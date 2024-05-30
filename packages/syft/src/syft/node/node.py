@@ -11,6 +11,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess  # nosec
+import sys
 import tempfile
 from time import sleep
 import traceback
@@ -223,7 +224,7 @@ def in_kubernetes() -> bool:
 def get_venv_packages() -> str:
     try:
         result = subprocess.run(
-            ["pip", "list", "--format=freeze"],
+            [sys.executable, "-m", "pip", "list", "--format=freeze"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             check=True,
