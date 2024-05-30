@@ -111,7 +111,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
     def _connect(self) -> None:
         # SQLite is not thread safe by default so we ensure that each connection
-        # comes from a different thread. In cases of Uvicorn and other AWSGI servers
+        # comes from a different thread. In cases of Hypercorn and other AWSGI servers
         # there will be many threads handling incoming requests so we need to ensure
         # that different connections are used in each thread. By using a dict for the
         # _db and _cur we can ensure they are never shared
