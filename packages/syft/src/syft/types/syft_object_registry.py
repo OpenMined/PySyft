@@ -1,5 +1,6 @@
 # stdlib
 from collections.abc import Callable
+from typing import Any
 from typing import TYPE_CHECKING
 
 # relative
@@ -20,10 +21,10 @@ class SyftObjectRegistry:
         str, type["SyftObject"] | type["SyftObjectRegistry"]
     ] = {}
     __object_transform_registry__: dict[str, Callable] = {}
-    __object_serialization_registry__: dict[tuple[str, str] : tuple] = {}
+    __object_serialization_registry__: dict[tuple[str, int], tuple] = {}
 
     @classmethod
-    def get_canonical_name(cls, obj):
+    def get_canonical_name(cls, obj: Any) -> str:
         # if is_type:
         #     # TODO: this is different for builtin types, make more generic
         #     return "ModelMetaclass"
@@ -37,7 +38,7 @@ class SyftObjectRegistry:
             return fqn
 
     @classmethod
-    def get_serde_properties(cls, fqn: str, canonical_name: str, version: str) -> tuple:
+    def get_serde_properties(cls, fqn: str, canonical_name: str, version: int) -> tuple:
         # relative
         from ..serde.recursive import TYPE_BANK
 
@@ -89,10 +90,13 @@ class SyftObjectRegistry:
                     ]
             except Exception as e:
                 print(e)
+                raise
                 # third party
 
     @classmethod
-    def has_serde_class(cls, fqn: str, canonical_name: str, version: str) -> tuple:
+    def has_serde_class(
+        cls, fqn: str, canonical_name: str | None, version: int
+    ) -> bool:
         # relative
         from ..serde.recursive import TYPE_BANK
 

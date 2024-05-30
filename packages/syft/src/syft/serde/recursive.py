@@ -13,10 +13,9 @@ from pydantic import BaseModel
 
 # syft absolute
 import syft as sy
-from syft.types.syft_object_registry import SyftObjectRegistry
 
 # relative
-from ..util.util import get_fully_qualified_name
+from ..types.syft_object_registry import SyftObjectRegistry
 from ..util.util import index_syft_by_module_name
 from .capnp import get_capnp_schema
 from .util import compatible_with_large_file_writes_capnp
@@ -158,7 +157,6 @@ def recursive_serde_register(
         version,
     )
 
-
     TYPE_BANK[fqn] = serde_attributes
     if hasattr(cls, "__canonical_name__"):
         canonical_name = cls.__canonical_name__
@@ -168,8 +166,9 @@ def recursive_serde_register(
         canonical_name = fqn
         version = 1
 
-    SyftObjectRegistry.__object_serialization_registry__[canonical_name, version] = serde_attributes
-
+    SyftObjectRegistry.__object_serialization_registry__[canonical_name, version] = (
+        serde_attributes
+    )
 
     if isinstance(alias_fqn, tuple):
         for alias in alias_fqn:
@@ -234,15 +233,13 @@ def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuild
         version = 1
     else:
         version = getattr(self, "__version__", 1)
-    
+
     if not SyftObjectRegistry.has_serde_class("", canonical_name, version):
         # third party
-        import ipdb
-        ipdb.set_trace()
         raise Exception(f"{canonical_name} version {version} not in SyftObjectRegistry")
 
     msg.canonicalName = canonical_name
-    msg.version=version
+    msg.version = version
 
     (
         nonrecursive,
@@ -315,17 +312,16 @@ def rs_bytes2object(blob: bytes) -> Any:
         return rs_proto2object(msg)
 
 
-def map_fqns_for_backward_compatibility(fqn):
+def map_fqns_for_backward_compatibility(fqn: str) -> str:
     """for backwards compatibility with 0.8.6. Sometimes classes where moved to another file. Which is
     exactly why we are implementing it differently"""
     mapping = {
-        'syft.service.dataset.dataset.MarkdownDescription': "syft.util.misc_objs.MarkdownDescription"
+        "syft.service.dataset.dataset.MarkdownDescription": "syft.util.misc_objs.MarkdownDescription"
     }
     if fqn in mapping:
         return mapping[fqn]
     else:
         return fqn
-
 
 
 def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
@@ -360,8 +356,7 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
     fqn = getattr(proto, "fullyQualifiedName", "")
     fqn = map_fqns_for_backward_compatibility(fqn)
     if not SyftObjectRegistry.has_serde_class(fqn, canonical_name, version):
-        import ipdb
-        ipdb.set_trace()
+        # third party
         raise Exception(f"{canonical_name} version {version} not in SyftObjectRegistry")
 
     # TODO: 🐉 sort this out, basically sometimes the syft.user classes are not in the

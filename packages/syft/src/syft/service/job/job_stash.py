@@ -30,11 +30,10 @@ from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
 from ...types.datetime import DateTime
+from ...types.datetime import format_timedelta
 from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_4
-from ...types.syft_object import SYFT_OBJECT_VERSION_5
-from ...types.datetime import format_timedelta
 from ...types.syft_object import SYFT_OBJECT_VERSION_6
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
