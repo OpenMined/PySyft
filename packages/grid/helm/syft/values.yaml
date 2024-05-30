@@ -234,7 +234,7 @@ ingress:
 attestation:
   enabled: false
   appLogLevel: "info"
-  uvicornLogLevel: "info"
+  hypercornLogLevel: "info"
 
   # Extra environment vars
   env: null
