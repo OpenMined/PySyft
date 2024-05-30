@@ -51,6 +51,7 @@ from ..types.cache_object import CachedSyftObject
 from ..types.identity import Identity
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
+from ..types.syft_object import SYFT_OBJECT_VERSION_3
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftMigrationRegistry
 from ..types.syft_object import SyftObject
@@ -245,7 +246,7 @@ class RemoteFunction(SyftObject):
 
     node_uid: UID
     signature: Signature
-    refresh_api_callback: Callable | None
+    refresh_api_callback: Callable | None = None
     path: str
     make_call: Callable
     pre_kwargs: dict[str, Any] | None = None
@@ -815,6 +816,38 @@ def result_needs_api_update(api_call_result: Any) -> bool:
     return False
 
 
+@serializable(
+    attrs=[
+        "endpoints",
+        "node_uid",
+        "node_name",
+        "lib_endpoints",
+        "communication_protocol",
+    ]
+)
+class SyftAPIV2(SyftObject):
+    # version
+    __canonical_name__ = "SyftAPI"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    # fields
+    connection: NodeConnection | None = None
+    node_uid: UID | None = None
+    node_name: str | None = None
+    endpoints: dict[str, APIEndpoint]
+    lib_endpoints: dict[str, LibEndpoint] | None = None
+    api_module: APIModule | None = None
+    libs: APIModule | None = None
+    signing_key: SyftSigningKey | None = None
+    # serde / storage rules
+    refresh_api_callback: Callable | None = None
+    __user_role: ServiceRole = ServiceRole.NONE
+    communication_protocol: PROTOCOL_TYPE
+
+    # informs getattr does not have nasty side effects
+    __syft_allow_autocomplete__ = ["services"]
+
+
 @instrument
 @serializable(
     attrs=[
@@ -828,7 +861,7 @@ def result_needs_api_update(api_call_result: Any) -> bool:
 class SyftAPI(SyftObject):
     # version
     __canonical_name__ = "SyftAPI"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     # fields
     connection: NodeConnection | None = None

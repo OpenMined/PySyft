@@ -65,7 +65,7 @@ from ..service.job.job_stash import JobStash
 from ..service.job.job_stash import JobType
 from ..service.log.log_service import LogService
 from ..service.metadata.metadata_service import MetadataService
-from ..service.metadata.node_metadata import NodeMetadataV3
+from ..service.metadata.node_metadata import NodeMetadata
 from ..service.network.network_service import NetworkService
 from ..service.network.utils import PeerHealthCheckTask
 from ..service.notification.notification_service import NotificationService
@@ -1009,7 +1009,7 @@ class Node(AbstractNode):
         return settings
 
     @property
-    def metadata(self) -> NodeMetadataV3:
+    def metadata(self) -> NodeMetadata:
         name = ""
         organization = ""
         description = ""
@@ -1023,7 +1023,7 @@ class Node(AbstractNode):
         node_type = self.node_type.value if self.node_type else ""
         node_side_type = self.node_side_type.value if self.node_side_type else ""
 
-        return NodeMetadataV3(
+        return NodeMetadata(
             name=name,
             id=self.id,
             verify_key=self.verify_key,

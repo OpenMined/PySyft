@@ -14,8 +14,8 @@ from ...abstract_node import NodeType
 from ...node.credentials import SyftVerifyKey
 from ...protocol.data_protocol import get_data_protocol
 from ...serde.serializable import serializable
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_4
+from ...types.syft_object import SYFT_OBJECT_VERSION_5
 from ...types.syft_object import StorableObjectType
 from ...types.syft_object import SyftObject
 from ...types.transforms import convert_types
@@ -44,24 +44,33 @@ def check_version(
 
 
 @serializable()
-class NodeMetadataUpdate(SyftObject):
-    __canonical_name__ = "NodeMetadataUpdate"
-    __version__ = SYFT_OBJECT_VERSION_2
+class NodeMetadata(SyftObject):
+    __canonical_name__ = "NodeMetadata"
+    __version__ = SYFT_OBJECT_VERSION_5
 
-    name: str | None = None
-    organization: str | None = None
-    description: str | None = None
-    on_board: bool | None = None
-    id: UID | None = None  # type: ignore[assignment]
-    verify_key: SyftVerifyKey | None = None
-    highest_object_version: int | None = None
-    lowest_object_version: int | None = None
-    syft_version: str | None = None
-    admin_email: str | None = None
+    name: str
+    id: UID
+    verify_key: SyftVerifyKey
+    highest_version: int
+    lowest_version: int
+    syft_version: str
+    node_type: NodeType = NodeType.DOMAIN
+    organization: str = "OpenMined"
+    description: str = "Text"
+    node_side_type: str
+    show_warnings: bool
+    eager_execution_enabled: bool
+
+    def check_version(self, client_version: str) -> bool:
+        return check_version(
+            client_version=client_version,
+            server_version=self.syft_version,
+            server_name=self.name,
+        )
 
 
 @serializable()
-class NodeMetadataV3(SyftObject):
+class NodeMetadataV4(SyftObject):
     __canonical_name__ = "NodeMetadata"
     __version__ = SYFT_OBJECT_VERSION_4
 
@@ -76,7 +85,6 @@ class NodeMetadataV3(SyftObject):
     description: str = "Text"
     node_side_type: str
     show_warnings: bool
-    eager_execution_enabled: bool
 
     def check_version(self, client_version: str) -> bool:
         return check_version(
@@ -121,7 +129,7 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
         )
 
 
-@transform(NodeMetadataV3, NodeMetadataJSON)
+@transform(NodeMetadata, NodeMetadataJSON)
 def metadata_to_json() -> list[Callable]:
     return [
         drop(["__canonical_name__"]),
@@ -132,7 +140,7 @@ def metadata_to_json() -> list[Callable]:
     ]
 
 
-@transform(NodeMetadataJSON, NodeMetadataV3)
+@transform(NodeMetadataJSON, NodeMetadata)
 def json_to_metadata() -> list[Callable]:
     return [
         drop(["metadata_version", "supported_protocols"]),
