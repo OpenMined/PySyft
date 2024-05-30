@@ -19,6 +19,7 @@ select = [
 ignore = [
     "B904",  # check for raise statements in exception handlers that lack a from clause
     "B905",  # zip() without an explicit strict= parameter
+    "B603",  # start_process_with_partial_path] Starting a process with a partial executable path
 ]
 
 [lint.per-file-ignores]
