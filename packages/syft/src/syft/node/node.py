@@ -228,7 +228,7 @@ def get_venv_packages() -> str:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             check=True,
-            text=True
+            text=True,
         )
         return result.stdout
     except subprocess.CalledProcessError as e:
