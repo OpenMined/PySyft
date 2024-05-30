@@ -221,13 +221,17 @@ def in_kubernetes() -> bool:
 
 
 def get_venv_packages() -> str:
-    pip_path = shutil.which("pip")
-    if pip_path is None:
-        raise Exception("pip not found")
-    process = subprocess.run(
-        [pip_path, "list", "--format=freeze"], capture_output=True, text=True
-    )
-    return process.stdout
+    try:
+        result = subprocess.run(
+            ["pip", "list", "--format=freeze"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=True,
+            text=True
+        )
+        return result.stdout
+    except subprocess.CalledProcessError as e:
+        return f"An error occurred: {e.stderr}"
 
 
 def get_syft_worker() -> bool:
