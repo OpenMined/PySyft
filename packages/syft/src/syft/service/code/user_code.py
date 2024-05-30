@@ -31,7 +31,7 @@ from result import Err
 from typing_extensions import Self
 
 # relative
-from ...abstract_node import NodeType
+from ...abstract_node import NodeSideType, NodeType
 from ...client.api import APIRegistry
 from ...client.api import NodeIdentity
 from ...client.enclave_client import EnclaveMetadata
@@ -119,8 +119,18 @@ class UserCodeStatusCollection(SyncableSyftObject):
 
     __repr_attrs__ = ["approved", "status_dict"]
 
-    status_dict: dict[NodeIdentity, tuple[UserCodeStatus, str]] = {}
+    status_dict_: dict[NodeIdentity, tuple[UserCodeStatus, str]] = {}
     user_code_link: LinkedObject
+
+    @property
+    def status_dict(self) -> dict[NodeIdentity, tuple[UserCodeStatus, str]]:
+        return self.status_dict_
+
+    @status_dict.setter
+    def status_dict(
+        self, value: dict[NodeIdentity, tuple[UserCodeStatus, str]]
+    ) -> None:
+        self.status_dict_ = value
 
     def syft_get_diffs(self, ext_obj: Any) -> list[AttrDiff]:
         # relative
@@ -278,6 +288,7 @@ class UserCode(SyncableSyftObject):
     signature: inspect.Signature
     status_link: LinkedObject
     input_kwargs: list[str]
+    origin_node_side_type: NodeSideType
     enclave_metadata: EnclaveMetadata | None = None
     submit_time: DateTime | None = None
     # tracks if the code calls domain.something, variable is set during parsing
@@ -365,7 +376,17 @@ class UserCode(SyncableSyftObject):
         return api.services.user.get_by_verify_key(self.user_verify_key)
 
     @property
-    def status(self) -> UserCodeStatusCollection | SyftError:
+    def status(self) -> UserCodeStatusCollection | UserCodeStatus | SyftError:
+        if self.origin_node_side_type == NodeSideType.LOW_SIDE and self.output_history:
+            return UserCodeStatus.APPROVED
+        elif (
+            self.origin_node_side_type == NodeSideType.LOW_SIDE
+            and not self.output_history
+        ):
+            return UserCodeStatus.PENDING
+
+        # NOTE: what is the reject condition on L0 setups?
+
         # Clientside only
         res = self.status_link.resolve
         return res
@@ -1292,6 +1313,14 @@ def set_default_pool_if_empty(context: TransformContext) -> TransformContext:
     return context
 
 
+def set_origin_node_side_type(context: TransformContext) -> TransformContext:
+    if context.node and context.output:
+        context.output["origin_node_side_type"] = (
+            context.node.node_side_type or NodeSideType.HIGH_SIDE
+        )
+    return context
+
+
 @transform(SubmitUserCode, UserCode)
 def submit_user_code_to_user_code() -> list[Callable]:
     return [
@@ -1307,6 +1336,7 @@ def submit_user_code_to_user_code() -> list[Callable]:
         add_node_uid_for_key("node_uid"),
         add_submit_time,
         set_default_pool_if_empty,
+        set_origin_node_side_type,
     ]
 
 
