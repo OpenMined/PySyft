@@ -1500,7 +1500,7 @@ class ActionObject(SyncableSyftObject):
 
         self.syft_history_hash = hash(self.id)
 
-    def _syft_add_pre_hooks__(self, eager_execution: bool):
+    def _syft_add_pre_hooks__(self, eager_execution: bool) -> None:
         """
         Add pre-hooks
 
@@ -1522,7 +1522,7 @@ class ActionObject(SyncableSyftObject):
             if trace_action_side_effect not in self.syft_pre_hooks__[HOOK_ALWAYS]:
                 self.syft_pre_hooks__[HOOK_ALWAYS].append(trace_action_side_effect)
 
-    def _syft_add_post_hooks__(self, eager_execution: bool):
+    def _syft_add_post_hooks__(self, eager_execution: bool) -> None:
         """
         Add post-hooks
 
