@@ -13,9 +13,9 @@ import time
 # third party
 from fastapi import APIRouter
 from fastapi import FastAPI
+import hypercorn
 import requests
 from starlette.middleware.cors import CORSMiddleware
-import hypercorn
 
 # relative
 from ..abstract_node import NodeSideType
