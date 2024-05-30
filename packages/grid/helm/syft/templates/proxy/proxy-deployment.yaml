@@ -1,3 +1,4 @@
+{{- if .Values.proxy.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -63,3 +64,4 @@ spec:
               name: proxy-config
           - configMap:
               name: proxy-config-dynamic
+{{- end }}

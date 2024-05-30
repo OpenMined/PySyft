@@ -4,11 +4,13 @@ from __future__ import annotations
 # stdlib
 from pathlib import Path
 import re
+from string import Template
 from typing import TYPE_CHECKING
 from typing import cast
 
 # third party
 from loguru import logger
+import markdown
 from tqdm import tqdm
 
 # relative
@@ -26,11 +28,9 @@ from ..service.sync.diff_state import ResolvedSyncState
 from ..service.sync.sync_state import SyncState
 from ..service.user.roles import Roles
 from ..service.user.user import UserView
-from ..service.user.user_roles import ServiceRole
 from ..types.blob_storage import BlobFile
 from ..types.uid import UID
-from ..util.assets import load_png_base64
-from ..util.notebook_ui.styles import FONT_CSS
+from ..util.misc_objs import HTMLObject
 from ..util.util import get_mb_size
 from ..util.util import prompt_warning_message
 from .api import APIModule
@@ -409,107 +409,15 @@ class DomainClient(SyftClient):
         return self.api.services.project.get_all()
 
     def _repr_html_(self) -> str:
-        guest_commands = """
-        <li><span class='syft-code-block'>&lt;your_client&gt;.datasets</span> - list datasets</li>
-        <li><span class='syft-code-block'>&lt;your_client&gt;.code</span> - list code</li>
-        <li><span class='syft-code-block'>&lt;your_client&gt;.login</span> - list projects</li>
-        <li>
-            <span class='syft-code-block'>&lt;your_client&gt;.code.submit?</span> - display function signature
-        </li>"""
-        ds_commands = """
-        <li><span class='syft-code-block'>&lt;your_client&gt;.datasets</span> - list datasets</li>
-        <li><span class='syft-code-block'>&lt;your_client&gt;.code</span> - list code</li>
-        <li><span class='syft-code-block'>&lt;your_client&gt;.projects</span> - list projects</li>
-        <li>
-            <span class='syft-code-block'>&lt;your_client&gt;.code.submit?</span> - display function signature
-        </li>"""
+        obj = self.api.services.settings.welcome_show()
+        if isinstance(obj, SyftError):
+            return obj.message
+        updated_template_str = Template(obj.text).safe_substitute(
+            node_url=getattr(self.connection, "url", None)
+        )
+        # If it's a markdown structured file
+        if not isinstance(obj, HTMLObject):
+            return markdown.markdown(updated_template_str)
 
-        do_commands = """
-        <li><span class='syft-code-block'>&lt;your_client&gt;.projects</span> - list projects</li>
-        <li><span class='syft-code-block'>&lt;your_client&gt;.requests</span> - list requests</li>
-        <li><span class='syft-code-block'>&lt;your_client&gt;.users</span> - list users</li>
-        <li>
-            <span class='syft-code-block'>&lt;your_client&gt;.requests.submit?</span> - display function signature
-        </li>"""
-
-        # TODO: how to select ds/do commands based on self.__user_role
-
-        if (
-            self.user_role.value == ServiceRole.NONE.value
-            or self.user_role.value == ServiceRole.GUEST.value
-        ):
-            commands = guest_commands
-        elif (
-            self.user_role is not None
-            and self.user_role.value == ServiceRole.DATA_SCIENTIST.value
-        ):
-            commands = ds_commands
-        elif (
-            self.user_role is not None
-            and self.user_role.value >= ServiceRole.DATA_OWNER.value
-        ):
-            commands = do_commands
-
-        command_list = f"""
-        <ul style='padding-left: 1em;'>
-            {commands}
-        </ul>
-        """
-
-        small_grid_symbol_logo = load_png_base64("small-grid-symbol-logo.png")
-
-        url = getattr(self.connection, "url", None)
-        node_details = f"<strong>URL:</strong> {url}<br />" if url else ""
-        if self.metadata is not None:
-            node_details += f"<strong>Node Type:</strong> {self.metadata.node_type.capitalize()}<br />"
-            node_side_type = (
-                "Low Side"
-                if self.metadata.node_side_type == NodeSideType.LOW_SIDE.value
-                else "High Side"
-            )
-            node_details += f"<strong>Node Side Type:</strong> {node_side_type}<br />"
-            node_details += (
-                f"<strong>Syft Version:</strong> {self.metadata.syft_version}<br />"
-            )
-
-        self._fetch_node_metadata(self.credentials)
-        return f"""
-        <style>
-            {FONT_CSS}
-
-            .syft-container {{
-                padding: 5px;
-                font-family: 'Open Sans';
-            }}
-            .syft-alert-info {{
-                color: #1F567A;
-                background-color: #C2DEF0;
-                border-radius: 4px;
-                padding: 5px;
-                padding: 13px 10px
-            }}
-            .syft-code-block {{
-                background-color: #f7f7f7;
-                border: 1px solid #cfcfcf;
-                padding: 0px 2px;
-            }}
-            .syft-space {{
-                margin-top: 1em;
-            }}
-        </style>
-        <div class="syft-client syft-container">
-            <img src="{small_grid_symbol_logo}" alt="Logo"
-            style="width:48px;height:48px;padding:3px;">
-            <h2>Welcome to {self.name}</h2>
-            <div class="syft-space">
-                {node_details}
-            </div>
-            <div class='syft-alert-info syft-space'>
-                &#9432;&nbsp;
-                This domain is run by the library PySyft to learn more about how it works visit
-                <a href="https://github.com/OpenMined/PySyft">github.com/OpenMined/PySyft</a>.
-            </div>
-            <h4>Commands to Get Started</h4>
-            {command_list}
-        </div><br />
-        """
+        # if it's a html string
+        return updated_template_str

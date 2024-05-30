@@ -1,3 +1,4 @@
+{{- if .Values.proxy.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -94,4 +95,4 @@ metadata:
     app.kubernetes.io/component: proxy
 data:
   rathole-dynamic.yml: |
-
+{{- end }}
