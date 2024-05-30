@@ -2,12 +2,14 @@
 
 # stdlib
 
+# stdlib
+import traceback
+
 # third party
 from pydantic import EmailStr
 from result import Err
 from result import Ok
 from result import Result
-import traceback
 
 # relative
 from ...abstract_node import AbstractNode
@@ -277,7 +279,7 @@ class NotifierService(AbstractService):
             notifier_stash.set(node.signing_key.verify_key, notifier)
             return Ok("Notifier initialized successfully")
 
-        except Exception as e:
+        except Exception:
             raise Exception(f"Error initializing notifier. \n {traceback.format_exc()}")
 
     # This is not a public API.

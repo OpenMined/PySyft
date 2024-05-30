@@ -1,15 +1,17 @@
 # stdlib
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 from typing import ClassVar
-
-from syft.types.syft_migration import migrate
-from syft.types.transforms import drop, make_set_default
 
 # relative
 from ...serde.serializable import serializable
 from ...service.context import AuthedServiceContext
-from ...types.syft_object import SYFT_OBJECT_VERSION_3, SYFT_OBJECT_VERSION_4
+from ...types.syft_migration import migrate
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
+from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syncable_object import SyncableSyftObject
+from ...types.transforms import drop
+from ...types.transforms import make_set_default
 from ...types.uid import UID
 
 
@@ -27,6 +29,7 @@ class SyftLogV3(SyncableSyftObject):
 
     stdout: str = ""
     stderr: str = ""
+
 
 @serializable()
 class SyftLog(SyncableSyftObject):
@@ -59,12 +62,13 @@ class SyftLog(SyncableSyftObject):
     ) -> list[UID]:  # type: ignore
         return [self.job_id]
 
+
 @migrate(SyftLogV3, SyftLog)
 def upgrade_syftlog() -> list[Callable]:
     # TODO: FIX
     return [make_set_default("job_id", UID())]
 
+
 @migrate(SyftLog, SyftLogV3)
 def downgrade_syftlog() -> list[Callable]:
     return [drop("job_id")]
-

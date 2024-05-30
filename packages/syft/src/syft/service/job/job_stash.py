@@ -1,10 +1,11 @@
 # stdlib
+from collections.abc import Callable
 from datetime import datetime
 from datetime import timedelta
 from enum import Enum
 import random
 from string import Template
-from typing import Any, Callable
+from typing import Any
 
 # third party
 from pydantic import Field
@@ -12,8 +13,6 @@ from pydantic import model_validator
 from result import Err
 from result import Ok
 from result import Result
-from syft.types.syft_migration import migrate
-from syft.types.transforms import drop, make_set_default
 from typing_extensions import Self
 
 # relative
@@ -30,10 +29,14 @@ from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
 from ...types.datetime import DateTime
-from ...types.syft_object import SYFT_OBJECT_VERSION_2, SYFT_OBJECT_VERSION_4
+from ...types.syft_migration import migrate
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SYFT_OBJECT_VERSION_5
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
+from ...types.transforms import drop
+from ...types.transforms import make_set_default
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
@@ -752,9 +755,11 @@ class Job(SyncableSyftObject):
 def upgrade_job() -> list[Callable]:
     return [make_set_default("requested_by", UID())]
 
+
 @migrate(JobV4, Job)
 def downgrade_job() -> list[Callable]:
     return [drop("requested_by")]
+
 
 @serializable()
 class JobInfo(SyftObject):

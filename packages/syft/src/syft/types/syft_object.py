@@ -50,7 +50,6 @@ from .uid import UID
 if TYPE_CHECKING:
     # relative
     from ..service.sync.diff_state import AttrDiff
-    from .syft_object_registry import SyftObjectRegistry
 
 IntStr = int | str
 AbstractSetIntStr = Set[IntStr]
@@ -295,9 +294,10 @@ base_attrs_sync_ignore = [
 ]
 
 
-class RegisteredSyftObject():
+class RegisteredSyftObject:
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
+        # relative
         from .syft_object_registry import SyftObjectRegistry as reg
 
         if hasattr(reg, "__canonical_name__") and hasattr(reg, "__version__"):
@@ -324,6 +324,7 @@ class RegisteredSyftObject():
             else:
                 # only if the cls has not been registered do we want to register it
                 reg.__object_version_registry__[mapping_string] = reg
+
 
 class SyftObject(SyftBaseObject, RegisteredSyftObject, SyftMigrationRegistry):
     __canonical_name__ = "SyftObject"
@@ -477,7 +478,9 @@ class SyftObject(SyftBaseObject, RegisteredSyftObject, SyftMigrationRegistry):
         return self.__dict__.__getitem__(key)  # type: ignore
 
     def _upgrade_version(self, latest: bool = True) -> "SyftObject":
+        # relative
         from .syft_object_registry import SyftObjectRegistry
+
         constructor = SyftObjectRegistry.versioned_class(
             name=self.__canonical_name__, version=self.__version__ + 1
         )
@@ -492,7 +495,9 @@ class SyftObject(SyftBaseObject, RegisteredSyftObject, SyftMigrationRegistry):
 
     # transform from one supported type to another
     def to(self, projection: type, context: Context | None = None) -> Any:
+        # relative
         from .syft_object_registry import SyftObjectRegistry
+
         # 🟡 TODO 19: Could we do an mro style inheritence conversion? Risky?
         transform = SyftObjectRegistry.get_transform(type(self), projection)
         return transform(self, context)
@@ -718,7 +723,9 @@ aggressive_set_attr(tuple, "_repr_html_", build_tabulator_table)
 class StorableObjectType:
     def to(self, projection: type, context: Context | None = None) -> Any:
         # 🟡 TODO 19: Could we do an mro style inheritence conversion? Risky?
+        # relative
         from .syft_object_registry import SyftObjectRegistry
+
         transform = SyftObjectRegistry.get_transform(type(self), projection)
         return transform(self, context)
 

@@ -405,7 +405,6 @@ class Node(AbstractNode):
 
         self.create_initial_settings(admin_email=root_email)
 
-
         self.init_blob_storage(config=blob_storage_config)
 
         # Migrate data before any operation on db
@@ -424,8 +423,6 @@ class Node(AbstractNode):
         self.peer_health_manager: PeerHealthCheckTask | None = None
         if background_tasks:
             self.run_peer_health_checks(context=context)
-
-
 
         NodeRegistry.set_node_for(self.id, self)
 
@@ -1637,11 +1634,12 @@ def create_admin_new(
                 return result.ok()
             else:
                 raise Exception(f"Could not create user: {result}")
-    except Exception as e:
+    except Exception:
         # import ipdb
         # ipdb.set_trace()
+        # stdlib
         import traceback
-        
+
         print("Unable to create new admin", traceback.format_exc())
 
     return None

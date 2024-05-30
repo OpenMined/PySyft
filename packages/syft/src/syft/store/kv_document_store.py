@@ -26,8 +26,9 @@ from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
-from .document_store import BaseStash, PartitionKeys
+from .document_store import BaseStash
 from .document_store import PartitionKey
+from .document_store import PartitionKeys
 from .document_store import QueryKey
 from .document_store import QueryKeys
 from .document_store import StorePartition
@@ -482,10 +483,10 @@ class KeyValueStorePartition(StorePartition):
                 return Err(f"Failed to update obj {obj}, you have no permission")
 
         except Exception as e:
-            import ipdb
-
-            ipdb.set_trace()
+            # third party
+            # stdlib
             import traceback
+
             print(traceback.format_exc())
             return Err(f"Failed to update obj {obj} with error: {e}")
 
@@ -658,9 +659,9 @@ class KeyValueStorePartition(StorePartition):
             ck_col[pk_value] = store_query_key.value
             self.unique_keys[pk_key] = ck_col
 
-        self.unique_keys[store_query_key.key][
+        self.unique_keys[store_query_key.key][store_query_key.value] = (
             store_query_key.value
-        ] = store_query_key.value
+        )
 
         sqks = searchable_query_keys.all
         for qk in sqks:
@@ -691,6 +692,7 @@ class KeyValueStorePartition(StorePartition):
                 try:
                     migrated_value = value.migrate_to(to_klass.__version__, context)
                 except Exception:
+                    # stdlib
                     import traceback
 
                     print(traceback.format_exc())
@@ -704,7 +706,7 @@ class KeyValueStorePartition(StorePartition):
                     obj=migrated_value,
                     has_permission=has_permission,
                     overwrite=True,
-                    allow_missing_keys=True
+                    allow_missing_keys=True,
                 )
 
                 if result.is_err():
