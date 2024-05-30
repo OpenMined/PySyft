@@ -4,7 +4,7 @@ export PATH="/root/.local/bin:${PATH}"
 
 APP_MODULE=server.attestation_main:app
 APP_LOG_LEVEL=${APP_LOG_LEVEL:-info}
-UVICORN_LOG_LEVEL=${UVICORN_LOG_LEVEL:-info}
+HYPERCORN_LOG_LEVEL=${HYPERCORN_LOG_LEVEL:-info}
 HOST=${HOST:-0.0.0.0}
 PORT=${PORT:-4455}
 RELOAD=""
@@ -16,4 +16,4 @@ then
 fi
 
 
-exec uvicorn $RELOAD --host $HOST --port $PORT --log-level $UVICORN_LOG_LEVEL "$APP_MODULE"
+exec hypercorn $RELOAD --bind $HOST:$PORT --log-level $HYPERCORN_LOG_LEVEL "$APP_MODULE"
