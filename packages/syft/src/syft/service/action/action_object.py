@@ -1478,7 +1478,7 @@ class ActionObject(SyncableSyftObject):
         if HOOK_ALWAYS not in self.syft_pre_hooks__:
             self.syft_pre_hooks__[HOOK_ALWAYS] = []
 
-        if HOOK_ON_POINTERS not in self.syft_post_hooks__:
+        if HOOK_ON_POINTERS not in self.syft_pre_hooks__:
             self.syft_pre_hooks__[HOOK_ON_POINTERS] = []
 
         api = APIRegistry.api_for(self.syft_node_location, self.syft_client_verify_key)
