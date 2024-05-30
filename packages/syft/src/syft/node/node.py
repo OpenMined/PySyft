@@ -228,7 +228,7 @@ def get_venv_packages() -> str:
             [sys.executable, "-m", "pip", "list", "--format=freeze"],
             capture_output=True,
             check=True,
-            text=True
+            text=True,
         )
         return result.stdout
     except subprocess.CalledProcessError as e:
