@@ -73,6 +73,10 @@ domain_client = sy.login(
 
 ## Deploy Kubernetes Helm Chart
 
+#### 0. Deploy Kubernetes with 8+ Cores and 16GB RAM
+
+If you're using Docker Desktop to deploy your Kubernetes, you may need to go into Settings > Resources and increase CPUs and Memory.
+
 **Note**: Assuming we have a Kubernetes cluster already setup.
 
 #### 1. Add and update Helm repo for Syft
