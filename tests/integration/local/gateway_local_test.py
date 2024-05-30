@@ -141,7 +141,7 @@ def test_create_gateway(
         email="info@openmined.org",
         password="changethis",
     )
-    res = gateway_client.settings.enable_association_request_auto_approval(enable=True)
+    res = gateway_client.settings.allow_association_request_auto_approval(enable=True)
     assert isinstance(res, SyftSuccess)
 
     domain_client: DomainClient = domain_webserver.login(
