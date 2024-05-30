@@ -36,7 +36,7 @@ def compare_and_resolve(
     diff_state_before = compare_clients(from_client, to_client)
     for obj_diff_batch in diff_state_before.active_batches:
         widget = resolve(
-            obj_diff_batch=obj_diff_batch,
+            obj_diff_batch,
         )
         if decision_callback:
             decision = decision_callback(obj_diff_batch)
