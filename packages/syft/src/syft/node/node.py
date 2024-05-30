@@ -221,8 +221,11 @@ def in_kubernetes() -> bool:
 
 
 def get_venv_packages() -> str:
+    pip_path = shutil.which("pip")
+    if pip_path is None:
+        raise Exception("pip not found")
     process = subprocess.Popen(
-        ["pip", "list", "--format=freeze"], stdout=subprocess.PIPE
+        [pip_path, "list", "--format=freeze"], stdout=subprocess.PIPE
     )
     output, _ = process.communicate()
     return output.decode()
