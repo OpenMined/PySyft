@@ -399,7 +399,7 @@ class Request(SyncableSyftObject):
         "changes",
         "requesting_user_verify_key",
     ]
-    __exclude_sync_diff_attrs__ = ["node_uid"]
+    __exclude_sync_diff_attrs__ = ["node_uid", "changes", "history"]
     __table_sort_attr__ = "Request time"
 
     def _repr_html_(self) -> Any:
@@ -549,18 +549,20 @@ class Request(SyncableSyftObject):
 
     @property
     def status(self) -> RequestStatus:
-        # if len(self.history) == 0:
-        #     return RequestStatus.PENDING
+        if self.code.output_history:  # Node side type?
+            return RequestStatus.APPROVED
+        if len(self.history) == 0:
+            return RequestStatus.PENDING
 
-        # all_changes_applied = all(self.current_change_state.values()) and (
-        #     len(self.current_change_state) == len(self.changes)
-        # )
+        all_changes_applied = all(self.current_change_state.values()) and (
+            len(self.current_change_state) == len(self.changes)
+        )
 
-        # request_status = (
-        #     RequestStatus.APPROVED if all_changes_applied else RequestStatus.REJECTED
-        # )
+        request_status = (
+            RequestStatus.APPROVED if all_changes_applied else RequestStatus.REJECTED
+        )
 
-        return RequestStatus.APPROVED
+        return request_status
 
     def approve(
         self,
