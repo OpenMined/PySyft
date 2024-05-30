@@ -221,7 +221,9 @@ def in_kubernetes() -> bool:
 
 
 def get_venv_packages() -> str:
-    process = subprocess.Popen(["pip", "list", "--format=freeze"], stdout=subprocess.PIPE)
+    process = subprocess.Popen(
+        ["pip", "list", "--format=freeze"], stdout=subprocess.PIPE
+    )
     output, _ = process.communicate()
     return output.decode()
 
