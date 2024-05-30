@@ -33,4 +33,4 @@ export NODE_TYPE=$NODE_TYPE
 echo "NODE_UID=$NODE_UID"
 echo "NODE_TYPE=$NODE_TYPE"
 
-exec $DEBUG_CMD uvicorn $RELOAD --host $HOST --port $PORT --log-level $LOG_LEVEL "$APP_MODULE"
+exec $DEBUG_CMD hypercorn $RELOAD --bind $HOST:$PORT --log-level $LOG_LEVEL "$APP_MODULE"
