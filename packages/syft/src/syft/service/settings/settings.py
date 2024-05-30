@@ -12,6 +12,7 @@ from ...abstract_node import NodeType
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...service.worker.utils import DEFAULT_WORKER_POOL_NAME
+from ...types.syft_metaclass import Empty
 from ...types.syft_migration import migrate
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
@@ -75,7 +76,7 @@ class NodeSettingsUpdate(PartialSyftObject):
 
     @field_validator("node_side_type", check_fields=False)
     @classmethod
-    def validate_node_side_type(cls, v: str) -> None:
+    def validate_node_side_type(cls, v: str) -> type[Empty]:
         msg = f"You cannot update 'node_side_type' through NodeSettingsUpdate. \
 Please use client.set_node_side_type_dangerous(node_side_type={v}). \
 Be aware if you have private data on the node and you want to change it to the Low Side, \
@@ -84,7 +85,7 @@ as information might be leaked."
             display(SyftInfo(message=msg))
         except Exception:
             print(SyftInfo(message=msg))
-        return None
+        return Empty
 
 
 @serializable()
