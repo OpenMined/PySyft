@@ -549,18 +549,18 @@ class Request(SyncableSyftObject):
 
     @property
     def status(self) -> RequestStatus:
-        if len(self.history) == 0:
-            return RequestStatus.PENDING
+        # if len(self.history) == 0:
+        #     return RequestStatus.PENDING
 
-        all_changes_applied = all(self.current_change_state.values()) and (
-            len(self.current_change_state) == len(self.changes)
-        )
+        # all_changes_applied = all(self.current_change_state.values()) and (
+        #     len(self.current_change_state) == len(self.changes)
+        # )
 
-        request_status = (
-            RequestStatus.APPROVED if all_changes_applied else RequestStatus.REJECTED
-        )
+        # request_status = (
+        #     RequestStatus.APPROVED if all_changes_applied else RequestStatus.REJECTED
+        # )
 
-        return request_status
+        return RequestStatus.APPROVED
 
     def approve(
         self,

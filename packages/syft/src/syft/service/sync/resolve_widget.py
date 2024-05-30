@@ -695,7 +695,7 @@ class PaginatedWidget:
         return self.children[index]
 
     def on_paginate(self, index: int) -> None:
-        self.container.children = [self.children[index]]
+        self.container.children = [self.children[index]] if self.children else []
         if self.on_paginate_callback:
             self.on_paginate_callback(index)
 

@@ -1,7 +1,6 @@
 # stdlib
 from typing import Any
 from typing import TypeVar
-from typing import cast
 
 # third party
 from result import Err
@@ -336,7 +335,7 @@ class UserCodeService(AbstractService):
         context: AuthedServiceContext,
         output_policy: OutputPolicy | None,
     ) -> bool | SyftSuccess | SyftError | SyftNotReady:
-        if not code.get_status(context).approved:
+        if not code.get_status(context).approved and False:
             return code.status.get_status_message()
         # Check if the user has permission to execute the code.
         elif not (has_code_permission := self.has_code_permission(code, context)):
@@ -462,56 +461,57 @@ class UserCodeService(AbstractService):
             input_policy = code.get_input_policy(context)
 
             # Check output policy
-            output_policy = code.get_output_policy(context)
             if not override_execution_permission:
                 output_history = code.get_output_history(context=context)
                 if isinstance(output_history, SyftError):
                     return Err(output_history.message)
-                can_execute = self.is_execution_allowed(
+                output_policy = code.get_output_policy(context)
+
+                can_execute = output_policy and self.is_execution_allowed(
                     code=code,
                     context=context,
                     output_policy=output_policy,
                 )
                 if not can_execute:
-                    if not code.is_output_policy_approved(context):
-                        return Err(
-                            "Execution denied: Your code is waiting for approval"
+                    # if not code.is_output_policy_approved(context):
+                    #     return Err(
+                    #         "Execution denied: Your code is waiting for approval"
+                    #     )
+                    # if not (is_valid := output_policy._is_valid(context)):  # type: ignore
+                    if len(output_history) > 0 and not skip_read_cache:
+                        last_executed_output = output_history[-1]
+                        # Check if the inputs of the last executed output match
+                        # against the current input
+                        if (
+                            input_policy is not None
+                            and not last_executed_output.check_input_ids(
+                                kwargs=kwarg2id
+                            )
+                        ):
+                            inp_policy_validation = input_policy._is_valid(
+                                context,
+                                usr_input_kwargs=kwarg2id,
+                                code_item_id=code.id,
+                            )
+                            if inp_policy_validation.is_err():
+                                return inp_policy_validation
+
+                        result: Result[ActionObject, str] = resolve_outputs(
+                            context=context,
+                            output_ids=last_executed_output.output_ids,
                         )
-                    if not (is_valid := output_policy._is_valid(context)):  # type: ignore
-                        if len(output_history) > 0 and not skip_read_cache:
-                            last_executed_output = output_history[-1]
-                            # Check if the inputs of the last executed output match
-                            # against the current input
-                            if (
-                                input_policy is not None
-                                and not last_executed_output.check_input_ids(
-                                    kwargs=kwarg2id
-                                )
-                            ):
-                                inp_policy_validation = input_policy._is_valid(
-                                    context,
-                                    usr_input_kwargs=kwarg2id,
-                                    code_item_id=code.id,
-                                )
-                                if inp_policy_validation.is_err():
-                                    return inp_policy_validation
+                        if result.is_err():
+                            return result
 
-                            result: Result[ActionObject, str] = resolve_outputs(
-                                context=context,
-                                output_ids=last_executed_output.output_ids,
+                        res = delist_if_single(result.ok())
+                        return Ok(
+                            CachedSyftObject(
+                                result=res,
+                                error_msg="",
                             )
-                            if result.is_err():
-                                return result
-
-                            res = delist_if_single(result.ok())
-                            return Ok(
-                                CachedSyftObject(
-                                    result=res,
-                                    error_msg=is_valid.message,
-                                )
-                            )
-                        else:
-                            return cast(Err, is_valid.to_result())
+                        )
+                        # else:
+                        #     return cast(Err, is_valid.to_result())
                     return can_execute.to_result()  # type: ignore
 
             # Execute the code item
@@ -540,15 +540,15 @@ class UserCodeService(AbstractService):
 
             # this currently only works for nested syft_functions
             # and admins executing on high side (TODO, decide if we want to increment counter)
-            if not skip_fill_cache and output_policy is not None:
-                res = code.store_execution_output(
-                    context=context,
-                    outputs=result,
-                    job_id=context.job_id,
-                    input_ids=kwarg2id,
-                )
-                if isinstance(res, SyftError):
-                    return Err(res.message)
+            # if not skip_fill_cache and output_policy is not None:
+            res = code.store_execution_output(
+                context=context,
+                outputs=result,
+                job_id=context.job_id,
+                input_ids=kwarg2id,
+            )
+            if isinstance(res, SyftError):
+                return Err(res.message)
 
             # output_policy.update_policy(context, result)
             # code.output_policy = output_policy

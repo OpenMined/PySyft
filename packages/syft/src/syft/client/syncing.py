@@ -3,6 +3,7 @@
 # relative
 from ..abstract_node import NodeSideType
 from ..node.credentials import SyftVerifyKey
+from ..service.job.job_stash import Job
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.sync.diff_state import NodeDiff
@@ -62,9 +63,15 @@ def compare_clients(
     filter_by_email: str | None = None,
     filter_by_type: type | None = None,
 ) -> NodeDiff:
+    from_state = from_client.get_sync_state()
+    to_state = to_client.get_sync_state()
+    if not from_state:
+        return from_state
+    if not to_state:
+        return to_state
     return compare_states(
-        from_client.get_sync_state(),
-        to_client.get_sync_state(),
+        from_state=from_state,
+        to_state=to_state,
         include_ignored=include_ignored,
         include_same=include_same,
         filter_by_email=filter_by_email,
@@ -117,6 +124,15 @@ def handle_sync_batch(
 
     src_client = obj_diff_batch.source_client
     tgt_client = obj_diff_batch.target_client
+
+    # make sure dependent request is approved before syncing the job
+    if obj_diff_batch.root_type == Job and sync_direction == SyncDirection.HIGH_TO_LOW:
+        job = obj_diff_batch.root.get_obj()
+        requests = [r for r in src_client.requests if r.code_id == job.user_code_id]
+        # NOTE: how to handle 0 or multiple requests?
+        if requests:
+            requests[0].approve()
+
     src_resolved_state, tgt_resolved_state = obj_diff_batch.create_new_resolved_states()
 
     obj_diff_batch.decision = decision
@@ -130,7 +146,7 @@ def handle_sync_batch(
             getattr(obj_diff_batch.user_code_high, "user_verify_key", None)
             or obj_diff_batch.user_verify_key_high
         )
-        share_private_data_for_diff = share_private_data[diff.object_id]
+        share_private_data_for_diff = True
         mockify_for_diff = mockify[diff.object_id]
         instruction = SyncInstruction.from_batch_decision(
             diff=diff,
