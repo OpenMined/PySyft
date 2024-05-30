@@ -428,8 +428,6 @@ def make_action_side_effect(
         - Ok[[Tuple[PreHookContext, Tuple[Any, ...], Dict[str, Any]]] on success
         - Err[str] on failure
     """
-    # relative
-
     try:
         action = context.obj.syft_make_action_with_self(
             op=context.op_name,
@@ -1494,12 +1492,12 @@ class ActionObject(SyncableSyftObject):
             and api.metadata.eager_execution_enabled
         )
 
-        if eager_execution_enabled:
-            # pre_hooks | this should be a list as orders matters
-            for side_effect in [make_action_side_effect]:
-                if side_effect not in self.syft_pre_hooks__[HOOK_ALWAYS]:
-                    self.syft_pre_hooks__[HOOK_ALWAYS].append(side_effect)
+        # pre_hooks | this should be a list as orders matters
+        for side_effect in [make_action_side_effect]:
+            if side_effect not in self.syft_pre_hooks__[HOOK_ALWAYS]:
+                self.syft_pre_hooks__[HOOK_ALWAYS].append(side_effect)
 
+        if eager_execution_enabled:
             for side_effect in [send_action_side_effect]:
                 if side_effect not in self.syft_pre_hooks__[HOOK_ON_POINTERS]:
                     self.syft_pre_hooks__[HOOK_ON_POINTERS].append(side_effect)
