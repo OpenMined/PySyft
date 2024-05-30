@@ -215,6 +215,13 @@
           "hash": "010d9aaca95f3fdfc8d1f97d01c1bd66483da774a59275b310c08d6912f7f863",
           "action": "add"
         }
+      },
+      "EnclaveInstance": {
+        "1": {
+          "version": 1,
+          "hash": "4ccf585328e191d22e974fac0370618ad4c020eb768f9effd231ed8b37e22808",
+          "action": "add"
+        }
       }
     }
   }

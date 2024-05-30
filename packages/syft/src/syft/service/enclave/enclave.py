@@ -22,11 +22,10 @@ class EnclaveStatus(Enum):
     SHUTTING_DOWN = "shutting_down"
 
 
-# TODO rename Enclave to EnclaveInstance to prevent a clash
 @serializable()
-class Enclave(SyftObject):
+class EnclaveInstance(SyftObject):
     # version
-    __canonical_name__ = "Enclave"
+    __canonical_name__ = "EnclaveInstance"
     __version__ = SYFT_OBJECT_VERSION_1
 
     node_uid: UID
@@ -41,7 +40,7 @@ class Enclave(SyftObject):
 
     # TODO replace the create method with pydantic field validators, or find a better alternative
     @classmethod
-    def create(cls, route: NodeRouteType) -> "Enclave":
+    def create(cls, route: NodeRouteType) -> "EnclaveInstance":
         # TODO: find the standard method to convert route to client object
         metadata = login_as_guest(url=route.host_or_ip, port=route.port).metadata
         return cls(

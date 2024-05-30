@@ -25,15 +25,15 @@ from ..network.routes import route_to_connection
 from ..policy.policy import InputPolicy
 from ..service import AbstractService
 from ..service import service_method
-from .enclave import Enclave
+from .enclave import EnclaveInstance
 
 
 @instrument
 @serializable()
 class EnclaveStash(BaseUIDStoreStash):
-    object_type = Enclave
+    object_type = EnclaveInstance
     settings: PartitionSettings = PartitionSettings(
-        name=Enclave.__canonical_name__, object_type=Enclave
+        name=EnclaveInstance.__canonical_name__, object_type=EnclaveInstance
     )
 
 
@@ -57,7 +57,7 @@ class EnclaveService(AbstractService):
         self, context: AuthedServiceContext, name: str, route: NodeRouteType
     ) -> SyftSuccess | SyftError:
         """Add an Enclave to the network."""
-        enclave = Enclave.create(route=route)
+        enclave = EnclaveInstance.create(route=route)
         result = self.stash.set(
             credentials=context.credentials,
             obj=enclave,
@@ -78,7 +78,9 @@ class EnclaveService(AbstractService):
         name="get_all",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
-    def get_all(self, context: AuthedServiceContext) -> list[Enclave] | SyftError:
+    def get_all(
+        self, context: AuthedServiceContext
+    ) -> list[EnclaveInstance] | SyftError:
         """Add an Enclave to the network."""
         result = self.stash.get_all(context.credentials)
         if result.is_ok():
