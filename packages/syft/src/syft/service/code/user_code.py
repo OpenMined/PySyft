@@ -280,7 +280,8 @@ class UserCode(SyncableSyftObject):
     input_kwargs: list[str]
     enclave_metadata: EnclaveMetadata | None = None
     submit_time: DateTime | None = None
-    uses_domain: bool = False  # tracks if the code calls domain.something, variable is set during parsing
+    # tracks if the code calls domain.something, variable is set during parsing
+    uses_domain: bool = False
     nested_codes: dict[str, tuple[LinkedObject, dict]] | None = {}
     worker_pool_name: str | None = None
 
@@ -568,12 +569,6 @@ class UserCode(SyncableSyftObject):
     def get_output_history(
         self, context: AuthedServiceContext
     ) -> list[ExecutionOutput] | SyftError:
-        is_admin = context.role == ServiceRole.ADMIN
-        if not self.get_status(context).approved and False:
-            return SyftError(
-                message="Execution denied, Please wait for the code to be approved"
-            )
-
         output_service = cast(OutputService, context.node.get_service("outputservice"))
         return output_service.get_by_user_code_id(context, self.id)
 
@@ -594,7 +589,6 @@ class UserCode(SyncableSyftObject):
 
         output_service = context.node.get_service("outputservice")
         output_service = cast(OutputService, output_service)
-        # use DS verify key here
         execution_result = output_service.create(
             context,
             user_code_id=self.id,
@@ -875,7 +869,10 @@ class SubmitUserCode(SyftObject):
             n_consumers=n_consumers,
             deploy_to="python",
         )
-        ep_client = ep_node.login(email="info@openmined.org", password="changethis")  # nosec
+        ep_client = ep_node.login(
+            email="info@openmined.org",
+            password="changethis",
+        )  # nosec
         self.input_policy_init_kwargs = cast(dict, self.input_policy_init_kwargs)
         for node_id, obj_dict in self.input_policy_init_kwargs.items():
             # api = APIRegistry.api_for(
