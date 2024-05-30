@@ -224,11 +224,10 @@ def get_venv_packages() -> str:
     pip_path = shutil.which("pip")
     if pip_path is None:
         raise Exception("pip not found")
-    process = subprocess.Popen(
-        [pip_path, "list", "--format=freeze"], stdout=subprocess.PIPE, shell=False
+    process = subprocess.run(
+        [pip_path, "list", "--format=freeze"], capture_output=True, text=True
     )
-    output, _ = process.communicate()
-    return output.decode()
+    return process.stdout
 
 
 def get_syft_worker() -> bool:
