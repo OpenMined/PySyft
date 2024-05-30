@@ -164,6 +164,11 @@ profiles:
         path: dev.backend.containers.backend-container.ssh.localPort
         value: 3481
 
+      # Mongo
+      - op: replace
+        path: dev.rathole.ports[0].port
+        value: 2334:2333
+
   - name: gcp
     patches:
       - op: replace
