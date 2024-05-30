@@ -177,7 +177,7 @@ def test_dataset_search(set_env_var, gateway_port: int, domain_1_port: int) -> N
         port=domain_1_port, email="info@openmined.org", password="changethis"
     )
 
-    res = gateway_client.settings.enable_association_request_auto_approval(enable=True)
+    res = gateway_client.settings.allow_association_request_auto_approval(enable=True)
     assert isinstance(res, SyftSuccess)
 
     # connect the domain to the gateway
@@ -251,7 +251,7 @@ def test_domain_gateway_user_code(
     )
     assert isinstance(user_create_res, SyftSuccess)
 
-    res = gateway_client.settings.enable_association_request_auto_approval(enable=True)
+    res = gateway_client.settings.allow_association_request_auto_approval(enable=True)
     assert isinstance(res, SyftSuccess)
 
     # the domain client connects to the gateway
@@ -304,7 +304,7 @@ def test_deleting_peers(set_env_var, domain_1_port: int, gateway_port: int) -> N
     )
 
     # Enable automatic acceptance of association requests
-    res = gateway_client.settings.enable_association_request_auto_approval(enable=True)
+    res = gateway_client.settings.allow_association_request_auto_approval(enable=True)
     assert isinstance(res, SyftSuccess)
 
     # connecting the domain to the gateway
@@ -372,7 +372,7 @@ def test_add_update_route_priority(
     _remove_existing_peers(gateway_client)
 
     # Enable automatic acceptance of association requests
-    res = gateway_client.settings.enable_association_request_auto_approval(enable=True)
+    res = gateway_client.settings.allow_association_request_auto_approval(enable=True)
     assert isinstance(res, SyftSuccess)
 
     # connecting the domain to the gateway
@@ -456,7 +456,7 @@ def test_delete_route(set_env_var, gateway_port: int, domain_1_port: int) -> Non
     )
 
     # Enable automatic acceptance of association requests
-    res = gateway_client.settings.enable_association_request_auto_approval(enable=True)
+    res = gateway_client.settings.allow_association_request_auto_approval(enable=True)
     assert isinstance(res, SyftSuccess)
 
     # connecting the domain to the gateway
@@ -513,7 +513,7 @@ def test_add_update_route_priority_on_peer(
     _remove_existing_peers(gateway_client)
 
     # Enable automatic acceptance of association requests
-    res = gateway_client.settings.enable_association_request_auto_approval(enable=True)
+    res = gateway_client.settings.allow_association_request_auto_approval(enable=True)
     assert isinstance(res, SyftSuccess)
 
     # connecting the domain to the gateway
@@ -586,7 +586,7 @@ def test_delete_route_on_peer(
     )
 
     # Enable automatic acceptance of association requests
-    res = gateway_client.settings.enable_association_request_auto_approval(enable=True)
+    res = gateway_client.settings.allow_association_request_auto_approval(enable=True)
     assert isinstance(res, SyftSuccess)
 
     # connecting the domain to the gateway
@@ -653,7 +653,7 @@ def test_update_route_priority(
     _remove_existing_peers(gateway_client)
 
     # Enable automatic acceptance of association requests
-    res = gateway_client.settings.enable_association_request_auto_approval(enable=True)
+    res = gateway_client.settings.allow_association_request_auto_approval(enable=True)
     assert isinstance(res, SyftSuccess)
 
     # connecting the domain to the gateway
@@ -724,7 +724,7 @@ def test_update_route_priority_on_peer(
     _remove_existing_peers(gateway_client)
 
     # Enable automatic acceptance of association requests
-    res = gateway_client.settings.enable_association_request_auto_approval(enable=True)
+    res = gateway_client.settings.allow_association_request_auto_approval(enable=True)
     assert isinstance(res, SyftSuccess)
 
     # connecting the domain to the gateway
@@ -794,7 +794,7 @@ def test_dataset_stream(set_env_var, gateway_port: int, domain_1_port: int) -> N
     _remove_existing_peers(domain_client)
     _remove_existing_peers(gateway_client)
 
-    res = gateway_client.settings.enable_association_request_auto_approval(enable=True)
+    res = gateway_client.settings.allow_association_request_auto_approval(enable=True)
     assert isinstance(res, SyftSuccess)
 
     # connect the domain to the gateway

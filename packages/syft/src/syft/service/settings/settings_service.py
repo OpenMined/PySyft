@@ -162,11 +162,11 @@ class SettingsService(AbstractService):
         return notifier_service.turn_off(context=context)
 
     @service_method(
-        path="settings.enable_guest_signup",
-        name="enable_guest_signup",
+        path="settings.allow_guest_signup",
+        name="allow_guest_signup",
         warning=HighSideCRUDWarning(confirmation=True),
     )
-    def enable_guest_signup(
+    def allow_guest_signup(
         self, context: AuthedServiceContext, enable: bool
     ) -> SyftSuccess | SyftError:
         """Enable/Disable Registration for Data Scientist or Guest Users."""
@@ -201,10 +201,10 @@ class SettingsService(AbstractService):
         return SyftSuccess(message=f"Eager execution {message}")
 
     @service_method(
-        path="settings.enable_association_request_auto_approval",
-        name="enable_association_request_auto_approval",
+        path="settings.allow_association_request_auto_approval",
+        name="allow_association_request_auto_approval",
     )
-    def enable_association_request_auto_approval(
+    def allow_association_request_auto_approval(
         self, context: AuthedServiceContext, enable: bool
     ) -> SyftSuccess | SyftError:
         new_settings = NodeSettingsUpdate(association_request_auto_approval=enable)
