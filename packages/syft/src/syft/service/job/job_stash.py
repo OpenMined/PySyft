@@ -715,9 +715,8 @@ class Job(SyncableSyftObject):
         output = context.node.get_service("outputservice").get_by_job_id(  # type: ignore
             context, self.id
         )
-        if isinstance(output, SyftError) or output is None:
-            # TODO: remove before merge
-            raise ValueError("Could not get output for job")
+        if isinstance(output, SyftError):
+            return output
         elif output is not None:
             dependencies.append(output.id)
 

@@ -23,7 +23,6 @@ from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_object import ActionObject
-from ..action.action_permissions import ActionObjectPermission
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..service import AbstractService
@@ -280,24 +279,6 @@ class OutputService(AbstractService):
         )
 
         res = self.stash.set(context.credentials, output)
-        return res
-
-    @service_method(
-        path="output.set",
-        name="set",
-        roles=ADMIN_ROLE_LEVEL,
-    )
-    def set(
-        self,
-        context: AuthedServiceContext,
-        obj: ExecutionOutput,
-        add_permissions: list[ActionObjectPermission] | None = None,
-    ) -> ExecutionOutput | SyftError:
-        res = self.stash.set(
-            context.credentials,
-            obj,
-            add_permissions=add_permissions,
-        )
         return res
 
     @service_method(
