@@ -1537,7 +1537,10 @@ class SyncInstruction(SyftObject):
             if share_private_data:  # or diff.object_type == "Job":
                 if share_to_user is None:
                     # job ran by another user
-                    if not diff.object_type == "Job":
+                    if (
+                        diff.object_type != "Job"
+                        and diff.object_type != "ExecutionOutput"
+                    ):
                         raise ValueError(
                             "share_to_user is required to share private data"
                         )
@@ -1549,10 +1552,6 @@ class SyncInstruction(SyftObject):
                             credentials=share_to_user,
                         )
                     ]
-
-        # TODO move this to the widget
-        # if widget.has_unused_share_button:
-        #     print("Share button was not used, so we will mockify the object")
 
         # storage permissions
         new_storage_permissions = []

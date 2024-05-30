@@ -147,7 +147,6 @@ def handle_sync_batch(
         )
         share_private_data_for_diff = share_private_data[diff.object_id]
         # add sync private option to execution output
-        share_private_data_for_diff = True
         mockify_for_diff = mockify[diff.object_id]
         instruction = SyncInstruction.from_batch_decision(
             diff=diff,
