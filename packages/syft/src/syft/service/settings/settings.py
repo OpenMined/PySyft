@@ -23,10 +23,10 @@ from ...types.transforms import make_set_default
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
-from ..response import SyftInfo
 from ...util.misc_objs import HTMLObject
 from ...util.misc_objs import MarkdownDescription
 from ...util.schema import DEFAULT_WELCOME_MSG
+from ..response import SyftInfo
 
 
 @serializable()
@@ -56,18 +56,6 @@ class NodeSettingsUpdateV3(PartialSyftObject):
     signup_enabled: bool
     admin_email: str
     association_request_auto_approval: bool
-    node_side_type: str
-
-    @field_validator("node_side_type", check_fields=False)
-    @classmethod
-    def validate_node_side_type(cls, v: str) -> None:
-        msg = f"You cannot update 'node_side_type' through NodeSettingsUpdate. \
-Please use client.set_node_side_type_dangerous(node_side_type={v})."
-        try:
-            display(SyftInfo(message=msg))
-        except Exception:
-            print(SyftInfo(message=msg))
-        return None
 
 
 @serializable()
@@ -83,6 +71,18 @@ class NodeSettingsUpdate(PartialSyftObject):
     admin_email: str
     association_request_auto_approval: bool
     welcome_markdown: HTMLObject | MarkdownDescription
+    node_side_type: str
+
+    @field_validator("node_side_type", check_fields=False)
+    @classmethod
+    def validate_node_side_type(cls, v: str) -> None:
+        msg = f"You cannot update 'node_side_type' through NodeSettingsUpdate. \
+Please use client.set_node_side_type_dangerous(node_side_type={v})."
+        try:
+            display(SyftInfo(message=msg))
+        except Exception:
+            print(SyftInfo(message=msg))
+        return None
 
 
 @serializable()
