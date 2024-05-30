@@ -165,7 +165,7 @@ def recursive_serde_register(
         version = cls.__version__
     else:
         # TODO: refactor
-        canonical_name = fqn.split(".")[-1]
+        canonical_name = fqn
         version = 1
 
     SyftObjectRegistry.__object_serialization_registry__[canonical_name, version] = serde_attributes
@@ -229,7 +229,7 @@ def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuild
     msg = recursive_scheme.new_message()
 
     # todo: rewrite and make sure every object has a canonical name and version
-    canonical_name = SyftObjectRegistry.get_canonical_name(self, is_type=is_type)
+    canonical_name = SyftObjectRegistry.get_canonical_name(self)
     if is_type:
         version = 1
     else:

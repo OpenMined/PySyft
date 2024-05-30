@@ -23,17 +23,18 @@ class SyftObjectRegistry:
     __object_serialization_registry__: dict[tuple[str, str] : tuple] = {}
 
     @classmethod
-    def get_canonical_name(cls, obj, is_type: bool):
-        if is_type:
-            # TODO: this is different for builtin types, make more generic
-            return "ModelMetaclass"
+    def get_canonical_name(cls, obj):
+        # if is_type:
+        #     # TODO: this is different for builtin types, make more generic
+        #     return "ModelMetaclass"
+        is_type = isinstance(obj, type)
 
         res = getattr(obj, "__canonical_name__", None)
-        if res is not None:
+        if res is not None and not is_type:
             return res
         else:
             fqn = get_fully_qualified_name(obj)
-            return fqn.split(".")[-1]
+            return fqn
 
     @classmethod
     def get_serde_properties(cls, fqn: str, canonical_name: str, version: str) -> tuple:
@@ -81,7 +82,7 @@ class SyftObjectRegistry:
                     return res
                 else:
                     # TODO, add refactoring for non syftobject versions
-                    canonical_name = fqn.split(".")[-1]
+                    canonical_name = fqn
                     version = 1
                     return cls.__object_serialization_registry__[
                         canonical_name, version
