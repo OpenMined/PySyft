@@ -33,6 +33,16 @@ class AssociationRequestChange(Change):
     def _run(
         self, context: ChangeContext, apply: bool
     ) -> Result[tuple[bytes, NodePeer], SyftError]:
+        """
+        Executes the association request.
+
+        Args:
+            context (ChangeContext): The change context.
+            apply (bool): A flag indicating whether to apply the association request.
+
+        Returns:
+            Result[tuple[bytes, NodePeer], SyftError]: The result of the association request.
+        """
         # relative
         from .network_service import NetworkService
 
@@ -42,11 +52,25 @@ class AssociationRequestChange(Change):
                 SyftError(message="Undo not supported for AssociationRequestChange")
             )
 
+        # Get the network service
         service_ctx = context.to_service_ctx()
+        network_service = cast(
+            NetworkService, service_ctx.node.get_service(NetworkService)
+        )
+        network_stash = network_service.stash
 
+        # Check if remote peer to be added is via rathole
         rathole_route = self.remote_peer.get_rathole_route()
+        add_rathole_route = (
+            rathole_route is not None
+            and self.remote_peer.latest_added_route == rathole_route
+        )
 
-        if rathole_route and rathole_route.rathole_token is None:
+        # If the remote peer is added via rathole, we don't need to ping the peer
+        if add_rathole_route:
+            network_service.rathole_service.add_host_to_server(self.remote_peer)
+        else:
+            # Pinging the remote peer to verify the connection
             try:
                 remote_client: SyftClient = self.remote_peer.client_with_context(
                     context=service_ctx
@@ -77,14 +101,7 @@ class AssociationRequestChange(Change):
             except Exception as e:
                 return Err(SyftError(message=str(e)))
 
-        network_service = cast(
-            NetworkService, service_ctx.node.get_service(NetworkService)
-        )
-
-        network_stash = network_service.stash
-
-        network_service.rathole_service.add_host_to_server(self.remote_peer)
-
+        # Adding the remote peer to the network stash
         result = network_stash.create_or_update_peer(
             service_ctx.node.verify_key, self.remote_peer
         )

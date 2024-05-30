@@ -215,6 +215,16 @@ class NodePeer(SyftObject):
         peer.node_routes.append(route)
         return peer
 
+    @property
+    def latest_added_route(self) -> NodeRoute | None:
+        """
+        Returns the latest added route from the list of node routes.
+
+        Returns:
+            NodeRoute | None: The latest added route, or None if there are no routes.
+        """
+        return self.node_routes[-1] if self.node_routes else None
+
     def client_with_context(
         self, context: NodeServiceContext
     ) -> Result[type[SyftClient], str]:

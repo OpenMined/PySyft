@@ -1,10 +1,12 @@
 # stdlib
 from collections.abc import Callable
 from enum import Enum
+import logging
 import secrets
 from typing import Any
 
 # third party
+from loguru import logger
 from result import Err
 from result import Result
 
@@ -130,10 +132,9 @@ class NetworkStash(BaseUIDStoreStash):
             existing = existing.ok()
             existing.update_routes(peer.node_routes)
             result = self.update(credentials, existing)
-            return result
         else:
             result = self.set(credentials, peer)
-            return result
+        return result
 
     def get_by_verify_key(
         self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
@@ -202,121 +203,86 @@ class NetworkService(AbstractService):
         )
         remote_node_peer = NodePeer.from_client(remote_client)
 
-        # ask the remote client to add this node (represented by `self_node_peer`) as a peer
-        # check locally if the remote node already exists as a peer
-        existing_peer_result = self.stash.get_by_uid(
-            context.node.verify_key, remote_node_peer.id
+        # Step 3: Check remotely if the self node already exists as a peer
+        # Update the peer if it exists, otherwise add it
+        remote_self_node_peer = remote_client.api.services.network.get_peer_by_name(
+            name=self_node_peer.name
         )
-        if (
-            existing_peer_result.is_ok()
-            and (existing_peer := existing_peer_result.ok()) is not None
-        ):
-            msg = [
-                (
-                    f"{existing_peer.node_type} peer '{existing_peer.name}' already exist for "
-                    f"{self_node_peer.node_type} '{self_node_peer.name}'."
-                )
-            ]
-            if existing_peer != remote_node_peer:
-                result = self.stash.create_or_update_peer(
-                    context.node.verify_key,
-                    remote_node_peer,
-                )
-                msg.append(
-                    f"{existing_peer.node_type} peer '{existing_peer.name}' information change detected."
-                )
-                if result.is_err():
-                    msg.append(
-                        f"Attempt to update peer '{existing_peer.name}' information failed."
-                    )
-                    return SyftError(message="\n".join(msg))
-                msg.append(
-                    f"{existing_peer.node_type} peer '{existing_peer.name}' information successfully updated."
-                )
 
-            # Also check remotely if the self node already exists as a peer
-            remote_self_node_peer = remote_client.api.services.network.get_peer_by_name(
-                name=self_node_peer.name
-            )
-            if isinstance(remote_self_node_peer, NodePeer):
-                msg.append(
-                    f"{self_node_peer.node_type} '{self_node_peer.name}' already exist "
-                    f"as a peer for {remote_node_peer.node_type} '{remote_node_peer.name}'."
+        association_request_approved = True
+        if isinstance(remote_self_node_peer, NodePeer):
+            result = remote_client.api.services.network.update_peer(peer=self_node_peer)
+            if isinstance(result, SyftError):
+                return SyftError(
+                    message=f"Failed to add peer information on remote client : {remote_client.id}"
                 )
-                if remote_self_node_peer != self_node_peer:
-                    result = remote_client.api.services.network.update_peer(
-                        peer=self_node_peer,
-                    )
-                    msg.append(
-                        f"{self_node_peer.node_type} peer '{self_node_peer.name}' information change detected."
-                    )
-                    if isinstance(result, SyftError):
-                        msg.apnpend(
-                            f"Attempt to remotely update {self_node_peer.node_type} peer "
-                            f"'{self_node_peer.name}' information remotely failed."
-                        )
-                        return SyftError(message="\n".join(msg))
-                    msg.append(
-                        f"{self_node_peer.node_type} peer '{self_node_peer.name}' "
-                        f"information successfully updated."
-                    )
-                msg.append(
-                    f"Routes between {remote_node_peer.node_type} '{remote_node_peer.name}' and "
-                    f"{self_node_peer.node_type} '{self_node_peer.name}' already exchanged."
-                )
-                return SyftSuccess(message="\n".join(msg))
 
         # If  peer does not exist, ask the remote client to add this node
         # (represented by `self_node_peer`) as a peer
-        random_challenge = secrets.token_bytes(16)
-        remote_res = remote_client.api.services.network.add_peer(
-            peer=self_node_peer,
-            challenge=random_challenge,
-            self_node_route=remote_node_route,
-            verify_key=remote_node_verify_key,
-        )
-
-        if isinstance(remote_res, SyftError):
-            return SyftError(
-                message=f"returned error from add peer: {remote_res.message}"
+        if remote_self_node_peer is None:
+            random_challenge = secrets.token_bytes(16)
+            remote_res = remote_client.api.services.network.add_peer(
+                peer=self_node_peer,
+                challenge=random_challenge,
+                self_node_route=remote_node_route,
+                verify_key=remote_node_verify_key,
             )
 
-        association_request_approved = not isinstance(remote_res, Request)
+            if isinstance(remote_res, SyftError):
+                return SyftError(
+                    message=f"Failed to add peer to remote client: {remote_client.id}. Error: {remote_res.message}"
+                )
 
-        # save the remote peer for later
+            association_request_approved = not isinstance(remote_res, Request)
+
+        # Step 4: Save the remote peer for later
         result = self.stash.create_or_update_peer(
             context.node.verify_key,
             remote_node_peer,
         )
         if result.is_err():
+            logging.error(
+                f"Failed to save peer: {remote_node_peer}. Error: {result.err()}"
+            )
             return SyftError(message="Failed to update route information.")
 
+        # Step 5: Save rathole config to enable reverse tunneling
         if reverse_tunnel and get_rathole_enabled():
-            rathole_route = self_node_peer.get_rathole_route()
-            if not rathole_route:
-                raise Exception(
-                    "Failed to exchange credentials. "
-                    + f"Peer: {self_node_peer} has no rathole route: {rathole_route}"
-                )
-
-            remote_url = GridURL(
-                host_or_ip=remote_node_route.host_or_ip, port=remote_node_route.port
-            )
-            rathole_remote_addr = remote_url.as_container_host()
-
-            remote_addr = rathole_remote_addr.url_no_protocol
-
-            self.rathole_service.add_host_to_client(
-                peer_name=self_node_peer.name,
-                peer_id=str(self_node_peer.id),
-                rathole_token=rathole_route.rathole_token,
-                remote_addr=remote_addr,
+            self._add_reverse_tunneling_config_for_peer(
+                self_node_peer=self_node_peer, remote_node_route=remote_node_route
             )
 
         return (
             SyftSuccess(message="Routes Exchanged")
             if association_request_approved
             else remote_res
+        )
+
+    def _add_reverse_tunneling_config_for_peer(
+        self,
+        self_node_peer: NodePeer,
+        remote_node_route: NodeRoute,
+    ) -> None:
+
+        rathole_route = self_node_peer.get_rathole_route()
+        if not rathole_route:
+            return SyftError(
+                "Failed to exchange routes via . "
+                + f"Peer: {self_node_peer} has no rathole route: {rathole_route}"
+            )
+
+        remote_url = GridURL(
+            host_or_ip=remote_node_route.host_or_ip, port=remote_node_route.port
+        )
+        rathole_remote_addr = remote_url.as_container_host()
+
+        remote_addr = rathole_remote_addr.url_no_protocol
+
+        self.rathole_service.add_host_to_client(
+            peer_name=self_node_peer.name,
+            peer_id=str(self_node_peer.id),
+            rathole_token=rathole_route.rathole_token,
+            remote_addr=remote_addr,
         )
 
     @service_method(path="network.add_peer", name="add_peer", roles=GUEST_ROLE_LEVEL)
@@ -524,6 +490,22 @@ class NetworkService(AbstractService):
             return SyftError(
                 message=f"Failed to update peer '{peer.name}'. Error: {result.err()}"
             )
+
+        if context.node.node_side_type == NodeType.GATEWAY:
+            rathole_route = peer.get_rathole_route()
+            self.rathole_service.add_host_to_server(peer) if rathole_route else None
+        else:
+            self_node_peer: NodePeer = context.node.settings.to(NodePeer)
+            rathole_route = self_node_peer.get_rathole_route()
+            (
+                self._add_reverse_tunneling_config_for_peer(
+                    self_node_peer=self_node_peer,
+                    remote_node_route=peer.pick_highest_priority_route(),
+                )
+                if rathole_route
+                else None
+            )
+
         return SyftSuccess(
             message=f"Peer '{result.ok().name}' information successfully updated."
         )

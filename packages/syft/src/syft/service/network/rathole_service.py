@@ -120,40 +120,6 @@ class RatholeService:
         # Update the rathole config map
         KubeUtils.update_configmap(config_map=rathole_config_map, patch={"data": data})
 
-    def forward_port_to_proxy(
-        self, config: RatholeConfig, entrypoint: str = "web"
-    ) -> None:
-        """Add a port to the rathole proxy config map."""
-
-        rathole_proxy_config_map = KubeUtils.get_configmap(
-            self.k8rs_client, RATHOLE_PROXY_CONFIG_MAP
-        )
-
-        if rathole_proxy_config_map is None:
-            raise Exception("Rathole proxy config map not found.")
-
-        rathole_proxy = rathole_proxy_config_map.data["rathole-dynamic.yml"]
-
-        if not rathole_proxy:
-            rathole_proxy = {"http": {"routers": {}, "services": {}}}
-        else:
-            rathole_proxy = yaml.safe_load(rathole_proxy)
-
-        rathole_proxy["http"]["services"][config.server_name] = {
-            "loadBalancer": {"servers": [{"url": "http://proxy:8001"}]}
-        }
-
-        rathole_proxy["http"]["routers"][config.server_name] = {
-            "rule": "PathPrefix(`/`)",
-            "service": config.server_name,
-            "entryPoints": [entrypoint],
-        }
-
-        KubeUtils.update_configmap(
-            config_map=rathole_proxy_config_map,
-            patch={"data": {"rathole-dynamic.yml": yaml.safe_dump(rathole_proxy)}},
-        )
-
     def add_dynamic_addr_to_rathole(
         self, config: RatholeConfig, entrypoint: str = "web"
     ) -> None:
@@ -206,14 +172,25 @@ class RatholeService:
 
         config = rathole_service.raw
 
-        config["spec"]["ports"].append(
-            {
-                "name": port_name,
-                "port": port,
-                "targetPort": port,
-                "protocol": "TCP",
-            }
-        )
+        existing_port_idx = None
+        for idx, port in enumerate(config["spec"]["ports"]):
+            if port["name"] == port_name:
+                print("Port already exists.", existing_port_idx, port_name)
+                existing_port_idx = idx
+                break
+
+        if existing_port_idx is not None:
+            config["spec"]["ports"][existing_port_idx]["port"] = port
+            config["spec"]["ports"][existing_port_idx]["targetPort"] = port
+        else:
+            config["spec"]["ports"].append(
+                {
+                    "name": port_name,
+                    "port": port,
+                    "targetPort": port,
+                    "protocol": "TCP",
+                }
+            )
 
         rathole_service.patch(config)
 
