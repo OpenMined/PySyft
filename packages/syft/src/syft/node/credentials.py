@@ -14,7 +14,7 @@ from pydantic import field_validator
 from ..serde.serializable import serializable
 from ..types.base import SyftBaseModel
 
-SIGNING_KEY_FOR = "SigningKey for"
+SIGNING_KEY_FOR = "Corresponding Public Key"
 
 
 @serializable()
@@ -75,6 +75,11 @@ class SyftSigningKey(SyftBaseModel):
 
     def __repr__(self) -> str:
         return f"<{SIGNING_KEY_FOR}: {self.verify}>"
+
+    def _coll_repr_(self) -> dict[str, str]:
+        return {
+            SIGNING_KEY_FOR: self.verify,
+        }
 
     @property
     def verify(self) -> str:
