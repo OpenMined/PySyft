@@ -566,6 +566,8 @@ def test_actionobject_syft_get_attr_context():
 )
 def test_actionobject_syft_execute_hooks(worker, testcase):
     client = worker.root_client
+    assert client.settings.enable_eager_execution(enable=True)
+
     orig_obj, op, args, kwargs, expected = testcase
 
     obj = helper_make_action_obj(orig_obj)
@@ -918,7 +920,7 @@ def test_actionobject_syft_getattr_int(orig_obj: int, worker, scenario):
         assert (3 >> obj) == (3 >> orig_obj)
 
 
-def test_actionobject_syft_getattr_int_history(worker):
+def test_actionobject_syft_getattr_int_history():
     orig_obj = 5
     obj1 = ActionObject.from_obj(orig_obj)
     obj2 = ActionObject.from_obj(orig_obj)
