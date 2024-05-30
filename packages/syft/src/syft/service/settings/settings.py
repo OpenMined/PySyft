@@ -2,12 +2,17 @@
 from collections.abc import Callable
 from typing import Any
 
+# third party
+from IPython.display import display
+from pydantic import field_validator
+
 # relative
 from ...abstract_node import NodeSideType
 from ...abstract_node import NodeType
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...service.worker.utils import DEFAULT_WORKER_POOL_NAME
+from ...types.syft_metaclass import Empty
 from ...types.syft_migration import migrate
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
@@ -22,6 +27,7 @@ from ...util.colors import SURFACE
 from ...util.misc_objs import HTMLObject
 from ...util.misc_objs import MarkdownDescription
 from ...util.schema import DEFAULT_WELCOME_MSG
+from ..response import SyftInfo
 
 
 @serializable()
@@ -66,6 +72,20 @@ class NodeSettingsUpdate(PartialSyftObject):
     admin_email: str
     association_request_auto_approval: bool
     welcome_markdown: HTMLObject | MarkdownDescription
+    node_side_type: str
+
+    @field_validator("node_side_type", check_fields=False)
+    @classmethod
+    def validate_node_side_type(cls, v: str) -> type[Empty]:
+        msg = f"You cannot update 'node_side_type' through NodeSettingsUpdate. \
+Please use client.set_node_side_type_dangerous(node_side_type={v}). \
+Be aware if you have private data on the node and you want to change it to the Low Side, \
+as information might be leaked."
+        try:
+            display(SyftInfo(message=msg))
+        except Exception:
+            print(SyftInfo(message=msg))
+        return Empty
 
 
 @serializable()
