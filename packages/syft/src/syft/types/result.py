@@ -42,7 +42,7 @@ class Ok(Generic[T]):
         return self.value
 
 
-class Error(Generic[E]):
+class Err(Generic[E]):
     __slots__ = ("value",)
     __match_args__ = ("error_value",)
 
@@ -74,7 +74,7 @@ class Error(Generic[E]):
         raise TypeError("Error is not a BaseException")
 
 
-Result: TypeAlias = Ok[T] | Error[E]
+Result: TypeAlias = Ok[T] | Err[E]
 
 
 def catch(
@@ -91,7 +91,7 @@ def catch(
             try:
                 return Ok(func(*args, **kwargs))
             except exceptions as e:
-                return Error(e)
+                return Err(e)
 
         return wrapper
 

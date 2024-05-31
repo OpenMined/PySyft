@@ -3,7 +3,7 @@ import pytest
 
 # syft absolute
 from syft.service.action.action_object import ActionObject
-from syft.types.result import Error
+from syft.types.result import Err
 from syft.types.result import Ok
 from syft.types.result import catch
 
@@ -39,7 +39,7 @@ def test_ok_match():
 
 
 def test_error():
-    bad = Error(OSError("some exception"))
+    bad = Err(OSError("some exception"))
 
     assert bad.is_ok() is False
     assert bad.is_err() is True
@@ -47,24 +47,24 @@ def test_error():
 
 
 def test_err_is_not_ok():
-    bad = Error(OSError("some exception"))
+    bad = Err(OSError("some exception"))
 
     assert bad.is_ok() is False
     assert bad.ok() is None
 
 
 def test_err_value_property():
-    bad = Error(OSError("some exception"))
+    bad = Err(OSError("some exception"))
 
     assert type(bad.error_value) is OSError
     assert bad.error_value.args == ("some exception",)
 
 
 def test_err_match():
-    matched = Error(OSError("some exception"))
+    matched = Err(OSError("some exception"))
 
     match matched:
-        case Error(e):
+        case Err(e):
             assert type(e) is OSError
             assert e.args == ("some exception",)
 
@@ -78,7 +78,7 @@ def test_unwrap_ok():
 
 
 def test_unwrap_error():
-    result = Error(ValueError("some exception"))
+    result = Err(ValueError("some exception"))
 
     with pytest.raises(ValueError):
         result.unwrap()
@@ -86,7 +86,7 @@ def test_unwrap_error():
 
 def test_unwrap_error_not_exception():
     str_ = "some_exception"
-    result = Error(str_)  # type: ignore
+    result = Err(str_)  # type: ignore
 
     with pytest.raises(TypeError):
         result.unwrap()
