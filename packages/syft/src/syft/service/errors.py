@@ -6,11 +6,13 @@ from ..service.user.user_roles import ServiceRole
 SyftErrorCodes = Literal[
     'not-found',
     'not-permitted',
+    'database-error',
     'serde-serialization-error',
     'serde-deserialization-error',
     'stash-error',
     'worker-invalid-pool',
     'usercode-not-approved',
+    'usercode-bad-input-policy',
     'usercode-bad-output-policy'
 ]
 
