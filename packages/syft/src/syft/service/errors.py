@@ -1,55 +1,28 @@
 # stdlib
 from typing import Literal
 
-# syft absolute
-from syft.service.user.user_roles import ServiceRole
+from ..service.user.user_roles import ServiceRole
 
 SyftErrorCodes = Literal[
     'not-found',
     'not-permitted',
+    'serde-serialization-error',
+    'serde-deserialization-error',
     'stash-error',
-    'worker',
     'worker-invalid-pool',
-    'usercode-not-approved'
+    'usercode-not-approved',
+    'usercode-bad-output-policy'
 ]
 
-SyftErrorVisibility = tuple[str, ServiceRole, str | None] # message, role, public_message
-
-syft_errors: dict[SyftErrorCodes, SyftErrorVisibility] = {
-    'not-permitted': (
-        "You do not have permission to perform this operation.",
-        ServiceRole.ADMIN,
-        None
-    ),
-    'not-found': (
-        "The requested object was not found.",
-        ServiceRole.DATA_SCIENTIST,
-        None
-    ),
-    'worker-invalid-pool': (
-        (
-            "You tried to run a syft function attached to a worker pool in blocking mode,"
-            " which is currently not supported. Run your function with `blocking=False` to run"
-            " as a job on your worker pool"
-        ),
-        ServiceRole.ADMIN,
-        None
-    ),
-    'usercode-not-approved': (
-        "Your code has not been approved yet.",
-        ServiceRole.DATA_SCIENTIST,
-        None
-    ),
-
-}
-
 class SyftError(Exception):
+    __match_args__ = ('code')
+
     def __init__(
         self,
-        message: str | None = None,
-        code: SyftErrorCodes | None = None,
-        public_message: str | None = None,
+        message: str,
+        code: SyftErrorCodes,
         min_visible_role: ServiceRole = ServiceRole.ADMIN,
+        public_message: str | None = None,
     ) -> None:
         self.message = message
         self.code = code
