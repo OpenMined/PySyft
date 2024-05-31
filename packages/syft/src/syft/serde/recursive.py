@@ -316,7 +316,8 @@ def map_fqns_for_backward_compatibility(fqn: str) -> str:
     """for backwards compatibility with 0.8.6. Sometimes classes where moved to another file. Which is
     exactly why we are implementing it differently"""
     mapping = {
-        "syft.service.dataset.dataset.MarkdownDescription": "syft.util.misc_objs.MarkdownDescription"
+        "syft.service.dataset.dataset.MarkdownDescription": "syft.util.misc_objs.MarkdownDescription",
+        "syft.service.object_search.object_migration_state.SyftObjectMigrationState": "syft.service.migration.object_migration_state.SyftObjectMigrationState",  # noqa: E501
     }
     if fqn in mapping:
         return mapping[fqn]

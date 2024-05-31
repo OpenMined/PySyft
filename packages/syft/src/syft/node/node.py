@@ -71,7 +71,6 @@ from ..service.network.network_service import NetworkService
 from ..service.network.utils import PeerHealthCheckTask
 from ..service.notification.notification_service import NotificationService
 from ..service.notifier.notifier_service import NotifierService
-from ..service.object_search.migration_state_service import MigrateStateService
 from ..service.output.output_service import OutputService
 from ..service.policy.policy_service import PolicyService
 from ..service.project.project_service import ProjectService
@@ -689,7 +688,7 @@ class Node(AbstractNode):
             credentials=self.verify_key,
             role=ServiceRole.ADMIN,
         )
-        migration_state_service = self.get_service(MigrateStateService)
+        migration_state_service = self.get_service(MigrationService)
 
         klasses_to_be_migrated = []
 
@@ -1662,8 +1661,6 @@ def create_admin_new(
             else:
                 raise Exception(f"Could not create user: {result}")
     except Exception:
-        # import ipdb
-        # ipdb.set_trace()
         # stdlib
         import traceback
 
