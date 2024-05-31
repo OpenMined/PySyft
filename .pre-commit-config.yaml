@@ -3,14 +3,14 @@ repos:
     rev: v4.5.0
     hooks:
       - id: check-ast
-        exclude: ^(packages/grid/ansible/|packages/syft/tests/mongomock)
+        exclude: ^(packages/syft/tests/mongomock)
         always_run: true
       - id: trailing-whitespace
         always_run: true
         exclude: ^(docs/|.+\.md|.bumpversion.cfg|packages/syft/tests/mongomock)
       - id: check-docstring-first
         always_run: true
-        exclude: ^(packages/grid/ansible/|packages/syft/tests/mongomock)
+        exclude: ^(packages/syft/tests/mongomock)
       - id: check-json
         always_run: true
         exclude: ^(packages/grid/frontend/|packages/syft/tests/mongomock)
@@ -25,10 +25,10 @@ repos:
         args: ["--assume-in-merge"]
       - id: check-executables-have-shebangs
         always_run: true
-        exclude: ^(packages/grid/ansible/|packages/syft/tests/mongomock)
+        exclude: ^(packages/syft/tests/mongomock)
       - id: debug-statements
         always_run: true
-        exclude: ^(packages/grid/ansible/|packages/syft/tests/mongomock)
+        exclude: ^(packages/syft/tests/mongomock)
       - id: name-tests-test
         always_run: true
         exclude: ^(.*/tests/utils/)|^(.*fixtures.py|packages/syft/tests/mongomock)
@@ -81,7 +81,6 @@ repos:
     # files: "^notebooks/(api|tutorials|admin)"
     hooks:
       - id: nbqa-isort
-      - id: nbqa-black
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
@@ -151,7 +150,7 @@ repos:
         name: "mypy: syft"
         always_run: true
         files: "^packages/syft/src/syft/"
-        exclude: "packages/syft/src/syft/types/dicttuple.py|^packages/syft/src/syft/service/action/action_graph.py"
+        exclude: "packages/syft/src/syft/types/dicttuple.py"
         args: [
             "--follow-imports=skip",
             "--ignore-missing-imports",

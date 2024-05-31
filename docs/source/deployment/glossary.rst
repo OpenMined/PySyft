@@ -43,10 +43,6 @@ PyGrid
 ~~~~~~~~~~~~~~~~~~~~~
 ``PyGrid`` is a ``peer-to-peer network`` of data owners and data scientists who can collectively train AI models using ``PySyft``. ``PyGrid`` is also the central server for conducting both model-centric and data-centric ``federated learning``. You may control PyGrid via our user-interface, ``PyGrid Admin``.
 
-HaGrid
-~~~~~~~~~~~~~~~~~~~~~
-``Hagrid`` (HAppy GRID!) is a ``command-line tool`` that speeds up the deployment of ``PyGrid``, the software providing a peer-to-peer network of data owners and data scientists who can collectively train models.
-
 Remote Data Science
 ~~~~~~~~~~~~~~~~~~~~~
 A sub-field of data science wherein a data scientist is able to extract insights from a dataset owned by a data owner, but only those insights which the data owner explicitly decides to allow, whose preferences are enforced by information-restricting technologies such as cryptography, information security, and distributed systems.

@@ -1,9 +1,0 @@
-#!/bin/bash
-
-until systemctl is-active --quiet docker
-do
-    echo "Waiting for docker service to start"
-    sleep 1
-done
-
-sudo {{ syft_dir }}/packages/grid/scripts/containers.sh

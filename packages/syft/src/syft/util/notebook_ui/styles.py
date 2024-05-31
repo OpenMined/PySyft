@@ -12,7 +12,6 @@ STYLESHEET_JS_CALLS = "\n".join([f'addStyleSheet("{s}")' for s in STYLESHEET_URL
 JS_DOWNLOAD_FONTS = f"""
 <script>
 function addStyleSheet(fileName) {{
-
   var head = document.head;
   var link = document.createElement("link");
 

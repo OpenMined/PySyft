@@ -29,7 +29,6 @@ export CREDENTIALS_PATH=${CREDENTIALS_PATH:-$HOME/data/creds/credentials.json}
 export NODE_PRIVATE_KEY=$(python $APPDIR/grid/bootstrap.py --private_key)
 export NODE_UID=$(python $APPDIR/grid/bootstrap.py --uid)
 export NODE_TYPE=$NODE_TYPE
-export GEVENT_MONKEYPATCH="False"
 
 echo "NODE_UID=$NODE_UID"
 echo "NODE_TYPE=$NODE_TYPE"
