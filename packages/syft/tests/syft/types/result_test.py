@@ -2,7 +2,7 @@
 import pytest
 
 # syft absolute
-from syft import ActionObject
+from syft.service.action.action_object import ActionObject
 from syft.types.result import Error
 from syft.types.result import Ok
 from syft.types.result import catch
@@ -132,7 +132,10 @@ def test_catch_decorator():
 
     assert result.is_ok() is True
     assert result.is_err() is False
-    assert result.ok().syft_action_data == "om"
+
+    obj = result.unwrap()
+    assert isinstance(obj, ActionObject)
+    assert obj.syft_action_data == "om"
 
     result = create_object(False)
 
