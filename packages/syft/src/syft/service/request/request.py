@@ -37,6 +37,7 @@ from ...types.uid import LineageID
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
+from ...util.decorators import deprecated
 from ...util.markdown import markdown_as_class_with_fields
 from ...util.notebook_ui.icons import Icon
 from ...util.util import prompt_warning_message
@@ -54,7 +55,6 @@ from ..job.job_stash import Job
 from ..job.job_stash import JobInfo
 from ..job.job_stash import JobStatus
 from ..notification.notifications import Notification
-from ..policy.policy import UserPolicy
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..user.user import UserView
@@ -795,7 +795,6 @@ class Request(SyncableSyftObject):
         self,
         result: Any,
         logs: str = "",
-        add_code_owner_read_permissions: bool = True,
     ) -> Job | SyftError:
         """
         Adds a result to this Request:
@@ -827,12 +826,13 @@ class Request(SyncableSyftObject):
             return action_object
 
         # Create Job
+        # NOTE code owner read permissions are added when syncing this Job
         job = api.services.job.create_job_for_user_code_id(
             code.id,
             result=action_object,
             log_stdout=logs,
             status=JobStatus.COMPLETED,
-            add_code_owner_read_permissions=add_code_owner_read_permissions,
+            add_code_owner_read_permissions=False,
         )
         if isinstance(job, SyftError):
             return job
@@ -844,214 +844,13 @@ class Request(SyncableSyftObject):
 
         return job
 
-    # @deprecated(
-    #     return_syfterror=True,
-    #     reason="accept_by_depositing_result has been removed. Use approve instead to "
-    #     "approve this request, or deposit_result to deposit a new result.",
-    # )
-    def accept_by_depositing_result(
-        self, result: Any, force: bool = False
-    ) -> SyftError | SyftSuccess:
-        # this code is extremely brittle because its a work around that relies on
-        # the type of request being very specifically tied to code which needs approving
-
-        # Special case for results from Jobs (High-low side async)
-        if isinstance(result, JobInfo):
-            job_info = result
-            if not job_info.includes_result:
-                return SyftError(
-                    message="JobInfo should not include result. Use sync_job instead."
-                )
-            result = job_info.result
-        elif isinstance(result, ActionObject):
-            # Do not allow accepting a result produced by a Job,
-            # This can cause an inconsistent Job state
-            action_object_job = self._get_job_from_action_object(result)
-            if action_object_job is not None:
-                return SyftError(
-                    message=f"This ActionObject is the result of Job {action_object_job.id}, "
-                    f"please use the `Job.info` instead."
-                )
-            else:
-                job_info = JobInfo(
-                    includes_metadata=True,
-                    includes_result=True,
-                    status=JobStatus.COMPLETED,
-                    resolved=True,
-                )
-        else:
-            # NOTE result is added at the end of function (once ActionObject is created)
-            job_info = JobInfo(
-                includes_metadata=True,
-                includes_result=True,
-                status=JobStatus.COMPLETED,
-                resolved=True,
-            )
-
-        user_code_status_change: UserCodeStatusChange = self.changes[0]
-        code = user_code_status_change.code
-        output_history = code.output_history
-        if isinstance(output_history, SyftError):
-            return output_history
-        output_policy = code.output_policy
-        if isinstance(output_policy, SyftError):
-            return output_policy
-        if isinstance(user_code_status_change.code.output_policy_type, UserPolicy):
-            return SyftError(
-                message="UserCode uses an user-submitted custom policy. Please use .approve()"
-            )
-
-        if not user_code_status_change.change_object_is_type(UserCodeStatusCollection):
-            raise TypeError(
-                f"accept_by_depositing_result can only be run on {UserCodeStatusCollection} not "
-                f"{user_code_status_change.linked_obj.object_type}"
-            )
-        if not type(user_code_status_change) == UserCodeStatusChange:
-            raise TypeError(
-                f"accept_by_depositing_result can only be run on {UserCodeStatusChange} not "
-                f"{type(user_code_status_change)}"
-            )
-
-        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
-        if not api:
-            raise Exception(
-                f"No access to Syft API. Please login to {self.node_uid} first."
-            )
-        if api.signing_key is None:
-            raise ValueError(f"{api}'s signing key is None")
-        is_approved = user_code_status_change.approved
-
-        permission_request = self.approve(approve_nested=True)
-        if isinstance(permission_request, SyftError):
-            return permission_request
-
-        job = self._get_latest_or_create_job()
-        if isinstance(job, SyftError):
-            return job
-
-        # This weird order is due to the fact that state is None before calling approve
-        # we could fix it in a future release
-        if is_approved:
-            if not force:
-                return SyftError(
-                    message="Already approved, if you want to force updating the result use force=True"
-                )
-            # TODO: this should overwrite the output history instead
-            action_obj_id = output_history[0].output_ids[0]  # type: ignore
-
-            if not isinstance(result, ActionObject):
-                action_object = ActionObject.from_obj(
-                    result,
-                    id=action_obj_id,
-                    syft_client_verify_key=api.signing_key.verify_key,
-                    syft_node_location=api.node_uid,
-                )
-            else:
-                action_object = result
-            action_object_is_from_this_node = (
-                self.syft_node_location == action_object.syft_node_location
-            )
-            if (
-                action_object.syft_blob_storage_entry_id is None
-                or not action_object_is_from_this_node
-            ):
-                action_object.reload_cache()
-                action_object.syft_node_location = self.syft_node_location
-                action_object.syft_client_verify_key = self.syft_client_verify_key
-                blob_store_result = action_object._save_to_blob_storage()
-                if isinstance(blob_store_result, SyftError):
-                    return blob_store_result
-                result = api.services.action.set(action_object)
-                if isinstance(result, SyftError):
-                    return result
-        else:
-            if not isinstance(result, ActionObject):
-                action_object = ActionObject.from_obj(
-                    result,
-                    syft_client_verify_key=api.signing_key.verify_key,
-                    syft_node_location=api.node_uid,
-                )
-            else:
-                action_object = result
-
-            # TODO: proper check for if actionobject is already uploaded
-            # we also need this for manualy syncing
-            action_object_is_from_this_node = (
-                self.syft_node_location == action_object.syft_node_location
-            )
-            if (
-                action_object.syft_blob_storage_entry_id is None
-                or not action_object_is_from_this_node
-            ):
-                action_object.reload_cache()
-                action_object.syft_node_location = self.syft_node_location
-                action_object.syft_client_verify_key = self.syft_client_verify_key
-                blob_store_result = action_object._save_to_blob_storage()
-                if isinstance(blob_store_result, SyftError):
-                    return blob_store_result
-                result = api.services.action.set(action_object)
-                if isinstance(result, SyftError):
-                    return result
-
-            # Do we still need this?
-            # policy_state_mutation = ObjectMutation(
-            #     linked_obj=user_code_status_change.linked_obj,
-            #     attr_name="output_policy",
-            #     match_type=True,
-            #     value=output_policy,
-            # )
-
-            action_object_link = LinkedObject.from_obj(result, node_uid=self.node_uid)
-            permission_change = ActionStoreChange(
-                linked_obj=action_object_link,
-                apply_permission_type=ActionPermission.READ,
-            )
-
-            new_changes = [permission_change]
-            result_request = api.services.request.add_changes(
-                uid=self.id, changes=new_changes
-            )
-            if isinstance(result_request, SyftError):
-                return result_request
-            self = result_request
-
-            approved = self.approve(disable_warnings=True, approve_nested=True)
-            if isinstance(approved, SyftError):
-                return approved
-
-            input_ids = {}
-            if code.input_policy is not None:
-                for inps in code.input_policy.inputs.values():
-                    input_ids.update(inps)
-
-            res = api.services.code.store_execution_output(
-                user_code_id=code.id,
-                outputs=result,
-                job_id=job.id,
-                input_ids=input_ids,
-            )
-            if isinstance(res, SyftError):
-                return res
-
-        job_info.result = action_object
-        job_info.status = (
-            JobStatus.ERRORED
-            if isinstance(action_object.syft_action_data, Err)
-            else JobStatus.COMPLETED
-        )
-
-        existing_result = job.result.id if job.result is not None else None
-        print(
-            f"Job({job.id}) Setting new result {existing_result} -> {job_info.result.id}"
-        )
-        job.apply_info(job_info)
-
-        job_service = api.services.job
-        res = job_service.update(job)
-        if isinstance(res, SyftError):
-            return res
-
-        return SyftSuccess(message="Request submitted for updating result.")
+    @deprecated(
+        return_syfterror=True,
+        reason="accept_by_depositing_result has been removed. Use approve instead to "
+        "approve this request, or deposit_result to deposit a new result.",
+    )
+    def accept_by_depositing_result(self, result: Any, force: bool = False) -> Any:
+        pass
 
     def sync_job(
         self, job_info: JobInfo, **kwargs: Any
