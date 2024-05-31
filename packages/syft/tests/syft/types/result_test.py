@@ -1,6 +1,11 @@
+# third party
 import pytest
-from syft.types.result import Result, Ok, Error, catch
+
+# syft absolute
 from syft import ActionObject
+from syft.types.result import Error
+from syft.types.result import Ok
+
 
 def test_ok():
     good = Ok("om")
@@ -9,6 +14,7 @@ def test_ok():
     assert good.is_err() is False
     assert good.ok() == "om"
 
+
 def test_ok_is_not_err():
     good = Ok("om")
 
@@ -16,17 +22,20 @@ def test_ok_is_not_err():
     assert good.err() is None
     assert good.unwrap() == "om"
 
+
 def test_ok_value_property():
     good = Ok("om")
 
     assert good.ok_value == "om"
+
 
 def test_ok_match():
     matched = Ok(True)
 
     match matched:
         case Ok(x):
-            assert x is True 
+            assert x is True
+
 
 def test_error():
     bad = Error(OSError("some exception"))
@@ -42,11 +51,13 @@ def test_err_is_not_ok():
     assert bad.is_ok() is False
     assert bad.ok() is None
 
+
 def test_err_value_property():
     bad = Error(OSError("some exception"))
 
     assert type(bad.error_value) is OSError
     assert bad.error_value.args == ("some exception",)
+
 
 def test_err_match():
     matched = Error(OSError("some exception"))
@@ -56,12 +67,14 @@ def test_err_match():
             assert type(e) is OSError
             assert e.args == ("some exception",)
 
+
 def test_unwrap_ok():
     obj = ActionObject.from_obj("om")
     result = Ok(obj)
 
     same_obj = result.unwrap()
     assert same_obj == obj
+
 
 def test_unwrap_error():
     result = Error(ValueError("some exception"))
@@ -76,4 +89,3 @@ def test_unwrap_error_not_exception():
 
     with pytest.raises(TypeError):
         result.unwrap()
-
