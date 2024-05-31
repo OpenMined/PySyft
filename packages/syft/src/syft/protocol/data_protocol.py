@@ -209,7 +209,7 @@ class DataProtocol:
         return state_dict
 
     @staticmethod
-    def obj_json(version, _hash, action="add"):
+    def obj_json(version: str | int, _hash: str, action: str = "add") -> dict:
         return {
             "version": int(version),
             "hash": _hash,
@@ -219,7 +219,12 @@ class DataProtocol:
     def diff_state(self, state: dict) -> tuple[dict, dict]:
         compare_dict: dict = defaultdict(dict)  # what versions are in the latest code
         object_diff: dict = defaultdict(dict)  # diff in latest code with saved json
-        for serde_properties in SyftObjectRegistry.__object_serialization_registry__.values():
+        all_serde_propeties = [
+            serde_properties
+            for version_dict in SyftObjectRegistry.__object_serialization_registry__.values()
+            for serde_properties in version_dict.values()
+        ]
+        for serde_properties in all_serde_propeties:
             cls, version = serde_properties[7], serde_properties[9]
             if issubclass(cls, SyftBaseObject):
                 canonical_name = cls.__canonical_name__
@@ -417,9 +422,9 @@ with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
 
         # Update older file path to newer file path
         latest_protocol_fp.rename(new_protocol_file_path)
-        protocol_history[latest_protocol][
-            "release_name"
-        ] = f"{current_syft_version}.json"
+        protocol_history[latest_protocol]["release_name"] = (
+            f"{current_syft_version}.json"
+        )
 
         # Save history
         self.file_path.write_text(json.dumps(protocol_history, indent=2) + "\n")

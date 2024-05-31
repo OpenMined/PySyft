@@ -44,7 +44,7 @@ def migrate(
             klass_from=klass_from, klass_to=klass_to, transforms=transforms
         )
 
-        SyftMigrationRegistry.register_transform(
+        SyftMigrationRegistry.register_migration_function(
             klass_type_str=klass_from_str,
             version_from=version_from,
             version_to=version_to,

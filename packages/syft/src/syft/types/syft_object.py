@@ -142,7 +142,7 @@ class Context(SyftBaseObject):
 
 class SyftMigrationRegistry:
     __migration_version_registry__: dict[str, dict[int, str]] = {}
-    __migration_transform_registry__: dict[str, dict[str, Callable]] = {}
+    __migration_function_registry__: dict[str, dict[str, Callable]] = {}
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         """
@@ -179,16 +179,16 @@ class SyftMigrationRegistry:
                     klass_version: fqn
                 }
 
-    @classmethod
-    def get_versions(cls, canonical_name: str) -> list[int]:
-        available_versions: dict = cls.__migration_version_registry__.get(
-            canonical_name,
-            {},
-        )
-        return list(available_versions.keys())
+    # @classmethod
+    # def get_versions(cls, canonical_name: str) -> list[int]:
+    #     available_versions: dict = cls.__migration_version_registry__.get(
+    #         canonical_name,
+    #         {},
+    #     )
+    #     return list(available_versions.keys())
 
     @classmethod
-    def register_transform(
+    def register_migration_function(
         cls, klass_type_str: str, version_from: int, version_to: int, method: Callable
     ) -> None:
         """
@@ -211,11 +211,9 @@ class SyftMigrationRegistry:
 
         if versions_exists:
             mapping_string = f"{version_from}x{version_to}"
-            if klass_type_str not in cls.__migration_transform_registry__:
-                cls.__migration_transform_registry__[klass_type_str] = {}
-            cls.__migration_transform_registry__[klass_type_str][mapping_string] = (
-                method
-            )
+            if klass_type_str not in cls.__migration_function_registry__:
+                cls.__migration_function_registry__[klass_type_str] = {}
+            cls.__migration_function_registry__[klass_type_str][mapping_string] = method
         else:
             raise Exception(
                 f"Available versions for {klass_type_str} are: {available_versions}."
@@ -246,9 +244,9 @@ class SyftMigrationRegistry:
                         mapping_string = f"{version_from}x{version_to}"
                         if (
                             mapping_string
-                            in cls.__migration_transform_registry__[klass_from]
+                            in cls.__migration_function_registry__[klass_from]
                         ):
-                            return cls.__migration_transform_registry__[klass_from][
+                            return cls.__migration_function_registry__[klass_from][
                                 mapping_string
                             ]
         raise ValueError(
@@ -273,11 +271,9 @@ class SyftMigrationRegistry:
                 mapping_string = f"{version_from}x{version_to}"
                 if (
                     mapping_string
-                    in cls.__migration_transform_registry__[
-                        type_from.__canonical_name__
-                    ]
+                    in cls.__migration_function_registry__[type_from.__canonical_name__]
                 ):
-                    return cls.__migration_transform_registry__[klass_from][
+                    return cls.__migration_function_registry__[klass_from][
                         mapping_string
                     ]
 
@@ -296,39 +292,7 @@ base_attrs_sync_ignore = [
 ]
 
 
-class RegisteredSyftObject:
-    def __init_subclass__(cls, **kwargs: Any) -> None:
-        super().__init_subclass__(**kwargs)
-        # relative
-        from .syft_object_registry import SyftObjectRegistry as reg
-
-        if hasattr(reg, "__canonical_name__") and hasattr(reg, "__version__"):
-            mapping_string = f"{reg.__canonical_name__}_{reg.__version__}"
-
-            if (
-                mapping_string in reg.__object_version_registry__
-                and not autoreload_enabled()
-            ):
-                current_cls = reg.__object_version_registry__[mapping_string]
-                if reg == current_cls:
-                    # same class so noop
-                    return None
-
-                # user code is reinitialized which means it might have a new address
-                # in memory so for that we can just skip
-                if "syft.user" in reg.__module__:
-                    # this happens every time we reload the user code
-                    return None
-                else:
-                    # this shouldn't happen and is usually a mistake of reusing the
-                    # same __canonical_name__ and __version__ in two classes
-                    raise Exception(f"Duplicate mapping for {mapping_string} and {reg}")
-            else:
-                # only if the cls has not been registered do we want to register it
-                reg.__object_version_registry__[mapping_string] = reg
-
-
-class SyftObject(SyftBaseObject, RegisteredSyftObject, SyftMigrationRegistry):
+class SyftObject(SyftBaseObject, SyftMigrationRegistry):
     __canonical_name__ = "SyftObject"
     __version__ = SYFT_OBJECT_VERSION_2
 
@@ -478,22 +442,6 @@ class SyftObject(SyftBaseObject, RegisteredSyftObject, SyftMigrationRegistry):
     # allows splatting with **
     def __getitem__(self, key: str | int) -> Any:
         return self.__dict__.__getitem__(key)  # type: ignore
-
-    def _upgrade_version(self, latest: bool = True) -> "SyftObject":
-        # relative
-        from .syft_object_registry import SyftObjectRegistry
-
-        constructor = SyftObjectRegistry.versioned_class(
-            name=self.__canonical_name__, version=self.__version__ + 1
-        )
-        if not constructor:
-            return self
-        else:
-            # should we do some kind of recursive upgrades?
-            upgraded = constructor._from_previous_version(self)
-            if latest:
-                upgraded = upgraded._upgrade_version(latest=latest)
-            return upgraded
 
     # transform from one supported type to another
     def to(self, projection: type, context: Context | None = None) -> Any:

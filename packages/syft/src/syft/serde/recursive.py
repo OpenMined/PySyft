@@ -166,9 +166,7 @@ def recursive_serde_register(
         canonical_name = fqn
         version = 1
 
-    SyftObjectRegistry.__object_serialization_registry__[canonical_name, version] = (
-        serde_attributes
-    )
+    SyftObjectRegistry.register_cls(canonical_name, version, serde_attributes)
 
     if isinstance(alias_fqn, tuple):
         for alias in alias_fqn:
@@ -252,7 +250,7 @@ def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuild
         _,
         _,
         _,
-    ) = SyftObjectRegistry.__object_serialization_registry__[canonical_name, version]
+    ) = SyftObjectRegistry.get_serde_properties(canonical_name, version)
 
     if nonrecursive or is_type:
         if serialize is None:
@@ -376,7 +374,9 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
         cls,
         _,
         version,
-    ) = SyftObjectRegistry.get_serde_properties(fqn, canonical_name, version)
+    ) = SyftObjectRegistry.get_serde_properties_bw_compatible(
+        fqn, canonical_name, version
+    )
 
     if class_type == type(None) or fqn != "":
         # yes this looks stupid but it works and the opposite breaks

@@ -17,11 +17,26 @@ if TYPE_CHECKING:
 
 
 class SyftObjectRegistry:
-    __object_version_registry__: dict[
-        str, type["SyftObject"] | type["SyftObjectRegistry"]
-    ] = {}
     __object_transform_registry__: dict[str, Callable] = {}
-    __object_serialization_registry__: dict[tuple[str, int], tuple] = {}
+    __object_serialization_registry__: dict[str, dict[int, tuple]] = {}
+
+    @classmethod
+    def register_cls(
+        cls, canonical_name: str, version: int, serde_attributes: tuple
+    ) -> None:
+        if canonical_name not in cls.__object_serialization_registry__:
+            cls.__object_serialization_registry__[canonical_name] = {}
+        cls.__object_serialization_registry__[canonical_name][version] = (
+            serde_attributes
+        )
+
+    @classmethod
+    def get_versions(cls, canonical_name: str) -> list[int]:
+        available_versions: dict = cls.__object_serialization_registry__.get(
+            canonical_name,
+            {},
+        )
+        return list(available_versions.keys())
 
     @classmethod
     def get_canonical_name(cls, obj: Any) -> str:
@@ -38,12 +53,18 @@ class SyftObjectRegistry:
             return fqn
 
     @classmethod
-    def get_serde_properties(cls, fqn: str, canonical_name: str, version: int) -> tuple:
+    def get_serde_properties(cls, canonical_name: str, version: int) -> tuple:
+        return cls.__object_serialization_registry__[canonical_name][version]
+
+    @classmethod
+    def get_serde_properties_bw_compatible(
+        cls, fqn: str, canonical_name: str, version: int
+    ) -> tuple:
         # relative
         from ..serde.recursive import TYPE_BANK
 
         if canonical_name != "" and canonical_name is not None:
-            return cls.__object_serialization_registry__[canonical_name, version]
+            return cls.get_serde_properties(canonical_name, version)
         else:
             # this is for backward compatibility with 0.8.6
             try:
@@ -72,9 +93,8 @@ class SyftObjectRegistry:
                         ]
                     )
                     try:
-                        res = cls.__object_serialization_registry__[
-                            canonical_name, version_086
-                        ]
+                        res = cls.get_serde_properties(canonical_name, version_086)
+
                     except Exception:
                         print(
                             f"could not find {canonical_name} {version_086} in ObjectRegistry"
@@ -85,9 +105,7 @@ class SyftObjectRegistry:
                     # TODO, add refactoring for non syftobject versions
                     canonical_name = fqn
                     version = 1
-                    return cls.__object_serialization_registry__[
-                        canonical_name, version
-                    ]
+                    return cls.get_serde_properties(canonical_name, version)
             except Exception as e:
                 print(e)
                 raise
@@ -101,7 +119,10 @@ class SyftObjectRegistry:
         from ..serde.recursive import TYPE_BANK
 
         if canonical_name != "" and canonical_name is not None:
-            return (canonical_name, version) in cls.__object_serialization_registry__
+            return (
+                canonical_name in cls.__object_serialization_registry__
+                and version in cls.__object_serialization_registry__[canonical_name]
+            )
         else:
             # this is for backward compatibility with 0.8.6
             return fqn in TYPE_BANK
@@ -152,15 +173,3 @@ class SyftObjectRegistry:
             f"No mapping found for: {type_from} to {type_to} in"
             f"the registry: {SyftObjectRegistry.__object_transform_registry__.keys()}"
         )
-
-    @classmethod
-    def versioned_class(
-        cls, name: str, version: int
-    ) -> type["SyftObject"] | type["SyftObjectRegistry"] | None:
-        # relative
-        from .syft_object_registry import SyftObjectRegistry
-
-        mapping_string = f"{name}_{version}"
-        if mapping_string not in SyftObjectRegistry.__object_version_registry__:
-            return None
-        return SyftObjectRegistry.__object_version_registry__[mapping_string]
