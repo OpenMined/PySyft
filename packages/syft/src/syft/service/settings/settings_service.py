@@ -219,6 +219,7 @@ class SettingsService(AbstractService):
     @service_method(
         path="settings.enable_eager_execution",
         name="enable_eager_execution",
+        roles=ADMIN_ROLE_LEVEL,
         warning=HighSideCRUDWarning(confirmation=True),
     )
     def enable_eager_execution(
