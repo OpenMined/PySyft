@@ -15,6 +15,7 @@ from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
 from ...types.cache_object import CachedSyftObject
+from ...types.syft_metaclass import Empty
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
@@ -43,6 +44,7 @@ from ..user.user_roles import ServiceRole
 from .user_code import SubmitUserCode
 from .user_code import UserCode
 from .user_code import UserCodeStatus
+from .user_code import UserCodeUpdate
 from .user_code import load_approved_policy_code
 from .user_code_stash import UserCodeStash
 
@@ -75,6 +77,32 @@ class UserCodeService(AbstractService):
 
         result = self.stash.set(context.credentials, code)
         return result
+
+    @service_method(
+        path="code.update",
+        name="update",
+        roles=ADMIN_ROLE_LEVEL,
+        autosplat=["code_update"],
+    )
+    def update(
+        self,
+        context: AuthedServiceContext,
+        code_update: UserCodeUpdate,
+    ) -> SyftSuccess | SyftError:
+        code = self.stash.get_by_uid(context.credentials, code_update.id)
+
+        result = self.stash.update(context.credentials, code)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+
+        if code_update.l0_deny_reason is not Empty:
+            code.l0_deny_reason = code_update.l0_deny_reason
+
+        result = self.stash.update(context.credentials, code)
+
+        if result.is_ok():
+            return result.ok()
+        return SyftError(message=str(result.err()))
 
     @service_method(path="code.delete", name="delete", roles=ADMIN_ROLE_LEVEL)
     def delete(

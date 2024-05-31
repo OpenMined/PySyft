@@ -1,5 +1,6 @@
 # stdlib
 from typing import ClassVar
+from typing import cast
 
 # third party
 from pydantic import model_validator
@@ -23,6 +24,8 @@ from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_object import ActionObject
+from ..action.action_permissions import ActionObjectREAD
+from ..action.action_service import ActionService
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..service import AbstractService
@@ -296,6 +299,39 @@ class OutputService(AbstractService):
         if result.is_ok():
             return result.ok()
         return SyftError(message=result.err())
+
+    @service_method(
+        path="output.has_output_read_permissions",
+        name="has_output_read_permissions",
+        roles=GUEST_ROLE_LEVEL,
+    )
+    def has_output_read_permissions(
+        self,
+        context: AuthedServiceContext,
+        user_code_id: UID,
+        code_owner_verify_key: SyftVerifyKey,
+    ) -> bool:
+        action_service = cast(ActionService, context.node.get_service("actionservice"))
+        all_outputs = self.get_by_user_code_id(context, user_code_id)
+        if isinstance(all_outputs, SyftError):
+            return False
+        for output in all_outputs:
+            # Check if this output has permissions
+            if not self.stash.has_permission(
+                ActionObjectREAD(uid=output.id, credentials=code_owner_verify_key)
+            ):
+                continue
+
+            # Check if all output ActionObjects have permissions
+            result_ids = output.output_id_list
+            permissions = [
+                ActionObjectREAD(uid=_id, credentials=code_owner_verify_key)
+                for _id in result_ids
+            ]
+            if action_service.store.has_permissions(permissions):
+                return True
+
+        return False
 
     @service_method(
         path="output.get_by_job_id",

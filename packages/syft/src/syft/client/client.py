@@ -4,7 +4,6 @@ from __future__ import annotations
 # stdlib
 import base64
 from collections.abc import Callable
-from copy import deepcopy
 from enum import Enum
 from getpass import getpass
 import json
@@ -560,60 +559,6 @@ class SyftClient:
         )
         project = project_create.send()
         return project
-
-    # TODO: type of request should be REQUEST, but it will give circular import error
-    def sync_code_from_request(self, request: Any) -> SyftSuccess | SyftError:
-        # relative
-        from ..service.code.user_code import UserCode
-        from ..service.code.user_code import UserCodeStatusCollection
-        from ..store.linked_obj import LinkedObject
-
-        code: UserCode | SyftError = request.code
-        if isinstance(code, SyftError):
-            return code
-
-        code = deepcopy(code)
-        code.node_uid = self.id
-        code.user_verify_key = self.verify_key
-
-        def get_nested_codes(code: UserCode) -> list[UserCode]:
-            result: list[UserCode] = []
-            if code.nested_codes is None:
-                return result
-
-            for _, (linked_code_obj, _) in code.nested_codes.items():
-                nested_code = linked_code_obj.resolve
-                nested_code = deepcopy(nested_code)
-                nested_code.node_uid = code.node_uid
-                nested_code.user_verify_key = code.user_verify_key
-                result.append(nested_code)
-                result += get_nested_codes(nested_code)
-
-            return result
-
-        def get_code_statusses(codes: list[UserCode]) -> list[UserCodeStatusCollection]:
-            statusses = []
-            for code in codes:
-                status = deepcopy(code.status)
-                statusses.append(status)
-                code.status_link = LinkedObject.from_obj(status, node_uid=code.node_uid)
-            return statusses
-
-        nested_codes = get_nested_codes(code)
-        statusses = get_code_statusses(nested_codes + [code])
-
-        for c in nested_codes + [code]:
-            res = self.code.submit(c)
-            if isinstance(res, SyftError):
-                return res
-
-        for status in statusses:
-            res = self.api.services.code_status.create(status)
-            if isinstance(res, SyftError):
-                return res
-
-        self._fetch_api(self.credentials)
-        return SyftSuccess(message="User Code Submitted")
 
     @property
     def authed(self) -> bool:

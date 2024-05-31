@@ -31,7 +31,8 @@ from result import Err
 from typing_extensions import Self
 
 # relative
-from ...abstract_node import NodeSideType, NodeType
+from ...abstract_node import NodeSideType
+from ...abstract_node import NodeType
 from ...client.api import APIRegistry
 from ...client.api import NodeIdentity
 from ...client.enclave_client import EnclaveMetadata
@@ -42,6 +43,7 @@ from ...serde.serialize import _serialize
 from ...store.document_store import PartitionKey
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
+from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_4
@@ -119,18 +121,8 @@ class UserCodeStatusCollection(SyncableSyftObject):
 
     __repr_attrs__ = ["approved", "status_dict"]
 
-    status_dict_: dict[NodeIdentity, tuple[UserCodeStatus, str]] = {}
+    status_dict: dict[NodeIdentity, tuple[UserCodeStatus, str]] = {}
     user_code_link: LinkedObject
-
-    @property
-    def status_dict(self) -> dict[NodeIdentity, tuple[UserCodeStatus, str]]:
-        return self.status_dict_
-
-    @status_dict.setter
-    def status_dict(
-        self, value: dict[NodeIdentity, tuple[UserCodeStatus, str]]
-    ) -> None:
-        self.status_dict_ = value
 
     def syft_get_diffs(self, ext_obj: Any) -> list[AttrDiff]:
         # relative
@@ -286,15 +278,15 @@ class UserCode(SyncableSyftObject):
     user_unique_func_name: str
     code_hash: str
     signature: inspect.Signature
-    status_link: LinkedObject
+    status_link: LinkedObject | None = None
     input_kwargs: list[str]
-    origin_node_side_type: NodeSideType
     enclave_metadata: EnclaveMetadata | None = None
     submit_time: DateTime | None = None
-    # tracks if the code calls domain.something, variable is set during parsing
-    uses_domain: bool = False
+    uses_domain: bool = False  # tracks if the code calls domain.something, variable is set during parsing
     nested_codes: dict[str, tuple[LinkedObject, dict]] | None = {}
     worker_pool_name: str | None = None
+    origin_node_side_type: NodeSideType
+    l0_deny_reason: str | None = None
 
     __table_coll_widths__ = [
         "min-content",
@@ -364,6 +356,14 @@ class UserCode(SyncableSyftObject):
         }
 
     @property
+    def is_low_side(self) -> bool:
+        return self.origin_node_side_type == NodeSideType.LOW_SIDE
+
+    @property
+    def is_high_side(self) -> bool:
+        return self.origin_node_side_type == NodeSideType.HIGH_SIDE
+
+    @property
     def user(self) -> UserView | SyftError:
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
@@ -375,25 +375,74 @@ class UserCode(SyncableSyftObject):
             )
         return api.services.user.get_by_verify_key(self.user_verify_key)
 
+    def _status_from_output_history(
+        self, context: AuthedServiceContext | None = None
+    ) -> UserCodeStatusCollection | SyftError:
+        if context is None:
+            # Clientside
+            api = self._get_api()
+            if isinstance(api, SyftError):
+                return api
+            node_identity = NodeIdentity.from_api(api)
+            is_approved = api.output.has_output_read_permissions(
+                self.id, self.user_verify_key
+            )
+        else:
+            # Serverside
+            node_identity = NodeIdentity.from_node(context.node)
+            output_service = context.node.get_service("outputservice")
+            is_approved = output_service.has_output_read_permissions(
+                context, self.id, self.user_verify_key
+            )
+
+        is_denied = self.l0_deny_reason is not None
+
+        if is_denied:
+            message = self.l0_deny_reason
+            status = (UserCodeStatus.DENIED, message)
+        elif is_approved:
+            status = (UserCodeStatus.APPROVED, "")
+        else:
+            status = (UserCodeStatus.PENDING, "")
+        status_dict = {node_identity: status}
+
+        return UserCodeStatusCollection(
+            status_dict=status_dict,
+            user_code_link=LinkedObject.from_obj(self),
+        )
+
     @property
-    def status(self) -> UserCodeStatusCollection | UserCodeStatus | SyftError:
-        if self.origin_node_side_type == NodeSideType.LOW_SIDE and self.output_history:
-            return UserCodeStatus.APPROVED
-        elif (
-            self.origin_node_side_type == NodeSideType.LOW_SIDE
-            and not self.output_history
-        ):
-            return UserCodeStatus.PENDING
-
-        # NOTE: what is the reject condition on L0 setups?
-
+    def status(self) -> UserCodeStatusCollection | SyftError:
         # Clientside only
+
+        if self.is_low_side:
+            if self.status_link is not None:
+                return SyftError(
+                    message="Encountered a low side UserCode object with a status_link."
+                )
+            return self._status_from_output_history()
+
+        if self.status_link is None:
+            return SyftError(
+                message="This UserCode does not have a status. Please contact the Admin."
+            )
         res = self.status_link.resolve
         return res
 
     def get_status(
         self, context: AuthedServiceContext
     ) -> UserCodeStatusCollection | SyftError:
+        if self.origin_node_side_type == NodeSideType.LOW_SIDE:
+            if self.status_link is not None:
+                return SyftError(
+                    message="Encountered a low side UserCode object with a status_link."
+                )
+            return self._status_from_output_history(context)
+        if self.status_link is None:
+            return SyftError(
+                message="This UserCode does not have a status. Please contact the Admin."
+            )
+
         status = self.status_link.resolve_with_context(context)
         if status.is_err():
             return SyftError(message=status.err())
@@ -782,6 +831,13 @@ class UserCode(SyncableSyftObject):
         ip.set_next_input(warning_message + self.raw_code)
 
 
+class UserCodeUpdate(PartialSyftObject):
+    __canonical_name__ = "UserCodeUpdate"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    l0_deny_reason: str | None = None
+
+
 @serializable(without=["local_function"])
 class SubmitUserCode(SyftObject):
     # version
@@ -890,10 +946,7 @@ class SubmitUserCode(SyftObject):
             n_consumers=n_consumers,
             deploy_to="python",
         )
-        ep_client = ep_node.login(
-            email="info@openmined.org",
-            password="changethis",
-        )  # nosec
+        ep_client = ep_node.login(email="info@openmined.org", password="changethis")  # nosec
         self.input_policy_init_kwargs = cast(dict, self.input_policy_init_kwargs)
         for node_id, obj_dict in self.input_policy_init_kwargs.items():
             # api = APIRegistry.api_for(
@@ -1250,6 +1303,10 @@ def create_code_status(context: TransformContext) -> TransformContext:
         raise ValueError(f"{context}'s node is None")
 
     if context.output is None:
+        return context
+
+    # Low side requests have a computed status
+    if context.node.node_side_type == NodeSideType.LOW_SIDE:
         return context
 
     input_keys = list(context.output["input_policy_init_kwargs"].keys())

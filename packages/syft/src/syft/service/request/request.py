@@ -549,8 +549,15 @@ class Request(SyncableSyftObject):
 
     @property
     def status(self) -> RequestStatus:
-        if self.code.output_history:  # Node side type?
-            return RequestStatus.APPROVED
+        if self.code.is_low_side:
+            code_status = self.code.status
+            if code_status == UserCodeStatus.PENDING:
+                return RequestStatus.PENDING
+            elif code_status == UserCodeStatus.DENIED:
+                return RequestStatus.REJECTED
+            elif code_status == UserCodeStatus.APPROVED:
+                return RequestStatus.APPROVED
+
         if len(self.history) == 0:
             return RequestStatus.PENDING
 
@@ -570,12 +577,14 @@ class Request(SyncableSyftObject):
         approve_nested: bool = False,
         **kwargs: dict,
     ) -> Result[SyftSuccess, SyftError]:
-        api = APIRegistry.api_for(
-            self.node_uid,
-            self.syft_client_verify_key,
-        )
-        if api is None:
-            return SyftError(message=f"api is None. You must login to {self.node_uid}")
+        api = self._get_api()
+        if isinstance(api, SyftError):
+            return api
+
+        if self.code.is_low_side:
+            return SyftError(
+                message="This request is a low-side request. Please sync your results to approve."
+            )
         # TODO: Refactor so that object can also be passed to generate warnings
         if api.connection:
             metadata = api.connection.get_node_metadata(api.signing_key)
@@ -619,15 +628,27 @@ class Request(SyncableSyftObject):
         Args:
             reason (str): Reason for which the request has been denied.
         """
-        api = APIRegistry.api_for(
-            self.node_uid,
-            self.syft_client_verify_key,
-        )
-        if api is None:
-            return SyftError(message=f"api is None. You must login to {self.node_uid}")
+        if reason is None:
+            return SyftError("Please provide a reason for denying the request.")
+
+        api = self._get_api()
+        if isinstance(api, SyftError):
+            return api
+
+        if self.code.is_low_side:
+            result = api.code.update(l0_deny_reason=reason)
+            if isinstance(result, SyftError):
+                return result
+            return SyftSuccess(message=f"Request denied with reason: {reason}")
+
         return api.services.request.undo(uid=self.id, reason=reason)
 
     def approve_with_client(self, client: SyftClient) -> Result[SyftSuccess, SyftError]:
+        if self.code.is_low_side:
+            return SyftError(
+                message="This request is a low-side request. Please sync your results to approve."
+            )
+
         print(f"Approving request for domain {client.name}")
         return client.api.services.request.apply(self.id)
 
