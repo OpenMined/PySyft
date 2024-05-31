@@ -11,6 +11,7 @@ from result import Result
 from ...client.api import APIRegistry
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...service.errors import SyftError as NSyftError
 from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
@@ -18,6 +19,7 @@ from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
+from ...types.result import catch
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import UID
@@ -286,16 +288,20 @@ class OutputService(AbstractService):
         name="get_by_user_code_id",
         roles=GUEST_ROLE_LEVEL,
     )
+    @catch(NSyftError)
     def get_by_user_code_id(
         self, context: AuthedServiceContext, user_code_id: UID
-    ) -> list[ExecutionOutput] | SyftError:
+    ) -> list[ExecutionOutput]:
         result = self.stash.get_by_user_code_id(
             credentials=context.node.verify_key,  # type: ignore
             user_code_id=user_code_id,
         )
-        if result.is_ok():
-            return result.ok()
-        return SyftError(message=result.err())
+        match result:
+            case Ok(None):
+                return []
+            case Ok(user):
+                return user
+        raise NSyftError(message=result.err())
 
     @service_method(
         path="output.get_by_job_id",

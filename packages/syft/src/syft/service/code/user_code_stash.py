@@ -1,6 +1,7 @@
 # stdlib
 
 # third party
+from typing import cast
 from result import Result
 
 # relative
@@ -10,6 +11,9 @@ from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
+from ...service.errors import SyftError, SyftErrorCodes
+from ...types.uid import UID
+from ...types.result import catch
 from ...util.telemetry import instrument
 from .user_code import CodeHashPartitionKey
 from .user_code import ServiceFuncNamePartitionKey
@@ -48,3 +52,14 @@ class UserCodeStash(BaseUIDStoreStash):
         return self.query_all(
             credentials=credentials, qks=qks, order_by=SubmitTimePartitionKey
         )
+
+    @catch(SyftError)
+    def get_by_uid(self, credentials: SyftVerifyKey, uid: UID) -> UserCode:
+        query_result = super().get_by_uid(credentials, uid)
+        if query_result.is_ok():
+            result = query_result.ok()
+            if result is None:
+                raise SyftError(code=SyftErrorCodes.NOT_FOUND)
+            return cast(UserCode, result)
+        raise SyftError(code=SyftErrorCodes.STASH_ERROR)
+        

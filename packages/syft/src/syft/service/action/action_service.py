@@ -11,7 +11,9 @@ from result import Result
 # relative
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...service.errors import SyftError as NSyftError
 from ...types.datetime import DateTime
+from ...types.result import catch
 from ...types.syft_object import SyftObject
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
@@ -195,15 +197,22 @@ class ActionService(AbstractService):
         return result
 
     @service_method(path="action.get", name="get", roles=GUEST_ROLE_LEVEL)
+    @catch(NSyftError)
     def get(
         self,
         context: AuthedServiceContext,
         uid: UID,
         twin_mode: TwinMode = TwinMode.PRIVATE,
         resolve_nested: bool = True,
-    ) -> Result[Ok[ActionObject], Err[str]]:
+    ) -> ActionObject:
         """Get an object from the action store"""
-        return self._get(context, uid, twin_mode, resolve_nested=resolve_nested)
+        result = self._get(context, uid, twin_mode, resolve_nested=resolve_nested)
+        match result:
+            case Ok(None):
+                raise NSyftError(code='not-found')
+            case Ok(obj):
+                return obj
+        raise NSyftError(result.err())
 
     def _get(
         self,

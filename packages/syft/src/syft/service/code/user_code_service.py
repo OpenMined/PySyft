@@ -3,11 +3,6 @@ from typing import Any
 from typing import TypeVar
 from typing import cast
 
-# third party
-from result import Err
-from result import Ok
-from result import Result
-
 # relative
 from ...abstract_node import NodeType
 from ...client.enclave_client import EnclaveClient
@@ -15,13 +10,18 @@ from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
 from ...types.cache_object import CachedSyftObject
+from ...types.result import Err, catch
+from ...types.result import Ok
+from ...types.result import Result
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
+from ..action.action_service import ActionService
 from ..context import AuthedServiceContext
+from ..errors import SyftError as NSyftError
 from ..network.routes import route_to_connection
 from ..output.output_service import ExecutionOutput
 from ..policy.policy import OutputPolicy
@@ -362,7 +362,7 @@ class UserCodeService(AbstractService):
 
     def keep_owned_kwargs(
         self, kwargs: dict[str, Any], context: AuthedServiceContext
-    ) -> dict[str, Any] | SyftError:
+    ) -> dict[str, Any]:
         """Return only the kwargs that are owned by the user"""
 
         action_service = context.node.get_service("actionservice")
@@ -413,25 +413,26 @@ class UserCodeService(AbstractService):
         else:
             return True
 
+    @catch(NSyftError)
     def _call(
         self,
         context: AuthedServiceContext,
         uid: UID,
         result_id: UID | None = None,
         **kwargs: Any,
-    ) -> Result[ActionObject, Err]:
+    ) -> ActionObject | CachedSyftObject:
         """Call a User Code Function"""
         try:
-            code_result = self.stash.get_by_uid(context.credentials, uid=uid)
-            if code_result.is_err():
-                return code_result
-            code: UserCode = code_result.ok()
+            code = self.stash.get_by_uid(context.credentials, uid=uid).unwrap()
 
             if not self.valid_worker_pool_for_context(context, code):
-                return Err(
-                    value="You tried to run a syft function attached to a worker pool in blocking mode,"
-                    "which is currently not supported. Run your function with `blocking=False` to run"
-                    " as a job on your worker pool"
+                raise NSyftError(
+                    (
+                        "You tried to run a syft function attached to a worker pool in blocking mode,"
+                        " which is currently not supported. Run your function with `blocking=False` to run"
+                        " as a job on your worker pool."
+                    ),
+                    code='worker-invalid-pool'
                 )
 
             # Set Permissions
@@ -444,11 +445,18 @@ class UserCodeService(AbstractService):
                     # handles the case: if we have 0 owned args and execution permission
                     pass
                 else:
-                    return Err(
-                        "You do not have the permissions for mock execution, please contact the admin"
+                    raise NSyftError(
+                        (
+                            f"Attempt by {context.syft_client_verify_key} to call"
+                            f" UserCode<{code.id}> with owned args without permission."
+                        ),
+                        code='not-permitted',
+                        min_visible_role=ServiceRole.ADMIN,
+                        public_message="You do not have the permissions for mock execution. Please contact the admin."
                     )
+
             override_execution_permission = (
-                context.has_execute_permissions or context.role == ServiceRole.ADMIN
+                context.has_execute_permissions or context.is_admin
             )
 
             # Override permissions bypasses the cache, since we do not check in/out policies
@@ -462,21 +470,17 @@ class UserCodeService(AbstractService):
             input_policy = code.get_input_policy(context)
 
             # Check output policy
-            output_policy = code.get_output_policy(context)
+            output_policy = code.get_output_policy(context).unwrap()
             if not override_execution_permission:
-                output_history = code.get_output_history(context=context)
-                if isinstance(output_history, SyftError):
-                    return Err(output_history.message)
+                output_history = code._get_output_history(context=context).unwrap()
                 can_execute = self.is_execution_allowed(
                     code=code,
                     context=context,
                     output_policy=output_policy,
                 )
                 if not can_execute:
-                    if not code.is_output_policy_approved(context):
-                        return Err(
-                            "Execution denied: Your code is waiting for approval"
-                        )
+                    code.check_if_approved(context)
+
                     if not (is_valid := output_policy._is_valid(context)):  # type: ignore
                         if len(output_history) > 0 and not skip_read_cache:
                             last_executed_output = output_history[-1]
@@ -488,6 +492,7 @@ class UserCodeService(AbstractService):
                                     kwargs=kwarg2id
                                 )
                             ):
+                                # TODO: more annoying
                                 inp_policy_validation = input_policy._is_valid(
                                     context,
                                     usr_input_kwargs=kwarg2id,
@@ -496,37 +501,35 @@ class UserCodeService(AbstractService):
                                 if inp_policy_validation.is_err():
                                     return inp_policy_validation
 
-                            result: Result[ActionObject, str] = resolve_outputs(
+                            result = resolve_outputs(
                                 context=context,
                                 output_ids=last_executed_output.output_ids,
-                            )
-                            if result.is_err():
-                                return result
+                            ).unwrap()
 
-                            res = delist_if_single(result.ok())
-                            return Ok(
-                                CachedSyftObject(
-                                    result=res,
-                                    error_msg=is_valid.message,
-                                )
+                            return CachedSyftObject(
+                                result=delist_if_single(result),
+                                error_msg=is_valid.message,
                             )
-                        else:
-                            return cast(Err, is_valid.to_result())
-                    return can_execute.to_result()  # type: ignore
+                    else:
+                        raise NSyftError(
+                            'Input policy is invalid',
+                            code='usercode-bad-input-policy'
+                        )
+                raise NSyftError(can_execute.to_result())
 
             # Execute the code item
+            action_service = cast(ActionService, context.node.get_service("actionservice"))
 
-            action_service = context.node.get_service("actionservice")
-
-            result_action_object: Result[ActionObject | TwinObject, str] = (
+            result_action_object = (
                 action_service._user_code_execute(
                     context, code, kwarg2id, result_id=result_id
                 )
-            )
-            if result_action_object.is_err():
-                return result_action_object
-            else:
-                result_action_object = result_action_object.ok()
+            ).unwrap()
+            # Stopped here
+            # if result_action_object.is_err():
+            #     return result_action_object
+            # else:
+            #     result_action_object = result_action_object.ok()
 
             output_result = action_service.set_result_to_store(
                 result_action_object, context, code.get_output_policy(context)
@@ -623,27 +626,26 @@ class UserCodeService(AbstractService):
         return res
 
 
+@catch(NSyftError)
 def resolve_outputs(
     context: AuthedServiceContext,
     output_ids: list[UID],
-) -> Result[list[ActionObject], str]:
+) -> list[ActionObject]:
     # relative
     from ...service.action.action_object import TwinMode
 
     if isinstance(output_ids, list):
-        if len(output_ids) == 0:
-            return None
         outputs = []
+
         for output_id in output_ids:
             if context.node is not None:
-                action_service = context.node.get_service("actionservice")
+                action_service = cast(ActionService, context.node.get_service("actionservice"))
                 result = action_service.get(
                     context, uid=output_id, twin_mode=TwinMode.PRIVATE
-                )
-                if result.is_err():
-                    return result
-                outputs.append(result.ok())
-        return Ok(outputs)
+                ).unwrap()
+                outputs.append(result)
+
+        return outputs
     else:
         raise NotImplementedError
 
