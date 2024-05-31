@@ -5,6 +5,7 @@ import pytest
 from syft import ActionObject
 from syft.types.result import Error
 from syft.types.result import Ok
+from syft.types.result import catch
 
 
 def test_ok():
@@ -89,3 +90,106 @@ def test_unwrap_error_not_exception():
 
     with pytest.raises(TypeError):
         result.unwrap()
+
+def test_catch_decorator_good():
+    @catch(ValueError)
+    def good() -> str:
+        return "om"
+
+    result = good()
+
+    assert result.is_ok() is True
+    assert result.is_err() is False
+    assert result.ok() == "om"
+    assert result.unwrap() == "om"
+
+def test_catch_decorator_bad():
+    @catch(ValueError)
+    def bad() -> str:
+        raise ValueError("some exception")
+   
+    result = bad()
+
+    assert result.is_err() is True
+    assert result.is_ok() is False
+
+    e = result.err()
+    assert type(e) is ValueError
+    assert e.args == ("some exception",)
+
+    with pytest.raises(ValueError):
+        result.unwrap()
+
+def test_catch_decorator():
+    @catch(ValueError)
+    def create_object(valid: bool) -> ActionObject:
+        if valid:
+            return ActionObject.from_obj("om")
+        else:
+            raise ValueError("some exception")
+
+    result = create_object(True)
+
+    assert result.is_ok() is True
+    assert result.is_err() is False
+    assert result.ok().syft_action_data == "om"
+
+    result = create_object(False)
+
+    assert result.is_err() is True
+    assert result.is_ok() is False
+    assert type(result.err()) is ValueError
+
+    with pytest.raises(ValueError):
+        result.unwrap()
+
+def test_catch_decorator_bubble_up():
+    @catch(ValueError, TypeError)
+    def more_decorators(a: int) -> str:
+        if a == 1:
+            return "om"
+        raise OSError("some exception")
+
+    result = more_decorators(1)
+    assert result.is_ok() is True
+    assert result.ok() == "om"
+
+    with pytest.raises(OSError):
+        more_decorators(0)
+
+def test_catch_decorator_no_exceptions():
+    with pytest.raises(TypeError) as e:
+        @catch()
+        def f() -> str:
+            return "om"
+
+        assert e.value.args == ("No exceptions provided to catch decorator",)
+
+def test_catch_decorator_multiple_exceptions():
+    @catch(ValueError, TypeError, OSError)
+    def multiple_exceptions(a: int) -> str:
+        if a == 1:
+            return "om"
+        if a == 2:
+            raise TypeError
+        if a == 3:
+            raise ValueError
+        if a == 4:
+            raise OSError
+        raise Exception
+
+    result = multiple_exceptions(1)
+    assert result.ok() == "om"
+
+    result_type = multiple_exceptions(2)
+    assert type(result_type.err()) is TypeError
+
+    result_value = multiple_exceptions(3)
+    assert type(result_value.err()) is ValueError
+
+    result_os = multiple_exceptions(4)
+    assert type(result_os.err()) is OSError
+
+    with pytest.raises(Exception):
+        multiple_exceptions(5)
+
