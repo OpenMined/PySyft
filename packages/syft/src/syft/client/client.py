@@ -37,8 +37,8 @@ from ..serde.deserialize import _deserialize
 from ..serde.serializable import serializable
 from ..serde.serialize import _serialize
 from ..service.context import NodeServiceContext
+from ..service.metadata.node_metadata import NodeMetadata
 from ..service.metadata.node_metadata import NodeMetadataJSON
-from ..service.metadata.node_metadata import NodeMetadataV3
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.user.user import UserCreate
@@ -241,7 +241,10 @@ class HTTPConnection(NodeConnection):
             return NodeMetadataJSON(**metadata_json)
 
     def get_api(
-        self, credentials: SyftSigningKey, communication_protocol: int
+        self,
+        credentials: SyftSigningKey,
+        communication_protocol: int,
+        metadata: NodeMetadataJSON | None = None,
     ) -> SyftAPI:
         params = {
             "verify_key": str(credentials.verify_key),
@@ -264,6 +267,7 @@ class HTTPConnection(NodeConnection):
         obj.connection = self
         obj.signing_key = credentials
         obj.communication_protocol = communication_protocol
+        obj.metadata = metadata
         if self.proxy_target_uid:
             obj.node_uid = self.proxy_target_uid
         return cast(SyftAPI, obj)
@@ -378,7 +382,10 @@ class PythonConnection(NodeConnection):
             return GridURL(port=8333).with_path(path)
 
     def get_api(
-        self, credentials: SyftSigningKey, communication_protocol: int
+        self,
+        credentials: SyftSigningKey,
+        communication_protocol: int,
+        metadata: NodeMetadataJSON | None = None,
     ) -> SyftAPI:
         # todo: its a bit odd to identify a user by its verify key maybe?
         if self.proxy_target_uid:
@@ -400,6 +407,7 @@ class PythonConnection(NodeConnection):
         obj.connection = self
         obj.signing_key = credentials
         obj.communication_protocol = communication_protocol
+        obj.metadata = metadata
         if self.proxy_target_uid:
             obj.node_uid = self.proxy_target_uid
         return obj
@@ -697,7 +705,7 @@ class SyftClient:
             return self.api.services.network.exchange_credentials_with(
                 self_node_route=self_node_route,
                 remote_node_route=remote_node_route,
-                remote_node_verify_key=client.metadata.to(NodeMetadataV3).verify_key,
+                remote_node_verify_key=client.metadata.to(NodeMetadata).verify_key,
             )
         else:
             raise ValueError(
@@ -942,7 +950,9 @@ class SyftClient:
         _api: SyftAPI = self.connection.get_api(
             credentials=credentials,
             communication_protocol=self.communication_protocol,
+            metadata=self.metadata,
         )
+        self._fetch_node_metadata(self.credentials)
 
         def refresh_callback() -> SyftAPI:
             return self._fetch_api(self.credentials)
@@ -958,6 +968,7 @@ class SyftClient:
             api=_api,
         )
         self._api = _api
+        self._api.metadata = self.metadata
         self.services = _api.services
         return _api
 
