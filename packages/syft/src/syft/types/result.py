@@ -7,8 +7,8 @@ from typing import NoReturn
 from typing import TypeAlias
 from typing import TypeVar
 
-T = TypeVar("T")
-E = TypeVar("E")
+T = TypeVar("T", covariant=True)
+E = TypeVar("E", covariant=True, bound=BaseException)
 BE = TypeVar("BE", bound=BaseException)
 
 
