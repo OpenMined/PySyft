@@ -222,7 +222,7 @@ def in_kubernetes() -> bool:
 
 def get_venv_packages() -> str:
     res = subprocess.getoutput(
-        "pip list --format=freeze",
+        "pip list --format=freeze",  # nosec
     )
     return res
 
