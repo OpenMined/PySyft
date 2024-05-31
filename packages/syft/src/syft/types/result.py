@@ -1,13 +1,16 @@
+# stdlib
 from collections.abc import Callable
 import functools
-
-from typing import Literal, TypeAlias, TypeVar
-from typing import NoReturn
 from typing import Generic
+from typing import Literal
+from typing import NoReturn
+from typing import TypeAlias
+from typing import TypeVar
 
-T = TypeVar('T')
-E = TypeVar('E')
-BE = TypeVar('BE', bound=BaseException)
+T = TypeVar("T")
+E = TypeVar("E")
+BE = TypeVar("BE", bound=BaseException)
+
 
 class Ok(Generic[T]):
     __slots__ = ("value",)
@@ -38,6 +41,7 @@ class Ok(Generic[T]):
     def unwrap(self) -> T:
         return self.value
 
+
 class Error(Generic[E]):
     __slots__ = ("value",)
     __match_args__ = ("error_value",)
@@ -67,13 +71,19 @@ class Error(Generic[E]):
     def unwrap(self) -> NoReturn:
         if isinstance(self.value, BaseException):
             raise self.value
-        raise Exception("Error is not a BaseException")
+        raise TypeError("Error is not a BaseException")
+
 
 Result: TypeAlias = Ok[T] | Error[E]
 
-def catch(*exceptions: type[BE]):
-    if not exceptions or not all(issubclass(exception, BaseException) for exception in exceptions):
-        raise Exception("The catch() decorator only accepts exceptions")
+
+def catch(
+    *exceptions: type[BE],
+) -> Callable[[Callable[..., T]], Callable[..., Result[T, BE]]]:
+    if not exceptions or not all(
+        issubclass(exception, BaseException) for exception in exceptions
+    ):
+        raise TypeError("The catch() decorator only accepts exceptions")
 
     def decorator(func: Callable[..., T]) -> Callable[..., Result[T, BE]]:
         @functools.wraps(func)
@@ -82,7 +92,7 @@ def catch(*exceptions: type[BE]):
                 return Ok(func(*args, **kwargs))
             except exceptions as e:
                 return Error(e)
+
         return wrapper
+
     return decorator
-
-
