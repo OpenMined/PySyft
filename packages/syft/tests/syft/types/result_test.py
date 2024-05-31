@@ -196,3 +196,23 @@ def test_catch_decorator_multiple_exceptions():
     with pytest.raises(Exception):
         multiple_exceptions(5)
 
+def test_catch_decorator_sub():
+    class TestException(Exception):
+        pass
+
+    class SubException(TestException):
+        pass
+
+    @catch(TestException)
+    def subclassed() -> str:
+        raise SubException("some exception")
+
+    result = subclassed()
+
+    assert result.is_err() is True
+    assert result.is_ok() is False
+
+    assert type(result.err()) is SubException
+
+    with pytest.raises(SubException):
+        result.unwrap()
