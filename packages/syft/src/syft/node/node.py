@@ -221,7 +221,7 @@ def in_kubernetes() -> bool:
     return get_container_host() == "k8s"
 
 
-def get_venv_packages() -> str:
+def get_venv_packages() -> str: # nosec
     try:
         # subprocess call is safe because it uses a fully qualified path and fixed arguments
         result = subprocess.run(
