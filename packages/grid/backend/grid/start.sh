@@ -5,7 +5,14 @@ echo "Running Syft with RELEASE=${RELEASE} and $(id)"
 
 APP_MODULE=grid.main:app
 LOG_LEVEL=${LOG_LEVEL:-info}
-HOST=${HOST:-0.0.0.0}
+if grep -q ":" /proc/net/if_inet6 ; then
+    # IPv6 is available
+    HOST=${HOST:-[::]}
+else
+    # Only IPv4 is available
+    HOST=${HOST:-0.0.0.0}
+fi
+
 PORT=${PORT:-80}
 NODE_TYPE=${NODE_TYPE:-domain}
 APPDIR=${APPDIR:-$HOME/app}
