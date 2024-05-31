@@ -33,7 +33,7 @@ from ...util.telemetry import instrument
 from ...util.util import prompt_warning_message
 from ..context import AuthedServiceContext
 from ..data_subject.data_subject import NamePartitionKey
-from ..metadata.node_metadata import NodeMetadataV3
+from ..metadata.node_metadata import NodeMetadata
 from ..request.request import Request
 from ..request.request import RequestStatus
 from ..request.request import SubmitRequest
@@ -953,7 +953,7 @@ def node_route_to_http_connection(
     return HTTPConnection(url=url, proxy_target_uid=obj.proxy_target_uid)
 
 
-@transform(NodeMetadataV3, NodePeer)
+@transform(NodeMetadata, NodePeer)
 def metadata_to_peer() -> list[Callable]:
     return [
         keep(
