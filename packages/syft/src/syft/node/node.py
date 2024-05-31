@@ -93,6 +93,7 @@ from ..service.service import AbstractService
 from ..service.service import ServiceConfigRegistry
 from ..service.service import UserServiceConfigRegistry
 from ..service.settings.settings import NodeSettings
+from ..service.settings.settings import NodeSettingsUpdate
 from ..service.settings.settings_service import SettingsService
 from ..service.settings.settings_stash import SettingsStash
 from ..service.sync.sync_service import SyncService
@@ -120,6 +121,8 @@ from ..store.linked_obj import LinkedObject
 from ..store.mongo_document_store import MongoStoreConfig
 from ..store.sqlite_document_store import SQLiteStoreClientConfig
 from ..store.sqlite_document_store import SQLiteStoreConfig
+from ..types.syft_metaclass import Empty
+from ..types.syft_object import PartialSyftObject
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
@@ -994,6 +997,16 @@ class Node(AbstractNode):
         if rootdir.exists():
             shutil.rmtree(rootdir, ignore_errors=True)
 
+    def update_self(self, settings: NodeSettings) -> None:
+        updateable_attrs = (
+            NodeSettingsUpdate.model_fields.keys()
+            - PartialSyftObject.model_fields.keys()
+        )
+        for attr_name in updateable_attrs:
+            attr = getattr(settings, attr_name)
+            if attr is not Empty:
+                setattr(self, attr_name, attr)
+
     @property
     def settings(self) -> NodeSettings:
         settings_stash = SettingsStash(store=self.document_store)
@@ -1006,21 +1019,20 @@ class Node(AbstractNode):
             )
         if settings.is_ok() and len(settings.ok()) > 0:
             settings = settings.ok()[0]
+        self.update_self(settings)
         return settings
 
     @property
     def metadata(self) -> NodeMetadataV3:
-        name = ""
-        organization = ""
-        description = ""
-        show_warnings = self.enable_warnings
         settings_data = self.settings
         name = settings_data.name
         organization = settings_data.organization
         description = settings_data.description
         show_warnings = settings_data.show_warnings
-        node_type = self.node_type.value if self.node_type else ""
-        node_side_type = self.node_side_type.value if self.node_side_type else ""
+        node_type = settings_data.node_type.value if settings_data.node_type else ""
+        node_side_type = (
+            settings_data.node_side_type.value if settings_data.node_side_type else ""
+        )
 
         return NodeMetadataV3(
             name=name,

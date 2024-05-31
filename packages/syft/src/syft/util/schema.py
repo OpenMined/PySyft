@@ -11,6 +11,69 @@ import syft as sy
 RELATIVE_PATH_TO_FRONTEND = "/../../../../grid/frontend/"
 SCHEMA_FOLDER = "schema"
 
+GUEST_COMMANDS = """
+<li><span class='syft-code-block'>&lt;your_client&gt;.datasets</span> - list datasets</li>
+<li><span class='syft-code-block'>&lt;your_client&gt;.code</span> - list code</li>
+<li><span class='syft-code-block'>&lt;your_client&gt;.login</span> - list projects</li>
+"""
+
+DS_COMMANDS = """
+<li><span class='syft-code-block'>&lt;your_client&gt;.datasets</span> - list datasets</li>
+<li><span class='syft-code-block'>&lt;your_client&gt;.code</span> - list code</li>
+<li><span class='syft-code-block'>&lt;your_client&gt;.projects</span> - list projects</li>
+"""
+
+DO_COMMANDS = """
+<li><span class='syft-code-block'>&lt;your_client&gt;.projects</span> - list projects</li>
+<li><span class='syft-code-block'>&lt;your_client&gt;.requests</span> - list requests</li>
+<li><span class='syft-code-block'>&lt;your_client&gt;.users</span> - list users</li>
+"""
+
+DEFAULT_WELCOME_MSG = """
+        <style>
+            $FONT_CSS
+
+            .syft-container {
+                padding: 5px;
+                font-family: 'Open Sans';
+            }
+            .syft-alert-info {
+                color: #1F567A;
+                background-color: #C2DEF0;
+                border-radius: 4px;
+                padding: 5px;
+                padding: 13px 10px
+            }
+            .syft-code-block {
+                background-color: #f7f7f7;
+                border: 1px solid #cfcfcf;
+                padding: 0px 2px;
+            }
+            .syft-space {
+                margin-top: 1em;
+            }
+        </style>
+        <div class="syft-client syft-container">
+            <img src="$grid_symbol" alt="Logo"
+            style="width:48px;height:48px;padding:3px;">
+            <h2>Welcome to $domain_name</h2>
+            <div class="syft-space">
+            <strong>URL:</strong> $node_url <br />
+            <strong>Node Type:</strong> $node_type <br />
+            <strong>Node Side Type:</strong>$node_side_type<br />
+            <strong>Syft Version:</strong> $node_version<br />
+
+            </div>
+            <div class='syft-alert-info syft-space'>
+                &#9432;&nbsp;
+                This domain is run by the library PySyft to learn more about how it works visit
+                <a href="https://github.com/OpenMined/PySyft">github.com/OpenMined/PySyft</a>.
+            </div>
+            <h4>Commands to Get Started</h4>
+            $command_list
+        </div><br />
+        """
+
 # json schema primitive types
 primitive_mapping = {
     list: "array",

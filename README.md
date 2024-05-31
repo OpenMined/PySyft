@@ -73,6 +73,10 @@ domain_client = sy.login(
 
 ## Deploy Kubernetes Helm Chart
 
+#### 0. Deploy Kubernetes with 8+ Cores and 16GB RAM
+
+If you're using Docker Desktop to deploy your Kubernetes, you may need to go into Settings > Resources and increase CPUs and Memory.
+
 **Note**: Assuming we have a Kubernetes cluster already setup.
 
 #### 1. Add and update Helm repo for Syft
@@ -432,15 +436,6 @@ OpenMined and Syft appreciates all contributors, if you would like to fix a bug 
 </th>
 </tr>
 </table>
-
-# Open Collective
-
-`OpenMined` is a fiscally sponsored `501(c)(3)` in the USA. We are funded by our generous supporters on <a href="https://opencollective.com/openmined">Open Collective</a>. <br /><br />
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/opencollective_dark.png">
-  <img src="docs/img/opencollective_light.png" alt="Contributors" width="100%" />
-</picture>
 
 # Disclaimer
 
