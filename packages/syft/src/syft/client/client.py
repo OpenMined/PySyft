@@ -244,7 +244,7 @@ class HTTPConnection(NodeConnection):
         self,
         credentials: SyftSigningKey,
         communication_protocol: int,
-        metadata: NodeMetadataJSON | None,
+        metadata: NodeMetadataJSON | None = None,
     ) -> SyftAPI:
         params = {
             "verify_key": str(credentials.verify_key),
@@ -385,7 +385,7 @@ class PythonConnection(NodeConnection):
         self,
         credentials: SyftSigningKey,
         communication_protocol: int,
-        metadata: NodeMetadataJSON | None,
+        metadata: NodeMetadataJSON | None = None,
     ) -> SyftAPI:
         # todo: its a bit odd to identify a user by its verify key maybe?
         if self.proxy_target_uid:
