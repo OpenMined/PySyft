@@ -5,7 +5,7 @@ from setuptools import setup
 __version__ = "0.1.11"
 
 packages = [
-    "requests==2.32.0",
+    "requests==2.32.2",
     "pyyaml==6.0.1",
     "packaging==21.3",
     "typer[all]==0.9.0",
