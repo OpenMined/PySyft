@@ -65,7 +65,7 @@ from ..service.job.job_stash import JobStash
 from ..service.job.job_stash import JobType
 from ..service.log.log_service import LogService
 from ..service.metadata.metadata_service import MetadataService
-from ..service.metadata.node_metadata import NodeMetadataV3
+from ..service.metadata.node_metadata import NodeMetadata
 from ..service.network.network_service import NetworkService
 from ..service.network.utils import PeerHealthCheckTask
 from ..service.notification.notification_service import NotificationService
@@ -1023,7 +1023,8 @@ class Node(AbstractNode):
         return settings
 
     @property
-    def metadata(self) -> NodeMetadataV3:
+    def metadata(self) -> NodeMetadata:
+        show_warnings = self.enable_warnings
         settings_data = self.settings
         name = settings_data.name
         organization = settings_data.organization
@@ -1033,8 +1034,9 @@ class Node(AbstractNode):
         node_side_type = (
             settings_data.node_side_type.value if settings_data.node_side_type else ""
         )
+        eager_execution_enabled = settings_data.eager_execution_enabled
 
-        return NodeMetadataV3(
+        return NodeMetadata(
             name=name,
             id=self.id,
             verify_key=self.verify_key,
@@ -1046,6 +1048,7 @@ class Node(AbstractNode):
             node_type=node_type,
             node_side_type=node_side_type,
             show_warnings=show_warnings,
+            eager_execution_enabled=eager_execution_enabled,
         )
 
     @property
