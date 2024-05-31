@@ -91,6 +91,7 @@ def test_unwrap_error_not_exception():
     with pytest.raises(TypeError):
         result.unwrap()
 
+
 def test_catch_decorator_good():
     @catch(ValueError)
     def good() -> str:
@@ -103,11 +104,12 @@ def test_catch_decorator_good():
     assert result.ok() == "om"
     assert result.unwrap() == "om"
 
+
 def test_catch_decorator_bad():
     @catch(ValueError)
     def bad() -> str:
         raise ValueError("some exception")
-   
+
     result = bad()
 
     assert result.is_err() is True
@@ -119,6 +121,7 @@ def test_catch_decorator_bad():
 
     with pytest.raises(ValueError):
         result.unwrap()
+
 
 def test_catch_decorator():
     @catch(ValueError)
@@ -146,6 +149,7 @@ def test_catch_decorator():
     with pytest.raises(ValueError):
         result.unwrap()
 
+
 def test_catch_decorator_bubble_up():
     @catch(ValueError, TypeError)
     def more_decorators(a: int) -> str:
@@ -160,13 +164,16 @@ def test_catch_decorator_bubble_up():
     with pytest.raises(OSError):
         more_decorators(0)
 
+
 def test_catch_decorator_no_exceptions():
     with pytest.raises(TypeError) as e:
+
         @catch()
         def f() -> str:
             return "om"
 
         assert e.value.args == ("No exceptions provided to catch decorator",)
+
 
 def test_catch_decorator_multiple_exceptions():
     @catch(ValueError, TypeError, OSError)
@@ -195,6 +202,7 @@ def test_catch_decorator_multiple_exceptions():
 
     with pytest.raises(Exception):
         multiple_exceptions(5)
+
 
 def test_catch_decorator_sub():
     class TestException(Exception):
