@@ -659,13 +659,17 @@ class Job(SyncableSyftObject):
         if self.resolved:
             return self.resolve
 
-        if not job_only and self.result is not None:
-            self.result.wait(timeout)
-
         print_warning = True
         counter = 0
         while True:
             self.fetch()
+            print(f"{self.resolved = }. {self.status = }. {self.result = }")
+            if isinstance(self.result, Err):
+                return SyftError(
+                    message=f"Waiting for job with id '{self.id}' failed with error: {self.result.err()}"
+                )
+            if isinstance(self.result, SyftError):
+                return self.result
             if print_warning and self.result is not None:
                 result_obj = api.services.action.get(
                     self.result.id, resolve_nested=False
@@ -685,6 +689,19 @@ class Job(SyncableSyftObject):
                 counter += 1
                 if counter > timeout:
                     return SyftError(message="Reached Timeout!")
+
+        # TODO: if self.resolve is error, return SyftError and not wait for the result
+        # should we wait on the job first, and then wait on the result
+        # now we are waiting for the result before the job is resolved
+        # if a job is error, we should return it and not wait for the result
+        # if a job is completed, then we should we for the result
+        if not job_only and self.result is not None:  # type: ignore[unreachable]
+            print(f"Waiting for result of job with id '{self.id}'")
+            self.result.wait(timeout)
+
+        print(
+            f"Job with id '{self.id}' is resolved with {self.resolve = }, {self.result = }"
+        )
         return self.resolve  # type: ignore[unreachable]
 
     @property

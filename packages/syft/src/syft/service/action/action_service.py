@@ -155,14 +155,6 @@ class ActionService(AbstractService):
 
             # If it's a leaf but not resolved yet, return false
             elif not obj.syft_resolved:
-                user_code_service = context.node.get_service("usercodeservice")
-                if not user_code_service.is_execution_on_owned_args_allowed(context):
-                    return Err(
-                        "You do not have the permissions for mock execution, please contact the admin"
-                    )
-                print(
-                    f"inside ActionService.is_resolved (3). {result = }. {obj.syft_resolved = }"
-                )
                 return Ok(False)
 
             print(f"inside ActionService.is_resolved (4). {obj = }.")
