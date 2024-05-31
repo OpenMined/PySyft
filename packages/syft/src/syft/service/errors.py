@@ -1,15 +1,36 @@
 # stdlib
+from enum import Enum
 from typing import Literal
 
 # syft absolute
 from syft.service.context import AuthedServiceContext
 from syft.service.user.user_roles import ServiceRole
 
-SyftErrorCodes = Literal["invalid-worker-pool"]
+class SyftErrorCodes(Enum):
+    INVALID_WORKER_POOL = "invalid-worker-pool",
+    PERMISSION_ERROR = "permission-error",
+    USER_CODE_NOT_APPROVED = "user-code-not-approved"
+
 SyftErrorVisibility = tuple[str, ServiceRole, str | None] # message, role, public_message
 
 syft_errors: dict[SyftErrorCodes, SyftErrorVisibility] = {
-    "invalid-worker-pool": ("Invalid worker", ServiceRole.ADMIN, None)
+    SyftErrorCodes.INVALID_WORKER_POOL: (
+        "You tried to run a syft function attached to a worker pool in blocking mode,"
+        " which is currently not supported. Run your function with `blocking=False` to run"
+        " as a job on your worker poolInvalid worker",
+        ServiceRole.ADMIN,
+        None
+    ),
+    SyftErrorCodes.PERMISSION_ERROR: (
+        "",
+        ServiceRole.ADMIN,
+        "You do not have permission to perform this operation.",
+    ),
+    SyftErrorCodes.USER_CODE_NOT_APPROVED: (
+        "Your code has not been approved yet.",
+        ServiceRole.DATA_SCIENTIST,
+        None
+    )
 }
 
 
@@ -54,7 +75,7 @@ class SyftException(Exception):
         super().__init__(message, *args, **kwargs)
 
 
-class WorkerException(SyftException):
+class WorkerError(SyftException):
     def __init__(
         self,
         /,
@@ -77,7 +98,47 @@ class WorkerException(SyftException):
             **kwargs,
         )
 
-class InvalidWorkerException(WorkerException):
+class PermissionError(SyftException):
+    def __init__(
+        self,
+        /,
+        message: str,
+        public_message: str | None = None,
+        *args,
+        **kwargs,
+    ) -> None:
+        _, min_role, _= syft_errors["permission-error"]
+
+        super().__init__(
+            message,
+            code="permission-error",
+            public_message=public_message,
+            min_visible_role=min_role,
+            *args,
+            **kwargs,
+        )
+
+class UserCodeError(SyftException):
+    def __init__(
+        self,
+        /,
+        message: str,
+        code: SyftErrorCodes,
+        public_message: str | None = None,
+        *args,
+        **kwargs,
+    ) -> None:
+        message, min_role, public_message = syft_errors[code]
+        super().__init__(
+            message,
+            code=code,
+            public_message=public_message,
+            min_visible_role=min_role,
+            *args,
+            **kwargs,
+        )
+
+class InvalidWorkerPoolException(WorkerException):
     def __init__(self, message: str | None = None, *args, **kwargs):
         super().__init__(message=message, code="invalid-worker-pool", *args, **kwargs)
 
