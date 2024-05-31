@@ -437,15 +437,6 @@ OpenMined and Syft appreciates all contributors, if you would like to fix a bug 
 </tr>
 </table>
 
-# Open Collective
-
-`OpenMined` is a fiscally sponsored `501(c)(3)` in the USA. We are funded by our generous supporters on <a href="https://opencollective.com/openmined">Open Collective</a>. <br /><br />
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/opencollective_dark.png">
-  <img src="docs/img/opencollective_light.png" alt="Contributors" width="100%" />
-</picture>
-
 # Disclaimer
 
 Syft is under active development and is not yet ready for pilots on private data without our assistance. As early access participants, please contact us via [Slack](https://slack.openmined.org/) or email if you would like to ask a question or have a use case that you would like to discuss.
