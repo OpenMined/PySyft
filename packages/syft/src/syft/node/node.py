@@ -11,6 +11,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess  # nosec
+import sys
 import tempfile
 from time import sleep
 import traceback
@@ -221,10 +222,17 @@ def in_kubernetes() -> bool:
 
 
 def get_venv_packages() -> str:
-    res = subprocess.getoutput(
-        "pip list --format=freeze",  # nosec
-    )
-    return res
+    try:
+        # subprocess call is safe because it uses a fully qualified path and fixed arguments
+        result = subprocess.run(
+            [sys.executable, "-m", "pip", "list", "--format=freeze"],  # nosec
+            capture_output=True,
+            check=True,
+            text=True,
+        )
+        return result.stdout
+    except subprocess.CalledProcessError as e:
+        return f"An error occurred: {e.stderr}"
 
 
 def get_syft_worker() -> bool:
