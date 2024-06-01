@@ -173,8 +173,8 @@ class RatholeService:
         config = rathole_service.raw
 
         existing_port_idx = None
-        for idx, port in enumerate(config["spec"]["ports"]):
-            if port["name"] == port_name:
+        for idx, existing_port in enumerate(config["spec"]["ports"]):
+            if existing_port["name"] == port_name:
                 print("Port already exists.", existing_port_idx, port_name)
                 existing_port_idx = idx
                 break

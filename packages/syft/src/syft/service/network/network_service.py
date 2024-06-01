@@ -4,9 +4,9 @@ from enum import Enum
 import logging
 import secrets
 from typing import Any
+from typing import cast
 
 # third party
-from loguru import logger
 from result import Err
 from result import Result
 
@@ -263,10 +263,9 @@ class NetworkService(AbstractService):
         self_node_peer: NodePeer,
         remote_node_route: NodeRoute,
     ) -> None:
-
         rathole_route = self_node_peer.get_rathole_route()
         if not rathole_route:
-            return SyftError(
+            raise Exception(
                 "Failed to exchange routes via . "
                 + f"Peer: {self_node_peer} has no rathole route: {rathole_route}"
             )
@@ -491,7 +490,8 @@ class NetworkService(AbstractService):
                 message=f"Failed to update peer '{peer.name}'. Error: {result.err()}"
             )
 
-        if context.node.node_side_type == NodeType.GATEWAY:
+        node_side_type = cast(NodeType, context.node.node_side_type)
+        if node_side_type == NodeType.GATEWAY:
             rathole_route = peer.get_rathole_route()
             self.rathole_service.add_host_to_server(peer) if rathole_route else None
         else:
@@ -899,7 +899,7 @@ class NetworkService(AbstractService):
         remote_node_peer = remote_node_peer.ok()
         if remote_node_peer is None:
             return SyftError(
-                message=f"Can't retrive {remote_node_peer.name} from the store of peers (None)."
+                message=f"Can't retrieve {remote_node_peer.name} from the store of peers (None)."
             )
         return remote_node_peer
 

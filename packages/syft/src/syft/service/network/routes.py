@@ -18,7 +18,6 @@ from ...client.client import SyftClient
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
@@ -90,6 +89,7 @@ class HTTPNodeRoute(SyftObject, NodeRoute):
     __canonical_name__ = "HTTPNodeRoute"
     __version__ = SYFT_OBJECT_VERSION_3
 
+    id: UID | None = None  # type: ignore
     host_or_ip: str
     private: bool = False
     protocol: str = "http"
@@ -119,8 +119,9 @@ class HTTPNodeRoute(SyftObject, NodeRoute):
 @serializable()
 class PythonNodeRoute(SyftObject, NodeRoute):
     __canonical_name__ = "PythonNodeRoute"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
+    id: UID | None = None  # type: ignore
     worker_settings: WorkerSettings
     proxy_target_uid: UID | None = None
     priority: int = 1

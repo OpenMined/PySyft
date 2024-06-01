@@ -217,7 +217,7 @@
         },
         "3": {
           "version": 3,
-          "hash": "5e363abe2875beec89a3f4f4f5c53e15f9893fb98e5da71e2fa6c0f619883b1f",
+          "hash": "9162f038f0f6401c4cf4d1b517c40805d1f291bd69a6e76f3c1ee9e5095de2e5",
           "action": "add"
         }
       },
@@ -229,7 +229,7 @@
         },
         "3": {
           "version": 3,
-          "hash": "89ace8067c392b802fe23a99446a8ae464a9dad0b49d8b2c3871b631451acec4",
+          "hash": "9e7e3700a2f7b1a67f054efbcb31edc71bbf358c469c85ed7760b81233803bac",
           "action": "add"
         }
       },
@@ -237,6 +237,18 @@
         "1": {
           "version": 1,
           "hash": "010d9aaca95f3fdfc8d1f97d01c1bd66483da774a59275b310c08d6912f7f863",
+          "action": "add"
+        }
+      },
+      "PythonConnection": {
+        "2": {
+          "version": 2,
+          "hash": "eb479c671fc112b2acbedb88bc5624dfdc9592856c04c22c66410f6c863e1708",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "1084c85a59c0436592530b5fe9afc2394088c8d16faef2b19fdb9fb83ff0f0e2",
           "action": "add"
         }
       }
