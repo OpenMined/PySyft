@@ -222,6 +222,13 @@
           "hash": "4ccf585328e191d22e974fac0370618ad4c020eb768f9effd231ed8b37e22808",
           "action": "add"
         }
+      },
+      "DistributedProject": {
+        "1": {
+          "version": 1,
+          "hash": "4e1d65b6bbcdd7c8a80e4e3347ff95d8f7499ecd5fde95d03c3d7766ee57dfcf",
+          "action": "add"
+        }
       }
     }
   }
