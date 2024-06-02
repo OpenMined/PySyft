@@ -1,13 +1,13 @@
 # stdlib
 import importlib
-from typing import Any, cast
+from typing import Any
+from typing import cast
 
 # third party
 import numpy as np
 from result import Err
 from result import Ok
 from result import Result
-from syft.service.code.user_code_service import UserCodeService
 
 # relative
 from ...node.credentials import SyftVerifyKey
@@ -21,6 +21,7 @@ from ...types.uid import UID
 from ..blob_storage.service import BlobStorageService
 from ..code.user_code import UserCode
 from ..code.user_code import execute_byte_code
+from ..code.user_code_service import UserCodeService
 from ..context import AuthedServiceContext
 from ..policy.policy import OutputPolicy
 from ..policy.policy import retrieve_from_db
@@ -210,10 +211,10 @@ class ActionService(AbstractService):
         result = self._get(context, uid, twin_mode, resolve_nested=resolve_nested)
         match result:
             case Ok(None):
-                raise NSyftError('Object not found.', code="not-found")
+                raise NSyftError("Object not found.", code="not-found")
             case Ok(obj):
                 return obj
-        raise NSyftError(result.err(), code='stash-error')
+        raise NSyftError(result.err(), code="stash-error")
 
     def _get(
         self,
@@ -317,8 +318,7 @@ class ActionService(AbstractService):
         )
         if context.node:
             user_code_service = cast(
-                UserCodeService,
-                context.node.get_service("usercodeservice")
+                UserCodeService, context.node.get_service("usercodeservice")
             )
 
         input_policy = code_item.get_input_policy(context).unwrap()
@@ -327,8 +327,14 @@ class ActionService(AbstractService):
         if not override_execution_permission:
             if input_policy is None:
                 if not code_item.is_output_policy_approved(context).unwrap():
-                    raise NSyftError("Execution denied: Your code is waiting for approval", code='usercode-not-approved')
-                raise NSyftError(f"No input policy defined for user code: {code_item.id}", code='usercode-bad-input-policy')
+                    raise NSyftError(
+                        "Execution denied: Your code is waiting for approval",
+                        code="usercode-not-approved",
+                    )
+                raise NSyftError(
+                    f"No input policy defined for user code: {code_item.id}",
+                    code="usercode-bad-input-policy",
+                )
 
             # Filter input kwargs based on policy
             filtered_kwargs = input_policy.filter_kwargs(
@@ -346,11 +352,17 @@ class ActionService(AbstractService):
                 code_item_id=code_item.id,
             )
             if is_approved.is_err():
-                raise NSyftError(is_approved.err() or "Input Policy is not valid", code='usercode-bad-input-policy')
+                raise NSyftError(
+                    is_approved.err() or "Input Policy is not valid",
+                    code="usercode-bad-input-policy",
+                )
         else:
             result = retrieve_from_db(code_item.id, kwargs, context)
             if result.is_err():
-                raise NSyftError(result.err() or "Could not grab from db", code='usercode-bad-input-policy')
+                raise NSyftError(
+                    result.err() or "Could not grab from db",
+                    code="usercode-bad-input-policy",
+                )
             filtered_kwargs = result.ok()
         # update input policy to track any input state
 
@@ -466,7 +478,7 @@ class ActionService(AbstractService):
         )
         blob_store_result = result_action_object._save_to_blob_storage()
         if isinstance(blob_store_result, SyftError):
-            raise NSyftError(blob_store_result.message, code='blob-storage-error')
+            raise NSyftError(blob_store_result.message, code="blob-storage-error")
 
         # IMPORTANT: DO THIS ONLY AFTER ._save_to_blob_storage
         if isinstance(result_action_object, TwinObject):
@@ -483,7 +495,7 @@ class ActionService(AbstractService):
         )
 
         if set_result.is_err():
-            raise NSyftError(set_result.err(), code='stash-error')
+            raise NSyftError(set_result.err(), code="stash-error")
 
         blob_storage_service: AbstractService = context.node.get_service(
             BlobStorageService

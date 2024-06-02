@@ -1,5 +1,6 @@
 # stdlib
-from typing import Any, Literal
+from typing import Any
+from typing import Literal
 from typing import TypeVar
 from typing import cast
 
@@ -31,7 +32,6 @@ from ..request.request import SubmitRequest
 from ..request.request import UserCodeStatusChange
 from ..request.request_service import RequestService
 from ..response import SyftError
-from ..response import SyftNotReady
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
@@ -341,23 +341,39 @@ class UserCodeService(AbstractService):
         if not code.is_output_policy_approved(context):
             status = code.status
             if isinstance(status, SyftError):
-                raise NSyftError(status.message, code='usercode-status-error')
-            raise NSyftError(status._get_status_message_str(), code='usercode-not-approved')
+                raise NSyftError(status.message, code="usercode-status-error")
+            raise NSyftError(
+                status._get_status_message_str(), code="usercode-not-approved"
+            )
 
         # Check if the user has permission to execute the code.
         elif not self.has_code_permission(code, context):
-            raise NSyftError(f"User {context.credentials} does not have permission to execute code {code}", code='not-permitted', public_message="You do not have the permissions to execute this code. Please contact the admin.", private=True, min_visible_role=ServiceRole.ADMIN)
+            raise NSyftError(
+                f"User {context.credentials} does not have permission to execute code {code}",
+                code="not-permitted",
+                public_message="You do not have the permissions to execute this code. Please contact the admin.",
+                private=True,
+                min_visible_role=ServiceRole.ADMIN,
+            )
 
         elif not code.is_output_policy_approved(context).unwrap():
-            raise NSyftError(f"Output policy not approved for code {code}", code='usercode-not-approved',
-            public_message="Output policy has not been approved.", min_visible_role=ServiceRole.ADMIN, private=True)
+            raise NSyftError(
+                f"Output policy not approved for code {code}",
+                code="usercode-not-approved",
+                public_message="Output policy has not been approved.",
+                min_visible_role=ServiceRole.ADMIN,
+                private=True,
+            )
 
         policy_is_valid = output_policy is not None and output_policy._is_valid(context)
 
         if policy_is_valid:
             return True
 
-        raise NSyftError('Invalid output policy', code='usercode-bad-output-policy',)
+        raise NSyftError(
+            "Invalid output policy",
+            code="usercode-bad-output-policy",
+        )
 
     def is_execution_on_owned_args_allowed(
         self, context: AuthedServiceContext
@@ -370,6 +386,7 @@ class UserCodeService(AbstractService):
         return current_user.mock_execution_permission
 
     catch(NSyftError)
+
     def keep_owned_kwargs(
         self, kwargs: dict[str, Any], context: AuthedServiceContext
     ) -> dict[str, Any]:
@@ -414,12 +431,12 @@ class UserCodeService(AbstractService):
         """This is a temporary fix that is needed until every function is always just ran as job"""
         # relative
         from ...node.node import get_default_worker_pool_name
+
         code_pool_name = user_code.worker_pool_name
         default_pool_name = get_default_worker_pool_name()
 
         has_custom_worker_pool = (
-            code_pool_name is not None
-            and code_pool_name != default_pool_name
+            code_pool_name is not None and code_pool_name != default_pool_name
         )
 
         return not (has_custom_worker_pool and context.is_blocking_api_call)
@@ -489,7 +506,6 @@ class UserCodeService(AbstractService):
                 output_policy=output_policy,
             )
 
-
             # If I cannot execute the code
             if not can_execute:
                 code.check_if_approved(context)
@@ -514,7 +530,10 @@ class UserCodeService(AbstractService):
                                 code_item_id=code.id,
                             )
                             if inp_policy_validation.is_err():
-                                return inp_policy_validation
+                                raise NSyftError(
+                                    inp_policy_validation.err() or "Bad input policy.",
+                                    code="usercode-bad-input-policy",
+                                )
 
                         result = resolve_outputs(
                             context=context,
@@ -529,19 +548,23 @@ class UserCodeService(AbstractService):
                         raise NSyftError(
                             "Input policy is invalid", code="usercode-bad-input-policy"
                         )
-                raise NSyftError()
+                raise NSyftError(
+                    f"User {context.credentials} cannot execute UserCode {code.id}.",
+                    code="not-permitted",
+                    public_message="You cannot execute this code. Please contact the admin.",
+                    min_visible_role=ServiceRole.ADMIN,
+                    private=True,
+                )
 
         # Execute the code item
-        action_service = cast(
-            ActionService, context.node.get_service("actionservice")
-        )
+        action_service = cast(ActionService, context.node.get_service("actionservice"))
 
         result_action_object = (
             action_service._user_code_execute(
                 context, code, kwarg2id, result_id=result_id
             )
         ).unwrap()
-        
+
         result = action_service.set_result_to_store(
             result_action_object, context, code.get_output_policy(context)
         ).unwrap()
@@ -557,7 +580,7 @@ class UserCodeService(AbstractService):
                 job_id=context.job_id,
                 input_ids=kwarg2id,
             ).unwrap()
-                    # output_policy.update_policy(context, result)
+            # output_policy.update_policy(context, result)
         # code.output_policy = output_policy
         # res = self.update_code_state(context, code)
         # print(res)
@@ -584,7 +607,7 @@ class UserCodeService(AbstractService):
             return result
         else:
             return result.as_empty()
-        
+
     def has_code_permission(
         self, code_item: UserCode, context: AuthedServiceContext
     ) -> bool:
