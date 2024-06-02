@@ -44,7 +44,7 @@ from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_4
+from ...types.syft_object import SYFT_OBJECT_VERSION_5
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.transforms import TransformContext
@@ -66,6 +66,8 @@ from ..output.output_service import ExecutionOutput
 from ..output.output_service import OutputService
 from ..policy.policy import CustomInputPolicy
 from ..policy.policy import CustomOutputPolicy
+from ..policy.policy import DeploymentPolicy
+from ..policy.policy import EmptyDeploymentPolicy
 from ..policy.policy import EmpyInputPolicy
 from ..policy.policy import ExactMatch
 from ..policy.policy import InputPolicy
@@ -257,7 +259,7 @@ class UserCodeStatusCollection(SyncableSyftObject):
 class UserCode(SyncableSyftObject):
     # version
     __canonical_name__ = "UserCode"
-    __version__ = SYFT_OBJECT_VERSION_4
+    __version__ = SYFT_OBJECT_VERSION_5
 
     id: UID
     node_uid: UID | None = None
@@ -269,6 +271,9 @@ class UserCode(SyncableSyftObject):
     output_policy_type: type[OutputPolicy] | UserPolicy
     output_policy_init_kwargs: dict[Any, Any] | None = None
     output_policy_state: bytes = b""
+    deployment_policy_type: type[DeploymentPolicy] | UserPolicy
+    deployment_policy_init_kwargs: dict[Any, Any] | None = None
+    deployment_policy_state: bytes = b""
     parsed_code: str
     service_func_name: str
     unique_func_name: str
@@ -756,7 +761,7 @@ class UserCode(SyncableSyftObject):
 class SubmitUserCode(SyftObject):
     # version
     __canonical_name__ = "SubmitUserCode"
-    __version__ = SYFT_OBJECT_VERSION_4
+    __version__ = SYFT_OBJECT_VERSION_5
 
     id: UID | None = None  # type: ignore[assignment]
     code: str
@@ -766,6 +771,8 @@ class SubmitUserCode(SyftObject):
     input_policy_init_kwargs: dict[Any, Any] | None = {}
     output_policy_type: SubmitUserPolicy | UID | type[OutputPolicy]
     output_policy_init_kwargs: dict[Any, Any] | None = {}
+    deployment_policy_type: SubmitUserPolicy | UID | type[DeploymentPolicy]
+    deployment_policy_init_kwargs: dict[Any, Any] | None = {}
     local_function: Callable | None = None
     input_kwargs: list[str]
     enclave_metadata: EnclaveMetadata | None = None
@@ -968,20 +975,23 @@ def syft_function_single_use(
 def syft_function(
     input_policy: InputPolicy | UID | None = None,
     output_policy: OutputPolicy | UID | None = None,
+    deployment_policy: DeploymentPolicy | UID | None = None,
     share_results_with_owners: bool = False,
     worker_pool_name: str | None = None,
 ) -> Callable:
+    # Input policy
     if input_policy is None:
         input_policy = EmpyInputPolicy()
 
     init_input_kwargs = None
     if isinstance(input_policy, CustomInputPolicy):
         input_policy_type = SubmitUserPolicy.from_obj(input_policy)
-        init_input_kwargs = partition_by_node(input_policy.init_kwargs)
+        init_input_kwargs = partition_by_node(getattr(input_policy, "init_kwargs", {}))
     else:
         input_policy_type = type(input_policy)
         init_input_kwargs = getattr(input_policy, "init_kwargs", {})
 
+    # Output policy
     if output_policy is None:
         output_policy = SingleExecutionExactOutput()
 
@@ -989,6 +999,11 @@ def syft_function(
         output_policy_type = SubmitUserPolicy.from_obj(output_policy)
     else:
         output_policy_type = type(output_policy)
+
+    # Deployment policy
+    if deployment_policy is None:
+        deployment_policy = EmptyDeploymentPolicy()
+    deployment_policy_type = type(deployment_policy)
 
     def decorator(f: Any) -> SubmitUserCode:
         res = SubmitUserCode(
@@ -999,6 +1014,8 @@ def syft_function(
             input_policy_init_kwargs=init_input_kwargs,
             output_policy_type=output_policy_type,
             output_policy_init_kwargs=getattr(output_policy, "init_kwargs", {}),
+            deployment_policy_type=deployment_policy_type,
+            deployment_policy_init_kwargs=getattr(deployment_policy, "init_kwargs", {}),
             local_function=f,
             input_kwargs=f.__code__.co_varnames[: f.__code__.co_argcount],
             worker_pool_name=worker_pool_name,
@@ -1209,6 +1226,14 @@ def check_output_policy(context: TransformContext) -> TransformContext:
     return context
 
 
+def check_deployment_policy(context: TransformContext) -> TransformContext:
+    if context.output is not None:
+        op = context.output["deployment_policy_type"]
+        op = check_policy(policy=op, context=context)
+        context.output["deployment_policy_type"] = op
+    return context
+
+
 def create_code_status(context: TransformContext) -> TransformContext:
     # relative
     from .user_code_service import UserCodeService
@@ -1288,6 +1313,7 @@ def submit_user_code_to_user_code() -> list[Callable]:
         generate_unique_func_name,
         check_input_policy,
         check_output_policy,
+        check_deployment_policy,
         new_check_code,
         locate_launch_jobs,
         add_credentials_for_key("user_verify_key"),

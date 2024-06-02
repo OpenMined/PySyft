@@ -70,7 +70,7 @@ class EnclaveInstance(SyftObject):
 
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         _repr_str = f"Enclave: {self.name}\n"
-        _repr_str += f"Address: {self.address}\n"
+        _repr_str += f"Route: {self.route}\n"
         _repr_str += f"Status: {self.status}\n"
         _repr_str += f"Metadata: {self.metadata}\n"
         return as_markdown_python_code(_repr_str) if wrap_as_python else _repr_str

@@ -229,6 +229,37 @@
           "hash": "4e1d65b6bbcdd7c8a80e4e3347ff95d8f7499ecd5fde95d03c3d7766ee57dfcf",
           "action": "add"
         }
+      },
+      "RunOnEnclave": {
+        "1": {
+          "version": 1,
+          "hash": "7f8d6c4e136b8ca8ecba3062367c2f82ae3e8cb9e04234f2e60524aa32f483b8",
+          "action": "add"
+        }
+      },
+      "UserCode": {
+        "4": {
+          "version": 4,
+          "hash": "0a7181cd5f76800b6566175ffa7276d0cf38c4ddc5110114430147dfc8bfdb2a",
+          "action": "remove"
+        },
+        "5": {
+          "version": 5,
+          "hash": "671220bf374cb3b882b330322912f26b8e999ac00771d8850949e638d1a8b510",
+          "action": "add"
+        }
+      },
+      "SubmitUserCode": {
+        "4": {
+          "version": 4,
+          "hash": "3c5c8627e4f7cca64c1249eea52e7c46171fd4882f76c83e9fa8a1ea7e828b9c",
+          "action": "remove"
+        },
+        "5": {
+          "version": 5,
+          "hash": "ad19de9b665a18fdfeb7988f964e814fee4f55a30ed1b2f8ba279a3004592a9d",
+          "action": "add"
+        }
       }
     }
   }

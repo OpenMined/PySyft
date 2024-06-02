@@ -28,8 +28,10 @@ from ...client.api import NodeIdentity
 from ...node.credentials import SyftVerifyKey
 from ...serde.recursive_primitives import recursive_serde_register_type
 from ...serde.serializable import serializable
+from ...service.enclave.enclave import EnclaveInstance
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
@@ -465,6 +467,28 @@ class OutputPolicyExecuteOnce(OutputPolicyExecuteCount):
 
 
 SingleExecutionExactOutput = OutputPolicyExecuteOnce
+
+
+class DeploymentPolicy(Policy):
+    __canonical_name__ = "DeploymentPolicy"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+
+class EmptyDeploymentPolicy(DeploymentPolicy):
+    __canonical_name__ = "EmptyDeploymentPolicy"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+
+@serializable()
+class RunOnEnclave(DeploymentPolicy):
+    __canonical_name__ = "RunOnEnclave"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    provider: EnclaveInstance
+
+    def is_valid(self, *args: list, **kwargs: dict) -> SyftSuccess | SyftError:  # type: ignore
+        # TODO verify validitity of the enclave instance
+        return SyftSuccess(message="Policy is valid.")
 
 
 @serializable()
