@@ -39,7 +39,7 @@ repos:
         args: ["--fix=lf"]
         exclude: '\.bat|\.csv|\.ps1$|packages/syft/tests/mongomock'
 
-  - repo: https://github.com/MarcoGorelli/absolufy-imports  # This repository has been archived by the owner on Aug 15, 2023. It is now read-only.  
+  - repo: https://github.com/MarcoGorelli/absolufy-imports # This repository has been archived by the owner on Aug 15, 2023. It is now read-only.  
     rev: v0.3.1
     hooks:
       - id: absolufy-imports
@@ -175,7 +175,7 @@ repos:
       - id: nbstripout
         files: "^notebooks/(api|tutorials|admin)"
 
-  - repo: https://github.com/pre-commit/mirrors-prettier  # This repository has been archived by the owner on Apr 11, 2024. It is now read-only.  
+  - repo: https://github.com/pre-commit/mirrors-prettier # This repository has been archived by the owner on Apr 11, 2024. It is now read-only.  
     rev: "v3.0.0-alpha.9-for-vscode"
     hooks:
       - id: prettier
