@@ -1,12 +1,13 @@
 # stdlib
 import importlib
-from typing import Any
+from typing import Any, cast
 
 # third party
 import numpy as np
 from result import Err
 from result import Ok
 from result import Result
+from syft.service.code.user_code_service import UserCodeService
 
 # relative
 from ...node.credentials import SyftVerifyKey
@@ -209,10 +210,10 @@ class ActionService(AbstractService):
         result = self._get(context, uid, twin_mode, resolve_nested=resolve_nested)
         match result:
             case Ok(None):
-                raise NSyftError(code="not-found")
+                raise NSyftError('Object not found.', code="not-found")
             case Ok(obj):
                 return obj
-        raise NSyftError(result.err())
+        raise NSyftError(result.err(), code='stash-error')
 
     def _get(
         self,
@@ -303,6 +304,7 @@ class ActionService(AbstractService):
         return self.store.has_storage_permission(uid)
 
     # not a public service endpoint
+    @catch(NSyftError)
     def _user_code_execute(
         self,
         context: AuthedServiceContext,
@@ -314,24 +316,28 @@ class ActionService(AbstractService):
             context.has_execute_permissions or context.role == ServiceRole.ADMIN
         )
         if context.node:
-            user_code_service = context.node.get_service("usercodeservice")
+            user_code_service = cast(
+                UserCodeService,
+                context.node.get_service("usercodeservice")
+            )
 
-        input_policy = code_item.get_input_policy(context)
-        output_policy = code_item.get_output_policy(context)
+        input_policy = code_item.get_input_policy(context).unwrap()
+        output_policy = code_item.get_output_policy(context).unwrap()
 
         if not override_execution_permission:
             if input_policy is None:
-                if not code_item.is_output_policy_approved(context):
-                    return Err("Execution denied: Your code is waiting for approval")
-                return Err(f"No input policy defined for user code: {code_item.id}")
+                if not code_item.is_output_policy_approved(context).unwrap():
+                    raise NSyftError("Execution denied: Your code is waiting for approval", code='usercode-not-approved')
+                raise NSyftError(f"No input policy defined for user code: {code_item.id}", code='usercode-bad-input-policy')
 
             # Filter input kwargs based on policy
             filtered_kwargs = input_policy.filter_kwargs(
                 kwargs=kwargs, context=context, code_item_id=code_item.id
             )
-            if filtered_kwargs.is_err():
-                return filtered_kwargs
-            filtered_kwargs = filtered_kwargs.ok()
+            # TODO: filter_kwargs returns a dict, not result
+            # if filtered_kwargs.is_err():
+            #     return filtered_kwargs
+            # filtered_kwargs = filtered_kwargs.ok()
 
             # validate input policy
             is_approved = input_policy._is_valid(
@@ -340,11 +346,11 @@ class ActionService(AbstractService):
                 code_item_id=code_item.id,
             )
             if is_approved.is_err():
-                return is_approved
+                raise NSyftError(is_approved.err() or "Input Policy is not valid", code='usercode-bad-input-policy')
         else:
             result = retrieve_from_db(code_item.id, kwargs, context)
-            if isinstance(result, SyftError):
-                return Err(result.message)
+            if result.is_err():
+                raise NSyftError(result.err() or "Could not grab from db", code='usercode-bad-input-policy')
             filtered_kwargs = result.ok()
         # update input policy to track any input state
 
@@ -428,13 +434,14 @@ class ActionService(AbstractService):
             return Err(f"_user_code_execute failed. {e}")
         return Ok(result_action_object)
 
+    @catch(NSyftError)
     def set_result_to_store(
         self,
         result_action_object: ActionObject | TwinObject,
         context: AuthedServiceContext,
         output_policy: OutputPolicy | None = None,
         has_result_read_permission: bool = False,
-    ) -> Result[ActionObject, str]:
+    ) -> ActionObject:
         result_id = result_action_object.id
         # result_blob_id = result_action_object.syft_blob_storage_entry_id
 
@@ -459,7 +466,7 @@ class ActionService(AbstractService):
         )
         blob_store_result = result_action_object._save_to_blob_storage()
         if isinstance(blob_store_result, SyftError):
-            return Err(blob_store_result.message)
+            raise NSyftError(blob_store_result.message, code='blob-storage-error')
 
         # IMPORTANT: DO THIS ONLY AFTER ._save_to_blob_storage
         if isinstance(result_action_object, TwinObject):
@@ -476,7 +483,7 @@ class ActionService(AbstractService):
         )
 
         if set_result.is_err():
-            return set_result
+            raise NSyftError(set_result.err(), code='stash-error')
 
         blob_storage_service: AbstractService = context.node.get_service(
             BlobStorageService
@@ -499,7 +506,7 @@ class ActionService(AbstractService):
             blob_permissions = [blob_permission(x) for x in output_readers]
             blob_storage_service.stash.add_permissions(blob_permissions)
 
-        return set_result
+        return cast(ActionObject, set_result.ok())
 
     def execute_plan(
         self,

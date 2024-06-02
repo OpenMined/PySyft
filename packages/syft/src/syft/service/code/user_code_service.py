@@ -1,5 +1,5 @@
 # stdlib
-from typing import Any
+from typing import Any, Literal
 from typing import TypeVar
 from typing import cast
 
@@ -10,6 +10,7 @@ from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
 from ...types.cache_object import CachedSyftObject
+from ...types.errors import SyftError as NSyftError
 from ...types.result import Err
 from ...types.result import Ok
 from ...types.result import Result
@@ -22,7 +23,6 @@ from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..action.action_service import ActionService
 from ..context import AuthedServiceContext
-from ..errors import SyftError as NSyftError
 from ..network.routes import route_to_connection
 from ..output.output_service import ExecutionOutput
 from ..policy.policy import OutputPolicy
@@ -331,25 +331,33 @@ class UserCodeService(AbstractService):
         else:
             return SyftError(message="Endpoint only supported for enclave code")
 
+    @catch(NSyftError)
     def is_execution_allowed(
         self,
         code: UserCode,
         context: AuthedServiceContext,
         output_policy: OutputPolicy | None,
-    ) -> bool | SyftSuccess | SyftError | SyftNotReady:
-        if not code.get_status(context).approved:
-            return code.status.get_status_message()
+    ) -> Literal[True]:
+        if not code.is_output_policy_approved(context):
+            status = code.status
+            if isinstance(status, SyftError):
+                raise NSyftError(status.message, code='usercode-status-error')
+            raise NSyftError(status._get_status_message_str(), code='usercode-not-approved')
+
         # Check if the user has permission to execute the code.
-        elif not (has_code_permission := self.has_code_permission(code, context)):
-            return has_code_permission
-        elif not code.is_output_policy_approved(context):
-            return SyftError("Output policy not approved", code)
+        elif not self.has_code_permission(code, context):
+            raise NSyftError(f"User {context.credentials} does not have permission to execute code {code}", code='not-permitted', public_message="You do not have the permissions to execute this code. Please contact the admin.", private=True, min_visible_role=ServiceRole.ADMIN)
+
+        elif not code.is_output_policy_approved(context).unwrap():
+            raise NSyftError(f"Output policy not approved for code {code}", code='usercode-not-approved',
+            public_message="Output policy has not been approved.", min_visible_role=ServiceRole.ADMIN, private=True)
 
         policy_is_valid = output_policy is not None and output_policy._is_valid(context)
-        if not policy_is_valid:
-            return policy_is_valid
-        else:
+
+        if policy_is_valid:
             return True
+
+        raise NSyftError('Invalid output policy', code='usercode-bad-output-policy',)
 
     def is_execution_on_owned_args_allowed(
         self, context: AuthedServiceContext
@@ -361,12 +369,13 @@ class UserCodeService(AbstractService):
         current_user = user_service.get_current_user(context=context)
         return current_user.mock_execution_permission
 
+    catch(NSyftError)
     def keep_owned_kwargs(
         self, kwargs: dict[str, Any], context: AuthedServiceContext
     ) -> dict[str, Any]:
         """Return only the kwargs that are owned by the user"""
 
-        action_service = context.node.get_service("actionservice")
+        action_service = cast(ActionService, context.node.get_service("actionservice"))
 
         mock_kwargs = {}
         for k, v in kwargs.items():
@@ -405,14 +414,15 @@ class UserCodeService(AbstractService):
         """This is a temporary fix that is needed until every function is always just ran as job"""
         # relative
         from ...node.node import get_default_worker_pool_name
+        code_pool_name = user_code.worker_pool_name
+        default_pool_name = get_default_worker_pool_name()
 
         has_custom_worker_pool = (
-            user_code.worker_pool_name is not None
-        ) and user_code.worker_pool_name != get_default_worker_pool_name()
-        if has_custom_worker_pool and context.is_blocking_api_call:
-            return False
-        else:
-            return True
+            code_pool_name is not None
+            and code_pool_name != default_pool_name
+        )
+
+        return not (has_custom_worker_pool and context.is_blocking_api_call)
 
     @catch(NSyftError)
     def _call(
@@ -423,182 +433,165 @@ class UserCodeService(AbstractService):
         **kwargs: Any,
     ) -> ActionObject | CachedSyftObject:
         """Call a User Code Function"""
-        try:
-            code = self.stash.get_by_uid(context.credentials, uid=uid).unwrap()
+        code = self.stash.get_by_uid(context.credentials, uid=uid).unwrap()
 
-            if not self.valid_worker_pool_for_context(context, code):
-                raise NSyftError(
-                    (
-                        "You tried to run a syft function attached to a worker pool in blocking mode,"
-                        " which is currently not supported. Run your function with `blocking=False` to run"
-                        " as a job on your worker pool."
-                    ),
-                    code="worker-invalid-pool",
-                )
-
-            # Set Permissions
-            if self.is_execution_on_owned_args(kwargs, context):
-                if self.is_execution_on_owned_args_allowed(context):
-                    # handles the case: if we have 1 or more owned args and execution permission
-                    # handles the case: if we have 0 owned args and execution permission
-                    context.has_execute_permissions = True
-                elif len(kwargs) == 0:
-                    # handles the case: if we have 0 owned args and execution permission
-                    pass
-                else:
-                    raise NSyftError(
-                        (
-                            f"Attempt by {context.syft_client_verify_key} to call"
-                            f" UserCode<{code.id}> with owned args without permission."
-                        ),
-                        code="not-permitted",
-                        min_visible_role=ServiceRole.ADMIN,
-                        public_message="You do not have the permissions for mock execution. Please contact the admin.",
-                    )
-
-            override_execution_permission = (
-                context.has_execute_permissions or context.is_admin
+        if not self.valid_worker_pool_for_context(context, code):
+            raise NSyftError(
+                (
+                    "You tried to run a syft function attached to a worker pool in blocking mode,"
+                    " which is currently not supported. Run your function with `blocking=False` to run"
+                    " as a job on your worker pool."
+                ),
+                code="worker-invalid-pool",
             )
 
-            # Override permissions bypasses the cache, since we do not check in/out policies
-            skip_fill_cache = override_execution_permission
-            # We do not read from output policy cache if there are mock arguments
-            skip_read_cache = len(self.keep_owned_kwargs(kwargs, context)) > 0
-
-            # Extract ids from kwargs
-            kwarg2id = map_kwargs_to_id(kwargs)
-
-            input_policy = code.get_input_policy(context)
-
-            # Check output policy
-            output_policy = code.get_output_policy(context).unwrap()
-            if not override_execution_permission:
-                output_history = code._get_output_history(context=context).unwrap()
-                can_execute = self.is_execution_allowed(
-                    code=code,
-                    context=context,
-                    output_policy=output_policy,
+        # Set Permissions
+        if self.is_execution_on_owned_args(kwargs, context):
+            if self.is_execution_on_owned_args_allowed(context):
+                # handles the case: if we have 1 or more owned args and execution permission
+                # handles the case: if we have 0 owned args and execution permission
+                context.has_execute_permissions = True
+            elif len(kwargs) == 0:
+                # handles the case: if we have 0 owned args and execution permission
+                pass
+            else:
+                raise NSyftError(
+                    (
+                        f"Attempt by {context.syft_client_verify_key} to call"
+                        f" UserCode<{code.id}> with owned args without permission."
+                    ),
+                    code="not-permitted",
+                    min_visible_role=ServiceRole.ADMIN,
+                    public_message="You do not have the permissions for mock execution. Please contact the admin.",
                 )
-                if not can_execute:
-                    code.check_if_approved(context)
 
-                    if not (is_valid := output_policy._is_valid(context)):  # type: ignore
-                        if len(output_history) > 0 and not skip_read_cache:
-                            last_executed_output = output_history[-1]
-                            # Check if the inputs of the last executed output match
-                            # against the current input
-                            if (
-                                input_policy is not None
-                                and not last_executed_output.check_input_ids(
-                                    kwargs=kwarg2id
-                                )
-                            ):
-                                # TODO: more annoying
-                                inp_policy_validation = input_policy._is_valid(
-                                    context,
-                                    usr_input_kwargs=kwarg2id,
-                                    code_item_id=code.id,
-                                )
-                                if inp_policy_validation.is_err():
-                                    return inp_policy_validation
+        override_execution_permission = (
+            context.has_execute_permissions or context.role == ServiceRole.ADMIN
+        )
 
-                            result = resolve_outputs(
-                                context=context,
-                                output_ids=last_executed_output.output_ids,
-                            ).unwrap()
+        # Override permissions bypasses the cache, since we do not check in/out policies
+        skip_fill_cache = override_execution_permission
+        # We do not read from output policy cache if there are mock arguments
+        skip_read_cache = len(self.keep_owned_kwargs(kwargs, context)) > 0
 
-                            return CachedSyftObject(
-                                result=delist_if_single(result),
-                                error_msg=is_valid.message,
+        # Extract ids from kwargs
+        kwarg2id = map_kwargs_to_id(kwargs)
+
+        # gets policies
+        input_policy = code.get_input_policy(context).unwrap()
+        output_policy = code.get_output_policy(context).unwrap()
+
+        if not override_execution_permission:
+            output_history = code._get_output_history(context=context).unwrap()
+            can_execute = self.is_execution_allowed(
+                code=code,
+                context=context,
+                output_policy=output_policy,
+            )
+
+
+            # If I cannot execute the code
+            if not can_execute:
+                code.check_if_approved(context)
+
+                # Check if my output policy is invalid
+                if not (is_valid := output_policy._is_valid(context)):  # type: ignore
+                    # return cached version if exists and there is output_history
+                    if len(output_history) > 0 and not skip_read_cache:
+                        last_executed_output = output_history[-1]
+                        # Check if the inputs of the last executed output match
+                        # against the current input
+                        if (
+                            input_policy is not None
+                            and not last_executed_output.check_input_ids(
+                                kwargs=kwarg2id
                             )
+                        ):
+                            # TODO: more annoying
+                            inp_policy_validation = input_policy._is_valid(
+                                context,
+                                usr_input_kwargs=kwarg2id,
+                                code_item_id=code.id,
+                            )
+                            if inp_policy_validation.is_err():
+                                return inp_policy_validation
+
+                        result = resolve_outputs(
+                            context=context,
+                            output_ids=last_executed_output.output_ids,
+                        ).unwrap()
+
+                        return CachedSyftObject(
+                            result=delist_if_single(result),
+                            error_msg=is_valid.message,
+                        )
                     else:
                         raise NSyftError(
                             "Input policy is invalid", code="usercode-bad-input-policy"
                         )
-                raise NSyftError(can_execute.to_result())
+                raise NSyftError()
 
-            # Execute the code item
-            action_service = cast(
-                ActionService, context.node.get_service("actionservice")
+        # Execute the code item
+        action_service = cast(
+            ActionService, context.node.get_service("actionservice")
+        )
+
+        result_action_object = (
+            action_service._user_code_execute(
+                context, code, kwarg2id, result_id=result_id
             )
+        ).unwrap()
+        
+        result = action_service.set_result_to_store(
+            result_action_object, context, code.get_output_policy(context)
+        ).unwrap()
 
-            result_action_object = (
-                action_service._user_code_execute(
-                    context, code, kwarg2id, result_id=result_id
-                )
+        # Apply Output Policy to the results and update the OutputPolicyState
+
+        # this currently only works for nested syft_functions
+        # and admins executing on high side (TODO, decide if we want to increment counter)
+        if not skip_fill_cache and output_policy is not None:
+            code.store_as_history(
+                context=context,
+                outputs=result,
+                job_id=context.job_id,
+                input_ids=kwarg2id,
             ).unwrap()
-            # Stopped here
-            # if result_action_object.is_err():
-            #     return result_action_object
-            # else:
-            #     result_action_object = result_action_object.ok()
+                    # output_policy.update_policy(context, result)
+        # code.output_policy = output_policy
+        # res = self.update_code_state(context, code)
+        # print(res)
 
-            output_result = action_service.set_result_to_store(
-                result_action_object, context, code.get_output_policy(context)
-            )
+        has_result_read_permission = context.extra_kwargs.get(
+            "has_result_read_permission", False
+        )
 
-            if output_result.is_err():
-                return output_result
-            result = output_result.ok()
+        # TODO: Just to fix the issue with the current implementation
+        if context.role == ServiceRole.ADMIN:
+            has_result_read_permission = True
 
-            # Apply Output Policy to the results and update the OutputPolicyState
-
-            # this currently only works for nested syft_functions
-            # and admins executing on high side (TODO, decide if we want to increment counter)
-            if not skip_fill_cache and output_policy is not None:
-                res = code.store_as_history(
-                    context=context,
-                    outputs=result,
-                    job_id=context.job_id,
-                    input_ids=kwarg2id,
-                )
-                if isinstance(res, SyftError):
-                    return Err(res.message)
-
-            # output_policy.update_policy(context, result)
-            # code.output_policy = output_policy
-            # res = self.update_code_state(context, code)
-            # print(res)
-
-            has_result_read_permission = context.extra_kwargs.get(
-                "has_result_read_permission", False
-            )
-
-            # TODO: Just to fix the issue with the current implementation
-            if context.role == ServiceRole.ADMIN:
-                has_result_read_permission = True
-
-            if isinstance(result, TwinObject):
-                if has_result_read_permission:
-                    return Ok(result.private)
-                else:
-                    return Ok(result.mock)
-            elif result.is_mock:
-                return Ok(result)
-            elif result.syft_action_data_type is Err:
-                # result contains the error but the request was handled correctly
-                return Ok(result)
-            elif has_result_read_permission:
-                return Ok(result)
+        if isinstance(result, TwinObject):
+            if has_result_read_permission:
+                return result.private
             else:
-                return Ok(result.as_empty())
-        except Exception as e:
-            # stdlib
-            import traceback
-
-            return Err(value=f"Failed to run. {e}, {traceback.format_exc()}")
-
+                return result.mock
+        elif result.is_mock:
+            return result
+        elif result.syft_action_data_type is Err:
+            # result contains the error but the request was handled correctly
+            return result
+        elif has_result_read_permission:
+            return result
+        else:
+            return result.as_empty()
+        
     def has_code_permission(
         self, code_item: UserCode, context: AuthedServiceContext
-    ) -> SyftSuccess | SyftError:
-        if not (
+    ) -> bool:
+        return (
             context.credentials == context.node.verify_key
             or context.credentials == code_item.user_verify_key
-        ):
-            return SyftError(
-                message=f"Code Execution Permission: {context.credentials} denied"
-            )
-        return SyftSuccess(message="you have permission")
+        )
 
     @service_method(
         path="code.store_as_history", name="store_as_history", roles=GUEST_ROLE_LEVEL

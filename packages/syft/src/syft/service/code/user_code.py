@@ -192,6 +192,22 @@ class UserCodeStatusCollection(SyncableSyftObject):
                 message=f"{type(self)} Your code is waiting for approval. {string}"
             )
 
+    def _get_status_message_str(self) -> str:
+        if self.approved:
+            return f"{type(self)} approved"
+        denial_string = ""
+        string = ""
+        for node_identity, (status, reason) in self.status_dict.items():
+            denial_string += f"Code status on node '{node_identity.node_name}' is '{status}'. Reason: {reason}"
+            if not reason.endswith("."):
+                denial_string += "."
+            string += f"Code status on node '{node_identity.node_name}' is '{status}'."
+        if self.denied:
+            return f"{type(self)} Your code cannot be run: {denial_string}"
+        else:
+            return f"{type(self)} Your code is waiting for approval. {string}"
+
+
     @property
     def approved(self) -> bool:
         return all(x == UserCodeStatus.APPROVED for x, _ in self.status_dict.values())
@@ -496,6 +512,7 @@ class UserCode(SyncableSyftObject):
         status = self._get_status(context).unwrap()
         return status.approved
 
+    @catch(NSyftError)
     def check_if_approved(self, context: AuthedServiceContext) -> None:
         status = self._get_status(context).unwrap()
         if not status.approved:
@@ -515,12 +532,19 @@ class UserCode(SyncableSyftObject):
 
     @catch(NSyftError)
     def get_output_policy(self, context: AuthedServiceContext) -> OutputPolicy:
-        self.check_if_approved(context).unwrap()
+        self.check_if_approved(context)
         return self._get_output_policy().unwrap()
 
     @catch(NSyftError)
     def _get_output_policy(self) -> OutputPolicy:
-        if not self.status.approved:
+        status = self.status
+        if isinstance(status, SyftError):
+            raise NSyftError(
+                message=f"Failed to get status. Error: {status}",
+                code="usercode-status-error",
+            )
+        
+        if not status.approved:
             raise NSyftError(
                 message="Please wait for the code to be approved.",
                 code="usercode-not-approved",
@@ -528,6 +552,7 @@ class UserCode(SyncableSyftObject):
 
         if len(self.output_policy_state) == 0:
             output_policy = None
+
             if isinstance(self.output_policy_type, type) and issubclass(
                 self.output_policy_type, OutputPolicy
             ):
@@ -574,7 +599,7 @@ class UserCode(SyncableSyftObject):
     def output_policy(self) -> OutputPolicy | None:  # type: ignore
         if not self.status.approved:
             return None
-        return self._get_output_policy()
+        return self._get_output_policy().unwrap()
 
     @output_policy.setter  # type: ignore
     def output_policy(self, value: Any) -> None:  # type: ignore
@@ -598,39 +623,35 @@ class UserCode(SyncableSyftObject):
     def _get_output_history(
         self, context: AuthedServiceContext
     ) -> list[ExecutionOutput]:
-        if self.is_output_policy_approved(context).unwrap():
-            output_service = cast(
-                OutputService, context.node.get_service("outputservice")
-            )
-            return output_service.get_by_user_code_id(context, self.id).unwrap()
-        raise NSyftError(
-            message="Execution denied, Please wait for the code to be approved",
-            code="usercode-not-approved",
+        self.check_if_approved(context)
+
+        output_service = cast(
+            OutputService, context.node.get_service("outputservice")
         )
+        return output_service.get_by_user_code_id(context, self.id).unwrap()
 
     def get_output_history(
         self, context: AuthedServiceContext
     ) -> list[ExecutionOutput] | SyftError:
         if not self.get_status(context).approved:
-            return NSyftError(
+            return SyftError(
                 message="Execution denied, Please wait for the code to be approved"
             )
 
         output_service = cast(OutputService, context.node.get_service("outputservice"))
         return output_service.get_by_user_code_id(context, self.id)
 
+    @catch(NSyftError)
     def store_as_history(
         self,
         context: AuthedServiceContext,
         outputs: Any,
         job_id: UID | None = None,
         input_ids: dict[str, UID] | None = None,
-    ) -> ExecutionOutput | SyftError:
+    ) -> ExecutionOutput:
         output_policy = self.get_output_policy(context)
         if output_policy is None:
-            return SyftError(
-                message="You must wait for the output policy to be approved"
-            )
+            raise NSyftError("You must wait for the output policy to be approved", code='usercode-not-approved')
 
         output_ids = filter_only_uids(outputs)
 
@@ -646,7 +667,7 @@ class UserCode(SyncableSyftObject):
             input_ids=input_ids,
         )
         if isinstance(execution_result, SyftError):
-            return execution_result
+            raise NSyftError(execution_result.message, code="output-service-error")
 
         return execution_result
 

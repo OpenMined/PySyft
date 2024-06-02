@@ -12,9 +12,12 @@ SyftErrorCodes = Literal[
     "serde-deserialization-error",
     "stash-error",
     "worker-invalid-pool",
+    "blob-storage-error",
+    "output-service-error",
     "usercode-not-approved",
     "usercode-bad-input-policy",
     "usercode-bad-output-policy",
+    "usercode-status-error",
 ]
 
 
@@ -29,7 +32,7 @@ class SyftError(Exception):
         private: bool | None = True,
         min_visible_role: ServiceRole = ServiceRole.ADMIN,
         *args,
-        **kwargs
+        **kwargs,
     ) -> None:
         self.message = message
         self.code = code
