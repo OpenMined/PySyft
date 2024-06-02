@@ -1,4 +1,5 @@
 # stdlib
+from typing import Any
 from typing import Literal
 
 # relative
@@ -28,8 +29,8 @@ class SyftError(Exception):
         public_message: str | None = None,
         private: bool | None = True,
         min_visible_role: ServiceRole = ServiceRole.ADMIN,
-        *args,
-        **kwargs
+        *args: Any,
+        **kwargs: Any,
     ) -> None:
         self.message = message
         self.code = code
@@ -39,7 +40,7 @@ class SyftError(Exception):
         super().__init__(message, *args, **kwargs)
 
     @property
-    def public(self):
+    def public(self) -> str:
         if self.private:
             return (
                 self.public_message

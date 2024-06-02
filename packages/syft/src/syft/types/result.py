@@ -4,6 +4,7 @@ import functools
 from typing import Generic
 from typing import Literal
 from typing import NoReturn
+from typing import ParamSpec
 from typing import TypeAlias
 from typing import TypeVar
 
@@ -76,18 +77,20 @@ class Err(Generic[E]):
 
 Result: TypeAlias = Ok[T] | Err[E]
 
+P = ParamSpec("P")
+
 
 def catch(
     *exceptions: type[BE],
-) -> Callable[[Callable[..., T]], Callable[..., Result[T, BE]]]:
+) -> Callable[[Callable[P, T]], Callable[P, Result[T, BE]]]:
     if not exceptions or not all(
         issubclass(exception, BaseException) for exception in exceptions
     ):
         raise TypeError("The catch() decorator only accepts exceptions")
 
-    def decorator(func: Callable[..., T]) -> Callable[..., Result[T, BE]]:
+    def decorator(func: Callable[P, T]) -> Callable[P, Result[T, BE]]:
         @functools.wraps(func)
-        def wrapper(*args, **kwargs) -> Result[T, BE]:
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> Result[T, BE]:
             try:
                 return Ok(func(*args, **kwargs))
             except exceptions as e:
