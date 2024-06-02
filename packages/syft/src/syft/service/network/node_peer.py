@@ -25,7 +25,7 @@ from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.uid import UID
 from ..context import NodeServiceContext
-from ..metadata.node_metadata import NodeMetadataV3
+from ..metadata.node_metadata import NodeMetadata
 from .routes import HTTPNodeRoute
 from .routes import NodeRoute
 from .routes import NodeRouteType
@@ -236,7 +236,7 @@ class NodePeer(SyftObject):
         if not client.metadata:
             raise ValueError("Client has to have metadata first")
 
-        peer = client.metadata.to(NodeMetadataV3).to(NodePeer)
+        peer = client.metadata.to(NodeMetadata).to(NodePeer)
         route = connection_to_route(client.connection)
         peer.node_routes.append(route)
         return peer

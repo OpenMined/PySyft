@@ -68,6 +68,8 @@ def planify(func: Callable) -> ActionObject:
     client = worker.root_client
     if client is None:
         raise ValueError("Not able to get client for plan building")
+    if client.settings is not None:
+        client.settings.enable_eager_execution(enable=True)
     TraceResultRegistry.set_trace_result_for_current_thread(client=client)
     try:
         # TraceResult._client = client

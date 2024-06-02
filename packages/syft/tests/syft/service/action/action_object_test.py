@@ -160,6 +160,23 @@ def test_actionobject_hooks_init(orig_obj: Any):
 
     assert HOOK_ALWAYS in obj.syft_pre_hooks__
     assert HOOK_ALWAYS in obj.syft_post_hooks__
+    assert HOOK_ON_POINTERS in obj.syft_pre_hooks__
+    assert HOOK_ON_POINTERS in obj.syft_post_hooks__
+
+    assert make_action_side_effect in obj.syft_pre_hooks__[HOOK_ALWAYS]
+
+
+def test_actionobject_add_pre_hooks():
+    # Eager execution is disabled by default
+    obj = ActionObject.from_obj(1)
+
+    assert make_action_side_effect in obj.syft_pre_hooks__[HOOK_ALWAYS]
+    assert send_action_side_effect not in obj.syft_pre_hooks__[HOOK_ON_POINTERS]
+    assert propagate_node_uid not in obj.syft_post_hooks__[HOOK_ALWAYS]
+
+    # eager exec tests:
+    obj._syft_add_pre_hooks__(eager_execution=True)
+    obj._syft_add_post_hooks__(eager_execution=True)
 
     assert make_action_side_effect in obj.syft_pre_hooks__[HOOK_ALWAYS]
     assert send_action_side_effect in obj.syft_pre_hooks__[HOOK_ON_POINTERS]
@@ -566,6 +583,8 @@ def test_actionobject_syft_get_attr_context():
 )
 def test_actionobject_syft_execute_hooks(worker, testcase):
     client = worker.root_client
+    assert client.settings.enable_eager_execution(enable=True)
+
     orig_obj, op, args, kwargs, expected = testcase
 
     obj = helper_make_action_obj(orig_obj)
@@ -918,7 +937,7 @@ def test_actionobject_syft_getattr_int(orig_obj: int, worker, scenario):
         assert (3 >> obj) == (3 >> orig_obj)
 
 
-def test_actionobject_syft_getattr_int_history(worker):
+def test_actionobject_syft_getattr_int_history():
     orig_obj = 5
     obj1 = ActionObject.from_obj(orig_obj)
     obj2 = ActionObject.from_obj(orig_obj)

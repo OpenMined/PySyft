@@ -14,6 +14,7 @@ from ..utils.custom_markers import currently_fail_on_python_3_12
 
 def test_actionobject_method(worker):
     root_domain_client = worker.root_client
+    assert root_domain_client.settings.enable_eager_execution(enable=True)
     action_store = worker.get_service("actionservice").store
     obj = ActionObject.from_obj("abc")
     pointer = root_domain_client.api.services.action.set(obj)
