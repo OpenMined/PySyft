@@ -28,13 +28,15 @@ class SyftError(Exception):
         public_message: str | None = None,
         private: bool | None = True,
         min_visible_role: ServiceRole = ServiceRole.ADMIN,
+        *args,
+        **kwargs
     ) -> None:
         self.message = message
         self.code = code
         self.private = private
         self.public_message = public_message
         self.min_visible_role = min_visible_role
-        super().__init__(message)
+        super().__init__(message, *args, **kwargs)
 
     @property
     def public(self):
