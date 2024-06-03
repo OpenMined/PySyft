@@ -7,6 +7,7 @@ from ...client.client import login_as_guest
 from ...serde.serializable import serializable
 from ...service.metadata.node_metadata import NodeMetadataJSON
 from ...service.network.routes import NodeRouteType
+from ...service.response import SyftException
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
@@ -43,6 +44,8 @@ class EnclaveInstance(SyftObject):
     def create(cls, route: NodeRouteType) -> "EnclaveInstance":
         # TODO: find the standard method to convert route to client object
         metadata = login_as_guest(url=route.host_or_ip, port=route.port).metadata
+        if not metadata:
+            raise SyftException("Failed to fetch metadata from the node")
         return cls(
             node_uid=UID(metadata.id),
             name=metadata.name,

@@ -113,11 +113,17 @@ class DistributedProject(SyftObject):
 
     @staticmethod
     def _get_clients_from_code(code: SubmitUserCode) -> list[SyftClient]:
-        node_ids = [i.node_id for i in code.input_policy_init_kwargs.keys()]
-        return [
-            SyftClientSessionCache.get_client_for_node_uid(node_id)
-            for node_id in node_ids
+        if not code.input_policy_init_kwargs:
+            return []
+
+        clients = [
+            client
+            for policy in code.input_policy_init_kwargs.keys()
+            if (
+                client := SyftClientSessionCache.get_client_for_node_uid(policy.node_id)
+            )
         ]
+        return clients
 
     @field_validator("clients", mode="before")
     @classmethod
@@ -165,5 +171,5 @@ class DistributedProject(SyftObject):
             )
             new_project.create_code_request(self.code, client)
             project = new_project.send()
-            projects_map[client] = project
+            projects_map[client] = project[0] if isinstance(project, list) else project
         return projects_map
