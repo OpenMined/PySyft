@@ -78,8 +78,6 @@ class Err(Generic[E]):
 
 Result: TypeAlias = Ok[T] | Err[E]
 
-P = ParamSpec("P")
-
 
 def catch(
     *exceptions: type[BE],
