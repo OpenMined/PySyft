@@ -160,16 +160,18 @@ node:
   type: domain
   side: high
   defaultBucketName: null
+  inMemoryWorkers: false
   queuePort: 5556
   logLevel: info
   debuggerEnabled: false
   associationRequestAutoApproval: false
   useInternalRegistry: true
 
-  # Worker pool settings
-  inMemoryWorkers: false
-  defaultWorkerPoolCount: 1
-  defaultWorkerPoolPodAnnotations: null
+  # Deault Worker pool settings
+  defaultWorkerPool:
+    count: 1
+    podLabels: null
+    podAnnotations: null
 
   # SMTP Settings
   smtp:

@@ -72,9 +72,11 @@ spec:
             - name: DEFAULT_WORKER_POOL_IMAGE
               value: "{{ .Values.global.registry }}/openmined/grid-backend:{{ .Values.global.version }}"
             - name: DEFAULT_WORKER_POOL_COUNT
-              value: {{ .Values.node.defaultWorkerPoolCount | quote }}
+              value: {{ .Values.node.defaultWorkerPool.count | quote }}
+            - name: DEFAULT_WORKER_POOL_POD_LABELS
+              value: {{ .Values.node.defaultWorkePool.podLabels | toJson | quote }}
             - name: DEFAULT_WORKER_POOL_POD_ANNOTATIONS
-              value: {{ .Values.node.defaultWorkerPoolPodAnnotations | toJson | quote }}
+              value: {{ .Values.node.defaultWorkerPool.podAnnotations | toJson | quote }}
             - name: USE_INTERNAL_REGISTRY
               value: {{ .Values.node.useInternalRegistry | quote }}
             {{- if .Values.node.defaultBucketName }}

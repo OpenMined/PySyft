@@ -305,6 +305,7 @@ class CreateCustomWorkerPoolChange(Change):
     image_uid: UID | None = None
     config: WorkerConfig | None = None
     pod_annotations: dict[str, str] | None = None
+    pod_labels: dict[str, str] | None = None
 
     __repr_attrs__ = ["pool_name", "num_workers", "image_uid"]
 
@@ -339,6 +340,7 @@ class CreateCustomWorkerPoolChange(Change):
                 registry_username=context.extra_kwargs.get("registry_username", None),
                 registry_password=context.extra_kwargs.get("registry_password", None),
                 pod_annotations=self.pod_annotations,
+                pod_labels=self.pod_labels,
             )
             if isinstance(result, SyftError):
                 return Err(result)
