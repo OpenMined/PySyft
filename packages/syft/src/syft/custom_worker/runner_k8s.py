@@ -194,6 +194,8 @@ class KubernetesRunner:
         }
         if isinstance(pod_labels, dict):
             pod_labels = default_pod_labels.update(pod_labels)
+        else:
+            pod_labels = default_pod_labels
 
         stateful_set = StatefulSet(
             {
