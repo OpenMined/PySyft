@@ -16,7 +16,7 @@ from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
 from ..code.user_code import SubmitUserCode
-from ..metadata.node_metadata import NodeMetadataV3
+from ..metadata.node_metadata import NodeMetadata
 from ..request.request import Request
 from ..request.request import RequestStatus
 from ..response import SyftError
@@ -140,7 +140,7 @@ class DistributedProject(SyftObject):
     @staticmethod
     def _to_node_identity(val: SyftClient) -> NodeIdentity:
         if isinstance(val, SyftClient) and val.metadata is not None:
-            metadata = val.metadata.to(NodeMetadataV3)
+            metadata = val.metadata.to(NodeMetadata)
             return metadata.to(NodeIdentity)
         else:
             raise SyftException(f"members must be SyftClient. Received: {type(val)}")
