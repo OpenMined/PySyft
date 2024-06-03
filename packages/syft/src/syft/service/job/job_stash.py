@@ -663,13 +663,28 @@ class Job(SyncableSyftObject):
         counter = 0
         while True:
             self.fetch()
+            
             print(f"{self.resolved = }. {self.status = }. {self.result = }")
-            if isinstance(self.result, Err):
-                return SyftError(
-                    message=f"Waiting for job with id '{self.id}' failed with error: {self.result.err()}"
-                )
-            if isinstance(self.result, SyftError):
-                return self.result
+            
+            if self.resolved:
+                if isinstance(self.result, Err):
+                    return SyftError(
+                        message=f"Waiting for job with id '{self.id}' failed with error: {self.result.err()}"
+                    )
+                if isinstance(self.result, SyftError):
+                    return SyftError(
+                        message=f"Waiting for job with id '{self.id}' failed with error: {self.result.message}"
+                    )
+                if isinstance(self.result, ActionObject) and isinstance(self.result.syft_action_data, Err):
+                    return SyftError(
+                        message=f"Waiting for job with id '{self.id}' failed with error: {self.result.syft_action_data.err()}"
+                    )
+                if isinstance(self.result, ActionObject) and isinstance(self.result.syft_action_data, SyftError):
+                    return SyftError(
+                        message=f"Waiting for job with id '{self.id}' failed with error: {self.result.syft_action_data.message}"
+                    )
+                break  # type: ignore[unreachable]
+
             if print_warning and self.result is not None:
                 result_obj = api.services.action.get(
                     self.result.id, resolve_nested=False
@@ -681,9 +696,9 @@ class Job(SyncableSyftObject):
                         "Use job.wait().get() instead to wait for the linked result."
                     )
                     print_warning = False
+            
             sleep(1)
-            if self.resolved:
-                break  # type: ignore[unreachable]
+
             # TODO: fix the mypy issue
             if timeout is not None:
                 counter += 1

@@ -1403,11 +1403,15 @@ class ActionObject(SyncableSyftObject):
 
         counter = 0
         while api:
-            obj_resolved = api.services.action.is_resolved(obj_id)
-            print(f"inside ActionObject.wait. {obj_resolved = }. {type(obj_resolved)}")
-            if "You do not have the permissions for mock execution" in obj_resolved:
+            obj_resolved: bool | str = api.services.action.is_resolved(obj_id)
+            print(
+                f"inside ActionObject.wait. {obj_resolved = }. {type(obj_resolved) = }"
+            )
+            if isinstance(obj_resolved, str):
                 return SyftError(message=obj_resolved)
-            if not obj_resolved:
+            if obj_resolved == True:
+                break
+            if obj_resolved == False:
                 time.sleep(1)
                 if timeout is not None:
                     counter += 1
