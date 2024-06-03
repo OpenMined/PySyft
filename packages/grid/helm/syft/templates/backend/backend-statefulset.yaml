@@ -74,7 +74,7 @@ spec:
             - name: DEFAULT_WORKER_POOL_COUNT
               value: {{ .Values.node.defaultWorkerPool.count | quote }}
             - name: DEFAULT_WORKER_POOL_POD_LABELS
-              value: {{ .Values.node.defaultWorkePool.podLabels | toJson | quote }}
+              value: {{ .Values.node.defaultWorkerPool.podLabels | toJson | quote }}
             - name: DEFAULT_WORKER_POOL_POD_ANNOTATIONS
               value: {{ .Values.node.defaultWorkerPool.podAnnotations | toJson | quote }}
             - name: USE_INTERNAL_REGISTRY

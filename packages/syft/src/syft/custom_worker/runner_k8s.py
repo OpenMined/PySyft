@@ -192,8 +192,9 @@ class KubernetesRunner:
             "app.kubernetes.io/name": KUBERNETES_NAMESPACE,
             "app.kubernetes.io/component": pool_name,
         }
+
         if isinstance(pod_labels, dict):
-            pod_labels = default_pod_labels.update(pod_labels)
+            pod_labels = {**default_pod_labels, **pod_labels}
         else:
             pod_labels = default_pod_labels
 
