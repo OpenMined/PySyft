@@ -192,26 +192,21 @@ class NetworkService(AbstractService):
             existing_peer_result.is_ok()
             and (existing_peer := existing_peer_result.ok()) is not None
         ):
-            msg = [
-                (
-                    f"{existing_peer.node_type} peer '{existing_peer.name}' already exist for "
-                    f"{self_node_peer.node_type} '{self_node_peer.name}'."
-                )
-            ]
+            logger.info(
+                f"{remote_node_peer.node_type} '{remote_node_peer.name}' already exist as a peer for "
+                f"{self_node_peer.node_type} '{self_node_peer.name}'."
+            )
+
             if existing_peer != remote_node_peer:
                 result = self.stash.create_or_update_peer(
                     context.node.verify_key,
                     remote_node_peer,
                 )
-                msg.append(
-                    f"{existing_peer.node_type} peer '{existing_peer.name}' information change detected."
-                )
                 if result.is_err():
-                    msg.append(
-                        f"Attempt to update peer '{existing_peer.name}' information failed."
+                    return SyftError(
+                        message=f"Failed to update peer: {remote_node_peer.name} information."
                     )
-                    return SyftError(message="\n".join(msg))
-                msg.append(
+                logger.info(
                     f"{existing_peer.node_type} peer '{existing_peer.name}' information successfully updated."
                 )
 
@@ -220,7 +215,7 @@ class NetworkService(AbstractService):
                 name=self_node_peer.name
             )
             if isinstance(remote_self_node_peer, NodePeer):
-                msg.append(
+                logger.info(
                     f"{self_node_peer.node_type} '{self_node_peer.name}' already exist "
                     f"as a peer for {remote_node_peer.node_type} '{remote_node_peer.name}'."
                 )
@@ -228,20 +223,21 @@ class NetworkService(AbstractService):
                     result = remote_client.api.services.network.update_peer(
                         peer=self_node_peer,
                     )
-                    msg.append(
+                    logger.info(
                         f"{self_node_peer.node_type} peer '{self_node_peer.name}' information change detected."
                     )
                     if isinstance(result, SyftError):
-                        msg.append(
+                        logger.error(
                             f"Attempt to remotely update {self_node_peer.node_type} peer "
                             f"'{self_node_peer.name}' information remotely failed. Error: {result.message}"
                         )
-                        return SyftError(message="\n".join(msg))
-                    msg.append(
+                        return SyftError(message="Failed to update peer information.")
+
+                    logger.info(
                         f"{self_node_peer.node_type} peer '{self_node_peer.name}' "
                         f"information successfully updated."
                     )
-                msg.append(
+                msg = (
                     f"Routes between {remote_node_peer.node_type} '{remote_node_peer.name}' and "
                     f"{self_node_peer.node_type} '{self_node_peer.name}' already exchanged."
                 )
@@ -474,10 +470,20 @@ class NetworkService(AbstractService):
         peer: NodePeer,
     ) -> SyftSuccess | SyftError:
         # try setting all fields of NodePeerUpdate according to NodePeer
+
+        get_peer_result = self.stash.get_by_uid(context.credentials, peer.id)
+        if get_peer_result.is_err():
+            return SyftError(
+                message=f"Failed to get peer '{peer.name}'. Error: {get_peer_result.err()}"
+            )
+        existing_peer = get_peer_result.ok()
         peer_update = NodePeerUpdate()
-        for field_name, value in peer.to_dict().items():
+
+        # Only update the fields that have changed
+        for field_name, value in existing_peer.to_dict().items():
             try:
-                setattr(peer_update, field_name, value)
+                if getattr(peer, field_name) != value:
+                    setattr(peer_update, field_name, value)
             except Exception as e:
                 logger.debug(f"Failed to set {field_name} to {value}. Exception: {e}")
                 pass

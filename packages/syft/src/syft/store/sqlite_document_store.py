@@ -353,7 +353,6 @@ class SQLiteBackingStore(KeyValueBackingStore):
             self._close()
         except Exception as e:
             print(f"Could not close connection. Error: {e}")
-            raise e
 
 
 @serializable()
