@@ -1,5 +1,4 @@
 # third party
-from result import Err
 
 # syft absolute
 import syft
@@ -136,7 +135,7 @@ def test_sync_with_error(low_worker, high_worker):
 
     client_low_ds.refresh()
     res = client_low_ds.code.compute(blocking=True)
-    assert isinstance(res.get(), Err)
+    assert isinstance(res.get(), SyftError)
 
 
 def test_ignore_unignore_single(low_worker, high_worker):
