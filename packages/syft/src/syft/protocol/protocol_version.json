@@ -251,6 +251,18 @@
           "hash": "1084c85a59c0436592530b5fe9afc2394088c8d16faef2b19fdb9fb83ff0f0e2",
           "action": "add"
         }
+      },
+      "PythonNodeRoute": {
+        "2": {
+          "version": 2,
+          "hash": "3eca5767ae4a8fbe67744509e58c6d9fb78f38fa0a0f7fcf5960ab4250acc1f0",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "1bc413ec7c1d498ec945878e21e00affd9bd6d53b564b1e10e52feb09f177d04",
+          "action": "add"
+        }
       }
     }
   }

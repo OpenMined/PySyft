@@ -135,7 +135,7 @@ class RatholeService:
         rathole_proxy = rathole_proxy_config_map.data["rathole-dynamic.yml"]
 
         if not rathole_proxy:
-            rathole_proxy = {"http": {"routers": {}, "services": {}}}
+            rathole_proxy = {"http": {"routers": {}, "services": {}, "middlewares": {}}}
         else:
             rathole_proxy = yaml.safe_load(rathole_proxy)
 
@@ -145,15 +145,20 @@ class RatholeService:
             }
         }
 
+        rathole_proxy["http"]["middlewares"]["strip-rathole-prefix"] = {
+            "replacePathRegex:": {"regex": "^/rathole/(.*)", "replacement": "/$1"}
+        }
+
         proxy_rule = (
             f"Host(`{config.server_name}.syft.local`) || "
-            f"HostHeader(`{config.server_name}.syft.local`) && PathPrefix(`/`)"
+            f"HostHeader(`{config.server_name}.syft.local`) && PathPrefix(`/rathole`)"
         )
 
         rathole_proxy["http"]["routers"][config.server_name] = {
             "rule": proxy_rule,
             "service": config.server_name,
             "entryPoints": [entrypoint],
+            "middlewares": ["strip-rathole-prefix"],
         }
 
         KubeUtils.update_configmap(
