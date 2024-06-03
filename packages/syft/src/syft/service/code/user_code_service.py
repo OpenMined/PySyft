@@ -4,6 +4,11 @@ from typing import Literal
 from typing import TypeVar
 from typing import cast
 
+# third party
+from result import Err
+from result import Ok
+from result import Result
+
 # relative
 from ...abstract_node import NodeType
 from ...client.enclave_client import EnclaveClient
@@ -11,10 +16,7 @@ from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
 from ...types.cache_object import CachedSyftObject
-from ...types.errors import SyftError as NSyftError
-from ...types.result import Err
-from ...types.result import Ok
-from ...types.result import Result
+from ...types.errors import SyftException
 from ...types.result import catch
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
@@ -234,16 +236,16 @@ class UserCodeService(AbstractService):
     )
     def get_by_uid(
         self, context: AuthedServiceContext, uid: UID
-    ) -> UserCode | SyftError:
+    ) -> UserCode | SyftError | None:
         """Get a User Code Item"""
-        result = self.stash.get_by_uid(context.credentials, uid=uid)
-        if result.is_ok():
-            user_code = result.ok()
+        try:
+            user_code = self.stash.get_by_uid(context.credentials, uid=uid).unwrap()
             if user_code and user_code.input_policy_state and context.node is not None:
                 # TODO replace with LinkedObject Context
                 user_code.node_uid = context.node.id
-            return user_code
-        return SyftError(message=result.err())
+                return user_code
+        except Exception as exc:
+            return SyftError(message=str(exc))
 
     @service_method(
         path="code.get_all_for_user",
@@ -331,7 +333,7 @@ class UserCodeService(AbstractService):
         else:
             return SyftError(message="Endpoint only supported for enclave code")
 
-    @catch(NSyftError)
+    @catch(SyftException)
     def is_execution_allowed(
         self,
         code: UserCode,
@@ -341,14 +343,14 @@ class UserCodeService(AbstractService):
         if not code.is_output_policy_approved(context):
             status = code.status
             if isinstance(status, SyftError):
-                raise NSyftError(status.message, code="usercode-status-error")
-            raise NSyftError(
+                raise SyftException(status.message, code="usercode-status-error")
+            raise SyftException(
                 status._get_status_message_str(), code="usercode-not-approved"
             )
 
         # Check if the user has permission to execute the code.
         elif not self.has_code_permission(code, context):
-            raise NSyftError(
+            raise SyftException(
                 f"User {context.credentials} does not have permission to execute code {code}",
                 code="not-permitted",
                 public_message="You do not have the permissions to execute this code. Please contact the admin.",
@@ -357,7 +359,7 @@ class UserCodeService(AbstractService):
             )
 
         elif not code.is_output_policy_approved(context).unwrap():
-            raise NSyftError(
+            raise SyftException(
                 f"Output policy not approved for code {code}",
                 code="usercode-not-approved",
                 public_message="Output policy has not been approved.",
@@ -370,7 +372,7 @@ class UserCodeService(AbstractService):
         if policy_is_valid:
             return True
 
-        raise NSyftError(
+        raise SyftException(
             "Invalid output policy",
             code="usercode-bad-output-policy",
         )
@@ -385,7 +387,7 @@ class UserCodeService(AbstractService):
         current_user = user_service.get_current_user(context=context)
         return current_user.mock_execution_permission
 
-    catch(NSyftError)
+    catch(SyftException)
 
     def keep_owned_kwargs(
         self, kwargs: dict[str, Any], context: AuthedServiceContext
@@ -441,7 +443,7 @@ class UserCodeService(AbstractService):
 
         return not (has_custom_worker_pool and context.is_blocking_api_call)
 
-    @catch(NSyftError)
+    @catch(SyftException)
     def _call(
         self,
         context: AuthedServiceContext,
@@ -453,7 +455,7 @@ class UserCodeService(AbstractService):
         code = self.stash.get_by_uid(context.credentials, uid=uid).unwrap()
 
         if not self.valid_worker_pool_for_context(context, code):
-            raise NSyftError(
+            raise SyftException(
                 (
                     "You tried to run a syft function attached to a worker pool in blocking mode,"
                     " which is currently not supported. Run your function with `blocking=False` to run"
@@ -472,7 +474,7 @@ class UserCodeService(AbstractService):
                 # handles the case: if we have 0 owned args and execution permission
                 pass
             else:
-                raise NSyftError(
+                raise SyftException(
                     (
                         f"Attempt by {context.syft_client_verify_key} to call"
                         f" UserCode<{code.id}> with owned args without permission."
@@ -530,7 +532,7 @@ class UserCodeService(AbstractService):
                                 code_item_id=code.id,
                             )
                             if inp_policy_validation.is_err():
-                                raise NSyftError(
+                                raise SyftException(
                                     inp_policy_validation.err() or "Bad input policy.",
                                     code="usercode-bad-input-policy",
                                 )
@@ -545,10 +547,10 @@ class UserCodeService(AbstractService):
                             error_msg=is_valid.message,
                         )
                     else:
-                        raise NSyftError(
+                        raise SyftException(
                             "Input policy is invalid", code="usercode-bad-input-policy"
                         )
-                raise NSyftError(
+                raise SyftException(
                     f"User {context.credentials} cannot execute UserCode {code.id}.",
                     code="not-permitted",
                     public_message="You cannot execute this code. Please contact the admin.",
@@ -644,7 +646,7 @@ class UserCodeService(AbstractService):
         return res
 
 
-@catch(NSyftError)
+@catch(SyftException)
 def resolve_outputs(
     context: AuthedServiceContext,
     output_ids: list[UID],

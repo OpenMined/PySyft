@@ -43,7 +43,7 @@ from ...service.user.user_roles import ServiceRole
 from ...store.document_store import PartitionKey
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
-from ...types.errors import SyftError as NSyftError
+from ...types.errors import SyftException
 from ...types.result import catch
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
@@ -394,12 +394,12 @@ class UserCode(SyncableSyftObject):
             return SyftError(message=status.err())
         return status.ok()
 
-    @catch(NSyftError)
+    @catch(SyftException)
     def _get_status(self, context: AuthedServiceContext) -> UserCodeStatusCollection:
         status = self.status_link.resolve_with_context(context)
         if status.is_ok():
             return status.ok()
-        raise NSyftError(message=status.err().message, code="something")
+        raise SyftException(message=status.err().message, code="something")
 
     @property
     def is_enclave_code(self) -> bool:
@@ -451,7 +451,7 @@ class UserCode(SyncableSyftObject):
             return None
         return self._get_input_policy()
 
-    @catch(NSyftError)
+    @catch(SyftException)
     def get_input_policy(self, context: AuthedServiceContext) -> InputPolicy:
         self.check_if_approved(context)
         return self._get_input_policy()
@@ -483,7 +483,7 @@ class UserCode(SyncableSyftObject):
                     self.input_policy_type, self.input_policy_init_kwargs
                 )
             else:
-                raise NSyftError(
+                raise SyftException(
                     f"Invalid input_policy_type: {self.input_policy_type}",
                     code="usercode-bad-input-policy",
                 )
@@ -493,7 +493,7 @@ class UserCode(SyncableSyftObject):
                 self.input_policy_state = input_blob
                 return input_policy
             else:
-                raise NSyftError(
+                raise SyftException(
                     "Input policy is None during init",
                     code="usercode-bad-input-policy",
                 )
@@ -501,21 +501,21 @@ class UserCode(SyncableSyftObject):
         try:
             return _deserialize(self.input_policy_state, from_bytes=True)
         except Exception as e:
-            raise NSyftError(
+            raise SyftException(
                 f"Failed to deserialize custom input policy state. {e}",
                 code="serde-deserialization-error",
             )
 
-    @catch(NSyftError)
+    @catch(SyftException)
     def is_output_policy_approved(self, context: AuthedServiceContext) -> bool:
         status = self._get_status(context).unwrap()
         return status.approved
 
-    @catch(NSyftError)
+    @catch(SyftException)
     def check_if_approved(self, context: AuthedServiceContext) -> None:
         status = self._get_status(context).unwrap()
         if not status.approved:
-            raise NSyftError(
+            raise SyftException(
                 message="Please wait for the code to be approved.",
                 code="usercode-not-approved",
             )
@@ -529,22 +529,22 @@ class UserCode(SyncableSyftObject):
         else:
             raise Exception(f"You can't set {type(value)} as input_policy_state")
 
-    @catch(NSyftError)
+    @catch(SyftException)
     def get_output_policy(self, context: AuthedServiceContext) -> OutputPolicy:
         self.check_if_approved(context)
         return self._get_output_policy().unwrap()
 
-    @catch(NSyftError)
+    @catch(SyftException)
     def _get_output_policy(self) -> OutputPolicy:
         status = self.status
         if isinstance(status, SyftError):
-            raise NSyftError(
+            raise SyftException(
                 message=f"Failed to get status. Error: {status}",
                 code="usercode-status-error",
             )
 
         if not status.approved:
-            raise NSyftError(
+            raise SyftException(
                 message="Please wait for the code to be approved.",
                 code="usercode-not-approved",
             )
@@ -563,7 +563,7 @@ class UserCode(SyncableSyftObject):
                     self.output_policy_type, self.output_policy_init_kwargs
                 )
             else:
-                raise NSyftError(
+                raise SyftException(
                     f"Invalid output_policy_type: {self.output_policy_type}",
                     code="usercode-bad-output-policy",
                     min_visible_role=ServiceRole.ADMIN,
@@ -576,7 +576,7 @@ class UserCode(SyncableSyftObject):
                 self.output_policy_state = output_blob
                 return output_policy
             else:
-                raise NSyftError(
+                raise SyftException(
                     "output_policy is None during init",
                     code="usercode-bad-output-policy",
                     min_visible_role=ServiceRole.ADMIN,
@@ -588,7 +588,7 @@ class UserCode(SyncableSyftObject):
             output_policy.syft_client_verify_key = self.syft_client_verify_key
             return output_policy
         except Exception as e:
-            raise NSyftError(
+            raise SyftException(
                 f"Failed to deserialize custom output policy state. {e}",
                 code="serde-deserialization-error",
                 min_visible_role=ServiceRole.ADMIN,
@@ -618,7 +618,7 @@ class UserCode(SyncableSyftObject):
             )
         return api.services.output.get_by_user_code_id(self.id)
 
-    @catch(NSyftError)
+    @catch(SyftException)
     def _get_output_history(
         self, context: AuthedServiceContext
     ) -> list[ExecutionOutput]:
@@ -638,7 +638,7 @@ class UserCode(SyncableSyftObject):
         output_service = cast(OutputService, context.node.get_service("outputservice"))
         return output_service.get_by_user_code_id(context, self.id)
 
-    @catch(NSyftError)
+    @catch(SyftException)
     def store_as_history(
         self,
         context: AuthedServiceContext,
@@ -648,7 +648,7 @@ class UserCode(SyncableSyftObject):
     ) -> ExecutionOutput:
         output_policy = self.get_output_policy(context)
         if output_policy is None:
-            raise NSyftError(
+            raise SyftException(
                 "You must wait for the output policy to be approved",
                 code="usercode-not-approved",
             )
@@ -667,7 +667,7 @@ class UserCode(SyncableSyftObject):
             input_ids=input_ids,
         )
         if isinstance(execution_result, SyftError):
-            raise NSyftError(execution_result.message, code="output-service-error")
+            raise SyftException(execution_result.message, code="output-service-error")
 
         return execution_result
 

@@ -13,7 +13,7 @@ from result import Result
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...types.datetime import DateTime
-from ...types.errors import SyftError as NSyftError
+from ...types.errors import SyftException
 from ...types.result import catch
 from ...types.syft_object import SyftObject
 from ...types.twin_object import TwinObject
@@ -199,7 +199,7 @@ class ActionService(AbstractService):
         return result
 
     @service_method(path="action.get", name="get", roles=GUEST_ROLE_LEVEL)
-    @catch(NSyftError)
+    @catch(SyftException)
     def get(
         self,
         context: AuthedServiceContext,
@@ -211,10 +211,10 @@ class ActionService(AbstractService):
         result = self._get(context, uid, twin_mode, resolve_nested=resolve_nested)
         match result:
             case Ok(None):
-                raise NSyftError("Object not found.", code="not-found")
+                raise SyftException("Object not found.", code="not-found")
             case Ok(obj):
                 return obj
-        raise NSyftError(result.err(), code="stash-error")
+        raise SyftException(result.err(), code="stash-error")
 
     def _get(
         self,
@@ -305,7 +305,7 @@ class ActionService(AbstractService):
         return self.store.has_storage_permission(uid)
 
     # not a public service endpoint
-    @catch(NSyftError)
+    @catch(SyftException)
     def _user_code_execute(
         self,
         context: AuthedServiceContext,
@@ -327,11 +327,11 @@ class ActionService(AbstractService):
         if not override_execution_permission:
             if input_policy is None:
                 if not code_item.is_output_policy_approved(context).unwrap():
-                    raise NSyftError(
+                    raise SyftException(
                         "Execution denied: Your code is waiting for approval",
                         code="usercode-not-approved",
                     )
-                raise NSyftError(
+                raise SyftException(
                     f"No input policy defined for user code: {code_item.id}",
                     code="usercode-bad-input-policy",
                 )
@@ -352,14 +352,14 @@ class ActionService(AbstractService):
                 code_item_id=code_item.id,
             )
             if is_approved.is_err():
-                raise NSyftError(
+                raise SyftException(
                     is_approved.err() or "Input Policy is not valid",
                     code="usercode-bad-input-policy",
                 )
         else:
             result = retrieve_from_db(code_item.id, kwargs, context)
             if result.is_err():
-                raise NSyftError(
+                raise SyftException(
                     result.err() or "Could not grab from db",
                     code="usercode-bad-input-policy",
                 )
@@ -446,7 +446,7 @@ class ActionService(AbstractService):
             return Err(f"_user_code_execute failed. {e}")
         return Ok(result_action_object)
 
-    @catch(NSyftError)
+    @catch(SyftException)
     def set_result_to_store(
         self,
         result_action_object: ActionObject | TwinObject,
@@ -478,7 +478,7 @@ class ActionService(AbstractService):
         )
         blob_store_result = result_action_object._save_to_blob_storage()
         if isinstance(blob_store_result, SyftError):
-            raise NSyftError(blob_store_result.message, code="blob-storage-error")
+            raise SyftException(blob_store_result.message, code="blob-storage-error")
 
         # IMPORTANT: DO THIS ONLY AFTER ._save_to_blob_storage
         if isinstance(result_action_object, TwinObject):
@@ -495,7 +495,7 @@ class ActionService(AbstractService):
         )
 
         if set_result.is_err():
-            raise NSyftError(set_result.err(), code="stash-error")
+            raise SyftException(set_result.err(), code="stash-error")
 
         blob_storage_service: AbstractService = context.node.get_service(
             BlobStorageService

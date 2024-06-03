@@ -22,7 +22,7 @@ SyftErrorCodes = Literal[
 ]
 
 
-class SyftError(Exception):
+class SyftException(Exception):
     __match_args__ = "code"
 
     def __init__(

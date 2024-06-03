@@ -13,7 +13,7 @@ from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
-from ...types.errors import SyftError
+from ...types.errors import SyftException
 from ...types.result import catch
 from ...types.uid import UID
 from ...util.telemetry import instrument
@@ -55,12 +55,14 @@ class UserCodeStash(BaseUIDStoreStash):
             credentials=credentials, qks=qks, order_by=SubmitTimePartitionKey
         )
 
-    @catch(SyftError)
+    @catch(SyftException)
     def get_by_uid(self, credentials: SyftVerifyKey, uid: UID) -> UserCode:
         query_result = super().get_by_uid(credentials, uid)
         if query_result.is_ok():
             result = query_result.ok()
             if result is None:
-                raise SyftError("User code not found.", code="not-found")
+                raise SyftException("User code not found.", code="not-found")
             return cast(UserCode, result)
-        raise SyftError(query_result.err(), code="stash-error")
+        raise SyftException(
+            query_result.err() or "Something went wrong.", code="stash-error"
+        )
