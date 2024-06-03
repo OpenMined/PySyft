@@ -298,12 +298,13 @@ class CreateCustomImageChange(Change):
 @serializable()
 class CreateCustomWorkerPoolChange(Change):
     __canonical_name__ = "CreateCustomWorkerPoolChange"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     pool_name: str
     num_workers: int
     image_uid: UID | None = None
     config: WorkerConfig | None = None
+    pod_annotations: dict[str, str] | None = None
 
     __repr_attrs__ = ["pool_name", "num_workers", "image_uid"]
 
@@ -337,6 +338,7 @@ class CreateCustomWorkerPoolChange(Change):
                 num_workers=self.num_workers,
                 reg_username=context.extra_kwargs.get("reg_username", None),
                 reg_password=context.extra_kwargs.get("reg_password", None),
+                pod_annotations=self.pod_annotations,
             )
             if isinstance(result, SyftError):
                 return Err(result)
@@ -359,6 +361,19 @@ class CreateCustomWorkerPoolChange(Change):
         return (
             f"Create Worker Pool '{self.pool_name}' for Image with id {self.image_uid}"
         )
+
+
+@serializable()
+class CreateCustomWorkerPoolChangeV2(Change):
+    __canonical_name__ = "CreateCustomWorkerPoolChange"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    pool_name: str
+    num_workers: int
+    image_uid: UID | None = None
+    config: WorkerConfig | None = None
+
+    __repr_attrs__ = ["pool_name", "num_workers", "image_uid"]
 
 
 @serializable()

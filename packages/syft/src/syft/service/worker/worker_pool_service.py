@@ -163,6 +163,7 @@ class SyftWorkerPoolService(AbstractService):
         num_workers: int,
         image_uid: UID,
         reason: str | None = "",
+        pod_annotations: dict[str, str] | None = None,
     ) -> SyftError | SyftSuccess:
         """
         Create a request to launch the worker pool based on a built image.
@@ -212,6 +213,7 @@ class SyftWorkerPoolService(AbstractService):
             pool_name=pool_name,
             num_workers=num_workers,
             image_uid=image_uid,
+            pod_annotations=pod_annotations,
         )
 
         changes: list[Change] = [create_worker_pool_change]
@@ -240,6 +242,7 @@ class SyftWorkerPoolService(AbstractService):
         registry_uid: UID | None = None,
         reason: str | None = "",
         pull_image: bool = True,
+        pod_annotations: dict[str, str] | None = None,
     ) -> SyftError | SyftSuccess:
         """
         Create a request to launch the worker pool based on a built image.
@@ -324,6 +327,7 @@ class SyftWorkerPoolService(AbstractService):
             pool_name=pool_name,
             num_workers=num_workers,
             config=config,
+            pod_annotations=pod_annotations,
         )
         changes += [create_custom_image_change, create_worker_pool_change]
 
@@ -594,6 +598,7 @@ class SyftWorkerPoolService(AbstractService):
                 pool_name = change.pool_name
                 num_workers = change.num_workers
                 image_uid = change.image_uid
+                pod_annotations = change.pod_annotations
             elif isinstance(change, CreateCustomImageChange):  # type: ignore[unreachable]
                 config = change.config
                 tag = change.tag
@@ -604,6 +609,7 @@ class SyftWorkerPoolService(AbstractService):
                 pool_name=pool_name,
                 num_workers=num_workers,
                 image_uid=image_uid,
+                pod_annotations=pod_annotations,
             )
         elif config is not None:
             return self.create_image_and_pool_request(  # type: ignore[unreachable]
@@ -612,6 +618,7 @@ class SyftWorkerPoolService(AbstractService):
                 num_workers=num_workers,
                 config=config,
                 tag=tag,
+                pod_annotations=pod_annotations,
             )
         else:
             return SyftError(
