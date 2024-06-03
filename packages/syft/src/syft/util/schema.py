@@ -59,6 +59,7 @@ DEFAULT_WELCOME_MSG = """
             <h2>Welcome to $domain_name</h2>
             <div class="syft-space">
             <strong>URL:</strong> $node_url <br />
+            <strong>Node Description:</strong> $description <br />
             <strong>Node Type:</strong> $node_type <br />
             <strong>Node Side Type:</strong>$node_side_type<br />
             <strong>Syft Version:</strong> $node_version<br />

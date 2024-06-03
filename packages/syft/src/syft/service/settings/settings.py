@@ -82,6 +82,7 @@ class NodeSettings(SyftObject):
     __repr_attrs__ = [
         "name",
         "organization",
+        "description",
         "deployed_on",
         "signup_enabled",
         "admin_email",
@@ -93,7 +94,7 @@ class NodeSettings(SyftObject):
     organization: str = "OpenMined"
     verify_key: SyftVerifyKey
     on_board: bool = True
-    description: str = "Text"
+    description: str = "This is the default description for a Domain Node."
     node_type: NodeType = NodeType.DOMAIN
     signup_enabled: bool
     admin_email: str
@@ -116,6 +117,7 @@ class NodeSettings(SyftObject):
                 <p><strong>Id: </strong>{self.id}</p>
                 <p><strong>Name: </strong>{self.name}</p>
                 <p><strong>Organization: </strong>{self.organization}</p>
+                <p><strong>Description: </strong>{self.description}</p>
                 <p><strong>Deployed on: </strong>{self.deployed_on}</p>
                 <p><strong>Signup enabled: </strong>{self.signup_enabled}</p>
                 <p><strong>Admin email: </strong>{self.admin_email}</p>
