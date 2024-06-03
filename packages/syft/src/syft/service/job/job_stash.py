@@ -695,14 +695,10 @@ class Job(SyncableSyftObject):
 
         # if self.resolve returns self.result as error, then we
         # return SyftError and not wait for the result
-        # if a job is completed and not errored out, we would wait for the result
+        # otherwise if a job is resolved and not errored out, we wait for the result
         if not job_only and self.result is not None:  # type: ignore[unreachable]
-            print(f"Waiting for result of job with id '{self.id}'")
             self.result.wait(timeout)
 
-        print(
-            f"Job with id '{self.id}' is resolved with {self.resolve = }, {self.result = }"
-        )
         return self.resolve  # type: ignore[unreachable]
 
     @property

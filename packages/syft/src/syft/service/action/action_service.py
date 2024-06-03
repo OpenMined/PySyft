@@ -146,7 +146,6 @@ class ActionService(AbstractService):
                 result = self.resolve_links(
                     context, obj.syft_action_data.action_object_id.id
                 )
-                print(f"inside ActionService.is_resolved (2). {result = }")
                 # Checking in case any error occurred
                 if result.is_err():
                     return result
@@ -157,10 +156,8 @@ class ActionService(AbstractService):
             elif not obj.syft_resolved:
                 return Ok(False)
 
-            print(f"inside ActionService.is_resolved (4). {obj = }.")
             # If it's not an action data link or non resolved (empty). It's resolved
             return Ok(True)
-        print(f"inside ActionService.is_resolved (5). {result = }.")
         # If it's not in the store or permission error, return the error
         return result
 
