@@ -109,8 +109,6 @@ class Worker(SyftBaseModel):
     syft_worker_id: UID | None = None
     expiry_t: Timeout = Timeout(WORKER_TIMEOUT_SEC)
 
-    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @field_validator("syft_worker_id", mode="before")
     @classmethod
     def set_syft_worker_id(cls, v: Any) -> Any:
@@ -366,7 +364,7 @@ class ZMQProducer(QueueProducer):
         Workers are oldest to most recent, so we stop at the first alive worker.
         """
         # work on a copy of the iterator
-        for worker in list(self.waiting):
+        for worker in self.waiting:
             if worker.has_expired():
                 logger.info(
                     "Deleting expired Worker id={} uid={} expiry={} now={}",
