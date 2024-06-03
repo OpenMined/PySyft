@@ -12,9 +12,11 @@ SyftErrorCodes = Literal[
     "serde-serialization-error",
     "serde-deserialization-error",
     "stash-error",
+    "stash-not-found",
     "worker-invalid-pool",
     "blob-storage-error",
     "output-service-error",
+    "usercode-error",
     "usercode-not-approved",
     "usercode-bad-input-policy",
     "usercode-bad-output-policy",
@@ -28,7 +30,7 @@ class SyftException(Exception):
     def __init__(
         self,
         message: str,
-        code: SyftErrorCodes,
+        # code: SyftErrorCodes,
         public_message: str | None = None,
         private: bool | None = True,
         min_visible_role: ServiceRole = ServiceRole.ADMIN,
@@ -36,7 +38,7 @@ class SyftException(Exception):
         **kwargs: Any,
     ) -> None:
         self.message = message
-        self.code = code
+        # self.code = code
         self.private = private
         self.public_message = public_message
         self.min_visible_role = min_visible_role

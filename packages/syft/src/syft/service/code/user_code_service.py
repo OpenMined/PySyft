@@ -5,9 +5,16 @@ from typing import TypeVar
 from typing import cast
 
 # third party
+from pydantic_core.core_schema import is_subclass_schema
 from result import Err
 from result import Ok
 from result import Result
+from syft.service.code.status_service import UserCodeStatusService
+from syft.service.code.user_code_errors import UserCodeInvalidRequestException, UserCodeNoOutputReadersException
+from syft.service.code_history.code_history_service import CodeHistoryService
+from syft.service.user.user_service import UserService
+from syft.service.worker.worker_pool_service import SyftWorkerPoolService
+from syft.store.store_errors import StashException, StashNotFoundException
 
 # relative
 from ...abstract_node import NodeType
@@ -63,22 +70,21 @@ class UserCodeService(AbstractService):
     @service_method(path="code.submit", name="submit", roles=GUEST_ROLE_LEVEL)
     def submit(
         self, context: AuthedServiceContext, code: UserCode | SubmitUserCode
-    ) -> UserCode | SyftError:
+    ) -> SyftSuccess | SyftError:
         """Add User Code"""
         result = self._submit(context=context, code=code)
         if result.is_err():
             return SyftError(message=str(result.err()))
         return SyftSuccess(message="User Code Submitted", require_api_update=True)
 
+    @catch(SyftException)
     def _submit(
         self, context: AuthedServiceContext, code: UserCode | SubmitUserCode
-    ) -> Result[UserCode, str]:
+    ) -> UserCode:
         if not isinstance(code, UserCode):
-            code = code.to(UserCode, context=context)  # type: ignore[unreachable]
-
-        result = self.stash.set(context.credentials, code)
-        return result
-
+            code = code.to(UserCode, context=context)
+        return self.stash.set(context.credentials, cast(UserCode, code)).unwrap()
+        
     @service_method(path="code.delete", name="delete", roles=ADMIN_ROLE_LEVEL)
     def delete(
         self, context: AuthedServiceContext, uid: UID
@@ -94,16 +100,15 @@ class UserCodeService(AbstractService):
         name="get_by_service_func_name",
         roles=GUEST_ROLE_LEVEL,
     )
+    @catch(StashException)
     def get_by_service_name(
         self, context: AuthedServiceContext, service_func_name: str
     ) -> list[UserCode] | SyftError:
-        result = self.stash.get_by_service_func_name(
+        return self.stash.get_by_service_func_name(
             context.credentials, service_func_name=service_func_name
-        )
-        if result.is_err():
-            return SyftError(message=str(result.err()))
-        return result.ok()
+        ).unwrap()
 
+    @catch(StashException)
     def _request_code_execution(
         self,
         context: AuthedServiceContext,
@@ -111,79 +116,79 @@ class UserCodeService(AbstractService):
         reason: str | None = "",
     ) -> Request | SyftError:
         user_code: UserCode = code.to(UserCode, context=context)
-        result = self._validate_request_code_execution(context, user_code)
-        if isinstance(result, SyftError):
+        is_user_code_valid = self._validate_request_code_execution(context, user_code)
+        if is_user_code_valid.is_err():
             # if the validation fails, we should remove the user code status
             # and code version to prevent dangling status
             root_context = AuthedServiceContext(
                 credentials=context.node.verify_key, node=context.node
             )
-            _ = context.node.get_service("usercodestatusservice").remove(
+            status_service = cast(UserCodeStatusService, context.node.get_service("usercodestatusservice"))
+            _ = status_service.remove(
                 root_context, user_code.status_link.object_uid
             )
-            return result
+            
         result = self._request_code_execution_inner(context, user_code, reason)
         return result
 
+
+    @catch(StashNotFoundException, StashException, UserCodeInvalidRequestException)
     def _validate_request_code_execution(
         self,
         context: AuthedServiceContext,
         user_code: UserCode,
-    ) -> SyftSuccess | SyftError:
+    ) -> None:
         if user_code.output_readers is None:
-            return SyftError(
-                message=f"there is no verified output readers for {user_code}"
+            raise UserCodeInvalidRequestException(
+                f"There is no verified output reader for {user_code}."
             )
         if user_code.input_owner_verify_keys is None:
-            return SyftError(
-                message=f"there is no verified input owners for {user_code}"
+            raise UserCodeInvalidRequestException(
+                f"There is no verified input owner for {user_code}."
             )
         if not all(
             x in user_code.input_owner_verify_keys for x in user_code.output_readers
         ):
-            raise ValueError("outputs can only be distributed to input owners")
+            raise UserCodeInvalidRequestException(
+                "Outputs can only be distributed to input owners"
+            )
 
         # check if the code with the same name and content already exists in the stash
-
         find_results = self.stash.get_by_code_hash(
             context.credentials, code_hash=user_code.code_hash
         )
-        if find_results.is_err():
-            return SyftError(message=str(find_results.err()))
-        find_results = find_results.ok()
 
-        if find_results is not None:
-            return SyftError(
+        if find_results.is_ok():
+            raise UserCodeInvalidRequestException(
                 message="The code to be submitted (name and content) already exists"
             )
 
-        worker_pool_service = context.node.get_service("SyftWorkerPoolService")
+        worker_pool_service = cast(SyftWorkerPoolService, context.node.get_service("SyftWorkerPoolService"))
         pool_result = worker_pool_service._get_worker_pool(
             context,
             pool_name=user_code.worker_pool_name,
         )
 
         if isinstance(pool_result, SyftError):
-            return pool_result
+            raise UserCodeInvalidRequestException(pool_result.message)
 
         result = self.stash.set(context.credentials, user_code)
         if result.is_err():
-            return SyftError(message=str(result.err()))
+            raise UserCodeInvalidRequestException(str(result.err()))
 
         # Create a code history
-        code_history_service = context.node.get_service("codehistoryservice")
-        result = code_history_service.submit_version(context=context, code=user_code)
+        code_history_service = cast(CodeHistoryService, context.node.get_service("codehistoryservice"))
+        code_history = code_history_service.submit_version(context=context, code=user_code)
         if isinstance(result, SyftError):
-            return result
+            raise UserCodeInvalidRequestException(code_history.message)
 
-        return SyftSuccess(message="")
-
+    @catch(StashException)
     def _request_code_execution_inner(
         self,
         context: AuthedServiceContext,
         user_code: UserCode,
         reason: str | None = "",
-    ) -> Request | SyftError:
+    ) -> Request:
         # Users that have access to the output also have access to the code item
         if user_code.output_readers is not None:
             self.stash.add_permissions(
@@ -206,8 +211,10 @@ class UserCodeService(AbstractService):
         method = context.node.get_service_method(RequestService.submit)
         result = method(context=context, request=request, reason=reason)
 
-        # The Request service already returns either a SyftSuccess or SyftError
-        return result
+        if isinstance(result, SyftError):
+            raise UserCodeInvalidRequestException(result.message)
+
+        return result.ok()
 
     @service_method(
         path="code.request_code_execution",
@@ -377,17 +384,18 @@ class UserCodeService(AbstractService):
             code="usercode-bad-output-policy",
         )
 
+    @catch(SyftException)
     def is_execution_on_owned_args_allowed(
         self, context: AuthedServiceContext
     ) -> bool | SyftError:
         if context.role == ServiceRole.ADMIN:
             return True
 
-        user_service = context.node.get_service("userservice")
+        user_service = cast(UserService, context.node.get_service("userservice"))
         current_user = user_service.get_current_user(context=context)
+        if isinstance(current_user, SyftError):
+            raise SyftException('get_current_user_error')
         return current_user.mock_execution_permission
-
-    catch(SyftException)
 
     def keep_owned_kwargs(
         self, kwargs: dict[str, Any], context: AuthedServiceContext
