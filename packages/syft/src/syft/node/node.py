@@ -11,6 +11,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess  # nosec
+import sys
 import tempfile
 from time import sleep
 import traceback
@@ -65,7 +66,7 @@ from ..service.job.job_stash import JobStash
 from ..service.job.job_stash import JobType
 from ..service.log.log_service import LogService
 from ..service.metadata.metadata_service import MetadataService
-from ..service.metadata.node_metadata import NodeMetadataV3
+from ..service.metadata.node_metadata import NodeMetadata
 from ..service.network.network_service import NetworkService
 from ..service.network.utils import PeerHealthCheckTask
 from ..service.notification.notification_service import NotificationService
@@ -93,6 +94,7 @@ from ..service.service import AbstractService
 from ..service.service import ServiceConfigRegistry
 from ..service.service import UserServiceConfigRegistry
 from ..service.settings.settings import NodeSettings
+from ..service.settings.settings import NodeSettingsUpdate
 from ..service.settings.settings_service import SettingsService
 from ..service.settings.settings_stash import SettingsStash
 from ..service.sync.sync_service import SyncService
@@ -120,6 +122,8 @@ from ..store.linked_obj import LinkedObject
 from ..store.mongo_document_store import MongoStoreConfig
 from ..store.sqlite_document_store import SQLiteStoreClientConfig
 from ..store.sqlite_document_store import SQLiteStoreConfig
+from ..types.syft_metaclass import Empty
+from ..types.syft_object import PartialSyftObject
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
@@ -218,10 +222,17 @@ def in_kubernetes() -> bool:
 
 
 def get_venv_packages() -> str:
-    res = subprocess.getoutput(
-        "pip list --format=freeze",
-    )
-    return res
+    try:
+        # subprocess call is safe because it uses a fully qualified path and fixed arguments
+        result = subprocess.run(
+            [sys.executable, "-m", "pip", "list", "--format=freeze"],  # nosec
+            capture_output=True,
+            check=True,
+            text=True,
+        )
+        return result.stdout
+    except subprocess.CalledProcessError as e:
+        return f"An error occurred: {e.stderr}"
 
 
 def get_syft_worker() -> bool:
@@ -994,6 +1005,16 @@ class Node(AbstractNode):
         if rootdir.exists():
             shutil.rmtree(rootdir, ignore_errors=True)
 
+    def update_self(self, settings: NodeSettings) -> None:
+        updateable_attrs = (
+            NodeSettingsUpdate.model_fields.keys()
+            - PartialSyftObject.model_fields.keys()
+        )
+        for attr_name in updateable_attrs:
+            attr = getattr(settings, attr_name)
+            if attr is not Empty:
+                setattr(self, attr_name, attr)
+
     @property
     def settings(self) -> NodeSettings:
         settings_stash = SettingsStash(store=self.document_store)
@@ -1006,23 +1027,24 @@ class Node(AbstractNode):
             )
         if settings.is_ok() and len(settings.ok()) > 0:
             settings = settings.ok()[0]
+        self.update_self(settings)
         return settings
 
     @property
-    def metadata(self) -> NodeMetadataV3:
-        name = ""
-        organization = ""
-        description = ""
+    def metadata(self) -> NodeMetadata:
         show_warnings = self.enable_warnings
         settings_data = self.settings
         name = settings_data.name
         organization = settings_data.organization
         description = settings_data.description
         show_warnings = settings_data.show_warnings
-        node_type = self.node_type.value if self.node_type else ""
-        node_side_type = self.node_side_type.value if self.node_side_type else ""
+        node_type = settings_data.node_type.value if settings_data.node_type else ""
+        node_side_type = (
+            settings_data.node_side_type.value if settings_data.node_side_type else ""
+        )
+        eager_execution_enabled = settings_data.eager_execution_enabled
 
-        return NodeMetadataV3(
+        return NodeMetadata(
             name=name,
             id=self.id,
             verify_key=self.verify_key,
@@ -1034,6 +1056,7 @@ class Node(AbstractNode):
             node_type=node_type,
             node_side_type=node_side_type,
             show_warnings=show_warnings,
+            eager_execution_enabled=eager_execution_enabled,
         )
 
     @property
@@ -1729,7 +1752,7 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
             context,
             image_uid=default_image.id,
             tag=DEFAULT_WORKER_IMAGE_TAG,
-            pull=pull_image,
+            pull_image=pull_image,
         )
 
         if isinstance(result, SyftError):
@@ -1749,7 +1772,7 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
         create_pool_method = node.get_service_method(SyftWorkerPoolService.launch)
         result = create_pool_method(
             context,
-            name=default_pool_name,
+            pool_name=default_pool_name,
             image_uid=default_image.id,
             num_workers=worker_count,
         )
