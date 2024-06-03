@@ -1,9 +1,9 @@
 # stdlib
 from typing import Any
-from typing import Self
 
 # third party
 from pydantic import field_validator
+from typing_extensions import Self
 
 # relative
 from ...client.api import NodeIdentity
