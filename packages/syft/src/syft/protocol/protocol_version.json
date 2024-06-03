@@ -246,6 +246,13 @@
           "hash": "c1796e7b01c9eae0dbf59cfd5c2c2f0e7eba593e0cea615717246572b27aae4b",
           "action": "remove"
         }
+      },
+      "NodePeerUpdate": {
+        "1": {
+          "version": 1,
+          "hash": "9e7cd39f6a9f90e8c595452865525e0989df1688236acfd1a665ed047ba47de9",
+          "action": "add"
+        }
       }
     }
   }
