@@ -11,6 +11,7 @@ from typing import TypeVar
 T = TypeVar("T", covariant=True)
 E = TypeVar("E", covariant=True, bound=BaseException)
 BE = TypeVar("BE", bound=BaseException)
+P = ParamSpec("P")
 
 
 class Ok(Generic[T]):
@@ -76,8 +77,6 @@ class Err(Generic[E]):
 
 
 Result: TypeAlias = Ok[T] | Err[E]
-
-P = ParamSpec("P")
 
 
 def catch(
