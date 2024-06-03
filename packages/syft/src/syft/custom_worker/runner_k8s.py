@@ -31,6 +31,7 @@ class KubernetesRunner:
         reg_username: str | None = None,
         reg_password: str | None = None,
         reg_url: str | None = None,
+        pod_annotations: dict[str, str] | None = None,
         **kwargs: Any,
     ) -> StatefulSet:
         try:
@@ -52,6 +53,7 @@ class KubernetesRunner:
                 env_vars=env_vars,
                 mount_secrets=mount_secrets,
                 pull_secret=pull_secret,
+                pod_annotations=pod_annotations,
                 **kwargs,
             )
 
@@ -147,6 +149,7 @@ class KubernetesRunner:
         env_vars: list[dict] | None = None,
         mount_secrets: dict | None = None,
         pull_secret: Secret | None = None,
+        pod_annotations: dict[str, str] | None = None,
         **kwargs: Any,
     ) -> StatefulSet:
         """Create a stateful set for a pool"""
@@ -204,7 +207,8 @@ class KubernetesRunner:
                             "labels": {
                                 "app.kubernetes.io/name": KUBERNETES_NAMESPACE,
                                 "app.kubernetes.io/component": pool_name,
-                            }
+                            },
+                            "annotations": pod_annotations,
                         },
                         "spec": {
                             # TODO: make this configurable

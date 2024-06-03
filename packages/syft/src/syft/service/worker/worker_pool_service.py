@@ -69,6 +69,7 @@ class SyftWorkerPoolService(AbstractService):
         num_workers: int,
         reg_username: str | None = None,
         reg_password: str | None = None,
+        pod_annotations: dict[str, str] | None = None,
     ) -> list[ContainerSpawnStatus] | SyftError:
         """Creates a pool of workers from the given SyftWorkerImage.
 
@@ -126,6 +127,7 @@ class SyftWorkerPoolService(AbstractService):
             worker_stash=worker_stash,
             reg_username=reg_username,
             reg_password=reg_password,
+            pod_annotations=pod_annotations,
         )
 
         if isinstance(result, SyftError):
@@ -656,6 +658,7 @@ def _create_workers_in_pool(
     worker_stash: WorkerStash,
     reg_username: str | None = None,
     reg_password: str | None = None,
+    pod_annotations: dict[str, str] | None = None,
 ) -> tuple[list[LinkedObject], list[ContainerSpawnStatus]] | SyftError:
     queue_port = context.node.queue_config.client_config.queue_port
 
@@ -687,6 +690,7 @@ def _create_workers_in_pool(
             reg_username=reg_username,
             reg_password=reg_password,
             reg_url=registry_host,
+            pod_annotations=pod_annotations,
         )
         if isinstance(result, SyftError):
             return result

@@ -159,14 +159,17 @@ node:
   rootEmail: info@openmined.org
   type: domain
   side: high
-  inMemoryWorkers: false
-  defaultWorkerPoolCount: 1
   defaultBucketName: null
   queuePort: 5556
   logLevel: info
   debuggerEnabled: false
   associationRequestAutoApproval: false
   useInternalRegistry: true
+
+  # Worker pool settings
+  inMemoryWorkers: false
+  defaultWorkerPoolCount: 1
+  defaultWorkerPoolPodAnnotations: null
 
   # SMTP Settings
   smtp:
