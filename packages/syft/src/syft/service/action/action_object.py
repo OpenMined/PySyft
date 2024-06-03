@@ -428,8 +428,6 @@ def make_action_side_effect(
         - Ok[[Tuple[PreHookContext, Tuple[Any, ...], Dict[str, Any]]] on success
         - Err[str] on failure
     """
-    # relative
-
     try:
         action = context.obj.syft_make_action_with_self(
             op=context.op_name,
@@ -794,11 +792,12 @@ class ActionObject(SyncableSyftObject):
         from ...types.blob_storage import CreateBlobStorageEntry
 
         if not isinstance(data, ActionDataEmpty):
-            if isinstance(data, BlobFile) and not data.uploaded:
-                api = APIRegistry.api_for(
-                    self.syft_node_location, self.syft_client_verify_key
-                )
-                data.upload_to_blobstorage_from_api(api)
+            if isinstance(data, BlobFile):
+                if not data.uploaded:
+                    api = APIRegistry.api_for(
+                        self.syft_node_location, self.syft_client_verify_key
+                    )
+                    data._upload_to_blobstorage_from_api(api)
             else:
                 serialized = serialize(data, to_bytes=True)
                 size = sys.getsizeof(serialized)
@@ -867,7 +866,7 @@ class ActionObject(SyncableSyftObject):
 
     @property
     def syft_lineage_id(self) -> LineageID:
-        """Compute the LineageID of the ActionObject, using the `id` and the `syft_history_hash` memebers"""
+        """Compute the LineageID of the ActionObject, using the `id` and the `syft_history_hash` members"""
         return LineageID(self.id, self.syft_history_hash)
 
     model_config = ConfigDict(validate_assignment=True)
@@ -1490,20 +1489,8 @@ class ActionObject(SyncableSyftObject):
         if HOOK_ALWAYS not in self.syft_pre_hooks__:
             self.syft_pre_hooks__[HOOK_ALWAYS] = []
 
-        if HOOK_ON_POINTERS not in self.syft_post_hooks__:
+        if HOOK_ON_POINTERS not in self.syft_pre_hooks__:
             self.syft_pre_hooks__[HOOK_ON_POINTERS] = []
-
-        # this should be a list as orders matters
-        for side_effect in [make_action_side_effect]:
-            if side_effect not in self.syft_pre_hooks__[HOOK_ALWAYS]:
-                self.syft_pre_hooks__[HOOK_ALWAYS].append(side_effect)
-
-        for side_effect in [send_action_side_effect]:
-            if side_effect not in self.syft_pre_hooks__[HOOK_ON_POINTERS]:
-                self.syft_pre_hooks__[HOOK_ON_POINTERS].append(side_effect)
-
-        if trace_action_side_effect not in self.syft_pre_hooks__[HOOK_ALWAYS]:
-            self.syft_pre_hooks__[HOOK_ALWAYS].append(trace_action_side_effect)
 
         if HOOK_ALWAYS not in self.syft_post_hooks__:
             self.syft_post_hooks__[HOOK_ALWAYS] = []
@@ -1511,14 +1498,56 @@ class ActionObject(SyncableSyftObject):
         if HOOK_ON_POINTERS not in self.syft_post_hooks__:
             self.syft_post_hooks__[HOOK_ON_POINTERS] = []
 
-        for side_effect in [propagate_node_uid]:
-            if side_effect not in self.syft_post_hooks__[HOOK_ALWAYS]:
-                self.syft_post_hooks__[HOOK_ALWAYS].append(side_effect)
+        api = APIRegistry.api_for(self.syft_node_location, self.syft_client_verify_key)
+        eager_execution_enabled = (
+            api is not None
+            and api.metadata is not None
+            and api.metadata.eager_execution_enabled
+        )
+
+        self._syft_add_pre_hooks__(eager_execution_enabled)
+        self._syft_add_post_hooks__(eager_execution_enabled)
 
         if isinstance(self.syft_action_data_type, ActionObject):
             raise Exception("Nested ActionObjects", self.syft_action_data_repr_)
 
         self.syft_history_hash = hash(self.id)
+
+    def _syft_add_pre_hooks__(self, eager_execution: bool) -> None:
+        """
+        Add pre-hooks
+
+        Args:
+            eager_execution: bool: If eager execution is enabled, hooks for
+                tracing and executing the action on remote are added.
+        """
+
+        # this should be a list as orders matters
+        for side_effect in [make_action_side_effect]:
+            if side_effect not in self.syft_pre_hooks__[HOOK_ALWAYS]:
+                self.syft_pre_hooks__[HOOK_ALWAYS].append(side_effect)
+
+        if eager_execution:
+            for side_effect in [send_action_side_effect]:
+                if side_effect not in self.syft_pre_hooks__[HOOK_ON_POINTERS]:
+                    self.syft_pre_hooks__[HOOK_ON_POINTERS].append(side_effect)
+
+            if trace_action_side_effect not in self.syft_pre_hooks__[HOOK_ALWAYS]:
+                self.syft_pre_hooks__[HOOK_ALWAYS].append(trace_action_side_effect)
+
+    def _syft_add_post_hooks__(self, eager_execution: bool) -> None:
+        """
+        Add post-hooks
+
+        Args:
+            eager_execution: bool: If eager execution is enabled, hooks for
+                tracing and executing the action on remote are added.
+        """
+        if eager_execution:
+            # this should be a list as orders matters
+            for side_effect in [propagate_node_uid]:
+                if side_effect not in self.syft_post_hooks__[HOOK_ALWAYS]:
+                    self.syft_post_hooks__[HOOK_ALWAYS].append(side_effect)
 
     def _syft_run_pre_hooks__(
         self, context: PreHookContext, name: str, args: Any, kwargs: Any
@@ -1648,7 +1677,7 @@ class ActionObject(SyncableSyftObject):
         result.syft_node_location = context.syft_node_location
         result.syft_client_verify_key = context.syft_client_verify_key
 
-        # Propogate Syft blob storage entry id
+        # Propagate Syft blob storage entry id
         object_attrs = [
             "syft_blob_storage_entry_id",
             "syft_action_data_repr_",
