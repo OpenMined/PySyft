@@ -11,6 +11,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess  # nosec
+import sys
 import tempfile
 from time import sleep
 import traceback
@@ -65,7 +66,7 @@ from ..service.job.job_stash import JobStash
 from ..service.job.job_stash import JobType
 from ..service.log.log_service import LogService
 from ..service.metadata.metadata_service import MetadataService
-from ..service.metadata.node_metadata import NodeMetadataV3
+from ..service.metadata.node_metadata import NodeMetadata
 from ..service.network.network_service import NetworkService
 from ..service.network.utils import PeerHealthCheckTask
 from ..service.notification.notification_service import NotificationService
@@ -221,10 +222,17 @@ def in_kubernetes() -> bool:
 
 
 def get_venv_packages() -> str:
-    res = subprocess.getoutput(
-        "pip list --format=freeze",
-    )
-    return res
+    try:
+        # subprocess call is safe because it uses a fully qualified path and fixed arguments
+        result = subprocess.run(
+            [sys.executable, "-m", "pip", "list", "--format=freeze"],  # nosec
+            capture_output=True,
+            check=True,
+            text=True,
+        )
+        return result.stdout
+    except subprocess.CalledProcessError as e:
+        return f"An error occurred: {e.stderr}"
 
 
 def get_syft_worker() -> bool:
@@ -1023,7 +1031,8 @@ class Node(AbstractNode):
         return settings
 
     @property
-    def metadata(self) -> NodeMetadataV3:
+    def metadata(self) -> NodeMetadata:
+        show_warnings = self.enable_warnings
         settings_data = self.settings
         name = settings_data.name
         organization = settings_data.organization
@@ -1033,8 +1042,9 @@ class Node(AbstractNode):
         node_side_type = (
             settings_data.node_side_type.value if settings_data.node_side_type else ""
         )
+        eager_execution_enabled = settings_data.eager_execution_enabled
 
-        return NodeMetadataV3(
+        return NodeMetadata(
             name=name,
             id=self.id,
             verify_key=self.verify_key,
@@ -1046,6 +1056,7 @@ class Node(AbstractNode):
             node_type=node_type,
             node_side_type=node_side_type,
             show_warnings=show_warnings,
+            eager_execution_enabled=eager_execution_enabled,
         )
 
     @property
@@ -1741,7 +1752,7 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
             context,
             image_uid=default_image.id,
             tag=DEFAULT_WORKER_IMAGE_TAG,
-            pull=pull_image,
+            pull_image=pull_image,
         )
 
         if isinstance(result, SyftError):
@@ -1761,7 +1772,7 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
         create_pool_method = node.get_service_method(SyftWorkerPoolService.launch)
         result = create_pool_method(
             context,
-            name=default_pool_name,
+            pool_name=default_pool_name,
             image_uid=default_image.id,
             num_workers=worker_count,
         )

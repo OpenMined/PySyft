@@ -28,19 +28,19 @@ class KubernetesRunner:
         replicas: int = 1,
         env_vars: list[dict] | None = None,
         mount_secrets: dict | None = None,
-        reg_username: str | None = None,
-        reg_password: str | None = None,
+        registry_username: str | None = None,
+        registry_password: str | None = None,
         reg_url: str | None = None,
         **kwargs: Any,
     ) -> StatefulSet:
         try:
             # create pull secret if registry credentials are passed
             pull_secret = None
-            if reg_username and reg_password and reg_url:
+            if registry_username and registry_password and reg_url:
                 pull_secret = self._create_image_pull_secret(
                     pool_name,
-                    reg_username,
-                    reg_password,
+                    registry_username,
+                    registry_password,
                     reg_url,
                 )
 
@@ -126,8 +126,8 @@ class KubernetesRunner:
     def _create_image_pull_secret(
         self,
         pool_name: str,
-        reg_username: str,
-        reg_password: str,
+        registry_username: str,
+        registry_password: str,
         reg_url: str,
         **kwargs: Any,
     ) -> Secret:
@@ -135,7 +135,7 @@ class KubernetesRunner:
             secret_name=f"pull-secret-{pool_name}",
             component=pool_name,
             registries=[
-                (reg_url, reg_username, reg_password),
+                (reg_url, registry_username, registry_password),
             ],
         )
 
