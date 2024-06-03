@@ -17,6 +17,7 @@ from typing import Any
 
 # third party
 from RestrictedPython import compile_restricted
+import requests
 from result import Err
 from result import Ok
 from result import Result
@@ -151,15 +152,20 @@ def partition_by_node(kwargs: dict[str, Any]) -> dict[NodeIdentity, dict[str, UI
 
         _obj_exists = False
         for api in api_list:
-            if api.services.action.exists(uid):
-                node_identity = NodeIdentity.from_api(api)
-                if node_identity not in output_kwargs:
-                    output_kwargs[node_identity] = {k: uid}
-                else:
-                    output_kwargs[node_identity].update({k: uid})
+            try:
+                if api.services.action.exists(uid):
+                    node_identity = NodeIdentity.from_api(api)
+                    if node_identity not in output_kwargs:
+                        output_kwargs[node_identity] = {k: uid}
+                    else:
+                        output_kwargs[node_identity].update({k: uid})
 
-                _obj_exists = True
-                break
+                    _obj_exists = True
+                    break
+            except requests.exceptions.ConnectionError:
+                # To handle the cases , where there an old api objects in
+                # in APIRegistry
+                continue
 
         if not _obj_exists:
             raise Exception(f"Input data {k}:{uid} does not belong to any Domain")
