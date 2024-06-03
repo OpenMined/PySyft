@@ -124,6 +124,7 @@ class Routes(Enum):
     ROUTE_API_CALL = f"{API_PATH}/api_call"
     ROUTE_BLOB_STORE = "/blob"
     STREAM = f"{API_PATH}/stream"
+    RATHOLE = "/rathole"
 
 
 @serializable(attrs=["proxy_target_uid", "url", "rathole_token"])
@@ -191,7 +192,7 @@ class HTTPConnection(NodeConnection):
         url = self.url
 
         if self.rathole_token:
-            url = GridURL.from_url(INTERNAL_PROXY_URL)
+            url = GridURL.from_url(INTERNAL_PROXY_URL).with_path(Routes.RATHOLE.value)
             headers = {"Host": self.url.host_or_ip}
 
         url = url.with_path(path)
@@ -226,7 +227,7 @@ class HTTPConnection(NodeConnection):
         url = self.url
 
         if self.rathole_token:
-            url = GridURL.from_url(INTERNAL_PROXY_URL)
+            url = GridURL.from_url(INTERNAL_PROXY_URL).with_path(Routes.RATHOLE.value)
             headers = {"Host": self.url.host_or_ip}
 
         url = url.with_path(path)
@@ -338,7 +339,9 @@ class HTTPConnection(NodeConnection):
         headers = {}
 
         if self.rathole_token:
-            api_url = GridURL.from_url(INTERNAL_PROXY_URL)
+            api_url = GridURL.from_url(INTERNAL_PROXY_URL).with_path(
+                Routes.RATHOLE.value
+            )
             api_url = api_url.with_path(self.routes.ROUTE_API_CALL.value)
             headers = {"Host": self.url.host_or_ip}
         else:
