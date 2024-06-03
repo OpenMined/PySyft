@@ -1247,9 +1247,10 @@ class ActionObject(SyncableSyftObject):
             self.wait()
 
         res = self.refresh_object()
-
         if not isinstance(res, ActionObject):
             return SyftError(message=f"{res}")  # type: ignore
+        elif issubclass(res.syft_action_data_type, Err):
+            return SyftError(message=f"{res.syft_action_data.err()}")
         else:
             if not self.has_storage_permission():
                 prompt_warning_message(
@@ -1403,14 +1404,11 @@ class ActionObject(SyncableSyftObject):
         counter = 0
         while api:
             obj_resolved: bool | str = api.services.action.is_resolved(obj_id)
-            print(
-                f"inside ActionObject.wait. {obj_resolved = }. {type(obj_resolved) = }"
-            )
             if isinstance(obj_resolved, str):
                 return SyftError(message=obj_resolved)
-            if obj_resolved == True:
+            if obj_resolved:
                 break
-            if obj_resolved == False:
+            if not obj_resolved:
                 time.sleep(1)
                 if timeout is not None:
                     counter += 1

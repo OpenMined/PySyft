@@ -663,11 +663,8 @@ class Job(SyncableSyftObject):
         counter = 0
         while True:
             self.fetch()
-            
-            print(f"{self.resolved = }. {self.status = }. {self.result = }")
-            
             if self.resolved:
-                if isinstance(self.result, Err):
+                if isinstance(self.result, Err):  # type: ignore[unreachable]
                     return SyftError(
                         message=f"Waiting for job with id '{self.id}' failed with error: {self.result.err()}"
                     )
@@ -675,15 +672,7 @@ class Job(SyncableSyftObject):
                     return SyftError(
                         message=f"Waiting for job with id '{self.id}' failed with error: {self.result.message}"
                     )
-                if isinstance(self.result, ActionObject) and isinstance(self.result.syft_action_data, Err):
-                    return SyftError(
-                        message=f"Waiting for job with id '{self.id}' failed with error: {self.result.syft_action_data.err()}"
-                    )
-                if isinstance(self.result, ActionObject) and isinstance(self.result.syft_action_data, SyftError):
-                    return SyftError(
-                        message=f"Waiting for job with id '{self.id}' failed with error: {self.result.syft_action_data.message}"
-                    )
-                break  # type: ignore[unreachable]
+                break
 
             if print_warning and self.result is not None:
                 result_obj = api.services.action.get(
@@ -696,20 +685,17 @@ class Job(SyncableSyftObject):
                         "Use job.wait().get() instead to wait for the linked result."
                     )
                     print_warning = False
-            
+
             sleep(1)
 
-            # TODO: fix the mypy issue
             if timeout is not None:
                 counter += 1
                 if counter > timeout:
                     return SyftError(message="Reached Timeout!")
 
-        # TODO: if self.resolve is error, return SyftError and not wait for the result
-        # should we wait on the job first, and then wait on the result
-        # now we are waiting for the result before the job is resolved
-        # if a job is error, we should return it and not wait for the result
-        # if a job is completed, then we should we for the result
+        # if self.resolve returns self.result as error, then we
+        # return SyftError and not wait for the result
+        # if a job is completed and not errored out, we would wait for the result
         if not job_only and self.result is not None:  # type: ignore[unreachable]
             print(f"Waiting for result of job with id '{self.id}'")
             self.result.wait(timeout)

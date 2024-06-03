@@ -207,7 +207,6 @@ def handle_message_multiprocessing(
         )
 
         result: Any = call_method(context, *queue_item.args, **queue_item.kwargs)
-        logger.info(f"Result: {result}")
         status = Status.COMPLETED
         job_status = JobStatus.COMPLETED
 
@@ -218,6 +217,7 @@ def handle_message_multiprocessing(
             ):
                 status = Status.ERRORED
                 job_status = JobStatus.ERRORED
+                result = result.syft_action_data
         elif isinstance(result, SyftError) or isinstance(result, Err):
             status = Status.ERRORED
             job_status = JobStatus.ERRORED
@@ -230,10 +230,6 @@ def handle_message_multiprocessing(
         # stdlib
 
         logger.error(f"Error while handle message multiprocessing: {e}")
-        # result = SyftError(
-        #     message=f"Failed with exception: {e}, {traceback.format_exc()}"
-        # )
-        # print("HAD AN ERROR WHILE HANDLING MESSAGE", result.message)
 
     queue_item.result = result
     queue_item.resolved = True
