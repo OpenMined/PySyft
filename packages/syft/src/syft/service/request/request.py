@@ -251,7 +251,7 @@ class CreateCustomImageChange(Change):
                     image_uid=worker_image.id,
                     tag=self.tag,
                     registry_uid=self.registry_uid,
-                    pull=self.pull_image,
+                    pull_image=self.pull_image,
                 )
 
                 if isinstance(build_result, SyftError):
@@ -266,9 +266,9 @@ class CreateCustomImageChange(Change):
             if IN_KUBERNETES and not worker_image.is_prebuilt:
                 push_result = worker_image_service.push(
                     service_context,
-                    image=worker_image.id,
-                    username=context.extra_kwargs.get("reg_username", None),
-                    password=context.extra_kwargs.get("reg_password", None),
+                    image_uid=worker_image.id,
+                    username=context.extra_kwargs.get("registry_username", None),
+                    password=context.extra_kwargs.get("registry_password", None),
                 )
 
                 if isinstance(push_result, SyftError):
@@ -333,11 +333,11 @@ class CreateCustomWorkerPoolChange(Change):
 
             result = worker_pool_service.launch(
                 context=service_context,
-                name=self.pool_name,
+                pool_name=self.pool_name,
                 image_uid=self.image_uid,
                 num_workers=self.num_workers,
-                reg_username=context.extra_kwargs.get("reg_username", None),
-                reg_password=context.extra_kwargs.get("reg_password", None),
+                registry_username=context.extra_kwargs.get("registry_username", None),
+                registry_password=context.extra_kwargs.get("registry_password", None),
                 pod_annotations=self.pod_annotations,
             )
             if isinstance(result, SyftError):
