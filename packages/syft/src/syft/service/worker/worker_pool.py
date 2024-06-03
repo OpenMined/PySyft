@@ -73,6 +73,7 @@ class SyftWorker(SyftObject):
     worker_pool_name: str
     consumer_state: ConsumerState = ConsumerState.DETACHED
     job_id: UID | None = None
+    _to_be_deleted: bool = False
 
     @property
     def logs(self) -> str | SyftError:

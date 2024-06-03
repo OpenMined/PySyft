@@ -161,6 +161,8 @@ class WorkerService(AbstractService):
         if isinstance(worker, SyftError):
             return worker
 
+        worker._to_be_deleted = True
+
         worker_pool_name = worker.worker_pool_name
 
         # relative

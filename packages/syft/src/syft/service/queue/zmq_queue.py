@@ -11,6 +11,7 @@ from typing import Any
 # third party
 from loguru import logger
 from pydantic import field_validator
+from result import Result
 import zmq
 from zmq import Frame
 from zmq import LINGER
@@ -31,6 +32,7 @@ from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..worker.worker_pool import ConsumerState
+from ..worker.worker_pool import SyftWorker
 from ..worker.worker_stash import WorkerStash
 from .base_queue import AbstractMessageHandler
 from .base_queue import QueueClient
@@ -124,6 +126,14 @@ class Worker(SyftBaseModel):
 
     def reset_expiry(self) -> None:
         self.expiry_t.reset()
+
+    def _syft_worker(self, stash: WorkerStash) -> Result[SyftWorker | None, str]:
+        return stash.get_by_uid(self.syft_worker_id)
+
+    def _to_be_deleted(self, stash: WorkerStash) -> bool:
+        return self._syft_worker(stash).map_or(
+            False, lambda x: x is not None and x._to_be_deleted
+        )
 
 
 @serializable()
@@ -365,7 +375,7 @@ class ZMQProducer(QueueProducer):
         """
         # work on a copy of the iterator
         for worker in self.waiting:
-            if worker.has_expired():
+            if worker.has_expired() or worker._to_be_deleted(self.worker_stash):
                 logger.info(
                     "Deleting expired Worker id={} uid={} expiry={} now={}",
                     worker.identity,
