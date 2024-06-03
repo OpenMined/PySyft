@@ -220,8 +220,11 @@ class NetworkService(AbstractService):
                     f"as a peer for {remote_node_peer.node_type} '{remote_node_peer.name}'."
                 )
                 if remote_self_node_peer != self_node_peer:
+                    updated_peer = NodePeerUpdate(
+                        id=self_node_peer.id, node_routes=self_node_peer.node_routes
+                    )
                     result = remote_client.api.services.network.update_peer(
-                        peer=self_node_peer,
+                        peer_update=updated_peer
                     )
                     logger.info(
                         f"{self_node_peer.node_type} peer '{self_node_peer.name}' information change detected."
@@ -462,38 +465,24 @@ class NetworkService(AbstractService):
         return result.ok() or []
 
     @service_method(
-        path="network.update_peer", name="update_peer", roles=GUEST_ROLE_LEVEL
+        path="network.update_peer",
+        name="update_peer",
+        roles=GUEST_ROLE_LEVEL,
     )
     def update_peer(
         self,
         context: AuthedServiceContext,
-        peer: NodePeer,
+        peer_update: NodePeerUpdate,
     ) -> SyftSuccess | SyftError:
         # try setting all fields of NodePeerUpdate according to NodePeer
 
-        get_peer_result = self.stash.get_by_uid(context.credentials, peer.id)
-        if get_peer_result.is_err():
-            return SyftError(
-                message=f"Failed to get peer '{peer.name}'. Error: {get_peer_result.err()}"
-            )
-        existing_peer = get_peer_result.ok()
-        peer_update = NodePeerUpdate()
-
-        # Only update the fields that have changed
-        for field_name, value in existing_peer.to_dict().items():
-            try:
-                if getattr(peer, field_name) != value:
-                    setattr(peer_update, field_name, value)
-            except Exception as e:
-                logger.debug(f"Failed to set {field_name} to {value}. Exception: {e}")
-                pass
         result = self.stash.update(
             credentials=context.node.verify_key,
             peer_update=peer_update,
         )
         if result.is_err():
             return SyftError(
-                message=f"Failed to update peer '{peer.name}'. Error: {result.err()}"
+                message=f"Failed to update peer '{peer_update.name}'. Error: {result.err()}"
             )
         return SyftSuccess(
             message=f"Peer '{result.ok().name}' information successfully updated."
