@@ -3,7 +3,6 @@ import sys
 
 # third party
 import pytest
-from result import Err
 
 # syft absolute
 import syft
@@ -149,7 +148,6 @@ def test_function_error(full_low_worker) -> None:
     ds_client.api.services.code.request_code_execution(compute_sum)
 
     users[-1].allow_mock_execution()
-    import pdb; pdb.set_trace()
     result = ds_client.api.services.code.compute_sum(blocking=True)
     assert isinstance(result, ActionObject)
     assert isinstance(result.get(), SyftError)
