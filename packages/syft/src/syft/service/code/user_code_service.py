@@ -466,8 +466,7 @@ class UserCodeService(AbstractService):
                     "You tried to run a syft function attached to a worker pool in blocking mode,"
                     " which is currently not supported. Run your function with `blocking=False` to run"
                     " as a job on your worker pool."
-                ),
-                code="worker-invalid-pool",
+                )
             )
 
         # Set Permissions
@@ -481,13 +480,7 @@ class UserCodeService(AbstractService):
                 pass
             else:
                 raise SyftException(
-                    (
-                        f"Attempt by {context.syft_client_verify_key} to call"
-                        f" UserCode<{code.id}> with owned args without permission."
-                    ),
-                    code="not-permitted",
-                    min_visible_role=ServiceRole.ADMIN,
-                    public_message="You do not have the permissions for mock execution. Please contact the admin.",
+                    "You do not have the permissions for mock execution. Please contact the admin."
                 )
 
         override_execution_permission = (
