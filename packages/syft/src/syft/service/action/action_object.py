@@ -1212,7 +1212,7 @@ class ActionObject(SyncableSyftObject):
         else:
             return res.syft_action_data
 
-    def refresh_object(self, resolve_nested: bool = True) -> ActionObject:
+    def refresh_object(self, resolve_nested: bool = True) -> ActionObject | SyftError:
         # relative
         from ...client.api import APIRegistry
 

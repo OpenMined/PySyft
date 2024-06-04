@@ -11,6 +11,7 @@ import syft as sy
 from syft.client.domain_client import DomainClient
 from syft.client.syncing import compare_clients
 from syft.client.syncing import resolve
+from syft.service.action.action_object import ActionObject
 from syft.service.job.job_stash import JobStatus
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
@@ -148,10 +149,12 @@ def test_function_error(full_low_worker) -> None:
     ds_client.api.services.code.request_code_execution(compute_sum)
 
     users[-1].allow_mock_execution()
+    import pdb; pdb.set_trace()
     result = ds_client.api.services.code.compute_sum(blocking=True)
-    assert isinstance(result.get(), Err)
+    assert isinstance(result, ActionObject)
+    assert isinstance(result.get(), SyftError)
 
     job_info = ds_client.api.services.code.compute_sum(blocking=False)
     result = job_info.wait(timeout=10)
-    assert isinstance(result.get(), Err)
+    assert isinstance(result, SyftError)
     assert job_info.status == JobStatus.ERRORED
