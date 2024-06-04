@@ -7,6 +7,7 @@ from collections.abc import Callable
 from datetime import datetime
 from functools import partial
 import hashlib
+import json
 import os
 from pathlib import Path
 import shutil
@@ -215,6 +216,16 @@ def get_default_worker_pool_count(node: Node) -> int:
             "DEFAULT_WORKER_POOL_COUNT", node.queue_config.client_config.n_consumers
         )
     )
+
+
+def get_default_worker_pool_pod_annotations() -> dict[str, str] | None:
+    annotations = get_env("DEFAULT_WORKER_POOL_POD_ANNOTATIONS", "null")
+    return json.loads(annotations)
+
+
+def get_default_worker_pool_pod_labels() -> dict[str, str] | None:
+    labels = get_env("DEFAULT_WORKER_POOL_POD_LABELS", "null")
+    return json.loads(labels)
 
 
 def in_kubernetes() -> bool:
@@ -1719,6 +1730,8 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
     default_pool_name = node.settings.default_worker_pool
     default_worker_pool = node.get_default_worker_pool()
     default_worker_tag = get_default_worker_tag_by_env(node.dev_mode)
+    default_worker_pool_pod_annotations = get_default_worker_pool_pod_annotations()
+    default_worker_pool_pod_labels = get_default_worker_pool_pod_labels()
     worker_count = get_default_worker_pool_count(node)
     context = AuthedServiceContext(
         node=node,
@@ -1775,6 +1788,8 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
             pool_name=default_pool_name,
             image_uid=default_image.id,
             num_workers=worker_count,
+            pod_annotations=default_worker_pool_pod_annotations,
+            pod_labels=default_worker_pool_pod_labels,
         )
     else:
         # Else add a worker to existing worker pool

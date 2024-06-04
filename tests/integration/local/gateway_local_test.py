@@ -132,6 +132,7 @@ def test_create_gateway(
     set_network_json_env_var, gateway_webserver, domain_webserver, domain_2_webserver
 ):
     assert isinstance(sy.gateways, sy.NetworkRegistry)
+    assert len(sy.gateways) == 1
     assert len(sy.gateways.all_networks) == 1
     assert sy.gateways.all_networks[0]["name"] == gateway_webserver.name
     assert len(sy.gateways.online_networks) == 1
@@ -157,14 +158,15 @@ def test_create_gateway(
     result = domain_client_2.connect_to_gateway(handle=gateway_webserver)
     assert isinstance(result, SyftSuccess)
 
-    time.sleep(PeerHealthCheckTask.repeat_time + 1)
+    time.sleep(PeerHealthCheckTask.repeat_time * 2 + 1)
     assert len(sy.domains.all_domains) == 2
     assert len(sy.domains.online_domains) == 2
+    # check for peer connection status
+    for peer in gateway_client.api.services.network.get_all_peers():
+        assert peer.ping_status == NodePeerConnectionStatus.ACTIVE
 
-
-@pytest.mark.local_node
-def test_create_gateway_client(gateway):
-    client = gateway.client
+    # check the guest client
+    client = gateway_webserver.client
     assert isinstance(client, GatewayClient)
     assert client.metadata.node_type == NodeType.GATEWAY.value
 
@@ -244,7 +246,6 @@ def test_domain_connect_to_gateway(gateway_association_request_auto_approval, do
 def test_domain_connect_to_gateway_routes_priority(gateway, domain, domain_2) -> None:
     """
     A test for routes' priority (PythonNodeRoute)
-    TODO: Add a similar test for HTTPNodeRoute
     """
     gateway_client: GatewayClient = gateway.login(
         email="info@openmined.org",
@@ -375,8 +376,3 @@ def test_repeated_association_requests_peers_health_check(
     )
     assert isinstance(res, NodePeerAssociationStatus)
     assert res.value == "PEER_ASSOCIATED"
-
-    # check for peer connection status
-    time.sleep(PeerHealthCheckTask.repeat_time + 1)
-    domain_peer = gateway_client.api.services.network.get_all_peers()[0]
-    assert domain_peer.ping_status == NodePeerConnectionStatus.ACTIVE

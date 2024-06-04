@@ -328,6 +328,8 @@ def create_kubernetes_pool(
     registry_username: str | None = None,
     registry_password: str | None = None,
     reg_url: str | None = None,
+    pod_annotations: dict[str, str] | None = None,
+    pod_labels: dict[str, str] | None = None,
     **kwargs: Any,
 ) -> list[Pod] | SyftError:
     pool = None
@@ -363,6 +365,8 @@ def create_kubernetes_pool(
             registry_username=registry_username,
             registry_password=registry_password,
             reg_url=reg_url,
+            pod_annotations=pod_annotations,
+            pod_labels=pod_labels,
         )
     except Exception as e:
         if pool:
@@ -405,6 +409,8 @@ def run_workers_in_kubernetes(
     registry_username: str | None = None,
     registry_password: str | None = None,
     reg_url: str | None = None,
+    pod_annotations: dict[str, str] | None = None,
+    pod_labels: dict[str, str] | None = None,
     **kwargs: Any,
 ) -> list[ContainerSpawnStatus] | SyftError:
     spawn_status = []
@@ -422,6 +428,8 @@ def run_workers_in_kubernetes(
                 registry_username=registry_username,
                 registry_password=registry_password,
                 reg_url=reg_url,
+                pod_annotations=pod_annotations,
+                pod_labels=pod_labels,
             )
         else:
             return SyftError(
@@ -504,6 +512,8 @@ def run_containers(
     registry_username: str | None = None,
     registry_password: str | None = None,
     reg_url: str | None = None,
+    pod_annotations: dict[str, str] | None = None,
+    pod_labels: dict[str, str] | None = None,
 ) -> list[ContainerSpawnStatus] | SyftError:
     results = []
 
@@ -540,6 +550,8 @@ def run_containers(
             registry_username=registry_username,
             registry_password=registry_password,
             reg_url=reg_url,
+            pod_annotations=pod_annotations,
+            pod_labels=pod_labels,
         )
 
     return results

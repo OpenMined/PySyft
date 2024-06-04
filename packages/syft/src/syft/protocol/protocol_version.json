@@ -281,8 +281,21 @@
         },
         "5": {
           "version": 5,
-          "hash": "ad19de9b665a18fdfeb7988f964e814fee4f55a30ed1b2f8ba279a3004592a9d",
-          "action": "add"
+          "hash": "ad19de9b665a18fdfeb7988f964e814fee4f55a30ed1b2f8ba279a3004592a9d"
+        },
+        "CreateCustomWorkerPoolChange": {
+          "3": {
+            "version": 3,
+            "hash": "e982f2ebcdc6fe23a65a014109e33ba7c487bb7ca5623723cf5ec7642f86828c",
+            "action": "add"
+          }
+        },
+        "NodePeerUpdate": {
+          "1": {
+            "version": 1,
+            "hash": "9e7cd39f6a9f90e8c595452865525e0989df1688236acfd1a665ed047ba47de9",
+            "action": "add"
+          }
         }
       }
     }
