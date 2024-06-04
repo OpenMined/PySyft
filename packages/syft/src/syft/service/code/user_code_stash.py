@@ -4,9 +4,8 @@
 from typing import cast
 
 # third party
-from result import Ok
 from result import Err
-from ...store.store_errors import StashException, StashNotFoundException
+from result import Ok
 
 # relative
 from ...node.credentials import SyftVerifyKey
@@ -15,6 +14,8 @@ from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
+from ...store.store_errors import StashException
+from ...store.store_errors import StashNotFoundException
 from ...types.result import catch
 from ...types.uid import UID
 from ...util.telemetry import instrument
@@ -46,22 +47,24 @@ class UserCodeStash(BaseUIDStoreStash):
             case Ok(user_code_list):
                 return cast(list[UserCode], [user_code_list])
             case Ok(None):
-                raise StashNotFoundException(f"UserCode not found for user {user_verify_key}")
+                raise StashNotFoundException(
+                    f"UserCode not found for user {user_verify_key}"
+                )
             case Err(msg):
                 raise StashException(msg)
             case _:
                 raise StashException("Unknown error")
 
     @catch(StashNotFoundException, StashException)
-    def get_by_code_hash(
-        self, credentials: SyftVerifyKey, code_hash: str
-    ) -> UserCode:
+    def get_by_code_hash(self, credentials: SyftVerifyKey, code_hash: str) -> UserCode:
         qks = QueryKeys(qks=[CodeHashPartitionKey.with_obj(code_hash)])
         match self.query_one(credentials=credentials, qks=qks):
             case Ok(user_code):
                 return cast(UserCode, user_code)
             case Ok(None):
-                raise StashNotFoundException(f"UserCode not found with hash {code_hash}")
+                raise StashNotFoundException(
+                    f"UserCode not found with hash {code_hash}"
+                )
             case Err(msg):
                 raise StashException(msg)
             case _:
@@ -97,7 +100,7 @@ class UserCodeStash(BaseUIDStoreStash):
                 raise StashException(msg)
             case _:
                 raise StashException("Unknown error")
-       
+
     @catch(StashException)
     def set(self, credentials: SyftVerifyKey, user_code: UserCode) -> UserCode:
         match super().set(credentials=credentials, obj=user_code):

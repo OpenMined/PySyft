@@ -5,14 +5,9 @@ from typing import TypeVar
 from typing import cast
 
 # third party
+from _history.code_history_service import CodeHistoryService
 from result import Err
 from result import Ok
-from syft.service.code.status_service import UserCodeStatusService
-from syft.service.code.user_code_errors import UserCodeInvalidRequestException
-from syft.service.code_history.code_history_service import CodeHistoryService
-from syft.service.user.user_service import UserService
-from syft.service.worker.worker_pool_service import SyftWorkerPoolService
-from syft.store.store_errors import StashException, StashNotFoundException
 
 # relative
 from ...abstract_node import NodeType
@@ -20,6 +15,8 @@ from ...client.enclave_client import EnclaveClient
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
+from ...store.store_errors import StashException
+from ...store.store_errors import StashNotFoundException
 from ...types.cache_object import CachedSyftObject
 from ...types.errors import SyftException
 from ...types.result import catch
@@ -48,10 +45,14 @@ from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_roles import ServiceRole
+from ..user.user_service import UserService
+from ..worker.worker_pool_service import SyftWorkerPoolService
+from .status_service import UserCodeStatusService
 from .user_code import SubmitUserCode
 from .user_code import UserCode
 from .user_code import UserCodeStatus
 from .user_code import load_approved_policy_code
+from .user_code_errors import UserCodeInvalidRequestException
 from .user_code_stash import UserCodeStash
 
 
@@ -82,7 +83,7 @@ class UserCodeService(AbstractService):
         if not isinstance(code, UserCode):
             code = code.to(UserCode, context=context)
         return self.stash.set(context.credentials, cast(UserCode, code)).unwrap()
-        
+
     @service_method(path="code.delete", name="delete", roles=ADMIN_ROLE_LEVEL)
     def delete(
         self, context: AuthedServiceContext, uid: UID
@@ -121,14 +122,13 @@ class UserCodeService(AbstractService):
             root_context = AuthedServiceContext(
                 credentials=context.node.verify_key, node=context.node
             )
-            status_service = cast(UserCodeStatusService, context.node.get_service("usercodestatusservice"))
-            _ = status_service.remove(
-                root_context, user_code.status_link.object_uid
+            status_service = cast(
+                UserCodeStatusService, context.node.get_service("usercodestatusservice")
             )
-            
+            _ = status_service.remove(root_context, user_code.status_link.object_uid)
+
         result = self._request_code_execution_inner(context, user_code, reason)
         return result
-
 
     @catch(StashNotFoundException, StashException, UserCodeInvalidRequestException)
     def _validate_request_code_execution(
@@ -161,7 +161,9 @@ class UserCodeService(AbstractService):
                 message="The code to be submitted (name and content) already exists"
             )
 
-        worker_pool_service = cast(SyftWorkerPoolService, context.node.get_service("SyftWorkerPoolService"))
+        worker_pool_service = cast(
+            SyftWorkerPoolService, context.node.get_service("SyftWorkerPoolService")
+        )
         pool_result = worker_pool_service._get_worker_pool(
             context,
             pool_name=user_code.worker_pool_name,
@@ -175,8 +177,12 @@ class UserCodeService(AbstractService):
             raise UserCodeInvalidRequestException(str(result.err()))
 
         # Create a code history
-        code_history_service = cast(CodeHistoryService, context.node.get_service("codehistoryservice"))
-        code_history = code_history_service.submit_version(context=context, code=user_code)
+        code_history_service = cast(
+            CodeHistoryService, context.node.get_service("codehistoryservice")
+        )
+        code_history = code_history_service.submit_version(
+            context=context, code=user_code
+        )
         if isinstance(result, SyftError):
             raise UserCodeInvalidRequestException(code_history.message)
 
@@ -392,7 +398,7 @@ class UserCodeService(AbstractService):
         user_service = cast(UserService, context.node.get_service("userservice"))
         current_user = user_service.get_current_user(context=context)
         if isinstance(current_user, SyftError):
-            raise SyftException('get_current_user_error')
+            raise SyftException("get_current_user_error")
         return current_user.mock_execution_permission
 
     def keep_owned_kwargs(
@@ -462,11 +468,9 @@ class UserCodeService(AbstractService):
 
         if not self.valid_worker_pool_for_context(context, code):
             raise SyftException(
-                (
-                    "You tried to run a syft function attached to a worker pool in blocking mode,"
-                    " which is currently not supported. Run your function with `blocking=False` to run"
-                    " as a job on your worker pool."
-                )
+                "You tried to run a syft function attached to a worker pool in blocking mode,"
+                " which is currently not supported. Run your function with `blocking=False` to run"
+                " as a job on your worker pool."
             )
 
         # Set Permissions
