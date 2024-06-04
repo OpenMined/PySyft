@@ -31,6 +31,8 @@ class KubernetesRunner:
         registry_username: str | None = None,
         registry_password: str | None = None,
         reg_url: str | None = None,
+        pod_annotations: dict[str, str] | None = None,
+        pod_labels: dict[str, str] | None = None,
         **kwargs: Any,
     ) -> StatefulSet:
         try:
@@ -52,6 +54,8 @@ class KubernetesRunner:
                 env_vars=env_vars,
                 mount_secrets=mount_secrets,
                 pull_secret=pull_secret,
+                pod_annotations=pod_annotations,
+                pod_labels=pod_labels,
                 **kwargs,
             )
 
@@ -147,6 +151,8 @@ class KubernetesRunner:
         env_vars: list[dict] | None = None,
         mount_secrets: dict | None = None,
         pull_secret: Secret | None = None,
+        pod_annotations: dict[str, str] | None = None,
+        pod_labels: dict[str, str] | None = None,
         **kwargs: Any,
     ) -> StatefulSet:
         """Create a stateful set for a pool"""
@@ -182,6 +188,16 @@ class KubernetesRunner:
                 }
             ]
 
+        default_pod_labels = {
+            "app.kubernetes.io/name": KUBERNETES_NAMESPACE,
+            "app.kubernetes.io/component": pool_name,
+        }
+
+        if isinstance(pod_labels, dict):
+            pod_labels = {**default_pod_labels, **pod_labels}
+        else:
+            pod_labels = default_pod_labels
+
         stateful_set = StatefulSet(
             {
                 "metadata": {
@@ -201,10 +217,8 @@ class KubernetesRunner:
                     },
                     "template": {
                         "metadata": {
-                            "labels": {
-                                "app.kubernetes.io/name": KUBERNETES_NAMESPACE,
-                                "app.kubernetes.io/component": pool_name,
-                            }
+                            "labels": pod_labels,
+                            "annotations": pod_annotations,
                         },
                         "spec": {
                             # TODO: make this configurable

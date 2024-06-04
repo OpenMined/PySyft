@@ -69,6 +69,8 @@ class SyftWorkerPoolService(AbstractService):
         num_workers: int,
         registry_username: str | None = None,
         registry_password: str | None = None,
+        pod_annotations: dict[str, str] | None = None,
+        pod_labels: dict[str, str] | None = None,
     ) -> list[ContainerSpawnStatus] | SyftError:
         """Creates a pool of workers from the given SyftWorkerImage.
 
@@ -128,6 +130,8 @@ class SyftWorkerPoolService(AbstractService):
             worker_stash=worker_stash,
             registry_username=registry_username,
             registry_password=registry_password,
+            pod_annotations=pod_annotations,
+            pod_labels=pod_labels,
         )
 
         if isinstance(result, SyftError):
@@ -163,6 +167,8 @@ class SyftWorkerPoolService(AbstractService):
         num_workers: int,
         image_uid: UID,
         reason: str | None = "",
+        pod_annotations: dict[str, str] | None = None,
+        pod_labels: dict[str, str] | None = None,
     ) -> SyftError | SyftSuccess:
         """
         Create a request to launch the worker pool based on a built image.
@@ -212,6 +218,8 @@ class SyftWorkerPoolService(AbstractService):
             pool_name=pool_name,
             num_workers=num_workers,
             image_uid=image_uid,
+            pod_annotations=pod_annotations,
+            pod_labels=pod_labels,
         )
 
         changes: list[Change] = [create_worker_pool_change]
@@ -240,6 +248,8 @@ class SyftWorkerPoolService(AbstractService):
         registry_uid: UID | None = None,
         reason: str | None = "",
         pull_image: bool = True,
+        pod_annotations: dict[str, str] | None = None,
+        pod_labels: dict[str, str] | None = None,
     ) -> SyftError | SyftSuccess:
         """
         Create a request to launch the worker pool based on a built image.
@@ -324,6 +334,8 @@ class SyftWorkerPoolService(AbstractService):
             pool_name=pool_name,
             num_workers=num_workers,
             config=config,
+            pod_annotations=pod_annotations,
+            pod_labels=pod_labels,
         )
         changes += [create_custom_image_change, create_worker_pool_change]
 
@@ -594,6 +606,8 @@ class SyftWorkerPoolService(AbstractService):
                 pool_name = change.pool_name
                 num_workers = change.num_workers
                 image_uid = change.image_uid
+                pod_annotations = change.pod_annotations
+                pod_labels = change.pod_labels
             elif isinstance(change, CreateCustomImageChange):  # type: ignore[unreachable]
                 config = change.config
                 tag = change.tag
@@ -604,6 +618,8 @@ class SyftWorkerPoolService(AbstractService):
                 pool_name=pool_name,
                 num_workers=num_workers,
                 image_uid=image_uid,
+                pod_annotations=pod_annotations,
+                pod_labels=pod_labels,
             )
         elif config is not None:
             return self.create_image_and_pool_request(  # type: ignore[unreachable]
@@ -612,6 +628,8 @@ class SyftWorkerPoolService(AbstractService):
                 num_workers=num_workers,
                 config=config,
                 tag=tag,
+                pod_annotations=pod_annotations,
+                pod_labels=pod_labels,
             )
         else:
             return SyftError(
@@ -658,6 +676,8 @@ def _create_workers_in_pool(
     worker_stash: WorkerStash,
     registry_username: str | None = None,
     registry_password: str | None = None,
+    pod_annotations: dict[str, str] | None = None,
+    pod_labels: dict[str, str] | None = None,
 ) -> tuple[list[LinkedObject], list[ContainerSpawnStatus]] | SyftError:
     queue_port = context.node.queue_config.client_config.queue_port
 
@@ -689,6 +709,8 @@ def _create_workers_in_pool(
             registry_username=registry_username,
             registry_password=registry_password,
             reg_url=registry_host,
+            pod_annotations=pod_annotations,
+            pod_labels=pod_labels,
         )
         if isinstance(result, SyftError):
             return result

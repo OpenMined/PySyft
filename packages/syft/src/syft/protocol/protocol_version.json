@@ -247,6 +247,13 @@
           "action": "remove"
         }
       },
+      "CreateCustomWorkerPoolChange": {
+        "3": {
+          "version": 3,
+          "hash": "e982f2ebcdc6fe23a65a014109e33ba7c487bb7ca5623723cf5ec7642f86828c",
+          "action": "add"
+        }
+      },
       "NodePeerUpdate": {
         "1": {
           "version": 1,
