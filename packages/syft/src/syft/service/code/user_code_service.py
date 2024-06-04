@@ -5,12 +5,10 @@ from typing import TypeVar
 from typing import cast
 
 # third party
-from pydantic_core.core_schema import is_subclass_schema
 from result import Err
 from result import Ok
-from result import Result
 from syft.service.code.status_service import UserCodeStatusService
-from syft.service.code.user_code_errors import UserCodeInvalidRequestException, UserCodeNoOutputReadersException
+from syft.service.code.user_code_errors import UserCodeInvalidRequestException
 from syft.service.code_history.code_history_service import CodeHistoryService
 from syft.service.user.user_service import UserService
 from syft.service.worker.worker_pool_service import SyftWorkerPoolService
@@ -540,10 +538,7 @@ class UserCodeService(AbstractService):
                                 code_item_id=code.id,
                             )
                             if inp_policy_validation.is_err():
-                                raise SyftException(
-                                    inp_policy_validation.err() or "Bad input policy.",
-                                    code="usercode-bad-input-policy",
-                                )
+                                raise SyftException(inp_policy_validation.err())
 
                         result = resolve_outputs(
                             context=context,
@@ -555,15 +550,9 @@ class UserCodeService(AbstractService):
                             error_msg=is_valid.message,
                         )
                     else:
-                        raise SyftException(
-                            "Input policy is invalid", code="usercode-bad-input-policy"
-                        )
+                        raise SyftException("Input policy is invalid")
                 raise SyftException(
-                    f"User {context.credentials} cannot execute UserCode {code.id}.",
-                    code="not-permitted",
-                    public_message="You cannot execute this code. Please contact the admin.",
-                    min_visible_role=ServiceRole.ADMIN,
-                    private=True,
+                    "You cannot execute this code. Please contact the admin."
                 )
 
         # Execute the code item
