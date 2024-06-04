@@ -154,5 +154,6 @@ def test_function_error(full_low_worker) -> None:
 
     job_info = ds_client.api.services.code.compute_sum(blocking=False)
     result = job_info.wait(timeout=10)
-    assert isinstance(result, SyftError)
+    assert isinstance(result, ActionObject)
+    assert isinstance(result.get(), SyftError)
     assert job_info.status == JobStatus.ERRORED

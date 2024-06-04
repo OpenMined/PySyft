@@ -214,7 +214,6 @@ def handle_message_multiprocessing(
             ):
                 status = Status.ERRORED
                 job_status = JobStatus.ERRORED
-                result = result.syft_action_data
         elif isinstance(result, SyftError) or isinstance(result, Err):
             status = Status.ERRORED
             job_status = JobStatus.ERRORED
