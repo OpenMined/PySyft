@@ -1,4 +1,6 @@
 # stdlib
+from dataclasses import dataclass
+from dataclasses import field
 from typing import Any
 
 # third party
@@ -9,10 +11,6 @@ from typing_extensions import Self
 from ...client.api import NodeIdentity
 from ...client.client import SyftClient
 from ...client.client import SyftClientSessionCache
-from ...serde.serializable import serializable
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
-from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
 from ..code.user_code import SubmitUserCode
@@ -26,18 +24,8 @@ from .project import ProjectRequest
 from .project import ProjectSubmit
 
 
-@serializable(without=["clients"])
-class DistributedProject(SyftObject):
-    __canonical_name__ = "DistributedProject"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    __hash_exclude_attrs__ = ["clients"]
-
-    # stash rules
-    __repr_attrs__ = ["name", "description", "created_by"]
-    __attr_unique__ = ["name"]
-
-    id: UID
+@dataclass
+class DistributedProject:
     name: str
     description: str = ""
     code: SubmitUserCode | None = None  # only one code per project for this prototype
@@ -47,8 +35,8 @@ class DistributedProject(SyftObject):
     )
     created_by: str | None = None
     username: str | None = None
-    all_projects: list[Project] = []
-    project_permissions: set[str] = set()  # Unused at the moment
+    all_projects: list[Project] = field(default_factory=list)
+    project_permissions: set[str] = field(default_factory=set)  # Unused at the moment
 
     def _coll_repr_(self) -> dict:
         return {
@@ -73,11 +61,30 @@ class DistributedProject(SyftObject):
             + "</div>"
         )
 
-    def __init__(self, *args: Any, **kwargs: Any):
-        code = kwargs.pop("code", None)
-        super().__init__(*args, **kwargs)
-        if code:
-            self.add_code(code)
+    def __post_init__(self) -> None:
+        if self.code:
+            self.add_code(self.code)
+
+    @classmethod
+    def get_by_name(cls, name: str, clients: list[SyftClient]) -> Self:
+        instance = cls(name=name)
+        for client in clients:
+            project = client.projects.get_by_name(name)
+            if isinstance(project, SyftError):
+                raise SyftException(project.message)
+            instance.all_projects.append(project)
+
+        # TODO verify that all the projects in the `all_projects` list are the same
+        project = instance.all_projects[0]
+
+        instance.description = project.description
+        instance.code = project.requests[0].code  # TODO fix possible errors
+        instance.clients = clients
+        instance.members = list(map(instance._to_node_identity, clients))
+        instance.created_by = project.created_by
+        instance.username = project.username
+
+        return instance
 
     @property
     def requests(self) -> list[Request]:
@@ -103,11 +110,11 @@ class DistributedProject(SyftObject):
         self.created_by = self.clients[0].logged_in_user
         self.username = self.clients[0].logged_in_username
 
-    def send(self) -> Self:
+    def submit(self) -> Self:
         if not self.code:
-            raise SyftException("Cannot send project without code.")
+            raise SyftException("Cannot submit project without code.")
         self._pre_submit_checks(self.clients)
-        projects_map = self._send_project_to_all_clients(self.clients)
+        projects_map = self._submit_project_to_all_clients(self.clients)
         self.all_projects = list(projects_map.values())
         return self
 
@@ -157,7 +164,7 @@ class DistributedProject(SyftObject):
 
         return True
 
-    def _send_project_to_all_clients(
+    def _submit_project_to_all_clients(
         self, clients: list[SyftClient]
     ) -> dict[SyftClient, Project]:
         projects_map: dict[SyftClient, Project] = {}

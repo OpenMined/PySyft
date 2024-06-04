@@ -2,6 +2,9 @@
 from enum import Enum
 from typing import Any
 
+# third party
+from typing_extensions import Self
+
 # relative
 from ...client.client import login_as_guest
 from ...serde.serializable import serializable
@@ -41,7 +44,7 @@ class EnclaveInstance(SyftObject):
 
     # TODO replace the create method with pydantic field validators, or find a better alternative
     @classmethod
-    def create(cls, route: NodeRouteType) -> "EnclaveInstance":
+    def create(cls, route: NodeRouteType) -> Self:
         # TODO: find the standard method to convert route to client object
         metadata = login_as_guest(url=route.host_or_ip, port=route.port).metadata
         if not metadata:
