@@ -9,6 +9,7 @@ import textwrap
 from typing import Any
 from typing import ClassVar
 from typing import Literal
+from typing import TYPE_CHECKING
 
 # third party
 from loguru import logger
@@ -38,6 +39,7 @@ from ...types.uid import LineageID
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
+from ...util.notebook_ui.components.sync import Label
 from ...util.notebook_ui.components.sync import SyncTableObject
 from ...util.notebook_ui.icons import Icon
 from ...util.notebook_ui.styles import FONT_CSS
@@ -58,6 +60,11 @@ from ..response import SyftError
 from ..response import SyftSuccess
 from ..user.user import UserView
 from .sync_state import SyncState
+
+if TYPE_CHECKING:
+    # relative
+    from .resolve_widget import PaginatedResolveWidget
+    from .resolve_widget import ResolveWidget
 
 sketchy_tab = "‎ " * 4
 
@@ -554,6 +561,12 @@ class ObjectDiffBatch(SyftObject):
     root_diff: ObjectDiff
     sync_direction: SyncDirection | None
 
+    def resolve(self) -> "ResolveWidget":
+        # relative
+        from .resolve_widget import ResolveWidget
+
+        return ResolveWidget(self)
+
     def walk_graph(
         self,
         deps: dict[UID, list[UID]],
@@ -704,6 +717,21 @@ class ObjectDiffBatch(SyftObject):
     def root_type(self) -> type:
         return self.root_diff.obj_type
 
+    def decision_badge(self) -> str:
+        if self.decision is None:
+            return ""
+        if self.decision == SyncDecision.IGNORE:
+            decision_str = "IGNORED"
+            badge_color = "label-red"
+        if self.decision == SyncDecision.SKIP:
+            decision_str = "SKIPPED"
+            badge_color = "label-gray"
+        else:
+            decision_str = "SYNCED"
+            badge_color = "label-green"
+
+        return Label(value=decision_str, label_class=badge_color).to_html()
+
     @property
     def is_ignored(self) -> bool:
         return self.decision == SyncDecision.IGNORE
@@ -846,9 +874,10 @@ class ObjectDiffBatch(SyftObject):
             high_html = SyncTableObject(object=self.root_diff.high_obj).to_html()
 
         return {
-            "Merge status": self.status_badge(),
+            "Diff status": self.status_badge(),
             "Public Sync State": low_html,
             "Private sync state": high_html,
+            "Decision": self.decision_badge(),
         }
 
     @property
@@ -1117,6 +1146,12 @@ class NodeDiff(SyftObject):
     filters: list[NodeDiffFilter] = []
 
     include_ignored: bool = False
+
+    def resolve(self) -> "PaginatedResolveWidget":
+        # relative
+        from .resolve_widget import PaginatedResolveWidget
+
+        return PaginatedResolveWidget(batches=self.batches)
 
     def __getitem__(self, idx: Any) -> ObjectDiffBatch:
         return self.batches[idx]

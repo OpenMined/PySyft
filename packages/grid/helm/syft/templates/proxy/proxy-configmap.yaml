@@ -1,3 +1,4 @@
+{{- if .Values.proxy.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -72,4 +73,4 @@ data:
     providers:
       file:
         filename: /etc/traefik/dynamic.yml
-
+{{- end }}

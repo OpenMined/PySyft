@@ -357,17 +357,17 @@ class MongoStorePartition(StorePartition):
         if has_permission or self.has_permission(
             ActionObjectWRITE(uid=prev_obj.id, credentials=credentials)
         ):
-            # we don't want to overwrite Mongo's "id_" or Syft's "id" on update
-            obj_id = obj["id"]
+            for key, value in obj.to_dict(exclude_empty=True).items():
+                # we don't want to overwrite Mongo's "id_" or Syft's "id" on update
+                if key == "id":
+                    # protected field
+                    continue
 
-            # Set ID to the updated object value
-            obj.id = prev_obj["id"]
+                # Overwrite the value if the key is already present
+                setattr(prev_obj, key, value)
 
             # Create the Mongo object
-            storage_obj = obj.to(self.storage_type)
-
-            # revert the ID
-            obj.id = obj_id
+            storage_obj = prev_obj.to(self.storage_type)
 
             try:
                 collection.update_one(

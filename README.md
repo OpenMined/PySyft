@@ -61,7 +61,7 @@ domain_client = sy.login(
 - <a href="notebooks/api/0.8/01-submit-code.ipynb">01-submit-code.ipynb</a>
 - <a href="notebooks/api/0.8/02-review-code-and-approve.ipynb">02-review-code-and-approve.ipynb</a>
 - <a href="notebooks/api/0.8/03-data-scientist-download-result.ipynb">03-data-scientist-download-result.ipynb</a>
-- <a href="notebooks/api/0.8/04-jax-example.ipynb">04-jax-example.ipynb</a>
+- <a href="notebooks/api/0.8/04-pytorch-example.ipynb">04-pytorch-example.ipynb</a>
 - <a href="notebooks/api/0.8/05-custom-policy.ipynb">05-custom-policy.ipynb</a>
 - <a href="notebooks/api/0.8/06-multiple-code-requests.ipynb">06-multiple-code-requests.ipynb</a>
 - <a href="notebooks/api/0.8/07-domain-register-control-flow.ipynb">07-domain-register-control-flow.ipynb</a>
@@ -72,6 +72,10 @@ domain_client = sy.login(
 - <a href="notebooks/api/0.8/12-custom-api-endpoint.ipynb">12-custom-api-endpoint.ipynb</a>
 
 ## Deploy Kubernetes Helm Chart
+
+#### 0. Deploy Kubernetes with 8+ Cores and 16GB RAM
+
+If you're using Docker Desktop to deploy your Kubernetes, you may need to go into Settings > Resources and increase CPUs and Memory.
 
 **Note**: Assuming we have a Kubernetes cluster already setup.
 
@@ -432,15 +436,6 @@ OpenMined and Syft appreciates all contributors, if you would like to fix a bug 
 </th>
 </tr>
 </table>
-
-# Open Collective
-
-`OpenMined` is a fiscally sponsored `501(c)(3)` in the USA. We are funded by our generous supporters on <a href="https://opencollective.com/openmined">Open Collective</a>. <br /><br />
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/opencollective_dark.png">
-  <img src="docs/img/opencollective_light.png" alt="Contributors" width="100%" />
-</picture>
 
 # Disclaimer
 

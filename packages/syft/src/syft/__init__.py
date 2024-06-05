@@ -1,4 +1,4 @@
-__version__ = "0.8.7-beta.7"
+__version__ = "0.8.7-beta.10"
 
 # stdlib
 from collections.abc import Callable
@@ -25,6 +25,7 @@ from .client.search import SearchResults  # noqa: F401
 from .client.user_settings import UserSettings  # noqa: F401
 from .client.user_settings import settings  # noqa: F401
 from .custom_worker.config import DockerWorkerConfig  # noqa: F401
+from .custom_worker.config import PrebuiltWorkerConfig  # noqa: F401
 from .node.credentials import SyftSigningKey  # noqa: F401
 from .node.domain import Domain  # noqa: F401
 from .node.enclave import Enclave  # noqa: F401
@@ -74,7 +75,6 @@ from .types.syft_object import SyftObject
 from .types.twin_object import TwinObject  # noqa: F401
 from .types.uid import UID  # noqa: F401
 from .util import filterwarnings  # noqa: F401
-from .util import jax_settings  # noqa: F401
 from .util import logger  # noqa: F401
 from .util import options  # noqa: F401
 from .util.autoreload import disable_autoreload  # noqa: F401
