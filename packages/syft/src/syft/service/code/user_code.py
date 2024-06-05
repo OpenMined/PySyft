@@ -320,6 +320,9 @@ class UserCode(SyncableSyftObject):
         "output_policy_type",
         "output_policy_init_kwargs",
         "output_policy_state",
+        "deployment_policy_type",
+        "deployment_policy_init_kwargs",
+        "deployment_policy_state",
     ]
 
     def __setattr__(self, key: str, value: Any) -> None:
