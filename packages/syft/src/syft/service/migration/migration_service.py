@@ -188,6 +188,7 @@ class MigrationService(AbstractService):
             canonical_name = klass.__canonical_name__
             object_partition = self.store.partitions.get(canonical_name)
             qk = object_partition.settings.store_key.with_obj(migrated_object.id)
+
             result = object_partition._update(
                 context.credentials,
                 qk=qk,
@@ -198,7 +199,7 @@ class MigrationService(AbstractService):
             )
 
             if result.is_err():
-                return result.err()
+                return result
         return Ok(value="success")
 
     @service_method(

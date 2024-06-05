@@ -336,6 +336,7 @@ class MongoStorePartition(StorePartition):
         obj: SyftObject,
         has_permission: bool = False,
         overwrite: bool = False,
+        allow_missing_keys=False,
     ) -> Result[SyftObject, str]:
         collection_status = self.collection
         if collection_status.is_err():

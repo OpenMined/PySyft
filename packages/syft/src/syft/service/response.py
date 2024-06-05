@@ -42,7 +42,7 @@ class SyftResponseMessage(SyftBaseModel):
     def _repr_html_(self) -> str:
         return (
             f'<div class="{self._repr_html_class_}" style="padding:5px;">'
-            + f"<strong>{type(self).__name__}</strong>: {self.message}</div><br />"
+            + f"<strong>{type(self).__name__}</strong>: {self.message.replace("\n", "</br>")}</div><br/>"
         )
 
 
