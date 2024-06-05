@@ -46,7 +46,7 @@ class DistributedProject:
             "pending requests": self.pending_requests,
         }
 
-    def _repr_html_(self) -> Any:
+    def _repr_html_(self) -> str:
         return (
             f"""
             <style>
@@ -117,6 +117,17 @@ class DistributedProject:
         projects_map = self._submit_project_to_all_clients(self.clients)
         self.all_projects = list(projects_map.values())
         return self
+
+    def request_execution(self, blocking: bool = True) -> Any:
+        # TODO
+        # 1. Check that pending_requests is 0, meaning all requests have been accepted
+        # 2. Request Enclave owner for access
+        # 3. Wait for Enclave to be set up by the owner domain (project, code and users)
+        # 4. Request each domain to transfer their assets to the Enclave
+        # 5. Execute the code on the Enclave
+        # 6. Return the results
+        # 7. Cleanup the Enclave
+        pass
 
     @staticmethod
     def _get_clients_from_code(code: SubmitUserCode) -> list[SyftClient]:
