@@ -295,7 +295,8 @@
         },
         "5": {
           "version": 5,
-          "hash": "ad19de9b665a18fdfeb7988f964e814fee4f55a30ed1b2f8ba279a3004592a9d"
+          "hash": "ad19de9b665a18fdfeb7988f964e814fee4f55a30ed1b2f8ba279a3004592a9d",
+          "action": "add"
         }
       }
     }
