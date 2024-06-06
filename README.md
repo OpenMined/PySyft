@@ -73,7 +73,10 @@ domain_client = sy.login(
 
 ## Deploy Kubernetes Helm Chart
 
-#### 0. Deploy Kubernetes with 8+ Cores and 16GB RAM
+#### 0. Deploy Kubernetes
+
+Required resources: 1 CPU and 4GB RAM. However, you will need some special instructions to deploy, please consult [these instructions](https://github.com/OpenMined/PySyft/blob/dev/notebooks/tutorials/deployments/03-deploy-k8s-k3d.ipynb) or look at the resource constraint testing [here](https://github.com/OpenMined/PySyft/pull/8828#issue-2300774645).  
+Recommended resources: 8+ Cores and 16GB RAM
 
 If you're using Docker Desktop to deploy your Kubernetes, you may need to go into Settings > Resources and increase CPUs and Memory.
 
