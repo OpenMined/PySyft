@@ -940,10 +940,11 @@ class Project(SyftObject):
         )
 
     def get_messages(self) -> list[ProjectMessage, ProjectThreadMessage]:
-        return [event
-                for event in self.events 
-                if isinstance(event, (ProjectMessage, ProjectThreadMessage))
-               ]
+        return [
+            event
+            for event in self.events 
+            if isinstance(event, (ProjectMessage, ProjectThreadMessage))
+        ]
 
     @property
     def messages(self) -> str:
