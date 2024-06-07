@@ -943,7 +943,7 @@ class Project(SyftObject):
         return [
             event
             for event in self.events
-            if isinstance(event, (ProjectMessage, ProjectThreadMessage))
+            if isinstance(event, (ProjectMessage | ProjectThreadMessage))
         ]
 
     @property
