@@ -939,7 +939,7 @@ class Project(SyftObject):
             reason=reason,
         )
 
-    def get_messages(self) -> list[ProjectMessage, ProjectThreadMessage]:
+    def get_messages(self) -> list[ProjectMessage | ProjectThreadMessage]:
         return [
             event
             for event in self.events
