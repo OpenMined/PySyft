@@ -137,7 +137,5 @@ class UsersCodeHistoriesDict(SyftObject):
         return api.services.code_history.get_history_for_user(key)
 
     def _repr_html_(self) -> str:
-        rows = []
-        for user, funcs in self.user_dict.items():
-            rows += [{"user": user, "UserCodes": funcs}]
+        rows = [{"user": user, "UserCodes": funcs} for user, funcs in self.user_dict.items()]
         return create_table_template(rows, "UserCodeHistory", icon=None)
