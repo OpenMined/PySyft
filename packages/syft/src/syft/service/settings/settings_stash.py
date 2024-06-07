@@ -34,7 +34,7 @@ class SettingsStash(BaseUIDStoreStash):
         self,
         credentials: SyftVerifyKey,
         settings: NodeSettings,
-        add_permission: list[ActionObjectPermission] | None = None,
+        add_permissions: list[ActionObjectPermission] | None = None,
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> Result[NodeSettings, str]:
@@ -42,7 +42,13 @@ class SettingsStash(BaseUIDStoreStash):
         # we dont use and_then logic here as it is hard because of the order of the arguments
         if res.is_err():
             return res
-        return super().set(credentials=credentials, obj=res.ok())
+        return super().set(
+            credentials=credentials,
+            obj=res.ok(),
+            add_permissions=add_permissions,
+            add_storage_permission=add_storage_permission,
+            ignore_duplicates=ignore_duplicates,
+        )
 
     def update(
         self,

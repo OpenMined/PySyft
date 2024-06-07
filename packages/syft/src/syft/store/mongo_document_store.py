@@ -291,14 +291,25 @@ class MongoStorePartition(StorePartition):
                 f"The fields that should be unique are {keys}."
             )
         else:
+            # TODO: h4x fix ?????? how is this supposed to work? This returns if
+            # ignore_duplicates is set to True.....????!?!?
+
             # we are not throwing an error, because we are ignoring duplicates
             # we are also not writing though
-            return Ok(obj)
+            # return Ok(obj)
+            pass
 
         if can_write:
             storage_obj = obj.to(self.storage_type)
 
-            collection.insert_one(storage_obj)
+            # update if it exists
+            if store_key_exists:
+                collection.update_one(
+                    filter=store_query_key.as_dict_mongo,
+                    update={"$set": storage_obj},
+                )
+            else:
+                collection.insert_one(storage_obj)
 
             # adding permissions
             read_permission = ActionObjectPermission(
@@ -864,7 +875,7 @@ class MongoBackingStore(KeyValueBackingStore):
             )
         except Exception as e:
             raise RuntimeError(
-                f"Failed to update obj: {key} with value: {value}. Error: {e}"
+                f"Failed to update obj: {key} with value: {type(value)}. Error: {e}"
             )
 
     def __setitem__(self, key: Any, value: Any) -> None:

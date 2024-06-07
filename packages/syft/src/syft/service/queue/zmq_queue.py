@@ -261,12 +261,17 @@ class ZMQProducer(QueueProducer):
         if res.is_err():
             return arg
         action_object = res.ok()
-        data = action_object.syft_action_data
-        new_data = self.unwrap_nested_actionobjects(data)
-        new_action_object = ActionObject.from_obj(new_data, id=action_object.id)
-        res = self.action_service.set(
-            context=self.auth_context, action_object=new_action_object
-        )
+
+        # TODO: do this elsewhere, because here it breaks mongo by setting data back
+        # really we shouldnt have nested issues requiring this in the first place
+
+        # data = action_object.syft_action_data
+        # new_data = self.unwrap_nested_actionobjects(data)
+        # new_action_object = ActionObject.from_obj(new_data, id=action_object.id)
+        # res = self.action_service.set(
+        #     context=self.auth_context, action_object=new_action_object
+        # )
+        return action_object
 
     def read_items(self) -> None:
         while True:
