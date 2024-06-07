@@ -72,10 +72,10 @@ def deserialize_iterable(iterable_type: type, blob: bytes) -> Collection:
     with iterable_schema.from_bytes(
         blob, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
     ) as msg:
-        values = (
+        values = [
             _deserialize(combine_bytes(element), from_bytes=True)
             for element in msg.values
-        )
+        ]
 
     return iterable_type(values)
 
