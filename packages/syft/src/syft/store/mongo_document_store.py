@@ -425,7 +425,8 @@ class MongoStorePartition(StorePartition):
         res = [
             s
             for s in syft_objs
-            if has_permission or self.has_permission(ActionObjectREAD(uid=s.id, credentials=credentials))
+            if has_permission
+            or self.has_permission(ActionObjectREAD(uid=s.id, credentials=credentials))
         ]
         return Ok(res)
 
