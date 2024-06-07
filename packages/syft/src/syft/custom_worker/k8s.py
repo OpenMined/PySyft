@@ -126,7 +126,6 @@ class KubeUtils:
             for pod in pods
         )
 
-
     @staticmethod
     def get_pod_status(pod: Pod) -> PodStatus | None:
         """Map the status of the given pod to PodStatuss."""
@@ -153,7 +152,6 @@ class KubeUtils:
             for pod in pods
             for container_status in pod.status.containerStatuses
         ]
-
 
     @staticmethod
     def get_container_exit_message(pods: list[Pod]) -> str | None:
