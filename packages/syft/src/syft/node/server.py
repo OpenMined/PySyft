@@ -286,10 +286,12 @@ def find_python_processes_on_port(port: int) -> list[int]:
     python_pids = []
     for pid in pids:
         if system == "Windows":
-            command = f"wmic process where (ProcessId='{pid}') get ProcessId,CommandLine"
+            command = (
+                f"wmic process where (ProcessId='{pid}') get ProcessId,CommandLine"
+            )
         else:
             command = f"ps -p {pid} -o pid,command"
-    
+
         try:
             process = subprocess.Popen(  # nosec
                 command,
@@ -302,11 +304,11 @@ def find_python_processes_on_port(port: int) -> list[int]:
         except Exception as e:
             print(f"Error checking process {pid}: {e}")
             continue
-    
+
         lines = output.strip().split("\n")
         if len(lines) > 1 and "python" in lines[1].lower():
             python_pids.append(pid)
-    
+
     return python_pids
 
 
