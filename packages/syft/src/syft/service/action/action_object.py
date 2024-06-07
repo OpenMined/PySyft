@@ -1090,11 +1090,9 @@ class ActionObject(SyncableSyftObject):
         if kwargs is None:
             kwargs = {}
 
-        arg_ids = []
-        kwarg_ids = {}
+        arg_ids = [self._syft_prepare_obj_uid(obj) for obj in args]
 
-        for obj in args:
-            arg_ids.append(self._syft_prepare_obj_uid(obj))
+        kwarg_ids = {}
 
         for k, obj in kwargs.items():
             kwarg_ids[k] = self._syft_prepare_obj_uid(obj)
