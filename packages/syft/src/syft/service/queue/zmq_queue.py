@@ -957,12 +957,12 @@ class ZMQClient(QueueClient):
 
     def close(self) -> SyftError | SyftSuccess:
         try:
-            for _, consumers in self.consumers.items():
+            for consumers in self.consumers.values():
                 for consumer in consumers:
                     # make sure look is stopped
                     consumer.close()
 
-            for _, producer in self.producers.items():
+            for producer in self.producers.values():
                 # make sure loop is stopped
                 producer.close()
                 # close existing connection.
