@@ -134,9 +134,10 @@ class CodeHistoryService(AbstractService):
             code_versions_dict = {}
 
             for code_history in code_histories:
-                user_code_list = []
-                for uid in code_history.user_code_history:
-                    user_code_list.append(get_code(uid))
+                user_code_list = [
+                    get_code(uid)
+                    for uid in code_history.user_code_history
+                ]
                 code_versions = CodeHistoryView(
                     user_code_history=user_code_list,
                     service_func_name=code_history.service_func_name,
