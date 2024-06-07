@@ -300,7 +300,10 @@ class ZMQProducer(QueueProducer):
                             continue
                         for arg in action.args:
                             self.preprocess_action_arg(arg)
-                        [self.preprocess_action_arg(arg) for _, arg in action.kwargs.items()]
+                        [
+                            self.preprocess_action_arg(arg)
+                            for arg in action.kwargs.values()
+                        ]
 
                     msg_bytes = serialize(item, to_bytes=True)
                     worker_pool = item.worker_pool.resolve_with_context(
