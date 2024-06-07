@@ -503,30 +503,6 @@ class ZMQProducer(QueueProducer):
             self.send_heartbeats()
             self.purge_workers()
 
-            items = None
-
-            try:
-                items = self.poll_workers.poll(ZMQ_POLLER_TIMEOUT_MSEC)
-            except Exception as e:
-                logger.exception("Failed to poll items: {}", e)
-
-            if items:
-                msg = self.socket.recv_multipart()
-
-                logger.debug("Recieve: {}", msg)
-
-                address = msg.pop(0)
-                empty = msg.pop(0)  # noqa: F841
-                header = msg.pop(0)
-
-                if header == QueueMsgProtocol.W_WORKER:
-                    self.process_worker(address, msg)
-                else:
-                    logger.error("Invalid message header: {}", header)
-
-            self.send_heartbeats()
-            self.purge_workers()
-
     def require_worker(self, address: bytes) -> Worker:
         """Finds the worker (creates if necessary)."""
         identity = hexlify(address)
