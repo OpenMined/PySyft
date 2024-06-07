@@ -64,17 +64,14 @@ def serialize_iterable(iterable: Collection) -> bytes:
 
 
 def deserialize_iterable(iterable_type: type, blob: bytes) -> Collection:
-    # relative
     from .deserialize import _deserialize
 
     MAX_TRAVERSAL_LIMIT = 2**64 - 1
-    values = []
 
     with iterable_schema.from_bytes(
         blob, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
     ) as msg:
-        for element in msg.values:
-            values.append(_deserialize(combine_bytes(element), from_bytes=True))
+        values = (_deserialize(combine_bytes(element), from_bytes=True) for element in msg.values)
 
     return iterable_type(values)
 
