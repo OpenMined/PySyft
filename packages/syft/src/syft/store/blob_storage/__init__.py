@@ -41,10 +41,10 @@ Read/retrieve SyftObject from blob storage
 """
 
 # stdlib
-import time
 from collections.abc import Callable
 from collections.abc import Generator
 from io import BytesIO
+import time
 from typing import Any
 
 # third party
