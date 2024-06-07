@@ -7,7 +7,7 @@ from syft.types.uid import LineageID
 from syft.types.uid import UID
 
 
-def test_lineage_id() -> None:.
+def test_lineage_id() -> None:
     rng = np.random.default_rng()
     data1 = sy.ActionObject.from_obj(syft_action_data=2 * rng.random.rand(10, 10) - 1)
     data2 = sy.ActionObject.from_obj(syft_action_data=2 * rng.random.rand(10, 10) - 1)
