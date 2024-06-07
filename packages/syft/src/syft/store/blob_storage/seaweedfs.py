@@ -122,7 +122,7 @@ class SeaweedFSBlobDeposit(BlobDeposit):
                         ) -> None:
                             """Creates a data generator for the part"""
                             n = 0
-                        
+
                             while True:
                                 if n * chunk_size >= part_size:
                                     break
@@ -132,7 +132,7 @@ class SeaweedFSBlobDeposit(BlobDeposit):
                                 self.no_lines += chunk.count(b"\n")
                                 n += 1
                                 queue.put(chunk)
-                        
+
                             # Use None to indicate the end of the part or file
                             queue.put(None)
 
