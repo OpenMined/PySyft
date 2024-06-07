@@ -740,7 +740,7 @@ def debox_signed_syftapicall_response(
 
 def downgrade_signature(signature: Signature, object_versions: dict) -> Signature:
     migrated_parameters = []
-    for _, parameter in signature.parameters.items():
+    for parameter in signature.parameters.values():
         annotation = unwrap_and_migrate_annotation(
             parameter.annotation, object_versions
         )
