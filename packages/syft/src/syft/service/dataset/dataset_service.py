@@ -177,25 +177,24 @@ class DatasetService(AbstractService):
             return datasets
         return SyftError(message=result.err())
 
-
-@service_method(
-    path="dataset.get_assets_by_action_id",
-    name="get_assets_by_action_id",
-    roles=DATA_SCIENTIST_ROLE_LEVEL,
-)
-def get_assets_by_action_id(
-    self, context: AuthedServiceContext, uid: UID
-) -> list[Asset] | SyftError:
-    """Get Assets by an Action ID"""
-    datasets = self.get_by_action_id(context=context, uid=uid)
-    if isinstance(datasets, SyftError):
-        return datasets
-    return [
-        asset
-        for dataset in datasets
-        for asset in dataset.asset_list
-        if asset.action_id == uid
-    ]
+    @service_method(
+        path="dataset.get_assets_by_action_id",
+        name="get_assets_by_action_id",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
+    def get_assets_by_action_id(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> list[Asset] | SyftError:
+        """Get Assets by an Action ID"""
+        datasets = self.get_by_action_id(context=context, uid=uid)
+        if isinstance(datasets, SyftError):
+            return datasets
+        return [
+            asset
+            for dataset in datasets
+            for asset in dataset.asset_list
+            if asset.action_id == uid
+        ]
 
     @service_method(
         path="dataset.delete_by_uid",
