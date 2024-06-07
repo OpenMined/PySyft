@@ -177,6 +177,7 @@ class DatasetService(AbstractService):
             return datasets
         return SyftError(message=result.err())
 
+
 @service_method(
     path="dataset.get_assets_by_action_id",
     name="get_assets_by_action_id",
@@ -189,7 +190,12 @@ def get_assets_by_action_id(
     datasets = self.get_by_action_id(context=context, uid=uid)
     if isinstance(datasets, SyftError):
         return datasets
-    return [asset for dataset in datasets for asset in dataset.asset_list if asset.action_id == uid]
+    return [
+        asset
+        for dataset in datasets
+        for asset in dataset.asset_list
+        if asset.action_id == uid
+    ]
 
     @service_method(
         path="dataset.delete_by_uid",
