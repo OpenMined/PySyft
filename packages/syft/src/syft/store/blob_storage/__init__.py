@@ -139,12 +139,12 @@ def syft_iter_content(
 
         except requests.exceptions.RequestException as e:
             if attempt < max_retries:
-                logging.error(
+                print(
                     f"Attempt {attempt}/{max_retries} failed: {e} at byte {current_byte}. Retrying..."
                 )
                 time.sleep(2**attempt)  # exponential backoff
             else:
-                logging.error(f"Max retries reached. Failed with error: {e}")
+                print(f"Max retries reached. Failed with error: {e}")
                 raise
 
 
