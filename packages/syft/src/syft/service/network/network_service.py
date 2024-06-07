@@ -901,8 +901,13 @@ class NetworkService(AbstractService):
         )
         all_requests: list[Request] = request_get_all_method(context)
         association_requests: list[Request] = [
-            request for request in all_requests 
-            if any(isinstance(change, AssociationRequestChange) and change.remote_peer.id == peer_id for change in request.changes)
+            request
+            for request in all_requests
+            if any(
+                isinstance(change, AssociationRequestChange)
+                and change.remote_peer.id == peer_id
+                for change in request.changes
+            )
         ]
 
         return sorted(
