@@ -45,7 +45,8 @@ from collections.abc import Callable
 from collections.abc import Generator
 from io import BytesIO
 import time
-from typing import Any, Generator, Union
+from typing import Any
+from typing import Union
 
 # third party
 from pydantic import BaseModel
