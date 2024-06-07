@@ -16,7 +16,7 @@ select = [
     "C4",   # flake8-comprehensions
     "NPY",  # NumPy-specific rules
     "PERF", # Perflint
-    "PTH"   # flake8-use-pathlib
+    "PTH",  # flake8-use-pathlib
     "UP",   # pyupgrade
 ]
 ignore = [
