@@ -180,10 +180,11 @@ class WorkerPool(SyftObject):
     @property
     def running_workers(self) -> list[SyftWorker] | SyftError:
         """Query the running workers using an API call to the server"""
-        _running_workers = []
-        for worker in self.workers:
-            if worker.status == WorkerStatus.RUNNING:
-                _running_workers.append(worker)
+        _running_workers = [
+            worker
+            for worker in self.workers
+            if worker.status == WorkerStatus.RUNNING
+        ]
 
         return _running_workers
 
@@ -194,9 +195,11 @@ class WorkerPool(SyftObject):
         """
         _healthy_workers = []
 
-        for worker in self.workers:
-            if worker.healthcheck == WorkerHealth.HEALTHY:
-                _healthy_workers.append(worker)
+        _healthy_workers = [
+            worker
+            for worker in self.workers
+            if worker.healthcheck == WorkerHealth.HEALTHY
+        ]
 
         return _healthy_workers
 
