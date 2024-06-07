@@ -2170,7 +2170,7 @@ def has_action_data_empty(args: Any, kwargs: Any) -> bool:
         if is_action_data_empty(a):
             return True
 
-    for _, a in kwargs.items():
+    for a in kwargs.values():
         if is_action_data_empty(a):
             return True
     return False
