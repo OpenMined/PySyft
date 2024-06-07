@@ -142,7 +142,7 @@ def syft_iter_content(
                 logging.error(
                     f"Attempt {attempt}/{max_retries} failed: {e} at byte {current_byte}. Retrying..."
                 )
-                time.sleep(2 ** attempt)  # exponential backoff
+                time.sleep(2**attempt)  # exponential backoff
             else:
                 logging.error(f"Max retries reached. Failed with error: {e}")
                 raise
