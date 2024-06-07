@@ -15,6 +15,7 @@ select = [
     "B",    # flake8-bugbear
     "C4",   # flake8-comprehensions
     "NPY",  # NumPy-specific rules
+    "PD",   # pandas-vet
     "PERF", # Perflint
     "PTH",  # flake8-use-pathlib
     "UP",   # pyupgrade
