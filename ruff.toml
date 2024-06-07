@@ -17,7 +17,9 @@ select = [
     "NPY",  # NumPy-specific rules
     "PD",   # pandas-vet
     "PERF", # Perflint
+    "PL",   # Pylint
     "PTH",  # flake8-use-pathlib
+    "SIM",  # flake8-simplify
     "UP",   # pyupgrade
 ]
 ignore = [
