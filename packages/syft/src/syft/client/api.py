@@ -1101,7 +1101,7 @@ class SyftAPI(SyftObject):
             endpoints: dict[str, LibEndpoint], communication_protocol: PROTOCOL_TYPE
         ) -> APIModule:
             api_module = APIModule(path="", refresh_callback=self.refresh_api_callback)
-            for _, v in endpoints.items():
+            for v in endpoints.values():
                 signature = v.signature
                 if not v.has_self:
                     signature = signature_remove_self(signature)
