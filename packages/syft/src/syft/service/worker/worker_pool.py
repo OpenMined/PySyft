@@ -181,9 +181,7 @@ class WorkerPool(SyftObject):
     def running_workers(self) -> list[SyftWorker] | SyftError:
         """Query the running workers using an API call to the server"""
         _running_workers = [
-            worker
-            for worker in self.workers
-            if worker.status == WorkerStatus.RUNNING
+            worker for worker in self.workers if worker.status == WorkerStatus.RUNNING
         ]
 
         return _running_workers
