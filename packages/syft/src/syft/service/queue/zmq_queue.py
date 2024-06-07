@@ -300,8 +300,7 @@ class ZMQProducer(QueueProducer):
                             continue
                         for arg in action.args:
                             self.preprocess_action_arg(arg)
-                        for _, arg in action.kwargs.items():
-                            self.preprocess_action_arg(arg)
+                        [self.preprocess_action_arg(arg) for _, arg in action.kwargs.items()]
 
                     msg_bytes = serialize(item, to_bytes=True)
                     worker_pool = item.worker_pool.resolve_with_context(
@@ -476,8 +475,38 @@ class ZMQProducer(QueueProducer):
             if self._stop.is_set():
                 return
 
-            for _, service in self.services.items():
-                self.dispatch(service, None)
+                def _run(self) -> None:
+        while True:
+            if self._stop.is_set():
+                return
+
+            for service in self.services.keys():
+                thread = threading.Thread(target=self.dispatch, args=(service, None))
+                thread.start()
+
+            items = None
+
+            try:
+                items = self.poll_workers.poll(ZMQ_POLLER_TIMEOUT_MSEC)
+            except Exception as e:
+                logger.exception("Failed to poll items: {}", e)
+
+            if items:
+                msg = self.socket.recv_multipart()
+
+                logger.debug("Recieve: {}", msg)
+
+                address = msg.pop(0)
+                empty = msg.pop(0)  # noqa: F841
+                header = msg.pop(0)
+
+                if header == QueueMsgProtocol.W_WORKER:
+                    self.process_worker(address, msg)
+                else:
+                    logger.error("Invalid message header: {}", header)
+
+            self.send_heartbeats()
+            self.purge_workers()
 
             items = None
 
