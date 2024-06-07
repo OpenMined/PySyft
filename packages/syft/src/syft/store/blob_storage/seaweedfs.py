@@ -115,26 +115,23 @@ class SeaweedFSBlobDeposit(BlobDeposit):
 
                         def add_chunks_to_queue(
                             self,
-                            data: IO[bytes],
-                            part_size: int,
                             queue: Queue,
                             chunk_size: int = DEFAULT_UPLOAD_CHUNK_SIZE,
                         ) -> None:
-                            """Creates a data generator for the part"""
+                            """Creates a data geneator for the part"""
                             n = 0
 
-                            while True:
-                                if n * chunk_size >= part_size:
-                                    break
-                                chunk = data.read(chunk_size)
-                                if not chunk:
-                                    break
-                                self.no_lines += chunk.count(b"\n")
-                                n += 1
-                                queue.put(chunk)
-
-                            # Use None to indicate the end of the part or file
-                            queue.put(None)
+                            while n * chunk_size <= part_size:
+                                try:
+                                    chunk = data.read(chunk_size)
+                                    self.no_lines += chunk.count(b"\n")
+                                    n += 1
+                                    queue.put(chunk)
+                                except BlockingIOError:
+                                    # if end of file, stop
+                                    queue.put(0)
+                            # if end of part, stop
+                            queue.put(0)
 
                     gen = PartGenerator()
 
