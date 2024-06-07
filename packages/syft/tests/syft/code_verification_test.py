@@ -12,7 +12,7 @@ from syft.service.action.numpy import NumpyArrayObject
 def data1() -> ActionObject:
     """Returns an Action Object with a NumPy dataset with values between -1 and 1"""
     rng = np.random.default_rng()
-    yield NumpyArrayObject.from_obj(2 * rng.random(10, 10) - 1)
+    yield NumpyArrayObject.from_obj(2 * rng.random((10, 10)) - 1)
 
 
 @pytest.fixture
