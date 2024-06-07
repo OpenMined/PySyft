@@ -239,7 +239,7 @@ class APIService(AbstractService):
 
         all_api_endpoints = result.ok()
         api_endpoint_view = [
-            api_endpoint.to(TwinAPIEndpointView, context=context) 
+            api_endpoint.to(TwinAPIEndpointView, context=context)
             for api_endpoint in all_api_endpoints
         ]
 
