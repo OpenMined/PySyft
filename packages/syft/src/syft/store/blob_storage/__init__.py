@@ -46,7 +46,6 @@ from collections.abc import Generator
 from io import BytesIO
 import time
 from typing import Any
-from typing import Union
 
 # third party
 from pydantic import BaseModel
@@ -118,7 +117,7 @@ class SyftObjectRetrieval(BlobRetrieval):
 
 
 def syft_iter_content(
-    blob_url: Union[str, GridURL],
+    blob_url: str | GridURL,
     chunk_size: int,
     max_retries: int = MAX_RETRIES,
     timeout: int = DEFAULT_TIMEOUT,
