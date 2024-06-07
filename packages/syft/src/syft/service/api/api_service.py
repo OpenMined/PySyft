@@ -238,11 +238,7 @@ class APIService(AbstractService):
             return SyftError(message=result.err())
 
         all_api_endpoints = result.ok()
-        api_endpoint_view = []
-        for api_endpoint in all_api_endpoints:
-            api_endpoint_view.append(
-                api_endpoint.to(TwinAPIEndpointView, context=context)
-            )
+        api_endpoint_view = [api_endpoint.to(TwinAPIEndpointView, context=context) for api_endpoint in all_api_endpoints]
 
         return api_endpoint_view
 
