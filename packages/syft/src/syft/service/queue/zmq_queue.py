@@ -475,11 +475,6 @@ class ZMQProducer(QueueProducer):
             if self._stop.is_set():
                 return
 
-                def _run(self) -> None:
-        while True:
-            if self._stop.is_set():
-                return
-
             for service in self.services.keys():
                 thread = threading.Thread(target=self.dispatch, args=(service, None))
                 thread.start()
