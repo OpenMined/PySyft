@@ -88,7 +88,7 @@ def _create_table_rows(
             ret_val = item._coll_repr_()
             if "id" in ret_val:
                 del ret_val["id"]
-            for key in ret_val.keys():
+            for key in ret_val:
                 cols[key].append(ret_val[key])
         else:
             for field in extra_fields:
@@ -136,7 +136,7 @@ def _create_table_rows(
                     value = None
                 cols[field].append(str(value))
 
-    col_lengths = {len(cols[col]) for col in cols.keys()}
+    col_lengths = {len(cols[col]) for col in cols}
     if len(col_lengths) != 1:
         raise ValueError(
             "Cannot create table for items with different number of fields."
@@ -150,7 +150,7 @@ def _create_table_rows(
     rows = []
     for i in range(num_rows):
         row = {}
-        for col in cols.keys():
+        for col in cols:
             row[col] = cols[col][i]
         rows.append(row)
 
