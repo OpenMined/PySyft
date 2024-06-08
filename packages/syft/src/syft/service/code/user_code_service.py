@@ -287,7 +287,7 @@ class UserCodeService(AbstractService):
 
         if code.is_enclave_code:
             # if the current node is not the enclave
-            if not context.node.node_type == NodeType.ENCLAVE:
+            if context.node.node_type != NodeType.ENCLAVE:
                 connection = route_to_connection(code.enclave_metadata.route)
                 enclave_client = EnclaveClient(
                     connection=connection,
