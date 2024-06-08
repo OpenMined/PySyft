@@ -17,7 +17,7 @@ select = [
     # "NPY",  # NumPy-specific rules
     # "PERF", # Perflint
     # "PL",   # Pylint
-    "PTH",  # flake8-use-pathlib
+    # "PTH",  # flake8-use-pathlib
     # "SIM",  # flake8-simplify
     "UP",   # pyupgrade
 ]
