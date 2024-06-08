@@ -34,9 +34,7 @@ class SearchResults:
                     if dataset.id == key:
                         return dataset
                 elif isinstance(key, str):
-                    if dataset.name == key:
-                        return dataset
-                    elif str(dataset.id) == key:
+                    if dataset.name == key or str(dataset.id) == key:
                         return dataset
         raise KeyError
 
