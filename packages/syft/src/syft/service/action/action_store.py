@@ -241,13 +241,14 @@ class KeyValueActionStore(ActionStore):
             return True
 
         # 🟡 TODO 14: add ALL_READ, ALL_EXECUTE etc
-        if permission.permission == ActionPermission.OWNER:
-            pass
-        elif permission.permission == ActionPermission.READ:
-            pass
-        elif permission.permission == ActionPermission.WRITE:
-            pass
-        elif permission.permission == ActionPermission.EXECUTE:
+        if (
+            permission.permission == ActionPermission.OWNER
+            or permission.permission == ActionPermission.READ
+            or (
+                permission.permission == ActionPermission.WRITE
+                or permission.permission == ActionPermission.EXECUTE
+            )
+        ):
             pass
 
         return False
