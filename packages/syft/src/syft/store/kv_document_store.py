@@ -295,9 +295,10 @@ class KeyValueStorePartition(StorePartition):
             in self.permissions[permission.uid]
         ):
             return True
-        elif permission.permission == ActionPermission.WRITE:
-            pass
-        elif permission.permission == ActionPermission.EXECUTE:
+        elif (
+            permission.permission == ActionPermission.WRITE
+            or permission.permission == ActionPermission.EXECUTE
+        ):
             pass
 
         return False
