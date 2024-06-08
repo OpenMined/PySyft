@@ -107,7 +107,7 @@ class CodeHistoriesDict(SyftObject):
 
     def __getattr__(self, name: str) -> Any:
         code_versions = object.__getattribute__(self, "code_versions")
-        if name in code_versions.keys():
+        if name in code_versions:
             return code_versions[name]
         return object.__getattribute__(self, name)
 
