@@ -336,7 +336,7 @@ class KeyValueStorePartition(StorePartition):
         has_permission: bool | None = False,
     ) -> Result[list[BaseStash.object_type], str]:
         # this checks permissions
-        res = [self._get(uid, credentials, has_permission) for uid in self.data.keys()]
+        res = [self._get(uid, credentials, has_permission) for uid in self.data]
         result = [x.ok() for x in res if x.is_ok()]
         if order_by is not None:
             result = sorted(result, key=lambda x: getattr(x, order_by.key, ""))
@@ -538,7 +538,7 @@ class KeyValueStorePartition(StorePartition):
                 if pk_key not in self.unique_keys:
                     return Err(f"Failed to query index with {qk}")
                 ck_col = self.unique_keys[pk_key]
-                if pk_value not in ck_col.keys():
+                if pk_value not in ck_col:
                     # must be at least one in all query keys
                     continue
                 store_value = ck_col[pk_value]
@@ -573,7 +573,7 @@ class KeyValueStorePartition(StorePartition):
                     # the values of the list will be turned into strings in a single key
                     matches = set()
                     for item in pk_value:
-                        for col_key in ck_col.keys():
+                        for col_key in ck_col:
                             if str(item) in col_key:
                                 store_values = ck_col[col_key]
                                 for value in store_values:
@@ -582,7 +582,7 @@ class KeyValueStorePartition(StorePartition):
                         subsets.append(matches)
                 else:
                     # this is the normal path
-                    if pk_value not in ck_col.keys():
+                    if pk_value not in ck_col:
                         # must be at least one in all query keys
                         subsets.append(set())
                         continue
