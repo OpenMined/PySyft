@@ -51,10 +51,7 @@ def check_rule(
         if required.minor > stable_version.minor:
             pre = " --pre"
         msg = f"Alternatively you could try to match {op_char}{required} with:\n"
-        if required > syft_version:
-            upgrade = f"pip install -U{pre} syft or "
-        else:
-            upgrade = ""
+        upgrade = f"pip install -U{pre} syft or " if required > syft_version else ""
         msg += f"{upgrade}pip install syft=={required}"
         messages.append(msg)
     return result, requirements, messages
