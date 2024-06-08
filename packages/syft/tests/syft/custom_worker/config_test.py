@@ -30,14 +30,14 @@ DEFAULT_BUILD_CONFIG = {
     "custom_cmds": [],
 }
 # must follow the default values set in CustomBuildConfig class definition
-assert DEFAULT_BUILD_CONFIG == to_json_like_dict(CustomBuildConfig())
+assert to_json_like_dict(CustomBuildConfig()) == DEFAULT_BUILD_CONFIG
 
 
 DEFAULT_WORKER_CONFIG_VERSION = "1"
 # must be set to the default value of CustomWorkerConfig.version
 assert (
-    DEFAULT_WORKER_CONFIG_VERSION
-    == CustomWorkerConfig(build=CustomBuildConfig()).version
+    CustomWorkerConfig(build=CustomBuildConfig()).version
+    == DEFAULT_WORKER_CONFIG_VERSION
 )
 
 
