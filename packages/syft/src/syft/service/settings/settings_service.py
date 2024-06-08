@@ -269,10 +269,7 @@ class SettingsService(AbstractService):
             )
 
         welcome_msg = None
-        if markdown:
-            welcome_msg = MarkdownDescription(text=markdown)
-        else:
-            welcome_msg = HTMLObject(text=html)
+        welcome_msg = MarkdownDescription(text=markdown) if markdown else HTMLObject(text=html)
 
         return welcome_msg
 
