@@ -583,9 +583,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
                     check_type(value, var_annotation)
                 setattr(self, attr, value)
             elif not _is_optional(var_annotation):
-                raise ValueError(
-                    f"{attr}\n field required (type=value_error.missing)"
-                )
+                raise ValueError(f"{attr}\n field required (type=value_error.missing)")
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
