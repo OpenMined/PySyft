@@ -139,7 +139,7 @@ class DataProtocol:
     def read_history(self) -> dict:
         protocol_history = self.read_json(self.file_path)
 
-        for version in protocol_history.keys():
+        for version in protocol_history:
             if version == "dev":
                 continue
             release_version_path = (
@@ -183,14 +183,14 @@ class DataProtocol:
                     state_versions = state_dict[canonical_name]
                     state_version_hashes = [val[0] for val in state_versions.values()]
                     if action == "add" and (
-                        str(version) in state_versions.keys()
+                        str(version) in state_versions
                         or hash_str in state_version_hashes
                     ):
                         raise Exception(
                             f"Can't add {object_metadata} already in state {versions}"
                         )
                     elif action == "remove" and (
-                        str(version) not in state_versions.keys()
+                        str(version) not in state_versions
                         and hash_str not in state_version_hashes
                     ):
                         raise Exception(
@@ -246,12 +246,12 @@ class DataProtocol:
 
                 versions = state[canonical_name]
                 if (
-                    str(version) in versions.keys()
+                    str(version) in versions
                     and versions[str(version)][0] == hash_str
                 ):
                     # already there so do nothing
                     continue
-                elif str(version) in versions.keys():
+                elif str(version) in versions:
                     is_protocol_dev = versions[str(version)][1] == "dev"
                     if is_protocol_dev:
                         # force overwrite existing object so its an add
@@ -297,7 +297,7 @@ class DataProtocol:
                     object_diff[canonical_name][str(version)]["action"] = "remove"
                     continue
                 versions = compare_dict[canonical_name]
-                if str(version) not in versions.keys():
+                if str(version) not in versions:
                     # missing so its a remove
                     object_diff[canonical_name][str(version)] = {}
                     object_diff[canonical_name][str(version)]["version"] = int(version)
@@ -365,7 +365,7 @@ class DataProtocol:
             )
 
         highest_protocol = 0
-        for k in self.protocol_history.keys():
+        for k in self.protocol_history:
             if k == "dev":
                 continue
             highest_protocol = max(highest_protocol, int(k))
@@ -518,7 +518,7 @@ class DataProtocol:
 
     @property
     def has_dev(self) -> bool:
-        if "dev" in self.protocol_history.keys():
+        if "dev" in self.protocol_history:
             return True
         return False
 
