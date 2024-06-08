@@ -311,7 +311,7 @@ def create_table_template(
     if len(table_data) == 0:
         cols = 0
     else:
-        col_names = [k for k in table_data[0].keys() if k != TABLE_INDEX_KEY]
+        col_names = [k for k in table_data[0] if k != TABLE_INDEX_KEY]
         cols = (len(col_names)) * 4
     if "{cols}" in grid_template_columns:
         grid_template_columns = grid_template_columns.format(cols=cols)
