@@ -91,7 +91,7 @@ class NetworkRegistry:
                     online = False
 
             if online:
-                version = network.get("version", None)
+                version = network.get("version")
                 # Check if syft version was described in NetworkRegistry
                 # If it's unknown, try to update it to an available version.
                 if not version or version == "unknown":
@@ -227,7 +227,7 @@ class DomainRegistry:
                     online = False
 
             if online:
-                version = network.get("version", None)
+                version = network.get("version")
                 # Check if syft version was described in NetworkRegistry
                 # If it's unknown, try to update it to an available version.
                 if not version or version == "unknown":
@@ -381,7 +381,7 @@ class EnclaveRegistry:
                 online = False
 
             if online:
-                version = enclave.get("version", None)
+                version = enclave.get("version")
                 # Check if syft version was described in EnclaveRegistry
                 # If it's unknown, try to update it to an available version.
                 if not version or version == "unknown":
