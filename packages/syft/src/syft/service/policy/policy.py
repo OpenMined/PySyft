@@ -294,7 +294,7 @@ def allowed_ids_only(
             f"Invalid Node Type for Code Submission:{context.node.node_type}"
         )
     filtered_kwargs = {}
-    for key in allowed_inputs.keys():
+    for key in allowed_inputs:
         if key in kwargs:
             value = kwargs[key]
             uid = value
@@ -354,7 +354,7 @@ class ExactMatch(InputPolicy):
 
         expected_input_kwargs = set()
         for _inp_kwargs in self.inputs.values():
-            for k in _inp_kwargs.keys():
+            for k in _inp_kwargs:
                 if k not in usr_input_kwargs:
                     return Err(f"Function missing required keyword argument: '{k}'")
             expected_input_kwargs.update(_inp_kwargs.keys())
@@ -827,7 +827,7 @@ def execute_policy_code(user_policy: UserPolicy) -> Any:
         sys.stderr = stderr
 
         class_name = f"{user_policy.unique_name}"
-        if class_name in user_policy.__object_version_registry__.keys():
+        if class_name in user_policy.__object_version_registry__:
             policy_class = user_policy.__object_version_registry__[class_name]
         else:
             exec(user_policy.byte_code)  # nosec
