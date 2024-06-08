@@ -121,10 +121,7 @@ class ActionService(AbstractService):
         )
         if result.is_ok():
             if isinstance(action_object, TwinObject):
-                if has_result_read_permission:
-                    action_object = action_object.private
-                else:
-                    action_object = action_object.mock
+                action_object = action_object.private if has_result_read_permission else action_object.mock
 
             action_object.syft_point_to(context.node.id)
             return Ok(action_object)
