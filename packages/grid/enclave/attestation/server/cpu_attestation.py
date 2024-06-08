@@ -8,7 +8,7 @@ from loguru import logger
 def attest_cpu() -> tuple[str, str]:
     # Fetch report from Micrsoft Attestation library
     cpu_report = subprocess.run(
-        ["/app/AttestationClient"], capture_output=True, text=True
+        ["/app/AttestationClient"], capture_output=True, text=True, check=False
     )
     logger.debug(f"Stdout: {cpu_report.stdout}")
     logger.debug(f"Stderr: {cpu_report.stderr}")
@@ -20,7 +20,10 @@ def attest_cpu() -> tuple[str, str]:
 
     # Fetch token from Micrsoft Attestation library
     cpu_token = subprocess.run(
-        ["/app/AttestationClient", "-o", "token"], capture_output=True, text=True
+        ["/app/AttestationClient", "-o", "token"],
+        capture_output=True,
+        text=True,
+        check=False,
     )
     logger.debug(f"Stdout: {cpu_token.stdout}")
     logger.debug(f"Stderr: {cpu_token.stderr}")
