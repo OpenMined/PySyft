@@ -373,12 +373,15 @@ class UserService(AbstractService):
                 f"As a {context.role} you have no permission to delete user with {user.role} permission"
             )
         )
-        if context.role == ServiceRole.DATA_OWNER and user.role in [
-            ServiceRole.GUEST,
-            ServiceRole.DATA_SCIENTIST,
-        ]:
-            pass
-        elif context.role == ServiceRole.ADMIN:
+        if (
+            context.role == ServiceRole.DATA_OWNER
+            and user.role
+            in [
+                ServiceRole.GUEST,
+                ServiceRole.DATA_SCIENTIST,
+            ]
+            or context.role == ServiceRole.ADMIN
+        ):
             pass
         else:
             return permission_error
