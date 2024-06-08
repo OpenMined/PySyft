@@ -1277,13 +1277,14 @@ class UserCodeStatusChange(Change):
         msg += "to permission RequestStatus.APPROVED."
         if self.code.nested_codes is None or self.code.nested_codes == {}:  # type: ignore
             msg += " No nested requests"
+        elif self.nested_solved:
+            # else:
+            msg += (
+                "<br><br>This change requests the following nested functions calls:<br>"
+            )
+            msg += self.nested_repr()
         else:
-            if self.nested_solved:
-                # else:
-                msg += "<br><br>This change requests the following nested functions calls:<br>"
-                msg += self.nested_repr()
-            else:
-                msg += " Nested Requests not resolved"
+            msg += " Nested Requests not resolved"
         return msg
 
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
