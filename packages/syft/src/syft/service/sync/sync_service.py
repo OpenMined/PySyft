@@ -100,7 +100,7 @@ class SyncService(AbstractService):
         if isinstance(item, UserCodeStatusCollection):
             identity = NodeIdentity.from_node(context.node)
             res = {}
-            for key in item.status_dict.keys():
+            for key in item.status_dict:
                 # todo, check if they are actually only two nodes
                 res[identity] = item.status_dict[key]
             item.status_dict = res
