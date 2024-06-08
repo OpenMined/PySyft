@@ -1599,7 +1599,9 @@ def load_approved_policy_code(
     """Reload the policy code in memory for user code that is approved."""
     try:
         for user_code in user_code_items:
-            status = user_code.status if context is None else user_code.get_status(context)
+            status = (
+                user_code.status if context is None else user_code.get_status(context)
+            )
 
             if status.approved:
                 if isinstance(user_code.input_policy_type, UserPolicy):
