@@ -115,7 +115,7 @@ def stage_protocol(protocol_file: Path):
         # Cleanup release dir, remove unused released files
         for _file_path in protocol_release_dir().iterdir():
             for version in dp.read_json(_file_path):
-                if version not in dp.protocol_history.keys():
+                if version not in dp.protocol_history:
                     _file_path.unlink()
 
 
