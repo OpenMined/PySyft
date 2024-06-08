@@ -154,7 +154,7 @@ class DataProtocol:
         for file_path in protocol_release_dir().iterdir():
             for version in self.read_json(file_path):
                 # Skip adding file if the version is not part of the history
-                if version not in history.keys():
+                if version not in history:
                     continue
                 history[version] = {"release_name": file_path.name}
         self.file_path.write_text(json.dumps(history, indent=2) + "\n")
@@ -245,10 +245,7 @@ class DataProtocol:
                     continue
 
                 versions = state[canonical_name]
-                if (
-                    str(version) in versions
-                    and versions[str(version)][0] == hash_str
-                ):
+                if str(version) in versions and versions[str(version)][0] == hash_str:
                     # already there so do nothing
                     continue
                 elif str(version) in versions:
