@@ -254,10 +254,7 @@ def refresh_worker_status(
     worker_stash: WorkerStash,
     credentials: SyftVerifyKey,
 ) -> list[SyftWorker]:
-    if IN_KUBERNETES:
-        result = refresh_status_kubernetes(workers)
-    else:
-        result = refresh_status_docker(workers)
+    result = refresh_status_kubernetes(workers) if IN_KUBERNETES else refresh_status_docker(workers)
 
     if isinstance(result, SyftError):
         return result
