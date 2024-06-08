@@ -1932,18 +1932,17 @@ class ActionObject(SyncableSyftObject):
 
         if isinstance(self.syft_action_data_cache, ActionDataEmpty):
             data_repr_ = self.syft_action_data_repr_
+        elif inspect.isclass(self.syft_action_data_cache):
+            data_repr_ = repr_cls(self.syft_action_data_cache)
         else:
-            if inspect.isclass(self.syft_action_data_cache):
-                data_repr_ = repr_cls(self.syft_action_data_cache)
-            else:
-                data_repr_ = (
-                    self.syft_action_data_cache._repr_markdown_()
-                    if (
-                        self.syft_action_data_cache is not None
-                        and hasattr(self.syft_action_data_cache, "_repr_markdown_")
-                    )
-                    else self.syft_action_data_cache.__repr__()
+            data_repr_ = (
+                self.syft_action_data_cache._repr_markdown_()
+                if (
+                    self.syft_action_data_cache is not None
+                    and hasattr(self.syft_action_data_cache, "_repr_markdown_")
                 )
+                else self.syft_action_data_cache.__repr__()
+            )
 
         return f"```python\n{res}\n{data_repr_}\n```\n"
 
