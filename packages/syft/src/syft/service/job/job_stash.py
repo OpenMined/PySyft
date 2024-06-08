@@ -229,16 +229,15 @@ class Job(SyncableSyftObject):
         if self.status in [JobStatus.PROCESSING, JobStatus.COMPLETED]:
             if self.current_iter is None:
                 return ""
-            else:
-                if self.n_iters is not None:
-                    return self.time_remaining_string
-                # if self.current_iter !=0
-                # we can compute the remaining time
+            elif self.n_iters is not None:
+                return self.time_remaining_string
+            # if self.current_iter !=0
+            # we can compute the remaining time
 
-                # we cannot compute the remaining time
-                else:
-                    n_iters_str = "?" if self.n_iters is None else str(self.n_iters)
-                    return f"{self.current_iter}/{n_iters_str}"
+            # we cannot compute the remaining time
+            else:
+                n_iters_str = "?" if self.n_iters is None else str(self.n_iters)
+                return f"{self.current_iter}/{n_iters_str}"
         else:
             return ""
 
@@ -394,10 +393,8 @@ class Job(SyncableSyftObject):
                 # no access
                 if isinstance(self.result, Err):
                     results.append(self.result.value)
-        else:
-            # add short error
-            if isinstance(self.result, Err):
-                results.append(self.result.value)
+        elif isinstance(self.result, Err):
+            results.append(self.result.value)
 
         if has_permissions:
             has_storage_permission = api.services.log.has_storage_permission(
