@@ -187,12 +187,9 @@ def resolve_references(json_mappings: dict[str, dict]) -> dict[str, dict]:
                 if _type_str in primitive_mapping.values():
                     # no issue with primitive types
                     continue
-                else:
-                    # if we don't have a type yet its because its not supported
-                    # lets create an empty type to satisfy the generation process
-                    if _type_str not in json_mappings.keys():
-                        reference = make_fake_type(_type_str)
-                        new_types[_type_str] = reference
+                elsif _type_str not in json_mappings.keys():
+                    reference = make_fake_type(_type_str)
+                    new_types[_type_str] = reference
 
                 # if the type is a reference we need to replace its type entry after
                 replace_types[attribute] = {
