@@ -21,10 +21,10 @@ def get_operator(version_string: str) -> tuple[str, Callable, str]:
     if len(version_string) > 2:
         two_char = version_string[0:2]
         one_char = version_string[0:1]
-        if two_char in operators.keys():
+        if two_char in operators:
             op_char = two_char
             version_string = version_string[2:]
-        elif one_char in operators.keys():
+        elif one_char in operators:
             op_char = one_char
             version_string = version_string[1:]
     op = operators[op_char]
