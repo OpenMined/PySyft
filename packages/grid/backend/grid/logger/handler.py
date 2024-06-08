@@ -26,7 +26,7 @@ class LogHandler:
         format_string: str = self.config.LOGURU_FORMAT
 
         if record["extra"] is not None:
-            for key in record["extra"].keys():
+            for key in record["extra"]:
                 record["extra"][key] = pformat(
                     record["extra"][key], indent=2, compact=False, width=88
                 )
@@ -47,7 +47,7 @@ class LogHandler:
         logging.root.setLevel(self.config.LOGURU_LEVEL)
         logging.root.handlers = [intercept_handler]
 
-        for log in logging.root.manager.loggerDict.keys():
+        for log in logging.root.manager.loggerDict:
             log_instance = logging.getLogger(log)
             log_instance.handlers = []
             log_instance.propagate = True
