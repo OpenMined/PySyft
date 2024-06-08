@@ -453,7 +453,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
         class_name = get_qualname_for(type(self))
         _repr_str = f"class {class_name}:\n"
         fields = getattr(self, "model_fields", {})
-        for attr in fields.keys():
+        for attr in fields:
             if attr in DYNAMIC_SYFT_ATTRIBUTES:
                 continue
             value = getattr(self, attr, "<Missing>")
@@ -811,5 +811,5 @@ def attach_attribute_to_syft_object(result: Any, attr_dict: dict[str, Any]) -> N
             for attr_name, attr_value in attr_dict.items():
                 setattr(_object, attr_name, attr_value)
 
-            for field in _object.model_fields.keys():
+            for field in _object.model_fields:
                 attach_attribute_to_syft_object(getattr(_object, field), attr_dict)
