@@ -582,11 +582,10 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
                     # Otherwise validate value against the variable annotation
                     check_type(value, var_annotation)
                 setattr(self, attr, value)
-            else:
-                if not _is_optional(var_annotation):
-                    raise ValueError(
-                        f"{attr}\n field required (type=value_error.missing)"
-                    )
+            elif not _is_optional(var_annotation):
+                raise ValueError(
+                    f"{attr}\n field required (type=value_error.missing)"
+                )
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
@@ -736,16 +735,15 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
                         raise AttributeError(
                             f"{type(self).__name__!r} object has no attribute {item!r}"
                         ) from exc
+                elif hasattr(self.__class__, item):
+                    return self.__getattribute__(
+                        item
+                    )  # Raises AttributeError if appropriate
                 else:
-                    if hasattr(self.__class__, item):
-                        return self.__getattribute__(
-                            item
-                        )  # Raises AttributeError if appropriate
-                    else:
-                        # this is the current error
-                        raise AttributeError(
-                            f"{type(self).__name__!r} object has no attribute {item!r}"
-                        )
+                    # this is the current error
+                    raise AttributeError(
+                        f"{type(self).__name__!r} object has no attribute {item!r}"
+                    )
 
 
 def short_qual_name(name: str) -> str:
