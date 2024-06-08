@@ -6,6 +6,10 @@ target-version = "py310"
 
 extend-exclude = ["*.gypi"]
 
+fix = true
+
+unsafe-fixes = true
+
 # Enable flake8-bugbear (`B`) rules.
 # https://beta.ruff.rs/docs/configuration/#using-rufftoml
 [lint]
