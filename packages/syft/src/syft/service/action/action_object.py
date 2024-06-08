@@ -875,7 +875,7 @@ class ActionObject(SyncableSyftObject):
     @classmethod
     def __check_action_data(cls, values: dict) -> dict:
         v = values.get("syft_action_data_cache")
-        if values.get("syft_action_data_type", None) is None:
+        if values.get("syft_action_data_type") is None:
             values["syft_action_data_type"] = type(v)
         if not isinstance(v, ActionDataEmpty):
             if inspect.isclass(v):
@@ -975,9 +975,11 @@ class ActionObject(SyncableSyftObject):
         return client.api.services.request.submit(submit_request)
 
     def _syft_try_to_save_to_store(self, obj: SyftObject) -> None:
-        if self.syft_node_uid is None or self.syft_client_verify_key is None:
-            return
-        elif obj.syft_node_uid is not None:
+        if (
+            self.syft_node_uid is None
+            or self.syft_client_verify_key is None
+            or obj.syft_node_uid is not None
+        ):
             return
 
         if obj.syft_blob_storage_entry_id is not None:
