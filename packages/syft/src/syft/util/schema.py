@@ -187,7 +187,7 @@ def resolve_references(json_mappings: dict[str, dict]) -> dict[str, dict]:
                 if _type_str in primitive_mapping.values():
                     # no issue with primitive types
                     continue
-                elif _type_str not in json_mappings.keys():
+                elif _type_str not in json_mappings:
                     reference = make_fake_type(_type_str)
                     new_types[_type_str] = reference
 
