@@ -1397,10 +1397,7 @@ class ActionObject(SyncableSyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
-        if isinstance(self.id, LineageID):
-            obj_id = self.id.id
-        else:
-            obj_id = self.id
+        obj_id = self.id.id if isinstance(self.id, LineageID) else self.id
 
         counter = 0
         while api and not api.services.action.is_resolved(obj_id):
