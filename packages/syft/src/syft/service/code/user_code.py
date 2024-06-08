@@ -383,13 +383,13 @@ class UserCode(SyncableSyftObject):
     @property
     def input_owners(self) -> list[str] | None:
         if self.input_policy_init_kwargs is not None:
-            return [str(x.node_name) for x in self.input_policy_init_kwargs.keys()]
+            return [str(x.node_name) for x in self.input_policy_init_kwargs]
         return None
 
     @property
     def input_owner_verify_keys(self) -> list[SyftVerifyKey] | None:
         if self.input_policy_init_kwargs is not None:
-            return [x.verify_key for x in self.input_policy_init_kwargs.keys()]
+            return [x.verify_key for x in self.input_policy_init_kwargs]
         return None
 
     @property
@@ -928,7 +928,7 @@ class SubmitUserCode(SyftObject):
     @property
     def input_owner_verify_keys(self) -> list[str] | None:
         if self.input_policy_init_kwargs is not None:
-            return [x.verify_key for x in self.input_policy_init_kwargs.keys()]
+            return [x.verify_key for x in self.input_policy_init_kwargs]
         return None
 
 
@@ -1086,7 +1086,7 @@ def new_check_code(context: TransformContext) -> TransformContext:
 
     input_kwargs = context.output["input_policy_init_kwargs"]
     node_view_workaround = False
-    for k in input_kwargs.keys():
+    for k in input_kwargs:
         if isinstance(k, NodeIdentity):
             node_view_workaround = True
 
@@ -1599,10 +1599,7 @@ def load_approved_policy_code(
     """Reload the policy code in memory for user code that is approved."""
     try:
         for user_code in user_code_items:
-            if context is None:
-                status = user_code.status
-            else:
-                status = user_code.get_status(context)
+            status = user_code.status if context is None else user_code.get_status(context)
 
             if status.approved:
                 if isinstance(user_code.input_policy_type, UserPolicy):
