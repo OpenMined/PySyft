@@ -519,7 +519,7 @@ class ZMQProducer(QueueProducer):
 
         worker = self.require_worker(address)
 
-        if QueueMsgProtocol.W_READY == command:
+        if command == QueueMsgProtocol.W_READY:
             service_name = msg.pop(0).decode()
             syft_worker_id = msg.pop(0).decode()
             if worker_ready:
@@ -552,7 +552,7 @@ class ZMQProducer(QueueProducer):
                 worker.syft_worker_id = UID(syft_worker_id)
                 self.worker_waiting(worker)
 
-        elif QueueMsgProtocol.W_HEARTBEAT == command:
+        elif command == QueueMsgProtocol.W_HEARTBEAT:
             if worker_ready:
                 # If worker is ready then reset expiry
                 # and add it to worker waiting list
@@ -563,7 +563,7 @@ class ZMQProducer(QueueProducer):
                 # Get the corresponding worker pool and worker
                 # update the status to be unhealthy
                 self.delete_worker(worker, True)
-        elif QueueMsgProtocol.W_DISCONNECT == command:
+        elif command == QueueMsgProtocol.W_DISCONNECT:
             self.delete_worker(worker, False)
         else:
             logger.error("Invalid command: {}", command)
