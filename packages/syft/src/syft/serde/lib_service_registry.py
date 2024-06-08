@@ -88,7 +88,7 @@ class CMPBase:
 
         child_paths = set(self.children.keys())
 
-        for attr_name in getattr(self.obj, "__dict__", {}).keys():
+        for attr_name in getattr(self.obj, "__dict__", {}):
             if attr_name not in LIB_IGNORE_ATTRIBUTES:
                 if attr_name in child_paths:
                     child = self.children[attr_name]
@@ -169,10 +169,7 @@ class CMPBase:
                 return False
             else:
                 child_parent_module = child.__package__.rsplit(".", 1)[0]
-                if parent.__package__ == child_parent_module:
-                    return True
-                else:
-                    return False
+                return parent.__package__ == child_parent_module
         except Exception:  # nosec
             pass
         return False
@@ -243,10 +240,9 @@ class CMPBase:
         )
         tree_prefix = "└───" if is_last else "├───"
         indent_str = "│    " * indent + tree_prefix
-        if parent_path != "":
-            path = self.path.replace(f"{parent_path}.", "")
-        else:
-            path = self.path
+        path = (
+            self.path.replace(f"{parent_path}.", "") if parent_path != "" else self.path
+        )
         return f"{indent_str}{path} ({self.permissions})\n{children_string}"
 
 
