@@ -113,7 +113,7 @@ def forward_message_to_proxy(
 API_PATH = "/api/v2"
 DEFAULT_PYGRID_PORT = 80
 DEFAULT_PYGRID_ADDRESS = f"http://localhost:{DEFAULT_PYGRID_PORT}"
-INTERNAL_PROXY_URL = "http://proxy:80"
+INTERNAL_PROXY_TO_RATHOLE = "http://proxy:80/rathole/"
 
 
 class Routes(Enum):
@@ -124,7 +124,6 @@ class Routes(Enum):
     ROUTE_API_CALL = f"{API_PATH}/api_call"
     ROUTE_BLOB_STORE = "/blob"
     STREAM = f"{API_PATH}/stream"
-    RATHOLE = "/rathole"
 
 
 @serializable(attrs=["proxy_target_uid", "url", "rathole_token"])
@@ -192,7 +191,7 @@ class HTTPConnection(NodeConnection):
         url = self.url
 
         if self.rathole_token:
-            url = GridURL.from_url(INTERNAL_PROXY_URL).with_path(Routes.RATHOLE.value)
+            url = GridURL.from_url(INTERNAL_PROXY_TO_RATHOLE)
             headers = {"Host": self.url.host_or_ip}
 
         url = url.with_path(path)
@@ -227,7 +226,7 @@ class HTTPConnection(NodeConnection):
         url = self.url
 
         if self.rathole_token:
-            url = GridURL.from_url(INTERNAL_PROXY_URL).with_path(Routes.RATHOLE.value)
+            url = GridURL.from_url(INTERNAL_PROXY_TO_RATHOLE)
             headers = {"Host": self.url.host_or_ip}
 
         url = url.with_path(path)
@@ -339,9 +338,7 @@ class HTTPConnection(NodeConnection):
         headers = {}
 
         if self.rathole_token:
-            api_url = GridURL.from_url(INTERNAL_PROXY_URL).with_path(
-                Routes.RATHOLE.value
-            )
+            api_url = GridURL.from_url(INTERNAL_PROXY_TO_RATHOLE)
             api_url = api_url.with_path(self.routes.ROUTE_API_CALL.value)
             headers = {"Host": self.url.host_or_ip}
         else:

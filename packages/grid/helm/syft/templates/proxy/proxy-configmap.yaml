@@ -28,17 +28,17 @@ data:
               - url: "http://rathole:2333"
       routers:
         rathole:
-          rule: "PathPrefix(`/`) && Headers(`Upgrade`, `websocket`)"
+          rule: "PathPrefix(`/`) && Headers(`Upgrade`, `websocket`) && !PathPrefix(`/rathole`)"
           entryPoints:
             - "web"
           service: "rathole"
         frontend:
-          rule: "PathPrefix(`/`)"
+          rule: "PathPrefix(`/`) && !PathPrefix(`/rathole`)"
           entryPoints:
             - "web"
           service: "frontend"
         backend:
-          rule: "PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)"
+          rule: "(PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)) && !PathPrefix(`/rathole`)"
           entryPoints:
             - "web"
           service: "backend"

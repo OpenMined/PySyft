@@ -146,7 +146,7 @@ class RatholeService:
         }
 
         rathole_proxy["http"]["middlewares"]["strip-rathole-prefix"] = {
-            "replacePathRegex:": {"regex": "^/rathole/(.*)", "replacement": "/$1"}
+            "replacePathRegex": {"regex": "^/rathole/(.*)", "replacement": "/$1"}
         }
 
         proxy_rule = (
