@@ -289,10 +289,13 @@ class SyncService(AbstractService):
         for obj in all_items:
             if isinstance(obj, ExecutionOutput):
                 action_object_ids |= set(obj.output_id_list)
-            elif isinstance(obj, Job) and obj.result is not None:
-                if isinstance(obj.result, ActionObject):
-                    obj.result = obj.result.as_empty()
-                    action_object_ids.add(obj.result.id)
+            elif (
+                isinstance(obj, Job)
+                and obj.result is not None
+                and isinstance(obj.result, ActionObject)
+            ):
+                obj.result = obj.result.as_empty()
+                action_object_ids.add(obj.result.id)
 
         for uid in action_object_ids:
             action_object = context.node.get_service("actionservice").get(
