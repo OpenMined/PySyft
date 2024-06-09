@@ -58,10 +58,7 @@ def _get_files_from_dir(dir: Path, recursive: bool) -> list:
 
 
 def _contains_subdir(dir: Path) -> bool:
-    for item in dir.iterdir():
-        if item.is_dir():
-            return True
-    return False
+    return any(item.is_dir() for item in dir.iterdir())
 
 
 def add_default_uploader(
