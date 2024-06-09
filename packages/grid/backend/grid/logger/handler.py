@@ -65,7 +65,7 @@ class LogHandler:
 
         try:
             if (
-                self.config.LOGURU_SINK is not ("sys.stdout" or "sys.stderr")
+                self.config.LOGURU_SINK != ("sys.stdout")
                 and self.config.LOGURU_SINK is not None
             ):
                 logger.add(
