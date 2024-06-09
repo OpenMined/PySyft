@@ -216,7 +216,7 @@ def handle_message_multiprocessing(
             ):
                 status = Status.ERRORED
                 job_status = JobStatus.ERRORED
-        elif isinstance(result, SyftError) or isinstance(result, Err):
+        elif isinstance(result, SyftError | Err):
             status = Status.ERRORED
             job_status = JobStatus.ERRORED
 
