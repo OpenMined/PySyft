@@ -86,10 +86,11 @@ class LinkedObject(SyftObject):
             from ..service.action.action_service import ActionService
             from ..service.service import TYPE_TO_SERVICE
 
-            if isinstance(obj, ActionObject):
-                service_type = ActionService
-            else:
-                service_type = TYPE_TO_SERVICE[type(obj)]
+            service_type = (
+                ActionService
+                if isinstance(obj, ActionObject)
+                else TYPE_TO_SERVICE[type(obj)]
+            )
 
         object_uid = getattr(obj, "id", None)
         if object_uid is None:
