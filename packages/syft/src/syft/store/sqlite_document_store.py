@@ -368,13 +368,11 @@ class SQLiteStorePartition(KeyValueStorePartition):
 
     def close(self) -> None:
         self.lock.acquire()
-        try:
+        with suppress(BaseException):
             # I think we don't want these now, because of the REF_COUNT?
             # self.data._close()
             # self.unique_keys._close()
             # self.searchable_keys._close()
-            pass
-        except BaseException:
             pass
         self.lock.release()
 
