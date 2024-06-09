@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+from contextlib import suppress
 from collections import defaultdict
 from copy import deepcopy
 from pathlib import Path
