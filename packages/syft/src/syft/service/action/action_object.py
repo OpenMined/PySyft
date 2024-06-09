@@ -1547,26 +1547,27 @@ class ActionObject(SyncableSyftObject):
                     context, result_args, result_kwargs = result.ok()
                 else:
                     debug(f"Pre-hook failed with {result.err()}")
-        if name not in self._syft_dont_wrap_attrs():
+        if (
+            name not in self._syft_dont_wrap_attrs()
+            and HOOK_ALWAYS in self.syft_pre_hooks__
+        ):
+            for hook in self.syft_pre_hooks__[HOOK_ALWAYS]:
+                result = hook(context, *result_args, **result_kwargs)
+                if result.is_ok():
+                    context, result_args, result_kwargs = result.ok()
+                else:
+                    msg = result.err().replace("\\n", "\n")
+                    debug(f"Pre-hook failed with {msg}")
+
+        if self.is_pointer and name not in self._syft_dont_wrap_attrs():
             if HOOK_ALWAYS in self.syft_pre_hooks__:
-                for hook in self.syft_pre_hooks__[HOOK_ALWAYS]:
+                for hook in self.syft_pre_hooks__[HOOK_ON_POINTERS]:
                     result = hook(context, *result_args, **result_kwargs)
                     if result.is_ok():
                         context, result_args, result_kwargs = result.ok()
                     else:
                         msg = result.err().replace("\\n", "\n")
                         debug(f"Pre-hook failed with {msg}")
-
-        if self.is_pointer:
-            if name not in self._syft_dont_wrap_attrs():
-                if HOOK_ALWAYS in self.syft_pre_hooks__:
-                    for hook in self.syft_pre_hooks__[HOOK_ON_POINTERS]:
-                        result = hook(context, *result_args, **result_kwargs)
-                        if result.is_ok():
-                            context, result_args, result_kwargs = result.ok()
-                        else:
-                            msg = result.err().replace("\\n", "\n")
-                            debug(f"Pre-hook failed with {msg}")
 
         return context, result_args, result_kwargs
 
@@ -1583,24 +1584,25 @@ class ActionObject(SyncableSyftObject):
                 else:
                     debug(f"Post hook failed with {result.err()}")
 
-        if name not in self._syft_dont_wrap_attrs():
+        if (
+            name not in self._syft_dont_wrap_attrs()
+            and HOOK_ALWAYS in self.syft_post_hooks__
+        ):
+            for hook in self.syft_post_hooks__[HOOK_ALWAYS]:
+                result = hook(context, name, new_result)
+                if result.is_ok():
+                    new_result = result.ok()
+                else:
+                    debug(f"Post hook failed with {result.err()}")
+
+        if self.is_pointer and name not in self._syft_dont_wrap_attrs():
             if HOOK_ALWAYS in self.syft_post_hooks__:
-                for hook in self.syft_post_hooks__[HOOK_ALWAYS]:
+                 for hook in self.syft_post_hooks__[HOOK_ON_POINTERS]:
                     result = hook(context, name, new_result)
                     if result.is_ok():
                         new_result = result.ok()
                     else:
                         debug(f"Post hook failed with {result.err()}")
-
-        if self.is_pointer:
-            if name not in self._syft_dont_wrap_attrs():
-                if HOOK_ALWAYS in self.syft_post_hooks__:
-                    for hook in self.syft_post_hooks__[HOOK_ON_POINTERS]:
-                        result = hook(context, name, new_result)
-                        if result.is_ok():
-                            new_result = result.ok()
-                        else:
-                            debug(f"Post hook failed with {result.err()}")
 
         return new_result
 
@@ -2170,7 +2172,4 @@ def has_action_data_empty(args: Any, kwargs: Any) -> bool:
         if is_action_data_empty(a):
             return True
 
-    for _, a in kwargs.items():
-        if is_action_data_empty(a):
-            return True
-    return False
+    return any(is_action_data_empty(a) for _, a in kwargs.items())
