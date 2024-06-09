@@ -269,7 +269,9 @@ class SettingsService(AbstractService):
             )
 
         welcome_msg = None
-        welcome_msg = MarkdownDescription(text=markdown) if markdown else HTMLObject(text=html)
+        welcome_msg = (
+            MarkdownDescription(text=markdown) if markdown else HTMLObject(text=html)
+        )
 
         return welcome_msg
 
@@ -289,10 +291,9 @@ class SettingsService(AbstractService):
             )
 
         welcome_msg = None
-        if markdown:
-            welcome_msg = MarkdownDescription(text=markdown)
-        else:
-            welcome_msg = HTMLObject(text=html)
+        welcome_msg = (
+            MarkdownDescription(text=markdown) if markdown else HTMLObject(text=html)
+        )
 
         new_settings = NodeSettingsUpdate(welcome_markdown=welcome_msg)
         result = self._update(context=context, settings=new_settings)
