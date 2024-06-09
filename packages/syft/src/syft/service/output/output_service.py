@@ -171,10 +171,10 @@ class ExecutionOutput(SyncableSyftObject):
         """
         if not self.input_ids:
             return True
-        for key, value in kwargs.items():  # Iterate over items of kwargs dictionary
-            if key not in self.input_ids or self.input_ids[key] != value:
-                return False
-        return True
+        return all(
+            not (key not in self.input_ids or self.input_ids[key] != value)
+            for key, value in kwargs.items()
+        )
 
     def get_sync_dependencies(self, context: AuthedServiceContext) -> list[UID]:
         # Output ids, user code id, job id
