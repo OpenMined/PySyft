@@ -40,10 +40,9 @@ class SyftRepo:
 
     @staticmethod
     def latest_version(beta: bool = False) -> str:
-        if beta:
-            latest_release = SyftRepo.beta_releases()[0]
-        else:
-            latest_release = SyftRepo.prod_releases()[0]
+        latest_release = (
+            SyftRepo.beta_releases()[0] if beta else SyftRepo.prod_releases()[0]
+        )
         return latest_release["tag_name"]
 
     @staticmethod
