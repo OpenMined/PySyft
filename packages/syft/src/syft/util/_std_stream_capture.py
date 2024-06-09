@@ -21,10 +21,7 @@ patchsysdict = {0: "stdin", 1: "stdout", 2: "stderr"}
 try:
     devnullpath = os.devnull
 except AttributeError:
-    if os.name == "nt":
-        devnullpath = "NUL"
-    else:
-        devnullpath = "/dev/null"
+    devnullpath = "NUL" if os.name == "nt" else "/dev/null"
 
 
 class DontReadFromInput:
@@ -190,10 +187,8 @@ class StdCaptureFD(Capture):
         mixed = self._options["mixed"]
         patchsys = self._options["patchsys"]
         if in_:
-            try:
+            with contextlib.suppress(OSError):
                 self.in_ = FDCapture(0, tmpfile=None, now=False, patchsys=patchsys)
-            except OSError:
-                pass
         if out:
             tmpfile = None
             if hasattr(out, "write"):
@@ -243,14 +238,8 @@ class StdCaptureFD(Capture):
 
     def readouterr(self) -> tuple[str, str]:
         """return snapshot value of stdout/stderr capturings."""
-        if hasattr(self, "out"):
-            out = self._readsnapshot(self.out.tmpfile)
-        else:
-            out = ""
-        if hasattr(self, "err"):
-            err = self._readsnapshot(self.err.tmpfile)
-        else:
-            err = ""
+        out = self._readsnapshot(self.out.tmpfile) if hasattr(self, "out") else ""
+        err = self._readsnapshot(self.err.tmpfile) if hasattr(self, "err") else ""
         return out, err
 
     def _readsnapshot(self, f: Any) -> str:
@@ -266,10 +255,11 @@ class StdCaptureFD(Capture):
                 Source: https://github.com/pytest-dev/py/blob/master/py/_builtin.py
                 """
                 if isinstance(obj, bytes):
-                    if errors is None:
-                        obj = obj.decode(encoding)
-                    else:
-                        obj = obj.decode(encoding, errors)
+                    obj = (
+                        obj.decode(encoding)
+                        if errors is None
+                        else obj.decode(encoding, errors)
+                    )
                 elif not isinstance(obj, str):
                     obj = str(obj)
                 return obj
