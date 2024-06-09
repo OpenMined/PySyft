@@ -34,9 +34,8 @@ class ActionObjectPermission:
         permission: ActionPermission,
         credentials: SyftVerifyKey | None = None,
     ):
-        if credentials is None:
-            if permission not in COMPOUND_ACTION_PERMISSION:
-                raise Exception(f"{permission} not in {COMPOUND_ACTION_PERMISSION}")
+        if credentials is None and permission not in COMPOUND_ACTION_PERMISSION:
+            raise Exception(f"{permission} not in {COMPOUND_ACTION_PERMISSION}")
         self.uid = uid
         self.credentials = credentials
         self.permission = permission
