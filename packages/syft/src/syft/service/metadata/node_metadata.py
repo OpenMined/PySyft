@@ -36,10 +36,9 @@ def check_version(
     )
     if client_syft_version.base_version != node_syft_version.base_version:
         raise ValueError(msg)
-    if client_syft_version.pre != node_syft_version.pre:
-        if not silent:
-            print(f"Warning: {msg}")
-            return False
+    if client_syft_version.pre != node_syft_version.pre and not silent:
+        print(f"Warning: {msg}")
+        return False
     return True
 
 
