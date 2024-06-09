@@ -104,9 +104,7 @@ class Settings(BaseSettings):
     OPEN_REGISTRATION: bool = True
 
     # DOMAIN_ASSOCIATION_REQUESTS_AUTOMATICALLY_ACCEPTED: bool = True
-    USE_BLOB_STORAGE: bool = (
-        True if os.getenv("USE_BLOB_STORAGE", "false").lower() == "true" else False
-    )
+    USE_BLOB_STORAGE: bool = os.getenv("USE_BLOB_STORAGE", "false").lower() == "true"
     S3_ENDPOINT: str = os.getenv("S3_ENDPOINT", "seaweedfs")
     S3_PORT: int = int(os.getenv("S3_PORT", 8333))
     S3_ROOT_USER: str = os.getenv("S3_ROOT_USER", "admin")
@@ -130,12 +128,10 @@ class Settings(BaseSettings):
     MONGO_PORT: int = int(os.getenv("MONGO_PORT", 27017))
     MONGO_USERNAME: str = str(os.getenv("MONGO_USERNAME", ""))
     MONGO_PASSWORD: str = str(os.getenv("MONGO_PASSWORD", ""))
-    DEV_MODE: bool = True if os.getenv("DEV_MODE", "false").lower() == "true" else False
+    DEV_MODE: bool = os.getenv("DEV_MODE", "false").lower() == "true"
     # ZMQ stuff
     QUEUE_PORT: int = int(os.getenv("QUEUE_PORT", 5556))
-    CREATE_PRODUCER: bool = (
-        True if os.getenv("CREATE_PRODUCER", "false").lower() == "true" else False
-    )
+    CREATE_PRODUCER: bool = os.getenv("CREATE_PRODUCER", "false").lower() == "true"
     N_CONSUMERS: int = int(os.getenv("N_CONSUMERS", 1))
     SQLITE_PATH: str = os.path.expandvars("$HOME/data/db/")
     SINGLE_CONTAINER_MODE: bool = str_to_bool(os.getenv("SINGLE_CONTAINER_MODE", False))
@@ -148,9 +144,7 @@ class Settings(BaseSettings):
     SMTP_PORT: int = int(os.getenv("SMTP_PORT", 587))
     SMTP_HOST: str = os.getenv("SMTP_HOST", "")
 
-    TEST_MODE: bool = (
-        True if os.getenv("TEST_MODE", "false").lower() == "true" else False
-    )
+    TEST_MODE: bool = os.getenv("TEST_MODE", "false").lower() == "true"
     ASSOCIATION_TIMEOUT: int = 10
     ASSOCIATION_REQUEST_AUTO_APPROVAL: bool = str_to_bool(
         os.getenv("ASSOCIATION_REQUEST_AUTO_APPROVAL", "False")
