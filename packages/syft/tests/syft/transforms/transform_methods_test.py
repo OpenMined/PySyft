@@ -194,10 +194,7 @@ def test_keep(faker, node_context):
     expected_output = {}
 
     for key in list_keys:
-        if key in mock_obj_dict:
-            expected_output[key] = mock_obj_dict[key]
-        else:
-            expected_output[key] = None
+        expected_output[key] = mock_obj_dict.get(key)
 
     resultant_context = result(transform_context)
     assert isinstance(resultant_context, TransformContext)
