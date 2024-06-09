@@ -139,10 +139,7 @@ def _patch_ipython_autocompletion() -> None:
             attr_name = "__syft_allow_autocomplete__"
             # first check if exist to prevent side effects
             if hasattr(value, attr_name) and attr in getattr(value, attr_name, []):
-                if attr in dir(value):
-                    return True
-                else:
-                    return False
+                return attr in dir(value)
             else:
                 return original_can_get_attr(value, attr)
 
