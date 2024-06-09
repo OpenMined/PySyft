@@ -195,10 +195,9 @@ class UserCodeStatusCollection(SyncableSyftObject):
 
     @property
     def denied(self) -> bool:
-        for status, _ in self.status_dict.values():
-            if status == UserCodeStatus.DENIED:
-                return True
-        return False
+        return any(
+            status == UserCodeStatus.DENIED for status, _ in self.status_dict.values()
+        )
 
     def for_user_context(self, context: AuthedServiceContext) -> UserCodeStatus:
         if context.node.node_type == NodeType.ENCLAVE:
