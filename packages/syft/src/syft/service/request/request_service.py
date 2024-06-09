@@ -79,7 +79,7 @@ class RequestService(AbstractService):
                     subject_msg = f"Result to request {str(request.id)[:4]}...{str(request.id)[-3:]}\
                         has been successfully deposited."
                     message = CreateNotification(
-                        subject=subject_msg if not reason else reason,
+                        subject=reason if reason else subject_msg,
                         from_user_verify_key=context.credentials,
                         to_user_verify_key=root_verify_key,
                         linked_obj=link,
