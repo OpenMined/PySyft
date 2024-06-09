@@ -82,10 +82,7 @@ class UserStash(BaseStash):
 
     def email_exists(self, email: str) -> bool:
         res = self.get_by_email(credentials=self.admin_verify_key().ok(), email=email)
-        if res.ok() is None:
-            return False
-        else:
-            return True
+        return res.ok() is not None
 
     def get_by_role(
         self, credentials: SyftVerifyKey, role: ServiceRole
