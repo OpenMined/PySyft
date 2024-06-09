@@ -284,6 +284,30 @@
           "hash": "1bc413ec7c1d498ec945878e21e00affd9bd6d53b564b1e10e52feb09f177d04",
           "action": "add"
         }
+      },
+      "HTTPConnection": {
+        "2": {
+          "version": 2,
+          "hash": "68409295f8916ceb22a8cf4abf89f5e4bcff0d75dc37e16ede37250ada28df59",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "9162f038f0f6401c4cf4d1b517c40805d1f291bd69a6e76f3c1ee9e5095de2e5",
+          "action": "add"
+        }
+      },
+      "HTTPNodeRoute": {
+        "2": {
+          "version": 2,
+          "hash": "2134ea812f7c6ea41522727ae087245c4b1195ffbad554db638070861cd9eb1c",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "9e7e3700a2f7b1a67f054efbcb31edc71bbf358c469c85ed7760b81233803bac",
+          "action": "add"
+        }
       }
     }
   }
