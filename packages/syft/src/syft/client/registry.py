@@ -337,6 +337,7 @@ class DomainRegistry:
             error(f"Failed to login to: {peer}. {e}")
             raise SyftException(f"Failed to login to: {peer}. {e}")
 
+
 def __getitem__(self, key: str | int) -> Client:
     if isinstance(key, int):
         return self.create_client(self.online_domains[key][0])
