@@ -157,13 +157,13 @@ class KeyValueActionStore(ActionStore):
             # attempt to claim it for writing
             if has_result_read_permission:
                 ownership_result = self.take_ownership(uid=uid, credentials=credentials)
-                can_write = True if ownership_result.is_ok() else False
+                can_write = bool(ownership_result.is_ok())
             else:
                 # root takes owneship, but you can still write
                 ownership_result = self.take_ownership(
                     uid=uid, credentials=self.root_verify_key
                 )
-                can_write = True if ownership_result.is_ok() else False
+                can_write = bool(ownership_result.is_ok())
 
         if can_write:
             self.data[uid] = syft_object
