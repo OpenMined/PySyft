@@ -100,10 +100,11 @@ class SyftObjectRetrieval(BlobRetrieval):
         self, stream: bool = False, _deserialize: bool = True, **kwargs: Any
     ) -> Any:
         # development setup, we can access the same filesystem
-        if not _deserialize:
-            res = self.syft_object
-        else:
-            res = deserialize(self.syft_object, from_bytes=True)
+        res = (
+            self.syft_object
+            if not _deserialize
+            else deserialize(self.syft_object, from_bytes=True)
+        )
 
         # TODO: implement proper streaming from local files
         if stream:
