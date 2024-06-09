@@ -126,10 +126,11 @@ class BlobFile(SyftObject):
                 if pending is not None:
                     chunk = pending + chunk  # type: ignore[unreachable]
                 lines = chunk.splitlines()
-                if lines and lines[-1] and chunk and lines[-1][-1] == chunk[-1]:
-                    pending = lines.pop()
-                else:
-                    pending = None
+                pending = (
+                    lines.pop()
+                    if lines and lines[-1] and chunk and lines[-1][-1] == chunk[-1]
+                    else None
+                )
                 yield from lines
             elif pending is None:
                 pending = chunk
