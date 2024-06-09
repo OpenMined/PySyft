@@ -12,11 +12,15 @@ registry:
 
 node:
   rootEmail: info@openmined.org
-  defaultWorkerPoolCount: 1
   associationRequestAutoApproval: true
 
   resourcesPreset: null
   resources: null
+
+  defaultWorkerPool:
+    count: 1
+    podLabels: null
+    podAnnotations: null
 
   secret:
     defaultRootPassword: changethis

@@ -43,7 +43,7 @@ def test_syft_worker(worker: Worker):
     pool_name = "custom-worker-pool"
     num_workers = 3
     worker_pool_res = root_client.api.services.worker_pool.launch(
-        name=pool_name,
+        pool_name=pool_name,
         image_uid=worker_image.id,
         num_workers=num_workers,
     )
