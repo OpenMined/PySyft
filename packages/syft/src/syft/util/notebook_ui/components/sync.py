@@ -252,7 +252,7 @@ class TypeLabel(Label):
 
     @staticmethod
     def type_label_class(obj: Any) -> str:
-        if isinstance(obj, UserCode) or isinstance(obj, Job):
+        if isinstance(obj, UserCode | Job):
             return "label-light-blue"
         elif isinstance(obj, Request):  # type: ignore
             # TODO: handle other requests
