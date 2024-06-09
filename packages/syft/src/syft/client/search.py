@@ -33,9 +33,10 @@ class SearchResults:
                 if isinstance(key, UID):
                     if dataset.id == key:
                         return dataset
-                elif isinstance(key, str):
-                    if dataset.name == key or str(dataset.id) == key:
-                        return dataset
+                elif isinstance(key, str) and (
+                    dataset.name == key or str(dataset.id) == key
+                ):
+                    return dataset
         raise KeyError
 
     def __repr__(self) -> str:
@@ -45,10 +46,7 @@ class SearchResults:
         return self._datasets._repr_html_()
 
     def client_for(self, key: Dataset | int | str | UID) -> SyftClient:
-        if isinstance(key, Dataset):
-            dataset = key
-        else:
-            dataset = self.__getitem__(key)
+        dataset = key if isinstance(key, Dataset) else self.__getitem__(key)
         return self._dataset_client[dataset.id]
 
     def __len__(self) -> int:
