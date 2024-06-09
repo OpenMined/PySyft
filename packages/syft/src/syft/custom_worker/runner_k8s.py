@@ -193,10 +193,11 @@ class KubernetesRunner:
             "app.kubernetes.io/component": pool_name,
         }
 
-        if isinstance(pod_labels, dict):
-            pod_labels = {**default_pod_labels, **pod_labels}
-        else:
-            pod_labels = default_pod_labels
+        pod_labels = (
+            {**default_pod_labels, **pod_labels}
+            if isinstance(pod_labels, dict)
+            else default_pod_labels
+        )
 
         stateful_set = StatefulSet(
             {
