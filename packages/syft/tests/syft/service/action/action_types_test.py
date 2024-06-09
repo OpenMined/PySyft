@@ -52,10 +52,7 @@ def test_action_type_for_type_any(obj: Any):
 def test_action_type_for_type_numpy(np_type: Any):
     assert np_type in action_types
 
-    if np_type == np.ndarray:
-        np_obj = np.asarray([1, 2, 3])
-    else:
-        np_obj = np_type(1)
+    np_obj = np.asarray([1, 2, 3]) if np_type == np.ndarray else np_type(1)
 
     assert action_type_for_type(np_obj) == action_types[np_type]
 
