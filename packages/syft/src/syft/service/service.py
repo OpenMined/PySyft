@@ -213,20 +213,19 @@ def register_lib_obj(lib_obj: CMPBase) -> None:
     path = lib_obj.absolute_path
     func_name = lib_obj.name
 
-    if signature is not None:
-        if path != "numpy.source":
-            lib_config = LibConfig(
-                public_path=str(path),
-                private_path=str(path),
-                public_name=str(func_name),
-                method_name=str(func_name),
-                doc_string=str(lib_obj.__doc__),
-                signature=signature,
-                permissions={lib_obj.permissions},
-                is_from_lib=True,
-            )
+    if signature is not None and path != "numpy.source":
+        lib_config = LibConfig(
+            public_path=str(path),
+            private_path=str(path),
+            public_name=str(func_name),
+            method_name=str(func_name),
+            doc_string=str(lib_obj.__doc__),
+            signature=signature,
+            permissions={lib_obj.permissions},
+            is_from_lib=True,
+        )
 
-            LibConfigRegistry.register(lib_config)
+        LibConfigRegistry.register(lib_config)
 
 
 # hacky, prevent circular imports
@@ -235,7 +234,7 @@ for lib_obj in action_execute_registry_libs.flatten():
     # func_name = func.__name__
     # # for classes
     # func_name = path.split(".")[-1]
-    if isinstance(lib_obj, CMPFunction) or isinstance(lib_obj, CMPClass):
+    if isinstance(lib_obj, CMPFunction | CMPClass):
         register_lib_obj(lib_obj)
 
 
