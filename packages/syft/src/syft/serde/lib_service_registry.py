@@ -282,10 +282,8 @@ class CMPClass(CMPBase):
         try:
             self.signature = get_signature(self.obj)
         except Exception:  # nosec
-            try:
+            with suppress(Exception):
                 self.signature = get_signature(self.obj.__init__)  # type: ignore
-            except Exception:  # nosec
-                pass
 
 
 class CMPMethod(CMPBase):
