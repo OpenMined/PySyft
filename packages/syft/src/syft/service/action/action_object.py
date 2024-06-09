@@ -1597,7 +1597,7 @@ class ActionObject(SyncableSyftObject):
 
         if self.is_pointer and name not in self._syft_dont_wrap_attrs():
             if HOOK_ALWAYS in self.syft_post_hooks__:
-                 for hook in self.syft_post_hooks__[HOOK_ON_POINTERS]:
+                for hook in self.syft_post_hooks__[HOOK_ON_POINTERS]:
                     result = hook(context, name, new_result)
                     if result.is_ok():
                         new_result = result.ok()
