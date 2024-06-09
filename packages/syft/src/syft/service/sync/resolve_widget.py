@@ -221,10 +221,7 @@ class CollapsableObjectDiffWidget:
     def mockify(self) -> bool:
         if isinstance(self.diff.non_empty_object, TwinAPIEndpoint):
             return True
-        if self.has_unused_share_button:
-            return True
-        else:
-            return False
+        return bool(self.has_unused_share_button)
 
     @property
     def has_unused_share_button(self) -> bool:
