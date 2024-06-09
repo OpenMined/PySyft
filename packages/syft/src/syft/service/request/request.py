@@ -592,7 +592,11 @@ class Request(SyncableSyftObject):
         if api is None:
             return SyftError(message=f"api is None. You must login to {self.node_uid}")
         # TODO: Refactor so that object can also be passed to generate warnings
-        metadata = api.connection.get_node_metadata(api.signing_key) if api.connection else None
+        metadata = (
+            api.connection.get_node_metadata(api.signing_key)
+            if api.connection
+            else None
+        )
         message, is_enclave = None, False
 
         is_code_request = not isinstance(self.codes, SyftError)
