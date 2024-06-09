@@ -408,10 +408,7 @@ class UserCodeService(AbstractService):
         has_custom_worker_pool = (
             user_code.worker_pool_name is not None
         ) and user_code.worker_pool_name != get_default_worker_pool_name()
-        if has_custom_worker_pool and context.is_blocking_api_call:
-            return False
-        else:
-            return True
+        return not (has_custom_worker_pool and context.is_blocking_api_call)
 
     def _call(
         self,
