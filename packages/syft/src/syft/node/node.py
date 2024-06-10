@@ -575,7 +575,9 @@ class Node(AbstractNode):
                 address: str | None = producer.address
             else:
                 port = queue_config.client_config.queue_port
-                address: str | None = get_queue_address(port) if port is not None else None
+                address: str | None = (
+                    get_queue_address(port) if port is not None else None
+                )
 
             if address is None and queue_config.client_config.n_consumers > 0:
                 raise ValueError("address unknown for consumers")
