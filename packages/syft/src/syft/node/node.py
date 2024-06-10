@@ -453,12 +453,11 @@ class Node(AbstractNode):
     @property
     def runs_in_docker(self) -> bool:
         path = "/proc/self/cgroup"
-        if os.path.exists("/.dockerenv"):
-            return True
-        if os.path.isfile(path):
-            with open(path) as file:
-                return any("docker" in line for line in file)
-        return False
+        return (
+            os.path.exists("/.dockerenv")
+            or os.path.isfile(path)
+            and any("docker" in line for line in open(path))
+        )
 
     def get_default_store(self, use_sqlite: bool, store_type: str) -> StoreConfig:
         if use_sqlite:
@@ -575,7 +574,10 @@ class Node(AbstractNode):
                 address = producer.address
             else:
                 port = queue_config.client_config.queue_port
-                address = get_queue_address(port) if port is not None else None
+                if port is not None:
+                    address = get_queue_address(port)
+                else:
+                    address = None
 
             if address is None and queue_config.client_config.n_consumers > 0:
                 raise ValueError("address unknown for consumers")
@@ -1217,8 +1219,9 @@ class Node(AbstractNode):
             return SyftError(
                 message=f"You sent a {type(api_call)}. This node requires SignedSyftAPICall."
             )
-        elif not api_call.is_valid:
-            return SyftError(message="Your message signature is invalid")
+        else:
+            if not api_call.is_valid:
+                return SyftError(message="Your message signature is invalid")
 
         if api_call.message.node_uid != self.id and check_call_location:
             return self.forward_message(api_call=api_call)
