@@ -23,7 +23,7 @@ jobs:
       max-parallel: 3
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.12"]
+        python-version: ["3.12.3"]
 
     runs-on: ubuntu-20.04 # ${{ matrix.os }}
     steps:
