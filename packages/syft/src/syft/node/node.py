@@ -456,7 +456,7 @@ class Node(AbstractNode):
         return (
             os.path.exists("/.dockerenv")
             or os.path.isfile(path)
-            and any("docker" in line for line in open(path, 'r'))
+            and any("docker" in line for line in open(path))
         )
 
     def get_default_store(self, use_sqlite: bool, store_type: str) -> StoreConfig:
