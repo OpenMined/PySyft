@@ -1,6 +1,5 @@
 # stdlib
 from collections.abc import Callable
-from contextlib import suppress
 from enum import Enum
 from enum import EnumMeta
 import sys
