@@ -87,9 +87,11 @@ class TwinObject(SyftObject):
             self.syft_node_location,
             self.syft_client_verify_key,
         )
-        # self.mock_obj._set_obj_location_(
-        #     self.syft_node_location,
-        #     self.syft_client_verify_key,
-        # )
+        self.mock_obj._set_obj_location_(
+            self.syft_node_location,
+            self.syft_client_verify_key,
+        )
+        mock_store_res = self.mock_obj._save_to_blob_storage()
+        if isinstance(mock_store_res, SyftError):
+            return mock_store_res
         return self.private_obj._save_to_blob_storage()
-        # self.mock_obj._save_to_blob_storage()

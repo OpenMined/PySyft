@@ -102,9 +102,13 @@ class ActionService(AbstractService):
 
         if isinstance(action_object, ActionObject):
             action_object.syft_created_at = DateTime.now()
+            action_object._clear_cache(clear_reprs=True)
         else:
-            action_object.private_obj.syft_created_at = DateTime.now()  # type: ignore[unreachable]
-            action_object.mock_obj.syft_created_at = DateTime.now()
+            twin_object = action_object
+            twin_object.private_obj.syft_created_at = DateTime.now()  # type: ignore[unreachable]
+            twin_object.mock_obj.syft_created_at = DateTime.now()
+            twin_object.private_obj._clear_cache()
+            twin_object.mock._clear_cache(clear_reprs=True)
 
         # If either context or argument is True, has_result_read_permission is True
         has_result_read_permission = (

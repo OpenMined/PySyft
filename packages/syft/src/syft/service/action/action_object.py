@@ -318,6 +318,7 @@ passthrough_attrs = [
     "_data_repr",
     "syft_eq",  # syft
     "__table_coll_widths__",
+    "_clear_cache",
 ]
 dont_wrap_output_attrs = [
     "__repr__",
@@ -341,6 +342,7 @@ dont_wrap_output_attrs = [
     "get_sync_dependencies",  # syft
     "syft_eq",  # syft
     "__table_coll_widths__",
+    "_clear_cache",
 ]
 dont_make_side_effects = [
     "__repr_attrs__",
@@ -362,6 +364,7 @@ dont_make_side_effects = [
     "get_sync_dependencies",
     "syft_eq",  # syft
     "__table_coll_widths__",
+    "_clear_cache",
 ]
 action_data_empty_must_run = [
     "__repr__",
@@ -857,8 +860,14 @@ class ActionObject(SyncableSyftObject):
         if isinstance(result, SyftError):
             return result
         if not TraceResultRegistry.current_thread_is_tracing():
-            self.syft_action_data_cache = self.as_empty_data()
+            self._clear_cache()
         return None
+
+    def _clear_cache(self, clear_reprs: bool = False) -> None:
+        self.syft_action_data_cache = self.as_empty_data()
+        if clear_reprs:
+            self.syft_action_data_repr_ = ""
+            self.syft_action_data_str_ = ""
 
     @property
     def is_pointer(self) -> bool:
