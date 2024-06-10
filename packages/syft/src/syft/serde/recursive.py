@@ -1,5 +1,6 @@
 # stdlib
 from collections.abc import Callable
+from contextlib import suppress
 from enum import Enum
 from enum import EnumMeta
 import sys
@@ -313,10 +314,8 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
 
                     for _, load_user_code in CODE_RELOADER.items():
                         load_user_code()
-                try:
+                with contextlib.suppress(Exception):
                     class_type = getattr(sys.modules[".".join(module_parts)], klass)
-                except Exception:  # nosec
-                    pass
 
     if proto.fullyQualifiedName not in TYPE_BANK:
         raise Exception(f"{proto.fullyQualifiedName} not in TYPE_BANK")
