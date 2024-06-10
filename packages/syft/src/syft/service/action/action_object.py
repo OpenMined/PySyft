@@ -1566,7 +1566,7 @@ class ActionObject(SyncableSyftObject):
                     context, result_args, result_kwargs = result.ok()
                 else:
                     msg = result.err().replace("\\n", "\n")
-                    debug(f"Pre-hook failed with {msg}"
+                    debug(f"Pre-hook failed with {msg}")
 
         return context, result_args, result_kwargs
 
@@ -1593,15 +1593,13 @@ class ActionObject(SyncableSyftObject):
                     new_result = result.ok()
                 else:
                     debug(f"Post hook failed with {result.err()}")
-
-        if self.is_pointer and name not in self._syft_dont_wrap_attrs():
-            if HOOK_ALWAYS in self.syft_post_hooks__:
-                for hook in self.syft_post_hooks__[HOOK_ON_POINTERS]:
-                    result = hook(context, name, new_result)
-                    if result.is_ok():
-                        new_result = result.ok()
-                    else:
-                        debug(f"Post hook failed with {result.err()}")
+        if self.is_pointer and name not in self._syft_dont_wrap_attrs() and HOOK_ALWAYS in self.syft_post_hooks__:
+            for hook in self.syft_post_hooks__[HOOK_ON_POINTERS]:
+                result = hook(context, name, new_result)
+                if result.is_ok():
+                    new_result = result.ok()
+                else:
+                    debug(f"Post hook failed with {result.err()}")
 
         return new_result
 
