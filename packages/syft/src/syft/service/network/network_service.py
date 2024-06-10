@@ -7,6 +7,7 @@ from typing import Any
 from typing import cast
 
 # third party
+from loguru import logger
 from result import Result
 
 # relative
@@ -216,9 +217,12 @@ class NetworkService(AbstractService):
                 id=self_node_peer.id, node_routes=self_node_peer.node_routes
             )
             result = remote_client.api.services.network.update_peer(
-                update_peer=updated_peer
+                peer_update=updated_peer
             )
             if isinstance(result, SyftError):
+                logger.error(
+                    f"Failed to update peer information on remote client. {result.message}"
+                )
                 return SyftError(
                     message=f"Failed to add peer information on remote client : {remote_client.id}"
                 )
@@ -502,8 +506,8 @@ class NetworkService(AbstractService):
 
         peer = result.ok()
 
-        node_side_type = cast(NodeType, context.node.node_side_type)
-        if node_side_type == NodeType.GATEWAY:
+        node_side_type = cast(NodeType, context.node.node_type)
+        if node_side_type.value == NodeType.GATEWAY.value:
             rathole_route = peer.get_rathole_route()
             self.rathole_service.add_host_to_server(peer) if rathole_route else None
         else:
