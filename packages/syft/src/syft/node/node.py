@@ -16,7 +16,7 @@ import sys
 import tempfile
 from time import sleep
 import traceback
-from typing import Any
+from typing import Any, Optional
 
 # third party
 from loguru import logger
