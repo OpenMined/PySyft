@@ -559,6 +559,7 @@ class Node(AbstractNode):
         for message_handler in MessageHandlers:
             queue_name = message_handler.queue_name
             # client config
+            address: str | None = None
             if getattr(queue_config.client_config, "create_producer", True):
                 context = AuthedServiceContext(
                     node=self,
@@ -572,14 +573,12 @@ class Node(AbstractNode):
                     worker_stash=self.worker_stash,
                 )
                 producer.run()
-                producer_address: str | None = producer.address
-                address: str | None = producer_address
+                address = producer.address
             else:
                 port = queue_config.client_config.queue_port
-                client_address: str | None = (
+                address = (
                     get_queue_address(port) if port is not None else None
                 )
-                address: str | None = client_address
 
             if address is None and queue_config.client_config.n_consumers > 0:
                 raise ValueError("address unknown for consumers")
