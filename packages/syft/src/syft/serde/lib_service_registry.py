@@ -1,7 +1,7 @@
 # stdlib
 from collections.abc import Callable
 from collections.abc import Sequence
-from contextlib import suppress
+import contextlib
 import importlib
 import inspect
 from inspect import Signature
