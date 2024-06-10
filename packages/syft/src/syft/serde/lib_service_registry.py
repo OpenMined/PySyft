@@ -262,10 +262,8 @@ class CMPFunction(CMPBase):
         return self.obj.__name__  # type: ignore
 
     def set_signature(self) -> None:
-        try:
+        with contextlib.suppress(Exception):
             self.signature = get_signature(self.obj)
-        except Exception:  # nosec
-            pass
 
 
 class CMPClass(CMPBase):
