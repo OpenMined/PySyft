@@ -6,6 +6,8 @@ from typing import Any
 from typing_extensions import Self
 
 # relative
+from ...client.client import SyftClient
+from ...client.client import login
 from ...client.client import login_as_guest
 from ...serde.serializable import serializable
 from ...service.metadata.node_metadata import NodeMetadataJSON
@@ -61,6 +63,21 @@ class EnclaveInstance(SyftObject):
     def get_status(cls) -> EnclaveStatus:
         # TODO check the actual status of the enclave
         return EnclaveStatus.IDLE
+
+    def get_client(self, verify_key: str) -> SyftClient:
+        # TODO: find the standard method to convert route to client object
+        # TODO for this prototype/demo all communication is done via the admin client.
+        # Later, we will use verify keys to authenticate actions of each member in the
+        # Enclave. Also, there will be no concept of admin users. This will prevent anyone,
+        # including the Enclave owner domain, from performing elevated actions like
+        # accessing other member's data.
+        client = login(
+            email="info@openmined.org",
+            password="changethis",
+            url=self.route.host_or_ip,
+            port=self.route.port,
+        )
+        return client
 
     def __hash__(self) -> int:
         return hash(self.name)

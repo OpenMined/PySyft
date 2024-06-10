@@ -919,3 +919,38 @@ def get_queue_address(port: int) -> str:
 
 def get_dev_mode() -> bool:
     return str_to_bool(os.getenv("DEV_MODE", "False"))
+
+
+def human_friendly_join(
+    items: list[str], sep: str = ", ", last_sep: str = " and "
+) -> str:
+    """Joins a list of strings into a single string with specified separators.
+
+    This function concatenates the elements of a list into a single string.
+    Elements are separated by `sep`, except for the last two elements which
+    are separated by `last_sep`.
+
+    Parameters:
+    items (list of str): The list of strings to join.
+    sep (str): The separator between all elements except the last two. Default is ", ".
+    last_sep (str): The separator between the last two elements. Default is " and ".
+
+    Returns:
+    str: The concatenated string.
+
+    Examples:
+    >>> custom_join(["a", "b", "c", "d"])
+    'a, b, c and d'
+    >>> custom_join(["a", "b"], sep="; ", last_sep=" or ")
+    'a or b'
+    >>> custom_join(["a"])
+    'a'
+    >>> custom_join([])
+    ''
+    """
+    if not items:
+        return ""
+    elif len(items) == 1:
+        return items[0]
+    else:
+        return sep.join(items[:-1]) + last_sep + items[-1]

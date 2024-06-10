@@ -23,6 +23,7 @@ from ..context import AuthedServiceContext
 from ..context import ChangeContext
 from ..network.routes import route_to_connection
 from ..policy.policy import InputPolicy
+from ..request.request import RequestStatus
 from ..service import AbstractService
 from ..service import service_method
 from .enclave import EnclaveInstance
@@ -87,6 +88,44 @@ class EnclaveService(AbstractService):
             enclaves = result.ok()
             return enclaves
         return SyftError(message=result.err())
+
+    @service_method(
+        path="enclave.request_enclave_for_project",
+        name="request_enclave_for_project",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
+    def request_enclave_for_project(
+        self, context: AuthedServiceContext, project_id: UID
+    ) -> SyftSuccess | SyftError:
+        """Request an Enclave for running a project."""
+        if not context.node or not context.node.signing_key:
+            return SyftError(message=f"{type(context)} has no node")
+
+        client = context.node.get_guest_client()
+        # TODO run using the credentials from the context instead of the admin credentials
+        client.credentials = context.node.signing_key
+
+        project = client.services.project.get_by_uid(uid=project_id)
+        if isinstance(project, SyftError):
+            return project
+
+        # TODO taking the latest approved request for now
+        request = [
+            req for req in project.requests if req.status == RequestStatus.APPROVED
+        ][-1]
+        code = client.services.code.get_by_id(request.code_id)
+        provider = code.deployment_policy_init_kwargs.get("provider")
+        if not isinstance(provider, EnclaveInstance):
+            return SyftError(
+                message=f"Project '{project.name}' does not have an Enclave."
+            )
+
+        # Setup the Enclave (create project, send code and register users)
+        # enclave_client = provider.get_client(verify_key=context.node.verify_key)
+        # 1. Create code (We need SubmitUserCode but we have UserCode so we convert)
+        # code_copy = code
+        # enclave_client.services.code.submit(code_copy)
+        return SyftSuccess(message="TODO, not implemented yet!")
 
     @service_method(
         path="enclave.send_user_code_inputs_to_enclave",

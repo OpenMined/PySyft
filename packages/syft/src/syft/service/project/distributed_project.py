@@ -16,6 +16,7 @@ from ...client.client import SyftClientSessionCache
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
+from ...util.util import human_friendly_join
 from ..code.user_code import SubmitUserCode
 from ..code.user_code import UserCode
 from ..enclave.enclave import EnclaveInstance
@@ -37,7 +38,7 @@ class DistributedProject(BaseModel):
     code: UserCode | SubmitUserCode  # only one code per project for this prototype
     clients: dict[UID, SyftClient] = Field(default_factory=dict)
     members: dict[UID, NodeIdentity] = Field(default_factory=dict)
-    all_projects: list[Project] = Field(default_factory=list)
+    all_projects: dict[SyftClient, Project] = Field(default_factory=dict)
     project_permissions: set[str] = Field(default_factory=set)  # Unused at the moment
 
     def _coll_repr_(self) -> dict:
@@ -63,15 +64,15 @@ class DistributedProject(BaseModel):
 
     @classmethod
     def get_by_name(cls, name: str, clients: list[SyftClient]) -> Self:
-        all_projects = []
+        all_projects = {}
         for client in clients:
             project = client.projects.get_by_name(name)
             if isinstance(project, SyftError):
                 raise SyftException(project.message)
-            all_projects.append(project)
+            all_projects[client] = project
 
         # TODO verify that all the projects in the `all_projects` list are the same
-        project = all_projects[0]
+        project = next(iter(all_projects.values()))
         description = project.description
         code = project.requests[0].code  # TODO fix possible errors
         return cls(
@@ -81,7 +82,7 @@ class DistributedProject(BaseModel):
     @property
     def requests(self) -> list[Request]:
         requests: list[Request] = []
-        for project in self.all_projects:
+        for project in self.all_projects.values():
             requests.extend(
                 event.request
                 for event in project.events
@@ -129,20 +130,30 @@ class DistributedProject(BaseModel):
 
     def submit(self) -> Self:
         self._pre_submit_checks()
-        projects_map = self._submit_project_to_all_clients()
-        self.all_projects = list(projects_map.values())
+        self.all_projects = self._submit_project_to_all_clients()
         return self
 
     def request_execution(self, blocking: bool = True) -> Any:
-        # TODO
-        # 1. Check that pending_requests is 0, meaning all requests have been accepted
-        # 2. Request Enclave owner for access
-        # 3. Wait for Enclave to be set up by the owner domain (project, code and users)
-        # 4. Request each domain to transfer their assets to the Enclave
-        # 5. Execute the code on the Enclave
-        # 6. Return the results
-        # 7. Cleanup the Enclave
-        pass
+        self._pre_execution_request_checks()
+        code = self.verify_code(self.code)
+        provider = code.deployment_policy_init_kwargs.get("provider")
+        owner_node_id = provider.syft_node_location
+        owner_client = self.clients.get(owner_node_id)
+        if not owner_client or not owner_client.services:
+            raise SyftException(
+                f"Can't access Syft client. You must login to {self.syft_node_location}"
+            )
+        owner_project = self.all_projects[owner_client]
+        enclave_client = owner_client.services.enclave.request_enclave_for_project(
+            project_id=owner_project.id
+        )
+
+        # Wait for Enclave to be set up by the owner domain (project, code and users)
+        # Request each domain to transfer their assets to the Enclave
+        # Execute the code on the Enclave
+        # Return the results
+        # Cleanup the Enclave
+        return enclave_client
 
     def _get_clients_from_code(self) -> dict[UID, SyftClient]:
         if not self.code or not self.code.input_policy_init_kwargs:
@@ -197,3 +208,23 @@ class DistributedProject(BaseModel):
             project = new_project.send()
             projects_map[client] = project[0] if isinstance(project, list) else project
         return projects_map
+
+    def _pre_execution_request_checks(self) -> bool:
+        members_nodes_pending_approval = [
+            request.syft_node_location
+            for request in self.requests
+            if request.status == RequestStatus.PENDING
+        ]
+        if members_nodes_pending_approval:
+            member_names = [
+                self._get_node_name(member_node_id) or f"Node ID: {member_node_id}"
+                for member_node_id in members_nodes_pending_approval
+            ]
+            raise SyftException(
+                f"Cannot execute project as approval request is pending for {human_friendly_join(member_names)}."
+            )
+        return True
+
+    def _get_node_name(self, node_id: UID) -> str | None:
+        node_identity = self.members.get(node_id)
+        return node_identity.node_name if node_identity else None
