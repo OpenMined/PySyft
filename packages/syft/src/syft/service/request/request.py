@@ -1,5 +1,6 @@
 # stdlib
 from collections.abc import Callable
+import contextlib
 from enum import Enum
 import hashlib
 import inspect
