@@ -211,27 +211,28 @@ class RequestService(AbstractService):
             request_notification = filter_by_obj(context=context, obj_uid=uid)
 
             link = LinkedObject.with_context(request, context=context)
-            if request.status != RequestStatus.PENDING:
-                if request_notification is not None and not isinstance(
-                    request_notification, SyftError
-                ):
-                    mark_as_read = context.node.get_service_method(
-                        NotificationService.mark_as_read
-                    )
-                    mark_as_read(context=context, uid=request_notification.id)
-
-                    notification = CreateNotification(
-                        subject=f"Your request ({str(uid)[:4]}) has been approved!",
-                        from_user_verify_key=context.credentials,
-                        to_user_verify_key=request.requesting_user_verify_key,
-                        linked_obj=link,
-                        notifier_types=[NOTIFIERS.EMAIL],
-                        email_template=RequestUpdateEmailTemplate,
-                    )
-                    send_notification = context.node.get_service_method(
-                        NotificationService.send
-                    )
-                    send_notification(context=context, notification=notification)
+            if (
+                request.status != RequestStatus.PENDING
+                and request_notification is not None
+                and not isinstance(request_notification, SyftError)
+            ):
+                mark_as_read = context.node.get_service_method(
+                    NotificationService.mark_as_read
+                )
+                mark_as_read(context=context, uid=request_notification.id)
+            
+                notification = CreateNotification(
+                    subject=f"Your request ({str(uid)[:4]}) has been approved!",
+                    from_user_verify_key=context.credentials,
+                    to_user_verify_key=request.requesting_user_verify_key,
+                    linked_obj=link,
+                    notifier_types=[NOTIFIERS.EMAIL],
+                    email_template=RequestUpdateEmailTemplate,
+                )
+                send_notification = context.node.get_service_method(
+                    NotificationService.send
+                )
+                send_notification(context=context, notification=notification)
 
             # TODO: check whereever we're return SyftError encapsulate it in Result.
             if hasattr(result, "value"):
