@@ -1630,23 +1630,30 @@ class ResolvedSyncState(SyftObject):
             other_obj = other_obj.create_shareable_sync_copy(mock=True)
 
         if (
-            sync_instruction.decision and sync_instruction.decision.value != self.alias
-        ):  # chose for the other
-            if diff.status == "MODIFIED":
-                # keep IDs comparison here, otherwise it will break with actionobjects
-                if other_obj.id not in [x.id for x in self.update_objs]:  # type: ignore
-                    self.update_objs.append(other_obj)
-
-            elif diff.status == "NEW":
-                if my_obj is None:
-                    # keep IDs comparison here, otherwise it will break with actionobjects
-                    if other_obj.id not in [x.id for x in self.create_objs]:  # type: ignore
-                        self.create_objs.append(other_obj)
-
-                elif other_obj is None:
-                    # keep IDs comparison here, otherwise it will break with actionobjects
-                    if my_obj.id not in [x.id for x in self.delete_objs]:
-                        self.delete_objs.append(my_obj)
+            sync_instruction.decision 
+            and sync_instruction.decision.value != self.alias
+            and diff.status == "MODIFIED"
+            and other_obj.id not in [x.id for x in self.update_objs]  # type: ignore
+        ):
+            self.update_objs.append(other_obj)
+        
+        elif (
+            sync_instruction.decision 
+            and sync_instruction.decision.value != self.alias
+            and diff.status == "NEW"
+            and my_obj is None
+            and other_obj.id not in [x.id for x in self.create_objs]  # type: ignore
+        ):
+            self.create_objs.append(other_obj)
+        
+        elif (
+            sync_instruction.decision 
+            and sync_instruction.decision.value != self.alias
+            and diff.status == "NEW"
+            and other_obj is None
+            and my_obj.id not in [x.id for x in self.delete_objs]
+        ):
+            self.delete_objs.append(my_obj)
 
         if self.alias == "low":
             self.new_permissions.extend(sync_instruction.new_permissions_lowside)
