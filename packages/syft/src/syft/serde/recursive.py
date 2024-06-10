@@ -1,8 +1,8 @@
 # stdlib
 from collections.abc import Callable
+import contextlib
 from enum import Enum
 from enum import EnumMeta
-import contextlib
 import sys
 import tempfile
 import types
