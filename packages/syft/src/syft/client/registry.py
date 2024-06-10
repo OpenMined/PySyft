@@ -338,7 +338,7 @@ class DomainRegistry:
             raise SyftException(f"Failed to login to: {peer}. {e}")
 
 
-def __getitem__(self: 'DomainRegistry', key: str | int) -> Client:
+def __getitem__(self: DomainRegistry, key: str | int) -> Client:
     if isinstance(key, int):
         return self.create_client(self.online_domains[key][0])
     else:
