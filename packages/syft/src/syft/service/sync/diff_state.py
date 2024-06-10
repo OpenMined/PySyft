@@ -1551,7 +1551,6 @@ class SyncInstruction(SyftObject):
         ):
             raise ValueError("share_to_user is required to share private data")
 
-
         # TODO move this to the widget
         # if widget.has_unused_share_button:
         #     print("Share button was not used, so we will mockify the object")
