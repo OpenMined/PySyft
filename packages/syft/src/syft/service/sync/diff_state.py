@@ -1635,7 +1635,7 @@ class ResolvedSyncState(SyftObject):
             and other_obj.id not in [x.id for x in self.update_objs]  # type: ignore
         ):
             self.update_objs.append(other_obj)
-        
+
         elif (
             sync_instruction.decision
             and sync_instruction.decision.value != self.alias
@@ -1645,7 +1645,7 @@ class ResolvedSyncState(SyftObject):
             and other_obj.id not in [x.id for x in self.create_objs]  # type: ignore
         ):
             self.create_objs.append(other_obj)
-        
+
         elif (
             sync_instruction.decision
             and sync_instruction.decision.value != self.alias
