@@ -1,5 +1,6 @@
 # stdlib
 from collections.abc import Callable
+from contextlib import suppress
 from enum import Enum
 import hashlib
 import inspect
@@ -1146,10 +1147,8 @@ def type_for_field(object_type: type, attr_name: str) -> type | None:
     try:
         field_type = object_type.__dict__["__annotations__"][attr_name]
     except Exception:  # nosec
-        try:
+        with contextlib.suppress(Exception):
             field_type = object_type.__fields__.get(attr_name, None).type_
-        except Exception:  # nosec
-            pass
     return field_type
 
 
