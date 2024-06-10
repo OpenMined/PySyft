@@ -22,6 +22,7 @@ from loguru import logger
 from nacl.signing import SigningKey
 from result import Err
 from result import Result
+from syft.types.errors import SyftException
 from typing_extensions import Self
 
 # relative
@@ -1259,6 +1260,9 @@ class Node(AbstractNode):
                 result = method(context, *api_call.args, **api_call.kwargs)
             except PySyftException as e:
                 return e.handle()
+            except SyftException as exc:
+                msg = exc.public()
+                result = SyftError(message=msg)
             except Exception:
                 result = SyftError(
                     message=f"Exception calling {api_call.path}. {traceback.format_exc()}"
