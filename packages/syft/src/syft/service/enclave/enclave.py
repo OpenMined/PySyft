@@ -73,7 +73,7 @@ class EnclaveInstance(SyftObject):
         # accessing other member's data.
         client = login(
             email="info@openmined.org",
-            password="changethis",
+            password="changethis",  # nosec
             url=self.route.host_or_ip,
             port=self.route.port,
         )
