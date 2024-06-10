@@ -1630,24 +1630,24 @@ class ResolvedSyncState(SyftObject):
             other_obj = other_obj.create_shareable_sync_copy(mock=True)
 
         if (
-            sync_instruction.decision 
+            sync_instruction.decision
             and sync_instruction.decision.value != self.alias
             and diff.status == "MODIFIED"
             and other_obj.id not in [x.id for x in self.update_objs]  # type: ignore
         ):
             self.update_objs.append(other_obj)
-        
+
         elif (
-            sync_instruction.decision 
+            sync_instruction.decision
             and sync_instruction.decision.value != self.alias
             and diff.status == "NEW"
             and my_obj is None
             and other_obj.id not in [x.id for x in self.create_objs]  # type: ignore
         ):
             self.create_objs.append(other_obj)
-        
+
         elif (
-            sync_instruction.decision 
+            sync_instruction.decision
             and sync_instruction.decision.value != self.alias
             and diff.status == "NEW"
             and other_obj is None
