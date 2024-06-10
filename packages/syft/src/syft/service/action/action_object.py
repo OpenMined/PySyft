@@ -1559,15 +1559,14 @@ class ActionObject(SyncableSyftObject):
                     msg = result.err().replace("\\n", "\n")
                     debug(f"Pre-hook failed with {msg}")
 
-        if self.is_pointer and name not in self._syft_dont_wrap_attrs():
-            if HOOK_ALWAYS in self.syft_pre_hooks__:
-                for hook in self.syft_pre_hooks__[HOOK_ON_POINTERS]:
-                    result = hook(context, *result_args, **result_kwargs)
-                    if result.is_ok():
-                        context, result_args, result_kwargs = result.ok()
-                    else:
-                        msg = result.err().replace("\\n", "\n")
-                        debug(f"Pre-hook failed with {msg}")
+        if self.is_pointer and name not in self._syft_dont_wrap_attrs() and HOOK_ALWAYS in self.syft_pre_hooks__[HOOK_ON_POINTERS]:
+            for hook in self.syft_pre_hooks__[HOOK_ON_POINTERS]:
+                result = hook(context, *result_args, **result_kwargs)
+                if result.is_ok():
+                    context, result_args, result_kwargs = result.ok()
+                else:
+                    msg = result.err().replace("\\n", "\n")
+                    debug(f"Pre-hook failed with {msg}"
 
         return context, result_args, result_kwargs
 
