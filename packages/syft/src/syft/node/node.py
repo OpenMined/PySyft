@@ -572,7 +572,7 @@ class Node(AbstractNode):
                     worker_stash=self.worker_stash,
                 )
                 producer.run()
-                address = producer.address
+                address: Optional[str] = producer.address
             else:
                 port = queue_config.client_config.queue_port
                 address: Optional[str] = (
