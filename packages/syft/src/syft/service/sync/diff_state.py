@@ -310,7 +310,10 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
 
     @property
     def non_empty_object(self) -> SyftObject | None:
-        return self.low_obj or self.high_obj
+        if self.low_obj is not None:
+            return self.low_obj
+        else:
+            return self.high_obj
 
     @property
     def object_type(self) -> str:
