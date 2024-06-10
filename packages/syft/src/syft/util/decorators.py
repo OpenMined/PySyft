@@ -38,11 +38,9 @@ def singleton(cls: Any) -> Callable:
 
     @functools.wraps(cls)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
-        if cls in previous_instances and previous_instances.get(cls).get("args") == (
-            args,
-            kwargs,
-        ):
-            return previous_instances[cls].get("instance")
+        instance_info = previous_instances.get(cls)
+        if instance_info is not None and instance_info.get("args") == (args, kwargs):
+            return instance_info.get("instance")
         else:
             previous_instances[cls] = {
                 "args": (args, kwargs),
