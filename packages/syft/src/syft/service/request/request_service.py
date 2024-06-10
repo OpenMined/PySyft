@@ -220,7 +220,7 @@ class RequestService(AbstractService):
                     NotificationService.mark_as_read
                 )
                 mark_as_read(context=context, uid=request_notification.id)
-            
+
                 notification = CreateNotification(
                     subject=f"Your request ({str(uid)[:4]}) has been approved!",
                     from_user_verify_key=context.credentials,
