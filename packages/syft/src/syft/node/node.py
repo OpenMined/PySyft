@@ -16,7 +16,7 @@ import sys
 import tempfile
 from time import sleep
 import traceback
-from typing import Any, Optional
+from typing import Any
 
 # third party
 from loguru import logger
@@ -572,10 +572,10 @@ class Node(AbstractNode):
                     worker_stash=self.worker_stash,
                 )
                 producer.run()
-                address: Optional[str] = producer.address
+                address: str | None = producer.address = producer.address
             else:
                 port = queue_config.client_config.queue_port
-                address: Optional[str] = (
+               address: str | None = producer.address = (
                     get_queue_address(port) if port is not None else None
                 )
 
