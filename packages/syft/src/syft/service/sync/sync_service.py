@@ -23,14 +23,10 @@ from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..action.action_permissions import StoragePermission
-from ..action.action_service import ActionService
 from ..api.api import TwinAPIEndpoint
 from ..code.user_code import UserCodeStatusCollection
 from ..context import AuthedServiceContext
-from ..job.job_service import JobService
 from ..job.job_stash import Job
-from ..log.log_service import LogService
-from ..output.output_service import OutputService
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -279,7 +275,7 @@ class SyncService(AbstractService):
         """
         items_for_jobs = []
 
-        job_service: JobService = context.node.get_service("jobservice")
+        job_service = context.node.get_service("jobservice")
         jobs = job_service.get_all(context)
         if isinstance(jobs, SyftError):
             return Err(jobs.message)
@@ -300,13 +296,13 @@ class SyncService(AbstractService):
     ) -> Result[list[SyncableSyftObject], str]:
         job_batch = [job]
 
-        log_service: LogService = context.node.get_service("logservice")
+        log_service = context.node.get_service("logservice")
         log = log_service.get(context, job.log_id)
         if isinstance(log, SyftError):
             return Err(log.message)
         job_batch.append(log)
 
-        output_service: OutputService = context.node.get_service("outputservice")
+        output_service = context.node.get_service("outputservice")
         output = output_service.get_by_job_id(context, job.id)
         if isinstance(output, SyftError):
             return Err(output.message)
@@ -317,7 +313,7 @@ class SyncService(AbstractService):
             return Err("Job Result is not an ActionObject")
         job_result_ids.add(job.result.id.id)
 
-        action_service: ActionService = context.node.get_service("actionservice")
+        action_service = context.node.get_service("actionservice")
         for result_id in job_result_ids:
             action_object = action_service.get(context, result_id)
             if action_object.is_err():
