@@ -101,7 +101,7 @@ class SyncService(AbstractService):
         if isinstance(item, UserCodeStatusCollection):
             identity = NodeIdentity.from_node(context.node)
             res = {}
-            for key in item.status_dict:
+            for key in item.status_dict.keys():
                 # todo, check if they are actually only two nodes
                 res[identity] = item.status_dict[key]
             item.status_dict = res
@@ -164,11 +164,15 @@ class SyncService(AbstractService):
             else:
                 return Ok(item)
 
-        res = (
-            stash.update(creds, item)
-            if exists
-            else stash.set(creds, item, add_storage_permission=False)
-        )
+        if exists:
+            res = stash.update(creds, item)
+        else:
+            # Storage permissions are added separately
+            res = stash.set(
+                creds,
+                item,
+                add_storage_permission=False,
+            )
 
         return res
 
