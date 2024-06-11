@@ -329,6 +329,19 @@ class OutputService(AbstractService):
             return result.ok()
         return SyftError(message=result.err())
 
+    @service_method(
+        path="output.get",
+        name="get",
+        roles=GUEST_ROLE_LEVEL,
+    )
+    def get(
+        self, context: AuthedServiceContext, id: UID
+    ) -> ExecutionOutput | SyftError:
+        result = self.stash.get_by_uid(context.credentials, id)
+        if result.is_ok():
+            return result.ok()
+        return SyftError(message=result.err())
+
     @service_method(path="output.get_all", name="get_all", roles=GUEST_ROLE_LEVEL)
     def get_all(
         self, context: AuthedServiceContext

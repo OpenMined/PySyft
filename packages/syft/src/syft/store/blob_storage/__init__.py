@@ -205,7 +205,10 @@ class BlobRetrievalByURL(BlobRetrieval):
             blob_url = self.url
 
         try:
-            if (is_blob_file := issubclass(self.type_, BlobFileType)) and stream:
+            is_blob_file = self.type_ is not None and issubclass(
+                self.type_, BlobFileType
+            )
+            if is_blob_file and stream:
                 return syft_iter_content(blob_url, chunk_size)
 
             response = requests.get(str(blob_url), stream=stream)  # nosec
