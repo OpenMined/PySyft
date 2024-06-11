@@ -1,8 +1,7 @@
 # stdlib
-import traceback
-
 from collections.abc import Callable
 import functools
+from types import TracebackType
 from typing import Generic
 from typing import Literal
 from typing import NoReturn
@@ -95,42 +94,61 @@ def as_result(
             try:
                 output = func(*args, **kwargs)
                 if isinstance(output, Ok) or isinstance(output, Err):
-                    raise TypeError((
+                    raise TypeError(
                         f"Functions decorated with `as_result` should not return Result.\n"
-                        f"function output: {output}"
-                    ))
+                        f"output: {output}"
+                    )
                 return Ok(func(*args, **kwargs))
-            except exceptions as e:
-                # We want to adjust the traceback so we can remove the decorator
-                # and the wrapper from the traceback for nicer error messages.
-                frames = []
-
-                for tb in traceback.walk_tb(e.__traceback__):
-                    frames.append(tb)
-
-                # The first two frames we always want to keep as they show the
-                # immediate context of the error: this except block  and the caller
-                frames_to_keep = frames[0:2]
-
-                # Next, we skip two frames that contains the decorator and the wrapper.
-                # They'll appear when unwrap() is called. We don't need them.
-                if len(frames) > 2:
-                    frames_to_keep += frames[4:]
-
-                # Before being done, we need to adjust the traceback.tb_next so that
-                # the frames are linked together properly.
-                for i, tb in enumerate(frames_to_keep):
-                    if i + 1 == len(frames_to_keep):
-                        tb.tb_next = None
-                    else:
-                        tb.tb_next = frames_to_keep[i + 1]
-
-                # Finally, we create a new exception with the adjusted traceback.
-                # ex = e.with_traceback(keepers[0])
-                e.__traceback__ = frames_to_keep[0]
-
-                return Err(e)
+            except exceptions as exc:
+                strip_asresult_from_exception_traceback(exc)
+                return Err(exc)
 
         return wrapper
 
     return decorator
+
+
+def strip_asresult_from_exception_traceback(exc: BaseException) -> BaseException:
+    """
+    Adjusts the traceback of an exception to remove specific frames related to 
+    the as_result decorator and the unwrap() call, for cleaner and more relevant 
+    error messages.
+
+    This function modifies the traceback of the provided exception by keeping the first
+    two frames (which show the immediate context of the error) and then skipping the
+    next two frames (which contain decorator and wrapper frames). The rest of the frames
+    are preserved.
+
+    Args:
+        exc (BaseException): The exception whose traceback is to be adjusted.
+
+    Returns:
+        BaseException: The same exception with an adjusted traceback.
+    """
+    # We want to adjust the traceback so we can remove the decorator
+    # and the wrapper from the traceback for nicer error messages.
+    tb = exc.__traceback__
+    frames: list[TracebackType] = []
+
+    while tb is not None:
+        frames.append(tb)
+        tb = tb.tb_next
+
+    # The first two frames we always want to keep as they show the immediate 
+    # context of the error: the current except block and the caller
+    frames_to_keep = frames[0:2]
+
+    # Next, we skip two frames that contains the decorator and the wrapper.
+    # They'll appear when unwrap() is called. We don't need them.
+    if len(frames) > 2:
+        frames_to_keep += frames[4:]
+
+    # Before being done, we need to adjust the traceback.tb_next so that
+    # the frames are linked together properly.
+    for i, tb in enumerate(frames_to_keep):
+        if i + 1 == len(frames_to_keep):
+            tb.tb_next = None
+        else:
+            tb.tb_next = frames_to_keep[i + 1]
+
+    return exc
