@@ -1153,7 +1153,6 @@ class NodeDiff(SyftObject):
     def resolve(self) -> "PaginatedResolveWidget | SyftSuccess":
         if len(self.batches) == 0:
             return SyftSuccess(message="No batches to resolve")
-        # relative
 
         # relative
         from .resolve_widget import PaginatedResolveWidget

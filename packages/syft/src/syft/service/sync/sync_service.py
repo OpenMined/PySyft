@@ -261,6 +261,8 @@ class SyncService(AbstractService):
                 item_permissions = store._get_permissions_for_uid(uid)
                 if not item_permissions.is_err():
                     permissions[uid] = item_permissions.ok()
+
+                # TODO fix error handling for storage permissions
                 item_storage_permissions = store._get_storage_permissions_for_uid(uid)
                 if not item_storage_permissions.is_err():
                     storage_permissions[uid] = item_storage_permissions.ok()
@@ -269,11 +271,12 @@ class SyncService(AbstractService):
     def _get_all_items_for_jobs(
         self,
         context: AuthedServiceContext,
-    ) -> Result[list[SyncableSyftObject], str]:
+    ) -> Result[tuple[list[SyncableSyftObject], dict[UID, str]], str]:
         """
         Returns all Jobs, along with their Logs, ExecutionOutputs and ActionObjects
         """
         items_for_jobs = []
+        errors = {}
 
         job_service = context.node.get_service("jobservice")
         jobs = job_service.get_all(context)
@@ -286,10 +289,11 @@ class SyncService(AbstractService):
                 logger.info(
                     f"Job {job.id} could not be added to SyncState: {job_items_result.err()}"
                 )
+                errors[job.id] = job_items_result.err()
                 continue
             items_for_jobs.extend(job_items_result.ok())
 
-        return Ok(items_for_jobs)
+        return Ok((items_for_jobs, errors))
 
     def _get_job_batch(
         self, context: AuthedServiceContext, job: Job
@@ -327,7 +331,7 @@ class SyncService(AbstractService):
 
     def get_all_syncable_items(
         self, context: AuthedServiceContext
-    ) -> Result[list[SyncableSyftObject], str]:
+    ) -> Result[tuple[list[SyncableSyftObject], dict[UID, str]], str]:
         all_items: list[SyncableSyftObject] = []
 
         # NOTE Jobs are handled separately
@@ -349,9 +353,10 @@ class SyncService(AbstractService):
         items_for_jobs = self._get_all_items_for_jobs(context)
         if items_for_jobs.is_err():
             return items_for_jobs
-        all_items.extend(items_for_jobs.ok())
+        items_for_jobs, errors = items_for_jobs.ok()
+        all_items.extend(items_for_jobs)
 
-        return Ok(all_items)
+        return Ok((all_items, errors))
 
     def build_current_state(
         self,
@@ -370,8 +375,8 @@ class SyncService(AbstractService):
         objects_res = self.get_all_syncable_items(context)
         if objects_res.is_err():
             return objects_res
-        else:
-            objects = objects_res.ok()
+
+        objects, errors = objects_res.ok()
         permissions, storage_permissions = self.get_permissions(context, objects)
 
         previous_state = self.stash.get_latest(context=context)
@@ -414,6 +419,7 @@ class SyncService(AbstractService):
             storage_permissions=storage_permissions,
             ignored_batches=ignored_batches,
             object_sync_dates=object_sync_dates,
+            errors=errors,
         )
 
         new_state.add_objects(objects, context)

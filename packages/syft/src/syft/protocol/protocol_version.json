@@ -203,6 +203,11 @@
           "version": 2,
           "hash": "925f1b8ccd4b9d542700a111f9c4bdd28bfa55978d805ddb2fb3c108cc940d19",
           "action": "add"
+        },
+        "3": {
+          "version": 3,
+          "hash": "1b5fd28919cb496f8073a64a57736d477ace1ed969962b1b049cecf766f2661c",
+          "action": "add"
         }
       },
       "NodePeer": {
