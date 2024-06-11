@@ -498,44 +498,25 @@ def convert_to_pointers(
     # relative
     from ..dataset.dataset import Asset
 
-    arg_list = []
-    kwarg_dict = {}
-    if args is not None:
-        for arg in args:
-            if (
-                not isinstance(arg, ActionObject | Asset | UID)
-                and api.signing_key is not None  # type: ignore[unreachable]
-            ):
-                arg = ActionObject.from_obj(  # type: ignore[unreachable]
-                    syft_action_data=arg,
-                    syft_client_verify_key=api.signing_key.verify_key,
-                    syft_node_location=api.node_uid,
-                )
-                arg.syft_node_uid = node_uid
-                r = arg._save_to_blob_storage()
-                if isinstance(r, SyftError):
-                    print(r.message)
-                arg = api.services.action.set(arg)
-            arg_list.append(arg)
+    def process_arg(arg: ActionObject | Asset | UID | Any) -> Any:
+        if (
+            not isinstance(arg, ActionObject | Asset | UID)
+            and api.signing_key is not None  # type: ignore[unreachable]
+        ):
+            arg = ActionObject.from_obj(  # type: ignore[unreachable]
+                syft_action_data=arg,
+                syft_client_verify_key=api.signing_key.verify_key,
+                syft_node_location=api.node_uid,
+            )
+            arg.syft_node_uid = node_uid
+            r = arg._save_to_blob_storage()
+            if isinstance(r, SyftError):
+                print(r.message)
+            arg = api.services.action.set(arg)
+        return arg
 
-    if kwargs is not None:
-        for k, arg in kwargs.items():
-            if (
-                not isinstance(arg, ActionObject | Asset | UID)
-                and api.signing_key is not None  # type: ignore[unreachable]
-            ):
-                arg = ActionObject.from_obj(  # type: ignore[unreachable]
-                    syft_action_data=arg,
-                    syft_client_verify_key=api.signing_key.verify_key,
-                    syft_node_location=api.node_uid,
-                )
-                arg.syft_node_uid = node_uid
-                r = arg._save_to_blob_storage()
-                if isinstance(r, SyftError):
-                    print(r.message)
-                arg = api.services.action.set(arg)
-
-            kwarg_dict[k] = arg
+    arg_list = [process_arg(arg) for arg in args] if args else []
+    kwarg_dict = {k: process_arg(v) for k, v in kwargs.items()} if kwargs else {}
 
     return arg_list, kwarg_dict
 
