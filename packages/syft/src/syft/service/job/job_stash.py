@@ -43,6 +43,7 @@ from ...util.util import prompt_warning_message
 from ..action.action_object import Action
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
+from ..log.log import SyftLog
 from ..response import SyftError
 from ..response import SyftNotReady
 from ..response import SyftSuccess
@@ -352,7 +353,7 @@ class Job(SyncableSyftObject):
             )
         return api.services.user.get_current_user(self.id)
 
-    def _get_log_objs(self) -> SyftObject | SyftError:
+    def _get_log_objs(self) -> SyftLog | SyftError:
         api = APIRegistry.api_for(
             node_uid=self.node_uid,
             user_verify_key=self.syft_client_verify_key,
@@ -384,12 +385,12 @@ class Job(SyncableSyftObject):
 
         if stderr:
             try:
-                std_err_log = api.services.log.get_error(self.log_id)
-                if isinstance(std_err_log, SyftError):
+                stderr_log = api.services.log.get_stderr(self.log_id)
+                if isinstance(stderr_log, SyftError):
                     results.append(f"Error log {self.log_id} not available")
                     has_permissions = False
                 else:
-                    results.append(std_err_log)
+                    results.append(stderr_log)
             except Exception:
                 # no access
                 if isinstance(self.result, Err):

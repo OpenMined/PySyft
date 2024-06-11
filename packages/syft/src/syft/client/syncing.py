@@ -13,7 +13,7 @@ from ..service.sync.resolve_widget import ResolveWidget
 from ..service.sync.sync_state import SyncState
 from ..types.uid import UID
 from ..util.decorators import deprecated
-from .client import SyftClient
+from .domain_client import DomainClient
 from .sync_decision import SyncDecision
 from .sync_decision import SyncDirection
 
@@ -25,7 +25,7 @@ def compare_states(
     include_same: bool = False,
     filter_by_email: str | None = None,
     filter_by_type: str | type | None = None,
-) -> NodeDiff:
+) -> NodeDiff | SyftError:
     # NodeDiff
     if (
         from_state.node_side_type == NodeSideType.LOW_SIDE
@@ -42,7 +42,9 @@ def compare_states(
         high_state = from_state
         direction = SyncDirection.HIGH_TO_LOW
     else:
-        raise ValueError("Invalid SyncStates")
+        return SyftError(
+            "Invalid node side types: can only compare a high and low node"
+        )
     return NodeDiff.from_sync_state(
         low_state=low_state,
         high_state=high_state,
@@ -55,16 +57,24 @@ def compare_states(
 
 
 def compare_clients(
-    from_client: SyftClient,
-    to_client: SyftClient,
+    from_client: DomainClient,
+    to_client: DomainClient,
     include_ignored: bool = False,
     include_same: bool = False,
     filter_by_email: str | None = None,
     filter_by_type: type | None = None,
-) -> NodeDiff:
+) -> NodeDiff | SyftError:
+    from_state = from_client.get_sync_state()
+    if isinstance(from_state, SyftError):
+        return from_state
+
+    to_state = to_client.get_sync_state()
+    if isinstance(to_state, SyftError):
+        return to_state
+
     return compare_states(
-        from_client.get_sync_state(),
-        to_client.get_sync_state(),
+        from_state=from_state,
+        to_state=to_state,
         include_ignored=include_ignored,
         include_same=include_same,
         filter_by_email=filter_by_email,
