@@ -724,7 +724,6 @@ class Job(SyncableSyftObject):
         return dependencies
 
 
-@serializable()
 class JobInfo(SyftObject):
     __canonical_name__ = "JobInfo"
     __version__ = SYFT_OBJECT_VERSION_2
@@ -749,6 +748,7 @@ class JobInfo(SyftObject):
     includes_result: bool
     # TODO add logs (error reporting PRD)
 
+    user_code_id: UID | None = None
     resolved: bool | None = None
     status: JobStatus | None = None
     n_iters: int | None = None
@@ -793,6 +793,7 @@ class JobInfo(SyftObject):
         info = cls(
             includes_metadata=metadata,
             includes_result=result,
+            user_code_id=job.user_code_id,
         )
 
         if metadata:
@@ -850,7 +851,7 @@ class JobStash(BaseStash):
             if len(res) == 0:
                 return Ok(None)
             elif len(res) > 1:
-                return Err(SyftError(message="multiple Jobs found"))
+                return Err("multiple Jobs found")
             else:
                 return Ok(res[0])
 

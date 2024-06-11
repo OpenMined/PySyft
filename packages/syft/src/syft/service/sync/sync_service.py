@@ -306,12 +306,15 @@ class SyncService(AbstractService):
         output = output_service.get_by_job_id(context, job.id)
         if isinstance(output, SyftError):
             return Err(output.message)
-        job_batch.append(output)
 
-        job_result_ids = set(output.output_id_list)
-        if not isinstance(job.result, ActionObject):
-            return Err("Job Result is not an ActionObject")
-        job_result_ids.add(job.result.id.id)
+        if output is not None:
+            job_batch.append(output)
+            job_result_ids = set(output.output_id_list)
+        else:
+            job_result_ids = set()
+
+        if isinstance(job.result, ActionObject):
+            job_result_ids.add(job.result.id.id)
 
         action_service = context.node.get_service("actionservice")
         for result_id in job_result_ids:

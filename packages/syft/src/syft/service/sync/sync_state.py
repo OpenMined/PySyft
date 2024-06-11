@@ -187,8 +187,10 @@ class SyncState(SyftObject):
         for obj in objects:
             if isinstance(obj.id, LineageID):
                 self.objects[obj.id.id] = obj
-            else:
+            elif isinstance(obj.id, UID):
                 self.objects[obj.id] = obj
+            else:
+                raise ValueError(f"Unsupported id type: {type(obj.id)}")
 
         # TODO might get slow with large states,
         # need to build dependencies every time to not have UIDs
