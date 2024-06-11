@@ -1327,12 +1327,9 @@ def validate_callable_args_and_kwargs(
                 )
             param = signature.parameters[key]
 
-            if isinstance(param.annotation, str):
-                # 🟡 TODO 21: make this work for weird string type situations
-                # happens when from __future__ import annotations in a class file
-                t = index_syft_by_module_name(param.annotation)
-            else:
-                t = param.annotation
+            t = index_syft_by_module_name(param.annotation) if isinstance(param.annotation, str) else param.annotation
+            # 🟡 TODO 21: make this work for weird string type situations
+            # happens when from __future__ import annotations in a class file
 
             if t is not inspect.Parameter.empty:
                 try:
