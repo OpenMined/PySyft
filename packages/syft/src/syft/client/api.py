@@ -325,9 +325,11 @@ class RemoteFunction(SyftObject):
         # TODO: annotate this on the service method decorator
         API_CALLS_THAT_REQUIRE_REFRESH = ["settings.enable_eager_execution"]
 
-        if path in API_CALLS_THAT_REQUIRE_REFRESH:
-            if self.refresh_api_callback is not None:
-                self.refresh_api_callback()
+        if (
+            path in API_CALLS_THAT_REQUIRE_REFRESH
+            and self.refresh_api_callback is not None
+        ):
+            self.refresh_api_callback()
 
         result, _ = migrate_args_and_kwargs(
             [result], kwargs={}, to_latest_protocol=True
@@ -407,10 +409,7 @@ class RemoteFunction(SyftObject):
                 return endpoint._repr_html_()
 
             str_repr = "## API: " + custom_path + "\n"
-            if endpoint.description is not None:
-                text = endpoint.description.text
-            else:
-                text = ""
+            text = endpoint.description.text if endpoint.description is not None else ""
             str_repr += (
                 "### Description: "
                 + f'<span style="font-weight: lighter;">{text}</span><br>'
@@ -1081,9 +1080,11 @@ class SyftAPI(SyftObject):
 
     def update_api(self, api_call_result: Any) -> None:
         # TODO: hacky stuff with typing and imports to prevent circular imports
-        if result_needs_api_update(api_call_result):
-            if self.refresh_api_callback is not None:
-                self.refresh_api_callback()
+        if (
+            result_needs_api_update(api_call_result)
+            and self.refresh_api_callback is not None
+        ):
+            self.refresh_api_callback()
 
     def _add_route(
         self, api_module: APIModule, endpoint: APIEndpoint, endpoint_method: Callable
