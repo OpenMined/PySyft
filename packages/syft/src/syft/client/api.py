@@ -325,11 +325,9 @@ class RemoteFunction(SyftObject):
         # TODO: annotate this on the service method decorator
         API_CALLS_THAT_REQUIRE_REFRESH = ["settings.enable_eager_execution"]
 
-        if (
-            path in API_CALLS_THAT_REQUIRE_REFRESH
-            and self.refresh_api_callback is not None
-        ):
-            self.refresh_api_callback()
+        if path in API_CALLS_THAT_REQUIRE_REFRESH:
+            if self.refresh_api_callback is not None:
+                self.refresh_api_callback()
 
         result, _ = migrate_args_and_kwargs(
             [result], kwargs={}, to_latest_protocol=True
@@ -409,7 +407,10 @@ class RemoteFunction(SyftObject):
                 return endpoint._repr_html_()
 
             str_repr = "## API: " + custom_path + "\n"
-            text = endpoint.description.text if endpoint.description is not None else ""
+            if endpoint.description is not None:
+                text = endpoint.description.text
+            else:
+                text = ""
             str_repr += (
                 "### Description: "
                 + f'<span style="font-weight: lighter;">{text}</span><br>'
@@ -1070,18 +1071,19 @@ class SyftAPI(SyftObject):
                 result = result.result
 
         if isinstance(result, OkErr):
-            result = result.ok() if result.is_ok() else result.err()
+            if result.is_ok():
+                result = result.ok()
+            else:
+                result = result.err()
         # we update the api when we create objects that change it
         self.update_api(result)
         return result
 
     def update_api(self, api_call_result: Any) -> None:
         # TODO: hacky stuff with typing and imports to prevent circular imports
-        if (
-            result_needs_api_update(api_call_result)
-            and self.refresh_api_callback is not None
-        ):
-            self.refresh_api_callback()
+        if result_needs_api_update(api_call_result):
+            if self.refresh_api_callback is not None:
+                self.refresh_api_callback()
 
     def _add_route(
         self, api_module: APIModule, endpoint: APIEndpoint, endpoint_method: Callable
@@ -1326,14 +1328,12 @@ def validate_callable_args_and_kwargs(
                     message=f"""Invalid parameter: `{key}`. Valid Parameters: {list(signature.parameters)}"""
                 )
             param = signature.parameters[key]
-
-            t = (
-                index_syft_by_module_name(param.annotation)
-                if isinstance(param.annotation, str)
-                else param.annotation
-            )
-            # 🟡 TODO 21: make this work for weird string type situations
-            # happens when from __future__ import annotations in a class file
+            if isinstance(param.annotation, str):
+                # 🟡 TODO 21: make this work for weird string type situations
+                # happens when from __future__ import annotations in a class file
+                t = index_syft_by_module_name(param.annotation)
+            else:
+                t = param.annotation
 
             if t is not inspect.Parameter.empty:
                 try:
