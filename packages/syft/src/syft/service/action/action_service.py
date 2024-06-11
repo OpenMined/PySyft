@@ -201,7 +201,7 @@ class ActionService(AbstractService):
         uid: UID,
         twin_mode: TwinMode = TwinMode.PRIVATE,
         resolve_nested: bool = True,
-    ) -> Result[Ok[ActionObject], Err[str]]:
+    ) -> Result[ActionObject, str]:
         """Get an object from the action store"""
         return self._get(context, uid, twin_mode, resolve_nested=resolve_nested)
 
