@@ -1,4 +1,6 @@
 # stdlib
+import sys
+
 from collections.abc import Callable
 import functools
 from typing import Generic
@@ -99,7 +101,58 @@ def as_result(
                     ))
                 return Ok(func(*args, **kwargs))
             except exceptions as e:
-                return Err(e)
+                # exc_traceback = e.__traceback__
+                # tb1 = e.__traceback__ #1
+                # # This skips two frames: the frame of the decorator itself
+                # # and the frame of the wrapper
+                # try:
+                #     tb2 = tb1.tb_next #2
+                #     tb3 = tb2.tb_next #3
+                #     tb4 = tb3.tb_next #4
+                #     tb5 = tb4.tb_next #4
+
+                #     tb3.tb_next = tb5
+                #     tb1.tb_next = tb3
+                # except Exception:
+                #     pass
+                # ex = e.with_traceback(tb1)
+                # levels = e.__traceback__
+                tb = e.__traceback__
+                levels = []
+                while tb is not None:
+                    levels.append(tb)
+                    tb = tb.tb_next
+
+                keepers = levels[0:2]
+                if len(levels) > 2:
+                    keepers += levels[4:]
+
+                print(f"Len of keepers: {len(keepers)}")
+                print(f"Len of levels: {len(levels)}")
+
+                tb = e.__traceback__
+                while tb is not None:
+                    levels.append(tb)
+                    tb = tb.tb_next
+
+
+                for index, keeper in enumerate(keepers):
+                    print(f"{index} in keeper == {levels.index(keeper)} in levels")
+
+                import traceback
+                for level in levels:
+                    print(f"{traceback.format_tb(level)[0]}")
+
+                for i, tb in enumerate(keepers):
+                    print(f"index: {i}")
+                    if i + 1 == len(keepers):
+                        tb.tb_next = None
+                    else:
+                        tb.tb_next = keepers[i + 1]
+
+                ex = e.with_traceback(keepers[0])
+
+                return Err(ex)
 
         return wrapper
 
