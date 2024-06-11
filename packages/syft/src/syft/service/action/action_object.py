@@ -1092,10 +1092,7 @@ class ActionObject(SyncableSyftObject):
 
         arg_ids = [self._syft_prepare_obj_uid(obj) for obj in args]
 
-        kwarg_ids = {}
-
-        for k, obj in kwargs.items():
-            kwarg_ids[k] = self._syft_prepare_obj_uid(obj)
+        kwarg_ids = {k: self._syft_prepare_obj_uid(obj) for k, obj in kwargs.items()}
 
         action = Action(
             path=path,
