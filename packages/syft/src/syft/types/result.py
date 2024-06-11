@@ -79,18 +79,24 @@ class Err(Generic[E]):
 Result: TypeAlias = Ok[T] | Err[E]
 
 
-def catch(
+def as_result(
     *exceptions: type[BE],
 ) -> Callable[[Callable[P, T]], Callable[P, Result[T, BE]]]:
     if not exceptions or not all(
         issubclass(exception, BaseException) for exception in exceptions
     ):
-        raise TypeError("The catch() decorator only accepts exceptions")
+        raise TypeError("The as_result() decorator only accepts exceptions")
 
     def decorator(func: Callable[P, T]) -> Callable[P, Result[T, BE]]:
         @functools.wraps(func)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> Result[T, BE]:
             try:
+                output = func(*args, **kwargs)
+                if isinstance(output, Result):
+                    raise TypeError((
+                        f"Functions decorated with `as_result` should not return Result.\n"
+                        f"function output: {output}"
+                    ))
                 return Ok(func(*args, **kwargs))
             except exceptions as e:
                 return Err(e)
