@@ -833,7 +833,6 @@ class Node(AbstractNode):
     def __repr__(self) -> str:
         service_string = ""
         if not self.is_subprocess:
-            services = []
             services = [service.__name__ for service in self.services]
             service_string = ", ".join(sorted(services))
             service_string = f"\n\nServices:\n{service_string}"
