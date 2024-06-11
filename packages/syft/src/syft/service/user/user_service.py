@@ -1,6 +1,7 @@
 # stdlib
 
 # relative
+from ...abstract_node import NodeType
 from ...exceptions.user import UserAlreadyExistsException
 from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
@@ -407,16 +408,15 @@ class UserService(AbstractService):
                 context.login_credentials.password,
                 user.hashed_password,
             ):
-                # TODO uncomment this once enclave permission system is in place
-                # if (
-                #     context.node
-                #     and context.node.node_type == NodeType.ENCLAVE
-                #     and user.role == ServiceRole.ADMIN
-                # ):
-                #     return SyftError(
-                #         message="Admins are not allowed to login to Enclaves."
-                #         "\n Kindly register a new data scientist account by your_client.register."
-                #     )
+                if (
+                    context.node
+                    and context.node.node_type == NodeType.ENCLAVE
+                    and user.role == ServiceRole.ADMIN
+                ):
+                    return SyftError(
+                        message="Admins are not allowed to login to Enclaves."
+                        "\n Kindly register a new data scientist account by your_client.register."
+                    )
                 return user.to(UserPrivateKey)
 
             return SyftError(

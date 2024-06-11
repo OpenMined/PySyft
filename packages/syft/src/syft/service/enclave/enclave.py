@@ -12,6 +12,7 @@ from ...client.client import login_as_guest
 from ...serde.serializable import serializable
 from ...service.metadata.node_metadata import NodeMetadataJSON
 from ...service.network.routes import NodeRouteType
+from ...service.response import SyftError
 from ...service.response import SyftException
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
@@ -66,17 +67,32 @@ class EnclaveInstance(SyftObject):
 
     def get_client(self, verify_key: str) -> SyftClient:
         # TODO: find the standard method to convert route to client object
-        # TODO for this prototype/demo all communication is done via the admin client.
+        # TODO for this prototype/demo all communication is done via a DS client.
         # Later, we will use verify keys to authenticate actions of each member in the
         # Enclave. Also, there will be no concept of admin users. This will prevent anyone,
         # including the Enclave owner domain, from performing elevated actions like
         # accessing other member's data.
-        client = login(
-            email="info@openmined.org",
-            password="changethis",  # nosec
-            url=self.route.host_or_ip,
-            port=self.route.port,
-        )
+        PASSWORD = "changethis"  # nosec
+
+        def attempt_login() -> SyftClient | SyftError:
+            return login(
+                email="ds@openmined.org",
+                password=PASSWORD,
+                url=self.route.host_or_ip,
+                port=self.route.port,
+            )
+
+        client = attempt_login()
+
+        if isinstance(client, SyftError):
+            login_as_guest(url=self.route.host_or_ip, port=self.route.port).register(
+                name="Data Scientist",
+                email="ds@openmined.org",
+                password=PASSWORD,
+                password_verify=PASSWORD,
+            )
+            client = attempt_login()
+
         return client
 
     def __hash__(self) -> int:

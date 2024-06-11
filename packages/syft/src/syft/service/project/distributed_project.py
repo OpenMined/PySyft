@@ -136,6 +136,8 @@ class DistributedProject(BaseModel):
     def request_execution(self, blocking: bool = True) -> Any:
         self._pre_execution_request_checks()
         code = self.verify_code(self.code)
+
+        # Request Enclave to be set up by its owner domain
         provider = code.deployment_policy_init_kwargs.get("provider")
         owner_node_id = provider.syft_node_location
         owner_client = self.clients.get(owner_node_id)
@@ -143,17 +145,17 @@ class DistributedProject(BaseModel):
             raise SyftException(
                 f"Can't access Syft client. You must login to {self.syft_node_location}"
             )
-        owner_project = self.all_projects[owner_client]
-        enclave_client = owner_client.services.enclave.request_enclave_for_project(
-            project_id=owner_project.id
+        enclave_code_created = owner_client.services.enclave.request_enclave_for_code(
+            service_func_name=self.code.service_func_name
         )
+        if isinstance(enclave_code_created, SyftError):
+            raise SyftException(enclave_code_created.message)
 
-        # Wait for Enclave to be set up by the owner domain (project, code and users)
         # Request each domain to transfer their assets to the Enclave
         # Execute the code on the Enclave
         # Return the results
         # Cleanup the Enclave
-        return enclave_client
+        return enclave_code_created
 
     def _get_clients_from_code(self) -> dict[UID, SyftClient]:
         if not self.code or not self.code.input_policy_init_kwargs:
