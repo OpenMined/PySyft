@@ -5,7 +5,7 @@ import pytest
 from syft.service.action.action_object import ActionObject
 from syft.types.result import Err
 from syft.types.result import Ok
-from syft.types.result import catch
+from syft.types.result import as_result
 
 
 def test_ok():
@@ -92,8 +92,8 @@ def test_unwrap_error_not_exception():
         result.unwrap()
 
 
-def test_catch_decorator_good():
-    @catch(ValueError)
+def test_as_result_decorator_good():
+    @as_result(ValueError)
     def good() -> str:
         return "om"
 
@@ -105,8 +105,8 @@ def test_catch_decorator_good():
     assert result.unwrap() == "om"
 
 
-def test_catch_decorator_bad():
-    @catch(ValueError)
+def test_as_result_decorator_bad():
+    @as_result(ValueError)
     def bad() -> str:
         raise ValueError("some exception")
 
@@ -123,8 +123,8 @@ def test_catch_decorator_bad():
         result.unwrap()
 
 
-def test_catch_decorator():
-    @catch(ValueError)
+def test_as_result_decorator():
+    @as_result(ValueError)
     def create_object(valid: bool) -> ActionObject:
         if valid:
             return ActionObject.from_obj("om")
@@ -150,8 +150,8 @@ def test_catch_decorator():
         result.unwrap()
 
 
-def test_catch_decorator_bubble_up():
-    @catch(ValueError, TypeError)
+def test_as_result_decorator_bubble_up():
+    @as_result(ValueError, TypeError)
     def more_decorators(a: int) -> str:
         if a == 1:
             return "om"
@@ -165,18 +165,8 @@ def test_catch_decorator_bubble_up():
         more_decorators(0)
 
 
-def test_catch_decorator_no_exceptions():
-    with pytest.raises(TypeError) as e:
-
-        @catch()
-        def f() -> str:
-            return "om"
-
-        assert e.value.args == ("No exceptions provided to catch decorator",)
-
-
-def test_catch_decorator_multiple_exceptions():
-    @catch(ValueError, TypeError, OSError)
+def test_as_result_decorator_multiple_exceptions():
+    @as_result(ValueError, TypeError, OSError)
     def multiple_exceptions(a: int) -> str:
         if a == 1:
             return "om"
@@ -204,14 +194,14 @@ def test_catch_decorator_multiple_exceptions():
         multiple_exceptions(5)
 
 
-def test_catch_decorator_sub():
+def test_as_result_decorator_sub():
     class TestException(Exception):
         pass
 
     class SubException(TestException):
         pass
 
-    @catch(TestException)
+    @as_result(TestException)
     def subclassed() -> str:
         raise SubException("some exception")
 
