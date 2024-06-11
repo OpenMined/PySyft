@@ -206,7 +206,7 @@ def test_forget_usercode(low_worker, high_worker):
         decision_callback=skip_if_user_code,
     )
     assert not diff_before.is_same
-    assert diff_after.is_same
+    assert len(diff_after.batches) == 0
 
 
 def test_request_code_execution_multiple(low_worker, high_worker):
