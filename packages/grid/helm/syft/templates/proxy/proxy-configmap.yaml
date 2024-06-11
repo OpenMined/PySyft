@@ -43,7 +43,7 @@ data:
             - "web"
           service: "backend"
         blob-storage:
-          rule: "PathPrefix(`/blob`)"
+          rule: "PathPrefix(`/blob`) && !PathPrefix(`/rathole`)"
           entryPoints:
             - "web"
           service: "seaweedfs"
