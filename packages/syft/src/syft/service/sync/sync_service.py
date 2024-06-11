@@ -164,15 +164,7 @@ class SyncService(AbstractService):
             else:
                 return Ok(item)
 
-        if exists:
-            res = stash.update(creds, item)
-        else:
-            # Storage permissions are added separately
-            res = stash.set(
-                creds,
-                item,
-                add_storage_permission=False,
-            )
+        res = stash.update(creds, item) if exists else stash.set(creds, item, add_storage_permission=False)
 
         return res
 
