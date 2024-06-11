@@ -82,7 +82,9 @@ def compare_clients(
     )
 
 
-def resolve(obj: ObjectDiffBatch | NodeDiff) -> ResolveWidget | PaginatedResolveWidget:
+def resolve(
+    obj: ObjectDiffBatch | NodeDiff,
+) -> ResolveWidget | PaginatedResolveWidget | SyftSuccess | SyftError:
     if not isinstance(obj, ObjectDiffBatch | NodeDiff):
         raise ValueError(
             f"Invalid type: could not resolve object with type {type(obj).__qualname__}"
@@ -93,7 +95,7 @@ def resolve(obj: ObjectDiffBatch | NodeDiff) -> ResolveWidget | PaginatedResolve
 @deprecated(reason="resolve_single has been renamed to resolve", return_syfterror=True)
 def resolve_single(
     obj_diff_batch: ObjectDiffBatch,
-) -> ResolveWidget | PaginatedResolveWidget:
+) -> ResolveWidget | PaginatedResolveWidget | SyftSuccess | SyftError:
     return resolve(obj_diff_batch)
 
 
