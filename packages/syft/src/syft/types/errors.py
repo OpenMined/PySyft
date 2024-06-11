@@ -1,5 +1,7 @@
-from syft.service.context import AuthedServiceContext
-from syft.service.user.user_roles import ServiceRole
+# relative
+from ..service.context import AuthedServiceContext
+from ..service.user.user_roles import ServiceRole
+
 
 class SyftException(Exception):
     def public(self, context: AuthedServiceContext) -> str:

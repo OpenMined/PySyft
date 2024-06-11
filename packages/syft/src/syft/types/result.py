@@ -110,8 +110,8 @@ def as_result(
 
 def strip_asresult_from_exception_traceback(exc: BaseException) -> BaseException:
     """
-    Adjusts the traceback of an exception to remove specific frames related to 
-    the as_result decorator and the unwrap() call, for cleaner and more relevant 
+    Adjusts the traceback of an exception to remove specific frames related to
+    the as_result decorator and the unwrap() call, for cleaner and more relevant
     error messages.
 
     This function modifies the traceback of the provided exception by keeping the first
@@ -134,7 +134,7 @@ def strip_asresult_from_exception_traceback(exc: BaseException) -> BaseException
         frames.append(tb)
         tb = tb.tb_next
 
-    # The first two frames we always want to keep as they show the immediate 
+    # The first two frames we always want to keep as they show the immediate
     # context of the error: the current except block and the caller
     frames_to_keep = frames[0:2]
 

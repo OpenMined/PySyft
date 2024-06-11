@@ -22,7 +22,6 @@ from loguru import logger
 from nacl.signing import SigningKey
 from result import Err
 from result import Result
-from syft.types.errors import SyftException
 from typing_extensions import Self
 
 # relative
@@ -123,6 +122,7 @@ from ..store.linked_obj import LinkedObject
 from ..store.mongo_document_store import MongoStoreConfig
 from ..store.sqlite_document_store import SQLiteStoreClientConfig
 from ..store.sqlite_document_store import SQLiteStoreConfig
+from ..types.errors import SyftException
 from ..types.syft_metaclass import Empty
 from ..types.syft_object import PartialSyftObject
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
