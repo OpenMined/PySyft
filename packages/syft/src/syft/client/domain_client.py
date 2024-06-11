@@ -5,7 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 import re
 from string import Template
-import sys
 from typing import TYPE_CHECKING
 from typing import cast
 
@@ -18,7 +17,6 @@ from tqdm import tqdm
 # relative
 from ..abstract_node import NodeSideType
 from ..serde.serializable import serializable
-from ..serde.serialize import _serialize as serialize
 from ..service.action.action_object import ActionObject
 from ..service.code_history.code_history import CodeHistoriesDict
 from ..service.code_history.code_history import UsersCodeHistoriesDict
@@ -136,11 +134,6 @@ class DomainClient(SyftClient):
                         syft_node_location=self.id,
                         syft_client_verify_key=self.verify_key,
                     )
-                    serialized: bytes = serialize(twin, to_bytes=True)
-                    size_mb: float = sys.getsizeof(serialized) / 1024 / 1024
-                    if size_mb < 16:
-                        print(f"object's size = {size_mb} (MB), less than 16 MB")
-                        # TODO: if less than 16 MB, save without using blob storage
                     twin._save_to_blob_storage()
                 except Exception as e:
                     tqdm.write(f"Failed to create twin for {asset.name}. {e}")

@@ -38,6 +38,7 @@ from nacl.signing import VerifyKey
 import requests
 
 # relative
+from ..serde.serialize import _serialize as serialize
 from .logger import critical
 from .logger import debug
 from .logger import error
@@ -90,6 +91,10 @@ def get_name_for(klass: type) -> str:
 
 def get_mb_size(data: Any) -> float:
     return sys.getsizeof(data) / (1024 * 1024)
+
+
+def get_mb_serialized_size(data: Any) -> float:
+    return sys.getsizeof(serialize(data)) / (1024 * 1024)
 
 
 def extract_name(klass: type) -> str:
