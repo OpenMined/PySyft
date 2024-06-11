@@ -841,8 +841,6 @@ class ActionObject(SyncableSyftObject):
             return SyftError(
                 message=f"cannot store empty object {self.id} to the blob storage"
             )
-        if not TraceResultRegistry.current_thread_is_tracing():
-            self.syft_action_data_cache = self.as_empty_data()
         action_data_size_mb: float = get_mb_serialized_size(data)
         if action_data_size_mb > min_size_mb:
             result = self._save_to_blob_storage_(data)
@@ -853,6 +851,9 @@ class ActionObject(SyncableSyftObject):
                 f"self.syft_action_data's size = {action_data_size_mb:4f} (MB), less than {min_size_mb} (MB). "
                 f"Skip saving to blob storage."
             )
+            self.syft_action_data_cache = data
+        # if not TraceResultRegistry.current_thread_is_tracing():
+        #     self.syft_action_data_cache = self.as_empty_data()
         return None
 
     @property
