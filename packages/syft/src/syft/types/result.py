@@ -1,5 +1,5 @@
 # stdlib
-import sys
+import traceback
 
 from collections.abc import Callable
 import functools
@@ -94,65 +94,42 @@ def as_result(
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> Result[T, BE]:
             try:
                 output = func(*args, **kwargs)
-                if isinstance(output, Result):
+                if isinstance(output, Ok) or isinstance(output, Err):
                     raise TypeError((
                         f"Functions decorated with `as_result` should not return Result.\n"
                         f"function output: {output}"
                     ))
                 return Ok(func(*args, **kwargs))
             except exceptions as e:
-                # exc_traceback = e.__traceback__
-                # tb1 = e.__traceback__ #1
-                # # This skips two frames: the frame of the decorator itself
-                # # and the frame of the wrapper
-                # try:
-                #     tb2 = tb1.tb_next #2
-                #     tb3 = tb2.tb_next #3
-                #     tb4 = tb3.tb_next #4
-                #     tb5 = tb4.tb_next #4
+                # We want to adjust the traceback so we can remove the decorator
+                # and the wrapper from the traceback for nicer error messages.
+                frames = []
 
-                #     tb3.tb_next = tb5
-                #     tb1.tb_next = tb3
-                # except Exception:
-                #     pass
-                # ex = e.with_traceback(tb1)
-                # levels = e.__traceback__
-                tb = e.__traceback__
-                levels = []
-                while tb is not None:
-                    levels.append(tb)
-                    tb = tb.tb_next
+                for tb in traceback.walk_tb(e.__traceback__):
+                    frames.append(tb)
 
-                keepers = levels[0:2]
-                if len(levels) > 2:
-                    keepers += levels[4:]
+                # The first two frames we always want to keep as they show the
+                # immediate context of the error: this except block  and the caller
+                frames_to_keep = frames[0:2]
 
-                print(f"Len of keepers: {len(keepers)}")
-                print(f"Len of levels: {len(levels)}")
+                # Next, we skip two frames that contains the decorator and the wrapper.
+                # They'll appear when unwrap() is called. We don't need them.
+                if len(frames) > 2:
+                    frames_to_keep += frames[4:]
 
-                tb = e.__traceback__
-                while tb is not None:
-                    levels.append(tb)
-                    tb = tb.tb_next
-
-
-                for index, keeper in enumerate(keepers):
-                    print(f"{index} in keeper == {levels.index(keeper)} in levels")
-
-                import traceback
-                for level in levels:
-                    print(f"{traceback.format_tb(level)[0]}")
-
-                for i, tb in enumerate(keepers):
-                    print(f"index: {i}")
-                    if i + 1 == len(keepers):
+                # Before being done, we need to adjust the traceback.tb_next so that
+                # the frames are linked together properly.
+                for i, tb in enumerate(frames_to_keep):
+                    if i + 1 == len(frames_to_keep):
                         tb.tb_next = None
                     else:
-                        tb.tb_next = keepers[i + 1]
+                        tb.tb_next = frames_to_keep[i + 1]
 
-                ex = e.with_traceback(keepers[0])
+                # Finally, we create a new exception with the adjusted traceback.
+                # ex = e.with_traceback(keepers[0])
+                e.__traceback__ = frames_to_keep[0]
 
-                return Err(ex)
+                return Err(e)
 
         return wrapper
 
