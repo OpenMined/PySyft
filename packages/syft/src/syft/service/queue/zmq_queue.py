@@ -476,7 +476,7 @@ class ZMQProducer(QueueProducer):
             if self._stop.is_set():
                 return
 
-            for _, service in self.services.items():
+            for service in self.services.values():
                 thread = threading.Thread(target=self.dispatch, args=(service, None))
                 thread.start()
 
