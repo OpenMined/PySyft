@@ -52,7 +52,6 @@ from ..code.user_code import UserCodeStatusCollection
 from ..context import AuthedServiceContext
 from ..context import ChangeContext
 from ..job.job_stash import Job
-from ..job.job_stash import JobInfo
 from ..job.job_stash import JobStatus
 from ..notification.notifications import Notification
 from ..response import SyftError
@@ -712,41 +711,6 @@ class Request(SyncableSyftObject):
         save_method = context.node.get_service_method(RequestService.save)
         return save_method(context=context, request=self)
 
-    def _get_latest_or_create_job(self) -> Job | SyftError:
-        """Get the latest job for this requests user_code, or creates one if no jobs exist"""
-        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
-        if api is None:
-            return SyftError(message=f"api is None. You must login to {self.node_uid}")
-        job_service = api.services.job
-
-        existing_jobs = job_service.get_by_user_code_id(self.code.id)
-        if isinstance(existing_jobs, SyftError):
-            return existing_jobs
-
-        if len(existing_jobs) == 0:
-            print("Creating job for existing user code")
-            job = job_service.create_job_for_user_code_id(self.code.id)
-        else:
-            job = existing_jobs[-1]
-            res = job_service.add_read_permission_job_for_code_owner(job, self.code)
-            print(res)
-            res = job_service.add_read_permission_log_for_code_owner(
-                job.log_id, self.code
-            )
-            print(res)
-
-        return job
-
-    def _get_job_from_action_object(self, action_object: ActionObject) -> Job | None:  # type: ignore
-        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
-        if api is None:
-            raise ValueError(f"Can't access the api. You must login to {self.node_uid}")
-        job_service = api.services.job
-        existing_jobs = job_service.get_by_user_code_id(self.code.id)
-        for job in existing_jobs:
-            if job.result and job.result.id == action_object.id:
-                return job
-
     def _create_action_object_for_deposited_result(
         self,
         result: Any,
@@ -876,25 +840,6 @@ class Request(SyncableSyftObject):
     )
     def accept_by_depositing_result(self, result: Any, force: bool = False) -> Any:
         pass
-
-    def sync_job(
-        self, job_info: JobInfo, **kwargs: Any
-    ) -> Result[SyftSuccess, SyftError]:
-        if job_info.includes_result:
-            return SyftError(
-                message="This JobInfo includes a Result. Please use Request.accept_by_depositing_result instead."
-            )
-
-        api = APIRegistry.api_for(
-            node_uid=self.node_uid, user_verify_key=self.syft_client_verify_key
-        )
-        if api is None:
-            return SyftError(message=f"api is None. You must login to {self.node_uid}")
-        job_service = api.services.job
-
-        job = self._get_latest_or_create_job()
-        job.apply_info(job_info)
-        return job_service.update(job)
 
     def get_sync_dependencies(
         self, context: AuthedServiceContext
