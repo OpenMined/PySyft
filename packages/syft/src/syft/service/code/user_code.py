@@ -441,7 +441,7 @@ class UserCode(SyncableSyftObject):
             ):
                 # TODO: Tech Debt here
                 node_view_workaround = False
-                for k, _ in self.input_policy_init_kwargs.items():
+                for k in self.input_policy_init_kwargs.keys():
                     if isinstance(k, NodeIdentity):
                         node_view_workaround = True
 
@@ -726,7 +726,7 @@ class UserCode(SyncableSyftObject):
             [f"{'  '*level}{substring}" for substring in md.split("\n")[:-1]]
         )
         if self.nested_codes is not None:
-            for _, (obj, _) in self.nested_codes.items():
+            for obj, _ in self.nested_codes.values():
                 code = obj.resolve
                 md += "\n"
                 md += code._inner_repr(level=level + 1)
@@ -875,7 +875,7 @@ class SubmitUserCode(SyftObject):
             # And need only ActionObjects
             # Also, this works only on the assumption that all inputs
             # are ActionObjects, which might change in the future
-            for _, id in obj_dict.items():
+            for id in obj_dict.values():
                 mock_obj = api.services.action.get_mock(id)
                 if isinstance(mock_obj, SyftError):
                     data_obj = api.services.action.get(id)

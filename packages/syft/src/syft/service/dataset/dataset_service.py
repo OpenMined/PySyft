@@ -187,16 +187,14 @@ class DatasetService(AbstractService):
     ) -> list[Asset] | SyftError:
         """Get Assets by an Action ID"""
         datasets = self.get_by_action_id(context=context, uid=uid)
-        assets = []
-        if isinstance(datasets, list):
-            for dataset in datasets:
-                for asset in dataset.asset_list:
-                    if asset.action_id == uid:
-                        assets.append(asset)
-            return assets
-        elif isinstance(datasets, SyftError):
+        if isinstance(datasets, SyftError):
             return datasets
-        return []
+        return [
+            asset
+            for dataset in datasets
+            for asset in dataset.asset_list
+            if asset.action_id == uid
+        ]
 
     @service_method(
         path="dataset.delete_by_uid",

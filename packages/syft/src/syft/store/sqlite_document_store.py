@@ -267,7 +267,6 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
     def _get_all_keys(self) -> Any:
         select_sql = f"select uid from {self.table_name} order by sqltime"  # nosec
-        keys = []
 
         res = self._execute(select_sql)
         if res.is_err():
@@ -278,8 +277,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         if rows is None:
             return []
 
-        for row in rows:
-            keys.append(UID(row[0]))
+        keys = [UID(row[0]) for row in rows]
         return keys
 
     def _delete(self, key: UID) -> None:

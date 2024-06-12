@@ -404,10 +404,7 @@ class EnclaveRegistry:
                 executor.map(lambda enclave: check_enclave(enclave), enclaves)
             )
 
-        online_enclaves = []
-        for each in _online_enclaves:
-            if each is not None:
-                online_enclaves.append(each)
+        online_enclaves = [each for each in _online_enclaves if each is not None]
         return online_enclaves
 
     def _repr_html_(self) -> str:
