@@ -75,7 +75,7 @@ def planify(func: Callable) -> ActionObject:
         # TraceResult._client = client
         plan_kwargs = build_plan_inputs(func, client)
         outputs = func(**plan_kwargs)
-        if not (isinstance(outputs, list) or isinstance(outputs, tuple)):
+        if not (isinstance(outputs, list | tuple)):
             outputs = [outputs]
         ActionObject.remove_trace_hook()
         actions = TraceResultRegistry.get_trace_result_for_thread().result  # type: ignore
