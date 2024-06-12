@@ -659,8 +659,7 @@ class Job(SyncableSyftObject):
             )
 
         workers = api.services.worker.get_all()
-        worker_pool = api.services.worker_pool.get_all()
-        if len(workers) == 0 and len(worker_pool) == 0:
+        if not isinstance(workers, SyftError) and len(workers) == 0:
             return SyftError(
                 message="This node has no workers. "
                 "You need to start a worker to run jobs "
