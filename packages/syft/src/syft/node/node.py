@@ -345,7 +345,6 @@ class Node(AbstractNode):
         smtp_port: int | None = None,
         smtp_host: str | None = None,
         association_request_auto_approval: bool = False,
-        min_size_blob_storage_mb: int = 16,
         background_tasks: bool = False,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
@@ -433,7 +432,6 @@ class Node(AbstractNode):
 
         self.init_queue_manager(queue_config=self.queue_config)
 
-        self.min_size_blob_storage_mb = min_size_blob_storage_mb
         self.init_blob_storage(config=blob_storage_config)
 
         context = AuthedServiceContext(
@@ -480,9 +478,7 @@ class Node(AbstractNode):
             client_config = OnDiskBlobStorageClientConfig(
                 base_directory=self.get_temp_dir("blob")
             )
-            config_ = OnDiskBlobStorageConfig(
-                client_config=client_config, min_size_mb=self.min_size_blob_storage_mb
-            )
+            config_ = OnDiskBlobStorageConfig(client_config=client_config)
         else:
             config_ = config
         self.blob_store_config = config_
@@ -502,6 +498,9 @@ class Node(AbstractNode):
                 ] = remote_profile
 
         if self.dev_mode:
+            # relative
+            from ..util.util import min_size_for_blob_storage_upload
+
             if isinstance(self.blob_store_config, OnDiskBlobStorageConfig):
                 print(
                     f"Using on-disk blob storage with path: "
@@ -510,7 +509,7 @@ class Node(AbstractNode):
                 )
             print(
                 f"Minimum object size to be saved to the blob storage: "
-                f"{self.blob_store_config.min_size_mb} (MB)."
+                f"{min_size_for_blob_storage_upload()} (MB)."
             )
 
     def run_peer_health_checks(self, context: AuthedServiceContext) -> None:

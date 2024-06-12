@@ -97,6 +97,17 @@ def get_mb_serialized_size(data: Any) -> float:
     return sys.getsizeof(serialize(data)) / (1024 * 1024)
 
 
+def min_size_for_blob_storage_upload() -> int:
+    """
+    Return the minimum size in MB for a blob storage upload. Default to 16 MB for now
+    """
+    return int(os.getenv("MIN_SIZE_BLOB_STORAGE_MB", 16))
+
+
+def can_upload_to_blob_storage(data: Any) -> bool:
+    return get_mb_size(data) >= min_size_for_blob_storage_upload()
+
+
 def extract_name(klass: type) -> str:
     name_regex = r".+class.+?([\w\._]+).+"
     regex2 = r"([\w\.]+)"

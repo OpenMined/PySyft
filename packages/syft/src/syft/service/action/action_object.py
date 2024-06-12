@@ -47,7 +47,7 @@ from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
 from ...util.logger import debug
-from ...util.util import get_mb_serialized_size
+from ...util.util import can_upload_to_blob_storage
 from ...util.util import prompt_warning_message
 from ..context import AuthedServiceContext
 from ..response import SyftException
@@ -785,8 +785,8 @@ class ActionObject(SyncableSyftObject):
                 size = sys.getsizeof(serialized)
                 storage_entry = CreateBlobStorageEntry.from_obj(data, file_size=size)
 
-                # if not TraceResultRegistry.current_thread_is_tracing():
-                #     self.syft_action_data_cache = self.as_empty_data()
+                if not TraceResultRegistry.current_thread_is_tracing():
+                    self.syft_action_data_cache = self.as_empty_data()
                 if self.syft_blob_storage_entry_id is not None:
                     # TODO: check if it already exists
                     storage_entry.id = self.syft_blob_storage_entry_id
@@ -829,7 +829,7 @@ class ActionObject(SyncableSyftObject):
 
         return None
 
-    def _save_to_blob_storage(self, min_size_mb: int = 16) -> SyftError | None:
+    def _save_to_blob_storage(self) -> SyftError | None:
         """ "
         If less than min_size_mb, skip saving to blob storage
         TODO: min_size_mb shoulb be passed as a env var
@@ -841,19 +841,14 @@ class ActionObject(SyncableSyftObject):
             return SyftError(
                 message=f"cannot store empty object {self.id} to the blob storage"
             )
-        action_data_size_mb: float = get_mb_serialized_size(data)
-        if action_data_size_mb > min_size_mb:
-            result = self._save_to_blob_storage_(data)
-            if isinstance(result, SyftError):
-                return result
-            if not TraceResultRegistry.current_thread_is_tracing():
-                self.syft_action_data_cache = self.as_empty_data()
-        else:
-            debug(
-                f"self.syft_action_data's size = {action_data_size_mb:4f} (MB), "
-                f"less than {min_size_mb} (MB). Skip saving to blob storage."
-            )
+        if not can_upload_to_blob_storage(data):
             self.syft_action_data_cache = data
+            return None
+        result = self._save_to_blob_storage_(data)
+        if isinstance(result, SyftError):
+            return result
+        if not TraceResultRegistry.current_thread_is_tracing():
+            self.syft_action_data_cache = self.as_empty_data()
         return None
 
     @property

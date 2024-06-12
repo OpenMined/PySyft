@@ -66,6 +66,8 @@ seaweedfs:
   s3:
     rootUser: admin
 
+  minSizeBlobStorageMB: 16
+
   # Mount API
   mountApi:
     # automount:
