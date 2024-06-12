@@ -138,9 +138,9 @@ def syft_iter_content(
                     yield chunk
             return  # If successful, exit the function
         except requests.exceptions.RequestException as e:
-            if attempt < max_retries - 1:
+            if attempt < max_retries:
                 print(
-                    f"Attempt {attempt + 1}/{max_retries} failed: {e} at byte {current_byte}. Retrying..."
+                    f"Attempt {attempt}/{max_retries} failed: {e} at byte {current_byte}. Retrying..."
                 )
                 time.sleep(2**attempt)  # exponential
             else:
