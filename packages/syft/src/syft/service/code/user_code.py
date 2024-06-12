@@ -441,7 +441,7 @@ class UserCode(SyncableSyftObject):
             ):
                 # TODO: Tech Debt here
                 node_view_workaround = False
-                for k in self.input_policy_init_kwargs.keys():
+                for k in self.input_policy_init_kwargs:
                     if isinstance(k, NodeIdentity):
                         node_view_workaround = True
 
