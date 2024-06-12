@@ -3,7 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from collections import defaultdict
-from contextlib import suppress
+import contextlib
 from copy import deepcopy
 from pathlib import Path
 import sqlite3
@@ -369,7 +369,7 @@ class SQLiteStorePartition(KeyValueStorePartition):
 
     def close(self) -> None:
         self.lock.acquire()
-        with suppress(BaseException):
+        with contextlib.suppress(BaseException):
             # I think we don't want these now, because of the REF_COUNT?
             # self.data._close()
             # self.unique_keys._close()
