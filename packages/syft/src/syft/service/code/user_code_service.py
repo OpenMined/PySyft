@@ -28,6 +28,7 @@ from ..output.output_service import ExecutionOutput
 from ..policy.policy import OutputPolicy
 from ..request.request import Request
 from ..request.request import SubmitRequest
+from ..request.request import SyncedUserCodeStatusChange
 from ..request.request import UserCodeStatusChange
 from ..request.request_service import RequestService
 from ..response import SyftError
@@ -143,9 +144,11 @@ class UserCodeService(AbstractService):
             root_context = AuthedServiceContext(
                 credentials=context.node.verify_key, node=context.node
             )
-            _ = context.node.get_service("usercodestatusservice").remove(
-                root_context, user_code.status_link.object_uid
-            )
+
+            if user_code.status_link is not None:
+                _ = context.node.get_service("usercodestatusservice").remove(
+                    root_context, user_code.status_link.object_uid
+                )
             return result
         result = self._request_code_execution_inner(context, user_code, reason)
         return result
@@ -220,12 +223,20 @@ class UserCodeService(AbstractService):
 
         code_link = LinkedObject.from_obj(user_code, node_uid=context.node.id)
 
-        CODE_EXECUTE = UserCodeStatusChange(
-            value=UserCodeStatus.APPROVED,
-            linked_obj=user_code.status_link,
-            linked_user_code=code_link,
-        )
-        changes = [CODE_EXECUTE]
+        # Requests made on low side are synced, and have their status computed instead of set manually.
+        if user_code.is_low_side:
+            status_change = SyncedUserCodeStatusChange(
+                value=UserCodeStatus.APPROVED,
+                linked_obj=user_code.status_link,
+                linked_user_code=code_link,
+            )
+        else:
+            status_change = UserCodeStatusChange(
+                value=UserCodeStatus.APPROVED,
+                linked_obj=user_code.status_link,
+                linked_user_code=code_link,
+            )
+        changes = [status_change]
 
         request = SubmitRequest(changes=changes)
         method = context.node.get_service_method(RequestService.submit)

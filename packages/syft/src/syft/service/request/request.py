@@ -65,6 +65,15 @@ class RequestStatus(Enum):
     REJECTED = 1
     APPROVED = 2
 
+    @classmethod
+    def from_usercode_status(cls, status: UserCodeStatusCollection) -> "RequestStatus":
+        if status.approved:
+            return RequestStatus.APPROVED
+        elif status.denied:
+            return RequestStatus.REJECTED
+        else:
+            return RequestStatus.PENDING
+
 
 @serializable()
 class Change(SyftObject):
@@ -567,12 +576,7 @@ class Request(SyncableSyftObject):
     def status(self) -> RequestStatus:
         if self.code.is_low_side:
             code_status = self.code.status
-            if code_status == UserCodeStatus.PENDING:
-                return RequestStatus.PENDING
-            elif code_status == UserCodeStatus.DENIED:
-                return RequestStatus.REJECTED
-            elif code_status == UserCodeStatus.APPROVED:
-                return RequestStatus.APPROVED
+            return RequestStatus.from_usercode_status(code_status)
 
         if len(self.history) == 0:
             return RequestStatus.PENDING
@@ -1208,20 +1212,6 @@ class UserCodeStatusChange(Change):
             )
         return SyftSuccess(message=f"{type(self)} valid")
 
-    # def get_nested_requests(self, context, code_tree: Dict[str: Tuple[LinkedObject, Dict]]):
-    #     approved_nested_codes = {}
-    #     for key, (linked_obj, new_code_tree) in code_tree.items():
-    #         code_obj = linked_obj.resolve_with_context(context).ok()
-    #         approved_nested_codes[key] = code_obj.id
-
-    #         res = self.get_nested_requests(context, new_code_tree)
-    #         if isinstance(res, SyftError):
-    #             return res
-    #         code_obj.nested_codes = res
-    #         linked_obj.update_with_context(context, code_obj)
-
-    #     return approved_nested_codes
-
     def mutate(
         self,
         status: UserCodeStatusCollection,
@@ -1309,4 +1299,37 @@ class UserCodeStatusChange(Change):
     def link(self) -> SyftObject | None:
         if self.linked_obj:
             return self.linked_obj.resolve
+        return None
+
+
+@serializable()
+class SyncedUserCodeStatusChange(UserCodeStatusChange):
+    __canonical_name__ = "SyncedUserCodeStatusChange"
+    __version__ = SYFT_OBJECT_VERSION_3
+    linked_obj: LinkedObject | None = None
+
+    @property
+    def approved(self) -> bool:
+        return self.code.status.approved
+
+    def mutate(
+        self,
+        status: UserCodeStatusCollection,
+        context: ChangeContext,
+        undo: bool,
+    ) -> UserCodeStatusCollection | SyftError:
+        return SyftError(
+            message="Synced UserCodes status is computed, and cannot be updated manually."
+        )
+
+    def _run(
+        self, context: ChangeContext, apply: bool
+    ) -> Result[SyftSuccess, SyftError]:
+        return Ok(
+            SyftError(
+                message="Synced UserCodes status is computed, and cannot be updated manually."
+            )
+        )
+
+    def link(self) -> SyftObject | None:
         return None

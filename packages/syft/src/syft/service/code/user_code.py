@@ -43,15 +43,19 @@ from ...serde.serialize import _serialize
 from ...store.document_store import PartitionKey
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
+from ...types.syft_migration import migrate
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_4
+from ...types.syft_object import SYFT_OBJECT_VERSION_5
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import add_node_uid_for_key
+from ...types.transforms import drop
 from ...types.transforms import generate_id
+from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.uid import UID
 from ...util import options
@@ -256,11 +260,41 @@ class UserCodeStatusCollection(SyncableSyftObject):
         return [self.user_code_link.object_uid]
 
 
+class UserCodeV4(SyncableSyftObject):
+    # version
+    __canonical_name__ = "UserCode"
+    __version__ = SYFT_OBJECT_VERSION_4
+
+    id: UID
+    node_uid: UID | None = None
+    user_verify_key: SyftVerifyKey
+    raw_code: str
+    input_policy_type: type[InputPolicy] | UserPolicy
+    input_policy_init_kwargs: dict[Any, Any] | None = None
+    input_policy_state: bytes = b""
+    output_policy_type: type[OutputPolicy] | UserPolicy
+    output_policy_init_kwargs: dict[Any, Any] | None = None
+    output_policy_state: bytes = b""
+    parsed_code: str
+    service_func_name: str
+    unique_func_name: str
+    user_unique_func_name: str
+    code_hash: str
+    signature: inspect.Signature
+    status_link: LinkedObject
+    input_kwargs: list[str]
+    enclave_metadata: EnclaveMetadata | None = None
+    submit_time: DateTime | None = None
+    uses_domain: bool = False  # tracks if the code calls domain.something, variable is set during parsing
+    nested_codes: dict[str, tuple[LinkedObject, dict]] | None = {}
+    worker_pool_name: str | None = None
+
+
 @serializable()
 class UserCode(SyncableSyftObject):
     # version
     __canonical_name__ = "UserCode"
-    __version__ = SYFT_OBJECT_VERSION_4
+    __version__ = SYFT_OBJECT_VERSION_5
 
     id: UID
     node_uid: UID | None = None
@@ -726,7 +760,8 @@ class UserCode(SyncableSyftObject):
             ]
             dependencies.extend(nested_code_ids)
 
-        dependencies.append(self.status_link.object_uid)
+        if self.status_link is not None:
+            dependencies.append(self.status_link.object_uid)
 
         return dependencies
 
@@ -1710,3 +1745,19 @@ def load_approved_policy_code(
                     load_policy_code(user_code.output_policy_type)
     except Exception as e:
         raise Exception(f"Failed to load code: {user_code}: {e}")
+
+
+@migrate(UserCodeV4, UserCode)
+def migrate_usercode_v4_to_v5() -> list[Callable]:
+    return [
+        make_set_default("origin_node_side_type", NodeSideType.HIGH_SIDE),
+        make_set_default("l0_deny_reason", None),
+    ]
+
+
+@migrate(UserCode, UserCodeV4)
+def migrate_usercode_v5_to_v4() -> list[Callable]:
+    return [
+        drop("origin_node_side_type"),
+        drop("l0_deny_reason"),
+    ]

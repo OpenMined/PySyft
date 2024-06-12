@@ -1062,8 +1062,11 @@ class SyftAPI(SyftObject):
         if isinstance(result, CachedSyftObject):
             if result.error_msg is not None:
                 if cache_result:
+                    msg = "Loading results from cache."
+                    if result.error_msg:
+                        msg = f"{result.error_msg}. {msg}"
                     prompt_warning_message(
-                        message=f"{result.error_msg}. Loading results from cache."
+                        message=msg,
                     )
                 else:
                     result = SyftError(message=result.error_msg)

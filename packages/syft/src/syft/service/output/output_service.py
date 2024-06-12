@@ -1,6 +1,5 @@
 # stdlib
 from typing import ClassVar
-from typing import cast
 
 # third party
 from pydantic import model_validator
@@ -25,7 +24,6 @@ from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectREAD
-from ..action.action_service import ActionService
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..service import AbstractService
@@ -311,16 +309,19 @@ class OutputService(AbstractService):
         user_code_id: UID,
         code_owner_verify_key: SyftVerifyKey,
     ) -> bool:
-        action_service = cast(ActionService, context.node.get_service("actionservice"))
+        action_service = context.node.get_service("actionservice")
         all_outputs = self.get_by_user_code_id(context, user_code_id)
         if isinstance(all_outputs, SyftError):
+            print(all_outputs.message)
             return False
+        print("OUTPUTS", all_outputs)
         for output in all_outputs:
-            # Check if this output has permissions
-            if not self.stash.has_permission(
-                ActionObjectREAD(uid=output.id, credentials=code_owner_verify_key)
-            ):
-                continue
+            # TODO tech debt: unclear why code owner can see outputhistory without permissions.
+            # It is not a security issue (output history has no data) it is confusing for user
+            # if not self.stash.has_permission(
+            #     ActionObjectREAD(uid=output.id, credentials=code_owner_verify_key)
+            # ):
+            #     continue
 
             # Check if all output ActionObjects have permissions
             result_ids = output.output_id_list
