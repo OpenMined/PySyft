@@ -1,8 +1,3 @@
-# stdlib
-
-# third party
-from result import Ok
-
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
@@ -65,25 +60,29 @@ class LogService(AbstractService):
         return SyftSuccess(message="Log Append successful!")
 
     @service_method(path="log.get", name="get", roles=DATA_SCIENTIST_ROLE_LEVEL)
-    def get(self, context: AuthedServiceContext, uid: UID) -> SyftSuccess | SyftError:
+    def get(self, context: AuthedServiceContext, uid: UID) -> SyftLog | SyftError:
         result = self.stash.get_by_uid(context.credentials, uid)
 
         if result.is_err():
             return SyftError(message=str(result.err()))
 
-        return result
+        return result.ok()
 
     @service_method(
         path="log.get_stdout", name="get_stdout", roles=DATA_SCIENTIST_ROLE_LEVEL
     )
-    def get_stdout(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> SyftSuccess | SyftError:
-        result = self.stash.get_by_uid(context.credentials, uid)
-        if result.is_err():
-            return SyftError(message=str(result.err()))
+    def get_stdout(self, context: AuthedServiceContext, uid: UID) -> str | SyftError:
+        result = self.get(context, uid)
+        if isinstance(result, SyftError):
+            return result
+        return result.stdout
 
-        return Ok(result.ok().stdout)
+    @service_method(path="log.get_stderr", name="get_stderr", roles=ADMIN_ROLE_LEVEL)
+    def get_stderr(self, context: AuthedServiceContext, uid: UID) -> str | SyftError:
+        result = self.get(context, uid)
+        if isinstance(result, SyftError):
+            return result
+        return result.stderr
 
     @service_method(path="log.restart", name="restart", roles=DATA_SCIENTIST_ROLE_LEVEL)
     def restart(
@@ -101,16 +100,6 @@ class LogService(AbstractService):
         if result.is_err():
             return SyftError(message=str(result.err()))
         return SyftSuccess(message="Log Restart successful!")
-
-    @service_method(path="log.get_error", name="get_error", roles=ADMIN_ROLE_LEVEL)
-    def get_error(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> SyftSuccess | SyftError:
-        result = self.stash.get_by_uid(context.credentials, uid)
-        if result.is_err():
-            return SyftError(message=str(result.err()))
-
-        return Ok(result.ok().stderr)
 
     @service_method(path="log.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL)
     def get_all(self, context: AuthedServiceContext) -> SyftSuccess | SyftError:

@@ -203,6 +203,11 @@
           "version": 2,
           "hash": "925f1b8ccd4b9d542700a111f9c4bdd28bfa55978d805ddb2fb3c108cc940d19",
           "action": "add"
+        },
+        "3": {
+          "version": 3,
+          "hash": "1b5fd28919cb496f8073a64a57736d477ace1ed969962b1b049cecf766f2661c",
+          "action": "add"
         }
       },
       "NodePeer": {
@@ -259,6 +264,13 @@
           "version": 1,
           "hash": "9e7cd39f6a9f90e8c595452865525e0989df1688236acfd1a665ed047ba47de9",
           "action": "add"
+        }
+      },
+      "JobInfo": {
+        "2": {
+          "version": 2,
+          "hash": "89dbd4a810586b49498be1f5299b565a19871487e14a120433b0a4cf607b6dee",
+          "action": "remove"
         }
       },
       "EnclaveInstance": {
