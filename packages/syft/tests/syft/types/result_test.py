@@ -176,7 +176,7 @@ def test_as_result_decorator_multiple_exceptions():
             raise ValueError
         if a == 4:
             raise OSError
-        raise Exception
+        raise ArithmeticError
 
     result = multiple_exceptions(1)
     assert result.ok() == "om"
@@ -190,7 +190,7 @@ def test_as_result_decorator_multiple_exceptions():
     result_os = multiple_exceptions(4)
     assert type(result_os.err()) is OSError
 
-    with pytest.raises(Exception):
+    with pytest.raises(ArithmeticError):
         multiple_exceptions(5)
 
 
