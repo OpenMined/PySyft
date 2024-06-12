@@ -2,7 +2,7 @@
 import sys
 import traceback
 from typing import Any
-from typing import Self
+from typing_extensions import Self
 
 # third party
 from result import Err
