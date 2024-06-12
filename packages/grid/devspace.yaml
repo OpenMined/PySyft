@@ -115,6 +115,19 @@ dev:
           localPort: 3480
 
 profiles:
+  - name: dev-low
+    patches:
+      - op: add
+        path: deployments.syft.helm.values.node
+        value:
+          side: low
+  - name: dev-high
+    patches:
+      - op: add
+        path: deployments.syft.helm.values.node
+        value:
+          side: high
+
   - name: gateway
     patches:
       - op: replace
