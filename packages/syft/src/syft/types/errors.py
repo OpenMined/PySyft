@@ -19,7 +19,7 @@ class SyftException(Exception):
     ):
         if public_message:
             self.public_message = public_message
-        self.__private_message = private_message
+        self._private_message = private_message
         super().__init__(self.public, *args, **kwargs)
 
     @property
@@ -44,7 +44,7 @@ class SyftException(Exception):
             str: The private or public message based on the role.
         """
         if context.role.value >= ServiceRole.DATA_OWNER.value:
-            return self.__private_message
+            return self._private_message
         return self.public
 
     def __repr__(self) -> str:
