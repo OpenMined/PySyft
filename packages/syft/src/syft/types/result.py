@@ -23,7 +23,7 @@ class Ok(Generic[T]):
         self.value = value
 
     def __repr__(self) -> str:
-        return repr(self.value)
+        return f"Ok({self.value})"
 
     @property
     def ok_value(self) -> T:
@@ -53,7 +53,7 @@ class Err(Generic[E]):
         self.value = value
 
     def __repr__(self) -> str:
-        return repr(self.value)
+        return f"Err({self.value})"
 
     @property
     def error_value(self) -> E:
