@@ -497,6 +497,15 @@ class Node(AbstractNode):
                     remote_profile.profile_name
                 ] = remote_profile
 
+        if (
+            isinstance(self.blob_store_config, OnDiskBlobStorageConfig)
+            and self.dev_mode
+        ):
+            print(
+                f"Using on-disk blob storage with path: "
+                f"{self.blob_store_config.client_config.base_directory}"
+            )
+
     def run_peer_health_checks(self, context: AuthedServiceContext) -> None:
         self.peer_health_manager = PeerHealthCheckTask()
         self.peer_health_manager.run(context=context)
