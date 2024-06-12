@@ -48,7 +48,7 @@ class SyftWorkerImageStash(BaseUIDStoreStash):
         )
 
         if isinstance(obj.config, DockerWorkerConfig):
-            result = self.get_by_docker_config(
+            result = self.get_by_worker_config(
                 credentials=credentials, config=obj.config
             )
             if result.is_ok() and result.ok() is not None:
@@ -62,8 +62,8 @@ class SyftWorkerImageStash(BaseUIDStoreStash):
             ignore_duplicates=ignore_duplicates,
         )
 
-    def get_by_docker_config(
-        self, credentials: SyftVerifyKey, config: DockerWorkerConfig
+    def get_by_worker_config(
+        self, credentials: SyftVerifyKey, config: WorkerConfig
     ) -> Result[SyftWorkerImage | None, str]:
         qks = QueryKeys(qks=[WorkerConfigPK.with_obj(config)])
         return self.query_one(credentials=credentials, qks=qks)

@@ -8,11 +8,12 @@ from ..service.response import SyftSuccess
 from ..service.sync.diff_state import NodeDiff
 from ..service.sync.diff_state import ObjectDiffBatch
 from ..service.sync.diff_state import SyncInstruction
+from ..service.sync.resolve_widget import PaginatedResolveWidget
 from ..service.sync.resolve_widget import ResolveWidget
 from ..service.sync.sync_state import SyncState
 from ..types.uid import UID
 from ..util.decorators import deprecated
-from .client import SyftClient
+from .domain_client import DomainClient
 from .sync_decision import SyncDecision
 from .sync_decision import SyncDirection
 
@@ -24,7 +25,7 @@ def compare_states(
     include_same: bool = False,
     filter_by_email: str | None = None,
     filter_by_type: str | type | None = None,
-) -> NodeDiff:
+) -> NodeDiff | SyftError:
     # NodeDiff
     if (
         from_state.node_side_type == NodeSideType.LOW_SIDE
@@ -41,7 +42,9 @@ def compare_states(
         high_state = from_state
         direction = SyncDirection.HIGH_TO_LOW
     else:
-        raise ValueError("Invalid SyncStates")
+        return SyftError(
+            "Invalid node side types: can only compare a high and low node"
+        )
     return NodeDiff.from_sync_state(
         low_state=low_state,
         high_state=high_state,
@@ -54,16 +57,24 @@ def compare_states(
 
 
 def compare_clients(
-    from_client: SyftClient,
-    to_client: SyftClient,
+    from_client: DomainClient,
+    to_client: DomainClient,
     include_ignored: bool = False,
     include_same: bool = False,
     filter_by_email: str | None = None,
     filter_by_type: type | None = None,
-) -> NodeDiff:
+) -> NodeDiff | SyftError:
+    from_state = from_client.get_sync_state()
+    if isinstance(from_state, SyftError):
+        return from_state
+
+    to_state = to_client.get_sync_state()
+    if isinstance(to_state, SyftError):
+        return to_state
+
     return compare_states(
-        from_client.get_sync_state(),
-        to_client.get_sync_state(),
+        from_state=from_state,
+        to_state=to_state,
         include_ignored=include_ignored,
         include_same=include_same,
         filter_by_email=filter_by_email,
@@ -71,28 +82,20 @@ def compare_clients(
     )
 
 
-def get_user_input_for_resolve() -> SyncDecision:
-    options = [x.value for x in SyncDecision]
-    options_str = ", ".join(options[:-1]) + f" or {options[-1]}"
-    print(f"How do you want to sync these objects? choose between {options_str}")
-
-    while True:
-        decision = input()
-        decision = decision.lower()
-
-        try:
-            return SyncDecision(decision)
-        except ValueError:
-            print(f"Please choose between {options_str}")
-
-
-def resolve(obj_diff_batch: ObjectDiffBatch) -> ResolveWidget:
-    widget = ResolveWidget(obj_diff_batch)
-    return widget
+def resolve(
+    obj: ObjectDiffBatch | NodeDiff,
+) -> ResolveWidget | PaginatedResolveWidget | SyftSuccess | SyftError:
+    if not isinstance(obj, ObjectDiffBatch | NodeDiff):
+        raise ValueError(
+            f"Invalid type: could not resolve object with type {type(obj).__qualname__}"
+        )
+    return obj.resolve()
 
 
 @deprecated(reason="resolve_single has been renamed to resolve", return_syfterror=True)
-def resolve_single(obj_diff_batch: ObjectDiffBatch) -> ResolveWidget:
+def resolve_single(
+    obj_diff_batch: ObjectDiffBatch,
+) -> ResolveWidget | PaginatedResolveWidget | SyftSuccess | SyftError:
     return resolve(obj_diff_batch)
 
 

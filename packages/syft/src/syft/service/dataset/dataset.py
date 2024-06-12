@@ -6,7 +6,6 @@ import textwrap
 from typing import Any
 
 # third party
-from IPython.display import HTML
 from IPython.display import display
 import itables
 import pandas as pd
@@ -35,6 +34,7 @@ from ...util.colors import ON_SURFACE_HIGHEST
 from ...util.colors import SURFACE
 from ...util.colors import SURFACE_SURFACE
 from ...util.markdown import as_markdown_python_code
+from ...util.misc_objs import MarkdownDescription
 from ...util.notebook_ui.icons import Icon
 from ...util.notebook_ui.styles import FONT_CSS
 from ...util.notebook_ui.styles import ITABLES_CSS
@@ -44,6 +44,7 @@ from ..data_subject.data_subject_service import DataSubjectService
 from ..response import SyftError
 from ..response import SyftException
 from ..response import SyftSuccess
+from ..response import SyftWarning
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
 
@@ -83,31 +84,6 @@ class Contributor(SyftObject):
 
     def __hash__(self) -> int:
         return hash(self.email)
-
-
-@serializable()
-class MarkdownDescription(SyftObject):
-    # version
-    __canonical_name__ = "MarkdownDescription"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    text: str
-
-    def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
-        style = """
-        <style>
-            .jp-RenderedHTMLCommon pre {
-                background-color: #282c34 !important;
-                padding: 10px 10px 10px;
-            }
-            .jp-RenderedHTMLCommon pre code {
-                background-color: #282c34 !important;  /* Set the background color for the text in the code block */
-                color: #abb2bf !important;  /* Set text color */
-            }
-        </style>
-        """
-        display(HTML(style))
-        return self.text
 
 
 @serializable()
@@ -283,6 +259,10 @@ class Asset(SyftObject):
         if self.has_permission(res):
             return res.syft_action_data
         else:
+            warning = SyftWarning(
+                message="You do not have permission to access private data."
+            )
+            display(warning)
             return None
 
 

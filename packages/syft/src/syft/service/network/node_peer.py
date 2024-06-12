@@ -17,13 +17,15 @@ from ...serde.serializable import serializable
 from ...service.response import SyftError
 from ...types.datetime import DateTime
 from ...types.syft_migration import migrate
+from ...types.syft_object import PartialSyftObject
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.uid import UID
 from ..context import NodeServiceContext
-from ..metadata.node_metadata import NodeMetadataV3
+from ..metadata.node_metadata import NodeMetadata
 from .routes import HTTPNodeRoute
 from .routes import NodeRoute
 from .routes import NodeRouteType
@@ -71,7 +73,7 @@ class NodePeer(SyftObject):
         "name",
         "node_type",
         "admin_email",
-        "ping_status.value",
+        "ping_status",
         "ping_status_message",
         "pinged_timestamp",
     ]
@@ -117,9 +119,9 @@ class NodePeer(SyftObject):
 
         return (False, None)
 
-    def assign_highest_priority(self, route: NodeRoute) -> NodeRoute:
+    def update_route_priority(self, route: NodeRoute) -> NodeRoute:
         """
-        Assign the new_route's to have the highest priority
+        Assign the new_route's priority to be current max + 1
 
         Args:
             route (NodeRoute): The new route whose priority is to be updated.
@@ -131,15 +133,39 @@ class NodePeer(SyftObject):
         route.priority = current_max_priority + 1
         return route
 
+    def pick_highest_priority_route(self, oldest: bool = True) -> NodeRoute:
+        """
+        Picks the route with the highest priority from the list of node routes.
+
+        Args:
+            oldest (bool):
+                If True, picks the oldest route to have the highest priority,
+                    meaning the route with min priority value.
+                If False, picks the most recent route with the highest priority,
+                    meaning the route with max priority value.
+
+        Returns:
+            NodeRoute: The route with the highest priority.
+
+        """
+        highest_priority_route: NodeRoute = self.node_routes[-1]
+        for route in self.node_routes[:-1]:
+            if oldest:
+                if route.priority < highest_priority_route.priority:
+                    highest_priority_route = route
+            else:
+                if route.priority > highest_priority_route.priority:
+                    highest_priority_route = route
+        return highest_priority_route
+
     def update_route(self, route: NodeRoute) -> NodeRoute | None:
         """
         Update the route for the node.
         If the route already exists, return it.
-        If the route is new, assign it to have the highest priority
-        before appending it to the peer's list of node routes.
+        If the route is new, assign it to have the priority of (current_max + 1)
 
         Args:
-            route (NodeRoute): The new route to be added to the peer.
+            route (NodeRoute): The new route to be added to the peer's node route list
 
         Returns:
             NodeRoute | None: if the route already exists, return it, else returns None
@@ -148,7 +174,7 @@ class NodePeer(SyftObject):
         if existed:
             return route
         else:
-            new_route = self.assign_highest_priority(route)
+            new_route = self.update_route_priority(route)
             self.node_routes.append(new_route)
             return None
 
@@ -199,7 +225,7 @@ class NodePeer(SyftObject):
         if priority is not None:
             self.node_routes[index].priority = priority
         else:
-            self.node_routes[index].priority = self.assign_highest_priority(
+            self.node_routes[index].priority = self.update_route_priority(
                 route
             ).priority
 
@@ -210,7 +236,7 @@ class NodePeer(SyftObject):
         if not client.metadata:
             raise ValueError("Client has to have metadata first")
 
-        peer = client.metadata.to(NodeMetadataV3).to(NodePeer)
+        peer = client.metadata.to(NodeMetadata).to(NodePeer)
         route = connection_to_route(client.connection)
         peer.node_routes.append(route)
         return peer
@@ -223,7 +249,7 @@ class NodePeer(SyftObject):
 
         if len(self.node_routes) < 1:
             raise ValueError(f"No routes to peer: {self}")
-        # select the highest priority route (i.e. added or updated the latest)
+        # select the route with highest priority to connect to the peer
         final_route: NodeRoute = self.pick_highest_priority_route()
         connection: NodeConnection = route_to_connection(route=final_route)
         try:
@@ -244,7 +270,7 @@ class NodePeer(SyftObject):
     def client_with_key(self, credentials: SyftSigningKey) -> SyftClient | SyftError:
         if len(self.node_routes) < 1:
             raise ValueError(f"No routes to peer: {self}")
-        # select the latest added route
+
         final_route: NodeRoute = self.pick_highest_priority_route()
 
         connection = route_to_connection(route=final_route)
@@ -261,13 +287,6 @@ class NodePeer(SyftObject):
 
     def proxy_from(self, client: SyftClient) -> SyftClient:
         return client.proxy_to(self)
-
-    def pick_highest_priority_route(self) -> NodeRoute:
-        highest_priority_route: NodeRoute = self.node_routes[-1]
-        for route in self.node_routes:
-            if route.priority > highest_priority_route.priority:
-                highest_priority_route = route
-        return highest_priority_route
 
     def delete_route(
         self, route: NodeRouteType | None = None, route_id: UID | None = None
@@ -300,6 +319,20 @@ class NodePeer(SyftObject):
                 )
 
         return None
+
+
+@serializable()
+class NodePeerUpdate(PartialSyftObject):
+    __canonical_name__ = "NodePeerUpdate"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: UID
+    name: str
+    node_routes: list[NodeRouteType]
+    admin_email: str
+    ping_status: NodePeerConnectionStatus
+    ping_status_message: str
+    pinged_timestamp: DateTime
 
 
 def drop_veilid_route() -> Callable:

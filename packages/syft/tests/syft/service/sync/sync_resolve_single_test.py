@@ -36,7 +36,7 @@ def compare_and_resolve(
     diff_state_before = compare_clients(from_client, to_client)
     for obj_diff_batch in diff_state_before.active_batches:
         widget = resolve(
-            obj_diff_batch=obj_diff_batch,
+            obj_diff_batch,
         )
         if decision_callback:
             decision = decision_callback(obj_diff_batch)
@@ -205,8 +205,8 @@ def test_forget_usercode(low_worker, high_worker):
         to_client=high_client,
         decision_callback=skip_if_user_code,
     )
-    assert not diff_after.is_same
-    assert not diff_after.is_same
+    assert not diff_before.is_same
+    assert len(diff_after.batches) == 0
 
 
 def test_request_code_execution_multiple(low_worker, high_worker):

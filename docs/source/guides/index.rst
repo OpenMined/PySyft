@@ -22,9 +22,6 @@ while using these new ``privacy-enhancing techniques``.
    **TIP:** To run all the tutorials interactively in Jupyter Lab on your own machine, type:
 
 :: 
-   
-   pip install -U hagrid
-   hagrid quickstart
 
 
 Once you have the installation completed, the best place to start is by ``identifying`` your role. 

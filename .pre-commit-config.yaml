@@ -39,7 +39,7 @@ repos:
         args: ["--fix=lf"]
         exclude: '\.bat|\.csv|\.ps1$|packages/syft/tests/mongomock'
 
-  - repo: https://github.com/MarcoGorelli/absolufy-imports
+  - repo: https://github.com/MarcoGorelli/absolufy-imports # This repository has been archived by the owner on Aug 15, 2023. It is now read-only.
     rev: v0.3.1
     hooks:
       - id: absolufy-imports
@@ -76,16 +76,15 @@ repos:
         always_run: true
 
   - repo: https://github.com/nbQA-dev/nbQA
-    rev: 1.8.3
+    rev: 1.8.5
     # nbQA has no files attribute
     # files: "^notebooks/(api|tutorials|admin)"
     hooks:
       - id: nbqa-isort
-      - id: nbqa-black
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: "v0.4.3"
+    rev: "v0.4.7"
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix, --show-fixes]
@@ -95,7 +94,7 @@ repos:
         types_or: [python, pyi, jupyter]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.8.0
+    rev: v1.10.0
     hooks:
       - id: mypy
         name: "mypy: syft-cli"
@@ -120,7 +119,7 @@ repos:
           ]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.8.0
+    rev: v1.10.0
     hooks:
       - id: mypy
         name: "mypy: grid"
@@ -145,13 +144,13 @@ repos:
           ]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.8.0
+    rev: v1.10.0
     hooks:
       - id: mypy
         name: "mypy: syft"
         always_run: true
         files: "^packages/syft/src/syft/"
-        exclude: "packages/syft/src/syft/types/dicttuple.py|^packages/syft/src/syft/service/action/action_graph.py"
+        exclude: "packages/syft/src/syft/types/dicttuple.py"
         args: [
             "--follow-imports=skip",
             "--ignore-missing-imports",
@@ -176,7 +175,7 @@ repos:
       - id: nbstripout
         files: "^notebooks/(api|tutorials|admin)"
 
-  - repo: https://github.com/pre-commit/mirrors-prettier
+  - repo: https://github.com/pre-commit/mirrors-prettier # This repository has been archived by the owner on Apr 11, 2024. It is now read-only.
     rev: "v3.0.0-alpha.9-for-vscode"
     hooks:
       - id: prettier

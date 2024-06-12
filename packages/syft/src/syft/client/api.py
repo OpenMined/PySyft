@@ -17,7 +17,10 @@ from typing import get_origin
 
 # third party
 from nacl.exceptions import BadSignatureError
+from pydantic import BaseModel
+from pydantic import ConfigDict
 from pydantic import EmailStr
+from pydantic import TypeAdapter
 from result import OkErr
 from result import Result
 from typeguard import check_type
@@ -38,6 +41,7 @@ from ..serde.signature import signature_remove_context
 from ..serde.signature import signature_remove_self
 from ..service.context import AuthedServiceContext
 from ..service.context import ChangeContext
+from ..service.metadata.node_metadata import NodeMetadataJSON
 from ..service.response import SyftAttributeError
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
@@ -50,6 +54,7 @@ from ..types.cache_object import CachedSyftObject
 from ..types.identity import Identity
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
+from ..types.syft_object import SYFT_OBJECT_VERSION_3
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftMigrationRegistry
 from ..types.syft_object import SyftObject
@@ -81,6 +86,16 @@ IPYNB_BACKGROUND_METHODS = {
 }
 
 IPYNB_BACKGROUND_PREFIXES = ["_ipy", "_repr", "__ipython", "__pydantic"]
+
+
+def _has_config_dict(t: Any) -> bool:
+    return (
+        # Use this instead of `issubclass`` to be compatible with python 3.10
+        # `inspect.isclass(t) and issubclass(t, BaseModel)`` wouldn't work with
+        # generics, e.g. `set[sy.UID]`, in python 3.10
+        (hasattr(t, "__mro__") and BaseModel in t.__mro__)
+        or hasattr(t, "__pydantic_config__")
+    )
 
 
 class APIRegistry:
@@ -244,6 +259,7 @@ class RemoteFunction(SyftObject):
 
     node_uid: UID
     signature: Signature
+    refresh_api_callback: Callable | None = None
     path: str
     make_call: Callable
     pre_kwargs: dict[str, Any] | None = None
@@ -305,6 +321,13 @@ class RemoteFunction(SyftObject):
         if not allowed:
             return
         result = self.make_call(api_call=api_call, cache_result=cache_result)
+
+        # TODO: annotate this on the service method decorator
+        API_CALLS_THAT_REQUIRE_REFRESH = ["settings.enable_eager_execution"]
+
+        if path in API_CALLS_THAT_REQUIRE_REFRESH:
+            if self.refresh_api_callback is not None:
+                self.refresh_api_callback()
 
         result, _ = migrate_args_and_kwargs(
             [result], kwargs={}, to_latest_protocol=True
@@ -507,6 +530,7 @@ def generate_remote_function(
         custom_function = bool(path == "api.call_in_jobs")
         remote_function = RemoteFunction(
             node_uid=node_uid,
+            refresh_api_callback=api.refresh_api_callback,
             signature=signature,
             path=path,
             make_call=make_call,
@@ -805,7 +829,6 @@ def result_needs_api_update(api_call_result: Any) -> bool:
     return False
 
 
-@instrument
 @serializable(
     attrs=[
         "endpoints",
@@ -815,7 +838,7 @@ def result_needs_api_update(api_call_result: Any) -> bool:
         "communication_protocol",
     ]
 )
-class SyftAPI(SyftObject):
+class SyftAPIV2(SyftObject):
     # version
     __canonical_name__ = "SyftAPI"
     __version__ = SYFT_OBJECT_VERSION_2
@@ -833,6 +856,40 @@ class SyftAPI(SyftObject):
     refresh_api_callback: Callable | None = None
     __user_role: ServiceRole = ServiceRole.NONE
     communication_protocol: PROTOCOL_TYPE
+
+    # informs getattr does not have nasty side effects
+    __syft_allow_autocomplete__ = ["services"]
+
+
+@instrument
+@serializable(
+    attrs=[
+        "endpoints",
+        "node_uid",
+        "node_name",
+        "lib_endpoints",
+        "communication_protocol",
+    ]
+)
+class SyftAPI(SyftObject):
+    # version
+    __canonical_name__ = "SyftAPI"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    # fields
+    connection: NodeConnection | None = None
+    node_uid: UID | None = None
+    node_name: str | None = None
+    endpoints: dict[str, APIEndpoint]
+    lib_endpoints: dict[str, LibEndpoint] | None = None
+    api_module: APIModule | None = None
+    libs: APIModule | None = None
+    signing_key: SyftSigningKey | None = None
+    # serde / storage rules
+    refresh_api_callback: Callable | None = None
+    __user_role: ServiceRole = ServiceRole.NONE
+    communication_protocol: PROTOCOL_TYPE
+    metadata: NodeMetadataJSON | None = None
 
     # informs getattr does not have nasty side effects
     __syft_allow_autocomplete__ = ["services"]
@@ -1277,30 +1334,25 @@ def validate_callable_args_and_kwargs(
                 t = index_syft_by_module_name(param.annotation)
             else:
                 t = param.annotation
-            msg = None
-            try:
-                if t is not inspect.Parameter.empty:
-                    if isinstance(t, _GenericAlias) and type(None) in t.__args__:
-                        success = False
-                        for v in t.__args__:
-                            if issubclass(v, EmailStr):
-                                v = str
-                            try:
-                                check_type(value, v)  # raises Exception
-                                success = True
-                                break  # only need one to match
-                            except Exception:  # nosec
-                                pass
-                        if not success:
-                            raise TypeError()
-                    else:
-                        check_type(value, t)  # raises Exception
-            except TypeError:
-                _type_str = getattr(t, "__name__", str(t))
-                msg = f"`{key}` must be of type `{_type_str}` not `{type(value).__name__}`"
 
-            if msg:
-                return SyftError(message=msg)
+            if t is not inspect.Parameter.empty:
+                try:
+                    config_kw = (
+                        {"config": ConfigDict(arbitrary_types_allowed=True)}
+                        if not _has_config_dict(t)
+                        else {}
+                    )
+
+                    # TypeAdapter only accepts `config` arg if `t` does not
+                    # already contain a ConfigDict
+                    # i.e model_config in BaseModel and __pydantic_config__ in
+                    # other types.
+                    TypeAdapter(t, **config_kw).validate_python(value)
+                except Exception:
+                    _type_str = getattr(t, "__name__", str(t))
+                    return SyftError(
+                        message=f"`{key}` must be of type `{_type_str}` not `{type(value).__name__}`"
+                    )
 
             _valid_kwargs[key] = value
 

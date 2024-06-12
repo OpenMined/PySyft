@@ -229,7 +229,7 @@ def test_userservice_search(
     expected_output = [guest_user.to(UserView)]
 
     # Search via id
-    response = user_service.search(authed_context, id=guest_user.id)
+    response = user_service.search(context=authed_context, id=guest_user.id)
     assert isinstance(response, list)
     assert all(
         r.to_dict() == expected.to_dict()
@@ -238,7 +238,7 @@ def test_userservice_search(
     # assert response.to_dict() == expected_output.to_dict()
 
     # Search via email
-    response = user_service.search(authed_context, email=guest_user.email)
+    response = user_service.search(context=authed_context, email=guest_user.email)
     assert isinstance(response, list)
     assert all(
         r.to_dict() == expected.to_dict()
@@ -246,7 +246,7 @@ def test_userservice_search(
     )
 
     # Search via name
-    response = user_service.search(authed_context, name=guest_user.name)
+    response = user_service.search(context=authed_context, name=guest_user.name)
     assert isinstance(response, list)
     assert all(
         r.to_dict() == expected.to_dict()
@@ -255,7 +255,7 @@ def test_userservice_search(
 
     # Search via verify_key
     response = user_service.search(
-        authed_context,
+        context=authed_context,
         verify_key=guest_user.verify_key,
     )
     assert isinstance(response, list)
@@ -266,7 +266,7 @@ def test_userservice_search(
 
     # Search via multiple kwargs
     response = user_service.search(
-        authed_context, name=guest_user.name, email=guest_user.email
+        context=authed_context, name=guest_user.name, email=guest_user.email
     )
     assert isinstance(response, list)
     assert all(
@@ -279,7 +279,7 @@ def test_userservice_search_with_invalid_kwargs(
     user_service: UserService, authed_context: AuthedServiceContext
 ) -> None:
     # Search with invalid kwargs
-    response = user_service.search(authed_context, role=ServiceRole.GUEST)
+    response = user_service.search(context=authed_context, role=ServiceRole.GUEST)
     assert isinstance(response, SyftError)
     assert "Invalid Search parameters" in response.message
 

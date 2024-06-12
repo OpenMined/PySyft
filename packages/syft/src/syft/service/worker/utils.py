@@ -325,13 +325,14 @@ def create_kubernetes_pool(
     replicas: int,
     queue_port: int,
     debug: bool,
-    reg_username: str | None = None,
-    reg_password: str | None = None,
+    registry_username: str | None = None,
+    registry_password: str | None = None,
     reg_url: str | None = None,
+    pod_annotations: dict[str, str] | None = None,
+    pod_labels: dict[str, str] | None = None,
     **kwargs: Any,
 ) -> list[Pod] | SyftError:
     pool = None
-    error = False
 
     try:
         print(
@@ -361,16 +362,21 @@ def create_kubernetes_pool(
             replicas=replicas,
             env_vars=env_vars,
             mount_secrets=mount_secrets,
-            reg_username=reg_username,
-            reg_password=reg_password,
+            registry_username=registry_username,
+            registry_password=registry_password,
             reg_url=reg_url,
+            pod_annotations=pod_annotations,
+            pod_labels=pod_labels,
         )
     except Exception as e:
-        error = True
-        return SyftError(message=f"Failed to start workers {e}")
-    finally:
-        if error and pool:
+        if pool:
             pool.delete()
+        # stdlib
+        import traceback
+
+        return SyftError(
+            message=f"Failed to start workers {e} {e.__class__} {e.args} {traceback.format_exc()}."
+        )
 
     return runner.get_pool_pods(pool_name=pool_name)
 
@@ -400,9 +406,11 @@ def run_workers_in_kubernetes(
     queue_port: int,
     start_idx: int = 0,
     debug: bool = False,
-    reg_username: str | None = None,
-    reg_password: str | None = None,
+    registry_username: str | None = None,
+    registry_password: str | None = None,
     reg_url: str | None = None,
+    pod_annotations: dict[str, str] | None = None,
+    pod_labels: dict[str, str] | None = None,
     **kwargs: Any,
 ) -> list[ContainerSpawnStatus] | SyftError:
     spawn_status = []
@@ -417,9 +425,11 @@ def run_workers_in_kubernetes(
                 replicas=worker_count,
                 queue_port=queue_port,
                 debug=debug,
-                reg_username=reg_username,
-                reg_password=reg_password,
+                registry_username=registry_username,
+                registry_password=registry_password,
                 reg_url=reg_url,
+                pod_annotations=pod_annotations,
+                pod_labels=pod_labels,
             )
         else:
             return SyftError(
@@ -499,9 +509,11 @@ def run_containers(
     queue_port: int,
     dev_mode: bool = False,
     start_idx: int = 0,
-    reg_username: str | None = None,
-    reg_password: str | None = None,
+    registry_username: str | None = None,
+    registry_password: str | None = None,
     reg_url: str | None = None,
+    pod_annotations: dict[str, str] | None = None,
+    pod_labels: dict[str, str] | None = None,
 ) -> list[ContainerSpawnStatus] | SyftError:
     results = []
 
@@ -522,8 +534,8 @@ def run_containers(
                     pool_name=pool_name,
                     queue_port=queue_port,
                     debug=dev_mode,
-                    username=reg_username,
-                    password=reg_password,
+                    username=registry_username,
+                    password=registry_password,
                     registry_url=reg_url,
                 )
                 results.append(spawn_result)
@@ -535,9 +547,11 @@ def run_containers(
             queue_port=queue_port,
             debug=dev_mode,
             start_idx=start_idx,
-            reg_username=reg_username,
-            reg_password=reg_password,
+            registry_username=registry_username,
+            registry_password=registry_password,
             reg_url=reg_url,
+            pod_annotations=pod_annotations,
+            pod_labels=pod_labels,
         )
 
     return results
@@ -564,7 +578,7 @@ def create_default_image(
         image_identifier=SyftWorkerImageIdentifier.from_str(tag),
     )
 
-    result = image_stash.get_by_docker_config(
+    result = image_stash.get_by_worker_config(
         credentials=credentials,
         config=worker_config,
     )

@@ -20,13 +20,18 @@ spec:
   {{- end }}
   defaultBackend:
     service:
+      {{- if .Values.proxy.enabled }}
       name: proxy
+      {{- else }}
+      name: frontend
+      {{- end }}
       port:
         number: 80
   rules:
   - host: {{ .Values.ingress.hostname | quote }}
     http:
       paths:
+  {{- if .Values.proxy.enabled }}
       - backend:
           service:
             name: proxy
@@ -34,6 +39,36 @@ spec:
               number: 80
         path: /
         pathType: Prefix
+  {{- else }}
+      - backend:
+          service:
+            name: frontend
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+      - backend:
+          service:
+            name: backend
+            port:
+              number: 80
+        path: /()(api)(.*)
+        pathType: Prefix
+      - backend:
+          service:
+            name: backend
+            port:
+              number: 80
+        path: /()(docs|redoc)
+        pathType: Prefix
+      - backend:
+          service:
+            name: seaweedfs
+            port:
+              number: 8333
+        path: /(blob/)(.*)
+        pathType: ImplementationSpecific
+  {{- end }}
   {{- if .Values.ingress.tls.enabled }}
   tls:
   - hosts:
