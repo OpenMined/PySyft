@@ -44,6 +44,7 @@ Read/retrieve SyftObject from blob storage
 from collections.abc import Callable
 from collections.abc import Generator
 from io import BytesIO
+import time
 from typing import Any
 
 # third party
@@ -138,9 +139,10 @@ def syft_iter_content(
                 return
 
         except requests.exceptions.RequestException as e:
-            if attempt < max_retries:
+            if attempt < max_retries - 1:
                 print(
-                    f"Attempt {attempt}/{max_retries} failed: {e} at byte {current_byte}. Retrying..."
+                    f"Attempt {attempt + 1}/{max_retries} failed: {e} at byte {current_byte}. Retrying..."
+                    time.sleep(2**attempt) # exponential
                 )
             else:
                 print(f"Max retries reached. Failed with error: {e}")
