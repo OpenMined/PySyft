@@ -141,21 +141,32 @@ class DistributedProject(BaseModel):
         provider = code.deployment_policy_init_kwargs.get("provider")
         owner_node_id = provider.syft_node_location
         owner_client = self.clients.get(owner_node_id)
-        if not owner_client or not owner_client.services:
+        if not owner_client:
             raise SyftException(
                 f"Can't access Syft client. You must login to {self.syft_node_location}"
             )
-        enclave_code_created = owner_client.services.enclave.request_enclave_for_code(
-            service_func_name=self.code.service_func_name
+        enclave_code_created = (
+            owner_client.api.services.enclave.request_enclave_for_code_execution(
+                service_func_name=self.code.service_func_name
+            )
         )
         if isinstance(enclave_code_created, SyftError):
             raise SyftException(enclave_code_created.message)
 
         # Request each domain to transfer their assets to the Enclave
-        # Execute the code on the Enclave
-        # Return the results
-        # Cleanup the Enclave
-        return enclave_code_created
+        for client in self.clients.values():
+            assets_transferred = (
+                client.api.services.enclave.request_assets_transfer_to_enclave(
+                    service_func_name=self.code.service_func_name
+                )
+            )
+            if isinstance(assets_transferred, SyftError):
+                raise SyftException(assets_transferred.message)
+            print(assets_transferred.message)
+
+        # TODO Return the results
+        # TODO Cleanup the Enclave in owner domain node
+        return None
 
     def _get_clients_from_code(self) -> dict[UID, SyftClient]:
         if not self.code or not self.code.input_policy_init_kwargs:
@@ -164,7 +175,9 @@ class DistributedProject(BaseModel):
         clients = {
             policy.node_id: client
             for policy in self.code.input_policy_init_kwargs.keys()
-            if (
+            if
+            (
+                # TODO use node_uid, verify_key instead as there could be multiple logged-in users to the same client
                 client := SyftClientSessionCache.get_client_for_node_uid(policy.node_id)
             )
         }

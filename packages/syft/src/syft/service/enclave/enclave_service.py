@@ -1,3 +1,6 @@
+# stdlib
+import itertools
+
 # relative
 from ...client.enclave_client import EnclaveClient
 from ...client.enclave_client import EnclaveMetadata
@@ -90,11 +93,11 @@ class EnclaveService(AbstractService):
         return SyftError(message=result.err())
 
     @service_method(
-        path="enclave.request_enclave_for_code",
-        name="request_enclave_for_code",
+        path="enclave.request_enclave_for_code_execution",
+        name="request_enclave_for_code_execution",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
-    def request_enclave_for_code(
+    def request_enclave_for_code_execution(
         self, context: AuthedServiceContext, service_func_name: str
     ) -> SyftSuccess | SyftError:
         """Request an Enclave for running a project."""
@@ -108,16 +111,22 @@ class EnclaveService(AbstractService):
             return SyftError(
                 message=f"Code '{service_func_name}' does not have an Enclave deployment provider."
             )
+        if context.node.id != provider.syft_node_location:
+            return SyftError(
+                message=f"The enclave '{provider.name}' does not belong to the current domain '{context.node.name}'."
+            )
         enclave_client = provider.get_client(verify_key=context.node.verify_key)
-        result = enclave_client.services.enclave.execute_code(code=code)
+        result = enclave_client.services.enclave.setup_enclave_for_code_execution(
+            code=code
+        )
         return result
 
     @service_method(
-        path="enclave.execute_code",
-        name="execute_code",
+        path="enclave.setup_enclave_for_code_execution",
+        name="setup_enclave_for_code_execution",
         roles=DATA_SCIENTIST_ROLE_LEVEL,  # TODO 🟣 Only an enclave's owner domain node should call this
     )
-    def execute_code(
+    def setup_enclave_for_code_execution(
         self, context: AuthedServiceContext, code: UserCode | SubmitUserCode
     ) -> SyftSuccess | SyftError:
         if not context.node or not context.node.signing_key:
@@ -144,6 +153,58 @@ class EnclaveService(AbstractService):
 
         result = context.node.get_service("usercodeservice").submit(context, code)
         return result
+
+    @service_method(
+        path="enclave.request_assets_transfer_to_enclave",
+        name="request_assets_transfer_to_enclave",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,  # TODO 🟣 update this
+    )
+    def request_assets_transfer_to_enclave(
+        self, context: AuthedServiceContext, service_func_name: str
+    ) -> SyftSuccess | SyftError:
+        if not context.node or not context.node.signing_key:
+            return SyftError(message=f"{type(context)} has no node")
+
+        # Get the code
+        code = context.node.get_service("usercodeservice").get_by_service_name(
+            context=context, service_func_name=service_func_name
+        )[-1]  # TODO also match code hash and check status to get the actual code
+        if code.input_policy_init_kwargs is None:
+            return SyftSuccess(message="No assets to transfer")
+
+        # Get all asset action ids for the current node
+        asset_action_ids_nested = [
+            assets.values()
+            for node_identity, assets in code.input_policy_init_kwargs.items()
+            if node_identity.node_name == context.node.name
+        ]
+        asset_action_ids = tuple(itertools.chain.from_iterable(asset_action_ids_nested))
+        root_context = AuthedServiceContext(
+            node=context.node, credentials=context.node.verify_key
+        )
+        action_objects = [
+            context.node.get_service("actionservice")
+            .get(context=root_context, uid=action_id)
+            .ok()
+            for action_id in asset_action_ids
+        ]
+
+        # Get the enclave client
+        provider = code.deployment_policy_init_kwargs.get("provider")
+        if not isinstance(provider, EnclaveInstance):
+            return SyftError(
+                message=f"Code '{service_func_name}' does not have an Enclave deployment provider."
+            )
+        enclave_client = provider.get_client(verify_key=context.node.verify_key)
+
+        # Upload the assets to the enclave
+        for action_object in action_objects:
+            enclave_client.api.services.action.set(action_object=action_object)
+            # TODO 🟣 Rollback all uploaded assets if any error occurs
+
+        return SyftSuccess(
+            message=f"Assets transferred from Domain '{context.node.name}' to Enclave '{enclave_client.name}'"
+        )
 
     @service_method(
         path="enclave.send_user_code_inputs_to_enclave",
