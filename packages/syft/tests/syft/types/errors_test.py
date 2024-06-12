@@ -51,4 +51,3 @@ def test_get_message(role, private_msg, public_msg, expected_message):
     mock_context.role = role
     exception = SyftException(private_msg, public_message=public_msg)
     assert exception.get_message(mock_context) == expected_message
-
