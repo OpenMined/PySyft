@@ -628,7 +628,7 @@ class Request(SyncableSyftObject):
         Args:
             reason (str): Reason for which the request has been denied.
         """
-        if reason is None:
+        if not reason:
             return SyftError("Please provide a reason for denying the request.")
 
         api = self._get_api()
@@ -760,7 +760,7 @@ class Request(SyncableSyftObject):
 
         # Ensure result is an ActionObject
         if isinstance(result, ActionObject):
-            existing_job = self._get_job_from_action_object(result)
+            existing_job = api.services.job.get_by_result_id(result.id.id)
             if existing_job is not None:
                 return SyftError(
                     message=f"This ActionObject is already the result of Job {existing_job.id}"
@@ -815,7 +815,8 @@ class Request(SyncableSyftObject):
     def deposit_result(
         self,
         result: Any,
-        logs: str = "",
+        log_stdout: str = "",
+        log_stderr: str = "",
     ) -> Job | SyftError:
         """
         Adds a result to this Request:
@@ -841,6 +842,11 @@ class Request(SyncableSyftObject):
         if isinstance(code, SyftError):
             return code
 
+        if not self.code.is_low_side:
+            return SyftError(
+                message="deposit_result is only available for low side requests. Please use request.approve() instead."
+            )
+
         # Create ActionObject
         action_object = self._create_action_object_for_deposited_result(result)
         if isinstance(action_object, SyftError):
@@ -851,7 +857,8 @@ class Request(SyncableSyftObject):
         job = api.services.job.create_job_for_user_code_id(
             code.id,
             result=action_object,
-            log_stdout=logs,
+            log_stdout=log_stdout,
+            log_stderr=log_stderr,
             status=JobStatus.COMPLETED,
             add_code_owner_read_permissions=False,
         )
