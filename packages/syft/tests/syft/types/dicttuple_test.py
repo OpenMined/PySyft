@@ -39,7 +39,9 @@ SIMPLE_TEST_CASES = [
 
 @pytest.mark.parametrize("dict_tuple", SIMPLE_TEST_CASES)
 def test_should_iter_over_value(dict_tuple: DictTuple) -> None:
-    values = list(dict_tuple)
+    values = []
+    for v in dict_tuple:
+        values.append(v)  # noqa: PERF402
 
     assert values == [1, 2]
 
