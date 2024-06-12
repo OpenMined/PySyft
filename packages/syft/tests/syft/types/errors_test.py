@@ -52,24 +52,3 @@ def test_get_message(role, private_msg, public_msg, expected_message):
     exception = SyftException(private_msg, public_message=public_msg)
     assert exception.get_message(mock_context) == expected_message
 
-
-def test_repr_method():
-    default_public_message = SyftException.public_message
-    exception = SyftException(private_message)
-    assert repr(exception) == default_public_message
-
-
-def test_repr_method_custom_msg():
-    exception = SyftException(private_message, public_message=public_message)
-    assert repr(exception) == public_message
-
-
-def test_str_method():
-    default_public_message = SyftException.public_message
-    exception = SyftException(private_message)
-    assert str(exception) == default_public_message
-
-
-def test_str_method_custom_msg():
-    exception = SyftException(private_message, public_message=public_message)
-    assert str(exception) == public_message

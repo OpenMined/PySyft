@@ -54,8 +54,3 @@ class SyftException(Exception):
             return self._private_message
         return self.public
 
-    def __repr__(self) -> str:
-        return self.public
-
-    def __str__(self) -> str:
-        return self.public
