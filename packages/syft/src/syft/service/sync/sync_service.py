@@ -3,6 +3,8 @@ from collections import defaultdict
 from typing import Any
 
 # third party
+from loguru import logger
+from result import Err
 from result import Ok
 from result import Result
 
@@ -25,7 +27,6 @@ from ..api.api import TwinAPIEndpoint
 from ..code.user_code import UserCodeStatusCollection
 from ..context import AuthedServiceContext
 from ..job.job_stash import Job
-from ..output.output_service import ExecutionOutput
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -257,23 +258,86 @@ class SyncService(AbstractService):
             if store is not None:
                 # TODO fix error handling
                 uid = item.id.id
-                permissions[uid] = store._get_permissions_for_uid(uid).ok()
-                storage_permissions[uid] = store._get_storage_permissions_for_uid(
-                    uid
-                ).ok()
+                item_permissions = store._get_permissions_for_uid(uid)
+                if not item_permissions.is_err():
+                    permissions[uid] = item_permissions.ok()
+
+                # TODO fix error handling for storage permissions
+                item_storage_permissions = store._get_storage_permissions_for_uid(uid)
+                if not item_storage_permissions.is_err():
+                    storage_permissions[uid] = item_storage_permissions.ok()
         return permissions, storage_permissions
+
+    def _get_all_items_for_jobs(
+        self,
+        context: AuthedServiceContext,
+    ) -> Result[tuple[list[SyncableSyftObject], dict[UID, str]], str]:
+        """
+        Returns all Jobs, along with their Logs, ExecutionOutputs and ActionObjects
+        """
+        items_for_jobs = []
+        errors = {}
+
+        job_service = context.node.get_service("jobservice")
+        jobs = job_service.get_all(context)
+        if isinstance(jobs, SyftError):
+            return Err(jobs.message)
+
+        for job in jobs:
+            job_items_result = self._get_job_batch(context, job)
+            if job_items_result.is_err():
+                logger.info(
+                    f"Job {job.id} could not be added to SyncState: {job_items_result.err()}"
+                )
+                errors[job.id] = job_items_result.err()
+                continue
+            items_for_jobs.extend(job_items_result.ok())
+
+        return Ok((items_for_jobs, errors))
+
+    def _get_job_batch(
+        self, context: AuthedServiceContext, job: Job
+    ) -> Result[list[SyncableSyftObject], str]:
+        job_batch = [job]
+
+        log_service = context.node.get_service("logservice")
+        log = log_service.get(context, job.log_id)
+        if isinstance(log, SyftError):
+            return Err(log.message)
+        job_batch.append(log)
+
+        output_service = context.node.get_service("outputservice")
+        output = output_service.get_by_job_id(context, job.id)
+        if isinstance(output, SyftError):
+            return Err(output.message)
+
+        if output is not None:
+            job_batch.append(output)
+            job_result_ids = set(output.output_id_list)
+        else:
+            job_result_ids = set()
+
+        if isinstance(job.result, ActionObject):
+            job_result_ids.add(job.result.id.id)
+
+        action_service = context.node.get_service("actionservice")
+        for result_id in job_result_ids:
+            action_object = action_service.get(context, result_id)
+            if action_object.is_err():
+                return action_object
+            job_batch.append(action_object.ok())
+
+        return Ok(job_batch)
 
     def get_all_syncable_items(
         self, context: AuthedServiceContext
-    ) -> Result[list[SyncableSyftObject], str]:
-        all_items = []
+    ) -> Result[tuple[list[SyncableSyftObject], dict[UID, str]], str]:
+        all_items: list[SyncableSyftObject] = []
 
+        # NOTE Jobs are handled separately
         services_to_sync = [
             "requestservice",
             "usercodeservice",
-            "jobservice",
-            "logservice",
-            "outputservice",
             "usercodestatusservice",
             "apiservice",
         ]
@@ -282,27 +346,17 @@ class SyncService(AbstractService):
             service = context.node.get_service(service_name)
             items = service.get_all(context)
             if isinstance(items, SyftError):
-                return items
+                return Err(items.message)
             all_items.extend(items)
 
-        action_object_ids = set()
-        for obj in all_items:
-            if isinstance(obj, ExecutionOutput):
-                action_object_ids |= set(obj.output_id_list)
-            elif isinstance(obj, Job) and obj.result is not None:
-                if isinstance(obj.result, ActionObject):
-                    obj.result = obj.result.as_empty()
-                    action_object_ids.add(obj.result.id)
+        # Gather jobs, logs, outputs and action objects
+        items_for_jobs = self._get_all_items_for_jobs(context)
+        if items_for_jobs.is_err():
+            return items_for_jobs
+        items_for_jobs, errors = items_for_jobs.ok()
+        all_items.extend(items_for_jobs)
 
-        for uid in action_object_ids:
-            action_object = context.node.get_service("actionservice").get(
-                context, uid, resolve_nested=False
-            )  # type: ignore
-            if action_object.is_err():
-                return action_object
-            all_items.append(action_object.ok())
-
-        return Ok(all_items)
+        return Ok((all_items, errors))
 
     def build_current_state(
         self,
@@ -321,8 +375,8 @@ class SyncService(AbstractService):
         objects_res = self.get_all_syncable_items(context)
         if objects_res.is_err():
             return objects_res
-        else:
-            objects = objects_res.ok()
+
+        objects, errors = objects_res.ok()
         permissions, storage_permissions = self.get_permissions(context, objects)
 
         previous_state = self.stash.get_latest(context=context)
@@ -365,6 +419,7 @@ class SyncService(AbstractService):
             storage_permissions=storage_permissions,
             ignored_batches=ignored_batches,
             object_sync_dates=object_sync_dates,
+            errors=errors,
         )
 
         new_state.add_objects(objects, context)
