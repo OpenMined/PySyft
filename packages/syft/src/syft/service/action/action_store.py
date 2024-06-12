@@ -244,10 +244,8 @@ class KeyValueActionStore(ActionStore):
         if (
             permission.permission == ActionPermission.OWNER
             or permission.permission == ActionPermission.READ
-            or (
-                permission.permission == ActionPermission.WRITE
-                or permission.permission == ActionPermission.EXECUTE
-            )
+            or permission.permission == ActionPermission.WRITE
+            or permission.permission == ActionPermission.EXECUTE
         ):
             pass
 
