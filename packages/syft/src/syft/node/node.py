@@ -455,7 +455,7 @@ class Node(AbstractNode):
         path = "/proc/self/cgroup"
         if os.path.exists("/.dockerenv"):
             return True
-        if os.path.isfile(path) and any("docker" in line for line in file):
+        if os.path.isfile(path) and any("docker" in line for line in open(path)):
             return True
         return False
 
