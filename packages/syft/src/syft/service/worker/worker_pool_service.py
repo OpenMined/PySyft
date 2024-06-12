@@ -362,7 +362,7 @@ class SyftWorkerPoolService(AbstractService):
             return SyftError(message=f"{result.err()}")
         worker_pools: list[WorkerPool] = result.ok()
 
-        res = [(pool.name, pool) for pool in worker_pools]
+        res = ((pool.name, pool) for pool in worker_pools)
         return DictTuple(res)
 
     @service_method(
