@@ -122,11 +122,11 @@ def syft_iter_content(
     max_retries: int = MAX_RETRIES,
     timeout: int = DEFAULT_TIMEOUT,
 ) -> Generator:
-    """custom iter content with smart retries (start from last byte read)"""
+    """Custom iter content with smart retries (start from last byte read)"""
     current_byte = 0
     for attempt in range(max_retries):
+        headers = {"Range": f"bytes={current_byte}-"}
         try:
-            headers = {"Range": f"bytes={current_byte}-"}
             with requests.get(
                 str(blob_url), stream=True, headers=headers, timeout=(timeout, timeout)
             ) as response:
@@ -136,8 +136,7 @@ def syft_iter_content(
                 ):
                     current_byte += len(chunk)
                     yield chunk
-                return
-
+            return  # If successful, exit the function
         except requests.exceptions.RequestException as e:
             if attempt < max_retries - 1:
                 print(
