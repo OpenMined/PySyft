@@ -5,12 +5,12 @@ on:
       none:
         description: "Deploy Syft Documentation"
         required: false
-  pull_request:
-    branches: [dev]
-    paths: [docs/]
-  push:
-    branches: [dev]
-    paths: [docs/]
+  # pull_request:
+  #   branches: [dev]
+  #   paths: [docs/]
+  # push:
+  #   branches: [dev]
+  #   paths: [docs/]
 
 jobs:
   cd-docs:

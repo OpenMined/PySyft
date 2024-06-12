@@ -31,8 +31,8 @@ from ...types.transforms import generate_id
 from ...types.transforms import keep
 from ...types.transforms import transform
 from ...types.uid import UID
+from ...util.misc_objs import MarkdownDescription
 from ..context import AuthedServiceContext
-from ..dataset.dataset import MarkdownDescription
 from ..response import SyftError
 from ..user.user import UserView
 

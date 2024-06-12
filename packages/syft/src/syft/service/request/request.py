@@ -6,6 +6,7 @@ import inspect
 from typing import Any
 
 # third party
+from pydantic import model_validator
 from result import Err
 from result import Ok
 from result import Result
@@ -15,6 +16,7 @@ from typing_extensions import Self
 from ...abstract_node import NodeSideType
 from ...client.api import APIRegistry
 from ...client.client import SyftClient
+from ...custom_worker.config import DockerWorkerConfig
 from ...custom_worker.config import WorkerConfig
 from ...custom_worker.k8s import IN_KUBERNETES
 from ...node.credentials import SyftVerifyKey
@@ -187,7 +189,7 @@ class ActionStoreChange(Change):
 
 
 @serializable()
-class CreateCustomImageChange(Change):
+class CreateCustomImageChangeV2(Change):
     __canonical_name__ = "CreateCustomImageChange"
     __version__ = SYFT_OBJECT_VERSION_2
 
@@ -198,6 +200,25 @@ class CreateCustomImageChange(Change):
 
     __repr_attrs__ = ["config", "tag"]
 
+
+@serializable()
+class CreateCustomImageChange(Change):
+    __canonical_name__ = "CreateCustomImageChange"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    config: WorkerConfig
+    tag: str | None = None
+    registry_uid: UID | None = None
+    pull_image: bool = True
+
+    __repr_attrs__ = ["config", "tag"]
+
+    @model_validator(mode="after")
+    def _tag_required_for_dockerworkerconfig(self) -> Self:
+        if isinstance(self.config, DockerWorkerConfig) and self.tag is None:
+            raise ValueError("`tag` is required for `DockerWorkerConfig`.")
+        return self
+
     def _run(
         self, context: ChangeContext, apply: bool
     ) -> Result[SyftSuccess, SyftError]:
@@ -205,39 +226,49 @@ class CreateCustomImageChange(Change):
             worker_image_service = context.node.get_service("SyftWorkerImageService")
 
             service_context = context.to_service_ctx()
-            result = worker_image_service.submit_dockerfile(
-                service_context, docker_config=self.config
+            result = worker_image_service.submit(
+                service_context, worker_config=self.config
             )
 
             if isinstance(result, SyftError):
                 return Err(result)
 
-            result = worker_image_service.stash.get_by_docker_config(
+            result = worker_image_service.stash.get_by_worker_config(
                 service_context.credentials, config=self.config
             )
 
             if result.is_err():
                 return Err(SyftError(message=f"{result.err()}"))
 
-            worker_image = result.ok()
+            if (worker_image := result.ok()) is None:
+                return Err(SyftError(message="The worker image does not exist."))
 
-            build_result = worker_image_service.build(
-                service_context,
-                image_uid=worker_image.id,
-                tag=self.tag,
-                registry_uid=self.registry_uid,
-                pull=self.pull_image,
+            build_success_message = "Image was pre-built."
+
+            if not worker_image.is_prebuilt:
+                build_result = worker_image_service.build(
+                    service_context,
+                    image_uid=worker_image.id,
+                    tag=self.tag,
+                    registry_uid=self.registry_uid,
+                    pull_image=self.pull_image,
+                )
+
+                if isinstance(build_result, SyftError):
+                    return Err(build_result)
+
+                build_success_message = build_result.message
+
+            build_success = SyftSuccess(
+                message=f"Build result: {build_success_message}"
             )
 
-            if isinstance(build_result, SyftError):
-                return Err(build_result)
-
-            if IN_KUBERNETES:
+            if IN_KUBERNETES and not worker_image.is_prebuilt:
                 push_result = worker_image_service.push(
                     service_context,
-                    image=worker_image.id,
-                    username=context.extra_kwargs.get("reg_username", None),
-                    password=context.extra_kwargs.get("reg_password", None),
+                    image_uid=worker_image.id,
+                    username=context.extra_kwargs.get("registry_username", None),
+                    password=context.extra_kwargs.get("registry_password", None),
                 )
 
                 if isinstance(push_result, SyftError):
@@ -245,11 +276,11 @@ class CreateCustomImageChange(Change):
 
                 return Ok(
                     SyftSuccess(
-                        message=f"Build Result: {build_result.message} \n Push Result: {push_result.message}"
+                        message=f"{build_success}\nPush result: {push_result.message}"
                     )
                 )
 
-            return Ok(build_result)
+            return Ok(build_success)
 
         except Exception as e:
             return Err(SyftError(message=f"Failed to create/build image: {e}"))
@@ -267,12 +298,14 @@ class CreateCustomImageChange(Change):
 @serializable()
 class CreateCustomWorkerPoolChange(Change):
     __canonical_name__ = "CreateCustomWorkerPoolChange"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     pool_name: str
     num_workers: int
     image_uid: UID | None = None
     config: WorkerConfig | None = None
+    pod_annotations: dict[str, str] | None = None
+    pod_labels: dict[str, str] | None = None
 
     __repr_attrs__ = ["pool_name", "num_workers", "image_uid"]
 
@@ -291,7 +324,7 @@ class CreateCustomWorkerPoolChange(Change):
             service_context: AuthedServiceContext = context.to_service_ctx()
 
             if self.config is not None:
-                result = worker_pool_service.image_stash.get_by_docker_config(
+                result = worker_pool_service.image_stash.get_by_worker_config(
                     service_context.credentials, self.config
                 )
                 if result.is_err():
@@ -301,11 +334,13 @@ class CreateCustomWorkerPoolChange(Change):
 
             result = worker_pool_service.launch(
                 context=service_context,
-                name=self.pool_name,
+                pool_name=self.pool_name,
                 image_uid=self.image_uid,
                 num_workers=self.num_workers,
-                reg_username=context.extra_kwargs.get("reg_username", None),
-                reg_password=context.extra_kwargs.get("reg_password", None),
+                registry_username=context.extra_kwargs.get("registry_username", None),
+                registry_password=context.extra_kwargs.get("registry_password", None),
+                pod_annotations=self.pod_annotations,
+                pod_labels=self.pod_labels,
             )
             if isinstance(result, SyftError):
                 return Err(result)
@@ -328,6 +363,19 @@ class CreateCustomWorkerPoolChange(Change):
         return (
             f"Create Worker Pool '{self.pool_name}' for Image with id {self.image_uid}"
         )
+
+
+@serializable()
+class CreateCustomWorkerPoolChangeV2(Change):
+    __canonical_name__ = "CreateCustomWorkerPoolChange"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    pool_name: str
+    num_workers: int
+    image_uid: UID | None = None
+    config: WorkerConfig | None = None
+
+    __repr_attrs__ = ["pool_name", "num_workers", "image_uid"]
 
 
 @serializable()
@@ -688,24 +736,27 @@ class Request(SyncableSyftObject):
 
         return job
 
-    def _get_job_from_action_object(self, action_object: ActionObject) -> Job | None:  # type: ignore
-        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
-        if api is None:
-            raise ValueError(f"Can't access the api. You must login to {self.node_uid}")
-        job_service = api.services.job
-        existing_jobs = job_service.get_by_user_code_id(self.code.id)
-        for job in existing_jobs:
-            if job.result and job.result.id == action_object.id:
-                return job
-
     def accept_by_depositing_result(
         self, result: Any, force: bool = False
     ) -> SyftError | SyftSuccess:
+        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
+        if not api:
+            raise Exception(
+                f"No access to Syft API. Please login to {self.node_uid} first."
+            )
+        if api.signing_key is None:
+            raise ValueError(f"{api}'s signing key is None")
+
         # this code is extremely brittle because its a work around that relies on
         # the type of request being very specifically tied to code which needs approving
 
         # Special case for results from Jobs (High-low side async)
         if isinstance(result, JobInfo):
+            if result.user_code_id != self.code_id:
+                return SyftError(
+                    message=f"JobInfo for user_code_id {result.user_code_id} does not match "
+                    f"request's user_code_id {self.code_id}"
+                )
             job_info = result
             if not job_info.includes_result:
                 return SyftError(
@@ -715,14 +766,16 @@ class Request(SyncableSyftObject):
         elif isinstance(result, ActionObject):
             # Do not allow accepting a result produced by a Job,
             # This can cause an inconsistent Job state
-            action_object_job = self._get_job_from_action_object(result)
+            job_service = api.services.job
+            action_object_job = job_service.get_by_result_id(result.id.id)
             if action_object_job is not None:
                 return SyftError(
-                    message=f"This ActionObject is the result of Job {action_object_job.id}, "
-                    f"please use the `Job.info` instead."
+                    message=f"This ActionObject is the result of existing Job {action_object_job.id}, "
+                    f"please use the `Job.info` instead, or create a new ActionObject."
                 )
             else:
                 job_info = JobInfo(
+                    user_code_id=self.code_id,
                     includes_metadata=True,
                     includes_result=True,
                     status=JobStatus.COMPLETED,
@@ -731,6 +784,7 @@ class Request(SyncableSyftObject):
         else:
             # NOTE result is added at the end of function (once ActionObject is created)
             job_info = JobInfo(
+                user_code_id=self.code_id,
                 includes_metadata=True,
                 includes_result=True,
                 status=JobStatus.COMPLETED,
@@ -761,13 +815,6 @@ class Request(SyncableSyftObject):
                 f"{type(user_code_status_change)}"
             )
 
-        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
-        if not api:
-            raise Exception(
-                f"No access to Syft API. Please login to {self.node_uid} first."
-            )
-        if api.signing_key is None:
-            raise ValueError(f"{api}'s signing key is None")
         is_approved = user_code_status_change.approved
 
         permission_request = self.approve(approve_nested=True)

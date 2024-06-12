@@ -23,22 +23,7 @@ jobs:
     uses: OpenMined/PySyft/.github/workflows/pr-tests-stack.yml@dev
     secrets: inherit
 
-  # call-pr-tests-stack-arm64:
-  #   if: github.repository == 'OpenMined/PySyft' # don't run on forks
-  #   uses: OpenMined/PySyft/.github/workflows/pr-tests-stack-arm64.yml@dev
-  #   secrets: inherit
-
-  call-pr-tests-stack-public:
-    if: github.repository == 'OpenMined/PySyft' # don't run on forks
-    uses: OpenMined/PySyft/.github/workflows/pr-tests-stack-public.yml@dev
-    secrets: inherit
-
   call-container-scan:
     if: github.repository == 'OpenMined/PySyft' # don't run on forks
     uses: OpenMined/PySyft/.github/workflows/container-scan.yml@dev
     secrets: inherit
-
-  # call-rhel-tests:
-  #   if: github.repository == 'OpenMined/PySyft' # don't run on forks
-  #   uses: OpenMined/PySyft/.github/workflows/rhel-tests.yml@dev
-  #   secrets: inherit

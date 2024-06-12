@@ -17,6 +17,7 @@ from typing import Any
 
 # third party
 from RestrictedPython import compile_restricted
+import requests
 from result import Err
 from result import Ok
 from result import Result
@@ -151,15 +152,20 @@ def partition_by_node(kwargs: dict[str, Any]) -> dict[NodeIdentity, dict[str, UI
 
         _obj_exists = False
         for api in api_list:
-            if api.services.action.exists(uid):
-                node_identity = NodeIdentity.from_api(api)
-                if node_identity not in output_kwargs:
-                    output_kwargs[node_identity] = {k: uid}
-                else:
-                    output_kwargs[node_identity].update({k: uid})
+            try:
+                if api.services.action.exists(uid):
+                    node_identity = NodeIdentity.from_api(api)
+                    if node_identity not in output_kwargs:
+                        output_kwargs[node_identity] = {k: uid}
+                    else:
+                        output_kwargs[node_identity].update({k: uid})
 
-                _obj_exists = True
-                break
+                    _obj_exists = True
+                    break
+            except requests.exceptions.ConnectionError:
+                # To handle the cases , where there an old api objects in
+                # in APIRegistry
+                continue
 
         if not _obj_exists:
             raise Exception(f"Input data {k}:{uid} does not belong to any Domain")
@@ -854,6 +860,26 @@ def load_policy_code(user_policy: UserPolicy) -> Any:
 def init_policy(user_policy: UserPolicy, init_args: dict[str, Any]) -> Any:
     policy_class = load_policy_code(user_policy)
     policy_object = policy_class()
+
+    # Unwrapp {NodeIdentity : {x: y}} -> {x: y}
+    # Tech debt : For input policies, we required to have NodeIdentity args beforehand,
+    # therefore at this stage we had to return back to the normal args.
+    # Maybe there's better way to do it.
+    if len(init_args) and isinstance(list(init_args.keys())[0], NodeIdentity):
+        unwrapped_init_kwargs = init_args
+        if len(init_args) > 1:
+            raise Exception("You shoudn't have more than one Node Identity.")
+        # Otherwise, unwrapp it
+        init_args = init_args[list(init_args.keys())[0]]
+
     init_args = {k: v for k, v in init_args.items() if k != "id"}
+
+    # For input policies, this initializer wouldn't work properly:
+    # 1 - Passing {NodeIdentity: {kwargs:UIDs}} as keyword args doesn't work since keys must be strings
+    # 2 - Passing {kwargs: UIDs} in this initializer would not trigger the partition nodes from the
+    # InputPolicy initializer.
+    # The cleanest way to solve it is by checking if it's an Input Policy, and then, setting it manually.
     policy_object.__user_init__(**init_args)
+    if isinstance(policy_object, InputPolicy):
+        policy_object.init_kwargs = unwrapped_init_kwargs
     return policy_object

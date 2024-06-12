@@ -43,10 +43,10 @@
                 >
                   2
                 </div>
-                <p>Install HAGrid by running the code below in your Jupyter Notebook</p>
+                <p></p>
               </div>
               <div class="rounded bg-gray-100 text-gray-800 font-fira p-3 mx-8 mb-2">
-                <p>pip install -U hagrid</p>
+                <p></p>
               </div>
             </li>
             <li class="flex flex-col gap-3">
@@ -57,12 +57,10 @@
                   3
                 </div>
                 <p>
-                  Once HAGrid is installed open the "Upload Dataset" quickstart tutorial notebook by
-                  running the code below in your Jupyter Notebook.
                 </p>
               </div>
               <div class="rounded bg-gray-100 text-gray-800 font-fira p-3 mx-8 mb-2">
-                <p>hagrid quickstart</p>
+                <p></p>
               </div>
             </li>
           </ul>
