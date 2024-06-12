@@ -300,7 +300,7 @@ class ZMQProducer(QueueProducer):
                             continue
                         for arg in action.args:
                             self.preprocess_action_arg(arg)
-                        for _, arg in action.kwargs.items():
+                        for arg in action.kwargs.values():
                             self.preprocess_action_arg(arg)
 
                     msg_bytes = serialize(item, to_bytes=True)
@@ -929,12 +929,12 @@ class ZMQClient(QueueClient):
 
     def close(self) -> SyftError | SyftSuccess:
         try:
-            for _, consumers in self.consumers.items():
+            for consumers in self.consumers.values():
                 for consumer in consumers:
                     # make sure look is stopped
                     consumer.close()
 
-            for _, producer in self.producers.items():
+            for producer in self.producers.values():
                 # make sure loop is stopped
                 producer.close()
                 # close existing connection.

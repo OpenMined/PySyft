@@ -121,16 +121,17 @@ class SeaweedFSBlobDeposit(BlobDeposit):
                             """Creates a data geneator for the part"""
                             n = 0
 
-                            while n * chunk_size <= part_size:
-                                try:
+                            try:
+                                while n * chunk_size <= part_size:
                                     chunk = data.read(chunk_size)
+                                    if not chunk:
+                                        break
                                     self.no_lines += chunk.count(b"\n")
                                     n += 1
                                     queue.put(chunk)
-                                except BlockingIOError:
-                                    # if end of file, stop
-                                    queue.put(0)
-                            # if end of part, stop
+                            except BlockingIOError:
+                                pass
+                            # if end of file or part, stop
                             queue.put(0)
 
                     gen = PartGenerator()
