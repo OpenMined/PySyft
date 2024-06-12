@@ -14,14 +14,14 @@ then
     RELOAD="--reload"
 fi
 
-if grep -q ":" /proc/net/if_inet6 ; then
-    # IPv6 is available
-    HOST=${HOST:-[::]}
-    exec uvicorn $RELOAD --host $HOST --port $PORT --log-level $UVICORN_LOG_LEVEL "$APP_MODULE"
-fi
-
 if ! grep -q ":" /proc/net/if_inet6 ; then
     # IPv4 is available
     HOST=${HOST:-0.0.0.0}
+    exec uvicorn $RELOAD --host $HOST --port $PORT --log-level $UVICORN_LOG_LEVEL "$APP_MODULE"
+fi
+
+if grep -q ":" /proc/net/if_inet6 ; then
+    # IPv6 is available
+    HOST=${HOST:-[::]}
     exec uvicorn $RELOAD --host $HOST --port $PORT --log-level $UVICORN_LOG_LEVEL "$APP_MODULE"
 fi
