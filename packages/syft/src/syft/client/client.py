@@ -589,7 +589,7 @@ class SyftClient:
             if code.nested_codes is None:
                 return result
 
-            for linked_code_obj in code.nested_codes.values():
+            for (linked_code_obj, _) in code.nested_codes.values():
                 nested_code = linked_code_obj.resolve
                 nested_code = deepcopy(nested_code)
                 nested_code.node_uid = code.node_uid
