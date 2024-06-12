@@ -2,10 +2,10 @@
 import sys
 import traceback
 from typing import Any
-from typing_extensions import Self
 
 # third party
 from result import Err
+from typing_extensions import Self
 
 # relative
 from ..serde.serializable import serializable
