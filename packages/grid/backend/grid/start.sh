@@ -33,6 +33,7 @@ echo "NODE_UID=$NODE_UID"
 echo "NODE_TYPE=$NODE_TYPE"
 
 if ! grep -q ":" /proc/net/if_inet6 ; then
+    # IPv4 is available
     HOST=${HOST:-0.0.0.0}
     exec $DEBUG_CMD uvicorn $RELOAD --host $HOST --port $PORT --log-level $LOG_LEVEL "$APP_MODULE"
 fi
