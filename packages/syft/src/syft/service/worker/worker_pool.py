@@ -191,8 +191,6 @@ class WorkerPool(SyftObject):
         """
         Query the healthy workers using an API call to the server
         """
-        _healthy_workers = []
-
         _healthy_workers = [
             worker
             for worker in self.workers
