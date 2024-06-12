@@ -165,6 +165,7 @@ def deploy_to_python(
     create_producer: bool = False,
     queue_port: int | None = None,
     association_request_auto_approval: bool = False,
+    min_size_blob_storage_mb: int = 16,
     background_tasks: bool = False,
 ) -> NodeHandle:
     worker_classes = {
@@ -192,6 +193,7 @@ def deploy_to_python(
         "n_consumers": n_consumers,
         "create_producer": create_producer,
         "association_request_auto_approval": association_request_auto_approval,
+        "min_size_blob_storage_mb": min_size_blob_storage_mb,
         "background_tasks": background_tasks,
     }
 
@@ -281,6 +283,7 @@ class Orchestra:
         create_producer: bool = False,
         queue_port: int | None = None,
         association_request_auto_approval: bool = False,
+        min_size_blob_storage_mb: int = 16,
         background_tasks: bool = False,
     ) -> NodeHandle:
         if dev_mode is True:
@@ -317,6 +320,7 @@ class Orchestra:
                 create_producer=create_producer,
                 queue_port=queue_port,
                 association_request_auto_approval=association_request_auto_approval,
+                min_size_blob_storage_mb=min_size_blob_storage_mb,
                 background_tasks=background_tasks,
             )
         elif deployment_type_enum == DeploymentType.REMOTE:

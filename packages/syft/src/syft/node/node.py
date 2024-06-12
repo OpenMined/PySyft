@@ -345,6 +345,7 @@ class Node(AbstractNode):
         smtp_port: int | None = None,
         smtp_host: str | None = None,
         association_request_auto_approval: bool = False,
+        min_size_blob_storage_mb: int = 16,
         background_tasks: bool = False,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
@@ -432,6 +433,7 @@ class Node(AbstractNode):
 
         self.init_queue_manager(queue_config=self.queue_config)
 
+        self.min_size_blob_storage_mb = min_size_blob_storage_mb
         self.init_blob_storage(config=blob_storage_config)
 
         context = AuthedServiceContext(
@@ -464,7 +466,7 @@ class Node(AbstractNode):
             path = self.get_temp_dir("db")
             file_name: str = f"{self.id}.sqlite"
             if self.dev_mode:
-                print(f"{store_type}'s SQLite DB path: {path/file_name}")
+                print(f"{store_type}'s SQLite DB path: {path/file_name}.")
             return SQLiteStoreConfig(
                 client_config=SQLiteStoreClientConfig(
                     filename=file_name,
@@ -478,7 +480,9 @@ class Node(AbstractNode):
             client_config = OnDiskBlobStorageClientConfig(
                 base_directory=self.get_temp_dir("blob")
             )
-            config_ = OnDiskBlobStorageConfig(client_config=client_config)
+            config_ = OnDiskBlobStorageConfig(
+                client_config=client_config, min_size_mb=self.min_size_blob_storage_mb
+            )
         else:
             config_ = config
         self.blob_store_config = config_
@@ -497,13 +501,16 @@ class Node(AbstractNode):
                     remote_profile.profile_name
                 ] = remote_profile
 
-        if (
-            isinstance(self.blob_store_config, OnDiskBlobStorageConfig)
-            and self.dev_mode
-        ):
+        if self.dev_mode:
+            if isinstance(self.blob_store_config, OnDiskBlobStorageConfig):
+                print(
+                    f"Using on-disk blob storage with path: "
+                    f"{self.blob_store_config.client_config.base_directory}",
+                    end=". ",
+                )
             print(
-                f"Using on-disk blob storage with path: "
-                f"{self.blob_store_config.client_config.base_directory}"
+                f"Minimum object size to be saved to the blob storage: "
+                f"{self.blob_store_config.min_size_mb} (MB)."
             )
 
     def run_peer_health_checks(self, context: AuthedServiceContext) -> None:
@@ -1754,7 +1761,7 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
         )
         return default_worker_pool
 
-    print(f"Creating default worker image with tag='{default_worker_tag}'")
+    print(f"Creating default worker image with tag='{default_worker_tag}'", end=". ")
     # Get/Create a default worker SyftWorkerImage
     default_image = create_default_image(
         credentials=credentials,
@@ -1767,7 +1774,7 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
         return default_image
 
     if not default_image.is_built:
-        print(f"Building default worker image with tag={default_worker_tag}")
+        print(f"Building default worker image with tag={default_worker_tag}", end=". ")
         image_build_method = node.get_service_method(SyftWorkerImageService.build)
         # Build the Image for given tag
         result = image_build_method(
@@ -1787,7 +1794,8 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
         f"name={default_pool_name} "
         f"workers={worker_count} "
         f"image_uid={default_image.id} "
-        f"in_memory={node.in_memory_workers}"
+        f"in_memory={node.in_memory_workers}",
+        end=". ",
     )
     if default_worker_pool is None:
         worker_to_add_ = worker_count

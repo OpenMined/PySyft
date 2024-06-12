@@ -850,8 +850,8 @@ class ActionObject(SyncableSyftObject):
                 self.syft_action_data_cache = self.as_empty_data()
         else:
             debug(
-                f"self.syft_action_data's size = {action_data_size_mb:4f} (MB), less than {min_size_mb} (MB). "
-                f"Skip saving to blob storage."
+                f"self.syft_action_data's size = {action_data_size_mb:4f} (MB), "
+                f"less than {min_size_mb} (MB). Skip saving to blob storage."
             )
             self.syft_action_data_cache = data
         return None
