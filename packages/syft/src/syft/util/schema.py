@@ -180,7 +180,7 @@ def process_type_bank(type_bank: dict[str, tuple[Any, ...]]) -> dict[str, dict]:
 def resolve_references(json_mappings: dict[str, dict]) -> dict[str, dict]:
     # track second pass generated types
     new_types = {}
-    for _, json_schema in json_mappings.items():
+    for json_schema in json_mappings.values():
         replace_types = {}
         for attribute, config in json_schema["properties"].items():
             if "type" in config:

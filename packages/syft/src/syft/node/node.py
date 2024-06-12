@@ -619,7 +619,7 @@ class Node(AbstractNode):
         consumer.run()
 
     def remove_consumer_with_id(self, syft_worker_id: UID) -> None:
-        for _, consumers in self.queue_manager.consumers.items():
+        for consumers in self.queue_manager.consumers.values():
             # Grab the list of consumers for the given queue
             consumer_to_pop = None
             for consumer_idx, consumer in enumerate(consumers):
@@ -833,9 +833,7 @@ class Node(AbstractNode):
     def __repr__(self) -> str:
         service_string = ""
         if not self.is_subprocess:
-            services = []
-            for service in self.services:
-                services.append(service.__name__)
+            services = [service.__name__ for service in self.services]
             service_string = ", ".join(sorted(services))
             service_string = f"\n\nServices:\n{service_string}"
         return f"{type(self).__name__}: {self.name} - {self.id} - {self.node_type}{service_string}"
