@@ -336,10 +336,14 @@ class ActionService(AbstractService):
             if is_approved.is_err():
                 return is_approved
         else:
+
             result = retrieve_from_db(code_item.id, kwargs, context)
             if isinstance(result, SyftError):
                 return Err(result.message)
             filtered_kwargs = result.ok()
+            import sys
+            print("BBB", file=sys.stderr)
+            # print(filtered_kwargs["data"].syft_blob_storage_entry_id, file=sys.stderr)
         # update input policy to track any input state
 
         has_twin_inputs = False
@@ -354,7 +358,6 @@ class ActionService(AbstractService):
 
         try:
             if not has_twin_inputs:
-                # no twins
                 filtered_kwargs = filter_twin_kwargs(
                     real_kwargs, twin_mode=TwinMode.NONE
                 )
@@ -417,8 +420,6 @@ class ActionService(AbstractService):
                     mock_obj=result_action_object_mock,
                 )
         except Exception as e:
-            # import traceback
-            # return Err(f"_user_code_execute failed. {e} {traceback.format_exc()}")
             return Err(f"_user_code_execute failed. {e}")
         return Ok(result_action_object)
 

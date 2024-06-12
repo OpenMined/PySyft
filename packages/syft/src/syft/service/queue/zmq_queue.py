@@ -250,23 +250,57 @@ class ZMQProducer(QueueProducer):
                 return SyftError(message=f"{res}")
             else:
                 nested_res = res.syft_action_data
-                if isinstance(nested_res, ActionObject):
-                    nested_res.syft_node_location = res.syft_node_location
-                    nested_res.syft_client_verify_key = res.syft_client_verify_key
+                # if isinstance(nested_res, ActionObject):
+                #     nested_res.syft_node_location = res.syft_node_location
+                #     nested_res.syft_client_verify_key = res.syft_client_verify_key
                 return nested_res
         return data
 
+    def contains_nested_actionobjects(self, data: Any):
+        """
+        returns if this is a list/set/dict that contains ActionObjects
+        """
+        def unwrap_collection(col: set | dict | list):
+            return_values = []
+            if isinstance(col, dict):
+                values = list(col.values()) + list(col.keys())
+            else:
+                values = list(col)
+            for v in values:
+                if isinstance(v, list, dict, set):
+                    return_values += unwrap_collection(v)
+                else:
+                    return_values.append(v)
+            return return_values
+
+        if isinstance(data, list, dict, set):
+            values = unwrap_collection(data)
+            has_action_object = any([isinstance(x, ActionObject) for x in values])
+            return has_action_object
+        return False
+
     def preprocess_action_arg(self, arg: Any) -> None:
+        """"If the argument is a collection (of collections) of ActionObjects,
+        We want to flatten the collection and upload a new ActionObject that contains
+        its values. E.g. [[ActionObject1, ActionObject2],[ActionObject3, ActionObject4]] 
+        -> [[value1, value2],[value3, value4]] 
+        """
         res = self.action_service.get(context=self.auth_context, uid=arg)
         if res.is_err():
             return arg
         action_object = res.ok()
         data = action_object.syft_action_data
-        new_data = self.unwrap_nested_actionobjects(data)
-        new_action_object = ActionObject.from_obj(new_data, id=action_object.id)
-        res = self.action_service.set(
-            context=self.auth_context, action_object=new_action_object
-        )
+        if self.contains_nested_actionobjects(data):
+            new_data = self.unwrap_nested_actionobjects(data)
+        
+            new_action_object = ActionObject.from_obj(
+                new_data,
+                id=action_object.id,
+                syft_blob_storage_entry_id=action_object.syft_blob_storage_entry_id,
+            )
+            res = self.action_service.set(
+                context=self.auth_context, action_object=new_action_object
+            )
 
     def read_items(self) -> None:
         while True:
