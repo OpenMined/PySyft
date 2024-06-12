@@ -142,7 +142,7 @@ def syft_iter_content(
                 print(
                     f"Attempt {attempt}/{max_retries} failed: {e} at byte {current_byte}. Retrying..."
                 )
-                time.sleep(2**attempt)  # exponential
+                time.sleep(2*attempt)  # exponential
             else:
                 print(f"Max retries reached. Failed with error: {e}")
                 raise
