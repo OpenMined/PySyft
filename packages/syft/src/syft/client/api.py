@@ -753,7 +753,7 @@ def debox_signed_syftapicall_response(
 
 def downgrade_signature(signature: Signature, object_versions: dict) -> Signature:
     migrated_parameters = []
-    for _, parameter in signature.parameters.items():
+    for parameter in signature.parameters.values():
         annotation = unwrap_and_migrate_annotation(
             parameter.annotation, object_versions
         )
@@ -1114,7 +1114,7 @@ class SyftAPI(SyftObject):
             endpoints: dict[str, LibEndpoint], communication_protocol: PROTOCOL_TYPE
         ) -> APIModule:
             api_module = APIModule(path="", refresh_callback=self.refresh_api_callback)
-            for _, v in endpoints.items():
+            for v in endpoints.values():
                 signature = v.signature
                 if not v.has_self:
                     signature = signature_remove_self(signature)
