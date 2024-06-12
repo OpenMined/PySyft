@@ -628,9 +628,6 @@ class Request(SyncableSyftObject):
         Args:
             reason (str): Reason for which the request has been denied.
         """
-        if not reason:
-            return SyftError("Please provide a reason for denying the request.")
-
         api = self._get_api()
         if isinstance(api, SyftError):
             return api
