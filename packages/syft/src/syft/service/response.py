@@ -2,6 +2,7 @@
 import sys
 import traceback
 from typing import Any
+from typing import Self
 
 # third party
 from result import Err
@@ -9,6 +10,8 @@ from result import Err
 # relative
 from ..serde.serializable import serializable
 from ..types.base import SyftBaseModel
+from ..types.errors import SyftException as SyftExc
+from .context import AuthedServiceContext
 
 
 class SyftResponseMessage(SyftBaseModel):
@@ -59,6 +62,10 @@ class SyftError(SyftResponseMessage):
 
     def __bool__(self) -> bool:
         return False
+
+    @classmethod
+    def from_exc(cls, exc: SyftExc, context: AuthedServiceContext) -> Self:
+        return cls(message=exc.get_message(context))
 
 
 @serializable()

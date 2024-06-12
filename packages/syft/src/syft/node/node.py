@@ -1261,8 +1261,7 @@ class Node(AbstractNode):
             except PySyftException as e:
                 return e.handle()
             except SyftException as exc:
-                msg = exc.public()
-                result = SyftError(message=msg)
+                result = SyftError.from_exc(exc, context)
             except Exception:
                 result = SyftError(
                     message=f"Exception calling {api_call.path}. {traceback.format_exc()}"
