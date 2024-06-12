@@ -785,8 +785,8 @@ class ActionObject(SyncableSyftObject):
                 size = sys.getsizeof(serialized)
                 storage_entry = CreateBlobStorageEntry.from_obj(data, file_size=size)
 
-                if not TraceResultRegistry.current_thread_is_tracing():
-                    self.syft_action_data_cache = self.as_empty_data()
+                # if not TraceResultRegistry.current_thread_is_tracing():
+                #     self.syft_action_data_cache = self.as_empty_data()
                 if self.syft_blob_storage_entry_id is not None:
                     # TODO: check if it already exists
                     storage_entry.id = self.syft_blob_storage_entry_id
@@ -846,14 +846,14 @@ class ActionObject(SyncableSyftObject):
             result = self._save_to_blob_storage_(data)
             if isinstance(result, SyftError):
                 return result
+            if not TraceResultRegistry.current_thread_is_tracing():
+                self.syft_action_data_cache = self.as_empty_data()
         else:
             debug(
                 f"self.syft_action_data's size = {action_data_size_mb:4f} (MB), less than {min_size_mb} (MB). "
                 f"Skip saving to blob storage."
             )
             self.syft_action_data_cache = data
-        # if not TraceResultRegistry.current_thread_is_tracing():
-        #     self.syft_action_data_cache = self.as_empty_data()
         return None
 
     @property
