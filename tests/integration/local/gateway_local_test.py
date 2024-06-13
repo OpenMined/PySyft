@@ -26,7 +26,7 @@ def _launch(
     node_type: NodeType,
     association_request_auto_approval: bool = True,
     port: int | str | None = None,
-) -> sy.Node:
+) -> sy.node:
     return sy.orchestra.launch(
         name=token_hex(8),
         node_type=node_type,
@@ -40,7 +40,7 @@ def _launch(
 
 
 @pytest.fixture
-def gateway() -> sy.Node:
+def gateway() -> sy.node:
     node = _launch(NodeType.GATEWAY)
     yield node
     node.python_node.cleanup()
@@ -48,7 +48,7 @@ def gateway() -> sy.Node:
 
 
 @pytest.fixture(params=[True, False])
-def gateway_association_request_auto_approval(request: pytest.FixtureRequest) -> tuple[bool, sy.Node]:
+def gateway_association_request_auto_approval(request: pytest.FixtureRequest) -> tuple[bool, sy.node]:
     node = _launch(NodeType.GATEWAY, association_request_auto_approval=request.param)
     yield (request.param, node)
     node.python_node.cleanup()
@@ -56,7 +56,7 @@ def gateway_association_request_auto_approval(request: pytest.FixtureRequest) ->
 
 
 @pytest.fixture
-def domain() -> sy.Node:
+def domain() -> sy.node:
     node = _launch(NodeType.DOMAIN)
     yield node
     node.python_node.cleanup()
@@ -64,7 +64,7 @@ def domain() -> sy.Node:
 
 
 @pytest.fixture
-def domain_2() -> sy.Node:
+def domain_2() -> sy.node:
     node = _launch(NodeType.DOMAIN)
     yield node
     node.python_node.cleanup()
@@ -72,7 +72,7 @@ def domain_2() -> sy.Node:
 
 
 @pytest.fixture
-def enclave() -> sy.Node:
+def enclave() -> sy.node:
     node = _launch(NodeType.ENCLAVE)
     yield node
     node.python_node.cleanup()
@@ -80,28 +80,28 @@ def enclave() -> sy.Node:
 
 
 @pytest.fixture
-def gateway_webserver() -> sy.Node:
+def gateway_webserver() -> sy.node:
     node = _launch(node_type=NodeType.GATEWAY, port="auto")
     yield node
     node.land()
 
 
 @pytest.fixture
-def domain_webserver() -> sy.Node:
+def domain_webserver() -> sy.node:
     node = _launch(NodeType.DOMAIN, port="auto")
     yield node
     node.land()
 
 
 @pytest.fixture
-def domain_2_webserver() -> sy.Node:
+def domain_2_webserver() -> sy.node:
     node = _launch(NodeType.DOMAIN, port="auto")
     yield node
     node.land()
 
 
 @pytest.fixture(scope="function")
-def set_network_json_env_var(gateway_webserver: sy.Node):
+def set_network_json_env_var(gateway_webserver: sy.node):
     """Set the environment variable for the network registry JSON string."""
     json_string = f"""
         {{
