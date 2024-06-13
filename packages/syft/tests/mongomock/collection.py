@@ -1,6 +1,3 @@
-# future
-from __future__ import division
-
 # stdlib
 import collections
 from collections import OrderedDict
@@ -43,10 +40,10 @@ try:
     _READ_PREFERENCE_PRIMARY = ReadPreference.PRIMARY
 except ImportError:
 
-    class IndexModel(object):
+    class IndexModel:
         pass
 
-    class ReturnDocument(object):
+    class ReturnDocument:
         BEFORE = False
         AFTER = True
 
@@ -147,7 +144,7 @@ def validate_write_concern_params(**params):
         WriteConcern(**params)
 
 
-class BulkWriteOperation(object):
+class BulkWriteOperation:
     def __init__(self, builder, selector, is_upsert=False):
         self.builder = builder
         self.selector = selector
@@ -250,7 +247,7 @@ def _combine_projection_spec(projection_fields_spec):
             if not isinstance(tmp_spec.get(base_field), dict):
                 if base_field in tmp_spec:
                     raise OperationFailure(
-                        "Path collision at %s remaining portion %s" % (f, new_field)
+                        "Path collision at {} remaining portion {}".format(f, new_field)
                     )
                 tmp_spec[base_field] = OrderedDict()
             tmp_spec[base_field][new_field] = v
@@ -327,7 +324,7 @@ def _validate_data_fields(data):
             )
 
 
-class BulkOperationBuilder(object):
+class BulkOperationBuilder:
     def __init__(self, collection, ordered=False, bypass_document_validation=False):
         self.collection = collection
         self.ordered = ordered
@@ -466,7 +463,7 @@ class BulkOperationBuilder(object):
         write_operation.register_remove_op(not just_one, hint=hint)
 
 
-class Collection(object):
+class Collection:
     def __init__(
         self,
         database,
@@ -490,7 +487,7 @@ class Collection(object):
         self._codec_options = codec_options or mongomock_codec_options.CodecOptions()
 
     def __repr__(self):
-        return "Collection({0}, '{1}')".format(self.database, self.name)
+        return "Collection({}, '{}')".format(self.database, self.name)
 
     def __getitem__(self, name):
         return self.database[self.name + "." + name]
@@ -522,7 +519,7 @@ class Collection(object):
 
     @property
     def full_name(self):
-        return "{0}.{1}".format(self.database.name, self._name)
+        return "{}.{}".format(self.database.name, self._name)
 
     @property
     def name(self):
@@ -1119,7 +1116,7 @@ class Collection(object):
                         existing_document.update(self._internalize_dict(document))
                         if existing_document["_id"] != _id:
                             raise OperationFailure(
-                                "The _id field cannot be changed from {0} to {1}".format(
+                                "The _id field cannot be changed from {} to {}".format(
                                     existing_document["_id"], _id
                                 )
                             )
@@ -1969,8 +1966,7 @@ class Collection(object):
         if not self._store.is_created:
             return
         yield "_id_", {"key": [("_id", 1)]}
-        for name, information in self._store.indexes.items():
-            yield name, information
+        yield from self._store.indexes.items()
 
     def list_indexes(self, session=None):
         if session:
@@ -2288,7 +2284,7 @@ class Collection(object):
         )
 
 
-class Cursor(object):
+class Cursor:
     def __init__(
         self,
         collection,
@@ -2302,7 +2298,7 @@ class Cursor(object):
         batch_size=0,
         session=None,
     ):
-        super(Cursor, self).__init__()
+        super().__init__()
         self.collection = collection
         spec = helpers.patch_datetime_awareness_in_document(spec)
         self._spec = spec
