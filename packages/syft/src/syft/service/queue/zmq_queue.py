@@ -379,8 +379,10 @@ class ZMQProducer(QueueProducer):
         """
         # work on a copy of the iterator
         for worker in self.waiting:
-            if worker.has_expired() or worker._to_be_deleted(
-                self.worker_stash, self.auth_context.credentials
+            if worker.has_expired() or (
+                to_be_deleted := worker._to_be_deleted(
+                    self.worker_stash, self.auth_context.credentials
+                )
             ):
                 logger.info(
                     "Deleting expired Worker id={} uid={} expiry={} now={}",
@@ -389,7 +391,7 @@ class ZMQProducer(QueueProducer):
                     worker.get_expiry(),
                     Timeout.now(),
                 )
-                self.delete_worker(worker, False)
+                self.delete_worker(worker, to_be_deleted)
 
     def update_consumer_state_for_worker(
         self, syft_worker_id: UID, consumer_state: ConsumerState
