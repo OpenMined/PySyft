@@ -455,8 +455,10 @@ class Node(AbstractNode):
         path = "/proc/self/cgroup"
         if os.path.exists("/.dockerenv"):
             return True
-        if os.path.isfile(path) and any("docker" in line for line in open(path)):
-            return True
+        if os.path.isfile(path):
+            with open(path) as file:
+                if any("docker" in line for line in file):
+                    return True
         return False
 
     def get_default_store(self, use_sqlite: bool, store_type: str) -> StoreConfig:
