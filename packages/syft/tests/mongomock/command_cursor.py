@@ -1,4 +1,4 @@
-class CommandCursor(object):
+class CommandCursor:
     def __init__(self, collection, curser_info=None, address=None, retrieved=0):
         self._collection = iter(collection)
         self._id = None
