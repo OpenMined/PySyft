@@ -273,7 +273,7 @@ class ZMQProducer(QueueProducer):
                     return_values.append(v)
             return return_values
 
-        if isinstance(data, list, dict, set):
+        if isinstance(data, (list, dict, set)):
             values = unwrap_collection(data)
             has_action_object = any([isinstance(x, ActionObject) for x in values])
             return has_action_object
