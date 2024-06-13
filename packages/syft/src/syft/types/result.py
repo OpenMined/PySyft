@@ -109,8 +109,8 @@ def as_result(
                 return Ok(func(*args, **kwargs))
             except exceptions as exc:
                 if convert_to_syft_exception and not isinstance(exc, SyftException):
-                    exc = SyftException.from_exception(exc)
-                process_traceback(exc)
+                    exc = SyftException.from_exception(exc)  # type: ignore
+                exc = process_traceback(exc)
                 return Err(exc)
 
         return wrapper
