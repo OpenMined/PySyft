@@ -4,7 +4,6 @@ from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
-
 from ..action.action_permissions import ActionObjectPermission, ActionPermission
 from ..context import AuthedServiceContext
 from ..notification.email_templates import RequestEmailTemplate, RequestUpdateEmailTemplate
@@ -18,6 +17,7 @@ from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL, GUEST_ROLE_LEVEL
 from ..user.user_service import UserService
 from .request import Change, Request, RequestInfo, RequestInfoFilter, RequestStatus, SubmitRequest
 from .request_stash import RequestStash
+
 
 @instrument
 @serializable()
@@ -88,6 +88,7 @@ class RequestService(AbstractService):
 
     @service_method(path="request.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL)
     def get_all(self, context: AuthedServiceContext) -> list[Request] | SyftError:
+        """Retrieve all requests"""
         result = self.stash.get_all(context.credentials)
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -131,6 +132,7 @@ class RequestService(AbstractService):
     def add_changes(
         self, context: AuthedServiceContext, uid: UID, changes: list[Change]
     ) -> Request | SyftError:
+        """Add changes to a request"""
         result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
 
         if result.is_err():
@@ -170,6 +172,7 @@ class RequestService(AbstractService):
         uid: UID,
         **kwargs: dict,
     ) -> SyftSuccess | SyftError:
+        """Apply changes to a request"""
         request = self.stash.get_by_uid(context.credentials, uid)
         if request.is_ok():
             request = request.ok()
@@ -207,6 +210,7 @@ class RequestService(AbstractService):
     def undo(
         self, context: AuthedServiceContext, uid: UID, reason: str
     ) -> SyftSuccess | SyftError:
+        """Undo changes to a request"""
         result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
         if result.is_err():
             return SyftError(
@@ -226,7 +230,6 @@ class RequestService(AbstractService):
             )
 
         link = LinkedObject.with_context(request, context=context)
-        # continued from the undo method
         message_subject = f"Your request ({str(uid)[:4]}) has been denied."
 
         notification = CreateNotification(
@@ -246,6 +249,7 @@ class RequestService(AbstractService):
     def save(
         self, context: AuthedServiceContext, request: Request
     ) -> Request | SyftError:
+        """Save a request"""
         result = self.stash.update(context.credentials, request)
         if result.is_ok():
             return result.ok()
@@ -253,14 +257,11 @@ class RequestService(AbstractService):
             message=f"Failed to update Request: <{request.id}>. Error: {result.err()}"
         )
 
-    @service_method(
-        path="request.delete_by_uid",
-        name="delete_by_uid",
-    )
+    @service_method(path="request.delete_by_uid", name="delete_by_uid")
     def delete_by_uid(
         self, context: AuthedServiceContext, uid: UID
     ) -> SyftSuccess | SyftError:
-        """Delete the request with the given uid."""
+        """Delete a request by UID"""
         result = self.stash.delete_by_uid(context.credentials, uid)
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -269,4 +270,3 @@ class RequestService(AbstractService):
 
 TYPE_TO_SERVICE[Request] = RequestService
 SERVICE_TO_TYPES[RequestService].update({Request})
-
