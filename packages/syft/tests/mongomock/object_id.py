@@ -2,9 +2,9 @@
 import uuid
 
 
-class ObjectId(object):
+class ObjectId:
     def __init__(self, id=None):
-        super(ObjectId, self).__init__()
+        super().__init__()
         if id is None:
             self._id = uuid.uuid1()
         else:
@@ -20,7 +20,7 @@ class ObjectId(object):
         return hash(self._id)
 
     def __repr__(self):
-        return "ObjectId({0})".format(self._id)
+        return "ObjectId({})".format(self._id)
 
     def __str__(self):
         return str(self._id)
