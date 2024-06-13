@@ -17,7 +17,7 @@ except ImportError:
 
     class OperationFailure(PyMongoError):
         def __init__(self, message, code=None, details=None):
-            super(OperationFailure, self).__init__()
+            super().__init__()
             self._message = message
             self._code = code
             self._details = details
@@ -54,7 +54,7 @@ except ImportError:
 
     class BulkWriteError(OperationFailure):
         def __init__(self, results):
-            super(BulkWriteError, self).__init__(
+            super().__init__(
                 "batch op errors occurred", 65, results
             )
 
