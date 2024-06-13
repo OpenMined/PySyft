@@ -36,8 +36,8 @@ _LIST_COLLECTION_FILTER_ALLOWED_OPERATORS = frozenset(["$regex", "$eq", "$ne"])
 def _verify_list_collection_supported_op(keys):
     if set(keys) - _LIST_COLLECTION_FILTER_ALLOWED_OPERATORS:
         raise NotImplementedError(
-            "list collection names filter operator {0} is not implemented yet in mongomock "
-            "allowed operators are {1}".format(
+            "list collection names filter operator {} is not implemented yet in mongomock "
+            "allowed operators are {}".format(
                 keys, _LIST_COLLECTION_FILTER_ALLOWED_OPERATORS
             )
         )
