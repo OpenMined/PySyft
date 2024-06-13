@@ -55,7 +55,7 @@ repos:
               packages/syft/src/syft/federated/model_serialization/protos.py
           )$
 
-  - repo: https://github.com/MarcoGorelli/absolufy-imports # This repository has been archived by the owner on Aug 15, 2023. It is now read-only. 
+  - repo: https://github.com/MarcoGorelli/absolufy-imports # This repository has been archived by the owner on Aug 15, 2023. It is now read-only.
     rev: v0.3.1
     hooks:
       - id: absolufy-imports
