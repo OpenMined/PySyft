@@ -25,7 +25,7 @@ class _MongoMockGridOutCursor(MongoMockCursor):
     def __init__(self, collection, *args, **kwargs):
         self.__root_collection = collection
         super().__init__(collection.files, *args, **kwargs)
-        
+
     def next(self):
         next_file = super().next()
         return PyMongoGridOut(
