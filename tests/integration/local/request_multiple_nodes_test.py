@@ -7,7 +7,8 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.service.job.job_stash import Job, JobStatus
+from syft.service.job.job_stash import Job
+from syft.service.job.job_stash import JobStatus
 
 
 @pytest.fixture(scope="function")
