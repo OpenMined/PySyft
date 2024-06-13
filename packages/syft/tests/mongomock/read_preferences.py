@@ -1,4 +1,4 @@
-class _Primary(object):
+class _Primary:
     @property
     def mongos_mode(self):
         return "primary"
