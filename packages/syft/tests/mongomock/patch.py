@@ -11,7 +11,7 @@ try:
     _IMPORT_MOCK_ERROR = None
 except ImportError:
     try:
-        # third party
+        # stdlib
         from unittest import mock
 
         _IMPORT_MOCK_ERROR = None
