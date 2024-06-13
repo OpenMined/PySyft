@@ -237,8 +237,6 @@ class RequestService(AbstractService):
             return result
         return request.value
 
-        return SyftError(message=f"Failed to retrieve request with uid: {uid}")
-
     @service_method(path="request.undo", name="undo")
     def undo(
         self, context: AuthedServiceContext, uid: UID, reason: str
