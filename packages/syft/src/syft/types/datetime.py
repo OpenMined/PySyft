@@ -1,6 +1,7 @@
 # stdlib
-from datetime import datetime, timezone
+from datetime import datetime
 from datetime import timedelta
+from datetime import timezone
 from functools import total_ordering
 import re
 from typing import Any
