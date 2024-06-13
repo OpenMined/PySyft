@@ -5,8 +5,10 @@ import inspect
 from types import CodeType
 from types import TracebackType
 from typing import Any
-from typing import Self
 from typing import TypeVar
+
+# third party
+from typing_extensions import Self
 
 # relative
 from ..service.context import AuthedServiceContext
