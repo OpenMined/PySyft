@@ -48,7 +48,9 @@ def gateway() -> sy.node:
 
 
 @pytest.fixture(params=[True, False])
-def gateway_association_request_auto_approval(request: pytest.FixtureRequest) -> tuple[bool, sy.node]:
+def gateway_association_request_auto_approval(
+    request: pytest.FixtureRequest,
+) -> tuple[bool, sy.node]:
     node = _launch(NodeType.GATEWAY, association_request_auto_approval=request.param)
     yield (request.param, node)
     node.python_node.cleanup()
