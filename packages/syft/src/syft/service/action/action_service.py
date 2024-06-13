@@ -1,5 +1,6 @@
 # stdlib
 import importlib
+import sys
 from typing import Any
 
 # third party
@@ -115,6 +116,7 @@ class ActionService(AbstractService):
             or has_result_read_permission
         )
 
+        print(f"{has_result_read_permission=}", file=sys.stderr)
         result = self.store.set(
             uid=action_object.id,
             credentials=context.credentials,
@@ -341,9 +343,6 @@ class ActionService(AbstractService):
             if isinstance(result, SyftError):
                 return Err(result.message)
             filtered_kwargs = result.ok()
-            import sys
-            print("BBB", file=sys.stderr)
-            # print(filtered_kwargs["data"].syft_blob_storage_entry_id, file=sys.stderr)
         # update input policy to track any input state
 
         has_twin_inputs = False

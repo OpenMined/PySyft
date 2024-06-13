@@ -664,6 +664,11 @@ BASE_PASSTHROUGH_ATTRS: list[str] = [
     "__table_coll_widths__",
 ]
 
+def truncate_str(string, length = 100):
+    if len(string) > length:
+        repr_data = repr_data[:length] + '... data too long, truncated to 100 characters'
+    return string
+
 
 @serializable(without=["syft_pre_hooks__", "syft_post_hooks__"])
 class ActionObject(SyncableSyftObject):
@@ -834,14 +839,14 @@ class ActionObject(SyncableSyftObject):
             self.syft_action_data_type = type(data)
 
             if inspect.isclass(data):
-                self.syft_action_data_repr_ = repr_cls(data)
+                self.syft_action_data_repr_ = truncate_str(repr_cls(data))
             else:
-                self.syft_action_data_repr_ = (
+                self.syft_action_data_repr_ = truncate_str(
                     data._repr_markdown_()
                     if hasattr(data, "_repr_markdown_")
                     else data.__repr__()
                 )
-            self.syft_action_data_str_ = str(data)
+            self.syft_action_data_str_ = truncate_str(str(data))
             self.syft_has_bool_attr = hasattr(data, "__bool__")
         else:
             debug("skipping writing action object to store, passed data was empty.")
@@ -863,11 +868,8 @@ class ActionObject(SyncableSyftObject):
             self._clear_cache()
         return None
 
-    def _clear_cache(self, clear_reprs: bool = False) -> None:
+    def _clear_cache(self) -> None:
         self.syft_action_data_cache = self.as_empty_data()
-        if clear_reprs:
-            self.syft_action_data_repr_ = ""
-            self.syft_action_data_str_ = ""
 
     @property
     def is_pointer(self) -> bool:
@@ -888,14 +890,14 @@ class ActionObject(SyncableSyftObject):
             values["syft_action_data_type"] = type(v)
         if not isinstance(v, ActionDataEmpty):
             if inspect.isclass(v):
-                values["syft_action_data_repr_"] = repr_cls(v)
+                values["syft_action_data_repr_"] = truncate_str(repr_cls(v))
             else:
-                values["syft_action_data_repr_"] = (
+                values["syft_action_data_repr_"] = truncate_str(
                     v._repr_markdown_()
                     if v is not None and hasattr(v, "_repr_markdown_")
                     else v.__repr__()
                 )
-            values["syft_action_data_str_"] = str(v)
+            values["syft_action_data_str_"] = truncate_str(str(v))
             values["syft_has_bool_attr"] = hasattr(v, "__bool__")
         return values
 
