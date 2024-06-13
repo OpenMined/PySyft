@@ -33,7 +33,7 @@ def _convert_version_to_list(version_str):
     return pieces + [0] * (4 - len(pieces))
 
 
-class MongoClient(object):
+class MongoClient:
     HOST = "localhost"
     PORT = 27017
     _CONNECTION_ID = itertools.count()
@@ -101,7 +101,7 @@ class MongoClient(object):
         self.close()
 
     def __repr__(self):
-        return "mongomock.MongoClient('{0}', {1})".format(self.host, self.port)
+        return "mongomock.MongoClient('{}', {})".format(self.host, self.port)
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
