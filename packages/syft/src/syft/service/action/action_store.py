@@ -22,7 +22,7 @@ from ...types.uid import LineageID
 from ...types.uid import UID
 from ..response import SyftSuccess
 from .action_object import is_action_data_empty
-from .action_permissions import ActionObjectALLREAD, ActionObjectEXECUTE
+from .action_permissions import ActionObjectEXECUTE
 from .action_permissions import ActionObjectOWNER
 from .action_permissions import ActionObjectPermission
 from .action_permissions import ActionObjectREAD

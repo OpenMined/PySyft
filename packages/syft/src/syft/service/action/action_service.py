@@ -1,6 +1,5 @@
 # stdlib
 import importlib
-import sys
 from typing import Any
 
 # third party
@@ -103,12 +102,12 @@ class ActionService(AbstractService):
 
         if isinstance(action_object, ActionObject):
             action_object.syft_created_at = DateTime.now()
-            action_object._clear_cache(clear_reprs=True)
+            action_object._clear_cache()
         else:
             action_object.private_obj.syft_created_at = DateTime.now()  # type: ignore[unreachable]
             action_object.mock_obj.syft_created_at = DateTime.now()
-            action_object.private_obj._clear_cache(clear_reprs=True)
-            action_object.mock._clear_cache(clear_reprs=True)
+            action_object.private_obj._clear_cache()
+            action_object.mock._clear_cache()
 
         # If either context or argument is True, has_result_read_permission is True
         has_result_read_permission = (
@@ -116,7 +115,6 @@ class ActionService(AbstractService):
             or has_result_read_permission
         )
 
-        print(f"{has_result_read_permission=}", file=sys.stderr)
         result = self.store.set(
             uid=action_object.id,
             credentials=context.credentials,
@@ -667,7 +665,6 @@ class ActionService(AbstractService):
 
         if action.action_type == ActionType.CREATEOBJECT:
             result_action_object = Ok(action.create_object)
-            # print(action.create_object, "already in blob storage")
         elif action.action_type == ActionType.SYFTFUNCTION:
             usercode_service = context.node.get_service("usercodeservice")
             kwarg_ids = {}

@@ -79,13 +79,6 @@ class ActionObjectREAD(ActionObjectPermission):
         self.credentials = credentials
         self.permission = ActionPermission.READ
 
-class ActionObjectALLREAD(ActionObjectPermission):
-    def __init__(self, uid: UID, credentials: SyftVerifyKey):
-        self.uid = uid
-        self.credentials = credentials
-        self.permission = ActionPermission.ALL_READ
-
-
 class ActionObjectWRITE(ActionObjectPermission):
     def __init__(self, uid: UID, credentials: SyftVerifyKey):
         self.uid = uid
