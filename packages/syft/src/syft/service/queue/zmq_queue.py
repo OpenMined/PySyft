@@ -380,7 +380,7 @@ class ZMQProducer(QueueProducer):
         # work on a copy of the iterator
         for worker in self.waiting:
             if worker.has_expired() or worker._to_be_deleted(
-                self.worker_stash, self.auth_context.syft_client_verify_key
+                self.worker_stash, self.auth_context.credentials
             ):
                 logger.info(
                     "Deleting expired Worker id={} uid={} expiry={} now={}",
@@ -592,9 +592,7 @@ class ZMQProducer(QueueProducer):
         )
         worker_service._delete(
             self.auth_context,
-            worker._syft_worker(
-                self.worker_stash, self.auth_context.syft_client_verify_key
-            ),
+            worker._syft_worker(self.worker_stash, self.auth_context.credentials),
         )
 
         if disconnect:
