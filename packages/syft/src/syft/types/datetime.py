@@ -33,7 +33,7 @@ class DateTime(SyftObject):
 
     @classmethod
     def now(cls) -> Self:
-        return cls(utc_timestamp=datetime.utcnow().timestamp())
+        return cls(utc_timestamp=datetime.now(datetime.UTC).timestamp())
 
     @classmethod
     def from_str(cls, datetime_str: str) -> "DateTime":
