@@ -67,7 +67,7 @@ except ImportError:
 
         def __init__(self, raw_result, acknowledged=True):
             self.__raw_result = raw_result
-            super(DeleteResult, self).__init__(acknowledged)
+            super().__init__(acknowledged)
 
         @property
         def raw_result(self):
@@ -82,7 +82,7 @@ except ImportError:
 
         def __init__(self, bulk_api_result, acknowledged):
             self.__bulk_api_result = bulk_api_result
-            super(BulkWriteResult, self).__init__(acknowledged)
+            super().__init__(acknowledged)
 
         @property
         def bulk_api_result(self):
@@ -111,7 +111,7 @@ except ImportError:
         @property
         def upserted_ids(self):
             if self.__bulk_api_result:
-                return dict(
-                    (upsert["index"], upsert["_id"])
+                return {
+                    upsert["index"]: upsert["_id"]
                     for upsert in self.bulk_api_result["upserted"]
-                )
+                }
