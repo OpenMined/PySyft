@@ -1,21 +1,34 @@
-# Imports - organizing as per categories
+# relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
-from ..action.action_permissions import ActionObjectPermission, ActionPermission
+from ..action.action_permissions import ActionObjectPermission
+from ..action.action_permissions import ActionPermission
 from ..context import AuthedServiceContext
-from ..notification.email_templates import RequestEmailTemplate, RequestUpdateEmailTemplate
-from ..notification.notification_service import CreateNotification, NotificationService
+from ..notification.email_templates import RequestEmailTemplate
+from ..notification.email_templates import RequestUpdateEmailTemplate
+from ..notification.notification_service import CreateNotification
+from ..notification.notification_service import NotificationService
 from ..notification.notifications import Notification
 from ..notifier.notifier_enums import NOTIFIERS
-from ..response import SyftError, SyftSuccess
-from ..service import AbstractService, SERVICE_TO_TYPES, TYPE_TO_SERVICE, service_method
+from ..response import SyftError
+from ..response import SyftSuccess
+from ..service import AbstractService
+from ..service import SERVICE_TO_TYPES
+from ..service import TYPE_TO_SERVICE
+from ..service import service_methodd
 from ..user.user import UserView
-from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL, GUEST_ROLE_LEVEL
+from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
+from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_service import UserService
-from .request import Change, Request, RequestInfo, RequestInfoFilter, RequestStatus, SubmitRequest
+from .request import Change
+from .request import Request
+from .request import RequestInfo
+from .request import RequestInfoFilter
+from .request import RequestStatus
+from .request import SubmitRequest
 from .request_stash import RequestStash
 
 
@@ -53,7 +66,9 @@ class RequestService(AbstractService):
                 request = result.ok()
                 link = LinkedObject.with_context(request, context=context)
 
-                admin_verify_key = context.node.get_service_method(UserService.admin_verify_key)
+                admin_verify_key = context.node.get_service_method(
+                    UserService.admin_verify_key
+                )
                 root_verify_key = admin_verify_key()
 
                 if send_message:
@@ -86,7 +101,9 @@ class RequestService(AbstractService):
             print(f"Failed to submit Request: {e}")
             raise e
 
-    @service_method(path="request.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL)
+    @service_method(
+        path="request.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL
+    )
     def get_all(self, context: AuthedServiceContext) -> list[Request] | SyftError:
         """Retrieve all requests"""
         result = self.stash.get_all(context.credentials)
@@ -155,7 +172,9 @@ class RequestService(AbstractService):
     ) -> list[RequestInfo] | SyftError:
         """Get a Dataset"""
         result = self.get_all_info(context)
-        requests = list(filter(lambda res: (request_filter.name in res.user.name), result))
+        requests = list(
+            filter(lambda res: (request_filter.name in res.user.name), result)
+        )
 
         if page_size:
             requests = [
@@ -181,13 +200,19 @@ class RequestService(AbstractService):
             context.extra_kwargs = kwargs
             result = request.apply(context=context)
 
-            filter_by_obj = context.node.get_service_method(NotificationService.filter_by_obj)
+            filter_by_obj = context.node.get_service_method(
+                NotificationService.filter_by_obj
+            )
             request_notification = filter_by_obj(context=context, obj_uid=uid)
 
             link = LinkedObject.with_context(request, context=context)
             if not request.status == RequestStatus.PENDING:
-                if request_notification is not None and not isinstance(request_notification, SyftError):
-                    mark_as_read = context.node.get_service_method(NotificationService.mark_as_read)
+                if request_notification is not None and not isinstance(
+                    request_notification, SyftError
+                ):
+                    mark_as_read = context.node.get_service_method(
+                        NotificationService.mark_as_read
+                    )
                     mark_as_read(context=context, uid=request_notification.id)
 
                     notification = CreateNotification(
@@ -198,10 +223,12 @@ class RequestService(AbstractService):
                         notifier_types=[NOTIFIERS.EMAIL],
                         email_template=RequestUpdateEmailTemplate,
                     )
-                    send_notification = context.node.get_service_method(NotificationService.send)
+                    send_notification = context.node.get_service_method(
+                        NotificationService.send
+                    )
                     send_notification(context=context, notification=notification)
 
-            # TODO: check whereever we're return SyftError encapsulate it in Result. 
+            # TODO: check whereever we're return SyftError encapsulate it in Result.
             if result.is_ok():
                 return result.ok_value()
             elif result.is_err():
