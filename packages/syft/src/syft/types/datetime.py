@@ -1,5 +1,5 @@
 # stdlib
-from datetime import datetime
+from datetime import datetime, timezone
 from datetime import timedelta
 from functools import total_ordering
 import re
@@ -33,7 +33,7 @@ class DateTime(SyftObject):
 
     @classmethod
     def now(cls) -> Self:
-        return cls(utc_timestamp=datetime.now(datetime.UTC).timestamp())
+        return cls(utc_timestamp=datetime.now(timezone.utc).timestamp())
 
     @classmethod
     def from_str(cls, datetime_str: str) -> "DateTime":
