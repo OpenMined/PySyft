@@ -378,6 +378,15 @@ class ZMQProducer(QueueProducer):
                         pass
             except Exception as e:
                 print(e, file=sys.stderr)
+                item.status = Status.ERRORED
+                res = self.queue_stash.update(item.syft_client_verify_key, item)
+                if res.is_err():
+                    logger.error(
+                        "Failed to update queue item={} error={}",
+                        item,
+                        res.err(),
+                    )
+                
 
     def run(self) -> None:
         self.thread = threading.Thread(target=self._run)
