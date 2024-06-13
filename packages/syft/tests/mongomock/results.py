@@ -7,7 +7,7 @@ try:
     from pymongo.results import UpdateResult
 except ImportError:
 
-    class _WriteResult(object):
+    class _WriteResult:
         def __init__(self, acknowledged=True):
             self.__acknowledged = acknowledged
 
@@ -20,7 +20,7 @@ except ImportError:
 
         def __init__(self, inserted_id, acknowledged=True):
             self.__inserted_id = inserted_id
-            super(InsertOneResult, self).__init__(acknowledged)
+            super().__init__(acknowledged)
 
         @property
         def inserted_id(self):
@@ -31,7 +31,7 @@ except ImportError:
 
         def __init__(self, inserted_ids, acknowledged=True):
             self.__inserted_ids = inserted_ids
-            super(InsertManyResult, self).__init__(acknowledged)
+           super().__init__(acknowledged)
 
         @property
         def inserted_ids(self):
@@ -42,7 +42,7 @@ except ImportError:
 
         def __init__(self, raw_result, acknowledged=True):
             self.__raw_result = raw_result
-            super(UpdateResult, self).__init__(acknowledged)
+            super().__init__(acknowledged)
 
         @property
         def raw_result(self):
