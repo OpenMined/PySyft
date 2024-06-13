@@ -231,7 +231,7 @@ _GROUPING_OPERATOR_MAP = {
 }
 
 
-class _Parser(object):
+class _Parser:
     """Helper to parse expressions within the aggregate pipeline."""
 
     def __init__(self, doc_dict, user_vars=None, ignore_missing_keys=False):
@@ -1292,12 +1292,10 @@ def _recursive_get(match, nested_fields):
     if isinstance(head, (list, tuple)):
         for m in head:
             # Yield from _recursive_get(m, remaining_fields).
-            for answer in _recursive_get(m, remaining_fields):
-                yield answer
+            yield from _recursive_get(m, remaining_fields)
     elif isinstance(head, dict):
         # Yield from _recursive_get(head, remaining_fields).
-        for answer in _recursive_get(head, remaining_fields):
-            yield answer
+        yield from _recursive_get(head, remaining_fields)
 
 
 def _handle_graph_lookup_stage(in_collection, database, options):
@@ -1585,7 +1583,7 @@ def _combine_projection_spec(filter_list, original_filter, prefix=""):
         filter_dict[field] = filter_dict.get(field, []) + [subkey]
 
     return collections.OrderedDict(
-        (k, _combine_projection_spec(v, original_filter, prefix="%s%s." % (prefix, k)))
+        (k, _combine_projection_spec(v, original_filter, prefix="{}{}.".format(prefix, k)))
         for k, v in filter_dict.items()
     )
 
