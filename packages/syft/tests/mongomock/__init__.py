@@ -54,9 +54,7 @@ except ImportError:
 
     class BulkWriteError(OperationFailure):
         def __init__(self, results):
-            super().__init__(
-                "batch op errors occurred", 65, results
-            )
+            super().__init__("batch op errors occurred", 65, results)
 
 
 try:
