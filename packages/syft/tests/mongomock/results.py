@@ -31,7 +31,7 @@ except ImportError:
 
         def __init__(self, inserted_ids, acknowledged=True):
             self.__inserted_ids = inserted_ids
-           super().__init__(acknowledged)
+            super().__init__(acknowledged)
 
         @property
         def inserted_ids(self):
