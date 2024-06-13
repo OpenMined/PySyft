@@ -874,7 +874,7 @@ class UserCodeUpdate(PartialSyftObject):
     __canonical_name__ = "UserCodeUpdate"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    l0_deny_reason: str | None = None
+    l0_deny_reason: str | None
 
 
 @serializable(without=["local_function"])

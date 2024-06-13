@@ -751,8 +751,8 @@ class Request(SyncableSyftObject):
         else:
             action_object = ActionObject.from_obj(
                 result,
-                syft_client_verify_key=api.signing_key.verify_key,
-                syft_node_location=api.node_uid,
+                syft_client_verify_key=self.syft_client_verify_key,
+                syft_node_location=self.syft_node_location,
             )
 
         # Ensure ActionObject exists on this node
@@ -1306,7 +1306,7 @@ class UserCodeStatusChange(Change):
 class SyncedUserCodeStatusChange(UserCodeStatusChange):
     __canonical_name__ = "SyncedUserCodeStatusChange"
     __version__ = SYFT_OBJECT_VERSION_3
-    linked_obj: LinkedObject | None = None
+    linked_obj: LinkedObject | None = None  # type: ignore
 
     @property
     def approved(self) -> bool:

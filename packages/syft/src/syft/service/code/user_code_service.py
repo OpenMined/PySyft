@@ -99,7 +99,7 @@ class UserCodeService(AbstractService):
         if result.is_err():
             return SyftError(message=str(result.err()))
 
-        if code_update.l0_deny_reason is not Empty:
+        if code_update.l0_deny_reason is not Empty:  # type: ignore[comparison-overlap]
             code.l0_deny_reason = code_update.l0_deny_reason
 
         result = self.stash.update(context.credentials, code)
