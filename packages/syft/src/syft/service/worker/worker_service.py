@@ -161,8 +161,8 @@ class WorkerService(AbstractService):
         job_service = cast(JobService, context.node.get_service(JobService))
         job_service._kill(job_service.get(context=context, uid=worker.job_id))
 
-        worker_pool_service: AbstractService = context.node.get_service(
-            SyftWorkerPoolService
+        worker_pool_service = cast(
+            SyftWorkerPoolService, context.node.get_service(SyftWorkerPoolService)
         )
         worker_pool_stash = worker_pool_service.stash
         result = worker_pool_stash.get_by_name(
