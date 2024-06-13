@@ -1090,14 +1090,9 @@ class ActionObject(SyncableSyftObject):
         if kwargs is None:
             kwargs = {}
 
-        arg_ids = []
-        kwarg_ids = {}
+        arg_ids = [self._syft_prepare_obj_uid(obj) for obj in args]
 
-        for obj in args:
-            arg_ids.append(self._syft_prepare_obj_uid(obj))
-
-        for k, obj in kwargs.items():
-            kwarg_ids[k] = self._syft_prepare_obj_uid(obj)
+        kwarg_ids = {k: self._syft_prepare_obj_uid(obj) for k, obj in kwargs.items()}
 
         action = Action(
             path=path,
@@ -1202,14 +1197,16 @@ class ActionObject(SyncableSyftObject):
         node_uid: UID,
         verify_key: SyftVerifyKey,
         add_storage_permission: bool = True,
-    ) -> Self:
+    ) -> Self | SyftError:
         self._set_obj_location_(node_uid, verify_key)
 
         blob_storage_res = self._save_to_blob_storage()
         if isinstance(blob_storage_res, SyftError):
             return blob_storage_res
 
-        api = APIRegistry.api_for(node_uid, verify_key)
+        api = self._get_api()
+        if isinstance(api, SyftError):
+            return api
         res = api.services.action.set(
             self, add_storage_permission=add_storage_permission
         )
@@ -2185,7 +2182,7 @@ def has_action_data_empty(args: Any, kwargs: Any) -> bool:
         if is_action_data_empty(a):
             return True
 
-    for _, a in kwargs.items():
+    for a in kwargs.values():
         if is_action_data_empty(a):
             return True
     return False

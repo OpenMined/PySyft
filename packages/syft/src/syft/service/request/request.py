@@ -1143,7 +1143,7 @@ class UserCodeStatusChange(Change):
     def codes(self) -> list[UserCode]:
         def recursive_code(node: Any) -> list:
             codes = []
-            for _, (obj, new_node) in node.items():
+            for obj, new_node in node.values():
                 codes.append(obj.resolve)
                 codes.extend(recursive_code(new_node))
             return codes
