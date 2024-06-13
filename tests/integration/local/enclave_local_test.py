@@ -18,7 +18,9 @@ def test_enclave_root_client_exception():
         reset=True,
         local_db=True,
     )
-    res = enclave_node.login(email="info@openmined.org", password="changethis")
-    assert isinstance(res, SyftError)
-    enclave_node.python_node.cleanup()
-    enclave_node.land()
+    try:
+        res = enclave_node.login(email="info@openmined.org", password="changethis")
+        assert isinstance(res, SyftError)
+    finally:
+        enclave_node.python_node.cleanup()
+        enclave_node.land()
