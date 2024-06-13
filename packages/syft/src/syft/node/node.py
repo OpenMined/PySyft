@@ -478,7 +478,10 @@ class Node(AbstractNode):
             client_config = OnDiskBlobStorageClientConfig(
                 base_directory=self.get_temp_dir("blob")
             )
-            config_ = OnDiskBlobStorageConfig(client_config=client_config)
+            config_ = OnDiskBlobStorageConfig(
+                client_config=client_config,
+                min_blob_size=os.getenv("MIN_SIZE_BLOB_STORAGE_MB", 16),
+            )
         else:
             config_ = config
         self.blob_store_config = config_
@@ -498,9 +501,6 @@ class Node(AbstractNode):
                 ] = remote_profile
 
         if self.dev_mode:
-            # relative
-            from ..util.util import min_size_for_blob_storage_upload
-
             if isinstance(self.blob_store_config, OnDiskBlobStorageConfig):
                 print(
                     f"Using on-disk blob storage with path: "
@@ -509,7 +509,7 @@ class Node(AbstractNode):
                 )
             print(
                 f"Minimum object size to be saved to the blob storage: "
-                f"{min_size_for_blob_storage_upload()} (MB)."
+                f"{self.blob_store_config.min_blob_size} (MB)."
             )
 
     def run_peer_health_checks(self, context: AuthedServiceContext) -> None:
@@ -1083,6 +1083,7 @@ class Node(AbstractNode):
             node_side_type=node_side_type,
             show_warnings=show_warnings,
             eager_execution_enabled=eager_execution_enabled,
+            min_size_blob_storage_mb=self.blob_store_config.min_blob_size,
         )
 
     @property

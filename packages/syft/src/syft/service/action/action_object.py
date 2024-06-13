@@ -35,6 +35,7 @@ from ...client.client import SyftClient
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize as serialize
+from ...service.blob_storage.util import can_upload_to_blob_storage
 from ...service.response import SyftError
 from ...store.linked_obj import LinkedObject
 from ...types.base import SyftBaseModel
@@ -47,7 +48,6 @@ from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
 from ...util.logger import debug
-from ...util.util import can_upload_to_blob_storage
 from ...util.util import prompt_warning_message
 from ..context import AuthedServiceContext
 from ..response import SyftException
@@ -837,7 +837,8 @@ class ActionObject(SyncableSyftObject):
             return SyftError(
                 message=f"cannot store empty object {self.id} to the blob storage"
             )
-        if not can_upload_to_blob_storage(data):
+        api = APIRegistry.api_for(self.syft_node_location, self.syft_client_verify_key)
+        if not can_upload_to_blob_storage(data, api.metadata):
             self.syft_action_data_cache = data
             return None
         result = self._save_to_blob_storage_(data)
