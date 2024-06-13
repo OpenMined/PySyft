@@ -6,7 +6,7 @@
   <img alt="Syft Logo" src="docs/img/title_syft_light.png" width="200px" />
 </picture>
 
-Perform data science on `data` that remains in `someone else's` server
+Perform data science operations on `data` that remains in `someone else's` server
 
 # Quickstart
 
