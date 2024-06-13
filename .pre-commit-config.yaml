@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v4.6.0
     hooks:
       - id: check-ast
         exclude: ^(packages/syft/tests/mongomock)
@@ -55,7 +55,7 @@ repos:
               packages/syft/src/syft/federated/model_serialization/protos.py
           )$
 
-  - repo: https://github.com/MarcoGorelli/absolufy-imports
+  - repo: https://github.com/MarcoGorelli/absolufy-imports # This repository has been archived by the owner on Aug 15, 2023. It is now read-only. 
     rev: v0.3.1
     hooks:
       - id: absolufy-imports
@@ -84,7 +84,7 @@ repos:
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: "v0.4.7"
+    rev: "v0.4.8"
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix, --show-fixes]
