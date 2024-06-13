@@ -4,7 +4,7 @@ def _with_default_values(document):
     return dict(document, w=1)
 
 
-class WriteConcern(object):
+class WriteConcern:
     def __init__(self, w=None, wtimeout=None, j=None, fsync=None):
         self._document = {}
         if w is not None:
