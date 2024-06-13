@@ -43,7 +43,7 @@ def _verify_list_collection_supported_op(keys):
         )
 
 
-class Database(object):
+class Database:
     def __init__(
         self,
         client,
@@ -78,7 +78,7 @@ class Database(object):
         return self[attr]
 
     def __repr__(self):
-        return "Database({0}, '{1}')".format(self._client, self.name)
+        return "Database({}, '{}')".format(self._client, self.name)
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -139,7 +139,7 @@ class Database(object):
         if filter:
             if not filter.get("name"):
                 raise NotImplementedError(
-                    "list collection {0} might be valid but is not "
+                    "list collection {} might be valid but is not "
                     "implemented yet in mongomock".format(filter)
                 )
 
@@ -237,14 +237,14 @@ class Database(object):
         # https://docs.mongodb.com/manual/reference/command/renameCollection/
         if not self._store[name].is_created:
             raise OperationFailure(
-                'The collection "{0}" does not exist.'.format(name), 10026
+                'The collection "{}" does not exist.'.format(name), 10026
             )
         if new_name in self._store:
             if dropTarget:
                 self.drop_collection(new_name)
             else:
                 raise OperationFailure(
-                    'The target collection "{0}" already exists'.format(new_name), 10027
+                    'The target collection "{}" already exists'.format(new_name), 10027
                 )
         self._store.rename(name, new_name)
         return {"ok": 1}
