@@ -1,40 +1,23 @@
-# stdlib
-
-# third party
-
-# relative
+# Imports - organizing as per categories
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
-from ..action.action_permissions import ActionObjectPermission
-from ..action.action_permissions import ActionPermission
+
+from ..action.action_permissions import ActionObjectPermission, ActionPermission
 from ..context import AuthedServiceContext
-from ..notification.email_templates import RequestEmailTemplate
-from ..notification.email_templates import RequestUpdateEmailTemplate
-from ..notification.notification_service import CreateNotification
-from ..notification.notification_service import NotificationService
+from ..notification.email_templates import RequestEmailTemplate, RequestUpdateEmailTemplate
+from ..notification.notification_service import CreateNotification, NotificationService
 from ..notification.notifications import Notification
 from ..notifier.notifier_enums import NOTIFIERS
-from ..response import SyftError
-from ..response import SyftSuccess
-from ..service import AbstractService
-from ..service import SERVICE_TO_TYPES
-from ..service import TYPE_TO_SERVICE
-from ..service import service_method
+from ..response import SyftError, SyftSuccess
+from ..service import AbstractService, SERVICE_TO_TYPES, TYPE_TO_SERVICE, service_method
 from ..user.user import UserView
-from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
-from ..user.user_roles import GUEST_ROLE_LEVEL
+from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL, GUEST_ROLE_LEVEL
 from ..user.user_service import UserService
-from .request import Change
-from .request import Request
-from .request import RequestInfo
-from .request import RequestInfoFilter
-from .request import RequestStatus
-from .request import SubmitRequest
+from .request import Change, Request, RequestInfo, RequestInfoFilter, RequestStatus, SubmitRequest
 from .request_stash import RequestStash
-
 
 @instrument
 @serializable()
@@ -70,14 +53,11 @@ class RequestService(AbstractService):
                 request = result.ok()
                 link = LinkedObject.with_context(request, context=context)
 
-                admin_verify_key = context.node.get_service_method(
-                    UserService.admin_verify_key
-                )
-
+                admin_verify_key = context.node.get_service_method(UserService.admin_verify_key)
                 root_verify_key = admin_verify_key()
+
                 if send_message:
-                    subject_msg = f"Result to request {str(request.id)[:4]}...{str(request.id)[-3:]}\
-                        has been successfully deposited."
+                    subject_msg = f"Result to request {str(request.id)[:4]}...{str(request.id)[-3:]} has been successfully deposited."
                     message = CreateNotification(
                         subject=subject_msg if not reason else reason,
                         from_user_verify_key=context.credentials,
@@ -99,21 +79,20 @@ class RequestService(AbstractService):
 
             if result.is_err():
                 return SyftError(message=str(result.err()))
+
             return result.ok()
+
         except Exception as e:
-            print("Failed to submit Request", e)
+            print(f"Failed to submit Request: {e}")
             raise e
 
-    @service_method(
-        path="request.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL
-    )
+    @service_method(path="request.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL)
     def get_all(self, context: AuthedServiceContext) -> list[Request] | SyftError:
         result = self.stash.get_all(context.credentials)
         if result.is_err():
             return SyftError(message=str(result.err()))
-        requests = result.ok()
-        # return [self.resolve_nested_requests(context, request) for request in requests]
-        return requests
+
+        return result.ok()
 
     @service_method(path="request.get_all_info", name="get_all_info")
     def get_all_info(
@@ -123,7 +102,6 @@ class RequestService(AbstractService):
         page_size: int | None = 0,
     ) -> list[list[RequestInfo]] | list[RequestInfo] | SyftError:
         """Get the information of all requests"""
-
         result = self.stash.get_all(context.credentials)
         if result.is_err():
             return SyftError(message=result.err())
@@ -136,14 +114,15 @@ class RequestService(AbstractService):
             user = method(req.requesting_user_verify_key).to(UserView)
             message = get_message(context=context, obj_uid=req.id)
             requests.append(RequestInfo(user=user, request=req, notification=message))
+
         if not page_size:
             return requests
 
-        # If chunk size is defined, then split list into evenly sized chunks
         chunked_requests: list[list[RequestInfo]] = [
             requests[i : i + page_size] for i in range(0, len(requests), page_size)
         ]
-        if page_index:
+
+        if page_index is not None:
             return chunked_requests[page_index]
         else:
             return chunked_requests
@@ -171,27 +150,20 @@ class RequestService(AbstractService):
         page_index: int | None = 0,
         page_size: int | None = 0,
     ) -> list[RequestInfo] | SyftError:
-        """Get a Dataset"""
+        """Filter requests by user name"""
         result = self.get_all_info(context)
-        requests = list(
-            filter(lambda res: (request_filter.name in res.user.name), result)
-        )
+        requests = list(filter(lambda res: (request_filter.name in res.user.name), result))
 
-        # If chunk size is defined, then split list into evenly sized chunks
         if page_size:
             requests = [
                 requests[i : i + page_size] for i in range(0, len(requests), page_size)
             ]
             if page_index is not None:
-                # Return the proper slice using chunk_index
                 requests = requests[page_index]
 
         return requests
 
-    @service_method(
-        path="request.apply",
-        name="apply",
-    )
+    @service_method(path="request.apply", name="apply")
     def apply(
         self,
         context: AuthedServiceContext,
@@ -205,19 +177,13 @@ class RequestService(AbstractService):
             context.extra_kwargs = kwargs
             result = request.apply(context=context)
 
-            filter_by_obj = context.node.get_service_method(
-                NotificationService.filter_by_obj
-            )
+            filter_by_obj = context.node.get_service_method(NotificationService.filter_by_obj)
             request_notification = filter_by_obj(context=context, obj_uid=uid)
 
             link = LinkedObject.with_context(request, context=context)
             if not request.status == RequestStatus.PENDING:
-                if request_notification is not None and not isinstance(
-                    request_notification, SyftError
-                ):
-                    mark_as_read = context.node.get_service_method(
-                        NotificationService.mark_as_read
-                    )
+                if request_notification is not None and not isinstance(request_notification, SyftError):
+                    mark_as_read = context.node.get_service_method(NotificationService.mark_as_read)
                     mark_as_read(context=context, uid=request_notification.id)
 
                     notification = CreateNotification(
@@ -228,16 +194,14 @@ class RequestService(AbstractService):
                         notifier_types=[NOTIFIERS.EMAIL],
                         email_template=RequestUpdateEmailTemplate,
                     )
-                    send_notification = context.node.get_service_method(
-                        NotificationService.send
-                    )
+                    send_notification = context.node.get_service_method(NotificationService.send)
                     send_notification(context=context, notification=notification)
 
-            # TODO: check whereever we're return SyftError encapsulate it in Result.
             if hasattr(result, "value"):
                 return result.value
             return result
-        return request.value
+
+        return SyftError(message=f"Failed to retrieve request with uid: {uid}")
 
     @service_method(path="request.undo", name="undo")
     def undo(
@@ -251,7 +215,7 @@ class RequestService(AbstractService):
 
         request = result.ok()
         if request is None:
-            return SyftError(message=f"Request with uid: {uid} does not exists.")
+            return SyftError(message=f"Request with uid: {uid} does not exist.")
 
         context.extra_kwargs["reason"] = reason
         result = request.undo(context=context)
@@ -262,7 +226,8 @@ class RequestService(AbstractService):
             )
 
         link = LinkedObject.with_context(request, context=context)
-        message_subject = f"Your request ({str(uid)[:4]}) has been denied. "
+        # continued from the undo method
+        message_subject = f"Your request ({str(uid)[:4]}) has been denied."
 
         notification = CreateNotification(
             subject=message_subject,
@@ -276,7 +241,7 @@ class RequestService(AbstractService):
         send_notification = context.node.get_service_method(NotificationService.send)
         send_notification(context=context, notification=notification)
 
-        return SyftSuccess(message=f"Request {uid} successfully denied !")
+        return SyftSuccess(message=f"Request {uid} successfully denied.")
 
     def save(
         self, context: AuthedServiceContext, request: Request
@@ -304,3 +269,4 @@ class RequestService(AbstractService):
 
 TYPE_TO_SERVICE[Request] = RequestService
 SERVICE_TO_TYPES[RequestService].update({Request})
+
