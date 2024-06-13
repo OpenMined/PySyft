@@ -830,10 +830,6 @@ class ActionObject(SyncableSyftObject):
         return None
 
     def _save_to_blob_storage(self) -> SyftError | None:
-        """ "
-        If less than min_size_mb, skip saving to blob storage
-        TODO: min_size_mb shoulb be passed as a env var
-        """
         data = self.syft_action_data
         if isinstance(data, SyftError):
             return data

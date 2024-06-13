@@ -1,18 +1,23 @@
 # stdlib
 import io
+import os
 import random
 
 # third party
+import numpy as np
 import pytest
 
 # syft absolute
 import syft as sy
+from syft import ActionObject
+from syft.client.domain_client import DomainClient
 from syft.service.context import AuthedServiceContext
 from syft.service.response import SyftSuccess
 from syft.service.user.user import UserCreate
 from syft.store.blob_storage import BlobDeposit
 from syft.store.blob_storage import SyftObjectRetrieval
 from syft.types.blob_storage import CreateBlobStorageEntry
+from syft.util.util import min_size_for_blob_storage_upload
 
 raw_data = {"test": "test"}
 data = sy.serialize(raw_data, to_bytes=True)
@@ -99,3 +104,34 @@ def test_blob_storage_delete(authed_context, blob_storage):
 
     with pytest.raises(FileNotFoundError):
         blob_storage.read(authed_context, blob_deposit.blob_storage_entry_id)
+
+
+def test_action_obj_send_save_to_blob_storage(worker):
+    # set this so we will always save action objects to blob storage
+    os.environ["MIN_SIZE_BLOB_STORAGE_MB"] = "0"
+
+    orig_obj: np.ndarray = np.array([1, 2, 3])
+    action_obj = ActionObject.from_obj(orig_obj)
+    assert action_obj.dtype == orig_obj.dtype
+
+    root_client: DomainClient = worker.root_client
+    action_obj.send(root_client)
+    assert isinstance(action_obj.syft_blob_storage_entry_id, sy.UID)
+    root_authed_ctx = AuthedServiceContext(
+        node=worker, credentials=root_client.verify_key
+    )
+
+    blob_storage = worker.get_service("BlobStorageService")
+    syft_retrieved_data = blob_storage.read(
+        root_authed_ctx, action_obj.syft_blob_storage_entry_id
+    )
+    assert isinstance(syft_retrieved_data, SyftObjectRetrieval)
+    assert all(syft_retrieved_data.read() == orig_obj)
+
+    # stop saving small action objects to blob storage
+    del os.environ["MIN_SIZE_BLOB_STORAGE_MB"]
+    assert min_size_for_blob_storage_upload() == 16
+    orig_obj_2: np.ndarray = np.array([1, 2, 4])
+    action_obj_2 = ActionObject.from_obj(orig_obj_2)
+    action_obj_2.send(root_client)
+    assert action_obj_2.syft_blob_storage_entry_id is None
