@@ -12,7 +12,7 @@ try:
 except ImportError:
     try:
         # third party
-        import mock
+        from unittest import mock
 
         _IMPORT_MOCK_ERROR = None
     except ImportError as error:
