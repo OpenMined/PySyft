@@ -119,6 +119,7 @@ class RequestService(AbstractService):
         if not page_size:
             return requests
 
+        # If chunk size is defined, then split list into evenly sized chunks
         chunked_requests: list[list[RequestInfo]] = [
             requests[i : i + page_size] for i in range(0, len(requests), page_size)
         ]
@@ -152,7 +153,7 @@ class RequestService(AbstractService):
         page_index: int | None = 0,
         page_size: int | None = 0,
     ) -> list[RequestInfo] | SyftError:
-        """Filter requests by user name"""
+        """Get a Dataset"""
         result = self.get_all_info(context)
         requests = list(filter(lambda res: (request_filter.name in res.user.name), result))
 
@@ -200,6 +201,7 @@ class RequestService(AbstractService):
                     send_notification = context.node.get_service_method(NotificationService.send)
                     send_notification(context=context, notification=notification)
 
+            # TODO: check whereever we're return SyftError encapsulate it in Result. 
             if hasattr(result, "value"):
                 return result.value
             return result
