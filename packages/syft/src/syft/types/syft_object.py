@@ -690,14 +690,17 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
                     cmp = obj_attr.__eq__
                     if hasattr(obj_attr, "syft_eq"):
                         cmp = obj_attr.syft_eq
-
-                    if callable(cmp) and not cmp(ext_obj_attr):
-                        diff_attr = AttrDiff(
-                            attr_name=attr,
-                            low_attr=obj_attr,
-                            high_attr=ext_obj_attr,
-                        )
-                        diff_attrs.append(diff_attr)
+                    
+                    # Check if cmp is callable before using it
+                    if callable(cmp):
+                        comparison_result = cmp(ext_obj_attr)
+                        if not comparison_result:
+                            diff_attr = AttrDiff(
+                                attr_name=attr,
+                                low_attr=obj_attr,
+                                high_attr=ext_obj_attr,
+                            )
+                            diff_attrs.append(diff_attr)
         return diff_attrs
 
     ## OVERRIDING pydantic.BaseModel.__getattr__
