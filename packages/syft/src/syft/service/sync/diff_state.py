@@ -817,7 +817,7 @@ class ObjectDiffBatch(SyftObject):
             global_diffs=obj_uid_to_diff,
             global_roots=root_ids,
             hierarchy_levels=levels,
-            dependencies=batch_dependencies,
+            dependencies=obj_dependencies,
             root_diff=obj_uid_to_diff[root_uid],
             low_node_uid=low_node_uid,
             high_node_uid=high_node_uid,

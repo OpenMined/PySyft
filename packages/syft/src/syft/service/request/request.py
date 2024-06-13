@@ -866,11 +866,9 @@ class Request(SyncableSyftObject):
         self, context: AuthedServiceContext
     ) -> list[UID] | SyftError:
         dependencies = []
-
         code_id = self.code_id
         if isinstance(code_id, SyftError):
             return code_id
-
         dependencies.append(code_id)
 
         return dependencies

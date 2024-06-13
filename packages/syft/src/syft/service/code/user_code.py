@@ -125,6 +125,11 @@ class UserCodeStatusCollection(SyncableSyftObject):
 
     __repr_attrs__ = ["approved", "status_dict"]
 
+    # if len(output_history): {uid: approved},
+    # if denied string is somewhere: {uid: denied}
+    # else: {uid: pending}
+    # - the object is completely different for l2/l0
+    # - the interface is different (because we need context in backend to get output_history)
     status_dict: dict[NodeIdentity, tuple[UserCodeStatus, str]] = {}
     user_code_link: LinkedObject
 
@@ -411,7 +416,7 @@ class UserCode(SyncableSyftObject):
             )
         return api.services.user.get_by_verify_key(self.user_verify_key)
 
-    def _status_from_output_history(
+    def _compute_status_from_output_history(
         self, context: AuthedServiceContext | None = None
     ) -> UserCodeStatusCollection | SyftError:
         if context is None:
@@ -458,7 +463,7 @@ class UserCode(SyncableSyftObject):
                 return SyftError(
                     message="Encountered a low side UserCode object with a status_link."
                 )
-            return self._status_from_output_history()
+            return self._compute_status_from_output_history()
 
         if self.status_link is None:
             return SyftError(
@@ -475,7 +480,7 @@ class UserCode(SyncableSyftObject):
                 return SyftError(
                     message="Encountered a low side UserCode object with a status_link."
                 )
-            return self._status_from_output_history(context)
+            return self._compute_status_from_output_history(context)
         if self.status_link is None:
             return SyftError(
                 message="This UserCode does not have a status. Please contact the Admin."

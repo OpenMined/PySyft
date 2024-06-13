@@ -143,7 +143,7 @@ def handle_sync_batch(
     obj_diff_batch.decision = decision
 
     sync_instructions = []
-    for diff in obj_diff_batch.get_dependents(include_roots=True):
+    for diff in obj_diff_batch.get_dependencies(include_roots=True):
         # figure out the right verify key to share to
         # in case of a job with user code, share to user code owner
         # without user code, share to job owner
