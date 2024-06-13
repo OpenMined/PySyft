@@ -18,7 +18,7 @@ except ImportError:
     _UUID_REPRESENTATIONS = None
 
 
-class TypeRegistry(object):
+class TypeRegistry:
     pass
 
 
