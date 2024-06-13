@@ -59,7 +59,7 @@ def filter_applies(search_filter, document):
     return _filterer_inst.apply(search_filter, document)
 
 
-class _Filterer(object):
+class _Filterer:
     """An object to help applying a filter, using the MongoDB query language."""
 
     # This is populated using register_parse_expression further down.
@@ -579,7 +579,7 @@ def resolve_sort_key(key, doc):
     return 1, BsonComparable(value)
 
 
-class BsonComparable(object):
+class BsonComparable:
     """Wraps a value in an BSON like object that can be compared one to another."""
 
     def __init__(self, obj):
