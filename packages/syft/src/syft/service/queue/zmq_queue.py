@@ -584,17 +584,6 @@ class ZMQProducer(QueueProducer):
 
     def delete_worker(self, worker: Worker, disconnect: bool) -> None:
         """Deletes worker from all data structures, and deletes worker."""
-        # relative
-        from ...service.worker.worker_service import WorkerService
-
-        worker_service = cast(
-            WorkerService, self.auth_context.node.get_service(WorkerService)
-        )
-        worker_service._delete(
-            self.auth_context,
-            worker._syft_worker(self.worker_stash, self.auth_context.credentials),
-        )
-
         if disconnect:
             self.send_to_worker(worker, QueueMsgProtocol.W_DISCONNECT, None, None)
 
@@ -610,6 +599,17 @@ class ZMQProducer(QueueProducer):
             self.update_consumer_state_for_worker(
                 worker.syft_worker_id, ConsumerState.DETACHED
             )
+
+        # relative
+        from ...service.worker.worker_service import WorkerService
+
+        worker_service = cast(
+            WorkerService, self.auth_context.node.get_service(WorkerService)
+        )
+        worker_service._delete(
+            self.auth_context,
+            worker._syft_worker(self.worker_stash, self.auth_context.credentials),
+        )
 
     @property
     def alive(self) -> bool:
