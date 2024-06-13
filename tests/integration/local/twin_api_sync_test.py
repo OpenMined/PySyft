@@ -7,13 +7,10 @@ from result import Err
 
 # syft absolute
 import syft
-import syft as sy
 from syft.client.domain_client import DomainClient
-from syft.client.syncing import compare_clients
-from syft.client.syncing import resolve
+from syft.client.syncing import compare_clients, resolve
 from syft.service.job.job_stash import JobStatus
-from syft.service.response import SyftError
-from syft.service.response import SyftSuccess
+from syft.service.response import SyftError, SyftSuccess
 
 
 def compare_and_resolve(*, from_client: DomainClient, to_client: DomainClient):
