@@ -14,7 +14,7 @@ select = [
     "F",    # pyflake
     "B",    # flake8-bugbear
     "C4",   # flake8-comprehensions
-    "PERF", # perflint
+    # "PERF", # perflint
     "UP",   # pyupgrade
 ]
 ignore = [
