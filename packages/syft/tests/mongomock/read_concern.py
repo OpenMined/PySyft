@@ -1,4 +1,4 @@
-class ReadConcern(object):
+class ReadConcern:
     def __init__(self, level=None):
         self._document = {}
 
