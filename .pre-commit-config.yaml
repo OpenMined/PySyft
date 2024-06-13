@@ -181,10 +181,10 @@ repos:
       - id: prettier
         exclude: ^(packages/grid/helm|packages/grid/frontend/pnpm-lock.yaml|packages/syft/tests/mongomock)
 
-  -   repo: https://github.com/asottile/pyupgrade
-      rev: v3.16.0
-      hooks:
-      -   id: pyupgrade
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.16.0
+    hooks:
+      - id: pyupgrade
 
   # - repo: meta
   #   hooks:
