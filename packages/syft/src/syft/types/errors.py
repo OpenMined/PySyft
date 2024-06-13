@@ -104,10 +104,10 @@ class ExceptionFilter(tuple):
     def __new__(cls, path: str) -> Self:
         module = import_module(path)
 
-        exceptions = tuple(
+        exceptions = (
             obj
             for _, obj in inspect.getmembers(module, inspect.isclass)
-            if issubclass(obj, BaseException) and obj.__module__ == module.__name__
+            if issubclass(obj, BaseException) and not issubclass(obj, Warning)
         )
 
         instance = super().__new__(cls, exceptions)
