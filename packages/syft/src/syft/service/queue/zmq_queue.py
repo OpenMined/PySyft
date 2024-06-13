@@ -7,6 +7,7 @@ import threading
 import time
 from time import sleep
 from typing import Any
+from typing import cast
 
 # third party
 from loguru import logger
@@ -18,6 +19,7 @@ from zmq import LINGER
 from zmq.error import ContextTerminated
 
 # relative
+from ...node.credentials import SyftVerifyKey
 from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize as serialize
@@ -127,11 +129,13 @@ class Worker(SyftBaseModel):
     def reset_expiry(self) -> None:
         self.expiry_t.reset()
 
-    def _syft_worker(self, stash: WorkerStash) -> Result[SyftWorker | None, str]:
-        return stash.get_by_uid(self.syft_worker_id)
+    def _syft_worker(
+        self, stash: WorkerStash, credentials: SyftVerifyKey
+    ) -> Result[SyftWorker | None, str]:
+        return stash.get_by_uid(credentials == credentials, uid=self.syft_worker_id)
 
-    def _to_be_deleted(self, stash: WorkerStash) -> bool:
-        return self._syft_worker(stash).map_or(
+    def _to_be_deleted(self, stash: WorkerStash, credentials: SyftVerifyKey) -> bool:
+        return self._syft_worker(stash, credentials).map_or(
             False, lambda x: x is not None and x._to_be_deleted
         )
 
@@ -375,7 +379,9 @@ class ZMQProducer(QueueProducer):
         """
         # work on a copy of the iterator
         for worker in self.waiting:
-            if worker.has_expired() or worker._to_be_deleted(self.worker_stash):
+            if worker.has_expired() or worker._to_be_deleted(
+                self.worker_stash, self.auth_context.syft_client_verify_key
+            ):
                 logger.info(
                     "Deleting expired Worker id={} uid={} expiry={} now={}",
                     worker.identity,
@@ -578,6 +584,19 @@ class ZMQProducer(QueueProducer):
 
     def delete_worker(self, worker: Worker, disconnect: bool) -> None:
         """Deletes worker from all data structures, and deletes worker."""
+        # relative
+        from ...service.worker.worker_service import WorkerService
+
+        worker_service = cast(
+            WorkerService, self.auth_context.node.get_service("WorkerService")
+        )
+        worker_service._delete(
+            self.auth_context,
+            worker._syft_worker(
+                self.worker_stash, self.auth_context.syft_client_verify_key
+            ),
+        )
+
         if disconnect:
             self.send_to_worker(worker, QueueMsgProtocol.W_DISCONNECT, None, None)
 
