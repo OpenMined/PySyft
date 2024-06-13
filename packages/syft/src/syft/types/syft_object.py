@@ -690,7 +690,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
                     cmp = obj_attr.__eq__
                     if hasattr(obj_attr, "syft_eq"):
                         cmp = obj_attr.syft_eq
-                    
+
                     # Check if cmp is callable before using it
                     if callable(cmp):
                         comparison_result = cmp(ext_obj_attr)
