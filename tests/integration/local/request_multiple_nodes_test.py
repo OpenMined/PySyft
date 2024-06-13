@@ -7,8 +7,7 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.service.job.job_stash import Job
-from syft.service.job.job_stash import JobStatus
+from syft.service.job.job_stash import Job, JobStatus
 
 
 @pytest.fixture(scope="function")
@@ -128,6 +127,7 @@ def test_transfer_request_blocking(
     client_do_2._fetch_api(client_do_2.credentials)
     result_2 = client_do_2.code.compute_sum(data=dataset_2).get()
     assert result_2 == dataset_2.data.mean()
+
     res = request_1_do.accept_by_depositing_result(result_2)
     assert isinstance(res, sy.SyftSuccess)
 
@@ -169,6 +169,7 @@ def test_transfer_request_nonblocking(
     job_2_info = job_2.info()
     assert job_2_info.result is None
     assert job_2_info.status is not None
+
     res = request_1_do.sync_job(job_2_info)
     assert isinstance(res, sy.SyftSuccess)
 
