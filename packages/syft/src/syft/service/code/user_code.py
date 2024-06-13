@@ -344,10 +344,12 @@ class UserCode(SyncableSyftObject):
         "input_owners",
         "code_status",
         "worker_pool_name",
+        "l0_deny_reason",
     ]
 
     __exclude_sync_diff_attrs__: ClassVar[list[str]] = [
         "node_uid",
+        "code_status",
         "input_policy_type",
         "input_policy_init_kwargs",
         "input_policy_state",
@@ -429,6 +431,8 @@ class UserCode(SyncableSyftObject):
                 context, self.id, self.user_verify_key
             )
 
+        if isinstance(is_approved, SyftError):
+            return is_approved
         is_denied = self.l0_deny_reason is not None
 
         if is_denied:

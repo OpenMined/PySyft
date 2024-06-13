@@ -91,6 +91,9 @@ class UserCodeService(AbstractService):
         code_update: UserCodeUpdate,
     ) -> SyftSuccess | SyftError:
         code = self.stash.get_by_uid(context.credentials, code_update.id)
+        if code.is_err():
+            return SyftError(message=code.err())
+        code = code.ok()
 
         result = self.stash.update(context.credentials, code)
         if result.is_err():
@@ -521,7 +524,8 @@ class UserCodeService(AbstractService):
                         return Err(
                             "Execution denied: Your code is waiting for approval"
                         )
-                    if has_side or not (is_valid := output_policy._is_valid(context)):
+                    is_valid = output_policy._is_valid(context)  # type: ignore
+                    if has_side or not is_valid:
                         if len(output_history) > 0 and not skip_read_cache:
                             last_executed_output = output_history[-1]
                             # Check if the inputs of the last executed output match

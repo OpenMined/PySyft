@@ -653,7 +653,7 @@ class Request(SyncableSyftObject):
             return api
 
         if self.code.is_low_side:
-            result = api.code.update(l0_deny_reason=reason)
+            result = api.code.update(id=self.code_id, l0_deny_reason=reason)
             if isinstance(result, SyftError):
                 return result
             return SyftSuccess(message=f"Request denied with reason: {reason}")
@@ -1331,5 +1331,5 @@ class SyncedUserCodeStatusChange(UserCodeStatusChange):
             )
         )
 
-    def link(self) -> SyftObject | None:
-        return None
+    def link(self) -> Any:  # type: ignore
+        return self.code.status

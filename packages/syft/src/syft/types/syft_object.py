@@ -680,6 +680,15 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
                 obj_attr = getattr(self, attr)
                 ext_obj_attr = getattr(ext_obj, attr)
 
+                if (obj_attr is None) ^ (ext_obj_attr is None):
+                    # If either attr is None, but not both, we have a diff
+                    # NOTE This clause is needed because attr.__eq__ is not implemented for None, and will eval to True
+                    diff_attr = AttrDiff(
+                        attr_name=attr,
+                        low_attr=obj_attr,
+                        high_attr=ext_obj_attr,
+                    )
+                    diff_attrs.append(diff_attr)
                 if isinstance(obj_attr, list) and isinstance(ext_obj_attr, list):
                     list_diff = ListDiff.from_lists(
                         attr_name=attr, low_list=obj_attr, high_list=ext_obj_attr

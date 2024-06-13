@@ -307,26 +307,24 @@ class OutputService(AbstractService):
         self,
         context: AuthedServiceContext,
         user_code_id: UID,
-        code_owner_verify_key: SyftVerifyKey,
-    ) -> bool:
+        user_verify_key: SyftVerifyKey,
+    ) -> bool | SyftError:
         action_service = context.node.get_service("actionservice")
         all_outputs = self.get_by_user_code_id(context, user_code_id)
         if isinstance(all_outputs, SyftError):
-            print(all_outputs.message)
-            return False
-        print("OUTPUTS", all_outputs)
+            return all_outputs
         for output in all_outputs:
             # TODO tech debt: unclear why code owner can see outputhistory without permissions.
             # It is not a security issue (output history has no data) it is confusing for user
             # if not self.stash.has_permission(
-            #     ActionObjectREAD(uid=output.id, credentials=code_owner_verify_key)
+            #     ActionObjectREAD(uid=output.id, credentials=user_verify_key)
             # ):
             #     continue
 
             # Check if all output ActionObjects have permissions
             result_ids = output.output_id_list
             permissions = [
-                ActionObjectREAD(uid=_id, credentials=code_owner_verify_key)
+                ActionObjectREAD(uid=_id, credentials=user_verify_key)
                 for _id in result_ids
             ]
             if action_service.store.has_permissions(permissions):
