@@ -8,7 +8,7 @@ from .helpers import utcnow
 from .thread import RWLock
 
 
-class ServerStore(object):
+class ServerStore:
     """Object holding the data for a whole server (many databases)."""
 
     def __init__(self):
@@ -28,7 +28,7 @@ class ServerStore(object):
         return [name for name, db in self._databases.items() if db.is_created]
 
 
-class DatabaseStore(object):
+class DatabaseStore:
     """Object holding the data for a database (many collections)."""
 
     def __init__(self):
@@ -62,7 +62,7 @@ class DatabaseStore(object):
         return any(col.is_created for col in self._collections.values())
 
 
-class CollectionStore(object):
+class CollectionStore:
     """Object holding the data for a collection."""
 
     def __init__(self, name):
@@ -133,8 +133,7 @@ class CollectionStore(object):
     def documents(self):
         self._remove_expired_documents()
         with self._rwlock.reader():
-            for doc in self._documents.values():
-                yield doc
+            yield from self._documents.values()
 
     def _remove_expired_documents(self):
         for index in self._ttl_indexes.values():
