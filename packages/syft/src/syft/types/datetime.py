@@ -42,7 +42,7 @@ class DateTime(SyftObject):
         return cls(utc_timestamp=dt.timestamp())
 
     def __str__(self) -> str:
-        utc_datetime = datetime.utcfromtimestamp(self.utc_timestamp)
+        utc_datetime = datetime.fromtimestamp(self.utc_timestamp, timezone.utc)
         return utc_datetime.strftime(DATETIME_FORMAT)
 
     def __hash__(self) -> int:
