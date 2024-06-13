@@ -202,9 +202,10 @@ class RequestService(AbstractService):
                     send_notification(context=context, notification=notification)
 
             # TODO: check whereever we're return SyftError encapsulate it in Result. 
-            if hasattr(result, "value"):
-                return result.value
-            return result
+            if result.is_ok():
+                return result.ok_value()
+            elif result.is_err():
+                return result.err_value()
 
         return SyftError(message=f"Failed to retrieve request with uid: {uid}")
 
