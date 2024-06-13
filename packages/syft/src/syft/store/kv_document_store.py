@@ -289,7 +289,7 @@ class KeyValueStorePartition(StorePartition):
             pass
         elif (
             permission.permission == ActionPermission.READ
-            and ActionObjectPermission(
+            or ActionObjectPermission(
                 permission.uid, ActionPermission.ALL_READ
             ).permission_string
             in self.permissions[permission.uid]
