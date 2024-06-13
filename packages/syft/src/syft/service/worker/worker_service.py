@@ -158,7 +158,7 @@ class WorkerService(AbstractService):
         from ...service.job.job_service import JobService
         from .worker_pool_service import SyftWorkerPoolService
 
-        job_service = cast(JobService, context.node.get_service("JobService"))
+        job_service = cast(JobService, context.node.get_service(JobService))
         job_service._kill(job_service.get(context=context, uid=worker.job_id))
 
         worker_pool_service: AbstractService = context.node.get_service(

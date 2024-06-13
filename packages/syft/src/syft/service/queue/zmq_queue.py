@@ -588,7 +588,7 @@ class ZMQProducer(QueueProducer):
         from ...service.worker.worker_service import WorkerService
 
         worker_service = cast(
-            WorkerService, self.auth_context.node.get_service("WorkerService")
+            WorkerService, self.auth_context.node.get_service(WorkerService)
         )
         worker_service._delete(
             self.auth_context,
