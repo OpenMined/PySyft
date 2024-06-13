@@ -24,10 +24,10 @@ except ImportError:
 class _MongoMockGridOutCursor(MongoMockCursor):
     def __init__(self, collection, *args, **kwargs):
         self.__root_collection = collection
-        super(_MongoMockGridOutCursor, self).__init__(collection.files, *args, **kwargs)
-
+        super().__init__(collection.files, *args, **kwargs)
+        
     def next(self):
-        next_file = super(_MongoMockGridOutCursor, self).next()
+        next_file = super().next()
         return PyMongoGridOut(
             self.__root_collection, file_document=next_file, session=self.session
         )
