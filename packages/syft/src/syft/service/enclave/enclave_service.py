@@ -199,7 +199,12 @@ class EnclaveService(AbstractService):
 
         # Upload the assets to the enclave
         for action_object in action_objects:
-            enclave_client.api.services.action.set(action_object=action_object)
+            action_object.syft_node_uid = enclave_client.id
+            action_object.syft_action_data_node_id = enclave_client.id
+            enclave_action_object = enclave_client.api.services.action.set(
+                action_object=action_object
+            )
+            enclave_action_object._save_to_blob_storage_(action_object.syft_action_data)
             # TODO 🟣 Rollback all uploaded assets if any error occurs
 
         return SyftSuccess(
