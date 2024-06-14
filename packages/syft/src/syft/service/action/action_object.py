@@ -319,6 +319,7 @@ passthrough_attrs = [
     "syft_eq",  # syft
     "__table_coll_widths__",
     "_clear_cache",
+    "_set_reprs",
 ]
 dont_wrap_output_attrs = [
     "__repr__",
@@ -343,6 +344,7 @@ dont_wrap_output_attrs = [
     "syft_eq",  # syft
     "__table_coll_widths__",
     "_clear_cache",
+    "_set_reprs",
 ]
 dont_make_side_effects = [
     "__repr_attrs__",
@@ -365,6 +367,7 @@ dont_make_side_effects = [
     "syft_eq",  # syft
     "__table_coll_widths__",
     "_clear_cache",
+    "_set_reprs",
 ]
 action_data_empty_must_run = [
     "__repr__",
@@ -662,12 +665,15 @@ BASE_PASSTHROUGH_ATTRS: list[str] = [
     "_data_repr",
     "syft_eq",
     "__table_coll_widths__",
+    "_set_reprs",
 ]
 
 
 def truncate_str(string: str, length: int = 100) -> str:
-    if len(string) > length:
-        string = string[:length] + "... data too long, truncated to 100 characters"
+    stringlen = len(string)
+    if len(stringlen) > length:
+        n_hidden = stringlen - length
+        string = f"{string[:length]}... ({n_hidden} characters hidden)"
     return string
 
 
@@ -838,16 +844,7 @@ class ActionObject(SyncableSyftObject):
                     print("cannot save to blob storage")
 
             self.syft_action_data_type = type(data)
-
-            if inspect.isclass(data):
-                self.syft_action_data_repr_ = truncate_str(repr_cls(data))
-            else:
-                self.syft_action_data_repr_ = truncate_str(
-                    data._repr_markdown_()
-                    if hasattr(data, "_repr_markdown_")
-                    else data.__repr__()
-                )
-            self.syft_action_data_str_ = truncate_str(str(data))
+            self._set_reprs(data)
             self.syft_has_bool_attr = hasattr(data, "__bool__")
         else:
             debug("skipping writing action object to store, passed data was empty.")
@@ -855,6 +852,17 @@ class ActionObject(SyncableSyftObject):
         self.syft_action_data_cache = data
 
         return None
+
+    def _set_reprs(self, data: any) -> None:
+        if inspect.isclass(data):
+            self.syft_action_data_repr_ = truncate_str(repr_cls(data))
+        else:
+            self.syft_action_data_repr_ = truncate_str(
+                data._repr_markdown_()
+                if hasattr(data, "_repr_markdown_")
+                else data.__repr__()
+            )
+        self.syft_action_data_str_ = truncate_str(str(data))
 
     def _save_to_blob_storage(self) -> SyftError | None:
         data = self.syft_action_data
