@@ -1,5 +1,6 @@
 # stdlib
 import importlib
+import sys
 from typing import Any
 
 # third party
@@ -107,7 +108,7 @@ class ActionService(AbstractService):
             action_object.private_obj.syft_created_at = DateTime.now()  # type: ignore[unreachable]
             action_object.mock_obj.syft_created_at = DateTime.now()
             action_object.private_obj._clear_cache()
-            action_object.mock._clear_cache()
+            action_object.mock_obj._clear_cache()
 
         # If either context or argument is True, has_result_read_permission is True
         has_result_read_permission = (
@@ -124,6 +125,14 @@ class ActionService(AbstractService):
         )
         if result.is_ok():
             if isinstance(action_object, TwinObject):
+                if action_object.mock_obj.syft_blob_storage_entry_id is not None:
+                    print(action_object.mock_obj.syft_blob_storage_entry_id, file=sys.stderr)
+                    blob_id = action_object.mock_obj.syft_blob_storage_entry_id
+                    permission = ActionObjectPermission(blob_id, ActionPermission.ALL_READ)
+                    blob_storage_service: AbstractService = context.node.get_service(
+                        BlobStorageService
+                    )
+                    blob_storage_service.stash.add_permission(permission)
                 if has_result_read_permission:
                     action_object = action_object.private
                 else:

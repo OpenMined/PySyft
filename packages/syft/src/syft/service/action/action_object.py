@@ -666,7 +666,7 @@ BASE_PASSTHROUGH_ATTRS: list[str] = [
 
 def truncate_str(string, length = 100):
     if len(string) > length:
-        repr_data = repr_data[:length] + '... data too long, truncated to 100 characters'
+        string = string[:length] + '... data too long, truncated to 100 characters'
     return string
 
 
