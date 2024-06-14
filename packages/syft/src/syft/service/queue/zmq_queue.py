@@ -286,7 +286,7 @@ class ZMQProducer(QueueProducer):
             return True
         return False
 
-    def preprocess_action_arg(self, arg: UID) -> None:
+    def preprocess_action_arg(self, arg: UID) -> UID | None:
         """ "If the argument is a collection (of collections) of ActionObjects,
         We want to flatten the collection and upload a new ActionObject that contains
         its values. E.g. [[ActionObject1, ActionObject2],[ActionObject3, ActionObject4]]
@@ -308,6 +308,7 @@ class ZMQProducer(QueueProducer):
             res = self.action_service.set(
                 context=self.auth_context, action_object=new_action_object
             )
+        return None
 
     def read_items(self) -> None:
         while True:

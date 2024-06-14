@@ -81,8 +81,9 @@ def test_action_store_change(faker: Faker, worker: Worker):
     dummy_data = [1, 2, 3]
     data = ActionObject.from_obj(dummy_data)
     action_obj = root_client.api.services.action.set(data)
-
-    assert action_obj.get() == dummy_data
+    print(action_obj)
+    action_obj.reload_cache()
+    assert action_obj.syft_action_data == dummy_data
 
     ds_client = get_ds_client(faker, root_client, worker.guest_client)
 

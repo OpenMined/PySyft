@@ -19,6 +19,8 @@ def test_action_service_sanity(worker):
     obj = ActionObject.from_obj("abc")
 
     pointer = service.set(get_auth_ctx(worker), obj).ok()
+    print(pointer)
+    pointer = pointer.get()
 
     assert len(service.store.data) == 1
     res = pointer.capitalize()

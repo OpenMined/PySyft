@@ -879,7 +879,8 @@ class ActionObject(SyncableSyftObject):
         return None
 
     def _clear_cache(self) -> None:
-        self.syft_action_data_cache = self.as_empty_data()
+        if self.syft_blob_storage_entry_id is not None:
+            self.syft_action_data_cache = self.as_empty_data()
 
     @property
     def is_pointer(self) -> bool:
