@@ -574,7 +574,7 @@ class Request(SyncableSyftObject):
 
     @property
     def status(self) -> RequestStatus:
-        if self.code.is_low_side:
+        if self.is_low_side:
             code_status = self.code.status
             return RequestStatus.from_usercode_status(code_status)
 
@@ -601,7 +601,7 @@ class Request(SyncableSyftObject):
         if isinstance(api, SyftError):
             return api
 
-        if self.code.is_low_side:
+        if self.is_low_side:
             return SyftError(
                 message="This request is a low-side request. Please sync your results to approve."
             )
@@ -652,7 +652,7 @@ class Request(SyncableSyftObject):
         if isinstance(api, SyftError):
             return api
 
-        if self.code.is_low_side:
+        if self.is_low_side:
             result = api.code.update(id=self.code_id, l0_deny_reason=reason)
             if isinstance(result, SyftError):
                 return result
@@ -660,8 +660,12 @@ class Request(SyncableSyftObject):
 
         return api.services.request.undo(uid=self.id, reason=reason)
 
+    @property
+    def is_low_side(self) -> bool:
+        return bool(self.code) and self.code.is_low_side
+
     def approve_with_client(self, client: SyftClient) -> Result[SyftSuccess, SyftError]:
-        if self.code.is_low_side:
+        if self.is_low_side:
             return SyftError(
                 message="This request is a low-side request. Please sync your results to approve."
             )
@@ -824,9 +828,10 @@ class Request(SyncableSyftObject):
         if isinstance(code, SyftError):
             return code
 
-        if not self.code.is_low_side:
+        if not self.is_low_side:
             return SyftError(
-                message="deposit_result is only available for low side requests. Please use request.approve() instead."
+                message="deposit_result is only available for low side code requests. "
+                "Please use request.approve() instead."
             )
 
         # Create ActionObject
