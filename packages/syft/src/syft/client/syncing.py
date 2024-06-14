@@ -1,5 +1,8 @@
 # stdlib
 
+# stdlib
+from collections.abc import Sequence
+
 # relative
 from ..abstract_node import NodeSideType
 from ..node.credentials import SyftVerifyKey
@@ -24,7 +27,9 @@ def compare_states(
     include_ignored: bool = False,
     include_same: bool = False,
     filter_by_email: str | None = None,
-    filter_by_type: str | type | None = None,
+    include_types: Sequence[str | type] | None = None,
+    exclude_types: Sequence[str | type] | None = None,
+    _hide_usercode: bool = True,
 ) -> NodeDiff | SyftError:
     # NodeDiff
     if (
@@ -45,6 +50,11 @@ def compare_states(
         return SyftError(
             "Invalid node side types: can only compare a high and low node"
         )
+
+    if _hide_usercode:
+        exclude_types = exclude_types or []
+        exclude_types.append("usercode")
+
     return NodeDiff.from_sync_state(
         low_state=low_state,
         high_state=high_state,
@@ -52,7 +62,8 @@ def compare_states(
         include_ignored=include_ignored,
         include_same=include_same,
         filter_by_email=filter_by_email,
-        filter_by_type=filter_by_type,
+        include_types=include_types,
+        exclude_types=exclude_types,
     )
 
 
@@ -62,7 +73,9 @@ def compare_clients(
     include_ignored: bool = False,
     include_same: bool = False,
     filter_by_email: str | None = None,
-    filter_by_type: type | None = None,
+    include_types: Sequence[str | type] | None = None,
+    exclude_types: Sequence[str | type] | None = None,
+    _hide_usercode: bool = True,
 ) -> NodeDiff | SyftError:
     from_state = from_client.get_sync_state()
     if isinstance(from_state, SyftError):
@@ -78,7 +91,9 @@ def compare_clients(
         include_ignored=include_ignored,
         include_same=include_same,
         filter_by_email=filter_by_email,
-        filter_by_type=filter_by_type,
+        include_types=include_types,
+        exclude_types=exclude_types,
+        _hide_usercode=_hide_usercode,
     )
 
 
