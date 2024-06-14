@@ -380,7 +380,7 @@ class EnclaveRegistry:
                 online = False
 
             if online:
-                version = enclave.get("version")
+                version: str | None = enclave.get("version")
                 # Check if syft version was described in EnclaveRegistry
                 # If it's unknown, try to update it to an available version.
                 if not version or version == "unknown":
