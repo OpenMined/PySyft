@@ -17,7 +17,7 @@ def test_actionobject_method(worker):
     assert root_domain_client.settings.enable_eager_execution(enable=True)
     action_store = worker.get_service("actionservice").store
     obj = ActionObject.from_obj("abc")
-    pointer = root_domain_client.api.services.action.set(obj)
+    pointer = obj.send(root_domain_client)
     assert len(action_store.data) == 1
     res = pointer.capitalize()
     assert len(action_store.data) == 2

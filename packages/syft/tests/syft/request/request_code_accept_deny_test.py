@@ -80,7 +80,7 @@ def test_action_store_change(faker: Faker, worker: Worker):
     root_client = worker.root_client
     dummy_data = [1, 2, 3]
     data = ActionObject.from_obj(dummy_data)
-    action_obj = root_client.api.services.action.set(data)
+    action_obj = data.send(root_client)
 
     assert action_obj.get() == dummy_data
 

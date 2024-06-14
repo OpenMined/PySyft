@@ -895,7 +895,7 @@ class SubmitUserCode(SyftObject):
                     syft_node_location=node_id.node_id,
                     syft_client_verify_key=node_id.verify_key,
                 )
-                res = ep_client.api.services.action.set(new_obj)
+                res = new_obj.send(ep_client)
                 if isinstance(res, SyftError):
                     return res
 

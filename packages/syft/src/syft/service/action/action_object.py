@@ -751,11 +751,7 @@ class ActionObject(SyncableSyftObject):
 
     @property
     def syft_action_data(self) -> Any:
-        if (
-            self.syft_blob_storage_entry_id
-            and self.syft_created_at
-            and not TraceResultRegistry.current_thread_is_tracing()
-        ):
+        if self.syft_blob_storage_entry_id and self.syft_created_at:
             self.reload_cache()
 
         return self.syft_action_data_cache
