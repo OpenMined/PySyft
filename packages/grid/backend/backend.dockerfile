@@ -1,6 +1,6 @@
 ARG PYTHON_VERSION="3.12"
-ARG UV_VERSION="0.1.41-r0"
-ARG TORCH_VERSION="2.3.0"
+ARG UV_VERSION="0.2.11"
+ARG TORCH_VERSION="2.3.1"
 
 # ==================== [BUILD STEP] Python Dev Base ==================== #
 
