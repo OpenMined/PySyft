@@ -448,6 +448,10 @@ class ActionService(AbstractService):
             context.node.id,
             context.credentials,
         )
+        print("---- inside ActionService.set_result_to_store() ----")
+        print(f"{result_action_object.__dict__ = }")
+        print("calling result_action_object._save_to_blob_storage()")
+
         blob_store_result = result_action_object._save_to_blob_storage()
         if isinstance(blob_store_result, SyftError):
             return Err(blob_store_result.message)
@@ -723,7 +727,6 @@ class ActionService(AbstractService):
             context.node.id,
             context.credentials,
         )
-
         blob_store_result = result_action_object._save_to_blob_storage()
         if isinstance(blob_store_result, SyftError):
             return blob_store_result

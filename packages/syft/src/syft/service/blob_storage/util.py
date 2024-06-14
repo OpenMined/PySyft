@@ -10,7 +10,8 @@ from ..metadata.node_metadata import NodeMetadataJSON
 def min_size_for_blob_storage_upload(metadata: NodeMetadata | NodeMetadataJSON) -> int:
     if not isinstance(metadata, (NodeMetadata | NodeMetadataJSON)):
         raise ValueError(
-            f"argument `metadata` is type {type(metadata)}, but it should be of type NodeMetadata or NodeMetadataJSON"
+            f"argument `metadata` is type {type(metadata)}, "
+            f"but it should be of type NodeMetadata or NodeMetadataJSON"
         )
     return metadata.min_size_blob_storage_mb
 

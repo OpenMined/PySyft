@@ -837,7 +837,22 @@ class ActionObject(SyncableSyftObject):
             return SyftError(
                 message=f"cannot store empty object {self.id} to the blob storage"
             )
-        api = APIRegistry.api_for(self.syft_node_location, self.syft_client_verify_key)
+
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        print()
+        print()
+        print("---- inside ActionObject._save_to_blob_storage() ----")
+        print(f"{self.syft_node_location = }")
+        print(f"{self.syft_client_verify_key = }")
+        print(f"{APIRegistry = }")
+        print(f"{api = }")
+        if api is None:
+            raise ValueError(
+                f"api is None. You must login to {self.syft_node_location}"
+            )
         if not can_upload_to_blob_storage(data, api.metadata):
             self.syft_action_data_cache = data
             return None
