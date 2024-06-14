@@ -133,3 +133,46 @@ def test_action_obj_send_save_to_blob_storage(worker):
     )
     assert isinstance(syft_retrieved_data, SyftObjectRetrieval)
     assert all(syft_retrieved_data.read() == data_big)
+
+
+def test_upload_dataset_save_to_blob_storage(worker):
+    root_client: DomainClient = worker.root_client
+    root_authed_ctx = AuthedServiceContext(
+        node=worker, credentials=root_client.verify_key
+    )
+    dataset = sy.Dataset(
+        name="small_dataset",
+        asset_list=[
+            sy.Asset(
+                name="small_dataset",
+                data=np.array([1, 2, 3]),
+                mock=np.array([1, 1, 1]),
+            )
+        ],
+    )
+    root_client.upload_dataset(dataset)
+    blob_storage = worker.get_service("BlobStorageService")
+    assert len(blob_storage.get_all_blob_storage_entries(context=root_authed_ctx)) == 0
+
+    num_elements = 50 * 1024 * 1024
+    data_big = np.random.randint(0, 100, size=num_elements)
+    dataset_big = sy.Dataset(
+        name="big_dataset",
+        asset_list=[
+            sy.Asset(
+                name="big_dataset",
+                data=data_big,
+                mock=np.array([1, 1, 1]),
+            )
+        ],
+    )
+    root_client.upload_dataset(dataset_big)
+    # the private data should be saved to the blob storage
+    blob_entries: list = blob_storage.get_all_blob_storage_entries(
+        context=root_authed_ctx
+    )
+    assert len(blob_entries) == 1
+    data_big_retrieved: SyftObjectRetrieval = blob_storage.read(
+        context=root_authed_ctx, uid=blob_entries[0].id
+    )
+    assert all(data_big_retrieved.read() == data_big)
