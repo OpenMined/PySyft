@@ -290,7 +290,8 @@ class UserCodeV4(SyncableSyftObject):
     input_kwargs: list[str]
     enclave_metadata: EnclaveMetadata | None = None
     submit_time: DateTime | None = None
-    uses_domain: bool = False  # tracks if the code calls domain.something, variable is set during parsing
+    # tracks if the code calls domain.something, variable is set during parsing
+    uses_domain: bool = False
     nested_codes: dict[str, tuple[LinkedObject, dict]] | None = {}
     worker_pool_name: str | None = None
 
@@ -321,7 +322,9 @@ class UserCode(SyncableSyftObject):
     input_kwargs: list[str]
     enclave_metadata: EnclaveMetadata | None = None
     submit_time: DateTime | None = None
-    uses_domain: bool = False  # tracks if the code calls domain.something, variable is set during parsing
+    # tracks if the code calls domain.something, variable is set during parsing
+    uses_domain: bool = False
+
     nested_codes: dict[str, tuple[LinkedObject, dict]] | None = {}
     worker_pool_name: str | None = None
     origin_node_side_type: NodeSideType
@@ -990,7 +993,10 @@ class SubmitUserCode(SyftObject):
             n_consumers=n_consumers,
             deploy_to="python",
         )
-        ep_client = ep_node.login(email="info@openmined.org", password="changethis")  # nosec
+        ep_client = ep_node.login(
+            email="info@openmined.org",
+            password="changethis",
+        )  # nosec
         self.input_policy_init_kwargs = cast(dict, self.input_policy_init_kwargs)
         for node_id, obj_dict in self.input_policy_init_kwargs.items():
             # api = APIRegistry.api_for(

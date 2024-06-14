@@ -503,10 +503,7 @@ class UserCodeService(AbstractService):
 
             input_policy = code.get_input_policy(context)
             # relative
-            from ...node.node import get_node_side_type
 
-            is_high_side = get_node_side_type() == "high"
-            has_side = get_node_side_type() is not None
             # Check output policy
             if not override_execution_permission:
                 output_history = code.get_output_history(context=context)
@@ -520,12 +517,18 @@ class UserCodeService(AbstractService):
                     output_policy=output_policy,
                 )
                 if not can_execute:
-                    if not has_side and not code.is_output_policy_approved(context):
+                    # We don't check output policy if
+                    # code is from low side (L0 setup)
+                    if not code.is_low_side and not code.is_output_policy_approved(
+                        context
+                    ):
                         return Err(
                             "Execution denied: Your code is waiting for approval"
                         )
-                    is_valid = output_policy._is_valid(context)  # type: ignore
-                    if has_side or not is_valid:
+                    is_valid = (
+                        output_policy._is_valid(context) if output_policy else False
+                    )
+                    if not is_valid or code.is_low_side:
                         if len(output_history) > 0 and not skip_read_cache:
                             last_executed_output = output_history[-1]
                             # Check if the inputs of the last executed output match
@@ -588,8 +591,9 @@ class UserCodeService(AbstractService):
 
             # this currently only works for nested syft_functions
             # and admins executing on high side (TODO, decide if we want to increment counter)
-
-            if not skip_fill_cache and output_policy is not None or is_high_side:
+            # always store_execution_output on l0 setup
+            is_l0_request = context.role == ServiceRole.ADMIN and code.is_low_side
+            if not skip_fill_cache and output_policy is not None or is_l0_request:
                 res = code.store_execution_output(
                     context=context,
                     outputs=result,
