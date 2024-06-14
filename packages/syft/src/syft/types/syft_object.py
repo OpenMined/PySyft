@@ -37,6 +37,7 @@ from typing_extensions import Self
 from ..node.credentials import SyftVerifyKey
 from ..serde.recursive_primitives import recursive_serde_register_type
 from ..serde.serialize import _serialize as serialize
+from ..service.response import SyftError
 from ..util.autoreload import autoreload_enabled
 from ..util.markdown import as_markdown_python_code
 from ..util.notebook_ui.components.tabulator_template import build_tabulator_table
@@ -50,7 +51,6 @@ from .uid import UID
 if TYPE_CHECKING:
     # relative
     from ..client.api import SyftAPI
-    from ..service.response import SyftError
     from ..service.sync.diff_state import AttrDiff
 
 IntStr = int | str
