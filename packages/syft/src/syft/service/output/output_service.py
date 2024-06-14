@@ -171,7 +171,7 @@ class ExecutionOutput(SyncableSyftObject):
         """
         if not self.input_ids:
             return True
-        return all(
+        return any(
             not (key not in self.input_ids or self.input_ids[key] != value)
             for key, value in kwargs.items()
         )
