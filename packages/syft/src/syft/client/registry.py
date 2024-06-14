@@ -91,7 +91,7 @@ class NetworkRegistry:
                     online = False
 
             if online:
-                version = network.get("version")
+                version: str | None = network.get("version")
                 # Check if syft version was described in NetworkRegistry
                 # If it's unknown, try to update it to an available version.
                 if not version or version == "unknown":
