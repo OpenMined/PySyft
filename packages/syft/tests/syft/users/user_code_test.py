@@ -317,6 +317,7 @@ def test_mock_no_arguments(worker) -> None:
     # not approved, mock execution
     users[-1].allow_mock_execution()
     result = ds_client.api.services.code.compute_sum()
+    assert result, result
     assert result.get() == 1
 
     # approved, no mock execution
@@ -328,4 +329,5 @@ def test_mock_no_arguments(worker) -> None:
     request.approve()
 
     result = ds_client.api.services.code.compute_sum()
+    assert result, result
     assert result.get() == 1

@@ -588,8 +588,8 @@ class UserCodeService(AbstractService):
 
             # this currently only works for nested syft_functions
             # and admins executing on high side (TODO, decide if we want to increment counter)
-
-            if not skip_fill_cache and output_policy is not None or is_high_side:
+            is_l0_setup = context.role == ServiceRole.ADMIN and is_high_side
+            if not skip_fill_cache and output_policy is not None or is_l0_setup:
                 res = code.store_execution_output(
                     context=context,
                     outputs=result,
