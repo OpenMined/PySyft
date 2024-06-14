@@ -80,7 +80,7 @@ class DictDocumentStore(DocumentStore):
         )
 
     def reset(self) -> None:
-        for _, partition in self.partitions.items():
+        for partition in self.partitions.values():
             partition.prune()
 
 
