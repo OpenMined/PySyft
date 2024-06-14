@@ -78,14 +78,14 @@ class EnclaveService(AbstractService):
             root_context.extra_kwargs = {"has_result_read_permission": True}
             # TODO: Instead of using the action store, modify to
             # use the action service directly to store objects
-            action_service.set(root_context, dict_object)
+            action_service._set(root_context, dict_object)
 
         else:
             res = action_service.get(uid=user_code_id, context=root_context)
             if res.is_ok():
                 dict_object = res.ok()
                 dict_object[str(context.credentials)] = inputs
-                action_service.set(root_context, dict_object)
+                action_service._set(root_context, dict_object)
             else:
                 return SyftError(
                     message=f"Error while fetching the object on Enclave: {res.err()}"

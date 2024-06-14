@@ -91,7 +91,7 @@ class APIService(AbstractService):
             syft_client_verify_key=context.credentials,
         )
         action_service = context.node.get_service("actionservice")
-        res = action_service.set(context=context, action_object=action_obj)
+        res = action_service._set(context=context, action_object=action_obj)
         if res.is_err():
             return SyftError(message=res.err())
 

@@ -305,7 +305,7 @@ class ZMQProducer(QueueProducer):
                 id=action_object.id,
                 syft_blob_storage_entry_id=action_object.syft_blob_storage_entry_id,
             )
-            res = self.action_service.set(
+            res = self.action_service._set(
                 context=self.auth_context, action_object=new_action_object
             )
         return None

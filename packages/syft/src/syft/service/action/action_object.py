@@ -752,7 +752,9 @@ class ActionObject(SyncableSyftObject):
     @property
     def syft_action_data(self) -> Any:
         if self.syft_blob_storage_entry_id and self.syft_created_at:
-            self.reload_cache()
+            res = self.reload_cache()
+            if isinstance(res, SyftError):
+                print(res)
 
         return self.syft_action_data_cache
 
@@ -793,8 +795,7 @@ class ActionObject(SyncableSyftObject):
                     self.syft_action_data_type = type(self.syft_action_data)
                     return None
             else:
-                print("cannot reload cache")
-                return None
+                return SyftError("Could not reload cache, could not get read method")
 
         return None
 
@@ -861,11 +862,11 @@ class ActionObject(SyncableSyftObject):
             )
         self.syft_action_data_str_ = truncate_str(str(data))
 
-    def _save_to_blob_storage(self) -> SyftError | None:
+    def _save_to_blob_storage(self, allow_empty: bool = False) -> SyftError | None:
         data = self.syft_action_data
         if isinstance(data, SyftError):
             return data
-        if isinstance(data, ActionDataEmpty):
+        if isinstance(data, ActionDataEmpty) and not allow_empty:
             return SyftError(message=f"cannot store empty object {self.id}")
         result = self._save_to_blob_storage_(data)
         if isinstance(result, SyftError):

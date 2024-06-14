@@ -82,7 +82,7 @@ class TwinObject(SyftObject):
         mock.id = twin_id
         return mock
 
-    def _save_to_blob_storage(self) -> SyftError | None:
+    def _save_to_blob_storage(self, allow_empty: bool = False) -> SyftError | None:
         # Set node location and verify key
         self.private_obj._set_obj_location_(
             self.syft_node_location,
@@ -92,10 +92,10 @@ class TwinObject(SyftObject):
             self.syft_node_location,
             self.syft_client_verify_key,
         )
-        mock_store_res = self.mock_obj._save_to_blob_storage()
+        mock_store_res = self.mock_obj._save_to_blob_storage(allow_empty=allow_empty)
         if isinstance(mock_store_res, SyftError):
             return mock_store_res
-        return self.private_obj._save_to_blob_storage()
+        return self.private_obj._save_to_blob_storage(allow_empty=allow_empty)
 
     def send(self, client: SyftClient, add_storage_permission: bool = True) -> Any:
         self._set_obj_location_(client.id, client.verify_key)

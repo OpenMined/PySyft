@@ -83,14 +83,18 @@ class ActionService(AbstractService):
         action_object: ActionObject | TwinObject,
         add_storage_permission: bool = True,
         ignore_detached_objs: bool = False,
-    ) -> Result[ActionObject, str]:
-        return self._set(
+    ) -> ActionObject | SyftError:
+        res = self._set(
             context,
             action_object,
             has_result_read_permission=True,
             add_storage_permission=add_storage_permission,
             ignore_detached_objs=ignore_detached_objs,
         )
+        if res.is_err():
+            return SyftError(message=res.value)
+        else:
+            return res.ok()
 
     def is_detached_obj(
         self,

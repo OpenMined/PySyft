@@ -38,6 +38,8 @@ from ...util.misc_objs import MarkdownDescription
 from ...util.notebook_ui.icons import Icon
 from ...util.notebook_ui.styles import FONT_CSS
 from ...util.notebook_ui.styles import ITABLES_CSS
+from ..action.action_data_empty import ActionDataEmpty
+from ..action.action_object import ActionObject
 from ..data_subject.data_subject import DataSubject
 from ..data_subject.data_subject import DataSubjectCreate
 from ..data_subject.data_subject_service import DataSubjectService
@@ -319,6 +321,17 @@ class CreateAsset(SyftObject):
             self.__dict__["mock_is_real"] = False
 
         return self
+
+    def contains_empty(self) -> bool:
+        if isinstance(self.mock, ActionObject) and isinstance(
+            self.mock.syft_action_data_cache, ActionDataEmpty
+        ):
+            return True
+        if isinstance(self.data, ActionObject) and isinstance(
+            self.data.syft_action_data_cache, ActionDataEmpty
+        ):
+            return True
+        return False
 
     def add_data_subject(self, data_subject: DataSubject) -> None:
         self.data_subjects.append(data_subject)
@@ -694,7 +707,7 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
                 "f{context}'s node is None, please log in. No trasformation happened"
             )
         action_service = context.node.get_service("actionservice")
-        result = action_service.set(
+        result = action_service._set(
             context=context.to_node_context(), action_object=twin
         )
         if result.is_err():

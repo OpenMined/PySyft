@@ -120,7 +120,7 @@ def test_user_code_status_change(faker: Faker, worker: Worker):
     root_client = worker.root_client
     dummy_data = [1, 2, 3]
     data = ActionObject.from_obj(dummy_data)
-    action_obj = root_client.api.services.action.set(data)
+    action_obj = data.send(root_client)
 
     ds_client = get_ds_client(faker, root_client, worker.guest_client)
 
@@ -168,7 +168,7 @@ def test_code_accept_deny(faker: Faker, worker: Worker):
     root_client = worker.root_client
     dummy_data = [1, 2, 3]
     data = ActionObject.from_obj(dummy_data)
-    action_obj = root_client.api.services.action.set(data)
+    action_obj = data.send(root_client)
 
     ds_client = get_ds_client(faker, root_client, worker.guest_client)
 
