@@ -680,7 +680,7 @@ class Job(SyncableSyftObject):
             ]:
                 return self.result
             if print_warning and self.result is not None:
-                result_obj = api.services.action.get(
+                result_obj = api.services.action.get(  # type: ignore[unreachable]
                     self.result.id, resolve_nested=False
                 )
                 if result_obj.is_link and job_only:
