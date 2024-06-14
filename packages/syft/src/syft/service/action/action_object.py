@@ -671,7 +671,7 @@ BASE_PASSTHROUGH_ATTRS: list[str] = [
 
 def truncate_str(string: str, length: int = 100) -> str:
     stringlen = len(string)
-    if len(stringlen) > length:
+    if stringlen > length:
         n_hidden = stringlen - length
         string = f"{string[:length]}... ({n_hidden} characters hidden)"
     return string
