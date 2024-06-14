@@ -79,6 +79,7 @@ class ActionObjectREAD(ActionObjectPermission):
         self.credentials = credentials
         self.permission = ActionPermission.READ
 
+
 class ActionObjectWRITE(ActionObjectPermission):
     def __init__(self, uid: UID, credentials: SyftVerifyKey):
         self.uid = uid
