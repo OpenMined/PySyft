@@ -1374,7 +1374,13 @@ class SecureContext:
             kw2id = {}
             for k, v in kwargs.items():
                 value = ActionObject.from_obj(v)
-                ptr = action_service._set(context, value)
+                ptr = action_service.set_result_to_store(
+                    value, context, has_result_read_permissions=False
+                )
+                if ptr.is_err():
+                    raise ValueError(
+                        f"failed to create argument {k} for launch job using value {v}"
+                    )
                 ptr = ptr.ok()
                 kw2id[k] = ptr.id
             try:

@@ -1,6 +1,5 @@
 # stdlib
 import importlib
-import sys
 from typing import Any
 
 # third party
@@ -83,13 +82,35 @@ class ActionService(AbstractService):
         context: AuthedServiceContext,
         action_object: ActionObject | TwinObject,
         add_storage_permission: bool = True,
+        ignore_detached_objs: bool = False,
     ) -> Result[ActionObject, str]:
         return self._set(
             context,
             action_object,
             has_result_read_permission=True,
             add_storage_permission=add_storage_permission,
+            ignore_detached_objs=ignore_detached_objs,
         )
+
+    def is_detached_obj(
+        self,
+        action_object: ActionObject | TwinObject,
+        ignore_detached_obj: bool = False,
+    ) -> bool:
+        if (
+            isinstance(action_object, TwinObject)
+            and (
+                action_object.mock_obj.syft_blob_storage_entry_id is None
+                or action_object.private_obj.syft_blob_storage_entry_id is None
+            )
+            and not ignore_detached_obj
+        ):
+            return True
+        if isinstance(action_object, ActionObject) and (
+            action_object.syft_blob_storage_entry_id is None and not ignore_detached_obj
+        ):
+            return True
+        return False
 
     def _set(
         self,
@@ -97,7 +118,12 @@ class ActionService(AbstractService):
         action_object: ActionObject | TwinObject,
         has_result_read_permission: bool = False,
         add_storage_permission: bool = True,
+        ignore_detached_objs: bool = False,
     ) -> Result[ActionObject, str]:
+        if self.is_detached_obj(action_object, ignore_detached_objs):
+            return Err(
+                "you uploaded an ActionObject that is not yet in the blob storage"
+            )
         """Save an object to the action store"""
         # 🟡 TODO 9: Create some kind of type checking / protocol for SyftSerializable
 
@@ -125,19 +151,13 @@ class ActionService(AbstractService):
         )
         if result.is_ok():
             if isinstance(action_object, TwinObject):
-                if action_object.mock_obj.syft_blob_storage_entry_id is not None:
-                    print(
-                        action_object.mock_obj.syft_blob_storage_entry_id,
-                        file=sys.stderr,
-                    )
-                    blob_id = action_object.mock_obj.syft_blob_storage_entry_id
-                    permission = ActionObjectPermission(
-                        blob_id, ActionPermission.ALL_READ
-                    )
-                    blob_storage_service: AbstractService = context.node.get_service(
-                        BlobStorageService
-                    )
-                    blob_storage_service.stash.add_permission(permission)
+                # give read permission to the mock
+                blob_id = action_object.mock_obj.syft_blob_storage_entry_id
+                permission = ActionObjectPermission(blob_id, ActionPermission.ALL_READ)
+                blob_storage_service: AbstractService = context.node.get_service(
+                    BlobStorageService
+                )
+                blob_storage_service.stash.add_permission(permission)
                 if has_result_read_permission:
                     action_object = action_object.private
                 else:
