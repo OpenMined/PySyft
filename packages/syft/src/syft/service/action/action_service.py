@@ -126,9 +126,14 @@ class ActionService(AbstractService):
         if result.is_ok():
             if isinstance(action_object, TwinObject):
                 if action_object.mock_obj.syft_blob_storage_entry_id is not None:
-                    print(action_object.mock_obj.syft_blob_storage_entry_id, file=sys.stderr)
+                    print(
+                        action_object.mock_obj.syft_blob_storage_entry_id,
+                        file=sys.stderr,
+                    )
                     blob_id = action_object.mock_obj.syft_blob_storage_entry_id
-                    permission = ActionObjectPermission(blob_id, ActionPermission.ALL_READ)
+                    permission = ActionObjectPermission(
+                        blob_id, ActionPermission.ALL_READ
+                    )
                     blob_storage_service: AbstractService = context.node.get_service(
                         BlobStorageService
                     )
@@ -213,7 +218,7 @@ class ActionService(AbstractService):
         uid: UID,
         twin_mode: TwinMode = TwinMode.PRIVATE,
         resolve_nested: bool = True,
-    ) -> Result[Ok[ActionObject], Err[str]]:
+    ) -> Result[ActionObject, str]:
         """Get an object from the action store"""
         return self._get(context, uid, twin_mode, resolve_nested=resolve_nested)
 
@@ -345,7 +350,6 @@ class ActionService(AbstractService):
             if is_approved.is_err():
                 return is_approved
         else:
-
             result = retrieve_from_db(code_item.id, kwargs, context)
             if isinstance(result, SyftError):
                 return Err(result.message)

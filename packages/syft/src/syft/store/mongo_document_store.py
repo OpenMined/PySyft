@@ -422,12 +422,12 @@ class MongoStorePartition(StorePartition):
             syft_objs.append(obj.to(self.settings.object_type, transform_context))
 
         # TODO: maybe do this in loop before this
-        res = []
-        for s in syft_objs:
-            if has_permission or self.has_permission(
-                ActionObjectREAD(uid=s.id, credentials=credentials)
-            ):
-                res.append(s)
+        res = [
+            s
+            for s in syft_objs
+            if has_permission
+            or self.has_permission(ActionObjectREAD(uid=s.id, credentials=credentials))
+        ]
         return Ok(res)
 
     def _delete(

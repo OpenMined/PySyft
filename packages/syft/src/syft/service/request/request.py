@@ -736,24 +736,27 @@ class Request(SyncableSyftObject):
 
         return job
 
-    def _get_job_from_action_object(self, action_object: ActionObject) -> Job | None:  # type: ignore
-        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
-        if api is None:
-            raise ValueError(f"Can't access the api. You must login to {self.node_uid}")
-        job_service = api.services.job
-        existing_jobs = job_service.get_by_user_code_id(self.code.id)
-        for job in existing_jobs:
-            if job.result and job.result.id == action_object.id:
-                return job
-
     def accept_by_depositing_result(
         self, result: Any, force: bool = False
     ) -> SyftError | SyftSuccess:
+        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
+        if not api:
+            raise Exception(
+                f"No access to Syft API. Please login to {self.node_uid} first."
+            )
+        if api.signing_key is None:
+            raise ValueError(f"{api}'s signing key is None")
+
         # this code is extremely brittle because its a work around that relies on
         # the type of request being very specifically tied to code which needs approving
 
         # Special case for results from Jobs (High-low side async)
         if isinstance(result, JobInfo):
+            if result.user_code_id != self.code_id:
+                return SyftError(
+                    message=f"JobInfo for user_code_id {result.user_code_id} does not match "
+                    f"request's user_code_id {self.code_id}"
+                )
             job_info = result
             if not job_info.includes_result:
                 return SyftError(
@@ -763,14 +766,16 @@ class Request(SyncableSyftObject):
         elif isinstance(result, ActionObject):
             # Do not allow accepting a result produced by a Job,
             # This can cause an inconsistent Job state
-            action_object_job = self._get_job_from_action_object(result)
+            job_service = api.services.job
+            action_object_job = job_service.get_by_result_id(result.id.id)
             if action_object_job is not None:
                 return SyftError(
-                    message=f"This ActionObject is the result of Job {action_object_job.id}, "
-                    f"please use the `Job.info` instead."
+                    message=f"This ActionObject is the result of existing Job {action_object_job.id}, "
+                    f"please use the `Job.info` instead, or create a new ActionObject."
                 )
             else:
                 job_info = JobInfo(
+                    user_code_id=self.code_id,
                     includes_metadata=True,
                     includes_result=True,
                     status=JobStatus.COMPLETED,
@@ -779,6 +784,7 @@ class Request(SyncableSyftObject):
         else:
             # NOTE result is added at the end of function (once ActionObject is created)
             job_info = JobInfo(
+                user_code_id=self.code_id,
                 includes_metadata=True,
                 includes_result=True,
                 status=JobStatus.COMPLETED,
@@ -809,13 +815,6 @@ class Request(SyncableSyftObject):
                 f"{type(user_code_status_change)}"
             )
 
-        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
-        if not api:
-            raise Exception(
-                f"No access to Syft API. Please login to {self.node_uid} first."
-            )
-        if api.signing_key is None:
-            raise ValueError(f"{api}'s signing key is None")
         is_approved = user_code_status_change.approved
 
         permission_request = self.approve(approve_nested=True)
@@ -1250,7 +1249,7 @@ class UserCodeStatusChange(Change):
     def codes(self) -> list[UserCode]:
         def recursive_code(node: Any) -> list:
             codes = []
-            for _, (obj, new_node) in node.items():
+            for obj, new_node in node.values():
                 codes.append(obj.resolve)
                 codes.extend(recursive_code(new_node))
             return codes

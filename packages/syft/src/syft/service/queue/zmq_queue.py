@@ -252,42 +252,45 @@ class ZMQProducer(QueueProducer):
             else:
                 nested_res = res.syft_action_data
                 if isinstance(nested_res, ActionObject):
-                    raise ValueError("More than double nesting of ActionObjects is currently not supported")
+                    raise ValueError(
+                        "More than double nesting of ActionObjects is currently not supported"
+                    )
                 #     nested_res.syft_node_location = res.syft_node_location
                 #     nested_res.syft_client_verify_key = res.syft_client_verify_key
                 return nested_res
         return data
 
-    def contains_nested_actionobjects(self, data: Any):
+    def contains_nested_actionobjects(self, data: Any) -> bool:
         """
         returns if this is a list/set/dict that contains ActionObjects
         """
-        def unwrap_collection(col: set | dict | list):
+
+        def unwrap_collection(col: set | dict | list) -> [Any]:  # type: ignore
             return_values = []
             if isinstance(col, dict):
                 values = list(col.values()) + list(col.keys())
             else:
                 values = list(col)
             for v in values:
-                if isinstance(v, (list, dict, set)):
+                if isinstance(v, list | dict | set):
                     return_values += unwrap_collection(v)
                 else:
                     return_values.append(v)
             return return_values
 
-        if isinstance(data, (list, dict, set)):
+        if isinstance(data, list | dict | set):
             values = unwrap_collection(data)
-            has_action_object = any([isinstance(x, ActionObject) for x in values])
+            has_action_object = any(isinstance(x, ActionObject) for x in values)
             return has_action_object
         elif isinstance(data, ActionObject):
             return True
         return False
 
     def preprocess_action_arg(self, arg: UID) -> None:
-        """"If the argument is a collection (of collections) of ActionObjects,
+        """ "If the argument is a collection (of collections) of ActionObjects,
         We want to flatten the collection and upload a new ActionObject that contains
-        its values. E.g. [[ActionObject1, ActionObject2],[ActionObject3, ActionObject4]] 
-        -> [[value1, value2],[value3, value4]] 
+        its values. E.g. [[ActionObject1, ActionObject2],[ActionObject3, ActionObject4]]
+        -> [[value1, value2],[value3, value4]]
         """
         res = self.action_service.get(context=self.auth_context, uid=arg)
         if res.is_err():
@@ -296,7 +299,7 @@ class ZMQProducer(QueueProducer):
         data = action_object.syft_action_data
         if self.contains_nested_actionobjects(data):
             new_data = self.unwrap_nested_actionobjects(data)
-        
+
             new_action_object = ActionObject.from_obj(
                 new_data,
                 id=action_object.id,
@@ -386,7 +389,6 @@ class ZMQProducer(QueueProducer):
                         item,
                         res.err(),
                     )
-                
 
     def run(self) -> None:
         self.thread = threading.Thread(target=self._run)
@@ -527,7 +529,7 @@ class ZMQProducer(QueueProducer):
             if self._stop.is_set():
                 return
 
-            for _, service in self.services.items():
+            for service in self.services.values():
                 self.dispatch(service, None)
 
             items = None
@@ -979,12 +981,12 @@ class ZMQClient(QueueClient):
 
     def close(self) -> SyftError | SyftSuccess:
         try:
-            for _, consumers in self.consumers.items():
+            for consumers in self.consumers.values():
                 for consumer in consumers:
                     # make sure look is stopped
                     consumer.close()
 
-            for _, producer in self.producers.items():
+            for producer in self.producers.values():
                 # make sure loop is stopped
                 producer.close()
                 # close existing connection.

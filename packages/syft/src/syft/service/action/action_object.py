@@ -664,9 +664,10 @@ BASE_PASSTHROUGH_ATTRS: list[str] = [
     "__table_coll_widths__",
 ]
 
-def truncate_str(string, length = 100):
+
+def truncate_str(string: str, length: int = 100) -> str:
     if len(string) > length:
-        string = string[:length] + '... data too long, truncated to 100 characters'
+        string = string[:length] + "... data too long, truncated to 100 characters"
     return string
 
 
@@ -1101,14 +1102,9 @@ class ActionObject(SyncableSyftObject):
         if kwargs is None:
             kwargs = {}
 
-        arg_ids = []
-        kwarg_ids = {}
+        arg_ids = [self._syft_prepare_obj_uid(obj) for obj in args]
 
-        for obj in args:
-            arg_ids.append(self._syft_prepare_obj_uid(obj))
-
-        for k, obj in kwargs.items():
-            kwarg_ids[k] = self._syft_prepare_obj_uid(obj)
+        kwarg_ids = {k: self._syft_prepare_obj_uid(obj) for k, obj in kwargs.items()}
 
         action = Action(
             path=path,
@@ -2183,7 +2179,7 @@ def has_action_data_empty(args: Any, kwargs: Any) -> bool:
         if is_action_data_empty(a):
             return True
 
-    for _, a in kwargs.items():
+    for a in kwargs.values():
         if is_action_data_empty(a):
             return True
     return False
