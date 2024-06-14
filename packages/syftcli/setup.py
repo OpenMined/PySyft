@@ -9,7 +9,7 @@ packages = [
     "pyyaml==6.0.1",
     "packaging==24.0",
     "typer[all]==0.12.3",
-    "typing_extensions==4.12.1",
+    "typing_extensions==4.12.2",
 ]
 
 build_packages = [
