@@ -665,6 +665,7 @@ BASE_PASSTHROUGH_ATTRS: list[str] = [
     "_data_repr",
     "syft_eq",
     "__table_coll_widths__",
+    "_clear_cache",
     "_set_reprs",
 ]
 
