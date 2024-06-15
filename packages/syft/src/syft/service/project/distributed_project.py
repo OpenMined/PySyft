@@ -71,6 +71,7 @@ class DistributedProject(BaseModel):
                 raise SyftException(project.message)
             all_projects[client] = project
 
+        # TODO verify that DS passed all clients in the args correctly, else raise exception
         # TODO verify that all the projects in the `all_projects` list are the same
         project = next(iter(all_projects.values()))
         description = project.description

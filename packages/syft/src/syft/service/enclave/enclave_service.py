@@ -188,6 +188,8 @@ class EnclaveService(AbstractService):
             .ok()
             for action_id in asset_action_ids
         ]
+        # Load all the action data into the action objects
+        [action_object.syft_action_data for action_object in action_objects]
 
         # Get the enclave client
         provider = code.deployment_policy_init_kwargs.get("provider")
@@ -198,17 +200,49 @@ class EnclaveService(AbstractService):
         enclave_client = provider.get_client(verify_key=context.node.verify_key)
 
         # Upload the assets to the enclave
-        for action_object in action_objects:
-            action_object.syft_node_uid = enclave_client.id
-            action_object.syft_action_data_node_id = enclave_client.id
-            enclave_action_object = enclave_client.api.services.action.set(
-                action_object=action_object
-            )
-            enclave_action_object._save_to_blob_storage_(action_object.syft_action_data)
-            # TODO 🟣 Rollback all uploaded assets if any error occurs
+        result = enclave_client.api.services.enclave.upload_input_data_for_code(
+            service_func_name=service_func_name, action_objects=action_objects
+        )
+        if isinstance(result, SyftError):
+            return result
 
         return SyftSuccess(
             message=f"Assets transferred from Domain '{context.node.name}' to Enclave '{enclave_client.name}'"
+        )
+
+    @service_method(
+        path="enclave.upload_input_data_for_code",
+        name="upload_input_data_for_code",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,  # TODO 🟣 update this
+    )
+    def upload_input_data_for_code(
+        self,
+        context: AuthedServiceContext,
+        service_func_name: str,
+        action_objects: list[ActionObject] | list[TwinObject],
+    ) -> SyftSuccess | SyftError:
+        if not context.node or not context.node.signing_key:
+            return SyftError(message=f"{type(context)} has no node")
+
+        code_service = context.node.get_service("usercodeservice")
+        action_service = context.node.get_service("actionservice")
+
+        # Get the code
+        code: UserCode = code_service.get_by_service_name(
+            context=context, service_func_name=service_func_name
+        )[-1]  # TODO also match code hash to get the actual code
+        if not code or code.input_policy_init_kwargs is None:
+            return SyftError(message="No assets to transfer")
+
+        for action_object in action_objects:
+            action_object.syft_node_uid = context.node.id
+            action_object.syft_action_data_node_id = context.node.id
+            result = action_service.set(context=context, action_object=action_object)
+            if result.is_err():
+                # TODO 🟣 Rollback previously uploaded assets if any error occurs
+                return result
+        return SyftSuccess(
+            message=f"{len(action_objects)} assets uploaded successfully"
         )
 
     @service_method(
