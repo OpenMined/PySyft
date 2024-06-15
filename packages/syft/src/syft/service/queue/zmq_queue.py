@@ -255,8 +255,6 @@ class ZMQProducer(QueueProducer):
                     raise ValueError(
                         "More than double nesting of ActionObjects is currently not supported"
                     )
-                #     nested_res.syft_node_location = res.syft_node_location
-                #     nested_res.syft_client_verify_key = res.syft_client_verify_key
                 return nested_res
         return data
 

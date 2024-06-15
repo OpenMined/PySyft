@@ -698,17 +698,27 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
         if private_obj is None and mock_obj is None:
             raise ValueError("No data and no action_id means this asset has no data")
 
+        asset = context.obj
+        contains_empty = asset.contains_empty()
         twin = TwinObject(
-            private_obj=private_obj,
-            mock_obj=mock_obj,
+            private_obj=asset.data,
+            mock_obj=asset.mock,
+            syft_node_location=asset.syft_node_location,
+            syft_client_verify_key=asset.syft_client_verify_key,
         )
+        res = twin._save_to_blob_storage(allow_empty=contains_empty)
+        if isinstance(res, SyftError):
+            raise ValueError(res.message)
+
+        # TODO, upload to blob storage here
         if context.node is None:
             raise ValueError(
                 "f{context}'s node is None, please log in. No trasformation happened"
             )
         action_service = context.node.get_service("actionservice")
         result = action_service._set(
-            context=context.to_node_context(), action_object=twin
+            context=context.to_node_context(),
+            action_object=twin,
         )
         if result.is_err():
             raise RuntimeError(f"Failed to create and store twin. Error: {result}")

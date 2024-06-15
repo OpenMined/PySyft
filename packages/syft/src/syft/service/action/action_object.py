@@ -755,7 +755,6 @@ class ActionObject(SyncableSyftObject):
             res = self.reload_cache()
             if isinstance(res, SyftError):
                 print(res)
-
         return self.syft_action_data_cache
 
     def reload_cache(self) -> SyftError | None:

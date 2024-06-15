@@ -203,13 +203,6 @@ def handle_message_multiprocessing(
             context=context,
             user_verify_key=credentials,
         )
-        # import syft as sy
-        # res = [(x, x.syft_blob_storage_entry_id) if isinstance(x, sy.ActionObject) \
-        #         else (x, x.private.syft_blob_storage_entry_id)
-        #         for x in context.node.action_store.data.values()]
-        # import sys
-        # print("KWARGS", kwargs, kwargs["data"])
-        # print(res, file=sys.stderr)
 
         result: Any = call_method(context, *queue_item.args, **queue_item.kwargs)
 

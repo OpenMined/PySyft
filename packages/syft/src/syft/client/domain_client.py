@@ -139,17 +139,12 @@ class DomainClient(SyftClient):
                     if isinstance(res, SyftError):
                         return res
                 except Exception as e:
-                    # stdlib
-                    import traceback
-
-                    print(traceback.format_exc())
                     tqdm.write(f"Failed to create twin for {asset.name}. {e}")
                     return SyftError(message=f"Failed to create twin. {e}")
 
                 response = self.api.services.action.set(
                     twin, ignore_detached_objs=contains_empty
                 )
-                print(response)
                 if isinstance(response, SyftError):
                     tqdm.write(f"Failed to upload asset: {asset.name}")
                     return response
