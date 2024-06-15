@@ -4,7 +4,6 @@ from datetime import datetime
 from enum import Enum
 import textwrap
 from typing import Any
-from typing import cast
 
 # third party
 from IPython.display import display
@@ -699,13 +698,13 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
         if private_obj is None and mock_obj is None:
             raise ValueError("No data and no action_id means this asset has no data")
 
-        asset = cast(context.obj, CreateAsset)
-        contains_empty = asset.contains_empty()
+        asset = context.obj  # type: ignore
+        contains_empty = asset.contains_empty()  # type: ignore
         twin = TwinObject(
-            private_obj=asset.data,
-            mock_obj=asset.mock,
-            syft_node_location=asset.syft_node_location,
-            syft_client_verify_key=asset.syft_client_verify_key,
+            private_obj=asset.data,  # type: ignore
+            mock_obj=asset.mock,  # type: ignore
+            syft_node_location=asset.syft_node_location,  # type: ignore
+            syft_client_verify_key=asset.syft_client_verify_key,  # type: ignore
         )
         res = twin._save_to_blob_storage(allow_empty=contains_empty)
         if isinstance(res, SyftError):
