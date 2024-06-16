@@ -1,6 +1,7 @@
 # stdlib
 import base64
 import binascii
+from collections.abc import AsyncGenerator
 from typing import Annotated
 
 # third party
@@ -62,7 +63,7 @@ def make_routes(worker: Worker) -> APIRouter:
         return connection
 
     @router.get("/stream/{peer_uid}/{url_path}/", name="stream")
-    async def stream(peer_uid: str, url_path: str) -> StreamingResponse:
+    async def stream_download(peer_uid: str, url_path: str) -> StreamingResponse:
         try:
             url_path_parsed = base64.urlsafe_b64decode(url_path.encode()).decode()
         except binascii.Error:
@@ -78,6 +79,38 @@ def make_routes(worker: Worker) -> APIRouter:
             raise HTTPException(404, "Failed to retrieve data from domain.")
 
         return StreamingResponse(stream_response, media_type="text/event-stream")
+
+    async def read_request_body_in_chunks(
+        request: Request,
+    ) -> AsyncGenerator[bytes, None]:
+        async for chunk in request.stream():
+            yield chunk
+
+    @router.put("/stream/{peer_uid}/{url_path}/", name="stream")
+    async def stream_upload(peer_uid: str, url_path: str, request: Request) -> Response:
+        try:
+            url_path_parsed = base64.urlsafe_b64decode(url_path.encode()).decode()
+        except binascii.Error:
+            raise HTTPException(404, "Invalid `url_path`.")
+
+        data = await request.body()
+
+        peer_uid_parsed = UID.from_string(peer_uid)
+
+        try:
+            peer_connection = _get_node_connection(peer_uid_parsed)
+            url = peer_connection.to_blob_route(url_path_parsed)
+
+            print("Url on stream", url.path)
+            response = peer_connection._make_put(url.path, data=data, stream=True)
+        except requests.RequestException:
+            raise HTTPException(404, "Failed to upload data to domain")
+
+        return Response(
+            content=response.content,
+            headers=response.headers,
+            media_type="application/octet-stream",
+        )
 
     @router.get(
         "/",

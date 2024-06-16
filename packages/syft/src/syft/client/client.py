@@ -4,6 +4,7 @@ from __future__ import annotations
 # stdlib
 import base64
 from collections.abc import Callable
+from collections.abc import Generator
 from collections.abc import Iterator
 from copy import deepcopy
 from enum import Enum
@@ -215,6 +216,35 @@ class HTTPConnection(NodeConnection):
             return response.iter_content(chunk_size=None)
 
         return response.content
+
+    def _make_put(
+        self, path: str, data: bytes | Generator, stream: bool = False
+    ) -> Response:
+        headers = {}
+        url = self.url
+
+        if self.rathole_token:
+            url = GridURL.from_url(INTERNAL_PROXY_TO_RATHOLE)
+            headers = {"Host": self.url.host_or_ip}
+
+        url = url.with_path(path)
+        response = self.session.put(
+            str(url),
+            verify=verify_tls(),
+            proxies={},
+            data=data,
+            headers=headers,
+            stream=stream,
+        )
+        if response.status_code != 200:
+            raise requests.ConnectionError(
+                f"Failed to fetch {url}. Response returned with code {response.status_code}"
+            )
+
+        # upgrade to tls if available
+        self.url = upgrade_tls(self.url, response)
+
+        return response
 
     def _make_post(
         self,
