@@ -165,9 +165,18 @@ class DistributedProject(BaseModel):
                 raise SyftException(assets_transferred.message)
             print(assets_transferred.message)
 
-        # TODO Return the results
+        result_parts = []
+        for client in self.clients.values():
+            result = client.api.services.enclave.request_execution(
+                service_func_name=self.code.service_func_name
+            )
+            if isinstance(result, SyftError):
+                raise SyftException(result.message)
+            result_parts.append(result)
+
+        # TODO reconstruct the result from the parts and return
         # TODO Cleanup the Enclave in owner domain node
-        return None
+        return result_parts[0]
 
     def _get_clients_from_code(self) -> dict[UID, SyftClient]:
         if not self.code or not self.code.input_policy_init_kwargs:
