@@ -123,6 +123,7 @@ class ActionService(AbstractService):
         has_result_read_permission: bool = False,
         add_storage_permission: bool = True,
         ignore_detached_objs: bool = False,
+        skip_clear_cache: bool = False
     ) -> Result[ActionObject, str]:
         if self.is_detached_obj(action_object, ignore_detached_objs):
             return Err(
@@ -133,12 +134,14 @@ class ActionService(AbstractService):
 
         if isinstance(action_object, ActionObject):
             action_object.syft_created_at = DateTime.now()
-            action_object._clear_cache()
+            if not skip_clear_cache:
+                action_object._clear_cache()
         else:
             action_object.private_obj.syft_created_at = DateTime.now()  # type: ignore[unreachable]
             action_object.mock_obj.syft_created_at = DateTime.now()
-            action_object.private_obj._clear_cache()
-            action_object.mock_obj._clear_cache()
+            if not skip_clear_cache:
+                action_object.private_obj._clear_cache()
+                action_object.mock_obj._clear_cache()
 
         # If either context or argument is True, has_result_read_permission is True
         has_result_read_permission = (
