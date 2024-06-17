@@ -98,11 +98,33 @@ class SyftException(Exception):
 
 
 class ExceptionFilter(tuple):
-    def __init__(self, path: str) -> None:
-        self.path = path
+    """
+    Filter and store all exception classes from a given module path. This class can be
+    used in try/except blocks to handle these exceptions as a group (see example).
 
-    def __new__(cls, path: str) -> Self:
-        module = import_module(path)
+    Attributes:
+        module (str): The name of the module from which exceptions are filtered.
+
+    Example:
+        ```
+        from syft.types.errors import ExceptionFilter
+
+        try:
+            ...
+        except ExceptionFilter("google.cloud.bigquery") as e:
+            ...
+        ```
+
+    """
+    def __init__(self, module: str) -> None:
+        self.module = module
+
+    def __new__(cls, module_name: str) -> Self:
+        """
+        Creates a new instance of ExceptionFilter, which gathers all exception classes
+        from the specified module and stores them as a tuple.
+        """
+        module = import_module(module_name)
 
         exceptions = (
             obj
@@ -112,7 +134,7 @@ class ExceptionFilter(tuple):
 
         instance = super().__new__(cls, exceptions)
 
-        instance.path = path
+        instance.module = module_name
 
         return instance
 
