@@ -113,22 +113,22 @@ class ExceptionFilter(tuple):
     def __init__(self, module: str) -> None:
         self.module = module
 
-    def __new__(cls, module_name: str) -> Self:
+    def __new__(cls, module: str) -> Self:
         """
         Creates a new instance of ExceptionFilter, which gathers all exception classes
         from the specified module and stores them as a tuple.
         """
-        module = import_module(module_name)
+        imported_module = import_module(module)
 
         exceptions = (
             obj
-            for _, obj in inspect.getmembers(module, inspect.isclass)
+            for _, obj in inspect.getmembers(imported_module, inspect.isclass)
             if issubclass(obj, BaseException) and not issubclass(obj, Warning)
         )
 
         instance = super().__new__(cls, exceptions)
 
-        instance.module = module_name
+        instance.module = module
 
         return instance
 
