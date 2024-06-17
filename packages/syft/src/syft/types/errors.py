@@ -109,6 +109,7 @@ class ExceptionFilter(tuple):
             ...
         ```
     """
+
     def __init__(self, module: str) -> None:
         self.module = module
 
@@ -117,13 +118,15 @@ class ExceptionFilter(tuple):
         Creates a new instance of ExceptionFilter, which gathers all exception classes
         from the specified module and stores them as a tuple.
         """
+        exceptions: tuple[type[BaseException], ...]
+
         try:
             imported_module = import_module(module)
         except ModuleNotFoundError:
             # TODO: log warning
             exceptions = ()
         else:
-            exceptions = (
+            exceptions = tuple(
                 obj
                 for _, obj in inspect.getmembers(imported_module, inspect.isclass)
                 if issubclass(obj, BaseException) and not issubclass(obj, Warning)
