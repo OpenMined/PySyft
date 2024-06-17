@@ -561,7 +561,7 @@ class SyftClient:
         if isinstance(self.connection, HTTPConnection):
             self.connection.set_headers(headers)
             return None
-        return SyftError(
+        return SyftError(  # type: ignore
             message="Incompatible connection type."
             + f"Expected HTTPConnection, got {type(self.connection)}"
         )
