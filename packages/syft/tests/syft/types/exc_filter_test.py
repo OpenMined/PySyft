@@ -60,11 +60,14 @@ def test_exception_filter_exceptions():
 
 def test_not_found_module_doesnt_crash():
     instance = ExceptionFilter("fake_syft_module")
+
     assert instance == ()
 
 
 def test_exception_filter_no_exceptions():
     module_name = "syft_test_empty_module"
-    create_empty_module("syft_test_empty_module")
+
+    create_empty_module(module_name)
     instance = ExceptionFilter(module=module_name)
+
     assert tuple(instance) == ()
