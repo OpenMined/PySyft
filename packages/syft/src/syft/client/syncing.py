@@ -16,6 +16,7 @@ from ..service.sync.resolve_widget import ResolveWidget
 from ..service.sync.sync_state import SyncState
 from ..types.uid import UID
 from ..util.decorators import deprecated
+from ..util.util import prompt_warning_message
 from .domain_client import DomainClient
 from .sync_decision import SyncDecision
 from .sync_decision import SyncDirection
@@ -29,7 +30,7 @@ def compare_states(
     filter_by_email: str | None = None,
     include_types: Collection[str | type] | None = None,
     exclude_types: Collection[str | type] | None = None,
-    _hide_usercode: bool = True,
+    hide_usercode: bool = True,
 ) -> NodeDiff | SyftError:
     # NodeDiff
     if (
@@ -51,7 +52,11 @@ def compare_states(
             "Invalid node side types: can only compare a high and low node"
         )
 
-    if _hide_usercode:
+    if hide_usercode:
+        prompt_warning_message(
+            "User code is hidden by default, as they are also part of the Request."
+            " If you want to include them, set hide_usercode=False."
+        )
         exclude_types = exclude_types or []
         exclude_types.append("usercode")
 
@@ -75,7 +80,7 @@ def compare_clients(
     filter_by_email: str | None = None,
     include_types: Collection[str | type] | None = None,
     exclude_types: Collection[str | type] | None = None,
-    _hide_usercode: bool = True,
+    hide_usercode: bool = True,
 ) -> NodeDiff | SyftError:
     from_state = from_client.get_sync_state()
     if isinstance(from_state, SyftError):
@@ -93,7 +98,7 @@ def compare_clients(
         filter_by_email=filter_by_email,
         include_types=include_types,
         exclude_types=exclude_types,
-        _hide_usercode=_hide_usercode,
+        hide_usercode=hide_usercode,
     )
 
 
