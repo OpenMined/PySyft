@@ -123,7 +123,7 @@ class ActionService(AbstractService):
         has_result_read_permission: bool = False,
         add_storage_permission: bool = True,
         ignore_detached_objs: bool = False,
-        skip_clear_cache: bool = False
+        skip_clear_cache: bool = False,
     ) -> Result[ActionObject, str]:
         if self.is_detached_obj(action_object, ignore_detached_objs):
             return Err(

@@ -96,7 +96,7 @@ def test_plan_with_function_call(worker, guest_client):
         mock_obj=np.array([[1, 1, 1], [1, 1, 1]]),
     )
 
-    input_obj = root_domain_client.api.services.action.set(input_obj)
+    input_obj = input_obj.send(root_domain_client)
     pointer = guest_client.api.services.action.get_pointer(input_obj.id)
     res_ptr = plan_ptr(x=pointer)
 
