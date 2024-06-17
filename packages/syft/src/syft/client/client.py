@@ -48,6 +48,7 @@ from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..types.grid_url import GridURL
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
+from ..types.syft_object import SYFT_OBJECT_VERSION_3
 from ..types.uid import UID
 from ..util.logger import debug
 from ..util.telemetry import instrument
@@ -130,7 +131,7 @@ class Routes(Enum):
 
 
 @serializable(attrs=["proxy_target_uid", "url"])
-class HTTPConnection(NodeConnection):
+class HTTPConnectionV2(NodeConnection):
     __canonical_name__ = "HTTPConnection"
     __version__ = SYFT_OBJECT_VERSION_2
 
@@ -138,6 +139,18 @@ class HTTPConnection(NodeConnection):
     proxy_target_uid: UID | None = None
     routes: type[Routes] = Routes
     session_cache: Session | None = None
+
+
+@serializable(attrs=["proxy_target_uid", "url"])
+class HTTPConnection(NodeConnection):
+    __canonical_name__ = "HTTPConnection"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    url: GridURL
+    proxy_target_uid: UID | None = None
+    routes: type[Routes] = Routes
+    session_cache: Session | None = None
+    headers: dict[str, str] | None = None
 
     @field_validator("url", mode="before")
     @classmethod
@@ -147,6 +160,9 @@ class HTTPConnection(NodeConnection):
             if isinstance(v, str | GridURL)
             else v
         )
+
+    def set_headers(self, headers: dict[str, str]) -> None:
+        self.headers = headers
 
     def with_proxy(self, proxy_target_uid: UID) -> Self:
         return HTTPConnection(url=self.url, proxy_target_uid=proxy_target_uid)
@@ -185,7 +201,11 @@ class HTTPConnection(NodeConnection):
     def _make_get(self, path: str, params: dict | None = None) -> bytes:
         url = self.url.with_path(path)
         response = self.session.get(
-            str(url), verify=verify_tls(), proxies={}, params=params
+            str(url),
+            headers=self.headers,
+            verify=verify_tls(),
+            proxies={},
+            params=params,
         )
         if response.status_code != 200:
             raise requests.ConnectionError(
@@ -205,7 +225,12 @@ class HTTPConnection(NodeConnection):
     ) -> bytes:
         url = self.url.with_path(path)
         response = self.session.post(
-            str(url), verify=verify_tls(), json=json, proxies={}, data=data
+            str(url),
+            headers=self.headers,
+            verify=verify_tls(),
+            json=json,
+            proxies={},
+            data=data,
         )
         if response.status_code != 200:
             raise requests.ConnectionError(
@@ -220,7 +245,7 @@ class HTTPConnection(NodeConnection):
     def stream_data(self, credentials: SyftSigningKey) -> Response:
         url = self.url.with_path(self.routes.STREAM.value)
         response = self.session.get(
-            str(url), verify=verify_tls(), proxies={}, stream=True
+            str(url), verify=verify_tls(), proxies={}, stream=True, headers=self.headers
         )
         return response
 
@@ -310,6 +335,7 @@ class HTTPConnection(NodeConnection):
         response = requests.post(  # nosec
             url=str(self.api_url),
             data=msg_bytes,
+            headers=self.headers,
         )
 
         if response.status_code != 200:
@@ -529,6 +555,15 @@ class SyftClient:
         self.metadata = cast(NodeMetadataJSON, self.metadata)
         self.communication_protocol = self._get_communication_protocol(
             self.metadata.supported_protocols
+        )
+
+    def set_headers(self, headers: dict[str, str]) -> None | SyftError:
+        if isinstance(self.connection, HTTPConnection):
+            self.connection.set_headers(headers)
+            return None
+        return SyftError(
+            message="Incompatible connection type."
+            + f"Expected HTTPConnection, got {type(self.connection)}"
         )
 
     def _get_communication_protocol(
