@@ -124,12 +124,6 @@ class UserCodeStatusCollection(SyncableSyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     __repr_attrs__ = ["approved", "status_dict"]
-
-    # if len(output_history): {uid: approved},
-    # if denied string is somewhere: {uid: denied}
-    # else: {uid: pending}
-    # - the object is completely different for l2/l0
-    # - the interface is different (because we need context in backend to get output_history)
     status_dict: dict[NodeIdentity, tuple[UserCodeStatus, str]] = {}
     user_code_link: LinkedObject
 
