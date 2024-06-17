@@ -17,6 +17,7 @@ from typing import Any
 
 # third party
 from RestrictedPython import compile_restricted
+import requests
 from result import Err
 from result import Ok
 from result import Result
@@ -71,9 +72,7 @@ def filter_only_uids(results: Any) -> list[UID] | dict[str, UID] | UID:
         results = [results]
 
     if isinstance(results, list):
-        output_list = []
-        for v in results:
-            output_list.append(extract_uid(v))
+        output_list = [extract_uid(v) for v in results]
         return output_list
     elif isinstance(results, dict):
         output_dict = {}
@@ -151,15 +150,20 @@ def partition_by_node(kwargs: dict[str, Any]) -> dict[NodeIdentity, dict[str, UI
 
         _obj_exists = False
         for api in api_list:
-            if api.services.action.exists(uid):
-                node_identity = NodeIdentity.from_api(api)
-                if node_identity not in output_kwargs:
-                    output_kwargs[node_identity] = {k: uid}
-                else:
-                    output_kwargs[node_identity].update({k: uid})
+            try:
+                if api.services.action.exists(uid):
+                    node_identity = NodeIdentity.from_api(api)
+                    if node_identity not in output_kwargs:
+                        output_kwargs[node_identity] = {k: uid}
+                    else:
+                        output_kwargs[node_identity].update({k: uid})
 
-                _obj_exists = True
-                break
+                    _obj_exists = True
+                    break
+            except requests.exceptions.ConnectionError:
+                # To handle the cases , where there an old api objects in
+                # in APIRegistry
+                continue
 
         if not _obj_exists:
             raise Exception(f"Input data {k}:{uid} does not belong to any Domain")
@@ -706,14 +710,16 @@ def process_class_code(raw_code: str, class_name: str) -> str:
         "Tuple",
         "Type",
     ]
-    for typing_type in typing_types:
-        new_body.append(
-            ast.ImportFrom(
-                module="typing",
-                names=[ast.alias(name=typing_type, asname=typing_type)],
-                level=0,
-            )
+    new_body.append(
+        ast.ImportFrom(
+            module="typing",
+            names=[
+                ast.alias(name=typing_type, asname=typing_type)
+                for typing_type in typing_types
+            ],
+            level=0,
         )
+    )
     new_body.append(new_class)
     module = ast.Module(new_body, type_ignores=[])
     try:

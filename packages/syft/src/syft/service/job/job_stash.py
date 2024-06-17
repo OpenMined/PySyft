@@ -5,6 +5,7 @@ from datetime import timezone
 from enum import Enum
 import random
 from string import Template
+from time import sleep
 from typing import Any
 
 # third party
@@ -43,6 +44,7 @@ from ...util.util import prompt_warning_message
 from ..action.action_object import Action
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
+from ..log.log import SyftLog
 from ..response import SyftError
 from ..response import SyftNotReady
 from ..response import SyftSuccess
@@ -352,7 +354,7 @@ class Job(SyncableSyftObject):
             )
         return api.services.user.get_current_user(self.id)
 
-    def _get_log_objs(self) -> SyftObject | SyftError:
+    def _get_log_objs(self) -> SyftLog | SyftError:
         api = APIRegistry.api_for(
             node_uid=self.node_uid,
             user_verify_key=self.syft_client_verify_key,
@@ -384,12 +386,12 @@ class Job(SyncableSyftObject):
 
         if stderr:
             try:
-                std_err_log = api.services.log.get_error(self.log_id)
-                if isinstance(std_err_log, SyftError):
+                stderr_log = api.services.log.get_stderr(self.log_id)
+                if isinstance(stderr_log, SyftError):
                     results.append(f"Error log {self.log_id} not available")
                     has_permissions = False
                 else:
-                    results.append(std_err_log)
+                    results.append(stderr_log)
             except Exception:
                 # no access
                 if isinstance(self.result, Err):
@@ -643,23 +645,30 @@ class Job(SyncableSyftObject):
     def wait(
         self, job_only: bool = False, timeout: int | None = None
     ) -> Any | SyftNotReady:
-        # stdlib
-        from time import sleep
+        self.fetch()
+        if self.resolved:
+            return self.resolve
 
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
-        if self.resolved:
-            return self.resolve
-
-        if not job_only and self.result is not None:
-            self.result.wait(timeout)
-
         if api is None:
             raise ValueError(
                 f"Can't access Syft API. You must login to {self.syft_node_location}"
             )
+
+        workers = api.services.worker.get_all()
+        if not isinstance(workers, SyftError) and len(workers) == 0:
+            return SyftError(
+                message="This node has no workers. "
+                "You need to start a worker to run jobs "
+                "by setting n_consumers > 0."
+            )
+
+        if not job_only and self.result is not None:
+            self.result.wait(timeout)
+
         print_warning = True
         counter = 0
         while True:
@@ -723,7 +732,6 @@ class Job(SyncableSyftObject):
         return dependencies
 
 
-@serializable()
 class JobInfo(SyftObject):
     __canonical_name__ = "JobInfo"
     __version__ = SYFT_OBJECT_VERSION_2
@@ -748,6 +756,7 @@ class JobInfo(SyftObject):
     includes_result: bool
     # TODO add logs (error reporting PRD)
 
+    user_code_id: UID | None = None
     resolved: bool | None = None
     status: JobStatus | None = None
     n_iters: int | None = None
@@ -792,6 +801,7 @@ class JobInfo(SyftObject):
         info = cls(
             includes_metadata=metadata,
             includes_result=result,
+            user_code_id=job.user_code_id,
         )
 
         if metadata:
@@ -849,7 +859,7 @@ class JobStash(BaseStash):
             if len(res) == 0:
                 return Ok(None)
             elif len(res) > 1:
-                return Err(SyftError(message="multiple Jobs found"))
+                return Err("multiple Jobs found")
             else:
                 return Ok(res[0])
 

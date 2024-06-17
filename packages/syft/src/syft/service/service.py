@@ -289,7 +289,7 @@ def reconstruct_args_kwargs(
         else:
             raise Exception(f"Missing {param_key} not in kwargs.")
 
-    if "context":
+    if "context" in kwargs:
         final_kwargs["context"] = kwargs["context"]
 
     return (args, final_kwargs)
