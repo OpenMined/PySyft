@@ -26,12 +26,6 @@ class SyftException(Exception):
 
     public_message = "An error occurred. Contact the admin for more information."
 
-    def __new__(cls, *args: Any, **kwargs: Any) -> Self:
-        exc = super().__new__(cls, *args, **kwargs)
-        # removes irrelevant frames from the traceback (e.g. as_result decorator)
-        process_traceback(exc)
-        return exc
-
     def __init__(
         self,
         private_message: str | None = None,
