@@ -104,9 +104,10 @@ def as_result(
                 if isinstance(output, Ok) or isinstance(output, Err):
                     raise _AsResultError(
                         f"Functions decorated with `as_result` should not return Result.\n"
-                        f"output: {output}"
+                        f"Did you forget to unwrap() the result?\n"
+                        f"result: {output}"
                     )
-                return Ok(func(*args, **kwargs))
+                return Ok(output)
             except exceptions as exc:
                 if convert_to_syft_exception and not isinstance(exc, SyftException):
                     exc = SyftException.from_exception(exc)  # type: ignore

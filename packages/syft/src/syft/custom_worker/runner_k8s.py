@@ -28,19 +28,21 @@ class KubernetesRunner:
         replicas: int = 1,
         env_vars: list[dict] | None = None,
         mount_secrets: dict | None = None,
-        reg_username: str | None = None,
-        reg_password: str | None = None,
+        registry_username: str | None = None,
+        registry_password: str | None = None,
         reg_url: str | None = None,
+        pod_annotations: dict[str, str] | None = None,
+        pod_labels: dict[str, str] | None = None,
         **kwargs: Any,
     ) -> StatefulSet:
         try:
             # create pull secret if registry credentials are passed
             pull_secret = None
-            if reg_username and reg_password and reg_url:
+            if registry_username and registry_password and reg_url:
                 pull_secret = self._create_image_pull_secret(
                     pool_name,
-                    reg_username,
-                    reg_password,
+                    registry_username,
+                    registry_password,
                     reg_url,
                 )
 
@@ -52,6 +54,8 @@ class KubernetesRunner:
                 env_vars=env_vars,
                 mount_secrets=mount_secrets,
                 pull_secret=pull_secret,
+                pod_annotations=pod_annotations,
+                pod_labels=pod_labels,
                 **kwargs,
             )
 
@@ -126,8 +130,8 @@ class KubernetesRunner:
     def _create_image_pull_secret(
         self,
         pool_name: str,
-        reg_username: str,
-        reg_password: str,
+        registry_username: str,
+        registry_password: str,
         reg_url: str,
         **kwargs: Any,
     ) -> Secret:
@@ -135,7 +139,7 @@ class KubernetesRunner:
             secret_name=f"pull-secret-{pool_name}",
             component=pool_name,
             registries=[
-                (reg_url, reg_username, reg_password),
+                (reg_url, registry_username, registry_password),
             ],
         )
 
@@ -147,6 +151,8 @@ class KubernetesRunner:
         env_vars: list[dict] | None = None,
         mount_secrets: dict | None = None,
         pull_secret: Secret | None = None,
+        pod_annotations: dict[str, str] | None = None,
+        pod_labels: dict[str, str] | None = None,
         **kwargs: Any,
     ) -> StatefulSet:
         """Create a stateful set for a pool"""
@@ -182,6 +188,16 @@ class KubernetesRunner:
                 }
             ]
 
+        default_pod_labels = {
+            "app.kubernetes.io/name": KUBERNETES_NAMESPACE,
+            "app.kubernetes.io/component": pool_name,
+        }
+
+        if isinstance(pod_labels, dict):
+            pod_labels = {**default_pod_labels, **pod_labels}
+        else:
+            pod_labels = default_pod_labels
+
         stateful_set = StatefulSet(
             {
                 "metadata": {
@@ -201,10 +217,8 @@ class KubernetesRunner:
                     },
                     "template": {
                         "metadata": {
-                            "labels": {
-                                "app.kubernetes.io/name": KUBERNETES_NAMESPACE,
-                                "app.kubernetes.io/component": pool_name,
-                            }
+                            "labels": pod_labels,
+                            "annotations": pod_annotations,
                         },
                         "spec": {
                             # TODO: make this configurable
