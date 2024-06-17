@@ -2,7 +2,6 @@
 
 # relative
 from ...abstract_node import NodeType
-from ...exceptions.user import UserAlreadyExistsException
 from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...node.credentials import UserLoginCredentials
@@ -37,6 +36,7 @@ from .user import UserView
 from .user import UserViewPage
 from .user import check_pwd
 from .user import salt_and_hash_password
+from .user_errors import UserAlreadyExistsError
 from .user_roles import ADMIN_ROLE_LEVEL
 from .user_roles import DATA_OWNER_ROLE_LEVEL
 from .user_roles import DATA_SCIENTIST_ROLE_LEVEL
@@ -272,7 +272,7 @@ class UserService(AbstractService):
                 email=user_update.email
             )
             if user_with_email_exists:
-                raise UserAlreadyExistsException.raise_with_context(context=context)
+                raise UserAlreadyExistsError
 
         if result.is_err():
             error_msg = (
