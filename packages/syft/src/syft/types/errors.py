@@ -34,7 +34,7 @@ class SyftException(Exception):
 
     def __init__(
         self,
-        private_message: str,
+        private_message: str | None = None,
         public_message: str | None = None,
         *args: Any,
         **kwargs: Any,
