@@ -405,7 +405,7 @@ class UserCodeService(AbstractService):
         else:
             return result.ok()
 
-    def validate_worker_pool_for_context(
+    def valid_worker_pool_for_context(
         self, context: AuthedServiceContext, user_code: UserCode
     ) -> bool:
         """This is a temporary fix that is needed until every function is always just ran as job"""
@@ -417,8 +417,7 @@ class UserCodeService(AbstractService):
 
         has_custom_worker_pool = pool_name is not None and pool_name != default_name
 
-        if has_custom_worker_pool and context.is_blocking_api_call:
-            raise WorkerPoolInvalidError
+        return not (has_custom_worker_pool and context.is_blocking_api_call)
 
     @as_result(NotFoundError, StashError)
     def _call(
@@ -432,7 +431,8 @@ class UserCodeService(AbstractService):
         try:
             code = self.stash._get_by_uid(context.credentials, uid=uid).unwrap()
 
-            self.validate_worker_pool_for_context(context, code)
+            if not self.valid_worker_pool_for_context(context, code):
+                raise WorkerPoolInvalidError
 
             # Set Permissions
             if self.is_execution_on_owned_args(kwargs, context):
@@ -462,7 +462,7 @@ class UserCodeService(AbstractService):
             # Extract ids from kwargs
             kwarg2id = map_kwargs_to_id(kwargs)
 
-            input_policy = code.get_input_policy(context)
+            input_policy = code.get_input_policy(context).unwrap()
 
             # Check output policy
             output_policy = code.get_output_policy(context)
