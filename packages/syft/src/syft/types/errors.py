@@ -119,6 +119,7 @@ class ExceptionFilter(tuple):
 
 _excluded_code_objects: set[CodeType] = set()
 
+E = TypeVar("E", bound=BaseException)
 F = TypeVar("F", bound=Callable[..., object])
 
 
@@ -130,9 +131,6 @@ def exclude_from_traceback(f: F) -> F:
     """
     _excluded_code_objects.add(f.__code__)
     return f
-
-
-E = TypeVar("E", bound=BaseException)
 
 
 def process_traceback(exc: E) -> E:
