@@ -7,6 +7,7 @@ from collections.abc import Callable
 from datetime import datetime
 from functools import partial
 import hashlib
+import json
 import os
 from pathlib import Path
 import shutil
@@ -216,6 +217,16 @@ def get_default_worker_pool_count(node: Node) -> int:
             "DEFAULT_WORKER_POOL_COUNT", node.queue_config.client_config.n_consumers
         )
     )
+
+
+def get_default_worker_pool_pod_annotations() -> dict[str, str] | None:
+    annotations = get_env("DEFAULT_WORKER_POOL_POD_ANNOTATIONS", "null")
+    return json.loads(annotations)
+
+
+def get_default_worker_pool_pod_labels() -> dict[str, str] | None:
+    labels = get_env("DEFAULT_WORKER_POOL_POD_LABELS", "null")
+    return json.loads(labels)
 
 
 def in_kubernetes() -> bool:
@@ -609,7 +620,7 @@ class Node(AbstractNode):
         consumer.run()
 
     def remove_consumer_with_id(self, syft_worker_id: UID) -> None:
-        for _, consumers in self.queue_manager.consumers.items():
+        for consumers in self.queue_manager.consumers.values():
             # Grab the list of consumers for the given queue
             consumer_to_pop = None
             for consumer_idx, consumer in enumerate(consumers):
@@ -823,9 +834,7 @@ class Node(AbstractNode):
     def __repr__(self) -> str:
         service_string = ""
         if not self.is_subprocess:
-            services = []
-            for service in self.services:
-                services.append(service.__name__)
+            services = [service.__name__ for service in self.services]
             service_string = ", ".join(sorted(services))
             service_string = f"\n\nServices:\n{service_string}"
         return f"{type(self).__name__}: {self.name} - {self.id} - {self.node_type}{service_string}"
@@ -1722,6 +1731,8 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
     default_pool_name = node.settings.default_worker_pool
     default_worker_pool = node.get_default_worker_pool()
     default_worker_tag = get_default_worker_tag_by_env(node.dev_mode)
+    default_worker_pool_pod_annotations = get_default_worker_pool_pod_annotations()
+    default_worker_pool_pod_labels = get_default_worker_pool_pod_labels()
     worker_count = get_default_worker_pool_count(node)
     context = AuthedServiceContext(
         node=node,
@@ -1755,7 +1766,7 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
             context,
             image_uid=default_image.id,
             tag=DEFAULT_WORKER_IMAGE_TAG,
-            pull=pull_image,
+            pull_image=pull_image,
         )
 
         if isinstance(result, SyftError):
@@ -1775,9 +1786,11 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
         create_pool_method = node.get_service_method(SyftWorkerPoolService.launch)
         result = create_pool_method(
             context,
-            name=default_pool_name,
+            pool_name=default_pool_name,
             image_uid=default_image.id,
             num_workers=worker_count,
+            pod_annotations=default_worker_pool_pod_annotations,
+            pod_labels=default_worker_pool_pod_labels,
         )
     else:
         # Else add a worker to existing worker pool

@@ -120,14 +120,11 @@ class KubeUtils:
 
     @staticmethod
     def get_logs(pods: list[Pod]) -> str:
-        """Combine and return logs for all the pods as string"""
-        logs = []
-        for pod in pods:
-            logs.append(f"----------Logs for pod={pod.metadata.name}----------")
-            for log in pod.logs():
-                logs.append(log)
-
-        return "\n".join(logs)
+        """Combine and return logs for all the pods as a single string."""
+        return "\n".join(
+            f"----------Logs for pod={pod.metadata.name}----------\n{''.join(pod.logs())}"
+            for pod in pods
+        )
 
     @staticmethod
     def get_pod_status(pod: Pod) -> PodStatus | None:
@@ -150,11 +147,11 @@ class KubeUtils:
     @staticmethod
     def get_container_exit_code(pods: list[Pod]) -> list[int]:
         """Return the exit codes of all the containers in the given pods."""
-        exit_codes = []
-        for pod in pods:
-            for container_status in pod.status.containerStatuses:
-                exit_codes.append(container_status.state.terminated.exitCode)
-        return exit_codes
+        return [
+            container_status.state.terminated.exitCode
+            for pod in pods
+            for container_status in pod.status.containerStatuses
+        ]
 
     @staticmethod
     def get_container_exit_message(pods: list[Pod]) -> str | None:
