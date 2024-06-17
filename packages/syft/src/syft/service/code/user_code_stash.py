@@ -1,21 +1,32 @@
 # stdlib
 
+# stdlib
+from typing import cast
+
 # third party
-from result import Result
+import result
 
 # relative
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
+from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
+from ...store.document_store_errors import StashError
+from ...types.exceptions import NotFoundError
+from ...types.result import as_result
+from ...types.uid import UID
 from ...util.telemetry import instrument
 from .user_code import CodeHashPartitionKey
 from .user_code import ServiceFuncNamePartitionKey
 from .user_code import SubmitTimePartitionKey
 from .user_code import UserCode
 from .user_code import UserVerifyKeyPartitionKey
+
+# This exists in output_service, but should really be here.
+UserCodeIdPartitionKey = PartitionKey(key="user_code_id", type_=UID)
 
 
 @instrument
@@ -31,20 +42,33 @@ class UserCodeStash(BaseUIDStoreStash):
 
     def get_all_by_user_verify_key(
         self, credentials: SyftVerifyKey, user_verify_key: SyftVerifyKey
-    ) -> Result[list[UserCode], str]:
+    ) -> result.Result[list[UserCode], str]:
         qks = QueryKeys(qks=[UserVerifyKeyPartitionKey.with_obj(user_verify_key)])
         return self.query_one(credentials=credentials, qks=qks)
 
     def get_by_code_hash(
         self, credentials: SyftVerifyKey, code_hash: str
-    ) -> Result[UserCode | None, str]:
+    ) -> result.Result[UserCode | None, str]:
         qks = QueryKeys(qks=[CodeHashPartitionKey.with_obj(code_hash)])
         return self.query_one(credentials=credentials, qks=qks)
 
     def get_by_service_func_name(
         self, credentials: SyftVerifyKey, service_func_name: str
-    ) -> Result[list[UserCode], str]:
+    ) -> result.Result[list[UserCode], str]:
         qks = QueryKeys(qks=[ServiceFuncNamePartitionKey.with_obj(service_func_name)])
         return self.query_all(
             credentials=credentials, qks=qks, order_by=SubmitTimePartitionKey
         )
+
+    @as_result(NotFoundError, StashError)
+    def _get_by_uid(self, credentials: SyftVerifyKey, uid: UID) -> UserCode:
+        qks = QueryKeys(qks=[UserCodeIdPartitionKey.with_obj(uid)])
+        query_result = self.query_one(credentials=credentials, qks=qks)
+
+        match query_result:
+            case result.Ok(None):
+                raise NotFoundError
+            case result.Ok(user_code):
+                return cast(UserCode, user_code)
+            case result.Err(_):
+                raise StashError

@@ -13,14 +13,19 @@ from ...abstract_node import NodeType
 from ...client.enclave_client import EnclaveClient
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
+from ...store.document_store_errors import StashError
 from ...store.linked_obj import LinkedObject
 from ...types.cache_object import CachedSyftObject
+from ...types.exceptions import NotFoundError
+from ...types.exceptions import SyftPermissionError
+from ...types.result import as_result
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
+from ..action.action_service import ActionService
 from ..context import AuthedServiceContext
 from ..network.routes import route_to_connection
 from ..output.output_service import ExecutionOutput
@@ -40,6 +45,7 @@ from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_roles import ServiceRole
+from ..worker.worker_pool_errors import WorkerPoolInvalidError
 from .user_code import SubmitUserCode
 from .user_code import UserCode
 from .user_code import UserCodeStatus
@@ -362,15 +368,16 @@ class UserCodeService(AbstractService):
 
     def keep_owned_kwargs(
         self, kwargs: dict[str, Any], context: AuthedServiceContext
-    ) -> dict[str, Any] | SyftError:
+    ) -> dict[str, Any]:
         """Return only the kwargs that are owned by the user"""
-
         action_service = context.node.get_service("actionservice")
+        action_service = cast(ActionService, action_service)
 
         mock_kwargs = {}
         for k, v in kwargs.items():
             if isinstance(v, UID):
                 # Jobs have UID kwargs instead of ActionObject
+                # TODO: Change action_service.get
                 v = action_service.get(context, uid=v)
                 if v.is_ok():
                     v = v.ok()
@@ -398,21 +405,22 @@ class UserCodeService(AbstractService):
         else:
             return result.ok()
 
-    def valid_worker_pool_for_context(
+    def validate_worker_pool_for_context(
         self, context: AuthedServiceContext, user_code: UserCode
     ) -> bool:
         """This is a temporary fix that is needed until every function is always just ran as job"""
         # relative
         from ...node.node import get_default_worker_pool_name
 
-        has_custom_worker_pool = (
-            user_code.worker_pool_name is not None
-        ) and user_code.worker_pool_name != get_default_worker_pool_name()
-        if has_custom_worker_pool and context.is_blocking_api_call:
-            return False
-        else:
-            return True
+        default_name = get_default_worker_pool_name()
+        pool_name = user_code.worker_pool_name
 
+        has_custom_worker_pool = pool_name is not None and pool_name != default_name
+
+        if has_custom_worker_pool and context.is_blocking_api_call:
+            raise WorkerPoolInvalidError
+
+    @as_result(NotFoundError, StashError)
     def _call(
         self,
         context: AuthedServiceContext,
@@ -422,17 +430,9 @@ class UserCodeService(AbstractService):
     ) -> Result[ActionObject, Err]:
         """Call a User Code Function"""
         try:
-            code_result = self.stash.get_by_uid(context.credentials, uid=uid)
-            if code_result.is_err():
-                return code_result
-            code: UserCode = code_result.ok()
+            code = self.stash._get_by_uid(context.credentials, uid=uid).unwrap()
 
-            if not self.valid_worker_pool_for_context(context, code):
-                return Err(
-                    value="You tried to run a syft function attached to a worker pool in blocking mode,"
-                    "which is currently not supported. Run your function with `blocking=False` to run"
-                    " as a job on your worker pool"
-                )
+            self.validate_worker_pool_for_context(context, code)
 
             # Set Permissions
             if self.is_execution_on_owned_args(kwargs, context):
@@ -444,17 +444,20 @@ class UserCodeService(AbstractService):
                     # handles the case: if we have 0 owned args and execution permission
                     pass
                 else:
-                    return Err(
-                        "You do not have the permissions for mock execution, please contact the admin"
+                    raise SyftPermissionError(
+                        f"User {context.credentials} does not have mock execution permission, usercode {code.id}",
+                        public_message="You do not have the permissions for mock execution, please contact the admin",
                     )
+
             override_execution_permission = (
-                context.has_execute_permissions or context.role == ServiceRole.ADMIN
+                context.has_execute_permissions or context.is_admin
             )
 
             # Override permissions bypasses the cache, since we do not check in/out policies
             skip_fill_cache = override_execution_permission
             # We do not read from output policy cache if there are mock arguments
-            skip_read_cache = len(self.keep_owned_kwargs(kwargs, context)) > 0
+            user_kwargs = self.keep_owned_kwargs(kwargs, context)
+            skip_read_cache = len(user_kwargs) > 0
 
             # Extract ids from kwargs
             kwarg2id = map_kwargs_to_id(kwargs)

@@ -41,6 +41,10 @@ class AuthedServiceContext(NodeServiceContext):
     def dev_mode(self) -> Any:
         return self.node.dev_mode  # type: ignore
 
+    @property
+    def is_admin(self) -> bool:
+        return self.role == ServiceRole.ADMIN
+
     def capabilities(self) -> list[ServiceRoleCapability]:
         return ROLE_TO_CAPABILITIES.get(self.role, [])
 

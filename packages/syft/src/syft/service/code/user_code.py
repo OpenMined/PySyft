@@ -37,11 +37,13 @@ from ...client.api import NodeIdentity
 from ...client.enclave_client import EnclaveMetadata
 from ...node.credentials import SyftVerifyKey
 from ...serde.deserialize import _deserialize
+from ...serde.serde_errors import DeserializationError
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
 from ...store.document_store import PartitionKey
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
+from ...types.result import as_result
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_4
@@ -87,6 +89,9 @@ from ..user.user import UserView
 from .code_parse import GlobalsVisitor
 from .code_parse import LaunchJobVisitor
 from .unparse import unparse
+from .user_code_errors import UserCodeError
+from .user_code_errors import UserCodeInvalidInputPolicy
+from .user_code_errors import UserCodeNotApprovedError
 from .utils import submit_subjobs_code
 
 if TYPE_CHECKING:
@@ -376,6 +381,19 @@ class UserCode(SyncableSyftObject):
             return SyftError(message=status.err())
         return status.ok()
 
+    @as_result(UserCodeError)
+    def _get_status(self, context: AuthedServiceContext) -> UserCodeStatusCollection:
+        status = self.status_link.resolve_with_context(context)
+        if status.is_err():
+            raise UserCodeError(status.err())
+        return status.ok()
+
+    @as_result(UserCodeError)
+    def check_approval(self, context: AuthedServiceContext) -> None:
+        status = self._get_status(context).unwrap()
+        if not status.approved:
+            raise UserCodeNotApprovedError
+
     @property
     def is_enclave_code(self) -> bool:
         return self.enclave_metadata is not None
@@ -421,18 +439,20 @@ class UserCode(SyncableSyftObject):
         return status_list
 
     @property
+    # TODO: Fix all places that call .input_policy
     def input_policy(self) -> InputPolicy | None:
         if not self.status.approved:
             return None
-        return self._get_input_policy()
+        return self._get_input_policy().unwrap()
 
-    def get_input_policy(self, context: AuthedServiceContext) -> InputPolicy | None:
-        status = self.get_status(context)
-        if not status.approved:
-            return None
-        return self._get_input_policy()
+    @as_result(UserCodeNotApprovedError, UserCodeInvalidInputPolicy)
+    # TODO: Change all places that call get_input_policy...
+    def get_input_policy(self, context: AuthedServiceContext) -> InputPolicy:
+        self.check_approval(context)
+        return self._get_input_policy().unwrap()
 
-    def _get_input_policy(self) -> InputPolicy | None:
+    @as_result(UserCodeInvalidInputPolicy, DeserializationError)
+    def _get_input_policy(self) -> InputPolicy:
         if len(self.input_policy_state) == 0:
             input_policy = None
             if (
@@ -459,19 +479,22 @@ class UserCode(SyncableSyftObject):
                     self.input_policy_type, self.input_policy_init_kwargs
                 )
             else:
-                raise Exception(f"Invalid output_policy_type: {self.input_policy_type}")
+                raise UserCodeInvalidInputPolicy(
+                    f"Invalid output_policy_type: {self.input_policy_type}"
+                )
 
             if input_policy is not None:
                 input_blob = _serialize(input_policy, to_bytes=True)
                 self.input_policy_state = input_blob
                 return input_policy
             else:
-                raise Exception("input_policy is None during init")
+                raise UserCodeInvalidInputPolicy("input_policy is None during init")
         try:
             return _deserialize(self.input_policy_state, from_bytes=True)
         except Exception as e:
-            print(f"Failed to deserialize custom input policy state. {e}")
-            return None
+            raise UserCodeInvalidInputPolicy.from_exception(
+                e, private_message=f"Failed to deserialize: {e}"
+            ) from None
 
     def is_output_policy_approved(self, context: AuthedServiceContext) -> bool:
         return self.get_status(context).approved
@@ -485,9 +508,10 @@ class UserCode(SyncableSyftObject):
         else:
             raise Exception(f"You can't set {type(value)} as input_policy_state")
 
+    @as_result(UserCodeError)
+    # TOOD: Change all places that call get_output_policy
     def get_output_policy(self, context: AuthedServiceContext) -> OutputPolicy | None:
-        if not self.get_status(context).approved:
-            return None
+        self.check_approval(context)
         return self._get_output_policy()
 
     def _get_output_policy(self) -> OutputPolicy | None:
