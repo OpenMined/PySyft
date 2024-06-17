@@ -35,7 +35,7 @@ class SyftException(Exception):
     ) -> None:
         if public_message:
             self.public_message = public_message
-        self._private_message = private_message
+        self._private_message = private_message or ""
         super().__init__(self.public, *args, **kwargs)
 
     @property
@@ -108,7 +108,6 @@ class ExceptionFilter(tuple):
         except ExceptionFilter("google.cloud.bigquery") as e:
             ...
         ```
-
     """
     def __init__(self, module: str) -> None:
         self.module = module
@@ -118,13 +117,16 @@ class ExceptionFilter(tuple):
         Creates a new instance of ExceptionFilter, which gathers all exception classes
         from the specified module and stores them as a tuple.
         """
-        imported_module = import_module(module)
-
-        exceptions = (
-            obj
-            for _, obj in inspect.getmembers(imported_module, inspect.isclass)
-            if issubclass(obj, BaseException) and not issubclass(obj, Warning)
-        )
+        try:
+            imported_module = import_module(module)
+        except ModuleNotFoundError:
+            exceptions = ()
+        else:
+            exceptions = (
+                obj
+                for _, obj in inspect.getmembers(imported_module, inspect.isclass)
+                if issubclass(obj, BaseException) and not issubclass(obj, Warning)
+            )
 
         instance = super().__new__(cls, exceptions)
 
