@@ -478,13 +478,7 @@ class KeyValueStorePartition(StorePartition):
         qks: QueryKeys,
         order_by: PartitionKey | None = None,
     ) -> Result[list[SyftObject], str]:
-        matches = []
-        for qk in qks.all:
-            if qk.value in self.data:
-                if self.has_permission(
-                    ActionObjectREAD(uid=qk.value, credentials=credentials)
-                ):
-                    matches.append(self.data[qk.value])
+        matches = [self.data[qk.value] for qk in qks.all if qk.value in self.data and self.has_permission(ActionObjectREAD(uid=qk.value, credentials=credentials))]
         if order_by is not None:
             matches = sorted(matches, key=lambda x: getattr(x, order_by.key, ""))
         return Ok(matches)
