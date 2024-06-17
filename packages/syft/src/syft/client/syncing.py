@@ -1,7 +1,7 @@
 # stdlib
 
 # stdlib
-from collections.abc import Sequence
+from collections.abc import Collection
 
 # relative
 from ..abstract_node import NodeSideType
@@ -27,8 +27,8 @@ def compare_states(
     include_ignored: bool = False,
     include_same: bool = False,
     filter_by_email: str | None = None,
-    include_types: Sequence[str | type] | None = None,
-    exclude_types: Sequence[str | type] | None = None,
+    include_types: Collection[str | type] | None = None,
+    exclude_types: Collection[str | type] | None = None,
     _hide_usercode: bool = True,
 ) -> NodeDiff | SyftError:
     # NodeDiff
@@ -73,8 +73,8 @@ def compare_clients(
     include_ignored: bool = False,
     include_same: bool = False,
     filter_by_email: str | None = None,
-    include_types: Sequence[str | type] | None = None,
-    exclude_types: Sequence[str | type] | None = None,
+    include_types: Collection[str | type] | None = None,
+    exclude_types: Collection[str | type] | None = None,
     _hide_usercode: bool = True,
 ) -> NodeDiff | SyftError:
     from_state = from_client.get_sync_state()
