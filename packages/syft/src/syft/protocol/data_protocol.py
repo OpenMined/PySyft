@@ -507,7 +507,7 @@ class DataProtocol:
             # we assume its supported until we prove otherwise
             protocol_supported[v] = True
             # iterate through each object
-            for canonical_name, _ in version_data["object_versions"].items():
+            for canonical_name in version_data["object_versions"].keys():
                 if canonical_name not in self.state:
                     protocol_supported[v] = False
                     break

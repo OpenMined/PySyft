@@ -34,9 +34,7 @@ class ServiceRole(Enum):
     # @property
     @classmethod
     def roles_descending(cls) -> list[tuple[int, Self]]:
-        tuples = []
-        for x in cls:
-            tuples.append((x.value, x))
+        tuples = [(x.value, x) for x in cls]
         return sorted(tuples, reverse=True)
 
     @classmethod
