@@ -65,12 +65,16 @@ class SyftException(Exception):
 
     @classmethod
     def from_exception(
-        cls, exc: BaseException, public_message: str | None = None
+        cls,
+        exc: BaseException,
+        public_message: str | None = None,
+        private_message: str | None = None,
     ) -> Self:
         """
-        Builds an instance of SyftException from an existing exception, incorporating
-        the message from the original exception as a private message. It also allows
-        setting a public message for end users.
+        Builds an instance of SyftException from an existing exception. It allows
+        setting a public message for end users or resetting the private message.
+        If no private_message is provided, the original exception's message is used.
+        If no public_message is provided, the default public message is used.
 
         Args:
             exception (BaseException): The original exception from which to create
@@ -79,14 +83,20 @@ class SyftException(Exception):
 
             public_message (str, optional): An optional message intended for public
                 display. This message can provide user-friendly information about
-                the error. If not provided, the default is None.
+                the error. If not provided, the default message is used.
+
+            private_message (str, optional): An optional message intended for private
+                display. This message should provide more information about the error
+                to administrators. If not provided, the exception's message is used.
 
         Returns:
             Self: A new instance of the class. The new instance retains the traceback
                 of the original exception.
         """
-        new_exc = cls(str(exc), public_message=public_message)
+        message = private_message if private_message is not None else str(exc)
+        new_exc = cls(message, public_message=public_message)
         new_exc.__traceback__ = exc.__traceback__
+        new_exc.__cause__ = exc
         new_exc = process_traceback(new_exc)
         return new_exc
 
