@@ -547,6 +547,12 @@ class Request(SyncableSyftObject):
             message="This type of request does not have code associated with it."
         )
 
+    def get_user_code(self, context: AuthedServiceContext) -> UserCode | None:
+        for change in self.changes:
+            if isinstance(change, UserCodeStatusChange):
+                return change.get_user_code(context)
+        return None
+
     @property
     def code(self) -> UserCode | SyftError:
         for change in self.changes:
@@ -572,10 +578,10 @@ class Request(SyncableSyftObject):
     def icon(self) -> str:
         return Icon.REQUEST.svg
 
-    @property
-    def status(self) -> RequestStatus:
-        if self.is_low_side:
-            code_status = self.code.status
+    def get_status(self, context: AuthedServiceContext | None = None) -> RequestStatus:
+        is_low_side = self.get_is_low_side(context) if context else self.is_low_side
+        if is_low_side:
+            code_status = self.code.get_status(context) if context else self.code.status
             return RequestStatus.from_usercode_status(code_status)
 
         if len(self.history) == 0:
@@ -590,6 +596,10 @@ class Request(SyncableSyftObject):
         )
 
         return request_status
+
+    @property
+    def status(self) -> RequestStatus:
+        return self.get_status()
 
     def approve(
         self,
@@ -663,6 +673,13 @@ class Request(SyncableSyftObject):
     @property
     def is_low_side(self) -> bool:
         return bool(self.code) and self.code.is_low_side
+
+    def get_is_low_side(self, context: AuthedServiceContext) -> bool:
+        code = self.get_user_code(context)
+        if code:
+            return code.is_low_side
+        else:
+            return False
 
     def approve_with_client(self, client: SyftClient) -> Result[SyftSuccess, SyftError]:
         if self.is_low_side:
@@ -1141,6 +1158,10 @@ class UserCodeStatusChange(Change):
     @property
     def code(self) -> UserCode:
         return self.linked_user_code.resolve
+
+    def get_user_code(self, context: AuthedServiceContext) -> UserCode:
+        resolve = self.linked_user_code.resolve_with_context(context)
+        return resolve.ok()
 
     @property
     def codes(self) -> list[UserCode]:
