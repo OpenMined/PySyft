@@ -49,7 +49,7 @@ class Hosts:
             old_hosts = "/private/etc/hosts"
             p = new_hosts if os.path.exists(new_hosts) else old_hosts
         elif Platform.windows():
-            p = r"C:\Windows\System32\drivers\etc\hosts"
+            p = "C:\Windows\System32\drivers\etc\hosts"
         else:
             raise Exception(f"Unsupported OS: {Platform.system}")
 
