@@ -129,8 +129,8 @@ class DomainClient(SyftClient):
             for asset in dataset.asset_list:
                 try:
                     twin = TwinObject(
-                        private_obj=asset.data,
-                        mock_obj=asset.mock,
+                        private_obj=ActionObject.from_obj(asset.data),
+                        mock_obj=ActionObject.from_obj(asset.mock),
                         syft_node_location=self.id,
                         syft_client_verify_key=self.verify_key,
                     )
