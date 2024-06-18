@@ -1,5 +1,8 @@
 # stdlib
 
+# stdlib
+from collections.abc import Collection
+
 # relative
 from ..abstract_node import NodeSideType
 from ..node.credentials import SyftVerifyKey
@@ -13,6 +16,7 @@ from ..service.sync.resolve_widget import ResolveWidget
 from ..service.sync.sync_state import SyncState
 from ..types.uid import UID
 from ..util.decorators import deprecated
+from ..util.util import prompt_warning_message
 from .domain_client import DomainClient
 from .sync_decision import SyncDecision
 from .sync_decision import SyncDirection
@@ -24,7 +28,9 @@ def compare_states(
     include_ignored: bool = False,
     include_same: bool = False,
     filter_by_email: str | None = None,
-    filter_by_type: str | type | None = None,
+    include_types: Collection[str | type] | None = None,
+    exclude_types: Collection[str | type] | None = None,
+    hide_usercode: bool = True,
 ) -> NodeDiff | SyftError:
     # NodeDiff
     if (
@@ -45,6 +51,15 @@ def compare_states(
         return SyftError(
             "Invalid node side types: can only compare a high and low node"
         )
+
+    if hide_usercode:
+        prompt_warning_message(
+            "User code is hidden by default, as they are also part of the Request."
+            " If you want to include them, set hide_usercode=False."
+        )
+        exclude_types = exclude_types or []
+        exclude_types.append("usercode")
+
     return NodeDiff.from_sync_state(
         low_state=low_state,
         high_state=high_state,
@@ -52,7 +67,8 @@ def compare_states(
         include_ignored=include_ignored,
         include_same=include_same,
         filter_by_email=filter_by_email,
-        filter_by_type=filter_by_type,
+        include_types=include_types,
+        exclude_types=exclude_types,
     )
 
 
@@ -62,7 +78,9 @@ def compare_clients(
     include_ignored: bool = False,
     include_same: bool = False,
     filter_by_email: str | None = None,
-    filter_by_type: type | None = None,
+    include_types: Collection[str | type] | None = None,
+    exclude_types: Collection[str | type] | None = None,
+    hide_usercode: bool = True,
 ) -> NodeDiff | SyftError:
     from_state = from_client.get_sync_state()
     if isinstance(from_state, SyftError):
@@ -78,7 +96,9 @@ def compare_clients(
         include_ignored=include_ignored,
         include_same=include_same,
         filter_by_email=filter_by_email,
-        filter_by_type=filter_by_type,
+        include_types=include_types,
+        exclude_types=exclude_types,
+        hide_usercode=hide_usercode,
     )
 
 
@@ -134,7 +154,7 @@ def handle_sync_batch(
     obj_diff_batch.decision = decision
 
     sync_instructions = []
-    for diff in obj_diff_batch.get_dependents(include_roots=True):
+    for diff in obj_diff_batch.get_dependencies(include_roots=True):
         # figure out the right verify key to share to
         # in case of a job with user code, share to user code owner
         # without user code, share to job owner
