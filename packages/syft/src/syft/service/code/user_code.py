@@ -1369,9 +1369,9 @@ def check_output_policy(context: TransformContext) -> TransformContext:
 
 def check_deployment_policy(context: TransformContext) -> TransformContext:
     if context.output is not None:
-        op = context.output["deployment_policy_type"]
-        op = check_policy(policy=op, context=context)
-        context.output["deployment_policy_type"] = op
+        policy = context.output["deployment_policy_type"]
+        policy = check_policy(policy=policy, context=context)
+        context.output["deployment_policy_type"] = policy
     return context
 
 
