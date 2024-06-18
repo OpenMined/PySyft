@@ -40,9 +40,10 @@ class SyftResponseMessage(SyftBaseModel):
         return "alert-info"
 
     def _repr_html_(self) -> str:
+        msg = self.message.replace('\n', '</br>')
         return (
             f'<div class="{self._repr_html_class_}" style="padding:5px;">'
-            + f"<strong>{type(self).__name__}</strong>: {self.message.replace("\n", "</br>")}</div><br/>"
+            + f"<strong>{type(self).__name__}</strong>: {msg}</div><br/>"
         )
 
 
