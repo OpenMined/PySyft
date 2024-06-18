@@ -349,6 +349,7 @@ class UserCode(SyncableSyftObject):
         "code_status",
         "worker_pool_name",
         "l0_deny_reason",
+        "raw_code",
     ]
 
     __exclude_sync_diff_attrs__: ClassVar[list[str]] = [
