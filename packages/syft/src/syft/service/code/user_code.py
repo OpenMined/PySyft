@@ -33,7 +33,7 @@ from typing_extensions import Self
 # relative
 from ...abstract_node import NodeSideType
 from ...abstract_node import NodeType
-from ...client.api import APIRegistry
+from ...client.api import APIRegistry, generate_remote_function
 from ...client.api import NodeIdentity
 from ...client.enclave_client import EnclaveMetadata
 from ...node.credentials import SyftVerifyKey
@@ -878,6 +878,22 @@ class UserCode(SyncableSyftObject):
 
         ip = get_ipython()
         ip.set_next_input(warning_message + self.raw_code)
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        api = self._get_api()
+        if isinstance(api, SyftError):
+            return api
+        remote_user_function = generate_remote_function(
+            api=api,
+            node_uid=self.node_uid,
+            signature=self.signature,
+            path="code.call",
+            make_call=api.make_call,
+            pre_kwargs={"uid": self.id},
+            warning=None,
+            communication_protocol=api.communication_protocol,
+        )
+        return remote_user_function()
 
 
 class UserCodeUpdate(PartialSyftObject):
