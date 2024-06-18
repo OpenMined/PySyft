@@ -80,8 +80,8 @@ def compare_states(
 
     if hide_usercode:
         prompt_warning_message(
-            "User code is hidden by default, as they are also part of the Request."
-            " If you want to include them, set hide_usercode=False."
+            "UserCodes are hidden by default, and are part of the Requests."
+            " If you want to include them as separate objects, set `hide_usercode=False`"
         )
         exclude_types = exclude_types or []
         exclude_types.append("usercode")
