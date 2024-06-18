@@ -1183,7 +1183,9 @@ class SyftAPI(SyftObject):
                 if hasattr(module_or_func, "_modules"):
                     for func_name in module_or_func._modules:
                         func = getattr(module_or_func, func_name)
-                        sig = func.__ipython_inspector_signature_override__
+                        sig = getattr(
+                            func, "__ipython_inspector_signature_override__", ""
+                        )
                         _repr_str += f"{module_path_str}.{func_name}{sig}\n\n"
         return _repr_str
 
