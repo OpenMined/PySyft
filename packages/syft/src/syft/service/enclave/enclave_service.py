@@ -310,6 +310,9 @@ class EnclaveService(AbstractService):
     ) -> Any:
         if not context.node or not context.node.signing_key:
             return SyftError(message=f"{type(context)} has no node")
+        
+        # if context.node.name == "italy-domain":
+        #     return SyftError(message="For testing purposes, italy-domain execution is blocked")
 
         code_service = context.node.get_service("usercodeservice")
         code: UserCode = code_service.get_by_service_name(
