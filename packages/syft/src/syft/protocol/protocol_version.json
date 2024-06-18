@@ -273,6 +273,13 @@
           "action": "remove"
         }
       },
+      "SyncedUserCodeStatusChange": {
+        "3": {
+          "version": 3,
+          "hash": "9b8ab2d513d84006bdd1329cd0bb636e7e62100a6227d8b772a5bf7c0c45b72f",
+          "action": "add"
+        }
+      },
       "EnclaveInstance": {
         "1": {
           "version": 1,
@@ -295,7 +302,7 @@
         },
         "5": {
           "version": 5,
-          "hash": "671220bf374cb3b882b330322912f26b8e999ac00771d8850949e638d1a8b510",
+          "hash": "62e0519dc6a0a647cf9644b25dd70b1f94674476297a82e4a3005f0defa19f17",
           "action": "add"
         }
       },

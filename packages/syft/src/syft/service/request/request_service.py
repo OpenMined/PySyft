@@ -211,7 +211,7 @@ class RequestService(AbstractService):
             request_notification = filter_by_obj(context=context, obj_uid=uid)
 
             link = LinkedObject.with_context(request, context=context)
-            if not request.status == RequestStatus.PENDING:
+            if not request.get_status(context) == RequestStatus.PENDING:
                 if request_notification is not None and not isinstance(
                     request_notification, SyftError
                 ):
