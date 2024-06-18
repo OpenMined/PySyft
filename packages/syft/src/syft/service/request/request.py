@@ -579,8 +579,10 @@ class Request(SyncableSyftObject):
         return Icon.REQUEST.svg
 
     def get_status(self, context: AuthedServiceContext | None = None) -> RequestStatus:
-        is_low_side = self.get_is_low_side(context) if context else self.is_low_side
-        if is_low_side:
+        is_l0_deployment = (
+            self.get_is_l0_deployment(context) if context else self.is_l0_deployment
+        )
+        if is_l0_deployment:
             code_status = self.code.get_status(context) if context else self.code.status
             return RequestStatus.from_usercode_status(code_status)
 
@@ -611,7 +613,7 @@ class Request(SyncableSyftObject):
         if isinstance(api, SyftError):
             return api
 
-        if self.is_low_side:
+        if self.is_l0_deployment:
             return SyftError(
                 message="This request is a low-side request. Please sync your results to approve."
             )
@@ -662,7 +664,12 @@ class Request(SyncableSyftObject):
         if isinstance(api, SyftError):
             return api
 
-        if self.is_low_side:
+        if self.is_l0_deployment:
+            if self.status == RequestStatus.APPROVED:
+                prompt_warning_message(
+                    "This request already has results published to the data scientist. "
+                    "They will still be able to access those results."
+                )
             result = api.code.update(id=self.code_id, l0_deny_reason=reason)
             if isinstance(result, SyftError):
                 return result
@@ -671,18 +678,18 @@ class Request(SyncableSyftObject):
         return api.services.request.undo(uid=self.id, reason=reason)
 
     @property
-    def is_low_side(self) -> bool:
-        return bool(self.code) and self.code.is_low_side
+    def is_l0_deployment(self) -> bool:
+        return bool(self.code) and self.code.is_l0_deployment
 
-    def get_is_low_side(self, context: AuthedServiceContext) -> bool:
+    def get_is_l0_deployment(self, context: AuthedServiceContext) -> bool:
         code = self.get_user_code(context)
         if code:
-            return code.is_low_side
+            return code.is_l0_deployment
         else:
             return False
 
     def approve_with_client(self, client: SyftClient) -> Result[SyftSuccess, SyftError]:
-        if self.is_low_side:
+        if self.is_l0_deployment:
             return SyftError(
                 message="This request is a low-side request. Please sync your results to approve."
             )
@@ -845,7 +852,7 @@ class Request(SyncableSyftObject):
         if isinstance(code, SyftError):
             return code
 
-        if not self.is_low_side:
+        if not self.is_l0_deployment:
             return SyftError(
                 message="deposit_result is only available for low side code requests. "
                 "Please use request.approve() instead."
