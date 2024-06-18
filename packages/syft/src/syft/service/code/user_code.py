@@ -443,8 +443,8 @@ class UserCode(SyncableSyftObject):
         if is_denied:
             if is_approved:
                 prompt_warning_message(
-                    "This request has been approved and "
-                    "the output is shared with the owner of the request."
+                    "This request already has results published to the data scientist. "
+                    "They will still be able to access those results."
                 )
             message = self.l0_deny_reason
             status = (UserCodeStatus.DENIED, message)

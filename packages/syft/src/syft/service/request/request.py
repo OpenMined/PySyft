@@ -665,6 +665,11 @@ class Request(SyncableSyftObject):
             return api
 
         if self.is_l0_deployment:
+            if self.status == RequestStatus.APPROVED:
+                prompt_warning_message(
+                    "This request already has results published to the data scientist. "
+                    "They will still be able to access those results."
+                )
             result = api.code.update(id=self.code_id, l0_deny_reason=reason)
             if isinstance(result, SyftError):
                 return result
