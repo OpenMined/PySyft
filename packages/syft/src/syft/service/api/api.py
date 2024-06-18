@@ -1,6 +1,7 @@
 # stdlib
 import ast
 from collections.abc import Callable
+import linecache
 import inspect
 from inspect import Signature
 import keyword
@@ -16,6 +17,7 @@ from pydantic import model_validator
 from result import Err
 from result import Ok
 from result import Result
+from syft.client.client import SyftClient
 
 # relative
 from ...abstract_node import AbstractNode
@@ -54,6 +56,7 @@ class TwinAPIAuthedContext(AuthedServiceContext):
     settings: dict[str, Any] | None = None
     code: HelperFunctionSet | None = None
     state: dict[Any, Any] | None = None
+    admin_client: SyftClient | None = None
 
 
 @serializable()
@@ -71,6 +74,14 @@ def get_signature(func: Callable) -> Signature:
     sig = inspect.signature(func)
     sig = signature_remove_context(sig)
     return sig
+
+def register_fn_in_linecache(fname: str, src: str) -> None:
+    """adds a function to linecache, such that inspect.getsource works for functions nested in this function.
+    This only works if the same function is compiled under the same filename"""
+    lines = [
+        line + "\n" for line in src.splitlines()
+    ]  # use same splitting method same as linecache 112 (py3.12)
+    linecache.cache[fname] = (137, None, lines, fname)
 
 
 @serializable()
@@ -191,7 +202,8 @@ class Endpoint(SyftObject):
         self.state = state
 
     def build_internal_context(
-        self, context: AuthedServiceContext
+        self, context: AuthedServiceContext,
+        admin_client: SyftClient | None,
     ) -> TwinAPIAuthedContext:
         helper_function_dict: dict[str, Callable] = {}
         self.helper_functions = self.helper_functions or {}
@@ -220,6 +232,7 @@ class Endpoint(SyftObject):
             code=helper_function_set,
             state=self.state or {},
             user=user,
+            admin_client=admin_client,
         )
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
@@ -465,6 +478,11 @@ class TwinAPIEndpoint(SyncableSyftObject):
 
         return SyftError(message="You're not allowed to run this code.")
 
+    def get_admin_client_from_node(self, context: AuthedServiceContext) -> SyftClient:
+        admin_client = context.node.get_guest_client()
+        admin_client.credentials = context.node.signing_key
+        return admin_client
+
     def exec_code(
         self,
         code: PrivateAPIEndpoint | PublicAPIEndpoint,
@@ -476,12 +494,15 @@ class TwinAPIEndpoint(SyncableSyftObject):
             inner_function = ast.parse(code.api_code).body[0]
             inner_function.decorator_list = []
             # compile the function
-            raw_byte_code = compile(ast.unparse(inner_function), "<string>", "exec")
+            src = ast.unparse(inner_function)
+            raw_byte_code = compile(src, code.func_name, "exec")
+            register_fn_in_linecache(code.func_name, src)
+            admin_client = self.get_admin_client_from_node(context)
 
             # load it
             exec(raw_byte_code)  # nosec
 
-            internal_context = code.build_internal_context(context)
+            internal_context = code.build_internal_context(context, admin_client=admin_client)
 
             # execute it
             evil_string = f"{code.func_name}(*args, **kwargs,context=internal_context)"
