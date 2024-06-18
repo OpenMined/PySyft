@@ -156,7 +156,7 @@ def test_ignore_unignore_single(low_worker, high_worker):
 
     _ = client_low_ds.code.request_code_execution(compute)
 
-    diff = compare_clients(low_client, high_client)
+    diff = compare_clients(low_client, high_client, hide_usercode=False)
 
     assert len(diff.batches) == 2  # Request + UserCode
     assert len(diff.ignored_batches) == 0
@@ -165,7 +165,7 @@ def test_ignore_unignore_single(low_worker, high_worker):
     res = diff[0].ignore()
     assert isinstance(res, SyftSuccess)
 
-    diff = compare_clients(low_client, high_client)
+    diff = compare_clients(low_client, high_client, hide_usercode=False)
     assert len(diff.batches) == 0
     assert len(diff.ignored_batches) == 2
     assert len(diff.all_batches) == 2
@@ -174,7 +174,7 @@ def test_ignore_unignore_single(low_worker, high_worker):
     res = diff.ignored_batches[0].unignore()
     assert isinstance(res, SyftSuccess)
 
-    diff = compare_clients(low_client, high_client)
+    diff = compare_clients(low_client, high_client, hide_usercode=False)
     assert len(diff.batches) == 1
     assert len(diff.ignored_batches) == 1
     assert len(diff.all_batches) == 2
