@@ -62,11 +62,28 @@ class SettingsService(AbstractService):
         self, context: AuthedServiceContext, settings: NodeSettings
     ) -> Result[Ok, Err]:
         """Set a new the Node Settings"""
-        result = self.stash.set(context.credentials, settings)
+        result = self.stash.get_all(context.credentials)
         if result.is_ok():
-            return result
+            current_settings = result.ok()
+            if len(current_settings) > 0:
+                if current_settings[0].id == settings.id:
+                    result = self.stash.set(
+                        context.credentials, settings=settings, ignore_duplicates=True
+                    )
+                else:
+                    return SyftError(
+                        message=f"NodeSettings UID {settings.id} does not match: {current_settings[0].id}"
+                    )
+            else:
+                # save first settings
+                result = self.stash.set(context.credentials, settings)
+
+            if result.is_ok():
+                return result
+            else:
+                return SyftError(message=result.err())
         else:
-            return SyftError(message=result.err())
+            return result
 
     @service_method(path="settings.update", name="update", autosplat=["settings"])
     def update(
