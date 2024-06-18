@@ -22,6 +22,32 @@ from .sync_decision import SyncDecision
 from .sync_decision import SyncDirection
 
 
+def sync(
+    from_client: DomainClient,
+    to_client: DomainClient,
+    include_ignored: bool = False,
+    include_same: bool = False,
+    filter_by_email: str | None = None,
+    include_types: Collection[str | type] | None = None,
+    exclude_types: Collection[str | type] | None = None,
+    hide_usercode: bool = True,
+) -> PaginatedResolveWidget | SyftError | SyftSuccess:
+    diff = compare_clients(
+        from_client=from_client,
+        to_client=to_client,
+        include_ignored=include_ignored,
+        include_same=include_same,
+        filter_by_email=filter_by_email,
+        include_types=include_types,
+        exclude_types=exclude_types,
+        hide_usercode=hide_usercode,
+    )
+    if isinstance(diff, SyftError):
+        return diff
+
+    return diff.resolve()
+
+
 def compare_states(
     from_state: SyncState,
     to_state: SyncState,
