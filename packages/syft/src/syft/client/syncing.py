@@ -129,15 +129,6 @@ def handle_sync_batch(
 
     src_client = obj_diff_batch.source_client
     tgt_client = obj_diff_batch.target_client
-
-    # make sure dependent request is approved before syncing the job
-    # if obj_diff_batch.root_type == Job and sync_direction == SyncDirection.HIGH_TO_LOW:
-    #     job = obj_diff_batch.root.get_obj()
-    #     requests = [r for r in src_client.requests if r.code_id == job.user_code_id]
-    #     # NOTE: how to handle 0 or multiple requests?
-    #     if requests:
-    #         requests[0].approve()
-
     src_resolved_state, tgt_resolved_state = obj_diff_batch.create_new_resolved_states()
 
     obj_diff_batch.decision = decision
@@ -152,7 +143,6 @@ def handle_sync_batch(
             or obj_diff_batch.user_verify_key_high
         )
         share_private_data_for_diff = share_private_data[diff.object_id]
-        # add sync private option to execution output
         mockify_for_diff = mockify[diff.object_id]
         instruction = SyncInstruction.from_batch_decision(
             diff=diff,

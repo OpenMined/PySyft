@@ -227,7 +227,7 @@ class UserCodeService(AbstractService):
         code_link = LinkedObject.from_obj(user_code, node_uid=context.node.id)
 
         # Requests made on low side are synced, and have their status computed instead of set manually.
-        if user_code.is_low_side:
+        if user_code.is_l0_deployment:
             status_change = SyncedUserCodeStatusChange(
                 value=UserCodeStatus.APPROVED,
                 linked_obj=user_code.status_link,
@@ -517,18 +517,16 @@ class UserCodeService(AbstractService):
                     output_policy=output_policy,
                 )
                 if not can_execute:
-                    # We don't check output policy if
+                    # We check output policy only in l2 deployment.
                     # code is from low side (L0 setup)
-                    if not code.is_low_side and not code.is_output_policy_approved(
-                        context
-                    ):
+                    if not code.is_output_policy_approved(context):
                         return Err(
                             "Execution denied: Your code is waiting for approval"
                         )
                     is_valid = (
                         output_policy._is_valid(context) if output_policy else False
                     )
-                    if not is_valid or code.is_low_side:
+                    if not is_valid or code.is_l0_deployment:
                         if len(output_history) > 0 and not skip_read_cache:
                             last_executed_output = output_history[-1]
                             # Check if the inputs of the last executed output match
@@ -555,10 +553,15 @@ class UserCodeService(AbstractService):
                                 return result
 
                             res = delist_if_single(result.ok())
+                            output_policy_message = ""
+                            if code.is_l2_deployment:
+                                # Skip output policy warning in L0 setup;
+                                # admin overrides policy checks.
+                                output_policy_message = is_valid.message
                             return Ok(
                                 CachedSyftObject(
                                     result=res,
-                                    error_msg="",
+                                    error_msg=output_policy_message,
                                 )
                             )
                         else:
@@ -592,7 +595,7 @@ class UserCodeService(AbstractService):
             # this currently only works for nested syft_functions
             # and admins executing on high side (TODO, decide if we want to increment counter)
             # always store_execution_output on l0 setup
-            is_l0_request = context.role == ServiceRole.ADMIN and code.is_low_side
+            is_l0_request = context.role == ServiceRole.ADMIN and code.is_l0_deployment
             if not skip_fill_cache and output_policy is not None or is_l0_request:
                 res = code.store_execution_output(
                     context=context,

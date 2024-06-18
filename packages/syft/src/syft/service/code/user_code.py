@@ -62,6 +62,7 @@ from ...util import options
 from ...util.colors import SURFACE
 from ...util.markdown import CodeMarkdown
 from ...util.markdown import as_markdown_code
+from ...util.util import prompt_warning_message
 from ..action.action_endpoint import CustomEndpointActionObject
 from ..action.action_object import Action
 from ..action.action_object import ActionObject
@@ -395,11 +396,11 @@ class UserCode(SyncableSyftObject):
         }
 
     @property
-    def is_low_side(self) -> bool:
+    def is_l0_deployment(self) -> bool:
         return self.origin_node_side_type == NodeSideType.LOW_SIDE
 
     @property
-    def is_high_side(self) -> bool:
+    def is_l2_deployment(self) -> bool:
         return self.origin_node_side_type == NodeSideType.HIGH_SIDE
 
     @property
@@ -414,7 +415,7 @@ class UserCode(SyncableSyftObject):
             )
         return api.services.user.get_by_verify_key(self.user_verify_key)
 
-    def _status_from_output_history(
+    def _compute_status_l0(
         self, context: AuthedServiceContext | None = None
     ) -> UserCodeStatusCollection | SyftError:
         if context is None:
@@ -439,6 +440,11 @@ class UserCode(SyncableSyftObject):
         is_denied = self.l0_deny_reason is not None
 
         if is_denied:
+            if is_approved:
+                prompt_warning_message(
+                    "This request has been approved and "
+                    "the output is shared with the owner of the request."
+                )
             message = self.l0_deny_reason
             status = (UserCodeStatus.DENIED, message)
         elif is_approved:
@@ -456,12 +462,12 @@ class UserCode(SyncableSyftObject):
     def status(self) -> UserCodeStatusCollection | SyftError:
         # Clientside only
 
-        if self.is_low_side:
+        if self.is_l0_deployment:
             if self.status_link is not None:
                 return SyftError(
                     message="Encountered a low side UserCode object with a status_link."
                 )
-            return self._status_from_output_history()
+            return self._compute_status_l0()
 
         if self.status_link is None:
             return SyftError(
@@ -473,12 +479,12 @@ class UserCode(SyncableSyftObject):
     def get_status(
         self, context: AuthedServiceContext
     ) -> UserCodeStatusCollection | SyftError:
-        if self.origin_node_side_type == NodeSideType.LOW_SIDE:
+        if self.is_l0_deployment:
             if self.status_link is not None:
                 return SyftError(
                     message="Encountered a low side UserCode object with a status_link."
                 )
-            return self._status_from_output_history(context)
+            return self._compute_status_l0(context)
         if self.status_link is None:
             return SyftError(
                 message="This UserCode does not have a status. Please contact the Admin."
