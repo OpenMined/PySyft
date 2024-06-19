@@ -17,9 +17,10 @@ from pydantic import model_validator
 from result import Err
 from result import Ok
 from result import Result
+from syft.service.user.user_service import UserService
 
 # relative
-from ...abstract_node import AbstractNode
+from ...abstract_node import AbstractNode, NodeSideType
 from ...client.client import SyftClient
 from ...serde.serializable import serializable
 from ...serde.signature import signature_remove_context
@@ -57,6 +58,7 @@ class TwinAPIAuthedContext(AuthedServiceContext):
     code: HelperFunctionSet | None = None
     state: dict[Any, Any] | None = None
     admin_client: SyftClient | None = None
+    user_client: SyftClient | None = None
 
 
 @serializable()
@@ -206,6 +208,7 @@ class Endpoint(SyftObject):
         self,
         context: AuthedServiceContext,
         admin_client: SyftClient | None = None,
+        user_client: SyftClient | None = None,
     ) -> TwinAPIAuthedContext:
         helper_function_dict: dict[str, Callable] = {}
         self.helper_functions = self.helper_functions or {}
@@ -235,6 +238,7 @@ class Endpoint(SyftObject):
             state=self.state or {},
             user=user,
             admin_client=admin_client,
+            user_client=user_client
         )
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
@@ -480,6 +484,20 @@ class TwinAPIEndpoint(SyncableSyftObject):
 
         return SyftError(message="You're not allowed to run this code.")
 
+    def get_user_client_from_node(self, context: AuthedServiceContext) -> SyftClient:
+        # get a user client
+        guest_client = context.node.get_guest_client()
+        user_client = guest_client
+        signing_key_for_verify_key = context.node.get_service_method(
+            UserService.signing_key_for_verify_key
+        )
+        private_key = signing_key_for_verify_key(
+            context=context, verify_key=context.credentials
+        )
+        signing_key = private_key.signing_key
+        user_client.credentials = signing_key
+        return user_client
+
     def get_admin_client_from_node(self, context: AuthedServiceContext) -> SyftClient:
         admin_client = context.node.get_guest_client()
         admin_client.credentials = context.node.signing_key
@@ -499,13 +517,14 @@ class TwinAPIEndpoint(SyncableSyftObject):
             src = ast.unparse(inner_function)
             raw_byte_code = compile(src, code.func_name, "exec")
             register_fn_in_linecache(code.func_name, src)
+            user_client = self.get_user_client_from_node(context)
             admin_client = self.get_admin_client_from_node(context)
 
             # load it
             exec(raw_byte_code)  # nosec
 
             internal_context = code.build_internal_context(
-                context=context, admin_client=admin_client
+                context=context, admin_client=admin_client, user_client=user_client
             )
 
             # execute it
