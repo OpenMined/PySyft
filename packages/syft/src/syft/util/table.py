@@ -3,16 +3,16 @@ from collections import defaultdict
 from collections.abc import Iterable
 from collections.abc import Mapping
 from collections.abc import Set
+import logging
 import re
 from typing import Any
-
-# third party
-from loguru import logger
 
 # relative
 from .notebook_ui.components.table_template import TABLE_INDEX_KEY
 from .notebook_ui.components.table_template import create_table_template
 from .util import full_name_with_qualname
+
+logger = logging.getLogger(__name__)
 
 
 def _syft_in_mro(self: Any, item: Any) -> bool:

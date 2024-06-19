@@ -2,6 +2,7 @@
 
 # stdlib
 from collections.abc import Collection
+import logging
 
 # relative
 from ..abstract_node import NodeSideType
@@ -20,6 +21,8 @@ from ..util.util import prompt_warning_message
 from .domain_client import DomainClient
 from .sync_decision import SyncDecision
 from .sync_decision import SyncDirection
+
+logger = logging.getLogger(__name__)
 
 
 def compare_states(
@@ -174,7 +177,7 @@ def handle_sync_batch(
         )
         sync_instructions.append(instruction)
 
-    print(f"Decision: Syncing {len(sync_instructions)} objects")
+    logger.debug(f"Decision: Syncing {len(sync_instructions)} objects")
 
     # Apply empty state to source side to signal that we are done syncing
     res_src = src_client.apply_state(src_resolved_state)
@@ -206,7 +209,7 @@ def handle_ignore_batch(
 
     for other_batch in other_ignore_batches:
         other_batch.decision = SyncDecision.IGNORE
-        print(f"Ignoring other batch with root {other_batch.root_type.__name__}")
+        logger.debug(f"Ignoring other batch with root {other_batch.root_type.__name__}")
 
     src_client = obj_diff_batch.source_client
     tgt_client = obj_diff_batch.target_client
@@ -240,7 +243,7 @@ def handle_unignore_batch(
     other_batches = [b for b in all_batches if b is not obj_diff_batch]
     other_unignore_batches = get_other_unignore_batches(obj_diff_batch, other_batches)
     for other_batch in other_unignore_batches:
-        print(f"Ignoring other batch with root {other_batch.root_type.__name__}")
+        logger.debug(f"Ignoring other batch with root {other_batch.root_type.__name__}")
         other_batch.decision = None
         src_resolved_state.add_unignored(other_batch.root_id)
         tgt_resolved_state.add_unignored(other_batch.root_id)

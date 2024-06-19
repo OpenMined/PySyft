@@ -4,6 +4,7 @@ from __future__ import annotations
 # stdlib
 from collections import defaultdict
 from copy import deepcopy
+import logging
 from pathlib import Path
 import sqlite3
 import tempfile
@@ -32,6 +33,8 @@ from .kv_document_store import KeyValueStorePartition
 from .locks import LockingConfig
 from .locks import NoLockingConfig
 from .locks import SyftLock
+
+logger = logging.getLogger(__name__)
 
 # here we can create a single connection per cache_key
 # since pytest is concurrent processes, we need to isolate each connection
@@ -350,7 +353,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         try:
             self._close()
         except Exception as e:
-            print(f"Could not close connection. Error: {e}")
+            logger.error("Could not close connection", exc_info=e)
 
 
 @serializable()

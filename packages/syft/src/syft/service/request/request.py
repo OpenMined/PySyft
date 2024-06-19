@@ -3,6 +3,7 @@ from collections.abc import Callable
 from enum import Enum
 import hashlib
 import inspect
+import logging
 from typing import Any
 
 # third party
@@ -57,6 +58,8 @@ from ..notification.notifications import Notification
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..user.user import UserView
+
+logger = logging.getLogger(__name__)
 
 
 @serializable()
@@ -158,7 +161,7 @@ class ActionStoreChange(Change):
                     permission=self.apply_permission_type,
                 )
                 if apply:
-                    print(
+                    logger.debug(
                         "ADDING PERMISSION", requesting_permission_action_obj, id_action
                     )
                     action_store.add_permission(requesting_permission_action_obj)
@@ -182,7 +185,7 @@ class ActionStoreChange(Change):
                 )
             return Ok(SyftSuccess(message=f"{type(self)} Success"))
         except Exception as e:
-            print(f"failed to apply {type(self)}", e)
+            logger.error(f"failed to apply {type(self)}", exc_info=e)
             return Err(SyftError(message=str(e)))
 
     def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
@@ -1317,7 +1320,7 @@ class UserCodeStatusChange(Change):
                 self.linked_obj.update_with_context(context, updated_status)
             return Ok(SyftSuccess(message=f"{type(self)} Success"))
         except Exception as e:
-            print(f"failed to apply {type(self)}. {e}")
+            logger.error(f"failed to apply {type(self)}", exc_info=e)
             return Err(SyftError(message=str(e)))
 
     def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:

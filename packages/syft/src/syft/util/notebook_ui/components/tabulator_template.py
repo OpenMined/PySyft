@@ -1,5 +1,6 @@
 # stdlib
 import json
+import logging
 import secrets
 from typing import Any
 
@@ -7,7 +8,6 @@ from typing import Any
 from IPython.display import HTML
 from IPython.display import display
 import jinja2
-from loguru import logger
 
 # relative
 from ...assets import load_css
@@ -15,6 +15,8 @@ from ...assets import load_js
 from ...table import TABLE_INDEX_KEY
 from ...table import prepare_table_data
 from ..icons import Icon
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_ID_WIDTH = 110
 env = jinja2.Environment(loader=jinja2.PackageLoader("syft", "assets/jinja"))  # nosec
@@ -145,7 +147,7 @@ def build_tabulator_table(
 
         return table_html
     except Exception as e:
-        logger.debug("error building table", e)
+        logger.debug("error building table", exc_info=e)
 
     return None
 

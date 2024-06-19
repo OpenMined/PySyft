@@ -7,6 +7,7 @@ from collections.abc import Iterable
 from enum import Enum
 import inspect
 from io import BytesIO
+import logging
 from pathlib import Path
 import sys
 import threading
@@ -46,7 +47,6 @@ from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
-from ...util.logger import debug
 from ...util.util import prompt_warning_message
 from ..context import AuthedServiceContext
 from ..response import SyftException
@@ -58,6 +58,8 @@ from .action_permissions import ActionPermission
 from .action_types import action_type_for_object
 from .action_types import action_type_for_type
 from .action_types import action_types
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     # relative
@@ -443,9 +445,10 @@ def make_action_side_effect(
             action_type=context.action_type,
         )
         context.action = action
-    except Exception:
-        print(f"make_action_side_effect failed with {traceback.format_exc()}")
-        return Err(f"make_action_side_effect failed with {traceback.format_exc()}")
+    except Exception as e:
+        msg = "make_action_side_effect failed"
+        logger.error(msg, exc_info=e)
+        return Err(f"{msg} with {traceback.format_exc()}")
 
     return Ok((context, args, kwargs))
 
@@ -521,7 +524,7 @@ def convert_to_pointers(
                 arg.syft_node_uid = node_uid
                 r = arg._save_to_blob_storage()
                 if isinstance(r, SyftError):
-                    print(r.message)
+                    logger.error(r.message)
                 arg = api.services.action.set(arg)
             arg_list.append(arg)
 
@@ -539,7 +542,7 @@ def convert_to_pointers(
                 arg.syft_node_uid = node_uid
                 r = arg._save_to_blob_storage()
                 if isinstance(r, SyftError):
-                    print(r.message)
+                    logger.error(r.message)
                 arg = api.services.action.set(arg)
 
             kwarg_dict[k] = arg
@@ -772,9 +775,8 @@ class ActionObject(SyncableSyftObject):
                     uid=self.syft_blob_storage_entry_id
                 )
                 if isinstance(blob_retrieval_object, SyftError):
-                    print(
-                        "Could not fetch actionobject data\n",
-                        blob_retrieval_object,
+                    logger.error(
+                        f"Could not fetch actionobject data: {blob_retrieval_object}"
                     )
                     return blob_retrieval_object
                 # relative
@@ -839,13 +841,15 @@ class ActionObject(SyncableSyftObject):
                         blob_deposit_object.blob_storage_entry_id
                     )
                 else:
-                    print("cannot save to blob storage")
+                    logger.warn("cannot save to blob storage. allocate_method=None")
 
             self.syft_action_data_type = type(data)
             self._set_reprs(data)
             self.syft_has_bool_attr = hasattr(data, "__bool__")
         else:
-            debug("skipping writing action object to store, passed data was empty.")
+            logger.debug(
+                "skipping writing action object to store, passed data was empty."
+            )
 
         self.syft_action_data_cache = data
 
@@ -1575,7 +1579,7 @@ class ActionObject(SyncableSyftObject):
                 if result.is_ok():
                     context, result_args, result_kwargs = result.ok()
                 else:
-                    debug(f"Pre-hook failed with {result.err()}")
+                    logger.debug(f"Pre-hook failed with {result.err()}")
         if name not in self._syft_dont_wrap_attrs():
             if HOOK_ALWAYS in self.syft_pre_hooks__:
                 for hook in self.syft_pre_hooks__[HOOK_ALWAYS]:
@@ -1584,7 +1588,7 @@ class ActionObject(SyncableSyftObject):
                         context, result_args, result_kwargs = result.ok()
                     else:
                         msg = result.err().replace("\\n", "\n")
-                        debug(f"Pre-hook failed with {msg}")
+                        logger.debug(f"Pre-hook failed with {msg}")
 
         if self.is_pointer:
             if name not in self._syft_dont_wrap_attrs():
@@ -1595,7 +1599,7 @@ class ActionObject(SyncableSyftObject):
                             context, result_args, result_kwargs = result.ok()
                         else:
                             msg = result.err().replace("\\n", "\n")
-                            debug(f"Pre-hook failed with {msg}")
+                            logger.debug(f"Pre-hook failed with {msg}")
 
         return context, result_args, result_kwargs
 
@@ -1610,7 +1614,7 @@ class ActionObject(SyncableSyftObject):
                 if result.is_ok():
                     new_result = result.ok()
                 else:
-                    debug(f"Post hook failed with {result.err()}")
+                    logger.debug(f"Post hook failed with {result.err()}")
 
         if name not in self._syft_dont_wrap_attrs():
             if HOOK_ALWAYS in self.syft_post_hooks__:
@@ -1619,7 +1623,7 @@ class ActionObject(SyncableSyftObject):
                     if result.is_ok():
                         new_result = result.ok()
                     else:
-                        debug(f"Post hook failed with {result.err()}")
+                        logger.debug(f"Post hook failed with {result.err()}")
 
         if self.is_pointer:
             if name not in self._syft_dont_wrap_attrs():
@@ -1629,7 +1633,7 @@ class ActionObject(SyncableSyftObject):
                         if result.is_ok():
                             new_result = result.ok()
                         else:
-                            debug(f"Post hook failed with {result.err()}")
+                            logger.debug(f"Post hook failed with {result.err()}")
 
         return new_result
 
@@ -1721,7 +1725,7 @@ class ActionObject(SyncableSyftObject):
                 "[_wrap_attribute_for_bool_on_nonbools] self.syft_action_data already implements the bool operator"
             )
 
-        debug("[__getattribute__] Handling bool on nonbools")
+        logger.debug("[__getattribute__] Handling bool on nonbools")
         context = PreHookContext(
             obj=self,
             op_name=name,
@@ -1754,7 +1758,7 @@ class ActionObject(SyncableSyftObject):
             raise RuntimeError(
                 "[_wrap_attribute_for_properties] Use this only on properties"
             )
-        debug(f"[__getattribute__] Handling property {name} ")
+        logger.debug(f"[__getattribute__] Handling property {name}")
 
         context = PreHookContext(
             obj=self,
@@ -1778,7 +1782,7 @@ class ActionObject(SyncableSyftObject):
         def fake_func(*args: Any, **kwargs: Any) -> Any:
             return ActionDataEmpty(syft_internal_type=self.syft_internal_type)
 
-        debug(f"[__getattribute__] Handling method {name} ")
+        logger.debug(f"[__getattribute__] Handling method {name}")
         if (
             issubclass(self.syft_action_data_type, ActionDataEmpty)
             and name not in action_data_empty_must_run
@@ -1815,20 +1819,20 @@ class ActionObject(SyncableSyftObject):
             return post_result
 
         if inspect.ismethod(original_func) or inspect.ismethoddescriptor(original_func):
-            debug("Running method: ", name)
+            logger.debug(f"Running method: {name}")
 
             def wrapper(_self: Any, *args: Any, **kwargs: Any) -> Any:
                 return _base_wrapper(*args, **kwargs)
 
             wrapper = types.MethodType(wrapper, type(self))
         else:
-            debug("Running non-method: ", name)
+            logger.debug(f"Running non-method: {name}")
 
             wrapper = _base_wrapper
 
         try:
             wrapper.__doc__ = original_func.__doc__
-            debug(
+            logger.debug(
                 "Found original signature for ",
                 name,
                 inspect.signature(original_func),
@@ -1837,7 +1841,7 @@ class ActionObject(SyncableSyftObject):
                 original_func
             )
         except Exception:
-            debug("name", name, "has no signature")
+            logger.debug(f"name={name} has no signature")
 
         # third party
         return wrapper
@@ -1931,7 +1935,7 @@ class ActionObject(SyncableSyftObject):
     def __setattr__(self, name: str, value: Any) -> Any:
         defined_on_self = name in self.__dict__ or name in self.__private_attributes__
 
-        debug(">> ", name, ", defined_on_self = ", defined_on_self)
+        logger.debug(f">> {name} defined_on_self={defined_on_self}")
 
         # use the custom defined version
         if defined_on_self:
@@ -2180,13 +2184,13 @@ action_types[Any] = AnyActionObject
 
 
 def debug_original_func(name: str, func: Callable) -> None:
-    debug(f"{name} func is:")
-    debug("inspect.isdatadescriptor", inspect.isdatadescriptor(func))
-    debug("inspect.isgetsetdescriptor", inspect.isgetsetdescriptor(func))
-    debug("inspect.isfunction", inspect.isfunction(func))
-    debug("inspect.isbuiltin", inspect.isbuiltin(func))
-    debug("inspect.ismethod", inspect.ismethod(func))
-    debug("inspect.ismethoddescriptor", inspect.ismethoddescriptor(func))
+    logger.debug(f"{name} func is:")
+    logger.debug(f"inspect.isdatadescriptor = {inspect.isdatadescriptor(func)}")
+    logger.debug(f"inspect.isgetsetdescriptor = {inspect.isgetsetdescriptor(func)}")
+    logger.debug(f"inspect.isfunction = {inspect.isfunction(func)}")
+    logger.debug(f"inspect.isbuiltin = {inspect.isbuiltin(func)}")
+    logger.debug(f"inspect.ismethod = {inspect.ismethod(func)}")
+    logger.debug(f"inspect.ismethoddescriptor = {inspect.ismethoddescriptor(func)}")
 
 
 def is_action_data_empty(obj: Any) -> bool:

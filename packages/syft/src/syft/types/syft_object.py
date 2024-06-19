@@ -10,6 +10,7 @@ from collections.abc import Set
 from hashlib import sha256
 import inspect
 from inspect import Signature
+import logging
 import types
 from types import NoneType
 from types import UnionType
@@ -47,6 +48,8 @@ from ..util.util import get_qualname_for
 from .syft_metaclass import Empty
 from .syft_metaclass import PartialModelMetaclass
 from .uid import UID
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     # relative
@@ -611,8 +614,9 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
                     if isinstance(method, types.FunctionType):
                         type_ = method.__annotations__["return"]
                 except Exception as e:
-                    print(
-                        f"Failed to get attribute from key {key} type for {cls} storage. {e}"
+                    logger.error(
+                        f"Failed to get attribute from key {key} type for {cls} storage.",
+                        exc_info=e,
                     )
                     raise e
             # EmailStr seems to be lost every time the value is set even with a validator

@@ -226,6 +226,9 @@ class SyftAPICall(SyftObject):
             signature=signed_message.signature,
         )
 
+    def __repr__(self) -> str:
+        return f"SyftAPICall(path={self.path}, args={self.args}, kwargs={self.kwargs}, blocking={self.blocking})"
+
 
 @instrument
 @serializable()
@@ -1266,7 +1269,6 @@ try:
         Inspector._getdef_bak = Inspector._getdef
         Inspector._getdef = types.MethodType(monkey_patch_getdef, Inspector)
 except Exception:
-    # print("Failed to monkeypatch IPython Signature Override")
     pass  # nosec
 
 

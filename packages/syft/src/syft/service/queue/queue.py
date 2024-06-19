@@ -1,13 +1,12 @@
 # stdlib
+import logging
 from multiprocessing import Process
 import threading
 from threading import Thread
 import time
 from typing import Any
-from typing import cast
 
 # third party
-from loguru import logger
 import psutil
 from result import Err
 from result import Ok
@@ -33,6 +32,8 @@ from .base_queue import QueueConsumer
 from .base_queue import QueueProducer
 from .queue_stash import QueueItem
 from .queue_stash import Status
+
+logger = logging.getLogger(__name__)
 
 
 class MonitorThread(threading.Thread):
@@ -297,7 +298,7 @@ class APICallMessageHandler(AbstractMessageHandler):
         queue_item.node_uid = worker.id
 
         job_item.status = JobStatus.PROCESSING
-        job_item.node_uid = cast(UID, worker.id)
+        job_item.node_uid = worker.id  # type: ignore[assignment]
         job_item.updated_at = DateTime.now()
 
         if syft_worker_id is not None:

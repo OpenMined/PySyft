@@ -2,14 +2,15 @@
 from __future__ import annotations
 
 # stdlib
+import logging
 from pathlib import Path
 import re
 from string import Template
+import traceback
 from typing import TYPE_CHECKING
 from typing import cast
 
 # third party
-from loguru import logger
 import markdown
 from result import Result
 from tqdm import tqdm
@@ -40,6 +41,8 @@ from .client import login
 from .client import login_as_guest
 from .connection import NodeConnection
 from .protocol import SyftProtocol
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     # relative
@@ -271,8 +274,9 @@ class DomainClient(SyftClient):
 
             return ActionObject.from_obj(result).send(self)
         except Exception as err:
-            logger.debug("upload_files: Error creating action_object: {}", err)
-            return SyftError(message=f"Failed to upload files: {err}")
+            return SyftError(
+                message=f"Failed to upload files: {err}.\n{traceback.format_exc()}"
+            )
 
     def connect_to_gateway(
         self,
