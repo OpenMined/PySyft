@@ -1,10 +1,10 @@
 # stdlib
 import ast
 from collections.abc import Callable
-import linecache
 import inspect
 from inspect import Signature
 import keyword
+import linecache
 import re
 import textwrap
 from typing import Any
@@ -17,10 +17,10 @@ from pydantic import model_validator
 from result import Err
 from result import Ok
 from result import Result
-from syft.client.client import SyftClient
 
 # relative
 from ...abstract_node import AbstractNode
+from ...client.client import SyftClient
 from ...serde.serializable import serializable
 from ...serde.signature import signature_remove_context
 from ...types.syft_object import PartialSyftObject
@@ -74,6 +74,7 @@ def get_signature(func: Callable) -> Signature:
     sig = inspect.signature(func)
     sig = signature_remove_context(sig)
     return sig
+
 
 def register_fn_in_linecache(fname: str, src: str) -> None:
     """adds a function to linecache, such that inspect.getsource works for functions nested in this function.
@@ -202,8 +203,9 @@ class Endpoint(SyftObject):
         self.state = state
 
     def build_internal_context(
-        self, context: AuthedServiceContext,
-        admin_client: SyftClient | None,
+        self,
+        context: AuthedServiceContext,
+        admin_client: SyftClient | None = None,
     ) -> TwinAPIAuthedContext:
         helper_function_dict: dict[str, Callable] = {}
         self.helper_functions = self.helper_functions or {}
@@ -256,7 +258,7 @@ class Endpoint(SyftObject):
         # load it
         exec(raw_byte_code)  # nosec
 
-        internal_context = self.build_internal_context(context)
+        internal_context = self.build_internal_context(context=context)
 
         # execute it
         evil_string = f"{self.func_name}(*args, **kwargs,context=internal_context)"
@@ -502,7 +504,9 @@ class TwinAPIEndpoint(SyncableSyftObject):
             # load it
             exec(raw_byte_code)  # nosec
 
-            internal_context = code.build_internal_context(context, admin_client=admin_client)
+            internal_context = code.build_internal_context(
+                context=context, admin_client=admin_client
+            )
 
             # execute it
             evil_string = f"{code.func_name}(*args, **kwargs,context=internal_context)"

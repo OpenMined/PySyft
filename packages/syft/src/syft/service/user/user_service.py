@@ -5,7 +5,6 @@ from ...abstract_node import NodeType
 from ...exceptions.user import UserAlreadyExistsException
 from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
-from ...node.credentials import UserLoginCredentials
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
@@ -361,6 +360,18 @@ class UserService(AbstractService):
         else:
             return user
 
+    @service_method(
+        path="user.key_for_email", name="key_for_email", roles=DATA_OWNER_ROLE_LEVEL
+    )
+    def key_for_email(
+        self, context: AuthedServiceContext, email: str
+    ) -> UserPrivateKey | SyftError:
+        result = self.stash.get_by_email(credentials=context.credentials, email=email)
+        if result.is_ok():
+            user = result.ok()
+            return user.to(UserPrivateKey)
+        return SyftError(message=str(result.err()))
+
     @service_method(path="user.delete", name="delete", roles=GUEST_ROLE_LEVEL)
     def delete(self, context: AuthedServiceContext, uid: UID) -> bool | SyftError:
         # third party
@@ -395,7 +406,7 @@ class UserService(AbstractService):
 
     def exchange_credentials(
         self, context: UnauthedServiceContext
-    ) -> UserLoginCredentials | SyftError:
+    ) -> UserPrivateKey | SyftError:
         """Verify user
         TODO: We might want to use a SyftObject instead
         """
