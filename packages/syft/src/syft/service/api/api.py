@@ -380,6 +380,10 @@ class TwinAPIEndpoint(SyncableSyftObject):
     # version
     __canonical_name__: str = "TwinAPIEndpoint"
     __version__ = SYFT_OBJECT_VERSION_1
+    __exclude_sync_diff_attrs__ = ["private_function"]
+    __private_sync_attr_mocks__ = {
+        "private_function": None,
+    }
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
@@ -392,10 +396,6 @@ class TwinAPIEndpoint(SyncableSyftObject):
     action_object_id: UID
     worker_pool: str | None = None
     endpoint_timeout: int = 60
-
-    __private_sync_attr_mocks__ = {
-        "private_function": None,
-    }
 
     __attr_searchable__ = ["path"]
     __attr_unique__ = ["path"]
