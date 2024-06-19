@@ -1,6 +1,11 @@
 ARG PYTHON_VERSION="3.12"
-ARG UV_VERSION="0.1.41-r0"
+ARG UV_VERSION="0.2.13-r0"
 ARG TORCH_VERSION="2.3.0"
+
+# wolfi-os pkg definition links
+# https://github.com/wolfi-dev/os/blob/main/python-3.12.yaml
+# https://github.com/wolfi-dev/os/blob/main/py3-pip.yaml
+# https://github.com/wolfi-dev/os/blob/main/uv.yaml
 
 # ==================== [BUILD STEP] Python Dev Base ==================== #
 
@@ -12,7 +17,9 @@ ARG TORCH_VERSION
 
 # Setup Python DEV
 RUN apk update && apk upgrade && \
-    apk add build-base gcc python-$PYTHON_VERSION-dev-default uv=$UV_VERSION
+    apk add build-base gcc python-$PYTHON_VERSION-dev uv=$UV_VERSION && \
+    # preemptive fix for wolfi-os breaking python entrypoint
+    (test -f /usr/bin/python || ln -s /usr/bin/python3.12 /usr/bin/python)
 
 WORKDIR /root/app
 
@@ -44,7 +51,9 @@ ARG PYTHON_VERSION
 ARG UV_VERSION
 
 RUN apk update && apk upgrade && \
-    apk add --no-cache git bash python-$PYTHON_VERSION-default py$PYTHON_VERSION-pip uv=$UV_VERSION
+    apk add --no-cache git bash python-$PYTHON_VERSION py$PYTHON_VERSION-pip uv=$UV_VERSION && \
+    # preemptive fix for wolfi-os breaking python entrypoint
+    (test -f /usr/bin/python || ln -s /usr/bin/python3.12 /usr/bin/python)
 
 WORKDIR /root/app/
 
