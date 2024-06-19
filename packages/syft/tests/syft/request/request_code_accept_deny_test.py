@@ -183,13 +183,13 @@ def test_code_accept_deny(faker: Faker, worker: Worker):
     assert not isinstance(result, SyftError)
 
     request = root_client.requests.get_all()[0]
-    result = request.accept_by_depositing_result(result=10)
+    result = request.approve()
     assert isinstance(result, SyftSuccess)
 
     request = root_client.requests.get_all()[0]
     assert request.status == RequestStatus.APPROVED
     result = ds_client.code.simple_function(data=action_obj)
-    assert result.get() == 10
+    assert result.get() == sum(dummy_data)
 
     result = request.deny(reason="Function output needs differential privacy !!")
     assert isinstance(result, SyftSuccess)

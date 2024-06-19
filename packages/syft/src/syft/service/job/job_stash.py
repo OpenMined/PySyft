@@ -23,7 +23,7 @@ from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...service.context import AuthedServiceContext
 from ...service.worker.worker_pool import SyftWorker
-from ...store.document_store import BaseStash
+from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
@@ -820,7 +820,7 @@ class JobInfo(SyftObject):
 
 @instrument
 @serializable()
-class JobStash(BaseStash):
+class JobStash(BaseUIDStoreStash):
     object_type = Job
     settings: PartitionSettings = PartitionSettings(
         name=Job.__canonical_name__, object_type=Job
@@ -862,29 +862,6 @@ class JobStash(BaseStash):
                 return Err("multiple Jobs found")
             else:
                 return Ok(res[0])
-
-    def set_placeholder(
-        self,
-        credentials: SyftVerifyKey,
-        item: Job,
-        add_permissions: list[ActionObjectPermission] | None = None,
-    ) -> Result[Job, str]:
-        # 🟡 TODO 36: Needs distributed lock
-        if not item.resolved:
-            exists = self.get_by_uid(credentials, item.id)
-            if exists.is_ok() and exists.ok() is None:
-                valid = self.check_type(item, self.object_type)
-                if valid.is_err():
-                    return SyftError(message=valid.err())
-                return super().set(credentials, item, add_permissions)
-        return item
-
-    def get_by_uid(
-        self, credentials: SyftVerifyKey, uid: UID
-    ) -> Result[Job | None, str]:
-        qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
-        item = self.query_one(credentials=credentials, qks=qks)
-        return item
 
     def get_by_parent_id(
         self, credentials: SyftVerifyKey, uid: UID

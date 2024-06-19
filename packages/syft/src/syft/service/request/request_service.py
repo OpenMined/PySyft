@@ -105,6 +105,17 @@ class RequestService(AbstractService):
             raise e
 
     @service_method(
+        path="request.get_by_uid", name="get_by_uid", roles=DATA_SCIENTIST_ROLE_LEVEL
+    )
+    def get_by_uid(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Request | None | SyftError:
+        result = self.stash.get_by_uid(context.credentials, uid)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        return result.ok()
+
+    @service_method(
         path="request.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL
     )
     def get_all(self, context: AuthedServiceContext) -> list[Request] | SyftError:
@@ -211,7 +222,7 @@ class RequestService(AbstractService):
             request_notification = filter_by_obj(context=context, obj_uid=uid)
 
             link = LinkedObject.with_context(request, context=context)
-            if not request.status == RequestStatus.PENDING:
+            if not request.get_status(context) == RequestStatus.PENDING:
                 if request_notification is not None and not isinstance(
                     request_notification, SyftError
                 ):

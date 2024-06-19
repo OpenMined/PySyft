@@ -72,6 +72,10 @@ def extract_uid(v: Any) -> UID:
 
 
 def filter_only_uids(results: Any) -> list[UID] | dict[str, UID] | UID:
+    # Prevent checking for __len__ on ActionObject (creates an Action)
+    if isinstance(results, ActionObject):
+        return extract_uid(results)
+
     if not hasattr(results, "__len__"):
         results = [results]
 
