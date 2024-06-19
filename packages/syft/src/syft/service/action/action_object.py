@@ -1940,7 +1940,7 @@ class ActionObject(SyncableSyftObject):
                     else self.syft_action_data_cache.__repr__()
                 )
 
-        return f"```python\n{res}\n{data_repr_}\n```\n"
+        return f"\n**{res}**\n\n{data_repr_}\n"
 
     def _data_repr(self) -> str | None:
         if isinstance(self.syft_action_data_cache, ActionDataEmpty):

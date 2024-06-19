@@ -26,11 +26,13 @@ from result import Result
 from ...abstract_node import NodeType
 from ...client.api import APIRegistry
 from ...client.api import NodeIdentity
+from ...client.api import RemoteFunction
 from ...node.credentials import SyftVerifyKey
 from ...serde.recursive_primitives import recursive_serde_register_type
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
@@ -40,6 +42,8 @@ from ...types.twin_object import TwinObject
 from ...types.uid import UID
 from ...util.util import is_interpreter_jupyter
 from ..action.action_object import ActionObject
+from ..action.action_permissions import ActionObjectPermission
+from ..action.action_permissions import ActionPermission
 from ..code.code_parse import GlobalsVisitor
 from ..code.unparse import unparse
 from ..context import AuthedServiceContext
@@ -171,6 +175,140 @@ def partition_by_node(kwargs: dict[str, Any]) -> dict[NodeIdentity, dict[str, UI
     return output_kwargs
 
 
+@serializable()
+class PolicyRule(SyftObject):
+    __canonical_name__ = "PolicyRule"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    kw: str
+    requires_input: bool = True
+
+    def is_met(
+        self, context: AuthedServiceContext, action_object: ActionObject
+    ) -> bool:
+        return False
+
+
+@serializable()
+class CreatePolicyRule(SyftObject):
+    __canonical_name__ = "CreatePolicyRule"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    val: Any
+
+
+@serializable()
+class CreatePolicyRuleConstant(CreatePolicyRule):
+    __canonical_name__ = "CreatePolicyRuleConstant"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    val: Any
+
+    def to_policy_rule(self, kw):
+        return Constant(kw=kw, val=self.val)
+
+
+@serializable()
+class Matches(PolicyRule):
+    __canonical_name__ = "Matches"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    val: UID
+
+    def is_met(
+        self, context: AuthedServiceContext, action_object: ActionObject
+    ) -> bool:
+        return action_object.id == self.val
+
+
+@serializable()
+class Constant(PolicyRule):
+    __canonical_name__ = "PreFill"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    val: Any
+    requires_input: bool = False
+
+    def is_met(self, context: AuthedServiceContext, *args, **kwargs) -> bool:
+        return True
+
+    def transform_kwarg(self, val):
+        return self.val
+
+
+@serializable()
+class UserOwned(PolicyRule):
+    __canonical_name__ = "UserOwned"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    # str, float, int, bool, dict, list, set, tuple
+
+    type: (
+        type[str]
+        | type[float]
+        | type[int]
+        | type[bool]
+        | type[dict]
+        | type[list]
+        | type[set]
+        | type[tuple]
+        | None
+    )
+
+    def is_owned(
+        self, context: AuthedServiceContext, action_object: ActionObject
+    ) -> bool:
+        action_store = context.node.get_service("actionservice").store
+        return action_store.has_permission(
+            ActionObjectPermission(
+                action_object.id, ActionPermission.OWNER, context.credentials
+            )
+        )
+
+    def is_met(
+        self, context: AuthedServiceContext, action_object: ActionObject
+    ) -> bool:
+        return type(action_object.syft_action_data) == self.type and self.is_owned(
+            context, action_object
+        )
+
+
+def user_code_arg2id(arg):
+    if isinstance(arg, ActionObject):
+        uid = arg.id
+    elif isinstance(arg, TwinObject):
+        uid = arg.id
+    elif isinstance(arg, Asset):
+        uid = arg.action_id
+    elif isinstance(arg, RemoteFunction):
+        # TODO: Beach Fix
+        # why do we need another call to the server to get the UID?
+        uid = arg.custom_function_actionobject_id()
+    else:
+        uid = arg
+    return uid
+
+
+def retrieve_item_from_db(id: UID, context: AuthedServiceContext) -> ActionObject:
+    # relative
+    from ...service.action.action_object import TwinMode
+
+    action_service = context.node.get_service("actionservice")
+    root_context = AuthedServiceContext(
+        node=context.node, credentials=context.node.verify_key
+    )
+    value = action_service._get(
+        context=root_context,
+        uid=id,
+        twin_mode=TwinMode.NONE,
+        has_permission=True,
+    )
+    if value.is_err():
+        return value
+    else:
+        return value.ok()
+
+
 class InputPolicy(Policy):
     __canonical_name__ = "InputPolicy"
     __version__ = SYFT_OBJECT_VERSION_2
@@ -225,6 +363,161 @@ class InputPolicy(Policy):
                 action_object_value.syft_action_data  # noqa: B018
             inputs[var_name] = action_object_value
         return inputs
+
+
+@serializable()
+class MixedInputPolicy(InputPolicy):
+    # version
+    __canonical_name__ = "MixedInputPolicy"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    kwarg_rules: dict[NodeIdentity, dict[str, PolicyRule]]
+
+    def __init__(
+        self, init_kwargs=None, client=None, *args: Any, **kwargs: Any
+    ) -> None:
+        if init_kwargs is not None:
+            kwarg_rules = init_kwargs
+            kwargs = {}
+        else:
+            node_identity = self.find_node_identity(kwargs, client)
+            kwarg_rules_current_node = {}
+            for kw, arg in kwargs.items():
+                if isinstance(
+                    arg, UID | Asset | ActionObject | TwinObject | RemoteFunction
+                ):
+                    kwarg_rules_current_node[kw] = Matches(
+                        kw=kw, val=user_code_arg2id(arg)
+                    )
+                elif arg in [str, float, int, bool, dict, list, set, tuple]:
+                    kwarg_rules_current_node[kw] = UserOwned(kw=kw, type=arg)
+                elif isinstance(arg, CreatePolicyRule):
+                    kwarg_rules_current_node[kw] = arg.to_policy_rule(kw)
+                else:
+                    raise ValueError("Incorrect argument")
+            kwarg_rules = {node_identity: kwarg_rules_current_node}
+
+        super().__init__(
+            *args, kwarg_rules=kwarg_rules, init_kwargs=kwarg_rules, **kwargs
+        )
+
+    def transform_kwargs(self, kwargs: dict[str, Any]) -> dict[str, Any]:
+        for _, rules in self.kwarg_rules.items():
+            for kw, rule in rules.items():
+                if hasattr(rule, "transform_kwarg"):
+                    val = rule.transform_kwarg(kwargs.get(kw, None))
+                    kwargs[kw] = val
+        return kwargs
+
+    def find_node_identity(self, kwargs: dict[str, Any], client=None) -> NodeIdentity:
+        if client is not None:
+            return NodeIdentity.from_api(client.api)
+
+        apis = APIRegistry.get_all_api()
+        matches = set()
+        has_ids = False
+        for val in kwargs.values():
+            # we mostly get the UID here because we don't want to store all those
+            # other objects, so we need to create a global UID obj lookup service
+            if isinstance(
+                val, UID | Asset | ActionObject | TwinObject | RemoteFunction
+            ):
+                has_ids = True
+                id = user_code_arg2id(val)
+                for api in apis:
+                    # TODO: Beach Fix
+                    # here be dragons, we need to refactor this since the existance
+                    # depends on the type and service
+                    # also the whole NodeIdentity needs to be removed
+                    check_endpoints = [
+                        api.services.action.exists,
+                        api.services.api.exists,
+                    ]
+                    for check_endpoint in check_endpoints:
+                        result = check_endpoint(id)
+                        if result:
+                            break  # stop looking
+                    if result:
+                        node_identity = NodeIdentity.from_api(api)
+                        matches.add(node_identity)
+
+        if len(matches) == 0:
+            if not has_ids:
+                if len(apis) == 1:
+                    return NodeIdentity.from_api(api)
+                else:
+                    raise ValueError(
+                        "Multiple Node Identities, please only login to one client (for this policy) and try again"
+                    )
+            else:
+                raise ValueError("No Node Identities")
+        if len(matches) > 1:
+            # TODO: Beach Fix
+            raise ValueError("Multiple Node Identities")
+            # we need to fix this as its possible we could
+            # grab the wrong API and call a different user context in jupyter testing
+            pass  # just grab the first one
+        return matches.pop()
+
+    def filter_kwargs(
+        self,
+        kwargs: dict[str, UID],
+        context: AuthedServiceContext,
+        code_item_id: UID,
+    ) -> Result[dict[Any, Any], str]:
+        try:
+            res = {}
+            for _, rules in self.kwarg_rules.items():
+                for kw, rule in rules.items():
+                    if rule.requires_input:
+                        passed_id = kwargs[kw]
+                        actionobject: ActionObject = retrieve_item_from_db(
+                            passed_id, context
+                        )
+                        rule_check_args = (actionobject,)
+                    else:
+                        rule_check_args = ()
+                        # TODO
+                        actionobject = rule.value
+                    if not rule.is_met(context, *rule_check_args):
+                        raise ValueError(f"{rule} is not met")
+                    else:
+                        res[kw] = actionobject
+        except Exception as e:
+            return Err(str(e))
+        return Ok(res)
+
+    def _is_valid(
+        self,
+        context: AuthedServiceContext,
+        usr_input_kwargs: dict,
+        code_item_id: UID,
+    ) -> Result[bool, str]:
+        filtered_input_kwargs = self.filter_kwargs(
+            kwargs=usr_input_kwargs,
+            context=context,
+            code_item_id=code_item_id,
+        )
+
+        if filtered_input_kwargs.is_err():
+            return filtered_input_kwargs
+
+        filtered_input_kwargs = filtered_input_kwargs.ok()
+
+        expected_input_kwargs = set()
+        for _inp_kwargs in self.inputs.values():
+            for k in _inp_kwargs.keys():
+                if k not in usr_input_kwargs:
+                    return Err(f"Function missing required keyword argument: '{k}'")
+            expected_input_kwargs.update(_inp_kwargs.keys())
+
+        permitted_input_kwargs = list(filtered_input_kwargs.keys())
+        not_approved_kwargs = set(expected_input_kwargs) - set(permitted_input_kwargs)
+        if len(not_approved_kwargs) > 0:
+            return Err(
+                f"Input arguments: {not_approved_kwargs} to the function are not approved yet."
+            )
+        return Ok(True)
 
 
 def retrieve_from_db(

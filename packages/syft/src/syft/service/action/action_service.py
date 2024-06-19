@@ -307,7 +307,7 @@ class ActionService(AbstractService):
         if context.node:
             user_code_service = context.node.get_service("usercodeservice")
 
-        input_policy = code_item.get_input_policy(context)
+        input_policy = code_item.get_input_policy(context, force_deserialize=True)
         output_policy = code_item.get_output_policy(context)
 
         if not override_execution_permission:
@@ -337,6 +337,10 @@ class ActionService(AbstractService):
             if isinstance(result, SyftError):
                 return Err(result.message)
             filtered_kwargs = result.ok()
+
+        if hasattr(input_policy, "transform_kwargs"):
+            filtered_kwargs = input_policy.transform_kwargs(filtered_kwargs)
+
         # update input policy to track any input state
 
         has_twin_inputs = False
@@ -352,8 +356,9 @@ class ActionService(AbstractService):
         try:
             if not has_twin_inputs:
                 # no twins
+                # allow python types from inputpolicy
                 filtered_kwargs = filter_twin_kwargs(
-                    real_kwargs, twin_mode=TwinMode.NONE
+                    real_kwargs, twin_mode=TwinMode.NONE, allow_python_types=True
                 )
                 exec_result = execute_byte_code(code_item, filtered_kwargs, context)
                 if output_policy:
@@ -373,7 +378,7 @@ class ActionService(AbstractService):
             else:
                 # twins
                 private_kwargs = filter_twin_kwargs(
-                    real_kwargs, twin_mode=TwinMode.PRIVATE
+                    real_kwargs, twin_mode=TwinMode.PRIVATE, allow_python_types=True
                 )
                 private_exec_result = execute_byte_code(
                     code_item, private_kwargs, context
@@ -390,7 +395,9 @@ class ActionService(AbstractService):
                     result_id, private_exec_result.result
                 )
 
-                mock_kwargs = filter_twin_kwargs(real_kwargs, twin_mode=TwinMode.MOCK)
+                mock_kwargs = filter_twin_kwargs(
+                    real_kwargs, twin_mode=TwinMode.MOCK, allow_python_types=True
+                )
                 # relative
                 from .action_data_empty import ActionDataEmpty
 
@@ -979,7 +986,9 @@ def filter_twin_args(args: list[Any], twin_mode: TwinMode) -> Any:
     return filtered
 
 
-def filter_twin_kwargs(kwargs: dict, twin_mode: TwinMode) -> Any:
+def filter_twin_kwargs(
+    kwargs: dict, twin_mode: TwinMode, allow_python_types=False
+) -> Any:
     filtered = {}
     for k, v in kwargs.items():
         if isinstance(v, TwinObject):
@@ -992,7 +1001,14 @@ def filter_twin_kwargs(kwargs: dict, twin_mode: TwinMode) -> Any:
                     f"Filter can only use {TwinMode.PRIVATE} or {TwinMode.MOCK}"
                 )
         else:
-            filtered[k] = v.syft_action_data
+            if isinstance(v, ActionObject):
+                filtered[k] = v.syft_action_data
+            elif isinstance(v, str | int | float | dict) and allow_python_types:
+                filtered[k] = v
+            else:
+                raise ValueError(
+                    f"unexepected value {v} passed to filtered twin kwargs"
+                )
     return filtered
 
 
