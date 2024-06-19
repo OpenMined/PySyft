@@ -41,6 +41,8 @@ from ...node.credentials import SyftVerifyKey
 from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
+from ...serde.signature import signature_remove_context
+from ...serde.signature import signature_remove_self
 from ...store.document_store import PartitionKey
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
@@ -884,6 +886,10 @@ class UserCode(SyncableSyftObject):
         api = self._get_api()
         if isinstance(api, SyftError):
             return api
+
+        signature = self.signature
+        signature = signature_remove_self(signature)
+        signature = signature_remove_context(signature)
         remote_user_function = generate_remote_function(
             api=api,
             node_uid=self.node_uid,
