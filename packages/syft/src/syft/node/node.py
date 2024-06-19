@@ -120,7 +120,7 @@ from ..store.linked_obj import LinkedObject
 from ..store.mongo_document_store import MongoStoreConfig
 from ..store.sqlite_document_store import SQLiteStoreClientConfig
 from ..store.sqlite_document_store import SQLiteStoreConfig
-from ..types.syft_object import SYFT_OBJECT_VERSION_2
+from ..types.syft_object import SYFT_OBJECT_VERSION_2, Context
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
 from ..util.experimental_flags import flags
@@ -1591,6 +1591,15 @@ class Node(AbstractNode):
             settings_exists = settings_stash.get_all(self.signing_key.verify_key).ok()
             if settings_exists:
                 node_settings = settings_exists[0]
+                if node_settings.__version__ != NodeSettings.__version__:
+                    context = Context()
+                    node_settings = node_settings.migrate_to(NodeSettings.__version__, context)
+                    res = settings_stash.delete_by_uid(self.signing_key.verify_key, node_settings.id)
+                    if res.is_err():
+                        raise Exception(res.value)
+                    res = settings_stash.set(self.signing_key.verify_key, node_settings)
+                    if res.is_err():
+                        raise Exception(res.value)
                 self.name = node_settings.name
                 self.association_request_auto_approval = (
                     node_settings.association_request_auto_approval
@@ -1775,12 +1784,15 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
         worker_to_add_ = max(default_worker_pool.max_count, worker_count) - len(
             default_worker_pool.worker_list
         )
-        add_worker_method = node.get_service_method(SyftWorkerPoolService.add_workers)
-        result = add_worker_method(
-            context=context,
-            number=worker_to_add_,
-            pool_name=default_pool_name,
-        )
+        if worker_to_add_ > 0:
+            add_worker_method = node.get_service_method(SyftWorkerPoolService.add_workers)
+            result = add_worker_method(
+                context=context,
+                number=worker_to_add_,
+                pool_name=default_pool_name,
+            )
+        else:
+            return None
 
     if isinstance(result, SyftError):
         print(f"Default worker pool error. {result.message}")
