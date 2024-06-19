@@ -2,6 +2,8 @@
 from collections.abc import Callable
 from typing import Any
 
+from syft.util.util import get_env
+
 # relative
 from ...abstract_node import NodeSideType
 from ...abstract_node import NodeType
@@ -189,7 +191,10 @@ class NodeSettingsV2(SyftObject):
 
 @migrate(NodeSettingsV2, NodeSettings)
 def upgrade_node_settings() -> list[Callable]:
-    return [make_set_default("association_request_auto_approval", False)]
+    return [
+        make_set_default("association_request_auto_approval", False),
+        make_set_default("default_worker_pool", get_env("DEFAULT_WORKER_POOL_NAME", DEFAULT_WORKER_POOL_NAME))
+    ]
 
 
 @migrate(NodeSettings, NodeSettingsV2)
@@ -204,4 +209,4 @@ def upgrade_node_settings_update() -> list[Callable]:
 
 @migrate(NodeSettings, NodeSettingsV2)
 def downgrade_node_settings_update() -> list[Callable]:
-    return [drop(["association_request_auto_approval"])]
+    return [drop(["association_request_auto_approval"]), drop(["default_worker_pool"])]
