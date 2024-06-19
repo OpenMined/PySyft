@@ -4,6 +4,8 @@ import uuid
 # third party
 from faker import Faker
 import numpy as np
+from pydantic import ValidationError
+import pytest
 
 # syft absolute
 import syft as sy
@@ -12,6 +14,7 @@ from syft.service.action.action_object import ActionObject
 from syft.service.request.request import Request
 from syft.service.request.request import UserCodeStatusChange
 from syft.service.response import SyftError
+from syft.service.response import SyftSuccess
 from syft.service.user.user import User
 
 
@@ -59,7 +62,7 @@ def test_user_code(worker) -> None:
     request = message.link
     user_code = request.changes[0].code
     result = user_code.unsafe_function()
-    request.accept_by_depositing_result(result)
+    request.approve()
 
     result = guest_client.api.services.code.mock_syft_func()
     assert isinstance(result, ActionObject)
@@ -310,22 +313,56 @@ def test_mock_no_arguments(worker) -> None:
 
     ds_client.api.services.code.request_code_execution(compute_sum)
 
-    # no accept_by_depositing_result, no mock execution
+    # not approved, no mock execution
     result = ds_client.api.services.code.compute_sum()
     assert isinstance(result, SyftError)
 
-    # no accept_by_depositing_result, mock execution
+    # not approved, mock execution
     users[-1].allow_mock_execution()
     result = ds_client.api.services.code.compute_sum()
+    assert result, result
     assert result.get() == 1
 
-    # accept_by_depositing_result, no mock execution
+    # approved, no mock execution
     users[-1].allow_mock_execution(allow=False)
     message = root_domain_client.notifications[-1]
     request = message.link
     user_code = request.changes[0].code
     result = user_code.unsafe_function()
-    request.accept_by_depositing_result(result)
+    request.approve()
 
     result = ds_client.api.services.code.compute_sum()
+    assert result, result
     assert result.get() == 1
+
+
+def test_submit_invalid_name(worker) -> None:
+    client = worker.root_client
+
+    @sy.syft_function_single_use()
+    def valid_name():
+        pass
+
+    res = client.code.submit(valid_name)
+    assert isinstance(res, SyftSuccess)
+
+    @sy.syft_function_single_use()
+    def get_all():
+        pass
+
+    assert isinstance(get_all, SyftError)
+
+    @sy.syft_function_single_use()
+    def _():
+        pass
+
+    assert isinstance(_, SyftError)
+
+    # overwrite valid function name before submit, fail on serde
+    @sy.syft_function_single_use()
+    def valid_name_2():
+        pass
+
+    valid_name_2.func_name = "get_all"
+    with pytest.raises(ValidationError):
+        client.code.submit(valid_name_2)

@@ -247,6 +247,7 @@ passthrough_attrs = [
     "__repr_str__",  # pydantic
     "__repr_args__",  # pydantic
     "__post_init__",  # syft
+    "_get_api",  # syft
     "__validate_private_attrs__",  # syft
     "id",  # syft
     "to_mongo",  # syft 🟡 TODO 23: Add composeable / inheritable object passthrough attrs
@@ -1203,13 +1204,28 @@ class ActionObject(SyncableSyftObject):
         return wrapper
 
     def send(self, client: SyftClient) -> Any:
-        return self._send(client, add_storage_permission=True)
+        return self._send(
+            node_uid=client.id,
+            verify_key=client.verify_key,
+            add_storage_permission=True,
+        )
 
-    def _send(self, client: SyftClient, add_storage_permission: bool = True) -> Self:
-        """Send the object to a Syft Client"""
-        self._set_obj_location_(client.id, client.verify_key)
-        self._save_to_blob_storage()
-        res = client.api.services.action.set(
+    def _send(
+        self,
+        node_uid: UID,
+        verify_key: SyftVerifyKey,
+        add_storage_permission: bool = True,
+    ) -> Self | SyftError:
+        self._set_obj_location_(node_uid, verify_key)
+
+        blob_storage_res = self._save_to_blob_storage()
+        if isinstance(blob_storage_res, SyftError):
+            return blob_storage_res
+
+        api = self._get_api()
+        if isinstance(api, SyftError):
+            return api
+        res = api.services.action.set(
             self, add_storage_permission=add_storage_permission
         )
         if isinstance(res, ActionObject):
