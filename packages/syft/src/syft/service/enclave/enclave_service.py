@@ -244,9 +244,16 @@ class EnclaveService(AbstractService):
         code: UserCode = code_service.get_by_service_name(
             context=context, service_func_name=service_func_name
         )[-1]  # TODO also match code hash to get the actual code
-        if not code or code.input_policy_init_kwargs is None:
+
+        init_kwargs = code.input_policy_init_kwargs
+        if not code or not init_kwargs:
             return SyftError(message="No assets to transfer")
 
+        # TODO fetch the uploader node id from context once user accounts are set up for each domain
+        uploader_node_id = action_objects[0].syft_node_uid
+
+        # TODO check if the uploader node is allowed to upload assets for the given code
+        # TODO only allow uploading action objects present in the input policy
         for action_object in action_objects:
             action_object.syft_node_uid = context.node.id
             action_object.syft_action_data_node_id = context.node.id
@@ -254,6 +261,41 @@ class EnclaveService(AbstractService):
             if result.is_err():
                 # TODO 🟣 Rollback previously uploaded assets if any error occurs
                 return result
+
+        # Let's approve the code
+        kwargs_for_uploading_node = {
+            name: action_id
+            for node, assets in init_kwargs.items()
+            for name, action_id in assets.items()
+            if node.node_id == uploader_node_id
+        }
+        all_assets_uploaded_for_current_node = all(
+            context.node.get_service("actionservice").exists(context, obj_id)
+            for obj_id in kwargs_for_uploading_node.values()
+        )
+        if all_assets_uploaded_for_current_node:
+            root_context = context.as_root_context()
+            status = code.get_status(root_context)
+            status.status_dict = {
+                k: (
+                    (
+                        UserCodeStatus.APPROVED,
+                        "All dependent assets uploaded by this domain node.",
+                    )
+                    if k.node_id == uploader_node_id
+                    else v
+                )
+                for k, v in status.status_dict.items()
+            }
+            status_link = code.status_link
+            if not status_link:
+                return SyftError(
+                    message=f"Code '{service_func_name}' does not have a status link."
+                )
+            res = status_link.update_with_context(root_context, status)
+            if isinstance(res, SyftError):
+                return res
+
         return SyftSuccess(
             message=f"{len(action_objects)} assets uploaded successfully"
         )
@@ -301,18 +343,24 @@ class EnclaveService(AbstractService):
         if not context.node or not context.node.signing_key:
             return SyftError(message=f"{type(context)} has no node")
 
-        code: UserCode = context.node.get_service(
-            "usercodeservice"
-        ).get_by_service_name(
-            context=context,
-            service_func_name=service_func_name,
+        code_service = context.node.get_service("usercodeservice")
+        code: UserCode = code_service.get_by_service_name(
+            context=context, service_func_name=service_func_name
         )[-1]  # TODO also match code hash to get the actual code
-        kwargs = get_code_kwargs_from_input_policy(context, code)
-        if not code.unsafe_function:
-            return SyftError(
-                message=f"Code '{service_func_name}' does not have a function to execute."
-            )
-        result = code.unsafe_function(**kwargs)
+
+        init_kwargs = (
+            code.input_policy_init_kwargs.values()
+            if code.input_policy_init_kwargs is not None
+            else []
+        )
+        kwargs = {k: v for d in init_kwargs for k, v in d.items()}
+
+        # TODO only allow execution for domain nodes in output_policy.share_result_with list
+        admin_context = context.as_root_context()
+        execution_result = code_service.call(
+            context=admin_context, uid=code.id, **kwargs
+        ).syft_action_data
+        result = get_encrypted_result(context, execution_result)
         return result
 
     @service_method(
@@ -430,25 +478,6 @@ def propagate_inputs_to_enclave(
     return res
 
 
-def get_code_kwargs_from_input_policy(
-    context: AuthedServiceContext, code: UserCode
-) -> dict[str, Any]:
-    if not context.node or not context.node.signing_key:
-        return SyftError(message=f"{type(context)} has no node")
-
-    if not code.input_policy_init_kwargs:
-        return {}
-
-    action_service = context.node.get_service("actionservice")
-    kwargs = {}
-    for policy_kwargs in code.input_policy_init_kwargs.values():
-        for key, action_id in policy_kwargs.items():
-            action_object = action_service.get(context=context, uid=action_id)
-            if action_object.is_err():
-                raise ValueError(
-                    f"Cannot execute function {code.service_func_name}{code.signature}"
-                    f"as data for argument {key} not found.\nError message: {action_object.err()}"
-                )
-            action_object = action_object.ok()
-            kwargs[key] = action_object.syft_action_data
-    return kwargs
+def get_encrypted_result(context: AuthedServiceContext, result: Any) -> Any:
+    # TODO 🟣 Encrypt the result before sending it back to the user
+    return result

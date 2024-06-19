@@ -246,7 +246,10 @@ def retrieve_from_db(
     root_context = AuthedServiceContext(
         node=context.node, credentials=context.node.verify_key
     )
-    if context.node.node_type == NodeType.DOMAIN:
+    # TODO temporarily modified this. In dev, we were storing action object in Enclaves in a custom format
+    # See EnclaveService.send_user_code_inputs_to_enclave to understand the current format.
+    # P.S. this was required for code_service.call method within EnclaveService.execute_code
+    if context.node.node_type in {NodeType.DOMAIN, NodeType.ENCLAVE}:
         for var_name, arg_id in allowed_inputs.items():
             kwarg_value = action_service._get(
                 context=root_context,
@@ -258,12 +261,12 @@ def retrieve_from_db(
                 return Err(kwarg_value.err())
             code_inputs[var_name] = kwarg_value.ok()
 
-    elif context.node.node_type == NodeType.ENCLAVE:
-        dict_object = action_service.get(context=root_context, uid=code_item_id)
-        if dict_object.is_err():
-            return Err(dict_object.err())
-        for value in dict_object.ok().syft_action_data.values():
-            code_inputs.update(value)
+    # elif context.node.node_type == NodeType.ENCLAVE:
+    #     dict_object = action_service.get(context=root_context, uid=code_item_id)
+    #     if dict_object.is_err():
+    #         return Err(dict_object.err())
+    #     for value in dict_object.ok().syft_action_data.values():
+    #         code_inputs.update(value)
 
     else:
         raise Exception(
