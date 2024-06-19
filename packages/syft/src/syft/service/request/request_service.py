@@ -148,6 +148,15 @@ class RequestService(AbstractService):
         else:
             return chunked_requests
 
+    @service_method(path="request.get_by_usercode_id", name="get_by_usercode_id")
+    def get_by_usercode_id(
+        self, context: AuthedServiceContext, usercode_id: UID
+    ) -> list[Request] | SyftError:
+        result = self.stash.get_by_usercode_id(context.credentials, usercode_id)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        return result.ok()
+
     @service_method(path="request.add_changes", name="add_changes")
     def add_changes(
         self, context: AuthedServiceContext, uid: UID, changes: list[Change]

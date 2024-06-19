@@ -160,14 +160,14 @@ class UserCodeService(AbstractService):
         self,
         context: AuthedServiceContext,
         user_code: UserCode,
-    ) -> SyftSuccess | SyftError:
+    ) -> UserCode | SyftError:
         if user_code.output_readers is None:
             return SyftError(
-                message=f"there is no verified output readers for {user_code}"
+                message=f"there are no verified output readers for {user_code}"
             )
         if user_code.input_owner_verify_keys is None:
             return SyftError(
-                message=f"there is no verified input owners for {user_code}"
+                message=f"there are no verified input owners for {user_code}"
             )
         if not all(
             x in user_code.input_owner_verify_keys for x in user_code.output_readers
@@ -176,17 +176,12 @@ class UserCodeService(AbstractService):
 
         # check if the code with the same name and content already exists in the stash
 
-        find_results = self.stash.get_by_code_hash(
+        existing_usercode = self.stash.get_by_code_hash(
             context.credentials, code_hash=user_code.code_hash
         )
-        if find_results.is_err():
-            return SyftError(message=str(find_results.err()))
-        find_results = find_results.ok()
-
-        if find_results is not None:
-            return SyftError(
-                message="The code to be submitted (name and content) already exists"
-            )
+        if existing_usercode.is_err():
+            return SyftError(message=str(existing_usercode.err()))
+        existing_usercode = existing_usercode.ok()
 
         worker_pool_service = context.node.get_service("SyftWorkerPoolService")
         pool_result = worker_pool_service._get_worker_pool(
@@ -197,17 +192,31 @@ class UserCodeService(AbstractService):
         if isinstance(pool_result, SyftError):
             return pool_result
 
-        result = self.stash.set(context.credentials, user_code)
-        if result.is_err():
-            return SyftError(message=str(result.err()))
+        if existing_usercode is None:
+            result = self.stash.set(context.credentials, user_code)
+            if result.is_err():
+                return SyftError(message=str(result.err()))
 
-        # Create a code history
-        code_history_service = context.node.get_service("codehistoryservice")
-        result = code_history_service.submit_version(context=context, code=user_code)
-        if isinstance(result, SyftError):
-            return result
+            # Create a code history
+            code_history_service = context.node.get_service("codehistoryservice")
+            result = code_history_service.submit_version(
+                context=context, code=user_code
+            )
+            if isinstance(result, SyftError):
+                return result
 
-        return SyftSuccess(message="")
+            return user_code
+        else:
+            request_service = context.node.get_service("requestservice")
+            existing_requests = request_service.get_by_usercode_id(
+                context, existing_usercode.id
+            )
+            if isinstance(existing_requests, SyftError):
+                return existing_requests
+            if len(existing_requests) > 0:
+                return SyftError(message="This code already has pending requests")
+
+            return existing_usercode
 
     def _request_code_execution_inner(
         self,
