@@ -128,18 +128,23 @@ class DomainClient(SyftClient):
         ) as pbar:
             for asset in dataset.asset_list:
                 try:
+                    contains_empty = asset.contains_empty()
                     twin = TwinObject(
                         private_obj=asset.data,
                         mock_obj=asset.mock,
                         syft_node_location=self.id,
                         syft_client_verify_key=self.verify_key,
                     )
-                    twin._save_to_blob_storage()
+                    res = twin._save_to_blob_storage(allow_empty=contains_empty)
+                    if isinstance(res, SyftError):
+                        return res
                 except Exception as e:
                     tqdm.write(f"Failed to create twin for {asset.name}. {e}")
                     return SyftError(message=f"Failed to create twin. {e}")
 
-                response = self.api.services.action.set(twin)
+                response = self.api.services.action.set(
+                    twin, ignore_detached_objs=contains_empty
+                )
                 if isinstance(response, SyftError):
                     tqdm.write(f"Failed to upload asset: {asset.name}")
                     return response
@@ -157,27 +162,6 @@ class DomainClient(SyftClient):
         if isinstance(valid, SyftError):
             return valid
         return self.api.services.dataset.add(dataset=dataset)
-
-    # def get_permissions_for_other_node(
-    #     self,
-    #     items: list[Union[ActionObject, SyftObject]],
-    # ) -> dict:
-    #     if len(items) > 0:
-    #         if not len({i.syft_node_location for i in items}) == 1 or (
-    #             not len({i.syft_client_verify_key for i in items}) == 1
-    #         ):
-    #             raise ValueError("permissions from different nodes")
-    #         item = items[0]
-    #         api = APIRegistry.api_for(
-    #             item.syft_node_location, item.syft_client_verify_key
-    #         )
-    #         if api is None:
-    #             raise ValueError(
-    #                 f"Can't access the api. Please log in to {item.syft_node_location}"
-    #             )
-    #         return api.services.sync.get_permissions(items)
-    #     else:
-    #         return {}
 
     def refresh(self) -> None:
         if self.credentials:
@@ -207,7 +191,7 @@ class DomainClient(SyftClient):
 
         for action_object in action_objects:
             # NOTE permissions are added separately server side
-            action_object._send(self, add_storage_permission=False)
+            action_object._send(self.id, self.verify_key, add_storage_permission=False)
 
         ignored_batches = resolved_state.ignored_batches
 
