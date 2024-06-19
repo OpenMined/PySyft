@@ -94,21 +94,6 @@ sys.path.append(str(Path(__file__)))
 
 logger.start()
 
-try:
-    # third party
-    from IPython import get_ipython
-
-    get_ipython()  # noqa: F821
-    # TODO: add back later or auto detect
-    # display(
-    #     Markdown(
-    #         "\nWarning: syft is imported in light mode by default. \
-    #     \nTo switch to dark mode, please run `sy.options.color_theme = 'dark'`"
-    #     )
-    # )
-except:  # noqa: E722
-    pass  # nosec
-
 
 def _patch_ipython_autocompletion() -> None:
     try:
