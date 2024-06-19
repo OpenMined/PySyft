@@ -131,7 +131,7 @@ def build_tabulator_table(
             uid=uid,
             columns=json.dumps(column_data),
             row_header=json.dumps(row_header),
-            data=nh3.clean(json.dumps(table_data)),
+            data=(json.dumps(table_data)),
             css=css,
             js=js,
             index_field_name=TABLE_INDEX_KEY,

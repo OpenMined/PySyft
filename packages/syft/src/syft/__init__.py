@@ -4,9 +4,12 @@ __version__ = "0.8.7-beta.10"
 from collections.abc import Callable
 import pathlib
 from pathlib import Path
+import re
 import sys
 from types import MethodType
 from typing import Any
+
+from syft.types.dicttuple import DictTuple
 
 # relative
 from .abstract_node import NodeSideType  # noqa: F401
@@ -95,9 +98,73 @@ sys.path.append(str(Path(__file__)))
 logger.start()
 
 
+def _patch_ipython_sanitization() -> None:
+    from IPython import get_ipython
+    from IPython.display import display_html, display_markdown
+
+    ip = get_ipython()
+    if ip is None:
+        return
+
+    from importlib import resources
+    import nh3
+    from .util.notebook_ui.styles import FONT_CSS, ITABLES_CSS, JS_DOWNLOAD_FONTS, CSS_CODE
+    from .util.assets import load_js, load_css
+
+    tabulator_js = load_js('tabulator.min.js')
+    tabulator_js = tabulator_js.replace(
+        "define(t)", "define('tabulator-tables', [], t)"
+    )
+
+    SKIP_SANITIZE = [
+        FONT_CSS,
+        ITABLES_CSS,
+        CSS_CODE,
+        JS_DOWNLOAD_FONTS,
+        tabulator_js,
+        load_css("tabulator_pysyft.min.css"),
+        load_js("table.js"),
+    ]
+
+    css_reinsert = f"""
+<style>{FONT_CSS}</style>
+<style>{ITABLES_CSS}</style>
+{JS_DOWNLOAD_FONTS}
+{CSS_CODE}
+"""
+
+    escaped_js_css = re.compile("|".join(re.escape(substr) for substr in SKIP_SANITIZE), re.IGNORECASE | re.MULTILINE)
+
+    table_template = resources.files('syft.assets.jinja').joinpath('table.jinja2').read_text()
+    table_template = table_template.strip()
+    table_template = re.sub(r'\\{\\{.*?\\}\\}', '.*?', re.escape(table_template))
+    escaped_template = re.compile(table_template, re.DOTALL | re.VERBOSE)
+
+    def display_sanitized_html(obj) -> None:
+        if hasattr(obj, "_repr_html_"):
+            _str = obj._repr_html_()
+            matching_template = escaped_template.findall(_str)
+            print("matching_template")
+            _str = escaped_template.sub('', _str)
+            _str = escaped_js_css.sub('', _str)
+            _str = nh3.clean(_str)
+            return f"{css_reinsert} {_str} {"\n".join(matching_template)}"
+
+    def display_sanitized_md(obj) -> None:
+        if hasattr(obj, "_repr_markdown_"):
+            return nh3.clean(obj._repr_markdown_())
+
+    ip.display_formatter.formatters['text/html'].for_type(SyftObject, display_sanitized_html)
+    ip.display_formatter.formatters['text/html'].for_type(DictTuple, display_sanitized_html)
+    ip.display_formatter.formatters['text/markdown'].for_type(SyftObject, display_sanitized_md)
+
+_patch_ipython_sanitization()
+
+
 def _patch_ipython_autocompletion() -> None:
     try:
         # third party
+        from IPython import get_ipython
         from IPython.core.guarded_eval import EVALUATION_POLICIES
     except ImportError:
         return

@@ -90,7 +90,10 @@ def _create_table_rows(
             if "id" in ret_val:
                 del ret_val["id"]
             for key in ret_val.keys():
-                cols[key].append(nh3.clean(ret_val[key]))
+                # if isinstance(ret_val[key], str):
+                    # cols[key].append(nh3.clean(ret_val[key]))
+                # else:
+                cols[key].append(ret_val[key])
         else:
             for field in extra_fields:
                 value = item
