@@ -105,6 +105,17 @@ class RequestService(AbstractService):
             raise e
 
     @service_method(
+        path="request.get_by_uid", name="get_by_uid", roles=DATA_SCIENTIST_ROLE_LEVEL
+    )
+    def get_by_uid(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Request | None | SyftError:
+        result = self.stash.get_by_uid(context.credentials, uid)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        return result.ok()
+
+    @service_method(
         path="request.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL
     )
     def get_all(self, context: AuthedServiceContext) -> list[Request] | SyftError:

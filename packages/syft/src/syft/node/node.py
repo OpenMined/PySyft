@@ -1446,8 +1446,8 @@ class Node(AbstractNode):
         )
 
         # 🟡 TODO 36: Needs distributed lock
-        self.queue_stash.set_placeholder(credentials, queue_item)
         self.job_stash.set(credentials, job)
+        self.queue_stash.set_placeholder(credentials, queue_item)
 
         log_service = self.get_service("logservice")
 
