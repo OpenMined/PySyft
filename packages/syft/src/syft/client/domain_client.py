@@ -5,12 +5,14 @@ from __future__ import annotations
 from pathlib import Path
 import re
 from string import Template
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List
 from typing import cast
 
 # third party
 from loguru import logger
 import markdown
+from syft.serde import deserialize, serialize
+from syft.types.syft_object import Context
 from tqdm import tqdm
 
 # relative
@@ -384,6 +386,29 @@ class DomainClient(SyftClient):
     @property
     def output(self) -> APIModule | None:
         return self._get_service_by_name_if_exists("output")
+    
+    def save_migration_objects_to_file(self, filename: str, get_all: bool = False) -> Dict[Any, Any] | SyftError:
+        migration_dict = self.api.services.migration.get_migration_objects(get_all=get_all)
+        if isinstance(migration_dict, SyftError):
+            return migration_dict
+        ser_bytes = serialize(migration_dict, to_bytes=True)
+        with open(filename, 'wb') as f:
+            f.write(ser_bytes)
+        return migration_dict
+            
+    
+    def migrate_objects_from_file(self, filename: str) -> SyftSuccess | SyftError:
+        with open(filename, 'rb') as f:
+            ser_bytes = f.read()
+        migration_dict = deserialize(ser_bytes, from_bytes=True)
+        context = Context()
+        migrated_objects = []
+        for klass, objects in migration_dict.items():
+            for obj in objects:
+                migrated_obj = obj.migrate_to(klass.__version__, context)
+                migrated_objects.append(migrated_obj)
+        res = self.api.services.migration.update_migrated_objects(migrated_objects)
+        return res
 
     def get_project(
         self,
