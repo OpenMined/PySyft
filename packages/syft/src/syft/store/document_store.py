@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from collections.abc import Callable
+import threading
 import types
 import typing
 from typing import Any
@@ -640,13 +641,25 @@ class BaseStash:
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> Result[BaseStash.object_type, str]:
-        return self.partition.set(
+        if type(obj).__name__ == "Job":
+            print(
+                f"START Setting Job {obj.id}, thread {threading.current_thread().ident}"
+            )
+
+        res = self.partition.set(
             credentials=credentials,
             obj=obj,
             ignore_duplicates=ignore_duplicates,
             add_permissions=add_permissions,
             add_storage_permission=add_storage_permission,
         )
+
+        if type(obj).__name__ == "Job":
+            print(
+                f"END Setting Job {obj.id}, thread {threading.current_thread().ident}"
+            )
+
+        return res
 
     def query_all(
         self,
@@ -744,10 +757,22 @@ class BaseStash:
         obj: BaseStash.object_type,
         has_permission: bool = False,
     ) -> Result[BaseStash.object_type, str]:
+        if type(obj).__name__ == "Job":
+            print(
+                f"START Updating Job {obj.id}, thread {threading.current_thread().ident}"
+            )
         qk = self.partition.store_query_key(obj)
-        return self.partition.update(
+        res = self.partition.update(
             credentials=credentials, qk=qk, obj=obj, has_permission=has_permission
         )
+        if type(obj).__name__ == "Job":
+            print(
+                f"END Updating Job {obj.id}, thread {threading.current_thread().ident}, res: {res}, obj: {obj}"
+            )
+            qks = QueryKeys(qks=[UIDPartitionKey.with_obj(obj.id)])
+            r = self.query_one(credentials=credentials, qks=qks)
+            print(f"Job {obj.id} found: {r}")
+        return res
 
 
 @instrument
@@ -764,8 +789,12 @@ class BaseUIDStoreStash(BaseStash):
     def get_by_uid(
         self, credentials: SyftVerifyKey, uid: UID
     ) -> Result[BaseUIDStoreStash.object_type | None, str]:
-        qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
-        return self.query_one(credentials=credentials, qks=qks)
+        res = self.partition.get(credentials=credentials, uid=uid)
+
+        # NOTE Return Ok(None) when no results are found for backwards compatibility
+        if res.is_err():
+            return Ok(None)
+        return res
 
     def set(
         self,

@@ -173,8 +173,6 @@ def handle_message_multiprocessing(
         migrate=False,
     )
 
-    job_item = worker.job_stash.get_by_uid(credentials, queue_item.job_id).ok()
-
     # Set monitor thread for this job.
     monitor_thread = MonitorThread(queue_item, worker, credentials)
     monitor_thread.start()
@@ -238,9 +236,9 @@ def handle_message_multiprocessing(
     queue_item.status = status
 
     # get new job item to get latest iter status
-    job_item = worker.job_stash.get_by_uid(credentials, job_item.id).ok()
-
-    # if result.is_ok():
+    job_item = worker.job_stash.get_by_uid(credentials, queue_item.job_id).ok()
+    if job_item is None:
+        raise Exception(f"Job {queue_item.job_id} not found!")
 
     job_item.node_uid = worker.id
     job_item.result = result
