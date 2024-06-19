@@ -8,6 +8,7 @@ from IPython.display import HTML
 from IPython.display import display
 import jinja2
 from loguru import logger
+import nh3
 
 # relative
 from ...assets import load_css
@@ -130,7 +131,7 @@ def build_tabulator_table(
             uid=uid,
             columns=json.dumps(column_data),
             row_header=json.dumps(row_header),
-            data=json.dumps(table_data),
+            data=nh3.clean(json.dumps(table_data)),
             css=css,
             js=js,
             index_field_name=TABLE_INDEX_KEY,

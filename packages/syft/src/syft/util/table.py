@@ -8,6 +8,7 @@ from typing import Any
 
 # third party
 from loguru import logger
+import nh3
 
 # relative
 from .notebook_ui.components.table_template import TABLE_INDEX_KEY
@@ -89,7 +90,7 @@ def _create_table_rows(
             if "id" in ret_val:
                 del ret_val["id"]
             for key in ret_val.keys():
-                cols[key].append(ret_val[key])
+                cols[key].append(nh3.clean(ret_val[key]))
         else:
             for field in extra_fields:
                 value = item
@@ -134,7 +135,7 @@ def _create_table_rows(
                 except Exception as e:
                     print(e)
                     value = None
-                cols[field].append(str(value))
+                cols[field].append(nh3.clean(str(value)))
 
     col_lengths = {len(cols[col]) for col in cols.keys()}
     if len(col_lengths) != 1:
