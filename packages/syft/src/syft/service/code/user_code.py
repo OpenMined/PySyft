@@ -33,8 +33,9 @@ from typing_extensions import Self
 # relative
 from ...abstract_node import NodeSideType
 from ...abstract_node import NodeType
-from ...client.api import APIRegistry, generate_remote_function
+from ...client.api import APIRegistry
 from ...client.api import NodeIdentity
+from ...client.api import generate_remote_function
 from ...client.enclave_client import EnclaveMetadata
 from ...node.credentials import SyftVerifyKey
 from ...serde.deserialize import _deserialize
