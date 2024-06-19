@@ -5,6 +5,7 @@
 # stdlib
 
 # third party
+from collections import defaultdict
 from result import Err
 from result import Ok
 from result import Result
@@ -123,8 +124,9 @@ class MigrationService(AbstractService):
         self,
         context: AuthedServiceContext,
         document_store_object_types: list[type[SyftObject]] | None = None,
+        get_all: bool = False,
     ) -> dict | SyftError:
-        res = self._get_migration_objects(context, document_store_object_types)
+        res = self._get_migration_objects(context, document_store_object_types, get_all)
         if res.is_err():
             return SyftError(message=res.value)
         else:
@@ -134,6 +136,7 @@ class MigrationService(AbstractService):
         self,
         context: AuthedServiceContext,
         document_store_object_types: list[type[SyftObject]] | None = None,
+        get_all: bool = False,
     ) -> Result[dict, str]:
         if document_store_object_types is None:
             document_store_object_types = [
@@ -141,16 +144,19 @@ class MigrationService(AbstractService):
                 for partition in self.store.partitions.values()
             ]
 
-        klasses_to_migrate = self._find_klasses_pending_for_migration(
-            context=context, object_types=document_store_object_types
-        )
+        if get_all:
+            klasses_to_migrate = document_store_object_types
+        else:
+            klasses_to_migrate = self._find_klasses_pending_for_migration(
+                context=context, object_types=document_store_object_types
+            )
 
         if klasses_to_migrate:
             print(
                 f"Classes in Document Store that need migration: {klasses_to_migrate}"
             )
 
-        result = {}
+        result = defaultdict(list)
 
         for klass in klasses_to_migrate:
             canonical_name = klass.__canonical_name__
@@ -163,7 +169,10 @@ class MigrationService(AbstractService):
             if objects_result.is_err():
                 return objects_result
             objects = objects_result.ok()
-            result[klass] = objects
+            for object in objects:
+                actual_klass = type(object)
+                use_klass = klass if actual_klass.__canonical_name__ == klass.__canonical_name__ else actual_klass
+                result[use_klass].append(object)
         return Ok(result)
 
     @service_method(
@@ -185,10 +194,23 @@ class MigrationService(AbstractService):
     ) -> Result[str, str]:
         for migrated_object in migrated_objects:
             klass = type(migrated_object)
-            canonical_name = klass.__canonical_name__
-            object_partition = self.store.partitions.get(canonical_name)
+            mro = klass.__mro__
+            class_index = 0
+            while len(mro) > class_index:
+                canonical_name = mro[class_index].__canonical_name__
+                object_partition = self.store.partitions.get(canonical_name)
+                if object_partition is not None:
+                    break
+                class_index += 1
+            
+            # canonical_name = mro[class_index].__canonical_name__
+            # object_partition = self.store.partitions.get(canonical_name)
+               
+            # print(klass, canonical_name, object_partition)
             qk = object_partition.settings.store_key.with_obj(migrated_object.id)
-
+            # print(migrated_object)
+            import sys
+            
             result = object_partition._update(
                 context.credentials,
                 qk=qk,
@@ -197,9 +219,12 @@ class MigrationService(AbstractService):
                 overwrite=True,
                 allow_missing_keys=True,
             )
-
+            
             if result.is_err():
-                return result
+                print("ERR:", result.value, file=sys.stderr)
+                print("ERR:", klass, file=sys.stderr)
+                print("ERR:", migrated_object, file=sys.stderr)
+                # return result
         return Ok(value="success")
 
     @service_method(
