@@ -109,7 +109,6 @@ class SyftObjectRegistry:
             except Exception as e:
                 print(e)
                 raise
-                # third party
 
     @classmethod
     def has_serde_class(

@@ -7,7 +7,7 @@ from syft.store.document_store import DocumentStore
 from syft.store.document_store import PartitionSettings
 from syft.store.document_store import StoreConfig
 from syft.store.kv_document_store import KeyValueBackingStore
-from syft.types.syft_object import SyftObject
+from syft.types.syft_object import SYFT_OBJECT_VERSION_2, SyftObject
 from syft.types.uid import UID
 
 
@@ -60,6 +60,7 @@ class MockStore(DocumentStore):
 @serializable()
 class MockSyftObject(SyftObject):
     __canonical_name__ = f"MockSyftObject_{UID()}"
+    __version__ = SYFT_OBJECT_VERSION_2
     data: Any
 
 
