@@ -132,7 +132,6 @@ class UserCodeStatusCollection(SyncableSyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     __repr_attrs__ = ["approved", "status_dict"]
-
     status_dict: dict[NodeIdentity, tuple[UserCodeStatus, str]] = {}
     user_code_link: LinkedObject
 
@@ -1064,7 +1063,7 @@ class SubmitUserCode(SyftObject):
                     syft_node_location=node_id.node_id,
                     syft_client_verify_key=node_id.verify_key,
                 )
-                res = ep_client.api.services.action.set(new_obj)
+                res = new_obj.send(ep_client)
                 if isinstance(res, SyftError):
                     return res
 
@@ -1604,7 +1603,13 @@ class SecureContext:
             kw2id = {}
             for k, v in kwargs.items():
                 value = ActionObject.from_obj(v)
-                ptr = action_service._set(context, value)
+                ptr = action_service.set_result_to_store(
+                    value, context, has_result_read_permissions=False
+                )
+                if ptr.is_err():
+                    raise ValueError(
+                        f"failed to create argument {k} for launch job using value {v}"
+                    )
                 ptr = ptr.ok()
                 kw2id[k] = ptr.id
             try:

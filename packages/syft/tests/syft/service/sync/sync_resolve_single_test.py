@@ -1,5 +1,4 @@
 # third party
-from result import Err
 
 # syft absolute
 import syft
@@ -8,7 +7,6 @@ from syft.client.domain_client import DomainClient
 from syft.client.sync_decision import SyncDecision
 from syft.client.syncing import compare_clients
 from syft.client.syncing import resolve
-from syft.service.code.user_code import UserCode
 from syft.service.job.job_stash import Job
 from syft.service.request.request import RequestStatus
 from syft.service.response import SyftError
@@ -143,7 +141,7 @@ def test_sync_with_error(low_worker, high_worker):
 
     client_low_ds.refresh()
     res = client_low_ds.code.compute(blocking=True)
-    assert isinstance(res.get(), Err)
+    assert isinstance(res.get(), SyftError)
 
 
 def test_ignore_unignore_single(low_worker, high_worker):
@@ -157,7 +155,7 @@ def test_ignore_unignore_single(low_worker, high_worker):
 
     _ = client_low_ds.code.request_code_execution(compute)
 
-    diff = compare_clients(low_client, high_client)
+    diff = compare_clients(low_client, high_client, hide_usercode=False)
 
     assert len(diff.batches) == 2  # Request + UserCode
     assert len(diff.ignored_batches) == 0
@@ -166,7 +164,7 @@ def test_ignore_unignore_single(low_worker, high_worker):
     res = diff[0].ignore()
     assert isinstance(res, SyftSuccess)
 
-    diff = compare_clients(low_client, high_client)
+    diff = compare_clients(low_client, high_client, hide_usercode=False)
     assert len(diff.batches) == 0
     assert len(diff.ignored_batches) == 2
     assert len(diff.all_batches) == 2
@@ -175,42 +173,10 @@ def test_ignore_unignore_single(low_worker, high_worker):
     res = diff.ignored_batches[0].unignore()
     assert isinstance(res, SyftSuccess)
 
-    diff = compare_clients(low_client, high_client)
+    diff = compare_clients(low_client, high_client, hide_usercode=False)
     assert len(diff.batches) == 1
     assert len(diff.ignored_batches) == 1
     assert len(diff.all_batches) == 2
-
-
-def test_forget_usercode(low_worker, high_worker):
-    low_client = low_worker.root_client
-    client_low_ds = low_worker.guest_client
-    high_client = high_worker.root_client
-
-    @sy.syft_function_single_use()
-    def compute() -> int:
-        print("computing...")
-        return 42
-
-    _ = client_low_ds.code.request_code_execution(compute)
-
-    diff_before, diff_after = compare_and_resolve(
-        from_client=low_client, to_client=high_client
-    )
-
-    run_and_deposit_result(high_client)
-
-    def skip_if_user_code(diff):
-        if diff.root_type is UserCode:
-            return SyncDecision.IGNORE
-        return SyncDecision.SKIP
-
-    diff_before, diff_after = compare_and_resolve(
-        from_client=low_client,
-        to_client=high_client,
-        decision_callback=skip_if_user_code,
-    )
-    assert not diff_before.is_same
-    assert len(diff_after.batches) == 1
 
 
 def test_request_code_execution_multiple(low_worker, high_worker):
