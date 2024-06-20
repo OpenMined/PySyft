@@ -5,7 +5,7 @@ from typing import Any
 
 # relative
 from ..types.dicttuple import DictTuple
-from .types.syft_object import SyftObject
+from ..types.syft_object import SyftObject
 
 
 def _patch_ipython_sanitization() -> None:
