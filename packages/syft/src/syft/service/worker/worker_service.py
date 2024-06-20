@@ -160,10 +160,7 @@ class WorkerService(AbstractService):
 
         if worker.job_id is not None:
             job_service = cast(JobService, context.node.get_service(JobService))
-            job_service._kill(
-                context=context,
-                job=job_service.get(context=context, uid=worker.job_id),
-            )
+            job_service.kill(context=context, id=worker.job_id)
 
         worker_pool_service = cast(
             SyftWorkerPoolService, context.node.get_service(SyftWorkerPoolService)
