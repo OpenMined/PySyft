@@ -179,8 +179,10 @@ class DistributedProject(BaseModel):
         # TODO reconstruct the result from the parts and return
         # TODO Cleanup the Enclave in owner domain node
         if errors:
-            return SyftError(message=f"One or more errors occurred: {', '.join(errors)}")
-        else:        
+            return SyftError(
+                message=f"One or more errors occurred: {', '.join(errors)}"
+            )
+        else:
             return result_parts[0]
 
     def _get_clients_from_code(self) -> dict[UID, SyftClient]:
