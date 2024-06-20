@@ -592,8 +592,9 @@ class Job(SyncableSyftObject):
         updated_at = str(self.updated_at)[:-7] if self.updated_at else "--"
 
         user_repr = "--"
-        if self.requested_by:
-            requesting_user = self.requesting_user
+        if self.requested_by and not isinstance(
+            requesting_user := self.requesting_user, SyftError
+        ):
             user_repr = f"{requesting_user.name} {requesting_user.email}"
 
         worker_attr = ""
