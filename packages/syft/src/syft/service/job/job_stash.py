@@ -592,8 +592,9 @@ class Job(SyncableSyftObject):
         updated_at = str(self.updated_at)[:-7] if self.updated_at else "--"
 
         user_repr = "--"
-        if self.requested_by:
-            requesting_user = self.requesting_user
+        if self.requested_by and not isinstance(
+            requesting_user := self.requesting_user, SyftError
+        ):
             user_repr = f"{requesting_user.name} {requesting_user.email}"
 
         worker_attr = ""
@@ -620,17 +621,12 @@ class Job(SyncableSyftObject):
 
         template = Template(job_repr_template)
         return template.substitute(
-            uid=str(UID()),
-            grid_template_columns=None,
-            grid_template_cell_columns=None,
-            cols=0,
             job_type=job_type,
             api_header=api_header,
             user_code_name=self.user_code_name,
             button_html=button_html,
             status=self.status.value.title(),
             creation_time=creation_time,
-            user_rerp=user_repr,
             updated_at=updated_at,
             worker_attr=worker_attr,
             no_subjobs=len(self.subjobs),
