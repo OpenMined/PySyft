@@ -17,7 +17,10 @@ from typing import get_origin
 
 # third party
 from nacl.exceptions import BadSignatureError
+from pydantic import BaseModel
+from pydantic import ConfigDict
 from pydantic import EmailStr
+from pydantic import TypeAdapter
 from result import OkErr
 from result import Result
 from typeguard import check_type
@@ -83,6 +86,16 @@ IPYNB_BACKGROUND_METHODS = {
 }
 
 IPYNB_BACKGROUND_PREFIXES = ["_ipy", "_repr", "__ipython", "__pydantic"]
+
+
+def _has_config_dict(t: Any) -> bool:
+    return (
+        # Use this instead of `issubclass`` to be compatible with python 3.10
+        # `inspect.isclass(t) and issubclass(t, BaseModel)`` wouldn't work with
+        # generics, e.g. `set[sy.UID]`, in python 3.10
+        (hasattr(t, "__mro__") and BaseModel in t.__mro__)
+        or hasattr(t, "__pydantic_config__")
+    )
 
 
 class APIRegistry:
@@ -740,7 +753,7 @@ def debox_signed_syftapicall_response(
 
 def downgrade_signature(signature: Signature, object_versions: dict) -> Signature:
     migrated_parameters = []
-    for _, parameter in signature.parameters.items():
+    for parameter in signature.parameters.values():
         annotation = unwrap_and_migrate_annotation(
             parameter.annotation, object_versions
         )
@@ -1049,8 +1062,11 @@ class SyftAPI(SyftObject):
         if isinstance(result, CachedSyftObject):
             if result.error_msg is not None:
                 if cache_result:
+                    msg = "Loading results from cache."
+                    if result.error_msg:
+                        msg = f"{result.error_msg}. {msg}"
                     prompt_warning_message(
-                        message=f"{result.error_msg}. Loading results from cache."
+                        message=msg,
                     )
                 else:
                     result = SyftError(message=result.error_msg)
@@ -1101,7 +1117,7 @@ class SyftAPI(SyftObject):
             endpoints: dict[str, LibEndpoint], communication_protocol: PROTOCOL_TYPE
         ) -> APIModule:
             api_module = APIModule(path="", refresh_callback=self.refresh_api_callback)
-            for _, v in endpoints.items():
+            for v in endpoints.values():
                 signature = v.signature
                 if not v.has_self:
                     signature = signature_remove_self(signature)
@@ -1170,7 +1186,9 @@ class SyftAPI(SyftObject):
                 if hasattr(module_or_func, "_modules"):
                     for func_name in module_or_func._modules:
                         func = getattr(module_or_func, func_name)
-                        sig = func.__ipython_inspector_signature_override__
+                        sig = getattr(
+                            func, "__ipython_inspector_signature_override__", ""
+                        )
                         _repr_str += f"{module_path_str}.{func_name}{sig}\n\n"
         return _repr_str
 
@@ -1321,30 +1339,25 @@ def validate_callable_args_and_kwargs(
                 t = index_syft_by_module_name(param.annotation)
             else:
                 t = param.annotation
-            msg = None
-            try:
-                if t is not inspect.Parameter.empty:
-                    if isinstance(t, _GenericAlias) and type(None) in t.__args__:
-                        success = False
-                        for v in t.__args__:
-                            if issubclass(v, EmailStr):
-                                v = str
-                            try:
-                                check_type(value, v)  # raises Exception
-                                success = True
-                                break  # only need one to match
-                            except Exception:  # nosec
-                                pass
-                        if not success:
-                            raise TypeError()
-                    else:
-                        check_type(value, t)  # raises Exception
-            except TypeError:
-                _type_str = getattr(t, "__name__", str(t))
-                msg = f"`{key}` must be of type `{_type_str}` not `{type(value).__name__}`"
 
-            if msg:
-                return SyftError(message=msg)
+            if t is not inspect.Parameter.empty:
+                try:
+                    config_kw = (
+                        {"config": ConfigDict(arbitrary_types_allowed=True)}
+                        if not _has_config_dict(t)
+                        else {}
+                    )
+
+                    # TypeAdapter only accepts `config` arg if `t` does not
+                    # already contain a ConfigDict
+                    # i.e model_config in BaseModel and __pydantic_config__ in
+                    # other types.
+                    TypeAdapter(t, **config_kw).validate_python(value)
+                except Exception:
+                    _type_str = getattr(t, "__name__", str(t))
+                    return SyftError(
+                        message=f"`{key}` must be of type `{_type_str}` not `{type(value).__name__}`"
+                    )
 
             _valid_kwargs[key] = value
 

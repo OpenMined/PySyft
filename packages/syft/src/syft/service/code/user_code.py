@@ -12,6 +12,7 @@ import hashlib
 import inspect
 from io import StringIO
 import itertools
+import keyword
 import random
 import sys
 from textwrap import dedent
@@ -26,11 +27,15 @@ from typing import final
 
 # third party
 from IPython.display import display
+from pydantic import ValidationError
 from pydantic import field_validator
 from result import Err
+from result import Ok
+from result import Result
 from typing_extensions import Self
 
 # relative
+from ...abstract_node import NodeSideType
 from ...abstract_node import NodeType
 from ...client.api import APIRegistry
 from ...client.api import NodeIdentity
@@ -42,20 +47,26 @@ from ...serde.serialize import _serialize
 from ...store.document_store import PartitionKey
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
+from ...types.syft_migration import migrate
+from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_4
+from ...types.syft_object import SYFT_OBJECT_VERSION_5
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import add_node_uid_for_key
+from ...types.transforms import drop
 from ...types.transforms import generate_id
+from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
 from ...util.markdown import CodeMarkdown
 from ...util.markdown import as_markdown_code
+from ...util.util import prompt_warning_message
 from ..action.action_endpoint import CustomEndpointActionObject
 from ..action.action_object import Action
 from ..action.action_object import ActionObject
@@ -83,7 +94,9 @@ from ..response import SyftInfo
 from ..response import SyftNotReady
 from ..response import SyftSuccess
 from ..response import SyftWarning
+from ..service import ServiceConfigRegistry
 from ..user.user import UserView
+from ..user.user_roles import ServiceRole
 from .code_parse import GlobalsVisitor
 from .code_parse import LaunchJobVisitor
 from .unparse import unparse
@@ -117,7 +130,6 @@ class UserCodeStatusCollection(SyncableSyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     __repr_attrs__ = ["approved", "status_dict"]
-
     status_dict: dict[NodeIdentity, tuple[UserCodeStatus, str]] = {}
     user_code_link: LinkedObject
 
@@ -253,8 +265,7 @@ class UserCodeStatusCollection(SyncableSyftObject):
         return [self.user_code_link.object_uid]
 
 
-@serializable()
-class UserCode(SyncableSyftObject):
+class UserCodeV4(SyncableSyftObject):
     # version
     __canonical_name__ = "UserCode"
     __version__ = SYFT_OBJECT_VERSION_4
@@ -279,9 +290,45 @@ class UserCode(SyncableSyftObject):
     input_kwargs: list[str]
     enclave_metadata: EnclaveMetadata | None = None
     submit_time: DateTime | None = None
-    uses_domain: bool = False  # tracks if the code calls domain.something, variable is set during parsing
+    # tracks if the code calls domain.something, variable is set during parsing
+    uses_domain: bool = False
     nested_codes: dict[str, tuple[LinkedObject, dict]] | None = {}
     worker_pool_name: str | None = None
+
+
+@serializable()
+class UserCode(SyncableSyftObject):
+    # version
+    __canonical_name__ = "UserCode"
+    __version__ = SYFT_OBJECT_VERSION_5
+
+    id: UID
+    node_uid: UID | None = None
+    user_verify_key: SyftVerifyKey
+    raw_code: str
+    input_policy_type: type[InputPolicy] | UserPolicy
+    input_policy_init_kwargs: dict[Any, Any] | None = None
+    input_policy_state: bytes = b""
+    output_policy_type: type[OutputPolicy] | UserPolicy
+    output_policy_init_kwargs: dict[Any, Any] | None = None
+    output_policy_state: bytes = b""
+    parsed_code: str
+    service_func_name: str
+    unique_func_name: str
+    user_unique_func_name: str
+    code_hash: str
+    signature: inspect.Signature
+    status_link: LinkedObject | None = None
+    input_kwargs: list[str]
+    enclave_metadata: EnclaveMetadata | None = None
+    submit_time: DateTime | None = None
+    # tracks if the code calls domain.something, variable is set during parsing
+    uses_domain: bool = False
+
+    nested_codes: dict[str, tuple[LinkedObject, dict]] | None = {}
+    worker_pool_name: str | None = None
+    origin_node_side_type: NodeSideType
+    l0_deny_reason: str | None = None
 
     __table_coll_widths__ = [
         "min-content",
@@ -305,10 +352,13 @@ class UserCode(SyncableSyftObject):
         "input_owners",
         "code_status",
         "worker_pool_name",
+        "l0_deny_reason",
+        "raw_code",
     ]
 
     __exclude_sync_diff_attrs__: ClassVar[list[str]] = [
         "node_uid",
+        "code_status",
         "input_policy_type",
         "input_policy_init_kwargs",
         "input_policy_state",
@@ -316,6 +366,14 @@ class UserCode(SyncableSyftObject):
         "output_policy_init_kwargs",
         "output_policy_state",
     ]
+
+    @field_validator("service_func_name", mode="after")
+    @classmethod
+    def service_func_name_is_valid(cls, value: str) -> str:
+        res = is_valid_usercode_name(value)
+        if res.is_err():
+            raise ValueError(res.err_value)
+        return value
 
     def __setattr__(self, key: str, value: Any) -> None:
         # Get the attribute from the class, it might be a descriptor or None
@@ -351,6 +409,14 @@ class UserCode(SyncableSyftObject):
         }
 
     @property
+    def is_l0_deployment(self) -> bool:
+        return self.origin_node_side_type == NodeSideType.LOW_SIDE
+
+    @property
+    def is_l2_deployment(self) -> bool:
+        return self.origin_node_side_type == NodeSideType.HIGH_SIDE
+
+    @property
     def user(self) -> UserView | SyftError:
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
@@ -362,15 +428,81 @@ class UserCode(SyncableSyftObject):
             )
         return api.services.user.get_by_verify_key(self.user_verify_key)
 
+    def _compute_status_l0(
+        self, context: AuthedServiceContext | None = None
+    ) -> UserCodeStatusCollection | SyftError:
+        if context is None:
+            # Clientside
+            api = self._get_api()
+            if isinstance(api, SyftError):
+                return api
+            node_identity = NodeIdentity.from_api(api)
+            is_approved = api.output.has_output_read_permissions(
+                self.id, self.user_verify_key
+            )
+        else:
+            # Serverside
+            node_identity = NodeIdentity.from_node(context.node)
+            output_service = context.node.get_service("outputservice")
+            is_approved = output_service.has_output_read_permissions(
+                context, self.id, self.user_verify_key
+            )
+
+        if isinstance(is_approved, SyftError):
+            return is_approved
+        is_denied = self.l0_deny_reason is not None
+
+        if is_denied:
+            if is_approved:
+                prompt_warning_message(
+                    "This request already has results published to the data scientist. "
+                    "They will still be able to access those results."
+                )
+            message = self.l0_deny_reason
+            status = (UserCodeStatus.DENIED, message)
+        elif is_approved:
+            status = (UserCodeStatus.APPROVED, "")
+        else:
+            status = (UserCodeStatus.PENDING, "")
+        status_dict = {node_identity: status}
+
+        return UserCodeStatusCollection(
+            status_dict=status_dict,
+            user_code_link=LinkedObject.from_obj(self),
+        )
+
     @property
     def status(self) -> UserCodeStatusCollection | SyftError:
         # Clientside only
+
+        if self.is_l0_deployment:
+            if self.status_link is not None:
+                return SyftError(
+                    message="Encountered a low side UserCode object with a status_link."
+                )
+            return self._compute_status_l0()
+
+        if self.status_link is None:
+            return SyftError(
+                message="This UserCode does not have a status. Please contact the Admin."
+            )
         res = self.status_link.resolve
         return res
 
     def get_status(
         self, context: AuthedServiceContext
     ) -> UserCodeStatusCollection | SyftError:
+        if self.is_l0_deployment:
+            if self.status_link is not None:
+                return SyftError(
+                    message="Encountered a low side UserCode object with a status_link."
+                )
+            return self._compute_status_l0(context)
+        if self.status_link is None:
+            return SyftError(
+                message="This UserCode does not have a status. Please contact the Admin."
+            )
+
         status = self.status_link.resolve_with_context(context)
         if status.is_err():
             return SyftError(message=status.err())
@@ -442,7 +574,7 @@ class UserCode(SyncableSyftObject):
             ):
                 # TODO: Tech Debt here
                 node_view_workaround = False
-                for k, _ in self.input_policy_init_kwargs.items():
+                for k in self.input_policy_init_kwargs.keys():
                     if isinstance(k, NodeIdentity):
                         node_view_workaround = True
 
@@ -529,6 +661,18 @@ class UserCode(SyncableSyftObject):
             return None
 
     @property
+    def output_policy_id(self) -> UID | None:
+        if self.output_policy_init_kwargs is not None:
+            return self.output_policy_init_kwargs.get("id", None)
+        return None
+
+    @property
+    def input_policy_id(self) -> UID | None:
+        if self.input_policy_init_kwargs is not None:
+            return self.input_policy_init_kwargs.get("id", None)
+        return None
+
+    @property
     def output_policy(self) -> OutputPolicy | None:  # type: ignore
         if not self.status.approved:
             return None
@@ -555,27 +699,22 @@ class UserCode(SyncableSyftObject):
     def get_output_history(
         self, context: AuthedServiceContext
     ) -> list[ExecutionOutput] | SyftError:
-        if not self.get_status(context).approved:
-            return SyftError(
-                message="Execution denied, Please wait for the code to be approved"
-            )
-
         output_service = cast(OutputService, context.node.get_service("outputservice"))
         return output_service.get_by_user_code_id(context, self.id)
 
-    def store_as_history(
+    def store_execution_output(
         self,
         context: AuthedServiceContext,
         outputs: Any,
         job_id: UID | None = None,
         input_ids: dict[str, UID] | None = None,
     ) -> ExecutionOutput | SyftError:
+        is_admin = context.role == ServiceRole.ADMIN
         output_policy = self.get_output_policy(context)
-        if output_policy is None:
+        if output_policy is None and not is_admin:
             return SyftError(
                 message="You must wait for the output policy to be approved"
             )
-
         output_ids = filter_only_uids(outputs)
 
         output_service = context.node.get_service("outputservice")
@@ -586,7 +725,7 @@ class UserCode(SyncableSyftObject):
             output_ids=output_ids,
             executing_user_verify_key=self.user_verify_key,
             job_id=job_id,
-            output_policy_id=output_policy.id,
+            output_policy_id=self.output_policy_id,
             input_ids=input_ids,
         )
         if isinstance(execution_result, SyftError):
@@ -647,7 +786,8 @@ class UserCode(SyncableSyftObject):
             ]
             dependencies.extend(nested_code_ids)
 
-        dependencies.append(self.status_link.object_uid)
+        if self.status_link is not None:
+            dependencies.append(self.status_link.object_uid)
 
         return dependencies
 
@@ -727,7 +867,7 @@ class UserCode(SyncableSyftObject):
             [f"{'  '*level}{substring}" for substring in md.split("\n")[:-1]]
         )
         if self.nested_codes is not None:
-            for _, (obj, _) in self.nested_codes.items():
+            for obj, _ in self.nested_codes.values():
                 code = obj.resolve
                 md += "\n"
                 md += code._inner_repr(level=level + 1)
@@ -752,6 +892,13 @@ class UserCode(SyncableSyftObject):
         ip.set_next_input(warning_message + self.raw_code)
 
 
+class UserCodeUpdate(PartialSyftObject):
+    __canonical_name__ = "UserCodeUpdate"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    l0_deny_reason: str | None
+
+
 @serializable(without=["local_function"])
 class SubmitUserCode(SyftObject):
     # version
@@ -772,6 +919,14 @@ class SubmitUserCode(SyftObject):
     worker_pool_name: str | None = None
 
     __repr_attrs__ = ["func_name", "code"]
+
+    @field_validator("func_name", mode="after")
+    @classmethod
+    def func_name_is_valid(cls, value: str) -> str:
+        res = is_valid_usercode_name(value)
+        if res.is_err():
+            raise ValueError(res.err_value)
+        return value
 
     @field_validator("output_policy_init_kwargs", mode="after")
     @classmethod
@@ -860,7 +1015,10 @@ class SubmitUserCode(SyftObject):
             n_consumers=n_consumers,
             deploy_to="python",
         )
-        ep_client = ep_node.login(email="info@openmined.org", password="changethis")  # nosec
+        ep_client = ep_node.login(
+            email="info@openmined.org",
+            password="changethis",
+        )  # nosec
         self.input_policy_init_kwargs = cast(dict, self.input_policy_init_kwargs)
         for node_id, obj_dict in self.input_policy_init_kwargs.items():
             # api = APIRegistry.api_for(
@@ -876,7 +1034,7 @@ class SubmitUserCode(SyftObject):
             # And need only ActionObjects
             # Also, this works only on the assumption that all inputs
             # are ActionObjects, which might change in the future
-            for _, id in obj_dict.items():
+            for id in obj_dict.values():
                 mock_obj = api.services.action.get_mock(id)
                 if isinstance(mock_obj, SyftError):
                     data_obj = api.services.action.get(id)
@@ -895,7 +1053,7 @@ class SubmitUserCode(SyftObject):
                     syft_node_location=node_id.node_id,
                     syft_client_verify_key=node_id.verify_key,
                 )
-                res = ep_client.api.services.action.set(new_obj)
+                res = new_obj.send(ep_client)
                 if isinstance(res, SyftError):
                     return res
 
@@ -930,6 +1088,24 @@ class SubmitUserCode(SyftObject):
         if self.input_policy_init_kwargs is not None:
             return [x.verify_key for x in self.input_policy_init_kwargs.keys()]
         return None
+
+
+def is_valid_usercode_name(func_name: str) -> Result[Any, str]:
+    if len(func_name) == 0:
+        return Err("Function name cannot be empty")
+    if func_name == "_":
+        return Err("Cannot use anonymous function as syft function")
+    if not str.isidentifier(func_name):
+        return Err("Function name must be a valid Python identifier")
+    if keyword.iskeyword(func_name):
+        return Err("Function name is a reserved python keyword")
+
+    service_method_path = f"code.{func_name}"
+    if ServiceConfigRegistry.path_exists(service_method_path):
+        return Err(
+            f"Could not create syft function with name {func_name}: a service with the same name already exists"
+        )
+    return Ok(None)
 
 
 class ArgumentType(Enum):
@@ -990,19 +1166,28 @@ def syft_function(
     else:
         output_policy_type = type(output_policy)
 
-    def decorator(f: Any) -> SubmitUserCode:
-        res = SubmitUserCode(
-            code=dedent(inspect.getsource(f)),
-            func_name=f.__name__,
-            signature=inspect.signature(f),
-            input_policy_type=input_policy_type,
-            input_policy_init_kwargs=init_input_kwargs,
-            output_policy_type=output_policy_type,
-            output_policy_init_kwargs=getattr(output_policy, "init_kwargs", {}),
-            local_function=f,
-            input_kwargs=f.__code__.co_varnames[: f.__code__.co_argcount],
-            worker_pool_name=worker_pool_name,
-        )
+    def decorator(f: Any) -> SubmitUserCode | SyftError:
+        try:
+            res = SubmitUserCode(
+                code=dedent(inspect.getsource(f)),
+                func_name=f.__name__,
+                signature=inspect.signature(f),
+                input_policy_type=input_policy_type,
+                input_policy_init_kwargs=init_input_kwargs,
+                output_policy_type=output_policy_type,
+                output_policy_init_kwargs=getattr(output_policy, "init_kwargs", {}),
+                local_function=f,
+                input_kwargs=f.__code__.co_varnames[: f.__code__.co_argcount],
+                worker_pool_name=worker_pool_name,
+            )
+        except ValidationError as e:
+            errors = e.errors()
+            msg = "Failed to create syft function, encountered validation errors:\n"
+            for error in errors:
+                msg += f"\t{error['msg']}\n"
+            err = SyftError(message=msg)
+            display(err)
+            return err
 
         if share_results_with_owners and res.output_policy_init_kwargs is not None:
             res.output_policy_init_kwargs["output_readers"] = (
@@ -1219,6 +1404,10 @@ def create_code_status(context: TransformContext) -> TransformContext:
     if context.output is None:
         return context
 
+    # Low side requests have a computed status
+    if context.node.node_side_type == NodeSideType.LOW_SIDE:
+        return context
+
     input_keys = list(context.output["input_policy_init_kwargs"].keys())
     code_link = LinkedObject.from_uid(
         context.output["id"],
@@ -1280,6 +1469,14 @@ def set_default_pool_if_empty(context: TransformContext) -> TransformContext:
     return context
 
 
+def set_origin_node_side_type(context: TransformContext) -> TransformContext:
+    if context.node and context.output:
+        context.output["origin_node_side_type"] = (
+            context.node.node_side_type or NodeSideType.HIGH_SIDE
+        )
+    return context
+
+
 @transform(SubmitUserCode, UserCode)
 def submit_user_code_to_user_code() -> list[Callable]:
     return [
@@ -1295,6 +1492,7 @@ def submit_user_code_to_user_code() -> list[Callable]:
         add_node_uid_for_key("node_uid"),
         add_submit_time,
         set_default_pool_if_empty,
+        set_origin_node_side_type,
     ]
 
 
@@ -1374,7 +1572,13 @@ class SecureContext:
             kw2id = {}
             for k, v in kwargs.items():
                 value = ActionObject.from_obj(v)
-                ptr = action_service._set(context, value)
+                ptr = action_service.set_result_to_store(
+                    value, context, has_result_read_permissions=False
+                )
+                if ptr.is_err():
+                    raise ValueError(
+                        f"failed to create argument {k} for launch job using value {v}"
+                    )
                 ptr = ptr.ok()
                 kw2id[k] = ptr.id
             try:
@@ -1611,3 +1815,19 @@ def load_approved_policy_code(
                     load_policy_code(user_code.output_policy_type)
     except Exception as e:
         raise Exception(f"Failed to load code: {user_code}: {e}")
+
+
+@migrate(UserCodeV4, UserCode)
+def migrate_usercode_v4_to_v5() -> list[Callable]:
+    return [
+        make_set_default("origin_node_side_type", NodeSideType.HIGH_SIDE),
+        make_set_default("l0_deny_reason", None),
+    ]
+
+
+@migrate(UserCode, UserCodeV4)
+def migrate_usercode_v5_to_v4() -> list[Callable]:
+    return [
+        drop("origin_node_side_type"),
+        drop("l0_deny_reason"),
+    ]

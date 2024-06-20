@@ -72,9 +72,7 @@ def filter_only_uids(results: Any) -> list[UID] | dict[str, UID] | UID:
         results = [results]
 
     if isinstance(results, list):
-        output_list = []
-        for v in results:
-            output_list.append(extract_uid(v))
+        output_list = [extract_uid(v) for v in results]
         return output_list
     elif isinstance(results, dict):
         output_dict = {}
@@ -363,7 +361,7 @@ class ExactMatch(InputPolicy):
         not_approved_kwargs = set(expected_input_kwargs) - set(permitted_input_kwargs)
         if len(not_approved_kwargs) > 0:
             return Err(
-                f"Input arguments: {not_approved_kwargs} to the function are not approved yet."
+                f"Function arguments: {not_approved_kwargs} are not approved yet."
             )
         return Ok(True)
 
@@ -712,14 +710,16 @@ def process_class_code(raw_code: str, class_name: str) -> str:
         "Tuple",
         "Type",
     ]
-    for typing_type in typing_types:
-        new_body.append(
-            ast.ImportFrom(
-                module="typing",
-                names=[ast.alias(name=typing_type, asname=typing_type)],
-                level=0,
-            )
+    new_body.append(
+        ast.ImportFrom(
+            module="typing",
+            names=[
+                ast.alias(name=typing_type, asname=typing_type)
+                for typing_type in typing_types
+            ],
+            level=0,
         )
+    )
     new_body.append(new_class)
     module = ast.Module(new_body, type_ignores=[])
     try:

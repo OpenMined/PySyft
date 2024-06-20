@@ -506,18 +506,6 @@ entries:
     - https://openmined.github.io/PySyft/helm/syft-0.8.4-beta.18.tgz
     version: 0.8.4-beta.18
   - apiVersion: v2
-    appVersion: 0.8.4-beta.17
-    created: "2024-06-03T13:45:21.35354575Z"
-    description: Perform numpy-like analysis on data that remains in someone elses
-      server
-    digest: 71b39c5a4c64037eadbb154f7029282ba90d9a0d703f8d4c7dfc1ba2f5d81498
-    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
-    name: syft
-    type: application
-    urls:
-    - https://openmined.github.io/PySyft/helm/syft-0.8.4-beta.17.tgz
-    version: 0.8.4-beta.17
-  - apiVersion: v2
     appVersion: 0.8.4-beta.16
     created: "2024-06-03T13:45:21.353142151Z"
     description: Perform numpy-like analysis on data that remains in someone elses
@@ -782,22 +770,6 @@ entries:
     - https://openmined.github.io/PySyft/helm/syft-0.8.3-beta.4.tgz
     version: 0.8.3-beta.4
   - apiVersion: v2
-    appVersion: 0.8.3-beta.3
-    created: "2024-06-03T13:45:21.346709046Z"
-    dependencies:
-    - name: component-chart
-      repository: https://charts.devspace.sh
-      version: 0.9.1
-    description: Perform numpy-like analysis on data that remains in someone elses
-      server
-    digest: 9162bc14e40021b56111c3c9dbeba2596ce1ff469263b0a1e0a4679174c14ef7
-    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
-    name: syft
-    type: application
-    urls:
-    - https://openmined.github.io/PySyft/helm/syft-0.8.3-beta.3.tgz
-    version: 0.8.3-beta.3
-  - apiVersion: v2
     appVersion: 0.8.3-beta.2
     created: "2024-06-03T13:45:21.346158131Z"
     dependencies:
@@ -925,22 +897,6 @@ entries:
     urls:
     - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.56.tgz
     version: 0.8.2-beta.56
-  - apiVersion: v2
-    appVersion: 0.8.2-beta.53
-    created: "2024-06-03T13:45:21.340191661Z"
-    dependencies:
-    - name: component-chart
-      repository: https://charts.devspace.sh
-      version: 0.9.1
-    description: Perform numpy-like analysis on data that remains in someone elses
-      server
-    digest: ab91512010a81ca45ff65030c366c6d16873913199a5346013cd24ee6348df84
-    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
-    name: syft
-    type: application
-    urls:
-    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.53.tgz
-    version: 0.8.2-beta.53
   - apiVersion: v2
     appVersion: 0.8.2-beta.52
     created: "2024-06-03T13:45:21.339543493Z"

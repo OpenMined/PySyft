@@ -937,14 +937,15 @@ class NetworkService(AbstractService):
             RequestService.get_all
         )
         all_requests: list[Request] = request_get_all_method(context)
-        association_requests: list[Request] = []
-        for request in all_requests:
-            for change in request.changes:
-                if (
-                    isinstance(change, AssociationRequestChange)
-                    and change.remote_peer.id == peer_id
-                ):
-                    association_requests.append(request)
+        association_requests: list[Request] = [
+            request
+            for request in all_requests
+            if any(
+                isinstance(change, AssociationRequestChange)
+                and change.remote_peer.id == peer_id
+                for change in request.changes
+            )
+        ]
 
         return sorted(
             association_requests, key=lambda request: request.request_time.utc_timestamp
