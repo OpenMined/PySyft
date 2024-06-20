@@ -151,7 +151,7 @@ class WorkerService(AbstractService):
         context: AuthedServiceContext,
         worker: SyftWorker,
     ) -> SyftSuccess | SyftError:
-        uid = SyftWorker.id
+        uid = worker.id
         worker_pool_name = worker.worker_pool_name
 
         # relative
