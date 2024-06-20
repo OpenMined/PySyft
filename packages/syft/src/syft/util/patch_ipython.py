@@ -4,6 +4,7 @@ from types import MethodType
 from typing import Any
 
 # relative
+from ..service.response import SyftResponseMessage
 from ..types.dicttuple import DictTuple
 from ..types.syft_object import SyftObject
 
@@ -26,12 +27,12 @@ def _patch_ipython_sanitization() -> None:
     import nh3
 
     # relative
-    from .util.assets import load_css
-    from .util.assets import load_js
-    from .util.notebook_ui.styles import CSS_CODE
-    from .util.notebook_ui.styles import FONT_CSS
-    from .util.notebook_ui.styles import ITABLES_CSS
-    from .util.notebook_ui.styles import JS_DOWNLOAD_FONTS
+    from .assets import load_css
+    from .assets import load_js
+    from .notebook_ui.styles import CSS_CODE
+    from .notebook_ui.styles import FONT_CSS
+    from .notebook_ui.styles import ITABLES_CSS
+    from .notebook_ui.styles import JS_DOWNLOAD_FONTS
 
     tabulator_js = load_js("tabulator.min.js")
     tabulator_js = tabulator_js.replace(
@@ -77,10 +78,14 @@ def _patch_ipython_sanitization() -> None:
             return f"{css_reinsert} {_str} {"\n".join(matching_template)}"
         return None
 
-    def display_sanitized_md(obj: SyftObject) -> None:
+    def display_sanitized_md(obj: SyftObject) -> str | None:
         if hasattr(obj, "_repr_markdown_"):
             return nh3.clean(obj._repr_markdown_())
+        return None
 
+    ip.display_formatter.formatters["text/html"].for_type(
+        SyftResponseMessage, display_sanitized_html
+    )
     ip.display_formatter.formatters["text/html"].for_type(
         SyftObject, display_sanitized_html
     )
