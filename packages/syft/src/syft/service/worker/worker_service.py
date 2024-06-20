@@ -246,9 +246,9 @@ class WorkerService(AbstractService):
         force: bool = False,
     ) -> SyftSuccess | SyftError:
         worker = self._get_worker(context=context, uid=uid)
+        worker._to_be_deleted = True
 
         if not force:
-            worker._to_be_deleted = True
             return SyftSuccess(message=f"Worker {uid} has been marked for deletion.")
 
         return self._delete(context, worker)
