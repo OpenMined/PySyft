@@ -69,7 +69,7 @@ def format_dict(data: Any) -> str:
         return data
 
     if set(data.keys()) != {"type", "value"}:
-        return str(data)
+        return nh3.clean(str(data))
 
     if "badge" in data["type"]:
         return Badge(value=data["value"], badge_class=data["type"]).to_html()
@@ -87,7 +87,7 @@ def format_table_data(table_data: list[dict[str, Any]]) -> list[dict[str, str]]:
         row_formatted: dict[str, str] = {}
         for k, v in row.items():
             if isinstance(v, str):
-                row_formatted[k] = v.replace("\n", "<br>")
+                row_formatted[k] = nh3.clean(v.replace("\n", "<br>"))
                 continue
             v_formatted = format_dict(v)
             row_formatted[k] = v_formatted
@@ -131,7 +131,7 @@ def build_tabulator_table(
             uid=uid,
             columns=json.dumps(column_data),
             row_header=json.dumps(row_header),
-            data=(json.dumps(table_data)),
+            data=json.dumps(table_data),
             css=css,
             js=js,
             index_field_name=TABLE_INDEX_KEY,
