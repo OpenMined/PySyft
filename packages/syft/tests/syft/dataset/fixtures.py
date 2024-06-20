@@ -47,6 +47,8 @@ def mock_asset(worker, root_domain_client) -> Asset:
         node_uid=worker.id,
         uploader=uploader,
         contributors=[uploader],
+        syft_node_location=worker.id,
+        syft_client_verify_key=root_domain_client.credentials.verify_key,
     )
     node_transform_context = TransformContext(
         node=worker,

@@ -248,6 +248,7 @@ passthrough_attrs = [
     "__repr_str__",  # pydantic
     "__repr_args__",  # pydantic
     "__post_init__",  # syft
+    "_get_api",  # syft
     "__validate_private_attrs__",  # syft
     "id",  # syft
     "to_mongo",  # syft 🟡 TODO 23: Add composeable / inheritable object passthrough attrs
@@ -319,6 +320,8 @@ passthrough_attrs = [
     "_data_repr",
     "syft_eq",  # syft
     "__table_coll_widths__",
+    "_clear_cache",
+    "_set_reprs",
 ]
 dont_wrap_output_attrs = [
     "__repr__",
@@ -342,6 +345,8 @@ dont_wrap_output_attrs = [
     "get_sync_dependencies",  # syft
     "syft_eq",  # syft
     "__table_coll_widths__",
+    "_clear_cache",
+    "_set_reprs",
 ]
 dont_make_side_effects = [
     "__repr_attrs__",
@@ -363,6 +368,8 @@ dont_make_side_effects = [
     "get_sync_dependencies",
     "syft_eq",  # syft
     "__table_coll_widths__",
+    "_clear_cache",
+    "_set_reprs",
 ]
 action_data_empty_must_run = [
     "__repr__",
@@ -641,7 +648,17 @@ BASE_PASSTHROUGH_ATTRS: list[str] = [
     "_data_repr",
     "syft_eq",
     "__table_coll_widths__",
+    "_clear_cache",
+    "_set_reprs",
 ]
+
+
+def truncate_str(string: str, length: int = 100) -> str:
+    stringlen = len(string)
+    if stringlen > length:
+        n_hidden = stringlen - length
+        string = f"{string[:length]}... ({n_hidden} characters hidden)"
+    return string
 
 
 @serializable(without=["syft_pre_hooks__", "syft_post_hooks__"])
@@ -717,13 +734,10 @@ class ActionObject(SyncableSyftObject):
 
     @property
     def syft_action_data(self) -> Any:
-        if (
-            self.syft_blob_storage_entry_id
-            and self.syft_created_at
-            and not TraceResultRegistry.current_thread_is_tracing()
-        ):
-            self.reload_cache()
-
+        if self.syft_blob_storage_entry_id and self.syft_created_at:
+            res = self.reload_cache()
+            if isinstance(res, SyftError):
+                print(res)
         return self.syft_action_data_cache
 
     def reload_cache(self) -> SyftError | None:
@@ -763,8 +777,7 @@ class ActionObject(SyncableSyftObject):
                     self.syft_action_data_type = type(self.syft_action_data)
                     return None
             else:
-                print("cannot reload cache")
-                return None
+                return SyftError("Could not reload cache, could not get read method")
 
         return None
 
@@ -811,16 +824,7 @@ class ActionObject(SyncableSyftObject):
                     print("cannot save to blob storage")
 
             self.syft_action_data_type = type(data)
-
-            if inspect.isclass(data):
-                self.syft_action_data_repr_ = repr_cls(data)
-            else:
-                self.syft_action_data_repr_ = (
-                    data._repr_markdown_()
-                    if hasattr(data, "_repr_markdown_")
-                    else data.__repr__()
-                )
-            self.syft_action_data_str_ = str(data)
+            self._set_reprs(data)
             self.syft_has_bool_attr = hasattr(data, "__bool__")
         else:
             debug("skipping writing action object to store, passed data was empty.")
@@ -829,7 +833,18 @@ class ActionObject(SyncableSyftObject):
 
         return None
 
-    def _save_to_blob_storage(self) -> SyftError | None:
+    def _set_reprs(self, data: any) -> None:
+        if inspect.isclass(data):
+            self.syft_action_data_repr_ = truncate_str(repr_cls(data))
+        else:
+            self.syft_action_data_repr_ = truncate_str(
+                data._repr_markdown_()
+                if hasattr(data, "_repr_markdown_")
+                else data.__repr__()
+            )
+        self.syft_action_data_str_ = truncate_str(str(data))
+
+    def _save_to_blob_storage(self, allow_empty: bool = False) -> SyftError | None:
         data = self.syft_action_data
         if isinstance(data, SyftError):
             return data
@@ -851,7 +866,7 @@ class ActionObject(SyncableSyftObject):
                 if isinstance(result, SyftError):
                     return result
                 if not TraceResultRegistry.current_thread_is_tracing():
-                    self.syft_action_data_cache = self.as_empty_data()
+                    self._clear_cache()
                 return None
         except Exception as e:
             print(
@@ -859,7 +874,11 @@ class ActionObject(SyncableSyftObject):
             )
 
         self.syft_action_data_cache = data
+
         return None
+
+    def _clear_cache(self) -> None:
+        self.syft_action_data_cache = self.as_empty_data()
 
     @property
     def is_pointer(self) -> bool:
@@ -880,14 +899,14 @@ class ActionObject(SyncableSyftObject):
             values["syft_action_data_type"] = type(v)
         if not isinstance(v, ActionDataEmpty):
             if inspect.isclass(v):
-                values["syft_action_data_repr_"] = repr_cls(v)
+                values["syft_action_data_repr_"] = truncate_str(repr_cls(v))
             else:
-                values["syft_action_data_repr_"] = (
+                values["syft_action_data_repr_"] = truncate_str(
                     v._repr_markdown_()
                     if v is not None and hasattr(v, "_repr_markdown_")
                     else v.__repr__()
                 )
-            values["syft_action_data_str_"] = str(v)
+            values["syft_action_data_str_"] = truncate_str(str(v))
             values["syft_has_bool_attr"] = hasattr(v, "__bool__")
         return values
 
@@ -1187,13 +1206,28 @@ class ActionObject(SyncableSyftObject):
         return wrapper
 
     def send(self, client: SyftClient) -> Any:
-        return self._send(client, add_storage_permission=True)
+        return self._send(
+            node_uid=client.id,
+            verify_key=client.verify_key,
+            add_storage_permission=True,
+        )
 
-    def _send(self, client: SyftClient, add_storage_permission: bool = True) -> Self:
-        """Send the object to a Syft Client"""
-        self._set_obj_location_(client.id, client.verify_key)
-        self._save_to_blob_storage()
-        res = client.api.services.action.set(
+    def _send(
+        self,
+        node_uid: UID,
+        verify_key: SyftVerifyKey,
+        add_storage_permission: bool = True,
+    ) -> Self | SyftError:
+        self._set_obj_location_(node_uid, verify_key)
+
+        blob_storage_res = self._save_to_blob_storage()
+        if isinstance(blob_storage_res, SyftError):
+            return blob_storage_res
+
+        api = self._get_api()
+        if isinstance(api, SyftError):
+            return api
+        res = api.services.action.set(
             self, add_storage_permission=add_storage_permission
         )
         if isinstance(res, ActionObject):

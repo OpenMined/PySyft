@@ -242,9 +242,17 @@ class SyncState(SyftObject):
         if previous_diff is None:
             raise ValueError("No previous state to compare to")
         for batch in previous_diff.batches:
+            # NOTE we re-use NodeDiff to compare to previous state,
+            # low_obj is previous state, high_obj is current state
             diff = batch.root_diff
+
+            # If there is no high object, it means it was deleted
+            # and we don't need to show it in the table
+            if diff.high_obj is None:
+                continue
             if diff.object_id in ids:
                 continue
+
             ids.add(diff.object_id)
             row = SyncStateRow(
                 object=diff.high_obj,

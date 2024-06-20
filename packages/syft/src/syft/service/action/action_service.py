@@ -82,13 +82,39 @@ class ActionService(AbstractService):
         context: AuthedServiceContext,
         action_object: ActionObject | TwinObject,
         add_storage_permission: bool = True,
-    ) -> Result[ActionObject, str]:
-        return self._set(
+        ignore_detached_objs: bool = False,
+    ) -> ActionObject | SyftError:
+        res = self._set(
             context,
             action_object,
             has_result_read_permission=True,
             add_storage_permission=add_storage_permission,
+            ignore_detached_objs=ignore_detached_objs,
         )
+        if res.is_err():
+            return SyftError(message=res.value)
+        else:
+            return res.ok()
+
+    def is_detached_obj(
+        self,
+        action_object: ActionObject | TwinObject,
+        ignore_detached_obj: bool = False,
+    ) -> bool:
+        if (
+            isinstance(action_object, TwinObject)
+            and (
+                action_object.mock_obj.syft_blob_storage_entry_id is None
+                or action_object.private_obj.syft_blob_storage_entry_id is None
+            )
+            and not ignore_detached_obj
+        ):
+            return True
+        if isinstance(action_object, ActionObject) and (
+            action_object.syft_blob_storage_entry_id is None and not ignore_detached_obj
+        ):
+            return True
+        return False
 
     def _set(
         self,
@@ -96,15 +122,26 @@ class ActionService(AbstractService):
         action_object: ActionObject | TwinObject,
         has_result_read_permission: bool = False,
         add_storage_permission: bool = True,
+        ignore_detached_objs: bool = False,
+        skip_clear_cache: bool = False,
     ) -> Result[ActionObject, str]:
+        if self.is_detached_obj(action_object, ignore_detached_objs):
+            return Err(
+                "you uploaded an ActionObject that is not yet in the blob storage"
+            )
         """Save an object to the action store"""
         # 🟡 TODO 9: Create some kind of type checking / protocol for SyftSerializable
 
         if isinstance(action_object, ActionObject):
             action_object.syft_created_at = DateTime.now()
+            if not skip_clear_cache:
+                action_object._clear_cache()
         else:
             action_object.private_obj.syft_created_at = DateTime.now()  # type: ignore[unreachable]
             action_object.mock_obj.syft_created_at = DateTime.now()
+            if not skip_clear_cache:
+                action_object.private_obj._clear_cache()
+                action_object.mock_obj._clear_cache()
 
         # If either context or argument is True, has_result_read_permission is True
         has_result_read_permission = (
@@ -121,6 +158,13 @@ class ActionService(AbstractService):
         )
         if result.is_ok():
             if isinstance(action_object, TwinObject):
+                # give read permission to the mock
+                blob_id = action_object.mock_obj.syft_blob_storage_entry_id
+                permission = ActionObjectPermission(blob_id, ActionPermission.ALL_READ)
+                blob_storage_service: AbstractService = context.node.get_service(
+                    BlobStorageService
+                )
+                blob_storage_service.stash.add_permission(permission)
                 if has_result_read_permission:
                     action_object = action_object.private
                 else:
@@ -351,7 +395,6 @@ class ActionService(AbstractService):
 
         try:
             if not has_twin_inputs:
-                # no twins
                 filtered_kwargs = filter_twin_kwargs(
                     real_kwargs, twin_mode=TwinMode.NONE
                 )
@@ -414,8 +457,6 @@ class ActionService(AbstractService):
                     mock_obj=result_action_object_mock,
                 )
         except Exception as e:
-            # import traceback
-            # return Err(f"_user_code_execute failed. {e} {traceback.format_exc()}")
             return Err(f"_user_code_execute failed. {e}")
         return Ok(result_action_object)
 
@@ -664,7 +705,6 @@ class ActionService(AbstractService):
 
         if action.action_type == ActionType.CREATEOBJECT:
             result_action_object = Ok(action.create_object)
-            # print(action.create_object, "already in blob storage")
         elif action.action_type == ActionType.SYFTFUNCTION:
             usercode_service = context.node.get_service("usercodeservice")
             kwarg_ids = {}
