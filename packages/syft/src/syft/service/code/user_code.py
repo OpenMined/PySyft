@@ -12,6 +12,7 @@ import hashlib
 import inspect
 from io import StringIO
 import itertools
+import keyword
 import random
 import sys
 from textwrap import dedent
@@ -26,8 +27,11 @@ from typing import final
 
 # third party
 from IPython.display import display
+from pydantic import ValidationError
 from pydantic import field_validator
 from result import Err
+from result import Ok
+from result import Result
 from typing_extensions import Self
 
 # relative
@@ -93,6 +97,7 @@ from ..response import SyftInfo
 from ..response import SyftNotReady
 from ..response import SyftSuccess
 from ..response import SyftWarning
+from ..service import ServiceConfigRegistry
 from ..user.user import UserView
 from ..user.user_roles import ServiceRole
 from .code_parse import GlobalsVisitor
@@ -128,7 +133,6 @@ class UserCodeStatusCollection(SyncableSyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     __repr_attrs__ = ["approved", "status_dict"]
-
     status_dict: dict[NodeIdentity, tuple[UserCodeStatus, str]] = {}
     user_code_link: LinkedObject
 
@@ -365,6 +369,14 @@ class UserCode(SyncableSyftObject):
         "output_policy_init_kwargs",
         "output_policy_state",
     ]
+
+    @field_validator("service_func_name", mode="after")
+    @classmethod
+    def service_func_name_is_valid(cls, value: str) -> str:
+        res = is_valid_usercode_name(value)
+        if res.is_err():
+            raise ValueError(res.err_value)
+        return value
 
     def __setattr__(self, key: str, value: Any) -> None:
         # Get the attribute from the class, it might be a descriptor or None
@@ -931,6 +943,14 @@ class SubmitUserCode(SyftObject):
 
     __repr_attrs__ = ["func_name", "code"]
 
+    @field_validator("func_name", mode="after")
+    @classmethod
+    def func_name_is_valid(cls, value: str) -> str:
+        res = is_valid_usercode_name(value)
+        if res.is_err():
+            raise ValueError(res.err_value)
+        return value
+
     @field_validator("output_policy_init_kwargs", mode="after")
     @classmethod
     def add_output_policy_ids(cls, values: Any) -> Any:
@@ -1056,7 +1076,7 @@ class SubmitUserCode(SyftObject):
                     syft_node_location=node_id.node_id,
                     syft_client_verify_key=node_id.verify_key,
                 )
-                res = ep_client.api.services.action.set(new_obj)
+                res = new_obj.send(ep_client)
                 if isinstance(res, SyftError):
                     return res
 
@@ -1091,6 +1111,24 @@ class SubmitUserCode(SyftObject):
         if self.input_policy_init_kwargs is not None:
             return [x.verify_key for x in self.input_policy_init_kwargs.keys()]
         return None
+
+
+def is_valid_usercode_name(func_name: str) -> Result[Any, str]:
+    if len(func_name) == 0:
+        return Err("Function name cannot be empty")
+    if func_name == "_":
+        return Err("Cannot use anonymous function as syft function")
+    if not str.isidentifier(func_name):
+        return Err("Function name must be a valid Python identifier")
+    if keyword.iskeyword(func_name):
+        return Err("Function name is a reserved python keyword")
+
+    service_method_path = f"code.{func_name}"
+    if ServiceConfigRegistry.path_exists(service_method_path):
+        return Err(
+            f"Could not create syft function with name {func_name}: a service with the same name already exists"
+        )
+    return Ok(None)
 
 
 class ArgumentType(Enum):
@@ -1151,19 +1189,28 @@ def syft_function(
     else:
         output_policy_type = type(output_policy)
 
-    def decorator(f: Any) -> SubmitUserCode:
-        res = SubmitUserCode(
-            code=dedent(inspect.getsource(f)),
-            func_name=f.__name__,
-            signature=inspect.signature(f),
-            input_policy_type=input_policy_type,
-            input_policy_init_kwargs=init_input_kwargs,
-            output_policy_type=output_policy_type,
-            output_policy_init_kwargs=getattr(output_policy, "init_kwargs", {}),
-            local_function=f,
-            input_kwargs=f.__code__.co_varnames[: f.__code__.co_argcount],
-            worker_pool_name=worker_pool_name,
-        )
+    def decorator(f: Any) -> SubmitUserCode | SyftError:
+        try:
+            res = SubmitUserCode(
+                code=dedent(inspect.getsource(f)),
+                func_name=f.__name__,
+                signature=inspect.signature(f),
+                input_policy_type=input_policy_type,
+                input_policy_init_kwargs=init_input_kwargs,
+                output_policy_type=output_policy_type,
+                output_policy_init_kwargs=getattr(output_policy, "init_kwargs", {}),
+                local_function=f,
+                input_kwargs=f.__code__.co_varnames[: f.__code__.co_argcount],
+                worker_pool_name=worker_pool_name,
+            )
+        except ValidationError as e:
+            errors = e.errors()
+            msg = "Failed to create syft function, encountered validation errors:\n"
+            for error in errors:
+                msg += f"\t{error['msg']}\n"
+            err = SyftError(message=msg)
+            display(err)
+            return err
 
         if share_results_with_owners and res.output_policy_init_kwargs is not None:
             res.output_policy_init_kwargs["output_readers"] = (
@@ -1548,7 +1595,13 @@ class SecureContext:
             kw2id = {}
             for k, v in kwargs.items():
                 value = ActionObject.from_obj(v)
-                ptr = action_service._set(context, value)
+                ptr = action_service.set_result_to_store(
+                    value, context, has_result_read_permissions=False
+                )
+                if ptr.is_err():
+                    raise ValueError(
+                        f"failed to create argument {k} for launch job using value {v}"
+                    )
                 ptr = ptr.ok()
                 kw2id[k] = ptr.id
             try:

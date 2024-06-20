@@ -331,7 +331,7 @@ class CollapsableObjectDiffWidget:
 
     def build_accordion(
         self,
-        accordion_body: widgets.Widget,
+        accordion_body: MainObjectDiffWidget,
         show_sync_checkbox: bool = True,
         show_share_private_checkbox: bool = True,
     ) -> VBox:
@@ -368,8 +368,12 @@ class CollapsableObjectDiffWidget:
             layout=Layout(flex="1"),
         )
 
+        if isinstance(self.diff.non_empty_object, ActionObject):
+            share_data_description = "Share real data and approve"
+        else:
+            share_data_description = "Share real data"
         share_private_data_checkbox = Checkbox(
-            description="Sync Real Data",
+            description=share_data_description,
             layout=Layout(width="auto", margin="0 2px 0 0"),
         )
         sync_checkbox = Checkbox(
@@ -485,20 +489,20 @@ class ResolveWidget:
         return dependent_diff_widgets
 
     @property
-    def dependent_batch_diff_widgets(self) -> list[CollapsableObjectDiffWidget]:
+    def dependent_root_diff_widgets(self) -> list[CollapsableObjectDiffWidget]:
         dependencies = self.obj_diff_batch.get_dependencies(
             include_roots=True, include_batch_root=False
         )
         other_roots = [
             d for d in dependencies if d.object_id in self.obj_diff_batch.global_roots
         ]
-        dependent_root_diff_widgets = [
+        widgets = [
             CollapsableObjectDiffWidget(
                 diff, direction=self.obj_diff_batch.sync_direction
             )
             for diff in other_roots
         ]
-        return dependent_root_diff_widgets
+        return widgets
 
     @property
     def main_object_diff_widget(self) -> MainObjectDiffWidget:
@@ -536,7 +540,7 @@ class ResolveWidget:
         self.id2widget = {}
 
         batch_diff_widgets = self.batch_diff_widgets
-        dependent_batch_diff_widgets = self.dependent_batch_diff_widgets
+        dependent_batch_diff_widgets = self.dependent_root_diff_widgets
         main_object_diff_widget = self.main_object_diff_widget
 
         self.id2widget[main_object_diff_widget.diff.object_id] = main_object_diff_widget
@@ -572,7 +576,7 @@ class ResolveWidget:
 
     def sync_button(self) -> Button:
         sync_button = Button(
-            description="Sync Selected Changes",
+            description="Apply Selected Changes",
             style={
                 "text_color": "#464A91",
                 "button_color": "transparent",
