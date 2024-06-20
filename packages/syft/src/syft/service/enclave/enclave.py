@@ -11,6 +11,7 @@ from ...client.client import login
 from ...client.client import login_as_guest
 from ...serde.serializable import serializable
 from ...service.metadata.node_metadata import NodeMetadataJSON
+from ...service.network.node_peer import route_to_connection
 from ...service.network.routes import NodeRouteType
 from ...service.response import SyftError
 from ...service.response import SyftException
@@ -48,8 +49,8 @@ class EnclaveInstance(SyftObject):
     # TODO replace the create method with pydantic field validators, or find a better alternative
     @classmethod
     def create(cls, route: NodeRouteType) -> Self:
-        # TODO: find the standard method to convert route to client object
-        metadata = login_as_guest(url=route.host_or_ip, port=route.port).metadata
+        connection = route_to_connection(route)
+        metadata = connection.get_node_metadata(credentials=None)
         if not metadata:
             raise SyftException("Failed to fetch metadata from the node")
         return cls(
