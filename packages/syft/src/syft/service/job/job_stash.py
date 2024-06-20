@@ -317,7 +317,7 @@ class Job(SyncableSyftObject):
         )
         job: Job | None = api.make_call(call)
         if job is None:
-            return
+            return None
         self.resolved = job.resolved
         if job.resolved:
             self.result = job.result
@@ -640,7 +640,7 @@ class Job(SyncableSyftObject):
 
     def wait(
         self, job_only: bool = False, timeout: int | None = None
-    ) -> Any | SyftNotReady:
+    ) -> Any | SyftNotReady | SyftError:
         self.fetch()
         if self.resolved:
             return self.resolve
@@ -652,29 +652,28 @@ class Job(SyncableSyftObject):
 
         if api is None:
             raise ValueError(
-                f"Can't access Syft API. You must login to {self.syft_node_location}"
+                f"Can't access Syft API. You must login to node with id '{self.syft_node_location}'"
             )
 
         workers = api.services.worker.get_all()
         if not isinstance(workers, SyftError) and len(workers) == 0:
             return SyftError(
-                message="This node has no workers. "
-                "You need to start a worker to run jobs "
-                "by setting n_consumers > 0."
+                message=f"Node {self.syft_node_location} has no workers. "
+                f"You need to start a worker to run jobs "
+                f"by setting n_consumers > 0."
             )
-
-        if not job_only and self.result is not None:
-            self.result.wait(timeout)
 
         print_warning = True
         counter = 0
         while True:
             self.fetch()
-            if isinstance(self.result, SyftError | Err) or self.status in [
-                JobStatus.ERRORED,
-                JobStatus.INTERRUPTED,
-            ]:
-                return self.result
+            if self.resolved:
+                if isinstance(self.result, SyftError | Err) or self.status in [  # type: ignore[unreachable]
+                    JobStatus.ERRORED,
+                    JobStatus.INTERRUPTED,
+                ]:
+                    return self.result
+                break
             if print_warning and self.result is not None:
                 result_obj = api.services.action.get(  # type: ignore[unreachable]
                     self.result.id, resolve_nested=False
@@ -686,15 +685,17 @@ class Job(SyncableSyftObject):
                         "Use job.wait().get() instead to wait for the linked result."
                     )
                     print_warning = False
+
             sleep(1)
-            if self.resolved:
-                break  # type: ignore[unreachable]
-            # TODO: fix the mypy issue
+
             if timeout is not None:
                 counter += 1
                 if counter > timeout:
                     return SyftError(message="Reached Timeout!")
 
+        # if self.resolve returns self.result as error, then we
+        # return SyftError and not wait for the result
+        # otherwise if a job is resolved and not errored out, we wait for the result
         if not job_only and self.result is not None:  # type: ignore[unreachable]
             self.result.wait(timeout)
 
