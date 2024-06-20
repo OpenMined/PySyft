@@ -23,6 +23,7 @@ from pydantic import EmailStr
 from pydantic import TypeAdapter
 from result import OkErr
 from result import Result
+from syft.util.notebook_ui.components.tabulator_template import build_tabulator_table, show_table
 from typeguard import check_type
 
 # relative
@@ -730,9 +731,9 @@ class APIModule:
                     APISubModulesView(submodule=submodule_name, endpoints=child_paths)
                 )
 
-            return list_dict_repr_html(views)
-            # return NotImplementedError
-
+            return build_tabulator_table(views)
+       
+        # should never happen?
         results = self.get_all()
         return results._repr_html_()
 
