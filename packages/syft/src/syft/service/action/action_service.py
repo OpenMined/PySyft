@@ -309,7 +309,7 @@ class ActionService(AbstractService):
         if context.node:
             user_code_service = context.node.get_service("usercodeservice")
 
-        input_policy = code_item.get_input_policy(context, force_deserialize=True)
+        input_policy = code_item.get_input_policy(context)
         output_policy = code_item.get_output_policy(context)
 
         if not override_execution_permission:

@@ -14,6 +14,7 @@ from io import StringIO
 import sys
 import types
 from typing import Any, Type
+from typing import ClassVar
 
 # third party
 from RestrictedPython import compile_restricted
@@ -96,6 +97,7 @@ class Policy(SyftObject):
     # version
     __canonical_name__: str = "Policy"
     __version__ = SYFT_OBJECT_VERSION_2
+    has_safe_serde: ClassVar[bool] = True
 
     id: UID
     init_kwargs: dict[Any, Any] = {}
@@ -852,6 +854,7 @@ class CustomInputPolicy(metaclass=CustomPolicy):
 class UserPolicy(Policy):
     __canonical_name__: str = "UserPolicy"
     __version__ = SYFT_OBJECT_VERSION_2
+    has_safe_serde: ClassVar[bool] = False
 
     id: UID
     node_uid: UID | None = None
