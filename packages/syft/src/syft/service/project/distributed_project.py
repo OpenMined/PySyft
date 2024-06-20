@@ -129,6 +129,11 @@ class DistributedProject(BaseModel):
         self.members = self._get_members_from_clients()
         return self
 
+    @model_validator(mode="after")
+    def _set_code_uid(self) -> Self:
+        self.code.id = UID()
+        return self
+
     def submit(self) -> Self:
         self._pre_submit_checks()
         self.all_projects = self._submit_project_to_all_clients()

@@ -143,6 +143,7 @@ class EnclaveService(AbstractService):
 
         if isinstance(code, UserCode):
             code = SubmitUserCode(
+                id=code.id,
                 code=code.raw_code,
                 func_name=code.service_func_name,
                 signature=code.signature,
