@@ -18,6 +18,7 @@ from typing import Any
 from typing import ClassVar
 from typing import Optional
 from typing import TYPE_CHECKING
+from typing import TypeVar
 from typing import Union
 from typing import get_args
 from typing import get_origin
@@ -56,6 +57,7 @@ if TYPE_CHECKING:
 IntStr = int | str
 AbstractSetIntStr = Set[IntStr]
 MappingIntStrAny = Mapping[IntStr, Any]
+T = TypeVar("T")
 
 
 SYFT_OBJECT_VERSION_1 = 1
@@ -547,7 +549,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
             return upgraded
 
     # transform from one supported type to another
-    def to(self, projection: type, context: Context | None = None) -> Any:
+    def to(self, projection: type[T], context: Context | None = None) -> T:
         # 🟡 TODO 19: Could we do an mro style inheritence conversion? Risky?
         transform = SyftObjectRegistry.get_transform(type(self), projection)
         return transform(self, context)
