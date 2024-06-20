@@ -232,10 +232,9 @@ class KubernetesRunner:
                                     "volumeMounts": volume_mounts,
                                     "livenessProbe": {
                                         "httpGet": {
-                                            "path": "/api/v2/?probe=livenessProbe",
+                                            "path": "/api/v2/metadata?probe=livenessProbe",
                                             "port": 80,
                                         },
-                                        "initialDelaySeconds": 30,
                                         "periodSeconds": 15,
                                         "timeoutSeconds": 5,
                                         "failureThreshold": 3,
