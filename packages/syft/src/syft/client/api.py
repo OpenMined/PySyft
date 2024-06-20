@@ -23,7 +23,6 @@ from pydantic import EmailStr
 from pydantic import TypeAdapter
 from result import OkErr
 from result import Result
-from syft.util.notebook_ui.components.tabulator_template import build_tabulator_table, show_table
 from typeguard import check_type
 
 # relative
@@ -63,7 +62,7 @@ from ..types.uid import LineageID
 from ..types.uid import UID
 from ..util.autoreload import autoreload_enabled
 from ..util.markdown import as_markdown_python_code
-from ..util.table import list_dict_repr_html
+from ..util.notebook_ui.components.tabulator_template import build_tabulator_table
 from ..util.telemetry import instrument
 from ..util.util import prompt_warning_message
 from .connection import NodeConnection
@@ -732,7 +731,7 @@ class APIModule:
                 )
 
             return build_tabulator_table(views)
-       
+
         # should never happen?
         results = self.get_all()
         return results._repr_html_()

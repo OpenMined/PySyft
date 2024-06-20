@@ -4,13 +4,8 @@ __version__ = "0.8.7-beta.10"
 from collections.abc import Callable
 import pathlib
 from pathlib import Path
-import re
 import sys
-from types import MethodType
 from typing import Any
-
-from syft.types.dicttuple import DictTuple
-from syft.util.ipython_patches import patch_ipython
 
 # relative
 from .abstract_node import NodeSideType  # noqa: F401
@@ -75,7 +70,6 @@ from .service.response import SyftSuccess  # noqa: F401
 from .service.user.roles import Roles as roles  # noqa: F401
 from .service.user.user_service import UserService  # noqa: F401
 from .stable_version import LATEST_STABLE_SYFT
-from .types.syft_object import SyftObject
 from .types.twin_object import TwinObject  # noqa: F401
 from .types.uid import UID  # noqa: F401
 from .util import filterwarnings  # noqa: F401
@@ -83,6 +77,7 @@ from .util import logger  # noqa: F401
 from .util import options  # noqa: F401
 from .util.autoreload import disable_autoreload  # noqa: F401
 from .util.autoreload import enable_autoreload  # noqa: F401
+from .util.ipython_patches import patch_ipython
 from .util.telemetry import instrument  # noqa: F401
 from .util.util import autocache  # noqa: F401
 from .util.util import get_root_data_path  # noqa: F401
@@ -99,6 +94,7 @@ sys.path.append(str(Path(__file__)))
 logger.start()
 
 patch_ipython()
+
 
 def module_property(func: Any) -> Callable:
     """Decorator to turn module functions into properties.

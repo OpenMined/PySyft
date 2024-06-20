@@ -1,15 +1,10 @@
 # stdlib
-from collections.abc import Callable
-import pathlib
-from pathlib import Path
 import re
-import sys
 from types import MethodType
 from typing import Any
 
-from syft.types.dicttuple import DictTuple
-
 # relative
+from ..types.dicttuple import DictTuple
 from .abstract_node import NodeSideType  # noqa: F401
 from .abstract_node import NodeType  # noqa: F401
 from .client.client import connect  # noqa: F401
@@ -71,7 +66,6 @@ from .service.response import SyftNotReady  # noqa: F401
 from .service.response import SyftSuccess  # noqa: F401
 from .service.user.roles import Roles as roles  # noqa: F401
 from .service.user.user_service import UserService  # noqa: F401
-from .stable_version import LATEST_STABLE_SYFT
 from .types.syft_object import SyftObject
 from .types.twin_object import TwinObject  # noqa: F401
 from .types.uid import UID  # noqa: F401
@@ -83,12 +77,12 @@ from .util.autoreload import enable_autoreload  # noqa: F401
 from .util.telemetry import instrument  # noqa: F401
 from .util.util import autocache  # noqa: F401
 from .util.util import get_root_data_path  # noqa: F401
-from .util.version_compare import make_requires
+
 
 def _patch_ipython_sanitization() -> None:
     try:
+        # third party
         from IPython import get_ipython
-        from IPython.display import display_html, display_markdown
     except ImportError:
         return
 
@@ -96,12 +90,21 @@ def _patch_ipython_sanitization() -> None:
     if ip is None:
         return
 
+    # stdlib
     from importlib import resources
-    import nh3
-    from .util.notebook_ui.styles import FONT_CSS, ITABLES_CSS, JS_DOWNLOAD_FONTS, CSS_CODE
-    from .util.assets import load_js, load_css
 
-    tabulator_js = load_js('tabulator.min.js')
+    # third party
+    import nh3
+
+    # relative
+    from .util.assets import load_css
+    from .util.assets import load_js
+    from .util.notebook_ui.styles import CSS_CODE
+    from .util.notebook_ui.styles import FONT_CSS
+    from .util.notebook_ui.styles import ITABLES_CSS
+    from .util.notebook_ui.styles import JS_DOWNLOAD_FONTS
+
+    tabulator_js = load_js("tabulator.min.js")
     tabulator_js = tabulator_js.replace(
         "define(t)", "define('tabulator-tables', [], t)"
     )
@@ -123,29 +126,41 @@ def _patch_ipython_sanitization() -> None:
 {CSS_CODE}
 """
 
-    escaped_js_css = re.compile("|".join(re.escape(substr) for substr in SKIP_SANITIZE), re.IGNORECASE | re.MULTILINE)
+    escaped_js_css = re.compile(
+        "|".join(re.escape(substr) for substr in SKIP_SANITIZE),
+        re.IGNORECASE | re.MULTILINE,
+    )
 
-    table_template = resources.files('syft.assets.jinja').joinpath('table.jinja2').read_text()
+    table_template = (
+        resources.files("syft.assets.jinja").joinpath("table.jinja2").read_text()
+    )
     table_template = table_template.strip()
-    table_template = re.sub(r'\\{\\{.*?\\}\\}', '.*?', re.escape(table_template))
+    table_template = re.sub(r"\\{\\{.*?\\}\\}", ".*?", re.escape(table_template))
     escaped_template = re.compile(table_template, re.DOTALL | re.VERBOSE)
 
-    def display_sanitized_html(obj) -> str | None:
-        if hasattr(obj, "_repr_html_") and callable(obj._repr_html_):
-            _str = obj._repr_html_()
+    def display_sanitized_html(obj: SyftObject | DictTuple) -> str | None:
+        if hasattr(obj, "_repr_html_") and callable(obj._repr_html_):  # type: ignore
+            _str = obj._repr_html_()  # type: ignore
             matching_template = escaped_template.findall(_str)
-            _str = escaped_template.sub('', _str)
-            _str = escaped_js_css.sub('', _str)
+            _str = escaped_template.sub("", _str)
+            _str = escaped_js_css.sub("", _str)
             _str = nh3.clean(_str)
             return f"{css_reinsert} {_str} {"\n".join(matching_template)}"
+        return None
 
-    def display_sanitized_md(obj) -> None:
+    def display_sanitized_md(obj: SyftObject) -> None:
         if hasattr(obj, "_repr_markdown_"):
             return nh3.clean(obj._repr_markdown_())
 
-    ip.display_formatter.formatters['text/html'].for_type(SyftObject, display_sanitized_html)
-    ip.display_formatter.formatters['text/html'].for_type(DictTuple, display_sanitized_html)
-    ip.display_formatter.formatters['text/markdown'].for_type(SyftObject, display_sanitized_md)
+    ip.display_formatter.formatters["text/html"].for_type(
+        SyftObject, display_sanitized_html
+    )
+    ip.display_formatter.formatters["text/html"].for_type(
+        DictTuple, display_sanitized_html
+    )
+    ip.display_formatter.formatters["text/markdown"].for_type(
+        SyftObject, display_sanitized_md
+    )
 
 
 def _patch_ipython_autocompletion() -> None:
@@ -224,8 +239,6 @@ def _patch_ipython_autocompletion() -> None:
         print("Failed to patch syft autocompletion for __syft_dir__")
 
 
-def patch_ipython():
+def patch_ipython() -> None:
     _patch_ipython_sanitization()
     _patch_ipython_autocompletion()
-
-
