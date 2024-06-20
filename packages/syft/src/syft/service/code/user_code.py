@@ -554,15 +554,15 @@ class UserCode(SyncableSyftObject):
 
     @property
     def input_policy(self) -> InputPolicy | None:
-        if not self.status.approved:
-            return None
-        return self._get_input_policy()
+        if self.status.approved or self.input_policy_type.has_safe_serde:
+            return self._get_input_policy()
+        return None
 
     def get_input_policy(self, context: AuthedServiceContext) -> InputPolicy | None:
         status = self.get_status(context)
-        if not status.approved:
-            return None
-        return self._get_input_policy()
+        if status.approved or self.input_policy_type.has_safe_serde:
+            return self._get_input_policy()
+        return None
 
     def _get_input_policy(self) -> InputPolicy | None:
         if len(self.input_policy_state) == 0:
@@ -618,13 +618,18 @@ class UserCode(SyncableSyftObject):
             raise Exception(f"You can't set {type(value)} as input_policy_state")
 
     def get_output_policy(self, context: AuthedServiceContext) -> OutputPolicy | None:
-        if not self.get_status(context).approved:
-            return None
-        return self._get_output_policy()
+        status = self.get_status(context)
+        if status.approved or self.output_policy_type.has_safe_serde:
+            return self._get_output_policy()
+        return None
+
+    @property
+    def output_policy(self) -> OutputPolicy | None:  # type: ignore
+        if self.status.approved or self.output_policy_type.has_safe_serde:
+            return self._get_output_policy()
+        return None
 
     def _get_output_policy(self) -> OutputPolicy | None:
-        # if not self.status.approved:
-        #     return None
         if len(self.output_policy_state) == 0:
             output_policy = None
             if isinstance(self.output_policy_type, type) and issubclass(
@@ -671,12 +676,6 @@ class UserCode(SyncableSyftObject):
         if self.input_policy_init_kwargs is not None:
             return self.input_policy_init_kwargs.get("id", None)
         return None
-
-    @property
-    def output_policy(self) -> OutputPolicy | None:  # type: ignore
-        if not self.status.approved:
-            return None
-        return self._get_output_policy()
 
     @output_policy.setter  # type: ignore
     def output_policy(self, value: Any) -> None:  # type: ignore
@@ -1153,7 +1152,7 @@ def syft_function(
     init_input_kwargs = None
     if isinstance(input_policy, CustomInputPolicy):
         input_policy_type = SubmitUserPolicy.from_obj(input_policy)
-        init_input_kwargs = partition_by_node(input_policy.init_kwargs)
+        init_input_kwargs = partition_by_node(input_policy.init_kwargs)  # type: ignore
     else:
         input_policy_type = type(input_policy)
         init_input_kwargs = getattr(input_policy, "init_kwargs", {})
