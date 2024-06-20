@@ -49,11 +49,6 @@ class CodeHistoryService(AbstractService):
             if result.is_err():
                 return SyftError(message=str(result.err()))
             code = result.ok()
-        elif isinstance(code, UserCode):  # type: ignore[unreachable]
-            result = user_code_service.get_by_uid(context=context, uid=code.id)
-            if isinstance(result, SyftError):
-                return result
-            code = result
 
         result = self.stash.get_by_service_func_name_and_verify_key(
             credentials=context.credentials,
