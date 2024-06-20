@@ -1,10 +1,9 @@
 # stdlib
 from enum import Enum
 from typing import Any
-from pydantic import model_validator
 
 # third party
-from typing_extensions import Self
+from pydantic import model_validator
 
 # relative
 from ...client.client import SyftClient
@@ -48,20 +47,22 @@ class EnclaveInstance(SyftObject):
 
     @model_validator(mode="before")
     @classmethod
-    def initialize_values(cls, values):
-        if 'route' in values:
-            route = values['route']
+    def initialize_values(cls, values: dict[str, Any]) -> dict[str, Any]:
+        if "route" in values:
+            route = values["route"]
             metadata = login_as_guest(url=route.host_or_ip, port=route.port).metadata
             if not metadata:
                 raise SyftException("Failed to fetch metadata from the node")
 
-            values.update({
-                # 'id': UID(metadata.id),
-                'node_uid': UID(metadata.id),
-                'name': metadata.name,
-                'status': EnclaveStatus.NOT_INITIALIZED,
-                'metadata': metadata
-            })
+            values.update(
+                {
+                    # 'id': UID(metadata.id),
+                    "node_uid": UID(metadata.id),
+                    "name": metadata.name,
+                    "status": EnclaveStatus.NOT_INITIALIZED,
+                    "metadata": metadata,
+                }
+            )
         return values
 
     @classmethod
