@@ -912,7 +912,7 @@ class UserCode(SyncableSyftObject):
             warning=None,
             communication_protocol=api.communication_protocol,
         )
-        return remote_user_function()
+        return remote_user_function(*args, **kwargs)
 
 
 class UserCodeUpdate(PartialSyftObject):
