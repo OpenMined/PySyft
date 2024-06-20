@@ -199,6 +199,19 @@ class UserCodeService(AbstractService):
         user_code: UserCode,
         reason: str | None = "",
     ) -> Request | SyftError:
+        # Cannot make multiple requests for the same code
+        get_by_usercode_id = context.node.get_service_method(
+            RequestService.get_by_usercode_id
+        )
+        existing_requests = get_by_usercode_id(context, user_code.id)
+        if isinstance(existing_requests, SyftError):
+            return existing_requests
+        if len(existing_requests) > 0:
+            return SyftError(
+                message=f"Request {existing_requests[0].id} already exists for this UserCode. "
+                f"Please use the existing request, or submit a new UserCode to create a new request."
+            )
+
         # Users that have access to the output also have access to the code item
         if user_code.output_readers is not None:
             self.stash.add_permissions(
