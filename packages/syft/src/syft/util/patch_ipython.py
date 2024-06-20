@@ -78,7 +78,7 @@ def _patch_ipython_sanitization() -> None:
         return None
 
     def display_sanitized_md(obj: SyftObject) -> str | None:
-        if hasattr(obj, "_repr_markdown_"):
+        if hasattr(obj, "_repr_markdown_") and callable(obj._repr_markdown_):
             return nh3.clean(obj._repr_markdown_())
         return None
 

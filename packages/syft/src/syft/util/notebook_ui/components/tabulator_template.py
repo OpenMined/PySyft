@@ -78,7 +78,7 @@ def format_dict(data: Any) -> str:
     if "clipboard" in data["type"]:
         return CopyButton(copy_text=data["value"]).to_html()
 
-    return str(data)
+    return nh3.clean(str(data))
 
 
 def format_table_data(table_data: list[dict[str, Any]]) -> list[dict[str, str]]:
