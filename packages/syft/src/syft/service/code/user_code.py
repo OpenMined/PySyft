@@ -14,6 +14,7 @@ from io import StringIO
 import itertools
 import keyword
 import random
+import re
 import sys
 from textwrap import dedent
 from threading import Thread
@@ -1140,11 +1141,19 @@ def syft_function_single_use(
     )
 
 
+def replace_func_name(src, new_func_name):
+    pattern = r"\bdef\s+(\w+)\s*\("
+    replacement = f"def {new_func_name}("
+    new_src = re.sub(pattern, replacement, src, count=1)
+    return new_src
+
+
 def syft_function(
     input_policy: InputPolicy | UID | None = None,
     output_policy: OutputPolicy | UID | None = None,
     share_results_with_owners: bool = False,
     worker_pool_name: str | None = None,
+    name: str | None = None,
 ) -> Callable:
     if input_policy is None:
         input_policy = EmpyInputPolicy()
@@ -1165,11 +1174,18 @@ def syft_function(
     else:
         output_policy_type = type(output_policy)
 
-    def decorator(f: Any) -> SubmitUserCode | SyftError:
+    def decorator(f: Any) -> SubmitUserCode:
         try:
+            code = dedent(inspect.getsource(f))
+            if name is not None:
+                fname = name
+                code = replace_func_name(code, fname)
+            else:
+                fname = f.__name__
+
             res = SubmitUserCode(
-                code=dedent(inspect.getsource(f)),
-                func_name=f.__name__,
+                code=code,
+                func_name=fname,
                 signature=inspect.signature(f),
                 input_policy_type=input_policy_type,
                 input_policy_init_kwargs=init_input_kwargs,
@@ -1179,6 +1195,7 @@ def syft_function(
                 input_kwargs=f.__code__.co_varnames[: f.__code__.co_argcount],
                 worker_pool_name=worker_pool_name,
             )
+
         except ValidationError as e:
             errors = e.errors()
             msg = "Failed to create syft function, encountered validation errors:\n"

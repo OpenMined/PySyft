@@ -641,10 +641,6 @@ class BaseStash:
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> Result[BaseStash.object_type, str]:
-        if type(obj).__name__ == "Job":
-            print(
-                f"START Setting Job {obj.id}, thread {threading.current_thread().ident}"
-            )
 
         res = self.partition.set(
             credentials=credentials,
@@ -653,11 +649,6 @@ class BaseStash:
             add_permissions=add_permissions,
             add_storage_permission=add_storage_permission,
         )
-
-        if type(obj).__name__ == "Job":
-            print(
-                f"END Setting Job {obj.id}, thread {threading.current_thread().ident}"
-            )
 
         return res
 
@@ -757,21 +748,10 @@ class BaseStash:
         obj: BaseStash.object_type,
         has_permission: bool = False,
     ) -> Result[BaseStash.object_type, str]:
-        if type(obj).__name__ == "Job":
-            print(
-                f"START Updating Job {obj.id}, thread {threading.current_thread().ident}"
-            )
         qk = self.partition.store_query_key(obj)
         res = self.partition.update(
             credentials=credentials, qk=qk, obj=obj, has_permission=has_permission
         )
-        if type(obj).__name__ == "Job":
-            print(
-                f"END Updating Job {obj.id}, thread {threading.current_thread().ident}, res: {res}, obj: {obj}"
-            )
-            qks = QueryKeys(qks=[UIDPartitionKey.with_obj(obj.id)])
-            r = self.query_one(credentials=credentials, qks=qks)
-            print(f"Job {obj.id} found: {r}")
         return res
 
 

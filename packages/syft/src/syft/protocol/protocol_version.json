@@ -291,6 +291,55 @@
           "hash": "9b8ab2d513d84006bdd1329cd0bb636e7e62100a6227d8b772a5bf7c0c45b72f",
           "action": "add"
         }
+      },
+      "PolicyRule": {
+        "1": {
+          "version": 1,
+          "hash": "31a982b94654ce27ad27a6622c6fa26dfe3f759a7824ac21d104390f10a5aa82",
+          "action": "add"
+        }
+      },
+      "CreatePolicyRule": {
+        "1": {
+          "version": 1,
+          "hash": "9b82e36c63e10c5b7b76b3b8ec1da1d2dfdce39f2cce98603a418ec221621874",
+          "action": "add"
+        }
+      },
+      "CreatePolicyRuleConstant": {
+        "1": {
+          "version": 1,
+          "hash": "f3feeaeefa1a1e86528aba80426c9ae4b6c723c41095cc613499acf39075b1ed",
+          "action": "add"
+        }
+      },
+      "Matches": {
+        "1": {
+          "version": 1,
+          "hash": "d1e875a6332a481458e83db364dfdf92bd34a87093d9762dfe8e136e5088bc4e",
+          "action": "add"
+        }
+      },
+      "PreFill": {
+        "1": {
+          "version": 1,
+          "hash": "3f9018398a15b3207fd7b340e314adcce1bc64f40f1381f4b40412bdb061a301",
+          "action": "add"
+        }
+      },
+      "UserOwned": {
+        "1": {
+          "version": 1,
+          "hash": "b5cbb44d742fa51b9adf2a48bb56d9ff5ca82a25f8568a2505961bd906d9d084",
+          "action": "add"
+        }
+      },
+      "MixedInputPolicy": {
+        "1": {
+          "version": 1,
+          "hash": "0e84e4c91e378717e1a4703574b07e3b1e6a3e5707401b4e0cc8d30088a506b9",
+          "action": "add"
+        }
       }
     }
   }
