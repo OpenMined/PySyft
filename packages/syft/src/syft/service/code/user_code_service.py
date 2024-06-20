@@ -250,7 +250,7 @@ class UserCodeService(AbstractService):
         # TODO: check for duplicate submissions
         user_code_or_err = self._submit(context, code)
         if user_code_or_err.is_err():
-            return SyftError(user_code_or_err.err())
+            return SyftError(message=user_code_or_err.err())
 
         result = self._request_code_execution(
             context,
