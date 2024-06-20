@@ -7,6 +7,8 @@ import numpy as np
 from result import Err
 from result import Ok
 from result import Result
+from syft.service.action.action_endpoint import CustomEndpointActionObject
+from syft.service.api.api import TwinAPIEndpoint
 
 # relative
 from ...node.credentials import SyftVerifyKey
@@ -339,7 +341,11 @@ class ActionService(AbstractService):
             filtered_kwargs = result.ok()
 
         if hasattr(input_policy, "transform_kwargs"):
-            filtered_kwargs = input_policy.transform_kwargs(filtered_kwargs)
+            filtered_kwargs_res = input_policy.transform_kwargs(context, filtered_kwargs)
+            if filtered_kwargs_res.is_err():
+                return filtered_kwargs_res
+            else:
+                filtered_kwargs = filtered_kwargs_res.ok()
 
         # update input policy to track any input state
 
@@ -1003,9 +1009,11 @@ def filter_twin_kwargs(
         else:
             if isinstance(v, ActionObject):
                 filtered[k] = v.syft_action_data
-            elif isinstance(v, str | int | float | dict) and allow_python_types:
+            elif isinstance(v, str | int | float | dict | CustomEndpointActionObject) and allow_python_types:
                 filtered[k] = v
             else:
+                import ipdb
+                ipdb.set_trace()
                 raise ValueError(
                     f"unexepected value {v} passed to filtered twin kwargs"
                 )

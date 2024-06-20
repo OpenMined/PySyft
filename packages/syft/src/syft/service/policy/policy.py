@@ -13,14 +13,16 @@ from inspect import Signature
 from io import StringIO
 import sys
 import types
-from typing import Any
+from typing import Any, Type
 
 # third party
 from RestrictedPython import compile_restricted
+from pydantic import field_validator, model_validator
 import requests
 from result import Err
 from result import Ok
 from result import Result
+from syft.service.action.action_endpoint import CustomEndpointActionObject
 
 # relative
 from ...abstract_node import NodeType
@@ -207,9 +209,28 @@ class CreatePolicyRuleConstant(CreatePolicyRule):
     __version__ = SYFT_OBJECT_VERSION_1
 
     val: Any
+    klass: None | Type = None
+
+    @model_validator(mode='before')
+    @classmethod
+    def set_klass(cls, data: Any) -> Any:
+        val = data["val"]
+        if isinstance(val, RemoteFunction):
+            klass = CustomEndpointActionObject
+        else:
+            klass = type(val)
+        data["klass"]= klass
+        return data
+
+    @field_validator("val", mode="after")
+    @classmethod
+    def idify_endpoints(cls, value: str) -> str:
+        if isinstance(value, RemoteFunction):
+            return value.custom_function_actionobject_id()
+        return value
 
     def to_policy_rule(self, kw):
-        return Constant(kw=kw, val=self.val)
+        return Constant(kw=kw, val=self.val, klass=self.klass)
 
 
 @serializable()
@@ -231,13 +252,22 @@ class Constant(PolicyRule):
     __version__ = SYFT_OBJECT_VERSION_1
 
     val: Any
+    klass: Type
     requires_input: bool = False
 
     def is_met(self, context: AuthedServiceContext, *args, **kwargs) -> bool:
         return True
 
-    def transform_kwarg(self, val):
-        return self.val
+    def transform_kwarg(self, context: AuthedServiceContext, val) -> Result[Any, str]:
+        if isinstance(self.val, UID):
+            if issubclass(self.klass, CustomEndpointActionObject):
+                res = context.node.get_service("actionservice").get(context, self.val)
+                if res.is_err():
+                    return res
+                else:
+                    obj = res.ok()
+                    return Ok(obj.syft_action_data)
+        return Ok(self.val)
 
 
 @serializable()
@@ -405,13 +435,16 @@ class MixedInputPolicy(InputPolicy):
             *args, kwarg_rules=kwarg_rules, init_kwargs=kwarg_rules, **kwargs
         )
 
-    def transform_kwargs(self, kwargs: dict[str, Any]) -> dict[str, Any]:
+    def transform_kwargs(self, context: AuthedServiceContext, kwargs: dict[str, Any]) -> dict[str, Any]:
         for _, rules in self.kwarg_rules.items():
             for kw, rule in rules.items():
                 if hasattr(rule, "transform_kwarg"):
-                    val = rule.transform_kwarg(kwargs.get(kw, None))
-                    kwargs[kw] = val
-        return kwargs
+                    res_val = rule.transform_kwarg(context, kwargs.get(kw, None))
+                    if res_val.is_err():
+                        return res_val
+                    else:
+                        kwargs[kw] = res_val.ok()
+        return Ok(kwargs)
 
     def find_node_identity(self, kwargs: dict[str, Any], client=None) -> NodeIdentity:
         if client is not None:
