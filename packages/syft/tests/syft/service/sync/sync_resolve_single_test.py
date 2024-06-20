@@ -7,7 +7,8 @@ from syft.client.domain_client import DomainClient
 from syft.client.sync_decision import SyncDecision
 from syft.client.syncing import compare_clients
 from syft.client.syncing import resolve
-from syft.service.code.user_code import UserCode
+from syft.service.job.job_stash import Job
+from syft.service.request.request import RequestStatus
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.sync.resolve_widget import ResolveWidget
@@ -21,6 +22,9 @@ def handle_decision(
         return widget.obj_diff_batch.ignore()
     elif decision in [SyncDecision.LOW, SyncDecision.HIGH]:
         return widget.click_sync()
+    elif decision == SyncDecision.SKIP:
+        # Skip is no-op
+        return SyftSuccess(message="skipped")
     else:
         raise ValueError(f"Unknown decision {decision}")
 
@@ -31,6 +35,7 @@ def compare_and_resolve(
     to_client: DomainClient,
     decision: SyncDecision = SyncDecision.LOW,
     decision_callback: callable = None,
+    share_private_data: bool = True,
 ):
     diff_state_before = compare_clients(from_client, to_client)
     for obj_diff_batch in diff_state_before.active_batches:
@@ -39,7 +44,8 @@ def compare_and_resolve(
         )
         if decision_callback:
             decision = decision_callback(obj_diff_batch)
-        widget.click_share_all_private_data()
+        if share_private_data:
+            widget.click_share_all_private_data()
         res = handle_decision(widget, decision)
         assert isinstance(res, SyftSuccess)
     from_client.refresh()
@@ -48,10 +54,10 @@ def compare_and_resolve(
     return diff_state_before, diff_state_after
 
 
-def run_and_accept_result(client):
-    job_high = client.code.compute(blocking=True)
-    client.requests[0].accept_by_depositing_result(job_high)
-    return job_high
+def run_and_deposit_result(client):
+    result = client.code.compute(blocking=True)
+    job = client.requests[0].deposit_result(result)
+    return job
 
 
 @syft.syft_function_single_use()
@@ -88,7 +94,7 @@ def test_diff_state(low_worker, high_worker):
 
     assert diff_state_after.is_same
 
-    run_and_accept_result(high_client)
+    run_and_deposit_result(high_client)
     diff_state_before, diff_state_after = compare_and_resolve(
         from_client=high_client, to_client=low_client
     )
@@ -125,7 +131,7 @@ def test_sync_with_error(low_worker, high_worker):
 
     assert diff_state_after.is_same
 
-    run_and_accept_result(high_client)
+    run_and_deposit_result(high_client)
     diff_state_before, diff_state_after = compare_and_resolve(
         from_client=high_client, to_client=low_client
     )
@@ -149,7 +155,7 @@ def test_ignore_unignore_single(low_worker, high_worker):
 
     _ = client_low_ds.code.request_code_execution(compute)
 
-    diff = compare_clients(low_client, high_client)
+    diff = compare_clients(low_client, high_client, hide_usercode=False)
 
     assert len(diff.batches) == 2  # Request + UserCode
     assert len(diff.ignored_batches) == 0
@@ -158,7 +164,7 @@ def test_ignore_unignore_single(low_worker, high_worker):
     res = diff[0].ignore()
     assert isinstance(res, SyftSuccess)
 
-    diff = compare_clients(low_client, high_client)
+    diff = compare_clients(low_client, high_client, hide_usercode=False)
     assert len(diff.batches) == 0
     assert len(diff.ignored_batches) == 2
     assert len(diff.all_batches) == 2
@@ -167,45 +173,10 @@ def test_ignore_unignore_single(low_worker, high_worker):
     res = diff.ignored_batches[0].unignore()
     assert isinstance(res, SyftSuccess)
 
-    diff = compare_clients(low_client, high_client)
+    diff = compare_clients(low_client, high_client, hide_usercode=False)
     assert len(diff.batches) == 1
     assert len(diff.ignored_batches) == 1
     assert len(diff.all_batches) == 2
-
-
-def test_forget_usercode(low_worker, high_worker):
-    low_client = low_worker.root_client
-    client_low_ds = low_worker.guest_client
-    high_client = high_worker.root_client
-
-    @sy.syft_function_single_use()
-    def compute() -> int:
-        print("computing...")
-        return 42
-
-    _ = client_low_ds.code.request_code_execution(compute)
-
-    diff_before, diff_after = compare_and_resolve(
-        from_client=low_client, to_client=high_client
-    )
-
-    run_and_accept_result(high_client)
-
-    def skip_if_user_code(diff):
-        if diff.root_type is UserCode:
-            return SyncDecision.IGNORE
-
-        raise ValueError(
-            f"Should not reach here after ignoring user code, got {diff.root_type}"
-        )
-
-    diff_before, diff_after = compare_and_resolve(
-        from_client=low_client,
-        to_client=high_client,
-        decision_callback=skip_if_user_code,
-    )
-    assert not diff_before.is_same
-    assert len(diff_after.batches) == 0
 
 
 def test_request_code_execution_multiple(low_worker, high_worker):
@@ -243,3 +214,93 @@ def test_request_code_execution_multiple(low_worker, high_worker):
 
     assert not diff_before.is_same
     assert diff_after.is_same
+
+
+def test_approve_request_on_sync_blocking(low_worker, high_worker):
+    low_client = low_worker.root_client
+    client_low_ds = get_ds_client(low_client)
+    high_client = high_worker.root_client
+
+    @sy.syft_function_single_use()
+    def compute() -> int:
+        return 42
+
+    _ = client_low_ds.code.request_code_execution(compute)
+
+    # No execute permissions
+    result_error = client_low_ds.code.compute(blocking=True)
+    assert isinstance(result_error, SyftError)
+    assert low_client.requests[0].status == RequestStatus.PENDING
+
+    # Sync request to high side
+    diff_before, diff_after = compare_and_resolve(
+        from_client=low_client, to_client=high_client
+    )
+
+    assert not diff_before.is_same
+    assert diff_after.is_same
+
+    # Execute on high side
+    job = run_and_deposit_result(high_client)
+    assert job.result.get() == 42
+
+    assert high_client.requests[0].status == RequestStatus.PENDING
+
+    # Sync back to low side, share private data
+    diff_before, diff_after = compare_and_resolve(
+        from_client=high_client, to_client=low_client, share_private_data=True
+    )
+    assert len(diff_before.batches) == 1 and diff_before.batches[0].root_type is Job
+    assert low_client.requests[0].status == RequestStatus.APPROVED
+
+    assert client_low_ds.code.compute().get() == 42
+    assert len(client_low_ds.code.compute.jobs) == 1
+    # check if user retrieved from cache, instead of re-executing
+    assert len(client_low_ds.requests[0].code.output_history) == 1
+
+
+def test_deny_and_sync(low_worker, high_worker):
+    low_client = low_worker.root_client
+    client_low_ds = get_ds_client(low_client)
+    high_client = high_worker.root_client
+
+    @sy.syft_function_single_use()
+    def compute() -> int:
+        return 42
+
+    _ = client_low_ds.code.request_code_execution(compute)
+
+    # No execute permissions
+    result_error = client_low_ds.code.compute(blocking=True)
+    assert isinstance(result_error, SyftError)
+    assert low_client.requests[0].status == RequestStatus.PENDING
+
+    # Deny on low side
+    request_low = low_client.requests[0]
+    res = request_low.deny(reason="bad request")
+    print(res)
+    assert low_client.requests[0].status == RequestStatus.REJECTED
+
+    # Un-deny. NOTE: not supported by current UX, this is just used to re-deny on high side
+    low_client.api.code.update(id=request_low.code_id, l0_deny_reason=None)
+    assert low_client.requests[0].status == RequestStatus.PENDING
+
+    # Sync request to high side
+    diff_before, diff_after = compare_and_resolve(
+        from_client=low_client, to_client=high_client
+    )
+
+    assert not diff_before.is_same
+    assert diff_after.is_same
+
+    # Deny on high side
+    high_client.requests[0].deny(reason="bad request")
+    assert high_client.requests[0].status == RequestStatus.REJECTED
+
+    diff_before, diff_after = compare_and_resolve(
+        from_client=high_client, to_client=low_client
+    )
+
+    assert diff_after.is_same
+
+    assert low_client.requests[0].status == RequestStatus.REJECTED

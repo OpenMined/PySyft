@@ -653,6 +653,7 @@ class Job(SyncableSyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
+
         if api is None:
             raise ValueError(
                 f"Can't access Syft API. You must login to node with id '{self.syft_node_location}'"
@@ -671,18 +672,14 @@ class Job(SyncableSyftObject):
         while True:
             self.fetch()
             if self.resolved:
-                if isinstance(self.result, Err):  # type: ignore[unreachable]
-                    return SyftError(
-                        message=f"Waiting for job with id '{self.id}' failed with error: {self.result.err()}"
-                    )
-                if isinstance(self.result, SyftError):
-                    return SyftError(
-                        message=f"Waiting for job with id '{self.id}' failed with error: {self.result.message}"
-                    )
+                if isinstance(self.result, SyftError | Err) or self.status in [  # type: ignore[unreachable]
+                    JobStatus.ERRORED,
+                    JobStatus.INTERRUPTED,
+                ]:
+                    return self.result
                 break
-
             if print_warning and self.result is not None:
-                result_obj = api.services.action.get(
+                result_obj = api.services.action.get(  # type: ignore[unreachable]
                     self.result.id, resolve_nested=False
                 )
                 if result_obj.is_link and job_only:

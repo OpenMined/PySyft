@@ -11,6 +11,7 @@ from pydantic import model_validator
 from typing_extensions import Self
 
 # relative
+from ..client.client import SyftClient
 from ..serde.serializable import serializable
 from ..service.action.action_object import ActionObject
 from ..service.action.action_object import TwinMode
@@ -81,15 +82,25 @@ class TwinObject(SyftObject):
         mock.id = twin_id
         return mock
 
-    def _save_to_blob_storage(self) -> SyftError | None:
+    def _save_to_blob_storage(self, allow_empty: bool = False) -> SyftError | None:
         # Set node location and verify key
         self.private_obj._set_obj_location_(
             self.syft_node_location,
             self.syft_client_verify_key,
         )
-        # self.mock_obj._set_obj_location_(
-        #     self.syft_node_location,
-        #     self.syft_client_verify_key,
-        # )
-        return self.private_obj._save_to_blob_storage()
-        # self.mock_obj._save_to_blob_storage()
+        self.mock_obj._set_obj_location_(
+            self.syft_node_location,
+            self.syft_client_verify_key,
+        )
+        mock_store_res = self.mock_obj._save_to_blob_storage(allow_empty=allow_empty)
+        if isinstance(mock_store_res, SyftError):
+            return mock_store_res
+        return self.private_obj._save_to_blob_storage(allow_empty=allow_empty)
+
+    def send(self, client: SyftClient, add_storage_permission: bool = True) -> Any:
+        self._set_obj_location_(client.id, client.verify_key)
+        self._save_to_blob_storage()
+        res = client.api.services.action.set(
+            self, add_storage_permission=add_storage_permission
+        )
+        return res
