@@ -77,7 +77,7 @@ from .util import logger  # noqa: F401
 from .util import options  # noqa: F401
 from .util.autoreload import disable_autoreload  # noqa: F401
 from .util.autoreload import enable_autoreload  # noqa: F401
-from .util.ipython_patches import patch_ipython
+from .util.patch_ipython import patch_ipython
 from .util.telemetry import instrument  # noqa: F401
 from .util.util import autocache  # noqa: F401
 from .util.util import get_root_data_path  # noqa: F401
