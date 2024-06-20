@@ -1062,8 +1062,11 @@ class SyftAPI(SyftObject):
         if isinstance(result, CachedSyftObject):
             if result.error_msg is not None:
                 if cache_result:
+                    msg = "Loading results from cache."
+                    if result.error_msg:
+                        msg = f"{result.error_msg}. {msg}"
                     prompt_warning_message(
-                        message=f"{result.error_msg}. Loading results from cache."
+                        message=msg,
                     )
                 else:
                     result = SyftError(message=result.error_msg)
@@ -1183,7 +1186,9 @@ class SyftAPI(SyftObject):
                 if hasattr(module_or_func, "_modules"):
                     for func_name in module_or_func._modules:
                         func = getattr(module_or_func, func_name)
-                        sig = func.__ipython_inspector_signature_override__
+                        sig = getattr(
+                            func, "__ipython_inspector_signature_override__", ""
+                        )
                         _repr_str += f"{module_path_str}.{func_name}{sig}\n\n"
         return _repr_str
 
