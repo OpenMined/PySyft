@@ -4,7 +4,6 @@ from types import MethodType
 from typing import Any
 
 # relative
-from ..service.response import SyftResponseMessage
 from ..types.dicttuple import DictTuple
 from ..types.syft_object import SyftObject
 
@@ -83,9 +82,6 @@ def _patch_ipython_sanitization() -> None:
             return nh3.clean(obj._repr_markdown_())
         return None
 
-    ip.display_formatter.formatters["text/html"].for_type(
-        SyftResponseMessage, display_sanitized_html
-    )
     ip.display_formatter.formatters["text/html"].for_type(
         SyftObject, display_sanitized_html
     )
