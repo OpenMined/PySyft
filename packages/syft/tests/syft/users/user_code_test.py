@@ -4,6 +4,8 @@ import uuid
 # third party
 from faker import Faker
 import numpy as np
+from pydantic import ValidationError
+import pytest
 
 # syft absolute
 import syft as sy
@@ -12,6 +14,7 @@ from syft.service.action.action_object import ActionObject
 from syft.service.request.request import Request
 from syft.service.request.request import UserCodeStatusChange
 from syft.service.response import SyftError
+from syft.service.response import SyftSuccess
 from syft.service.user.user import User
 
 
@@ -355,3 +358,35 @@ def test_mock_no_arguments(worker) -> None:
     result = ds_client.api.services.code.compute_sum()
     assert result, result
     assert result.get() == 1
+
+
+def test_submit_invalid_name(worker) -> None:
+    client = worker.root_client
+
+    @sy.syft_function_single_use()
+    def valid_name():
+        pass
+
+    res = client.code.submit(valid_name)
+    assert isinstance(res, SyftSuccess)
+
+    @sy.syft_function_single_use()
+    def get_all():
+        pass
+
+    assert isinstance(get_all, SyftError)
+
+    @sy.syft_function_single_use()
+    def _():
+        pass
+
+    assert isinstance(_, SyftError)
+
+    # overwrite valid function name before submit, fail on serde
+    @sy.syft_function_single_use()
+    def valid_name_2():
+        pass
+
+    valid_name_2.func_name = "get_all"
+    with pytest.raises(ValidationError):
+        client.code.submit(valid_name_2)

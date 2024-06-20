@@ -592,8 +592,9 @@ class Job(SyncableSyftObject):
         updated_at = str(self.updated_at)[:-7] if self.updated_at else "--"
 
         user_repr = "--"
-        if self.requested_by:
-            requesting_user = self.requesting_user
+        if self.requested_by and not isinstance(
+            requesting_user := self.requesting_user, SyftError
+        ):
             user_repr = f"{requesting_user.name} {requesting_user.email}"
 
         worker_attr = ""
@@ -620,17 +621,12 @@ class Job(SyncableSyftObject):
 
         template = Template(job_repr_template)
         return template.substitute(
-            uid=str(UID()),
-            grid_template_columns=None,
-            grid_template_cell_columns=None,
-            cols=0,
             job_type=job_type,
             api_header=api_header,
             user_code_name=self.user_code_name,
             button_html=button_html,
             status=self.status.value.title(),
             creation_time=creation_time,
-            user_rerp=user_repr,
             updated_at=updated_at,
             worker_attr=worker_attr,
             no_subjobs=len(self.subjobs),
@@ -653,6 +649,7 @@ class Job(SyncableSyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
+
         if api is None:
             raise ValueError(
                 f"Can't access Syft API. You must login to {self.syft_node_location}"
@@ -673,8 +670,13 @@ class Job(SyncableSyftObject):
         counter = 0
         while True:
             self.fetch()
+            if isinstance(self.result, SyftError | Err) or self.status in [
+                JobStatus.ERRORED,
+                JobStatus.INTERRUPTED,
+            ]:
+                return self.result
             if print_warning and self.result is not None:
-                result_obj = api.services.action.get(
+                result_obj = api.services.action.get(  # type: ignore[unreachable]
                     self.result.id, resolve_nested=False
                 )
                 if result_obj.is_link and job_only:
@@ -692,6 +694,10 @@ class Job(SyncableSyftObject):
                 counter += 1
                 if counter > timeout:
                     return SyftError(message="Reached Timeout!")
+
+        if not job_only and self.result is not None:  # type: ignore[unreachable]
+            self.result.wait(timeout)
+
         return self.resolve  # type: ignore[unreachable]
 
     @property
