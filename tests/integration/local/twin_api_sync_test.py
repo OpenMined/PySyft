@@ -100,7 +100,7 @@ def test_twin_api_integration(full_high_worker, full_low_worker):
     )
 
     job_high = high_client.code.compute(query=high_client.api.services.testapi.query)
-    high_client.requests[0].accept_by_depositing_result(job_high)
+    high_client.requests[0].deposit_result(job_high)
     diff_before, diff_after = compare_and_resolve(
         from_client=high_client, to_client=low_client
     )
