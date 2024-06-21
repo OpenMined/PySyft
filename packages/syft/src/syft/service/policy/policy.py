@@ -15,7 +15,6 @@ import sys
 import types
 from typing import Any
 from typing import ClassVar
-from typing import Type
 
 # third party
 from RestrictedPython import compile_restricted
@@ -25,9 +24,6 @@ import requests
 from result import Err
 from result import Ok
 from result import Result
-
-# syft absolute
-from syft.service.action.action_endpoint import CustomEndpointActionObject
 
 # relative
 from ...abstract_node import NodeType
@@ -48,6 +44,7 @@ from ...types.transforms import transform
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
 from ...util.util import is_interpreter_jupyter
+from ..action.action_endpoint import CustomEndpointActionObject
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
@@ -215,9 +212,9 @@ class CreatePolicyRuleConstant(CreatePolicyRule):
     __version__ = SYFT_OBJECT_VERSION_1
 
     val: Any
-    klass: None | Type = None
+    klass: None | type = None
 
-    @model_validator(mode='before')
+    @model_validator(mode="before")
     @classmethod
     def set_klass(cls, data: Any) -> Any:
         val = data["val"]
@@ -225,7 +222,7 @@ class CreatePolicyRuleConstant(CreatePolicyRule):
             klass = CustomEndpointActionObject
         else:
             klass = type(val)
-        data["klass"]= klass
+        data["klass"] = klass
         return data
 
     @field_validator("val", mode="after")
@@ -235,7 +232,7 @@ class CreatePolicyRuleConstant(CreatePolicyRule):
             return value.custom_function_actionobject_id()
         return value
 
-    def to_policy_rule(self, kw):
+    def to_policy_rule(self, kw: Any) -> PolicyRule:
         return Constant(kw=kw, val=self.val, klass=self.klass)
 
 
@@ -258,13 +255,15 @@ class Constant(PolicyRule):
     __version__ = SYFT_OBJECT_VERSION_1
 
     val: Any
-    klass: Type
+    klass: type
     requires_input: bool = False
 
-    def is_met(self, context: AuthedServiceContext, *args, **kwargs) -> bool:
+    def is_met(self, context: AuthedServiceContext, *args: Any, **kwargs: Any) -> bool:
         return True
 
-    def transform_kwarg(self, context: AuthedServiceContext, val) -> Result[Any, str]:
+    def transform_kwarg(
+        self, context: AuthedServiceContext, val: Any
+    ) -> Result[Any, str]:
         if isinstance(self.val, UID):
             if issubclass(self.klass, CustomEndpointActionObject):
                 res = context.node.get_service("actionservice").get(context, self.val)
@@ -313,7 +312,7 @@ class UserOwned(PolicyRule):
         )
 
 
-def user_code_arg2id(arg):
+def user_code_arg2id(arg: Any) -> UID:
     if isinstance(arg, ActionObject):
         uid = arg.id
     elif isinstance(arg, TwinObject):
@@ -414,7 +413,7 @@ class MixedInputPolicy(InputPolicy):
     kwarg_rules: dict[NodeIdentity, dict[str, PolicyRule]]
 
     def __init__(
-        self, init_kwargs=None, client=None, *args: Any, **kwargs: Any
+        self, init_kwargs: Any = None, client: Any = None, *args: Any, **kwargs: Any
     ) -> None:
         if init_kwargs is not None:
             kwarg_rules = init_kwargs
@@ -441,7 +440,9 @@ class MixedInputPolicy(InputPolicy):
             *args, kwarg_rules=kwarg_rules, init_kwargs=kwarg_rules, **kwargs
         )
 
-    def transform_kwargs(self, context: AuthedServiceContext, kwargs: dict[str, Any]) -> dict[str, Any]:
+    def transform_kwargs(
+        self, context: AuthedServiceContext, kwargs: dict[str, Any]
+    ) -> dict[str, Any]:
         for _, rules in self.kwarg_rules.items():
             for kw, rule in rules.items():
                 if hasattr(rule, "transform_kwarg"):
@@ -452,7 +453,9 @@ class MixedInputPolicy(InputPolicy):
                         kwargs[kw] = res_val.ok()
         return Ok(kwargs)
 
-    def find_node_identity(self, kwargs: dict[str, Any], client=None) -> NodeIdentity:
+    def find_node_identity(
+        self, kwargs: dict[str, Any], client: Any = None
+    ) -> NodeIdentity:
         if client is not None:
             return NodeIdentity.from_api(client.api)
 
@@ -519,7 +522,7 @@ class MixedInputPolicy(InputPolicy):
                         )
                         rule_check_args = (actionobject,)
                     else:
-                        rule_check_args = ()
+                        rule_check_args = ()  # type: ignore
                         # TODO
                         actionobject = rule.value
                     if not rule.is_met(context, *rule_check_args):

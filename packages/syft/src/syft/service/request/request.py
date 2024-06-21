@@ -12,9 +12,6 @@ from result import Ok
 from result import Result
 from typing_extensions import Self
 
-# syft absolute
-from syft.types.syft_migration import migrate
-
 # relative
 from ...abstract_node import NodeSideType
 from ...client.api import APIRegistry
@@ -27,6 +24,7 @@ from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
+from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject

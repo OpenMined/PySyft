@@ -8,10 +8,6 @@ from result import Err
 from result import Ok
 from result import Result
 
-# syft absolute
-from syft.service.action.action_endpoint import CustomEndpointActionObject
-from syft.service.api.api import TwinAPIEndpoint
-
 # relative
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
@@ -35,6 +31,7 @@ from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_roles import ServiceRole
+from .action_endpoint import CustomEndpointActionObject
 from .action_object import Action
 from .action_object import ActionObject
 from .action_object import ActionObjectPointer
@@ -383,7 +380,10 @@ class ActionService(AbstractService):
             filtered_kwargs = result.ok()
 
         if hasattr(input_policy, "transform_kwargs"):
-            filtered_kwargs_res = input_policy.transform_kwargs(context, filtered_kwargs)
+            filtered_kwargs_res = input_policy.transform_kwargs(  # type: ignore
+                context,
+                filtered_kwargs,
+            )
             if filtered_kwargs_res.is_err():
                 return filtered_kwargs_res
             else:
@@ -415,7 +415,7 @@ class ActionService(AbstractService):
                         exec_result.result,
                         update_policy=not override_execution_permission,
                     )
-                code_item.output_policy = output_policy
+                code_item.output_policy = output_policy  # type: ignore
                 user_code_service.update_code_state(context, code_item)
                 if isinstance(exec_result.result, ActionObject):
                     result_action_object = ActionObject.link(
@@ -437,7 +437,7 @@ class ActionService(AbstractService):
                         private_exec_result.result,
                         update_policy=not override_execution_permission,
                     )
-                code_item.output_policy = output_policy
+                code_item.output_policy = output_policy  # type: ignore
                 user_code_service.update_code_state(context, code_item)
                 result_action_object_private = wrap_result(
                     result_id, private_exec_result.result
@@ -1032,7 +1032,7 @@ def filter_twin_args(args: list[Any], twin_mode: TwinMode) -> Any:
 
 
 def filter_twin_kwargs(
-    kwargs: dict, twin_mode: TwinMode, allow_python_types=False
+    kwargs: dict, twin_mode: TwinMode, allow_python_types: bool = False
 ) -> Any:
     filtered = {}
     for k, v in kwargs.items():
@@ -1048,12 +1048,13 @@ def filter_twin_kwargs(
         else:
             if isinstance(v, ActionObject):
                 filtered[k] = v.syft_action_data
-            elif isinstance(v, str | int | float | dict | CustomEndpointActionObject) and allow_python_types:
+            elif (
+                isinstance(v, str | int | float | dict | CustomEndpointActionObject)
+                and allow_python_types
+            ):
                 filtered[k] = v
             else:
                 # third party
-                import ipdb
-                ipdb.set_trace()
                 raise ValueError(
                     f"unexepected value {v} passed to filtered twin kwargs"
                 )

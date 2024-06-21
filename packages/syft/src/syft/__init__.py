@@ -61,10 +61,10 @@ from .service.dataset.dataset import CreateAsset as Asset  # noqa: F401
 from .service.dataset.dataset import CreateDataset as Dataset  # noqa: F401
 from .service.notification.notifications import NotificationStatus  # noqa: F401
 from .service.policy.policy import CreatePolicyRuleConstant as Constant  # noqa: F401
-from .service.policy.policy import CustomInputPolicy
+from .service.policy.policy import CustomInputPolicy  # noqa: F401
 from .service.policy.policy import CustomOutputPolicy  # noqa: F401
 from .service.policy.policy import ExactMatch  # noqa: F401
-from .service.policy.policy import MixedInputPolicy
+from .service.policy.policy import MixedInputPolicy  # noqa: F401
 from .service.policy.policy import SingleExecutionExactOutput  # noqa: F401
 from .service.policy.policy import UserInputPolicy  # noqa: F401
 from .service.policy.policy import UserOutputPolicy  # noqa: F401

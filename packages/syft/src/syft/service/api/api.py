@@ -18,12 +18,8 @@ from result import Err
 from result import Ok
 from result import Result
 
-# syft absolute
-from syft.service.user.user_service import UserService
-
 # relative
 from ...abstract_node import AbstractNode
-from ...abstract_node import NodeSideType
 from ...client.client import SyftClient
 from ...serde.serializable import serializable
 from ...serde.signature import signature_remove_context
@@ -41,6 +37,7 @@ from ...util.misc_objs import MarkdownDescription
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..user.user import UserView
+from ..user.user_service import UserService
 
 NOT_ACCESSIBLE_STRING = "N / A"
 
@@ -241,7 +238,7 @@ class Endpoint(SyftObject):
             state=self.state or {},
             user=user,
             admin_client=admin_client,
-            user_client=user_client
+            user_client=user_client,
         )
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:

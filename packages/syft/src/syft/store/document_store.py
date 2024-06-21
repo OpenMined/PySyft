@@ -3,7 +3,6 @@ from __future__ import annotations
 
 # stdlib
 from collections.abc import Callable
-import threading
 import types
 import typing
 from typing import Any
@@ -641,7 +640,6 @@ class BaseStash:
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> Result[BaseStash.object_type, str]:
-
         res = self.partition.set(
             credentials=credentials,
             obj=obj,
