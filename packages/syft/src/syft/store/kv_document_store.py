@@ -270,7 +270,6 @@ class KeyValueStorePartition(StorePartition):
         if not isinstance(permission.permission, ActionPermission):
             raise Exception(f"ObjectPermission type: {permission.permission} not valid")
 
-        # TODO: fix for other admins
         if (
             permission.credentials
             and self.root_verify_key.verify == permission.credentials.verify

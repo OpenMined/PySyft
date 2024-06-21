@@ -23,7 +23,7 @@ from syft.service.user.user_roles import ServiceRole
 # relative
 from .user_test import ds_client as ds_client_fixture
 
-ds_client = ds_client_fixture  # workaround some ruff quirks
+ds_client = ds_client_fixture  # work around some ruff quirks
 
 
 @sy.syft_function(

@@ -588,8 +588,11 @@ class DocumentStore:
         from ..service.user.user_roles import ServiceRole
         from ..service.user.user_stash import UserStash
 
+        # leave out UserStash to avoid recursion
+        # TODO: pass the callback from BaseStash instead of DocumentStore
+        # so that this works with UserStash after the sqlite thread fix is merged
         if settings.object_type is User:
-            return lambda x: False
+            return lambda credentials: False
 
         user_stash = UserStash(store=self)
 
