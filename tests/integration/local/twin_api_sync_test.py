@@ -121,6 +121,12 @@ def test_twin_api_integration(full_high_worker, full_low_worker):
         private_res, SyftError
     ), "Should not be able to access private function on low side."
 
+    # updating twin api endpoint works
+    high_client.custom_api.update(endpoint_path="testapi.query", endpoint_timeout=60)
+    widget = sy.sync(from_client=high_client, to_client=low_client)
+    result = widget[0].click_sync()
+    assert result, result
+
 
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
 @pytest.mark.local_node
