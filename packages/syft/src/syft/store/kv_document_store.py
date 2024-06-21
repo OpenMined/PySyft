@@ -276,8 +276,10 @@ class KeyValueStorePartition(StorePartition):
         ):
             return True
 
-        if permission.credentials and self.has_admin_permissions(
+        if (
             permission.credentials
+            and self.has_admin_permissions is not None
+            and self.has_admin_permissions(permission.credentials)
         ):
             return True
 

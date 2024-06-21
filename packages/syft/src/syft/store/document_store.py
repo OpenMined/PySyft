@@ -309,7 +309,7 @@ class StorePartition:
         root_verify_key: SyftVerifyKey | None,
         settings: PartitionSettings,
         store_config: StoreConfig,
-        has_admin_permissions: Callable[[SyftVerifyKey], bool],
+        has_admin_permissions: Callable[[SyftVerifyKey], bool] | None = None,
     ) -> None:
         if root_verify_key is None:
             root_verify_key = SyftSigningKey.generate().verify_key
