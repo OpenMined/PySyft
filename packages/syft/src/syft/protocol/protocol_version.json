@@ -272,6 +272,32 @@
           "hash": "89dbd4a810586b49498be1f5299b565a19871487e14a120433b0a4cf607b6dee",
           "action": "remove"
         }
+      },
+      "HTTPConnection": {
+        "3": {
+          "version": 3,
+          "hash": "54b452bb4ab76691ac1e704b62e7bcec740850fea00805145259b37973ecd0f4",
+          "action": "add"
+        }
+      },
+      "UserCode": {
+        "4": {
+          "version": 4,
+          "hash": "0a7181cd5f76800b6566175ffa7276d0cf38c4ddc5110114430147dfc8bfdb2a",
+          "action": "remove"
+        },
+        "5": {
+          "version": 5,
+          "hash": "128705a5fdf308055ef857b25c80966c928938a05ec03459dae9b36bd6122aa2",
+          "action": "add"
+        }
+      },
+      "SyncedUserCodeStatusChange": {
+        "3": {
+          "version": 3,
+          "hash": "9b8ab2d513d84006bdd1329cd0bb636e7e62100a6227d8b772a5bf7c0c45b72f",
+          "action": "add"
+        }
       }
     }
   }

@@ -37,6 +37,7 @@ from typing_extensions import Self
 from ..node.credentials import SyftVerifyKey
 from ..serde.recursive_primitives import recursive_serde_register_type
 from ..serde.serialize import _serialize as serialize
+from ..service.response import SyftError
 from ..util.autoreload import autoreload_enabled
 from ..util.markdown import as_markdown_python_code
 from ..util.notebook_ui.components.tabulator_template import build_tabulator_table
@@ -49,6 +50,7 @@ from .uid import UID
 
 if TYPE_CHECKING:
     # relative
+    from ..client.api import SyftAPI
     from ..service.sync.diff_state import AttrDiff
 
 IntStr = int | str
@@ -678,6 +680,15 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
                 obj_attr = getattr(self, attr)
                 ext_obj_attr = getattr(ext_obj, attr)
 
+                if (obj_attr is None) ^ (ext_obj_attr is None):
+                    # If either attr is None, but not both, we have a diff
+                    # NOTE This clause is needed because attr.__eq__ is not implemented for None, and will eval to True
+                    diff_attr = AttrDiff(
+                        attr_name=attr,
+                        low_attr=obj_attr,
+                        high_attr=ext_obj_attr,
+                    )
+                    diff_attrs.append(diff_attr)
                 if isinstance(obj_attr, list) and isinstance(ext_obj_attr, list):
                     list_diff = ListDiff.from_lists(
                         attr_name=attr, low_list=obj_attr, high_list=ext_obj_attr
@@ -699,6 +710,15 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
                         )
                         diff_attrs.append(diff_attr)
         return diff_attrs
+
+    def _get_api(self) -> "SyftAPI | SyftError":
+        # relative
+        from ..client.api import APIRegistry
+
+        api = APIRegistry.api_for(self.syft_node_location, self.syft_client_verify_key)
+        if api is None:
+            return SyftError(f"Can't access the api. You must login to {self.node_uid}")
+        return api
 
     ## OVERRIDING pydantic.BaseModel.__getattr__
     ## return super().__getattribute__(item) -> return self.__getattribute__(item)

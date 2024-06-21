@@ -15,6 +15,7 @@ from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
 from ...types.cache_object import CachedSyftObject
+from ...types.syft_metaclass import Empty
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
@@ -27,6 +28,7 @@ from ..output.output_service import ExecutionOutput
 from ..policy.policy import OutputPolicy
 from ..request.request import Request
 from ..request.request import SubmitRequest
+from ..request.request import SyncedUserCodeStatusChange
 from ..request.request import UserCodeStatusChange
 from ..request.request_service import RequestService
 from ..response import SyftError
@@ -43,6 +45,7 @@ from ..user.user_roles import ServiceRole
 from .user_code import SubmitUserCode
 from .user_code import UserCode
 from .user_code import UserCodeStatus
+from .user_code import UserCodeUpdate
 from .user_code import load_approved_policy_code
 from .user_code_stash import UserCodeStash
 
@@ -75,6 +78,35 @@ class UserCodeService(AbstractService):
 
         result = self.stash.set(context.credentials, code)
         return result
+
+    @service_method(
+        path="code.update",
+        name="update",
+        roles=ADMIN_ROLE_LEVEL,
+        autosplat=["code_update"],
+    )
+    def update(
+        self,
+        context: AuthedServiceContext,
+        code_update: UserCodeUpdate,
+    ) -> SyftSuccess | SyftError:
+        code = self.stash.get_by_uid(context.credentials, code_update.id)
+        if code.is_err():
+            return SyftError(message=code.err())
+        code = code.ok()
+
+        result = self.stash.update(context.credentials, code)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+
+        if code_update.l0_deny_reason is not Empty:  # type: ignore[comparison-overlap]
+            code.l0_deny_reason = code_update.l0_deny_reason
+
+        result = self.stash.update(context.credentials, code)
+
+        if result.is_ok():
+            return result.ok()
+        return SyftError(message=str(result.err()))
 
     @service_method(path="code.delete", name="delete", roles=ADMIN_ROLE_LEVEL)
     def delete(
@@ -115,9 +147,11 @@ class UserCodeService(AbstractService):
             root_context = AuthedServiceContext(
                 credentials=context.node.verify_key, node=context.node
             )
-            _ = context.node.get_service("usercodestatusservice").remove(
-                root_context, user_code.status_link.object_uid
-            )
+
+            if user_code.status_link is not None:
+                _ = context.node.get_service("usercodestatusservice").remove(
+                    root_context, user_code.status_link.object_uid
+                )
             return result
         result = self._request_code_execution_inner(context, user_code, reason)
         return result
@@ -192,12 +226,20 @@ class UserCodeService(AbstractService):
 
         code_link = LinkedObject.from_obj(user_code, node_uid=context.node.id)
 
-        CODE_EXECUTE = UserCodeStatusChange(
-            value=UserCodeStatus.APPROVED,
-            linked_obj=user_code.status_link,
-            linked_user_code=code_link,
-        )
-        changes = [CODE_EXECUTE]
+        # Requests made on low side are synced, and have their status computed instead of set manually.
+        if user_code.is_l0_deployment:
+            status_change = SyncedUserCodeStatusChange(
+                value=UserCodeStatus.APPROVED,
+                linked_obj=user_code.status_link,
+                linked_user_code=code_link,
+            )
+        else:
+            status_change = UserCodeStatusChange(
+                value=UserCodeStatus.APPROVED,
+                linked_obj=user_code.status_link,
+                linked_user_code=code_link,
+            )
+        changes = [status_change]
 
         request = SubmitRequest(changes=changes)
         method = context.node.get_service_method(RequestService.submit)
@@ -460,24 +502,33 @@ class UserCodeService(AbstractService):
             kwarg2id = map_kwargs_to_id(kwargs)
 
             input_policy = code.get_input_policy(context)
+            # relative
 
             # Check output policy
-            output_policy = code.get_output_policy(context)
             if not override_execution_permission:
                 output_history = code.get_output_history(context=context)
                 if isinstance(output_history, SyftError):
                     return Err(output_history.message)
-                can_execute = self.is_execution_allowed(
+                output_policy = code.get_output_policy(context)
+
+                can_execute = output_policy and self.is_execution_allowed(
                     code=code,
                     context=context,
                     output_policy=output_policy,
                 )
                 if not can_execute:
-                    if not code.is_output_policy_approved(context):
-                        return Err(
-                            "Execution denied: Your code is waiting for approval"
-                        )
-                    if not (is_valid := output_policy._is_valid(context)):  # type: ignore
+                    # We check output policy only in l2 deployment.
+                    # code is from low side (L0 setup)
+                    status = code.get_status(context)
+                    if not status.approved:
+                        # return Err(
+                        #     "Execution denied: Your code is waiting for approval"
+                        # )
+                        return Err(status.get_status_message().message)
+                    is_valid = (
+                        output_policy._is_valid(context) if output_policy else False
+                    )
+                    if not is_valid or code.is_l0_deployment:
                         if len(output_history) > 0 and not skip_read_cache:
                             last_executed_output = output_history[-1]
                             # Check if the inputs of the last executed output match
@@ -504,10 +555,15 @@ class UserCodeService(AbstractService):
                                 return result
 
                             res = delist_if_single(result.ok())
+                            output_policy_message = ""
+                            if code.is_l2_deployment:
+                                # Skip output policy warning in L0 setup;
+                                # admin overrides policy checks.
+                                output_policy_message = is_valid.message
                             return Ok(
                                 CachedSyftObject(
                                     result=res,
-                                    error_msg=is_valid.message,
+                                    error_msg=output_policy_message,
                                 )
                             )
                         else:
@@ -540,8 +596,10 @@ class UserCodeService(AbstractService):
 
             # this currently only works for nested syft_functions
             # and admins executing on high side (TODO, decide if we want to increment counter)
-            if not skip_fill_cache and output_policy is not None:
-                res = code.store_as_history(
+            # always store_execution_output on l0 setup
+            is_l0_request = context.role == ServiceRole.ADMIN and code.is_l0_deployment
+            if not skip_fill_cache and output_policy is not None or is_l0_request:
+                res = code.store_execution_output(
                     context=context,
                     outputs=result,
                     job_id=context.job_id,
@@ -596,9 +654,11 @@ class UserCodeService(AbstractService):
         return SyftSuccess(message="you have permission")
 
     @service_method(
-        path="code.store_as_history", name="store_as_history", roles=GUEST_ROLE_LEVEL
+        path="code.store_execution_output",
+        name="store_execution_output",
+        roles=GUEST_ROLE_LEVEL,
     )
-    def store_as_history(
+    def store_execution_output(
         self,
         context: AuthedServiceContext,
         user_code_id: UID,
@@ -610,11 +670,12 @@ class UserCodeService(AbstractService):
         if code_result.is_err():
             return SyftError(message=code_result.err())
 
+        is_admin = context.role == ServiceRole.ADMIN
         code: UserCode = code_result.ok()
-        if not code.get_status(context).approved:
-            return SyftError(message="Code is not approved")
+        if not code.get_status(context).approved and not is_admin:
+            return SyftError(message="This UserCode is not approved")
 
-        res = code.store_as_history(
+        res = code.store_execution_output(
             context=context,
             outputs=outputs,
             job_id=job_id,

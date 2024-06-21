@@ -3,7 +3,6 @@ import sys
 
 # third party
 import pytest
-from result import Err
 
 # syft absolute
 import syft
@@ -11,6 +10,7 @@ import syft as sy
 from syft.client.domain_client import DomainClient
 from syft.client.syncing import compare_clients
 from syft.client.syncing import resolve
+from syft.service.action.action_object import ActionObject
 from syft.service.job.job_stash import JobStatus
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
@@ -100,7 +100,7 @@ def test_twin_api_integration(full_high_worker, full_low_worker):
     )
 
     job_high = high_client.code.compute(query=high_client.api.services.testapi.query)
-    high_client.requests[0].accept_by_depositing_result(job_high)
+    high_client.requests[0].deposit_result(job_high)
     diff_before, diff_after = compare_and_resolve(
         from_client=high_client, to_client=low_client
     )
@@ -149,9 +149,11 @@ def test_function_error(full_low_worker) -> None:
 
     users[-1].allow_mock_execution()
     result = ds_client.api.services.code.compute_sum(blocking=True)
-    assert isinstance(result.get(), Err)
+    assert isinstance(result, ActionObject)
+    assert isinstance(result.get(), SyftError)
 
     job_info = ds_client.api.services.code.compute_sum(blocking=False)
     result = job_info.wait(timeout=10)
-    assert isinstance(result.get(), Err)
+    assert isinstance(result, ActionObject)
+    assert isinstance(result.get(), SyftError)
     assert job_info.status == JobStatus.ERRORED
