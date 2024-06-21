@@ -580,18 +580,41 @@ class DocumentStore:
         self.node_uid = node_uid
         self.root_verify_key = root_verify_key
 
-    def __has_admin_permissions(
-        self, settings: PartitionSettings
-    ) -> Callable[[SyftVerifyKey], bool]:
+    def partition(
+        self,
+        settings: PartitionSettings,
+        has_admin_permissions: Callable[[SyftVerifyKey], bool],
+    ) -> StorePartition:
+        if settings.name not in self.partitions:
+            self.partitions[settings.name] = self.partition_type(
+                node_uid=self.node_uid,
+                root_verify_key=self.root_verify_key,
+                settings=settings,
+                store_config=self.store_config,
+                has_admin_permissions=has_admin_permissions,
+            )
+        return self.partitions[settings.name]
+
+
+@instrument
+class BaseStash:
+    object_type: type[SyftObject]
+    settings: PartitionSettings
+    partition: StorePartition
+
+    def __init__(self, store: DocumentStore) -> None:
+        self.store = store
+
         # relative
         from ..service.user.user import User
         from ..service.user.user_roles import ServiceRole
         from ..service.user.user_stash import UserStash
 
-        if settings.object_type is User:
-            return lambda x: False
-
-        user_stash = UserStash(store=self)
+        user_stash = (
+            self
+            if (type(self).settings.object_type is User)
+            else UserStash(store=store)
+        )
 
         def has_admin_permissions(credentials: SyftVerifyKey) -> bool:
             res = user_stash.get_by_verify_key(
@@ -605,29 +628,7 @@ class DocumentStore:
                 and user.role in (ServiceRole.DATA_OWNER, ServiceRole.ADMIN)
             )
 
-        return has_admin_permissions
-
-    def partition(self, settings: PartitionSettings) -> StorePartition:
-        if settings.name not in self.partitions:
-            self.partitions[settings.name] = self.partition_type(
-                node_uid=self.node_uid,
-                root_verify_key=self.root_verify_key,
-                settings=settings,
-                store_config=self.store_config,
-                has_admin_permissions=self.__has_admin_permissions(settings),
-            )
-        return self.partitions[settings.name]
-
-
-@instrument
-class BaseStash:
-    object_type: type[SyftObject]
-    settings: PartitionSettings
-    partition: StorePartition
-
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
-        self.partition = store.partition(type(self).settings)
+        self.partition = store.partition(type(self).settings, has_admin_permissions)
 
     def check_type(self, obj: Any, type_: type) -> Result[Any, str]:
         return (
