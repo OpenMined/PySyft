@@ -76,6 +76,7 @@ from ..dataset.dataset import Asset
 from ..job.job_stash import Job
 from ..output.output_service import ExecutionOutput
 from ..output.output_service import OutputService
+from ..policy.policy import Constant
 from ..policy.policy import CustomInputPolicy
 from ..policy.policy import CustomOutputPolicy
 from ..policy.policy import EmpyInputPolicy
@@ -847,11 +848,21 @@ class UserCode(SyncableSyftObject):
                 f"outputs are *shared* with the owners of {owners_string} once computed"
             )
 
+        constants_str = ""
+        args = [
+            x
+            for _dict in self.input_policy_init_kwargs.values()  # type: ignore
+            for x in _dict.values()
+        ]
+        constants = [x for x in args if isinstance(x, Constant)]
+        constants_str = "\n\t".join([f"{x.kw}: {x.val}" for x in constants])
+
         md = f"""class UserCode
     id: UID = {self.id}
     service_func_name: str = {self.service_func_name}
     shareholders: list = {self.input_owners}
     status: list = {self.code_status}
+    {constants_str}
     {shared_with_line}
     code:
 
