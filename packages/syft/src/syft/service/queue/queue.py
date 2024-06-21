@@ -184,7 +184,6 @@ def handle_message_multiprocessing(
 
     try:
         call_method = getattr(worker.get_service(queue_item.service), queue_item.method)
-
         role = worker.get_role_for_credentials(credentials=credentials)
 
         context = AuthedServiceContext(
@@ -205,7 +204,6 @@ def handle_message_multiprocessing(
         )
 
         result: Any = call_method(context, *queue_item.args, **queue_item.kwargs)
-
         status = Status.COMPLETED
         job_status = JobStatus.COMPLETED
 
@@ -227,11 +225,7 @@ def handle_message_multiprocessing(
         job_status = JobStatus.ERRORED
         # stdlib
 
-        raise e
-        # result = SyftError(
-        #     message=f"Failed with exception: {e}, {traceback.format_exc()}"
-        # )
-        # print("HAD AN ERROR WHILE HANDLING MESSAGE", result.message)
+        logger.error(f"Error while handle message multiprocessing: {e}")
 
     queue_item.result = result
     queue_item.resolved = True
