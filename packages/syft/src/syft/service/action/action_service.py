@@ -183,8 +183,6 @@ class ActionService(AbstractService):
         uid: UID,
     ) -> Result[Ok[bool], Err[str]]:
         """Get an object from the action store"""
-        # relative
-
         result = self._get(context, uid)
         if result.is_ok():
             obj = result.ok()
@@ -192,7 +190,6 @@ class ActionService(AbstractService):
                 result = self.resolve_links(
                     context, obj.syft_action_data.action_object_id.id
                 )
-
                 # Checking in case any error occurred
                 if result.is_err():
                     return result
@@ -205,7 +202,6 @@ class ActionService(AbstractService):
 
             # If it's not an action data link or non resolved (empty). It's resolved
             return Ok(True)
-
         # If it's not in the store or permission error, return the error
         return result
 

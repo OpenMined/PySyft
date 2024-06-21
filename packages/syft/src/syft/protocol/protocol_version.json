@@ -273,6 +273,13 @@
           "action": "remove"
         }
       },
+      "HTTPConnection": {
+        "3": {
+          "version": 3,
+          "hash": "54b452bb4ab76691ac1e704b62e7bcec740850fea00805145259b37973ecd0f4",
+          "action": "add"
+        }
+      },
       "UserCode": {
         "4": {
           "version": 4,
