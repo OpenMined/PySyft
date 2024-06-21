@@ -69,14 +69,19 @@ def _patch_ipython_sanitization() -> None:
     table_template = re.sub(r"\\{\\{.*?\\}\\}", ".*?", re.escape(table_template))
     escaped_template = re.compile(table_template, re.DOTALL | re.VERBOSE)
 
+    jobs_repr_template = r'<!-- Start job_repr_template -->(.*?)<!-- End job_repr_template -->'
+    jobs_pattern = re.compile(jobs_repr_template, re.DOTALL)
+
     def display_sanitized_html(obj: SyftObject | DictTuple) -> str | None:
         if callable(getattr(obj, "_repr_html_", None)):
             html_str = obj._repr_html_()
             if html_str is not None:
-                matching_template = escaped_template.findall(html_str)
-                template = "\n".join(matching_template)
+                matching_table = escaped_template.findall(html_str)
+                matching_jobs = jobs_pattern.findall(html_str)
+                template = "\n".join(matching_table + matching_jobs)
                 sanitized_str = escaped_template.sub("", html_str)
                 sanitized_str = escaped_js_css.sub("", sanitized_str)
+                sanitized_str = jobs_pattern.sub("", html_str)
                 sanitized_str = sanitize_html(sanitized_str)
                 return f"{css_reinsert} {sanitized_str} {template}"
         return None
