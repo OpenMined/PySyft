@@ -490,13 +490,6 @@ class UserCodeService(AbstractService):
                 return code_result
             code: UserCode = code_result.ok()
 
-            if not self.valid_worker_pool_for_context(context, code):
-                return Err(
-                    value="You tried to run a syft function attached to a worker pool in blocking mode,"
-                    "which is currently not supported. Run your function with `blocking=False` to run"
-                    " as a job on your worker pool"
-                )
-
             # Set Permissions
             if self.is_execution_on_owned_args(context, uid, kwargs):
                 if self.is_execution_on_owned_args_allowed(context):
@@ -592,9 +585,13 @@ class UserCodeService(AbstractService):
                     return can_execute.to_result()  # type: ignore
 
             # Execute the code item
-
+            if not self.valid_worker_pool_for_context(context, code):
+                return Err(
+                    value="You tried to run a syft function attached to a worker pool in blocking mode,"
+                    "which is currently not supported. Run your function with `blocking=False` to run"
+                    " as a job on your worker pool"
+                )
             action_service = context.node.get_service("actionservice")
-
             result_action_object: Result[ActionObject | TwinObject, str] = (
                 action_service._user_code_execute(
                     context, code, kwarg2id, result_id=result_id
