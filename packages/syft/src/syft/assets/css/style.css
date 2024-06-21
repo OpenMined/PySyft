@@ -5,6 +5,7 @@ body.vscode-dark {
   --tertiary-color: #cfcdd6;
   --button-color: #111111;
   --colors-black: #ffffff;
+  --surface-color: #fff;
 }
 
 body {
@@ -13,6 +14,7 @@ body {
   --tertiary-color: #000000de;
   --button-color: #d1d5db;
   --colors-black: #17161d;
+  --surface-color: #464158;
 }
 
 .header-1 {
@@ -564,3 +566,19 @@ body {
 .syft-widget li a:hover {
   background-color: #c2def0;
 }
+
+.syft-user_code, .syft-project, .syft-project-create, .syft-dataset, .syft-syncstate {
+  color: var(--surface-color);
+}
+
+.syft-dataset h3,
+.syft-dataset p,
+.syft-syncstate h3,
+.syft-syncstate p {
+  font-family: 'Open Sans';
+}
+
+.diff-container {
+  border: 0.5px solid #B4B0BF;
+}
+

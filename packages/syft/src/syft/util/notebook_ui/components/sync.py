@@ -3,6 +3,7 @@ import datetime
 from typing import Any
 
 # third party
+import nh3
 from pydantic import model_validator
 
 # relative

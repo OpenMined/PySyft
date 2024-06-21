@@ -134,7 +134,7 @@ def _create_table_rows(
                 except Exception as e:
                     print(e)
                     value = None
-                cols[field].append(nh3.clean(str(value)))
+                cols[field].append(nh3.clean(str(value), clean_content_tags={"script", "style"}, attributes={"*": {"style", "class"}}))
 
     col_lengths = {len(cols[col]) for col in cols.keys()}
     if len(col_lengths) != 1:

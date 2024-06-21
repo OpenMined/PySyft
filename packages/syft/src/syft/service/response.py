@@ -45,7 +45,7 @@ class SyftResponseMessage(SyftBaseModel):
             f'<div class="{self._repr_html_class_}" style="padding:5px;">'
             f"<strong>{type(self).__name__}</strong>: "
             f'<pre class="{self._repr_html_class_}" style="display:inline; font-family:inherit;">'
-            f"{nh3.clean(self.message)}</pre></div><br/>"
+            f"{nh3.clean(self.message, clean_content_tags={"script", "style"}, attributes={"*": {"style", "class"}})}</pre></div><br/>"
         )
 
 
@@ -108,7 +108,7 @@ class SyftException(Exception):
     def _repr_html_(self) -> str:
         return (
             f'<div class="{self._repr_html_class_}" style="padding:5px;">'
-            + f"<strong>{type(self).__name__}</strong>: {nh3.clean(self.args)}</div><br />"
+            + f"<strong>{type(self).__name__}</strong>: {nh3.clean(self.args, clean_content_tags={"script", "style"}, attributes={"*": {"style", "class"}})}</div><br />"
         )
 
     @staticmethod

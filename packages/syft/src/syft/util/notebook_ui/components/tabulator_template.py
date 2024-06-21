@@ -69,7 +69,7 @@ def format_dict(data: Any) -> str:
         return data
 
     if set(data.keys()) != {"type", "value"}:
-        return nh3.clean(str(data))
+        return nh3.clean(str(data), clean_content_tags={"script", "style"}, attributes={"*": {"style", "class"}})
 
     if "badge" in data["type"]:
         return Badge(value=data["value"], badge_class=data["type"]).to_html()
@@ -78,7 +78,7 @@ def format_dict(data: Any) -> str:
     if "clipboard" in data["type"]:
         return CopyButton(copy_text=data["value"]).to_html()
 
-    return nh3.clean(str(data))
+    return nh3.clean(str(data), clean_content_tags={"script", "style"}, attributes={"*": {"style", "class"}})
 
 
 def format_table_data(table_data: list[dict[str, Any]]) -> list[dict[str, str]]:
@@ -87,7 +87,7 @@ def format_table_data(table_data: list[dict[str, Any]]) -> list[dict[str, str]]:
         row_formatted: dict[str, str] = {}
         for k, v in row.items():
             if isinstance(v, str):
-                row_formatted[k] = nh3.clean(v.replace("\n", "<br>"))
+                row_formatted[k] = nh3.clean(v.replace("\n", "<br>"), clean_content_tags={"script", "style"}, attributes={"*": {"style", "class"}})
                 continue
             v_formatted = format_dict(v)
             row_formatted[k] = v_formatted

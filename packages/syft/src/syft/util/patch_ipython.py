@@ -32,6 +32,8 @@ def _patch_ipython_sanitization() -> None:
     from .notebook_ui.styles import FONT_CSS
     from .notebook_ui.styles import ITABLES_CSS
     from .notebook_ui.styles import JS_DOWNLOAD_FONTS
+    from .notebook_ui.components.sync import ALERT_CSS
+    from .notebook_ui.components.sync import COPY_CSS
 
     tabulator_js = load_js("tabulator.min.js")
     tabulator_js = tabulator_js.replace(
@@ -53,6 +55,8 @@ def _patch_ipython_sanitization() -> None:
 <style>{ITABLES_CSS}</style>
 {JS_DOWNLOAD_FONTS}
 {CSS_CODE}
+<style>{ALERT_CSS}</style>
+<style>{COPY_CSS}</style>
 """
 
     escaped_js_css = re.compile(
@@ -75,7 +79,7 @@ def _patch_ipython_sanitization() -> None:
                 template = "\n".join(matching_template)
                 sanitized_str = escaped_template.sub("", html_str)
                 sanitized_str = escaped_js_css.sub("", sanitized_str)
-                sanitized_str = nh3.clean(sanitized_str)
+                sanitized_str = nh3.clean(sanitized_str, clean_content_tags={"script", "style"}, attributes={"*": {"style", "class"}})
                 return f"{css_reinsert} {sanitized_str} {template}"
         return None
 
@@ -83,7 +87,7 @@ def _patch_ipython_sanitization() -> None:
         if callable(getattr(obj, "_repr_markdown_", None)):
             md = obj._repr_markdown_()
             if md is not None:
-                return nh3.clean(md)
+                return nh3.clean(md, clean_content_tags={"script", "style"}, attributes={"*": {"style", "class"}})
         return None
 
     ip.display_formatter.formatters["text/html"].for_type(
