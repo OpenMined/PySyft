@@ -595,15 +595,15 @@ body {
 
 .syft-container {
   padding: 5px;
-  font-family: 'Open Sans';
+  font-family: "Open Sans";
 }
 
 .syft-alert-info {
-  color: #1F567A;
-  background-color: #C2DEF0;
+  color: #1f567a;
+  background-color: #c2def0;
   border-radius: 4px;
   padding: 5px;
-  padding: 13px 10px
+  padding: 13px 10px;
 }
 
 .syft-code-block {
@@ -615,4 +615,3 @@ body {
 .syft-space {
   margin-top: 1em;
 }
-

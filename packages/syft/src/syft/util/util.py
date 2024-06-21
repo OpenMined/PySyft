@@ -950,8 +950,8 @@ def sanitize_html(html: str) -> str:
     for tag in policy["tags"]:
         tags.add(tag)
 
-    attributes = deepcopy(nh3.ALLOWED_ATTRIBUTES)
-    attributes = {**attributes, **policy["attributes"]}
+    _attributes = deepcopy(nh3.ALLOWED_ATTRIBUTES)
+    attributes = {**_attributes, **policy["attributes"]}  # type: ignore
 
     return nh3.clean(
         html,
