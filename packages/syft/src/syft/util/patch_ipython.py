@@ -68,18 +68,21 @@ def _patch_ipython_sanitization() -> None:
     escaped_template = re.compile(table_template, re.DOTALL | re.VERBOSE)
 
     def display_sanitized_html(obj: SyftObject | DictTuple) -> str | None:
-        if hasattr(obj, "_repr_html_") and callable(obj._repr_html_):  # type: ignore
-            _str = obj._repr_html_()  # type: ignore
-            matching_template = escaped_template.findall(_str)
-            _str = escaped_template.sub("", _str)
-            _str = escaped_js_css.sub("", _str)
-            _str = nh3.clean(_str)
-            return f"{css_reinsert} {_str} {"\n".join(matching_template)}"
+        if callable(getattr(obj, "_repr_html_", None)):
+            html_str = obj._repr_html_()
+            if html_str is not None:
+                matching_template = escaped_template.findall(html_str)
+                sanitized_str = escaped_template.sub("", html_str)
+                sanitized_str = escaped_js_css.sub("", sanitized_str)
+                sanitized_str = nh3.clean(sanitized_str)
+                return f"{css_reinsert} {sanitized_str} {'\n'.join(matching_template)}"
         return None
 
     def display_sanitized_md(obj: SyftObject) -> str | None:
-        if hasattr(obj, "_repr_markdown_") and callable(obj._repr_markdown_):
-            return nh3.clean(obj._repr_markdown_())
+        if callable(getattr(obj, "_repr_markdown_", None)):
+            md = obj._repr_markdown_()
+            if md is not None:
+                return nh3.clean(md)
         return None
 
     ip.display_formatter.formatters["text/html"].for_type(
