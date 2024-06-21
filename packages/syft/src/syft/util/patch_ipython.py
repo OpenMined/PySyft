@@ -69,7 +69,9 @@ def _patch_ipython_sanitization() -> None:
     table_template = re.sub(r"\\{\\{.*?\\}\\}", ".*?", re.escape(table_template))
     escaped_template = re.compile(table_template, re.DOTALL | re.VERBOSE)
 
-    jobs_repr_template = r'<!-- Start job_repr_template -->(.*?)<!-- End job_repr_template -->'
+    jobs_repr_template = (
+        r"<!-- Start job_repr_template -->(.*?)<!-- End job_repr_template -->"
+    )
     jobs_pattern = re.compile(jobs_repr_template, re.DOTALL)
 
     def display_sanitized_html(obj: SyftObject | DictTuple) -> str | None:
