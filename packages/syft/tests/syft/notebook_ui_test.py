@@ -1,6 +1,5 @@
 # third party
 import numpy as np
-import pytest
 
 # syft absolute
 from syft.service.action.action_object import ActionObject

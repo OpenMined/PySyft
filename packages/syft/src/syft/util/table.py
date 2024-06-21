@@ -14,6 +14,7 @@ from .util import full_name_with_qualname
 
 TABLE_INDEX_KEY = "_table_repr_index"
 
+
 def _syft_in_mro(self: Any, item: Any) -> bool:
     if hasattr(type(item), "mro") and type(item) != type:
         mro = type(item).mro()

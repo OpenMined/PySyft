@@ -56,7 +56,7 @@ class CodeHistoryView(SyftObject):
     def _coll_repr_(self) -> dict[str, int]:
         return {"Number of versions": len(self.user_code_history)}
 
-    def _repr_html_(self) -> str:
+    def _repr_html_(self) -> str | None:
         rows, metadata = prepare_table_data(self.user_code_history)
 
         for i, r in enumerate(rows):
@@ -141,7 +141,7 @@ class UsersCodeHistoriesDict(SyftObject):
             )
         return api.services.code_history.get_history_for_user(key)
 
-    def _repr_html_(self) -> str:
+    def _repr_html_(self) -> str | None:
         rows = [
             {"User": user, "UserCodes": ", ".join(funcs)}
             for user, funcs in self.user_dict.items()
