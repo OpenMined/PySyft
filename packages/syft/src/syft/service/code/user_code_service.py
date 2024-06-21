@@ -425,9 +425,29 @@ class UserCodeService(AbstractService):
         return mock_kwargs
 
     def is_execution_on_owned_args(
-        self, kwargs: dict[str, Any], context: AuthedServiceContext
+        self,
+        context: AuthedServiceContext,
+        user_code_id: UID,
+        passed_kwargs: dict[str, Any],
     ) -> bool:
-        return len(self.keep_owned_kwargs(kwargs, context)) == len(kwargs)
+        # Check if all kwargs are owned by the user
+        all_kwargs_are_owned = len(
+            self.keep_owned_kwargs(passed_kwargs, context)
+        ) == len(passed_kwargs)
+        if not all_kwargs_are_owned:
+            return False
+
+        # Check if the kwargs match the code signature
+        code = self.stash.get_by_uid(context.credentials, user_code_id)
+        if code.is_err():
+            return False
+        code = code.ok()
+
+        # Skip the domain and context kwargs, they are passed by the backend
+        code_kwargs = set(code.signature.parameters.keys()) - {"domain", "context"}
+
+        passed_kwarg_keys = set(passed_kwargs.keys())
+        return passed_kwarg_keys == code_kwargs
 
     @service_method(path="code.call", name="call", roles=GUEST_ROLE_LEVEL)
     def call(
@@ -478,7 +498,7 @@ class UserCodeService(AbstractService):
                 )
 
             # Set Permissions
-            if self.is_execution_on_owned_args(kwargs, context):
+            if self.is_execution_on_owned_args(context, uid, kwargs):
                 if self.is_execution_on_owned_args_allowed(context):
                     # handles the case: if we have 1 or more owned args and execution permission
                     # handles the case: if we have 0 owned args and execution permission
