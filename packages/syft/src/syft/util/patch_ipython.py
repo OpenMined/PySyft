@@ -72,10 +72,11 @@ def _patch_ipython_sanitization() -> None:
             html_str = obj._repr_html_()
             if html_str is not None:
                 matching_template = escaped_template.findall(html_str)
+                matching_template = '\n'.join(matching_template)
                 sanitized_str = escaped_template.sub("", html_str)
                 sanitized_str = escaped_js_css.sub("", sanitized_str)
                 sanitized_str = nh3.clean(sanitized_str)
-                return f"{css_reinsert} {sanitized_str} {'\n'.join(matching_template)}"
+                return f"{css_reinsert} {sanitized_str} {matching_template}"
         return None
 
     def display_sanitized_md(obj: SyftObject) -> str | None:
