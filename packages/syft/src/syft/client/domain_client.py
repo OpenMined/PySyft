@@ -192,7 +192,7 @@ class DomainClient(SyftClient):
             action_object.reload_cache()
             # NOTE permissions are added separately server side
             action_object._send(self.id, self.verify_key, add_storage_permission=False)
-            action_object = action_object.as_empty()
+            action_object._clear_cache()
 
         ignored_batches = resolved_state.ignored_batches
 
