@@ -10,12 +10,20 @@ import pytest
 # syft absolute
 import syft as sy
 from syft.client.domain_client import DomainClient
+from syft.node.worker import Worker
 from syft.service.action.action_object import ActionObject
 from syft.service.request.request import Request
 from syft.service.request.request import UserCodeStatusChange
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.user.user import User
+from syft.service.user.user import UserUpdate
+from syft.service.user.user_roles import ServiceRole
+
+# relative
+from .user_test import ds_client as ds_client_fixture
+
+ds_client = ds_client_fixture  # workaround some ruff quirks
 
 
 @sy.syft_function(
@@ -37,6 +45,32 @@ def test_repr_markdown_not_throwing_error(guest_client: DomainClient) -> None:
     result = guest_client.code.get_by_service_func_name("mock_syft_func")
     assert len(result) == 1
     assert result[0]._repr_markdown_()
+
+
+def test_new_admin_can_list_user_code(
+    worker: Worker,
+    ds_client: DomainClient,
+    faker: Faker,
+) -> None:
+    root_client = worker.root_client
+
+    project = sy.Project(name="", members=[ds_client])
+    project.create_code_request(mock_syft_func, ds_client)
+
+    email = faker.email()
+    pw = uuid.uuid4().hex
+    root_client.register(
+        name=faker.name(), email=email, password=pw, password_verify=pw
+    )
+
+    admin = root_client.login(email=email, password=pw)
+
+    root_client.api.services.user.update(
+        admin.me.id, UserUpdate(role=ServiceRole.ADMIN)
+    )
+
+    assert len(root_client.code.get_all()) == len(admin.code.get_all())
+    assert {c.id for c in root_client.code} == {c.id for c in admin.code}
 
 
 def test_user_code(worker) -> None:
