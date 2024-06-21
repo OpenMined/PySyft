@@ -33,8 +33,8 @@ def helper_make_action_obj(orig_obj: Any):
 
 def helper_make_action_pointers(worker, obj, *args, **kwargs):
     root_domain_client = worker.root_client
-    root_domain_client.api.services.action.set(obj)
-    obj_pointer = root_domain_client.api.services.action.get_pointer(obj.id)
+    res = obj.send(root_domain_client)
+    obj_pointer = root_domain_client.api.services.action.get_pointer(res.id)
 
     # The args and kwargs should automatically be pointerized by obj_pointer
     return obj_pointer, args, kwargs

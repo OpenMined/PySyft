@@ -3,7 +3,6 @@ import sys
 
 # third party
 import pytest
-from result import Err
 
 # syft absolute
 import syft
@@ -11,6 +10,7 @@ import syft as sy
 from syft.client.domain_client import DomainClient
 from syft.client.syncing import compare_clients
 from syft.client.syncing import resolve
+from syft.service.action.action_object import ActionObject
 from syft.service.job.job_stash import JobStatus
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
@@ -121,6 +121,37 @@ def test_twin_api_integration(full_high_worker, full_low_worker):
         private_res, SyftError
     ), "Should not be able to access private function on low side."
 
+    # verify updating twin api endpoint works
+
+    timeout_before = (
+        full_low_worker.python_node.get_service("apiservice")
+        .stash.get_all(
+            credentials=full_low_worker.client.credentials, has_permission=True
+        )
+        .ok()[0]
+        .endpoint_timeout
+    )
+    expected_timeout_after = timeout_before + 1
+
+    high_client.custom_api.update(
+        endpoint_path="testapi.query", endpoint_timeout=expected_timeout_after
+    )
+    widget = sy.sync(from_client=high_client, to_client=low_client)
+    result = widget[0].click_sync()
+    assert result, result
+
+    timeout_after = (
+        full_low_worker.python_node.get_service("apiservice")
+        .stash.get_all(
+            credentials=full_low_worker.client.credentials, has_permission=True
+        )
+        .ok()[0]
+        .endpoint_timeout
+    )
+    assert (
+        timeout_after == expected_timeout_after
+    ), "Timeout should be updated on low side."
+
 
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
 @pytest.mark.local_node
@@ -149,9 +180,11 @@ def test_function_error(full_low_worker) -> None:
 
     users[-1].allow_mock_execution()
     result = ds_client.api.services.code.compute_sum(blocking=True)
-    assert isinstance(result.get(), Err)
+    assert isinstance(result, ActionObject)
+    assert isinstance(result.get(), SyftError)
 
     job_info = ds_client.api.services.code.compute_sum(blocking=False)
     result = job_info.wait(timeout=10)
-    assert isinstance(result.get(), Err)
+    assert isinstance(result, ActionObject)
+    assert isinstance(result.get(), SyftError)
     assert job_info.status == JobStatus.ERRORED
