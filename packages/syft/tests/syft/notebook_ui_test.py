@@ -1,5 +1,6 @@
 # third party
 import numpy as np
+import pytest
 
 # syft absolute
 from syft.service.action.action_object import ActionObject
@@ -36,6 +37,16 @@ def table_test_cases() -> list[tuple[list, str | None]]:
         non_syft_obj_1,
         non_syft_obj_2,
     ]
+
+
+@pytest.mark.parametrize("test_case", table_test_cases())
+def test_list_dict_repr_html(test_case):
+    obj, expected = test_case
+
+    assert (obj._repr_html_() is not None) == expected
+    assert (dict(enumerate(obj))._repr_html_() is not None) == expected
+    assert (set(obj)._repr_html_() is not None) == expected
+    assert (tuple(obj)._repr_html_() is not None) == expected
 
 
 def test_sort_table_rows():
