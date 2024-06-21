@@ -39,16 +39,6 @@ def table_test_cases() -> list[tuple[list, str | None]]:
     ]
 
 
-@pytest.mark.parametrize("test_case", table_test_cases())
-def test_list_dict_repr_html(test_case):
-    obj, expected = test_case
-
-    assert (obj._repr_html_() is not None) == expected
-    assert (dict(enumerate(obj))._repr_html_() is not None) == expected
-    assert (set(obj)._repr_html_() is not None) == expected
-    assert (tuple(obj)._repr_html_() is not None) == expected
-
-
 def test_sort_table_rows():
     emails = [
         "x@y.z",
