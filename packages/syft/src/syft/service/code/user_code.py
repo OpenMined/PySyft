@@ -1141,7 +1141,7 @@ def syft_function_single_use(
     )
 
 
-def replace_func_name(src, new_func_name):
+def replace_func_name(src: str, new_func_name: str) -> str:
     pattern = r"\bdef\s+(\w+)\s*\("
     replacement = f"def {new_func_name}("
     new_src = re.sub(pattern, replacement, src, count=1)
