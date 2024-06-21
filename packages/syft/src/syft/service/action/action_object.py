@@ -319,6 +319,8 @@ passthrough_attrs = [
     "_data_repr",
     "syft_eq",  # syft
     "__table_coll_widths__",
+    "_clear_cache",
+    "_set_reprs",
 ]
 dont_wrap_output_attrs = [
     "__repr__",
@@ -342,6 +344,8 @@ dont_wrap_output_attrs = [
     "get_sync_dependencies",  # syft
     "syft_eq",  # syft
     "__table_coll_widths__",
+    "_clear_cache",
+    "_set_reprs",
 ]
 dont_make_side_effects = [
     "__repr_attrs__",
@@ -363,6 +367,8 @@ dont_make_side_effects = [
     "get_sync_dependencies",
     "syft_eq",  # syft
     "__table_coll_widths__",
+    "_clear_cache",
+    "_set_reprs",
 ]
 action_data_empty_must_run = [
     "__repr__",
@@ -660,7 +666,17 @@ BASE_PASSTHROUGH_ATTRS: list[str] = [
     "_data_repr",
     "syft_eq",
     "__table_coll_widths__",
+    "_clear_cache",
+    "_set_reprs",
 ]
+
+
+def truncate_str(string: str, length: int = 100) -> str:
+    stringlen = len(string)
+    if stringlen > length:
+        n_hidden = stringlen - length
+        string = f"{string[:length]}... ({n_hidden} characters hidden)"
+    return string
 
 
 @serializable(without=["syft_pre_hooks__", "syft_post_hooks__"])
@@ -736,13 +752,10 @@ class ActionObject(SyncableSyftObject):
 
     @property
     def syft_action_data(self) -> Any:
-        if (
-            self.syft_blob_storage_entry_id
-            and self.syft_created_at
-            and not TraceResultRegistry.current_thread_is_tracing()
-        ):
-            self.reload_cache()
-
+        if self.syft_blob_storage_entry_id and self.syft_created_at:
+            res = self.reload_cache()
+            if isinstance(res, SyftError):
+                print(res)
         return self.syft_action_data_cache
 
     def reload_cache(self) -> SyftError | None:
@@ -782,8 +795,7 @@ class ActionObject(SyncableSyftObject):
                     self.syft_action_data_type = type(self.syft_action_data)
                     return None
             else:
-                print("cannot reload cache")
-                return None
+                return SyftError("Could not reload cache, could not get read method")
 
         return None
 
@@ -830,16 +842,7 @@ class ActionObject(SyncableSyftObject):
                     print("cannot save to blob storage")
 
             self.syft_action_data_type = type(data)
-
-            if inspect.isclass(data):
-                self.syft_action_data_repr_ = repr_cls(data)
-            else:
-                self.syft_action_data_repr_ = (
-                    data._repr_markdown_()
-                    if hasattr(data, "_repr_markdown_")
-                    else data.__repr__()
-                )
-            self.syft_action_data_str_ = str(data)
+            self._set_reprs(data)
             self.syft_has_bool_attr = hasattr(data, "__bool__")
         else:
             debug("skipping writing action object to store, passed data was empty.")
@@ -848,18 +851,32 @@ class ActionObject(SyncableSyftObject):
 
         return None
 
-    def _save_to_blob_storage(self) -> SyftError | None:
+    def _set_reprs(self, data: any) -> None:
+        if inspect.isclass(data):
+            self.syft_action_data_repr_ = truncate_str(repr_cls(data))
+        else:
+            self.syft_action_data_repr_ = truncate_str(
+                data._repr_markdown_()
+                if hasattr(data, "_repr_markdown_")
+                else data.__repr__()
+            )
+        self.syft_action_data_str_ = truncate_str(str(data))
+
+    def _save_to_blob_storage(self, allow_empty: bool = False) -> SyftError | None:
         data = self.syft_action_data
         if isinstance(data, SyftError):
             return data
-        if isinstance(data, ActionDataEmpty):
+        if isinstance(data, ActionDataEmpty) and not allow_empty:
             return SyftError(message=f"cannot store empty object {self.id}")
         result = self._save_to_blob_storage_(data)
         if isinstance(result, SyftError):
             return result
         if not TraceResultRegistry.current_thread_is_tracing():
-            self.syft_action_data_cache = self.as_empty_data()
+            self._clear_cache()
         return None
+
+    def _clear_cache(self) -> None:
+        self.syft_action_data_cache = self.as_empty_data()
 
     @property
     def is_pointer(self) -> bool:
@@ -880,14 +897,14 @@ class ActionObject(SyncableSyftObject):
             values["syft_action_data_type"] = type(v)
         if not isinstance(v, ActionDataEmpty):
             if inspect.isclass(v):
-                values["syft_action_data_repr_"] = repr_cls(v)
+                values["syft_action_data_repr_"] = truncate_str(repr_cls(v))
             else:
-                values["syft_action_data_repr_"] = (
+                values["syft_action_data_repr_"] = truncate_str(
                     v._repr_markdown_()
                     if v is not None and hasattr(v, "_repr_markdown_")
                     else v.__repr__()
                 )
-            values["syft_action_data_str_"] = str(v)
+            values["syft_action_data_str_"] = truncate_str(str(v))
             values["syft_has_bool_attr"] = hasattr(v, "__bool__")
         return values
 
@@ -1223,7 +1240,7 @@ class ActionObject(SyncableSyftObject):
         else:
             return res.syft_action_data
 
-    def refresh_object(self, resolve_nested: bool = True) -> ActionObject:
+    def refresh_object(self, resolve_nested: bool = True) -> ActionObject | SyftError:
         # relative
         from ...client.api import APIRegistry
 
@@ -1258,9 +1275,10 @@ class ActionObject(SyncableSyftObject):
             self.wait()
 
         res = self.refresh_object()
-
         if not isinstance(res, ActionObject):
             return SyftError(message=f"{res}")  # type: ignore
+        elif issubclass(res.syft_action_data_type, Err):
+            return SyftError(message=f"{res.syft_action_data.err()}")
         else:
             if not self.has_storage_permission():
                 prompt_warning_message(
@@ -1398,7 +1416,7 @@ class ActionObject(SyncableSyftObject):
     def as_empty_data(self) -> ActionDataEmpty:
         return ActionDataEmpty(syft_internal_type=self.syft_internal_type)
 
-    def wait(self, timeout: int | None = None) -> ActionObject:
+    def wait(self, timeout: int | None = None) -> ActionObject | SyftError:
         # relative
         from ...client.api import APIRegistry
 
@@ -1412,12 +1430,18 @@ class ActionObject(SyncableSyftObject):
             obj_id = self.id
 
         counter = 0
-        while api and not api.services.action.is_resolved(obj_id):
-            time.sleep(1)
-            if timeout is not None:
-                counter += 1
-                if counter > timeout:
-                    return SyftError(message="Reached Timeout!")
+        while api:
+            obj_resolved: bool | str = api.services.action.is_resolved(obj_id)
+            if isinstance(obj_resolved, str):
+                return SyftError(message=obj_resolved)
+            if obj_resolved:
+                break
+            if not obj_resolved:
+                time.sleep(1)
+                if timeout is not None:
+                    counter += 1
+                    if counter > timeout:
+                        return SyftError(message="Reached Timeout!")
 
         return self
 
