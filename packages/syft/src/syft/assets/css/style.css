@@ -567,7 +567,11 @@ body {
   background-color: #c2def0;
 }
 
-.syft-user_code, .syft-project, .syft-project-create, .syft-dataset, .syft-syncstate {
+.syft-user_code,
+.syft-project,
+.syft-project-create,
+.syft-dataset,
+.syft-syncstate {
   color: var(--surface-color);
 }
 
@@ -575,10 +579,9 @@ body {
 .syft-dataset p,
 .syft-syncstate h3,
 .syft-syncstate p {
-  font-family: 'Open Sans';
+  font-family: "Open Sans";
 }
 
 .diff-container {
-  border: 0.5px solid #B4B0BF;
+  border: 0.5px solid #b4b0bf;
 }
-
