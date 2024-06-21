@@ -570,13 +570,20 @@ body {
 .syft-user_code,
 .syft-project,
 .syft-project-create,
+.syft-settings,
 .syft-dataset,
-.syft-syncstate {
+.syft-asset,
+.syft-contributor,
+.syft-request,
+.syft-syncstate,
+.job-info {
   color: var(--surface-color);
 }
 
 .syft-dataset h3,
 .syft-dataset p,
+.syft-asset h3,
+.syft-asset p,
 .syft-syncstate h3,
 .syft-syncstate p {
   font-family: "Open Sans";
@@ -585,3 +592,27 @@ body {
 .diff-container {
   border: 0.5px solid #b4b0bf;
 }
+
+.syft-container {
+  padding: 5px;
+  font-family: 'Open Sans';
+}
+
+.syft-alert-info {
+  color: #1F567A;
+  background-color: #C2DEF0;
+  border-radius: 4px;
+  padding: 5px;
+  padding: 13px 10px
+}
+
+.syft-code-block {
+  background-color: #f7f7f7;
+  border: 1px solid #cfcfcf;
+  padding: 0px 2px;
+}
+
+.syft-space {
+  margin-top: 1em;
+}
+
