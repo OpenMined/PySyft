@@ -10,8 +10,10 @@ from pydantic import model_validator
 from result import Err
 from result import Ok
 from result import Result
-from syft.types.syft_migration import migrate
 from typing_extensions import Self
+
+# syft absolute
+from syft.types.syft_migration import migrate
 
 # relative
 from ...abstract_node import NodeSideType
@@ -29,9 +31,11 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
-from ...types.transforms import TransformContext, drop, make_set_default
+from ...types.transforms import TransformContext
 from ...types.transforms import add_node_uid_for_key
+from ...types.transforms import drop
 from ...types.transforms import generate_id
+from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.twin_object import TwinObject
 from ...types.uid import LineageID

@@ -13,16 +13,20 @@ from inspect import Signature
 from io import StringIO
 import sys
 import types
-from typing import Any, Type
+from typing import Any
 from typing import ClassVar
+from typing import Type
 
 # third party
 from RestrictedPython import compile_restricted
-from pydantic import field_validator, model_validator
+from pydantic import field_validator
+from pydantic import model_validator
 import requests
 from result import Err
 from result import Ok
 from result import Result
+
+# syft absolute
 from syft.service.action.action_endpoint import CustomEndpointActionObject
 
 # relative

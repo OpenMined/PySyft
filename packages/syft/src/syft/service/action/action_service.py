@@ -7,6 +7,8 @@ import numpy as np
 from result import Err
 from result import Ok
 from result import Result
+
+# syft absolute
 from syft.service.action.action_endpoint import CustomEndpointActionObject
 from syft.service.api.api import TwinAPIEndpoint
 
@@ -1049,6 +1051,7 @@ def filter_twin_kwargs(
             elif isinstance(v, str | int | float | dict | CustomEndpointActionObject) and allow_python_types:
                 filtered[k] = v
             else:
+                # third party
                 import ipdb
                 ipdb.set_trace()
                 raise ValueError(

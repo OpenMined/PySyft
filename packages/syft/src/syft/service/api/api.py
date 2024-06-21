@@ -17,10 +17,13 @@ from pydantic import model_validator
 from result import Err
 from result import Ok
 from result import Result
+
+# syft absolute
 from syft.service.user.user_service import UserService
 
 # relative
-from ...abstract_node import AbstractNode, NodeSideType
+from ...abstract_node import AbstractNode
+from ...abstract_node import NodeSideType
 from ...client.client import SyftClient
 from ...serde.serializable import serializable
 from ...serde.signature import signature_remove_context
