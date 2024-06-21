@@ -95,6 +95,71 @@ def format_table_data(table_data: list[dict[str, Any]]) -> list[dict[str, str]]:
     return formatted
 
 
+def _render_tabulator_table(
+    uid: str,
+    table_data: list[dict],
+    table_metadata: dict,
+    max_height: int | None,
+    pagination: bool,
+    header_sort: bool,
+) -> str:
+    table_template = env.get_template("table.jinja2")
+    tabulator_js = load_js("tabulator.min.js")
+    tabulator_css = load_css("tabulator_pysyft.min.css")
+    js = load_js("table.js")
+    css = load_css("style.css")
+
+    # Add tabulator as a named module for VSCode compatibility
+    tabulator_js = tabulator_js.replace(
+        "define(t)", "define('tabulator-tables', [], t)"
+    )
+
+    icon = table_metadata.get("icon", None)
+    if icon is None:
+        icon = Icon.TABLE.svg
+
+    column_data, row_header = create_tabulator_columns(
+        table_metadata["columns"], header_sort=header_sort
+    )
+    table_data = format_table_data(table_data)
+    table_html = table_template.render(
+        uid=uid,
+        columns=json.dumps(column_data),
+        row_header=json.dumps(row_header),
+        data=json.dumps(table_data),
+        css=css,
+        js=js,
+        index_field_name=TABLE_INDEX_KEY,
+        icon=icon,
+        name=table_metadata["name"],
+        tabulator_js=tabulator_js,
+        tabulator_css=tabulator_css,
+        max_height=json.dumps(max_height),
+        pagination=json.dumps(pagination),
+        header_sort=json.dumps(header_sort),
+    )
+
+    return table_html
+
+
+def build_tabulator_table_with_data(
+    table_data: list[dict],
+    table_metadata: dict,
+    uid: str | None = None,
+    max_height: int | None = None,
+    pagination: bool = True,
+    header_sort: bool = True,
+) -> str | None:
+    try:
+        uid = uid if uid is not None else secrets.token_hex(4)
+        return _render_tabulator_table(
+            uid, table_data, table_metadata, max_height, pagination, header_sort
+        )
+    except Exception as e:
+        logger.debug("error building table", e)
+        return None
+
+
 def build_tabulator_table(
     obj: Any,
     uid: str | None = None,
@@ -106,49 +171,13 @@ def build_tabulator_table(
         table_data, table_metadata = prepare_table_data(obj)
         if len(table_data) == 0:
             return obj.__repr__()
-
-        table_template = env.get_template("table.jinja2")
-        tabulator_js = load_js("tabulator.min.js")
-        tabulator_css = load_css("tabulator_pysyft.min.css")
-        js = load_js("table.js")
-        css = load_css("style.css")
-
-        # Add tabulator as a named module for VSCode compatibility
-        tabulator_js = tabulator_js.replace(
-            "define(t)", "define('tabulator-tables', [], t)"
-        )
-
-        icon = table_metadata.get("icon", None)
-        if icon is None:
-            icon = Icon.TABLE.svg
-
         uid = uid if uid is not None else secrets.token_hex(4)
-        column_data, row_header = create_tabulator_columns(
-            table_metadata["columns"], header_sort=header_sort
+        return _render_tabulator_table(
+            uid, table_data, table_metadata, max_height, pagination, header_sort
         )
-        table_data = format_table_data(table_data)
-        table_html = table_template.render(
-            uid=uid,
-            columns=json.dumps(column_data),
-            row_header=json.dumps(row_header),
-            data=json.dumps(table_data),
-            css=css,
-            js=js,
-            index_field_name=TABLE_INDEX_KEY,
-            icon=icon,
-            name=table_metadata["name"],
-            tabulator_js=tabulator_js,
-            tabulator_css=tabulator_css,
-            max_height=json.dumps(max_height),
-            pagination=json.dumps(pagination),
-            header_sort=json.dumps(header_sort),
-        )
-
-        return table_html
     except Exception as e:
         logger.debug("error building table", e)
-
-    return None
+        return None
 
 
 def show_table(obj: Any) -> None:
