@@ -520,10 +520,12 @@ class UserCodeService(AbstractService):
                 if not can_execute:
                     # We check output policy only in l2 deployment.
                     # code is from low side (L0 setup)
-                    if not code.is_output_policy_approved(context):
-                        return Err(
-                            "Execution denied: Your code is waiting for approval"
-                        )
+                    status = code.get_status(context)
+                    if not status.approved:
+                        # return Err(
+                        #     "Execution denied: Your code is waiting for approval"
+                        # )
+                        return Err(status.get_status_message().message)
                     is_valid = (
                         output_policy._is_valid(context) if output_policy else False
                     )

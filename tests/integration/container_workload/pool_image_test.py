@@ -274,7 +274,7 @@ def test_pool_image_creation_job_requests(
     # Dataset
     data = np.array([1, 2, 3])
     data_action_obj = sy.ActionObject.from_obj(data)
-    data_pointer = ds_client.api.services.action.set(data_action_obj)
+    data_pointer = data_action_obj.send(ds_client)
 
     # Function
     @sy.syft_function(
