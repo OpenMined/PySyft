@@ -29,8 +29,9 @@ jobs:
 
       - name: Install pip packages
         run: |
-          pip install --upgrade pip uv==0.2.13
-          # uv --version
+          pip install --upgrade pip
+          pip install uv==0.2.13
+          uv --version
 
       - name: Get pip cache dir
         id: pip-cache
