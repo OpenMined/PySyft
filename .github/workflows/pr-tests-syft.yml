@@ -65,7 +65,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pip install --upgrade pip 
+          pip install --upgrade pip
           pip install uv==0.2.13
           uv --version
 
@@ -346,7 +346,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pip install --upgrade pip 
+          pip install --upgrade pip
           pip install uv==0.2.13
           uv --version
 
