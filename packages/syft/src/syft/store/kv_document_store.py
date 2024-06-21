@@ -101,20 +101,6 @@ class KeyValueStorePartition(StorePartition):
         if store_status.is_err():
             return store_status
 
-        store = self.store_config.store_type(
-            node_uid=self.node_uid,
-            root_verify_key=self.root_verify_key,
-            store_config=self.store_config,
-        )
-
-        # relative
-        from ..service.user.user import User
-        from ..service.user.user_stash import UserStash
-
-        self.__user_stash = (
-            UserStash(store=store) if self.settings.object_type is not User else None
-        )
-
         try:
             self.data = self.store_config.backing_store(
                 "data", self.settings, self.store_config
@@ -291,20 +277,10 @@ class KeyValueStorePartition(StorePartition):
         ):
             return True
 
-        if permission.credentials and self.__user_stash is not None:
-            # relative
-            from ..service.user.user_roles import ServiceRole
-
-            res = self.__user_stash.get_by_verify_key(
-                credentials=permission.credentials,
-                verify_key=permission.credentials,
-            )
-            if (
-                res.is_ok()
-                and (user := res.ok()) is not None
-                and user.role in (ServiceRole.DATA_OWNER, ServiceRole.ADMIN)
-            ):
-                return True
+        if permission.credentials and self.has_admin_permissions(
+            permission.credentials
+        ):
+            return True
 
         if (
             permission.uid in self.permissions
