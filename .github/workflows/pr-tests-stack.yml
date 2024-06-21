@@ -52,7 +52,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade pip uv==0.1.35
+          pip install --upgrade pip==24.0 uv==0.2.13
           uv --version
 
       - name: Get pip cache dir
@@ -74,7 +74,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade tox tox-uv==1.5.1
+          pip install --upgrade tox tox-uv==1.9.0
 
       - name: Run syft backend base image building test
         if: steps.changes.outputs.stack == 'true'
@@ -113,7 +113,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade pip uv==0.1.35
+          pip install --upgrade pip==24.0 uv==0.2.13
           uv --version
 
       - name: Get pip cache dir
@@ -135,7 +135,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade tox tox-uv==1.5.1
+          pip install --upgrade tox tox-uv==1.9.0
 
       - name: Run Syft Integration Tests
         if: steps.changes.outputs.stack == 'true'
@@ -200,7 +200,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade pip uv==0.1.35
+          pip install --upgrade pip==24.0 uv==0.2.13
           uv --version
 
       - name: Get pip cache dir
@@ -222,7 +222,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade tox tox-uv==1.5.1
+          pip install --upgrade tox tox-uv==1.9.0
 
       - name: Install kubectl
         if: steps.changes.outputs.stack == 'true'
@@ -353,7 +353,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade pip uv==0.1.35
+          pip install --upgrade pip==24.0 uv==0.2.13
           uv --version
 
       - name: Get pip cache dir
@@ -375,7 +375,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade tox tox-uv==1.5.1
+          pip install --upgrade tox tox-uv==1.9.0
 
       - name: Install kubectl
         if: steps.changes.outputs.stack == 'true'

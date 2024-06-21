@@ -183,20 +183,8 @@ try:
     import torch
     from torch._C import _TensorMeta
 
-    def serialize_torch_tensor_meta(t: _TensorMeta) -> bytes:
-        buffer = BytesIO()
-        torch.save(t, buffer)
-        return buffer.getvalue()
-
-    def deserialize_torch_tensor_meta(buf: bytes) -> _TensorMeta:
-        buffer = BytesIO(buf)
-        return torch.load(buffer)
-
-    recursive_serde_register(
-        _TensorMeta,
-        serialize=serialize_torch_tensor_meta,
-        deserialize=deserialize_torch_tensor_meta,
-    )
+    recursive_serde_register_type(_TensorMeta)
+    recursive_serde_register_type(torch.Tensor)
 
     def torch_serialize(tensor: torch.Tensor) -> bytes:
         return numpy_serialize(tensor.numpy())
