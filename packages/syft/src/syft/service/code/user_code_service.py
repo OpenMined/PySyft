@@ -264,9 +264,7 @@ class UserCodeService(AbstractService):
 
     @service_method(path="code.get_all", name="get_all", roles=GUEST_ROLE_LEVEL)
     def get_all(self, context: AuthedServiceContext) -> list[UserCode] | SyftError:
-        """Get a Dataset"""
-        has_permission = context.role in (ServiceRole.DATA_OWNER, ServiceRole.ADMIN)
-        result = self.stash.get_all(context.credentials, has_permission=has_permission)
+        result = self.stash.get_all(context.credentials)
         if result.is_ok():
             return result.ok()
         return SyftError(message=result.err())
