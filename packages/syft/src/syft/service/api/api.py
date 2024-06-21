@@ -551,7 +551,8 @@ class TwinAPIEndpoint(SyncableSyftObject):
             return result
         except Exception as e:
             # If it's admin, return the error message.
-            if context.role.value == 128:
+            # TODO: cleanup typeerrors
+            if context.role.value == 128 or isinstance(e, TypeError):
                 return SyftError(
                     message=f"An error was raised during the execution of the API endpoint call: \n {str(e)}"
                 )
