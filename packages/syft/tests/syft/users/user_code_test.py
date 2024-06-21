@@ -113,8 +113,11 @@ def test_duplicated_user_code(worker) -> None:
 
     code_histories = worker.root_client.code_histories
     user_code_history = code_histories[ds_client.logged_in_user]
+    assert not isinstance(code_histories, SyftError)
     assert not isinstance(user_code_history, SyftError)
     assert user_code_history.code_versions, "No code version found."
+    assert user_code_history.mock_syft_func.user_code_history[0].status is not None
+    assert user_code_history.mock_syft_func[0]._repr_markdown_(), "repr markdown failed"
 
     result = user_code_history.mock_syft_func_2[0]()
     assert result.get() == 1
