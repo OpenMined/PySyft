@@ -334,6 +334,15 @@ class RequestService(AbstractService):
         request.tags = tags
         return self.save(context, request)
 
+    @service_method(path="request.get_by_usercode_id", name="get_by_usercode_id")
+    def get_by_usercode_id(
+        self, context: AuthedServiceContext, usercode_id: UID
+    ) -> list[Request] | SyftError:
+        result = self.stash.get_by_usercode_id(context.credentials, usercode_id)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        return result.ok()
+
 
 TYPE_TO_SERVICE[Request] = RequestService
 SERVICE_TO_TYPES[RequestService].update({Request})
