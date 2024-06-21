@@ -24,7 +24,7 @@ from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user import UserView
-from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
+from ..user.user_roles import ADMIN_ROLE_LEVEL, DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_service import UserService
 from .request import Change
@@ -311,6 +311,27 @@ class RequestService(AbstractService):
         if result.is_err():
             return SyftError(message=str(result.err()))
         return SyftSuccess(message=f"Request with id {uid} deleted.")
+
+    @service_method(
+        path="request.set_tags",
+        name="set_tags",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def set_tags(
+        self,
+        context: AuthedServiceContext,
+        request: Request,
+        tags: list[str],
+    ) -> Request | SyftError:
+        request = self.stash.get_by_uid(context.credentials, request.id)
+        if request.is_err():
+            return SyftError(message=str(request.err()))
+        if request.ok() is None:
+            return SyftError(message="Request does not exist.")
+        request = request.ok()
+
+        request.tags = tags
+        return self.save(context, request)
 
 
 TYPE_TO_SERVICE[Request] = RequestService

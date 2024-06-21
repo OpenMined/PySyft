@@ -10,6 +10,7 @@ from pydantic import model_validator
 from result import Err
 from result import Ok
 from result import Result
+from syft.types.syft_migration import migrate
 from typing_extensions import Self
 
 # relative
@@ -28,7 +29,7 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
-from ...types.transforms import TransformContext
+from ...types.transforms import TransformContext, drop, make_set_default
 from ...types.transforms import add_node_uid_for_key
 from ...types.transforms import generate_id
 from ...types.transforms import transform
@@ -387,7 +388,7 @@ class CreateCustomWorkerPoolChangeV2(Change):
 
 
 @serializable()
-class Request(SyncableSyftObject):
+class RequestV2(SyncableSyftObject):
     __canonical_name__ = "Request"
     __version__ = SYFT_OBJECT_VERSION_2
 
@@ -402,6 +403,48 @@ class Request(SyncableSyftObject):
     request_hash: str
     changes: list[Change]
     history: list[ChangeStatus] = []
+    __table_coll_widths__ = [
+        "min-content",
+        "auto",
+        "auto",
+        "auto",
+        "auto",
+        "auto",
+    ]
+
+    __attr_searchable__ = [
+        "requesting_user_verify_key",
+        "approving_user_verify_key",
+    ]
+    __attr_unique__ = ["request_hash"]
+    __repr_attrs__ = [
+        "request_time",
+        "updated_at",
+        "status",
+        "changes",
+        "requesting_user_verify_key",
+    ]
+    __exclude_sync_diff_attrs__ = ["node_uid", "changes", "history"]
+    __table_sort_attr__ = "Request time"
+
+
+@serializable()
+class Request(SyncableSyftObject):
+    __canonical_name__ = "Request"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    requesting_user_verify_key: SyftVerifyKey
+    requesting_user_name: str = ""
+    requesting_user_email: str | None = ""
+    requesting_user_institution: str | None = ""
+    approving_user_verify_key: SyftVerifyKey | None = None
+    request_time: DateTime
+    updated_at: DateTime | None = None
+    node_uid: UID
+    request_hash: str
+    changes: list[Change]
+    history: list[ChangeStatus] = []
+    tags: list[str] = []
 
     __table_coll_widths__ = [
         "min-content",
@@ -1364,3 +1407,17 @@ class SyncedUserCodeStatusChange(UserCodeStatusChange):
 
     def link(self) -> Any:  # type: ignore
         return self.code.status
+
+
+@migrate(RequestV2, Request)
+def migrate_request_v2_to_v3() -> list[Callable]:
+    return [
+        make_set_default("tags", []),
+    ]
+
+
+@migrate(Request, RequestV2)
+def migrate_usercode_v5_to_v4() -> list[Callable]:
+    return [
+        drop("tags"),
+    ]

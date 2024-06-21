@@ -258,7 +258,7 @@ class UserCodeService(AbstractService):
         context: AuthedServiceContext,
         code: SubmitUserCode,
         reason: str | None = "",
-    ) -> SyftSuccess | SyftError:
+    ) -> Request | SyftError:
         """Request Code execution on user code"""
         return self._request_code_execution(context=context, code=code, reason=reason)
 
@@ -378,8 +378,9 @@ class UserCodeService(AbstractService):
         context: AuthedServiceContext,
         output_policy: OutputPolicy | None,
     ) -> bool | SyftSuccess | SyftError | SyftNotReady:
-        if not code.get_status(context).approved:
-            return code.status.get_status_message()
+        status = code.get_status(context)
+        if not status.approved:
+            return status.get_status_message()
         # Check if the user has permission to execute the code.
         elif not (has_code_permission := self.has_code_permission(code, context)):
             return has_code_permission
