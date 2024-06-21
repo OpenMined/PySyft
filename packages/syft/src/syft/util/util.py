@@ -7,6 +7,7 @@ from collections.abc import Sequence
 from concurrent.futures import ProcessPoolExecutor
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
+from copy import deepcopy
 import functools
 import hashlib
 from itertools import repeat
@@ -29,7 +30,6 @@ import time
 import types
 from types import ModuleType
 from typing import Any
-from copy import deepcopy
 
 # third party
 from IPython.display import display
@@ -925,24 +925,37 @@ def get_dev_mode() -> bool:
 
 def sanitize_html(html: str) -> str:
     policy = {
-        'tags': ['svg', 'strong', 'rect', 'path', 'circle'],
-        'attributes': {
-            '*': {'class', 'style'},
-            'svg': {'class', 'style', 'xmlns', 'width', 'height', 'viewBox', 'fill', 'stroke', 'stroke-width'},
-            'path': {'d', 'fill', 'stroke', 'stroke-width'},
-            'rect': {'x', 'y', 'width', 'height', 'fill', 'stroke', 'stroke-width'},
-            'circle': {'cx', 'cy', 'r', 'fill', 'stroke', 'stroke-width'},
+        "tags": ["svg", "strong", "rect", "path", "circle"],
+        "attributes": {
+            "*": {"class", "style"},
+            "svg": {
+                "class",
+                "style",
+                "xmlns",
+                "width",
+                "height",
+                "viewBox",
+                "fill",
+                "stroke",
+                "stroke-width",
+            },
+            "path": {"d", "fill", "stroke", "stroke-width"},
+            "rect": {"x", "y", "width", "height", "fill", "stroke", "stroke-width"},
+            "circle": {"cx", "cy", "r", "fill", "stroke", "stroke-width"},
         },
-        'remove': {'script', 'style'}
+        "remove": {"script", "style"},
     }
 
     tags = nh3.ALLOWED_TAGS
-    for tag in policy['tags']:
+    for tag in policy["tags"]:
         tags.add(tag)
 
     attributes = deepcopy(nh3.ALLOWED_ATTRIBUTES)
-    attributes = {**attributes, **policy['attributes']}
+    attributes = {**attributes, **policy["attributes"]}
 
     return nh3.clean(
-        html, tags=tags, clean_content_tags=policy['remove'], attributes=attributes,
+        html,
+        tags=tags,
+        clean_content_tags=policy["remove"],
+        attributes=attributes,
     )
