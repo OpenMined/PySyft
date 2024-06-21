@@ -655,6 +655,7 @@ def endpoint_to_private_endpoint() -> list[Callable]:
                 "api_code",
                 "func_name",
                 "settings",
+                "view_access",
                 "helper_functions",
                 "state",
                 "signature",
@@ -748,6 +749,8 @@ def create_new_api_endpoint(
     description: MarkdownDescription | None = None,
     worker_pool: str | None = None,
     endpoint_timeout: int = 60,
+    hide_mock_definition: bool = False,
+    hide_private_definition: bool = True,
 ) -> CreateTwinAPIEndpoint | SyftError:
     try:
         # Parse the string to extract the function name
@@ -757,7 +760,8 @@ def create_new_api_endpoint(
             if private_function.signature != mock_function.signature:
                 return SyftError(message="Signatures don't match")
             endpoint_signature = mock_function.signature
-            private_function.view_access = False
+            private_function.view_access = not hide_private_definition
+            mock_function.view_access = not hide_mock_definition
 
             return CreateTwinAPIEndpoint(
                 path=path,
