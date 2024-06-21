@@ -29,12 +29,14 @@ import time
 import types
 from types import ModuleType
 from typing import Any
+from copy import deepcopy
 
 # third party
 from IPython.display import display
 from forbiddenfruit import curse
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+import nh3
 import requests
 
 # relative
@@ -919,3 +921,28 @@ def get_queue_address(port: int) -> str:
 
 def get_dev_mode() -> bool:
     return str_to_bool(os.getenv("DEV_MODE", "False"))
+
+
+def sanitize_html(html: str) -> str:
+    policy = {
+        'tags': ['svg', 'strong', 'rect', 'path', 'circle'],
+        'attributes': {
+            '*': {'class', 'style'},
+            'svg': {'class', 'style', 'xmlns', 'width', 'height', 'viewBox', 'fill', 'stroke', 'stroke-width'},
+            'path': {'d', 'fill', 'stroke', 'stroke-width'},
+            'rect': {'x', 'y', 'width', 'height', 'fill', 'stroke', 'stroke-width'},
+            'circle': {'cx', 'cy', 'r', 'fill', 'stroke', 'stroke-width'},
+        },
+        'remove': {'script', 'style'}
+    }
+
+    tags = nh3.ALLOWED_TAGS
+    for tag in policy['tags']:
+        tags.add(tag)
+
+    attributes = deepcopy(nh3.ALLOWED_ATTRIBUTES)
+    attributes = {**attributes, **policy['attributes']}
+
+    return nh3.clean(
+        html, tags=tags, clean_content_tags=policy['remove'], attributes=attributes,
+    )

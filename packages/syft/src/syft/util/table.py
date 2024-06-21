@@ -6,11 +6,9 @@ from collections.abc import Set
 import re
 from typing import Any
 
-# third party
-import nh3
-
 # relative
 from .util import full_name_with_qualname
+from .util import sanitize_html
 
 TABLE_INDEX_KEY = "_table_repr_index"
 
@@ -134,7 +132,7 @@ def _create_table_rows(
                 except Exception as e:
                     print(e)
                     value = None
-                cols[field].append(nh3.clean(str(value), clean_content_tags={"script", "style"}, attributes={"*": {"style", "class"}}))
+                cols[field].append(sanitize_html(str(value)))
 
     col_lengths = {len(cols[col]) for col in cols.keys()}
     if len(col_lengths) != 1:
