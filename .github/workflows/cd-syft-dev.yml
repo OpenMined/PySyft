@@ -164,7 +164,7 @@ jobs:
           helm version
 
           # install tox
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip==24.0
           pip install tox
 
           tox -e syft.build.helm
