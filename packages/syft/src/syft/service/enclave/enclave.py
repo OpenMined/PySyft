@@ -7,13 +7,12 @@ from typing_extensions import Self
 
 # relative
 from ...client.client import SyftClient
-from ...client.client import login
-from ...client.client import login_as_guest
+from ...client.enclave_client import EnclaveClient
+from ...node.credentials import SyftSigningKey
 from ...serde.serializable import serializable
 from ...service.metadata.node_metadata import NodeMetadataJSON
 from ...service.network.node_peer import route_to_connection
 from ...service.network.routes import NodeRouteType
-from ...service.response import SyftError
 from ...service.response import SyftException
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
@@ -66,34 +65,9 @@ class EnclaveInstance(SyftObject):
         # TODO check the actual status of the enclave
         return EnclaveStatus.IDLE
 
-    def get_client(self, verify_key: str) -> SyftClient:
-        # TODO: find the standard method to convert route to client object
-        # TODO for this prototype/demo all communication is done via a DS client.
-        # Later, we will use verify keys to authenticate actions of each member in the
-        # Enclave. Also, there will be no concept of admin users. This will prevent anyone,
-        # including the Enclave owner domain, from performing elevated actions like
-        # accessing other member's data.
-        PASSWORD = "changethis"  # nosec
-
-        def attempt_login() -> SyftClient | SyftError:
-            return login(
-                email="ds@openmined.org",
-                password=PASSWORD,
-                url=self.route.host_or_ip,
-                port=self.route.port,
-            )
-
-        client = attempt_login()
-
-        if isinstance(client, SyftError):
-            login_as_guest(url=self.route.host_or_ip, port=self.route.port).register(
-                name="Data Scientist",
-                email="ds@openmined.org",
-                password=PASSWORD,
-                password_verify=PASSWORD,
-            )
-            client = attempt_login()
-
+    def get_client(self, credentials: SyftSigningKey) -> SyftClient:
+        connection = route_to_connection(route=self.route)
+        client = EnclaveClient(connection=connection, credentials=credentials)
         return client
 
     def __hash__(self) -> int:
