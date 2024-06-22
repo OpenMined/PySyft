@@ -4,12 +4,10 @@ def main():
   sy.requires(">=0.8.6,<0.8.7")
 
   node = sy.orchestra.launch(
-      name="my-domain",
-      port=8080,
-      create_producer=True,
-      n_consumers=1,
-      dev_mode=True,
-      reset=True, # resets database
+      name="test-domain-1", 
+      port=8080, 
+      dev_mode=True, 
+      reset=True
   )
 
   print(node)
