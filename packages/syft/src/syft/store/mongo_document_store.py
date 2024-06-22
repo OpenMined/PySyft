@@ -398,6 +398,21 @@ class MongoStorePartition(StorePartition):
         values: list = self._all(credentials=None, has_permission=True).ok()
         return {v.id: v for v in values}
 
+    def _get(
+        self,
+        uid: UID,
+        credentials: SyftVerifyKey,
+        has_permission: bool | None = False,
+    ) -> Result[SyftObject, str]:
+        qks = QueryKeys.from_dict({"id": uid})
+        res = self._get_all_from_store(
+            credentials, qks, order_by=None, has_permission=has_permission
+        )
+        if res.is_err():
+            return res
+        else:
+            return Ok(res.ok()[0])
+
     def _get_all_from_store(
         self,
         credentials: SyftVerifyKey,
