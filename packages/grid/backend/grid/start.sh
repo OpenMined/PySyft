@@ -11,16 +11,14 @@ APPDIR=${APPDIR:-$HOME/app}
 RELOAD=""
 DEBUG_CMD=""
 
-if [[ ${DEV_MODE} == "True" ]];
-then
+if [[ ${DEV_MODE} == "True" ]]; then
     echo "DEV_MODE Enabled"
     RELOAD="--reload"
 fi
 
 # only set by kubernetes to avoid conflict with docker tests
-if [[ ${DEBUGGER_ENABLED} == "True" ]];
-then
-    uv pip install debugpy
+if [[ ${DEBUGGER_ENABLED} == "True" ]]; then
+    pip install debugpy
     DEBUG_CMD="python -m debugpy --listen 0.0.0.0:5678 -m"
 fi
 
@@ -42,19 +40,17 @@ HOST_MODE=${HOST_MODE:-ipv4}
 if [[ $HOST_MODE == "ipv4" ]] && [[ $IPV4_AVAILABLE -gt 0 ]]; then
     # IPv4 is available
     HOST=${HOST:-0.0.0.0}
-    exec $DEBUG_CMD uvicorn $RELOAD --host $HOST --port $PORT --log-level $LOG_LEVEL "$APP_MODULE"
+    exec $DEBUG_CMD hypercorn $RELOAD --bind $HOST:$PORT --log-level $LOG_LEVEL "$APP_MODULE"
 elif [[ $HOST_MODE == "ipv6" ]] && [[ $IPV6_AVAILABLE -gt 0 ]]; then
     # IPv6 is available
-    HOST=${HOST:-[::]}
-    exec $DEBUG_CMD uvicorn $RELOAD --host $HOST --port $PORT --log-level $LOG_LEVEL "$APP_MODULE"
+    HOST6=${HOST6:-[::]}
+    exec $DEBUG_CMD hypercorn $RELOAD --bind $HOST6:$PORT --log-level $LOG_LEVEL "$APP_MODULE"
 elif [[ $HOST_MODE == "ipv4+ipv6" ]] && [[ $IPV4_AVAILABLE -gt 0 ]] && [[ $IPV6_AVAILABLE -gt 0 ]]; then
     # Both IPv4 and IPv6 are available
     HOST=${HOST:-0.0.0.0}
-    exec $DEBUG_CMD uvicorn $RELOAD --host $HOST --port $PORT --log-level $LOG LEVEL "$APP_MODULE" &
-    HOST=${HOST:-[::]}
-    exec $DEBUG_CMD uvicorn $RELOAD --host $HOST --port $PORT --log-level $LOG LEVEL "$APP_MODULE"
+    HOST6=${HOST6:-[::]}
+    exec $DEBUG_CMD hypercorn $RELOAD --bind $HOST:$PORT --bind $HOST6:$PORT --log-level $LOG_LEVEL "$APP_MODULE"
 else
     echo "No suitable IP version available for the specified HOST_MODE: $HOST_MODE"
     exit 1
 fi
-
