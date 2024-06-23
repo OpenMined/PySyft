@@ -14,6 +14,7 @@ from io import StringIO
 import itertools
 import keyword
 import random
+import re
 import sys
 from textwrap import dedent
 from threading import Thread
@@ -75,6 +76,7 @@ from ..dataset.dataset import Asset
 from ..job.job_stash import Job
 from ..output.output_service import ExecutionOutput
 from ..output.output_service import OutputService
+from ..policy.policy import Constant
 from ..policy.policy import CustomInputPolicy
 from ..policy.policy import CustomOutputPolicy
 from ..policy.policy import EmpyInputPolicy
@@ -554,15 +556,15 @@ class UserCode(SyncableSyftObject):
 
     @property
     def input_policy(self) -> InputPolicy | None:
-        if not self.status.approved:
-            return None
-        return self._get_input_policy()
+        if self.status.approved or self.input_policy_type.has_safe_serde:
+            return self._get_input_policy()
+        return None
 
     def get_input_policy(self, context: AuthedServiceContext) -> InputPolicy | None:
         status = self.get_status(context)
-        if not status.approved:
-            return None
-        return self._get_input_policy()
+        if status.approved or self.input_policy_type.has_safe_serde:
+            return self._get_input_policy()
+        return None
 
     def _get_input_policy(self) -> InputPolicy | None:
         if len(self.input_policy_state) == 0:
@@ -618,13 +620,18 @@ class UserCode(SyncableSyftObject):
             raise Exception(f"You can't set {type(value)} as input_policy_state")
 
     def get_output_policy(self, context: AuthedServiceContext) -> OutputPolicy | None:
-        if not self.get_status(context).approved:
-            return None
-        return self._get_output_policy()
+        status = self.get_status(context)
+        if status.approved or self.output_policy_type.has_safe_serde:
+            return self._get_output_policy()
+        return None
+
+    @property
+    def output_policy(self) -> OutputPolicy | None:  # type: ignore
+        if self.status.approved or self.output_policy_type.has_safe_serde:
+            return self._get_output_policy()
+        return None
 
     def _get_output_policy(self) -> OutputPolicy | None:
-        # if not self.status.approved:
-        #     return None
         if len(self.output_policy_state) == 0:
             output_policy = None
             if isinstance(self.output_policy_type, type) and issubclass(
@@ -671,12 +678,6 @@ class UserCode(SyncableSyftObject):
         if self.input_policy_init_kwargs is not None:
             return self.input_policy_init_kwargs.get("id", None)
         return None
-
-    @property
-    def output_policy(self) -> OutputPolicy | None:  # type: ignore
-        if not self.status.approved:
-            return None
-        return self._get_output_policy()
 
     @output_policy.setter  # type: ignore
     def output_policy(self, value: Any) -> None:  # type: ignore
@@ -847,11 +848,21 @@ class UserCode(SyncableSyftObject):
                 f"outputs are *shared* with the owners of {owners_string} once computed"
             )
 
+        constants_str = ""
+        args = [
+            x
+            for _dict in self.input_policy_init_kwargs.values()  # type: ignore
+            for x in _dict.values()
+        ]
+        constants = [x for x in args if isinstance(x, Constant)]
+        constants_str = "\n\t".join([f"{x.kw}: {x.val}" for x in constants])
+
         md = f"""class UserCode
     id: UID = {self.id}
     service_func_name: str = {self.service_func_name}
     shareholders: list = {self.input_owners}
     status: list = {self.code_status}
+    {constants_str}
     {shared_with_line}
     code:
 
@@ -1141,11 +1152,19 @@ def syft_function_single_use(
     )
 
 
+def replace_func_name(src: str, new_func_name: str) -> str:
+    pattern = r"\bdef\s+(\w+)\s*\("
+    replacement = f"def {new_func_name}("
+    new_src = re.sub(pattern, replacement, src, count=1)
+    return new_src
+
+
 def syft_function(
     input_policy: InputPolicy | UID | None = None,
     output_policy: OutputPolicy | UID | None = None,
     share_results_with_owners: bool = False,
     worker_pool_name: str | None = None,
+    name: str | None = None,
 ) -> Callable:
     if input_policy is None:
         input_policy = EmpyInputPolicy()
@@ -1153,7 +1172,7 @@ def syft_function(
     init_input_kwargs = None
     if isinstance(input_policy, CustomInputPolicy):
         input_policy_type = SubmitUserPolicy.from_obj(input_policy)
-        init_input_kwargs = partition_by_node(input_policy.init_kwargs)
+        init_input_kwargs = partition_by_node(input_policy.init_kwargs)  # type: ignore
     else:
         input_policy_type = type(input_policy)
         init_input_kwargs = getattr(input_policy, "init_kwargs", {})
@@ -1166,11 +1185,18 @@ def syft_function(
     else:
         output_policy_type = type(output_policy)
 
-    def decorator(f: Any) -> SubmitUserCode | SyftError:
+    def decorator(f: Any) -> SubmitUserCode:
         try:
+            code = dedent(inspect.getsource(f))
+            if name is not None:
+                fname = name
+                code = replace_func_name(code, fname)
+            else:
+                fname = f.__name__
+
             res = SubmitUserCode(
-                code=dedent(inspect.getsource(f)),
-                func_name=f.__name__,
+                code=code,
+                func_name=fname,
                 signature=inspect.signature(f),
                 input_policy_type=input_policy_type,
                 input_policy_init_kwargs=init_input_kwargs,
@@ -1180,6 +1206,7 @@ def syft_function(
                 input_kwargs=f.__code__.co_varnames[: f.__code__.co_argcount],
                 worker_pool_name=worker_pool_name,
             )
+
         except ValidationError as e:
             errors = e.errors()
             msg = "Failed to create syft function, encountered validation errors:\n"
