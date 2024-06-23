@@ -24,6 +24,7 @@ from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..action.action_permissions import StoragePermission
 from ..api.api import TwinAPIEndpoint
+from ..api.api_service import APIService
 from ..code.user_code import UserCodeStatusCollection
 from ..context import AuthedServiceContext
 from ..job.job_stash import Job
@@ -156,11 +157,11 @@ class SyncService(AbstractService):
         if isinstance(item, TwinAPIEndpoint):
             # we need the side effect of set function
             # to create an action object
-            res = context.node.get_service("apiservice").set(
-                context=context, endpoint=item
-            )
+            apiservice: APIService = context.node.get_service("apiservice")  # type: ignore
+
+            res = apiservice.set(context=context, endpoint=item)
             if isinstance(res, SyftError):
-                return res
+                return Err(res.message)
             else:
                 return Ok(item)
 
