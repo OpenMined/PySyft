@@ -19,6 +19,8 @@ else
     IPV6_AVAILABLE=false
 fi
 
+IPV6_AVAILABLE=false
+
 # Select appropriate URLs based on the availability of IPv4 and/or IPv6
 if [ "$IPV4_AVAILABLE" = true ] && [ "$IPV6_AVAILABLE" = true ]; then
     MASTER_URLS=("http://localhost:9333" "http://[::1]:9333")
