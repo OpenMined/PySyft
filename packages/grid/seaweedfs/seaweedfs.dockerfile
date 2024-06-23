@@ -1,4 +1,4 @@
-ARG SEAWEEDFS_VERSION="3.64"
+ARG SEAWEEDFS_VERSION="3.68"
 FROM chrislusf/seaweedfs:${SEAWEEDFS_VERSION}_large_disk
 
 WORKDIR /root/swfs
@@ -36,7 +36,7 @@ ENV \
     SWFS_UNCACHE_MINAGE="86400" \
     # mount api
     MOUNT_API_PORT="4001" \
-    UVICORN_LOG_LEVEL="info"
+    HYPERCORN_LOG_LEVEL="info"
 
 # overrides base image entrypoint
 ENTRYPOINT ["sh"]
