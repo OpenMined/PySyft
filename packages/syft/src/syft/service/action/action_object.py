@@ -523,7 +523,16 @@ def convert_to_pointers(
             r = arg._save_to_blob_storage()
             if isinstance(r, SyftError):
                 print(r.message)
-            arg = api.services.action.set(arg)
+            if isinstance(r, SyftWarning):
+                print(r.message)
+                skip_save_to_blob_store, skip_clear_cache = True, True
+            else:
+                skip_save_to_blob_store, skip_clear_cache = False, False
+            arg = api.services.action.set(
+                arg,
+                skip_save_to_blob_store=skip_save_to_blob_store,
+                skip_clear_cache=skip_clear_cache,
+            )
         return arg
 
     arg_list = [process_arg(arg) for arg in args] if args else []

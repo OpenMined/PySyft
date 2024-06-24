@@ -70,8 +70,18 @@ class ActionService(AbstractService):
         blob_store_result = np_obj._save_to_blob_storage()
         if isinstance(blob_store_result, SyftError):
             return blob_store_result
+        if isinstance(blob_store_result, SyftWarning):
+            print(blob_store_result.message)
+            skip_save_to_blob_store, skip_clear_cache = True, True
+        else:
+            skip_save_to_blob_store, skip_clear_cache = False, False
 
-        np_pointer = self._set(context, np_obj)
+        np_pointer = self._set(
+            context,
+            np_obj,
+            skip_save_to_blob_store=skip_save_to_blob_store,
+            skip_clear_cache=skip_clear_cache,
+        )
         return np_pointer
 
     @service_method(
