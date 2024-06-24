@@ -166,6 +166,7 @@ node:
   debuggerEnabled: false
   associationRequestAutoApproval: false
   useInternalRegistry: true
+  tracing: true
 
   # Default Worker pool settings
   defaultWorkerPool:

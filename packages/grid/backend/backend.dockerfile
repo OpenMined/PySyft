@@ -41,7 +41,7 @@ COPY syft/src/syft/VERSION ./syft/src/syft/
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     # remove torch because we already have the cpu version pre-installed
     sed --in-place /torch==/d ./syft/setup.cfg && \
-    uv pip install -e ./syft[data_science]
+    uv pip install -e ./syft[data_science,telemetry]
 
 # ==================== [Final] Setup Syft Server ==================== #
 
@@ -75,7 +75,6 @@ ENV \
     APPDIR="/root/app" \
     NODE_NAME="default_node_name" \
     NODE_TYPE="domain" \
-    SERVICE_NAME="backend" \
     RELEASE="production" \
     DEV_MODE="False" \
     DEBUGGER_ENABLED="False" \

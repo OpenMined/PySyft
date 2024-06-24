@@ -85,7 +85,7 @@ spec:
             {{- end }}
             {{- if .Values.node.debuggerEnabled }}
             - name: DEBUGGER_ENABLED
-              value: "true"
+              value: "True"
             - name: ASSOCIATION_REQUEST_AUTO_APPROVAL
               value: {{ .Values.node.associationRequestAutoApproval | quote }}
             {{- end }}
@@ -130,14 +130,10 @@ spec:
                     key: s3RootPassword
             {{- end }}
             # Tracing
-            - name: TRACE
-              value: "false"
-            - name: SERVICE_NAME
-              value: "backend"
-            - name: JAEGER_HOST
-              value: "localhost"
-            - name: JAEGER_PORT
-              value: "14268"
+            {{- if .Values.node.tracing }}
+            - name: TRACING
+              value: "True"
+            {{- end }}
             # Enclave attestation
             {{- if .Values.attestation.enabled }}
             - name: ENCLAVE_ATTESTATION_ENABLED

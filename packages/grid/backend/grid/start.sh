@@ -10,19 +10,36 @@ PORT=${PORT:-80}
 NODE_TYPE=${NODE_TYPE:-domain}
 APPDIR=${APPDIR:-$HOME/app}
 RELOAD=""
-DEBUG_CMD=""
+ROOT_PROC=""
 
 if [[ ${DEV_MODE} == "True" ]];
 then
-    echo "DEV_MODE Enabled"
+    echo "Hot-reload Enabled"
     RELOAD="--reload"
 fi
 
 # only set by kubernetes to avoid conflict with docker tests
 if [[ ${DEBUGGER_ENABLED} == "True" ]];
 then
+    echo "Debugger Enabled"
     uv pip install debugpy
-    DEBUG_CMD="python -m debugpy --listen 0.0.0.0:5678 -m"
+    ROOT_PROC="python -m debugpy --listen 0.0.0.0:5678 -m"
+fi
+
+if [[ ${TRACING} == "True" ]];
+then
+    echo "OpenTelemetry Enabled"
+
+    # TODOs:
+    # ! Handle case when OTEL_EXPORTER_OTLP_ENDPOINT is not set.
+    # ! syft-signoz-otel-collector.platform:4317 should be plumbed through helm charts
+    # ? Kubernetes OTel operator is recommended by signoz
+    export OTEL_PYTHON_LOG_CORRELATION=${OTEL_PYTHON_LOG_CORRELATION:-true}
+    export OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-"http://syft-signoz-otel-collector.platform:4317"}
+    export OTEL_EXPORTER_OTLP_PROTOCOL=${OTEL_EXPORTER_OTLP_PROTOCOL:-grpc}
+
+    # TODO: Finalize if uvicorn is stable with OpenTelemetry
+    # ROOT_PROC="opentelemetry-instrument"
 fi
 
 export CREDENTIALS_PATH=${CREDENTIALS_PATH:-$HOME/data/creds/credentials.json}
@@ -33,4 +50,4 @@ export NODE_TYPE=$NODE_TYPE
 echo "NODE_UID=$NODE_UID"
 echo "NODE_TYPE=$NODE_TYPE"
 
-exec $DEBUG_CMD uvicorn $RELOAD --host $HOST --port $PORT --log-config=$APPDIR/grid/logging.yaml --log-level $LOG_LEVEL "$APP_MODULE"
+exec $ROOT_PROC uvicorn $RELOAD --host $HOST --port $PORT --log-config=$APPDIR/grid/logging.yaml "$APP_MODULE"
