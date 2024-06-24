@@ -1547,7 +1547,6 @@ def user_code_to_submit_user_code() -> list[Callable]:
                 "deployment_policy_type",
                 "deployment_policy_init_kwargs",
                 "input_kwargs",
-                "enclave_metadata",
                 "worker_pool_name",
             ]
         ),
