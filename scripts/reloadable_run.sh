@@ -2,7 +2,7 @@
 
 # Run the different enclave servers as follows:
 # bash scripts/reloadable_run.sh --port 9081 --name "canada-domain"
-# bash scripts/reloadable_run.sh --port 9082 --name "italy-domain" 
+# bash scripts/reloadable_run.sh --port 9082 --name "italy-domain"
 # bash scripts/reloadable_run.sh --port 9083 --name "canada-enclave" --node_type "enclave"
 
 # And get the NodeHandlers as follows (note that the handlers point to the correct objects but are buggy in their attributes)

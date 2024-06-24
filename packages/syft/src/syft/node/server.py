@@ -62,15 +62,16 @@ worker_classes = {
     NodeType.ENCLAVE: Enclave,
 }
 
-def run_reloadable_app():
+
+def run_reloadable_app() -> None:
     # Read environment variables
     name = os.getenv("NODE_NAME", "testing-node")
     processes = int(os.getenv("PROCESSES", "1"))
     reset = os.getenv("RESET", "False").lower() in ("true")
     local_db = os.getenv("LOCAL_DB", "True").lower() in ("true")
-    node_type = os.getenv("NODE_TYPE", NodeType.DOMAIN)
-    node_side_type = os.getenv("NODE_SIDE_TYPE", NodeSideType.HIGH_SIDE)
-    
+    node_type = NodeType(os.getenv("NODE_TYPE", NodeType.DOMAIN))
+    node_side_type = NodeSideType(os.getenv("NODE_SIDE_TYPE", NodeSideType.HIGH_SIDE))
+
     # Print variables for debugging
     print("*" * 50)
     print("Starting uvicorn app with the following settings:")
@@ -104,6 +105,7 @@ def run_reloadable_app():
     router = make_routes(worker=worker)
     app = make_app(worker.name, router=router)
     return app
+
 
 def run_uvicorn(
     name: str,
