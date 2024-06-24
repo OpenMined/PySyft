@@ -5,7 +5,6 @@ from uuid import uuid4
 # third party
 import numpy as np
 import pytest
-import requests
 
 # syft absolute
 import syft as sy
@@ -19,13 +18,13 @@ from syft.service.worker.worker_image import SyftWorkerImage
 from syft.service.worker.worker_pool import SyftWorker
 from syft.service.worker.worker_pool import WorkerPool
 from syft.types.uid import UID
+from syft.util.util import get_latest_tag
 
 registry = os.getenv("SYFT_BASE_IMAGE_REGISTRY", "docker.io")
 repo = "openmined/grid-backend"
 
 if "k3d" in registry:
-    res = requests.get(url=f"http://{registry}/v2/{repo}/tags/list")
-    tag = res.json()["tags"][0]
+    tag = get_latest_tag(registry, repo)
 else:
     tag = sy.__version__
 
