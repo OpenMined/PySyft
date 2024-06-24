@@ -7,6 +7,7 @@ from collections.abc import Callable
 from enum import Enum
 from getpass import getpass
 import json
+import logging
 from typing import Any
 from typing import TYPE_CHECKING
 from typing import cast
@@ -49,7 +50,6 @@ from ..types.grid_url import GridURL
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SYFT_OBJECT_VERSION_3
 from ..types.uid import UID
-from ..util.logger import debug
 from ..util.telemetry import instrument
 from ..util.util import prompt_warning_message
 from ..util.util import thread_ident
@@ -62,6 +62,8 @@ from .api import SyftAPICall
 from .api import debox_signed_syftapicall_response
 from .connection import NodeConnection
 from .protocol import SyftProtocol
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     # relative
@@ -78,7 +80,7 @@ def upgrade_tls(url: GridURL, response: Response) -> GridURL:
         if response.url.startswith("https://") and url.protocol == "http":
             # we got redirected to https
             https_url = GridURL.from_url(response.url).with_path("")
-            debug(f"GridURL Upgraded to HTTPS. {https_url}")
+            logger.debug(f"GridURL Upgraded to HTTPS. {https_url}")
             return https_url
     except Exception as e:
         print(f"Failed to upgrade to HTTPS. {e}")
