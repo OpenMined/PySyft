@@ -4,6 +4,7 @@ from __future__ import annotations
 # stdlib
 from collections import OrderedDict
 from collections.abc import Callable
+from datetime import MINYEAR
 from datetime import datetime
 from functools import partial
 import hashlib
@@ -18,6 +19,7 @@ import tempfile
 from time import sleep
 import traceback
 from typing import Any
+from typing import cast
 
 # third party
 from nacl.signing import SigningKey
@@ -64,6 +66,7 @@ from ..service.enclave.enclave_service import EnclaveService
 from ..service.job.job_service import JobService
 from ..service.job.job_stash import Job
 from ..service.job.job_stash import JobStash
+from ..service.job.job_stash import JobStatus
 from ..service.job.job_stash import JobType
 from ..service.log.log_service import LogService
 from ..service.metadata.metadata_service import MetadataService
@@ -101,6 +104,7 @@ from ..service.settings.settings_stash import SettingsStash
 from ..service.sync.sync_service import SyncService
 from ..service.user.user import User
 from ..service.user.user import UserCreate
+from ..service.user.user import UserView
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..service.user.user_stash import UserStash
@@ -123,6 +127,7 @@ from ..store.linked_obj import LinkedObject
 from ..store.mongo_document_store import MongoStoreConfig
 from ..store.sqlite_document_store import SQLiteStoreClientConfig
 from ..store.sqlite_document_store import SQLiteStoreConfig
+from ..types.datetime import DATETIME_FORMAT
 from ..types.syft_metaclass import Empty
 from ..types.syft_object import PartialSyftObject
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
@@ -1459,13 +1464,34 @@ class Node(AbstractNode):
             return result
         return job
 
+    def _sort_jobs(self, jobs: list[Job]) -> list[Job]:
+        job_datetimes = {}
+        for job in jobs:
+            try:
+                d = datetime.strptime(job.creation_time, DATETIME_FORMAT)
+            except Exception:
+                d = datetime(MINYEAR, 1, 1)
+            job_datetimes[job.id] = d
+
+        jobs.sort(
+            key=lambda job: (job.status != JobStatus.COMPLETED, job_datetimes[job.id]),
+            reverse=True,
+        )
+
+        return jobs
+
     def _get_existing_user_code_jobs(
         self, context: AuthedServiceContext, user_code_id: UID
     ) -> list[Job] | SyftError:
         job_service = self.get_service("jobservice")
-        return job_service.get_by_user_code_id(
+        jobs = job_service.get_by_user_code_id(
             context=context, user_code_id=user_code_id
         )
+
+        if isinstance(jobs, SyftError):
+            return jobs
+
+        return self._sort_jobs(jobs)
 
     def _is_usercode_call_on_owned_kwargs(
         self,
@@ -1503,6 +1529,14 @@ class Node(AbstractNode):
             action = Action.from_api_call(unsigned_call)
             user_code_id = action.user_code_id
 
+            user = self.get_service(UserService).get_current_user(context)
+            if isinstance(user, SyftError):
+                return user
+            user = cast(UserView, user)
+
+            is_execution_on_owned_kwargs_allowed = (
+                user.mock_execution_permission or context.role == ServiceRole.ADMIN
+            )
             is_usercode_call_on_owned_kwargs = self._is_usercode_call_on_owned_kwargs(
                 context, unsigned_call, user_code_id
             )
@@ -1527,6 +1561,14 @@ class Node(AbstractNode):
                     return SyftError(
                         message="Please wait for the admin to allow the execution of this code"
                     )
+
+            elif (
+                is_usercode_call_on_owned_kwargs
+                and not is_execution_on_owned_kwargs_allowed
+            ):
+                return SyftError(
+                    message="You do not have the permissions for mock execution, please contact the admin"
+                )
 
             return self.add_action_to_queue(
                 action, api_call.credentials, parent_job_id=parent_job_id
