@@ -853,7 +853,7 @@ class Request(SyncableSyftObject):
         if isinstance(api, SyftError):
             return api
 
-        input_ids = {}
+        input_ids = {}  # type: ignore
         input_policy = code.input_policy
         if input_policy is not None:
             for input_ in input_policy.inputs.values():
