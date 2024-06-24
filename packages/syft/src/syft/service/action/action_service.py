@@ -516,6 +516,11 @@ class ActionService(AbstractService):
         blob_store_result = result_action_object._save_to_blob_storage()
         if isinstance(blob_store_result, SyftError):
             return Err(blob_store_result.message)
+        if isinstance(blob_store_result, SyftWarning):
+            print(blob_store_result.message)
+            skip_save_to_blob_store, skip_clear_cache = True, True
+        else:
+            skip_save_to_blob_store, skip_clear_cache = False, False
 
         # IMPORTANT: DO THIS ONLY AFTER ._save_to_blob_storage
         if isinstance(result_action_object, TwinObject):
@@ -528,7 +533,11 @@ class ActionService(AbstractService):
 
         # Since this just meta data about the result, they always have access to it.
         set_result = self._set(
-            context, result_action_object, has_result_read_permission=True
+            context,
+            result_action_object,
+            has_result_read_permission=True,
+            skip_save_to_blob_store=skip_save_to_blob_store,
+            skip_clear_cache=skip_clear_cache,
         )
 
         if set_result.is_err():
