@@ -255,7 +255,7 @@ class APICallMessageHandler(AbstractMessageHandler):
         # relative
         from ...node.node import Node
 
-        queue_item: QueueItem = deserialize(message, from_bytes=True)
+        queue_item = deserialize(message, from_bytes=True)
         worker_settings = queue_item.worker_settings
 
         queue_config = worker_settings.queue_config
