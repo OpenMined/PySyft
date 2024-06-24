@@ -1244,7 +1244,7 @@ class ActionObject(SyncableSyftObject):
         else:
             return res.syft_action_data
 
-    def refresh_object(self, resolve_nested: bool = True) -> ActionObject:
+    def refresh_object(self, resolve_nested: bool = True) -> ActionObject | SyftError:
         # relative
         from ...client.api import APIRegistry
 
@@ -1279,9 +1279,10 @@ class ActionObject(SyncableSyftObject):
             self.wait()
 
         res = self.refresh_object()
-
         if not isinstance(res, ActionObject):
             return SyftError(message=f"{res}")  # type: ignore
+        elif issubclass(res.syft_action_data_type, Err):
+            return SyftError(message=f"{res.syft_action_data.err()}")
         else:
             if not self.has_storage_permission():
                 prompt_warning_message(
@@ -1419,7 +1420,7 @@ class ActionObject(SyncableSyftObject):
     def as_empty_data(self) -> ActionDataEmpty:
         return ActionDataEmpty(syft_internal_type=self.syft_internal_type)
 
-    def wait(self, timeout: int | None = None) -> ActionObject:
+    def wait(self, timeout: int | None = None) -> ActionObject | SyftError:
         # relative
         from ...client.api import APIRegistry
 
@@ -1433,12 +1434,18 @@ class ActionObject(SyncableSyftObject):
             obj_id = self.id
 
         counter = 0
-        while api and not api.services.action.is_resolved(obj_id):
-            time.sleep(1)
-            if timeout is not None:
-                counter += 1
-                if counter > timeout:
-                    return SyftError(message="Reached Timeout!")
+        while api:
+            obj_resolved: bool | str = api.services.action.is_resolved(obj_id)
+            if isinstance(obj_resolved, str):
+                return SyftError(message=obj_resolved)
+            if obj_resolved:
+                break
+            if not obj_resolved:
+                time.sleep(1)
+                if timeout is not None:
+                    counter += 1
+                    if counter > timeout:
+                        return SyftError(message="Reached Timeout!")
 
         return self
 
@@ -1977,7 +1984,7 @@ class ActionObject(SyncableSyftObject):
                     else self.syft_action_data_cache.__repr__()
                 )
 
-        return f"```python\n{res}\n{data_repr_}\n```\n"
+        return f"\n**{res}**\n\n{data_repr_}\n"
 
     def _data_repr(self) -> str | None:
         if isinstance(self.syft_action_data_cache, ActionDataEmpty):

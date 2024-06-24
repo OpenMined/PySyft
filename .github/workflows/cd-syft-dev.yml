@@ -84,7 +84,7 @@ jobs:
           echo "GRID_VERSION=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
 
       - name: Build and push `syft` image to registry
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./packages
           file: ./packages/grid/syft-client/syft.Dockerfile
@@ -95,7 +95,7 @@ jobs:
             ${{ secrets.ACR_SERVER }}/openmined/syft-client:${{ steps.grid.outputs.GRID_VERSION }}
 
       - name: Build and push `grid-backend` image to registry
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./packages
           file: ./packages/grid/backend/backend.dockerfile
@@ -107,7 +107,7 @@ jobs:
             ${{ secrets.ACR_SERVER }}/openmined/grid-backend:${{ steps.grid.outputs.GRID_VERSION }}
 
       - name: Build and push `grid-frontend` image to registry
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./packages/grid/frontend
           file: ./packages/grid/frontend/frontend.dockerfile
@@ -119,7 +119,7 @@ jobs:
           target: grid-ui-development
 
       - name: Build and push `grid-seaweedfs` image to registry
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./packages/grid/seaweedfs
           file: ./packages/grid/seaweedfs/seaweedfs.dockerfile
@@ -130,7 +130,7 @@ jobs:
             ${{ secrets.ACR_SERVER }}/openmined/grid-seaweedfs:${{ steps.grid.outputs.GRID_VERSION }}
 
       - name: Build and push `grid-enclave-attestation` image to registry
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./packages/grid/enclave/attestation
           file: ./packages/grid/enclave/attestation/attestation.dockerfile
@@ -164,7 +164,7 @@ jobs:
           helm version
 
           # install tox
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip==24.0
           pip install tox
 
           tox -e syft.build.helm

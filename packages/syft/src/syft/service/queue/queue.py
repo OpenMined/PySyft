@@ -169,12 +169,11 @@ def handle_message_multiprocessing(
         document_store_config=worker_settings.document_store_config,
         action_store_config=worker_settings.action_store_config,
         blob_storage_config=worker_settings.blob_store_config,
+        node_side_type=worker_settings.node_side_type,
         queue_config=queue_config,
         is_subprocess=True,
         migrate=False,
     )
-
-    job_item = worker.job_stash.get_by_uid(credentials, queue_item.job_id).ok()
 
     # Set monitor thread for this job.
     monitor_thread = MonitorThread(queue_item, worker, credentials)
@@ -185,7 +184,6 @@ def handle_message_multiprocessing(
 
     try:
         call_method = getattr(worker.get_service(queue_item.service), queue_item.method)
-
         role = worker.get_role_for_credentials(credentials=credentials)
 
         context = AuthedServiceContext(
@@ -206,7 +204,6 @@ def handle_message_multiprocessing(
         )
 
         result: Any = call_method(context, *queue_item.args, **queue_item.kwargs)
-
         status = Status.COMPLETED
         job_status = JobStatus.COMPLETED
 
@@ -228,20 +225,16 @@ def handle_message_multiprocessing(
         job_status = JobStatus.ERRORED
         # stdlib
 
-        raise e
-        # result = SyftError(
-        #     message=f"Failed with exception: {e}, {traceback.format_exc()}"
-        # )
-        # print("HAD AN ERROR WHILE HANDLING MESSAGE", result.message)
+        logger.error(f"Error while handle message multiprocessing: {e}")
 
     queue_item.result = result
     queue_item.resolved = True
     queue_item.status = status
 
     # get new job item to get latest iter status
-    job_item = worker.job_stash.get_by_uid(credentials, job_item.id).ok()
-
-    # if result.is_ok():
+    job_item = worker.job_stash.get_by_uid(credentials, queue_item.job_id).ok()
+    if job_item is None:
+        raise Exception(f"Job {queue_item.job_id} not found!")
 
     job_item.node_uid = worker.id
     job_item.result = result
@@ -278,6 +271,7 @@ class APICallMessageHandler(AbstractMessageHandler):
             document_store_config=worker_settings.document_store_config,
             action_store_config=worker_settings.action_store_config,
             blob_storage_config=worker_settings.blob_store_config,
+            node_side_type=worker_settings.node_side_type,
             queue_config=queue_config,
             is_subprocess=True,
             migrate=False,

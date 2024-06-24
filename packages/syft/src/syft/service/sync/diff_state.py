@@ -365,7 +365,8 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
     def repr_attr_dict(self, side: str) -> dict[str, Any]:
         obj = self.low_obj if side == "low" else self.high_obj
         if isinstance(obj, ActionObject):
-            return {"value": obj.syft_action_data_cache}
+            # Only safe for ActionObjects created by data owners
+            return {"value": obj.syft_action_data_repr_}
         repr_attrs = getattr(obj, "__repr_attrs__", [])
         res = {}
         for attr in repr_attrs:

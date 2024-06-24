@@ -65,7 +65,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pip install --upgrade pip uv==0.1.35
+          pip install --upgrade pip==24.0 uv==0.2.13
           uv --version
 
       - name: Get pip cache dir
@@ -93,7 +93,7 @@ jobs:
       - name: Install Dependencies
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pip install --upgrade tox tox-uv==1.5.1
+          pip install --upgrade tox tox-uv==1.9.0
 
       - name: Run unit tests
         if: steps.changes.outputs.syft == 'true'
@@ -160,7 +160,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         run: |
-          pip install --upgrade pip uv==0.1.35
+          pip install --upgrade pip==24.0 uv==0.2.13
           uv --version
 
       - name: Get pip cache dir
@@ -182,7 +182,7 @@ jobs:
       - name: Install Dependencies
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         run: |
-          pip install --upgrade tox tox-uv==1.5.1
+          pip install --upgrade tox tox-uv==1.9.0
 
       - name: Run notebook tests
         uses: nick-fields/retry@v3
@@ -242,7 +242,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         run: |
-          pip install --upgrade pip uv==0.1.35
+          pip install --upgrade pip==24.0 uv==0.2.13
           uv --version
 
       - name: Get pip cache dir
@@ -264,7 +264,7 @@ jobs:
       - name: Install Dependencies
         if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         run: |
-          pip install --upgrade tox tox-uv==1.5.1
+          pip install --upgrade tox tox-uv==1.9.0
 
       - name: Docker Compose on Linux
         if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'ubuntu-latest'
@@ -343,7 +343,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pip install --upgrade pip uv==0.1.35
+          pip install --upgrade pip==24.0 uv==0.2.13
           uv --version
 
       - name: Get pip cache dir
@@ -365,7 +365,7 @@ jobs:
       - name: Install Dependencies
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pip install --upgrade tox tox-uv==1.5.1
+          pip install --upgrade tox tox-uv==1.9.0
 
       - name: Scan for security issues
         if: steps.changes.outputs.syft == 'true'

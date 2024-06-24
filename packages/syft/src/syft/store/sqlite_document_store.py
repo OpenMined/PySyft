@@ -168,7 +168,12 @@ class SQLiteBackingStore(KeyValueBackingStore):
         if REF_COUNTS[cache_key(self.db_filename)] <= 0:
             # once you close it seems like other object references can't re-use the
             # same connection
+
             self.db.close()
+            db_key = cache_key(self.db_filename)
+            if db_key in SQLITE_CONNECTION_POOL_CUR:
+                # NOTE if we don't remove the cursor, the cursor cache_key can clash with a future thread id
+                del SQLITE_CONNECTION_POOL_CUR[db_key]
             del SQLITE_CONNECTION_POOL_DB[cache_key(self.db_filename)]
         else:
             # don't close yet because another SQLiteBackingStore is probably still open

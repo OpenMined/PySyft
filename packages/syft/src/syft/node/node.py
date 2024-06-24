@@ -1447,8 +1447,10 @@ class Node(AbstractNode):
         )
 
         # 🟡 TODO 36: Needs distributed lock
+        job_res = self.job_stash.set(credentials, job)
+        if job_res.is_err():
+            return SyftError(message=f"{job_res.err()}")
         self.queue_stash.set_placeholder(credentials, queue_item)
-        self.job_stash.set(credentials, job)
 
         log_service = self.get_service("logservice")
 
@@ -1466,12 +1468,17 @@ class Node(AbstractNode):
         )
 
     def _is_usercode_call_on_owned_kwargs(
-        self, context: AuthedServiceContext, api_call: SyftAPICall
+        self,
+        context: AuthedServiceContext,
+        api_call: SyftAPICall,
+        user_code_id: UID,
     ) -> bool:
         if api_call.path != "code.call":
             return False
         user_code_service = self.get_service("usercodeservice")
-        return user_code_service.is_execution_on_owned_args(api_call.kwargs, context)
+        return user_code_service.is_execution_on_owned_args(
+            context, user_code_id, api_call.kwargs
+        )
 
     def add_api_call_to_queue(
         self, api_call: SyftAPICall, parent_job_id: UID | None = None
@@ -1494,18 +1501,17 @@ class Node(AbstractNode):
         action = None
         if is_user_code:
             action = Action.from_api_call(unsigned_call)
+            user_code_id = action.user_code_id
 
             is_usercode_call_on_owned_kwargs = self._is_usercode_call_on_owned_kwargs(
-                context, unsigned_call
+                context, unsigned_call, user_code_id
             )
             # Low side does not execute jobs, unless this is a mock execution
             if (
                 not is_usercode_call_on_owned_kwargs
                 and self.node_side_type == NodeSideType.LOW_SIDE
             ):
-                existing_jobs = self._get_existing_user_code_jobs(
-                    context, action.user_code_id
-                )
+                existing_jobs = self._get_existing_user_code_jobs(context, user_code_id)
                 if isinstance(existing_jobs, SyftError):
                     return existing_jobs
                 elif len(existing_jobs) > 0:

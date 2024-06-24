@@ -133,8 +133,8 @@ class DomainClient(SyftClient):
                 try:
                     contains_empty = asset.contains_empty()
                     twin = TwinObject(
-                        private_obj=asset.data,
-                        mock_obj=asset.mock,
+                        private_obj=ActionObject.from_obj(asset.data),
+                        mock_obj=ActionObject.from_obj(asset.mock),
                         syft_node_location=self.id,
                         syft_client_verify_key=self.verify_key,
                     )
@@ -181,7 +181,6 @@ class DomainClient(SyftClient):
         for uid, obj in state.objects.items():
             if isinstance(obj, ActionObject):
                 obj = obj.refresh_object(resolve_nested=False)
-                obj.reload_cache()
                 state.objects[uid] = obj
         return state
 
@@ -193,8 +192,10 @@ class DomainClient(SyftClient):
         action_objects = [x for x in items if isinstance(x, ActionObject)]
 
         for action_object in action_objects:
+            action_object.reload_cache()
             # NOTE permissions are added separately server side
             action_object._send(self.id, self.verify_key, add_storage_permission=False)
+            action_object._clear_cache()
 
         ignored_batches = resolved_state.ignored_batches
 

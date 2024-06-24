@@ -5,7 +5,6 @@ from collections.abc import Callable
 import pathlib
 from pathlib import Path
 import sys
-from types import MethodType
 from typing import Any
 
 # relative
@@ -22,6 +21,9 @@ from .client.registry import EnclaveRegistry
 from .client.registry import NetworkRegistry
 from .client.search import Search
 from .client.search import SearchResults
+from .client.syncing import compare_clients
+from .client.syncing import compare_states
+from .client.syncing import sync
 from .client.user_settings import UserSettings
 from .client.user_settings import settings
 from .custom_worker.config import DockerWorkerConfig
@@ -57,9 +59,11 @@ from .service.dataset.dataset import Contributor
 from .service.dataset.dataset import CreateAsset as Asset
 from .service.dataset.dataset import CreateDataset as Dataset
 from .service.notification.notifications import NotificationStatus
+from .service.policy.policy import CreatePolicyRuleConstant as Constant
 from .service.policy.policy import CustomInputPolicy
 from .service.policy.policy import CustomOutputPolicy
 from .service.policy.policy import ExactMatch
+from .service.policy.policy import MixedInputPolicy
 from .service.policy.policy import SingleExecutionExactOutput
 from .service.policy.policy import UserInputPolicy
 from .service.policy.policy import UserOutputPolicy
@@ -71,13 +75,13 @@ from .service.response import SyftSuccess
 from .service.user.roles import Roles as roles
 from .service.user.user_service import UserService
 from .stable_version import LATEST_STABLE_SYFT
-from .types.syft_object import SyftObject
 from .types.twin_object import TwinObject
 from .types.uid import UID
 from .util import filterwarnings
 from .util import options
 from .util.autoreload import disable_autoreload
 from .util.autoreload import enable_autoreload
+from .util.patch_ipython import patch_ipython
 from .util.telemetry import instrument
 from .util.util import autocache
 from .util.util import get_root_data_path
@@ -92,101 +96,7 @@ SYFT_PATH = pathlib.Path(__file__).parent.resolve()
 sys.path.append(str(Path(__file__)))
 
 
-try:
-    # third party
-    from IPython import get_ipython
-
-    get_ipython()  # noqa: F821
-    # TODO: add back later or auto detect
-    # display(
-    #     Markdown(
-    #         "\nWarning: syft is imported in light mode by default. \
-    #     \nTo switch to dark mode, please run `sy.options.color_theme = 'dark'`"
-    #     )
-    # )
-except:  # noqa: E722
-    pass  # nosec
-
-
-def _patch_ipython_autocompletion() -> None:
-    try:
-        # third party
-        from IPython.core.guarded_eval import EVALUATION_POLICIES
-    except ImportError:
-        return
-
-    ipython = get_ipython()
-    if ipython is None:
-        return
-
-    try:
-        # this allows property getters to be used in nested autocomplete
-        ipython.Completer.evaluation = "limited"
-        ipython.Completer.use_jedi = False
-        policy = EVALUATION_POLICIES["limited"]
-
-        policy.allowed_getattr_external.update(
-            [
-                ("syft.client.api", "APIModule"),
-                ("syft.client.api", "SyftAPI"),
-            ]
-        )
-        original_can_get_attr = policy.can_get_attr
-
-        def patched_can_get_attr(value: Any, attr: str) -> bool:
-            attr_name = "__syft_allow_autocomplete__"
-            # first check if exist to prevent side effects
-            if hasattr(value, attr_name) and attr in getattr(value, attr_name, []):
-                if attr in dir(value):
-                    return True
-                else:
-                    return False
-            else:
-                return original_can_get_attr(value, attr)
-
-        policy.can_get_attr = patched_can_get_attr
-    except Exception:
-        print("Failed to patch ipython autocompletion for syft property getters")
-
-    try:
-        # this constraints the completions for autocomplete.
-        # if __syft_dir__ is defined we only autocomplete those properties
-        # stdlib
-        import re
-
-        original_attr_matches = ipython.Completer.attr_matches
-
-        def patched_attr_matches(self, text: str) -> list[str]:  # type: ignore
-            res = original_attr_matches(text)
-            m2 = re.match(r"(.+)\.(\w*)$", self.line_buffer)
-            if not m2:
-                return res
-            expr, _ = m2.group(1, 2)
-            obj = self._evaluate_expr(expr)
-            if isinstance(obj, SyftObject) and hasattr(obj, "__syft_dir__"):
-                # here we filter all autocomplete results to only contain those
-                # defined in __syft_dir__, however the original autocomplete prefixes
-                # have the full path, while __syft_dir__ only defines the attr
-                attrs = set(obj.__syft_dir__())
-                new_res = []
-                for r in res:
-                    splitted = r.split(".")
-                    if len(splitted) > 1:
-                        attr_name = splitted[-1]
-                        if attr_name in attrs:
-                            new_res.append(r)
-                return new_res
-            else:
-                return res
-
-        ipython.Completer.attr_matches = MethodType(
-            patched_attr_matches, ipython.Completer
-        )
-    except Exception:
-        print("Failed to patch syft autocompletion for __syft_dir__")
-
-
-_patch_ipython_autocompletion()
+patch_ipython()
 
 
 def module_property(func: Any) -> Callable:

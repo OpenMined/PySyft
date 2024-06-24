@@ -5,8 +5,10 @@ from uuid import uuid4
 
 # third party
 import numpy as np
+import pandas as pd
 from pydantic import ValidationError
 import pytest
+import torch
 
 # syft absolute
 import syft as sy
@@ -253,3 +255,49 @@ def test_adding_contributors_with_duplicate_email():
     assert isinstance(res3, SyftSuccess)
     assert isinstance(res4, SyftError)
     assert len(asset.contributors) == 1
+
+
+@pytest.fixture(
+    params=[
+        1,
+        "hello",
+        {"key": "value"},
+        {1, 2, 3},
+        np.array([1, 2, 3]),
+        pd.DataFrame(data={"col1": [1, 2], "col2": [3, 4]}),
+        torch.Tensor([1, 2, 3]),
+    ]
+)
+def different_data_types(
+    request,
+) -> int | str | dict | set | np.ndarray | pd.DataFrame | torch.Tensor:
+    return request.param
+
+
+def test_upload_dataset_with_assets_of_different_data_types(
+    worker: Worker,
+    different_data_types: int
+    | str
+    | dict
+    | set
+    | np.ndarray
+    | pd.DataFrame
+    | torch.Tensor,
+) -> None:
+    asset = sy.Asset(
+        name=random_hash(),
+        data=different_data_types,
+        mock=different_data_types,
+    )
+    dataset = Dataset(name=random_hash())
+    dataset.add_asset(asset)
+    root_domain_client = worker.root_client
+    res = root_domain_client.upload_dataset(dataset)
+    assert isinstance(res, SyftSuccess)
+    assert len(root_domain_client.api.services.dataset.get_all()) == 1
+    assert type(root_domain_client.datasets[0].assets[0].data) == type(
+        different_data_types
+    )
+    assert type(root_domain_client.datasets[0].assets[0].mock) == type(
+        different_data_types
+    )
