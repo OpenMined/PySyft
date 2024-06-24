@@ -18,7 +18,6 @@ from ...types.cache_object import CachedSyftObject
 from ...types.syft_metaclass import Empty
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
@@ -50,7 +49,6 @@ from .user_code import load_approved_policy_code
 from .user_code_stash import UserCodeStash
 
 
-@instrument
 @serializable()
 class UserCodeService(AbstractService):
     store: DocumentStore

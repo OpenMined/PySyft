@@ -4,7 +4,6 @@
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectREAD
 from ..context import AuthedServiceContext
 from ..notifier.notifier import NotifierSettings
@@ -25,7 +24,6 @@ from .notifications import NotificationStatus
 from .notifications import ReplyNotification
 
 
-@instrument
 @serializable()
 class NotificationService(AbstractService):
     store: DocumentStore

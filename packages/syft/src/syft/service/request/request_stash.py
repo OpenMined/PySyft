@@ -13,7 +13,6 @@ from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...types.datetime import DateTime
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from .request import Request
 
 RequestingUserVerifyKeyPartitionKey = PartitionKey(
@@ -23,7 +22,6 @@ RequestingUserVerifyKeyPartitionKey = PartitionKey(
 OrderByRequestTimeStampPartitionKey = PartitionKey(key="request_time", type_=DateTime)
 
 
-@instrument
 @serializable()
 class RequestStash(BaseUIDStoreStash):
     object_type = Request

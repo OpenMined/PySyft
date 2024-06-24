@@ -5,7 +5,6 @@ from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..code.user_code import SubmitUserCode
 from ..code.user_code import UserCode
 from ..context import AuthedServiceContext
@@ -22,7 +21,6 @@ from .code_history import UsersCodeHistoriesDict
 from .code_history_stash import CodeHistoryStash
 
 
-@instrument
 @serializable()
 class CodeHistoryService(AbstractService):
     store: DocumentStore

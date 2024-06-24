@@ -15,7 +15,6 @@ from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from ..response import SyftSuccess
 from .user import User
@@ -28,7 +27,6 @@ SigningKeyPartitionKey = PartitionKey(key="signing_key", type_=SyftSigningKey)
 VerifyKeyPartitionKey = PartitionKey(key="verify_key", type_=SyftVerifyKey)
 
 
-@instrument
 @serializable()
 class UserStash(BaseStash):
     object_type = User

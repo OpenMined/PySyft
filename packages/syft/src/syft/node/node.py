@@ -313,7 +313,6 @@ class AuthNodeContextRegistry:
         return cls.__node_context_registry__.get(key)
 
 
-@instrument
 class Node(AbstractNode):
     signing_key: SyftSigningKey | None
     required_signed_calls: bool = True
@@ -956,7 +955,7 @@ class Node(AbstractNode):
             {"svc": SyftImageRegistryService},
             {"svc": SyncService},
             {"svc": OutputService},
-            {"svc": UserCodeStatusService},  # this is lazy
+            {"svc": UserCodeStatusService},
         ]
 
         for svc_kwargs in default_services:
@@ -1113,6 +1112,7 @@ class Node(AbstractNode):
                     return res
             sleep(0.1)
 
+    @instrument
     def resolve_future(
         self, credentials: SyftVerifyKey, uid: UID
     ) -> QueueItem | None | SyftError:
@@ -1127,6 +1127,7 @@ class Node(AbstractNode):
             return queue_obj
         return result.err()
 
+    @instrument
     def forward_message(
         self, api_call: SyftAPICall | SignedSyftAPICall
     ) -> Result | QueueItem | SyftObject | SyftError | Any:
@@ -1197,6 +1198,7 @@ class Node(AbstractNode):
         )
         return role
 
+    @instrument
     def handle_api_call(
         self,
         api_call: SyftAPICall | SignedSyftAPICall,
@@ -1354,6 +1356,7 @@ class Node(AbstractNode):
         )
         return worker_pool_ref
 
+    @instrument
     def add_action_to_queue(
         self,
         action: Action,
@@ -1406,6 +1409,7 @@ class Node(AbstractNode):
             user_id=user_id,
         )
 
+    @instrument
     def add_queueitem_to_queue(
         self,
         *,
@@ -1506,6 +1510,7 @@ class Node(AbstractNode):
             context, user_code_id, api_call.kwargs
         )
 
+    @instrument
     def add_api_call_to_queue(
         self, api_call: SyftAPICall, parent_job_id: UID | None = None
     ) -> Job | SyftError:
@@ -1627,6 +1632,7 @@ class Node(AbstractNode):
         worker_pool = result.ok()
         return worker_pool
 
+    @instrument
     def get_api(
         self,
         for_user: SyftVerifyKey | None = None,

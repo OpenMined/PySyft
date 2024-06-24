@@ -10,7 +10,6 @@ from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
 from ...types.syft_metaclass import Empty
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..context import AuthedServiceContext
@@ -45,7 +44,6 @@ from .user_roles import ServiceRoleCapability
 from .user_stash import UserStash
 
 
-@instrument
 @serializable()
 class UserService(AbstractService):
     store: DocumentStore

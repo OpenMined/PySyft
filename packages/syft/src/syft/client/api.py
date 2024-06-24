@@ -63,7 +63,6 @@ from ..types.uid import UID
 from ..util.autoreload import autoreload_enabled
 from ..util.markdown import as_markdown_python_code
 from ..util.notebook_ui.components.tabulator_template import build_tabulator_table
-from ..util.telemetry import instrument
 from ..util.util import prompt_warning_message
 from .connection import NodeConnection
 
@@ -203,7 +202,6 @@ class SignedSyftAPICall(SyftObject):
         return SyftSuccess(message="Credentials are valid")
 
 
-@instrument
 @serializable()
 class SyftAPICall(SyftObject):
     # version
@@ -230,7 +228,6 @@ class SyftAPICall(SyftObject):
         return f"SyftAPICall(path={self.path}, args={self.args}, kwargs={self.kwargs}, blocking={self.blocking})"
 
 
-@instrument
 @serializable()
 class SyftAPIData(SyftBaseObject):
     # version
@@ -864,7 +861,6 @@ class SyftAPIV2(SyftObject):
     __syft_allow_autocomplete__ = ["services"]
 
 
-@instrument
 @serializable(
     attrs=[
         "endpoints",

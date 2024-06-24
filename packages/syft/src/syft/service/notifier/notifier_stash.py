@@ -14,7 +14,6 @@ from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from .notifier import NotifierSettings
 
@@ -22,7 +21,6 @@ NamePartitionKey = PartitionKey(key="name", type_=str)
 ActionIDsPartitionKey = PartitionKey(key="action_ids", type_=list[UID])
 
 
-@instrument
 @serializable()
 class NotifierStash(BaseStash):
     object_type = NotifierSettings

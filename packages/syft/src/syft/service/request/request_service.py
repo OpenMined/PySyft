@@ -7,7 +7,6 @@ from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..context import AuthedServiceContext
@@ -37,7 +36,6 @@ from .request import SubmitRequest
 from .request_stash import RequestStash
 
 
-@instrument
 @serializable()
 class RequestService(AbstractService):
     store: DocumentStore

@@ -10,7 +10,6 @@ from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
-from ...util.telemetry import instrument
 from .user_code import CodeHashPartitionKey
 from .user_code import ServiceFuncNamePartitionKey
 from .user_code import SubmitTimePartitionKey
@@ -18,7 +17,6 @@ from .user_code import UserCode
 from .user_code import UserVerifyKeyPartitionKey
 
 
-@instrument
 @serializable()
 class UserCodeStash(BaseUIDStoreStash):
     object_type = UserCode

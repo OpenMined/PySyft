@@ -28,7 +28,6 @@ from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
-from ..util.telemetry import instrument
 from .locks import LockingConfig
 from .locks import NoLockingConfig
 from .locks import SyftLock
@@ -291,7 +290,6 @@ class PartitionSettings(BasePartitionSettings):
         return PartitionKeys.from_dict(self.object_type._syft_searchable_keys_dict())
 
 
-@instrument
 @serializable(attrs=["settings", "store_config", "unique_cks", "searchable_cks"])
 class StorePartition:
     """Base StorePartition
@@ -551,7 +549,6 @@ class StorePartition:
         raise NotImplementedError
 
 
-@instrument
 @serializable()
 class DocumentStore:
     """Base Document Store
@@ -588,7 +585,6 @@ class DocumentStore:
         return self.partitions[settings.name]
 
 
-@instrument
 class BaseStash:
     object_type: type[SyftObject]
     settings: PartitionSettings
@@ -752,7 +748,6 @@ class BaseStash:
         return res
 
 
-@instrument
 class BaseUIDStoreStash(BaseStash):
     def delete_by_uid(
         self, credentials: SyftVerifyKey, uid: UID

@@ -13,14 +13,12 @@ from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...types.datetime import DateTime
-from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
 from .sync_state import SyncState
 
 OrderByDatePartitionKey = PartitionKey(key="created_at", type_=DateTime)
 
 
-@instrument
 @serializable()
 class SyncStash(BaseUIDStoreStash):
     object_type = SyncState

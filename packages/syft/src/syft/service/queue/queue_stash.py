@@ -22,7 +22,6 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -97,7 +96,6 @@ class APIEndpointQueueItem(QueueItem):
     service: str = "apiservice"
 
 
-@instrument
 @serializable()
 class QueueStash(BaseStash):
     object_type = QueueItem

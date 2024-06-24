@@ -14,7 +14,6 @@ from ...service.action.action_endpoint import CustomEndpointActionObject
 from ...service.action.action_object import ActionObject
 from ...store.document_store import DocumentStore
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..action.action_service import ActionService
 from ..context import AuthedServiceContext
 from ..response import SyftError
@@ -36,7 +35,6 @@ from .api import UpdateTwinAPIEndpoint
 from .api_stash import TwinAPIEndpointStash
 
 
-@instrument
 @serializable()
 class APIService(AbstractService):
     store: DocumentStore

@@ -10,7 +10,6 @@ from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
-from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -22,7 +21,6 @@ from .data_subject_member import DataSubjectMemberRelationship
 from .data_subject_member import ParentPartitionKey
 
 
-@instrument
 @serializable()
 class DataSubjectMemberStash(BaseUIDStoreStash):
     object_type = DataSubjectMemberRelationship
@@ -47,7 +45,6 @@ class DataSubjectMemberStash(BaseUIDStoreStash):
         return self.query_all(credentials=credentials, qks=qks)
 
 
-@instrument
 @serializable()
 class DataSubjectMemberService(AbstractService):
     store: DocumentStore

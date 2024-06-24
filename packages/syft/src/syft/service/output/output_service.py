@@ -21,7 +21,6 @@ from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectREAD
 from ..context import AuthedServiceContext
@@ -189,7 +188,6 @@ class ExecutionOutput(SyncableSyftObject):
         return res
 
 
-@instrument
 @serializable()
 class OutputStash(BaseUIDStoreStash):
     object_type = ExecutionOutput
@@ -244,7 +242,6 @@ class OutputStash(BaseUIDStoreStash):
         )
 
 
-@instrument
 @serializable()
 class OutputService(AbstractService):
     store: DocumentStore

@@ -16,7 +16,6 @@ from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.document_store import SyftSuccess
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..service import AbstractService
 from ..service import AuthedServiceContext
 from ..service import SyftError
@@ -36,7 +35,6 @@ from .worker_pool import _get_worker_container_status
 from .worker_stash import WorkerStash
 
 
-@instrument
 @serializable()
 class WorkerService(AbstractService):
     store: DocumentStore

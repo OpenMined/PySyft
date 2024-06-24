@@ -29,7 +29,6 @@ from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.transforms import transform_method
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ...util.util import prompt_warning_message
 from ..context import AuthedServiceContext
 from ..data_subject.data_subject import NamePartitionKey
@@ -70,7 +69,6 @@ class NodePeerAssociationStatus(Enum):
     PEER_NOT_FOUND = "PEER_NOT_FOUND"
 
 
-@instrument
 @serializable()
 class NetworkStash(BaseUIDStoreStash):
     object_type = NodePeer
@@ -145,7 +143,6 @@ class NetworkStash(BaseUIDStoreStash):
         )
 
 
-@instrument
 @serializable()
 class NetworkService(AbstractService):
     store: DocumentStore

@@ -14,7 +14,6 @@ from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from .worker_pool import ConsumerState
@@ -23,7 +22,6 @@ from .worker_pool import SyftWorker
 WorkerContainerNamePartitionKey = PartitionKey(key="container_name", type_=str)
 
 
-@instrument
 @serializable()
 class WorkerStash(BaseUIDStoreStash):
     object_type = SyftWorker

@@ -10,7 +10,6 @@ from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
-from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -24,7 +23,6 @@ from .data_subject import NamePartitionKey
 from .data_subject_member_service import DataSubjectMemberService
 
 
-@instrument
 @serializable()
 class DataSubjectStash(BaseUIDStoreStash):
     object_type = DataSubject
@@ -54,7 +52,6 @@ class DataSubjectStash(BaseUIDStoreStash):
         return super().update(credentials=credentials, obj=res.ok())
 
 
-@instrument
 @serializable()
 class DataSubjectService(AbstractService):
     store: DocumentStore

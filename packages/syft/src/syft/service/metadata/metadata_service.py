@@ -3,7 +3,6 @@
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
-from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
 from ..service import AbstractService
 from ..service import service_method
@@ -11,7 +10,6 @@ from ..user.user_roles import GUEST_ROLE_LEVEL
 from .node_metadata import NodeMetadata
 
 
-@instrument
 @serializable()
 class MetadataService(AbstractService):
     def __init__(self, store: DocumentStore) -> None:

@@ -12,7 +12,6 @@ from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -24,7 +23,6 @@ from ..user.user_roles import GUEST_ROLE_LEVEL
 from .user_code import UserCodeStatusCollection
 
 
-@instrument
 @serializable()
 class StatusStash(BaseUIDStoreStash):
     object_type = UserCodeStatusCollection
@@ -46,7 +44,6 @@ class StatusStash(BaseUIDStoreStash):
         return self.query_one(credentials=credentials, qks=qks)
 
 
-@instrument
 @serializable()
 class UserCodeStatusService(AbstractService):
     store: DocumentStore

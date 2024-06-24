@@ -50,7 +50,6 @@ from ..types.grid_url import GridURL
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SYFT_OBJECT_VERSION_3
 from ..types.uid import UID
-from ..util.telemetry import instrument
 from ..util.util import prompt_warning_message
 from ..util.util import thread_ident
 from ..util.util import verify_tls
@@ -509,7 +508,6 @@ class PythonConnection(NodeConnection):
             return SyftError(message=f"Unknown node type {metadata.node_type}")
 
 
-@instrument
 @serializable()
 class SyftClient:
     connection: NodeConnection
@@ -971,7 +969,6 @@ class SyftClient:
         return _api
 
 
-@instrument
 def connect(
     url: str | GridURL = DEFAULT_PYGRID_ADDRESS,
     node: AbstractNode | None = None,
@@ -993,7 +990,6 @@ def connect(
     return client_type(connection=connection)
 
 
-@instrument
 def register(
     url: str | GridURL,
     port: int,
@@ -1013,7 +1009,6 @@ def register(
     )
 
 
-@instrument
 def login_as_guest(
     # HTTPConnection
     url: str | GridURL = DEFAULT_PYGRID_ADDRESS,
@@ -1040,7 +1035,6 @@ def login_as_guest(
     return _client.guest()
 
 
-@instrument
 def login(
     email: str,
     # HTTPConnection

@@ -39,7 +39,6 @@ from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
 from ...util.markdown import as_markdown_code
-from ...util.telemetry import instrument
 from ...util.util import prompt_warning_message
 from ..action.action_object import Action
 from ..action.action_object import ActionObject
@@ -825,7 +824,6 @@ class JobInfo(SyftObject):
         return info
 
 
-@instrument
 @serializable()
 class JobStash(BaseUIDStoreStash):
     object_type = Job

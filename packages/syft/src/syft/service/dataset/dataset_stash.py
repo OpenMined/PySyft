@@ -12,7 +12,6 @@ from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from .dataset import Dataset
 from .dataset import DatasetUpdate
 
@@ -20,7 +19,6 @@ NamePartitionKey = PartitionKey(key="name", type_=str)
 ActionIDsPartitionKey = PartitionKey(key="action_ids", type_=list[UID])
 
 
-@instrument
 @serializable()
 class DatasetStash(BaseUIDStoreStash):
     object_type = Dataset
