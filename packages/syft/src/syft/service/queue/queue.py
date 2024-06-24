@@ -220,12 +220,10 @@ def handle_message_multiprocessing(
 
         else:
             raise Exception(f"Unknown result type: {type(result)}")
-    except Exception as e:  # nosec
+    except Exception as e:
         status = Status.ERRORED
         job_status = JobStatus.ERRORED
-        # stdlib
-
-        logger.error(f"Error while handle message multiprocessing: {e}")
+        logger.error("Unhandled error in handle_message_multiprocessing", exc_info=e)
 
     queue_item.result = result
     queue_item.resolved = True
@@ -257,7 +255,7 @@ class APICallMessageHandler(AbstractMessageHandler):
         # relative
         from ...node.node import Node
 
-        queue_item = deserialize(message, from_bytes=True)
+        queue_item: QueueItem = deserialize(message, from_bytes=True)
         worker_settings = queue_item.worker_settings
 
         queue_config = worker_settings.queue_config
@@ -306,6 +304,12 @@ class APICallMessageHandler(AbstractMessageHandler):
         if isinstance(job_result, SyftError):
             raise Exception(f"{job_result.err()}")
 
+        logger.info(
+            f"Handling queue item: id={queue_item.id}, method={queue_item.method} "
+            f"args={queue_item.args}, kwargs={queue_item.kwargs} "
+            f"service={queue_item.service}, as_thread={queue_config.thread_workers}"
+        )
+
         if queue_config.thread_workers:
             thread = Thread(
                 target=handle_message_multiprocessing,
@@ -316,7 +320,6 @@ class APICallMessageHandler(AbstractMessageHandler):
         else:
             # if psutil.pid_exists(job_item.job_pid):
             #     psutil.Process(job_item.job_pid).terminate()
-
             process = Process(
                 target=handle_message_multiprocessing,
                 args=(worker_settings, queue_item, credentials),
