@@ -77,3 +77,10 @@ def healthcheck() -> dict[str, str]:
     probe on the pods backing the Service.
     """
     return {"status": "ok"}
+
+
+if settings.TRACING_ENABLED:
+    # third party
+    from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+
+    FastAPIInstrumentor.instrument_app(app)

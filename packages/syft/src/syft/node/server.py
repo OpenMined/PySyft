@@ -20,6 +20,7 @@ import uvicorn
 from ..abstract_node import NodeSideType
 from ..client.client import API_PATH
 from ..util.constants import DEFAULT_TIMEOUT
+from ..util.telemetry import TRACING_ENABLED
 from ..util.util import os_name
 from .domain import Domain
 from .enclave import Enclave
@@ -52,6 +53,12 @@ def make_app(name: str, router: APIRouter) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    if TRACING_ENABLED:
+        # third party
+        from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+
+        FastAPIInstrumentor().instrument_app(app)
 
     return app
 

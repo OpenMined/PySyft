@@ -155,6 +155,8 @@ class Settings(BaseSettings):
     ASSOCIATION_REQUEST_AUTO_APPROVAL: bool = str_to_bool(
         os.getenv("ASSOCIATION_REQUEST_AUTO_APPROVAL", "False")
     )
+
+    TRACING_ENABLED: bool = str_to_bool(os.getenv("TRACING", "False"))
     model_config = SettingsConfigDict(case_sensitive=True)
 
 
