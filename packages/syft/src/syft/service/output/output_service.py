@@ -324,7 +324,7 @@ class OutputService(AbstractService):
             # Check if all output ActionObjects have permissions
             result_ids = output.output_id_list
             permissions = [
-                ActionObjectREAD(uid=_id, credentials=user_verify_key)
+                ActionObjectREAD(uid=_id.id, credentials=user_verify_key)
                 for _id in result_ids
             ]
             if action_service.store.has_permissions(permissions):
