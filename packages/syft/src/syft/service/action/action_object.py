@@ -18,6 +18,7 @@ from typing import ClassVar
 from typing import TYPE_CHECKING
 
 # third party
+from loguru import logger
 from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import field_validator
@@ -36,7 +37,6 @@ from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize as serialize
 from ...service.blob_storage.util import can_upload_to_blob_storage
-from ...service.blob_storage.util import min_size_for_blob_storage_upload
 from ...service.response import SyftError
 from ...service.response import SyftSuccess
 from ...service.response import SyftWarning
@@ -524,7 +524,7 @@ def convert_to_pointers(
             if isinstance(r, SyftError):
                 print(r.message)
             if isinstance(r, SyftWarning):
-                print(r.message)
+                logger.debug(r.message)
                 skip_save_to_blob_store, skip_clear_cache = True, True
             else:
                 skip_save_to_blob_store, skip_clear_cache = False, False
@@ -892,8 +892,7 @@ class ActionObject(SyncableSyftObject):
         self.syft_action_data_cache = data
         return SyftWarning(
             message=f"The action object {self.id} was not saved to "
-            f"the blob store but to memory cache since it is "
-            f"smaller than {min_size_for_blob_storage_upload(api.metadata)} Mb."
+            f"the blob store but to memory cache since it is small."
         )
 
     def _clear_cache(self) -> None:
@@ -1248,7 +1247,7 @@ class ActionObject(SyncableSyftObject):
             return api
 
         if isinstance(blob_storage_res, SyftWarning):
-            print(blob_storage_res.message)
+            logger.debug(blob_storage_res.message)
             skip_save_to_blob_store, skip_clear_cache = True, True
         else:
             skip_save_to_blob_store, skip_clear_cache = False, False

@@ -3,6 +3,7 @@ import importlib
 from typing import Any
 
 # third party
+from loguru import logger
 import numpy as np
 from result import Err
 from result import Ok
@@ -71,7 +72,7 @@ class ActionService(AbstractService):
         if isinstance(blob_store_result, SyftError):
             return blob_store_result
         if isinstance(blob_store_result, SyftWarning):
-            print(blob_store_result.message)
+            logger.debug(blob_store_result.message)
             skip_save_to_blob_store, skip_clear_cache = True, True
         else:
             skip_save_to_blob_store, skip_clear_cache = False, False
@@ -527,7 +528,7 @@ class ActionService(AbstractService):
         if isinstance(blob_store_result, SyftError):
             return Err(blob_store_result.message)
         if isinstance(blob_store_result, SyftWarning):
-            print(blob_store_result.message)
+            logger.debug(blob_store_result.message)
             skip_save_to_blob_store, skip_clear_cache = True, True
         else:
             skip_save_to_blob_store, skip_clear_cache = False, False
@@ -815,7 +816,7 @@ class ActionService(AbstractService):
             "has_result_read_permission": has_result_read_permission
         }
         if isinstance(blob_store_result, SyftWarning):
-            print(blob_store_result.message)
+            logger.debug(blob_store_result.message)
             skip_save_to_blob_store, skip_clear_cache = True, True
         else:
             skip_save_to_blob_store, skip_clear_cache = False, False

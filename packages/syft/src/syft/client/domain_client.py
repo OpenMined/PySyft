@@ -144,7 +144,7 @@ class DomainClient(SyftClient):
                     return SyftError(message=f"Failed to create twin. {e}")
 
                 if isinstance(res, SyftWarning):
-                    print(res.message)
+                    logger.debug(res.message)
                     skip_save_to_blob_store, skip_clear_cache = True, True
                 else:
                     skip_save_to_blob_store, skip_clear_cache = False, False

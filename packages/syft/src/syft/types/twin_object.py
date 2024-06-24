@@ -6,6 +6,7 @@ from typing import Any
 from typing import ClassVar
 
 # third party
+from loguru import logger
 from pydantic import field_validator
 from pydantic import model_validator
 from typing_extensions import Self
@@ -105,7 +106,7 @@ class TwinObject(SyftObject):
         self._set_obj_location_(client.id, client.verify_key)
         blob_store_result = self._save_to_blob_storage()
         if isinstance(blob_store_result, SyftWarning):
-            print(blob_store_result.message)
+            logger.debug(blob_store_result.message)
             skip_save_to_blob_store, skip_clear_cache = True, True
         else:
             skip_save_to_blob_store, skip_clear_cache = False, False

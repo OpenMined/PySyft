@@ -8,6 +8,7 @@ from typing import Any
 # third party
 from IPython.display import display
 import itables
+from loguru import logger
 import pandas as pd
 from pydantic import ConfigDict
 from pydantic import field_validator
@@ -710,7 +711,7 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
         if isinstance(res, SyftError):
             raise ValueError(res.message)
         if isinstance(res, SyftWarning):
-            print(res.message)
+            logger.debug(res.message)
             skip_save_to_blob_store, skip_clear_cache = True, True
         else:
             skip_save_to_blob_store, skip_clear_cache = False, False
