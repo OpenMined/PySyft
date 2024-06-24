@@ -1237,8 +1237,17 @@ class ActionObject(SyncableSyftObject):
         api = self._get_api()
         if isinstance(api, SyftError):
             return api
+
+        if isinstance(blob_storage_res, SyftWarning):
+            print(blob_storage_res.message)
+            skip_save_to_blob_store, skip_clear_cache = True, True
+        else:
+            skip_save_to_blob_store, skip_clear_cache = False, False
         res = api.services.action.set(
-            self, add_storage_permission=add_storage_permission
+            self,
+            add_storage_permission=add_storage_permission,
+            skip_save_to_blob_store=skip_save_to_blob_store,
+            skip_clear_cache=skip_clear_cache,
         )
         if isinstance(res, ActionObject):
             self.syft_created_at = res.syft_created_at
