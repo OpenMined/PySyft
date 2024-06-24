@@ -84,6 +84,8 @@ class ActionService(AbstractService):
         action_object: ActionObject | TwinObject,
         add_storage_permission: bool = True,
         ignore_detached_objs: bool = False,
+        skip_clear_cache: bool = False,
+        skip_save_to_blob_store: bool = False,
     ) -> ActionObject | SyftError:
         res = self._set(
             context,
@@ -91,6 +93,8 @@ class ActionService(AbstractService):
             has_result_read_permission=True,
             add_storage_permission=add_storage_permission,
             ignore_detached_objs=ignore_detached_objs,
+            skip_clear_cache=skip_clear_cache,
+            skip_save_to_blob_store=skip_save_to_blob_store,
         )
         if res.is_err():
             return SyftError(message=res.value)
@@ -102,6 +106,9 @@ class ActionService(AbstractService):
         action_object: ActionObject | TwinObject,
         ignore_detached_obj: bool = False,
     ) -> bool:
+        """
+        A detached object is an object that is not yet saved to the blob storage.
+        """
         if (
             isinstance(action_object, TwinObject)
             and (
@@ -125,8 +132,12 @@ class ActionService(AbstractService):
         add_storage_permission: bool = True,
         ignore_detached_objs: bool = False,
         skip_clear_cache: bool = False,
+        skip_save_to_blob_store: bool = False,
     ) -> Result[ActionObject, str]:
-        if self.is_detached_obj(action_object, ignore_detached_objs):
+        if (
+            self.is_detached_obj(action_object, ignore_detached_objs)
+            and not skip_save_to_blob_store
+        ):
             return Err(
                 "you uploaded an ActionObject that is not yet in the blob storage"
             )

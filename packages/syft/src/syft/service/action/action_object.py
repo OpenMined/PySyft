@@ -36,7 +36,10 @@ from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize as serialize
 from ...service.blob_storage.util import can_upload_to_blob_storage
+from ...service.blob_storage.util import min_size_for_blob_storage_upload
 from ...service.response import SyftError
+from ...service.response import SyftSuccess
+from ...service.response import SyftWarning
 from ...store.linked_obj import LinkedObject
 from ...types.base import SyftBaseModel
 from ...types.datetime import DateTime
@@ -844,7 +847,9 @@ class ActionObject(SyncableSyftObject):
             )
         self.syft_action_data_str_ = truncate_str(str(data))
 
-    def _save_to_blob_storage(self, allow_empty: bool = False) -> SyftError | None:
+    def _save_to_blob_storage(
+        self, allow_empty: bool = False
+    ) -> SyftError | SyftSuccess | SyftWarning:
         data = self.syft_action_data
         if isinstance(data, SyftError):
             return data
@@ -867,15 +872,20 @@ class ActionObject(SyncableSyftObject):
                     return result
                 if not TraceResultRegistry.current_thread_is_tracing():
                     self._clear_cache()
-                return None
+                return SyftSuccess(
+                    message=f"Saved action object {self.id} to the blob store"
+                )
         except Exception as e:
             print(
                 f"Failed to save action object {self.id} to the blob store. Error: {e}"
             )
 
         self.syft_action_data_cache = data
-
-        return None
+        return SyftWarning(
+            message=f"The action object {self.id} was not saved to "
+            f"the blob store but to memory cache since it is "
+            f"smaller than {min_size_for_blob_storage_upload(api.metadata)} Mb."
+        )
 
     def _clear_cache(self) -> None:
         self.syft_action_data_cache = self.as_empty_data()
