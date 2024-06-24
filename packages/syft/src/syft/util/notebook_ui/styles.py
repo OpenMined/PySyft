@@ -28,6 +28,6 @@ function addStyleSheet(fileName) {{
 
 CSS_CODE = f"""
 <style>
-{load_css("style.css")}
+  {load_css("style.css")}
 </style>
 """

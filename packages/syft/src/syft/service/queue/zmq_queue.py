@@ -3,6 +3,7 @@ from binascii import hexlify
 from collections import defaultdict
 import itertools
 import socketserver
+import sys
 import threading
 import time
 from time import sleep
@@ -251,91 +252,142 @@ class ZMQProducer(QueueProducer):
             else:
                 nested_res = res.syft_action_data
                 if isinstance(nested_res, ActionObject):
-                    nested_res.syft_node_location = res.syft_node_location
-                    nested_res.syft_client_verify_key = res.syft_client_verify_key
+                    raise ValueError(
+                        "More than double nesting of ActionObjects is currently not supported"
+                    )
                 return nested_res
         return data
 
-    def preprocess_action_arg(self, arg: Any) -> None:
+    def contains_nested_actionobjects(self, data: Any) -> bool:
+        """
+        returns if this is a list/set/dict that contains ActionObjects
+        """
+
+        def unwrap_collection(col: set | dict | list) -> [Any]:  # type: ignore
+            return_values = []
+            if isinstance(col, dict):
+                values = list(col.values()) + list(col.keys())
+            else:
+                values = list(col)
+            for v in values:
+                if isinstance(v, list | dict | set):
+                    return_values += unwrap_collection(v)
+                else:
+                    return_values.append(v)
+            return return_values
+
+        if isinstance(data, list | dict | set):
+            values = unwrap_collection(data)
+            has_action_object = any(isinstance(x, ActionObject) for x in values)
+            return has_action_object
+        elif isinstance(data, ActionObject):
+            return True
+        return False
+
+    def preprocess_action_arg(self, arg: UID) -> UID | None:
+        """ "If the argument is a collection (of collections) of ActionObjects,
+        We want to flatten the collection and upload a new ActionObject that contains
+        its values. E.g. [[ActionObject1, ActionObject2],[ActionObject3, ActionObject4]]
+        -> [[value1, value2],[value3, value4]]
+        """
         res = self.action_service.get(context=self.auth_context, uid=arg)
         if res.is_err():
             return arg
         action_object = res.ok()
         data = action_object.syft_action_data
-        new_data = self.unwrap_nested_actionobjects(data)
-        new_action_object = ActionObject.from_obj(new_data, id=action_object.id)
-        res = self.action_service.set(
-            context=self.auth_context, action_object=new_action_object
-        )
+        if self.contains_nested_actionobjects(data):
+            new_data = self.unwrap_nested_actionobjects(data)
+
+            new_action_object = ActionObject.from_obj(
+                new_data,
+                id=action_object.id,
+                syft_blob_storage_entry_id=action_object.syft_blob_storage_entry_id,
+            )
+            res = self.action_service._set(
+                context=self.auth_context, action_object=new_action_object
+            )
+        return None
 
     def read_items(self) -> None:
         while True:
             if self._stop.is_set():
                 break
-            sleep(1)
+            try:
+                sleep(1)
 
-            # Items to be queued
-            items_to_queue = self.queue_stash.get_by_status(
-                self.queue_stash.partition.root_verify_key,
-                status=Status.CREATED,
-            ).ok()
+                # Items to be queued
+                items_to_queue = self.queue_stash.get_by_status(
+                    self.queue_stash.partition.root_verify_key,
+                    status=Status.CREATED,
+                ).ok()
 
-            items_to_queue = [] if items_to_queue is None else items_to_queue
+                items_to_queue = [] if items_to_queue is None else items_to_queue
 
-            # Queue Items that are in the processing state
-            items_processing = self.queue_stash.get_by_status(
-                self.queue_stash.partition.root_verify_key,
-                status=Status.PROCESSING,
-            ).ok()
+                # Queue Items that are in the processing state
+                items_processing = self.queue_stash.get_by_status(
+                    self.queue_stash.partition.root_verify_key,
+                    status=Status.PROCESSING,
+                ).ok()
 
-            items_processing = [] if items_processing is None else items_processing
+                items_processing = [] if items_processing is None else items_processing
 
-            for item in itertools.chain(items_to_queue, items_processing):
-                if item.status == Status.CREATED:
-                    if isinstance(item, ActionQueueItem):
-                        action = item.kwargs["action"]
-                        if self.contains_unresolved_action_objects(
-                            action.args
-                        ) or self.contains_unresolved_action_objects(action.kwargs):
-                            continue
-                        for arg in action.args:
-                            self.preprocess_action_arg(arg)
-                        for arg in action.kwargs.values():
-                            self.preprocess_action_arg(arg)
+                for item in itertools.chain(items_to_queue, items_processing):
+                    # TODO: if resolving fails, set queueitem to errored, and jobitem as well
+                    if item.status == Status.CREATED:
+                        if isinstance(item, ActionQueueItem):
+                            action = item.kwargs["action"]
+                            if self.contains_unresolved_action_objects(
+                                action.args
+                            ) or self.contains_unresolved_action_objects(action.kwargs):
+                                continue
+                            for arg in action.args:
+                                self.preprocess_action_arg(arg)
+                            for _, arg in action.kwargs.items():
+                                self.preprocess_action_arg(arg)
 
-                    msg_bytes = serialize(item, to_bytes=True)
-                    worker_pool = item.worker_pool.resolve_with_context(
-                        self.auth_context
-                    )
-                    worker_pool = worker_pool.ok()
-                    service_name = worker_pool.name
-                    service: Service | None = self.services.get(service_name)
-
-                    # Skip adding message if corresponding service/pool
-                    # is not registered.
-                    if service is None:
-                        continue
-
-                    # append request message to the corresponding service
-                    # This list is processed in dispatch method.
-
-                    # TODO: Logic to evaluate the CAN RUN Condition
-                    service.requests.append(msg_bytes)
-                    item.status = Status.PROCESSING
-                    res = self.queue_stash.update(item.syft_client_verify_key, item)
-                    if res.is_err():
-                        logger.error(
-                            "Failed to update queue item={} error={}",
-                            item,
-                            res.err(),
+                        msg_bytes = serialize(item, to_bytes=True)
+                        worker_pool = item.worker_pool.resolve_with_context(
+                            self.auth_context
                         )
-                elif item.status == Status.PROCESSING:
-                    # Evaluate Retry condition here
-                    # If job running and timeout or job status is KILL
-                    # or heartbeat fails
-                    # or container id doesn't exists, kill process or container
-                    # else decrease retry count and mark status as CREATED.
-                    pass
+                        worker_pool = worker_pool.ok()
+                        service_name = worker_pool.name
+                        service: Service | None = self.services.get(service_name)
+
+                        # Skip adding message if corresponding service/pool
+                        # is not registered.
+                        if service is None:
+                            continue
+
+                        # append request message to the corresponding service
+                        # This list is processed in dispatch method.
+
+                        # TODO: Logic to evaluate the CAN RUN Condition
+                        service.requests.append(msg_bytes)
+                        item.status = Status.PROCESSING
+                        res = self.queue_stash.update(item.syft_client_verify_key, item)
+                        if res.is_err():
+                            logger.error(
+                                "Failed to update queue item={} error={}",
+                                item,
+                                res.err(),
+                            )
+                    elif item.status == Status.PROCESSING:
+                        # Evaluate Retry condition here
+                        # If job running and timeout or job status is KILL
+                        # or heartbeat fails
+                        # or container id doesn't exists, kill process or container
+                        # else decrease retry count and mark status as CREATED.
+                        pass
+            except Exception as e:
+                print(e, file=sys.stderr)
+                item.status = Status.ERRORED
+                res = self.queue_stash.update(item.syft_client_verify_key, item)
+                if res.is_err():
+                    logger.error(
+                        "Failed to update queue item={} error={}",
+                        item,
+                        res.err(),
+                    )
 
     def run(self) -> None:
         self.thread = threading.Thread(target=self._run)
