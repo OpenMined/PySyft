@@ -59,7 +59,9 @@ from ...types.transforms import TransformContext
 from ...types.transforms import add_node_uid_for_key
 from ...types.transforms import drop
 from ...types.transforms import generate_id
+from ...types.transforms import keep
 from ...types.transforms import make_set_default
+from ...types.transforms import rename
 from ...types.transforms import transform
 from ...types.uid import UID
 from ...util import options
@@ -1527,40 +1529,29 @@ def submit_user_code_to_user_code() -> list[Callable]:
     ]
 
 
-def copy_user_code_attributes_for_submit_user_code(
-    context: TransformContext,
-) -> TransformContext:
-    keep_attributes = [
-        "id",
-        "output_policy_type",
-        "output_policy_init_kwargs",
-        "deployment_policy_type",
-        "deployment_policy_init_kwargs",
-        "input_kwargs",
-        "worker_pool_name",
-    ]
-
-    remap_attributes = {
-        "raw_code": "code",
-        "service_func_name": "func_name",
-        "signature": "signature",
-        "input_policy_type": "input_policy_type",
-    }
-    new_context_output = {}
-    if context.output:
-        new_context_output = {k: context.output.get(k) for k in keep_attributes}
-
-        new_context_output.update(
-            {v: context.output.get(k) for k, v in remap_attributes.items()}
-        )
-
-    context.output = new_context_output
-    return context
-
-
 @transform(UserCode, SubmitUserCode)
 def user_code_to_submit_user_code() -> list[Callable]:
-    return [copy_user_code_attributes_for_submit_user_code]
+    return [
+        rename("raw_code", "code"),
+        rename("service_func_name", "func_name"),
+        keep(
+            [
+                "id",
+                "code",
+                "func_name",
+                "signature",
+                "input_policy_type",
+                "input_policy_init_kwargs",
+                "output_policy_type",
+                "output_policy_init_kwargs",
+                "deployment_policy_type",
+                "deployment_policy_init_kwargs",
+                "input_kwargs",
+                "enclave_metadata",
+                "worker_pool_name",
+            ]
+        ),
+    ]
 
 
 @serializable()
