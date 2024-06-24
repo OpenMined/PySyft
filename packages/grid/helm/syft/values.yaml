@@ -177,6 +177,8 @@ node:
 
   # SMTP Settings
   smtp:
+    # Existing secret for SMTP with key 'smtpPassword'
+    existingSecret: null
     host: smtp.sendgrid.net
     port: 587
     from: noreply@openmined.org
@@ -197,7 +199,7 @@ node:
   resourcesPreset: xlarge
   resources: null
 
-  # Seaweed secret name. Override this if you want to use a self-managed secret.
+  # Backend secret name. Override this if you want to use a self-managed secret.
   # Secret must contain the following keys:
   # - defaultRootPassword
   secretKeyName: backend-secret
