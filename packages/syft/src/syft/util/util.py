@@ -7,9 +7,12 @@ from collections.abc import Sequence
 from concurrent.futures import ProcessPoolExecutor
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
+from copy import deepcopy
+from datetime import datetime
 import functools
 import hashlib
 from itertools import repeat
+import json
 import multiprocessing
 import multiprocessing as mp
 from multiprocessing import set_start_method
@@ -35,6 +38,7 @@ from IPython.display import display
 from forbiddenfruit import curse
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+import nh3
 import requests
 
 # relative
@@ -919,3 +923,71 @@ def get_queue_address(port: int) -> str:
 
 def get_dev_mode() -> bool:
     return str_to_bool(os.getenv("DEV_MODE", "False"))
+
+
+def sanitize_html(html: str) -> str:
+    policy = {
+        "tags": ["svg", "strong", "rect", "path", "circle"],
+        "attributes": {
+            "*": {"class", "style"},
+            "svg": {
+                "class",
+                "style",
+                "xmlns",
+                "width",
+                "height",
+                "viewBox",
+                "fill",
+                "stroke",
+                "stroke-width",
+            },
+            "path": {"d", "fill", "stroke", "stroke-width"},
+            "rect": {"x", "y", "width", "height", "fill", "stroke", "stroke-width"},
+            "circle": {"cx", "cy", "r", "fill", "stroke", "stroke-width"},
+        },
+        "remove": {"script", "style"},
+    }
+
+    tags = nh3.ALLOWED_TAGS
+    for tag in policy["tags"]:
+        tags.add(tag)
+
+    _attributes = deepcopy(nh3.ALLOWED_ATTRIBUTES)
+    attributes = {**_attributes, **policy["attributes"]}  # type: ignore
+
+    return nh3.clean(
+        html,
+        tags=tags,
+        clean_content_tags=policy["remove"],
+        attributes=attributes,
+    )
+
+
+def parse_iso8601_date(date_string: str) -> datetime:
+    # Handle variable length of microseconds by trimming to 6 digits
+    if "." in date_string:
+        base_date, microseconds = date_string.split(".")
+        microseconds = microseconds.rstrip("Z")  # Remove trailing 'Z'
+        microseconds = microseconds[:6]  # Trim to 6 digits
+        date_string = f"{base_date}.{microseconds}Z"
+    return datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%S.%fZ")
+
+
+def get_latest_tag(registry: str, repo: str) -> str | None:
+    repo_url = f"http://{registry}/v2/{repo}"
+    res = requests.get(url=f"{repo_url}/tags/list", timeout=5)
+    tags = res.json().get("tags", [])
+
+    tag_times = []
+    for tag in tags:
+        manifest_response = requests.get(f"{repo_url}/manifests/{tag}", timeout=5)
+        manifest = manifest_response.json()
+        created_time = json.loads(manifest["history"][0]["v1Compatibility"])["created"]
+        created_datetime = parse_iso8601_date(created_time)
+        tag_times.append((tag, created_datetime))
+
+    # sort tags by datetime
+    tag_times.sort(key=lambda x: x[1], reverse=True)
+    if len(tag_times) > 0:
+        return tag_times[0][0]
+    return None

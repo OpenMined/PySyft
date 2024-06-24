@@ -133,7 +133,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install --upgrade pip uv==0.1.35 bump2version tox tox-uv==1.5.1
+          pip install --upgrade pip==24.0 uv==0.2.13 bump2version tox tox-uv==1.9.0
           uv --version
 
       - name: Get Release tag
@@ -185,7 +185,7 @@ jobs:
 
       - name: Build and push `grid-backend` image to DockerHub
         id: grid-backend-build
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./packages
           file: ./packages/grid/backend/backend.dockerfile
@@ -203,7 +203,7 @@ jobs:
 
       - name: Build and push `grid-frontend` image to DockerHub
         id: grid-frontend-build
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./packages/grid/frontend
           file: ./packages/grid/frontend/frontend.dockerfile
@@ -221,7 +221,7 @@ jobs:
 
       - name: Build and push `grid-seaweedfs` image to DockerHub
         id: grid-seaweedfs-build
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./packages/grid/seaweedfs
           file: ./packages/grid/seaweedfs/seaweedfs.dockerfile
@@ -241,7 +241,7 @@ jobs:
       - name: Build and push `grid-enclave-attestation` image to DockerHub
         if: ${{ endsWith(matrix.runner, '-x64') }}
         id: grid-enclave-attestation-build
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./packages/grid/enclave/attestation
           file: ./packages/grid/enclave/attestation/attestation.dockerfile
@@ -259,7 +259,7 @@ jobs:
 
       - name: Build and push `syft` image to registry
         id: syft-build
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./packages/
           file: ./packages/grid/syft-client/syft.Dockerfile
@@ -385,7 +385,7 @@ jobs:
           python-version: "3.12"
       - name: Install dependencies
         run: |
-          pip install --upgrade pip uv==0.1.35 tox tox-uv==1.5.1 setuptools wheel twine bump2version PyYAML
+          pip install --upgrade pip==24.0 uv==0.2.13 tox tox-uv==1.9.0 setuptools wheel twine bump2version PyYAML
           uv --version
 
       - name: Bump the Version

@@ -5,7 +5,6 @@ from ...abstract_node import NodeType
 from ...exceptions.user import UserAlreadyExistsException
 from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
-from ...node.credentials import UserLoginCredentials
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
@@ -133,6 +132,23 @@ class UserService(AbstractService):
 
         # 🟡 TODO: No user exists will happen when result.ok() is empty list
         return SyftError(message="No users exists")
+
+    def signing_key_for_verify_key(
+        self, context: AuthedServiceContext, verify_key: SyftVerifyKey
+    ) -> UserPrivateKey | SyftError:
+        result = self.stash.get_by_verify_key(
+            credentials=self.admin_verify_key(), verify_key=verify_key
+        )
+        if result.is_ok():
+            user = result.ok()
+            if user is not None:
+                return user.to(UserPrivateKey)
+
+            return SyftError(message=f"No user exists with {verify_key}.")
+
+        return SyftError(
+            message=f"Failed to retrieve user with {verify_key} with error: {result.err()}"
+        )
 
     def get_role_for_credentials(
         self, credentials: SyftVerifyKey | SyftSigningKey
@@ -395,7 +411,7 @@ class UserService(AbstractService):
 
     def exchange_credentials(
         self, context: UnauthedServiceContext
-    ) -> UserLoginCredentials | SyftError:
+    ) -> UserPrivateKey | SyftError:
         """Verify user
         TODO: We might want to use a SyftObject instead
         """

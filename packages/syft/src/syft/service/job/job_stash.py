@@ -23,7 +23,7 @@ from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...service.context import AuthedServiceContext
 from ...service.worker.worker_pool import SyftWorker
-from ...store.document_store import BaseStash
+from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
@@ -317,7 +317,7 @@ class Job(SyncableSyftObject):
         )
         job: Job | None = api.make_call(call)
         if job is None:
-            return
+            return None
         self.resolved = job.resolved
         if job.resolved:
             self.result = job.result
@@ -592,8 +592,9 @@ class Job(SyncableSyftObject):
         updated_at = str(self.updated_at)[:-7] if self.updated_at else "--"
 
         user_repr = "--"
-        if self.requested_by:
-            requesting_user = self.requesting_user
+        if self.requested_by and not isinstance(
+            requesting_user := self.requesting_user, SyftError
+        ):
             user_repr = f"{requesting_user.name} {requesting_user.email}"
 
         worker_attr = ""
@@ -620,17 +621,12 @@ class Job(SyncableSyftObject):
 
         template = Template(job_repr_template)
         return template.substitute(
-            uid=str(UID()),
-            grid_template_columns=None,
-            grid_template_cell_columns=None,
-            cols=0,
             job_type=job_type,
             api_header=api_header,
             user_code_name=self.user_code_name,
             button_html=button_html,
             status=self.status.value.title(),
             creation_time=creation_time,
-            user_rerp=user_repr,
             updated_at=updated_at,
             worker_attr=worker_attr,
             no_subjobs=len(self.subjobs),
@@ -644,7 +640,7 @@ class Job(SyncableSyftObject):
 
     def wait(
         self, job_only: bool = False, timeout: int | None = None
-    ) -> Any | SyftNotReady:
+    ) -> Any | SyftNotReady | SyftError:
         self.fetch()
         if self.resolved:
             return self.resolve
@@ -656,29 +652,28 @@ class Job(SyncableSyftObject):
 
         if api is None:
             raise ValueError(
-                f"Can't access Syft API. You must login to {self.syft_node_location}"
+                f"Can't access Syft API. You must login to node with id '{self.syft_node_location}'"
             )
 
         workers = api.services.worker.get_all()
         if not isinstance(workers, SyftError) and len(workers) == 0:
             return SyftError(
-                message="This node has no workers. "
-                "You need to start a worker to run jobs "
-                "by setting n_consumers > 0."
+                message=f"Node {self.syft_node_location} has no workers. "
+                f"You need to start a worker to run jobs "
+                f"by setting n_consumers > 0."
             )
-
-        if not job_only and self.result is not None:
-            self.result.wait(timeout)
 
         print_warning = True
         counter = 0
         while True:
             self.fetch()
-            if isinstance(self.result, SyftError | Err) or self.status in [
-                JobStatus.ERRORED,
-                JobStatus.INTERRUPTED,
-            ]:
-                return self.result
+            if self.resolved:
+                if isinstance(self.result, SyftError | Err) or self.status in [  # type: ignore[unreachable]
+                    JobStatus.ERRORED,
+                    JobStatus.INTERRUPTED,
+                ]:
+                    return self.result
+                break
             if print_warning and self.result is not None:
                 result_obj = api.services.action.get(  # type: ignore[unreachable]
                     self.result.id, resolve_nested=False
@@ -690,15 +685,17 @@ class Job(SyncableSyftObject):
                         "Use job.wait().get() instead to wait for the linked result."
                     )
                     print_warning = False
+
             sleep(1)
-            if self.resolved:
-                break  # type: ignore[unreachable]
-            # TODO: fix the mypy issue
+
             if timeout is not None:
                 counter += 1
                 if counter > timeout:
                     return SyftError(message="Reached Timeout!")
 
+        # if self.resolve returns self.result as error, then we
+        # return SyftError and not wait for the result
+        # otherwise if a job is resolved and not errored out, we wait for the result
         if not job_only and self.result is not None:  # type: ignore[unreachable]
             self.result.wait(timeout)
 
@@ -830,7 +827,7 @@ class JobInfo(SyftObject):
 
 @instrument
 @serializable()
-class JobStash(BaseStash):
+class JobStash(BaseUIDStoreStash):
     object_type = Job
     settings: PartitionSettings = PartitionSettings(
         name=Job.__canonical_name__, object_type=Job
@@ -872,29 +869,6 @@ class JobStash(BaseStash):
                 return Err("multiple Jobs found")
             else:
                 return Ok(res[0])
-
-    def set_placeholder(
-        self,
-        credentials: SyftVerifyKey,
-        item: Job,
-        add_permissions: list[ActionObjectPermission] | None = None,
-    ) -> Result[Job, str]:
-        # 🟡 TODO 36: Needs distributed lock
-        if not item.resolved:
-            exists = self.get_by_uid(credentials, item.id)
-            if exists.is_ok() and exists.ok() is None:
-                valid = self.check_type(item, self.object_type)
-                if valid.is_err():
-                    return SyftError(message=valid.err())
-                return super().set(credentials, item, add_permissions)
-        return item
-
-    def get_by_uid(
-        self, credentials: SyftVerifyKey, uid: UID
-    ) -> Result[Job | None, str]:
-        qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
-        item = self.query_one(credentials=credentials, qks=qks)
-        return item
 
     def get_by_parent_id(
         self, credentials: SyftVerifyKey, uid: UID

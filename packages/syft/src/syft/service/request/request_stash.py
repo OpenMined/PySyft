@@ -1,6 +1,7 @@
 # stdlib
 
 # third party
+from result import Ok
 from result import Result
 
 # relative
@@ -11,6 +12,7 @@ from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...types.datetime import DateTime
+from ...types.uid import UID
 from ...util.telemetry import instrument
 from .request import Request
 
@@ -42,3 +44,14 @@ class RequestStash(BaseUIDStoreStash):
             qks=qks,
             order_by=OrderByRequestTimeStampPartitionKey,
         )
+
+    def get_by_usercode_id(
+        self, credentials: SyftVerifyKey, user_code_id: UID
+    ) -> Result[list[Request], str]:
+        query = self.get_all(credentials=credentials)
+        if query.is_err():
+            return query
+
+        all_requests: list[Request] = query.ok()
+        results = [r for r in all_requests if r.code_id == user_code_id]
+        return Ok(results)
