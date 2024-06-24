@@ -975,12 +975,12 @@ def parse_iso8601_date(date_string: str) -> datetime:
 
 def get_latest_tag(registry: str, repo: str) -> str | None:
     repo_url = f"http://{registry}/v2/{repo}"
-    res = requests.get(url=f"{repo_url}/tags/list")
+    res = requests.get(url=f"{repo_url}/tags/list", timeout=5)
     tags = res.json().get("tags", [])
 
     tag_times = []
     for tag in tags:
-        manifest_response = requests.get(f"{repo_url}/manifests/{tag}")
+        manifest_response = requests.get(f"{repo_url}/manifests/{tag}", timeout=5)
         manifest = manifest_response.json()
         created_time = json.loads(manifest["history"][0]["v1Compatibility"])["created"]
         created_datetime = parse_iso8601_date(created_time)
