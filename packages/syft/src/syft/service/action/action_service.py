@@ -23,6 +23,7 @@ from ..policy.policy import OutputPolicy
 from ..policy.policy import retrieve_from_db
 from ..response import SyftError
 from ..response import SyftSuccess
+from ..response import SyftWarning
 from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
@@ -794,8 +795,17 @@ class ActionService(AbstractService):
         context.extra_kwargs = {
             "has_result_read_permission": has_result_read_permission
         }
-
-        set_result = self._set(context, result_action_object)
+        if isinstance(blob_store_result, SyftWarning):
+            print(blob_store_result.message)
+            skip_save_to_blob_store, skip_clear_cache = True, True
+        else:
+            skip_save_to_blob_store, skip_clear_cache = False, False
+        set_result = self._set(
+            context,
+            result_action_object,
+            skip_save_to_blob_store=skip_save_to_blob_store,
+            skip_clear_cache=skip_clear_cache,
+        )
         if set_result.is_err():
             return Err(
                 f"Failed executing action {action}, set result is an error: {set_result.err()}"
