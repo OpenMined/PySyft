@@ -857,7 +857,9 @@ class Request(SyncableSyftObject):
         input_policy = code.input_policy
         if input_policy is not None:
             for input_ in input_policy.inputs.values():
-                input_ids.update(input_)
+                # Skip inputs with type Constant
+                if isinstance(input_, UID):
+                    input_ids.update(input_)
         res = api.services.code.store_execution_output(
             user_code_id=code.id,
             outputs=result,
