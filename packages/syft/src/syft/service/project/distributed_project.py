@@ -99,7 +99,7 @@ class DistributedProject(BaseModel):
 
     @field_validator("code", mode="before")
     @classmethod
-    def verify_code(cls, code: SubmitUserCode) -> SubmitUserCode:
+    def verify_code(cls, code: UserCode | SubmitUserCode) -> UserCode | SubmitUserCode:
         if not code.deployment_policy_init_kwargs:
             raise ValueError("Deployment policy not found in code.")
         provider = code.deployment_policy_init_kwargs.get("provider")
@@ -109,6 +109,8 @@ class DistributedProject(BaseModel):
             raise SyftException(
                 "Only `EnclaveInstance` is supported as provider for now."
             )
+        if isinstance(code, SubmitUserCode) and not code.id:
+            code.id = UID()
         return code
 
     @field_validator("clients", mode="before")
@@ -127,11 +129,6 @@ class DistributedProject(BaseModel):
     def _populate_auto_generated_fields(self) -> Self:
         self.clients = self._get_clients_from_code()
         self.members = self._get_members_from_clients()
-        return self
-
-    @model_validator(mode="after")
-    def _set_code_uid(self) -> Self:
-        self.code.id = UID()
         return self
 
     def submit(self) -> Self:
