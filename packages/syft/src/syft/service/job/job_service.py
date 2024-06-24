@@ -314,6 +314,7 @@ class JobService(AbstractService):
         status: JobStatus = JobStatus.CREATED,
         add_code_owner_read_permissions: bool = True,
     ) -> Job | SyftError:
+        is_resolved = status in [JobStatus.COMPLETED, JobStatus.ERRORED]
         job = Job(
             id=UID(),
             node_uid=context.node.id,
@@ -324,6 +325,7 @@ class JobService(AbstractService):
             log_id=UID(),
             job_pid=None,
             user_code_id=user_code_id,
+            resolved=is_resolved,
         )
         user_code_service = context.node.get_service("usercodeservice")
         user_code = user_code_service.get_by_uid(context=context, uid=user_code_id)
