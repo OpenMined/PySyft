@@ -86,6 +86,9 @@ def test_diff_state(low_worker, high_worker):
 
     _ = client_low_ds.code.request_code_execution(compute)
 
+    result = client_low_ds.code.compute(blocking=False)
+    assert isinstance(result, SyftError), "DS cannot start a job on low side"
+
     diff_state_before, diff_state_after = compare_and_resolve(
         from_client=low_client, to_client=high_client
     )
@@ -106,8 +109,14 @@ def test_diff_state(low_worker, high_worker):
     assert diff_state_after.is_same
 
     client_low_ds.refresh()
+
+    # check loading results for both blocking and non-blocking case
     res = client_low_ds.code.compute(blocking=True)
-    assert res == compute(syft_no_node=True)
+    expected_result = compute(syft_no_node=True)
+    assert res == expected_result
+
+    res = client_low_ds.code.compute(blocking=False)
+    assert res == expected_result
 
 
 def test_sync_with_error(low_worker, high_worker):
