@@ -133,12 +133,7 @@ class Worker(SyftBaseModel):
     def _syft_worker(
         self, stash: WorkerStash, credentials: SyftVerifyKey
     ) -> Result[SyftWorker | None, str]:
-        return stash.get_by_uid(credentials == credentials, uid=self.syft_worker_id)
-
-    def _to_be_deleted(self, stash: WorkerStash, credentials: SyftVerifyKey) -> bool:
-        return self._syft_worker(stash, credentials).map_or(
-            False, lambda x: x is not None and x._to_be_deleted
-        )
+        return stash.get_by_uid(credentials=credentials, uid=self.syft_worker_id)
 
 
 @serializable()
@@ -431,11 +426,12 @@ class ZMQProducer(QueueProducer):
         """
         # work on a copy of the iterator
         for worker in self.waiting:
-            if worker.has_expired() or (
-                to_be_deleted := worker._to_be_deleted(
-                    self.worker_stash, self.auth_context.credentials
-                )
-            ):
+            res = worker._syft_worker(self.worker_stash, self.auth_context.credentials)
+            if res.is_err() or (syft_worker := res.ok()) is None:
+                logger.info("Failed to retrieve SyftWorker {worker.syft_worker_id}")
+                continue
+
+            if worker.has_expired() or syft_worker._to_be_deleted:
                 logger.info(
                     "Deleting expired Worker id={} uid={} expiry={} now={}",
                     worker.identity,
@@ -443,7 +439,15 @@ class ZMQProducer(QueueProducer):
                     worker.get_expiry(),
                     Timeout.now(),
                 )
-                self.delete_worker(worker, to_be_deleted)
+                self.delete_worker(worker, syft_worker._to_be_deleted)
+
+                # relative
+                from ...service.worker.worker_service import WorkerService
+
+                worker_service = cast(
+                    WorkerService, self.auth_context.node.get_service(WorkerService)
+                )
+                worker_service._delete(self.auth_context, syft_worker)
 
     def update_consumer_state_for_worker(
         self, syft_worker_id: UID, consumer_state: ConsumerState
@@ -653,17 +657,6 @@ class ZMQProducer(QueueProducer):
             self.update_consumer_state_for_worker(
                 worker.syft_worker_id, ConsumerState.DETACHED
             )
-
-        # relative
-        from ...service.worker.worker_service import WorkerService
-
-        worker_service = cast(
-            WorkerService, self.auth_context.node.get_service(WorkerService)
-        )
-        worker_service._delete(
-            self.auth_context,
-            worker._syft_worker(self.worker_stash, self.auth_context.credentials),
-        )
 
     @property
     def alive(self) -> bool:
