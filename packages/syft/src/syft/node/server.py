@@ -63,6 +63,48 @@ worker_classes = {
     NodeType.ENCLAVE: Enclave,
 }
 
+def run_reloadable_app():
+    # Read environment variables
+    name = os.getenv("NODE_NAME", "testing-node")
+    processes = int(os.getenv("PROCESSES", "1"))
+    reset = os.getenv("RESET", "False").lower() in ("true")
+    local_db = os.getenv("LOCAL_DB", "True").lower() in ("true")
+    node_type = os.getenv("NODE_TYPE", NodeType.DOMAIN)
+    node_side_type = os.getenv("NODE_SIDE_TYPE", NodeSideType.HIGH_SIDE)
+    
+    # Print variables for debugging
+    print("*" * 50)
+    print("Starting uvicorn app with the following settings:")
+    print(f"NODE_NAME: {name}")
+    print(f"PROCESSES: {processes}")
+    print(f"RESET: {reset}")
+    print(f"LOCAL_DB: {local_db}")
+    print(f"NODE_TYPE: {node_type}")
+    print(f"NODE_SIDE_TYPE: {node_side_type}")
+    print("*" * 50)
+
+    # Assuming worker_classes, make_routes, and make_app are defined elsewhere
+    worker_type = worker_classes[node_type]
+    worker = worker_type.named(
+        name=name,
+        processes=processes,
+        reset=reset,
+        local_db=local_db,
+        node_type=node_type,
+        node_side_type=node_side_type,
+        enable_warnings=False,
+        migrate=True,
+        in_memory_workers=True,
+        queue_port=None,
+        create_producer=False,
+        n_consumers=0,
+        association_request_auto_approval=False,
+        background_tasks=False,
+    )
+
+    router = make_routes(worker=worker)
+    app = make_app(worker.name, router=router)
+    return app
 
 def run_uvicorn(
     name: str,
