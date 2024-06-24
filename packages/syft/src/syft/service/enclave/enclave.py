@@ -56,7 +56,6 @@ class EnclaveInstance(SyftObject):
 
             values.update(
                 {
-                    # 'id': UID(metadata.id),
                     "node_uid": UID(metadata.id),
                     "name": metadata.name,
                     "status": EnclaveStatus.NOT_INITIALIZED,
