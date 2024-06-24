@@ -38,8 +38,8 @@ spec:
         env:
             - name: SERVICE_NAME
               value: "rathole"
-            - name: APP_LOG_LEVEL
-              value: {{ .Values.rathole.appLogLevel | quote }}
+            - name: LOG_LEVEL
+              value: {{ .Values.rathole.logLevel | quote }}
             - name: MODE
               value: {{ .Values.rathole.mode | quote }}
             - name: DEV_MODE

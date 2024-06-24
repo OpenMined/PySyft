@@ -912,3 +912,56 @@ def test_peer_health_check(set_env_var, gateway_port: int, domain_1_port: int) -
     # Remove existing peers
     assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
+
+
+def test_reverse_tunnel_connection(domain_1_port: int, gateway_port: int):
+    # login to the domain and gateway
+
+    gateway_client: GatewayClient = sy.login(
+        port=gateway_port, email="info@openmined.org", password="changethis"
+    )
+    domain_client: DomainClient = sy.login(
+        port=domain_1_port, email="info@openmined.org", password="changethis"
+    )
+
+    res = gateway_client.settings.allow_association_request_auto_approval(enable=False)
+
+    # Try removing existing peers just to make sure
+    _remove_existing_peers(domain_client)
+    _remove_existing_peers(gateway_client)
+
+    # connecting the domain to the gateway
+    result = domain_client.connect_to_gateway(gateway_client, reverse_tunnel=True)
+
+    assert isinstance(result, Request)
+    assert isinstance(result.changes[0], AssociationRequestChange)
+
+    assert len(domain_client.peers) == 1
+
+    # Domain's peer is a gateway and vice-versa
+    domain_peer = domain_client.peers[0]
+    assert domain_peer.node_type == NodeType.GATEWAY
+    assert domain_peer.node_routes[0].rathole_token is None
+    assert len(gateway_client.peers) == 0
+
+    gateway_client_root = gateway_client.login(
+        email="info@openmined.org", password="changethis"
+    )
+    res = gateway_client_root.api.services.request.get_all()[-1].approve()
+    assert not isinstance(res, SyftError)
+
+    time.sleep(90)
+
+    gateway_peers = gateway_client.api.services.network.get_all_peers()
+    assert len(gateway_peers) == 1
+    assert len(gateway_peers[0].node_routes) == 1
+    assert gateway_peers[0].node_routes[0].rathole_token is not None
+
+    proxy_domain_client = gateway_client.peers[0]
+
+    assert isinstance(proxy_domain_client, DomainClient)
+    assert isinstance(domain_peer, NodePeer)
+    assert gateway_client.name == domain_peer.name
+    assert domain_client.name == proxy_domain_client.name
+
+    assert not isinstance(proxy_domain_client.datasets.get_all(), SyftError)

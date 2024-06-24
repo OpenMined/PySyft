@@ -49,6 +49,7 @@ proxy:
 
 rathole:
   enabled: "true"
+  logLevel: "trace"
 # attestation:
 #   enabled: true
 #   resourcesPreset: null

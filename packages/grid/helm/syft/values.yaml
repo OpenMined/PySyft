@@ -240,6 +240,7 @@ rathole:
   # Extra environment vars
   env: null
   enabled: true
+  logLevel: info
 
   port: 2333
   mode: client

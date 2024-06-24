@@ -10,9 +10,10 @@ RUN git clone -b v${RATHOLE_VERSION} https://github.com/rapiz1/rathole
 WORKDIR /rathole
 RUN cargo build --locked --release --features ${FEATURES:-default}
 
-FROM python:${PYTHON_VERSION}-bookworm
+FROM python:${PYTHON_VERSION}-slim-bookworm
 ARG RATHOLE_VERSION
 ENV MODE="client"
+ENV LOG_LEVEL="info"
 RUN apt update && apt install -y netcat-openbsd vim rsync
 COPY --from=build /rathole/target/release/rathole /app/rathole
 
@@ -23,32 +24,3 @@ EXPOSE 2333/udp
 EXPOSE 2333
 
 CMD ["sh", "-c", "/app/start.sh"]
-
-
-# build and run a fake domain to simulate a normal http container service
-# docker build -f domain.dockerfile . -t domain
-# docker run --name domain1 -it -d -p 8080:8000 domain
-
-
-
-# check the web server is running on 8080
-# curl localhost:8080
-
-# build and run the rathole container
-# docker build -f rathole.dockerfile . -t rathole
-
-# run the rathole server
-# docker run --add-host host.docker.internal:host-gateway --name rathole-server -it -p 8001:8001 -p 8002:8002 -p 2333:2333 -e MODE=server rathole
-
-# check nothing is on port 8001 yet
-# curl localhost:8001
-
-# run the rathole client
-# docker run --add-host host.docker.internal:host-gateway --name rathole-client -it -e MODE=client rathole
-
-# try port 8001 now
-# curl localhost:8001
-
-# add another client and edit the server.toml and client.toml for port 8002
-
-

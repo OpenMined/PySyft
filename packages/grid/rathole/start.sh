@@ -1,30 +1,52 @@
 #!/usr/bin/env bash
+
 MODE=${MODE:-server}
+RUST_LOG=${LOG_LEVEL:-trace}
 
-cp -L -r -f /conf/* conf/
+# Copy configuration files
+copy_config() {
+  cp -L -r -f /conf/* conf/
+}
 
-if [[ $MODE == "server" ]]; then
-  RUST_LOG=trace /app/rathole conf/server.toml &
-elif [[ $MODE = "client" ]]; then
+# Start the server
+start_server() {
+  RUST_LOG=$RUST_LOG /app/rathole conf/server.toml &
+}
+
+# Start the client
+start_client() {
   while true; do
-    RUST_LOG=trace /app/rathole conf/client.toml
+    RUST_LOG=$RUST_LOG /app/rathole conf/client.toml
     status=$?
     if [ $status -eq 0 ]; then
-        break
+      break
     else
-        echo "Failed to load client.toml, retrying in 5 seconds..."
-        sleep 10
+      echo "Failed to load client.toml, retrying in 5 seconds..."
+      sleep 10
     fi
   done &
+}
+
+# Reload configuration every 10 seconds
+reload_config() {
+  echo "Starting configuration reload loop..."
+  while true; do
+    copy_config
+    sleep 10
+  done
+}
+
+# Make an initial copy of the configuration
+copy_config
+
+if [[ $MODE == "server" ]]; then
+  start_server
+elif [[ $MODE == "client" ]]; then
+  start_client
 else
   echo "RATHOLE MODE is set to an invalid value. Exiting."
+  exit 1
 fi
 
-# reload config every 10 seconds
-while true
-do
-    # Execute your script here
-    cp -L -r -f /conf/* conf/
-    # Sleep for 10 seconds
-    sleep 10
-done
+# Start the configuration reload in the background to keep the configuration up to date
+reload_config
