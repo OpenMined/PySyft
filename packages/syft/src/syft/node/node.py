@@ -1234,8 +1234,10 @@ class Node(AbstractNode):
 
         result = None
         is_blocking = api_call.message.blocking
+        is_low_side = self.node_side_type == NodeSideType.LOW_SIDE
 
-        if is_blocking or self.is_subprocess:
+        # do not allow non-blocking calls on low side nodes
+        if is_blocking or self.is_subprocess or is_low_side:
             credentials: SyftVerifyKey = api_call.credentials
             api_call = api_call.message
 
