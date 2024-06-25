@@ -168,16 +168,34 @@ class DistributedProject(BaseModel):
             print(assets_transferred.message)
 
         result_parts = []
+        # errors = []
+        # for client in self.clients.values():
+        #     result = client.api.services.enclave.request_execution(
+        #         service_func_name=self.code.service_func_name
+        #     )
+        #     if isinstance(result, SyftError):
+        #         errors.append(result.message)
+        #     else:
+        #         result_parts.append(result)
+
+        # # TODO reconstruct the result from the parts and return
+        # # TODO Cleanup the Enclave in owner domain node
+        # if errors:
+        #     return SyftError(
+        #         message=f"One or more errors occurred: {', '.join(errors)}"
+        #     )
+        # else:
+        #     return result_parts[0]
+
         for client in self.clients.values():
             result = client.api.services.enclave.request_execution(
                 service_func_name=self.code.service_func_name
             )
             if isinstance(result, SyftError):
-                raise SyftException(result.message)
-            result_parts.append(result)
+                return SyftError(message=f"Enclave execution failure: {result.message}")
+            else:
+                result_parts.append(result)
 
-        # TODO reconstruct the result from the parts and return
-        # TODO Cleanup the Enclave in owner domain node
         return result_parts[0]
 
     def _get_clients_from_code(self) -> dict[UID, SyftClient]:
