@@ -2,13 +2,13 @@
 from collections.abc import Callable
 from datetime import datetime
 from enum import Enum
+import logging
 import textwrap
 from typing import Any
 
 # third party
 from IPython.display import display
 import itables
-from loguru import logger
 import pandas as pd
 from pydantic import ConfigDict
 from pydantic import field_validator
@@ -50,6 +50,7 @@ from ..response import SyftSuccess
 from ..response import SyftWarning
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
+logger = logging.getLogger(__name__)
 
 
 @serializable()

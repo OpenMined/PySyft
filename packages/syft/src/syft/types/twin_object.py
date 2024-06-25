@@ -2,11 +2,11 @@
 from __future__ import annotations
 
 # stdlib
+import logging
 from typing import Any
 from typing import ClassVar
 
 # third party
-from loguru import logger
 from pydantic import field_validator
 from pydantic import model_validator
 from typing_extensions import Self
@@ -23,6 +23,8 @@ from ..service.response import SyftWarning
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from .syft_object import SyftObject
 from .uid import UID
+
+logger = logging.getLogger(__name__)
 
 
 def to_action_object(obj: Any) -> ActionObject:
