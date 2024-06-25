@@ -11,7 +11,6 @@ from ...client.client import login
 from ...client.client import login_as_guest
 from ...serde.serializable import serializable
 from ...service.metadata.node_metadata import NodeMetadataJSON
-from ...service.network.node_peer import route_to_connection
 from ...service.network.routes import NodeRouteType
 from ...service.response import SyftError
 from ...service.response import SyftException
