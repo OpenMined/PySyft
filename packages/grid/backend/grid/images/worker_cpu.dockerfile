@@ -5,7 +5,7 @@
 # NOTE: This dockerfile will be built inside a grid-backend container in PROD
 # Hence COPY will not work the same way in DEV vs. PROD
 
-ARG SYFT_VERSION_TAG="0.8.7-beta.11"
+ARG SYFT_VERSION_TAG="0.8.7-beta.12"
 FROM openmined/grid-backend:${SYFT_VERSION_TAG}
 
 # should match base image python version
