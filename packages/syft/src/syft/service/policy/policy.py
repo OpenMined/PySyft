@@ -594,14 +594,6 @@ def retrieve_from_db(
             if kwarg_value.is_err():
                 return Err(kwarg_value.err())
             code_inputs[var_name] = kwarg_value.ok()
-
-    elif context.node.node_type == NodeType.ENCLAVE:
-        dict_object = action_service.get(context=root_context, uid=code_item_id)
-        if dict_object.is_err():
-            return Err(dict_object.err())
-        for value in dict_object.ok().syft_action_data.values():
-            code_inputs.update(value)
-
     else:
         raise Exception(
             f"Invalid Node Type for Code Submission:{context.node.node_type}"
@@ -621,11 +613,6 @@ def allowed_ids_only(
             verify_key=context.node.signing_key.verify_key,
         )
         allowed_inputs = allowed_inputs.get(node_identity, {})
-    elif context.node.node_type == NodeType.ENCLAVE:
-        base_dict = {}
-        for key in allowed_inputs.values():
-            base_dict.update(key)
-        allowed_inputs = base_dict
     else:
         raise Exception(
             f"Invalid Node Type for Code Submission:{context.node.node_type}"
