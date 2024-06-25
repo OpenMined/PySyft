@@ -26,7 +26,7 @@ class LinkedObject(SyftObject):
     object_type: type[SyftObject]
     object_uid: UID
 
-    _cache = None
+    _resolve_cache: SyftObject | None = None
 
     __exclude_sync_diff_attrs__ = ["node_uid"]
 
@@ -48,8 +48,8 @@ class LinkedObject(SyftObject):
         if api is None:
             raise ValueError(f"api is None. You must login to {self.node_uid}")
 
-        self._cache = api.services.notifications.resolve_object(self)
-        return self._cache
+        self._resolve_cache = api.services.notifications.resolve_object(self)
+        return self._resolve_cache
 
     def resolve_with_context(self, context: NodeServiceContext) -> Any:
         if context.node is None:

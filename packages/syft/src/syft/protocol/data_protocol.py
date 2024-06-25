@@ -529,10 +529,18 @@ class DataProtocol:
             self.save_history(self.protocol_history)
 
 
-@cache
+# @cache
 def get_data_protocol(raise_exception: bool = False) -> DataProtocol:
-    return DataProtocol(
+    return _get_data_protocol(
         filename=data_protocol_file_name(),
+        raise_exception=raise_exception,
+    )
+
+
+@cache
+def _get_data_protocol(filename: str, raise_exception: bool = False) -> DataProtocol:
+    return DataProtocol(
+        filename=filename,
         raise_exception=raise_exception,
     )
 
