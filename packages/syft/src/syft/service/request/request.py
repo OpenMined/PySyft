@@ -610,9 +610,6 @@ class Request(SyncableSyftObject):
             message="This type of request does not have code associated with it."
         )
 
-    def get_results(self) -> Any:
-        return self.code.get_results()
-
     @property
     def current_change_state(self) -> dict[UID, bool]:
         change_applied_map = {}
@@ -1341,7 +1338,6 @@ class UserCodeStatusChange(Change):
                 if isinstance(updated_status, SyftError):
                     return Err(updated_status.message)
 
-                # TODO: Handle Enclave approval.
                 self.linked_obj.update_with_context(context, updated_status)
             return Ok(SyftSuccess(message=f"{type(self)} Success"))
         except Exception as e:

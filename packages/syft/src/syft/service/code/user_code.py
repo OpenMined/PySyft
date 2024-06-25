@@ -54,6 +54,7 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SYFT_OBJECT_VERSION_5
+from ...types.syft_object import SYFT_OBJECT_VERSION_6
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.transforms import TransformContext
@@ -299,7 +300,7 @@ class UserCodeV4(SyncableSyftObject):
 
 
 @serializable()
-class UserCode(SyncableSyftObject):
+class UserCodeV5(SyncableSyftObject):
     # version
     __canonical_name__ = "UserCode"
     __version__ = SYFT_OBJECT_VERSION_5
@@ -323,6 +324,40 @@ class UserCode(SyncableSyftObject):
     status_link: LinkedObject | None = None
     input_kwargs: list[str]
     enclave_metadata: EnclaveMetadata | None = None
+    submit_time: DateTime | None = None
+    # tracks if the code calls domain.something, variable is set during parsing
+    uses_domain: bool = False
+
+    nested_codes: dict[str, tuple[LinkedObject, dict]] | None = {}
+    worker_pool_name: str | None = None
+    origin_node_side_type: NodeSideType
+    l0_deny_reason: str | None = None
+
+
+@serializable()
+class UserCode(SyncableSyftObject):
+    # version
+    __canonical_name__ = "UserCode"
+    __version__ = SYFT_OBJECT_VERSION_6
+
+    id: UID
+    node_uid: UID | None = None
+    user_verify_key: SyftVerifyKey
+    raw_code: str
+    input_policy_type: type[InputPolicy] | UserPolicy
+    input_policy_init_kwargs: dict[Any, Any] | None = None
+    input_policy_state: bytes = b""
+    output_policy_type: type[OutputPolicy] | UserPolicy
+    output_policy_init_kwargs: dict[Any, Any] | None = None
+    output_policy_state: bytes = b""
+    parsed_code: str
+    service_func_name: str
+    unique_func_name: str
+    user_unique_func_name: str
+    code_hash: str
+    signature: inspect.Signature
+    status_link: LinkedObject | None = None
+    input_kwargs: list[str]
     submit_time: DateTime | None = None
     # tracks if the code calls domain.something, variable is set during parsing
     uses_domain: bool = False
@@ -509,10 +544,6 @@ class UserCode(SyncableSyftObject):
         if status.is_err():
             return SyftError(message=status.err())
         return status.ok()
-
-    @property
-    def is_enclave_code(self) -> bool:
-        return self.enclave_metadata is not None
 
     @property
     def input_owners(self) -> list[str] | None:
@@ -738,17 +769,6 @@ class UserCode(SyncableSyftObject):
     def byte_code(self) -> PyCodeObject | None:
         return compile_byte_code(self.parsed_code)
 
-    def get_results(self) -> Any:
-        # relative
-        from ...client.api import APIRegistry
-
-        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
-        if api is None:
-            return SyftError(
-                message=f"Can't access the api. You must login to {self.node_uid}"
-            )
-        return api.services.code.get_results(self)
-
     @property
     def assets(self) -> list[Asset]:
         # relative
@@ -926,7 +946,6 @@ class SubmitUserCode(SyftObject):
     output_policy_init_kwargs: dict[Any, Any] | None = {}
     local_function: Callable | None = None
     input_kwargs: list[str]
-    enclave_metadata: EnclaveMetadata | None = None
     worker_pool_name: str | None = None
 
     __repr_attrs__ = ["func_name", "code"]
