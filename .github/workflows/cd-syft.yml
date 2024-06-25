@@ -85,7 +85,8 @@ jobs:
 
     strategy:
       matrix:
-        runner: [sh-arc-linux-x64, sh-arc-linux-arm64]
+        # runner: [sh-arc-linux-x64, sh-arc-linux-arm64]
+        runner: [sh-arc-linux-arm64]
     runs-on: ${{ matrix.runner }}
 
     outputs:
@@ -112,7 +113,7 @@ jobs:
         run: |
           sudo apt update -y
           sudo apt install software-properties-common -y
-          sudo apt install gcc -y
+          sudo apt install gcc curl -y
 
       - name: Setup Python on arm64
         if: ${{ endsWith(matrix.runner, '-arm64') }}
