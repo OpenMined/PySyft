@@ -3,6 +3,7 @@ from collections import defaultdict
 from collections.abc import Iterable
 from collections.abc import MutableMapping
 from collections.abc import MutableSequence
+from functools import cache
 import hashlib
 import json
 from operator import itemgetter
@@ -528,6 +529,7 @@ class DataProtocol:
             self.save_history(self.protocol_history)
 
 
+@cache
 def get_data_protocol(raise_exception: bool = False) -> DataProtocol:
     return DataProtocol(
         filename=data_protocol_file_name(),
