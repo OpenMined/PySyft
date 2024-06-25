@@ -53,6 +53,19 @@ class RatholeClientToml(RatholeBaseToml):
 
         self.save(toml)
 
+    def clear_remote_addr(self) -> None:
+        """Clear the remote address from the client toml file."""
+
+        toml = self.read()
+
+        # Clear the remote address
+        if "client" not in toml:
+            return
+
+        toml["client"]["remote_addr"] = ""
+
+        self.save(toml)
+
     def add_config(self, config: RatholeConfig) -> None:
         """Add a new config to the toml file."""
 

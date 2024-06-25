@@ -21,7 +21,7 @@ RATHOLE_PROXY_CONFIG_MAP = "proxy-config-dynamic"
 PROXY_CONFIG_MAP = "proxy-config"
 
 
-class RatholeService:
+class RatholeConfigBuilder:
     def __init__(self) -> None:
         self.k8rs_client = get_kr8s_client()
 
@@ -39,7 +39,7 @@ class RatholeService:
         if not rathole_route:
             raise Exception(f"Peer: {peer} has no rathole route: {rathole_route}")
 
-        random_port = self.get_random_port()
+        random_port = self._get_random_port()
 
         peer_id = cast(UID, peer.id)
 
@@ -78,9 +78,43 @@ class RatholeService:
         KubeUtils.update_configmap(config_map=rathole_config_map, patch={"data": data})
 
         # Add the peer info to the proxy config map
-        self.add_dynamic_addr_to_rathole(config)
+        self._add_dynamic_addr_to_rathole(config)
 
-    def get_random_port(self) -> int:
+    def remove_host_from_server(self, peer_id: str, server_name: str) -> None:
+        """Remove a host from the rathole server toml file.
+
+        Args:
+            peer_id (str): The id of the peer to be removed.
+            server_name (str): The name of the peer to be removed.
+
+        Returns:
+            None
+        """
+
+        rathole_config_map = KubeUtils.get_configmap(
+            client=self.k8rs_client, name=RATHOLE_TOML_CONFIG_MAP
+        )
+
+        if rathole_config_map is None:
+            raise Exception("Rathole config map not found.")
+
+        client_filename = RatholeServerToml.filename
+
+        toml_str = rathole_config_map.data[client_filename]
+
+        rathole_toml = RatholeServerToml(toml_str=toml_str)
+
+        rathole_toml.remove_config(peer_id)
+
+        data = {client_filename: rathole_toml.toml_str}
+
+        # Update the rathole config map
+        KubeUtils.update_configmap(config_map=rathole_config_map, patch={"data": data})
+
+        # Remove the peer info from the proxy config map
+        self._remove_dynamic_addr_from_rathole(server_name)
+
+    def _get_random_port(self) -> int:
         """Get a random port number."""
         return secrets.randbits(15)
 
@@ -120,7 +154,32 @@ class RatholeService:
         # Update the rathole config map
         KubeUtils.update_configmap(config_map=rathole_config_map, patch={"data": data})
 
-    def add_dynamic_addr_to_rathole(
+    def remove_host_from_client(self, peer_id: str) -> None:
+        """Remove a host from the rathole client toml file."""
+
+        rathole_config_map = KubeUtils.get_configmap(
+            client=self.k8rs_client, name=RATHOLE_TOML_CONFIG_MAP
+        )
+
+        if rathole_config_map is None:
+            raise Exception("Rathole config map not found.")
+
+        client_filename = RatholeClientToml.filename
+
+        toml_str = rathole_config_map.data[client_filename]
+
+        rathole_toml = RatholeClientToml(toml_str=toml_str)
+
+        rathole_toml.remove_config(peer_id)
+
+        rathole_toml.clear_remote_addr()
+
+        data = {client_filename: rathole_toml.toml_str}
+
+        # Update the rathole config map
+        KubeUtils.update_configmap(config_map=rathole_config_map, patch={"data": data})
+
+    def _add_dynamic_addr_to_rathole(
         self, config: RatholeConfig, entrypoint: str = "web"
     ) -> None:
         """Add a port to the rathole proxy config map."""
@@ -166,9 +225,39 @@ class RatholeService:
             patch={"data": {"rathole-dynamic.yml": yaml.safe_dump(rathole_proxy)}},
         )
 
-        self.expose_port_on_rathole_service(config.server_name, config.local_addr_port)
+        self._expose_port_on_rathole_service(config.server_name, config.local_addr_port)
 
-    def expose_port_on_rathole_service(self, port_name: str, port: int) -> None:
+    def _remove_dynamic_addr_from_rathole(self, server_name: str) -> None:
+        """Remove a port from the rathole proxy config map."""
+
+        rathole_proxy_config_map = KubeUtils.get_configmap(
+            self.k8rs_client, RATHOLE_PROXY_CONFIG_MAP
+        )
+
+        if rathole_proxy_config_map is None:
+            raise Exception("Rathole proxy config map not found.")
+
+        rathole_proxy = rathole_proxy_config_map.data["rathole-dynamic.yml"]
+
+        if not rathole_proxy:
+            return
+
+        rathole_proxy = yaml.safe_load(rathole_proxy)
+
+        if server_name in rathole_proxy["http"]["routers"]:
+            del rathole_proxy["http"]["routers"][server_name]
+
+        if server_name in rathole_proxy["http"]["services"]:
+            del rathole_proxy["http"]["services"][server_name]
+
+        KubeUtils.update_configmap(
+            config_map=rathole_proxy_config_map,
+            patch={"data": {"rathole-dynamic.yml": yaml.safe_dump(rathole_proxy)}},
+        )
+
+        self._remove_port_on_rathole_service(server_name)
+
+    def _expose_port_on_rathole_service(self, port_name: str, port: int) -> None:
         """Expose a port on the rathole service."""
 
         rathole_service = KubeUtils.get_service(self.k8rs_client, "rathole")
@@ -199,7 +288,7 @@ class RatholeService:
 
         rathole_service.patch(config)
 
-    def remove_port_on_rathole_service(self, port_name: str) -> None:
+    def _remove_port_on_rathole_service(self, port_name: str) -> None:
         """Remove a port from the rathole service."""
 
         rathole_service = KubeUtils.get_service(self.k8rs_client, "rathole")

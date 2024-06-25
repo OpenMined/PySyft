@@ -56,7 +56,7 @@ from ..warnings import CRUDWarning
 from .association_request import AssociationRequestChange
 from .node_peer import NodePeer
 from .node_peer import NodePeerUpdate
-from .rathole_service import RatholeService
+from .reverse_tunnel_service import ReverseTunnelService
 from .routes import HTTPNodeRoute
 from .routes import NodeRoute
 from .routes import NodeRouteType
@@ -69,7 +69,7 @@ OrderByNamePartitionKey = PartitionKey(key="name", type_=str)
 REVERSE_TUNNEL_RATHOLE_ENABLED = "REVERSE_TUNNEL_RATHOLE_ENABLED"
 
 
-def get_rathole_enabled() -> bool:
+def reverse_tunnel_enabled() -> bool:
     return str_to_bool(get_env(REVERSE_TUNNEL_RATHOLE_ENABLED, "false"))
 
 
@@ -164,8 +164,8 @@ class NetworkService(AbstractService):
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
         self.stash = NetworkStash(store=store)
-        if get_rathole_enabled():
-            self.rathole_service = RatholeService()
+        if reverse_tunnel_enabled():
+            self.rtunnel_service = ReverseTunnelService()
 
     @service_method(
         path="network.exchange_credentials_with",
@@ -188,7 +188,9 @@ class NetworkService(AbstractService):
         # Step 1: Validate the Route
         self_node_peer = self_node_route.validate_with_context(context=context)
 
-        if reverse_tunnel:
+        if reverse_tunnel and not reverse_tunnel_enabled():
+            return SyftError(message="Reverse tunneling is not enabled on this node.")
+        elif reverse_tunnel:
             _rathole_route = self_node_peer.node_routes[-1]
             _rathole_route.rathole_token = generate_token()
             _rathole_route.host_or_ip = f"{self_node_peer.name}.syft.local"
@@ -257,41 +259,16 @@ class NetworkService(AbstractService):
             return SyftError(message="Failed to update route information.")
 
         # Step 5: Save rathole config to enable reverse tunneling
-        if reverse_tunnel and get_rathole_enabled():
-            self._add_reverse_tunneling_config_for_peer(
-                self_node_peer=self_node_peer, remote_node_route=remote_node_route
+        if reverse_tunnel and reverse_tunnel_enabled():
+            self.rtunnel_service.set_client_config(
+                self_node_peer=self_node_peer,
+                remote_node_route=remote_node_route,
             )
 
         return (
             SyftSuccess(message="Routes Exchanged")
             if association_request_approved
             else remote_res
-        )
-
-    def _add_reverse_tunneling_config_for_peer(
-        self,
-        self_node_peer: NodePeer,
-        remote_node_route: NodeRoute,
-    ) -> None:
-        rathole_route = self_node_peer.get_rathole_route()
-        if not rathole_route:
-            raise Exception(
-                "Failed to exchange routes via . "
-                + f"Peer: {self_node_peer} has no rathole route: {rathole_route}"
-            )
-
-        remote_url = GridURL(
-            host_or_ip=remote_node_route.host_or_ip, port=remote_node_route.port
-        )
-        rathole_remote_addr = remote_url.as_container_host()
-
-        remote_addr = rathole_remote_addr.url_no_protocol
-
-        self.rathole_service.add_host_to_client(
-            peer_name=self_node_peer.name,
-            peer_id=str(self_node_peer.id),
-            rathole_token=rathole_route.rathole_token,
-            remote_addr=remote_addr,
         )
 
     @service_method(path="network.add_peer", name="add_peer", roles=GUEST_ROLE_LEVEL)
@@ -509,12 +486,12 @@ class NetworkService(AbstractService):
         node_side_type = cast(NodeType, context.node.node_type)
         if node_side_type.value == NodeType.GATEWAY.value:
             rathole_route = peer.get_rathole_route()
-            self.rathole_service.add_host_to_server(peer) if rathole_route else None
+            self.rtunnel_service.set_server_config(peer) if rathole_route else None
         else:
             self_node_peer: NodePeer = context.node.settings.to(NodePeer)
             rathole_route = self_node_peer.get_rathole_route()
             (
-                self._add_reverse_tunneling_config_for_peer(
+                self.rtunnel_service.set_client_config(
                     self_node_peer=self_node_peer,
                     remote_node_route=peer.pick_highest_priority_route(),
                 )

@@ -66,7 +66,8 @@ class AssociationRequestChange(Change):
             and self.remote_peer.latest_added_route == rathole_route
         )
 
-        # If the remote peer is added via rathole, we don't need to ping the peer
+        # If the remote peer is added via rathole, we skip ping to peer
+        # and add the peer to the rathole server
         if add_rathole_route:
             network_service.rathole_service.add_host_to_server(self.remote_peer)
         else:
