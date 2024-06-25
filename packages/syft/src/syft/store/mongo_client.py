@@ -13,10 +13,20 @@ from result import Result
 
 # relative
 from ..serde.serializable import serializable
+from ..util.telemetry import TRACING_ENABLED
 from .document_store import PartitionSettings
 from .document_store import StoreClientConfig
 from .document_store import StoreConfig
 from .mongo_codecs import SYFT_CODEC_OPTIONS
+
+if TRACING_ENABLED:
+    try:
+        # third party
+        from opentelemetry.instrumentation.pymongo import PymongoInstrumentor
+
+        PymongoInstrumentor().instrument()
+    except Exception:
+        pass
 
 
 @serializable()
