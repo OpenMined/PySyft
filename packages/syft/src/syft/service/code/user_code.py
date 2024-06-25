@@ -931,10 +931,30 @@ class UserCodeUpdate(PartialSyftObject):
 
 
 @serializable(without=["local_function"])
-class SubmitUserCode(SyftObject):
+class SubmitUserCodeV4(SyftObject):
     # version
     __canonical_name__ = "SubmitUserCode"
     __version__ = SYFT_OBJECT_VERSION_4
+
+    id: UID | None = None  # type: ignore[assignment]
+    code: str
+    func_name: str
+    signature: inspect.Signature
+    input_policy_type: SubmitUserPolicy | UID | type[InputPolicy]
+    input_policy_init_kwargs: dict[Any, Any] | None = {}
+    output_policy_type: SubmitUserPolicy | UID | type[OutputPolicy]
+    output_policy_init_kwargs: dict[Any, Any] | None = {}
+    local_function: Callable | None = None
+    input_kwargs: list[str]
+    enclave_metadata: EnclaveMetadata | None = None
+    worker_pool_name: str | None = None
+
+
+@serializable(without=["local_function"])
+class SubmitUserCode(SyftObject):
+    # version
+    __canonical_name__ = "SubmitUserCode"
+    __version__ = SYFT_OBJECT_VERSION_5
 
     id: UID | None = None  # type: ignore[assignment]
     code: str
