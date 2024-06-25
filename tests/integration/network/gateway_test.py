@@ -965,3 +965,7 @@ def test_reverse_tunnel_connection(domain_1_port: int, gateway_port: int):
     assert domain_client.name == proxy_domain_client.name
 
     assert not isinstance(proxy_domain_client.datasets.get_all(), SyftError)
+
+    # Try removing existing peers just to make sure
+    _remove_existing_peers(gateway_client)
+    _remove_existing_peers(domain_client)

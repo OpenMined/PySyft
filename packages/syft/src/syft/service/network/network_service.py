@@ -512,6 +512,24 @@ class NetworkService(AbstractService):
         self, context: AuthedServiceContext, uid: UID
     ) -> SyftSuccess | SyftError:
         """Delete Node Peer"""
+        retrieve_result = self.stash.get_by_uid(context.credentials, uid)
+        if err := retrieve_result.is_err():
+            return SyftError(
+                message=f"Failed to retrieve peer with UID {uid}: {retrieve_result.err()}."
+            )
+        peer_to_delete = cast(NodePeer, retrieve_result.ok())
+
+        node_side_type = cast(NodeType, context.node.node_type)
+        if node_side_type.value == NodeType.GATEWAY.value:
+            rathole_route = peer_to_delete.get_rathole_route()
+            (
+                self.rtunnel_service.clear_server_config(peer_to_delete)
+                if rathole_route
+                else None
+            )
+
+        # TODO: Handle the case when peer is deleted from domain node
+
         result = self.stash.delete_by_uid(context.credentials, uid)
         if err := result.is_err():
             return SyftError(message=f"Failed to delete peer with UID {uid}: {err}.")

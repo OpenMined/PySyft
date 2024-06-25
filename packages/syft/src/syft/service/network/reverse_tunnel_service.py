@@ -38,3 +38,11 @@ class ReverseTunnelService:
     def set_server_config(self, remote_peer: NodePeer) -> None:
         rathole_route = remote_peer.get_rathole_route()
         self.builder.add_host_to_server(remote_peer) if rathole_route else None
+
+    def clear_client_config(self, self_node_peer: NodePeer) -> None:
+        self.builder.remove_host_from_client(str(self_node_peer.id))
+
+    def clear_server_config(self, remote_peer: NodePeer) -> None:
+        self.builder.remove_host_from_server(
+            str(remote_peer.id), server_name=remote_peer.name
+        )
