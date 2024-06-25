@@ -1212,6 +1212,8 @@ class UserCodeStatusChange(Change):
 
     @property
     def code(self) -> UserCode:
+        if self.linked_user_code._cache:
+            return self.linked_user_code._cache
         return self.linked_user_code.resolve
 
     def get_user_code(self, context: AuthedServiceContext) -> UserCode:
