@@ -605,7 +605,7 @@ def allowed_ids_only(
     allowed_inputs: dict[NodeIdentity, Any],
     kwargs: dict[str, Any],
     context: AuthedServiceContext,
-) -> dict[str, UID]:
+) -> dict[NodeIdentity, UID]:
     if context.node.node_type == NodeType.DOMAIN:
         node_identity = NodeIdentity(
             node_name=context.node.name,
