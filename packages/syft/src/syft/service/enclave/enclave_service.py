@@ -99,24 +99,22 @@ class EnclaveService(AbstractService):
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def request_enclave_for_code_execution(
-        self, context: AuthedServiceContext, service_func_name: str
+        self, context: AuthedServiceContext, user_code_id: UID
     ) -> SyftSuccess | SyftError:
         """Request an Enclave for running a project."""
         if not context.node or not context.node.signing_key:
             return SyftError(message=f"{type(context)} has no node")
 
         code_service = context.node.get_service("usercodeservice")
-        code: UserCode = code_service.get_by_service_name(
-            context=context, service_func_name=service_func_name
-        )[-1]  # TODO also match code hash and check status to get the actual code
+        code: UserCode = code_service.get_by_uid(context=context, uid=user_code_id)
         if not code.deployment_policy_init_kwargs:
             return SyftError(
-                message=f"Code '{service_func_name}' does not have a deployment policy."
+                message=f"Code '{code.service_func_name}' does not have a deployment policy."
             )
         provider = code.deployment_policy_init_kwargs.get("provider")
         if not isinstance(provider, EnclaveInstance):
             return SyftError(
-                message=f"Code '{service_func_name}' does not have an Enclave deployment provider."
+                message=f"Code '{code.service_func_name}' does not have an Enclave deployment provider."
             )
         if context.node.id != provider.syft_node_location:
             return SyftError(
@@ -143,6 +141,7 @@ class EnclaveService(AbstractService):
 
         if isinstance(code, UserCode):
             code = SubmitUserCode(
+                id=code.id,
                 code=code.raw_code,
                 func_name=code.service_func_name,
                 signature=code.signature,
@@ -167,16 +166,14 @@ class EnclaveService(AbstractService):
         roles=DATA_SCIENTIST_ROLE_LEVEL,  # TODO 🟣 update this
     )
     def request_assets_transfer_to_enclave(
-        self, context: AuthedServiceContext, service_func_name: str
+        self, context: AuthedServiceContext, user_code_id: UID
     ) -> SyftSuccess | SyftError:
         if not context.node or not context.node.signing_key:
             return SyftError(message=f"{type(context)} has no node")
 
         # Get the code
         code_service = context.node.get_service("usercodeservice")
-        code: UserCode = code_service.get_by_service_name(
-            context=context, service_func_name=service_func_name
-        )[-1]  # TODO also match code hash and check status to get the actual code
+        code: UserCode = code_service.get_by_uid(context=context, uid=user_code_id)
         if code.input_policy_init_kwargs is None:
             return SyftSuccess(message="No assets to transfer")
 
@@ -203,18 +200,18 @@ class EnclaveService(AbstractService):
         # Get the enclave client
         if not code.deployment_policy_init_kwargs:
             return SyftError(
-                message=f"Code '{service_func_name}' does not have a deployment policy."
+                message=f"Code '{code.service_func_name}' does not have a deployment policy."
             )
         provider = code.deployment_policy_init_kwargs.get("provider")
         if not isinstance(provider, EnclaveInstance):
             return SyftError(
-                message=f"Code '{service_func_name}' does not have an Enclave deployment provider."
+                message=f"Code '{code.service_func_name}' does not have an Enclave deployment provider."
             )
         enclave_client = provider.get_client(verify_key=context.node.verify_key)
 
         # Upload the assets to the enclave
         result = enclave_client.api.services.enclave.upload_input_data_for_code(
-            service_func_name=service_func_name, action_objects=action_objects
+            user_code_id=user_code_id, action_objects=action_objects
         )
         if isinstance(result, SyftError):
             return result
@@ -231,7 +228,7 @@ class EnclaveService(AbstractService):
     def upload_input_data_for_code(
         self,
         context: AuthedServiceContext,
-        service_func_name: str,
+        user_code_id: UID,
         action_objects: list[ActionObject] | list[TwinObject],
     ) -> SyftSuccess | SyftError:
         if not context.node or not context.node.signing_key:
@@ -241,9 +238,7 @@ class EnclaveService(AbstractService):
         action_service = context.node.get_service("actionservice")
 
         # Get the code
-        code: UserCode = code_service.get_by_service_name(
-            context=context, service_func_name=service_func_name
-        )[-1]  # TODO also match code hash to get the actual code
+        code: UserCode = code_service.get_by_uid(context=context, uid=user_code_id)
 
         init_kwargs = code.input_policy_init_kwargs
         if not code or not init_kwargs:
@@ -290,7 +285,7 @@ class EnclaveService(AbstractService):
             status_link = code.status_link
             if not status_link:
                 return SyftError(
-                    message=f"Code '{service_func_name}' does not have a status link."
+                    message=f"Code '{code.service_func_name}' does not have a status link."
                 )
             res = status_link.update_with_context(root_context, status)
             if isinstance(res, SyftError):
@@ -306,29 +301,30 @@ class EnclaveService(AbstractService):
         roles=DATA_SCIENTIST_ROLE_LEVEL,  # TODO 🟣 update this
     )
     def request_execution(
-        self, context: AuthedServiceContext, service_func_name: str
+        self, context: AuthedServiceContext, user_code_id: UID
     ) -> Any:
         if not context.node or not context.node.signing_key:
             return SyftError(message=f"{type(context)} has no node")
 
+        # if context.node.name == "italy-domain":
+        #     return SyftError(message="For testing purposes, italy-domain execution is blocked")
+
         code_service = context.node.get_service("usercodeservice")
-        code: UserCode = code_service.get_by_service_name(
-            context=context, service_func_name=service_func_name
-        )[-1]
+        code: UserCode = code_service.get_by_uid(context=context, uid=user_code_id)
 
         if not code.deployment_policy_init_kwargs:
             return SyftError(
-                message=f"Code '{service_func_name}' does not have a deployment policy."
+                message=f"Code '{code.service_func_name}' does not have a deployment policy."
             )
         provider = code.deployment_policy_init_kwargs.get("provider")
         if not isinstance(provider, EnclaveInstance):
             return SyftError(
-                message=f"Code '{service_func_name}' does not have an Enclave deployment provider."
+                message=f"Code '{code.service_func_name}' does not have an Enclave deployment provider."
             )
 
         enclave_client = provider.get_client(verify_key=context.node.verify_key)
         result = enclave_client.api.services.enclave.execute_code(
-            service_func_name=service_func_name
+            user_code_id=user_code_id
         )
         return result
 
@@ -337,16 +333,12 @@ class EnclaveService(AbstractService):
         name="execute_code",
         roles=DATA_SCIENTIST_ROLE_LEVEL,  # TODO 🟣 update this
     )
-    def execute_code(
-        self, context: AuthedServiceContext, service_func_name: str
-    ) -> Any:
+    def execute_code(self, context: AuthedServiceContext, user_code_id: UID) -> Any:
         if not context.node or not context.node.signing_key:
             return SyftError(message=f"{type(context)} has no node")
 
         code_service = context.node.get_service("usercodeservice")
-        code: UserCode = code_service.get_by_service_name(
-            context=context, service_func_name=service_func_name
-        )[-1]  # TODO also match code hash to get the actual code
+        code: UserCode = code_service.get_by_uid(context=context, uid=user_code_id)
 
         init_kwargs = (
             code.input_policy_init_kwargs.values()
@@ -411,14 +403,32 @@ class EnclaveService(AbstractService):
             root_context.extra_kwargs = {"has_result_read_permission": True}
             # TODO: Instead of using the action store, modify to
             # use the action service directly to store objects
-            action_service.set(root_context, dict_object)
+            # TODO: we store this in the actionstore isntead of blob stoarge,
+            # which is bad, but we cannot update in the blobstorage
+            res = action_service._set(
+                root_context,
+                dict_object,
+                ignore_detached_objs=True,
+                skip_clear_cache=True,
+            )
+            if res.is_err():
+                return SyftError(message=res.value)
 
         else:
             res = action_service.get(uid=user_code_id, context=root_context)
             if res.is_ok():
                 dict_object = res.ok()
                 dict_object[str(context.credentials)] = inputs
-                action_service.set(root_context, dict_object)
+                # TODO: we store this in the actionstore isntead of blob stoarge,
+                # which is bad, but we cannot update in the blobstorage
+                res = action_service._set(
+                    root_context,
+                    dict_object,
+                    ignore_detached_objs=True,
+                    skip_clear_cache=True,
+                )
+                if res.is_err():
+                    return SyftError(message=res.value)
             else:
                 return SyftError(
                     message=f"Error while fetching the object on Enclave: {res.err()}"

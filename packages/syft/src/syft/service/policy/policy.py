@@ -366,7 +366,7 @@ class ExactMatch(InputPolicy):
         not_approved_kwargs = set(expected_input_kwargs) - set(permitted_input_kwargs)
         if len(not_approved_kwargs) > 0:
             return Err(
-                f"Input arguments: {not_approved_kwargs} to the function are not approved yet."
+                f"Function arguments: {not_approved_kwargs} are not approved yet."
             )
         return Ok(True)
 
