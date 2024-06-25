@@ -1,9 +1,9 @@
 # stdlib
 import importlib
+import logging
 from typing import Any
 
 # third party
-from loguru import logger
 import numpy as np
 from result import Err
 from result import Ok
@@ -48,6 +48,8 @@ from .action_types import action_type_for_type
 from .numpy import NumpyArrayObject
 from .pandas import PandasDataFrameObject  # noqa: F401
 from .pandas import PandasSeriesObject  # noqa: F401
+
+logger = logging.getLogger(__name__)
 
 
 @serializable()
