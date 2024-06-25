@@ -14,6 +14,8 @@ from typing import cast
 
 # third party
 from argon2 import PasswordHasher
+from cachetools import TTLCache
+from cachetools import cached
 from pydantic import field_validator
 import requests
 from requests import Response
@@ -200,6 +202,8 @@ class HTTPConnection(NodeConnection):
         return self.session_cache
 
     def _make_get(self, path: str, params: dict | None = None) -> bytes:
+        if params is None:
+            return self._make_get_no_params(path)
         url = self.url.with_path(path)
         response = self.session.get(
             str(url),
@@ -207,6 +211,26 @@ class HTTPConnection(NodeConnection):
             verify=verify_tls(),
             proxies={},
             params=params,
+        )
+        if response.status_code != 200:
+            raise requests.ConnectionError(
+                f"Failed to fetch {url}. Response returned with code {response.status_code}"
+            )
+
+        # upgrade to tls if available
+        self.url = upgrade_tls(self.url, response)
+
+        return response.content
+
+    @cached(cache=TTLCache(maxsize=128, ttl=300))
+    def _make_get_no_params(self, path: str) -> bytes:
+        print(path)
+        url = self.url.with_path(path)
+        response = self.session.get(
+            str(url),
+            headers=self.headers,
+            verify=verify_tls(),
+            proxies={},
         )
         if response.status_code != 200:
             raise requests.ConnectionError(
