@@ -19,6 +19,8 @@ import uvicorn
 # relative
 from ..abstract_node import NodeSideType
 from ..client.client import API_PATH
+from ..orchestra import DeploymentType
+from ..orchestra import NodeHandle
 from ..util.constants import DEFAULT_TIMEOUT
 from ..util.util import os_name
 from .domain import Domain
@@ -64,13 +66,15 @@ worker_classes = {
 
 
 process_list = []
+
+
 def create_app(
     name: str,
     node_type: NodeType,
     node_side_type: NodeSideType,
     processes: int,
     reset: bool,
-    local_db: bool
+    local_db: bool,
 ) -> FastAPI:
     # Print variables for debugging
     print("*" * 50)
@@ -105,7 +109,8 @@ def create_app(
     app = make_app(worker.name, router=router)
     return app
 
-def app_factory():
+
+def app_factory() -> FastAPI:
     name = os.getenv("NODE_NAME")
     node_type = NodeType(os.getenv("NODE_TYPE", "domain"))
     node_side_type = NodeSideType(os.getenv("NODE_SIDE_TYPE", "high"))
@@ -119,18 +124,19 @@ def app_factory():
         node_side_type=node_side_type,
         processes=processes,
         reset=reset,
-        local_db=local_db
+        local_db=local_db,
     )
-    
+
+
 def start_uvicorn_server(
     name: str = "testing-node",
     node_type: str = "domain",
     node_side_type: str = "high",
     port: int = 9081,
-    processes: int = 1, 
+    processes: int = 1,
     local_db: bool = True,
-    reset: bool = False,    
-):
+    reset: bool = False,
+) -> NodeHandle:
     os.environ["NODE_NAME"] = name
     os.environ["NODE_TYPE"] = node_type
     os.environ["NODE_SIDE_TYPE"] = node_side_type
@@ -138,15 +144,13 @@ def start_uvicorn_server(
     os.environ["PROCESSES"] = str(processes)
     os.environ["LOCAL_DB"] = str(local_db)
     os.environ["RESET"] = str(reset)
-    
+
     command = ["python", "-m", "syft.node.server"]
     process = subprocess.Popen(command)
     process_list.append(process)
     print(f"Uvicorn server running on port {port} with PID: {process.pid}")
-    
-    from syft.orchestra import NodeHandle, DeploymentType
-    
-    # Return this object: 
+
+    # Return this object:
     return NodeHandle(
         node_type=NodeType(node_type),
         deployment_type=DeploymentType.PYTHON,
@@ -156,26 +160,29 @@ def start_uvicorn_server(
         node_side_type=NodeSideType(node_side_type),
         # shutdown=stop,
     )
-    # return process
 
-def stop_all_uvicorn_servers():
+
+def stop_all_uvicorn_servers() -> None:
     for process in process_list:
         process.terminate()
         process.wait()
     process_list.clear()
     print("All Uvicorn servers stopped.")
 
+
 if __name__ == "__main__":
     current_file_path = os.path.dirname(os.path.abspath(__file__))
     reload_dirs = os.path.abspath(os.path.join(current_file_path, "../../"))
-    
-    uvicorn.run("syft.node.server:app_factory", 
-                host="0.0.0.0", 
-                port=int(os.getenv("PORT", 9081)), 
-                reload=True, 
-                factory=True,
-                reload_dirs=[reload_dirs],
-)
+
+    uvicorn.run(
+        "syft.node.server:app_factory",
+        host="0.0.0.0",
+        port=int(os.getenv("PORT", 9081)),
+        reload=True,
+        factory=True,
+        reload_dirs=[reload_dirs],
+    )
+
 
 def run_uvicorn(
     name: str,
