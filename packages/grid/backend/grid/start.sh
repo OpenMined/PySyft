@@ -1,7 +1,7 @@
 #! /usr/bin/env bash
 set -e
 
-echo "Running Syft with RELEASE=${RELEASE} and $(id)"
+echo "Running Syft with RELEASE=${RELEASE}"
 
 APP_MODULE=grid.main:app
 LOG_LEVEL=${LOG_LEVEL:-info}
@@ -38,7 +38,7 @@ then
     export OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-"http://syft-signoz-otel-collector.platform:4317"}
     export OTEL_EXPORTER_OTLP_PROTOCOL=${OTEL_EXPORTER_OTLP_PROTOCOL:-grpc}
 
-    # TODO: Finalize if uvicorn is stable with OpenTelemetry
+    # TODO: uvicorn postfork is not stable with OpenTelemetry
     # ROOT_PROC="opentelemetry-instrument"
 fi
 
