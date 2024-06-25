@@ -140,20 +140,7 @@ class EnclaveService(AbstractService):
         # TODO add queuing mechanism
 
         if isinstance(code, UserCode):
-            code = SubmitUserCode(
-                id=code.id,
-                code=code.raw_code,
-                func_name=code.service_func_name,
-                signature=code.signature,
-                input_policy_type=code.input_policy_type,
-                input_policy_init_kwargs=code.input_policy_init_kwargs,
-                output_policy_type=code.output_policy_type,
-                output_policy_init_kwargs=code.output_policy_init_kwargs,
-                deployment_policy_type=code.deployment_policy_type,
-                deployment_policy_init_kwargs=code.deployment_policy_init_kwargs,
-                input_kwargs=code.input_kwargs,
-                worker_pool_name=code.worker_pool_name,
-            )
+            code = code.to(SubmitUserCode)
 
         # TODO 🟣 set up user accounts for each domain for transferring assets
 
