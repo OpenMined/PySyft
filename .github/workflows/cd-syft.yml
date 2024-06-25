@@ -85,8 +85,7 @@ jobs:
 
     strategy:
       matrix:
-        # runner: [sh-arc-linux-x64, sh-arc-linux-arm64]
-        runner: [sh-arc-linux-arm64]
+        runner: [sh-arc-linux-x64, sh-arc-linux-arm64]
     runs-on: ${{ matrix.runner }}
 
     outputs:
