@@ -368,7 +368,12 @@ def create_kubernetes_pool(
         )
     except Exception as e:
         if pool:
-            pool.delete()
+            try:
+                pool.delete()  # this raises another exception if the pool never starts
+            except Exception as e2:
+                logger.error(
+                    f"Failed to delete pool {pool_name} after failed creation. {e2}"
+                )
         # stdlib
         import traceback
 
