@@ -62,7 +62,7 @@ class EnclaveService(AbstractService):
         self, context: AuthedServiceContext, route: NodeRouteType
     ) -> SyftSuccess | SyftError:
         """Add an Enclave to the network."""
-        enclave = EnclaveInstance.create(route=route)
+        enclave = EnclaveInstance(route=route)
         result = self.stash.set(
             credentials=context.credentials,
             obj=enclave,

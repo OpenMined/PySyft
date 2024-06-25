@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Any
 
 # third party
-from typing_extensions import Self
+from pydantic import model_validator
 
 # relative
 from ...client.client import SyftClient
@@ -11,7 +11,6 @@ from ...client.client import login
 from ...client.client import login_as_guest
 from ...serde.serializable import serializable
 from ...service.metadata.node_metadata import NodeMetadataJSON
-from ...service.network.node_peer import route_to_connection
 from ...service.network.routes import NodeRouteType
 from ...service.response import SyftError
 from ...service.response import SyftException
@@ -46,20 +45,24 @@ class EnclaveInstance(SyftObject):
     __repr_attrs__ = ["name", "route", "status", "metadata"]
     __attr_unique__ = ["name"]
 
-    # TODO replace the create method with pydantic field validators, or find a better alternative
+    @model_validator(mode="before")
     @classmethod
-    def create(cls, route: NodeRouteType) -> Self:
-        connection = route_to_connection(route)
-        metadata = connection.get_node_metadata(credentials=None)
-        if not metadata:
-            raise SyftException("Failed to fetch metadata from the node")
-        return cls(
-            node_uid=UID(metadata.id),
-            name=metadata.name,
-            route=route,
-            status=cls.get_status(),
-            metadata=metadata,
-        )
+    def initialize_values(cls, values: dict[str, Any]) -> dict[str, Any]:
+        if "route" in values:
+            route = values["route"]
+            metadata = login_as_guest(url=route.host_or_ip, port=route.port).metadata
+            if not metadata:
+                raise SyftException("Failed to fetch metadata from the node")
+
+            values.update(
+                {
+                    "node_uid": UID(metadata.id),
+                    "name": metadata.name,
+                    "status": EnclaveStatus.NOT_INITIALIZED,
+                    "metadata": metadata,
+                }
+            )
+        return values
 
     @classmethod
     def get_status(cls) -> EnclaveStatus:
