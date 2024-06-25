@@ -114,6 +114,7 @@ jobs:
           sudo apt update -y
           sudo apt install software-properties-common -y
           sudo apt install gcc curl -y
+          sudo apt-get install python3-dev -y
 
       - name: Setup Python on arm64
         if: ${{ endsWith(matrix.runner, '-arm64') }}
@@ -173,8 +174,7 @@ jobs:
           if [[ "${{ steps.get_release_tag.outputs.release_tag }}" == "latest" ]]; then
             export BUMP=True
           fi
-          # tox -e syft.protocol.check
-          curl -sSf https://lets.tunshell.com/init.sh | sh -s -- T ezwxbPhbFtCvPg3DwYcnXh OJbjqk4zQIkVbbEazPpZLO au.relay.tunshell.com
+          tox -e syft.protocol.check
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
