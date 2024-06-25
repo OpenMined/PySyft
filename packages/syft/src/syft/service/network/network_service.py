@@ -1,11 +1,11 @@
 # stdlib
 from collections.abc import Callable
 from enum import Enum
+import logging
 import secrets
 from typing import Any
 
 # third party
-from loguru import logger
 from result import Result
 
 # relative
@@ -55,6 +55,8 @@ from .routes import HTTPNodeRoute
 from .routes import NodeRoute
 from .routes import NodeRouteType
 from .routes import PythonNodeRoute
+
+logger = logging.getLogger(__name__)
 
 VerifyKeyPartitionKey = PartitionKey(key="verify_key", type_=SyftVerifyKey)
 NodeTypePartitionKey = PartitionKey(key="node_type", type_=NodeType)

@@ -13,6 +13,7 @@ import functools
 import hashlib
 from itertools import repeat
 import json
+import logging
 import multiprocessing
 import multiprocessing as mp
 from multiprocessing import set_start_method
@@ -43,10 +44,8 @@ import requests
 
 # relative
 from ..serde.serialize import _serialize as serialize
-from .logger import critical
-from .logger import debug
-from .logger import error
-from .logger import traceback_and_raise
+
+logger = logging.getLogger(__name__)
 
 DATASETS_URL = "https://raw.githubusercontent.com/OpenMined/datasets/main"
 PANDAS_DATA = f"{DATASETS_URL}/pandas_cookbook"
@@ -62,9 +61,9 @@ def full_name_with_qualname(klass: type) -> str:
         if not hasattr(klass, "__module__"):
             return f"builtins.{get_qualname_for(klass)}"
         return f"{klass.__module__}.{get_qualname_for(klass)}"
-    except Exception:
+    except Exception as e:
         # try name as backup
-        print("Failed to get FQN for:", klass, type(klass))
+        logger.error(f"Failed to get FQN for: {klass} {type(klass)}", exc_info=e)
     return full_name_with_name(klass=klass)
 
 
@@ -75,7 +74,7 @@ def full_name_with_name(klass: type) -> str:
             return f"builtins.{get_name_for(klass)}"
         return f"{klass.__module__}.{get_name_for(klass)}"
     except Exception as e:
-        print("Failed to get FQN for:", klass, type(klass))
+        logger.error(f"Failed to get FQN for: {klass} {type(klass)}", exc_info=e)
         raise e
 
 
@@ -116,7 +115,7 @@ def extract_name(klass: type) -> str:
                 return fqn.split(".")[-1]
             return fqn
         except Exception as e:
-            print(f"Failed to get klass name {klass}")
+            logger.error(f"Failed to get klass name {klass}", exc_info=e)
             raise e
     else:
         raise ValueError(f"Failed to match regex for klass {klass}")
@@ -126,9 +125,7 @@ def validate_type(_object: object, _type: type, optional: bool = False) -> Any:
     if isinstance(_object, _type) or (optional and (_object is None)):
         return _object
 
-    traceback_and_raise(
-        f"Object {_object} should've been of type {_type}, not {_object}."
-    )
+    raise Exception(f"Object {_object} should've been of type {_type}, not {_object}.")
 
 
 def validate_field(_object: object, _field: str) -> Any:
@@ -137,7 +134,7 @@ def validate_field(_object: object, _field: str) -> Any:
     if object is not None:
         return object
 
-    traceback_and_raise(f"Object {_object} has no {_field} field set.")
+    raise Exception(f"Object {_object} has no {_field} field set.")
 
 
 def get_fully_qualified_name(obj: object) -> str:
@@ -159,7 +156,7 @@ def get_fully_qualified_name(obj: object) -> str:
     try:
         fqn += "." + obj.__class__.__name__
     except Exception as e:
-        error(f"Failed to get FQN: {e}")
+        logger.error(f"Failed to get FQN: {e}")
     return fqn
 
 
@@ -184,7 +181,7 @@ def key_emoji(key: object) -> str:
             hex_chars = bytes(key).hex()[-8:]
             return char_emoji(hex_chars=hex_chars)
     except Exception as e:
-        error(f"Fail to get key emoji: {e}")
+        logger.error(f"Fail to get key emoji: {e}")
         pass
     return "ALL"
 
@@ -341,7 +338,7 @@ def find_available_port(
             sock.close()
 
         except Exception as e:
-            print(f"Failed to check port {port}. {e}")
+            logger.error(f"Failed to check port {port}. {e}")
     sock.close()
 
     if search is False and port_available is False:
@@ -455,7 +452,7 @@ def obj2pointer_type(obj: object | None = None, fqn: str | None = None) -> type:
         except Exception as e:
             # sometimes the object doesn't have a __module__ so you need to use the type
             # like: collections.OrderedDict
-            debug(
+            logger.debug(
                 f"Unable to get get_fully_qualified_name of {type(obj)} trying type. {e}"
             )
             fqn = get_fully_qualified_name(obj=type(obj))
@@ -466,10 +463,8 @@ def obj2pointer_type(obj: object | None = None, fqn: str | None = None) -> type:
 
     try:
         ref = get_loaded_syft().lib_ast.query(fqn, obj_type=type(obj))
-    except Exception as e:
-        log = f"Cannot find {type(obj)} {fqn} in lib_ast. {e}"
-        critical(log)
-        raise Exception(log)
+    except Exception:
+        raise Exception(f"Cannot find {type(obj)} {fqn} in lib_ast.")
 
     return ref.pointer_type
 

@@ -5,6 +5,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 import enum
 import html
+import logging
 import operator
 import textwrap
 from typing import Any
@@ -13,7 +14,6 @@ from typing import Literal
 from typing import TYPE_CHECKING
 
 # third party
-from loguru import logger
 import pandas as pd
 from rich import box
 from rich.console import Console
@@ -60,6 +60,8 @@ from ..response import SyftError
 from ..response import SyftSuccess
 from ..user.user import UserView
 from .sync_state import SyncState
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     # relative
@@ -510,7 +512,6 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
                 obj_repr += diff.__repr__() + "<br>"
 
             obj_repr = obj_repr.replace("\n", "<br>")
-            # print("New lines", res)
 
         attr_text = f"<h3>{self.object_type} ObjectDiff:</h3>\n{obj_repr}"
         return base_str + attr_text
@@ -1061,7 +1062,7 @@ class IgnoredBatchView(SyftObject):
                 other_batch.decision == SyncDecision.IGNORE
                 and other_batch.root_id in required_dependencies
             ):
-                print(f"ignoring other batch ({other_batch.root_type.__name__})")
+                logger.debug(f"ignoring other batch ({other_batch.root_type.__name__})")
                 other_batch.decision = None
 
 
@@ -1283,7 +1284,7 @@ class NodeDiff(SyftObject):
                     if hash(batch) == batch_hash:
                         batch.decision = SyncDecision.IGNORE
                     else:
-                        print(
+                        logger.debug(
                             f"""A batch with type {batch.root_type.__name__} was previously ignored but has changed
 It will be available for review again."""
                         )
@@ -1410,7 +1411,7 @@ It will be available for review again."""
                 # TODO: Figure out nested user codes, do we even need that?
 
                 root_ids.append(diff.object_id)  # type: ignore
-            elif (
+            elif (  # type: ignore[unreachable]
                 isinstance(diff_obj, Job)  # type: ignore
                 and diff_obj.parent_job_id is None
                 # ignore Job objects created by TwinAPIEndpoint
