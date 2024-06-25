@@ -37,6 +37,7 @@ from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
 from ..types.syft_object import attach_attribute_to_syft_object
 from ..types.uid import UID
+from ..util.telemetry import instrument
 from .context import AuthedServiceContext
 from .context import ChangeContext
 from .response import SyftError
@@ -351,6 +352,10 @@ def service_method(
 
         input_signature = deepcopy(signature)
 
+        @instrument(  # type: ignore
+            span_name=f"service_method::{_path}",
+            attributes={"service.name": name, "service.path": path},
+        )
         def _decorator(self: Any, *args: Any, **kwargs: Any) -> Callable:
             communication_protocol = kwargs.pop("communication_protocol", None)
 
