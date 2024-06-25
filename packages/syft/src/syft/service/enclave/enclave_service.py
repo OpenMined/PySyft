@@ -107,6 +107,11 @@ class EnclaveService(AbstractService):
 
         code_service = context.node.get_service("usercodeservice")
         code: UserCode = code_service.get_by_uid(context=context, uid=user_code_id)
+        status = code.get_status(context)
+        if not status.approved:
+            return SyftError(
+                message=f"Status for code '{code.service_func_name}' is not Approved."
+            )
         if not code.deployment_policy_init_kwargs:
             return SyftError(
                 message=f"Code '{code.service_func_name}' does not have a deployment policy."
@@ -161,6 +166,11 @@ class EnclaveService(AbstractService):
         # Get the code
         code_service = context.node.get_service("usercodeservice")
         code: UserCode = code_service.get_by_uid(context=context, uid=user_code_id)
+        status = code.get_status(context)
+        if not status.approved:
+            return SyftError(
+                message=f"Status for code '{code.service_func_name}' is not Approved."
+            )
         if code.input_policy_init_kwargs is None:
             return SyftSuccess(message="No assets to transfer")
 
