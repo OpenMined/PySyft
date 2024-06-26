@@ -272,6 +272,107 @@
           "hash": "89dbd4a810586b49498be1f5299b565a19871487e14a120433b0a4cf607b6dee",
           "action": "remove"
         }
+      },
+      "HTTPConnection": {
+        "3": {
+          "version": 3,
+          "hash": "54b452bb4ab76691ac1e704b62e7bcec740850fea00805145259b37973ecd0f4",
+          "action": "add"
+        }
+      },
+      "UserCode": {
+        "4": {
+          "version": 4,
+          "hash": "0a7181cd5f76800b6566175ffa7276d0cf38c4ddc5110114430147dfc8bfdb2a",
+          "action": "remove"
+        },
+        "5": {
+          "version": 5,
+          "hash": "128705a5fdf308055ef857b25c80966c928938a05ec03459dae9b36bd6122aa2",
+          "action": "add"
+        },
+        "6": {
+          "version": 6,
+          "hash": "c48ec3160bb34adf937e6306523c7ebc52861ff84a576a30a28cd45c224ded0f",
+          "action": "add"
+        }
+      },
+      "SyncedUserCodeStatusChange": {
+        "3": {
+          "version": 3,
+          "hash": "9b8ab2d513d84006bdd1329cd0bb636e7e62100a6227d8b772a5bf7c0c45b72f",
+          "action": "add"
+        }
+      },
+      "PolicyRule": {
+        "1": {
+          "version": 1,
+          "hash": "31a982b94654ce27ad27a6622c6fa26dfe3f759a7824ac21d104390f10a5aa82",
+          "action": "add"
+        }
+      },
+      "CreatePolicyRule": {
+        "1": {
+          "version": 1,
+          "hash": "9b82e36c63e10c5b7b76b3b8ec1da1d2dfdce39f2cce98603a418ec221621874",
+          "action": "add"
+        }
+      },
+      "CreatePolicyRuleConstant": {
+        "1": {
+          "version": 1,
+          "hash": "9e821ddd383b6472f95dad2b56ebaefad225ff49c96b89b4ce35dc99c422ba76",
+          "action": "add"
+        }
+      },
+      "Matches": {
+        "1": {
+          "version": 1,
+          "hash": "d1e875a6332a481458e83db364dfdf92bd34a87093d9762dfe8e136e5088bc4e",
+          "action": "add"
+        }
+      },
+      "PreFill": {
+        "1": {
+          "version": 1,
+          "hash": "22c38b8ad68409493810362e6c48822d3e2919760f26eba2d1de3f2ad394e314",
+          "action": "add"
+        }
+      },
+      "UserOwned": {
+        "1": {
+          "version": 1,
+          "hash": "b5cbb44d742fa51b9adf2a48bb56d9ff5ca82a25f8568a2505961bd906d9d084",
+          "action": "add"
+        }
+      },
+      "MixedInputPolicy": {
+        "1": {
+          "version": 1,
+          "hash": "0e84e4c91e378717e1a4703574b07e3b1e6a3e5707401b4e0cc8d30088a506b9",
+          "action": "add"
+        }
+      },
+      "Request": {
+        "3": {
+          "version": 3,
+          "hash": "ba9ebb04cc3e8b3ae3302fd42a67e47261a0a330bae5f189d8f4819cf2804711",
+          "action": "add"
+        }
+      },
+      "SubmitUserCode": {
+        "5": {
+          "version": 5,
+          "hash": "3135727b8f0ca7689d47c04e45a2bd6a7693f17c043f76fd2243135196c27232",
+          "action": "add"
+        }
+      },
+      "CodeHistory": {
+        "3": {
+          "version": 3,
+          "hash": "1b9bd1d3d096abab5617c2ff597b4c80751f686d16482a2cff4efd8741b84d53",
+          "action": "add"
+        }
       }
     }
   }

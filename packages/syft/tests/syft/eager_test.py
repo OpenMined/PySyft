@@ -20,11 +20,11 @@ def test_eager_permissions(worker, guest_client):
         mock_obj=np.array([[1, 1, 1], [1, 1, 1]]),
     )
 
-    input_ptr = root_domain_client.api.services.action.set(input_obj)
+    input_ptr = input_obj.send(root_domain_client)
 
     pointer = guest_client.api.services.action.get_pointer(input_ptr.id)
 
-    input_ptr = root_domain_client.api.services.action.set(input_obj)
+    input_ptr = input_obj.send(root_domain_client)
 
     pointer = guest_client.api.services.action.get_pointer(input_ptr.id)
 
@@ -53,8 +53,9 @@ def test_plan(worker):
         mock_obj=np.array([[1, 1, 1], [1, 1, 1]]),
     )
 
-    input_obj = root_domain_client.api.services.action.set(input_obj)
-    pointer = guest_client.api.services.action.get_pointer(input_obj.id)
+    input_ptr = input_obj.send(root_domain_client)
+
+    pointer = guest_client.api.services.action.get_pointer(input_ptr.id)
     res_ptr = plan_ptr(x=pointer)
 
     # guest cannot access result
@@ -95,7 +96,7 @@ def test_plan_with_function_call(worker, guest_client):
         mock_obj=np.array([[1, 1, 1], [1, 1, 1]]),
     )
 
-    input_obj = root_domain_client.api.services.action.set(input_obj)
+    input_obj = input_obj.send(root_domain_client)
     pointer = guest_client.api.services.action.get_pointer(input_obj.id)
     res_ptr = plan_ptr(x=pointer)
 
@@ -117,7 +118,7 @@ def test_plan_with_object_instantiation(worker, guest_client):
         private_obj=np.array([1, 2, 3, 4, 5, 6]), mock_obj=np.array([1, 1, 1, 1, 1, 1])
     )
 
-    _id = root_domain_client.api.services.action.set(input_obj).id
+    _id = input_obj.send(root_domain_client).id
     pointer = guest_client.api.services.action.get_pointer(_id)
 
     res_ptr = plan_ptr(x=pointer)
@@ -142,7 +143,7 @@ def test_setattribute(worker, guest_client):
 
     assert private_data.dtype != np.int32
 
-    obj_pointer = root_domain_client.api.services.action.set(obj)
+    obj_pointer = obj.send(root_domain_client)
     obj_pointer = guest_client.api.services.action.get_pointer(obj_pointer.id)
 
     original_id = obj_pointer.id
@@ -177,7 +178,7 @@ def test_getattribute(worker, guest_client):
         mock_obj=np.array([[1, 1, 1], [1, 1, 1]]),
     )
 
-    obj_pointer = root_domain_client.api.services.action.set(obj)
+    obj_pointer = obj.send(root_domain_client)
     obj_pointer = guest_client.api.services.action.get_pointer(obj_pointer.id)
     size_pointer = obj_pointer.size
 
@@ -196,7 +197,7 @@ def test_eager_method(worker, guest_client):
         mock_obj=np.array([[1, 1, 1], [1, 1, 1]]),
     )
 
-    obj_pointer = root_domain_client.api.services.action.set(obj)
+    obj_pointer = obj.send(root_domain_client)
     obj_pointer = guest_client.api.services.action.get_pointer(obj_pointer.id)
 
     flat_pointer = obj_pointer.flatten()
@@ -219,7 +220,7 @@ def test_eager_dunder_method(worker, guest_client):
         mock_obj=np.array([[1, 1, 1], [1, 1, 1]]),
     )
 
-    obj_pointer = root_domain_client.api.services.action.set(obj)
+    obj_pointer = obj.send(root_domain_client)
     obj_pointer = guest_client.api.services.action.get_pointer(obj_pointer.id)
 
     first_row_pointer = obj_pointer[0]

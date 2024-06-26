@@ -80,7 +80,7 @@ def test_action_store_change(faker: Faker, worker: Worker):
     root_client = worker.root_client
     dummy_data = [1, 2, 3]
     data = ActionObject.from_obj(dummy_data)
-    action_obj = root_client.api.services.action.set(data)
+    action_obj = data.send(root_client)
 
     assert action_obj.get() == dummy_data
 
@@ -120,7 +120,7 @@ def test_user_code_status_change(faker: Faker, worker: Worker):
     root_client = worker.root_client
     dummy_data = [1, 2, 3]
     data = ActionObject.from_obj(dummy_data)
-    action_obj = root_client.api.services.action.set(data)
+    action_obj = data.send(root_client)
 
     ds_client = get_ds_client(faker, root_client, worker.guest_client)
 
@@ -168,7 +168,7 @@ def test_code_accept_deny(faker: Faker, worker: Worker):
     root_client = worker.root_client
     dummy_data = [1, 2, 3]
     data = ActionObject.from_obj(dummy_data)
-    action_obj = root_client.api.services.action.set(data)
+    action_obj = data.send(root_client)
 
     ds_client = get_ds_client(faker, root_client, worker.guest_client)
 
@@ -183,13 +183,13 @@ def test_code_accept_deny(faker: Faker, worker: Worker):
     assert not isinstance(result, SyftError)
 
     request = root_client.requests.get_all()[0]
-    result = request.accept_by_depositing_result(result=10)
+    result = request.approve()
     assert isinstance(result, SyftSuccess)
 
     request = root_client.requests.get_all()[0]
     assert request.status == RequestStatus.APPROVED
     result = ds_client.code.simple_function(data=action_obj)
-    assert result.get() == 10
+    assert result.get() == sum(dummy_data)
 
     result = request.deny(reason="Function output needs differential privacy !!")
     assert isinstance(result, SyftSuccess)
@@ -202,4 +202,4 @@ def test_code_accept_deny(faker: Faker, worker: Worker):
 
     result = ds_client.code.simple_function(data=action_obj)
     assert isinstance(result, SyftError)
-    assert "Execution denied" in result.message
+    assert "DENIED" in result.message

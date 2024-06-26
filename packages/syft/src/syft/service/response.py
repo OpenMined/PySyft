@@ -11,6 +11,7 @@ from typing_extensions import Self
 from ..serde.serializable import serializable
 from ..types.base import SyftBaseModel
 from ..types.errors import SyftException as SyftExc
+from ..util.util import sanitize_html
 from .context import AuthedServiceContext
 
 
@@ -45,7 +46,9 @@ class SyftResponseMessage(SyftBaseModel):
     def _repr_html_(self) -> str:
         return (
             f'<div class="{self._repr_html_class_}" style="padding:5px;">'
-            + f"<strong>{type(self).__name__}</strong>: {self.message}</div><br />"
+            f"<strong>{type(self).__name__}</strong>: "
+            f'<pre class="{self._repr_html_class_}" style="display:inline; font-family:inherit;">'
+            f"{sanitize_html(self.message)}</pre></div><br/>"
         )
 
 
@@ -112,7 +115,7 @@ class SyftException(Exception):
     def _repr_html_(self) -> str:
         return (
             f'<div class="{self._repr_html_class_}" style="padding:5px;">'
-            + f"<strong>{type(self).__name__}</strong>: {self.args}</div><br />"
+            + f"<strong>{type(self).__name__}</strong>: {sanitize_html(self.args)}</div><br />"
         )
 
     @staticmethod
