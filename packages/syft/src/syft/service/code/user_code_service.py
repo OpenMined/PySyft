@@ -76,6 +76,20 @@ class UserCodeService(AbstractService):
         submit_code: SubmitUserCode,
         exists_ok: bool = False,
     ) -> Result[UserCode, str]:
+        """
+        Submit a UserCode.
+
+        If exists_ok is True, the function will return the existing code if it exists.
+
+        Args:
+            context (AuthedServiceContext): context
+            submit_code (SubmitUserCode): UserCode to submit
+            exists_ok (bool, optional): If True, return the existing code if it exists.
+                If false, existing codes returns Err. Defaults to False.
+
+        Returns:
+            Result[UserCode, str]: New UserCode or error
+        """
         existing_code_or_err = self.stash.get_by_code_hash(
             context.credentials,
             code_hash=submit_code.get_code_hash(),
@@ -289,10 +303,10 @@ class UserCodeService(AbstractService):
     ) -> Request | SyftError:
         """Request Code execution on user code"""
 
-        user_code_result = self._get_or_submit_user_code(context, code)
-        if user_code_result.is_err():
-            return SyftError(message=user_code_result.err())
-        user_code = user_code_result.ok()
+        user_code_or_err = self._get_or_submit_user_code(context, code)
+        if user_code_or_err.is_err():
+            return SyftError(message=user_code_or_err.err())
+        user_code = user_code_or_err.ok()
 
         result = self._request_code_execution(
             context,
