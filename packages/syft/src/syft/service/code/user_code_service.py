@@ -271,24 +271,17 @@ class UserCodeService(AbstractService):
         """
         if isinstance(code, UserCode):
             # Get existing UserCode
-            user_code_result = self.stash.get_by_uid(context.credentials, code.id)
-            if user_code_result.is_err():
-                return Err(user_code_result.err())
-            user_code = user_code_result.ok()
+            user_code_or_err = self.stash.get_by_uid(context.credentials, code.id)
+            if user_code_or_err.is_err():
+                return user_code_or_err
+            user_code = user_code_or_err.ok()
             if user_code is None:
                 return Err("UserCode not found on this node.")
             return Ok(user_code)
-
-        elif isinstance(code, SubmitUserCode):  # type: ignore[unreachable]
-            # Submit new UserCode
-            # NOTE if a code with the same hash exists, it will be returned instead
-            user_code_result = self._submit(context, code, exists_ok=True)
-            return user_code_result
-
-        else:
-            return Err(  # type: ignore[unreachable]
-                f"request_code_execution expects a UserCode or SubmitUserCode object, got a {type(code).__name__}"
-            )
+        else:  # code: SubmitUserCode
+            # Submit new UserCode, or get existing UserCode with the same code hash
+            user_code_or_err = self._submit(context, code, exists_ok=True)
+            return user_code_or_err
 
     @service_method(
         path="code.request_code_execution",
