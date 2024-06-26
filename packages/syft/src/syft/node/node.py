@@ -62,6 +62,7 @@ from ..service.context import UserLoginCredentials
 from ..service.data_subject.data_subject_member_service import DataSubjectMemberService
 from ..service.data_subject.data_subject_service import DataSubjectService
 from ..service.dataset.dataset_service import DatasetService
+from ..service.enclave.domain_enclave_service import DomainEnclaveService
 from ..service.enclave.enclave_service import EnclaveService
 from ..service.job.job_service import JobService
 from ..service.job.job_stash import Job
@@ -946,6 +947,7 @@ class Node(AbstractNode):
             {"svc": NotificationService},
             {"svc": DataSubjectMemberService},
             {"svc": ProjectService},
+            {"svc": DomainEnclaveService},
             {"svc": EnclaveService},
             {"svc": CodeHistoryService},
             {"svc": MetadataService},
