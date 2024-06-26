@@ -164,11 +164,13 @@ class EnclaveService(AbstractService):
         # Get the code
         code_service = context.node.get_service("usercodeservice")
         code: UserCode = code_service.get_by_uid(context=context, uid=user_code_id)
+
         status = code.get_status(context)
         if not status.approved:
             return SyftError(
-                message=f"Status for code '{code.service_func_name}' is not Approved."
+                message=f"Code '{code.service_func_name}' is not approved."
             )
+
         if code.input_policy_init_kwargs is None:
             return SyftSuccess(message="No assets to transfer")
 
@@ -234,17 +236,33 @@ class EnclaveService(AbstractService):
         action_service = context.node.get_service("actionservice")
 
         # Get the code
-        code: UserCode = code_service.get_by_uid(context=context, uid=user_code_id)
+        code: UserCode = code_service.get_by_uid(context=root_context, uid=user_code_id)
 
         init_kwargs = code.input_policy_init_kwargs
         if not code or not init_kwargs:
             return SyftError(message="No assets to transfer")
 
-        # TODO check if the uploader node is allowed to upload assets for the given code
-        # TODO only allow uploading action objects present in the input policy
+        node_identity_map = {node.verify_key: node for node in init_kwargs.keys()}
+        uploading_domain_identity = node_identity_map.get(context.credentials)
+
+        if not uploading_domain_identity:
+            return SyftError(
+                message="You are not allowed to upload assets for the given code"
+            )
+
+        kwargs_for_uploading_domain = init_kwargs.get(uploading_domain_identity)
+        print(f"{kwargs_for_uploading_domain=}")
+
+        for action_object in action_objects:
+            if action_object.id not in kwargs_for_uploading_domain.values():
+                return SyftError(
+                    message=f"You are not allowed to upload the asset with id '{action_object.id}'"
+                )
+
+        pending_assets_for_uploading_domain = set(kwargs_for_uploading_domain.values())
         for action_object in action_objects:
             result = action_service._set(
-                context,
+                root_context,
                 action_object,
                 ignore_detached_objs=True,
                 skip_clear_cache=True,
@@ -252,30 +270,16 @@ class EnclaveService(AbstractService):
             if result.is_err():
                 # TODO 🟣 Rollback previously uploaded assets if any error occurs
                 return SyftError(message=result.value)
+            pending_assets_for_uploading_domain.remove(action_object.id)
 
         # Let's approve the code
-        kwargs_for_uploading_node = {
-            name: action_id
-            for node, assets in init_kwargs.items()
-            for name, action_id in assets.items()
-            if node.verify_key == context.credentials
-        }
-        all_assets_uploaded_for_current_node = all(
-            context.node.get_service("actionservice").exists(context, obj_id)
-            for obj_id in kwargs_for_uploading_node.values()
-        )
-        if all_assets_uploaded_for_current_node:
+        if len(pending_assets_for_uploading_domain) == 0:
             approved_status_with_reason = (
                 UserCodeStatus.APPROVED,
                 "All dependent assets uploaded by this domain node.",
             )
             status = code.get_status(root_context)
-            key = [
-                k
-                for k in status.status_dict.keys()
-                if k.verify_key == context.credentials
-            ][0]
-            status.status_dict[key] = approved_status_with_reason
+            status.status_dict[uploading_domain_identity] = approved_status_with_reason
             status_link = code.status_link
             if not status_link:
                 return SyftError(
@@ -300,11 +304,14 @@ class EnclaveService(AbstractService):
         if not context.node or not context.node.signing_key:
             return SyftError(message=f"{type(context)} has no node")
 
-        # if context.node.name == "italy-domain":
-        #     return SyftError(message="For testing purposes, italy-domain execution is blocked")
-
         code_service = context.node.get_service("usercodeservice")
         code: UserCode = code_service.get_by_uid(context=context, uid=user_code_id)
+
+        status = code.get_status(context)
+        if not status.approved:
+            return SyftError(
+                message=f"Code '{code.service_func_name}' is not approved."
+            )
 
         if not code.deployment_policy_init_kwargs:
             return SyftError(
@@ -336,7 +343,7 @@ class EnclaveService(AbstractService):
         root_context = context.as_root_context()
 
         code_service = context.node.get_service("usercodeservice")
-        code: UserCode = code_service.get_by_uid(context=context, uid=user_code_id)
+        code: UserCode = code_service.get_by_uid(context=root_context, uid=user_code_id)
 
         init_kwargs = (
             code.input_policy_init_kwargs.values()
