@@ -1192,14 +1192,14 @@ def syft_function(
     else:
         output_policy_type = type(output_policy)
 
-    def decorator(f: Any) -> SubmitUserCode:
+    def decorator(f: Any) -> SubmitUserCode | SyftError:
         try:
             code = dedent(inspect.getsource(f))
 
-            res = process_code_client(code)
-            if isinstance(res, SyftError):
-                display(res)
-                return res
+            global_check = _check_global(code)
+            if isinstance(global_check, SyftError):
+                display(global_check)
+                return global_check
 
             if name is not None:
                 fname = name
@@ -1246,9 +1246,9 @@ def syft_function(
     return decorator
 
 
-def process_code_client(
+def _check_global(
     raw_code: str,
-):
+) -> None | SyftError:
     tree = ast.parse(raw_code)
     # check there are no globals
     v = GlobalsVisitor()
@@ -1256,6 +1256,7 @@ def process_code_client(
         v.visit(tree)
     except Exception as e:
         return SyftError(message=f"Failed to process code. {e}")
+    return None
 
 
 def generate_unique_func_name(context: TransformContext) -> TransformContext:
