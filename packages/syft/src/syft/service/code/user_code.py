@@ -1026,9 +1026,6 @@ class SubmitUserCode(SyftObject):
             values["id"] = UID()
         return values
 
-    def get_code_hash(self) -> str:
-        return hashlib.sha256(self.code.encode()).hexdigest()
-
     @property
     def kwargs(self) -> dict[Any, Any] | None:
         return self.input_policy_init_kwargs
@@ -1182,6 +1179,11 @@ class SubmitUserCode(SyftObject):
         if self.input_policy_init_kwargs is not None:
             return [x.verify_key for x in self.input_policy_init_kwargs.keys()]
         return None
+
+
+def get_code_hash(code: str, user_verify_key: SyftVerifyKey) -> str:
+    full_str = f"{code}{user_verify_key}"
+    return hashlib.sha256(full_str.encode()).hexdigest()
 
 
 def is_valid_usercode_name(func_name: str) -> Result[Any, str]:
@@ -1472,7 +1474,7 @@ def hash_code(context: TransformContext) -> TransformContext:
 
     code = context.output["code"]
     context.output["raw_code"] = code
-    code_hash = context.obj.get_code_hash()
+    code_hash = get_code_hash(code, context.credentials)
     context.output["code_hash"] = code_hash
 
     return context

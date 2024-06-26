@@ -43,6 +43,7 @@ from .user_code import SubmitUserCode
 from .user_code import UserCode
 from .user_code import UserCodeStatus
 from .user_code import UserCodeUpdate
+from .user_code import get_code_hash
 from .user_code import load_approved_policy_code
 from .user_code_stash import UserCodeStash
 
@@ -89,7 +90,7 @@ class UserCodeService(AbstractService):
         """
         existing_code_or_err = self.stash.get_by_code_hash(
             context.credentials,
-            code_hash=submit_code.get_code_hash(),
+            code_hash=get_code_hash(submit_code.code, context.credentials),
         )
 
         if existing_code_or_err.is_err():
