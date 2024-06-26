@@ -95,7 +95,11 @@ class CodeHistoryView(SyftObject):
             return SyftError(
                 message=f"Can't access the api. You must login to {self.node_uid}"
             )
-        if api.user_role.value >= ServiceRole.DATA_OWNER.value and index < 0:
+        if (
+            api.user.get_current_user().role.value >= ServiceRole.DATA_OWNER.value
+            and index < 0
+        ):
+            # negative index would dynamically resolve to a different version
             return SyftError(
                 message="For security concerns we do not allow negative indexing. \
                 Try using absolute values when indexing"
