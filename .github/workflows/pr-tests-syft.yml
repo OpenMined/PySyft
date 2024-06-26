@@ -162,7 +162,7 @@ jobs:
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         run: |
           pip install --upgrade pip
-          pip install uv==0.2.13
+          pip install uv==0.2.15
           uv --version
 
       - name: Get pip cache dir
@@ -245,7 +245,7 @@ jobs:
         if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         run: |
           pip install --upgrade pip
-          pip install uv==0.2.13
+          pip install uv==0.2.15
           uv --version
 
       - name: Get pip cache dir
