@@ -1388,6 +1388,7 @@ class ActionObject(SyncableSyftObject):
         action_object.syft_blob_storage_entry_id = syft_blob_storage_entry_id
         action_object.syft_action_data_node_id = data_node_id
         action_object.syft_resolved = syft_resolved
+        action_object.syft_created_at = DateTime.now()
 
         if id is not None:
             action_object.id = id
