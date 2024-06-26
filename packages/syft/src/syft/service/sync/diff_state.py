@@ -5,6 +5,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 import enum
 import html
+import logging
 import operator
 import textwrap
 from typing import Any
@@ -13,7 +14,6 @@ from typing import Literal
 from typing import TYPE_CHECKING
 
 # third party
-from loguru import logger
 import pandas as pd
 from rich import box
 from rich.console import Console
@@ -60,6 +60,8 @@ from ..response import SyftError
 from ..response import SyftSuccess
 from ..user.user import UserView
 from .sync_state import SyncState
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     # relative
@@ -363,7 +365,8 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
     def repr_attr_dict(self, side: str) -> dict[str, Any]:
         obj = self.low_obj if side == "low" else self.high_obj
         if isinstance(obj, ActionObject):
-            return {"value": obj.syft_action_data_cache}
+            # Only safe for ActionObjects created by data owners
+            return {"value": obj.syft_action_data_repr_}
         repr_attrs = getattr(obj, "__repr_attrs__", [])
         res = {}
         for attr in repr_attrs:
@@ -509,7 +512,6 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
                 obj_repr += diff.__repr__() + "<br>"
 
             obj_repr = obj_repr.replace("\n", "<br>")
-            # print("New lines", res)
 
         attr_text = f"<h3>{self.object_type} ObjectDiff:</h3>\n{obj_repr}"
         return base_str + attr_text
@@ -564,11 +566,11 @@ class ObjectDiffBatch(SyftObject):
     root_diff: ObjectDiff
     sync_direction: SyncDirection | None
 
-    def resolve(self) -> "ResolveWidget":
+    def resolve(self, build_state: bool = True) -> "ResolveWidget":
         # relative
         from .resolve_widget import ResolveWidget
 
-        return ResolveWidget(self)
+        return ResolveWidget(self, build_state=build_state)
 
     def walk_graph(
         self,
@@ -1060,7 +1062,7 @@ class IgnoredBatchView(SyftObject):
                 other_batch.decision == SyncDecision.IGNORE
                 and other_batch.root_id in required_dependencies
             ):
-                print(f"ignoring other batch ({other_batch.root_type.__name__})")
+                logger.debug(f"ignoring other batch ({other_batch.root_type.__name__})")
                 other_batch.decision = None
 
 
@@ -1140,14 +1142,16 @@ class NodeDiff(SyftObject):
 
     include_ignored: bool = False
 
-    def resolve(self) -> "PaginatedResolveWidget | SyftSuccess":
+    def resolve(
+        self, build_state: bool = True
+    ) -> "PaginatedResolveWidget | SyftSuccess":
         if len(self.batches) == 0:
             return SyftSuccess(message="No batches to resolve")
 
         # relative
         from .resolve_widget import PaginatedResolveWidget
 
-        return PaginatedResolveWidget(batches=self.batches)
+        return PaginatedResolveWidget(batches=self.batches, build_state=build_state)
 
     def __getitem__(self, idx: Any) -> ObjectDiffBatch:
         return self.batches[idx]
@@ -1282,7 +1286,7 @@ class NodeDiff(SyftObject):
                     if hash(batch) == batch_hash:
                         batch.decision = SyncDecision.IGNORE
                     else:
-                        print(
+                        logger.debug(
                             f"""A batch with type {batch.root_type.__name__} was previously ignored but has changed
 It will be available for review again."""
                         )
@@ -1409,7 +1413,7 @@ It will be available for review again."""
                 # TODO: Figure out nested user codes, do we even need that?
 
                 root_ids.append(diff.object_id)  # type: ignore
-            elif (
+            elif (  # type: ignore[unreachable]
                 isinstance(diff_obj, Job)  # type: ignore
                 and diff_obj.parent_job_id is None
                 # ignore Job objects created by TwinAPIEndpoint

@@ -1,8 +1,11 @@
 # stdlib
 from collections.abc import Callable
+import logging
 import os
 from typing import Any
 from typing import TypeVar
+
+logger = logging.getLogger(__name__)
 
 
 def str_to_bool(bool_str: str | None) -> bool:
@@ -27,7 +30,6 @@ if not TRACE_MODE:
     instrument = noop
 else:
     try:
-        print("OpenTelemetry Tracing enabled")
         service_name = os.environ.get("SERVICE_NAME", "client")
         jaeger_host = os.environ.get("JAEGER_HOST", "localhost")
         jaeger_port = int(os.environ.get("JAEGER_PORT", "14268"))
@@ -74,6 +76,6 @@ else:
         from .trace_decorator import instrument as _instrument
 
         instrument = _instrument
-    except Exception:  # nosec
-        print("Failed to import opentelemetry")
+    except Exception as e:
+        logger.error("Failed to import opentelemetry", exc_info=e)
         instrument = noop

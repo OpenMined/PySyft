@@ -1,5 +1,5 @@
 ARG PYTHON_VERSION="3.12"
-ARG UV_VERSION="0.2.13-r0"
+ARG UV_VERSION="0.2.15-r0"
 ARG TORCH_VERSION="2.3.1"
 
 # wolfi-os pkg definition links

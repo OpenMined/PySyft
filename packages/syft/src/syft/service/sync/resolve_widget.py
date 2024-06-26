@@ -105,10 +105,19 @@ class MainObjectDiffWidget:
         direction: SyncDirection,
         with_box: bool = True,
         show_share_warning: bool = False,
+        build_state: bool = True,
     ):
-        self.low_properties = diff.repr_attr_dict("low")
-        self.high_properties = diff.repr_attr_dict("high")
-        self.statuses = diff.repr_attr_diffstatus_dict()
+        build_state = build_state
+
+        if build_state:
+            self.low_properties = diff.repr_attr_dict("low")
+            self.high_properties = diff.repr_attr_dict("high")
+            self.statuses = diff.repr_attr_diffstatus_dict()
+        else:
+            self.low_properties = {}
+            self.high_properties = {}
+            self.statuses = {}
+
         self.direction = direction
         self.diff: ObjectDiff = diff
         self.with_box = with_box
@@ -203,9 +212,10 @@ class CollapsableObjectDiffWidget:
         self,
         diff: ObjectDiff,
         direction: SyncDirection,
+        build_state: bool = True,
     ):
         self.direction = direction
-
+        self.build_state = build_state
         self.share_private_data = False
         self.diff: ObjectDiff = diff
         self.sync: bool = False
@@ -275,6 +285,7 @@ class CollapsableObjectDiffWidget:
             self.direction,
             with_box=False,
             show_share_warning=self.show_share_button,
+            build_state=self.build_state,
         ).widget
 
         accordion, share_private_checkbox, sync_checkbox = self.build_accordion(
@@ -411,8 +422,12 @@ class CollapsableObjectDiffWidget:
 
 class ResolveWidget:
     def __init__(
-        self, obj_diff_batch: ObjectDiffBatch, on_sync_callback: Callable | None = None
+        self,
+        obj_diff_batch: ObjectDiffBatch,
+        on_sync_callback: Callable | None = None,
+        build_state: bool = True,
     ):
+        self.build_state = build_state
         self.obj_diff_batch: ObjectDiffBatch = obj_diff_batch
         self.id2widget: dict[
             UID, CollapsableObjectDiffWidget | MainObjectDiffWidget
@@ -483,6 +498,7 @@ class ResolveWidget:
             CollapsableObjectDiffWidget(
                 diff,
                 direction=self.obj_diff_batch.sync_direction,
+                build_state=self.build_state,
             )
             for diff in dependents
         ]
@@ -498,7 +514,9 @@ class ResolveWidget:
         ]
         widgets = [
             CollapsableObjectDiffWidget(
-                diff, direction=self.obj_diff_batch.sync_direction
+                diff,
+                direction=self.obj_diff_batch.sync_direction,
+                build_state=self.build_state,
             )
             for diff in other_roots
         ]
@@ -509,6 +527,7 @@ class ResolveWidget:
         obj_diff_widget = MainObjectDiffWidget(
             self.obj_diff_batch.root_diff,
             direction=self.obj_diff_batch.sync_direction,
+            build_state=self.build_state,
         )
         return obj_diff_widget
 
@@ -712,12 +731,14 @@ class PaginatedResolveWidget:
     paginated by a PaginationControl widget.
     """
 
-    def __init__(self, batches: list[ObjectDiffBatch]):
+    def __init__(self, batches: list[ObjectDiffBatch], build_state: bool = True):
+        self.build_state = build_state
         self.batches = batches
         self.resolve_widgets: list[ResolveWidget] = [
             ResolveWidget(
                 batch,
                 on_sync_callback=partial(self.on_click_sync, i),
+                build_state=build_state,
             )
             for i, batch in enumerate(self.batches)
         ]

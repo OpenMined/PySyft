@@ -31,6 +31,7 @@ from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_roles import ServiceRole
+from .action_endpoint import CustomEndpointActionObject
 from .action_object import Action
 from .action_object import ActionObject
 from .action_object import ActionObjectPointer
@@ -377,6 +378,17 @@ class ActionService(AbstractService):
             if isinstance(result, SyftError):
                 return Err(result.message)
             filtered_kwargs = result.ok()
+
+        if hasattr(input_policy, "transform_kwargs"):
+            filtered_kwargs_res = input_policy.transform_kwargs(  # type: ignore
+                context,
+                filtered_kwargs,
+            )
+            if filtered_kwargs_res.is_err():
+                return filtered_kwargs_res
+            else:
+                filtered_kwargs = filtered_kwargs_res.ok()
+
         # update input policy to track any input state
 
         has_twin_inputs = False
@@ -391,8 +403,10 @@ class ActionService(AbstractService):
 
         try:
             if not has_twin_inputs:
+                # no twins
+                # allow python types from inputpolicy
                 filtered_kwargs = filter_twin_kwargs(
-                    real_kwargs, twin_mode=TwinMode.NONE
+                    real_kwargs, twin_mode=TwinMode.NONE, allow_python_types=True
                 )
                 exec_result = execute_byte_code(code_item, filtered_kwargs, context)
                 if output_policy:
@@ -401,7 +415,7 @@ class ActionService(AbstractService):
                         exec_result.result,
                         update_policy=not override_execution_permission,
                     )
-                code_item.output_policy = output_policy
+                code_item.output_policy = output_policy  # type: ignore
                 user_code_service.update_code_state(context, code_item)
                 if isinstance(exec_result.result, ActionObject):
                     result_action_object = ActionObject.link(
@@ -412,7 +426,7 @@ class ActionService(AbstractService):
             else:
                 # twins
                 private_kwargs = filter_twin_kwargs(
-                    real_kwargs, twin_mode=TwinMode.PRIVATE
+                    real_kwargs, twin_mode=TwinMode.PRIVATE, allow_python_types=True
                 )
                 private_exec_result = execute_byte_code(
                     code_item, private_kwargs, context
@@ -423,13 +437,15 @@ class ActionService(AbstractService):
                         private_exec_result.result,
                         update_policy=not override_execution_permission,
                     )
-                code_item.output_policy = output_policy
+                code_item.output_policy = output_policy  # type: ignore
                 user_code_service.update_code_state(context, code_item)
                 result_action_object_private = wrap_result(
                     result_id, private_exec_result.result
                 )
 
-                mock_kwargs = filter_twin_kwargs(real_kwargs, twin_mode=TwinMode.MOCK)
+                mock_kwargs = filter_twin_kwargs(
+                    real_kwargs, twin_mode=TwinMode.MOCK, allow_python_types=True
+                )
                 # relative
                 from .action_data_empty import ActionDataEmpty
 
@@ -1015,7 +1031,9 @@ def filter_twin_args(args: list[Any], twin_mode: TwinMode) -> Any:
     return filtered
 
 
-def filter_twin_kwargs(kwargs: dict, twin_mode: TwinMode) -> Any:
+def filter_twin_kwargs(
+    kwargs: dict, twin_mode: TwinMode, allow_python_types: bool = False
+) -> Any:
     filtered = {}
     for k, v in kwargs.items():
         if isinstance(v, TwinObject):
@@ -1028,7 +1046,18 @@ def filter_twin_kwargs(kwargs: dict, twin_mode: TwinMode) -> Any:
                     f"Filter can only use {TwinMode.PRIVATE} or {TwinMode.MOCK}"
                 )
         else:
-            filtered[k] = v.syft_action_data
+            if isinstance(v, ActionObject):
+                filtered[k] = v.syft_action_data
+            elif (
+                isinstance(v, str | int | float | dict | CustomEndpointActionObject)
+                and allow_python_types
+            ):
+                filtered[k] = v
+            else:
+                # third party
+                raise ValueError(
+                    f"unexepected value {v} passed to filtered twin kwargs"
+                )
     return filtered
 
 

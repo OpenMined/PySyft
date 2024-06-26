@@ -62,7 +62,7 @@ from ..types.uid import LineageID
 from ..types.uid import UID
 from ..util.autoreload import autoreload_enabled
 from ..util.markdown import as_markdown_python_code
-from ..util.table import list_dict_repr_html
+from ..util.notebook_ui.components.tabulator_template import build_tabulator_table
 from ..util.telemetry import instrument
 from ..util.util import prompt_warning_message
 from .connection import NodeConnection
@@ -225,6 +225,9 @@ class SyftAPICall(SyftObject):
             serialized_message=signed_message.message,
             signature=signed_message.signature,
         )
+
+    def __repr__(self) -> str:
+        return f"SyftAPICall(path={self.path}, args={self.args}, kwargs={self.kwargs}, blocking={self.blocking})"
 
 
 @instrument
@@ -730,9 +733,9 @@ class APIModule:
                     APISubModulesView(submodule=submodule_name, endpoints=child_paths)
                 )
 
-            return list_dict_repr_html(views)
-            # return NotImplementedError
+            return build_tabulator_table(views)
 
+        # should never happen?
         results = self.get_all()
         return results._repr_html_()
 
@@ -1266,7 +1269,6 @@ try:
         Inspector._getdef_bak = Inspector._getdef
         Inspector._getdef = types.MethodType(monkey_patch_getdef, Inspector)
 except Exception:
-    # print("Failed to monkeypatch IPython Signature Override")
     pass  # nosec
 
 

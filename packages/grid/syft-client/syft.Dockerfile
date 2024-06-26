@@ -8,8 +8,11 @@ ARG PYTHON_VERSION
 
 ENV PATH="/root/.local/bin:$PATH"
 
+# Setup Python DEV
 RUN apk update && apk upgrade && \
-    apk add --no-cache build-base gcc python-$PYTHON_VERSION-dev-default py$PYTHON_VERSION-pip
+    apk add build-base gcc python-$PYTHON_VERSION-dev py$PYTHON_VERSION-pip && \
+    # preemptive fix for wolfi-os breaking python entrypoint
+    (test -f /usr/bin/python || ln -s /usr/bin/python3.12 /usr/bin/python)
 
 COPY ./syft /tmp/syft
 
@@ -25,7 +28,7 @@ ARG PYTHON_VERSION
 ENV PATH="/root/.local/bin:$PATH"
 
 RUN apk update && apk upgrade && \
-    apk add --no-cache git python-$PYTHON_VERSION-dev-default py$PYTHON_VERSION-pip
+    apk add --no-cache git python-$PYTHON_VERSION-dev py$PYTHON_VERSION-pip
 
 COPY --from=syft_deps /root/.local /root/.local
 

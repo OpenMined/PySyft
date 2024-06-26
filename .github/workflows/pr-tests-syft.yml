@@ -65,8 +65,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pip install --upgrade pip
-          pip install uv==0.2.15
+          pip install --upgrade pip==24.1 uv==0.2.15
           uv --version
 
       - name: Get pip cache dir
@@ -161,8 +160,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         run: |
-          pip install --upgrade pip
-          pip install uv==0.2.15
+          pip install --upgrade pip==24.1 uv==0.2.15
           uv --version
 
       - name: Get pip cache dir
@@ -244,8 +242,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         run: |
-          pip install --upgrade pip
-          pip install uv==0.2.15
+          pip install --upgrade pip==24.1 uv==0.2.15
           uv --version
 
       - name: Get pip cache dir
@@ -346,8 +343,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pip install --upgrade pip
-          pip install uv==0.2.15
+          pip install --upgrade pip==24.1 uv==0.2.15
           uv --version
 
       - name: Get pip cache dir
