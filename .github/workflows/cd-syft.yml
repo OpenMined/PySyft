@@ -112,7 +112,8 @@ jobs:
         run: |
           sudo apt update -y
           sudo apt install software-properties-common -y
-          sudo apt install gcc -y
+          sudo apt install gcc curl -y
+          sudo apt-get install python3-dev -y
 
       - name: Setup Python on arm64
         if: ${{ endsWith(matrix.runner, '-arm64') }}
@@ -185,7 +186,7 @@ jobs:
 
       - name: Build and push `grid-backend` image to DockerHub
         id: grid-backend-build
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./packages
           file: ./packages/grid/backend/backend.dockerfile
@@ -203,7 +204,7 @@ jobs:
 
       - name: Build and push `grid-frontend` image to DockerHub
         id: grid-frontend-build
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./packages/grid/frontend
           file: ./packages/grid/frontend/frontend.dockerfile
@@ -221,7 +222,7 @@ jobs:
 
       - name: Build and push `grid-seaweedfs` image to DockerHub
         id: grid-seaweedfs-build
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./packages/grid/seaweedfs
           file: ./packages/grid/seaweedfs/seaweedfs.dockerfile
@@ -241,7 +242,7 @@ jobs:
       - name: Build and push `grid-enclave-attestation` image to DockerHub
         if: ${{ endsWith(matrix.runner, '-x64') }}
         id: grid-enclave-attestation-build
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./packages/grid/enclave/attestation
           file: ./packages/grid/enclave/attestation/attestation.dockerfile
@@ -259,7 +260,7 @@ jobs:
 
       - name: Build and push `syft` image to registry
         id: syft-build
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./packages/
           file: ./packages/grid/syft-client/syft.Dockerfile

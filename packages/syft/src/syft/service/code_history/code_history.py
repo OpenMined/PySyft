@@ -8,6 +8,7 @@ from ...client.enclave_client import EnclaveMetadata
 from ...serde.serializable import serializable
 from ...service.user.user_roles import ServiceRole
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.syft_object import SyftVerifyKey
 from ...types.uid import UID
@@ -20,7 +21,7 @@ from ..response import SyftError
 
 
 @serializable()
-class CodeHistory(SyftObject):
+class CodeHistoryV2(SyftObject):
     # version
     __canonical_name__ = "CodeHistory"
     __version__ = SYFT_OBJECT_VERSION_2
@@ -29,6 +30,20 @@ class CodeHistory(SyftObject):
     node_uid: UID
     user_verify_key: SyftVerifyKey
     enclave_metadata: EnclaveMetadata | None = None
+    user_code_history: list[UID] = []
+    service_func_name: str
+    comment_history: list[str] = []
+
+
+@serializable()
+class CodeHistory(SyftObject):
+    # version
+    __canonical_name__ = "CodeHistory"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    id: UID
+    node_uid: UID
+    user_verify_key: SyftVerifyKey
     user_code_history: list[UID] = []
     service_func_name: str
     comment_history: list[str] = []
@@ -80,7 +95,11 @@ class CodeHistoryView(SyftObject):
             return SyftError(
                 message=f"Can't access the api. You must login to {self.node_uid}"
             )
-        if api.user_role.value >= ServiceRole.DATA_OWNER.value and index < 0:
+        if (
+            api.user.get_current_user().role.value >= ServiceRole.DATA_OWNER.value
+            and index < 0
+        ):
+            # negative index would dynamically resolve to a different version
             return SyftError(
                 message="For security concerns we do not allow negative indexing. \
                 Try using absolute values when indexing"

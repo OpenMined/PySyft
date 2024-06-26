@@ -171,7 +171,7 @@ class DistributedProject(BaseModel):
         # errors = []
         # for client in self.clients.values():
         #     result = client.api.services.enclave.request_execution(
-        #         service_func_name=self.code.service_func_name
+        #         user_code_id=self.code.id
         #     )
         #     if isinstance(result, SyftError):
         #         errors.append(result.message)
