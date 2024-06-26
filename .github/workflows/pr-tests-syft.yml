@@ -93,7 +93,7 @@ jobs:
       - name: Install Dependencies
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pip install --upgrade tox tox-uv==1.9.0
+          python -m uv pip install --upgrade tox tox-uv==1.9.0
 
       - name: Run unit tests
         if: steps.changes.outputs.syft == 'true'
@@ -182,7 +182,7 @@ jobs:
       - name: Install Dependencies
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         run: |
-          pip install --upgrade tox tox-uv==1.9.0
+          python -m uv pip install --upgrade tox tox-uv==1.9.0
 
       - name: Run notebook tests
         uses: nick-fields/retry@v3
