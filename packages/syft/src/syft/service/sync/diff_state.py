@@ -566,11 +566,11 @@ class ObjectDiffBatch(SyftObject):
     root_diff: ObjectDiff
     sync_direction: SyncDirection | None
 
-    def resolve(self) -> "ResolveWidget":
+    def resolve(self, build_state: bool = True) -> "ResolveWidget":
         # relative
         from .resolve_widget import ResolveWidget
 
-        return ResolveWidget(self)
+        return ResolveWidget(self, build_state=build_state)
 
     def walk_graph(
         self,
@@ -1142,14 +1142,16 @@ class NodeDiff(SyftObject):
 
     include_ignored: bool = False
 
-    def resolve(self) -> "PaginatedResolveWidget | SyftSuccess":
+    def resolve(
+        self, build_state: bool = True
+    ) -> "PaginatedResolveWidget | SyftSuccess":
         if len(self.batches) == 0:
             return SyftSuccess(message="No batches to resolve")
 
         # relative
         from .resolve_widget import PaginatedResolveWidget
 
-        return PaginatedResolveWidget(batches=self.batches)
+        return PaginatedResolveWidget(batches=self.batches, build_state=build_state)
 
     def __getitem__(self, idx: Any) -> ObjectDiffBatch:
         return self.batches[idx]

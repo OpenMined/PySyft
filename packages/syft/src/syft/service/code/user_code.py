@@ -332,6 +332,8 @@ class UserCode(SyncableSyftObject):
     origin_node_side_type: NodeSideType
     l0_deny_reason: str | None = None
 
+    _has_output_read_permissions_cache: bool | None = None
+
     __table_coll_widths__ = [
         "min-content",
         "auto",
@@ -439,9 +441,14 @@ class UserCode(SyncableSyftObject):
             if isinstance(api, SyftError):
                 return api
             node_identity = NodeIdentity.from_api(api)
-            is_approved = api.output.has_output_read_permissions(
-                self.id, self.user_verify_key
-            )
+
+            if self._has_output_read_permissions_cache is None:
+                is_approved = api.output.has_output_read_permissions(
+                    self.id, self.user_verify_key
+                )
+                self._has_output_read_permissions_cache = is_approved
+            else:
+                is_approved = self._has_output_read_permissions_cache
         else:
             # Serverside
             node_identity = NodeIdentity.from_node(context.node)
