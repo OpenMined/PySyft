@@ -457,3 +457,48 @@ def test_request_existing_usercode(worker) -> None:
 
     assert len(ds_client.code.get_all()) == 1
     assert len(ds_client.requests.get_all()) == 1
+
+
+def test_submit_existing_code_different_user(worker):
+    root_domain_client = worker.root_client
+
+    root_domain_client.register(
+        name="data-scientist",
+        email="test_user@openmined.org",
+        password="0000",
+        password_verify="0000",
+    )
+    ds_client_1 = root_domain_client.login(
+        email="test_user@openmined.org",
+        password="0000",
+    )
+
+    root_domain_client.register(
+        name="data-scientist-2",
+        email="test_user_2@openmined.org",
+        password="0000",
+        password_verify="0000",
+    )
+    ds_client_2 = root_domain_client.login(
+        email="test_user_2@openmined.org",
+        password="0000",
+    )
+
+    @sy.syft_function_single_use()
+    def my_func():
+        return 42
+
+    res_submit = ds_client_1.api.services.code.submit(my_func)
+    assert isinstance(res_submit, SyftSuccess)
+    res_resubmit = ds_client_1.api.services.code.submit(my_func)
+    assert isinstance(res_resubmit, SyftError)
+
+    # Resubmit with different user
+    res_submit = ds_client_2.api.services.code.submit(my_func)
+    assert isinstance(res_submit, SyftSuccess)
+    res_resubmit = ds_client_2.api.services.code.submit(my_func)
+    assert isinstance(res_resubmit, SyftError)
+
+    assert len(ds_client_1.code.get_all()) == 1
+    assert len(ds_client_2.code.get_all()) == 1
+    assert len(root_domain_client.code.get_all()) == 2
