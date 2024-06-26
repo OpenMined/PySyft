@@ -29,7 +29,8 @@ jobs:
 
       - name: Install pip packages
         run: |
-          pip install --upgrade pip==24.1 uv==0.2.15
+          python -m pip install --upgrade pip==24.1 
+          pythom -m pip install uv==0.2.15
           uv --version
 
       - name: Get pip cache dir
