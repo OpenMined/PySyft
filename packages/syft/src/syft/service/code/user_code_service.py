@@ -278,7 +278,7 @@ class UserCodeService(AbstractService):
             return Ok(user_code)
         else:  # code: SubmitUserCode
             # Submit new UserCode, or get existing UserCode with the same code hash
-            user_code_or_err = self._submit(context, code, exists_ok=True)
+            user_code_or_err = self._submit(context, code, exists_ok=True)  # type: ignore
             return user_code_or_err
 
     @service_method(
