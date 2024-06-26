@@ -1405,6 +1405,8 @@ def compile_code(context: TransformContext) -> TransformContext:
 def hash_code(context: TransformContext) -> TransformContext:
     if context.output is None:
         return context
+    if not isinstance(context.obj, SubmitUserCode):
+        return context
 
     code = context.output["code"]
     context.output["raw_code"] = code

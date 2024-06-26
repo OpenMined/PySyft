@@ -265,7 +265,7 @@ class UserCodeService(AbstractService):
                 return Err("UserCode not found on this node.")
             return Ok(user_code)
 
-        elif isinstance(code, SubmitUserCode):
+        elif isinstance(code, SubmitUserCode):  # type: ignore[unreachable]
             # Submit new UserCode
             # NOTE if a code with the same hash exists, it will be returned instead
             user_code_result = self._submit(context, code, exists_ok=True)
