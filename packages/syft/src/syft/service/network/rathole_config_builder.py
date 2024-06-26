@@ -19,6 +19,7 @@ from .rathole_toml import RatholeServerToml
 RATHOLE_TOML_CONFIG_MAP = "rathole-config"
 RATHOLE_PROXY_CONFIG_MAP = "proxy-config-dynamic"
 PROXY_CONFIG_MAP = "proxy-config"
+DEFAULT_LOCAL_ADDR_HOST = "0.0.0.0"  # nosec
 
 
 class RatholeConfigBuilder:
@@ -46,7 +47,7 @@ class RatholeConfigBuilder:
         config = RatholeConfig(
             uuid=peer_id.to_string(),
             secret_token=rathole_route.rathole_token,
-            local_addr_host="0.0.0.0",
+            local_addr_host=DEFAULT_LOCAL_ADDR_HOST,
             local_addr_port=random_port,
             server_name=peer.name,
         )
