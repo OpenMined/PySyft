@@ -2,6 +2,7 @@
 from binascii import hexlify
 from collections import defaultdict
 import itertools
+import logging
 import socketserver
 import sys
 import threading
@@ -10,7 +11,6 @@ from time import sleep
 from typing import Any
 
 # third party
-from loguru import logger
 from pydantic import field_validator
 import zmq
 from zmq import Frame
@@ -60,6 +60,8 @@ PRODUCER_TIMEOUT_SEC = 60
 
 # Lock for working on ZMQ socket
 ZMQ_SOCKET_LOCK = threading.Lock()
+
+logger = logging.getLogger(__name__)
 
 
 class QueueMsgProtocol:
@@ -128,6 +130,13 @@ class Worker(SyftBaseModel):
     def reset_expiry(self) -> None:
         self.expiry_t.reset()
 
+    def __str__(self) -> str:
+        svc = self.service.name if self.service else None
+        return (
+            f"Worker(addr={self.address!r}, id={self.identity!r}, service={svc}, "
+            f"syft_worker_id={self.syft_worker_id!r})"
+        )
+
 
 @serializable()
 class ZMQProducer(QueueProducer):
@@ -177,7 +186,7 @@ class ZMQProducer(QueueProducer):
         try:
             self.poll_workers.unregister(self.socket)
         except Exception as e:
-            logger.exception("Failed to unregister poller. {}", e)
+            logger.exception("Failed to unregister poller.", exc_info=e)
         finally:
             if self.thread:
                 self.thread.join(THREAD_TIMEOUT_SEC)
@@ -232,7 +241,7 @@ class ZMQProducer(QueueProducer):
                         return True
             return value
         except Exception as e:
-            logger.exception("Failed to resolve action objects. {}", e)
+            logger.exception("Failed to resolve action objects.", exc_info=e)
             return True
 
     def unwrap_nested_actionobjects(self, data: Any) -> Any:
@@ -367,9 +376,7 @@ class ZMQProducer(QueueProducer):
                         res = self.queue_stash.update(item.syft_client_verify_key, item)
                         if res.is_err():
                             logger.error(
-                                "Failed to update queue item={} error={}",
-                                item,
-                                res.err(),
+                                f"Failed to update queue item={item} error={res.err()}"
                             )
                     elif item.status == Status.PROCESSING:
                         # Evaluate Retry condition here
@@ -384,9 +391,7 @@ class ZMQProducer(QueueProducer):
                 res = self.queue_stash.update(item.syft_client_verify_key, item)
                 if res.is_err():
                     logger.error(
-                        "Failed to update queue item={} error={}",
-                        item,
-                        res.err(),
+                        f"Failed to update queue item={item} error={res.err()}"
                     )
 
     def run(self) -> None:
@@ -398,18 +403,18 @@ class ZMQProducer(QueueProducer):
 
     def send(self, worker: bytes, message: bytes | list[bytes]) -> None:
         worker_obj = self.require_worker(worker)
-        self.send_to_worker(worker=worker_obj, msg=message)
+        self.send_to_worker(worker_obj, QueueMsgProtocol.W_REQUEST, message)
 
     def bind(self, endpoint: str) -> None:
         """Bind producer to endpoint."""
         self.socket.bind(endpoint)
-        logger.info("Producer endpoint: {}", endpoint)
+        logger.info(f"ZMQProducer endpoint: {endpoint}")
 
     def send_heartbeats(self) -> None:
         """Send heartbeats to idle workers if it's time"""
         if self.heartbeat_t.has_expired():
             for worker in self.waiting:
-                self.send_to_worker(worker, QueueMsgProtocol.W_HEARTBEAT, None, None)
+                self.send_to_worker(worker, QueueMsgProtocol.W_HEARTBEAT)
             self.heartbeat_t.reset()
 
     def purge_workers(self) -> None:
@@ -420,22 +425,15 @@ class ZMQProducer(QueueProducer):
         # work on a copy of the iterator
         for worker in list(self.waiting):
             if worker.has_expired():
-                logger.info(
-                    "Deleting expired Worker id={} uid={} expiry={} now={}",
-                    worker.identity,
-                    worker.syft_worker_id,
-                    worker.get_expiry(),
-                    Timeout.now(),
-                )
+                logger.info(f"Deleting expired worker id={worker}")
                 self.delete_worker(worker, False)
 
     def update_consumer_state_for_worker(
         self, syft_worker_id: UID, consumer_state: ConsumerState
     ) -> None:
         if self.worker_stash is None:
-            # TODO: fix the mypy issue
             logger.error(  # type: ignore[unreachable]
-                f"Worker stash is not defined for ZMQProducer : {self.queue_name} - {self.id}"
+                f"ZMQProducer worker stash not defined for {self.queue_name} - {self.id}"
             )
             return
 
@@ -455,14 +453,13 @@ class ZMQProducer(QueueProducer):
             )
             if res.is_err():
                 logger.error(
-                    "Failed to update consumer state for worker id={} to state: {} error={}",
-                    syft_worker_id,
-                    consumer_state,
-                    res.err(),
+                    f"Failed to update consumer state for worker id={syft_worker_id} "
+                    f"to state: {consumer_state} error={res.err()}",
                 )
         except Exception as e:
             logger.error(
-                f"Failed to update consumer state for worker id: {syft_worker_id} to state {consumer_state}. Error: {e}"
+                f"Failed to update consumer state for worker id: {syft_worker_id} to state {consumer_state}",
+                exc_info=e,
             )
 
     def worker_waiting(self, worker: Worker) -> None:
@@ -487,13 +484,12 @@ class ZMQProducer(QueueProducer):
             msg = service.requests.pop(0)
             worker = service.waiting.pop(0)
             self.waiting.remove(worker)
-            self.send_to_worker(worker, QueueMsgProtocol.W_REQUEST, None, msg)
+            self.send_to_worker(worker, QueueMsgProtocol.W_REQUEST, msg)
 
     def send_to_worker(
         self,
         worker: Worker,
-        command: bytes = QueueMsgProtocol.W_REQUEST,
-        option: bytes | None = None,
+        command: bytes,
         msg: bytes | list | None = None,
     ) -> None:
         """Send message to worker.
@@ -510,51 +506,61 @@ class ZMQProducer(QueueProducer):
         elif not isinstance(msg, list):
             msg = [msg]
 
-        # Stack routing and protocol envelopes to start of message
-        # and routing envelope
-        if option is not None:
-            msg = [option] + msg
-        msg = [worker.address, b"", QueueMsgProtocol.W_WORKER, command] + msg
+        # ZMQProducer send frames: [address, empty, header, command, ...data]
+        core = [worker.address, b"", QueueMsgProtocol.W_WORKER, command]
+        msg = core + msg
 
-        logger.debug("Send: {}", msg)
+        if command != QueueMsgProtocol.W_HEARTBEAT:
+            # log everything except the last frame which contains serialized data
+            logger.info(f"ZMQProducer send: {core}")
+
         with ZMQ_SOCKET_LOCK:
             try:
                 self.socket.send_multipart(msg)
             except zmq.ZMQError as e:
-                logger.error("Failed to send message to producer. {}", e)
+                logger.error("ZMQProducer send error", exc_info=e)
 
     def _run(self) -> None:
-        while True:
-            if self._stop.is_set():
-                return
+        try:
+            while True:
+                if self._stop.is_set():
+                    logger.info("ZMQProducer thread stopped")
+                    return
 
-            for service in self.services.values():
-                thread = threading.Thread(target=self.dispatch, args=(service, None))
-                thread.start()
+                for service in self.services.values():
+                    thread = threading.Thread(target=self.dispatch, args=(service, None))
+                    thread.start()
 
-            items = None
+                items = None
 
-            try:
-                items = self.poll_workers.poll(ZMQ_POLLER_TIMEOUT_MSEC)
-            except Exception as e:
-                logger.exception("Failed to poll items: {}", e)
+                try:
+                    items = self.poll_workers.poll(ZMQ_POLLER_TIMEOUT_MSEC)
+                except Exception as e:
+                    logger.exception("ZMQProducer poll error", exc_info=e)
 
-            if items:
-                msg = self.socket.recv_multipart()
+                if items:
+                    msg = self.socket.recv_multipart()
 
-                logger.debug("Recieve: {}", msg)
+                    if len(msg) < 3:
+                        logger.error(f"ZMQProducer invalid recv: {msg}")
+                        continue
 
-                address = msg.pop(0)
-                empty = msg.pop(0)  # noqa: F841
-                header = msg.pop(0)
+                    # ZMQProducer recv frames: [address, empty, header, command, ...data]
+                    (address, _, header, command, *data) = msg
 
-                if header == QueueMsgProtocol.W_WORKER:
-                    self.process_worker(address, msg)
-                else:
-                    logger.error("Invalid message header: {}", header)
+                    if command != QueueMsgProtocol.W_HEARTBEAT:
+                        # log everything except the last frame which contains serialized data
+                        logger.info(f"ZMQProducer recv: {msg[:4]}")
 
-            self.send_heartbeats()
-            self.purge_workers()
+                    if header == QueueMsgProtocol.W_WORKER:
+                        self.process_worker(address, command, data)
+                    else:
+                        logger.error(f"Invalid message header: {header}")
+
+                self.send_heartbeats()
+                self.purge_workers()
+        except Exception as e:
+            logger.exception("ZMQProducer thread exception", exc_info=e)
 
     def require_worker(self, address: bytes) -> Worker:
         """Finds the worker (creates if necessary)."""
@@ -565,16 +571,13 @@ class ZMQProducer(QueueProducer):
             self.workers[identity] = worker
         return worker
 
-    def process_worker(self, address: bytes, msg: list[bytes]) -> None:
-        command = msg.pop(0)
-
+    def process_worker(self, address: bytes, command: bytes, data: list[bytes]) -> None:
         worker_ready = hexlify(address) in self.workers
-
         worker = self.require_worker(address)
 
         if QueueMsgProtocol.W_READY == command:
-            service_name = msg.pop(0).decode()
-            syft_worker_id = msg.pop(0).decode()
+            service_name = data.pop(0).decode()
+            syft_worker_id = data.pop(0).decode()
             if worker_ready:
                 # Not first command in session or Reserved service name
                 # If worker was already present, then we disconnect it first
@@ -590,18 +593,7 @@ class ZMQProducer(QueueProducer):
                     self.services[service_name] = service
                 if service is not None:
                     worker.service = service
-                    logger.info(
-                        "New Worker service={}, id={}, uid={}",
-                        service.name,
-                        worker.identity,
-                        worker.syft_worker_id,
-                    )
-                else:
-                    logger.info(
-                        "New Worker service=None, id={}, uid={}",
-                        worker.identity,
-                        worker.syft_worker_id,
-                    )
+                logger.info(f"New worker: {worker}")
                 worker.syft_worker_id = UID(syft_worker_id)
                 self.worker_waiting(worker)
 
@@ -612,19 +604,18 @@ class ZMQProducer(QueueProducer):
                 # if not already present
                 self.worker_waiting(worker)
             else:
-                # extract the syft worker id and worker pool name from the message
-                # Get the corresponding worker pool and worker
-                # update the status to be unhealthy
+                logger.info(f"Got heartbeat, but worker not ready. {worker}")
                 self.delete_worker(worker, True)
         elif QueueMsgProtocol.W_DISCONNECT == command:
+            logger.info(f"Removing disconnected worker: {worker}")
             self.delete_worker(worker, False)
         else:
-            logger.error("Invalid command: {}", command)
+            logger.error(f"Invalid command: {command!r}")
 
     def delete_worker(self, worker: Worker, disconnect: bool) -> None:
         """Deletes worker from all data structures, and deletes worker."""
         if disconnect:
-            self.send_to_worker(worker, QueueMsgProtocol.W_DISCONNECT, None, None)
+            self.send_to_worker(worker, QueueMsgProtocol.W_DISCONNECT)
 
         if worker.service and worker in worker.service.waiting:
             worker.service.waiting.remove(worker)
@@ -681,13 +672,12 @@ class ZMQConsumer(QueueConsumer):
         self.socket.connect(self.address)
         self.poller.register(self.socket, zmq.POLLIN)
 
-        logger.info("Connecting Worker id={} to broker addr={}", self.id, self.address)
+        logger.info(f"Connecting Worker id={self.id} to broker addr={self.address}")
 
         # Register queue with the producer
         self.send_to_producer(
             QueueMsgProtocol.W_READY,
-            self.service_name.encode(),
-            [str(self.syft_worker_id).encode()],
+            [self.service_name.encode(), str(self.syft_worker_id).encode()],
         )
 
     def post_init(self) -> None:
@@ -705,7 +695,7 @@ class ZMQConsumer(QueueConsumer):
         try:
             self.poller.unregister(self.socket)
         except Exception as e:
-            logger.exception("Failed to unregister worker. {}", e)
+            logger.exception("Failed to unregister worker.", exc_info=e)
         finally:
             if self.thread is not None:
                 self.thread.join(timeout=THREAD_TIMEOUT_SEC)
@@ -716,8 +706,7 @@ class ZMQConsumer(QueueConsumer):
 
     def send_to_producer(
         self,
-        command: str,
-        option: bytes | None = None,
+        command: bytes,
         msg: bytes | list | None = None,
     ) -> None:
         """Send message to producer.
@@ -733,23 +722,25 @@ class ZMQConsumer(QueueConsumer):
         elif not isinstance(msg, list):
             msg = [msg]
 
-        if option:
-            msg = [option] + msg
+        # ZMQConsumer send frames: [empty, header, command, ...data]
+        core = [b"", QueueMsgProtocol.W_WORKER, command]
+        msg = core + msg
 
-        msg = [b"", QueueMsgProtocol.W_WORKER, command] + msg
-        logger.debug("Send: msg={}", msg)
+        if command != QueueMsgProtocol.W_HEARTBEAT:
+            logger.info(f"ZMQ Consumer send: {core}")
 
         with ZMQ_SOCKET_LOCK:
             try:
                 self.socket.send_multipart(msg)
             except zmq.ZMQError as e:
-                logger.error("Failed to send message to producer. {}", e)
+                logger.error("ZMQConsumer send error", exc_info=e)
 
     def _run(self) -> None:
         """Send reply, if any, to producer and wait for next request."""
         try:
             while True:
                 if self._stop.is_set():
+                    logger.info("ZMQConsumer thread stopped")
                     return
 
                 try:
@@ -758,39 +749,38 @@ class ZMQConsumer(QueueConsumer):
                     logger.info("Context terminated")
                     return
                 except Exception as e:
-                    logger.error("Poll error={}", e)
+                    logger.error("ZMQ poll error", exc_info=e)
                     continue
 
                 if items:
-                    # Message format:
-                    # [b"", "<header>", "<command>", "<queue_name>", "<actual_msg_bytes>"]
                     msg = self.socket.recv_multipart()
-
-                    logger.debug("Recieve: {}", msg)
 
                     # mark as alive
                     self.set_producer_alive()
 
                     if len(msg) < 3:
-                        logger.error("Invalid message: {}", msg)
+                        logger.error(f"ZMQConsumer invalid recv: {msg}")
                         continue
 
-                    empty = msg.pop(0)  # noqa: F841
-                    header = msg.pop(0)  # noqa: F841
+                    # Message frames recieved by consumer:
+                    # [empty, header, command, ...data]
+                    (_, _, command, *data) = msg
 
-                    command = msg.pop(0)
+                    if command != QueueMsgProtocol.W_HEARTBEAT:
+                        # log everything except the last frame which contains serialized data
+                        logger.info(f"ZMQConsumer recv: {msg[:-4]}")
 
                     if command == QueueMsgProtocol.W_REQUEST:
                         # Call Message Handler
                         try:
-                            message = msg.pop()
+                            message = data.pop()
                             self.associate_job(message)
                             self.message_handler.handle_message(
                                 message=message,
                                 syft_worker_id=self.syft_worker_id,
                             )
                         except Exception as e:
-                            logger.exception("Error while handling message. {}", e)
+                            logger.exception("Couldn't handle message", exc_info=e)
                         finally:
                             self.clear_job()
                     elif command == QueueMsgProtocol.W_HEARTBEAT:
@@ -798,7 +788,7 @@ class ZMQConsumer(QueueConsumer):
                     elif command == QueueMsgProtocol.W_DISCONNECT:
                         self.reconnect_to_producer()
                     else:
-                        logger.error("Invalid command: {}", command)
+                        logger.error(f"ZMQConsumer invalid command: {command}")
                 else:
                     if not self.is_producer_alive():
                         logger.info("Producer check-alive timed out. Reconnecting.")
@@ -809,12 +799,11 @@ class ZMQConsumer(QueueConsumer):
 
         except zmq.ZMQError as e:
             if e.errno == zmq.ETERM:
-                logger.info("Consumer connection terminated")
+                logger.info("zmq.ETERM")
             else:
-                logger.exception("Consumer error. {}", e)
-                raise e
-
-        logger.info("Worker finished")
+                logger.exception("zmq.ZMQError", exc_info=e)
+        except Exception as e:
+            logger.exception("ZMQConsumer thread exception", exc_info=e)
 
     def set_producer_alive(self) -> None:
         self.producer_ping_t.reset()
@@ -837,7 +826,7 @@ class ZMQConsumer(QueueConsumer):
             queue_item = _deserialize(message, from_bytes=True)
             self._set_worker_job(queue_item.job_id)
         except Exception as e:
-            logger.exception("Could not associate job. {}", e)
+            logger.exception("Could not associate job", exc_info=e)
 
     def clear_job(self) -> None:
         self._set_worker_job(None)

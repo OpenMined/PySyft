@@ -3,6 +3,7 @@ from collections import defaultdict
 from collections.abc import Iterable
 from collections.abc import Mapping
 from collections.abc import Set
+import logging
 import re
 from typing import Any
 
@@ -11,6 +12,8 @@ from .util import full_name_with_qualname
 from .util import sanitize_html
 
 TABLE_INDEX_KEY = "_table_repr_index"
+
+logger = logging.getLogger(__name__)
 
 
 def _syft_in_mro(self: Any, item: Any) -> bool:

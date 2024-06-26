@@ -24,6 +24,7 @@ ignore = [
 
 [lint.per-file-ignores]
 "*.ipynb" = ["E402"]
+"__init__.py" = ["F401"]
 
 [lint.pycodestyle]
 max-line-length = 120
