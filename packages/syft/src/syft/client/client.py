@@ -7,12 +7,15 @@ from collections.abc import Callable
 from enum import Enum
 from getpass import getpass
 import json
+import logging
 from typing import Any
 from typing import TYPE_CHECKING
 from typing import cast
 
 # third party
 from argon2 import PasswordHasher
+from cachetools import TTLCache
+from cachetools import cached
 from pydantic import field_validator
 import requests
 from requests import Response
@@ -49,7 +52,6 @@ from ..types.grid_url import GridURL
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SYFT_OBJECT_VERSION_3
 from ..types.uid import UID
-from ..util.logger import debug
 from ..util.telemetry import instrument
 from ..util.util import prompt_warning_message
 from ..util.util import thread_ident
@@ -62,6 +64,8 @@ from .api import SyftAPICall
 from .api import debox_signed_syftapicall_response
 from .connection import NodeConnection
 from .protocol import SyftProtocol
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     # relative
@@ -78,7 +82,7 @@ def upgrade_tls(url: GridURL, response: Response) -> GridURL:
         if response.url.startswith("https://") and url.protocol == "http":
             # we got redirected to https
             https_url = GridURL.from_url(response.url).with_path("")
-            debug(f"GridURL Upgraded to HTTPS. {https_url}")
+            logger.debug(f"GridURL Upgraded to HTTPS. {https_url}")
             return https_url
     except Exception as e:
         print(f"Failed to upgrade to HTTPS. {e}")
@@ -198,6 +202,8 @@ class HTTPConnection(NodeConnection):
         return self.session_cache
 
     def _make_get(self, path: str, params: dict | None = None) -> bytes:
+        if params is None:
+            return self._make_get_no_params(path)
         url = self.url.with_path(path)
         response = self.session.get(
             str(url),
@@ -205,6 +211,26 @@ class HTTPConnection(NodeConnection):
             verify=verify_tls(),
             proxies={},
             params=params,
+        )
+        if response.status_code != 200:
+            raise requests.ConnectionError(
+                f"Failed to fetch {url}. Response returned with code {response.status_code}"
+            )
+
+        # upgrade to tls if available
+        self.url = upgrade_tls(self.url, response)
+
+        return response.content
+
+    @cached(cache=TTLCache(maxsize=128, ttl=300))
+    def _make_get_no_params(self, path: str) -> bytes:
+        print(path)
+        url = self.url.with_path(path)
+        response = self.session.get(
+            str(url),
+            headers=self.headers,
+            verify=verify_tls(),
+            proxies={},
         )
         if response.status_code != 200:
             raise requests.ConnectionError(
@@ -756,6 +782,22 @@ class SyftClient:
             )
 
         return _guest_client
+
+    def login_as(self, email: str) -> Self:
+        user_private_key = self.api.services.user.key_for_email(email=email)
+        if not isinstance(user_private_key, UserPrivateKey):
+            return user_private_key
+        if self.metadata is not None:
+            print(
+                f"Logged into <{self.name}: {self.metadata.node_side_type.capitalize()}-side "
+                f"{self.metadata.node_type.capitalize()}> as {email}"
+            )
+
+        return self.__class__(
+            connection=self.connection,
+            credentials=user_private_key.signing_key,
+            metadata=self.metadata,
+        )
 
     def login(
         self,
