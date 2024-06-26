@@ -182,9 +182,6 @@ class EnclaveService(AbstractService):
             .ok()
             for action_id in asset_action_ids
         ]
-        # Actual data from blob storage is lazy-loaded when the `syft_action_data` property is used for the
-        # first time. Let's load it now so that it can get properly transferred along with the action objects.
-        [action_object.syft_action_data for action_object in action_objects]
 
         # Get the enclave client
         if not code.deployment_policy_init_kwargs:
@@ -197,6 +194,19 @@ class EnclaveService(AbstractService):
                 message=f"Code '{code.service_func_name}' does not have an Enclave deployment provider."
             )
         enclave_client = provider.get_client(verify_key=context.node.verify_key)
+
+        # Actual data from blob storage is lazy-loaded when the `syft_action_data` property is used for the
+        # first time. Let's load it now so that it can get properly transferred along with the action objects.
+        for action_obj in action_objects:
+            _ = action_obj.syft_action_data
+            action_obj.syft_blob_storage_entry_id = (
+                None  # Clear the previous blob storage entry id
+            )
+            action_obj._set_obj_location_(
+                enclave_client.id,
+                enclave_client.api.signing_key.verify_key,
+            )
+            action_obj._save_to_blob_storage()
 
         # Upload the assets to the enclave
         result = enclave_client.api.services.enclave.upload_input_data_for_code(
