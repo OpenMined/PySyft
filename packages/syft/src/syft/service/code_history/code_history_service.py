@@ -126,7 +126,7 @@ class CodeHistoryService(AbstractService):
                 credentials=context.credentials, user_verify_key=user_verify_key
             )
 
-        user_code_service: UserCodeService = context.node.get_service("usercodeservice")
+        user_code_service: UserCodeService = context.node.get_service("usercodeservice")  # type: ignore
 
         def get_code(uid: UID) -> UserCode | SyftError:
             return user_code_service.stash.get_by_uid(
