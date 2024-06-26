@@ -77,23 +77,50 @@ def test_user_code(worker) -> None:
         assert multi_call_res.get() == result.get()
 
 
-def test_duplicated_user_code(worker, guest_client: User) -> None:
+def test_duplicated_user_code(worker) -> None:
+    worker.root_client.register(
+        name="Jane Doe",
+        email="jane@caltech.edu",
+        password="abc123",
+        password_verify="abc123",
+        institution="Caltech",
+        website="https://www.caltech.edu/",
+    )
+    ds_client = worker.root_client.login(
+        email="jane@caltech.edu",
+        password="abc123",
+    )
+
     # mock_syft_func()
-    result = guest_client.api.services.code.request_code_execution(mock_syft_func)
+    result = ds_client.api.services.code.request_code_execution(mock_syft_func)
     assert isinstance(result, Request)
-    assert len(guest_client.code.get_all()) == 1
+    assert len(ds_client.code.get_all()) == 1
 
     # request the exact same code should return an error
-    result = guest_client.api.services.code.request_code_execution(mock_syft_func)
+    result = ds_client.api.services.code.request_code_execution(mock_syft_func)
     assert isinstance(result, SyftError)
-    assert len(guest_client.code.get_all()) == 1
+    assert len(ds_client.code.get_all()) == 1
 
     # request the a different function name but same content will also succeed
     # flaky if not blocking
     mock_syft_func_2(syft_no_node=True)
-    result = guest_client.api.services.code.request_code_execution(mock_syft_func_2)
+    result = ds_client.api.services.code.request_code_execution(mock_syft_func_2)
     assert isinstance(result, Request)
-    assert len(guest_client.code.get_all()) == 2
+    assert len(ds_client.code.get_all()) == 2
+
+    code_history = ds_client.code_history
+    assert code_history.code_versions, "No code version found."
+
+    code_histories = worker.root_client.code_histories
+    user_code_history = code_histories[ds_client.logged_in_user]
+    assert not isinstance(code_histories, SyftError)
+    assert not isinstance(user_code_history, SyftError)
+    assert user_code_history.code_versions, "No code version found."
+    assert user_code_history.mock_syft_func.user_code_history[0].status is not None
+    assert user_code_history.mock_syft_func[0]._repr_markdown_(), "repr markdown failed"
+
+    result = user_code_history.mock_syft_func_2[0]()
+    assert result.get() == 1
 
 
 def random_hash() -> str:

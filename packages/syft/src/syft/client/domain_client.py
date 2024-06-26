@@ -2,14 +2,15 @@
 from __future__ import annotations
 
 # stdlib
+import logging
 from pathlib import Path
 import re
 from string import Template
+import traceback
 from typing import TYPE_CHECKING
 from typing import cast
 
 # third party
-from loguru import logger
 import markdown
 from result import Result
 from tqdm import tqdm
@@ -40,6 +41,8 @@ from .client import login
 from .client import login_as_guest
 from .connection import NodeConnection
 from .protocol import SyftProtocol
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     # relative
@@ -178,7 +181,6 @@ class DomainClient(SyftClient):
         for uid, obj in state.objects.items():
             if isinstance(obj, ActionObject):
                 obj = obj.refresh_object(resolve_nested=False)
-                obj.reload_cache()
                 state.objects[uid] = obj
         return state
 
@@ -190,8 +192,10 @@ class DomainClient(SyftClient):
         action_objects = [x for x in items if isinstance(x, ActionObject)]
 
         for action_object in action_objects:
+            action_object.reload_cache()
             # NOTE permissions are added separately server side
             action_object._send(self.id, self.verify_key, add_storage_permission=False)
+            action_object._clear_cache()
 
         ignored_batches = resolved_state.ignored_batches
 
@@ -271,8 +275,9 @@ class DomainClient(SyftClient):
 
             return ActionObject.from_obj(result).send(self)
         except Exception as err:
-            logger.debug("upload_files: Error creating action_object: {}", err)
-            return SyftError(message=f"Failed to upload files: {err}")
+            return SyftError(
+                message=f"Failed to upload files: {err}.\n{traceback.format_exc()}"
+            )
 
     def connect_to_gateway(
         self,

@@ -1,10 +1,8 @@
 # stdlib
+import logging
 import threading
 import time
 from typing import cast
-
-# third party
-from loguru import logger
 
 # relative
 from ...serde.serializable import serializable
@@ -16,6 +14,8 @@ from .network_service import NodePeerAssociationStatus
 from .node_peer import NodePeer
 from .node_peer import NodePeerConnectionStatus
 from .node_peer import NodePeerUpdate
+
+logger = logging.getLogger(__name__)
 
 
 @serializable(without=["thread"])
@@ -63,9 +63,7 @@ class PeerHealthCheckTask:
                     peer_update.ping_status = NodePeerConnectionStatus.TIMEOUT
                     peer_client = None
             except Exception as e:
-                logger.error(
-                    f"Failed to create client for peer: {peer} with exception {e}"
-                )
+                logger.error(f"Failed to create client for peer: {peer}", exc_info=e)
 
                 peer_update.ping_status = NodePeerConnectionStatus.TIMEOUT
                 peer_client = None
@@ -97,7 +95,7 @@ class PeerHealthCheckTask:
             )
 
             if result.is_err():
-                logger.info(f"Failed to update peer in stash: {result.err()}")
+                logger.error(f"Failed to update peer in stash: {result.err()}")
 
         return None
 
