@@ -32,7 +32,7 @@ from .project import ProjectSubmit
 
 class DistributedProject(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-
+    id: UID = Field(default_factory=UID)
     name: str
     description: str = ""
     code: UserCode | SubmitUserCode  # only one code per project for this prototype
@@ -226,6 +226,7 @@ class DistributedProject(BaseModel):
             # Creating projects and code requests separately across each client
             # TODO handle failures in between
             new_project = ProjectSubmit(
+                id=self.id,
                 name=self.name,
                 description=self.description,
                 members=[client],
