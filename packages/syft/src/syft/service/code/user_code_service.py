@@ -9,8 +9,6 @@ from result import Ok
 from result import Result
 
 # relative
-from ...abstract_node import NodeType
-from ...client.enclave_client import EnclaveClient
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
@@ -23,7 +21,6 @@ from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..context import AuthedServiceContext
-from ..network.routes import route_to_connection
 from ..output.output_service import ExecutionOutput
 from ..policy.policy import OutputPolicy
 from ..request.request import Request
@@ -312,62 +309,6 @@ class UserCodeService(AbstractService):
         if result.is_ok():
             user_code_items = result.ok()
             load_approved_policy_code(user_code_items=user_code_items, context=context)
-
-    @service_method(path="code.get_results", name="get_results", roles=GUEST_ROLE_LEVEL)
-    def get_results(
-        self, context: AuthedServiceContext, inp: UID | UserCode
-    ) -> list[UserCode] | SyftError:
-        uid = inp.id if isinstance(inp, UserCode) else inp
-        code_result = self.stash.get_by_uid(context.credentials, uid=uid)
-
-        if code_result.is_err():
-            return SyftError(message=code_result.err())
-        code = code_result.ok()
-
-        if code.is_enclave_code:
-            # if the current node is not the enclave
-            if not context.node.node_type == NodeType.ENCLAVE:
-                connection = route_to_connection(code.enclave_metadata.route)
-                enclave_client = EnclaveClient(
-                    connection=connection,
-                    credentials=context.node.signing_key,
-                )
-                if enclave_client.code is None:
-                    return SyftError(
-                        message=f"{enclave_client} can't access the user code api"
-                    )
-                outputs = enclave_client.code.get_results(code.id)
-                if isinstance(outputs, list):
-                    for output in outputs:
-                        output.syft_action_data  # noqa: B018
-                else:
-                    outputs.syft_action_data  # noqa: B018
-                return outputs
-
-            # if the current node is the enclave
-            else:
-                if not code.get_status(context.as_root_context()).approved:
-                    return code.status.get_status_message()
-
-                output_history = code.get_output_history(
-                    context=context.as_root_context()
-                )
-                if isinstance(output_history, SyftError):
-                    return output_history
-
-                if len(output_history) > 0:
-                    res = resolve_outputs(
-                        context=context,
-                        output_ids=output_history[-1].output_ids,
-                    )
-                    if res.is_err():
-                        return res
-                    res = delist_if_single(res.ok())
-                    return Ok(res)
-                else:
-                    return SyftError(message="No results available")
-        else:
-            return SyftError(message="Endpoint only supported for enclave code")
 
     def is_execution_allowed(
         self,
