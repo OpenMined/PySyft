@@ -59,32 +59,62 @@ class UserCodeService(AbstractService):
 
     @service_method(path="code.submit", name="submit", roles=GUEST_ROLE_LEVEL)
     def submit(
-        self, context: AuthedServiceContext, code: UserCode | SubmitUserCode
+        self, context: AuthedServiceContext, code: SubmitUserCode
     ) -> UserCode | SyftError:
         """Add User Code"""
-        result = self._submit(context=context, code=code)
+        result = self._submit(context, code, exists_ok=False)
         if result.is_err():
             return SyftError(message=str(result.err()))
         return SyftSuccess(message="User Code Submitted", require_api_update=True)
 
     def _submit(
-        self, context: AuthedServiceContext, code: UserCode | SubmitUserCode
+        self,
+        context: AuthedServiceContext,
+        submit_code: SubmitUserCode,
+        exists_ok: bool = False,
     ) -> Result[UserCode, str]:
-        if not isinstance(code, UserCode):
-            code = code.to(UserCode, context=context)  # type: ignore[unreachable]
-            result = self._post_user_code_transform_ops(context, code)
-            if isinstance(result, SyftError):
-                # if the validation fails, we should remove the user code status
-                # and code version to prevent dangling status
-                root_context = AuthedServiceContext(
-                    credentials=context.node.verify_key, node=context.node
-                )
+        """
+        Submit a UserCode.
 
-                if code.status_link is not None:
-                    _ = context.node.get_service("usercodestatusservice").remove(
-                        root_context, code.status_link.object_uid
-                    )
-                return result
+        If exists_ok is True, the function will return the existing code if it exists.
+
+        Args:
+            context (AuthedServiceContext): context
+            submit_code (SubmitUserCode): UserCode to submit
+            exists_ok (bool, optional): If True, return the existing code if it exists.
+                If false, existing codes returns Err. Defaults to False.
+
+        Returns:
+            Result[UserCode, str]: New UserCode or error
+        """
+        existing_code_or_err = self.stash.get_by_code_hash(
+            context.credentials,
+            code_hash=submit_code.get_code_hash(),
+        )
+
+        if existing_code_or_err.is_err():
+            return existing_code_or_err
+        existing_code = existing_code_or_err.ok()
+        if existing_code is not None:
+            if not exists_ok:
+                return Err("The code to be submitted already exists")
+            return Ok(existing_code)
+
+        code = submit_code.to(UserCode, context=context)
+
+        result = self._post_user_code_transform_ops(context, code)
+        if result.is_err():
+            # if the validation fails, we should remove the user code status
+            # and code version to prevent dangling status
+            root_context = AuthedServiceContext(
+                credentials=context.node.verify_key, node=context.node
+            )
+
+            if code.status_link is not None:
+                _ = context.node.get_service("usercodestatusservice").remove(
+                    root_context, code.status_link.object_uid
+                )
+            return result
 
         result = self.stash.set(context.credentials, code)
         return result
@@ -147,33 +177,15 @@ class UserCodeService(AbstractService):
         self,
         context: AuthedServiceContext,
         user_code: UserCode,
-    ) -> SyftSuccess | SyftError:
+    ) -> Result[UserCode, str]:
         if user_code.output_readers is None:
-            return SyftError(
-                message=f"there is no verified output readers for {user_code}"
-            )
+            return Err(f"there is no verified output readers for {user_code}")
         if user_code.input_owner_verify_keys is None:
-            return SyftError(
-                message=f"there is no verified input owners for {user_code}"
-            )
+            return Err(message=f"there is no verified input owners for {user_code}")
         if not all(
             x in user_code.input_owner_verify_keys for x in user_code.output_readers
         ):
-            raise ValueError("outputs can only be distributed to input owners")
-
-        # check if the code with the same name and content already exists in the stash
-
-        find_results = self.stash.get_by_code_hash(
-            context.credentials, code_hash=user_code.code_hash
-        )
-        if find_results.is_err():
-            return SyftError(message=str(find_results.err()))
-        find_results = find_results.ok()
-
-        if find_results is not None:
-            return SyftError(
-                message="The code to be submitted (name and content) already exists"
-            )
+            return Err("outputs can only be distributed to input owners")
 
         worker_pool_service = context.node.get_service("SyftWorkerPoolService")
         pool_result = worker_pool_service._get_worker_pool(
@@ -182,15 +194,15 @@ class UserCodeService(AbstractService):
         )
 
         if isinstance(pool_result, SyftError):
-            return pool_result
+            return Err(pool_result.message)
 
         # Create a code history
         code_history_service = context.node.get_service("codehistoryservice")
         result = code_history_service.submit_version(context=context, code=user_code)
         if isinstance(result, SyftError):
-            return result
+            return Err(result.message)
 
-        return SyftSuccess(message="")
+        return Ok(user_code)
 
     def _request_code_execution(
         self,
@@ -198,6 +210,19 @@ class UserCodeService(AbstractService):
         user_code: UserCode,
         reason: str | None = "",
     ) -> Request | SyftError:
+        # Cannot make multiple requests for the same code
+        get_by_usercode_id = context.node.get_service_method(
+            RequestService.get_by_usercode_id
+        )
+        existing_requests = get_by_usercode_id(context, user_code.id)
+        if isinstance(existing_requests, SyftError):
+            return existing_requests
+        if len(existing_requests) > 0:
+            return SyftError(
+                message=f"Request {existing_requests[0].id} already exists for this UserCode. "
+                f"Please use the existing request, or submit a new UserCode to create a new request."
+            )
+
         # Users that have access to the output also have access to the code item
         if user_code.output_readers is not None:
             self.stash.add_permissions(
@@ -231,6 +256,30 @@ class UserCodeService(AbstractService):
         # The Request service already returns either a SyftSuccess or SyftError
         return result
 
+    def _get_or_submit_user_code(
+        self,
+        context: AuthedServiceContext,
+        code: SubmitUserCode | UserCode,
+    ) -> Result[UserCode, str]:
+        """
+        - If the code is a UserCode, check if it exists and return
+        - If the code is a SubmitUserCode and the same code hash exists, return the existing code
+        - If the code is a SubmitUserCode and the code hash does not exist, submit the code
+        """
+        if isinstance(code, UserCode):
+            # Get existing UserCode
+            user_code_or_err = self.stash.get_by_uid(context.credentials, code.id)
+            if user_code_or_err.is_err():
+                return user_code_or_err
+            user_code = user_code_or_err.ok()
+            if user_code is None:
+                return Err("UserCode not found on this node.")
+            return Ok(user_code)
+        else:  # code: SubmitUserCode
+            # Submit new UserCode, or get existing UserCode with the same code hash
+            user_code_or_err = self._submit(context, code, exists_ok=True)  # type: ignore
+            return user_code_or_err
+
     @service_method(
         path="code.request_code_execution",
         name="request_code_execution",
@@ -239,19 +288,19 @@ class UserCodeService(AbstractService):
     def request_code_execution(
         self,
         context: AuthedServiceContext,
-        code: SubmitUserCode,
+        code: SubmitUserCode | UserCode,
         reason: str | None = "",
     ) -> Request | SyftError:
         """Request Code execution on user code"""
 
-        # TODO: check for duplicate submissions
-        user_code_or_err = self._submit(context, code)
+        user_code_or_err = self._get_or_submit_user_code(context, code)
         if user_code_or_err.is_err():
             return SyftError(message=user_code_or_err.err())
+        user_code = user_code_or_err.ok()
 
         result = self._request_code_execution(
             context,
-            user_code_or_err.ok(),
+            user_code,
             reason,
         )
         return result
