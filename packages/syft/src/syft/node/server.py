@@ -19,9 +19,6 @@ import uvicorn
 # relative
 from ..abstract_node import NodeSideType
 from ..client.client import API_PATH
-
-# from ..orchestra import DeploymentType
-# from ..orchestra import NodeHandle
 from ..util.constants import DEFAULT_TIMEOUT
 from ..util.util import os_name
 from .domain import Domain
