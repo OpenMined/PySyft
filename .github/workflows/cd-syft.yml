@@ -112,7 +112,8 @@ jobs:
         run: |
           sudo apt update -y
           sudo apt install software-properties-common -y
-          sudo apt install gcc -y
+          sudo apt install gcc curl -y
+          sudo apt-get install python3-dev -y
 
       - name: Setup Python on arm64
         if: ${{ endsWith(matrix.runner, '-arm64') }}
