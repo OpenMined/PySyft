@@ -3,16 +3,17 @@ from collections import defaultdict
 from collections.abc import Iterable
 from collections.abc import Mapping
 from collections.abc import Set
+import logging
 import re
 from typing import Any
 
-# third party
-from loguru import logger
-
 # relative
-from .notebook_ui.components.table_template import TABLE_INDEX_KEY
-from .notebook_ui.components.table_template import create_table_template
 from .util import full_name_with_qualname
+from .util import sanitize_html
+
+TABLE_INDEX_KEY = "_table_repr_index"
+
+logger = logging.getLogger(__name__)
 
 
 def _syft_in_mro(self: Any, item: Any) -> bool:
@@ -134,7 +135,7 @@ def _create_table_rows(
                 except Exception as e:
                     print(e)
                     value = None
-                cols[field].append(str(value))
+                cols[field].append(sanitize_html(str(value)))
 
     col_lengths = {len(cols[col]) for col in cols.keys()}
     if len(col_lengths) != 1:
@@ -238,21 +239,3 @@ def prepare_table_data(
     }
 
     return table_data, table_metadata
-
-
-def list_dict_repr_html(self: Mapping | Set | Iterable) -> str | None:
-    try:
-        table_data, table_metadata = prepare_table_data(self)
-        if len(table_data) == 0:
-            # TODO cleanup tech debt: _repr_html_ is used in syft without `None` fallback.
-            return self.__repr__()
-        return create_table_template(
-            table_data=table_data,
-            **table_metadata,
-        )
-
-    except Exception as e:
-        logger.debug(f"Could not create table: {e}")
-
-    # _repr_html_ returns None -> fallback to default repr
-    return None

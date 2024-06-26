@@ -2,7 +2,6 @@
 import asyncio
 from collections.abc import Callable
 from enum import Enum
-import logging
 import multiprocessing
 import os
 import platform
@@ -144,14 +143,7 @@ def run_uvicorn(
             except Exception:  # nosec
                 print(f"Failed to kill python process on port: {port}")
 
-        log_level = "critical"
-        if dev_mode:
-            log_level = "info"
-            logging.getLogger("uvicorn").setLevel(logging.CRITICAL)
-            logging.getLogger("uvicorn.access").setLevel(logging.CRITICAL)
-        config = uvicorn.Config(
-            app, host=host, port=port, log_level=log_level, reload=dev_mode
-        )
+        config = uvicorn.Config(app, host=host, port=port, reload=dev_mode)
         server = uvicorn.Server(config)
 
         await server.serve()
