@@ -25,19 +25,19 @@ from syft.service.user import user
 # relative
 # our version of mongomock that has a fix for CodecOptions and custom TypeRegistry Support
 from .mongomock.mongo_client import MongoClient
-from .syft.stores.store_fixtures_test import dict_action_store  # noqa: F401
-from .syft.stores.store_fixtures_test import dict_document_store  # noqa: F401
-from .syft.stores.store_fixtures_test import dict_queue_stash  # noqa: F401
-from .syft.stores.store_fixtures_test import dict_store_partition  # noqa: F401
-from .syft.stores.store_fixtures_test import mongo_action_store  # noqa: F401
-from .syft.stores.store_fixtures_test import mongo_document_store  # noqa: F401
-from .syft.stores.store_fixtures_test import mongo_queue_stash  # noqa: F401
-from .syft.stores.store_fixtures_test import mongo_store_partition  # noqa: F401
-from .syft.stores.store_fixtures_test import sqlite_action_store  # noqa: F401
-from .syft.stores.store_fixtures_test import sqlite_document_store  # noqa: F401
-from .syft.stores.store_fixtures_test import sqlite_queue_stash  # noqa: F401
-from .syft.stores.store_fixtures_test import sqlite_store_partition  # noqa: F401
-from .syft.stores.store_fixtures_test import sqlite_workspace  # noqa: F401
+from .syft.stores.store_fixtures_test import dict_action_store
+from .syft.stores.store_fixtures_test import dict_document_store
+from .syft.stores.store_fixtures_test import dict_queue_stash
+from .syft.stores.store_fixtures_test import dict_store_partition
+from .syft.stores.store_fixtures_test import mongo_action_store
+from .syft.stores.store_fixtures_test import mongo_document_store
+from .syft.stores.store_fixtures_test import mongo_queue_stash
+from .syft.stores.store_fixtures_test import mongo_store_partition
+from .syft.stores.store_fixtures_test import sqlite_action_store
+from .syft.stores.store_fixtures_test import sqlite_document_store
+from .syft.stores.store_fixtures_test import sqlite_queue_stash
+from .syft.stores.store_fixtures_test import sqlite_store_partition
+from .syft.stores.store_fixtures_test import sqlite_workspace
 
 
 def patch_protocol_file(filepath: Path):

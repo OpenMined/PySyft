@@ -4,10 +4,12 @@ from __future__ import annotations
 # stdlib
 from collections import OrderedDict
 from collections.abc import Callable
+from datetime import MINYEAR
 from datetime import datetime
 from functools import partial
 import hashlib
 import json
+import logging
 import os
 from pathlib import Path
 import shutil
@@ -17,9 +19,9 @@ import tempfile
 from time import sleep
 import traceback
 from typing import Any
+from typing import cast
 
 # third party
-from loguru import logger
 from nacl.signing import SigningKey
 from result import Err
 from result import Result
@@ -64,6 +66,7 @@ from ..service.enclave.enclave_service import EnclaveService
 from ..service.job.job_service import JobService
 from ..service.job.job_stash import Job
 from ..service.job.job_stash import JobStash
+from ..service.job.job_stash import JobStatus
 from ..service.job.job_stash import JobType
 from ..service.log.log_service import LogService
 from ..service.metadata.metadata_service import MetadataService
@@ -101,6 +104,7 @@ from ..service.settings.settings_stash import SettingsStash
 from ..service.sync.sync_service import SyncService
 from ..service.user.user import User
 from ..service.user.user import UserCreate
+from ..service.user.user import UserView
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..service.user.user_stash import UserStash
@@ -123,6 +127,7 @@ from ..store.linked_obj import LinkedObject
 from ..store.mongo_document_store import MongoStoreConfig
 from ..store.sqlite_document_store import SQLiteStoreClientConfig
 from ..store.sqlite_document_store import SQLiteStoreConfig
+from ..types.datetime import DATETIME_FORMAT
 from ..types.syft_metaclass import Empty
 from ..types.syft_object import PartialSyftObject
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
@@ -139,6 +144,8 @@ from ..util.util import thread_ident
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
 from .worker_settings import WorkerSettings
+
+logger = logging.getLogger(__name__)
 
 # if user code needs to be serded and its not available we can call this to refresh
 # the code for a specific node UID and thread
@@ -464,7 +471,7 @@ class Node(AbstractNode):
             path = self.get_temp_dir("db")
             file_name: str = f"{self.id}.sqlite"
             if self.dev_mode:
-                print(f"{store_type}'s SQLite DB path: {path/file_name}")
+                logger.debug(f"{store_type}'s SQLite DB path: {path/file_name}")
             return SQLiteStoreConfig(
                 client_config=SQLiteStoreClientConfig(
                     filename=file_name,
@@ -535,7 +542,7 @@ class Node(AbstractNode):
             queue_config_ = queue_config
         elif queue_port is not None or n_consumers > 0 or create_producer:
             if not create_producer and queue_port is None:
-                print("No queue port defined to bind consumers.")
+                logger.warn("No queue port defined to bind consumers.")
             queue_config_ = ZMQQueueConfig(
                 client_config=ZMQClientConfig(
                     create_producer=create_producer,
@@ -590,7 +597,7 @@ class Node(AbstractNode):
             else:
                 # Create consumer for given worker pool
                 syft_worker_uid = get_syft_worker_uid()
-                print(
+                logger.info(
                     f"Running as consumer with uid={syft_worker_uid} service={service_name}"
                 )
 
@@ -750,9 +757,8 @@ class Node(AbstractNode):
         )
 
         if object_pending_migration:
-            print(
-                "Object in Document Store that needs migration: ",
-                object_pending_migration,
+            logger.debug(
+                f"Object in Document Store that needs migration: {object_pending_migration}"
             )
 
         # Migrate data for objects in document store
@@ -762,7 +768,7 @@ class Node(AbstractNode):
             if object_partition is None:
                 continue
 
-            print(f"Migrating data for: {canonical_name} table.")
+            logger.debug(f"Migrating data for: {canonical_name} table.")
             migration_status = object_partition.migrate_data(
                 to_klass=object_type, context=context
             )
@@ -779,9 +785,8 @@ class Node(AbstractNode):
         )
 
         if action_object_pending_migration:
-            print(
-                "Object in Action Store that needs migration: ",
-                action_object_pending_migration,
+            logger.info(
+                f"Object in Action Store that needs migration: {action_object_pending_migration}",
             )
 
         # Migrate data for objects in action store
@@ -795,7 +800,7 @@ class Node(AbstractNode):
                 raise Exception(
                     f"Failed to migrate data for {canonical_name}. Error: {migration_status.err()}"
                 )
-        print("Data Migrated to latest version !!!")
+        logger.info("Data Migrated to latest version !!!")
 
     @property
     def guest_client(self) -> SyftClient:
@@ -817,7 +822,7 @@ class Node(AbstractNode):
             )
             if self.node_type:
                 message += f"side {self.node_type.value.capitalize()} > as GUEST"
-            print(message)
+            logger.debug(message)
 
         client_type = connection.get_client_type()
         if isinstance(client_type, SyftError):
@@ -1265,6 +1270,7 @@ class Node(AbstractNode):
             _private_api_path = user_config_registry.private_path_for(api_call.path)
             method = self.get_service_method(_private_api_path)
             try:
+                logger.info(f"API Call: {api_call}")
                 result = method(context, *api_call.args, **api_call.kwargs)
             except PySyftException as e:
                 return e.handle()
@@ -1458,13 +1464,34 @@ class Node(AbstractNode):
             return result
         return job
 
+    def _sort_jobs(self, jobs: list[Job]) -> list[Job]:
+        job_datetimes = {}
+        for job in jobs:
+            try:
+                d = datetime.strptime(job.creation_time, DATETIME_FORMAT)
+            except Exception:
+                d = datetime(MINYEAR, 1, 1)
+            job_datetimes[job.id] = d
+
+        jobs.sort(
+            key=lambda job: (job.status != JobStatus.COMPLETED, job_datetimes[job.id]),
+            reverse=True,
+        )
+
+        return jobs
+
     def _get_existing_user_code_jobs(
         self, context: AuthedServiceContext, user_code_id: UID
     ) -> list[Job] | SyftError:
         job_service = self.get_service("jobservice")
-        return job_service.get_by_user_code_id(
+        jobs = job_service.get_by_user_code_id(
             context=context, user_code_id=user_code_id
         )
+
+        if isinstance(jobs, SyftError):
+            return jobs
+
+        return self._sort_jobs(jobs)
 
     def _is_usercode_call_on_owned_kwargs(
         self,
@@ -1502,6 +1529,14 @@ class Node(AbstractNode):
             action = Action.from_api_call(unsigned_call)
             user_code_id = action.user_code_id
 
+            user = self.get_service(UserService).get_current_user(context)
+            if isinstance(user, SyftError):
+                return user
+            user = cast(UserView, user)
+
+            is_execution_on_owned_kwargs_allowed = (
+                user.mock_execution_permission or context.role == ServiceRole.ADMIN
+            )
             is_usercode_call_on_owned_kwargs = self._is_usercode_call_on_owned_kwargs(
                 context, unsigned_call, user_code_id
             )
@@ -1526,6 +1561,14 @@ class Node(AbstractNode):
                     return SyftError(
                         message="Please wait for the admin to allow the execution of this code"
                     )
+
+            elif (
+                is_usercode_call_on_owned_kwargs
+                and not is_execution_on_owned_kwargs_allowed
+            ):
+                return SyftError(
+                    message="You do not have the permissions for mock execution, please contact the admin"
+                )
 
             return self.add_action_to_queue(
                 action, api_call.credentials, parent_job_id=parent_job_id
@@ -1610,7 +1653,9 @@ class Node(AbstractNode):
         try:
             settings_stash = SettingsStash(store=self.document_store)
             if self.signing_key is None:
-                print("create_initial_settings failed as there is no signing key")
+                logger.debug(
+                    "create_initial_settings failed as there is no signing key"
+                )
                 return None
             settings_exists = settings_stash.get_all(self.signing_key.verify_key).ok()
             if settings_exists:
@@ -1645,7 +1690,7 @@ class Node(AbstractNode):
                     return result.ok()
                 return None
         except Exception as e:
-            print(f"create_initial_settings failed with error {e}")
+            logger.error("create_initial_settings failed", exc_info=e)
             return None
 
 
@@ -1685,7 +1730,7 @@ def create_admin_new(
             else:
                 raise Exception(f"Could not create user: {result}")
     except Exception as e:
-        print("Unable to create new admin", e)
+        logger.error("Unable to create new admin", exc_info=e)
 
     return None
 
@@ -1745,11 +1790,12 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
 
     if isinstance(default_worker_pool, SyftError):
         logger.error(
-            f"Failed to get default worker pool {default_pool_name}. Error: {default_worker_pool.message}"
+            f"Failed to get default worker pool {default_pool_name}. "
+            f"Error: {default_worker_pool.message}"
         )
         return default_worker_pool
 
-    print(f"Creating default worker image with tag='{default_worker_tag}'")
+    logger.info(f"Creating default worker image with tag='{default_worker_tag}'")
     # Get/Create a default worker SyftWorkerImage
     default_image = create_default_image(
         credentials=credentials,
@@ -1758,11 +1804,11 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
         in_kubernetes=in_kubernetes(),
     )
     if isinstance(default_image, SyftError):
-        print("Failed to create default worker image: ", default_image.message)
+        logger.error(f"Failed to create default worker image: {default_image.message}")
         return default_image
 
     if not default_image.is_built:
-        print(f"Building default worker image with tag={default_worker_tag}")
+        logger.info(f"Building default worker image with tag={default_worker_tag}")
         image_build_method = node.get_service_method(SyftWorkerImageService.build)
         # Build the Image for given tag
         result = image_build_method(
@@ -1773,11 +1819,11 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
         )
 
         if isinstance(result, SyftError):
-            print("Failed to build default worker image: ", result.message)
+            logger.error(f"Failed to build default worker image: {result.message}")
             return None
 
     # Create worker pool if it doesn't exists
-    print(
+    logger.info(
         "Setting up worker pool"
         f"name={default_pool_name} "
         f"workers={worker_count} "
@@ -1808,17 +1854,17 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
         )
 
     if isinstance(result, SyftError):
-        print(f"Default worker pool error. {result.message}")
+        logger.info(f"Default worker pool error. {result.message}")
         return None
 
     for n in range(worker_to_add_):
         container_status = result[n]
         if container_status.error:
-            print(
+            logger.error(
                 f"Failed to create container: Worker: {container_status.worker},"
                 f"Error: {container_status.error}"
             )
             return None
 
-    print("Created default worker pool.")
+    logger.info("Created default worker pool.")
     return None

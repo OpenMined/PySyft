@@ -49,7 +49,7 @@ elif [[ $HOST_MODE == "ipv4+ipv6" ]] && [[ $IPV4_AVAILABLE -gt 0 ]] && [[ $IPV6_
     # Both IPv4 and IPv6 are available
     HOST=${HOST:-0.0.0.0}
     HOST6=${HOST6:-[::]}
-    exec $DEBUG_CMD hypercorn $RELOAD --bind $HOST:$PORT --bind $HOST6:$PORT --log-level $LOG_LEVEL "$APP_MODULE"
+    exec $DEBUG_CMD hypercorn $RELOAD --bind $HOST:$PORT --bind $HOST6:$PORT --log-config $APPDIR/grid/logging.yaml --log-level $LOG_LEVEL "$APP_MODULE"
 else
     echo "No suitable IP version available for the specified HOST_MODE: $HOST_MODE"
     exit 1
