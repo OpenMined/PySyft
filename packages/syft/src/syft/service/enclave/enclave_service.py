@@ -250,8 +250,7 @@ class EnclaveService(AbstractService):
                 message="You are not allowed to upload assets for the given code"
             )
 
-        kwargs_for_uploading_domain = init_kwargs.get(uploading_domain_identity)
-        print(f"{kwargs_for_uploading_domain=}")
+        kwargs_for_uploading_domain = init_kwargs[uploading_domain_identity]
 
         for action_object in action_objects:
             if action_object.id not in kwargs_for_uploading_domain.values():
