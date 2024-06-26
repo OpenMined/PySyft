@@ -168,25 +168,6 @@ class DistributedProject(BaseModel):
             print(assets_transferred.message)
 
         result_parts = []
-        # errors = []
-        # for client in self.clients.values():
-        #     result = client.api.services.enclave.request_execution(
-        #         user_code_id=self.code.id
-        #     )
-        #     if isinstance(result, SyftError):
-        #         errors.append(result.message)
-        #     else:
-        #         result_parts.append(result)
-
-        # # TODO reconstruct the result from the parts and return
-        # # TODO Cleanup the Enclave in owner domain node
-        # if errors:
-        #     return SyftError(
-        #         message=f"One or more errors occurred: {', '.join(errors)}"
-        #     )
-        # else:
-        #     return result_parts[0]
-
         for client in self.clients.values():
             result = client.api.services.enclave.request_execution(
                 user_code_id=self.code.id
