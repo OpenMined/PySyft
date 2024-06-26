@@ -8,6 +8,7 @@ from ...client.enclave_client import EnclaveMetadata
 from ...serde.serializable import serializable
 from ...service.user.user_roles import ServiceRole
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.syft_object import SyftVerifyKey
 from ...types.uid import UID
@@ -20,7 +21,7 @@ from ..response import SyftError
 
 
 @serializable()
-class CodeHistory(SyftObject):
+class CodeHistoryV2(SyftObject):
     # version
     __canonical_name__ = "CodeHistory"
     __version__ = SYFT_OBJECT_VERSION_2
@@ -29,6 +30,20 @@ class CodeHistory(SyftObject):
     node_uid: UID
     user_verify_key: SyftVerifyKey
     enclave_metadata: EnclaveMetadata | None = None
+    user_code_history: list[UID] = []
+    service_func_name: str
+    comment_history: list[str] = []
+
+
+@serializable()
+class CodeHistory(SyftObject):
+    # version
+    __canonical_name__ = "CodeHistory"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    id: UID
+    node_uid: UID
+    user_verify_key: SyftVerifyKey
     user_code_history: list[UID] = []
     service_func_name: str
     comment_history: list[str] = []

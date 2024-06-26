@@ -1970,30 +1970,30 @@ class ActionObject(SyncableSyftObject):
         elif not self.is_twin:
             res = "Pointer"
 
-        if isinstance(self.syft_action_data_cache, ActionDataEmpty):
+        if isinstance(self.syft_action_data, ActionDataEmpty):
             data_repr_ = self.syft_action_data_repr_
         else:
-            if inspect.isclass(self.syft_action_data_cache):
-                data_repr_ = repr_cls(self.syft_action_data_cache)
+            if inspect.isclass(self.syft_action_data):
+                data_repr_ = repr_cls(self.syft_action_data)
             else:
                 data_repr_ = (
-                    self.syft_action_data_cache._repr_markdown_()
+                    self.syft_action_data._repr_markdown_()
                     if (
-                        self.syft_action_data_cache is not None
-                        and hasattr(self.syft_action_data_cache, "_repr_markdown_")
+                        self.syft_action_data is not None
+                        and hasattr(self.syft_action_data, "_repr_markdown_")
                     )
-                    else self.syft_action_data_cache.__repr__()
+                    else self.syft_action_data.__repr__()
                 )
 
         return f"\n**{res}**\n\n{data_repr_}\n"
 
     def _data_repr(self) -> str | None:
-        if isinstance(self.syft_action_data_cache, ActionDataEmpty):
+        if isinstance(self.syft_action_data, ActionDataEmpty):
             data_repr = self.syft_action_data_repr_
-        elif inspect.isclass(self.syft_action_data_cache):
-            data_repr = repr_cls(self.syft_action_data_cache)
+        elif inspect.isclass(self.syft_action_data):
+            data_repr = repr_cls(self.syft_action_data)
         else:
-            data_repr = self.syft_action_data_cache.__repr__()
+            data_repr = self.syft_action_data.__repr__()
 
         return data_repr
 
