@@ -105,11 +105,11 @@ class EnclaveService(AbstractService):
             return SyftError(
                 message=f"Status for code '{code.service_func_name}' is not Approved."
             )
-        if not code.deployment_policy_init_kwargs:
+        if not code.runtime_policy_init_kwargs:
             return SyftError(
-                message=f"Code '{code.service_func_name}' does not have a deployment policy."
+                message=f"Code '{code.service_func_name}' does not have a runtime policy."
             )
-        provider = code.deployment_policy_init_kwargs.get("provider")
+        provider = code.runtime_policy_init_kwargs.get("provider")
         if not isinstance(provider, EnclaveInstance):
             return SyftError(
                 message=f"Code '{code.service_func_name}' does not have an Enclave deployment provider."
@@ -192,11 +192,11 @@ class EnclaveService(AbstractService):
         [action_object.syft_action_data for action_object in action_objects]
 
         # Get the enclave client
-        if not code.deployment_policy_init_kwargs:
+        if not code.runtime_policy_init_kwargs:
             return SyftError(
-                message=f"Code '{code.service_func_name}' does not have a deployment policy."
+                message=f"Code '{code.service_func_name}' does not have a runtime policy."
             )
-        provider = code.deployment_policy_init_kwargs.get("provider")
+        provider = code.runtime_policy_init_kwargs.get("provider")
         if not isinstance(provider, EnclaveInstance):
             return SyftError(
                 message=f"Code '{code.service_func_name}' does not have an Enclave deployment provider."
@@ -312,11 +312,11 @@ class EnclaveService(AbstractService):
                 message=f"Code '{code.service_func_name}' is not approved."
             )
 
-        if not code.deployment_policy_init_kwargs:
+        if not code.runtime_policy_init_kwargs:
             return SyftError(
-                message=f"Code '{code.service_func_name}' does not have a deployment policy."
+                message=f"Code '{code.service_func_name}' does not have a runtime policy."
             )
-        provider = code.deployment_policy_init_kwargs.get("provider")
+        provider = code.runtime_policy_init_kwargs.get("provider")
         if not isinstance(provider, EnclaveInstance):
             return SyftError(
                 message=f"Code '{code.service_func_name}' does not have an Enclave deployment provider."

@@ -797,18 +797,18 @@ class OutputPolicyExecuteOnce(OutputPolicyExecuteCount):
 SingleExecutionExactOutput = OutputPolicyExecuteOnce
 
 
-class DeploymentPolicy(Policy):
-    __canonical_name__ = "DeploymentPolicy"
+class RuntimePolicy(Policy):
+    __canonical_name__ = "RuntimePolicy"
     __version__ = SYFT_OBJECT_VERSION_1
 
 
-class EmptyDeploymentPolicy(DeploymentPolicy):
-    __canonical_name__ = "EmptyDeploymentPolicy"
+class EmptyRuntimePolicy(RuntimePolicy):
+    __canonical_name__ = "EmptyRuntimePolicy"
     __version__ = SYFT_OBJECT_VERSION_1
 
 
 @serializable()
-class RunOnEnclave(DeploymentPolicy):
+class RunOnEnclave(RuntimePolicy):
     __canonical_name__ = "RunOnEnclave"
     __version__ = SYFT_OBJECT_VERSION_1
 
