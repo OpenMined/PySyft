@@ -339,10 +339,20 @@ class EnclaveService(AbstractService):
         if not context.node or not context.node.signing_key:
             return SyftError(message=f"{type(context)} has no node")
 
+        # TODO only allow execution for domain nodes in output_policy.share_result_with list
         root_context = context.as_root_context()
 
         code_service = context.node.get_service("usercodeservice")
+        job_service = context.node.get_service("jobservice")
+
         code: UserCode = code_service.get_by_uid(context=root_context, uid=user_code_id)
+
+        jobs = job_service.get_by_user_code_id(
+            context=root_context, user_code_id=code.id
+        )
+        if jobs:
+            job = jobs[-1]
+            return job.wait().get()
 
         init_kwargs = (
             code.input_policy_init_kwargs.values()
@@ -351,10 +361,10 @@ class EnclaveService(AbstractService):
         )
         kwargs = {k: v for d in init_kwargs for k, v in d.items()}
 
-        # TODO only allow execution for domain nodes in output_policy.share_result_with list
-        execution_result = code_service.call(
-            context=root_context, uid=code.id, **kwargs
-        ).syft_action_data
+        job = code_service.call(
+            context=root_context, blocking=False, uid=code.id, **kwargs
+        )
+        execution_result = job.wait().get()
         result = get_encrypted_result(context, execution_result)
         return result
 
