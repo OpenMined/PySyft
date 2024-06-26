@@ -239,10 +239,10 @@ class EnclaveService(AbstractService):
         for action_object in action_objects:
             action_object.syft_node_uid = context.node.id
             action_object.syft_action_data_node_id = context.node.id
-            result = action_service.set(context=context, action_object=action_object)
-            if result.is_err():
-                # TODO 🟣 Rollback previously uploaded assets if any error occurs
-                return result
+            action_service.set(context=context, action_object=action_object)
+            # if not result:
+            #     # TODO 🟣 Rollback previously uploaded assets if any error occurs
+            #     return result
 
         # Let's approve the code
         kwargs_for_uploading_node = {
