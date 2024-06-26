@@ -24,6 +24,7 @@ from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user import UserView
+from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_service import UserService
@@ -103,6 +104,17 @@ class RequestService(AbstractService):
         except Exception as e:
             print("Failed to submit Request", e)
             raise e
+
+    @service_method(
+        path="request.get_by_uid", name="get_by_uid", roles=DATA_SCIENTIST_ROLE_LEVEL
+    )
+    def get_by_uid(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Request | None | SyftError:
+        result = self.stash.get_by_uid(context.credentials, uid)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        return result.ok()
 
     @service_method(
         path="request.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL
@@ -300,6 +312,27 @@ class RequestService(AbstractService):
         if result.is_err():
             return SyftError(message=str(result.err()))
         return SyftSuccess(message=f"Request with id {uid} deleted.")
+
+    @service_method(
+        path="request.set_tags",
+        name="set_tags",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def set_tags(
+        self,
+        context: AuthedServiceContext,
+        request: Request,
+        tags: list[str],
+    ) -> Request | SyftError:
+        request = self.stash.get_by_uid(context.credentials, request.id)
+        if request.is_err():
+            return SyftError(message=str(request.err()))
+        if request.ok() is None:
+            return SyftError(message="Request does not exist.")
+        request = request.ok()
+
+        request.tags = tags
+        return self.save(context, request)
 
     @service_method(path="request.get_by_usercode_id", name="get_by_usercode_id")
     def get_by_usercode_id(

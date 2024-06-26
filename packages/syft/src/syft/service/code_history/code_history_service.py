@@ -8,6 +8,7 @@ from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..code.user_code import SubmitUserCode
 from ..code.user_code import UserCode
+from ..code.user_code_service import UserCodeService
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -15,6 +16,7 @@ from ..service import AbstractService
 from ..service import service_method
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
+from ..user.user_roles import ServiceRole
 from .code_history import CodeHistoriesDict
 from .code_history import CodeHistory
 from .code_history import CodeHistoryView
@@ -115,14 +117,22 @@ class CodeHistoryService(AbstractService):
     def fetch_histories_for_user(
         self, context: AuthedServiceContext, user_verify_key: SyftVerifyKey
     ) -> CodeHistoriesDict | SyftError:
-        result = self.stash.get_by_verify_key(
-            credentials=context.credentials, user_verify_key=user_verify_key
-        )
+        if context.role in [ServiceRole.DATA_OWNER, ServiceRole.ADMIN]:
+            result = self.stash.get_by_verify_key(
+                credentials=context.node.verify_key, user_verify_key=user_verify_key
+            )
+        else:
+            result = self.stash.get_by_verify_key(
+                credentials=context.credentials, user_verify_key=user_verify_key
+            )
 
-        user_code_service = context.node.get_service("usercodeservice")
+        user_code_service: UserCodeService = context.node.get_service("usercodeservice")  # type: ignore
 
         def get_code(uid: UID) -> UserCode | SyftError:
-            return user_code_service.get_by_uid(context=context, uid=uid)
+            return user_code_service.stash.get_by_uid(
+                credentials=context.node.verify_key,
+                uid=uid,
+            ).ok()
 
         if result.is_ok():
             code_histories = result.ok()
@@ -181,7 +191,10 @@ class CodeHistoryService(AbstractService):
     def get_histories_group_by_user(
         self, context: AuthedServiceContext
     ) -> UsersCodeHistoriesDict | SyftError:
-        result = self.stash.get_all(credentials=context.credentials)
+        if context.role in [ServiceRole.DATA_OWNER, ServiceRole.ADMIN]:
+            result = self.stash.get_all(context.credentials, has_permission=True)
+        else:
+            result = self.stash.get_all(context.credentials)
         if result.is_err():
             return SyftError(message=result.err())
         code_histories: list[CodeHistory] = result.ok()

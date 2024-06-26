@@ -1,5 +1,6 @@
 # stdlib
 from collections import defaultdict
+import logging
 import threading
 import time
 from typing import Any
@@ -11,6 +12,7 @@ from sherlock.lock import BaseLock
 # relative
 from ..serde.serializable import serializable
 
+logger = logging.getLogger(__name__)
 THREAD_FILE_LOCKS: dict[int, dict[str, int]] = defaultdict(dict)
 
 
@@ -190,7 +192,7 @@ class SyftLock(BaseLock):
                 elapsed = time.time() - start_time
             else:
                 return True
-        print(
+        logger.debug(
             f"Timeout elapsed after {self.timeout} seconds while trying to acquiring lock."
         )
         # third party
