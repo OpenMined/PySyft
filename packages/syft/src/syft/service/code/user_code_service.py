@@ -75,6 +75,19 @@ class UserCodeService(AbstractService):
     ) -> Result[UserCode, str]:
         if not isinstance(code, UserCode):
             code = code.to(UserCode, context=context)  # type: ignore[unreachable]
+            result = self._post_user_code_transform_ops(context, code)
+            if isinstance(result, SyftError):
+                # if the validation fails, we should remove the user code status
+                # and code version to prevent dangling status
+                root_context = AuthedServiceContext(
+                    credentials=context.node.verify_key, node=context.node
+                )
+
+                if code.status_link is not None:
+                    _ = context.node.get_service("usercodestatusservice").remove(
+                        root_context, code.status_link.object_uid
+                    )
+                return result
 
         result = self.stash.set(context.credentials, code)
         return result
@@ -133,30 +146,7 @@ class UserCodeService(AbstractService):
             return SyftError(message=str(result.err()))
         return result.ok()
 
-    def _request_code_execution(
-        self,
-        context: AuthedServiceContext,
-        code: SubmitUserCode,
-        reason: str | None = "",
-    ) -> Request | SyftError:
-        user_code: UserCode = code.to(UserCode, context=context)
-        result = self._validate_request_code_execution(context, user_code)
-        if isinstance(result, SyftError):
-            # if the validation fails, we should remove the user code status
-            # and code version to prevent dangling status
-            root_context = AuthedServiceContext(
-                credentials=context.node.verify_key, node=context.node
-            )
-
-            if user_code.status_link is not None:
-                _ = context.node.get_service("usercodestatusservice").remove(
-                    root_context, user_code.status_link.object_uid
-                )
-            return result
-        result = self._request_code_execution_inner(context, user_code, reason)
-        return result
-
-    def _validate_request_code_execution(
+    def _post_user_code_transform_ops(
         self,
         context: AuthedServiceContext,
         user_code: UserCode,
@@ -197,10 +187,6 @@ class UserCodeService(AbstractService):
         if isinstance(pool_result, SyftError):
             return pool_result
 
-        result = self.stash.set(context.credentials, user_code)
-        if result.is_err():
-            return SyftError(message=str(result.err()))
-
         # Create a code history
         code_history_service = context.node.get_service("codehistoryservice")
         result = code_history_service.submit_version(context=context, code=user_code)
@@ -209,7 +195,7 @@ class UserCodeService(AbstractService):
 
         return SyftSuccess(message="")
 
-    def _request_code_execution_inner(
+    def _request_code_execution(
         self,
         context: AuthedServiceContext,
         user_code: UserCode,
@@ -260,7 +246,18 @@ class UserCodeService(AbstractService):
         reason: str | None = "",
     ) -> Request | SyftError:
         """Request Code execution on user code"""
-        return self._request_code_execution(context=context, code=code, reason=reason)
+
+        # TODO: check for duplicate submissions
+        user_code_or_err = self._submit(context, code)
+        if user_code_or_err.is_err():
+            return SyftError(message=user_code_or_err.err())
+
+        result = self._request_code_execution(
+            context,
+            user_code_or_err.ok(),
+            reason,
+        )
+        return result
 
     @service_method(path="code.get_all", name="get_all", roles=GUEST_ROLE_LEVEL)
     def get_all(self, context: AuthedServiceContext) -> list[UserCode] | SyftError:
