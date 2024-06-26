@@ -16,6 +16,7 @@ from .node import NodeType
 # List storing all reloadable servers launched
 process_list = []
 
+
 def start_reloadable_server(
     name: str = "testing-node",
     node_type: str = "domain",
@@ -40,13 +41,13 @@ def start_reloadable_server(
     print(f"Uvicorn server running on port {port} with PID: {process.pid}", flush=True)
     print("*" * 50, flush=True)
 
-    
     # Since the servers take a second to run, adding this wait so
     # that notebook commands can run one after the other.
     # stdlib
-    from time import sleep 
+    from time import sleep
+
     sleep(6)
-    
+
     def stop() -> None:
         process.terminate()
         process.wait()
@@ -56,7 +57,6 @@ def start_reloadable_server(
         print(f"Uvicorn server with PID: {process.pid} stopped.", flush=True)
         print("*" * 50, flush=True)
 
-        
     # Return this object:
     return NodeHandle(
         node_type=NodeType(node_type),
@@ -67,6 +67,7 @@ def start_reloadable_server(
         node_side_type=NodeSideType(node_side_type),
         shutdown=stop,
     )
+
 
 def stop_all_reloadable_servers() -> None:
     for process in process_list:
