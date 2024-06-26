@@ -1014,6 +1014,9 @@ class SubmitUserCode(SyftObject):
             values["id"] = UID()
         return values
 
+    def get_code_hash(self) -> str:
+        return hashlib.sha256(self.code.encode()).hexdigest()
+
     @property
     def kwargs(self) -> dict[Any, Any] | None:
         return self.input_policy_init_kwargs
@@ -1440,10 +1443,12 @@ def compile_code(context: TransformContext) -> TransformContext:
 def hash_code(context: TransformContext) -> TransformContext:
     if context.output is None:
         return context
+    if not isinstance(context.obj, SubmitUserCode):
+        return context
 
     code = context.output["code"]
     context.output["raw_code"] = code
-    code_hash = hashlib.sha256(code.encode("utf8")).hexdigest()
+    code_hash = context.obj.get_code_hash()
     context.output["code_hash"] = code_hash
 
     return context
