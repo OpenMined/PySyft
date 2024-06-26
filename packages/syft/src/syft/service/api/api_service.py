@@ -65,7 +65,7 @@ class APIService(AbstractService):
                 new_endpoint = endpoint
 
             if new_endpoint is None:
-                return SyftError(message="Invalid endpoint type.")
+                return SyftError(message="Invalid endpoint type.")  # type: ignore
         except ValueError as e:
             return SyftError(message=str(e))
 
