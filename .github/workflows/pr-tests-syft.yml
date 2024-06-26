@@ -160,7 +160,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         run: |
-          pip install --upgrade pip==24.1 uv==0.2.15
+          python -m pip install --upgrade pip==24.1 uv==0.2.15
           uv --version
 
       - name: Get pip cache dir
@@ -242,7 +242,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         run: |
-          pip install --upgrade pip==24.1 uv==0.2.15
+          python -m pip install --upgrade pip==24.1 uv==0.2.15
           uv --version
 
       - name: Get pip cache dir
@@ -264,7 +264,7 @@ jobs:
       - name: Install Dependencies
         if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         run: |
-          pip install --upgrade tox tox-uv==1.9.0
+          python -m uv pip install --upgrade tox tox-uv==1.9.0
 
       - name: Docker Compose on Linux
         if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'ubuntu-latest'
@@ -343,7 +343,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pip install --upgrade pip==24.1 uv==0.2.15
+          python -m pip install --upgrade pip==24.1 uv==0.2.15
           uv --version
 
       - name: Get pip cache dir
@@ -365,7 +365,7 @@ jobs:
       - name: Install Dependencies
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pip install --upgrade tox tox-uv==1.9.0
+          python -m uv pip install --upgrade tox tox-uv==1.9.0
 
       - name: Scan for security issues
         if: steps.changes.outputs.syft == 'true'
