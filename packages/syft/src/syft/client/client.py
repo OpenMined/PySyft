@@ -207,6 +207,9 @@ class HTTPConnection(NodeConnection):
     def _make_get(
         self, path: str, params: dict | None = None, stream: bool = False
     ) -> bytes | Iterable:
+        if params is None:
+            return self._make_get_no_params(path, stream=stream)
+
         url = self.url
 
         if self.rathole_token:
@@ -216,9 +219,6 @@ class HTTPConnection(NodeConnection):
 
         url = url.with_path(path)
 
-        if params is None:
-            return self._make_get_no_params(path)
-        url = self.url.with_path(path)
         response = self.session.get(
             str(url),
             headers=self.headers,
@@ -239,8 +239,15 @@ class HTTPConnection(NodeConnection):
 
     @cached(cache=TTLCache(maxsize=128, ttl=300))
     def _make_get_no_params(self, path: str, stream: bool = False) -> bytes | Iterable:
-        print(path)
-        url = self.url.with_path(path)
+        url = self.url
+
+        if self.rathole_token:
+            self.headers = {} if self.headers is None else self.headers
+            url = GridURL.from_url(INTERNAL_PROXY_TO_RATHOLE)
+            self.headers["Host"] = self.url.host_or_ip
+
+        url = url.with_path(path)
+
         response = self.session.get(
             str(url),
             headers=self.headers,
