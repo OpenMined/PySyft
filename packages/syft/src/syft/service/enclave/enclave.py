@@ -48,7 +48,9 @@ class EnclaveInstance(SyftObject):
     @model_validator(mode="before")
     @classmethod
     def initialize_values(cls, values: dict[str, Any]) -> dict[str, Any]:
-        if "route" in values:
+        is_being_created = "id" not in values
+
+        if is_being_created and "route" in values:
             connection = route_to_connection(values["route"])
             metadata = connection.get_node_metadata(credentials=None)
             if not metadata:
