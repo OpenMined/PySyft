@@ -30,7 +30,7 @@ jobs:
       - name: Install pip packages
         run: |
           pip install --upgrade pip
-          pip install uv==0.2.13
+          pip install uv==0.2.15
           uv --version
 
       - name: Get pip cache dir
