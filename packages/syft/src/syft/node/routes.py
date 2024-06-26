@@ -1,6 +1,7 @@
 # stdlib
 import base64
 import binascii
+import logging
 from typing import Annotated
 
 # third party
@@ -12,7 +13,6 @@ from fastapi import Request
 from fastapi import Response
 from fastapi.responses import JSONResponse
 from fastapi.responses import StreamingResponse
-from loguru import logger
 from pydantic import ValidationError
 import requests
 
@@ -34,6 +34,8 @@ from .credentials import SyftVerifyKey
 from .credentials import UserLoginCredentials
 from .worker import Worker
 
+logger = logging.getLogger(__name__)
+
 
 def make_routes(worker: Worker) -> APIRouter:
     if TRACE_MODE:
@@ -42,8 +44,8 @@ def make_routes(worker: Worker) -> APIRouter:
             # third party
             from opentelemetry import trace
             from opentelemetry.propagate import extract
-        except Exception:
-            print("Failed to import opentelemetry")
+        except Exception as e:
+            logger.error("Failed to import opentelemetry", exc_info=e)
 
     router = APIRouter()
 
@@ -171,7 +173,7 @@ def make_routes(worker: Worker) -> APIRouter:
         result = method(context=context)
 
         if isinstance(result, SyftError):
-            logger.bind(payload={"email": email}).error(result.message)
+            logger.error(f"Login Error: {result.message}. user={email}")
             response = result
         else:
             user_private_key = result
@@ -196,7 +198,9 @@ def make_routes(worker: Worker) -> APIRouter:
         result = method(new_user=user_create)
 
         if isinstance(result, SyftError):
-            logger.bind(payload={"user": user_create}).error(result.message)
+            logger.error(
+                f"Register Error: {result.message}. user={user_create.model_dump()}"
+            )
             response = SyftError(message=f"{result.message}")
         else:
             response = result

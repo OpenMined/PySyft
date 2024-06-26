@@ -1,5 +1,6 @@
 # stdlib
 from collections.abc import Callable
+import logging
 from typing import Any
 
 # third party
@@ -29,6 +30,8 @@ from ...util.misc_objs import MarkdownDescription
 from ...util.schema import DEFAULT_WELCOME_MSG
 from ..response import SyftInfo
 
+logger = logging.getLogger(__name__)
+
 
 @serializable()
 class NodeSettingsUpdateV4(PartialSyftObject):
@@ -54,8 +57,8 @@ Be aware if you have private data on the node and you want to change it to the L
 as information might be leaked."
         try:
             display(SyftInfo(message=msg))
-        except Exception:
-            print(SyftInfo(message=msg))
+        except Exception as e:
+            logger.error(msg, exc_info=e)
         return Empty
 
 

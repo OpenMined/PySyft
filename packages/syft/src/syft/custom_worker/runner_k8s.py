@@ -230,6 +230,23 @@ class KubernetesRunner:
                                     "image": tag,
                                     "env": env_vars,
                                     "volumeMounts": volume_mounts,
+                                    "livenessProbe": {
+                                        "httpGet": {
+                                            "path": "/api/v2/metadata?probe=livenessProbe",
+                                            "port": 80,
+                                        },
+                                        "periodSeconds": 15,
+                                        "timeoutSeconds": 5,
+                                        "failureThreshold": 3,
+                                    },
+                                    "startupProbe": {
+                                        "httpGet": {
+                                            "path": "/api/v2/metadata?probe=startupProbe",
+                                            "port": 80,
+                                        },
+                                        "failureThreshold": 30,
+                                        "periodSeconds": 10,
+                                    },
                                 }
                             ],
                             "volumes": volumes,

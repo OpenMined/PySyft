@@ -46,7 +46,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.frontend == 'true'
         run: |
-          pip install --upgrade pip uv==0.1.35
+          pip install --upgrade pip==24.0 uv==0.2.13
           uv --version
 
       - name: Get pip cache dir
@@ -67,12 +67,12 @@ jobs:
 
       - name: Docker on MacOS
         if: steps.changes.outputs.frontend == 'true' && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v3.2.0
+        uses: crazy-max/ghaction-setup-docker@v3.3.0
 
       - name: Install Tox
         if: steps.changes.outputs.frontend == 'true'
         run: |
-          pip install --upgrade tox tox-uv==1.5.1
+          pip install --upgrade tox tox-uv==1.9.0
 
       - name: Remove existing containers
         if: steps.changes.outputs.frontend == 'true'

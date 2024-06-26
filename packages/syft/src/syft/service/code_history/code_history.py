@@ -8,17 +8,20 @@ from ...client.enclave_client import EnclaveMetadata
 from ...serde.serializable import serializable
 from ...service.user.user_roles import ServiceRole
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.syft_object import SyftVerifyKey
 from ...types.uid import UID
-from ...util.notebook_ui.components.table_template import create_table_template
+from ...util.notebook_ui.components.tabulator_template import (
+    build_tabulator_table_with_data,
+)
 from ...util.table import prepare_table_data
 from ..code.user_code import UserCode
 from ..response import SyftError
 
 
 @serializable()
-class CodeHistory(SyftObject):
+class CodeHistoryV2(SyftObject):
     # version
     __canonical_name__ = "CodeHistory"
     __version__ = SYFT_OBJECT_VERSION_2
@@ -27,6 +30,20 @@ class CodeHistory(SyftObject):
     node_uid: UID
     user_verify_key: SyftVerifyKey
     enclave_metadata: EnclaveMetadata | None = None
+    user_code_history: list[UID] = []
+    service_func_name: str
+    comment_history: list[str] = []
+
+
+@serializable()
+class CodeHistory(SyftObject):
+    # version
+    __canonical_name__ = "CodeHistory"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    id: UID
+    node_uid: UID
+    user_verify_key: SyftVerifyKey
     user_code_history: list[UID] = []
     service_func_name: str
     comment_history: list[str] = []
@@ -54,9 +71,9 @@ class CodeHistoryView(SyftObject):
     def _coll_repr_(self) -> dict[str, int]:
         return {"Number of versions": len(self.user_code_history)}
 
-    def _repr_html_(self) -> str:
-        # TODO techdebt: move this to _coll_repr_
-        rows, _ = prepare_table_data(self.user_code_history)
+    def _repr_html_(self) -> str | None:
+        rows, metadata = prepare_table_data(self.user_code_history)
+
         for i, r in enumerate(rows):
             r["Version"] = f"v{i}"
             raw_code = self.user_code_history[i].raw_code
@@ -64,8 +81,11 @@ class CodeHistoryView(SyftObject):
             if n_code_lines > 5:
                 raw_code = "\n".join(raw_code.split("\n", 5))
             r["Code"] = raw_code
-        # rows = sorted(rows, key=lambda x: x["Version"])
-        return create_table_template(rows, "CodeHistory", icon=None)
+
+        metadata["name"] = "Code History"
+        metadata["columns"] += ["Version", "Code"]
+
+        return build_tabulator_table_with_data(rows, metadata)
 
     def __getitem__(self, index: int | str) -> UserCode | SyftError:
         if isinstance(index, str):
@@ -75,7 +95,11 @@ class CodeHistoryView(SyftObject):
             return SyftError(
                 message=f"Can't access the api. You must login to {self.node_uid}"
             )
-        if api.user_role.value >= ServiceRole.DATA_OWNER.value and index < 0:
+        if (
+            api.user.get_current_user().role.value >= ServiceRole.DATA_OWNER.value
+            and index < 0
+        ):
+            # negative index would dynamically resolve to a different version
             return SyftError(
                 message="For security concerns we do not allow negative indexing. \
                 Try using absolute values when indexing"
@@ -136,8 +160,14 @@ class UsersCodeHistoriesDict(SyftObject):
             )
         return api.services.code_history.get_history_for_user(key)
 
-    def _repr_html_(self) -> str:
+    def _repr_html_(self) -> str | None:
         rows = [
-            {"user": user, "UserCodes": funcs} for user, funcs in self.user_dict.items()
+            {"User": user, "UserCodes": ", ".join(funcs)}
+            for user, funcs in self.user_dict.items()
         ]
-        return create_table_template(rows, "UserCodeHistory", icon=None)
+        metadata = {
+            "name": "UserCode Histories",
+            "columns": ["User", "UserCodes"],
+            "icon": None,
+        }
+        return build_tabulator_table_with_data(rows, metadata)
