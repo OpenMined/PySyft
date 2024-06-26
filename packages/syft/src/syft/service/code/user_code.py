@@ -1188,6 +1188,12 @@ def syft_function(
     def decorator(f: Any) -> SubmitUserCode:
         try:
             code = dedent(inspect.getsource(f))
+
+            res = process_code_client(code)
+            if isinstance(res, SyftError):
+                display(res)
+                return res
+
             if name is not None:
                 fname = name
                 code = replace_func_name(code, fname)
@@ -1231,6 +1237,18 @@ def syft_function(
         return res
 
     return decorator
+
+
+def process_code_client(
+    raw_code: str,
+):
+    tree = ast.parse(raw_code)
+    # check there are no globals
+    v = GlobalsVisitor()
+    try:
+        v.visit(tree)
+    except Exception as e:
+        return SyftError(message=f"Failed to process code. {e}")
 
 
 def generate_unique_func_name(context: TransformContext) -> TransformContext:
