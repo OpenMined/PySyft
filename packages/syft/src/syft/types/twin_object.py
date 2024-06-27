@@ -109,13 +109,12 @@ class TwinObject(SyftObject):
         blob_store_result = self._save_to_blob_storage()
         if isinstance(blob_store_result, SyftWarning):
             logger.debug(blob_store_result.message)
-            skip_save_to_blob_store, skip_clear_cache = True, True
+            skip_save_to_blob_store = True
         else:
-            skip_save_to_blob_store, skip_clear_cache = False, False
+            skip_save_to_blob_store = False
         res = client.api.services.action.set(
             self,
             add_storage_permission=add_storage_permission,
             skip_save_to_blob_store=skip_save_to_blob_store,
-            skip_clear_cache=skip_clear_cache,
         )
         return res

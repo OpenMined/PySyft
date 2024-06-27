@@ -713,9 +713,9 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
             raise ValueError(res.message)
         if isinstance(res, SyftWarning):
             logger.debug(res.message)
-            skip_save_to_blob_store, skip_clear_cache = True, True
+            skip_save_to_blob_store = True
         else:
-            skip_save_to_blob_store, skip_clear_cache = False, False
+            skip_save_to_blob_store = False
         # TODO, upload to blob storage here
         if context.node is None:
             raise ValueError(
@@ -726,7 +726,6 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
             context=context.to_node_context(),
             action_object=twin,
             skip_save_to_blob_store=skip_save_to_blob_store,
-            skip_clear_cache=skip_clear_cache,
         )
         if result.is_err():
             raise RuntimeError(f"Failed to create and store twin. Error: {result}")

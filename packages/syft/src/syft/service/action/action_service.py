@@ -75,15 +75,14 @@ class ActionService(AbstractService):
             return blob_store_result
         if isinstance(blob_store_result, SyftWarning):
             logger.debug(blob_store_result.message)
-            skip_save_to_blob_store, skip_clear_cache = True, True
+            skip_save_to_blob_store = True
         else:
-            skip_save_to_blob_store, skip_clear_cache = False, False
+            skip_save_to_blob_store = False
 
         np_pointer = self._set(
             context,
             np_obj,
             skip_save_to_blob_store=skip_save_to_blob_store,
-            skip_clear_cache=skip_clear_cache,
         )
         return np_pointer
 
@@ -98,7 +97,6 @@ class ActionService(AbstractService):
         action_object: ActionObject | TwinObject,
         add_storage_permission: bool = True,
         ignore_detached_objs: bool = False,
-        skip_clear_cache: bool = False,
         skip_save_to_blob_store: bool = False,
     ) -> ActionObject | SyftError:
         res = self._set(
@@ -107,7 +105,6 @@ class ActionService(AbstractService):
             has_result_read_permission=True,
             add_storage_permission=add_storage_permission,
             ignore_detached_objs=ignore_detached_objs,
-            skip_clear_cache=skip_clear_cache,
             skip_save_to_blob_store=skip_save_to_blob_store,
         )
         if res.is_err():
@@ -145,7 +142,6 @@ class ActionService(AbstractService):
         has_result_read_permission: bool = False,
         add_storage_permission: bool = True,
         ignore_detached_objs: bool = False,
-        skip_clear_cache: bool = False,
         skip_save_to_blob_store: bool = False,
     ) -> Result[ActionObject, str]:
         if (
@@ -153,19 +149,19 @@ class ActionService(AbstractService):
             and not skip_save_to_blob_store
         ):
             return Err(
-                "you uploaded an ActionObject that is not yet in the blob storage"
+                "You uploaded an ActionObject that is not yet in the blob storage"
             )
         """Save an object to the action store"""
         # 🟡 TODO 9: Create some kind of type checking / protocol for SyftSerializable
 
         if isinstance(action_object, ActionObject):
             action_object.syft_created_at = DateTime.now()
-            if not skip_clear_cache:
+            if not skip_save_to_blob_store:
                 action_object._clear_cache()
-        else:
+        else:  # TwinObject
             action_object.private_obj.syft_created_at = DateTime.now()  # type: ignore[unreachable]
             action_object.mock_obj.syft_created_at = DateTime.now()
-            if not skip_clear_cache:
+            if not skip_save_to_blob_store:
                 action_object.private_obj._clear_cache()
                 action_object.mock_obj._clear_cache()
 
@@ -531,9 +527,9 @@ class ActionService(AbstractService):
             return Err(blob_store_result.message)
         if isinstance(blob_store_result, SyftWarning):
             logger.debug(blob_store_result.message)
-            skip_save_to_blob_store, skip_clear_cache = True, True
+            skip_save_to_blob_store = True
         else:
-            skip_save_to_blob_store, skip_clear_cache = False, False
+            skip_save_to_blob_store = False
 
         # IMPORTANT: DO THIS ONLY AFTER ._save_to_blob_storage
         if isinstance(result_action_object, TwinObject):
@@ -550,7 +546,6 @@ class ActionService(AbstractService):
             result_action_object,
             has_result_read_permission=True,
             skip_save_to_blob_store=skip_save_to_blob_store,
-            skip_clear_cache=skip_clear_cache,
         )
 
         if set_result.is_err():
@@ -819,14 +814,13 @@ class ActionService(AbstractService):
         }
         if isinstance(blob_store_result, SyftWarning):
             logger.debug(blob_store_result.message)
-            skip_save_to_blob_store, skip_clear_cache = True, True
+            skip_save_to_blob_store = True
         else:
-            skip_save_to_blob_store, skip_clear_cache = False, False
+            skip_save_to_blob_store = False
         set_result = self._set(
             context,
             result_action_object,
             skip_save_to_blob_store=skip_save_to_blob_store,
-            skip_clear_cache=skip_clear_cache,
         )
         if set_result.is_err():
             return Err(
