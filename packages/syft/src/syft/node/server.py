@@ -2,7 +2,6 @@
 import asyncio
 from collections.abc import Callable
 from enum import Enum
-import logging
 import multiprocessing
 import os
 import platform
@@ -144,14 +143,7 @@ def run_uvicorn(
             except Exception:  # nosec
                 print(f"Failed to kill python process on port: {port}")
 
-        log_level = "critical"
-        if dev_mode:
-            log_level = "info"
-            logging.getLogger("uvicorn").setLevel(logging.CRITICAL)
-            logging.getLogger("uvicorn.access").setLevel(logging.CRITICAL)
-        config = uvicorn.Config(
-            app, host=host, port=port, log_level=log_level, reload=dev_mode
-        )
+        config = uvicorn.Config(app, host=host, port=port, reload=dev_mode)
         server = uvicorn.Server(config)
 
         await server.serve()
@@ -285,14 +277,14 @@ def find_python_processes_on_port(port: int) -> list[int]:
 
     python_pids = []
     for pid in pids:
-        try:
-            if system == "Windows":
-                command = (
-                    f"wmic process where (ProcessId='{pid}') get ProcessId,CommandLine"
-                )
-            else:
-                command = f"ps -p {pid} -o pid,command"
+        if system == "Windows":
+            command = (
+                f"wmic process where (ProcessId='{pid}') get ProcessId,CommandLine"
+            )
+        else:
+            command = f"ps -p {pid} -o pid,command"
 
+        try:
             process = subprocess.Popen(  # nosec
                 command,
                 shell=True,
@@ -301,13 +293,13 @@ def find_python_processes_on_port(port: int) -> list[int]:
                 text=True,
             )
             output, _ = process.communicate()
-            lines = output.strip().split("\n")
-
-            if len(lines) > 1 and "python" in lines[1].lower():
-                python_pids.append(pid)
-
         except Exception as e:
             print(f"Error checking process {pid}: {e}")
+            continue
+
+        lines = output.strip().split("\n")
+        if len(lines) > 1 and "python" in lines[1].lower():
+            python_pids.append(pid)
 
     return python_pids
 

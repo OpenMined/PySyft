@@ -1,6 +1,7 @@
 # stdlib
 from collections.abc import Callable
 from enum import Enum
+import logging
 
 # third party
 from result import Err
@@ -34,6 +35,8 @@ from .routes import PythonNodeRoute
 from .routes import VeilidNodeRoute
 from .routes import connection_to_route
 from .routes import route_to_connection
+
+logger = logging.getLogger(__name__)
 
 
 @serializable()
@@ -245,7 +248,6 @@ class NodePeer(SyftObject):
         self, context: NodeServiceContext
     ) -> Result[type[SyftClient], str]:
         # third party
-        from loguru import logger
 
         if len(self.node_routes) < 1:
             raise ValueError(f"No routes to peer: {self}")
@@ -255,12 +257,11 @@ class NodePeer(SyftObject):
         try:
             client_type = connection.get_client_type()
         except Exception as e:
-            logger.error(
-                f"Failed to establish a connection with {self.node_type} '{self.name}'. Exception: {e}"
-            )
-            return Err(
+            msg = (
                 f"Failed to establish a connection with {self.node_type} '{self.name}'"
             )
+            logger.error(msg, exc_info=e)
+            return Err(msg)
         if isinstance(client_type, SyftError):
             return Err(client_type.message)
         return Ok(

@@ -1,6 +1,7 @@
 # stdlib
 from collections.abc import Generator
 from io import BytesIO
+import logging
 import math
 from queue import Queue
 import threading
@@ -39,6 +40,8 @@ from ...types.blob_storage import SecureFilePathLocation
 from ...types.grid_url import GridURL
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...util.constants import DEFAULT_TIMEOUT
+
+logger = logging.getLogger(__name__)
 
 MAX_QUEUE_SIZE = 100
 WRITE_EXPIRATION_TIME = 900  # seconds
@@ -121,16 +124,17 @@ class SeaweedFSBlobDeposit(BlobDeposit):
                             """Creates a data geneator for the part"""
                             n = 0
 
-                            while n * chunk_size <= part_size:
-                                try:
+                            try:
+                                while n * chunk_size <= part_size:
                                     chunk = data.read(chunk_size)
+                                    if not chunk:
+                                        break
                                     self.no_lines += chunk.count(b"\n")
                                     n += 1
                                     queue.put(chunk)
-                                except BlockingIOError:
-                                    # if end of file, stop
-                                    queue.put(0)
-                            # if end of part, stop
+                            except BlockingIOError:
+                                pass
+                            # if end of file or part, stop
                             queue.put(0)
 
                     gen = PartGenerator()
@@ -148,7 +152,7 @@ class SeaweedFSBlobDeposit(BlobDeposit):
                     etags.append({"ETag": etag, "PartNumber": part_no})
 
         except requests.RequestException as e:
-            print(e)
+            logger.error(f"Failed to upload file to SeaweedFS - {e}")
             return SyftError(message=str(e))
 
         mark_write_complete_method = from_api_or_context(

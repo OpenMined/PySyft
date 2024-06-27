@@ -1,11 +1,11 @@
 # stdlib
 from collections.abc import Callable
 from enum import Enum
+import logging
 import secrets
 from typing import Any
 
 # third party
-from loguru import logger
 from result import Result
 
 # relative
@@ -55,6 +55,8 @@ from .routes import HTTPNodeRoute
 from .routes import NodeRoute
 from .routes import NodeRouteType
 from .routes import PythonNodeRoute
+
+logger = logging.getLogger(__name__)
 
 VerifyKeyPartitionKey = PartitionKey(key="verify_key", type_=SyftVerifyKey)
 NodeTypePartitionKey = PartitionKey(key="node_type", type_=NodeType)
@@ -900,14 +902,15 @@ class NetworkService(AbstractService):
             RequestService.get_all
         )
         all_requests: list[Request] = request_get_all_method(context)
-        association_requests: list[Request] = []
-        for request in all_requests:
-            for change in request.changes:
-                if (
-                    isinstance(change, AssociationRequestChange)
-                    and change.remote_peer.id == peer_id
-                ):
-                    association_requests.append(request)
+        association_requests: list[Request] = [
+            request
+            for request in all_requests
+            if any(
+                isinstance(change, AssociationRequestChange)
+                and change.remote_peer.id == peer_id
+                for change in request.changes
+            )
+        ]
 
         return sorted(
             association_requests, key=lambda request: request.request_time.utc_timestamp

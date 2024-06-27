@@ -1,9 +1,9 @@
 # stdlib
 from collections import defaultdict
+import logging
 from typing import Any
 
 # third party
-from loguru import logger
 from result import Err
 from result import Ok
 from result import Result
@@ -24,6 +24,7 @@ from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..action.action_permissions import StoragePermission
 from ..api.api import TwinAPIEndpoint
+from ..api.api_service import APIService
 from ..code.user_code import UserCodeStatusCollection
 from ..context import AuthedServiceContext
 from ..job.job_stash import Job
@@ -35,6 +36,8 @@ from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from .sync_stash import SyncStash
 from .sync_state import SyncState
+
+logger = logging.getLogger(__name__)
 
 
 def get_store(context: AuthedServiceContext, item: SyncableSyftObject) -> Any:
@@ -156,11 +159,11 @@ class SyncService(AbstractService):
         if isinstance(item, TwinAPIEndpoint):
             # we need the side effect of set function
             # to create an action object
-            res = context.node.get_service("apiservice").set(
-                context=context, endpoint=item
-            )
+            apiservice: APIService = context.node.get_service("apiservice")  # type: ignore
+
+            res = apiservice.set(context=context, endpoint=item)
             if isinstance(res, SyftError):
-                return res
+                return Err(res.message)
             else:
                 return Ok(item)
 

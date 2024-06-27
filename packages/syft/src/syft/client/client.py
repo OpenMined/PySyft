@@ -4,16 +4,18 @@ from __future__ import annotations
 # stdlib
 import base64
 from collections.abc import Callable
-from copy import deepcopy
 from enum import Enum
 from getpass import getpass
 import json
+import logging
 from typing import Any
 from typing import TYPE_CHECKING
 from typing import cast
 
 # third party
 from argon2 import PasswordHasher
+from cachetools import TTLCache
+from cachetools import cached
 from pydantic import field_validator
 import requests
 from requests import Response
@@ -48,8 +50,8 @@ from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..types.grid_url import GridURL
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
+from ..types.syft_object import SYFT_OBJECT_VERSION_3
 from ..types.uid import UID
-from ..util.logger import debug
 from ..util.telemetry import instrument
 from ..util.util import prompt_warning_message
 from ..util.util import thread_ident
@@ -62,6 +64,8 @@ from .api import SyftAPICall
 from .api import debox_signed_syftapicall_response
 from .connection import NodeConnection
 from .protocol import SyftProtocol
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     # relative
@@ -78,7 +82,7 @@ def upgrade_tls(url: GridURL, response: Response) -> GridURL:
         if response.url.startswith("https://") and url.protocol == "http":
             # we got redirected to https
             https_url = GridURL.from_url(response.url).with_path("")
-            debug(f"GridURL Upgraded to HTTPS. {https_url}")
+            logger.debug(f"GridURL Upgraded to HTTPS. {https_url}")
             return https_url
     except Exception as e:
         print(f"Failed to upgrade to HTTPS. {e}")
@@ -130,7 +134,7 @@ class Routes(Enum):
 
 
 @serializable(attrs=["proxy_target_uid", "url"])
-class HTTPConnection(NodeConnection):
+class HTTPConnectionV2(NodeConnection):
     __canonical_name__ = "HTTPConnection"
     __version__ = SYFT_OBJECT_VERSION_2
 
@@ -138,6 +142,18 @@ class HTTPConnection(NodeConnection):
     proxy_target_uid: UID | None = None
     routes: type[Routes] = Routes
     session_cache: Session | None = None
+
+
+@serializable(attrs=["proxy_target_uid", "url"])
+class HTTPConnection(NodeConnection):
+    __canonical_name__ = "HTTPConnection"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    url: GridURL
+    proxy_target_uid: UID | None = None
+    routes: type[Routes] = Routes
+    session_cache: Session | None = None
+    headers: dict[str, str] | None = None
 
     @field_validator("url", mode="before")
     @classmethod
@@ -147,6 +163,9 @@ class HTTPConnection(NodeConnection):
             if isinstance(v, str | GridURL)
             else v
         )
+
+    def set_headers(self, headers: dict[str, str]) -> None:
+        self.headers = headers
 
     def with_proxy(self, proxy_target_uid: UID) -> Self:
         return HTTPConnection(url=self.url, proxy_target_uid=proxy_target_uid)
@@ -183,9 +202,35 @@ class HTTPConnection(NodeConnection):
         return self.session_cache
 
     def _make_get(self, path: str, params: dict | None = None) -> bytes:
+        if params is None:
+            return self._make_get_no_params(path)
         url = self.url.with_path(path)
         response = self.session.get(
-            str(url), verify=verify_tls(), proxies={}, params=params
+            str(url),
+            headers=self.headers,
+            verify=verify_tls(),
+            proxies={},
+            params=params,
+        )
+        if response.status_code != 200:
+            raise requests.ConnectionError(
+                f"Failed to fetch {url}. Response returned with code {response.status_code}"
+            )
+
+        # upgrade to tls if available
+        self.url = upgrade_tls(self.url, response)
+
+        return response.content
+
+    @cached(cache=TTLCache(maxsize=128, ttl=300))
+    def _make_get_no_params(self, path: str) -> bytes:
+        print(path)
+        url = self.url.with_path(path)
+        response = self.session.get(
+            str(url),
+            headers=self.headers,
+            verify=verify_tls(),
+            proxies={},
         )
         if response.status_code != 200:
             raise requests.ConnectionError(
@@ -205,7 +250,12 @@ class HTTPConnection(NodeConnection):
     ) -> bytes:
         url = self.url.with_path(path)
         response = self.session.post(
-            str(url), verify=verify_tls(), json=json, proxies={}, data=data
+            str(url),
+            headers=self.headers,
+            verify=verify_tls(),
+            json=json,
+            proxies={},
+            data=data,
         )
         if response.status_code != 200:
             raise requests.ConnectionError(
@@ -220,7 +270,7 @@ class HTTPConnection(NodeConnection):
     def stream_data(self, credentials: SyftSigningKey) -> Response:
         url = self.url.with_path(self.routes.STREAM.value)
         response = self.session.get(
-            str(url), verify=verify_tls(), proxies={}, stream=True
+            str(url), verify=verify_tls(), proxies={}, stream=True, headers=self.headers
         )
         return response
 
@@ -310,6 +360,7 @@ class HTTPConnection(NodeConnection):
         response = requests.post(  # nosec
             url=str(self.api_url),
             data=msg_bytes,
+            headers=self.headers,
         )
 
         if response.status_code != 200:
@@ -531,6 +582,15 @@ class SyftClient:
             self.metadata.supported_protocols
         )
 
+    def set_headers(self, headers: dict[str, str]) -> None | SyftError:
+        if isinstance(self.connection, HTTPConnection):
+            self.connection.set_headers(headers)
+            return None
+        return SyftError(  # type: ignore
+            message="Incompatible connection type."
+            + f"Expected HTTPConnection, got {type(self.connection)}"
+        )
+
     def _get_communication_protocol(
         self, protocols_supported_by_server: list
     ) -> int | str:
@@ -568,60 +628,6 @@ class SyftClient:
         )
         project = project_create.send()
         return project
-
-    # TODO: type of request should be REQUEST, but it will give circular import error
-    def sync_code_from_request(self, request: Any) -> SyftSuccess | SyftError:
-        # relative
-        from ..service.code.user_code import UserCode
-        from ..service.code.user_code import UserCodeStatusCollection
-        from ..store.linked_obj import LinkedObject
-
-        code: UserCode | SyftError = request.code
-        if isinstance(code, SyftError):
-            return code
-
-        code = deepcopy(code)
-        code.node_uid = self.id
-        code.user_verify_key = self.verify_key
-
-        def get_nested_codes(code: UserCode) -> list[UserCode]:
-            result: list[UserCode] = []
-            if code.nested_codes is None:
-                return result
-
-            for _, (linked_code_obj, _) in code.nested_codes.items():
-                nested_code = linked_code_obj.resolve
-                nested_code = deepcopy(nested_code)
-                nested_code.node_uid = code.node_uid
-                nested_code.user_verify_key = code.user_verify_key
-                result.append(nested_code)
-                result += get_nested_codes(nested_code)
-
-            return result
-
-        def get_code_statusses(codes: list[UserCode]) -> list[UserCodeStatusCollection]:
-            statusses = []
-            for code in codes:
-                status = deepcopy(code.status)
-                statusses.append(status)
-                code.status_link = LinkedObject.from_obj(status, node_uid=code.node_uid)
-            return statusses
-
-        nested_codes = get_nested_codes(code)
-        statusses = get_code_statusses(nested_codes + [code])
-
-        for c in nested_codes + [code]:
-            res = self.code.submit(c)
-            if isinstance(res, SyftError):
-                return res
-
-        for status in statusses:
-            res = self.api.services.code_status.create(status)
-            if isinstance(res, SyftError):
-                return res
-
-        self._fetch_api(self.credentials)
-        return SyftSuccess(message="User Code Submitted")
 
     @property
     def authed(self) -> bool:
@@ -776,6 +782,22 @@ class SyftClient:
             )
 
         return _guest_client
+
+    def login_as(self, email: str) -> Self:
+        user_private_key = self.api.services.user.key_for_email(email=email)
+        if not isinstance(user_private_key, UserPrivateKey):
+            return user_private_key
+        if self.metadata is not None:
+            print(
+                f"Logged into <{self.name}: {self.metadata.node_side_type.capitalize()}-side "
+                f"{self.metadata.node_type.capitalize()}> as {email}"
+            )
+
+        return self.__class__(
+            connection=self.connection,
+            credentials=user_private_key.signing_key,
+            metadata=self.metadata,
+        )
 
     def login(
         self,

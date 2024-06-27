@@ -59,6 +59,7 @@ DEFAULT_WELCOME_MSG = """
             <h2>Welcome to $domain_name</h2>
             <div class="syft-space">
             <strong>URL:</strong> $node_url <br />
+            <strong>Node Description:</strong> $description <br />
             <strong>Node Type:</strong> $node_type <br />
             <strong>Node Side Type:</strong>$node_side_type<br />
             <strong>Syft Version:</strong> $node_version<br />
@@ -179,7 +180,7 @@ def process_type_bank(type_bank: dict[str, tuple[Any, ...]]) -> dict[str, dict]:
 def resolve_references(json_mappings: dict[str, dict]) -> dict[str, dict]:
     # track second pass generated types
     new_types = {}
-    for _, json_schema in json_mappings.items():
+    for json_schema in json_mappings.values():
         replace_types = {}
         for attribute, config in json_schema["properties"].items():
             if "type" in config:

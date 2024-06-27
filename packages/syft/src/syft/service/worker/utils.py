@@ -1,5 +1,6 @@
 # stdlib
 import contextlib
+import logging
 import os
 from pathlib import Path
 import socket
@@ -33,6 +34,8 @@ from .worker_pool import SyftWorker
 from .worker_pool import WorkerHealth
 from .worker_pool import WorkerOrchestrationType
 from .worker_pool import WorkerStatus
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_WORKER_IMAGE_TAG = "openmined/default-worker-image-cpu:0.0.1"
 DEFAULT_WORKER_POOL_NAME = "default-pool"
@@ -261,9 +264,9 @@ def run_workers_in_threads(
                 address=address,
             )
         except Exception as e:
-            print(
-                "Failed to start consumer for "
-                f"pool={pool_name} worker={worker_name}. Error: {e}"
+            logger.error(
+                f"Failed to start consumer for pool={pool_name} worker={worker_name}",
+                exc_info=e,
             )
             worker.status = WorkerStatus.STOPPED
             error = str(e)
@@ -335,12 +338,7 @@ def create_kubernetes_pool(
     pool = None
 
     try:
-        print(
-            "Creating new pool "
-            f"name={pool_name} "
-            f"tag={tag} "
-            f"replicas={replicas}"
-        )
+        logger.info(f"Creating new pool name={pool_name} tag={tag} replicas={replicas}")
 
         env_vars, mount_secrets = prepare_kubernetes_pool_env(
             runner,
@@ -370,7 +368,12 @@ def create_kubernetes_pool(
         )
     except Exception as e:
         if pool:
-            pool.delete()
+            try:
+                pool.delete()  # this raises another exception if the pool never starts
+            except Exception as e2:
+                logger.error(
+                    f"Failed to delete pool {pool_name} after failed creation. {e2}"
+                )
         # stdlib
         import traceback
 
@@ -391,7 +394,7 @@ def scale_kubernetes_pool(
         return SyftError(message=f"Pool does not exist. name={pool_name}")
 
     try:
-        print(f"Scaling pool name={pool_name} to replicas={replicas}")
+        logger.info(f"Scaling pool name={pool_name} to replicas={replicas}")
         runner.scale_pool(pool_name=pool_name, replicas=replicas)
     except Exception as e:
         return SyftError(message=f"Failed to scale workers {e}")
@@ -520,7 +523,7 @@ def run_containers(
     if not worker_image.is_built:
         return SyftError(message="Image must be built before running it.")
 
-    print(f"Starting workers with start_idx={start_idx} count={number}")
+    logger.info(f"Starting workers with start_idx={start_idx} count={number}")
 
     if orchestration == WorkerOrchestrationType.DOCKER:
         with contextlib.closing(docker.from_env()) as client:
