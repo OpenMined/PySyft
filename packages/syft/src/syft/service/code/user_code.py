@@ -1933,3 +1933,15 @@ def migrate_usercode_v5_to_v4() -> list[Callable]:
         drop("origin_node_side_type"),
         drop("l0_deny_reason"),
     ]
+
+
+@migrate(UserCodeV5, UserCode)
+def migrate_usercode_v5_to_v6() -> list[Callable]:
+    return [
+        drop("enclave_metadata"),
+    ]
+
+
+@migrate(UserCode, UserCodeV5)
+def migrate_usercode_v6_to_v5() -> list[Callable]:
+    return [make_set_default("enclave_metadata", None)]
