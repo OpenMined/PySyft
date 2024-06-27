@@ -570,9 +570,17 @@ class Request(SyncableSyftObject):
             self.requesting_user_institution,
         ]
 
+        api = APIRegistry.api_for(
+            self.node_uid,
+            self.syft_client_verify_key,
+        )
+        if api is not None:
+            node_name = api.node_name.capitalize() if api.node_name is not None else ""
+
         return {
             "Description": self.html_description,
             "Requested By": "\n".join(user_data),
+            "Requested On": node_name,
             "Creation Time": str(self.request_time),
             "Status": status_badge,
         }
