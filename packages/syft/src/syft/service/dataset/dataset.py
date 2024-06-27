@@ -178,6 +178,9 @@ class Asset(SyftObject):
             {mock_table_line}
             </div>"""
 
+    def __repr__(self) -> str:
+        return f"Asset(name='{self.name}', node_uid='{self.node_uid}', action_id='{self.action_id}')"
+
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         _repr_str = f"Asset: {self.name}\n"
         _repr_str += f"Pointer Id: {self.action_id}\n"

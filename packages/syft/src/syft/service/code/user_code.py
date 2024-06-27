@@ -4,7 +4,6 @@ from __future__ import annotations
 # stdlib
 import ast
 from collections.abc import Callable
-from collections.abc import Generator
 from copy import deepcopy
 import datetime
 from enum import Enum
@@ -779,31 +778,45 @@ class UserCode(SyncableSyftObject):
         return compile_byte_code(self.parsed_code)
 
     @property
-    def assets(self) -> list[Asset]:
-        # relative
-        from ...client.api import APIRegistry
+    def assets(self) -> dict[str, Asset] | SyftError:
+        if not self.input_policy:
+            return {}
 
-        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
-        if api is None:
-            return SyftError(message=f"You must login to {self.node_uid}")
+        api = self._get_api()
+        if isinstance(api, SyftError):
+            return api
 
-        inputs: Generator = (x for x in range(0))  # create an empty generator
-        if self.input_policy_init_kwargs is not None:
-            inputs = (
-                uids
-                for node_identity, uids in self.input_policy_init_kwargs.items()
-                if node_identity.node_name == api.node_name
-            )
+        # get all assets on the node
+        datasets = api.services.dataset.get_all()
+        if isinstance(datasets, SyftError):
+            return datasets
+        all_assets = {
+            asset.action_id: asset
+            for asset in itertools.chain.from_iterable(x.asset_list for x in datasets)
+        }
 
-        all_assets = []
-        for uid in itertools.chain.from_iterable(x.values() for x in inputs):
-            if isinstance(uid, UID):
-                assets = api.services.dataset.get_assets_by_action_id(uid)
-                if not isinstance(assets, list):
-                    return assets
+        # get a flat dict of all inputs
+        all_inputs = {}
+        inputs = self.input_policy.inputs or {}
+        for vals in inputs.values():
+            all_inputs.update(vals)
 
-                all_assets += assets
-        return all_assets
+        # map the action_id to the asset
+        used_assets = {}
+        for kwarg, action_id in all_inputs.items():
+            used_assets[kwarg] = all_assets.get(action_id, None)
+        return used_assets
+
+    @property
+    def _asset_str(self) -> str | SyftError:
+        assets = self.assets
+        if isinstance(assets, SyftError):
+            return assets
+        asset_str_list = [
+            f"{kwarg}={repr(asset)}" for kwarg, asset in self.assets.items()
+        ]
+        asset_str = "\n".join(asset_str_list)
+        return asset_str
 
     def get_sync_dependencies(
         self, context: AuthedServiceContext
@@ -894,7 +907,7 @@ class UserCode(SyncableSyftObject):
     {constants_str}
     {shared_with_line}
     code:
-
+{self._asset_str}
 {self.raw_code}
 """
         if self.nested_codes != {}:
