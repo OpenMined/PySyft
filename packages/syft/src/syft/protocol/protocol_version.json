@@ -290,6 +290,11 @@
           "version": 5,
           "hash": "128705a5fdf308055ef857b25c80966c928938a05ec03459dae9b36bd6122aa2",
           "action": "add"
+        },
+        "6": {
+          "version": 6,
+          "hash": "c48ec3160bb34adf937e6306523c7ebc52861ff84a576a30a28cd45c224ded0f",
+          "action": "add"
         }
       },
       "SyncedUserCodeStatusChange": {
@@ -352,6 +357,20 @@
         "3": {
           "version": 3,
           "hash": "ba9ebb04cc3e8b3ae3302fd42a67e47261a0a330bae5f189d8f4819cf2804711",
+          "action": "add"
+        }
+      },
+      "SubmitUserCode": {
+        "5": {
+          "version": 5,
+          "hash": "3135727b8f0ca7689d47c04e45a2bd6a7693f17c043f76fd2243135196c27232",
+          "action": "add"
+        }
+      },
+      "CodeHistory": {
+        "3": {
+          "version": 3,
+          "hash": "1b9bd1d3d096abab5617c2ff597b4c80751f686d16482a2cff4efd8741b84d53",
           "action": "add"
         }
       }

@@ -7,6 +7,7 @@ from collections.abc import KeysView
 from collections.abc import Mapping
 from collections.abc import Sequence
 from collections.abc import Set
+from functools import cache
 from hashlib import sha256
 import inspect
 from inspect import Signature
@@ -19,6 +20,7 @@ from typing import Any
 from typing import ClassVar
 from typing import Optional
 from typing import TYPE_CHECKING
+from typing import TypeVar
 from typing import Union
 from typing import get_args
 from typing import get_origin
@@ -59,6 +61,7 @@ if TYPE_CHECKING:
 IntStr = int | str
 AbstractSetIntStr = Set[IntStr]
 MappingIntStrAny = Mapping[IntStr, Any]
+T = TypeVar("T")
 
 
 SYFT_OBJECT_VERSION_1 = 1
@@ -227,6 +230,11 @@ class SyftObjectRegistry:
             f"No mapping found for: {type_from} to {type_to} in"
             f"the registry: {cls.__object_transform_registry__.keys()}"
         )
+
+
+@cache
+def cached_get_type_hints(cls: type) -> dict[str, Any]:
+    return typing.get_type_hints(cls)
 
 
 class SyftMigrationRegistry:
@@ -550,7 +558,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
             return upgraded
 
     # transform from one supported type to another
-    def to(self, projection: type, context: Context | None = None) -> Any:
+    def to(self, projection: type[T], context: Context | None = None) -> T:
         # 🟡 TODO 19: Could we do an mro style inheritence conversion? Risky?
         transform = SyftObjectRegistry.get_transform(type(self), projection)
         return transform(self, context)
@@ -578,7 +586,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
             return
         # Validate and set private attributes
         # https://github.com/pydantic/pydantic/issues/2105
-        annotations = typing.get_type_hints(self.__class__)
+        annotations = cached_get_type_hints(self.__class__)
         for attr, decl in self.__private_attributes__.items():
             value = kwargs.get(attr, decl.get_default())
             var_annotation = annotations.get(attr)

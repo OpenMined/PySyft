@@ -610,9 +610,6 @@ class Request(SyncableSyftObject):
             message="This type of request does not have code associated with it."
         )
 
-    def get_results(self) -> Any:
-        return self.code.get_results()
-
     @property
     def current_change_state(self) -> dict[UID, bool]:
         change_applied_map = {}
@@ -670,7 +667,7 @@ class Request(SyncableSyftObject):
             metadata = api.connection.get_node_metadata(api.signing_key)
         else:
             metadata = None
-        message, is_enclave = None, False
+        message = None
 
         is_code_request = not isinstance(self.codes, SyftError)
 
@@ -679,12 +676,7 @@ class Request(SyncableSyftObject):
                 message="Multiple codes detected, please use approve_nested=True"
             )
 
-        if self.code and not isinstance(self.code, SyftError):
-            is_enclave = getattr(self.code, "enclave_metadata", None) is not None
-
-        if is_enclave:
-            message = "On approval, the result will be released to the enclave."
-        elif metadata and metadata.node_side_type == NodeSideType.HIGH_SIDE.value:
+        if metadata and metadata.node_side_type == NodeSideType.HIGH_SIDE.value:
             message = (
                 "You're approving a request on "
                 f"{metadata.node_side_type} side {metadata.node_type} "
@@ -1212,6 +1204,8 @@ class UserCodeStatusChange(Change):
 
     @property
     def code(self) -> UserCode:
+        if self.linked_user_code._resolve_cache:
+            return self.linked_user_code._resolve_cache
         return self.linked_user_code.resolve
 
     def get_user_code(self, context: AuthedServiceContext) -> UserCode:
@@ -1317,12 +1311,6 @@ class UserCodeStatusChange(Change):
             )
         return res
 
-    def is_enclave_request(self, user_code: UserCode) -> bool:
-        return (
-            user_code.is_enclave_code is not None
-            and self.value == UserCodeStatus.APPROVED
-        )
-
     def _run(
         self, context: ChangeContext, apply: bool
     ) -> Result[SyftSuccess, SyftError]:
@@ -1346,22 +1334,12 @@ class UserCodeStatusChange(Change):
                 if isinstance(updated_status, SyftError):
                     return Err(updated_status.message)
 
-                # relative
-                from ..enclave.enclave_service import propagate_inputs_to_enclave
-
                 self.linked_obj.update_with_context(context, updated_status)
-                if self.is_enclave_request(user_code):
-                    enclave_res = propagate_inputs_to_enclave(
-                        user_code=user_code, context=context
-                    )
-                    if isinstance(enclave_res, SyftError):
-                        return enclave_res
             else:
                 updated_status = self.mutate(user_code_status, context, undo=True)
                 if isinstance(updated_status, SyftError):
                     return Err(updated_status.message)
 
-                # TODO: Handle Enclave approval.
                 self.linked_obj.update_with_context(context, updated_status)
             return Ok(SyftSuccess(message=f"{type(self)} Success"))
         except Exception as e:
