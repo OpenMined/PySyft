@@ -361,9 +361,8 @@ class EnclaveService(AbstractService):
         )
         kwargs = {k: v for d in init_kwargs for k, v in d.items()}
 
-        job = code_service.call(
-            context=root_context, blocking=False, uid=code.id, **kwargs
-        )
+        admin_client = context.node.root_client
+        job = admin_client.api.services.code.call(blocking=False, uid=code.id, **kwargs)
         execution_result = job.wait().get()
         result = get_encrypted_result(context, execution_result)
         return result
