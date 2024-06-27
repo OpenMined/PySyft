@@ -793,17 +793,25 @@ class ActionObject(SyncableSyftObject):
 
         return None
 
-    def _save_to_blob_storage_(self, data: Any) -> SyftError | None:
+    def _save_to_blob_storage_(self, data: Any) -> SyftError | SyftWarning | None:
         # relative
         from ...types.blob_storage import BlobFile
         from ...types.blob_storage import CreateBlobStorageEntry
 
+        api = APIRegistry.api_for(self.syft_node_location, self.syft_client_verify_key)
+        if api is None:
+            raise ValueError(
+                f"api is None. You must login to {self.syft_node_location}"
+            )
+        if not can_upload_to_blob_storage(data, api.metadata):
+            return SyftWarning(
+                message=f"The action object {self.id} was not saved to "
+                f"the blob store but to memory cache since it is small."
+            )
+
         if not isinstance(data, ActionDataEmpty):
             if isinstance(data, BlobFile):
                 if not data.uploaded:
-                    api = APIRegistry.api_for(
-                        self.syft_node_location, self.syft_client_verify_key
-                    )
                     data._upload_to_blobstorage_from_api(api)
             else:
                 serialized = serialize(data, to_bytes=True)
@@ -843,20 +851,9 @@ class ActionObject(SyncableSyftObject):
                 "skipping writing action object to store, passed data was empty."
             )
 
-        self.syft_action_data_cache = data
+        # self.syft_action_data_cache = data
 
         return None
-
-    def _set_reprs(self, data: any) -> None:
-        if inspect.isclass(data):
-            self.syft_action_data_repr_ = truncate_str(repr_cls(data))
-        else:
-            self.syft_action_data_repr_ = truncate_str(
-                data._repr_markdown_()
-                if hasattr(data, "_repr_markdown_")
-                else data.__repr__()
-            )
-        self.syft_action_data_str_ = truncate_str(str(data))
 
     def _save_to_blob_storage(
         self, allow_empty: bool = False
@@ -869,23 +866,14 @@ class ActionObject(SyncableSyftObject):
                 message=f"cannot store empty object {self.id} to the blob storage"
             )
         try:
-            api = APIRegistry.api_for(
-                node_uid=self.syft_node_location,
-                user_verify_key=self.syft_client_verify_key,
+            result = self._save_to_blob_storage_(data)
+            if isinstance(result, SyftError | SyftWarning):
+                return result
+            if not TraceResultRegistry.current_thread_is_tracing():
+                self._clear_cache()
+            return SyftSuccess(
+                message=f"Saved action object {self.id} to the blob store"
             )
-            if api is None:
-                raise ValueError(
-                    f"api is None. You must login to {self.syft_node_location}"
-                )
-            if can_upload_to_blob_storage(data, api.metadata):
-                result = self._save_to_blob_storage_(data)
-                if isinstance(result, SyftError):
-                    return result
-                if not TraceResultRegistry.current_thread_is_tracing():
-                    self._clear_cache()
-                return SyftSuccess(
-                    message=f"Saved action object {self.id} to the blob store"
-                )
         except Exception as e:
             print(
                 f"Failed to save action object {self.id} to the blob store. Error: {e}"
@@ -899,6 +887,17 @@ class ActionObject(SyncableSyftObject):
 
     def _clear_cache(self) -> None:
         self.syft_action_data_cache = self.as_empty_data()
+
+    def _set_reprs(self, data: any) -> None:
+        if inspect.isclass(data):
+            self.syft_action_data_repr_ = truncate_str(repr_cls(data))
+        else:
+            self.syft_action_data_repr_ = truncate_str(
+                data._repr_markdown_()
+                if hasattr(data, "_repr_markdown_")
+                else data.__repr__()
+            )
+        self.syft_action_data_str_ = truncate_str(str(data))
 
     @property
     def is_pointer(self) -> bool:
