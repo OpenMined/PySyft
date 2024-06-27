@@ -2,8 +2,6 @@
 from collections.abc import Callable
 from typing import Any
 
-from syft.util.util import get_env
-
 # relative
 from ...abstract_node import NodeSideType
 from ...abstract_node import NodeType
@@ -24,6 +22,7 @@ from ...util.colors import SURFACE
 from ...util.misc_objs import HTMLObject
 from ...util.misc_objs import MarkdownDescription
 from ...util.schema import DEFAULT_WELCOME_MSG
+from ...util.util import get_env
 
 
 @serializable()
@@ -193,7 +192,10 @@ class NodeSettingsV2(SyftObject):
 def upgrade_node_settings() -> list[Callable]:
     return [
         make_set_default("association_request_auto_approval", False),
-        make_set_default("default_worker_pool", get_env("DEFAULT_WORKER_POOL_NAME", DEFAULT_WORKER_POOL_NAME))
+        make_set_default(
+            "default_worker_pool",
+            get_env("DEFAULT_WORKER_POOL_NAME", DEFAULT_WORKER_POOL_NAME),
+        ),
     ]
 
 

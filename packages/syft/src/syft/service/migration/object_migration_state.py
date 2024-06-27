@@ -10,9 +10,11 @@ from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.syft_object_registry import SyftObjectRegistry
+from ...types.uid import UID
 from ..action.action_permissions import ActionObjectPermission
 
 
@@ -80,3 +82,13 @@ class SyftMigrationStateStash(BaseStash):
     ) -> Result[SyftObjectMigrationState, str]:
         qks = KlassNamePartitionKey.with_obj(canonical_name)
         return self.query_one(credentials=credentials, qks=qks)
+
+
+@serializable()
+class StoreMetadata(SyftObject):
+    __canonical_name__ = "StoreMetadata"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    object_type: type
+    permissions: dict[UID, set[str]]
+    storage_permissions: dict[UID, set[UID]]

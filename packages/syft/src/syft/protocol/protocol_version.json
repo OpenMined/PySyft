@@ -200,6 +200,13 @@
           "hash": "c1796e7b01c9eae0dbf59cfd5c2c2f0e7eba593e0cea615717246572b27aae4b",
           "action": "remove"
         }
+      },
+      "StoreMetadata": {
+        "1": {
+          "version": 1,
+          "hash": "bb9edb077f0214c5867d5349aa99eb584d133bd5f2cc5c824986c9174c0dbbc9",
+          "action": "add"
+        }
       }
     }
   }
