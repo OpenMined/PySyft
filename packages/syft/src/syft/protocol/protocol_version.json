@@ -293,7 +293,12 @@
         },
         "6": {
           "version": 6,
-          "hash": "e7d19463aba1de81b3cb956e0e42a9b40a4916308cc80c1c3c8e5f17cb21f9b4",
+          "hash": "c48ec3160bb34adf937e6306523c7ebc52861ff84a576a30a28cd45c224ded0f",
+          "action": "add"
+        },
+        "7": {
+          "version": 7,
+          "hash": "021ea094e900b61066cd47acdc0ba54c6e6cf9ab07cca51735209a4797db85a1",
           "action": "add"
         }
       },
@@ -363,7 +368,12 @@
       "SubmitUserCode": {
         "5": {
           "version": 5,
-          "hash": "4bea63bf596ef7fdb42c6c962a41fce4676906e376fbac09f5a4280a979a32ba",
+          "hash": "3135727b8f0ca7689d47c04e45a2bd6a7693f17c043f76fd2243135196c27232",
+          "action": "add"
+        },
+        "6": {
+          "version": 6,
+          "hash": "7905327032d92883db5d366620998c8a07c53f9d16815f2c4c4fb259bdb08e40",
           "action": "add"
         }
       },

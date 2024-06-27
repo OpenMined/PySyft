@@ -2062,7 +2062,7 @@ def migrate_usercode_v6_to_v5() -> list[Callable]:
 @migrate(UserCodeV6, UserCode)
 def migrate_usercode_v6_to_v7() -> list[Callable]:
     return [
-        make_set_default("deployment_policy_type", EmptyDeploymentPolicy()),
+        make_set_default("deployment_policy_type", EmptyDeploymentPolicy),
         make_set_default("deployment_policy_init_kwargs", None),
         make_set_default("deployment_policy_state", b""),
     ]
