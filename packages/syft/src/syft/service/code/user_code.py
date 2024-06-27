@@ -980,11 +980,12 @@ class SubmitUserCode(SyftObject):
         # only run this on the client side
         if self.local_function:
             source = dedent(inspect.getsource(self.local_function))
-            tree = ast.parse(source)
 
-            # check there are no globals
-            v = GlobalsVisitor()
-            v.visit(tree)
+            v: GlobalsVisitor | SyftWarning = _check_global(raw_code=source)
+            if isinstance(v, SyftWarning):  # the code contains "global" keyword
+                return SyftError(
+                    message=f"Error when running function locally: {v.message}"
+                )
 
             # filtered_args = []
             filtered_kwargs = {}
@@ -1196,10 +1197,19 @@ def syft_function(
         try:
             code = dedent(inspect.getsource(f))
 
+            # check that there are no globals
             global_check = _check_global(code)
-            if isinstance(global_check, SyftError):
+            if isinstance(global_check, SyftWarning):
                 display(global_check)
-                return global_check
+                # err = SyftError(message=global_check.message)
+                # display(err)
+                # return err
+
+            lint_issues = _lint_code(code)
+            lint_warning_msg = ""
+            for issue in lint_issues:
+                lint_warning_msg += f"{issue}\n\t"
+            display(SyftWarning(message=lint_warning_msg))
 
             if name is not None:
                 fname = name
@@ -1246,17 +1256,73 @@ def syft_function(
     return decorator
 
 
-def _check_global(
-    raw_code: str,
-) -> None | SyftError:
+def _check_global(raw_code: str) -> GlobalsVisitor | SyftWarning:
     tree = ast.parse(raw_code)
     # check there are no globals
     v = GlobalsVisitor()
     try:
         v.visit(tree)
-    except Exception as e:
-        return SyftError(message=f"Failed to process code. {e}")
-    return None
+    except Exception:
+        return SyftWarning(
+            message="Your code contains (a) global variable(s), which is not allowed"
+        )
+    return v
+
+
+# Define a linter function
+def _lint_code(code: str) -> list:
+    # Parse the code into an AST
+    tree = ast.parse(code)
+
+    # Initialize a list to collect linting issues
+    issues = []
+
+    # Define a visitor class to walk the AST
+    class CodeVisitor(ast.NodeVisitor):
+        def __init__(self) -> None:
+            self.globals: set = set()
+            self.defined_names: set = set()
+            self.current_scope_defined_names: set = set()
+
+        def visit_Global(self, node: Any) -> None:
+            # Collect global variable names
+            for name in node.names:
+                self.globals.add(name)
+            self.generic_visit(node)
+
+        def visit_FunctionDef(self, node: Any) -> None:
+            # Collect defined function names and handle function scope
+            self.defined_names.add(node.name)
+            self.current_scope_defined_names = set()  # New scope
+            self.generic_visit(node)
+            self.current_scope_defined_names.clear()  # Clear scope after visiting
+
+        def visit_Assign(self, node: Any) -> None:
+            # Collect assigned variable names
+            for target in node.targets:
+                if isinstance(target, ast.Name):
+                    self.current_scope_defined_names.add(target.id)
+            self.generic_visit(node)
+
+        def visit_Name(self, node: Any) -> None:
+            # Check if variables are used before being defined
+            if isinstance(node.ctx, ast.Load):
+                if (
+                    node.id not in self.current_scope_defined_names
+                    and node.id not in self.defined_names
+                    and node.id not in self.globals
+                ):
+                    issues.append(
+                        f"Variable '{node.id}' used at line {node.lineno} before being defined."
+                    )
+            self.generic_visit(node)
+
+    # Create a visitor instance and visit the AST
+    visitor = CodeVisitor()
+    visitor.visit(tree)
+
+    # Return the collected issues
+    return issues
 
 
 def generate_unique_func_name(context: TransformContext) -> TransformContext:
