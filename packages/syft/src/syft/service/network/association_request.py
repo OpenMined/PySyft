@@ -68,7 +68,10 @@ class AssociationRequestChange(Change):
 
         # If the remote peer is added via reverse tunnel, we skip ping to peer
         if add_rathole_route:
-            network_service.rtunnel_service.set_server_config(self.remote_peer)
+            network_service.set_reverse_tunnel_config(
+                context=context,
+                remote_node_peer=self.remote_peer,
+            )
         else:
             # Pinging the remote peer to verify the connection
             try:

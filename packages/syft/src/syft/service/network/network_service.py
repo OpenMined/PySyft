@@ -261,9 +261,10 @@ class NetworkService(AbstractService):
 
         # Step 5: Save rathole config to enable reverse tunneling
         if reverse_tunnel and reverse_tunnel_enabled():
-            self.rtunnel_service.set_client_config(
+            self.set_reverse_tunnel_config(
+                context=context,
                 self_node_peer=self_node_peer,
-                remote_node_route=remote_node_route,
+                remote_node_peer=remote_node_peer,
             )
 
         return (
@@ -484,25 +485,40 @@ class NetworkService(AbstractService):
 
         peer = result.ok()
 
-        node_side_type = cast(NodeType, context.node.node_type)
-        if node_side_type.value == NodeType.GATEWAY.value:
-            rathole_route = peer.get_rathole_route()
-            self.rtunnel_service.set_server_config(peer) if rathole_route else None
+        self.set_reverse_tunnel_config(context=context, remote_node_peer=peer)
+        return SyftSuccess(
+            message=f"Peer '{result.ok().name}' information successfully updated."
+        )
+
+    def set_reverse_tunnel_config(
+        self,
+        context: AuthedServiceContext,
+        remote_node_peer: NodePeer,
+        self_node_peer: NodePeer | None = None,
+    ) -> None:
+        node_type = cast(NodeType, context.node.node_type)
+        if node_type.value == NodeType.GATEWAY.value:
+            rathole_route = remote_node_peer.get_rathole_route()
+            (
+                self.rtunnel_service.set_server_config(remote_node_peer)
+                if rathole_route
+                else None
+            )
         else:
-            self_node_peer: NodePeer = context.node.settings.to(NodePeer)
+            self_node_peer = (
+                context.node.settings.to(NodePeer)
+                if self_node_peer is None
+                else self_node_peer
+            )
             rathole_route = self_node_peer.get_rathole_route()
             (
                 self.rtunnel_service.set_client_config(
                     self_node_peer=self_node_peer,
-                    remote_node_route=peer.pick_highest_priority_route(),
+                    remote_node_route=remote_node_peer.pick_highest_priority_route(),
                 )
                 if rathole_route
                 else None
             )
-
-        return SyftSuccess(
-            message=f"Peer '{result.ok().name}' information successfully updated."
-        )
 
     @service_method(
         path="network.delete_peer_by_id",
