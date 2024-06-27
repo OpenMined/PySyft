@@ -353,6 +353,7 @@ class SettingsService(AbstractService):
                     FONT_CSS=FONT_CSS,
                     grid_symbol=load_png_base64("small-grid-symbol-logo.png"),
                     domain_name=context.node.name,
+                    description=context.node.metadata.description,
                     # node_url='http://testing:8080',
                     node_type=context.node.metadata.node_type.capitalize(),
                     node_side_type=node_side_type,
