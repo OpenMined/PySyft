@@ -112,6 +112,10 @@ def test_domain_connect_to_gateway(
     _remove_existing_peers(domain_client)
     _remove_existing_peers(gateway_client)
 
+    # Disable automatic acceptance of association requests
+    res = gateway_client.settings.allow_association_request_auto_approval(enable=False)
+    assert isinstance(res, SyftSuccess)
+
     # connecting the domain to the gateway
     result = domain_client.connect_to_gateway(gateway_client)
     assert isinstance(result, Request)
@@ -914,6 +918,7 @@ def test_peer_health_check(set_env_var, gateway_port: int, domain_1_port: int) -
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
+@pytest.mark.network
 def test_reverse_tunnel_connection(domain_1_port: int, gateway_port: int):
     # login to the domain and gateway
 
