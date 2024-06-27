@@ -291,28 +291,17 @@ class NodePeer(SyftObject):
                 return route
         return None
 
-    def delete_route(
-        self, route: NodeRouteType | None = None, route_id: UID | None = None
-    ) -> SyftError | None:
+    def delete_route(self, route: NodeRouteType) -> SyftError | None:
         """
         Deletes a route from the peer's route list.
         Takes O(n) where is n is the number of routes in self.node_routes.
 
         Args:
             route (NodeRouteType): The route to be deleted;
-            route_id (UID): The id of the route to be deleted;
 
         Returns:
-            SyftError: If deleting failed
+            SyftError: If failing to delete node route
         """
-        if route_id:
-            try:
-                self.node_routes = [r for r in self.node_routes if r.id != route_id]
-            except Exception as e:
-                return SyftError(
-                    message=f"Error deleting route with id {route_id}. Exception: {e}"
-                )
-
         if route:
             try:
                 self.node_routes = [r for r in self.node_routes if r != route]

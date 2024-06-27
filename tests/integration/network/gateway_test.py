@@ -618,7 +618,7 @@ def test_delete_route_on_peer(
 
     # gateway delete the routes for the domain
     res = gateway_client.api.services.network.delete_route_on_peer(
-        peer=domain_peer, route_id=new_route.id
+        peer=domain_peer, route=new_route
     )
     assert isinstance(res, SyftSuccess)
     gateway_peer = domain_client.peers[0]

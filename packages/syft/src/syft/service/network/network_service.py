@@ -625,6 +625,8 @@ class NetworkService(AbstractService):
                 message=f"The route already exists between '{context.node.name}' and "
                 f"peer '{remote_node_peer.name}'."
             )
+
+        remote_node_peer.update_route(route=route)
         # update the peer in the store with the updated routes
         peer_update = NodePeerUpdate(
             id=remote_node_peer.id, node_routes=remote_node_peer.node_routes
@@ -646,8 +648,7 @@ class NetworkService(AbstractService):
         self,
         context: AuthedServiceContext,
         peer: NodePeer,
-        route: NodeRoute | None = None,
-        route_id: UID | None = None,
+        route: NodeRoute,
     ) -> SyftSuccess | SyftError | SyftInfo:
         """
         Delete the route on the remote peer.
@@ -656,7 +657,6 @@ class NetworkService(AbstractService):
             context (AuthedServiceContext): The authentication context for the service.
             peer (NodePeer): The peer for which the route will be deleted.
             route (NodeRoute): The route to be deleted.
-            route_id (UID): The UID of the route to be deleted.
 
         Returns:
             SyftSuccess: If the route is successfully deleted.
@@ -664,17 +664,6 @@ class NetworkService(AbstractService):
             SyftInfo: If there is only one route left for the peer and
                 the admin chose not to remove it
         """
-        if route is None and route_id is None:
-            return SyftError(
-                message="Either `route` or `route_id` arg must be provided"
-            )
-
-        if route and route_id and route.id != route_id:
-            return SyftError(
-                message=f"Both `route` and `route_id` are provided, but "
-                f"route's id ({route.id}) and route_id ({route_id}) do not match"
-            )
-
         # creates a client on the remote node based on the credentials
         # of the current node's client
         remote_client = peer.client_with_context(context=context)
@@ -688,7 +677,6 @@ class NetworkService(AbstractService):
         result = remote_client.api.services.network.delete_route(
             peer_verify_key=context.credentials,
             route=route,
-            route_id=route_id,
             called_by_peer=True,
         )
         return result
@@ -701,7 +689,6 @@ class NetworkService(AbstractService):
         context: AuthedServiceContext,
         peer_verify_key: SyftVerifyKey,
         route: NodeRoute | None = None,
-        route_id: UID | None = None,
         called_by_peer: bool = False,
     ) -> SyftSuccess | SyftError | SyftInfo:
         """
@@ -713,7 +700,6 @@ class NetworkService(AbstractService):
             context (AuthedServiceContext): The authentication context for the service.
             peer_verify_key (SyftVerifyKey): The verify key of the remote node peer.
             route (NodeRoute): The route to be deleted.
-            route_id (UID): The UID of the route to be deleted.
             called_by_peer (bool): The flag to indicate that it's called by a remote peer.
 
         Returns:
@@ -755,20 +741,12 @@ class NetworkService(AbstractService):
                     f"'{remote_node_peer.node_routes[0].id}' was not deleted."
                 )
 
-        if route:
-            result = remote_node_peer.delete_route(route=route)
-            return_message = (
-                f"Route '{str(route)}' with id '{route.id}' to peer "
-                f"{remote_node_peer.node_type.value} '{remote_node_peer.name}' "
-                f"was deleted for {str(context.node.node_type)} '{context.node.name}'."
-            )
-        if route_id:
-            result = remote_node_peer.delete_route(route_id=route_id)
-            return_message = (
-                f"Route with id '{route_id}' to peer "
-                f"{remote_node_peer.node_type.value} '{remote_node_peer.name}' "
-                f"was deleted for {str(context.node.node_type)} '{context.node.name}'."
-            )
+        result = remote_node_peer.delete_route(route=route)
+        return_message = (
+            f"Route '{str(route)}' to peer "
+            f"{remote_node_peer.node_type.value} '{remote_node_peer.name}' "
+            f"was deleted for {str(context.node.node_type)} '{context.node.name}'."
+        )
         if isinstance(result, SyftError):
             return result
 
