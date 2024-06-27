@@ -1,9 +1,11 @@
 # stdlib
 import asyncio
 from collections.abc import Callable
+from dataclasses import dataclass
 from enum import Enum
 import multiprocessing
 import os
+from pathlib import Path
 import platform
 import signal
 import subprocess  # nosec
@@ -15,6 +17,10 @@ from fastapi import FastAPI
 import requests
 from starlette.middleware.cors import CORSMiddleware
 import uvicorn
+from watchdog.events import FileSystemEvent
+from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer
+from watchdog.observers.api import BaseObserverSubclassCallable
 
 # relative
 from ..abstract_node import NodeSideType
@@ -183,65 +189,95 @@ def serve_node(
     association_request_auto_approval: bool = False,
     background_tasks: bool = False,
 ) -> tuple[Callable, Callable]:
-    server_process = multiprocessing.Process(
-        target=run_uvicorn,
-        kwargs={
-            "name": name,
-            "node_type": node_type,
-            "host": host,
-            "port": port,
-            "processes": processes,
-            "reset": reset,
-            "dev_mode": dev_mode,
-            "node_side_type": node_side_type,
-            "enable_warnings": enable_warnings,
-            "in_memory_workers": in_memory_workers,
-            "queue_port": queue_port,
-            "create_producer": create_producer,
-            "n_consumers": n_consumers,
-            "association_request_auto_approval": association_request_auto_approval,
-            "background_tasks": background_tasks,
-        },
-    )
+    @dataclass
+    class ServerState:
+        process: multiprocessing.Process | None
+        observer: BaseObserverSubclassCallable | None
 
-    def stop() -> None:
-        print(f"Stopping {name}")
-        server_process.terminate()
-        server_process.join(3)
-        if server_process.is_alive():
-            # this is needed because often the process is still alive
-            server_process.kill()
-            print("killed")
+    server_state = ServerState(process=None, observer=None)
 
     def start() -> None:
         print(f"Starting {name} server on {host}:{port}")
-        server_process.start()
+        if server_state.process and server_state.process.is_alive():
+            print(f"{name} server is already running.")
+            return
+
+        server_state.process = multiprocessing.Process(
+            target=run_uvicorn,
+            kwargs={
+                "name": name,
+                "node_type": node_type,
+                "host": host,
+                "port": port,
+                "processes": processes,
+                "reset": reset,
+                "dev_mode": dev_mode,
+                "node_side_type": node_side_type,
+                "enable_warnings": enable_warnings,
+                "in_memory_workers": in_memory_workers,
+                "queue_port": queue_port,
+                "create_producer": create_producer,
+                "n_consumers": n_consumers,
+                "association_request_auto_approval": association_request_auto_approval,
+                "background_tasks": background_tasks,
+            },
+        )
+        server_state.process.start()
 
         if tail:
             try:
                 while True:
                     time.sleep(1)
             except KeyboardInterrupt:
-                try:
-                    stop()
-                except SystemExit:
-                    os._exit(130)
+                stop()
         else:
-            for i in range(WAIT_TIME_SECONDS):
-                try:
-                    req = requests.get(
-                        f"http://{host}:{port}{API_PATH}/metadata",
-                        timeout=DEFAULT_TIMEOUT,
-                    )
-                    if req.status_code == 200:
-                        print(" Done.")
-                        break
-                except Exception:
-                    time.sleep(1)
-                    if i == 0:
-                        print("Waiting for server to start", end="")
-                    else:
-                        print(".", end="")
+            wait_for_server_to_start()
+
+    def stop() -> None:
+        if server_state.process and server_state.process.is_alive():
+            print(f"Stopping {name}")
+            server_state.process.terminate()
+            server_state.process.join(3)
+            if server_state.process.is_alive():
+                # this is needed because often the process is still alive
+                server_state.process.kill()
+                print("killed")
+        else:
+            print(f"{name} server is not running.")
+
+    def wait_for_server_to_start() -> None:
+        print(
+            f"Waiting for {name} server to start at http://{host}:{port}{API_PATH}... ",
+            end="",
+        )
+        for _ in range(WAIT_TIME_SECONDS):
+            try:
+                req = requests.get(
+                    f"http://{host}:{port}{API_PATH}/metadata",
+                    timeout=DEFAULT_TIMEOUT,
+                )
+                if req.status_code == 200:
+                    print("Done.")
+                    break
+            except Exception:
+                time.sleep(1)
+                print(".", end="", flush=True)
+
+    class ReloadHandler(FileSystemEventHandler):
+        def on_any_event(self, event: FileSystemEvent) -> None:
+            if event.is_directory or not event.src_path.endswith(".py"):
+                return
+            print(
+                f"[Watcher] File changed: {event.src_path}. Restarting {name} server..."
+            )
+            stop()
+            start()
+
+    server_state.observer = Observer()
+    watch_dir = Path(__file__).parent.parent
+    server_state.observer.schedule(ReloadHandler(), path=watch_dir, recursive=True)
+    print(f"[Watcher] Watching {watch_dir} for changes.")
+    server_state.observer.start()
 
     return start, stop
 
