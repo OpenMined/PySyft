@@ -104,7 +104,7 @@ jobs:
         run: |
           echo "dir=$(uv cache dir)" >> $GITHUB_OUTPUT
 
-      - name: pip cache
+      - name: load github cache
         uses: actions/cache@v4
         if: steps.changes.outputs.stack == 'true'
         with:
@@ -187,7 +187,7 @@ jobs:
         run: |
           echo "dir=$(uv cache dir)" >> $GITHUB_OUTPUT
 
-      - name: pip cache
+      - name: load github cache
         uses: actions/cache@v4
         if: steps.changes.outputs.stack == 'true'
         with:
@@ -336,7 +336,7 @@ jobs:
         run: |
           echo "dir=$(uv cache dir)" >> $GITHUB_OUTPUT
 
-      - name: pip cache
+      - name: load github cache
         uses: actions/cache@v4
         if: steps.changes.outputs.stack == 'true'
         with:
