@@ -1,12 +1,17 @@
-# stdlib
-
-# stdlib
-
 # third party
-from result import Ok
+import uuid
+from result import Err, Ok
+import sqlalchemy as sa
+from sqlalchemy.exc import IntegrityError
 from result import Result
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from syft.service.action.action_permissions import (
+    COMPOUND_ACTION_PERMISSION,
+    ActionObjectPermission,
+    ActionPermission,
+    StoragePermission,
+)
 
 # relative
 from . import dataset
@@ -22,7 +27,11 @@ class DatasetSQLStash:
     def __init__(self) -> None:
         pass
 
-    def set(self, credentials: SyftVerifyKey, dataset: Dataset) -> Result[Dataset, str]:
+    def set(
+        self,
+        credentials: SyftVerifyKey,
+        dataset: Dataset,
+    ) -> Result[Dataset, str]:
         assets = [
             dataset_sqla.Asset(
                 name=asset.name,
@@ -58,14 +67,116 @@ class DatasetSQLStash:
         # dataset_sqla_obj.asset_list.extend(assets)
 
         with Session(dataset_sqla.engine) as session:
-            session.add(dataset_sqla_obj)
-            session.commit()
+            try:
+                session.add(dataset_sqla_obj)
+                session.flush()
+
+                add_permission_res = self.add_permission(
+                    session=session,
+                    permission=ActionObjectPermission(
+                        uid=UID(dataset_sqla_obj.id),
+                        permission=ActionPermission.READ,
+                        credentials=credentials,
+                    ),
+                )
+                if add_permission_res.is_err():
+                    session.rollback()
+                    return add_permission_res
+
+                add_storage_permission_res = self.add_storage_permission(
+                    session=session,
+                    permission=StoragePermission(
+                        uid=UID(dataset_sqla_obj.id),
+                        node_uid=UID(dataset.node_uid),
+                    ),
+                )
+                if add_storage_permission_res.is_err():
+                    session.rollback()
+                    return add_storage_permission_res
+
+                session.commit()
+            except IntegrityError as e:
+                session.rollback()
+                return Err(str(e))
+
         return Ok(dataset)
+
+    def add_storage_permission(
+        self,
+        session: Session,
+        permission: StoragePermission,
+    ) -> Result[None, str]:
+        new_permission = dataset_sqla.DatasetStoragePermission(
+            object_uid=permission.uid.value,
+            node_uid=permission.node_uid.value,
+        )
+        session.add(new_permission)
+        return Ok(None)
+
+    def add_permission(
+        self,
+        session: Session,
+        permission: ActionObjectPermission,
+    ) -> Result[None, str]:
+        new_permission = dataset_sqla.DatasetPermission(
+            object_uid=permission.uid.value,
+            verify_key=permission.credentials.verify,
+            permission=permission.permission,
+        )
+        session.add(new_permission)
+        return Ok(None)
+
+    def has_permission(
+        self,
+        session: Session,
+        permission: ActionObjectPermission,
+    ) -> bool:
+        object_uid = permission.uid.value
+        permission_type = permission.permission
+        credentials = permission.credentials
+
+        if permission_type in COMPOUND_ACTION_PERMISSION:
+            stmt = select(dataset_sqla.DatasetPermission).where(
+                dataset_sqla.DatasetPermission.object_uid == object_uid,
+                dataset_sqla.DatasetPermission.permission == permission_type,
+            )
+
+        else:
+            if credentials is None:
+                raise ValueError(
+                    "Credentials must be provided for non-compound permissions."
+                )
+            stmt = select(dataset_sqla.DatasetPermission).where(
+                dataset_sqla.DatasetPermission.object_uid == object_uid,
+                dataset_sqla.DatasetPermission.verify_key == credentials.verify,
+                dataset_sqla.DatasetPermission.permission == permission_type,
+            )
+
+        result = session.execute(stmt).scalar_one_or_none()
+        return result is not None
+
+    def _get_all_with_permission(
+        self, session: Session, credentials: SyftVerifyKey, permission: ActionPermission
+    ) -> Result[list[Dataset], str]:
+        stmt = (
+            select(dataset_sqla.Dataset)
+            .join(
+                dataset_sqla.DatasetPermission,
+                dataset_sqla.Dataset.id == dataset_sqla.DatasetPermission.object_uid,
+            )
+            .where(
+                dataset_sqla.DatasetPermission.verify_key == credentials.verify,
+                dataset_sqla.DatasetPermission.permission == permission,
+            )
+        )
+
+        return session.scalars(stmt).all()
 
     def get_all(self, credentials: SyftVerifyKey) -> Result[list[Dataset], str]:
         with Session(dataset_sqla.engine) as session:
-            stmt = select(dataset_sqla.Dataset)
-            results = session.scalars(stmt).all()
+            results = self._get_all_with_permission(
+                session, credentials, ActionPermission.READ
+            )
 
             syft_datasets = []
             for dtset in results:
@@ -97,7 +208,7 @@ class DatasetSQLStash:
                     ),
                 )
                 syft_datasets.append(syft_dataset)
-            return Ok(syft_datasets)
+        return Ok(syft_datasets)
 
     def update(
         self,
