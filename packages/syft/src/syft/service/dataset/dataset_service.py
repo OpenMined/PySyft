@@ -8,8 +8,6 @@ from ...store.document_store import DocumentStore
 from ...types.dicttuple import DictTuple
 from ...types.uid import UID
 from ...util.telemetry import instrument
-from ..action.action_permissions import ActionObjectPermission
-from ..action.action_permissions import ActionPermission
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -26,7 +24,7 @@ from .dataset import Asset
 from .dataset import CreateDataset
 from .dataset import Dataset
 from .dataset import DatasetPageView
-from .dataset_stash import DatasetStash
+from .dataset_sqla_stash import DatasetSQLStash
 
 
 def _paginate_collection(
@@ -69,11 +67,11 @@ def _paginate_dataset_collection(
 @serializable()
 class DatasetService(AbstractService):
     store: DocumentStore
-    stash: DatasetStash
+    stash: DatasetSQLStash
 
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
-        self.stash = DatasetStash(store=store)
+        self.stash = DatasetSQLStash()
 
     @service_method(
         path="dataset.add",
@@ -88,11 +86,6 @@ class DatasetService(AbstractService):
         result = self.stash.set(
             context.credentials,
             dataset,
-            add_permissions=[
-                ActionObjectPermission(
-                    uid=dataset.id, permission=ActionPermission.ALL_READ
-                ),
-            ],
         )
         if result.is_err():
             return SyftError(message=str(result.err()))

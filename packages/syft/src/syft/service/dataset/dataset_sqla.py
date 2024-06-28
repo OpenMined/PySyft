@@ -1,22 +1,17 @@
+# stdlib
 from datetime import datetime
-from typing import List
-from typing import Optional
 import uuid
 
-from click import secho
+# third party
+import sqlalchemy as sa
+from sqlalchemy import Column
 from sqlalchemy import ForeignKey
-from sqlalchemy import String
+from sqlalchemy import Table
+from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
-import sqlalchemy as sa
-from sqlalchemy import Uuid
-
-from sqlalchemy import create_engine
-from sqlalchemy import Table
-from sqlalchemy import ForeignKey
-from sqlalchemy import Column
 
 engine = create_engine("sqlite://", echo=True)
 
@@ -51,17 +46,17 @@ class Contributor(Base):
     __tablename__ = "contributors"
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str]
-    role: Mapped[Optional[str]]
+    role: Mapped[str | None]
     email: Mapped[str]
-    phone: Mapped[Optional[str]]
-    note: Mapped[Optional[str]]
-    assets: Mapped[List["Asset"]] = relationship(
+    phone: Mapped[str | None]
+    note: Mapped[str | None]
+    assets: Mapped[list["Asset"]] = relationship(
         back_populates="contributors", secondary=contributor_asset_association_table
     )
-    datasets: Mapped[List["Dataset"]] = relationship(
+    datasets: Mapped[list["Dataset"]] = relationship(
         back_populates="contributors", secondary=dataset_contributor_association_table
     )
-    uploaded_datasets: Mapped[List["Dataset"]] = relationship("Dataset")
+    uploaded_datasets: Mapped[list["Dataset"]] = relationship("Dataset")
 
 
 class Asset(Base):
@@ -69,13 +64,13 @@ class Asset(Base):
     action_id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
     node_uid: Mapped[uuid.UUID]
     name: Mapped[str]
-    description: Mapped[Optional[str]]
-    contributors: Mapped[List["Contributor"]] = relationship(
+    description: Mapped[str | None]
+    contributors: Mapped[list["Contributor"]] = relationship(
         back_populates="assets", secondary=contributor_asset_association_table
     )
     mock_is_real: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[datetime] = mapped_column(server_default=sa.func.now())
-    datasets: Mapped[List["Dataset"]] = relationship(
+    datasets: Mapped[list["Dataset"]] = relationship(
         back_populates="asset_list", secondary=dataset_asset_association_table
     )
 
@@ -85,11 +80,12 @@ class Dataset(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str]
-    node_uid: Mapped[Optional[uuid.UUID]]
-    asset_list: Mapped[List[Asset]] = relationship(
+    description: Mapped[str | None]
+    node_uid: Mapped[uuid.UUID | None]
+    asset_list: Mapped[list[Asset]] = relationship(
         back_populates="datasets", secondary=dataset_asset_association_table
     )
-    contributors: Mapped[List["Contributor"]] = relationship(
+    contributors: Mapped[list["Contributor"]] = relationship(
         back_populates="datasets", secondary=dataset_contributor_association_table
     )
     updated_at: Mapped[datetime] = mapped_column(
