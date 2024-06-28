@@ -286,6 +286,47 @@ class NetworkService(AbstractService):
 
         return challenge_signature
 
+    @service_method(path="network.ping", name="ping", roles=GUEST_ROLE_LEVEL)
+    def ping(self, context: AuthedServiceContext) -> SyftSuccess:
+        """To check liveness of the remote node"""
+        return SyftSuccess(
+            message=f"Reply from remote node:{context.node.name}-<{context.node.id}>"
+        )
+
+    @service_method(
+        path="network.ping_peer",
+        name="ping_peer",
+        roles=GUEST_ROLE_LEVEL,
+    )
+    def ping_peer(
+        self, context: AuthedServiceContext, verify_key: SyftVerifyKey
+    ) -> SyftSuccess | SyftError:
+        """Ping a remote node by its verify key"""
+
+        remote_peer = self.stash.get_by_verify_key(
+            credentials=context.node.verify_key, verify_key=verify_key
+        )
+        if remote_peer.is_err():
+            return SyftError(
+                message=f"Failed to query peer from stash. Err: {remote_peer}"
+            )
+
+        remote_peer = remote_peer.ok()
+        if remote_peer is None:
+            return SyftError(message=f"Peer not found with verify key: {verify_key}")
+        try:
+            remote_client = remote_peer.client_with_context(context=context)
+            if remote_client.is_err():
+                return SyftError(
+                    message=f"Failed to create remote client for peer: {remote_peer}. Error: {remote_client.err()}"
+                )
+            remote_client = remote_client.ok()
+            return remote_client.api.services.network.ping()
+        except Exception as e:
+            return SyftError(
+                message=f"Cannot Ping Remote Peer: {remote_peer}. Error: {e}"
+            )
+
     @service_method(
         path="network.check_peer_association",
         name="check_peer_association",

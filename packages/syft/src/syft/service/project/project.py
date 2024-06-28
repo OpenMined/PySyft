@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from collections.abc import Iterable
 import copy
+from enum import Enum
 import hashlib
 import textwrap
 import time
@@ -1272,14 +1273,17 @@ class ProjectSubmit(SyftObject):
         # Currently we are assuming that the first member is the leader
         # This would be changed in our future leaderless approach
         leader = self.clients[0]
-        followers = self.clients[1:]
 
         try:
+            # TODO: should we move this before initializing the project
+            # Check if all clients are reachable
+            self._connection_checks(self.clients)
+
             # Check for DS role across all members
             self._pre_submit_checks(self.clients)
 
-            # Exchange route between leaders and followers
-            self._exchange_routes(leader, followers)
+            # Create Leader Node Route
+            self.leader_node_route = connection_to_route(leader.connection)
 
             # create project for each node
             projects_map = self._create_projects(self.clients)
@@ -1306,19 +1310,13 @@ class ProjectSubmit(SyftObject):
 
         return True
 
-    def _exchange_routes(self, leader: SyftClient, followers: list[SyftClient]) -> None:
-        # Since we are implementing a leader based system
-        # To be able to optimize exchanging routes.
-        # We require only the leader to exchange routes with all the members
-        # Meaning if we could guarantee, that the leader node is able to reach the members
-        # the project events could be broadcasted to all the members
-
-        for follower in followers:
-            result = leader.exchange_route(follower)
-            if isinstance(result, SyftError):
-                raise SyftException(result.message)
-
-        self.leader_node_route = connection_to_route(leader.connection)
+    def _connection_checks(self, clients: list[SyftClient]) -> bool:
+        # Check if all clients are reachable
+        conn_res = check_route_reachability(clients)
+        if isinstance(conn_res, SyftError):
+            # TODO:  add a convienient way to connect clients
+            raise SyftException(conn_res.message)
+        return True
 
     def _create_projects(self, clients: list[SyftClient]) -> dict[SyftClient, Project]:
         projects: dict[SyftClient, Project] = {}
@@ -1441,3 +1439,36 @@ def create_project_event_hash(project_event: ProjectEvent) -> tuple[bytes, str]:
             hash_object(project_event.creator_verify_key)[1],
         ]
     )
+
+
+class NetworkTopology(Enum):
+    STAR = "STAR"
+    MESH = "MESH"
+    HYBRID = "HYBRID"
+
+
+def check_route_reachability(
+    clients: list[SyftClient], topology: NetworkTopology = NetworkTopology.MESH
+) -> SyftSuccess | SyftError:
+    if topology == NetworkTopology.STAR:
+        return SyftError("STAR topology is not supported yet")
+    elif topology == NetworkTopology.MESH:
+        return check_mesh_topology(clients)
+    else:
+        return SyftError(message=f"Invalid topology: {topology}")
+
+
+def check_mesh_topology(clients: list[SyftClient]) -> SyftSuccess | SyftError:
+    for client in clients:
+        for other_client in clients:
+            if client == other_client:
+                continue
+            result = client.api.services.network.ping_peer(
+                verify_key=other_client.root_verify_key
+            )
+            if isinstance(result, SyftError):
+                return SyftError(
+                    message=f"{client.name}-<{client.id}> - cannot reach"
+                    + f"{other_client.name}-<{other_client.id} - {result.message}"
+                )
+    return SyftSuccess(message="All clients are reachable")
