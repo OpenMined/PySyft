@@ -71,16 +71,12 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pip install --upgrade pip==24.0
+          python -m pip install --upgrade pip==24.0
 
       - name: Install uv
         if: steps.changes.outputs.syft == 'true'
         run: |
           python -m pip install uv==0.2.13
-
-      - name: Verify uv installation
-        if: steps.changes.outputs.syft == 'true'
-        run: |
           python -m pip show uv
           where uv || which uv
 
