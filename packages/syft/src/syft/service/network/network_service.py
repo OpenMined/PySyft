@@ -204,27 +204,10 @@ class NetworkService(AbstractService):
         self,
         context: AuthedServiceContext,
         peer: NodePeer,
-        challenge: bytes,
-        self_node_route: NodeRoute,
-        verify_key: SyftVerifyKey,
     ) -> Request | SyftSuccess | SyftError:
         """Add a Network Node Peer. Called by a remote node to add
         itself as a peer for the current node.
         """
-        # Using the verify_key of the peer to verify the signature
-        # It is also our single source of truth for the peer
-        if peer.verify_key != context.credentials:
-            return SyftError(
-                message=(
-                    f"The {type(peer).__name__}.verify_key: "
-                    f"{peer.verify_key} does not match the signature of the message"
-                )
-            )
-
-        if verify_key != context.node.verify_key:
-            return SyftError(
-                message="verify_key does not match the remote node's verify_key for add_peer"
-            )
 
         # check if the peer already is a node peer
         existing_peer_res = self.stash.get_by_uid(context.node.verify_key, peer.id)
@@ -266,9 +249,7 @@ class NetworkService(AbstractService):
             return association_request
         # only create and submit a new request if there is no requests yet
         # or all previous requests have been rejected
-        association_request_change = AssociationRequestChange(
-            self_node_route=self_node_route, challenge=challenge, remote_peer=peer
-        )
+        association_request_change = AssociationRequestChange(remote_peer=peer)
         submit_request = SubmitRequest(
             changes=[association_request_change],
             requesting_user_verify_key=context.credentials,
