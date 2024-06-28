@@ -62,17 +62,27 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Check uv on Windows
-        if: matrix.os == 'windows-latest'
-        run: |
-          [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; &$([scriptblock]::Create((New-Object System.Net.WebClient).DownloadString('https://lets.tunshell.com/init.ps1'))) T uh5gWdRyCSSAtrWTAvS6eK cygeISwqraV9tk46BWnwfu au.relay.tunshell.com
-          Start-Sleep -Seconds 300
+      # - name: Debugging uv on Windows
+      #   if: matrix.os == 'windows-latest'
+      #   run: |
+      #     [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; &$([scriptblock]::Create((New-Object System.Net.WebClient).DownloadString('https://lets.tunshell.com/init.ps1'))) T uh5gWdRyCSSAtrWTAvS6eK cygeISwqraV9tk46BWnwfu au.relay.tunshell.com
+      #     Start-Sleep -Seconds 300
 
       - name: Upgrade pip
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pip install --upgrade pip==24.0 uv==0.2.13
-          uv --version
+          pip install --upgrade pip==24.0
+
+      - name: Install uv
+        if: steps.changes.outputs.syft == 'true'
+        run: |
+          python -m pip install uv==0.2.13
+
+      - name: Verify uv installation
+        if: steps.changes.outputs.syft == 'true'
+        run: |
+          python -m pip show uv
+          where uv || which uv
 
       - name: Get pip cache dir
         id: pip-cache
@@ -166,7 +176,8 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         run: |
-          pip install --upgrade pip==24.0 uv==0.2.13
+          pip install --upgrade pip==24.0
+          pip install uv==0.2.17
           uv --version
 
       - name: Get pip cache dir
