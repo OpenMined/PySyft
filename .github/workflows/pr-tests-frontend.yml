@@ -46,7 +46,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.frontend == 'true'
         run: |
-          pip install --upgrade pip==24.0 uv==0.2.13
+          pip install --upgrade pip==24.0 uv==0.2.17
           uv --version
 
       - name: Get pip cache dir
