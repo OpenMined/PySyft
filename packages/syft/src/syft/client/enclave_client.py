@@ -2,12 +2,10 @@
 from __future__ import annotations
 
 # stdlib
-from typing import Any
 from typing import TYPE_CHECKING
 
 # relative
 from ..abstract_node import NodeSideType
-from ..client.api import APIRegistry
 from ..serde.serializable import serializable
 from ..service.metadata.node_metadata import NodeMetadataJSON
 from ..service.network.routes import NodeRouteType
@@ -15,7 +13,6 @@ from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..types.syft_object import SYFT_OBJECT_VERSION_3
 from ..types.syft_object import SyftObject
-from ..types.uid import UID
 from ..util.assets import load_png_base64
 from ..util.notebook_ui.styles import FONT_CSS
 from .api import APIModule
@@ -27,7 +24,6 @@ from .protocol import SyftProtocol
 if TYPE_CHECKING:
     # relative
     from ..orchestra import NodeHandle
-    from ..service.code.user_code import SubmitUserCode
 
 
 @serializable()
@@ -108,54 +104,6 @@ class EnclaveClient(SyftClient):
 
     def get_enclave_metadata(self) -> EnclaveMetadata:
         return EnclaveMetadata(route=self.connection.route)
-
-    def request_code_execution(self, code: SubmitUserCode) -> Any | SyftError:
-        # relative
-        from ..service.code.user_code_service import SubmitUserCode
-
-        if not isinstance(code, SubmitUserCode):
-            raise Exception(
-                f"The input code should be of type: {SubmitUserCode} got:{type(code)}"
-            )
-        if code.input_policy_init_kwargs is None:
-            raise ValueError(f"code {code}'s input_policy_init_kwargs is None")
-
-        enclave_metadata = self.get_enclave_metadata()
-
-        code_id = UID()
-        code.id = code_id
-        code.enclave_metadata = enclave_metadata
-
-        apis = []
-        for k, v in code.input_policy_init_kwargs.items():
-            # We would need the verify key of the data scientist to be able to index the correct client
-            # Since we do not want the data scientist to pass in the clients to the enclave client
-            # from a UX perspecitve.
-            # we will use the recent node id to find the correct client
-            # assuming that it is the correct client
-            # Warning: This could lead to inconsistent results, when we have multiple clients
-            # in the same node pointing to the same node.
-            # One way, by which we could solve this in the long term,
-            # by forcing the user to pass only assets to the sy.ExactMatch,
-            # by which we could extract the verify key of the data scientist
-            # as each object comes with a verify key and node_uid
-            # the asset object would contain the verify key of the data scientist.
-            api = APIRegistry.get_by_recent_node_uid(k.node_id)
-            if api is None:
-                raise ValueError(f"could not find client for input {v}")
-            else:
-                apis += [api]
-
-        for api in apis:
-            res = api.services.code.request_code_execution(code=code)
-            if isinstance(res, SyftError):
-                return res
-
-        # we are using the real method here, see the .code property getter
-        _ = self.code
-        res = self._request_code_execution(code=code)
-
-        return res
 
     def _repr_html_(self) -> str:
         commands = """
