@@ -1,3 +1,4 @@
+{{- if .Values.rtunnel.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -28,3 +29,4 @@ data:
     [client.transport.websocket]
     tls = false
   {{- end }}
+{{- end }}

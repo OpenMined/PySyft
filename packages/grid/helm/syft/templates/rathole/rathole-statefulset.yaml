@@ -1,3 +1,4 @@
+{{- if .Values.rtunnel.enabled }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -76,3 +77,4 @@ spec:
       resources:
         requests:
           storage: 10Mi
+{{- end }}
