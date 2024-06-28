@@ -14,8 +14,9 @@ from ...client.api import NodeIdentity
 from ...client.client import SyftClient
 from ...client.client import SyftClientSessionCache
 from ...types.uid import UID
-from ...util import options
-from ...util.colors import SURFACE
+from ...util.notebook_ui.components.tabulator_template import (
+    build_tabulator_table_with_data,
+)
 from ...util.util import human_friendly_join
 from ..code.user_code import SubmitUserCode
 from ..code.user_code import UserCode
@@ -49,16 +50,28 @@ class DistributedProject(BaseModel):
         }
 
     def _repr_html_(self) -> str:
+        request_rows = [request._coll_repr_with_domain_() for request in self.requests]
+        metadata = {
+            "name": "Project Requests",
+            "columns": [
+                "id",
+                "Description",
+                "Requested By",
+                "Requested On",
+                "Creation Time",
+                "Status",
+            ],
+            "icon": None,
+        }
+        request_table_html = (
+            build_tabulator_table_with_data(request_rows, metadata) or ""
+        )
+
         return (
-            f"""
-            <style>
-            .syft-project {{color: {SURFACE[options.color_theme]};}}
-            </style>
-            """
-            + "<div class='syft-project'>"
+            "<div class='syft-project'>"
             + f"<h3>{self.name}</h3>"
             + f"<p>{self.description}</p>"
-            + self.requests._repr_html_()
+            + request_table_html
             + "</div>"
         )
 

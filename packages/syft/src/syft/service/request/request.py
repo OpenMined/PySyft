@@ -570,6 +570,28 @@ class Request(SyncableSyftObject):
             self.requesting_user_institution,
         ]
 
+        return {
+            "Description": self.html_description,
+            "Requested By": "\n".join(user_data),
+            "Creation Time": str(self.request_time),
+            "Status": status_badge,
+        }
+
+    def _coll_repr_with_domain_(self) -> dict[str, str | dict[str, str]]:
+        if self.status == RequestStatus.APPROVED:
+            badge_color = "badge-green"
+        elif self.status == RequestStatus.PENDING:
+            badge_color = "badge-gray"
+        else:
+            badge_color = "badge-red"
+
+        status_badge = {"value": self.status.name.capitalize(), "type": badge_color}
+
+        user_data = [
+            self.requesting_user_name,
+            self.requesting_user_email,
+            self.requesting_user_institution,
+        ]
         api = APIRegistry.api_for(
             self.node_uid,
             self.syft_client_verify_key,
@@ -578,6 +600,7 @@ class Request(SyncableSyftObject):
             node_name = api.node_name.capitalize() if api.node_name is not None else ""
 
         return {
+            "id": str(self.id),
             "Description": self.html_description,
             "Requested By": "\n".join(user_data),
             "Requested On": node_name,
