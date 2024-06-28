@@ -265,11 +265,13 @@ class NetworkService(AbstractService):
 
         return request
 
-    @service_method(path="network.ping", name="ping", roles=GUEST_ROLE_LEVEL)
-    def ping(
+    @service_method(
+        path="network.challenge_nonce", name="challenge_nonce", roles=GUEST_ROLE_LEVEL
+    )
+    def challenge_nonce(
         self, context: AuthedServiceContext, challenge: bytes
     ) -> bytes | SyftError:
-        """To check alivesness/authenticity of a peer"""
+        """To check authenticity of the remote node"""
 
         # # Only the root user can ping the node to check its state
         # if context.node.verify_key != context.credentials:

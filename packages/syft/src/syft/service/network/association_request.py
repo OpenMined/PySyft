@@ -51,7 +51,7 @@ class AssociationRequestChange(Change):
                 )
             remote_client = remote_client.ok()
             random_challenge = secrets.token_bytes(16)
-            remote_res = remote_client.api.services.network.ping(
+            remote_res = remote_client.api.services.network.challenge_nonce(
                 challenge=random_challenge
             )
         except Exception as e:
