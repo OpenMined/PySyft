@@ -96,6 +96,7 @@ from ..policy.policy import load_policy_code
 from ..policy.policy import partition_by_node
 from ..policy.policy_service import PolicyService
 from ..response import SyftError
+from ..response import SyftException
 from ..response import SyftInfo
 from ..response import SyftNotReady
 from ..response import SyftSuccess
@@ -1267,15 +1268,6 @@ def syft_function(
             global_check = _check_global(code)
             if isinstance(global_check, SyftWarning):
                 display(global_check)
-                # err = SyftError(message=global_check.message)
-                # display(err)
-                # return err
-
-            lint_issues = _lint_code(code)
-            lint_warning_msg = ""
-            for issue in lint_issues:
-                lint_warning_msg += f"{issue}\n\t"
-            display(SyftWarning(message=lint_warning_msg))
 
             if name is not None:
                 fname = name
@@ -1335,62 +1327,6 @@ def _check_global(raw_code: str) -> GlobalsVisitor | SyftWarning:
     return v
 
 
-# Define a linter function
-def _lint_code(code: str) -> list:
-    # Parse the code into an AST
-    tree = ast.parse(code)
-
-    # Initialize a list to collect linting issues
-    issues = []
-
-    # Define a visitor class to walk the AST
-    class CodeVisitor(ast.NodeVisitor):
-        def __init__(self) -> None:
-            self.globals: set = set()
-            self.defined_names: set = set()
-            self.current_scope_defined_names: set = set()
-
-        def visit_Global(self, node: Any) -> None:
-            # Collect global variable names
-            for name in node.names:
-                self.globals.add(name)
-            self.generic_visit(node)
-
-        def visit_FunctionDef(self, node: Any) -> None:
-            # Collect defined function names and handle function scope
-            self.defined_names.add(node.name)
-            self.current_scope_defined_names = set()  # New scope
-            self.generic_visit(node)
-            self.current_scope_defined_names.clear()  # Clear scope after visiting
-
-        def visit_Assign(self, node: Any) -> None:
-            # Collect assigned variable names
-            for target in node.targets:
-                if isinstance(target, ast.Name):
-                    self.current_scope_defined_names.add(target.id)
-            self.generic_visit(node)
-
-        def visit_Name(self, node: Any) -> None:
-            # Check if variables are used before being defined
-            if isinstance(node.ctx, ast.Load):
-                if (
-                    node.id not in self.current_scope_defined_names
-                    and node.id not in self.defined_names
-                    and node.id not in self.globals
-                ):
-                    issues.append(
-                        f"Variable '{node.id}' used at line {node.lineno} before being defined."
-                    )
-            self.generic_visit(node)
-
-    # Create a visitor instance and visit the AST
-    visitor = CodeVisitor()
-    visitor.visit(tree)
-
-    # Return the collected issues
-    return issues
-
-
 def generate_unique_func_name(context: TransformContext) -> TransformContext:
     if context.output is not None:
         code_hash = context.output["code_hash"]
@@ -1413,11 +1349,15 @@ def process_code(
     policy_input_kwargs: list[str],
     function_input_kwargs: list[str],
 ) -> str:
-    tree = ast.parse(raw_code)
+    try:
+        tree = ast.parse(raw_code)
+    except SyntaxError as e:
+        raise SyftException(f"Syntax error in code: {e}")
 
     # check there are no globals
-    v = GlobalsVisitor()
-    v.visit(tree)
+    v = _check_global(raw_code=tree)
+    if isinstance(v, SyftWarning):
+        raise SyftException(message=f"{v.message}")
 
     f = tree.body[0]
     f.decorator_list = []
