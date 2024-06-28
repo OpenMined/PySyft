@@ -20,30 +20,30 @@ spec:
       labels:
         {{- include "common.labels" . | nindent 8 }}
         app.kubernetes.io/component: rathole
-        {{- if .Values.reverse_tunnel.podLabels }}
-        {{- toYaml .Values.reverse_tunnel.podLabels | nindent 8 }}
+        {{- if .Values.rtunnel.podLabels }}
+        {{- toYaml .Values.rtunnel.podLabels | nindent 8 }}
         {{- end }}
-      {{- if .Values.reverse_tunnel.podAnnotations }}
-      annotations: {{- toYaml .Values.reverse_tunnel.podAnnotations | nindent 8 }}
+      {{- if .Values.rtunnel.podAnnotations }}
+      annotations: {{- toYaml .Values.rtunnel.podAnnotations | nindent 8 }}
       {{- end }}
     spec:
-      {{- if .Values.reverse_tunnel.nodeSelector }}
-      nodeSelector: {{- .Values.reverse_tunnel.nodeSelector | toYaml | nindent 8 }}
+      {{- if .Values.rtunnel.nodeSelector }}
+      nodeSelector: {{- .Values.rtunnel.nodeSelector | toYaml | nindent 8 }}
       {{- end }}
       containers:
       - name: rathole
         image: {{ .Values.global.registry }}/openmined/grid-rathole:{{ .Values.global.version }}
         imagePullPolicy: Always
-        resources: {{ include "common.resources.set" (dict "resources" .Values.reverse_tunnel.resources "preset" .Values.reverse_tunnel.resourcesPreset) | nindent 12 }}
+        resources: {{ include "common.resources.set" (dict "resources" .Values.rtunnel.resources "preset" .Values.rtunnel.resourcesPreset) | nindent 12 }}
         env:
             - name: LOG_LEVEL
-              value: {{ .Values.reverse_tunnel.logLevel | quote }}
+              value: {{ .Values.rtunnel.logLevel | quote }}
             - name: MODE
-              value: {{ .Values.reverse_tunnel.mode | quote }}
+              value: {{ .Values.rtunnel.mode | quote }}
             - name: RATHOLE_PORT
-              value: {{ .Values.reverse_tunnel.port | quote }}
-            {{- if .Values.reverse_tunnel.env }}
-            {{- toYaml .Values.reverse_tunnel.env | nindent 12 }}
+              value: {{ .Values.rtunnel.port | quote }}
+            {{- if .Values.rtunnel.env }}
+            {{- toYaml .Values.rtunnel.env | nindent 12 }}
             {{- end }}
         ports:
           - name: rathole-port

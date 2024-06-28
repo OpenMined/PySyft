@@ -91,9 +91,9 @@ spec:
             - name: ASSOCIATION_REQUEST_AUTO_APPROVAL
               value: {{ .Values.node.associationRequestAutoApproval | quote }}
             {{- end }}
-            {{- if .Values.reverse_tunnel.enabled }}
+            {{- if .Values.rtunnel.enabled }}
             - name: RATHOLE_PORT
-              value: {{ .Values.reverse_tunnel.port | quote }}
+              value: {{ .Values.rtunnel.port | quote }}
             - name: REVERSE_TUNNEL_ENABLED
               value: "true"
             {{- end }}

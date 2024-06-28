@@ -238,7 +238,7 @@ ingress:
 # =================================================================================
 
 
-reverse_tunnel:
+rtunnel:
   # Extra environment vars
   env: null
   enabled: false

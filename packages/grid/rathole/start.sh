@@ -8,9 +8,18 @@ copy_config() {
   cp -L -r -f /conf/* conf/
 }
 
-# Start the server
+# Start the server and reload until healthy
 start_server() {
-  RUST_LOG=$RUST_LOG /app/rathole conf/server.toml &
+  while true; do
+    RUST_LOG=$RUST_LOG /app/rathole conf/server.toml
+    status=$?
+    if [ $status -eq 0 ]; then
+      break
+    else
+      echo "Server failed to start, retrying in 5 seconds..."
+      sleep 5
+    fi
+  done &
 }
 
 # Start the client

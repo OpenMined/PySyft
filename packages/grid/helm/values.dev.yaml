@@ -47,7 +47,7 @@ proxy:
   resourcesPreset: null
   resources: null
 
-reverse_tunnel:
+rtunnel:
   enabled: true
   logLevel: "trace"
 
