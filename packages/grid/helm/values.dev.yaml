@@ -47,9 +47,10 @@ proxy:
   resourcesPreset: null
   resources: null
 
-rathole:
-  enabled: "true"
+reverse_tunnel:
+  enabled: true
   logLevel: "trace"
+
 # attestation:
 #   enabled: true
 #   resourcesPreset: null

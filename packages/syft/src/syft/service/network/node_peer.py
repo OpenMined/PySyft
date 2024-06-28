@@ -285,9 +285,9 @@ class NodePeer(SyftObject):
     def proxy_from(self, client: SyftClient) -> SyftClient:
         return client.proxy_to(self)
 
-    def get_rathole_route(self) -> HTTPNodeRoute | None:
+    def get_rtunnel_route(self) -> HTTPNodeRoute | None:
         for route in self.node_routes:
-            if hasattr(route, "rathole_token") and route.rathole_token:
+            if hasattr(route, "rtunnel_token") and route.rtunnel_token:
                 return route
         return None
 

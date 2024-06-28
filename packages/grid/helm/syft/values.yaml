@@ -238,11 +238,11 @@ ingress:
 # =================================================================================
 
 
-rathole:
+reverse_tunnel:
   # Extra environment vars
   env: null
-  enabled: true
-  logLevel: info
+  enabled: false
+  logLevel: "info"
 
   port: 2333
   mode: client

@@ -14,7 +14,7 @@ class ReverseTunnelService:
         self_node_peer: NodePeer,
         remote_node_route: NodeRoute,
     ) -> None:
-        rathole_route = self_node_peer.get_rathole_route()
+        rathole_route = self_node_peer.get_rtunnel_route()
         if not rathole_route:
             raise Exception(
                 "Failed to exchange routes via . "
@@ -31,12 +31,12 @@ class ReverseTunnelService:
         self.builder.add_host_to_client(
             peer_name=self_node_peer.name,
             peer_id=str(self_node_peer.id),
-            rathole_token=rathole_route.rathole_token,
+            rtunnel_token=rathole_route.rtunnel_token,
             remote_addr=remote_addr,
         )
 
     def set_server_config(self, remote_peer: NodePeer) -> None:
-        rathole_route = remote_peer.get_rathole_route()
+        rathole_route = remote_peer.get_rtunnel_route()
         self.builder.add_host_to_server(remote_peer) if rathole_route else None
 
     def clear_client_config(self, self_node_peer: NodePeer) -> None:

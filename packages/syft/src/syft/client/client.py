@@ -117,7 +117,7 @@ def forward_message_to_proxy(
 API_PATH = "/api/v2"
 DEFAULT_PYGRID_PORT = 80
 DEFAULT_PYGRID_ADDRESS = f"http://localhost:{DEFAULT_PYGRID_PORT}"
-INTERNAL_PROXY_TO_RATHOLE = "http://proxy:80/rathole/"
+INTERNAL_PROXY_TO_RATHOLE = "http://proxy:80/rtunnel/"
 
 
 class Routes(Enum):
@@ -130,7 +130,7 @@ class Routes(Enum):
     STREAM = f"{API_PATH}/stream"
 
 
-@serializable(attrs=["proxy_target_uid", "url", "rathole_token"])
+@serializable(attrs=["proxy_target_uid", "url", "rtunnel_token"])
 class HTTPConnection(NodeConnection):
     __canonical_name__ = "HTTPConnection"
     __version__ = SYFT_OBJECT_VERSION_3
@@ -140,7 +140,7 @@ class HTTPConnection(NodeConnection):
     routes: type[Routes] = Routes
     session_cache: Session | None = None
     headers: dict[str, str] | None = None
-    rathole_token: str | None = None
+    rtunnel_token: str | None = None
 
     @field_validator("url", mode="before")
     @classmethod
@@ -158,7 +158,7 @@ class HTTPConnection(NodeConnection):
         return HTTPConnection(
             url=self.url,
             proxy_target_uid=proxy_target_uid,
-            rathole_token=self.rathole_token,
+            rtunnel_token=self.rtunnel_token,
         )
 
     def stream_via(self, proxy_uid: UID, url_path: str) -> GridURL:
@@ -200,7 +200,7 @@ class HTTPConnection(NodeConnection):
 
         url = self.url
 
-        if self.rathole_token:
+        if self.rtunnel_token:
             self.headers = {} if self.headers is None else self.headers
             url = GridURL.from_url(INTERNAL_PROXY_TO_RATHOLE)
             self.headers["Host"] = self.url.host_or_ip
@@ -229,7 +229,7 @@ class HTTPConnection(NodeConnection):
     def _make_get_no_params(self, path: str, stream: bool = False) -> bytes | Iterable:
         url = self.url
 
-        if self.rathole_token:
+        if self.rtunnel_token:
             self.headers = {} if self.headers is None else self.headers
             url = GridURL.from_url(INTERNAL_PROXY_TO_RATHOLE)
             self.headers["Host"] = self.url.host_or_ip
@@ -261,7 +261,7 @@ class HTTPConnection(NodeConnection):
     ) -> Response:
         url = self.url
 
-        if self.rathole_token:
+        if self.rtunnel_token:
             url = GridURL.from_url(INTERNAL_PROXY_TO_RATHOLE)
             self.headers = {} if self.headers is None else self.headers
             self.headers["Host"] = self.url.host_or_ip
@@ -293,7 +293,7 @@ class HTTPConnection(NodeConnection):
     ) -> bytes:
         url = self.url
 
-        if self.rathole_token:
+        if self.rtunnel_token:
             url = GridURL.from_url(INTERNAL_PROXY_TO_RATHOLE)
             self.headers = {} if self.headers is None else self.headers
             self.headers["Host"] = self.url.host_or_ip
@@ -408,7 +408,7 @@ class HTTPConnection(NodeConnection):
     def make_call(self, signed_call: SignedSyftAPICall) -> Any | SyftError:
         msg_bytes: bytes = _serialize(obj=signed_call, to_bytes=True)
 
-        if self.rathole_token:
+        if self.rtunnel_token:
             api_url = GridURL.from_url(INTERNAL_PROXY_TO_RATHOLE)
             api_url = api_url.with_path(self.routes.ROUTE_API_CALL.value)
             self.headers = {} if self.headers is None else self.headers

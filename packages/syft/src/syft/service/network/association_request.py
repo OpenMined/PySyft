@@ -59,15 +59,15 @@ class AssociationRequestChange(Change):
         )
         network_stash = network_service.stash
 
-        # Check if remote peer to be added is via rathole
-        rathole_route = self.remote_peer.get_rathole_route()
-        add_rathole_route = (
-            rathole_route is not None
-            and self.remote_peer.latest_added_route == rathole_route
+        # Check if remote peer to be added is via reverse tunnel
+        rtunnel_route = self.remote_peer.get_rtunnel_route()
+        add_rtunnel_route = (
+            rtunnel_route is not None
+            and self.remote_peer.latest_added_route == rtunnel_route
         )
 
         # If the remote peer is added via reverse tunnel, we skip ping to peer
-        if add_rathole_route:
+        if add_rtunnel_route:
             network_service.set_reverse_tunnel_config(
                 context=context,
                 remote_node_peer=self.remote_peer,

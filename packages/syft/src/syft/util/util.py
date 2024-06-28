@@ -920,7 +920,7 @@ def get_dev_mode() -> bool:
 
 
 def generate_token() -> str:
-    return hashlib.sha256(secrets.token_bytes(16)).hexdigest()
+    return secrets.token_hex(64)
 
 
 def sanitize_html(html: str) -> str:

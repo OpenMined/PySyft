@@ -36,7 +36,7 @@ class RatholeConfig(SyftBaseModel):
 
         return cls(
             uuid=peer.id,
-            secret_token=peer.rathole_token,
+            secret_token=peer.rtunnel_token,
             local_addr_host=high_priority_route.host_or_ip,
             local_addr_port=high_priority_route.port,
             server_name=peer.name,

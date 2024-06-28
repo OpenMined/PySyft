@@ -91,10 +91,10 @@ spec:
             - name: ASSOCIATION_REQUEST_AUTO_APPROVAL
               value: {{ .Values.node.associationRequestAutoApproval | quote }}
             {{- end }}
-            {{- if .Values.rathole.enabled }}
+            {{- if .Values.reverse_tunnel.enabled }}
             - name: RATHOLE_PORT
-              value: {{ .Values.rathole.port | quote }}
-            - name: REVERSE_TUNNEL_RATHOLE_ENABLED
+              value: {{ .Values.reverse_tunnel.port | quote }}
+            - name: REVERSE_TUNNEL_ENABLED
               value: "true"
             {{- end }}
             # MongoDB

@@ -7,7 +7,7 @@ metadata:
     {{- include "common.labels" . | nindent 4 }}
     app.kubernetes.io/component: rathole
 data:
-  {{- if eq .Values.rathole.mode "server" }}
+  {{- if eq .Values.reverse_tunnel.mode "server" }}
   server.toml: |
     [server]
     bind_addr = "0.0.0.0:2333"
@@ -22,7 +22,7 @@ data:
     bind_addr = "0.0.0.0:8001"
   {{- end }}
 
-  {{- if eq .Values.rathole.mode "client" }}
+  {{- if eq .Values.reverse_tunnel.mode "client" }}
   client.toml: |
     [client]
     remote_addr = "0.0.0.0:2333"

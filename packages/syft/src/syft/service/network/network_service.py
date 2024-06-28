@@ -67,11 +67,11 @@ VerifyKeyPartitionKey = PartitionKey(key="verify_key", type_=SyftVerifyKey)
 NodeTypePartitionKey = PartitionKey(key="node_type", type_=NodeType)
 OrderByNamePartitionKey = PartitionKey(key="name", type_=str)
 
-REVERSE_TUNNEL_RATHOLE_ENABLED = "REVERSE_TUNNEL_RATHOLE_ENABLED"
+REVERSE_TUNNEL_ENABLED = "REVERSE_TUNNEL_ENABLED"
 
 
 def reverse_tunnel_enabled() -> bool:
-    return str_to_bool(get_env(REVERSE_TUNNEL_RATHOLE_ENABLED, "false"))
+    return str_to_bool(get_env(REVERSE_TUNNEL_ENABLED, "false"))
 
 
 @serializable()
@@ -192,10 +192,10 @@ class NetworkService(AbstractService):
         if reverse_tunnel and not reverse_tunnel_enabled():
             return SyftError(message="Reverse tunneling is not enabled on this node.")
         elif reverse_tunnel:
-            _rathole_route = self_node_peer.node_routes[-1]
-            _rathole_route.rathole_token = generate_token()
-            _rathole_route.host_or_ip = f"{self_node_peer.name}.syft.local"
-            self_node_peer.node_routes[-1] = _rathole_route
+            _rtunnel_route = self_node_peer.node_routes[-1]
+            _rtunnel_route.rtunnel_token = generate_token()
+            _rtunnel_route.host_or_ip = f"{self_node_peer.name}.syft.local"
+            self_node_peer.node_routes[-1] = _rtunnel_route
 
         if isinstance(self_node_peer, SyftError):
             return self_node_peer
@@ -259,7 +259,7 @@ class NetworkService(AbstractService):
             )
             return SyftError(message="Failed to update route information.")
 
-        # Step 5: Save rathole config to enable reverse tunneling
+        # Step 5: Save config to enable reverse tunneling
         if reverse_tunnel and reverse_tunnel_enabled():
             self.set_reverse_tunnel_config(
                 context=context,
@@ -498,10 +498,10 @@ class NetworkService(AbstractService):
     ) -> None:
         node_type = cast(NodeType, context.node.node_type)
         if node_type.value == NodeType.GATEWAY.value:
-            rathole_route = remote_node_peer.get_rathole_route()
+            rtunnel_route = remote_node_peer.get_rtunnel_route()
             (
                 self.rtunnel_service.set_server_config(remote_node_peer)
-                if rathole_route
+                if rtunnel_route
                 else None
             )
         else:
@@ -510,13 +510,13 @@ class NetworkService(AbstractService):
                 if self_node_peer is None
                 else self_node_peer
             )
-            rathole_route = self_node_peer.get_rathole_route()
+            rtunnel_route = self_node_peer.get_rtunnel_route()
             (
                 self.rtunnel_service.set_client_config(
                     self_node_peer=self_node_peer,
                     remote_node_route=remote_node_peer.pick_highest_priority_route(),
                 )
-                if rathole_route
+                if rtunnel_route
                 else None
             )
 
@@ -538,10 +538,10 @@ class NetworkService(AbstractService):
 
         node_side_type = cast(NodeType, context.node.node_type)
         if node_side_type.value == NodeType.GATEWAY.value:
-            rathole_route = peer_to_delete.get_rathole_route()
+            rtunnel_route = peer_to_delete.get_rtunnel_route()
             (
                 self.rtunnel_service.clear_server_config(peer_to_delete)
-                if rathole_route
+                if rtunnel_route
                 else None
             )
 
@@ -955,7 +955,7 @@ def from_grid_url(context: TransformContext) -> TransformContext:
         context.output["private"] = False
         context.output["proxy_target_uid"] = context.obj.proxy_target_uid
         context.output["priority"] = 1
-        context.output["rathole_token"] = context.obj.rathole_token
+        context.output["rtunnel_token"] = context.obj.rtunnel_token
 
     return context
 
@@ -995,7 +995,7 @@ def node_route_to_http_connection(
     return HTTPConnection(
         url=url,
         proxy_target_uid=obj.proxy_target_uid,
-        rathole_token=obj.rathole_token,
+        rtunnel_token=obj.rtunnel_token,
     )
 
 

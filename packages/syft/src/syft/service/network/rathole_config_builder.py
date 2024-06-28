@@ -36,7 +36,7 @@ class RatholeConfigBuilder:
             None
         """
 
-        rathole_route = peer.get_rathole_route()
+        rathole_route = peer.get_rtunnel_route()
         if not rathole_route:
             raise Exception(f"Peer: {peer} has no rathole route: {rathole_route}")
 
@@ -46,7 +46,7 @@ class RatholeConfigBuilder:
 
         config = RatholeConfig(
             uuid=peer_id.to_string(),
-            secret_token=rathole_route.rathole_token,
+            secret_token=rathole_route.rtunnel_token,
             local_addr_host=DEFAULT_LOCAL_ADDR_HOST,
             local_addr_port=random_port,
             server_name=peer.name,
@@ -120,13 +120,13 @@ class RatholeConfigBuilder:
         return secrets.randbits(15)
 
     def add_host_to_client(
-        self, peer_name: str, peer_id: str, rathole_token: str, remote_addr: str
+        self, peer_name: str, peer_id: str, rtunnel_token: str, remote_addr: str
     ) -> None:
         """Add a host to the rathole client toml file."""
 
         config = RatholeConfig(
             uuid=peer_id,
-            secret_token=rathole_token,
+            secret_token=rtunnel_token,
             local_addr_host="proxy",
             local_addr_port=80,
             server_name=peer_name,

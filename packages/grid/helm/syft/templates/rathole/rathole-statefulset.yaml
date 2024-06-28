@@ -20,36 +20,30 @@ spec:
       labels:
         {{- include "common.labels" . | nindent 8 }}
         app.kubernetes.io/component: rathole
-        {{- if .Values.rathole.podLabels }}
-        {{- toYaml .Values.rathole.podLabels | nindent 8 }}
+        {{- if .Values.reverse_tunnel.podLabels }}
+        {{- toYaml .Values.reverse_tunnel.podLabels | nindent 8 }}
         {{- end }}
-      {{- if .Values.rathole.podAnnotations }}
-      annotations: {{- toYaml .Values.rathole.podAnnotations | nindent 8 }}
+      {{- if .Values.reverse_tunnel.podAnnotations }}
+      annotations: {{- toYaml .Values.reverse_tunnel.podAnnotations | nindent 8 }}
       {{- end }}
     spec:
-      {{- if .Values.rathole.nodeSelector }}
-      nodeSelector: {{- .Values.rathole.nodeSelector | toYaml | nindent 8 }}
+      {{- if .Values.reverse_tunnel.nodeSelector }}
+      nodeSelector: {{- .Values.reverse_tunnel.nodeSelector | toYaml | nindent 8 }}
       {{- end }}
       containers:
       - name: rathole
         image: {{ .Values.global.registry }}/openmined/grid-rathole:{{ .Values.global.version }}
         imagePullPolicy: Always
-        resources: {{ include "common.resources.set" (dict "resources" .Values.rathole.resources "preset" .Values.rathole.resourcesPreset) | nindent 12 }}
+        resources: {{ include "common.resources.set" (dict "resources" .Values.reverse_tunnel.resources "preset" .Values.reverse_tunnel.resourcesPreset) | nindent 12 }}
         env:
-            - name: SERVICE_NAME
-              value: "rathole"
             - name: LOG_LEVEL
-              value: {{ .Values.rathole.logLevel | quote }}
+              value: {{ .Values.reverse_tunnel.logLevel | quote }}
             - name: MODE
-              value: {{ .Values.rathole.mode | quote }}
-            - name: DEV_MODE
-              value: {{ .Values.rathole.devMode | quote }}
-            - name: APP_PORT
-              value: {{ .Values.rathole.appPort | quote }}
+              value: {{ .Values.reverse_tunnel.mode | quote }}
             - name: RATHOLE_PORT
-              value: {{ .Values.rathole.ratholePort | quote }}
-            {{- if .Values.rathole.env }}
-            {{- toYaml .Values.rathole.env | nindent 12 }}
+              value: {{ .Values.reverse_tunnel.port | quote }}
+            {{- if .Values.reverse_tunnel.env }}
+            {{- toYaml .Values.reverse_tunnel.env | nindent 12 }}
             {{- end }}
         ports:
           - name: rathole-port

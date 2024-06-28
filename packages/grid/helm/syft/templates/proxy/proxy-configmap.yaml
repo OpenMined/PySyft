@@ -28,22 +28,22 @@ data:
               - url: "http://rathole:2333"
       routers:
         rathole:
-          rule: "PathPrefix(`/`) && Headers(`Upgrade`, `websocket`) && !PathPrefix(`/rathole`)"
+          rule: "PathPrefix(`/`) && Headers(`Upgrade`, `websocket`) && !PathPrefix(`/rtunnel`)"
           entryPoints:
             - "web"
           service: "rathole"
         frontend:
-          rule: "PathPrefix(`/`) && !PathPrefix(`/rathole`)"
+          rule: "PathPrefix(`/`) && !PathPrefix(`/rtunnel`)"
           entryPoints:
             - "web"
           service: "frontend"
         backend:
-          rule: "(PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)) && !PathPrefix(`/rathole`)"
+          rule: "(PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)) && !PathPrefix(`/rtunnel`)"
           entryPoints:
             - "web"
           service: "backend"
         blob-storage:
-          rule: "PathPrefix(`/blob`) && !PathPrefix(`/rathole`)"
+          rule: "PathPrefix(`/blob`) && !PathPrefix(`/rtunnel`)"
           entryPoints:
             - "web"
           service: "seaweedfs"

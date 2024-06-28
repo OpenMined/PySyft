@@ -86,7 +86,7 @@ deployments:
           version: dev-${DEVSPACE_TIMESTAMP}
         node:
           type: domain # required for the gateway profile
-        rathole:
+        reverse_tunnel:
           mode: client
 
 dev:
@@ -125,12 +125,12 @@ dev:
           - path: ../syft:/root/app/syft
         ssh:
           localPort: 3480
-  rathole:
+  reverse_tunnel:
     labelSelector:
       app.kubernetes.io/name: syft
-      app.kubernetes.io/component: rathole
+      app.kubernetes.io/component: reverse_tunnel
     ports:
-      - port: "2333" # rathole
+      - port: "2333" # reverse_tunnel
 
 profiles:
   - name: dev-low
@@ -158,7 +158,7 @@ profiles:
 
       # Patch mode to server
       - op: replace
-        path: deployments.syft.helm.values.rathole.mode
+        path: deployments.syft.helm.values.reverse_tunnel.mode
         value: server
 
       # Port Re-Mapping
@@ -179,7 +179,7 @@ profiles:
 
       # Mongo
       - op: replace
-        path: dev.rathole.ports[0].port
+        path: dev.reverse_tunnel.ports[0].port
         value: 2334:2333
 
   - name: gcp
