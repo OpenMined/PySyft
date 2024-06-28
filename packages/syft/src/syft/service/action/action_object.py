@@ -851,8 +851,6 @@ class ActionObject(SyncableSyftObject):
                 "skipping writing action object to store, passed data was empty."
             )
 
-        # self.syft_action_data_cache = data
-
         return None
 
     def _save_to_blob_storage(
