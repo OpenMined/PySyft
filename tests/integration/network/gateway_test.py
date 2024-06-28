@@ -946,7 +946,7 @@ def test_reverse_tunnel_connection(domain_1_port: int, gateway_port: int):
     # Domain's peer is a gateway and vice-versa
     domain_peer = domain_client.peers[0]
     assert domain_peer.node_type == NodeType.GATEWAY
-    assert domain_peer.node_routes[0].rathole_token is None
+    assert domain_peer.node_routes[0].rtunnel_token is None
     assert len(gateway_client.peers) == 0
 
     gateway_client_root = gateway_client.login(
@@ -960,7 +960,7 @@ def test_reverse_tunnel_connection(domain_1_port: int, gateway_port: int):
     gateway_peers = gateway_client.api.services.network.get_all_peers()
     assert len(gateway_peers) == 1
     assert len(gateway_peers[0].node_routes) == 1
-    assert gateway_peers[0].node_routes[0].rathole_token is not None
+    assert gateway_peers[0].node_routes[0].rtunnel_token is not None
 
     proxy_domain_client = gateway_client.peers[0]
 
