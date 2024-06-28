@@ -88,6 +88,8 @@ deployments:
           type: domain # required for the gateway profile
         rtunnel:
           mode: client
+        proxy:
+          enabled: true # required for the gateway profile
 
 dev:
   mongo:
@@ -161,6 +163,11 @@ profiles:
         path: deployments.syft.helm.values.rtunnel.mode
         value: server
 
+      # Enable proxy for gateway
+      - op: replace
+        path: deployments.syft.helm.values.proxy.enabled
+        value: true
+
       # Port Re-Mapping
       # Mongo
       - op: replace
@@ -177,7 +184,7 @@ profiles:
         path: dev.backend.containers.backend-container.ssh.localPort
         value: 3481
 
-      # Mongo
+      # Reverse tunnel port
       - op: replace
         path: dev.rtunnel.ports[0].port
         value: 2334:2333
