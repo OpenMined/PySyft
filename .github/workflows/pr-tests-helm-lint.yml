@@ -33,7 +33,7 @@ jobs:
           brew install kube-linter FairwindsOps/tap/polaris
 
           # Install python deps
-          python -m pip install --upgrade pip==24.1
+          python -m pip install --upgrade pip
           pip install uv==0.2.17 tox tox-uv==1.9.0
 
           kube-linter version
