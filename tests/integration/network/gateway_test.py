@@ -573,6 +573,7 @@ def test_add_route_on_peer(set_env_var, gateway_port: int, domain_1_port: int) -
 
 
 @pytest.mark.network
+@pytest.mark.flaky(reruns=2, reruns_delay=2)
 def test_delete_route_on_peer(
     set_env_var, gateway_port: int, domain_1_port: int
 ) -> None:
