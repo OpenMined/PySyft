@@ -43,13 +43,14 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Upgrade pip
+      - name: Install pip dependencies
         if: steps.changes.outputs.frontend == 'true'
         run: |
-          pip install --upgrade pip==24.1 uv==0.2.17
+          python -m pip install --upgrade pip==24.1
+          pip install --upgrade uv==0.2.17 tox tox-uv==1.9.0
           uv --version
 
-      - name: Get pip cache dir
+      - name: Get uv cache dir
         id: pip-cache
         if: steps.changes.outputs.frontend == 'true'
         shell: bash
@@ -68,11 +69,6 @@ jobs:
       - name: Docker on MacOS
         if: steps.changes.outputs.frontend == 'true' && matrix.os == 'macos-latest'
         uses: crazy-max/ghaction-setup-docker@v3.3.0
-
-      - name: Install Tox
-        if: steps.changes.outputs.frontend == 'true'
-        run: |
-          pip install --upgrade tox tox-uv==1.9.0
 
       - name: Remove existing containers
         if: steps.changes.outputs.frontend == 'true'

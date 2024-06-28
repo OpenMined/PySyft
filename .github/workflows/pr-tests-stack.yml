@@ -49,32 +49,12 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Upgrade pip
+      - name: Install pip packages
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade pip==24.1 uv==0.2.17
+          python -m pip install --upgrade pip==24.1
+          pip install --upgrade uv==0.2.17 tox tox-uv==1.9.0
           uv --version
-
-      - name: Get pip cache dir
-        if: steps.changes.outputs.stack == 'true'
-        id: pip-cache
-        shell: bash
-        run: |
-          echo "dir=$(uv cache dir)" >> $GITHUB_OUTPUT
-
-      - name: pip cache
-        uses: actions/cache@v4
-        if: steps.changes.outputs.stack == 'true'
-        with:
-          path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-uv-py${{ matrix.python-version }}
-          restore-keys: |
-            ${{ runner.os }}-uv-py${{ matrix.python-version }}
-
-      - name: Install tox
-        if: steps.changes.outputs.stack == 'true'
-        run: |
-          pip install --upgrade tox tox-uv==1.9.0
 
       - name: Run syft backend base image building test
         if: steps.changes.outputs.stack == 'true'
@@ -113,10 +93,11 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade pip==24.1 uv==0.2.17
+          python -m pip install --upgrade pip==24.1
+          pip install uv==0.2.17
           uv --version
 
-      - name: Get pip cache dir
+      - name: Get uv cache dir
         if: steps.changes.outputs.stack == 'true'
         id: pip-cache
         shell: bash
@@ -200,10 +181,11 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade pip==24.1 uv==0.2.17
+          python -m pip install --upgrade pip==24.1
+          pip install uv==0.2.17
           uv --version
 
-      - name: Get pip cache dir
+      - name: Get uv cache dir
         if: steps.changes.outputs.stack == 'true'
         id: pip-cache
         shell: bash
@@ -353,10 +335,11 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade pip==24.1 uv==0.2.17
+          python -m pip install --upgrade pip==24.1
+          pip install uv==0.2.17
           uv --version
 
-      - name: Get pip cache dir
+      - name: Get uv cache dir
         if: steps.changes.outputs.stack == 'true'
         id: pip-cache
         shell: bash

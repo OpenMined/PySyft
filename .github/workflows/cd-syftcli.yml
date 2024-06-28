@@ -119,13 +119,11 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install build dependencies for syftcli
+      - name: Install pip dependencies
         run: |
-          pip install --upgrade pip==24.1
-
-      - name: Install Tox
-        run: |
-          pip install -U tox
+          python -m pip install --upgrade pip==24.1
+          pip install --upgrade uv==0.2.17 tox tox-uv==1.9.0
+          uv --version
 
       - name: Build syftcli
         env:
