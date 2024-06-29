@@ -17,9 +17,9 @@ logger = logging.getLogger(__name__)
 
 
 def _syft_in_mro(self: Any, item: Any) -> bool:
-    if hasattr(type(item), "mro") and type(item) != type:
+    if hasattr(type(item), "mro") and type(item) is not type:
         mro = type(item).mro()
-    elif hasattr(item, "mro") and type(item) != type:
+    elif hasattr(item, "mro") and type(item) is not type:
         mro = item.mro()
     else:
         mro = str(self)  # type: ignore
@@ -72,7 +72,7 @@ def _create_table_rows(
         if id_ is not None and include_id:
             cols["id"].append({"value": str(id_), "type": "clipboard"})
 
-        if type(item) == type:
+        if type(item) is type:
             t = full_name_with_qualname(item)
         else:
             try:
