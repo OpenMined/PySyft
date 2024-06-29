@@ -307,7 +307,7 @@ class UserOwned(PolicyRule):
     def is_met(
         self, context: AuthedServiceContext, action_object: ActionObject
     ) -> bool:
-        return type(action_object.syft_action_data) == self.type and self.is_owned(
+        return type(action_object.syft_action_data) is self.type and self.is_owned(
             context, action_object
         )
 
