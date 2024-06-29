@@ -8,7 +8,7 @@ packages = [
     "requests==2.32.3",
     "pyyaml==6.0.1",
     "packaging==21.3",
-    "typer[all]==0.9.0",
+    "typer[all]==0.12.3",
     "typing_extensions==4.12.2",
 ]
 
