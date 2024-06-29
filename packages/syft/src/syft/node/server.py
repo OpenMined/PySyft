@@ -6,6 +6,7 @@ from pathlib import Path
 import platform
 import signal
 import subprocess  # nosec
+import sys
 import time
 from typing import Any
 
@@ -16,6 +17,7 @@ from pydantic_settings import BaseSettings
 from pydantic_settings import SettingsConfigDict
 import requests
 from starlette.middleware.cors import CORSMiddleware
+import uvicorn
 
 # relative
 from ..abstract_node import NodeSideType
@@ -103,19 +105,29 @@ def run_uvicorn(host: str, port: int, **kwargs: Any) -> None:
         except Exception:  # nosec
             print(f"Failed to kill python process on port: {port}")
 
+    # Set up all kwargs as environment variables so that they can be accessed in the app_factory function.
     env_prefix = AppSettings.model_config.get("env_prefix", "")
-    env_variables = " ".join(f"{env_prefix}{k.upper()}={v}" for k, v in kwargs.items())
+    for key, value in kwargs.items():
+        key_with_prefix = f"{env_prefix}{key.upper()}"
+        os.environ[key_with_prefix] = str(value)
 
-    uvicorn_cmd = (
-        f"{env_variables}"
-        " uvicorn syft.node.server:app_factory"
-        " --factory"
-        f" --host {host}"
-        f" --port {port}"
+    # The `serve_node` function calls `run_uvicorn` in a separate process using `multiprocessing.Process`.
+    # When the child process is created, it inherits the file descriptors from the parent process.
+    # If the parent process has a file descriptor open for sys.stdin, the child process will also have a file descriptor
+    # open for sys.stdin. This can cause an OSError in uvicorn when it tries to access sys.stdin in the child process.
+    # To prevent this, we set sys.stdin to None in the child process. This is safe because we don't actually need
+    # sys.stdin while running uvicorn programmatically.
+    sys.stdin = None  # type: ignore
+
+    # Finally, run the uvicorn server.
+    uvicorn.run(
+        "syft.node.server:app_factory",
+        host=host,
+        port=port,
+        factory=True,
+        reload=kwargs.get("dev_mode"),
+        reload_dirs=[Path(__file__).parent.parent] if kwargs.get("dev_mode") else None,
     )
-    if kwargs.get("dev_mode"):
-        uvicorn_cmd += f" --reload --reload-dir {Path(__file__).parent.parent}"
-    os.system(uvicorn_cmd)
 
 
 def serve_node(
