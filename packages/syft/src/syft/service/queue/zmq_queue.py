@@ -274,10 +274,7 @@ class ZMQProducer(QueueProducer):
 
         def unwrap_collection(col: set | dict | list) -> [Any]:  # type: ignore
             return_values = []
-            if isinstance(col, dict):
-                values = list(col.values()) + list(col.keys())
-            else:
-                values = list(col)
+            values = list(col.values()) + list(col.keys()) if isinstance(col, dict) else list(col)
             for v in values:
                 if isinstance(v, list | dict | set):
                     return_values += unwrap_collection(v)
