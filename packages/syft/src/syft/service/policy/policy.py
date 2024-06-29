@@ -443,7 +443,7 @@ class MixedInputPolicy(InputPolicy):
     def transform_kwargs(
         self, context: AuthedServiceContext, kwargs: dict[str, Any]
     ) -> dict[str, Any]:
-        for _, rules in self.kwarg_rules.items():
+        for rules in self.kwarg_rules.values():
             for kw, rule in rules.items():
                 if hasattr(rule, "transform_kwarg"):
                     res_val = rule.transform_kwarg(context, kwargs.get(kw, None))
@@ -513,7 +513,7 @@ class MixedInputPolicy(InputPolicy):
     ) -> Result[dict[Any, Any], str]:
         try:
             res = {}
-            for _, rules in self.kwarg_rules.items():
+            for rules in self.kwarg_rules.values():
                 for kw, rule in rules.items():
                     if rule.requires_input:
                         passed_id = kwargs[kw]
