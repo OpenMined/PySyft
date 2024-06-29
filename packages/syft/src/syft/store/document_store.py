@@ -97,7 +97,7 @@ class PartitionKey(BaseModel):
 
     @property
     def type_list(self) -> bool:
-        return get_origin(self.type_) == list
+        return get_origin(self.type_) is list
 
 
 @serializable()
