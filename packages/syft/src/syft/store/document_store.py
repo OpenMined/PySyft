@@ -5,7 +5,8 @@ from __future__ import annotations
 from collections.abc import Callable
 import types
 import typing
-from typing import Any, get_origin
+from typing import Any
+from typing import get_origin
 
 # third party
 from pydantic import BaseModel
