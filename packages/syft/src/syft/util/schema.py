@@ -204,8 +204,7 @@ def resolve_references(json_mappings: dict[str, dict]) -> dict[str, dict]:
             json_schema["properties"][k] = v
 
     # insert any new types created above into the main dict
-    for k, v in new_types.items():
-        json_mappings[k] = v
+    json_mappings = {k: v for k, v in new_types.items()}
 
     return json_mappings
 
