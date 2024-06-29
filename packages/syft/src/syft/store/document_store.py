@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 import types
 import typing
-from typing import Any
+from typing import Any, get_origin
 
 # third party
 from pydantic import BaseModel
@@ -97,7 +97,7 @@ class PartitionKey(BaseModel):
 
     @property
     def type_list(self) -> bool:
-        return is_generic_alias(self.type_) and self.type_.__origin__ == list
+        return get_origin(self.type_) == list
 
 
 @serializable()
