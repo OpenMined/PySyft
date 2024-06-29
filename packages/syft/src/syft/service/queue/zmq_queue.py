@@ -351,7 +351,7 @@ class ZMQProducer(QueueProducer):
                                 continue
                             for arg in action.args:
                                 self.preprocess_action_arg(arg)
-                            for _, arg in action.kwargs.items():
+                            for arg in action.kwargs.values():
                                 self.preprocess_action_arg(arg)
 
                         msg_bytes = serialize(item, to_bytes=True)
