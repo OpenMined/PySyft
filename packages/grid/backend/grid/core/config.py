@@ -108,44 +108,44 @@ class Settings(BaseSettings):
         True if os.getenv("USE_BLOB_STORAGE", "false").lower() == "true" else False
     )
     S3_ENDPOINT: str = os.getenv("S3_ENDPOINT", "seaweedfs")
-    S3_PORT: int = int(os.getenv("S3_PORT", 8333))
+    S3_PORT: int = int(os.getenv("S3_PORT", "8333"))
     S3_ROOT_USER: str = os.getenv("S3_ROOT_USER", "admin")
     S3_ROOT_PWD: str | None = os.getenv("S3_ROOT_PWD", "admin")
     S3_REGION: str = os.getenv("S3_REGION", "us-east-1")
     S3_PRESIGNED_TIMEOUT_SECS: int = int(
-        os.getenv("S3_PRESIGNED_TIMEOUT_SECS", 1800)
+        os.getenv("S3_PRESIGNED_TIMEOUT_SECS", "1800")
     )  # 30 minutes in seconds
-    SEAWEED_MOUNT_PORT: int = int(os.getenv("SEAWEED_MOUNT_PORT", 4001))
+    SEAWEED_MOUNT_PORT: int = int(os.getenv("SEAWEED_MOUNT_PORT", "4001"))
 
     # REDIS_HOST: str = str(os.getenv("REDIS_HOST", "redis"))
-    # REDIS_PORT: int = int(os.getenv("REDIS_PORT", 6379))
-    # REDIS_STORE_DB_ID: int = int(os.getenv("REDIS_STORE_DB_ID", 0))
-    # REDIS_LEDGER_DB_ID: int = int(os.getenv("REDIS_LEDGER_DB_ID", 1))
-    # STORE_DB_ID: int = int(os.getenv("STORE_DB_ID", 0))
-    # LEDGER_DB_ID: int = int(os.getenv("LEDGER_DB_ID", 1))
-    # NETWORK_CHECK_INTERVAL: int = int(os.getenv("NETWORK_CHECK_INTERVAL", 60))
-    # DOMAIN_CHECK_INTERVAL: int = int(os.getenv("DOMAIN_CHECK_INTERVAL", 60))
+    # REDIS_PORT: int = int(os.getenv("REDIS_PORT", "6379"))
+    # REDIS_STORE_DB_ID: int = int(os.getenv("REDIS_STORE_DB_ID", "0"))
+    # REDIS_LEDGER_DB_ID: int = int(os.getenv("REDIS_LEDGER_DB_ID", "1"))
+    # STORE_DB_ID: int = int(os.getenv("STORE_DB_ID", "0"))
+    # LEDGER_DB_ID: int = int(os.getenv("LEDGER_DB_ID", "1"))
+    # NETWORK_CHECK_INTERVAL: int = int(os.getenv("NETWORK_CHECK_INTERVAL", "60"))
+    # DOMAIN_CHECK_INTERVAL: int = int(os.getenv("DOMAIN_CHECK_INTERVAL", "60"))
     CONTAINER_HOST: str = str(os.getenv("CONTAINER_HOST", "docker"))
     MONGO_HOST: str = str(os.getenv("MONGO_HOST", ""))
-    MONGO_PORT: int = int(os.getenv("MONGO_PORT", 27017))
+    MONGO_PORT: int = int(os.getenv("MONGO_PORT", "27017"))
     MONGO_USERNAME: str = str(os.getenv("MONGO_USERNAME", ""))
     MONGO_PASSWORD: str = str(os.getenv("MONGO_PASSWORD", ""))
     DEV_MODE: bool = True if os.getenv("DEV_MODE", "false").lower() == "true" else False
     # ZMQ stuff
-    QUEUE_PORT: int = int(os.getenv("QUEUE_PORT", 5556))
+    QUEUE_PORT: int = int(os.getenv("QUEUE_PORT", "5556"))
     CREATE_PRODUCER: bool = (
         True if os.getenv("CREATE_PRODUCER", "false").lower() == "true" else False
     )
-    N_CONSUMERS: int = int(os.getenv("N_CONSUMERS", 1))
+    N_CONSUMERS: int = int(os.getenv("N_CONSUMERS", "1"))
     SQLITE_PATH: str = os.path.expandvars("$HOME/data/db/")
-    SINGLE_CONTAINER_MODE: bool = str_to_bool(os.getenv("SINGLE_CONTAINER_MODE", False))
+    SINGLE_CONTAINER_MODE: bool = str_to_bool(os.getenv("SINGLE_CONTAINER_MODE", "False"))
     CONSUMER_SERVICE_NAME: str | None = os.getenv("CONSUMER_SERVICE_NAME")
-    INMEMORY_WORKERS: bool = str_to_bool(os.getenv("INMEMORY_WORKERS", True))
+    INMEMORY_WORKERS: bool = str_to_bool(os.getenv("INMEMORY_WORKERS", "True"))
     SMTP_USERNAME: str = os.getenv("SMTP_USERNAME", "")
     EMAIL_SENDER: str = os.getenv("EMAIL_SENDER", "")
     SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
     SMTP_TLS: bool = True
-    SMTP_PORT: int = int(os.getenv("SMTP_PORT", 587))
+    SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
     SMTP_HOST: str = os.getenv("SMTP_HOST", "")
 
     TEST_MODE: bool = (
