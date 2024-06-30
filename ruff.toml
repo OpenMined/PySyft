@@ -19,8 +19,12 @@ select = [
     "UP",   # pyupgrade
 ]
 ignore = [
-    "B904",  # check for raise statements in exception handlers that lack a from clause
-    "B905",  # zip() without an explicit strict= parameter
+    "B904",      # check for raise statements in exception handlers that lack a from clause
+    "B905",      # zip() without an explicit strict= parameter
+    "PLR0911",   # Too many return statements
+    "PLR0913",   # Too many arguments in function definition
+    "PLR0915",   # Too many statements
+    
 ]
 
 [lint.per-file-ignores]
