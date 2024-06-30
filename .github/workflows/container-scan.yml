@@ -194,10 +194,11 @@ jobs:
       #Generate SBOM
       - name: Generate SBOM
         run: |
-          python3 --version
-          python3 -m pip install ./packages/syft
-          python3 -m pip install cyclonedx-bom
-          python3 -m pip freeze > requirements.txt
+          python --version
+          python -m pip install uv==0.2.17
+          python -m uv pip install ./packages/syft
+          python -m uv pip install cyclonedx-bom
+          python -m pip freeze > requirements.txt
           cyclonedx-py requirements -o syft.sbom.json
 
         #Trivy scan SBOM
