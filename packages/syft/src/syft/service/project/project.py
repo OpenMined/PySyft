@@ -30,6 +30,7 @@ from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.identity import Identity
 from ...types.identity import UserIdentity
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.syft_object import short_qual_name
@@ -347,6 +348,14 @@ class ProjectRequest(ProjectEventAddObject):
         return None
 
 
+@serializable()
+class ProjectCode(ProjectEventAddObject):
+    __canonical_name__ = "ProjectCode"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    code: SubmitUserCode
+
+
 def poll_creation_wizard() -> tuple[str, list[str]]:
     w = textwrap.TextWrapper(initial_indent="\t", subsequent_indent="\t")
 
@@ -618,7 +627,7 @@ class DemocraticConsensusModel(ConsensusModel):
 def add_code_request_to_project(
     project: ProjectSubmit | Project,
     code: SubmitUserCode,
-    client: SyftClient | Any,
+    clients: list[SyftClient] | Any,
     reason: str | None = None,
 ) -> SyftError | SyftSuccess:
     # TODO: fix the mypy issue
@@ -627,24 +636,31 @@ def add_code_request_to_project(
             message=f"Currently we are only support creating requests for SubmitUserCode: {type(code)}"
         )
 
-    if not isinstance(client, SyftClient):
-        return SyftError(message="Client should be a valid SyftClient")
+    # Create a global ID for the Code to share among domain nodes
+    code.id = UID()
+
+    # TODO: can we remove clients in code submission?
+    if not all(isinstance(client, SyftClient) for client in clients):
+        return SyftError(message=f"Clients should be of type SyftClient: {clients}")
 
     if reason is None:
         reason = f"Code Request for Project: {project.name} has been submitted by {project.created_by}"
 
-    submitted_req = client.api.services.code.request_code_execution(
-        code=code, reason=reason
-    )
-    if isinstance(submitted_req, SyftError):
-        return submitted_req
+    # TODO: Modify request to be created at client side.
+    for client in clients:
+        submitted_req = client.api.services.code.request_code_execution(
+            code=code, reason=reason
+        )
+        # TODO: Do we need to rollback the request if one of the requests fails?
+        if isinstance(submitted_req, SyftError):
+            return submitted_req
 
-    request_event = ProjectRequest(linked_request=submitted_req)
+    code_event = ProjectCode(code=code)
 
     if isinstance(project, ProjectSubmit) and project.bootstrap_events is not None:
-        project.bootstrap_events.append(request_event)
+        project.bootstrap_events.append(code_event)
     else:
-        result = project.add_event(request_event)
+        result = project.add_event(code_event)
         if isinstance(result, SyftError):
             return result
 
@@ -921,22 +937,22 @@ class Project(SyftObject):
     def create_code_request(
         self,
         obj: SubmitUserCode,
-        client: SyftClient | None = None,
+        clients: SyftClient | None = None,
         reason: str | None = None,
     ) -> SyftSuccess | SyftError:
-        if client is None:
+        if clients is None:
             leader_client = self.get_leader_client(self.user_signing_key)
             res = add_code_request_to_project(
                 project=self,
                 code=obj,
-                client=leader_client,
+                clients=[leader_client],
                 reason=reason,
             )
             return res
         return add_code_request_to_project(
             project=self,
             code=obj,
-            client=client,
+            clients=clients,
             reason=reason,
         )
 
@@ -1254,12 +1270,12 @@ class ProjectSubmit(SyftObject):
             )
 
     def create_code_request(
-        self, obj: SubmitUserCode, client: SyftClient, reason: str | None = None
+        self, obj: SubmitUserCode, clients: SyftClient, reason: str | None = None
     ) -> SyftError | SyftSuccess:
         return add_code_request_to_project(
             project=self,
             code=obj,
-            client=client,
+            clients=clients,
             reason=reason,
         )
 
