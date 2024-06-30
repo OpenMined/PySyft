@@ -243,7 +243,10 @@ class CMPBase:
         )
         tree_prefix = "└───" if is_last else "├───"
         indent_str = "│    " * indent + tree_prefix
-        path = self.path.replace(f"{parent_path}.", "") if parent_path != "" else self.path
+        if parent_path != "":
+            path = self.path.replace(f"{parent_path}.", "")
+        else:
+            path = self.path
         return f"{indent_str}{path} ({self.permissions})\n{children_string}"
 
 
