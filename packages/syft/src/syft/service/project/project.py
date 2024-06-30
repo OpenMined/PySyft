@@ -45,6 +45,7 @@ from ...util.decorators import deprecated
 from ...util.markdown import markdown_as_class_with_fields
 from ...util.util import full_name_with_qualname
 from ..code.user_code import SubmitUserCode
+from ..code.user_code import UserCodeStatus
 from ..network.network_service import NodePeer
 from ..network.routes import NodeRoute
 from ..network.routes import connection_to_route
@@ -266,10 +267,13 @@ class ProjectRequestResponse(ProjectSubEvent):
 @serializable()
 class ProjectRequest(ProjectEventAddObject):
     __canonical_name__ = "ProjectRequest"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     linked_request: LinkedObject
     allowed_sub_types: list[type] = [ProjectRequestResponse]
+    # TODO: should all events have parent_event_id by default
+    # then we differentiate them by allowed sub types.
+    parent_event_id: UID
 
     @field_validator("linked_request", mode="before")
     @classmethod
@@ -357,6 +361,9 @@ class ProjectCode(ProjectEventAddObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     code: SubmitUserCode
+
+    def status(self, project) -> UserCodeStatus:
+        pass
 
 
 def poll_creation_wizard() -> tuple[str, list[str]]:
@@ -640,7 +647,8 @@ def add_code_request_to_project(
         )
 
     # Create a global ID for the Code to share among domain nodes
-    code.id = UID()
+    code_id = UID()
+    code.id = code_id
 
     # Add Project UID to the code
     code.project_id = project.id
@@ -652,7 +660,10 @@ def add_code_request_to_project(
     if reason is None:
         reason = f"Code Request for Project: {project.name} has been submitted by {project.created_by}"
 
-    code_event = ProjectCode(code=code)
+    # TODO: Think more about different ID in
+    # the domain of project
+    # Project Code Event ID vs User Code ID.
+    code_event = ProjectCode(id=code_id, code=code)
 
     if isinstance(project, ProjectSubmit) and project.bootstrap_events is not None:
         project.bootstrap_events.append(code_event)
@@ -1069,12 +1080,11 @@ class Project(SyftObject):
             return SyftSuccess(message="Poll answered successfully")
         return result
 
-    def add_request(
-        self,
-        request: Request,
-    ) -> SyftSuccess | SyftError:
+    def add_request(self, request: Request, code_id: UID) -> SyftSuccess | SyftError:
         linked_request = LinkedObject.from_obj(request, node_uid=request.node_uid)
-        request_event = ProjectRequest(id=request.id, linked_request=linked_request)
+        request_event = ProjectRequest(
+            id=request.id, linked_request=linked_request, parent_event_id=code_id
+        )
         result = self.add_event(request_event)
 
         if isinstance(result, SyftSuccess):

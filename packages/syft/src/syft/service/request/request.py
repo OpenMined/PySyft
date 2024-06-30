@@ -1401,7 +1401,7 @@ class UserCodeStatusChange(Change):
             if isinstance(project_obj, SyftError):
                 return project_obj
 
-            req_res = project_obj.add_request(request)
+            req_res = project_obj.add_request(request, code_id=code.id)
             print("=" * 60)
             print(req_res)
             print("=" * 60)
