@@ -211,7 +211,7 @@ class RatholeConfigBuilder:
 
         proxy_rule = (
             f"Host(`{config.server_name}.syft.local`) || "
-            f"HostHeader(`{config.server_name}.syft.local`) && PathPrefix(`/rathole`)"
+            f"HostHeader(`{config.server_name}.syft.local`) && PathPrefix(`/rtunnel`)"
         )
 
         rathole_proxy["http"]["routers"][config.server_name] = {
