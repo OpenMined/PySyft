@@ -75,7 +75,7 @@ ENV \
     APPDIR="/root/app" \
     NODE_NAME="default_node_name" \
     NODE_TYPE="domain" \
-    NODE_IPV6=False \
+    NODE_IPV6="False" \
     SERVICE_NAME="backend" \
     RELEASE="production" \
     DEV_MODE="False" \
