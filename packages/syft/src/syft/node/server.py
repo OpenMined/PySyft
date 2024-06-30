@@ -1,6 +1,7 @@
 # stdlib
 from collections.abc import Callable
 import multiprocessing
+import multiprocessing.synchronize
 import os
 from pathlib import Path
 import platform
@@ -11,6 +12,7 @@ import time
 from typing import Any
 
 # third party
+import debugpy
 from fastapi import APIRouter
 from fastapi import FastAPI
 from pydantic_settings import BaseSettings
@@ -94,7 +96,12 @@ def app_factory() -> FastAPI:
     return app
 
 
-def run_uvicorn(host: str, port: int, **kwargs: Any) -> None:
+def run_uvicorn(
+    host: str,
+    port: int,
+    debugger_attached_event: multiprocessing.synchronize.Event | None = None,
+    **kwargs: Any,
+) -> None:
     if kwargs.get("reset"):
         try:
             python_pids = find_python_processes_on_port(port)
@@ -104,6 +111,23 @@ def run_uvicorn(host: str, port: int, **kwargs: Any) -> None:
                 time.sleep(1)
         except Exception:  # nosec
             print(f"Failed to kill python process on port: {port}")
+
+    if kwargs.get("debug"):
+        if debugger_attached_event is None:
+            raise ValueError(
+                "The `debugger_attached_event` parameter must be provided when `debug=True`."
+            )
+        os.environ["PYDEVD_DISABLE_FILE_VALIDATION"] = "1"
+        _, debug_port = debugpy.listen(0)
+        print(
+            "\nStarting the server with the Python Debugger enabled (`debug=True`).\n"
+            'To attach the debugger, open the command palette in VSCode and select "Debug: Start Debugging (F5)".\n'
+            f"Then, enter `{debug_port}` in the port field and press Enter.\n"
+        )
+        print(f"Waiting for debugger to attach on port `{debug_port}`...")
+        debugpy.wait_for_client()  # blocks execution until a remote debugger is attached
+        print("Debugger attached")
+        debugger_attached_event.set()  # Signal the parent process that the debugger is attached
 
     # Set up all kwargs as environment variables so that they can be accessed in the app_factory function.
     env_prefix = AppSettings.model_config.get("env_prefix", "")
@@ -147,7 +171,9 @@ def serve_node(
     n_consumers: int = 0,
     association_request_auto_approval: bool = False,
     background_tasks: bool = False,
+    debug: bool = False,
 ) -> tuple[Callable, Callable]:
+    debugger_attached_event = multiprocessing.Event()
     server_process = multiprocessing.Process(
         target=run_uvicorn,
         kwargs={
@@ -166,6 +192,8 @@ def serve_node(
             "n_consumers": n_consumers,
             "association_request_auto_approval": association_request_auto_approval,
             "background_tasks": background_tasks,
+            "debug": debug,
+            "debugger_attached_event": debugger_attached_event,
         },
     )
 
@@ -181,6 +209,10 @@ def serve_node(
     def start() -> None:
         print(f"Starting {name} server on {host}:{port}")
         server_process.start()
+
+        if debug:
+            # Wait for the debugger to get attached
+            debugger_attached_event.wait()
 
         if tail:
             try:

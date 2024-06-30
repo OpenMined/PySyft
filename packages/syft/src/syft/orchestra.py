@@ -166,6 +166,7 @@ def deploy_to_python(
     queue_port: int | None = None,
     association_request_auto_approval: bool = False,
     background_tasks: bool = False,
+    debug: bool = False,
 ) -> NodeHandle:
     worker_classes = {
         NodeType.DOMAIN: Domain,
@@ -193,6 +194,7 @@ def deploy_to_python(
         "create_producer": create_producer,
         "association_request_auto_approval": association_request_auto_approval,
         "background_tasks": background_tasks,
+        "debug": debug,
     }
 
     if port:
@@ -282,6 +284,7 @@ class Orchestra:
         queue_port: int | None = None,
         association_request_auto_approval: bool = False,
         background_tasks: bool = False,
+        debug: bool = False,
     ) -> NodeHandle:
         if dev_mode is True:
             thread_workers = True
@@ -318,6 +321,7 @@ class Orchestra:
                 queue_port=queue_port,
                 association_request_auto_approval=association_request_auto_approval,
                 background_tasks=background_tasks,
+                debug=debug,
             )
         elif deployment_type_enum == DeploymentType.REMOTE:
             return deploy_to_remote(
