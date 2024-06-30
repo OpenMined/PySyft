@@ -788,11 +788,10 @@ class ZMQConsumer(QueueConsumer):
                         self.reconnect_to_producer()
                     else:
                         logger.error(f"ZMQConsumer invalid command: {command}")
-                else:
-                    if not self.is_producer_alive():
-                        logger.info("Producer check-alive timed out. Reconnecting.")
-                        self.reconnect_to_producer()
-                        self.set_producer_alive()
+                elif not self.is_producer_alive():
+                    logger.info("Producer check-alive timed out. Reconnecting.")
+                    self.reconnect_to_producer()
+                    self.set_producer_alive()
 
                 self.send_heartbeat()
 
