@@ -125,11 +125,11 @@ jobs:
           uv --version
           python -m uv pip install tox tox-uv==1.9.0
 
-      - name: Get pip cache dir
+      - name: Get uv cache dir
         id: pip-cache
         shell: bash
         run: |
-          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+          echo "dir=$(uv cache dir)" >> $GITHUB_OUTPUT
 
       - name: Load github cache
         uses: actions/cache@v4
