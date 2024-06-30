@@ -367,7 +367,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          python -m uv pip install tox tox-uv==1.9.0
+          pip install tox tox-uv==1.9.0
         
       - name: Install kubectl
         if: steps.changes.outputs.stack == 'true'
