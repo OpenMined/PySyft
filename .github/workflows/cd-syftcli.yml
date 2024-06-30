@@ -72,7 +72,7 @@ jobs:
           python -p pip install uv==0.2.17
           uv --version
           python -m uv pip install --upgrade tox setuptools wheel twine bump2version==1.0.1 PyYAML==6.0.1
-         
+
 
       - name: Bump the Version
         if: ${{steps.get-hashes.outputs.current_hash != steps.get-hashes.outputs.previous_hash }}
