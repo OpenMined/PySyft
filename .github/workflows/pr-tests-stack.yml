@@ -57,6 +57,22 @@ jobs:
           uv --version
           python -m uv pip install tox tox-uv==1.9.0
 
+      - name: Get uv cache dir
+        if: steps.changes.outputs.stack == 'true'
+        id: pip-cache
+        shell: bash
+        run: |
+          echo "dir=$(uv cache dir)" >> $GITHUB_OUTPUT
+
+      - name: Load github cache
+        uses: actions/cache@v4
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-uv-py${{ matrix.python-version }}
+          restore-keys: |
+            ${{ runner.os }}-uv-py${{ matrix.python-version }}
+
       - name: Run syft backend base image building test
         if: steps.changes.outputs.stack == 'true'
         timeout-minutes: 60
