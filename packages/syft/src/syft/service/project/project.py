@@ -639,21 +639,15 @@ def add_code_request_to_project(
     # Create a global ID for the Code to share among domain nodes
     code.id = UID()
 
+    # Add Project UID to the code
+    code.project_id = project.id
+
     # TODO: can we remove clients in code submission?
     if not all(isinstance(client, SyftClient) for client in clients):
         return SyftError(message=f"Clients should be of type SyftClient: {clients}")
 
     if reason is None:
         reason = f"Code Request for Project: {project.name} has been submitted by {project.created_by}"
-
-    # TODO: Modify request to be created at client side.
-    for client in clients:
-        submitted_req = client.api.services.code.request_code_execution(
-            code=code, reason=reason
-        )
-        # TODO: Do we need to rollback the request if one of the requests fails?
-        if isinstance(submitted_req, SyftError):
-            return submitted_req
 
     code_event = ProjectCode(code=code)
 
@@ -663,6 +657,15 @@ def add_code_request_to_project(
         result = project.add_event(code_event)
         if isinstance(result, SyftError):
             return result
+
+    # TODO: Modify request to be created at server side.
+    for client in clients:
+        submitted_req = client.api.services.code.request_code_execution(
+            code=code, reason=reason
+        )
+        # TODO: Do we need to rollback the request if one of the requests fails?
+        if isinstance(submitted_req, SyftError):
+            return submitted_req
 
     return SyftSuccess(
         message=f"Code request for '{code.func_name}' successfully added to '{project.name}' Project. "

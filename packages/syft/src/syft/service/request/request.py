@@ -91,6 +91,18 @@ class Change(SyftObject):
     def change_object_is_type(self, type_: type) -> bool:
         return self.linked_obj is not None and type_ == self.linked_obj.object_type
 
+    # TODO: remove Any in argument by moving changes to a different file,
+    # this is done as changes and request have a catch 22 situation in order of the code.
+    # Runs a post hook after the change is created, applied, or undone
+    def post_create_hook(self, context: ChangeContext, request: Any) -> None:
+        pass
+
+    def post_apply_hook(self, context: ChangeContext, request: Any) -> None:
+        pass
+
+    def post_undo_hook(self, context: ChangeContext, request: Any) -> None:
+        pass
+
 
 @serializable()
 class ChangeStatus(SyftObject):
@@ -1357,6 +1369,33 @@ class UserCodeStatusChange(Change):
         if self.linked_obj:
             return self.linked_obj.resolve
         return None
+
+    def post_create_hook(
+        self, context: ChangeContext, request: Request
+    ) -> SyftSuccess | SyftError | None:
+        # relative
+        from ..project.project import Project
+        from ..project.project_service import ProjectService
+
+        code = self.get_user_code(context)
+        print("Entered Post Create Hook")
+
+        # Perform Post Create Hook only when the code is part of a project
+        if isinstance(code.project_id, UID):
+            project_service = context.node.get_service(ProjectService)
+
+            root_context = context.as_root_context()
+            project_obj: Project = project_service.get_by_uid(
+                root_context, uid=code.project_id
+            )
+            if isinstance(project_obj, SyftError):
+                return project_obj
+
+            req_res = project_obj.add_request(request)
+            print("=" * 60)
+            print(req_res)
+            print("=" * 60)
+            return req_res
 
 
 @serializable()
