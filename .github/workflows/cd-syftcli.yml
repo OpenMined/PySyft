@@ -42,7 +42,10 @@ jobs:
 
       - name: Install checksumdir
         run: |
-          pip install --upgrade checksumdir
+          python -m pip install --upgrade
+          python -m pip install uv==0.2.17
+          uv --version
+          python -m uv install checksumdir
 
       - name: Get the hashes
         id: get-hashes
