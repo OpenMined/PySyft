@@ -134,6 +134,7 @@ proxy:
 
 registry:
   enabled: true
+
   # Extra environment vars
   env: null
 
@@ -239,13 +240,14 @@ ingress:
 
 
 rtunnel:
-  # Extra environment vars
-  env: null
   enabled: false
-  logLevel: "info"
+  logLevel: info
 
   port: 2333
   mode: client
+
+  # Extra environment vars
+  env: null
 
   # Pod labels & annotations
   podLabels: null

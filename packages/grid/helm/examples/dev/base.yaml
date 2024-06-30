@@ -1,14 +1,8 @@
-# Helm chart values used for development and testing
-# Can be used through `helm install -f values.dev.yaml` or devspace `valuesFiles`
+# Base Helm chart values used for development and testing
+# Can be used through `helm install -f packages/grid/helm/examples/dev/base.yaml` or devspace `valuesFiles`
 
 global:
   randomizedSecrets: false
-
-registry:
-  resourcesPreset: null
-  resources: null
-
-  storageSize: "5Gi"
 
 node:
   rootEmail: info@openmined.org
@@ -44,14 +38,21 @@ frontend:
   resources: null
 
 proxy:
+  enabled: true
+
   resourcesPreset: null
   resources: null
 
-rtunnel:
+registry:
   enabled: true
-  logLevel: "trace"
 
-# attestation:
-#   enabled: true
-#   resourcesPreset: null
-#   resources: null
+  resourcesPreset: null
+  resources: null
+
+  storageSize: "5Gi"
+
+rtunnel:
+  enabled: false
+
+attestation:
+  enabled: false
