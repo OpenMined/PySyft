@@ -131,11 +131,10 @@ class BlobFile(SyftObject):
                 else:
                     pending = None
                 yield from lines
+            elif pending is None:
+                pending = chunk
             else:
-                if pending is None:
-                    pending = chunk
-                else:
-                    pending = pending + chunk
+                pending = pending + chunk
 
         if pending is not None:
             yield pending
