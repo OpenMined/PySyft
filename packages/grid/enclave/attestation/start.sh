@@ -15,5 +15,9 @@ then
     RELOAD="--reload"
 fi
 
+if [[ ${NODE_IPV6} == "True" ]];
+then
+    HOST=${HOST:-"::"}
+fi
 
 exec uvicorn $RELOAD --host $HOST --port $PORT --log-level $UVICORN_LOG_LEVEL "$APP_MODULE"
