@@ -35,7 +35,7 @@ echo "NODE_TYPE=$NODE_TYPE"
 
 if [[ ${NODE_IPV6} == "True" ]];
 then
-    HOST=${HOST:-::}
+    HOST=${HOST:-"::"}
 fi
 
 exec $DEBUG_CMD uvicorn $RELOAD --host $HOST --port $PORT --log-config=$APPDIR/grid/logging.yaml --log-level $LOG_LEVEL "$APP_MODULE"
