@@ -364,7 +364,7 @@ jobs:
           key: ${{ runner.os }}-uv-py${{ matrix.python-version }}
           restore-keys: |
             ${{ runner.os }}-uv-py${{ matrix.python-version }}
-        
+
       - name: Install kubectl
         if: steps.changes.outputs.stack == 'true'
         run: |
