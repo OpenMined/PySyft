@@ -197,7 +197,7 @@ jobs:
           fi
           if [[ ${{ inputs.release_platform }} == "REAL_PYPI" ]]; then
             python -m uv pip install syft[data_science,dev]==${{ inputs.syft_version }}
-          fi         
+          fi
 
       - name: Run unit tests
         run: |
