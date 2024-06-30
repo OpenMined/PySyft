@@ -67,9 +67,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          key: ${{ runner.os }}-uv-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
           restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+            ${{ runner.os }}-uv-py${{ matrix.python-version }}-
 
       - name: Install Syft
         shell: bash
@@ -167,11 +167,12 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Upgrade pip and install uv
+      - name: Upgrade pip and dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install uv==0.2.17
           uv --version
+          python -m uv pip install tox tox-uv==1.9.0 tox-current-env
 
       - name: Get pip cache dir
         id: pip-cache
@@ -183,9 +184,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          key: ${{ runner.os }}-uv-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
           restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+            ${{ runner.os }}-uv-py${{ matrix.python-version }}-
 
       - name: Install Syft
         env:
@@ -196,11 +197,7 @@ jobs:
           fi
           if [[ ${{ inputs.release_platform }} == "REAL_PYPI" ]]; then
             python -m uv pip install syft[data_science,dev]==${{ inputs.syft_version }}
-          fi
-
-      - name: Install tox
-        run: |
-          python -m uv pip install tox tox-uv==1.9.0 tox-current-env
+          fi         
 
       - name: Run unit tests
         run: |
