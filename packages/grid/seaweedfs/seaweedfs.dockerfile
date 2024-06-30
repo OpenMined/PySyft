@@ -35,6 +35,7 @@ ENV \
     SWFS_VOLUME_DOWNLOAD_LIMIT_MB="0" \
     SWFS_UNCACHE_MINAGE="86400" \
     # mount api
+    MOUNT_API_IP="0.0.0.0" \
     MOUNT_API_PORT="4001" \
     UVICORN_LOG_LEVEL="info"
 
