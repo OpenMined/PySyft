@@ -74,9 +74,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          key: ${{ runner.os }}-uv-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
           restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+            ${{ runner.os }}-uv-py${{ matrix.python-version }}-
 
       - name: Run Notebook tests
         env:
