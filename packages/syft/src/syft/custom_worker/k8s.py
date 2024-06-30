@@ -9,8 +9,10 @@ import os
 # third party
 import kr8s
 from kr8s.objects import APIObject
+from kr8s.objects import ConfigMap
 from kr8s.objects import Pod
 from kr8s.objects import Secret
+from kr8s.objects import Service
 from pydantic import BaseModel
 from typing_extensions import Self
 
@@ -167,6 +169,25 @@ class KubeUtils:
     def b64encode_secret(data: str) -> str:
         """Convert the data to base64 encoded string for Secret."""
         return base64.b64encode(data.encode()).decode()
+
+    @staticmethod
+    def get_configmap(client: kr8s.Api, name: str) -> ConfigMap | None:
+        config_map = client.get("configmaps", name)
+        return config_map[0] if config_map else None
+
+    @staticmethod
+    def get_service(client: kr8s.Api, name: str) -> Service | None:
+        service = client.get("services", name)
+        return service[0] if service else None
+
+    @staticmethod
+    def update_configmap(
+        config_map: ConfigMap,
+        patch: dict,
+    ) -> None:
+        existing_data = config_map.raw
+        existing_data.update(patch)
+        config_map.patch(patch=existing_data)
 
     @staticmethod
     def create_dockerconfig_secret(
