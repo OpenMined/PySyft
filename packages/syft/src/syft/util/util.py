@@ -324,11 +324,10 @@ def find_available_port(
             if result_of_check != 0:
                 port_available = True
                 break
+            elif search:
+                port += 1
             else:
-                if search:
-                    port += 1
-                else:
-                    break
+                break
             sock.close()
 
         except Exception as e:
