@@ -77,11 +77,11 @@ class RequestService(AbstractService):
 
                 # Apply Post Create Hooks to the request
                 for change in request.changes:
-                    change_hook_res = change.post_create_hook(
+                    create_hook_res = change.post_create_hook(
                         context=context, request=request
                     )
-                    if isinstance(change_hook_res, SyftError):
-                        return change_hook_res
+                    if isinstance(create_hook_res, SyftError):
+                        return create_hook_res
 
                 # Creating Notification
                 link = LinkedObject.with_context(request, context=context)

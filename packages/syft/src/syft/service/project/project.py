@@ -32,6 +32,7 @@ from ...types.identity import Identity
 from ...types.identity import UserIdentity
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.syft_object import short_qual_name
 from ...types.transforms import TransformContext
@@ -255,9 +256,11 @@ class ProjectMessage(ProjectEventAddObject):
 @serializable()
 class ProjectRequestResponse(ProjectSubEvent):
     __canonical_name__ = "ProjectRequestResponse"
-    __version__ = SYFT_OBJECT_VERSION_2
+    # TODO: Create Migration for ProjectRequestResponse before
+    # merge
+    __version__ = SYFT_OBJECT_VERSION_3
 
-    response: bool
+    response: RequestStatus
 
 
 @serializable()
@@ -1071,11 +1074,23 @@ class Project(SyftObject):
         request: Request,
     ) -> SyftSuccess | SyftError:
         linked_request = LinkedObject.from_obj(request, node_uid=request.node_uid)
-        request_event = ProjectRequest(linked_request=linked_request)
+        request_event = ProjectRequest(id=request.id, linked_request=linked_request)
         result = self.add_event(request_event)
 
         if isinstance(result, SyftSuccess):
             return SyftSuccess(message="Request created successfully")
+        return result
+
+    def add_request_response(
+        self, request_id: UID, response: RequestStatus
+    ) -> SyftSuccess | SyftError:
+        response_event = ProjectRequestResponse(
+            parent_event_id=request_id, response=response
+        )
+        result = self.add_event(response_event)
+
+        if isinstance(result, SyftSuccess):
+            return SyftSuccess(message="Response added successfully")
         return result
 
     # Since currently we do not have the notion of denying a request
