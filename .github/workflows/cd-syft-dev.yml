@@ -165,7 +165,7 @@ jobs:
 
           # install tox
           python -m pip install --upgrade pip
-          python -m pip install uv==0.2.17
+          python -m pip install uv==0.2.18
           uv --version
           python -m uv pip install tox
 
