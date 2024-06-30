@@ -99,7 +99,7 @@ jobs:
           uv --version
           python -m uv pip install tox tox-uv==1.9.0
 
-      - name: Get pip cache dir
+      - name: Get uv cache dir
         if: steps.changes.outputs.stack == 'true'
         id: pip-cache
         shell: bash
