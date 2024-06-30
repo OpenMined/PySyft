@@ -197,7 +197,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install uv==0.2.18
           uv --version
-          python -m uv pip install tox tox-uv==1.9.0
+          pip install tox tox-uv==1.9.0
 
       - name: Get uv cache dir
         if: steps.changes.outputs.stack == 'true'
@@ -347,6 +347,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install uv==0.2.18
           uv --version
+          pip install tox tox-uv==1.9.0
 
       - name: Get uv cache dir
         if: steps.changes.outputs.stack == 'true'
@@ -363,11 +364,6 @@ jobs:
           key: ${{ runner.os }}-uv-py${{ matrix.python-version }}
           restore-keys: |
             ${{ runner.os }}-uv-py${{ matrix.python-version }}
-
-      - name: Install tox
-        if: steps.changes.outputs.stack == 'true'
-        run: |
-          pip install tox tox-uv==1.9.0
         
       - name: Install kubectl
         if: steps.changes.outputs.stack == 'true'
