@@ -24,7 +24,6 @@ ignore = [
     "PLR0911",   # Too many return statements
     "PLR0913",   # Too many arguments in function definition
     "PLR0915",   # Too many statements
-    
 ]
 
 [lint.per-file-ignores]
