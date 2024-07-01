@@ -20,14 +20,14 @@ def automount(automount_conf: Path, mount_conf_dir: Path) -> None:
 
     mounts = config.get("mounts", [])
     for mount_opts in mounts:
-        mount_opts = MountOptions(**mount_opts)
+        mount_opts_val = MountOptions(**mount_opts)
         try:
             logger.info(
-                f"Auto mount type={mount_opts.remote_bucket.type} "
-                f"bucket={mount_opts.remote_bucket.bucket_name}"
+                f"Auto mount type={mount_opts_val.remote_bucket.type} "
+                f"bucket={mount_opts_val.remote_bucket.bucket_name}"
             )
             result = mount_bucket(
-                mount_opts,
+                mount_opts_val,
                 conf_dir=mount_conf_dir,
                 overwrite=True,
             )
