@@ -497,8 +497,8 @@ class DataProtocol:
         for version, is_supported in self.protocol_support.items():
             if is_supported:
                 if version != "dev":
-                    version = int(version)
-                supported.append(version)
+                    new_version = int(version)
+                supported.append(new_version)
         return supported
 
     def calculate_supported_protocols(self) -> dict:
