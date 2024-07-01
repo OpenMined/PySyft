@@ -157,7 +157,7 @@ def build_tabulator_table_with_data(
             uid, table_data, table_metadata, max_height, pagination, header_sort
         )
     except Exception as e:
-        logger.debug("error building table", e)
+        logger.debug("Error building table: %s", e)
         return None
 
 
