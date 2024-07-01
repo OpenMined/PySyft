@@ -1045,19 +1045,16 @@ def filter_twin_kwargs(
                 raise Exception(
                     f"Filter can only use {TwinMode.PRIVATE} or {TwinMode.MOCK}"
                 )
+        elif isinstance(v, ActionObject):
+            filtered[k] = v.syft_action_data
+        elif (
+            isinstance(v, str | int | float | dict | CustomEndpointActionObject)
+            and allow_python_types
+        ):
+            filtered[k] = v
         else:
-            if isinstance(v, ActionObject):
-                filtered[k] = v.syft_action_data
-            elif (
-                isinstance(v, str | int | float | dict | CustomEndpointActionObject)
-                and allow_python_types
-            ):
-                filtered[k] = v
-            else:
-                # third party
-                raise ValueError(
-                    f"unexepected value {v} passed to filtered twin kwargs"
-                )
+            # third party
+            raise ValueError(f"unexepected value {v} passed to filtered twin kwargs")
     return filtered
 
 
