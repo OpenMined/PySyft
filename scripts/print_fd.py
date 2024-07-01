@@ -76,8 +76,8 @@ def main(pid=None, verbose=False):
     lsof_output = run_lsof_for_pid(pid) if pid else run_lsof()
     files_by_pid = parse_lsof_output(lsof_output, verbose)
 
-    for pid, files in files_by_pid.items():
-        print(f"PID {pid} open files:")
+    for pid_key, files in files_by_pid.items():
+        print(f"PID {pid_key} open files:")
         for file in files:
             print(f"  {file['File Path']} ({file['FD Type']} - {file['FD Info']})")
 
