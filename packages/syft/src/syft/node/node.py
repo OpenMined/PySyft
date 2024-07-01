@@ -121,6 +121,7 @@ from ..service.worker.worker_stash import WorkerStash
 from ..store.blob_storage import BlobStorageConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageClientConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
+from ..store.blob_storage.seaweedfs import SeaweedFSBlobDeposit
 from ..store.dict_document_store import DictStoreConfig
 from ..store.document_store import StoreConfig
 from ..store.linked_obj import LinkedObject
@@ -1200,7 +1201,7 @@ class Node(AbstractNode):
                 # relative
                 from ..store.blob_storage import BlobRetrievalByURL
 
-                if isinstance(result, BlobRetrievalByURL):
+                if isinstance(result, BlobRetrievalByURL | SeaweedFSBlobDeposit):
                     result.proxy_node_uid = peer.id
 
             return result
