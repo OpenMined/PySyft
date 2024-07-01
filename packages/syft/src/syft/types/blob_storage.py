@@ -124,7 +124,7 @@ class BlobFile(SyftObject):
         for chunk in self.read(stream=True, chunk_size=chunk_size):
             if b"\n" in chunk:
                 if pending is not None:
-                    chunk = pending + chunk  # type: ignore[unreachable]
+                    chunk += pending  # type: ignore[unreachable]
                 lines = chunk.splitlines()
                 if lines and lines[-1] and chunk and lines[-1][-1] == chunk[-1]:
                     pending = lines.pop()
