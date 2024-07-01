@@ -101,7 +101,7 @@ class UserStash(BaseStash):
             credentials=admin_credentials, role=ServiceRole.ADMIN
         ).unwrap()
 
-    @as_result(StashError, NotFoundError)
+    @as_result(StashError)
     def _get_all(
         self,
         credentials: SyftVerifyKey,
@@ -114,7 +114,7 @@ class UserStash(BaseStash):
             case Ok(users):
                 return cast(list[User], users)
             case Err(err):
-                raise NotFoundError(str(err))
+                raise StashError(str(err))
             case _:
                 raise StashError
 
