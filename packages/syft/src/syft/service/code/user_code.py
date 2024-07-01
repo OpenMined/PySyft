@@ -1042,9 +1042,13 @@ class SubmitUserCode(SyftObject):
         # only run this on the client side
         if self.local_function:
             source = dedent(inspect.getsource(self.local_function))
-
-            v: GlobalsVisitor | SyftWarning = _check_global(raw_code=source)
-            if isinstance(v, SyftWarning):  # the code contains "global" keyword
+            tree: ast.Module | SyftWarning = _parse_code(source)
+            if isinstance(tree, SyftWarning):
+                return SyftError(
+                    message=f"Error when running function locally: {tree.message}"
+                )
+            v: GlobalsVisitor | SyftWarning = _check_global(code_tree=tree)
+            if isinstance(v, SyftWarning):
                 return SyftError(
                     message=f"Error when running function locally: {v.message}"
                 )
@@ -1264,8 +1268,12 @@ def syft_function(
         try:
             code = dedent(inspect.getsource(f))
 
+            tree: ast.Module | SyftWarning = _parse_code(raw_code=code)
+            if isinstance(tree, SyftWarning):
+                display(tree)
+
             # check that there are no globals
-            global_check = _check_global(code)
+            global_check: GlobalsVisitor | SyftWarning = _check_global(code_tree=tree)
             if isinstance(global_check, SyftWarning):
                 display(global_check)
 
@@ -1314,17 +1322,29 @@ def syft_function(
     return decorator
 
 
-def _check_global(raw_code: str) -> GlobalsVisitor | SyftWarning:
-    tree = ast.parse(raw_code)
-    # check there are no globals
+def _check_global(code_tree: ast.Module) -> GlobalsVisitor | SyftWarning:
+    """
+    Check that the code does not contain any global variables
+    """
     v = GlobalsVisitor()
     try:
-        v.visit(tree)
+        v.visit(code_tree)
     except Exception:
         return SyftWarning(
             message="Your code contains (a) global variable(s), which is not allowed"
         )
     return v
+
+
+def _parse_code(raw_code: str) -> ast.Module | SyftWarning:
+    """
+    Parse the code into an AST tree and return a warning if there are syntax errors
+    """
+    try:
+        tree = ast.parse(raw_code)
+    except SyntaxError as e:
+        return SyftWarning(message=f"Your code contains syntax error: {e}")
+    return tree
 
 
 def generate_unique_func_name(context: TransformContext) -> TransformContext:
@@ -1349,17 +1369,16 @@ def process_code(
     policy_input_kwargs: list[str],
     function_input_kwargs: list[str],
 ) -> str:
-    try:
-        tree = ast.parse(raw_code)
-    except SyntaxError as e:
-        raise SyftException(f"Syntax error in code: {e}")
+    tree: ast.Module | SyftWarning = _parse_code(raw_code=raw_code)
+    if isinstance(tree, SyftWarning):
+        raise SyftException(f"{tree.message}")
 
     # check there are no globals
-    v = _check_global(raw_code=tree)
+    v: GlobalsVisitor | SyftWarning = _check_global(code_tree=tree)
     if isinstance(v, SyftWarning):
-        raise SyftException(message=f"{v.message}")
+        raise SyftException(f"{v.message}")
 
-    f = tree.body[0]
+    f: ast.stmt = tree.body[0]
     f.decorator_list = []
 
     call_args = function_input_kwargs

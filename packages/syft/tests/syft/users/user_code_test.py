@@ -401,15 +401,18 @@ def test_submit_code_with_global_var(guest_client: DomainClient) -> None:
     )
     def mock_syft_func_with_global():
         global x
-
-        def example_function():
-            return 1 + x
-
-        return example_function()
+        return x
 
     res = guest_client.code.submit(mock_syft_func_with_global)
     assert isinstance(res, SyftError)
-    assert "No Globals allowed!" in res.message
+
+    @sy.syft_function_single_use()
+    def mock_syft_func_single_use_with_global():
+        global x
+        return x
+
+    res = guest_client.code.submit(mock_syft_func_single_use_with_global)
+    assert isinstance(res, SyftError)
 
 
 def test_request_existing_usercodesubmit(worker) -> None:
