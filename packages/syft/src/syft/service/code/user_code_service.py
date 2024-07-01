@@ -402,9 +402,9 @@ class UserCodeService(AbstractService):
         for k, v in kwargs.items():
             if isinstance(v, UID):
                 # Jobs have UID kwargs instead of ActionObject
-                v = action_service.get(context, uid=v)
-                if v.is_ok():
-                    v = v.ok()
+                val = action_service.get(context, uid=v)
+                if val.is_ok():
+                    v = val.ok()
             if (
                 isinstance(v, ActionObject)
                 and v.syft_client_verify_key == context.credentials
