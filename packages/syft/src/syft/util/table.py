@@ -135,7 +135,15 @@ def _create_table_rows(
                 except Exception as e:
                     print(e)
                     value = None
-                cols[field].append(sanitize_html(str(value)))
+
+                if field in getattr(item, "__clipboard_attrs__", []):
+                    value = {
+                        "value": sanitize_html(str(value)),
+                        "type": "clipboard",
+                    }
+                else:
+                    value = sanitize_html(str(value))
+                cols[field].append(value)
 
     col_lengths = {len(cols[col]) for col in cols.keys()}
     if len(col_lengths) != 1:

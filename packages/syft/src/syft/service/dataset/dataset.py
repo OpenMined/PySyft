@@ -105,7 +105,8 @@ class Asset(SyftObject):
     created_at: DateTime = DateTime.now()
     uploader: Contributor | None = None
 
-    __repr_attrs__ = ["name", "shape"]
+    __repr_attrs__ = ["_kwarg_name", "name", "action_id", "_dataset_name", "node_uid"]
+    __clipboard_attrs__ = ["action_id", "node_uid", "_dataset_name"]
 
     def __init__(
         self,
