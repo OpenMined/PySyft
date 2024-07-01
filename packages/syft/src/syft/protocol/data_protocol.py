@@ -177,7 +177,7 @@ class DataProtocol:
         for protocol_number in sorted_dict:
             object_versions = sorted_dict[protocol_number]["object_versions"]
             for canonical_name, versions in object_versions.items():
-                for version, object_metadata in versions.items():
+                for object_metadata in versions.values():
                     action = object_metadata["action"]
                     version = object_metadata["version"]
                     hash_str = object_metadata["hash"]
