@@ -41,7 +41,7 @@ class UID:
         "value": (lambda x: x.bytes, lambda x: uuid.UUID(bytes=bytes(x)))
     }
 
-    __slots__ = "value"
+    __slots__ = "value"  # noqa PLC0205
     value: uuid_type
 
     def __init__(self, value: Self | uuid_type | str | bytes | None = None):
