@@ -1,0 +1,19 @@
+{{- if .Values.rtunnel.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: rathole
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app.kubernetes.io/component: rathole
+spec:
+  clusterIP: None
+  selector:
+    {{- include "common.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: rathole
+  ports:
+    - name: rathole
+      port: 2333
+      targetPort: 2333
+      protocol: TCP
+{{- end }}
