@@ -197,3 +197,7 @@ def process_traceback(exc: E) -> E:
             tb.tb_next = frames[i + 1]
 
     return exc
+
+
+class CredentialsError(SyftException):
+    public_message = "Invalid credentials."
