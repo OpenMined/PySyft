@@ -54,9 +54,9 @@ def test_syft_worker(worker: Worker):
         if pool.name == pool_name:
             worker_pool = pool
     assert len(worker_pool.worker_list) == num_workers
-    for i, worker in enumerate(worker_pool.workers):
-        assert worker.name == pool_name + "-" + str(i + 1)
-        assert isinstance(worker.logs, str)
-        assert worker.worker_pool_name == pool_name
-        assert isinstance(worker.created_at, DateTime)
-        assert worker.job_id is None
+    for i, worker_val in enumerate(worker_pool.workers):
+        assert worker_val.name == pool_name + "-" + str(i + 1)
+        assert isinstance(worker_val.logs, str)
+        assert worker_val.worker_pool_name == pool_name
+        assert isinstance(worker_val.created_at, DateTime)
+        assert worker_val.job_id is None
