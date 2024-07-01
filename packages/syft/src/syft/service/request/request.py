@@ -1245,7 +1245,9 @@ class UserCodeStatusChange(Change):
             msg += " No nested requests"
         elif self.nested_solved:
             # else:
-            msg += "<br><br>This change requests the following nested functions calls:<br>"
+            msg += (
+                "<br><br>This change requests the following nested functions calls:<br>"
+            )
             msg += self.nested_repr()
         else:
             msg += " Nested Requests not resolved"
