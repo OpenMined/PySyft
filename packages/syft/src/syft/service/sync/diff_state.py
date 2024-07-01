@@ -1557,8 +1557,7 @@ class SyncInstruction(SyftObject):
                 if share_to_user is None:
                     # job ran by another user
                     if (
-                        diff.object_type != "Job"
-                        and diff.object_type != "ExecutionOutput"
+                        diff.object_type not in ("Job", "ExecutionOutput")
                     ):
                         raise ValueError(
                             "share_to_user is required to share private data"
@@ -1627,8 +1626,7 @@ class ResolvedSyncState(SyftObject):
 
     def add_sync_instruction(self, sync_instruction: SyncInstruction) -> None:
         if (
-            sync_instruction.decision == SyncDecision.IGNORE
-            or sync_instruction.decision == SyncDecision.SKIP
+            sync_instruction.decision in (SyncDecision.IGNORE, SyncDecision.SKIP)
         ):
             return
         diff = sync_instruction.diff
