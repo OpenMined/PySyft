@@ -493,9 +493,11 @@ class DataProtocol:
     @property
     def supported_protocols(self) -> list[int | str]:
         """Returns a list of protocol numbers that are marked as supported."""
-        return [int(version) if version != "dev" else version 
-            for version, is_supported in self.protocol_support.items() 
-            if is_supported]
+        return [
+            int(version) if version != "dev" else version
+            for version, is_supported in self.protocol_support.items()
+            if is_supported
+        ]
 
     def calculate_supported_protocols(self) -> dict:
         protocol_supported = {}
