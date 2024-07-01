@@ -333,8 +333,7 @@ class SettingsService(AbstractService):
                 )
                 commands = ""
                 if (
-                    role.value == ServiceRole.NONE.value
-                    or role.value == ServiceRole.GUEST.value
+                    role.value in (ServiceRole.NONE.value, ServiceRole.GUEST.value)
                 ):
                     commands = GUEST_COMMANDS
                 elif (
