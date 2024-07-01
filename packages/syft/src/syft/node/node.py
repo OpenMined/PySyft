@@ -510,12 +510,11 @@ class Node(AbstractNode):
 
         if self.dev_mode:
             if isinstance(self.blob_store_config, OnDiskBlobStorageConfig):
-                print(
+                logger.debug(
                     f"Using on-disk blob storage with path: "
                     f"{self.blob_store_config.client_config.base_directory}",
-                    end=". ",
                 )
-            print(
+            logger.debug(
                 f"Minimum object size to be saved to the blob storage: "
                 f"{self.blob_store_config.min_blob_size} (MB)."
             )
