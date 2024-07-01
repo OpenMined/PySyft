@@ -1840,7 +1840,7 @@ class ActionObject(SyncableSyftObject):
         try:
             wrapper.__doc__ = original_func.__doc__
             logger.debug(
-                "Found original signature for ",
+                "Found original signature for %s: %s",
                 name,
                 inspect.signature(original_func),
             )
