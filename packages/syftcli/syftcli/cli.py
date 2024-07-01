@@ -9,7 +9,7 @@ from syftcli.bundle import cmd as bundle_cmd
 from syftcli.core.console import console
 from syftcli.version import __version__
 
-__all__ = "app"
+__all__ = "app"  # noqa PLE0605
 
 app = Typer(name="Syft CLI", no_args_is_help=True, pretty_exceptions_show_locals=False)
 app.add_typer(bundle_cmd, name="bundle")
