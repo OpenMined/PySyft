@@ -320,39 +320,25 @@ class ProjectRequest(ProjectEventAddObject):
 
     # TODO: To add deny requests, when deny functionality is added
 
-    def status(self, project: Project) -> SyftInfo | SyftError | None:
+    def status(self, project: Project) -> RequestStatus:
         """Returns the status of the request.
 
         Args:
             project (Project): Project object to check the status
 
         Returns:
-            str: Status of the request.
+            RequestStatus: Status of the request.
 
         During Request  status calculation, we do not allow multiple responses
         """
-        responses: list[ProjectEvent] = project.get_children(self)
+        responses: list[ProjectRequestResponse] = project.get_children(self)
         if len(responses) == 0:
-            return SyftInfo(
-                "No one has responded to the request yet. Kindly recheck later 🙂"
-            )
-        elif len(responses) > 1:
-            return SyftError(
-                message="The Request Contains more than one Response"
-                "which is currently not possible"
-                "The request should contain only one response"
-                "Kindly re-submit a new request"
-                "The Syft Team is working on this issue to handle multiple responses"
-            )
-        response = responses[0]
-        if not isinstance(response, ProjectRequestResponse):
-            return SyftError(  # type: ignore[unreachable]
-                message=f"Response : {type(response)} is not of type ProjectRequestResponse"
-            )
+            return RequestStatus.PENDING
 
-        print("Request Status : ", "Approved" if response.response else "Denied")
-
-        return None
+        # Get the last response for the request
+        # That is the final state of the request
+        last_response = responses[-1]
+        return last_response.response
 
 
 @serializable()
@@ -361,9 +347,62 @@ class ProjectCode(ProjectEventAddObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     code: SubmitUserCode
+    allowed_sub_types: list[type] = [ProjectRequest]
 
-    def status(self, project) -> UserCodeStatus:
-        pass
+    def aggregate_final_status(
+        self, status_list: list[UserCodeStatus]
+    ) -> UserCodeStatus:
+        if UserCodeStatus.DENIED in status_list:
+            return UserCodeStatus.DENIED
+        elif UserCodeStatus.PENDING in status_list:
+            return UserCodeStatus.PENDING
+        else:
+            return UserCodeStatus.APPROVED
+
+    def get_code_status_for_node(
+        self, node_uid: UID, project: Project
+    ) -> UserCodeStatus:
+        code_status = UserCodeStatus.PENDING
+        request_events: list[ProjectRequest] = project.get_children(self)
+
+        # We follow a very simple heuristic to calculate the status of the code
+        # Get the last request submitted for this code on that node_uid
+        # If the last response for the request is approved/denied,then the code status is approved/denied
+        # if there is no response for the request, then the code status is pending
+        # This is mainly until , we define all the request semantics in the CodeBase.
+        code_status = UserCodeStatus.PENDING
+        for request_event in request_events[::-1]:
+            if request_event.linked_request.node_uid == node_uid:
+                request_status = request_event.status(project)
+                if request_status is RequestStatus.APPROVED:
+                    code_status = UserCodeStatus.APPROVED
+                    break
+                elif request_status is RequestStatus.REJECTED:
+                    code_status = UserCodeStatus.DENIED
+                    break
+
+        return code_status
+
+    def status(self, project: Project, verbose: bool = False) -> UserCodeStatus:
+        input_owner_node_uids = self.code.input_owner_node_uids
+        if len(input_owner_node_uids) == 0:
+            # TODO: add the ability to calculate status for empty input policies.
+            raise NotImplementedError("This feature is not implemented yet")
+
+        code_status = {}
+        for node_uid in input_owner_node_uids:
+            code_status[node_uid] = self.get_code_status_for_node(
+                node_uid=node_uid, project=project
+            )
+
+        final_status = self.aggregate_final_status(list(code_status.values()))
+
+        if verbose:
+            for node_uid, status in code_status.items():
+                print(f"{node_uid}: {status}")
+            print(f"\nFinal Status: {final_status}")
+
+        return final_status
 
 
 def poll_creation_wizard() -> tuple[str, list[str]]:

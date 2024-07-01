@@ -1182,6 +1182,12 @@ class SubmitUserCode(SyftObject):
             return [x.verify_key for x in self.input_policy_init_kwargs.keys()]
         return None
 
+    @property
+    def input_owner_node_uids(self) -> list[UID] | None:
+        if self.input_policy_init_kwargs is not None:
+            return [x.node_id for x in self.input_policy_init_kwargs.keys()]
+        return None
+
 
 def get_code_hash(code: str, user_verify_key: SyftVerifyKey) -> str:
     full_str = f"{code}{user_verify_key}"
