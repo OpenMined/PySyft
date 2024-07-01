@@ -4,14 +4,13 @@ from __future__ import annotations
 # stdlib
 import ast
 from collections.abc import Callable
-from collections.abc import Generator
 from copy import deepcopy
 import datetime
 from enum import Enum
 import hashlib
 import inspect
 from io import StringIO
-import itertools
+import json
 import keyword
 import random
 import re
@@ -77,6 +76,7 @@ from ..action.action_object import Action
 from ..action.action_object import ActionObject
 from ..context import AuthedServiceContext
 from ..dataset.dataset import Asset
+from ..dataset.dataset import Dataset
 from ..job.job_stash import Job
 from ..output.output_service import ExecutionOutput
 from ..output.output_service import OutputService
@@ -779,31 +779,53 @@ class UserCode(SyncableSyftObject):
         return compile_byte_code(self.parsed_code)
 
     @property
-    def assets(self) -> list[Asset]:
-        # relative
-        from ...client.api import APIRegistry
+    def assets(self) -> list[Asset] | SyftError:
+        if not self.input_policy:
+            return []
 
-        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
-        if api is None:
-            return SyftError(message=f"You must login to {self.node_uid}")
+        api = self._get_api()
+        if isinstance(api, SyftError):
+            return api
 
-        inputs: Generator = (x for x in range(0))  # create an empty generator
-        if self.input_policy_init_kwargs is not None:
-            inputs = (
-                uids
-                for node_identity, uids in self.input_policy_init_kwargs.items()
-                if node_identity.node_name == api.node_name
-            )
+        # get all assets on the node
+        datasets: list[Dataset] = api.services.dataset.get_all()
+        if isinstance(datasets, SyftError):
+            return datasets
 
-        all_assets = []
-        for uid in itertools.chain.from_iterable(x.values() for x in inputs):
-            if isinstance(uid, UID):
-                assets = api.services.dataset.get_assets_by_action_id(uid)
-                if not isinstance(assets, list):
-                    return assets
+        all_assets = {}
+        for dataset in datasets:
+            for asset in dataset.asset_list:
+                asset._dataset_name = dataset.name
+                all_assets[asset.action_id] = asset
 
-                all_assets += assets
-        return all_assets
+        # get a flat dict of all inputs
+        all_inputs = {}
+        inputs = self.input_policy.inputs or {}
+        for vals in inputs.values():
+            all_inputs.update(vals)
+
+        # map the action_id to the asset
+        used_assets = []
+        for kwarg_name, action_id in all_inputs.items():
+            asset = all_assets.get(action_id, None)
+            asset._kwarg_name = kwarg_name
+            used_assets.append(asset)
+        return used_assets
+
+    @property
+    def _asset_json(self) -> str | SyftError:
+        if isinstance(self.assets, SyftError):
+            return self.assets
+        used_assets = {}
+        for asset in self.assets:
+            used_assets[asset._kwarg_name] = {
+                "source_dataset": asset._dataset_name,
+                "source_asset": asset.name,
+                "action_id": asset.action_id.no_dash,
+                "source_node": asset.node_uid.no_dash,
+            }
+        asset_str = json.dumps(used_assets, indent=2)
+        return asset_str
 
     def get_sync_dependencies(
         self, context: AuthedServiceContext
@@ -886,6 +908,11 @@ class UserCode(SyncableSyftObject):
         constants = [x for x in args if isinstance(x, Constant)]
         constants_str = "\n\t".join([f"{x.kw}: {x.val}" for x in constants])
 
+        # indent all lines except the first one
+        asset_str = "\n".join(
+            [f"    {line}" for line in self._asset_json.split("\n")]
+        ).lstrip()
+
         md = f"""class UserCode
     id: UID = {self.id}
     service_func_name: str = {self.service_func_name}
@@ -893,8 +920,8 @@ class UserCode(SyncableSyftObject):
     status: list = {self.code_status}
     {constants_str}
     {shared_with_line}
+    assets: dict = {asset_str}
     code:
-
 {self.raw_code}
 """
         if self.nested_codes != {}:

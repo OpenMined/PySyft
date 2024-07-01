@@ -105,7 +105,8 @@ class Asset(SyftObject):
     created_at: DateTime = DateTime.now()
     uploader: Contributor | None = None
 
-    __repr_attrs__ = ["name", "shape"]
+    __repr_attrs__ = ["_kwarg_name", "name", "action_id", "_dataset_name", "node_uid"]
+    __clipboard_attrs__ = ["action_id", "node_uid", "_dataset_name"]
 
     def __init__(
         self,
@@ -177,6 +178,9 @@ class Asset(SyftObject):
             <p><strong>Mock Data:</strong></p>
             {mock_table_line}
             </div>"""
+
+    def __repr__(self) -> str:
+        return f"Asset(name='{self.name}', node_uid='{self.node_uid}', action_id='{self.action_id}')"
 
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         _repr_str = f"Asset: {self.name}\n"
