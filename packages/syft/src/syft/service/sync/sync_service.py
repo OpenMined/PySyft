@@ -210,8 +210,8 @@ class SyncService(AbstractService):
                     context, item, new_storage_permissions
                 )
             else:
-                item = self.transform_item(context, item)  # type: ignore[unreachable]
-                res = self.set_object(context, item)
+                new_item = self.transform_item(context, item)  # type: ignore[unreachable]
+                res = self.set_object(context, new_item)
 
                 if res.is_ok():
                     self.add_permissions_for_item(context, item, new_permissions)
