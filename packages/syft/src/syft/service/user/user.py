@@ -11,6 +11,9 @@ from pydantic import EmailStr
 from pydantic import ValidationError
 from pydantic import field_validator
 
+from src.syft.service.user.errors import UserInvalidEmailError, UserPasswordMismatchError
+from src.syft.types.errors import SyftException
+
 # relative
 from ...client.api import APIRegistry
 from ...node.credentials import SyftSigningKey
@@ -233,22 +236,24 @@ class UserView(SyftObject):
         if confirm:
             confirmed_password: str = getpass("Please confirm your password: ")
             if confirmed_password != new_password:
-                return SyftError(message="Passwords do not match !")
+                raise UserPasswordMismatchError
+
         return self._set_password(new_password)
 
-    def set_email(self, email: str) -> SyftSuccess | SyftError:
+    def set_email(self, email: str) -> str:
         # validate email address
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None:
-            return SyftError(message=f"You must login to {self.node_uid}")
+            # TODO: APIRegistryError?
+            raise SyftException(public_message="You must login to {self.node_uid}.")
 
         try:
             user_update = UserUpdate(email=email)
         except ValidationError:
-            return SyftError(message="{email} is not a valid email address.")
+            raise UserInvalidEmailError
 
         result = api.services.user.update(uid=self.id, user_update=user_update)
 
@@ -256,10 +261,8 @@ class UserView(SyftObject):
             return result
 
         self.email = email
-        return SyftSuccess(
-            message=f"Successfully updated email for the user "
-            f"'{self.name}' to '{self.email}'."
-        )
+
+        return f"Successfully updated email for the user '{self.name}' to '{self.email}'."
 
     def update(
         self,
