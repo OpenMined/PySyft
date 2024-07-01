@@ -274,6 +274,9 @@ class KeyValueActionStore(ActionStore):
             return Ok(self.permissions[uid])
         return Err(f"No permissions found for uid: {uid}")
 
+    def get_all_permissions(self) -> Result[dict[UID, set[str]], str]:
+        return Ok(dict(self.permissions.items()))
+
     def add_storage_permission(self, permission: StoragePermission) -> None:
         permissions = self.storage_permissions[permission.uid]
         permissions.add(permission.node_uid)
@@ -300,6 +303,9 @@ class KeyValueActionStore(ActionStore):
         if uid in self.storage_permissions:
             return Ok(self.storage_permissions[uid])
         return Err(f"No storage permissions found for uid: {uid}")
+
+    def get_all_storage_permissions(self) -> Result[dict[UID, set[UID]], str]:
+        return Ok(dict(self.storage_permissions.items()))
 
     def _all(
         self,

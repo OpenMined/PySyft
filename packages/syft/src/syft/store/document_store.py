@@ -208,7 +208,7 @@ class QueryKeys(SyftBaseModel):
     def from_obj(partition_keys: PartitionKeys, obj: SyftObject) -> QueryKeys:
         qks = []
         for partition_key in partition_keys.all:
-            pk_key = partition_key.key # name of the attribute
+            pk_key = partition_key.key  # name of the attribute
             pk_type = partition_key.type_
             pk_value = getattr(obj, pk_key)
             # object has a method for getting these types
@@ -489,6 +489,7 @@ class StorePartition:
         obj: SyftObject,
         has_permission: bool = False,
         overwrite: bool = False,
+        allow_missing_keys: bool = False,
     ) -> Result[SyftObject, str]:
         raise NotImplementedError
 
@@ -525,6 +526,9 @@ class StorePartition:
     def has_permission(self, permission: ActionObjectPermission) -> bool:
         raise NotImplementedError
 
+    def get_all_permissions(self) -> Result[dict[UID, set[str]], str]:
+        raise NotImplementedError
+
     def _get_permissions_for_uid(self, uid: UID) -> Result[set[str], str]:
         raise NotImplementedError
 
@@ -541,6 +545,9 @@ class StorePartition:
         raise NotImplementedError
 
     def _get_storage_permissions_for_uid(self, uid: UID) -> Result[set[UID], str]:
+        raise NotImplementedError
+
+    def get_all_storage_permissions(self) -> Result[dict[UID, set[UID]], str]:
         raise NotImplementedError
 
     def _migrate_data(
@@ -587,6 +594,11 @@ class DocumentStore:
                 store_config=self.store_config,
             )
         return self.partitions[settings.name]
+
+    def get_partition_object_types(self) -> list[type]:
+        return [
+            partition.settings.object_type for partition in self.partitions.values()
+        ]
 
 
 @instrument

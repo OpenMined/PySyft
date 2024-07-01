@@ -120,7 +120,8 @@ from ..store.linked_obj import LinkedObject
 from ..store.mongo_document_store import MongoStoreConfig
 from ..store.sqlite_document_store import SQLiteStoreClientConfig
 from ..store.sqlite_document_store import SQLiteStoreConfig
-from ..types.syft_object import SYFT_OBJECT_VERSION_2, Context
+from ..types.syft_object import Context
+from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
 from ..util.experimental_flags import flags
@@ -1593,8 +1594,12 @@ class Node(AbstractNode):
                 node_settings = settings_exists[0]
                 if node_settings.__version__ != NodeSettings.__version__:
                     context = Context()
-                    node_settings = node_settings.migrate_to(NodeSettings.__version__, context)
-                    res = settings_stash.delete_by_uid(self.signing_key.verify_key, node_settings.id)
+                    node_settings = node_settings.migrate_to(
+                        NodeSettings.__version__, context
+                    )
+                    res = settings_stash.delete_by_uid(
+                        self.signing_key.verify_key, node_settings.id
+                    )
                     if res.is_err():
                         raise Exception(res.value)
                     res = settings_stash.set(self.signing_key.verify_key, node_settings)
@@ -1785,7 +1790,9 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
             default_worker_pool.worker_list
         )
         if worker_to_add_ > 0:
-            add_worker_method = node.get_service_method(SyftWorkerPoolService.add_workers)
+            add_worker_method = node.get_service_method(
+                SyftWorkerPoolService.add_workers
+            )
             result = add_worker_method(
                 context=context,
                 number=worker_to_add_,

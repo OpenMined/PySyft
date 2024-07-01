@@ -4,8 +4,11 @@
 
 # stdlib
 
-# third party
+# stdlib
 from collections import defaultdict
+from typing import cast
+
+# third party
 from result import Err
 from result import Ok
 from result import Result
@@ -13,15 +16,20 @@ from result import Result
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
+from ...store.document_store import StorePartition
 from ...types.syft_object import SyftObject
 from ..action.action_object import Action
 from ..action.action_object import ActionObject
+from ..action.action_permissions import ActionObjectPermission
+from ..action.action_permissions import StoragePermission
+from ..action.action_store import KeyValueActionStore
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
+from .object_migration_state import StoreMetadata
 from .object_migration_state import SyftMigrationStateStash
 from .object_migration_state import SyftObjectMigrationState
 
@@ -116,6 +124,145 @@ class MigrationService(AbstractService):
         return klasses_to_be_migrated
 
     @service_method(
+        path="migration.get_all_store_metadata",
+        name="get_all_store_metadata",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def get_all_store_metadata(
+        self,
+        context: AuthedServiceContext,
+        document_store_object_types: list[type[SyftObject]] | None = None,
+        include_action_store: bool = True,
+    ) -> dict[str, StoreMetadata] | SyftError:
+        res = self._get_all_store_metadata(
+            context,
+            document_store_object_types=document_store_object_types,
+            include_action_store=include_action_store,
+        )
+        if res.is_err():
+            return SyftError(message=res.value)
+        else:
+            return res.ok()
+
+    def _get_partition_from_type(
+        self,
+        context: AuthedServiceContext,
+        object_type: type[SyftObject],
+    ) -> Result[KeyValueActionStore | StorePartition, str]:
+        object_partition: KeyValueActionStore | StorePartition | None = None
+        if issubclass(object_type, ActionObject):
+            object_partition = cast(KeyValueActionStore, context.node.action_store)
+        else:
+            canonical_name = object_type.__canonical_name__
+            object_partition = self.store.partitions.get(canonical_name)
+
+        if object_partition is None:
+            return Err(f"Object partition not found for {object_type}")  # type: ignore
+
+        return Ok(object_partition)
+
+    def _get_store_metadata(
+        self,
+        context: AuthedServiceContext,
+        object_type: type[SyftObject],
+    ) -> Result[StoreMetadata, str]:
+        object_partition = self._get_partition_from_type(context, object_type)
+        if object_partition.is_err():
+            return object_partition
+        object_partition = object_partition.ok()
+
+        permissions = object_partition.get_all_permissions()
+
+        if permissions.is_err():
+            return permissions
+        permissions = permissions.ok()
+
+        storage_permissions = object_partition.get_all_storage_permissions()
+        if storage_permissions.is_err():
+            return storage_permissions
+        storage_permissions = storage_permissions.ok()
+
+        return Ok(
+            StoreMetadata(
+                object_type=object_type,
+                permissions=permissions,
+                storage_permissions=storage_permissions,
+            )
+        )
+
+    def _get_all_store_metadata(
+        self,
+        context: AuthedServiceContext,
+        document_store_object_types: list[type[SyftObject]] | None = None,
+        include_action_store: bool = True,
+    ) -> Result[dict[str, list[str]], str]:
+        if document_store_object_types is None:
+            document_store_object_types = self.store.get_partition_object_types()
+
+        store_metadata = {}
+        for klass in document_store_object_types:
+            result = self._get_store_metadata(context, klass)
+            if result.is_err():
+                return result
+            store_metadata[klass] = result.ok()
+
+        if include_action_store:
+            result = self._get_store_metadata(context, ActionObject)
+            if result.is_err():
+                return result
+            store_metadata[ActionObject] = result.ok()
+
+        return Ok(store_metadata)
+
+    @service_method(
+        path="migration.update_store_metadata",
+        name="update_store_metadata",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def update_store_metadata(
+        self, context: AuthedServiceContext, store_metadata: dict[type, StoreMetadata]
+    ) -> SyftSuccess | SyftError:
+        res = self._update_store_metadata(context, store_metadata)
+        if res.is_err():
+            return SyftError(message=res.value)
+        else:
+            return SyftSuccess(message=res.ok())
+
+    def _update_store_metadata_for_klass(
+        self, context: AuthedServiceContext, metadata: StoreMetadata
+    ) -> Result[str, str]:
+        object_partition = self._get_partition_from_type(context, metadata.object_type)
+        if object_partition.is_err():
+            return object_partition
+        object_partition = object_partition.ok()
+
+        permissions = [
+            ActionObjectPermission.from_permission_string(uid, perm_str)
+            for uid, perm_strs in metadata.permissions.items()
+            for perm_str in perm_strs
+        ]
+
+        storage_permissions = [
+            StoragePermission(uid, node_uid)
+            for uid, node_uids in metadata.storage_permissions.items()
+            for node_uid in node_uids
+        ]
+
+        object_partition.add_permissions(permissions)
+        object_partition.add_storage_permissions(storage_permissions)
+
+        return Ok("success")
+
+    def _update_store_metadata(
+        self, context: AuthedServiceContext, store_metadata: dict[type, StoreMetadata]
+    ) -> Result[str, str]:
+        for metadata in store_metadata.values():
+            result = self._update_store_metadata_for_klass(context, metadata)
+            if result.is_err():
+                return result
+        return Ok("success")
+
+    @service_method(
         path="migration.get_migration_objects",
         name="get_migration_objects",
         roles=ADMIN_ROLE_LEVEL,
@@ -137,12 +284,9 @@ class MigrationService(AbstractService):
         context: AuthedServiceContext,
         document_store_object_types: list[type[SyftObject]] | None = None,
         get_all: bool = False,
-    ) -> Result[dict, str]:
+    ) -> Result[dict[type[SyftObject], list[SyftObject]], str]:
         if document_store_object_types is None:
-            document_store_object_types = [
-                partition.settings.object_type
-                for partition in self.store.partitions.values()
-            ]
+            document_store_object_types = self.store.get_partition_object_types()
 
         if get_all:
             klasses_to_migrate = document_store_object_types
@@ -171,9 +315,14 @@ class MigrationService(AbstractService):
             objects = objects_result.ok()
             for object in objects:
                 actual_klass = type(object)
-                use_klass = klass if actual_klass.__canonical_name__ == klass.__canonical_name__ else actual_klass
+                use_klass = (
+                    klass
+                    if actual_klass.__canonical_name__ == klass.__canonical_name__
+                    else actual_klass
+                )
                 result[use_klass].append(object)
-        return Ok(result)
+
+        return Ok(dict(result))
 
     @service_method(
         path="migration.update_migrated_objects",
@@ -196,21 +345,25 @@ class MigrationService(AbstractService):
             klass = type(migrated_object)
             mro = klass.__mro__
             class_index = 0
+            object_partition = None
             while len(mro) > class_index:
                 canonical_name = mro[class_index].__canonical_name__
                 object_partition = self.store.partitions.get(canonical_name)
                 if object_partition is not None:
                     break
                 class_index += 1
-            
+            if object_partition is None:
+                return Err(f"Object partition not found for {klass}")
+
             # canonical_name = mro[class_index].__canonical_name__
             # object_partition = self.store.partitions.get(canonical_name)
-               
+
             # print(klass, canonical_name, object_partition)
             qk = object_partition.settings.store_key.with_obj(migrated_object.id)
             # print(migrated_object)
+            # stdlib
             import sys
-            
+
             result = object_partition._update(
                 context.credentials,
                 qk=qk,
@@ -219,7 +372,7 @@ class MigrationService(AbstractService):
                 overwrite=True,
                 allow_missing_keys=True,
             )
-            
+
             if result.is_err():
                 print("ERR:", result.value, file=sys.stderr)
                 print("ERR:", klass, file=sys.stderr)
@@ -326,7 +479,9 @@ class MigrationService(AbstractService):
         name="get_migration_actionobjects",
         roles=ADMIN_ROLE_LEVEL,
     )
-    def get_migration_actionobjects(self, context: AuthedServiceContext):
+    def get_migration_actionobjects(
+        self, context: AuthedServiceContext
+    ) -> dict | SyftError:
         res = self._get_migration_actionobjects(context)
         if res.is_ok():
             return res.ok()
@@ -343,7 +498,9 @@ class MigrationService(AbstractService):
         action_object_pending_migration = self._find_klasses_pending_for_migration(
             context=context, object_types=action_object_types
         )
-        result_dict = {x: [] for x in action_object_pending_migration}
+        result_dict: dict[type[SyftObject], SyftObject] = {
+            x: [] for x in action_object_pending_migration
+        }
         action_store = context.node.action_store
         action_store_objects_result = action_store._all(
             context.credentials, has_permission=True

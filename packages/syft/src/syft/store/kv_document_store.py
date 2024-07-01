@@ -308,6 +308,9 @@ class KeyValueStorePartition(StorePartition):
             return Ok(self.permissions[uid])
         return Err(f"No permissions found for uid: {uid}")
 
+    def get_all_permissions(self) -> Result[dict[UID, set[str]], str]:
+        return Ok(dict(self.permissions.items()))
+
     def add_storage_permission(self, permission: StoragePermission) -> None:
         permissions = self.storage_permissions[permission.uid]
         permissions.add(permission.node_uid)
@@ -330,6 +333,14 @@ class KeyValueStorePartition(StorePartition):
             return permission.node_uid in self.storage_permissions[permission.uid]
         return False
 
+    def _get_storage_permissions_for_uid(self, uid: UID) -> Result[set[UID], Err]:
+        if uid in self.storage_permissions:
+            return Ok(self.storage_permissions[uid])
+        return Err(f"No storage permissions found for uid: {uid}")
+
+    def get_all_storage_permissions(self) -> Result[dict[UID, set[UID]], str]:
+        return Ok(dict(self.storage_permissions.items()))
+
     def _all(
         self,
         credentials: SyftVerifyKey,
@@ -342,11 +353,6 @@ class KeyValueStorePartition(StorePartition):
         if order_by is not None:
             result = sorted(result, key=lambda x: getattr(x, order_by.key, ""))
         return Ok(result)
-
-    def _get_storage_permissions_for_uid(self, uid: UID) -> Result[set[UID], Err]:
-        if uid in self.storage_permissions:
-            return Ok(self.storage_permissions[uid])
-        return Err(f"No storage permissions found for uid: {uid}")
 
     def _remove_keys(
         self,
@@ -417,7 +423,7 @@ class KeyValueStorePartition(StorePartition):
         obj: SyftObject,
         has_permission: bool = False,
         overwrite: bool = False,
-        allow_missing_keys=False,
+        allow_missing_keys: bool = False,
     ) -> Result[SyftObject, str]:
         try:
             if qk.value not in self.data:
