@@ -60,7 +60,7 @@ class SyftException(Exception):
             str: The private or public message based on the role.
         """
         if context.role.value >= ServiceRole.DATA_OWNER.value:
-            return self._private_message
+            return self._private_message or self.public
         return self.public
 
     @classmethod

@@ -16,7 +16,6 @@ from ...client.api import APIRegistry
 from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
-from ...types.errors import SyftException
 from ...types.syft_metaclass import Empty
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
@@ -33,7 +32,7 @@ from ...types.uid import UID
 from ..notifier.notifier_enums import NOTIFIERS
 from ..response import SyftError
 from ..response import SyftSuccess
-from .errors import UserInvalidEmailError
+from .errors import UserInvalidEmailError, UserUpdateError
 from .errors import UserPasswordMismatchError
 from .user_roles import ServiceRole
 
@@ -210,19 +209,20 @@ class UserView(SyftObject):
         }
 
     def _set_password(self, new_password: str) -> SyftError | SyftSuccess:
-        api = APIRegistry.api_for(
+        client = APIRegistry._api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            return SyftError(message=f"You must login to {self.node_uid}")
+        ).unwrap()
 
-        api.services.user.update(
+        result = client.services.user.update(
             uid=self.id, user_update=UserUpdate(password=new_password)
         )
+
+        if isinstance(result, SyftError):
+            return result
+
         return SyftSuccess(
-            message=f"Successfully updated password for "
-            f"user '{self.name}' with email '{self.email}'."
+            message=f"Successfully updated password for user '{self.email}'."
         )
 
     def set_password(
@@ -240,31 +240,24 @@ class UserView(SyftObject):
 
         return self._set_password(new_password)
 
-    def set_email(self, email: str) -> str:
-        # validate email address
-        api = APIRegistry.api_for(
-            node_uid=self.syft_node_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            # TODO: APIRegistryError?
-            raise SyftException(public_message="You must login to {self.node_uid}.")
-
+    def set_email(self, email: str) -> SyftSuccess | SyftError:
         try:
             user_update = UserUpdate(email=email)
         except ValidationError:
-            raise UserInvalidEmailError
+            return SyftError(message=f"Invalid email: '{email}'.")
 
-        result = api.services.user.update(uid=self.id, user_update=user_update)
+        client = APIRegistry._api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        ).unwrap()
+
+        # TODO: Shouldn't this trigger an update on self?
+        result = client.services.user.update(uid=self.id, user_update=user_update)
 
         if isinstance(result, SyftError):
             return result
-
-        self.email = email
-
-        return (
-            f"Successfully updated email for the user '{self.name}' to '{self.email}'."
-        )
+        
+        return SyftSuccess(message=f"Email updated to '{result.email}'.")
 
     def update(
         self,
@@ -275,19 +268,23 @@ class UserView(SyftObject):
         mock_execution_permission: type[Empty] | bool = Empty,
     ) -> SyftSuccess | SyftError:
         """Used to update name, institution, website of a user."""
-        api = APIRegistry.api_for(
+        try:
+            user_update = UserUpdate(
+                name=name,
+                institution=institution,
+                website=website,
+                role=role,
+                mock_execution_permission=mock_execution_permission,
+            )
+        except ValidationError as exc:
+            print("Error is here")
+            raise UserUpdateError.from_exception(exc, public_message=str(exc))
+
+        api = APIRegistry._api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            return SyftError(message=f"You must login to {self.node_uid}")
-        user_update = UserUpdate(
-            name=name,
-            institution=institution,
-            website=website,
-            role=role,
-            mock_execution_permission=mock_execution_permission,
-        )
+        ).unwrap()
+
         result = api.services.user.update(uid=self.id, user_update=user_update)
 
         if isinstance(result, SyftError):

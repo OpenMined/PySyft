@@ -25,6 +25,7 @@ from typing import cast
 from nacl.signing import SigningKey
 from result import Err
 from result import Result
+from syft.store.errors import NotFoundError
 from typing_extensions import Self
 
 # relative
@@ -1273,7 +1274,8 @@ class Node(AbstractNode):
                 logger.info(f"API Call: {api_call}")
                 result = method(context, *api_call.args, **api_call.kwargs)
             except SyftException as exc:
-                result = SyftError.from_exc(exc, context)
+                msg = exc.get_message(context)
+                result = SyftError(message=msg)
             except Exception:
                 result = SyftError(
                     message=f"Exception calling {api_call.path}. {traceback.format_exc()}"
@@ -1394,9 +1396,10 @@ class Node(AbstractNode):
             has_execute_permissions=has_execute_permissions,
             worker_pool=worker_pool_ref,  # set worker pool reference as part of queue item
         )
-        user_id = self.get_service("UserService").get_user_id_for_credentials(
-            credentials
-        )
+
+        user_service = self.get_service("UserService")
+        user_service = cast(UserService, user_service)
+        user_id = user_service.get_user_id_for_credentials(credentials).unwrap()
 
         return self.add_queueitem_to_queue(
             queue_item=queue_item,
@@ -1700,39 +1703,35 @@ def create_admin_new(
     password: str,
     node: AbstractNode,
 ) -> User | None:
-    try:
-        user_stash = UserStash(store=node.document_store)
-        row_exists = user_stash.get_by_email(
-            credentials=node.signing_key.verify_key, email=email
-        ).ok()
-        if row_exists:
-            return None
-        else:
-            create_user = UserCreate(
-                name=name,
-                email=email,
-                password=password,
-                password_verify=password,
-                role=ServiceRole.ADMIN,
-            )
-            # New User Initialization
-            # 🟡 TODO: change later but for now this gives the main user super user automatically
-            user = create_user.to(User)
-            user.signing_key = node.signing_key
-            user.verify_key = user.signing_key.verify_key
-            result = user_stash.set(
-                credentials=node.signing_key.verify_key,
-                user=user,
-                ignore_duplicates=True,
-            )
-            if result.is_ok():
-                return result.ok()
-            else:
-                raise Exception(f"Could not create user: {result}")
-    except Exception as e:
-        logger.error("Unable to create new admin", exc_info=e)
+    user_stash = UserStash(store=node.document_store)
 
-    return None
+    email_exists = user_stash._email_exists(email=email).unwrap()
+    if email_exists:
+        # TODO: Fail verbosely here!
+        return None
+
+    create_user = UserCreate(
+        name=name,
+        email=email,
+        password=password,
+        password_verify=password,
+        role=ServiceRole.ADMIN,
+    )
+
+    # New User Initialization
+    # 🟡 TODO: change later but for now this gives the main user super user automatically
+    user = create_user.to(User)
+    user.signing_key = node.signing_key
+    user.verify_key = user.signing_key.verify_key
+
+    new_user = user_stash._set(
+        credentials=node.signing_key.verify_key,
+        user=user,
+        ignore_duplicates=True,
+    ).unwrap()
+
+    print(f"created admin user {new_user.email}")
+    return new_user
 
 
 class NodeRegistry:

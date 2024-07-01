@@ -23,6 +23,8 @@ from pydantic import EmailStr
 from pydantic import TypeAdapter
 from result import OkErr
 from result import Result
+from syft.client.errors import SyftAPINotFoundError
+from syft.types.result import as_result
 from typeguard import check_type
 
 # relative
@@ -122,6 +124,18 @@ class APIRegistry:
     def api_for(cls, node_uid: UID, user_verify_key: SyftVerifyKey) -> SyftAPI | None:
         key = (node_uid, user_verify_key)
         return cls.__api_registry__.get(key, None)
+
+    @classmethod
+    @as_result(SyftAPINotFoundError)
+    def _api_for(cls, node_uid: UID, user_verify_key: SyftVerifyKey) -> SyftAPI:
+        key = (node_uid, user_verify_key)
+        api_instance = cls.__api_registry__.get(key, None)
+
+        if api_instance is None:
+            msg = f"Unable to get the API. Please login to domain {node_uid}"
+            raise SyftAPINotFoundError(public_message=msg)
+
+        return api_instance
 
     @classmethod
     def get_all_api(cls) -> list[SyftAPI]:

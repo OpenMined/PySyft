@@ -49,22 +49,22 @@ class UserStash(BaseStash):
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
 
+    def _admin_verify_key(self) -> SyftVerifyKey:
+        return self.partition.root_verify_key
+
     @as_result(StashError, NotFoundError)
     def _query_one(self, credentials: SyftVerifyKey, qks: QueryKeys) -> User:
         result = super().query_one(credentials=credentials, qks=qks)
 
         match result:
-            case Ok(user):
-                return cast(User, user)
             case Ok(None):
                 raise NotFoundError
+            case Ok(user):
+                return cast(User, user)
             case Err(msg):
                 raise StashError(msg)
             case _:
                 raise StashError
-
-    def _admin_verify_key(self) -> SyftVerifyKey:
-        return self.partition.root_verify_key
 
     @as_result(StashError, UserCreateError)
     def _set(
@@ -233,7 +233,7 @@ class UserStash(BaseStash):
             case Ok(update_user):
                 return cast(User, update_user)
             case Err(msg):
-                raise UserUpdateError(msg)
+                raise UserUpdateError(msg, public_message=f"Error: {str(msg)}")
             case _:
                 raise StashError
 

@@ -36,7 +36,7 @@ from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..settings.settings_stash import SettingsStash
-from .errors import UserCreateError
+from .errors import UserCreateError, UserUpdateError
 from .errors import UserEnclaveAdminLoginError
 from .errors import UserError
 from .errors import UserPermissionError
@@ -49,7 +49,6 @@ from .user import UserUpdate
 from .user import UserView
 from .user import check_pwd
 from .user import salt_and_hash_password
-from .user_errors import UserAlreadyExistsError
 from .user_roles import ADMIN_ROLE_LEVEL
 from .user_roles import DATA_OWNER_ROLE_LEVEL
 from .user_roles import DATA_SCIENTIST_ROLE_LEVEL
@@ -124,7 +123,7 @@ class UserService(AbstractService):
             new_user = self._add_user(context.credentials, user)
             return new_user.to(UserView)
 
-        raise UserCreateError(f"User with email {user.email} already exists.")
+        raise UserCreateError(f"User {user.email} already exists")
 
     @service_method(path="user.view", name="view", roles=DATA_SCIENTIST_ROLE_LEVEL)
     def view(self, context: AuthedServiceContext, uid: UID) -> UserView:
@@ -162,14 +161,14 @@ class UserService(AbstractService):
     ) -> ServiceRole:
         try:
             # they could be different
+            # TODO: This fn is cryptic -- when does each situation occur?
             if isinstance(credentials, SyftVerifyKey):
                 user = self.stash._get_by_verify_key(
                     credentials=credentials, verify_key=credentials
                 ).unwrap()
             elif isinstance(credentials, SyftSigningKey):
-                _verify_key = SyftVerifyKey.from_string(str(credentials))
                 user = self.stash._get_by_signing_key(
-                    credentials=_verify_key, signing_key=credentials
+                    credentials=credentials, signing_key=credentials # type: ignore
                 ).unwrap()
             else:
                 raise CredentialsError
@@ -250,12 +249,9 @@ class UserService(AbstractService):
 
         # check if the email already exists (with root's key)
         if user_update.email is not Empty:
-            user_with_email_exists: bool = self.stash._email_exists(
-                email=user_update.email
-            ).unwrap()
-            # TODO: Remove comment: below is handled in another PR (or merge it?)
-            if user_with_email_exists:
-                raise UserAlreadyExistsError
+            user_exists = self.stash._email_exists(email=user_update.email).unwrap()
+            if user_exists:
+                raise UserUpdateError(public_message=f"User {user_update.email} already exists")
 
         if updates_role:
             if context.role == ServiceRole.ADMIN:
@@ -263,6 +259,7 @@ class UserService(AbstractService):
                 pass
             elif (
                 context.role == ServiceRole.DATA_OWNER
+                and context.role.value > user.role.value
                 and context.role.value > user_update.role.value
             ):
                 # as a data owner, only update lower roles to < data owner
@@ -341,7 +338,6 @@ class UserService(AbstractService):
         ).unwrap()
 
     def exchange_credentials(self, context: UnauthedServiceContext) -> UserPrivateKey:
-        # TODO: Should this function be in the user service?
         """Verify user
         TODO: We might want to use a SyftObject instead
         """
@@ -355,11 +351,12 @@ class UserService(AbstractService):
                 and context.node.node_type == NodeType.ENCLAVE
                 and user.role == ServiceRole.ADMIN
             ):
-                # TODO: Seems more suited to an enclave auth service?
+                # TODO: Entertain an auth service?
                 raise UserEnclaveAdminLoginError
-            return user.to(UserPrivateKey)
         else:
             raise CredentialsError
+
+        return user.to(UserPrivateKey)
 
     def admin_verify_key(self) -> SyftVerifyKey:
         # TODO: Remove passthrough method?
@@ -380,12 +377,8 @@ class UserService(AbstractService):
             or request_user_role in DATA_OWNER_ROLE_LEVEL
         )
 
-        print("register context.node type: ", type(context.node))
-
         if not can_user_register:
-            raise UserPermissionError(
-                f"User {context.credentials} tried to create a new user"
-            )
+            raise UserPermissionError
 
         user = new_user.to(User)
 
@@ -394,7 +387,7 @@ class UserService(AbstractService):
         )
 
         if user_exists:
-            raise UserCreateError(f"User already exists with email: {user.email}")
+            raise UserCreateError(f"User {user.email} already exists")
 
         user = self._add_user(credentials=user.verify_key, user=user)
 
@@ -445,8 +438,6 @@ class UserService(AbstractService):
         ).unwrap()
         return user.to(UserView)
 
-    # TODO: This exposed service is only for the development phase.
-    # enable/disable notifications will be called from Notifier Service
     def _set_notification_status(
         self,
         notifier_type: NOTIFIERS,
@@ -461,23 +452,22 @@ class UserService(AbstractService):
 
     def enable_notifications(
         self, context: AuthedServiceContext, notifier_type: NOTIFIERS
-    ) -> Literal[True]:
+    ) -> SyftSuccess:
         self._set_notification_status(
             notifier_type=notifier_type, new_status=True, verify_key=context.credentials
         )
-        display_html(SyftSuccess(message="Notifications enabled successfully!"))
-        return True
+        return SyftSuccess(message="Notifications enabled successfully!")
 
     def disable_notifications(
         self, context: AuthedServiceContext, notifier_type: NOTIFIERS
-    ) -> Literal[True]:
+    ) -> SyftSuccess:
         self._set_notification_status(
             notifier_type=notifier_type,
             new_status=False,
             verify_key=context.credentials,
         )
-        display_html(SyftSuccess(message="Notifications disabled successfully!"))
-        return True
+
+        return SyftSuccess(message="Notifications disabled successfully!")
 
 
 TYPE_TO_SERVICE[User] = UserService

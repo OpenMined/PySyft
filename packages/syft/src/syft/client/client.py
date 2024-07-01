@@ -706,7 +706,7 @@ class SyftClient:
             self_node_route = connection_to_route(self.connection)
             remote_node_route = connection_to_route(client.connection)
             if client.metadata is None:
-                return SyftError(f"client {client}'s metadata is None!")
+                return SyftError(message=f"client {client}'s metadata is None!")
 
             return self.api.services.network.exchange_credentials_with(
                 self_node_route=self_node_route,
@@ -934,8 +934,6 @@ class SyftClient:
                 return None
 
         response = self.connection.register(new_user=new_user)
-        if isinstance(response, tuple):
-            response = response[0]
         return response
 
     def __hash__(self) -> int:

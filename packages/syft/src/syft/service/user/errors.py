@@ -1,6 +1,5 @@
 # relative
 from ...types.errors import SyftException
-from .user import UserSearch
 
 
 class UserError(SyftException):
@@ -27,11 +26,13 @@ class UserInvalidEmailError(UserError):
     public_message = "Invalid email address."
 
 
-class UserSearchBadParamsError(UserError):
-    public_message = (
-        f"Invalid Search parameters. Allowed params: "
-        f"{list(UserSearch.model_fields.keys())}"
-    )
+class UserSearchBadParamsError(UserError): ...
+
+
+# public_message = (
+#     f"Invalid Search parameters. Allowed params: "
+#     f"{list(UserSearch.model_fields.keys())}"
+# )
 
 
 class UserPermissionError(UserError):

@@ -6,5 +6,4 @@ class SyftClientError(SyftException):
     public_message = "Unknown client error."
 
 
-class APINotFoundError(SyftClientError):
-    public_message = "API not found."
+class SyftAPINotFoundError(SyftClientError): ...
