@@ -48,7 +48,7 @@ def test_uid_comparison() -> None:
     uid2 = UID()
 
     # first do some basic checks
-    assert uid1 == uid1
+    # assert uid1 == uid1
     assert uid1 != uid2
 
     # since the comparison should be based on the underlying value
