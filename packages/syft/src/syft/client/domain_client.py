@@ -180,8 +180,8 @@ class DomainClient(SyftClient):
 
         for uid, obj in state.objects.items():
             if isinstance(obj, ActionObject):
-                obj = obj.refresh_object(resolve_nested=False)
-                state.objects[uid] = obj
+                new_obj = obj.refresh_object(resolve_nested=False)
+                state.objects[uid] = new_obj
         return state
 
     def apply_state(self, resolved_state: ResolvedSyncState) -> SyftSuccess | SyftError:
