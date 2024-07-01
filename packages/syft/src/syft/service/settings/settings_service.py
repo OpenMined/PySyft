@@ -332,9 +332,7 @@ class SettingsService(AbstractService):
                     else "High Side"
                 )
                 commands = ""
-                if (
-                    role.value in (ServiceRole.NONE.value, ServiceRole.GUEST.value)
-                ):
+                if role.value in (ServiceRole.NONE.value, ServiceRole.GUEST.value):
                     commands = GUEST_COMMANDS
                 elif (
                     role is not None and role.value == ServiceRole.DATA_SCIENTIST.value
