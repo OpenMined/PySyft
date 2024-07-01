@@ -80,6 +80,6 @@ def configure_azure(first_res: dict) -> str:
             container_name,
             account_key,
         ],
-        check=False,
+        check=True,
     )
     return str(res.returncode)
