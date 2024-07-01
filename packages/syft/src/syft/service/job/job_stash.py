@@ -395,10 +395,9 @@ class Job(SyncableSyftObject):
                 # no access
                 if isinstance(self.result, Err):
                     results.append(self.result.value)
-        else:
+        elif isinstance(self.result, Err):
             # add short error
-            if isinstance(self.result, Err):
-                results.append(self.result.value)
+            results.append(self.result.value)
 
         if has_permissions:
             has_storage_permission = api.services.log.has_storage_permission(
