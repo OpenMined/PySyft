@@ -16,7 +16,7 @@ select = [
     "C4",   # flake8-comprehensions
     # "PERF", # perflint
     "PL",   # pylint
-    # "SIM",  # flake8-simplify  
+    # "SIM",  # flake8-simplify
     "UP",   # pyupgrade
 ]
 ignore = [
