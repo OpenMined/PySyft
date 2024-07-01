@@ -1516,9 +1516,9 @@ It will be available for review again."""
         if exclude_types:
             for exclude_type in exclude_types:
                 if isinstance(exclude_type, type):
-                    exclude_type = exclude_type.__name__
+                    exclude_type_name = exclude_type.__name__
                 new_filters.append(
-                    NodeDiffFilter(FilterProperty.TYPE, exclude_type, operator.ne)
+                    NodeDiffFilter(FilterProperty.TYPE, exclude_type_name, operator.ne)
                 )
 
         return self._apply_filters(new_filters, inplace=inplace)
