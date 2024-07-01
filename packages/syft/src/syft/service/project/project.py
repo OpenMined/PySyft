@@ -384,22 +384,22 @@ class ProjectCode(ProjectEventAddObject):
         return code_status
 
     def status(self, project: Project, verbose: bool = False) -> UserCodeStatus:
-        input_owner_node_uids = self.code.input_owner_node_uids
-        if len(input_owner_node_uids) == 0:
+        input_owner_node_identities = self.code.input_policy_init_kwargs.keys()
+        if len(input_owner_node_identities) == 0:
             # TODO: add the ability to calculate status for empty input policies.
             raise NotImplementedError("This feature is not implemented yet")
 
         code_status = {}
-        for node_uid in input_owner_node_uids:
-            code_status[node_uid] = self.get_code_status_for_node(
-                node_uid=node_uid, project=project
+        for node_identity in input_owner_node_identities:
+            code_status[node_identity] = self.get_code_status_for_node(
+                node_uid=node_identity.node_id, project=project
             )
 
         final_status = self.aggregate_final_status(list(code_status.values()))
 
         if verbose:
-            for node_uid, status in code_status.items():
-                print(f"{node_uid}: {status}")
+            for node_identity, status in code_status.items():
+                print(f"{node_identity.__repr__()}: {status}")
             print(f"\nFinal Status: {final_status}")
 
         return final_status
@@ -1212,8 +1212,15 @@ class Project(SyftObject):
     @property
     def requests(self) -> list[Request]:
         return [
-            event.request for event in self.events if isinstance(event, ProjectRequest)
+            event.request
+            for event in self.events
+            if isinstance(event, ProjectRequest)
+            and self.syft_node_location == event.linked_request.node_uid
         ]
+
+    @property
+    def code(self) -> list[ProjectCode]:
+        return self.get_events(types=[ProjectCode])
 
     @property
     def pending_requests(self) -> int:
