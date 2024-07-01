@@ -1380,8 +1380,8 @@ def validate_callable_args_and_kwargs(
                     if isinstance(t, _GenericAlias) and type(None) in t.__args__:
                         for v in t.__args__:
                             if issubclass(v, EmailStr):
-                                v = str
-                            check_type(arg, v)  # raises Exception
+                                val = str
+                            check_type(arg, val)  # raises Exception
                             break  # only need one to match
                     else:
                         check_type(arg, t)  # raises Exception
