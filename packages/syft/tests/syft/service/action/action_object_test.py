@@ -728,7 +728,7 @@ def test_actionobject_syft_getattr_str(worker, scenario):
     assert obj.upper() == orig_obj.upper()
     assert "C" in obj
     assert "z" not in obj
-    assert obj[0] == orig_obj[0]
+    assert obj[0] == orig_obj[0]  # noqa
     assert f"test {obj}" == f"test {orig_obj}"
     assert obj > "a"
     assert obj < "zzzz"
