@@ -22,7 +22,7 @@ from ..core.syft_repo import SyftRepo
 from ..core.syft_version import InvalidVersion
 from ..core.syft_version import SyftVersion
 
-__all__ = "create"
+__all__ = "create"  # noqa PLE0605
 
 DEFAULT_OUTPUT_DIR = Path("~/.syft")
 
