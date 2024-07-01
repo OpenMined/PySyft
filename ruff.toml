@@ -21,6 +21,7 @@ select = [
 ignore = [
     "B904",      # check for raise statements in exception handlers that lack a from clause
     "B905",      # zip() without an explicit strict= parameter
+    "E721",      # Already done in another PR
     "PLR0911",   # Too many return statements
     "PLR0912",   # Too many branches
     "PLR0913",   # Too many arguments in function definition
