@@ -295,11 +295,6 @@ class MigrationService(AbstractService):
                 context=context, object_types=document_store_object_types
             )
 
-        if klasses_to_migrate:
-            print(
-                f"Classes in Document Store that need migration: {klasses_to_migrate}"
-            )
-
         result = defaultdict(list)
 
         for klass in klasses_to_migrate:
@@ -324,6 +319,70 @@ class MigrationService(AbstractService):
 
         return Ok(dict(result))
 
+    def _search_partition_for_object(
+        self, context: AuthedServiceContext, obj: SyftObject
+    ) -> Result[StorePartition, str]:
+        klass = type(obj)
+        mro = klass.__mro__
+        class_index = 0
+        object_partition = None
+        while len(mro) > class_index:
+            canonical_name = mro[class_index].__canonical_name__
+            object_partition = self.store.partitions.get(canonical_name)
+            if object_partition is not None:
+                break
+            class_index += 1
+        if object_partition is None:
+            return Err(f"Object partition not found for {klass}")
+        return Ok(object_partition)
+
+    @service_method(
+        path="migration.create_migrated_objects",
+        name="create_migrated_objects",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def create_migrated_objects(
+        self,
+        context: AuthedServiceContext,
+        migrated_objects: list[SyftObject],
+        ignore_existing: bool = True,
+    ) -> SyftSuccess | SyftError:
+        res = self._create_migrated_objects(context, migrated_objects)
+        if res.is_err():
+            return SyftError(message=res.value)
+        else:
+            return SyftSuccess(message=res.ok())
+
+    def _create_migrated_objects(
+        self,
+        context: AuthedServiceContext,
+        migrated_objects: list[SyftObject],
+        ignore_existing: bool = True,
+    ) -> Result[str, str]:
+        for migrated_object in migrated_objects:
+            object_partition_or_err = self._search_partition_for_object(
+                context, migrated_object
+            )
+            if object_partition_or_err.is_err():
+                return object_partition_or_err
+            object_partition = object_partition_or_err.ok()
+
+            # upsert the object
+            result = object_partition.set(
+                context.credentials,
+                obj=migrated_object,
+            )
+            if result.is_err():
+                if ignore_existing and "Duplication Key Error" in result.value:
+                    print(
+                        f"{type(migrated_object)} #{migrated_object.id} already exists"
+                    )
+                    continue
+                else:
+                    return result
+
+        return Ok(value="success")
+
     @service_method(
         path="migration.update_migrated_objects",
         name="update_migrated_objects",
@@ -342,28 +401,18 @@ class MigrationService(AbstractService):
         self, context: AuthedServiceContext, migrated_objects: list[SyftObject]
     ) -> Result[str, str]:
         for migrated_object in migrated_objects:
-            klass = type(migrated_object)
-            mro = klass.__mro__
-            class_index = 0
-            object_partition = None
-            while len(mro) > class_index:
-                canonical_name = mro[class_index].__canonical_name__
-                object_partition = self.store.partitions.get(canonical_name)
-                if object_partition is not None:
-                    break
-                class_index += 1
-            if object_partition is None:
-                return Err(f"Object partition not found for {klass}")
+            object_partition_or_err = self._search_partition_for_object(
+                context, migrated_object
+            )
+            if object_partition_or_err.is_err():
+                return object_partition_or_err
+            object_partition = object_partition_or_err.ok()
 
             # canonical_name = mro[class_index].__canonical_name__
             # object_partition = self.store.partitions.get(canonical_name)
 
             # print(klass, canonical_name, object_partition)
             qk = object_partition.settings.store_key.with_obj(migrated_object.id)
-            # print(migrated_object)
-            # stdlib
-            import sys
-
             result = object_partition._update(
                 context.credentials,
                 qk=qk,
@@ -375,7 +424,7 @@ class MigrationService(AbstractService):
 
             if result.is_err():
                 print("ERR:", result.value, file=sys.stderr)
-                print("ERR:", klass, file=sys.stderr)
+                print("ERR:", type(migrated_object), file=sys.stderr)
                 print("ERR:", migrated_object, file=sys.stderr)
                 # return result
         return Ok(value="success")
@@ -480,17 +529,17 @@ class MigrationService(AbstractService):
         roles=ADMIN_ROLE_LEVEL,
     )
     def get_migration_actionobjects(
-        self, context: AuthedServiceContext
+        self, context: AuthedServiceContext, get_all: bool = False
     ) -> dict | SyftError:
-        res = self._get_migration_actionobjects(context)
+        res = self._get_migration_actionobjects(context, get_all=get_all)
         if res.is_ok():
             return res.ok()
         else:
             return SyftError(message=res.value)
 
     def _get_migration_actionobjects(
-        self, context: AuthedServiceContext
-    ) -> Result[dict[type[SyftObject], SyftObject], str]:
+        self, context: AuthedServiceContext, get_all: bool = False
+    ) -> Result[dict[type[SyftObject], list[SyftObject]], str]:
         # Track all object types from action store
         action_object_types = [Action, ActionObject]
         action_object_types.extend(ActionObject.__subclasses__())
@@ -498,9 +547,7 @@ class MigrationService(AbstractService):
         action_object_pending_migration = self._find_klasses_pending_for_migration(
             context=context, object_types=action_object_types
         )
-        result_dict: dict[type[SyftObject], SyftObject] = {
-            x: [] for x in action_object_pending_migration
-        }
+        result_dict: dict[type[SyftObject], list[SyftObject]] = defaultdict(list)
         action_store = context.node.action_store
         action_store_objects_result = action_store._all(
             context.credentials, has_permission=True
@@ -510,9 +557,9 @@ class MigrationService(AbstractService):
         action_store_objects = action_store_objects_result.ok()
 
         for obj in action_store_objects:
-            if type(obj) in result_dict:
+            if get_all or type(obj) in action_object_pending_migration:
                 result_dict[type(obj)].append(obj)
-        return Ok(result_dict)
+        return Ok(dict(result_dict))
 
     @service_method(
         path="migration.update_migrated_actionobjects",
