@@ -781,7 +781,7 @@ class UserCode(SyncableSyftObject):
     @property
     def assets(self) -> list[Asset] | SyftError:
         if not self.input_policy:
-            return {}
+            return []
 
         api = self._get_api()
         if isinstance(api, SyftError):
