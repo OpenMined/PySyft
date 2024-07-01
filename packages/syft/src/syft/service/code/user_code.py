@@ -822,7 +822,7 @@ class UserCode(SyncableSyftObject):
         return dependencies
 
     @property
-    def unsafe_function(self) -> Callable | None:
+    def run(self) -> Callable | None:
         warning = SyftWarning(
             message="This code was submitted by a User and could be UNSAFE."
         )
@@ -864,7 +864,7 @@ class UserCode(SyncableSyftObject):
                 # return the results
                 return result
             except Exception as e:
-                return SyftError(f"Failed to run unsafe_function. Error: {e}")
+                return SyftError(f"Failed to execute 'run'. Error: {e}")
 
         return wrapper
 
