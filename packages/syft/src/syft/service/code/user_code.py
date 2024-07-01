@@ -1041,18 +1041,6 @@ class SubmitUserCode(SyftObject):
     def local_call(self, *args: Any, **kwargs: Any) -> Any:
         # only run this on the client side
         if self.local_function:
-            source = dedent(inspect.getsource(self.local_function))
-            tree: ast.Module | SyftWarning = _parse_code(source)
-            if isinstance(tree, SyftWarning):
-                return SyftError(
-                    message=f"Error when running function locally: {tree.message}"
-                )
-            v: GlobalsVisitor | SyftWarning = _check_global(code_tree=tree)
-            if isinstance(v, SyftWarning):
-                return SyftError(
-                    message=f"Error when running function locally: {v.message}"
-                )
-
             # filtered_args = []
             filtered_kwargs = {}
             # for arg in args:
@@ -1268,20 +1256,20 @@ def syft_function(
         try:
             code = dedent(inspect.getsource(f))
 
-            tree: ast.Module | SyftWarning = _parse_code(raw_code=code)
-            if isinstance(tree, SyftWarning):
-                display(tree)
-
-            # check that there are no globals
-            global_check: GlobalsVisitor | SyftWarning = _check_global(code_tree=tree)
-            if isinstance(global_check, SyftWarning):
-                display(global_check)
-
             if name is not None:
                 fname = name
                 code = replace_func_name(code, fname)
             else:
                 fname = f.__name__
+
+            input_kwargs = f.__code__.co_varnames[: f.__code__.co_argcount]
+
+            parse_user_code(
+                raw_code=code,
+                func_name=fname,
+                original_func_name=f.__name__,
+                function_input_kwargs=input_kwargs,
+            )
 
             res = SubmitUserCode(
                 code=code,
@@ -1292,7 +1280,7 @@ def syft_function(
                 output_policy_type=output_policy_type,
                 output_policy_init_kwargs=getattr(output_policy, "init_kwargs", {}),
                 local_function=f,
-                input_kwargs=f.__code__.co_varnames[: f.__code__.co_argcount],
+                input_kwargs=input_kwargs,
                 worker_pool_name=worker_pool_name,
             )
 
@@ -1302,6 +1290,11 @@ def syft_function(
             for error in errors:
                 msg += f"\t{error['msg']}\n"
             err = SyftError(message=msg)
+            display(err)
+            return err
+
+        except SyftException as se:
+            err = SyftError(message=f"Error when parsing the code: {se}")
             display(err)
             return err
 
@@ -1322,31 +1315,6 @@ def syft_function(
     return decorator
 
 
-def _check_global(code_tree: ast.Module) -> GlobalsVisitor | SyftWarning:
-    """
-    Check that the code does not contain any global variables
-    """
-    v = GlobalsVisitor()
-    try:
-        v.visit(code_tree)
-    except Exception:
-        return SyftWarning(
-            message="Your code contains (a) global variable(s), which is not allowed"
-        )
-    return v
-
-
-def _parse_code(raw_code: str) -> ast.Module | SyftWarning:
-    """
-    Parse the code into an AST tree and return a warning if there are syntax errors
-    """
-    try:
-        tree = ast.parse(raw_code)
-    except SyntaxError as e:
-        return SyftWarning(message=f"Your code contains syntax error: {e}")
-    return tree
-
-
 def generate_unique_func_name(context: TransformContext) -> TransformContext:
     if context.output is not None:
         code_hash = context.output["code_hash"]
@@ -1361,29 +1329,48 @@ def generate_unique_func_name(context: TransformContext) -> TransformContext:
     return context
 
 
-def process_code(
-    context: TransformContext,
+def _check_global(code_tree: ast.Module) -> GlobalsVisitor | SyftWarning:
+    """
+    Check that the code does not contain any global variables
+    """
+    v = GlobalsVisitor()
+    try:
+        v.visit(code_tree)
+    except Exception:
+        raise SyftException(
+            "Your code contains (a) global variable(s), which is not allowed"
+        )
+    return v
+
+
+def _parse_code(raw_code: str) -> ast.Module | SyftWarning:
+    """
+    Parse the code into an AST tree and return a warning if there are syntax errors
+    """
+    try:
+        tree = ast.parse(raw_code)
+    except SyntaxError as e:
+        raise SyftException(f"Your code contains syntax error: {e}")
+    return tree
+
+
+def parse_user_code(
     raw_code: str,
     func_name: str,
     original_func_name: str,
-    policy_input_kwargs: list[str],
     function_input_kwargs: list[str],
 ) -> str:
-    tree: ast.Module | SyftWarning = _parse_code(raw_code=raw_code)
-    if isinstance(tree, SyftWarning):
-        raise SyftException(f"{tree.message}")
-
-    # check there are no globals
-    v: GlobalsVisitor | SyftWarning = _check_global(code_tree=tree)
-    if isinstance(v, SyftWarning):
-        raise SyftException(f"{v.message}")
+    # parse the code, check for syntax errors and if there are global variables
+    try:
+        tree: ast.Module = _parse_code(raw_code=raw_code)
+        _check_global(code_tree=tree)
+    except SyftException as e:
+        raise SyftException(f"{e}")
 
     f: ast.stmt = tree.body[0]
     f.decorator_list = []
 
     call_args = function_input_kwargs
-    if "domain" in function_input_kwargs and context.output is not None:
-        context.output["uses_domain"] = True
     call_stmt_keywords = [ast.keyword(arg=i, value=[ast.Name(id=i)]) for i in call_args]
     call_stmt = ast.Assign(
         targets=[ast.Name(id="result")],
@@ -1406,6 +1393,25 @@ def process_code(
     )
 
     return unparse(wrapper_function)
+
+
+def process_code(
+    context: TransformContext,
+    raw_code: str,
+    func_name: str,
+    original_func_name: str,
+    policy_input_kwargs: list[str],
+    function_input_kwargs: list[str],
+) -> str:
+    if "domain" in function_input_kwargs and context.output is not None:
+        context.output["uses_domain"] = True
+
+    return parse_user_code(
+        raw_code=raw_code,
+        func_name=func_name,
+        original_func_name=original_func_name,
+        function_input_kwargs=function_input_kwargs,
+    )
 
 
 def new_check_code(context: TransformContext) -> TransformContext:
