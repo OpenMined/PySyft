@@ -22,7 +22,7 @@ class UserSettings:
 
     @helper.setter
     def helper(self, value: bool) -> None:
-        global tutorial_mode
+        global tutorial_mode  # noqa
         tutorial_mode = value
 
 
