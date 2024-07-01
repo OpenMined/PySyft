@@ -1,4 +1,5 @@
-from src.syft.types.errors import SyftException
+# relative
+from ..types.errors import SyftException
 
 
 class NotFoundError(SyftException):
@@ -7,4 +8,3 @@ class NotFoundError(SyftException):
 
 class StashError(SyftException):
     public_message = "There was an error retrieving data. Contact your admin."
-

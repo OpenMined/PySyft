@@ -11,14 +11,12 @@ from pydantic import EmailStr
 from pydantic import ValidationError
 from pydantic import field_validator
 
-from src.syft.service.user.errors import UserInvalidEmailError, UserPasswordMismatchError
-from src.syft.types.errors import SyftException
-
 # relative
 from ...client.api import APIRegistry
 from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...types.errors import SyftException
 from ...types.syft_metaclass import Empty
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
@@ -35,6 +33,8 @@ from ...types.uid import UID
 from ..notifier.notifier_enums import NOTIFIERS
 from ..response import SyftError
 from ..response import SyftSuccess
+from .errors import UserInvalidEmailError
+from .errors import UserPasswordMismatchError
 from .user_roles import ServiceRole
 
 
@@ -262,7 +262,9 @@ class UserView(SyftObject):
 
         self.email = email
 
-        return f"Successfully updated email for the user '{self.name}' to '{self.email}'."
+        return (
+            f"Successfully updated email for the user '{self.name}' to '{self.email}'."
+        )
 
     def update(
         self,

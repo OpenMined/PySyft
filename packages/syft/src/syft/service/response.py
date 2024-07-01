@@ -5,14 +5,11 @@ from typing import Any
 
 # third party
 from result import Err
-from typing_extensions import Self
 
 # relative
 from ..serde.serializable import serializable
 from ..types.base import SyftBaseModel
-from ..types.errors import SyftException as SyftExc
 from ..util.util import sanitize_html
-from .context import AuthedServiceContext
 
 
 class SyftResponseMessage(SyftBaseModel):
@@ -65,10 +62,6 @@ class SyftError(SyftResponseMessage):
 
     def __bool__(self) -> bool:
         return False
-
-    @classmethod
-    def from_exc(cls, exc: SyftExc, context: AuthedServiceContext) -> Self:
-        return cls(message=exc.get_message(context))
 
 
 @serializable()

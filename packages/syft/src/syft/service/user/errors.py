@@ -1,5 +1,6 @@
-from src.syft.service.user.user import UserSearch
-from syft.types.errors import SyftException
+# relative
+from ...types.errors import SyftException
+from .user import UserSearch
 
 
 class UserError(SyftException):
@@ -25,21 +26,24 @@ class UserPasswordMismatchError(UserError):
 class UserInvalidEmailError(UserError):
     public_message = "Invalid email address."
 
+
 class UserSearchBadParamsError(UserError):
     public_message = (
-        f"Invalid Search parameters. Allowed params: "\
+        f"Invalid Search parameters. Allowed params: "
         f"{list(UserSearch.model_fields.keys())}"
     )
+
 
 class UserPermissionError(UserError):
     public_message = "You are not permitted to perform this action."
 
+
 class UserExchangeCredentials(UserError):
     public_message = "Invalid credential exchange. Please contact the admin."
 
+
 class UserEnclaveAdminLoginError(UserError):
     public_message = (
-        "Admins are not allowed to login to Enclaves.\n" 
+        "Admins are not allowed to login to Enclaves.\n"
         "Kindly register a new data scientist account via `client.register`."
     )
-

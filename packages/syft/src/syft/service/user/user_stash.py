@@ -1,12 +1,12 @@
 # stdlib
 
+# stdlib
+from typing import Any
+from typing import cast
+
 # third party
-from typing import Any, cast
-from result import Ok
 from result import Err
-from result import Result
-from src.syft.store.errors import NotFoundError, StashError
-from syft.service.user.errors import UserCreateError, UserDeleteError, UserUpdateError
+from result import Ok
 
 # relative
 from ...node.credentials import SyftSigningKey
@@ -18,11 +18,15 @@ from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
+from ...store.errors import NotFoundError
+from ...store.errors import StashError
 from ...types.result import as_result
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
-from ..response import SyftSuccess
+from .errors import UserCreateError
+from .errors import UserDeleteError
+from .errors import UserUpdateError
 from .user import User
 from .user_roles import ServiceRole
 
@@ -45,11 +49,8 @@ class UserStash(BaseStash):
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
 
-
     @as_result(StashError, NotFoundError)
-    def _query_one(
-        self, credentials: SyftVerifyKey, qks: QueryKeys
-    ) -> User:
+    def _query_one(self, credentials: SyftVerifyKey, qks: QueryKeys) -> User:
         result = super().query_one(credentials=credentials, qks=qks)
 
         match result:
@@ -59,7 +60,8 @@ class UserStash(BaseStash):
                 raise NotFoundError
             case Err(msg):
                 raise StashError(msg)
-
+            case _:
+                raise StashError
 
     def _admin_verify_key(self) -> SyftVerifyKey:
         return self.partition.root_verify_key
@@ -88,14 +90,16 @@ class UserStash(BaseStash):
                 return cast(User, new_user)
             case Err(msg):
                 raise UserCreateError(msg)
-
+            case _:
+                raise StashError
 
     @as_result(StashError, NotFoundError)
     def _admin_user(self) -> User:
         # TODO: This returns only one user, the first user with the role ADMIN
         admin_credentials = self._admin_verify_key()
-        return self._get_by_role(credentials=admin_credentials, role=ServiceRole.ADMIN).unwrap()
-
+        return self._get_by_role(
+            credentials=admin_credentials, role=ServiceRole.ADMIN
+        ).unwrap()
 
     @as_result(StashError, NotFoundError)
     def _get_all(
@@ -111,7 +115,8 @@ class UserStash(BaseStash):
                 return cast(list[User], users)
             case Err(err):
                 raise NotFoundError(str(err))
-
+            case _:
+                raise StashError
 
     @as_result(StashError, NotFoundError)
     def _get_by_uid(self, credentials: SyftVerifyKey, uid: UID) -> User:
@@ -125,9 +130,10 @@ class UserStash(BaseStash):
 
         return user
 
-
     @as_result(StashError, UserDeleteError)
-    def _delete_by_uid(self, credentials: SyftVerifyKey, uid: UID, has_permission: bool = False) -> bool:
+    def _delete_by_uid(
+        self, credentials: SyftVerifyKey, uid: UID, has_permission: bool = False
+    ) -> bool:
         qk = UIDPartitionKey.with_obj(uid)
         result = super().delete(
             credentials=credentials, qk=qk, has_permission=has_permission
@@ -139,7 +145,8 @@ class UserStash(BaseStash):
             case Err(err):
                 msg = f"Failed to delete User {uid}"
                 raise UserDeleteError(str(err), public_message=msg)
-
+            case _:
+                raise StashError
 
     @as_result(StashError, NotFoundError)
     def _get_by_email(self, credentials: SyftVerifyKey, email: str) -> User:
@@ -153,18 +160,18 @@ class UserStash(BaseStash):
 
         return user
 
-
     @as_result(StashError)
     def _email_exists(self, email: str) -> bool:
         # TODO: Delete commment below, only for remembering a remark to discuss
         # In this function, stash
         try:
-            self._get_by_email(credentials=self._admin_verify_key(), email=email).unwrap()
+            self._get_by_email(
+                credentials=self._admin_verify_key(), email=email
+            ).unwrap()
         except NotFoundError:
             return False
 
         return True
-
 
     @as_result(StashError, NotFoundError)
     def _get_by_role(self, credentials: SyftVerifyKey, role: ServiceRole) -> User:
@@ -179,9 +186,10 @@ class UserStash(BaseStash):
 
         return user
 
-
     @as_result(StashError, NotFoundError)
-    def _get_by_signing_key(self, credentials: SyftVerifyKey, signing_key: SyftSigningKey | str) -> User:
+    def _get_by_signing_key(
+        self, credentials: SyftVerifyKey, signing_key: SyftSigningKey | str
+    ) -> User:
         if isinstance(signing_key, str):
             signing_key = SyftSigningKey.from_string(signing_key)
 
@@ -194,9 +202,10 @@ class UserStash(BaseStash):
 
         return user
 
-
     @as_result(StashError, NotFoundError)
-    def _get_by_verify_key(self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey | str) -> User:
+    def _get_by_verify_key(
+        self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey | str
+    ) -> User:
         if isinstance(verify_key, str):
             verify_key = SyftVerifyKey.from_string(verify_key)
 
@@ -210,9 +219,10 @@ class UserStash(BaseStash):
 
         return user
 
-
     @as_result(StashError, UserUpdateError)
-    def _update(self, credentials: SyftVerifyKey, user: User, has_permission: bool = False) -> User:
+    def _update(
+        self, credentials: SyftVerifyKey, user: User, has_permission: bool = False
+    ) -> User:
         _user = self._check_type(user, self.object_type).unwrap()
 
         result = super().update(
@@ -224,10 +234,13 @@ class UserStash(BaseStash):
                 return cast(User, update_user)
             case Err(msg):
                 raise UserUpdateError(msg)
-
+            case _:
+                raise StashError
 
     @as_result(StashError)
-    def _find_all(self, credentials: SyftVerifyKey, **kwargs: dict[str, Any]) -> list[User]:
+    def _find_all(
+        self, credentials: SyftVerifyKey, **kwargs: dict[str, Any]
+    ) -> list[User]:
         result = self.query_all_kwargs(credentials=credentials, **kwargs)
 
         match result:
@@ -235,5 +248,5 @@ class UserStash(BaseStash):
                 return cast(list[User], users)
             case Err(msg):
                 raise StashError(msg)
-
-
+            case _:
+                raise StashError
