@@ -85,8 +85,7 @@ def create_diff_html(
 
     for attr, val in properties.items():
         status = statuses[attr]
-        if val is None:  # noqa
-            val = ""  # noqa
+        val = val if val is not None else ""
         style = f"background-color: {background_colors[status]}; color: {colors[status]}; display: block; white-space: pre-wrap; margin-bottom: 5px;"  # noqa: E501
         content = html.escape(f"{attr}: {val}")
         html_str += f"<div style='{style}'>{content}</div>"
