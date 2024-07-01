@@ -40,11 +40,14 @@ from ...abstract_node import NodeSideType
 from ...abstract_node import NodeType
 from ...client.api import APIRegistry
 from ...client.api import NodeIdentity
+from ...client.api import generate_remote_function
 from ...client.enclave_client import EnclaveMetadata
 from ...node.credentials import SyftVerifyKey
 from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
+from ...serde.signature import signature_remove_context
+from ...serde.signature import signature_remove_self
 from ...store.document_store import PartitionKey
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
@@ -54,6 +57,7 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SYFT_OBJECT_VERSION_5
+from ...types.syft_object import SYFT_OBJECT_VERSION_6
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.transforms import TransformContext
@@ -299,7 +303,7 @@ class UserCodeV4(SyncableSyftObject):
 
 
 @serializable()
-class UserCode(SyncableSyftObject):
+class UserCodeV5(SyncableSyftObject):
     # version
     __canonical_name__ = "UserCode"
     __version__ = SYFT_OBJECT_VERSION_5
@@ -331,6 +335,41 @@ class UserCode(SyncableSyftObject):
     worker_pool_name: str | None = None
     origin_node_side_type: NodeSideType
     l0_deny_reason: str | None = None
+
+
+@serializable()
+class UserCode(SyncableSyftObject):
+    # version
+    __canonical_name__ = "UserCode"
+    __version__ = SYFT_OBJECT_VERSION_6
+
+    id: UID
+    node_uid: UID | None = None
+    user_verify_key: SyftVerifyKey
+    raw_code: str
+    input_policy_type: type[InputPolicy] | UserPolicy
+    input_policy_init_kwargs: dict[Any, Any] | None = None
+    input_policy_state: bytes = b""
+    output_policy_type: type[OutputPolicy] | UserPolicy
+    output_policy_init_kwargs: dict[Any, Any] | None = None
+    output_policy_state: bytes = b""
+    parsed_code: str
+    service_func_name: str
+    unique_func_name: str
+    user_unique_func_name: str
+    code_hash: str
+    signature: inspect.Signature
+    status_link: LinkedObject | None = None
+    input_kwargs: list[str]
+    submit_time: DateTime | None = None
+    # tracks if the code calls domain.something, variable is set during parsing
+    uses_domain: bool = False
+
+    nested_codes: dict[str, tuple[LinkedObject, dict]] | None = {}
+    worker_pool_name: str | None = None
+    origin_node_side_type: NodeSideType
+    l0_deny_reason: str | None = None
+    _has_output_read_permissions_cache: bool | None = None
 
     __table_coll_widths__ = [
         "min-content",
@@ -439,9 +478,14 @@ class UserCode(SyncableSyftObject):
             if isinstance(api, SyftError):
                 return api
             node_identity = NodeIdentity.from_api(api)
-            is_approved = api.output.has_output_read_permissions(
-                self.id, self.user_verify_key
-            )
+
+            if self._has_output_read_permissions_cache is None:
+                is_approved = api.output.has_output_read_permissions(
+                    self.id, self.user_verify_key
+                )
+                self._has_output_read_permissions_cache = is_approved
+            else:
+                is_approved = self._has_output_read_permissions_cache
         else:
             # Serverside
             node_identity = NodeIdentity.from_node(context.node)
@@ -509,10 +553,6 @@ class UserCode(SyncableSyftObject):
         if status.is_err():
             return SyftError(message=status.err())
         return status.ok()
-
-    @property
-    def is_enclave_code(self) -> bool:
-        return self.enclave_metadata is not None
 
     @property
     def input_owners(self) -> list[str] | None:
@@ -738,17 +778,6 @@ class UserCode(SyncableSyftObject):
     def byte_code(self) -> PyCodeObject | None:
         return compile_byte_code(self.parsed_code)
 
-    def get_results(self) -> Any:
-        # relative
-        from ...client.api import APIRegistry
-
-        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
-        if api is None:
-            return SyftError(
-                message=f"Can't access the api. You must login to {self.node_uid}"
-            )
-        return api.services.code.get_results(self)
-
     @property
     def assets(self) -> list[Asset]:
         # relative
@@ -902,6 +931,26 @@ class UserCode(SyncableSyftObject):
         ip = get_ipython()
         ip.set_next_input(warning_message + self.raw_code)
 
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        api = self._get_api()
+        if isinstance(api, SyftError):
+            return api
+
+        signature = self.signature
+        signature = signature_remove_self(signature)
+        signature = signature_remove_context(signature)
+        remote_user_function = generate_remote_function(
+            api=api,
+            node_uid=self.node_uid,
+            signature=self.signature,
+            path="code.call",
+            make_call=api.make_call,
+            pre_kwargs={"uid": self.id},
+            warning=None,
+            communication_protocol=api.communication_protocol,
+        )
+        return remote_user_function(*args, **kwargs)
+
 
 class UserCodeUpdate(PartialSyftObject):
     __canonical_name__ = "UserCodeUpdate"
@@ -911,7 +960,7 @@ class UserCodeUpdate(PartialSyftObject):
 
 
 @serializable(without=["local_function"])
-class SubmitUserCode(SyftObject):
+class SubmitUserCodeV4(SyftObject):
     # version
     __canonical_name__ = "SubmitUserCode"
     __version__ = SYFT_OBJECT_VERSION_4
@@ -927,6 +976,25 @@ class SubmitUserCode(SyftObject):
     local_function: Callable | None = None
     input_kwargs: list[str]
     enclave_metadata: EnclaveMetadata | None = None
+    worker_pool_name: str | None = None
+
+
+@serializable(without=["local_function"])
+class SubmitUserCode(SyftObject):
+    # version
+    __canonical_name__ = "SubmitUserCode"
+    __version__ = SYFT_OBJECT_VERSION_5
+
+    id: UID | None = None  # type: ignore[assignment]
+    code: str
+    func_name: str
+    signature: inspect.Signature
+    input_policy_type: SubmitUserPolicy | UID | type[InputPolicy]
+    input_policy_init_kwargs: dict[Any, Any] | None = {}
+    output_policy_type: SubmitUserPolicy | UID | type[OutputPolicy]
+    output_policy_init_kwargs: dict[Any, Any] | None = {}
+    local_function: Callable | None = None
+    input_kwargs: list[str]
     worker_pool_name: str | None = None
 
     __repr_attrs__ = ["func_name", "code"]
@@ -1099,6 +1167,11 @@ class SubmitUserCode(SyftObject):
         if self.input_policy_init_kwargs is not None:
             return [x.verify_key for x in self.input_policy_init_kwargs.keys()]
         return None
+
+
+def get_code_hash(code: str, user_verify_key: SyftVerifyKey) -> str:
+    full_str = f"{code}{user_verify_key}"
+    return hashlib.sha256(full_str.encode()).hexdigest()
 
 
 def is_valid_usercode_name(func_name: str) -> Result[Any, str]:
@@ -1372,10 +1445,12 @@ def compile_code(context: TransformContext) -> TransformContext:
 def hash_code(context: TransformContext) -> TransformContext:
     if context.output is None:
         return context
+    if not isinstance(context.obj, SubmitUserCode):
+        return context
 
     code = context.output["code"]
     context.output["raw_code"] = code
-    code_hash = hashlib.sha256(code.encode("utf8")).hexdigest()
+    code_hash = get_code_hash(code, context.credentials)
     context.output["code_hash"] = code_hash
 
     return context

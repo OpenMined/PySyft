@@ -1,5 +1,6 @@
 # stdlib
 from collections.abc import Callable
+import logging
 from typing import Any
 
 # third party
@@ -29,6 +30,8 @@ from ...util.misc_objs import MarkdownDescription
 from ...util.schema import DEFAULT_WELCOME_MSG
 from ..response import SyftInfo
 
+logger = logging.getLogger(__name__)
+
 
 @serializable()
 class NodeSettingsUpdateV4(PartialSyftObject):
@@ -54,8 +57,8 @@ Be aware if you have private data on the node and you want to change it to the L
 as information might be leaked."
         try:
             display(SyftInfo(message=msg))
-        except Exception:
-            print(SyftInfo(message=msg))
+        except Exception as e:
+            logger.error(msg, exc_info=e)
         return Empty
 
 
@@ -82,6 +85,7 @@ class NodeSettings(SyftObject):
     __repr_attrs__ = [
         "name",
         "organization",
+        "description",
         "deployed_on",
         "signup_enabled",
         "admin_email",
@@ -93,7 +97,7 @@ class NodeSettings(SyftObject):
     organization: str = "OpenMined"
     verify_key: SyftVerifyKey
     on_board: bool = True
-    description: str = "Text"
+    description: str = "This is the default description for a Domain Node."
     node_type: NodeType = NodeType.DOMAIN
     signup_enabled: bool
     admin_email: str
@@ -116,6 +120,7 @@ class NodeSettings(SyftObject):
                 <p><strong>Id: </strong>{self.id}</p>
                 <p><strong>Name: </strong>{self.name}</p>
                 <p><strong>Organization: </strong>{self.organization}</p>
+                <p><strong>Description: </strong>{self.description}</p>
                 <p><strong>Deployed on: </strong>{self.deployed_on}</p>
                 <p><strong>Signup enabled: </strong>{self.signup_enabled}</p>
                 <p><strong>Admin email: </strong>{self.admin_email}</p>

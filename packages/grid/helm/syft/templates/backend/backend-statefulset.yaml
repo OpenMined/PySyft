@@ -86,8 +86,16 @@ spec:
             {{- if .Values.node.debuggerEnabled }}
             - name: DEBUGGER_ENABLED
               value: "true"
+            {{- end }}
+            {{- if eq .Values.node.type "gateway" }}
             - name: ASSOCIATION_REQUEST_AUTO_APPROVAL
               value: {{ .Values.node.associationRequestAutoApproval | quote }}
+            {{- end }}
+            {{- if .Values.rtunnel.enabled }}
+            - name: RATHOLE_PORT
+              value: {{ .Values.rtunnel.port | quote }}
+            - name: REVERSE_TUNNEL_ENABLED
+              value: "true"
             {{- end }}
             # MongoDB
             - name: MONGO_PORT
@@ -109,7 +117,14 @@ spec:
             - name: SMTP_USERNAME
               value: {{ .Values.node.smtp.username | quote }}
             - name: SMTP_PASSWORD
+              {{- if .Values.node.smtp.existingSecret }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.node.smtp.existingSecret }}
+                  key: smtpPassword
+              {{ else }}
               value: {{ .Values.node.smtp.password | quote }}
+              {{ end }}
             - name: EMAIL_SENDER
               value: {{ .Values.node.smtp.from | quote}}
             # SeaweedFS

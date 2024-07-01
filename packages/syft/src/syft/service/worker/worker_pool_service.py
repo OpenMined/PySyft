@@ -1,4 +1,5 @@
 # stdlib
+import logging
 from typing import Any
 
 # third party
@@ -44,6 +45,8 @@ from .worker_pool import WorkerPool
 from .worker_pool_stash import SyftWorkerPoolStash
 from .worker_service import WorkerService
 from .worker_stash import WorkerStash
+
+logger = logging.getLogger(__name__)
 
 
 @serializable()
@@ -527,7 +530,7 @@ class SyftWorkerPoolService(AbstractService):
                     uid=worker.object_uid,
                 )
                 if delete_result.is_err():
-                    print(f"Failed to delete worker: {worker.object_uid}")
+                    logger.error(f"Failed to delete worker: {worker.object_uid}")
 
             # update worker_pool
             worker_pool.max_count = number

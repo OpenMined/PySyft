@@ -1,6 +1,7 @@
 # stdlib
 from collections.abc import Callable
 from enum import Enum
+import logging
 
 # third party
 from result import Err
@@ -34,6 +35,8 @@ from .routes import PythonNodeRoute
 from .routes import VeilidNodeRoute
 from .routes import connection_to_route
 from .routes import route_to_connection
+
+logger = logging.getLogger(__name__)
 
 
 @serializable()
@@ -88,33 +91,23 @@ class NodePeer(SyftObject):
     ping_status_message: str | None = None
     pinged_timestamp: DateTime | None = None
 
-    def existed_route(
-        self, route: NodeRouteType | None = None, route_id: UID | None = None
-    ) -> tuple[bool, int | None]:
+    def existed_route(self, route: NodeRouteType) -> tuple[bool, int | None]:
         """Check if a route exists in self.node_routes
 
         Args:
             route: the route to be checked. For now it can be either
-                HTTPNodeRoute or PythonNodeRoute or VeilidNodeRoute
-            route_id: the id of the route to be checked
+                HTTPNodeRoute or PythonNodeRoute
 
         Returns:
             if the route exists, returns (True, index of the existed route in self.node_routes)
             if the route does not exist returns (False, None)
         """
-        if route_id is None and route is None:
-            raise ValueError("Either route or route_id should be provided in args")
 
         if route:
             if not isinstance(route, HTTPNodeRoute | PythonNodeRoute | VeilidNodeRoute):
                 raise ValueError(f"Unsupported route type: {type(route)}")
             for i, r in enumerate(self.node_routes):
                 if route == r:
-                    return (True, i)
-
-        elif route_id:
-            for i, r in enumerate(self.node_routes):
-                if r.id == route_id:
                     return (True, i)
 
         return (False, None)
@@ -158,25 +151,21 @@ class NodePeer(SyftObject):
                     highest_priority_route = route
         return highest_priority_route
 
-    def update_route(self, route: NodeRoute) -> NodeRoute | None:
+    def update_route(self, route: NodeRoute) -> None:
         """
         Update the route for the node.
         If the route already exists, return it.
         If the route is new, assign it to have the priority of (current_max + 1)
 
         Args:
-            route (NodeRoute): The new route to be added to the peer's node route list
-
-        Returns:
-            NodeRoute | None: if the route already exists, return it, else returns None
+            route (NodeRoute): The new route to be added to the peer.
         """
-        existed, _ = self.existed_route(route)
+        existed, idx = self.existed_route(route)
         if existed:
-            return route
+            self.node_routes[idx] = route  # type: ignore
         else:
             new_route = self.update_route_priority(route)
             self.node_routes.append(new_route)
-            return None
 
     def update_routes(self, new_routes: list[NodeRoute]) -> None:
         """
@@ -217,7 +206,7 @@ class NodePeer(SyftObject):
                 message="Priority must be greater than 0. Now it is {priority}."
             )
 
-        existed, index = self.existed_route(route_id=route.id)
+        existed, index = self.existed_route(route=route)
 
         if not existed or index is None:
             return SyftError(message=f"Route with id {route.id} does not exist.")
@@ -241,11 +230,20 @@ class NodePeer(SyftObject):
         peer.node_routes.append(route)
         return peer
 
+    @property
+    def latest_added_route(self) -> NodeRoute | None:
+        """
+        Returns the latest added route from the list of node routes.
+
+        Returns:
+            NodeRoute | None: The latest added route, or None if there are no routes.
+        """
+        return self.node_routes[-1] if self.node_routes else None
+
     def client_with_context(
         self, context: NodeServiceContext
     ) -> Result[type[SyftClient], str]:
         # third party
-        from loguru import logger
 
         if len(self.node_routes) < 1:
             raise ValueError(f"No routes to peer: {self}")
@@ -255,12 +253,11 @@ class NodePeer(SyftObject):
         try:
             client_type = connection.get_client_type()
         except Exception as e:
-            logger.error(
-                f"Failed to establish a connection with {self.node_type} '{self.name}'. Exception: {e}"
-            )
-            return Err(
+            msg = (
                 f"Failed to establish a connection with {self.node_type} '{self.name}'"
             )
+            logger.error(msg, exc_info=e)
+            return Err(msg)
         if isinstance(client_type, SyftError):
             return Err(client_type.message)
         return Ok(
@@ -288,28 +285,23 @@ class NodePeer(SyftObject):
     def proxy_from(self, client: SyftClient) -> SyftClient:
         return client.proxy_to(self)
 
-    def delete_route(
-        self, route: NodeRouteType | None = None, route_id: UID | None = None
-    ) -> SyftError | None:
+    def get_rtunnel_route(self) -> HTTPNodeRoute | None:
+        for route in self.node_routes:
+            if hasattr(route, "rtunnel_token") and route.rtunnel_token:
+                return route
+        return None
+
+    def delete_route(self, route: NodeRouteType) -> SyftError | None:
         """
         Deletes a route from the peer's route list.
         Takes O(n) where is n is the number of routes in self.node_routes.
 
         Args:
             route (NodeRouteType): The route to be deleted;
-            route_id (UID): The id of the route to be deleted;
 
         Returns:
-            SyftError: If deleting failed
+            SyftError: If failing to delete node route
         """
-        if route_id:
-            try:
-                self.node_routes = [r for r in self.node_routes if r.id != route_id]
-            except Exception as e:
-                return SyftError(
-                    message=f"Error deleting route with id {route_id}. Exception: {e}"
-                )
-
         if route:
             try:
                 self.node_routes = [r for r in self.node_routes if r != route]

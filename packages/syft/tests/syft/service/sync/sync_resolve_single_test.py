@@ -1,5 +1,8 @@
 # third party
 
+# third party
+import numpy as np
+
 # syft absolute
 import syft
 import syft as sy
@@ -60,6 +63,28 @@ def run_and_deposit_result(client):
     return job
 
 
+def create_dataset(client):
+    mock = np.random.random(5)
+    private = np.random.random(5)
+
+    dataset = sy.Dataset(
+        name=sy.util.util.random_name().lower(),
+        description="Lorem ipsum dolor sit amet, consectetur adipiscing elit",
+        asset_list=[
+            sy.Asset(
+                name="numpy-data",
+                mock=mock,
+                data=private,
+                shape=private.shape,
+                mock_is_real=True,
+            )
+        ],
+    )
+
+    client.upload_dataset(dataset)
+    return dataset
+
+
 @syft.syft_function_single_use()
 def compute() -> int:
     return 42
@@ -108,6 +133,60 @@ def test_diff_state(low_worker, high_worker):
     client_low_ds.refresh()
     res = client_low_ds.code.compute(blocking=True)
     assert res == compute(syft_no_node=True)
+
+
+def test_diff_state_with_dataset(low_worker, high_worker):
+    low_client: DomainClient = low_worker.root_client
+    client_low_ds = get_ds_client(low_client)
+    high_client: DomainClient = high_worker.root_client
+
+    _ = create_dataset(high_client)
+    _ = create_dataset(low_client)
+
+    @sy.syft_function_single_use()
+    def compute_mean(data) -> int:
+        return data.mean()
+
+    _ = client_low_ds.code.request_code_execution(compute_mean)
+
+    result = client_low_ds.code.compute_mean(blocking=False)
+    assert isinstance(result, SyftError), "DS cannot start a job on low side"
+
+    diff_state_before, diff_state_after = compare_and_resolve(
+        from_client=low_client, to_client=high_client
+    )
+
+    assert not diff_state_before.is_same
+
+    assert diff_state_after.is_same
+
+    # run_and_deposit_result(high_client)
+    data_high = high_client.datasets[0].assets[0]
+    result = high_client.code.compute_mean(data=data_high, blocking=True)
+    high_client.requests[0].deposit_result(result)
+
+    diff_state_before, diff_state_after = compare_and_resolve(
+        from_client=high_client, to_client=low_client
+    )
+
+    high_state = high_client.get_sync_state()
+    low_state = high_client.get_sync_state()
+    assert high_state.get_previous_state_diff().is_same
+    assert low_state.get_previous_state_diff().is_same
+    assert diff_state_after.is_same
+
+    client_low_ds.refresh()
+
+    # check loading results for both blocking and non-blocking case
+    res_blocking = client_low_ds.code.compute_mean(blocking=True)
+    res_non_blocking = client_low_ds.code.compute_mean(blocking=False).wait()
+
+    # expected_result = compute_mean(syft_no_node=True, data=)
+    assert (
+        res_blocking
+        == res_non_blocking
+        == high_client.datasets[0].assets[0].data.mean()
+    )
 
 
 def test_sync_with_error(low_worker, high_worker):
