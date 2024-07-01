@@ -38,7 +38,6 @@ from ..client.api import SyftAPICall
 from ..client.api import SyftAPIData
 from ..client.api import debox_signed_syftapicall_response
 from ..client.client import SyftClient
-from ..exceptions.exception import PySyftException
 from ..protocol.data_protocol import PROTOCOL_TYPE
 from ..protocol.data_protocol import get_data_protocol
 from ..service.action.action_object import Action
@@ -1273,8 +1272,6 @@ class Node(AbstractNode):
             try:
                 logger.info(f"API Call: {api_call}")
                 result = method(context, *api_call.args, **api_call.kwargs)
-            except PySyftException as e:
-                return e.handle()
             except SyftException as exc:
                 result = SyftError.from_exc(exc, context)
             except Exception:
