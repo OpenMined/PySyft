@@ -165,7 +165,7 @@ class ActionStoreChange(Change):
                 )
                 if apply:
                     logger.debug(
-                        "ADDING PERMISSION", requesting_permission_action_obj, id_action
+                        "ADDING PERMISSION: %s, %s", requesting_permission_action_obj, id_action
                     )
                     action_store.add_permission(requesting_permission_action_obj)
                     blob_storage_service.stash.add_permission(
