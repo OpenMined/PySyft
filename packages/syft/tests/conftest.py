@@ -75,7 +75,7 @@ def is_vscode_discover():
 # Pytest hook to set the number of workers for xdist
 def pytest_xdist_auto_num_workers(config):
     num = config.option.numprocesses
-    if num == "auto" or num == "logical":
+    if num in ("auto", "logical"):
         return os.cpu_count()
     return None
 
