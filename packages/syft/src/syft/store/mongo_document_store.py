@@ -358,17 +358,17 @@ class MongoStorePartition(StorePartition):
         if has_permission or self.has_permission(
             ActionObjectWRITE(uid=prev_obj.id, credentials=credentials)
         ):
-            # we don't want to overwrite Mongo's "id_" or Syft's "id" on update
-            obj_id = obj["id"]
+            for key, value in obj.to_dict(exclude_empty=True).items():
+                # we don't want to overwrite Mongo's "id_" or Syft's "id" on update
+                if key == "id":
+                    # protected field
+                    continue
 
-            # Set ID to the updated object value
-            obj.id = prev_obj["id"]
+                # Overwrite the value if the key is already present
+                setattr(prev_obj, key, value)
 
             # Create the Mongo object
-            storage_obj = obj.to(self.storage_type)
-
-            # revert the ID
-            obj.id = obj_id
+            storage_obj = prev_obj.to(self.storage_type)
 
             try:
                 collection.update_one(
@@ -377,7 +377,7 @@ class MongoStorePartition(StorePartition):
             except Exception as e:
                 return Err(f"Failed to update obj: {obj} with qk: {qk}. Error: {e}")
 
-            return Ok(obj)
+            return Ok(prev_obj)
         else:
             return Err(f"Failed to update obj {obj}, you have no permission")
 
@@ -398,6 +398,21 @@ class MongoStorePartition(StorePartition):
     def data(self) -> dict:
         values: list = self._all(credentials=None, has_permission=True).ok()
         return {v.id: v for v in values}
+
+    def _get(
+        self,
+        uid: UID,
+        credentials: SyftVerifyKey,
+        has_permission: bool | None = False,
+    ) -> Result[SyftObject, str]:
+        qks = QueryKeys.from_dict({"id": uid})
+        res = self._get_all_from_store(
+            credentials, qks, order_by=None, has_permission=has_permission
+        )
+        if res.is_err():
+            return res
+        else:
+            return Ok(res.ok()[0])
 
     def _get_all_from_store(
         self,
@@ -423,12 +438,12 @@ class MongoStorePartition(StorePartition):
             syft_objs.append(obj.to(self.settings.object_type, transform_context))
 
         # TODO: maybe do this in loop before this
-        res = []
-        for s in syft_objs:
-            if has_permission or self.has_permission(
-                ActionObjectREAD(uid=s.id, credentials=credentials)
-            ):
-                res.append(s)
+        res = [
+            s
+            for s in syft_objs
+            if has_permission
+            or self.has_permission(ActionObjectREAD(uid=s.id, credentials=credentials))
+        ]
         return Ok(res)
 
     def _delete(

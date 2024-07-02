@@ -13,6 +13,20 @@
   },
   "dev": {
     "object_versions": {
+      "NodeMetadata": {
+        "5": {
+          "version": 5,
+          "hash": "70197b4725dbdea0560ed8388e4d20b76808bee988f3630c5f916ee8f48761f8",
+          "action": "add"
+        }
+      },
+      "SyftAPI": {
+        "3": {
+          "version": 3,
+          "hash": "b1b9d131a4f204ef2d56dc91bab3b945d5581080565232ede864f32015c0882a",
+          "action": "add"
+        }
+      },
       "HTMLObject": {
         "1": {
           "version": 1,
@@ -21,26 +35,36 @@
         }
       },
       "NodeSettingsUpdate": {
-        "3": {
-          "version": 3,
-          "hash": "0f812fdd5aecc3e3aa1a7c953bbf7f8d8b03a77c5cdbb37e981fa91c8134c9f4",
-          "action": "add"
+        "2": {
+          "version": 2,
+          "hash": "e1dc9d2f30c4aae1f7359eb3fd44de5537788cd3c69be5f30c36fb019f07c261",
+          "action": "remove"
         },
         "4": {
           "version": 4,
-          "hash": "e9120fdf714498cbd2f3da727a4d6e18ea2040b2e8487ea38dff4900de2b14d0",
-          "action": "add"
-        }
-      },
-      "NodeSettings": {
-        "4": {
-          "version": 4,
-          "hash": "318e578f8a9af213a6af0cc2c567b62196b0ff81769d808afff4dd1eb7c372b8",
+          "hash": "ec783a7cd097e2bc4273a519d11023c796aebb9e3710c1d8332c0e46966d4ae0",
           "action": "add"
         },
         "5": {
           "version": 5,
+          "hash": "fd89638bb3d6dda9095905aab7ed2883f0b3dd5245900e8e141eec87921c2c9e",
+          "action": "add"
+        }
+      },
+      "NodeSettings": {
+        "3": {
+          "version": 3,
+          "hash": "2d5f6e79f074f75b5cfc2357eac7cf635b8f083421009a513240b4dbbd5a0fc1",
+          "action": "remove"
+        },
+        "5": {
+          "version": 5,
           "hash": "cde18eb23fdffcfba47bc0e85efdbba1d59f1f5d6baa9c9690e1af14b35eb74e",
+          "action": "add"
+        },
+        "6": {
+          "version": 6,
+          "hash": "986d201418035e59b12787dfaf60aa2af17817c1894ce42ab4b982ed73127403",
           "action": "add"
         }
       },
@@ -71,6 +95,11 @@
         }
       },
       "JobItem": {
+        "4": {
+          "version": 4,
+          "hash": "6a7cc7c2bb4dd234c1508b0af4d3b403cd3b7b427578a775bf80dc36891923ed",
+          "action": "add"
+        },
         "6": {
           "version": 6,
           "hash": "865a2ed791b8abd20d76e9a6bfae7ae7dad51b5ebfd8ff728aab25af93fa5570",
@@ -78,6 +107,11 @@
         }
       },
       "ExecutionOutput": {
+        "1": {
+          "version": 1,
+          "hash": "c2337099eba14767ead75fcc1b1fa265c1898461ede0b5e7758a0e8d11d1757d",
+          "action": "add"
+        },
         "2": {
           "version": 2,
           "hash": "854fe9df5bcbb5c7e5b7c467bac423cd98c32f93d6876fea7b8eb6c08f6596da",
@@ -148,6 +182,11 @@
         }
       },
       "SyftLog": {
+        "3": {
+          "version": 3,
+          "hash": "8964d48238672e0e5d5db6b932cda4ee8eb77581949ab3f7a38a05b1efec13b7",
+          "action": "add"
+        },
         "4": {
           "version": 4,
           "hash": "ad6ef18ccd87fced669f3824d27ab423aaf52574b0cd4f720687aeaba77524e5",
@@ -163,6 +202,11 @@
         "2": {
           "version": 2,
           "hash": "925f1b8ccd4b9d542700a111f9c4bdd28bfa55978d805ddb2fb3c108cc940d19",
+          "action": "add"
+        },
+        "3": {
+          "version": 3,
+          "hash": "1b5fd28919cb496f8073a64a57736d477ace1ed969962b1b049cecf766f2661c",
           "action": "add"
         }
       },
@@ -187,6 +231,13 @@
           "action": "add"
         }
       },
+      "NodeMetadataUpdate": {
+        "2": {
+          "version": 2,
+          "hash": "520ae8ffc0c057ffa827cb7b267a19fb6b92e3cf3c0a3666ac34e271b6dd0aed",
+          "action": "remove"
+        }
+      },
       "SyncStateItem": {
         "1": {
           "version": 1,
@@ -199,6 +250,181 @@
           "version": 1,
           "hash": "c1796e7b01c9eae0dbf59cfd5c2c2f0e7eba593e0cea615717246572b27aae4b",
           "action": "remove"
+        }
+      },
+      "CreateCustomWorkerPoolChange": {
+        "3": {
+          "version": 3,
+          "hash": "e982f2ebcdc6fe23a65a014109e33ba7c487bb7ca5623723cf5ec7642f86828c",
+          "action": "add"
+        }
+      },
+      "NodePeerUpdate": {
+        "1": {
+          "version": 1,
+          "hash": "9e7cd39f6a9f90e8c595452865525e0989df1688236acfd1a665ed047ba47de9",
+          "action": "add"
+        }
+      },
+      "JobInfo": {
+        "2": {
+          "version": 2,
+          "hash": "17a3986f1d55549a5ec2cadca6791bcafd84a92f442c220524d7665185064908",
+          "action": "add"
+        }
+      },
+      "HTTPConnection": {
+        "2": {
+          "version": 2,
+          "hash": "68409295f8916ceb22a8cf4abf89f5e4bcff0d75dc37e16ede37250ada28df59",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "b61b30d10e2d25726c708ef34b69c7b730d41b16b315e7062f3d487e943143d5",
+          "action": "add"
+        }
+      },
+      "UserCode": {
+        "4": {
+          "version": 4,
+          "hash": "0a7181cd5f76800b6566175ffa7276d0cf38c4ddc5110114430147dfc8bfdb2a",
+          "action": "add"
+        },
+        "5": {
+          "version": 5,
+          "hash": "128705a5fdf308055ef857b25c80966c928938a05ec03459dae9b36bd6122aa2",
+          "action": "add"
+        },
+        "6": {
+          "version": 6,
+          "hash": "c48ec3160bb34adf937e6306523c7ebc52861ff84a576a30a28cd45c224ded0f",
+          "action": "add"
+        }
+      },
+      "SyncedUserCodeStatusChange": {
+        "3": {
+          "version": 3,
+          "hash": "9b8ab2d513d84006bdd1329cd0bb636e7e62100a6227d8b772a5bf7c0c45b72f",
+          "action": "add"
+        }
+      },
+      "PolicyRule": {
+        "1": {
+          "version": 1,
+          "hash": "31a982b94654ce27ad27a6622c6fa26dfe3f759a7824ac21d104390f10a5aa82",
+          "action": "add"
+        }
+      },
+      "CreatePolicyRule": {
+        "1": {
+          "version": 1,
+          "hash": "9b82e36c63e10c5b7b76b3b8ec1da1d2dfdce39f2cce98603a418ec221621874",
+          "action": "add"
+        }
+      },
+      "CreatePolicyRuleConstant": {
+        "1": {
+          "version": 1,
+          "hash": "9e821ddd383b6472f95dad2b56ebaefad225ff49c96b89b4ce35dc99c422ba76",
+          "action": "add"
+        }
+      },
+      "Matches": {
+        "1": {
+          "version": 1,
+          "hash": "d1e875a6332a481458e83db364dfdf92bd34a87093d9762dfe8e136e5088bc4e",
+          "action": "add"
+        }
+      },
+      "PreFill": {
+        "1": {
+          "version": 1,
+          "hash": "22c38b8ad68409493810362e6c48822d3e2919760f26eba2d1de3f2ad394e314",
+          "action": "add"
+        }
+      },
+      "UserOwned": {
+        "1": {
+          "version": 1,
+          "hash": "b5cbb44d742fa51b9adf2a48bb56d9ff5ca82a25f8568a2505961bd906d9d084",
+          "action": "add"
+        }
+      },
+      "MixedInputPolicy": {
+        "1": {
+          "version": 1,
+          "hash": "0e84e4c91e378717e1a4703574b07e3b1e6a3e5707401b4e0cc8d30088a506b9",
+          "action": "add"
+        }
+      },
+      "Request": {
+        "3": {
+          "version": 3,
+          "hash": "ba9ebb04cc3e8b3ae3302fd42a67e47261a0a330bae5f189d8f4819cf2804711",
+          "action": "add"
+        }
+      },
+      "SubmitUserCode": {
+        "5": {
+          "version": 5,
+          "hash": "3135727b8f0ca7689d47c04e45a2bd6a7693f17c043f76fd2243135196c27232",
+          "action": "add"
+        }
+      },
+      "CodeHistory": {
+        "3": {
+          "version": 3,
+          "hash": "1b9bd1d3d096abab5617c2ff597b4c80751f686d16482a2cff4efd8741b84d53",
+          "action": "add"
+        }
+      },
+      "PythonConnection": {
+        "2": {
+          "version": 2,
+          "hash": "eb479c671fc112b2acbedb88bc5624dfdc9592856c04c22c66410f6c863e1708",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "1084c85a59c0436592530b5fe9afc2394088c8d16faef2b19fdb9fb83ff0f0e2",
+          "action": "add"
+        }
+      },
+      "HTTPNodeRoute": {
+        "2": {
+          "version": 2,
+          "hash": "2134ea812f7c6ea41522727ae087245c4b1195ffbad554db638070861cd9eb1c",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "d26cb313e92b1fbe36995c8ed4103a9168ea6e589b2803ed9a91c23f14bf0c96",
+          "action": "add"
+        }
+      },
+      "PythonNodeRoute": {
+        "2": {
+          "version": 2,
+          "hash": "3eca5767ae4a8fbe67744509e58c6d9fb78f38fa0a0f7fcf5960ab4250acc1f0",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "1bc413ec7c1d498ec945878e21e00affd9bd6d53b564b1e10e52feb09f177d04",
+          "action": "add"
+        }
+      },
+      "SeaweedFSBlobDeposit": {
+        "3": {
+          "version": 3,
+          "hash": "05e61e6328b085b738e5d41c0781d87852d44d218894cb3008f5be46e337f6d8",
+          "action": "remove"
+        },
+        "4": {
+          "version": 4,
+          "hash": "f475543ed5e0066ca09c0dfd8c903e276d4974519e9958473d8141f8d446c881",
+          "action": "add"
         }
       },
       "StoreMetadata": {

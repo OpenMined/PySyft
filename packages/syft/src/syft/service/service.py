@@ -8,6 +8,7 @@ from copy import deepcopy
 from functools import partial
 import inspect
 from inspect import Parameter
+import logging
 from typing import Any
 from typing import TYPE_CHECKING
 
@@ -42,6 +43,8 @@ from .response import SyftError
 from .user.user_roles import DATA_OWNER_ROLE_LEVEL
 from .user.user_roles import ServiceRole
 from .warnings import APIEndpointWarning
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     # relative
@@ -289,7 +292,7 @@ def reconstruct_args_kwargs(
         else:
             raise Exception(f"Missing {param_key} not in kwargs.")
 
-    if "context":
+    if "context" in kwargs:
         final_kwargs["context"] = kwargs["context"]
 
     return (args, final_kwargs)
@@ -491,5 +494,5 @@ def from_api_or_context(
         )
         return partial(service_method, node_context)
     else:
-        print("Could not get method from api or context")
+        logger.error("Could not get method from api or context")
         return None

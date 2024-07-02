@@ -22,19 +22,28 @@ data:
           loadBalancer:
             servers:
               - url: "http://seaweedfs:8333"
+        rathole:
+          loadBalancer:
+            servers:
+              - url: "http://rathole:2333"
       routers:
+        rathole:
+          rule: "PathPrefix(`/`) && Headers(`Upgrade`, `websocket`) && !PathPrefix(`/rtunnel`)"
+          entryPoints:
+            - "web"
+          service: "rathole"
         frontend:
-          rule: "PathPrefix(`/`)"
+          rule: "PathPrefix(`/`) && !PathPrefix(`/rtunnel`)"
           entryPoints:
             - "web"
           service: "frontend"
         backend:
-          rule: "PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)"
+          rule: "(PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)) && !PathPrefix(`/rtunnel`)"
           entryPoints:
             - "web"
           service: "backend"
         blob-storage:
-          rule: "PathPrefix(`/blob`)"
+          rule: "PathPrefix(`/blob`) && !PathPrefix(`/rtunnel`)"
           entryPoints:
             - "web"
           service: "seaweedfs"
@@ -72,5 +81,18 @@ data:
 
     providers:
       file:
-        filename: /etc/traefik/dynamic.yml
+        directory: /etc/traefik/
+        watch: true
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: proxy-config-dynamic
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app.kubernetes.io/component: proxy
+data:
+  rathole-dynamic.yml: |
 {{- end }}

@@ -9,8 +9,10 @@ import os
 # third party
 import kr8s
 from kr8s.objects import APIObject
+from kr8s.objects import ConfigMap
 from kr8s.objects import Pod
 from kr8s.objects import Secret
+from kr8s.objects import Service
 from pydantic import BaseModel
 from typing_extensions import Self
 
@@ -120,14 +122,11 @@ class KubeUtils:
 
     @staticmethod
     def get_logs(pods: list[Pod]) -> str:
-        """Combine and return logs for all the pods as string"""
-        logs = []
-        for pod in pods:
-            logs.append(f"----------Logs for pod={pod.metadata.name}----------")
-            for log in pod.logs():
-                logs.append(log)
-
-        return "\n".join(logs)
+        """Combine and return logs for all the pods as a single string."""
+        return "\n".join(
+            f"----------Logs for pod={pod.metadata.name}----------\n{''.join(pod.logs())}"
+            for pod in pods
+        )
 
     @staticmethod
     def get_pod_status(pod: Pod) -> PodStatus | None:
@@ -150,11 +149,11 @@ class KubeUtils:
     @staticmethod
     def get_container_exit_code(pods: list[Pod]) -> list[int]:
         """Return the exit codes of all the containers in the given pods."""
-        exit_codes = []
-        for pod in pods:
-            for container_status in pod.status.containerStatuses:
-                exit_codes.append(container_status.state.terminated.exitCode)
-        return exit_codes
+        return [
+            container_status.state.terminated.exitCode
+            for pod in pods
+            for container_status in pod.status.containerStatuses
+        ]
 
     @staticmethod
     def get_container_exit_message(pods: list[Pod]) -> str | None:
@@ -170,6 +169,25 @@ class KubeUtils:
     def b64encode_secret(data: str) -> str:
         """Convert the data to base64 encoded string for Secret."""
         return base64.b64encode(data.encode()).decode()
+
+    @staticmethod
+    def get_configmap(client: kr8s.Api, name: str) -> ConfigMap | None:
+        config_map = client.get("configmaps", name)
+        return config_map[0] if config_map else None
+
+    @staticmethod
+    def get_service(client: kr8s.Api, name: str) -> Service | None:
+        service = client.get("services", name)
+        return service[0] if service else None
+
+    @staticmethod
+    def update_configmap(
+        config_map: ConfigMap,
+        patch: dict,
+    ) -> None:
+        existing_data = config_map.raw
+        existing_data.update(patch)
+        config_map.patch(patch=existing_data)
 
     @staticmethod
     def create_dockerconfig_secret(

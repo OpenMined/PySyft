@@ -4,6 +4,8 @@ import uuid
 # third party
 from faker import Faker
 import numpy as np
+from pydantic import ValidationError
+import pytest
 
 # syft absolute
 import syft as sy
@@ -12,6 +14,7 @@ from syft.service.action.action_object import ActionObject
 from syft.service.request.request import Request
 from syft.service.request.request import UserCodeStatusChange
 from syft.service.response import SyftError
+from syft.service.response import SyftSuccess
 from syft.service.user.user import User
 
 
@@ -59,7 +62,7 @@ def test_user_code(worker) -> None:
     request = message.link
     user_code = request.changes[0].code
     result = user_code.unsafe_function()
-    request.accept_by_depositing_result(result)
+    request.approve()
 
     result = guest_client.api.services.code.mock_syft_func()
     assert isinstance(result, ActionObject)
@@ -74,23 +77,50 @@ def test_user_code(worker) -> None:
         assert multi_call_res.get() == result.get()
 
 
-def test_duplicated_user_code(worker, guest_client: User) -> None:
+def test_duplicated_user_code(worker) -> None:
+    worker.root_client.register(
+        name="Jane Doe",
+        email="jane@caltech.edu",
+        password="abc123",
+        password_verify="abc123",
+        institution="Caltech",
+        website="https://www.caltech.edu/",
+    )
+    ds_client = worker.root_client.login(
+        email="jane@caltech.edu",
+        password="abc123",
+    )
+
     # mock_syft_func()
-    result = guest_client.api.services.code.request_code_execution(mock_syft_func)
+    result = ds_client.api.services.code.request_code_execution(mock_syft_func)
     assert isinstance(result, Request)
-    assert len(guest_client.code.get_all()) == 1
+    assert len(ds_client.code.get_all()) == 1
 
     # request the exact same code should return an error
-    result = guest_client.api.services.code.request_code_execution(mock_syft_func)
+    result = ds_client.api.services.code.request_code_execution(mock_syft_func)
     assert isinstance(result, SyftError)
-    assert len(guest_client.code.get_all()) == 1
+    assert len(ds_client.code.get_all()) == 1
 
     # request the a different function name but same content will also succeed
     # flaky if not blocking
     mock_syft_func_2(syft_no_node=True)
-    result = guest_client.api.services.code.request_code_execution(mock_syft_func_2)
+    result = ds_client.api.services.code.request_code_execution(mock_syft_func_2)
     assert isinstance(result, Request)
-    assert len(guest_client.code.get_all()) == 2
+    assert len(ds_client.code.get_all()) == 2
+
+    code_history = ds_client.code_history
+    assert code_history.code_versions, "No code version found."
+
+    code_histories = worker.root_client.code_histories
+    user_code_history = code_histories[ds_client.logged_in_user]
+    assert not isinstance(code_histories, SyftError)
+    assert not isinstance(user_code_history, SyftError)
+    assert user_code_history.code_versions, "No code version found."
+    assert user_code_history.mock_syft_func.user_code_history[0].status is not None
+    assert user_code_history.mock_syft_func[0]._repr_markdown_(), "repr markdown failed"
+
+    result = user_code_history.mock_syft_func_2[0]()
+    assert result.get() == 1
 
 
 def random_hash() -> str:
@@ -310,22 +340,165 @@ def test_mock_no_arguments(worker) -> None:
 
     ds_client.api.services.code.request_code_execution(compute_sum)
 
-    # no accept_by_depositing_result, no mock execution
+    # not approved, no mock execution
     result = ds_client.api.services.code.compute_sum()
     assert isinstance(result, SyftError)
 
-    # no accept_by_depositing_result, mock execution
+    # not approved, mock execution
     users[-1].allow_mock_execution()
     result = ds_client.api.services.code.compute_sum()
+    assert result, result
     assert result.get() == 1
 
-    # accept_by_depositing_result, no mock execution
+    # approved, no mock execution
     users[-1].allow_mock_execution(allow=False)
     message = root_domain_client.notifications[-1]
     request = message.link
     user_code = request.changes[0].code
     result = user_code.unsafe_function()
-    request.accept_by_depositing_result(result)
+    request.approve()
 
     result = ds_client.api.services.code.compute_sum()
+    assert result, result
     assert result.get() == 1
+
+
+def test_submit_invalid_name(worker) -> None:
+    client = worker.root_client
+
+    @sy.syft_function_single_use()
+    def valid_name():
+        pass
+
+    res = client.code.submit(valid_name)
+    assert isinstance(res, SyftSuccess)
+
+    @sy.syft_function_single_use()
+    def get_all():
+        pass
+
+    assert isinstance(get_all, SyftError)
+
+    @sy.syft_function_single_use()
+    def _():
+        pass
+
+    assert isinstance(_, SyftError)
+
+    # overwrite valid function name before submit, fail on serde
+    @sy.syft_function_single_use()
+    def valid_name_2():
+        pass
+
+    valid_name_2.func_name = "get_all"
+    with pytest.raises(ValidationError):
+        client.code.submit(valid_name_2)
+
+
+def test_request_existing_usercodesubmit(worker) -> None:
+    root_domain_client = worker.root_client
+
+    root_domain_client.register(
+        name="data-scientist",
+        email="test_user@openmined.org",
+        password="0000",
+        password_verify="0000",
+    )
+    ds_client = root_domain_client.login(
+        email="test_user@openmined.org",
+        password="0000",
+    )
+
+    @sy.syft_function_single_use()
+    def my_func():
+        return 42
+
+    res_submit = ds_client.api.services.code.submit(my_func)
+    assert isinstance(res_submit, SyftSuccess)
+    res_request = ds_client.api.services.code.request_code_execution(my_func)
+    assert isinstance(res_request, Request)
+
+    # Second request fails, cannot have multiple requests for the same code
+    res_request = ds_client.api.services.code.request_code_execution(my_func)
+    assert isinstance(res_request, SyftError)
+
+    assert len(ds_client.code.get_all()) == 1
+    assert len(ds_client.requests.get_all()) == 1
+
+
+def test_request_existing_usercode(worker) -> None:
+    root_domain_client = worker.root_client
+
+    root_domain_client.register(
+        name="data-scientist",
+        email="test_user@openmined.org",
+        password="0000",
+        password_verify="0000",
+    )
+    ds_client = root_domain_client.login(
+        email="test_user@openmined.org",
+        password="0000",
+    )
+
+    @sy.syft_function_single_use()
+    def my_func():
+        return 42
+
+    res_submit = ds_client.api.services.code.submit(my_func)
+    assert isinstance(res_submit, SyftSuccess)
+
+    code = ds_client.code.get_all()[0]
+    res_request = ds_client.api.services.code.request_code_execution(my_func)
+    assert isinstance(res_request, Request)
+
+    # Second request fails, cannot have multiple requests for the same code
+    res_request = ds_client.api.services.code.request_code_execution(code)
+    assert isinstance(res_request, SyftError)
+
+    assert len(ds_client.code.get_all()) == 1
+    assert len(ds_client.requests.get_all()) == 1
+
+
+def test_submit_existing_code_different_user(worker):
+    root_domain_client = worker.root_client
+
+    root_domain_client.register(
+        name="data-scientist",
+        email="test_user@openmined.org",
+        password="0000",
+        password_verify="0000",
+    )
+    ds_client_1 = root_domain_client.login(
+        email="test_user@openmined.org",
+        password="0000",
+    )
+
+    root_domain_client.register(
+        name="data-scientist-2",
+        email="test_user_2@openmined.org",
+        password="0000",
+        password_verify="0000",
+    )
+    ds_client_2 = root_domain_client.login(
+        email="test_user_2@openmined.org",
+        password="0000",
+    )
+
+    @sy.syft_function_single_use()
+    def my_func():
+        return 42
+
+    res_submit = ds_client_1.api.services.code.submit(my_func)
+    assert isinstance(res_submit, SyftSuccess)
+    res_resubmit = ds_client_1.api.services.code.submit(my_func)
+    assert isinstance(res_resubmit, SyftError)
+
+    # Resubmit with different user
+    res_submit = ds_client_2.api.services.code.submit(my_func)
+    assert isinstance(res_submit, SyftSuccess)
+    res_resubmit = ds_client_2.api.services.code.submit(my_func)
+    assert isinstance(res_resubmit, SyftError)
+
+    assert len(ds_client_1.code.get_all()) == 1
+    assert len(ds_client_2.code.get_all()) == 1
+    assert len(root_domain_client.code.get_all()) == 2

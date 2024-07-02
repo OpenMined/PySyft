@@ -343,7 +343,7 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
                     # relative
                     from ..node.node import CODE_RELOADER
 
-                    for _, load_user_code in CODE_RELOADER.items():
+                    for load_user_code in CODE_RELOADER.values():
                         load_user_code()
                 try:
                     class_type = getattr(sys.modules[".".join(module_parts)], klass)

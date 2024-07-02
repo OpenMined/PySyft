@@ -44,6 +44,7 @@ Read/retrieve SyftObject from blob storage
 from collections.abc import Callable
 from collections.abc import Generator
 from io import BytesIO
+import logging
 from typing import Any
 
 # third party
@@ -73,6 +74,8 @@ from ...types.syft_object import SyftObject
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
 from ...types.uid import UID
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_TIMEOUT = 10
 MAX_RETRIES = 20
@@ -121,11 +124,11 @@ def syft_iter_content(
     max_retries: int = MAX_RETRIES,
     timeout: int = DEFAULT_TIMEOUT,
 ) -> Generator:
-    """custom iter content with smart retries (start from last byte read)"""
+    """Custom iter content with smart retries (start from last byte read)"""
     current_byte = 0
     for attempt in range(max_retries):
+        headers = {"Range": f"bytes={current_byte}-"}
         try:
-            headers = {"Range": f"bytes={current_byte}-"}
             with requests.get(
                 str(blob_url), stream=True, headers=headers, timeout=(timeout, timeout)
             ) as response:
@@ -135,15 +138,14 @@ def syft_iter_content(
                 ):
                     current_byte += len(chunk)
                     yield chunk
-                return
-
+            return  # If successful, exit the function
         except requests.exceptions.RequestException as e:
             if attempt < max_retries:
-                print(
+                logger.debug(
                     f"Attempt {attempt}/{max_retries} failed: {e} at byte {current_byte}. Retrying..."
                 )
             else:
-                print(f"Max retries reached. Failed with error: {e}")
+                logger.error(f"Max retries reached - {e}")
                 raise
 
 
@@ -204,7 +206,10 @@ class BlobRetrievalByURL(BlobRetrieval):
             blob_url = self.url
 
         try:
-            if (is_blob_file := issubclass(self.type_, BlobFileType)) and stream:
+            is_blob_file = self.type_ is not None and issubclass(
+                self.type_, BlobFileType
+            )
+            if is_blob_file and stream:
                 return syft_iter_content(blob_url, chunk_size)
 
             response = requests.get(str(blob_url), stream=stream)  # nosec

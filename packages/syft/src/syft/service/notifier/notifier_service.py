@@ -1,9 +1,6 @@
 # stdlib
-
-# stdlib
-
-# stdlib
 import traceback
+import logging
 
 # third party
 from pydantic import EmailStr
@@ -24,6 +21,8 @@ from .notifier import NotificationPreferences
 from .notifier import NotifierSettings
 from .notifier_enums import NOTIFIERS
 from .notifier_stash import NotifierStash
+
+logger = logging.getLogger(__name__)
 
 
 @serializable()
@@ -112,7 +111,7 @@ class NotifierService(AbstractService):
                 message="You must provide both server and port to enable notifications."
             )
 
-        print("[LOG] Got notifier from db")
+        logging.debug("Got notifier from db")
         # If no new credentials provided, check for existing ones
         if not (email_username and email_password):
             if not (notifier.email_username and notifier.email_password):
@@ -122,10 +121,9 @@ class NotifierService(AbstractService):
                     + "<client>.settings.enable_notifications(email=<>, password=<>)"
                 )
             else:
-                print("[LOG] No new credentials provided. Using existing ones.")
+                logging.debug("No new credentials provided. Using existing ones.")
                 email_password = notifier.email_password
                 email_username = notifier.email_username
-        print("[LOG] Validating credentials...")
 
         validation_result = notifier.validate_email_credentials(
             username=email_username,
@@ -135,6 +133,7 @@ class NotifierService(AbstractService):
         )
 
         if validation_result.is_err():
+            logging.error(f"Invalid SMTP credentials {validation_result.err()}")
             return SyftError(
                 message="Invalid SMTP credentials. Please check your username and password."
             )
@@ -163,8 +162,8 @@ class NotifierService(AbstractService):
             notifier.email_sender = email_sender
 
         notifier.active = True
-        print(
-            "[LOG] Email credentials are valid. Updating the notifier settings in the db."
+        logging.debug(
+            "Email credentials are valid. Updating the notifier settings in the db."
         )
 
         result = self.stash.update(credentials=context.credentials, settings=notifier)
@@ -263,9 +262,8 @@ class NotifierService(AbstractService):
 
                 sender_not_set = not email_sender and not notifier.email_sender
                 if validation_result.is_err() or sender_not_set:
-                    print(
-                        "Ops something went wrong while trying to setup your notification system.",
-                        "Please check your credentials and configuration.",
+                    logger.error(
+                        f"Notifier validation error - {validation_result.err()}.",
                     )
                     notifier.active = False
                 else:

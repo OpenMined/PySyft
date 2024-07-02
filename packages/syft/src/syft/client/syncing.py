@@ -1,5 +1,9 @@
 # stdlib
 
+# stdlib
+from collections.abc import Collection
+import logging
+
 # relative
 from ..abstract_node import NodeSideType
 from ..node.credentials import SyftVerifyKey
@@ -13,9 +17,38 @@ from ..service.sync.resolve_widget import ResolveWidget
 from ..service.sync.sync_state import SyncState
 from ..types.uid import UID
 from ..util.decorators import deprecated
-from .client import SyftClient
+from ..util.util import prompt_warning_message
+from .domain_client import DomainClient
 from .sync_decision import SyncDecision
 from .sync_decision import SyncDirection
+
+logger = logging.getLogger(__name__)
+
+
+def sync(
+    from_client: DomainClient,
+    to_client: DomainClient,
+    include_ignored: bool = False,
+    include_same: bool = False,
+    filter_by_email: str | None = None,
+    include_types: Collection[str | type] | None = None,
+    exclude_types: Collection[str | type] | None = None,
+    hide_usercode: bool = True,
+) -> PaginatedResolveWidget | SyftError | SyftSuccess:
+    diff = compare_clients(
+        from_client=from_client,
+        to_client=to_client,
+        include_ignored=include_ignored,
+        include_same=include_same,
+        filter_by_email=filter_by_email,
+        include_types=include_types,
+        exclude_types=exclude_types,
+        hide_usercode=hide_usercode,
+    )
+    if isinstance(diff, SyftError):
+        return diff
+
+    return diff.resolve()
 
 
 def compare_states(
@@ -24,8 +57,10 @@ def compare_states(
     include_ignored: bool = False,
     include_same: bool = False,
     filter_by_email: str | None = None,
-    filter_by_type: str | type | None = None,
-) -> NodeDiff:
+    include_types: Collection[str | type] | None = None,
+    exclude_types: Collection[str | type] | None = None,
+    hide_usercode: bool = True,
+) -> NodeDiff | SyftError:
     # NodeDiff
     if (
         from_state.node_side_type == NodeSideType.LOW_SIDE
@@ -42,7 +77,18 @@ def compare_states(
         high_state = from_state
         direction = SyncDirection.HIGH_TO_LOW
     else:
-        raise ValueError("Invalid SyncStates")
+        return SyftError(
+            "Invalid node side types: can only compare a high and low node"
+        )
+
+    if hide_usercode:
+        prompt_warning_message(
+            "UserCodes are hidden by default, and are part of the Requests."
+            " If you want to include them as separate objects, set `hide_usercode=False`"
+        )
+        exclude_types = exclude_types or []
+        exclude_types.append("usercode")
+
     return NodeDiff.from_sync_state(
         low_state=low_state,
         high_state=high_state,
@@ -50,29 +96,44 @@ def compare_states(
         include_ignored=include_ignored,
         include_same=include_same,
         filter_by_email=filter_by_email,
-        filter_by_type=filter_by_type,
+        include_types=include_types,
+        exclude_types=exclude_types,
     )
 
 
 def compare_clients(
-    from_client: SyftClient,
-    to_client: SyftClient,
+    from_client: DomainClient,
+    to_client: DomainClient,
     include_ignored: bool = False,
     include_same: bool = False,
     filter_by_email: str | None = None,
-    filter_by_type: type | None = None,
-) -> NodeDiff:
+    include_types: Collection[str | type] | None = None,
+    exclude_types: Collection[str | type] | None = None,
+    hide_usercode: bool = True,
+) -> NodeDiff | SyftError:
+    from_state = from_client.get_sync_state()
+    if isinstance(from_state, SyftError):
+        return from_state
+
+    to_state = to_client.get_sync_state()
+    if isinstance(to_state, SyftError):
+        return to_state
+
     return compare_states(
-        from_client.get_sync_state(),
-        to_client.get_sync_state(),
+        from_state=from_state,
+        to_state=to_state,
         include_ignored=include_ignored,
         include_same=include_same,
         filter_by_email=filter_by_email,
-        filter_by_type=filter_by_type,
+        include_types=include_types,
+        exclude_types=exclude_types,
+        hide_usercode=hide_usercode,
     )
 
 
-def resolve(obj: ObjectDiffBatch | NodeDiff) -> ResolveWidget | PaginatedResolveWidget:
+def resolve(
+    obj: ObjectDiffBatch | NodeDiff,
+) -> ResolveWidget | PaginatedResolveWidget | SyftSuccess | SyftError:
     if not isinstance(obj, ObjectDiffBatch | NodeDiff):
         raise ValueError(
             f"Invalid type: could not resolve object with type {type(obj).__qualname__}"
@@ -83,7 +144,7 @@ def resolve(obj: ObjectDiffBatch | NodeDiff) -> ResolveWidget | PaginatedResolve
 @deprecated(reason="resolve_single has been renamed to resolve", return_syfterror=True)
 def resolve_single(
     obj_diff_batch: ObjectDiffBatch,
-) -> ResolveWidget | PaginatedResolveWidget:
+) -> ResolveWidget | PaginatedResolveWidget | SyftSuccess | SyftError:
     return resolve(obj_diff_batch)
 
 
@@ -122,7 +183,7 @@ def handle_sync_batch(
     obj_diff_batch.decision = decision
 
     sync_instructions = []
-    for diff in obj_diff_batch.get_dependents(include_roots=True):
+    for diff in obj_diff_batch.get_dependencies(include_roots=True):
         # figure out the right verify key to share to
         # in case of a job with user code, share to user code owner
         # without user code, share to job owner
@@ -142,7 +203,7 @@ def handle_sync_batch(
         )
         sync_instructions.append(instruction)
 
-    print(f"Decision: Syncing {len(sync_instructions)} objects")
+    logger.debug(f"Decision: Syncing {len(sync_instructions)} objects")
 
     # Apply empty state to source side to signal that we are done syncing
     res_src = src_client.apply_state(src_resolved_state)
@@ -174,7 +235,7 @@ def handle_ignore_batch(
 
     for other_batch in other_ignore_batches:
         other_batch.decision = SyncDecision.IGNORE
-        print(f"Ignoring other batch with root {other_batch.root_type.__name__}")
+        logger.debug(f"Ignoring other batch with root {other_batch.root_type.__name__}")
 
     src_client = obj_diff_batch.source_client
     tgt_client = obj_diff_batch.target_client
@@ -208,7 +269,7 @@ def handle_unignore_batch(
     other_batches = [b for b in all_batches if b is not obj_diff_batch]
     other_unignore_batches = get_other_unignore_batches(obj_diff_batch, other_batches)
     for other_batch in other_unignore_batches:
-        print(f"Ignoring other batch with root {other_batch.root_type.__name__}")
+        logger.debug(f"Ignoring other batch with root {other_batch.root_type.__name__}")
         other_batch.decision = None
         src_resolved_state.add_unignored(other_batch.root_id)
         tgt_resolved_state.add_unignored(other_batch.root_id)

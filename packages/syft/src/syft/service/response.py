@@ -4,17 +4,40 @@ import traceback
 from typing import Any
 
 # third party
+from IPython.display import display
 from result import Err
 
 # relative
 from ..serde.serializable import serializable
 from ..types.base import SyftBaseModel
+from ..util.util import sanitize_html
 
 
 class SyftResponseMessage(SyftBaseModel):
     message: str
     _bool: bool = True
     require_api_update: bool = False
+
+    def __getattr__(self, name: str) -> Any:
+        if name in [
+            "_bool",
+            # "_repr_html_",
+            # "message",
+            # 'require_api_update',
+            # '__bool__',
+            # '__eq__',
+            # '__repr__',
+            # '__str__',
+            # '_repr_html_class_',
+            # '_repr_html_',
+            "_ipython_canary_method_should_not_exist_",
+            "_ipython_display_",
+        ] or name.startswith("_repr"):
+            return super().__getattr__(name)
+        display(self)
+        raise Exception(
+            f"You have tried accessing `{name}` on a {type(self).__name__} with message: {self.message}"
+        )
 
     def __bool__(self) -> bool:
         return self._bool
@@ -40,10 +63,11 @@ class SyftResponseMessage(SyftBaseModel):
         return "alert-info"
 
     def _repr_html_(self) -> str:
-        msg = self.message.replace('\n', '</br>')
         return (
             f'<div class="{self._repr_html_class_}" style="padding:5px;">'
-            + f"<strong>{type(self).__name__}</strong>: {msg}</div><br/>"
+            f"<strong>{type(self).__name__}</strong>: "
+            f'<pre class="{self._repr_html_class_}" style="display:inline; font-family:inherit;">'
+            f"{sanitize_html(self.message)}</pre></div><br/>"
         )
 
 
@@ -106,7 +130,7 @@ class SyftException(Exception):
     def _repr_html_(self) -> str:
         return (
             f'<div class="{self._repr_html_class_}" style="padding:5px;">'
-            + f"<strong>{type(self).__name__}</strong>: {self.args}</div><br />"
+            + f"<strong>{type(self).__name__}</strong>: {sanitize_html(self.args)}</div><br />"
         )
 
     @staticmethod

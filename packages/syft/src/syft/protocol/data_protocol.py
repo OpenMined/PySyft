@@ -3,6 +3,7 @@ from collections import defaultdict
 from collections.abc import Iterable
 from collections.abc import MutableMapping
 from collections.abc import MutableSequence
+from functools import cache
 import hashlib
 import json
 from operator import itemgetter
@@ -493,7 +494,7 @@ with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
             # we assume its supported until we prove otherwise
             protocol_supported[v] = True
             # iterate through each object
-            for canonical_name, _ in version_data["object_versions"].items():
+            for canonical_name in version_data["object_versions"].keys():
                 if canonical_name not in self.state:
                     protocol_supported[v] = False
                     break
@@ -515,8 +516,16 @@ with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
 
 
 def get_data_protocol(raise_exception: bool = False) -> DataProtocol:
-    return DataProtocol(
+    return _get_data_protocol(
         filename=data_protocol_file_name(),
+        raise_exception=raise_exception,
+    )
+
+
+@cache
+def _get_data_protocol(filename: str, raise_exception: bool = False) -> DataProtocol:
+    return DataProtocol(
+        filename=filename,
         raise_exception=raise_exception,
     )
 

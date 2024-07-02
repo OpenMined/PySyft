@@ -24,7 +24,7 @@ from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
-from ...service.metadata.node_metadata import NodeMetadataV3
+from ...service.metadata.node_metadata import NodeMetadata
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.identity import Identity
@@ -60,7 +60,7 @@ class EventAlreadyAddedException(SyftException):
     pass
 
 
-@transform(NodeMetadataV3, NodeIdentity)
+@transform(NodeMetadata, NodeIdentity)
 def metadata_to_node_identity() -> list[Callable]:
     return [rename("id", "node_id"), rename("name", "node_name")]
 
@@ -940,11 +940,11 @@ class Project(SyftObject):
         )
 
     def get_messages(self) -> list[ProjectMessage | ProjectThreadMessage]:
-        messages = []
-        for event in self.events:
-            if isinstance(event, ProjectMessage | ProjectThreadMessage):
-                messages.append(event)
-        return messages
+        return [
+            event
+            for event in self.events
+            if isinstance(event, (ProjectMessage | ProjectThreadMessage))
+        ]
 
     @property
     def messages(self) -> str:
@@ -1245,7 +1245,7 @@ class ProjectSubmit(SyftObject):
         if isinstance(val, NodeIdentity):
             return val
         elif isinstance(val, SyftClient) and val.metadata is not None:
-            metadata = val.metadata.to(NodeMetadataV3)
+            metadata = val.metadata.to(NodeMetadata)
             return metadata.to(NodeIdentity)
         else:
             raise SyftException(

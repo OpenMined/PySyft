@@ -1,9 +1,11 @@
 # stdlib
 from collections.abc import Callable
+from collections.abc import Collection
 from collections.abc import Iterable
 from dataclasses import dataclass
 import enum
 import html
+import logging
 import operator
 import textwrap
 from typing import Any
@@ -12,9 +14,7 @@ from typing import Literal
 from typing import TYPE_CHECKING
 
 # third party
-from loguru import logger
 import pandas as pd
-from pydantic import model_validator
 from rich import box
 from rich.console import Console
 from rich.console import Group
@@ -60,6 +60,8 @@ from ..response import SyftError
 from ..response import SyftSuccess
 from ..user.user import UserView
 from .sync_state import SyncState
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     # relative
@@ -310,7 +312,10 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
 
     @property
     def non_empty_object(self) -> SyftObject | None:
-        return self.low_obj or self.high_obj
+        if self.low_obj is not None:
+            return self.low_obj
+        else:
+            return self.high_obj
 
     @property
     def object_type(self) -> str:
@@ -360,7 +365,8 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
     def repr_attr_dict(self, side: str) -> dict[str, Any]:
         obj = self.low_obj if side == "low" else self.high_obj
         if isinstance(obj, ActionObject):
-            return {"value": obj.syft_action_data_cache}
+            # Only safe for ActionObjects created by data owners
+            return {"value": obj.syft_action_data_repr_}
         repr_attrs = getattr(obj, "__repr_attrs__", [])
         res = {}
         for attr in repr_attrs:
@@ -506,7 +512,6 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
                 obj_repr += diff.__repr__() + "<br>"
 
             obj_repr = obj_repr.replace("\n", "<br>")
-            # print("New lines", res)
 
         attr_text = f"<h3>{self.object_type} ObjectDiff:</h3>\n{obj_repr}"
         return base_str + attr_text
@@ -561,11 +566,11 @@ class ObjectDiffBatch(SyftObject):
     root_diff: ObjectDiff
     sync_direction: SyncDirection | None
 
-    def resolve(self) -> "ResolveWidget":
+    def resolve(self, build_state: bool = True) -> "ResolveWidget":
         # relative
         from .resolve_widget import ResolveWidget
 
-        return ResolveWidget(self)
+        return ResolveWidget(self, build_state=build_state)
 
     def walk_graph(
         self,
@@ -673,7 +678,7 @@ class ObjectDiffBatch(SyftObject):
             return "NEW"
 
         batch_statuses = [
-            diff.status for diff in self.get_dependents(include_roots=False)
+            diff.status for diff in self.get_dependencies(include_roots=False)
         ]
         if all(status == "SAME" for status in batch_statuses):
             return "SAME"
@@ -762,6 +767,7 @@ class ObjectDiffBatch(SyftObject):
         cls,
         root_uid: UID,
         obj_dependencies: dict[UID, list[UID]],
+        obj_dependents: dict[UID, list[UID]],
         obj_uid_to_diff: dict[UID, ObjectDiff],
         root_ids: list[UID],
         low_node_uid: UID,
@@ -806,15 +812,13 @@ class ObjectDiffBatch(SyftObject):
         levels = [level for _, level in batch_uids]
 
         batch_uids = {uid for uid, _ in batch_uids}  # type: ignore
-        batch_dependencies = {
-            uid: [d for d in obj_dependencies.get(uid, []) if d in batch_uids]
-            for uid in batch_uids
-        }
+
         return cls(
             global_diffs=obj_uid_to_diff,
             global_roots=root_ids,
             hierarchy_levels=levels,
-            dependencies=batch_dependencies,
+            dependencies=obj_dependencies,
+            dependents=obj_dependents,
             root_diff=obj_uid_to_diff[root_uid],
             low_node_uid=low_node_uid,
             high_node_uid=high_node_uid,
@@ -906,15 +910,6 @@ class ObjectDiffBatch(SyftObject):
             }
         else:
             raise ValueError(f"Unknown root type: {self.root.obj_type}")
-
-    @model_validator(mode="after")
-    def make_dependents(self) -> Self:
-        dependents: dict = {}
-        for parent, children in self.dependencies.items():
-            for child in children:
-                dependents[child] = dependents.get(child, []) + [parent]
-        self.dependents = dependents
-        return self
 
     @property
     def root(self) -> ObjectDiff:
@@ -1067,7 +1062,7 @@ class IgnoredBatchView(SyftObject):
                 other_batch.decision == SyncDecision.IGNORE
                 and other_batch.root_id in required_dependencies
             ):
-                print(f"ignoring other batch ({other_batch.root_type.__name__})")
+                logger.debug(f"ignoring other batch ({other_batch.root_type.__name__})")
                 other_batch.decision = None
 
 
@@ -1147,11 +1142,16 @@ class NodeDiff(SyftObject):
 
     include_ignored: bool = False
 
-    def resolve(self) -> "PaginatedResolveWidget":
+    def resolve(
+        self, build_state: bool = True
+    ) -> "PaginatedResolveWidget | SyftSuccess":
+        if len(self.batches) == 0:
+            return SyftSuccess(message="No batches to resolve")
+
         # relative
         from .resolve_widget import PaginatedResolveWidget
 
-        return PaginatedResolveWidget(batches=self.batches)
+        return PaginatedResolveWidget(batches=self.batches, build_state=build_state)
 
     def __getitem__(self, idx: Any) -> ObjectDiffBatch:
         return self.batches[idx]
@@ -1189,7 +1189,8 @@ class NodeDiff(SyftObject):
         include_ignored: bool = False,
         include_same: bool = False,
         filter_by_email: str | None = None,
-        filter_by_type: type | None = None,
+        include_types: Collection[type | str] | None = None,
+        exclude_types: Collection[type | str] | None = None,
         _include_node_status: bool = False,
     ) -> "NodeDiff":
         obj_uid_to_diff = {}
@@ -1229,8 +1230,9 @@ class NodeDiff(SyftObject):
             )
             obj_uid_to_diff[diff.object_id] = diff
 
+        # TODO move static methods to NodeDiff __init__
         obj_dependencies = NodeDiff.dependencies_from_states(low_state, high_state)
-        all_batches = NodeDiff.hierarchies(
+        all_batches = NodeDiff._create_batches(
             low_state,
             high_state,
             obj_dependencies,
@@ -1259,9 +1261,10 @@ class NodeDiff(SyftObject):
 
         res._filter(
             user_email=filter_by_email,
-            obj_type=filter_by_type,
+            include_types=include_types,
             include_ignored=include_ignored,
             include_same=include_same,
+            exclude_types=exclude_types,
             inplace=True,
         )
 
@@ -1283,7 +1286,7 @@ class NodeDiff(SyftObject):
                     if hash(batch) == batch_hash:
                         batch.decision = SyncDecision.IGNORE
                     else:
-                        print(
+                        logger.debug(
                             f"""A batch with type {batch.root_type.__name__} was previously ignored but has changed
 It will be available for review again."""
                         )
@@ -1394,7 +1397,7 @@ It will be available for review again."""
         return sorted_hierarchies
 
     @staticmethod
-    def hierarchies(
+    def _create_batches(
         low_sync_state: SyncState,
         high_sync_state: SyncState,
         obj_dependencies: dict[UID, list[UID]],
@@ -1410,7 +1413,7 @@ It will be available for review again."""
                 # TODO: Figure out nested user codes, do we even need that?
 
                 root_ids.append(diff.object_id)  # type: ignore
-            elif (
+            elif (  # type: ignore[unreachable]
                 isinstance(diff_obj, Job)  # type: ignore
                 and diff_obj.parent_job_id is None
                 # ignore Job objects created by TwinAPIEndpoint
@@ -1418,10 +1421,17 @@ It will be available for review again."""
             ):
                 root_ids.append(diff.object_id)  # type: ignore
 
+        # Dependents are the reverse edges of the dependency graph
+        obj_dependents = {}
+        for parent, children in obj_dependencies.items():
+            for child in children:
+                obj_dependents[child] = obj_dependencies.get(child, []) + [parent]
+
         for root_uid in root_ids:
             batch = ObjectDiffBatch.from_dependencies(
                 root_uid,
                 obj_dependencies,
+                obj_dependents,
                 obj_uid_to_diff,
                 root_ids,
                 low_sync_state.node_uid,
@@ -1477,21 +1487,16 @@ It will be available for review again."""
     def _filter(
         self,
         user_email: str | None = None,
-        obj_type: str | type | None = None,
         include_ignored: bool = False,
         include_same: bool = False,
+        include_types: Collection[str | type] | None = None,
+        exclude_types: Collection[type | str] | None = None,
         inplace: bool = True,
     ) -> Self:
         new_filters = []
         if user_email is not None:
             new_filters.append(
                 NodeDiffFilter(FilterProperty.USER, user_email, operator.eq)
-            )
-        if obj_type is not None:
-            if isinstance(obj_type, type):
-                obj_type = obj_type.__name__
-            new_filters.append(
-                NodeDiffFilter(FilterProperty.TYPE, obj_type, operator.eq)
             )
         if not include_ignored:
             new_filters.append(
@@ -1501,6 +1506,20 @@ It will be available for review again."""
             new_filters.append(
                 NodeDiffFilter(FilterProperty.STATUS, "SAME", operator.ne)
             )
+        if include_types is not None:
+            include_types_ = {
+                t.__name__ if isinstance(t, type) else t for t in include_types
+            }
+            new_filters.append(
+                NodeDiffFilter(FilterProperty.TYPE, include_types_, operator.contains)
+            )
+        if exclude_types:
+            for exclude_type in exclude_types:
+                if isinstance(exclude_type, type):
+                    exclude_type = exclude_type.__name__
+                new_filters.append(
+                    NodeDiffFilter(FilterProperty.TYPE, exclude_type, operator.ne)
+                )
 
         return self._apply_filters(new_filters, inplace=inplace)
 
@@ -1537,7 +1556,10 @@ class SyncInstruction(SyftObject):
             if share_private_data:  # or diff.object_type == "Job":
                 if share_to_user is None:
                     # job ran by another user
-                    if not diff.object_type == "Job":
+                    if (
+                        diff.object_type != "Job"
+                        and diff.object_type != "ExecutionOutput"
+                    ):
                         raise ValueError(
                             "share_to_user is required to share private data"
                         )
@@ -1549,10 +1571,6 @@ class SyncInstruction(SyftObject):
                             credentials=share_to_user,
                         )
                     ]
-
-        # TODO move this to the widget
-        # if widget.has_unused_share_button:
-        #     print("Share button was not used, so we will mockify the object")
 
         # storage permissions
         new_storage_permissions = []

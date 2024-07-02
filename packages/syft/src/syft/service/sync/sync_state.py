@@ -1,4 +1,5 @@
 # stdlib
+from collections.abc import Callable
 from datetime import timedelta
 from typing import Any
 from typing import Optional
@@ -11,10 +12,14 @@ from ...abstract_node import NodeSideType
 from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
+from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
+from ...types.transforms import drop
+from ...types.transforms import make_set_default
 from ...types.uid import LineageID
 from ...types.uid import UID
 from ...util import options
@@ -116,7 +121,7 @@ def td_format(td_object: timedelta) -> str:
 
 
 @serializable()
-class SyncState(SyftObject):
+class SyncStateV2(SyftObject):
     __canonical_name__ = "SyncState"
     __version__ = SYFT_OBJECT_VERSION_2
 
@@ -131,6 +136,25 @@ class SyncState(SyftObject):
     storage_permissions: dict[UID, set[UID]] = {}
     ignored_batches: dict[UID, int] = {}
     object_sync_dates: dict[UID, DateTime] = {}
+
+
+@serializable()
+class SyncState(SyftObject):
+    __canonical_name__ = "SyncState"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    node_uid: UID
+    node_name: str
+    node_side_type: NodeSideType
+    objects: dict[UID, SyncableSyftObject] = {}
+    dependencies: dict[UID, list[UID]] = {}
+    created_at: DateTime = Field(default_factory=DateTime.now)
+    previous_state_link: LinkedObject | None = None
+    permissions: dict[UID, set[str]] = {}
+    storage_permissions: dict[UID, set[UID]] = {}
+    ignored_batches: dict[UID, int] = {}
+    object_sync_dates: dict[UID, DateTime] = {}
+    errors: dict[UID, str] = {}
 
     # NOTE importing NodeDiff annotation with TYPE_CHECKING does not work here,
     # since typing.get_type_hints does not check for TYPE_CHECKING-imported types
@@ -187,8 +211,10 @@ class SyncState(SyftObject):
         for obj in objects:
             if isinstance(obj.id, LineageID):
                 self.objects[obj.id.id] = obj
-            else:
+            elif isinstance(obj.id, UID):
                 self.objects[obj.id] = obj
+            else:
+                raise ValueError(f"Unsupported id type: {type(obj.id)}")
 
         # TODO might get slow with large states,
         # need to build dependencies every time to not have UIDs
@@ -216,9 +242,17 @@ class SyncState(SyftObject):
         if previous_diff is None:
             raise ValueError("No previous state to compare to")
         for batch in previous_diff.batches:
+            # NOTE we re-use NodeDiff to compare to previous state,
+            # low_obj is previous state, high_obj is current state
             diff = batch.root_diff
+
+            # If there is no high object, it means it was deleted
+            # and we don't need to show it in the table
+            if diff.high_obj is None:
+                continue
             if diff.object_id in ids:
                 continue
+
             ids.add(diff.object_id)
             row = SyncStateRow(
                 object=diff.high_obj,
@@ -266,3 +300,13 @@ class SyncState(SyftObject):
         </div>
 """
         return repr + self.rows._repr_html_()
+
+
+@migrate(SyncStateV2, SyncState)
+def upgrade_syncstate_v2_to_v3() -> list[Callable]:
+    return [make_set_default("errors", {})]
+
+
+@migrate(SyncState, SyncStateV2)
+def downgrade_syncstate_v3_to_v2() -> list[Callable]:
+    return [drop("errors")]

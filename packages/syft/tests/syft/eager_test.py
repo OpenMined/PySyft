@@ -12,16 +12,19 @@ from ..utils.custom_markers import currently_fail_on_python_3_12
 
 def test_eager_permissions(worker, guest_client):
     root_domain_client = worker.root_client
+    assert root_domain_client.settings.enable_eager_execution(enable=True)
+    guest_client = worker.guest_client
+
     input_obj = TwinObject(
         private_obj=np.array([[3, 3, 3], [3, 3, 3]]),
         mock_obj=np.array([[1, 1, 1], [1, 1, 1]]),
     )
 
-    input_ptr = root_domain_client.api.services.action.set(input_obj)
+    input_ptr = input_obj.send(root_domain_client)
 
     pointer = guest_client.api.services.action.get_pointer(input_ptr.id)
 
-    input_ptr = root_domain_client.api.services.action.set(input_obj)
+    input_ptr = input_obj.send(root_domain_client)
 
     pointer = guest_client.api.services.action.get_pointer(input_ptr.id)
 
@@ -35,6 +38,7 @@ def test_eager_permissions(worker, guest_client):
 
 def test_plan(worker):
     root_domain_client = worker.root_client
+    assert root_domain_client.settings.enable_eager_execution(enable=True)
     guest_client = worker.guest_client
 
     @planify
@@ -49,8 +53,9 @@ def test_plan(worker):
         mock_obj=np.array([[1, 1, 1], [1, 1, 1]]),
     )
 
-    input_obj = root_domain_client.api.services.action.set(input_obj)
-    pointer = guest_client.api.services.action.get_pointer(input_obj.id)
+    input_ptr = input_obj.send(root_domain_client)
+
+    pointer = guest_client.api.services.action.get_pointer(input_ptr.id)
     res_ptr = plan_ptr(x=pointer)
 
     # guest cannot access result
@@ -76,6 +81,7 @@ def test_plan(worker):
 @currently_fail_on_python_3_12(raises=AttributeError)
 def test_plan_with_function_call(worker, guest_client):
     root_domain_client = worker.root_client
+    assert root_domain_client.settings.enable_eager_execution(enable=True)
     guest_client = worker.guest_client
 
     @planify
@@ -90,7 +96,7 @@ def test_plan_with_function_call(worker, guest_client):
         mock_obj=np.array([[1, 1, 1], [1, 1, 1]]),
     )
 
-    input_obj = root_domain_client.api.services.action.set(input_obj)
+    input_obj = input_obj.send(root_domain_client)
     pointer = guest_client.api.services.action.get_pointer(input_obj.id)
     res_ptr = plan_ptr(x=pointer)
 
@@ -98,11 +104,13 @@ def test_plan_with_function_call(worker, guest_client):
 
 
 def test_plan_with_object_instantiation(worker, guest_client):
+    root_domain_client = worker.root_client
+    assert root_domain_client.settings.enable_eager_execution(enable=True)
+    guest_client = worker.guest_client
+
     @planify
     def my_plan(x=np.array([1, 2, 3, 4, 5, 6])):  # noqa: B008
         return x + 1
-
-    root_domain_client = worker.root_client
 
     plan_ptr = my_plan.send(guest_client)
 
@@ -110,7 +118,7 @@ def test_plan_with_object_instantiation(worker, guest_client):
         private_obj=np.array([1, 2, 3, 4, 5, 6]), mock_obj=np.array([1, 1, 1, 1, 1, 1])
     )
 
-    _id = root_domain_client.api.services.action.set(input_obj).id
+    _id = input_obj.send(root_domain_client).id
     pointer = guest_client.api.services.action.get_pointer(_id)
 
     res_ptr = plan_ptr(x=pointer)
@@ -123,6 +131,8 @@ def test_plan_with_object_instantiation(worker, guest_client):
 
 def test_setattribute(worker, guest_client):
     root_domain_client = worker.root_client
+    assert root_domain_client.settings.enable_eager_execution(enable=True)
+    guest_client = worker.guest_client
 
     private_data, mock_data = (
         np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]),
@@ -133,7 +143,7 @@ def test_setattribute(worker, guest_client):
 
     assert private_data.dtype != np.int32
 
-    obj_pointer = root_domain_client.api.services.action.set(obj)
+    obj_pointer = obj.send(root_domain_client)
     obj_pointer = guest_client.api.services.action.get_pointer(obj_pointer.id)
 
     original_id = obj_pointer.id
@@ -160,12 +170,15 @@ def test_setattribute(worker, guest_client):
 
 def test_getattribute(worker, guest_client):
     root_domain_client = worker.root_client
+    assert root_domain_client.settings.enable_eager_execution(enable=True)
+    guest_client = worker.guest_client
+
     obj = TwinObject(
         private_obj=np.array([[1, 2, 3], [4, 5, 6]]),
         mock_obj=np.array([[1, 1, 1], [1, 1, 1]]),
     )
 
-    obj_pointer = root_domain_client.api.services.action.set(obj)
+    obj_pointer = obj.send(root_domain_client)
     obj_pointer = guest_client.api.services.action.get_pointer(obj_pointer.id)
     size_pointer = obj_pointer.size
 
@@ -176,13 +189,15 @@ def test_getattribute(worker, guest_client):
 
 def test_eager_method(worker, guest_client):
     root_domain_client = worker.root_client
+    assert root_domain_client.settings.enable_eager_execution(enable=True)
+    guest_client = worker.guest_client
 
     obj = TwinObject(
         private_obj=np.array([[1, 2, 3], [4, 5, 6]]),
         mock_obj=np.array([[1, 1, 1], [1, 1, 1]]),
     )
 
-    obj_pointer = root_domain_client.api.services.action.set(obj)
+    obj_pointer = obj.send(root_domain_client)
     obj_pointer = guest_client.api.services.action.get_pointer(obj_pointer.id)
 
     flat_pointer = obj_pointer.flatten()
@@ -197,13 +212,15 @@ def test_eager_method(worker, guest_client):
 
 def test_eager_dunder_method(worker, guest_client):
     root_domain_client = worker.root_client
+    assert root_domain_client.settings.enable_eager_execution(enable=True)
+    guest_client = worker.guest_client
 
     obj = TwinObject(
         private_obj=np.array([[1, 2, 3], [4, 5, 6]]),
         mock_obj=np.array([[1, 1, 1], [1, 1, 1]]),
     )
 
-    obj_pointer = root_domain_client.api.services.action.set(obj)
+    obj_pointer = obj.send(root_domain_client)
     obj_pointer = guest_client.api.services.action.get_pointer(obj_pointer.id)
 
     first_row_pointer = obj_pointer[0]

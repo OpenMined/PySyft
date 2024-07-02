@@ -4,6 +4,7 @@ from __future__ import annotations
 # stdlib
 from concurrent import futures
 import json
+import logging
 import os
 from typing import Any
 
@@ -13,14 +14,14 @@ import requests
 
 # relative
 from ..service.metadata.node_metadata import NodeMetadataJSON
-from ..service.network.network_service import NodePeer
+from ..service.network.node_peer import NodePeer
+from ..service.network.node_peer import NodePeerConnectionStatus
 from ..service.response import SyftException
 from ..types.grid_url import GridURL
 from ..util.constants import DEFAULT_TIMEOUT
-from ..util.logger import error
-from ..util.logger import warning
 from .client import SyftClient as Client
 
+logger = logging.getLogger(__name__)
 NETWORK_REGISTRY_URL = (
     "https://raw.githubusercontent.com/OpenMined/NetworkRegistry/main/gateways.json"
 )
@@ -42,7 +43,7 @@ class NetworkRegistry:
                 network_json=network_json, version="2.0.0"
             )
         except Exception as e:
-            warning(
+            logger.warning(
                 f"Failed to get Network Registry, go checkout: {NETWORK_REGISTRY_REPO}. Exception: {e}"
             )
 
@@ -63,7 +64,7 @@ class NetworkRegistry:
             return network_json
 
         except Exception as e:
-            warning(
+            logger.warning(
                 f"Failed to get Network Registry from {NETWORK_REGISTRY_REPO}. Exception: {e}"
             )
             return {}
@@ -120,13 +121,40 @@ class NetworkRegistry:
         on = self.online_networks
         if len(on) == 0:
             return "(no gateways online - try syft.gateways.all_networks to see offline gateways)"
-        return pd.DataFrame(on)._repr_html_()  # type: ignore
+        df = pd.DataFrame(on)
+        total_df = pd.DataFrame(
+            [
+                [
+                    f"{len(on)} / {len(self.all_networks)} (online networks / all networks)"
+                ]
+                + [""] * (len(df.columns) - 1)
+            ],
+            columns=df.columns,
+            index=["Total"],
+        )
+        df = pd.concat([df, total_df])
+        return df._repr_html_()  # type: ignore
 
     def __repr__(self) -> str:
         on = self.online_networks
         if len(on) == 0:
             return "(no gateways online - try syft.gateways.all_networks to see offline gateways)"
-        return pd.DataFrame(on).to_string()
+        df = pd.DataFrame(on)
+        total_df = pd.DataFrame(
+            [
+                [
+                    f"{len(on)} / {len(self.all_networks)} (online networks / all networks)"
+                ]
+                + [""] * (len(df.columns) - 1)
+            ],
+            columns=df.columns,
+            index=["Total"],
+        )
+        df = pd.concat([df, total_df])
+        return df.to_string()
+
+    def __len__(self) -> int:
+        return len(self.all_networks)
 
     @staticmethod
     def create_client(network: dict[str, Any]) -> Client:
@@ -141,7 +169,6 @@ class NetworkRegistry:
             client = connect(url=str(grid_url))
             return client.guest()
         except Exception as e:
-            error(f"Failed to login with: {network}. {e}")
             raise SyftException(f"Failed to login with: {network}. {e}")
 
     def __getitem__(self, key: str | int) -> Client:
@@ -166,7 +193,7 @@ class DomainRegistry:
             )
             self._get_all_domains()
         except Exception as e:
-            warning(
+            logger.warning(
                 f"Failed to get Network Registry, go checkout: {NETWORK_REGISTRY_REPO}. {e}"
             )
 
@@ -228,32 +255,25 @@ class DomainRegistry:
 
     @property
     def online_domains(self) -> list[tuple[NodePeer, NodeMetadataJSON | None]]:
-        def check_domain(
-            peer: NodePeer,
-        ) -> tuple[NodePeer, NodeMetadataJSON | None] | None:
-            try:
-                guest_client = peer.guest_client
-                metadata = guest_client.metadata
-                return peer, metadata
-            except Exception as e:  # nosec
-                print(f"Error in checking domain with exception {e}")
-            return None
-
         networks = self.online_networks
 
-        # We can use a with statement to ensure threads are cleaned up promptly
-        with futures.ThreadPoolExecutor(max_workers=20) as executor:
-            # map
-            _all_online_domains = []
-            for network in networks:
+        _all_online_domains = []
+        for network in networks:
+            try:
                 network_client = NetworkRegistry.create_client(network)
-                domains: list[NodePeer] = network_client.domains.retrieve_nodes()
-                for domain in domains:
-                    self.all_domains[str(domain.id)] = domain
-                _online_domains = list(
-                    executor.map(lambda domain: check_domain(domain), domains)
-                )
-                _all_online_domains += _online_domains
+            except Exception as e:
+                logger.error(f"Error in creating network client {e}")
+                continue
+
+            domains: list[NodePeer] = network_client.domains.retrieve_nodes()
+            for domain in domains:
+                self.all_domains[str(domain.id)] = domain
+
+            _all_online_domains += [
+                (domain, domain.guest_client.metadata)
+                for domain in domains
+                if domain.ping_status == NodePeerConnectionStatus.ACTIVE
+            ]
 
         return [domain for domain in _all_online_domains if domain is not None]
 
@@ -281,19 +301,38 @@ class DomainRegistry:
         on: list[dict[str, Any]] = self.__make_dict__()
         if len(on) == 0:
             return "(no domains online - try syft.domains.all_domains to see offline domains)"
-        return pd.DataFrame(on)._repr_html_()  # type: ignore
+        df = pd.DataFrame(on)
+        total_df = pd.DataFrame(
+            [
+                [f"{len(on)} / {len(self.all_domains)} (online domains / all domains)"]
+                + [""] * (len(df.columns) - 1)
+            ],
+            columns=df.columns,
+            index=["Total"],
+        )
+        df = pd.concat([df, total_df])
+        return df._repr_html_()  # type: ignore
 
     def __repr__(self) -> str:
         on: list[dict[str, Any]] = self.__make_dict__()
         if len(on) == 0:
             return "(no domains online - try syft.domains.all_domains to see offline domains)"
-        return pd.DataFrame(on).to_string()
+        df = pd.DataFrame(on)
+        total_df = pd.DataFrame(
+            [
+                [f"{len(on)} / {len(self.all_domains)} (online domains / all domains)"]
+                + [""] * (len(df.columns) - 1)
+            ],
+            columns=df.columns,
+            index=["Total"],
+        )
+        df = pd.concat([df, total_df])
+        return df._repr_html_()  # type: ignore
 
     def create_client(self, peer: NodePeer) -> Client:
         try:
             return peer.guest_client
         except Exception as e:
-            error(f"Failed to login to: {peer}. {e}")
             raise SyftException(f"Failed to login to: {peer}. {e}")
 
     def __getitem__(self, key: str | int) -> Client:
@@ -323,7 +362,7 @@ class EnclaveRegistry:
             enclaves_json = response.json()
             self.all_enclaves = enclaves_json["2.0.0"]["enclaves"]
         except Exception as e:
-            warning(
+            logger.warning(
                 f"Failed to get Enclave Registry, go checkout: {ENCLAVE_REGISTRY_REPO}. {e}"
             )
 
@@ -364,10 +403,7 @@ class EnclaveRegistry:
                 executor.map(lambda enclave: check_enclave(enclave), enclaves)
             )
 
-        online_enclaves = []
-        for each in _online_enclaves:
-            if each is not None:
-                online_enclaves.append(each)
+        online_enclaves = [each for each in _online_enclaves if each is not None]
         return online_enclaves
 
     def _repr_html_(self) -> str:
@@ -395,7 +431,6 @@ class EnclaveRegistry:
             client = connect(url=str(grid_url))
             return client.guest()
         except Exception as e:
-            error(f"Failed to login with: {enclave}. {e}")
             raise SyftException(f"Failed to login with: {enclave}. {e}")
 
     def __getitem__(self, key: str | int) -> Client:
