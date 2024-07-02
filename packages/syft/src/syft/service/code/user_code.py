@@ -1952,9 +1952,9 @@ def migrate_usercode_v4_to_v5() -> list[Callable]:
     return [
         make_set_default("origin_node_side_type", NodeSideType.HIGH_SIDE),
         make_set_default("l0_deny_reason", None),
-        make_set_default("deployment_policy_type", EmptyDeploymentPolicy),
-        make_set_default("deployment_policy_init_kwargs", None),
-        make_set_default("deployment_policy_state", b""),
+        make_set_default("runtime_policy_type", EmptyRuntimePolicy),
+        make_set_default("runtime_policy_init_kwargs", None),
+        make_set_default("runtime_policy_state", b""),
         drop("enclave_metadata"),
     ]
 
@@ -1967,9 +1967,9 @@ def migrate_usercode_v5_to_v4() -> list[Callable]:
             [
                 "origin_node_side_type",
                 "l0_deny_reason",
-                "deployment_policy_type",
-                "deployment_policy_init_kwargs",
-                "deployment_policy_state",
+                "runtime_policy_type",
+                "runtime_policy_init_kwargs",
+                "runtime_policy_state",
             ]
         ),
     ]
@@ -1978,8 +1978,8 @@ def migrate_usercode_v5_to_v4() -> list[Callable]:
 @migrate(SubmitUserCodeV4, SubmitUserCode)
 def upgrade_submitusercode() -> list[Callable]:
     return [
-        make_set_default("deployment_policy_type", EmptyDeploymentPolicy),
-        make_set_default("deployment_policy_init_kwargs", None),
+        make_set_default("runtime_policy_type", EmptyDeploymentPolicy),
+        make_set_default("runtime_policy_init_kwargs", None),
         drop("enclave_metadata"),
     ]
 
@@ -1987,6 +1987,6 @@ def upgrade_submitusercode() -> list[Callable]:
 @migrate(SubmitUserCode, SubmitUserCodeV4)
 def downgrade_submitusercode() -> list[Callable]:
     return [
-        drop(["deployment_policy_type", "deployment_policy_init_kwargs"]),
+        drop(["runtime_policy_type", "runtime_policy_init_kwargs"]),
         make_set_default("enclave_metadata", None),
     ]
