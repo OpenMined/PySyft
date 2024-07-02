@@ -1,6 +1,7 @@
 # stdlib
 from collections.abc import Generator
 from secrets import token_hex
+import time
 from typing import Any
 
 # third party
@@ -62,9 +63,12 @@ def test_delete_worker(node: NodeHandle, force: bool) -> None:
 
     job = client.code.compute_mean(data=data_pointer, blocking=False)
 
+    start = time.time()
     while True:
         if (syft_worker_id := client.jobs.get_all()[0].job_worker_id) is not None:
             break
+        if time.time() - start > 5:
+            raise TimeoutError("Job did not get picked up by any worker.")
 
     res = client.worker.delete(syft_worker_id, force=force)
     assert not isinstance(res, SyftError)
