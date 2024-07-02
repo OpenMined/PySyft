@@ -1023,3 +1023,17 @@ def test_actionobject_syft_getattr_pandas(worker):
 
     obj.columns = ["a", "b", "c"]
     assert (obj.columns == ["a", "b", "c"]).all()
+
+
+def test_actionobject_delete():
+    """
+    Test deleting a small action object that does not have its blob file
+    """
+    pass
+
+
+def test_actionobject_blob_entry_delete():
+    """
+    Test deleting a big action object that has its blob file
+    """
+    pass
