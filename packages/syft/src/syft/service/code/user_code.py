@@ -816,14 +816,10 @@ class UserCode(SyncableSyftObject):
     def _asset_json(self) -> str | SyftError:
         if isinstance(self.assets, SyftError):
             return self.assets
-        used_assets = {}
-        for asset in self.assets:
-            used_assets[asset._kwarg_name] = {
-                "source_dataset": asset._dataset_name,
-                "source_asset": asset.name,
-                "action_id": asset.action_id.no_dash,
-                "source_node": asset.node_uid.no_dash,
-            }
+        used_assets = {
+            asset._kwarg_name: asset._get_dict_for_user_code_repr()
+            for asset in self.assets
+        }
         asset_str = json.dumps(used_assets, indent=2)
         return asset_str
 
