@@ -887,6 +887,7 @@ class Node(AbstractNode):
                 node_uid=self.id,
                 store_config=action_store_config,
                 root_verify_key=self.verify_key,
+                document_store=self.document_store,
             )
         elif isinstance(action_store_config, MongoStoreConfig):
             # We add the python id of the current node in order
@@ -899,11 +900,13 @@ class Node(AbstractNode):
                 node_uid=self.id,
                 root_verify_key=self.verify_key,
                 store_config=action_store_config,
+                document_store=self.document_store,
             )
         else:
             self.action_store = DictActionStore(
                 node_uid=self.id,
                 root_verify_key=self.verify_key,
+                document_store=self.document_store,
             )
 
         self.action_store_config = action_store_config
