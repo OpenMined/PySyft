@@ -164,7 +164,7 @@ def recursive_attr_repr(value_attr: list | dict | bytes, num_tabs: int = 0) -> s
     elif isinstance(value_attr, dict):
         dict_repr = "{\n"
         for key, elem in value_attr.items():
-            dict_repr += f"{sketchy_tab * new_num_tabs}{key}: {str(elem)}\n"
+            dict_repr += f"{sketchy_tab * new_num_tabs}{key}: {elem!s}\n""
         dict_repr += "}"
         return dict_repr
 
@@ -517,7 +517,9 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         return base_str + attr_text
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}[{self.obj_type.__name__}](#{str(self.object_id)})"
+        return (
+            f"{self.__class__.__name__}[{self.obj_type.__name__}](#{self.object_id!s})"
+        )
 
 
 def _wrap_text(text: str, width: int, indent: int = 4) -> str:
