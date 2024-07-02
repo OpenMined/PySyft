@@ -68,6 +68,7 @@ from ...types.transforms import transform
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
+from ...util.decorators import deprecated
 from ...util.markdown import CodeMarkdown
 from ...util.markdown import as_markdown_code
 from ...util.util import prompt_warning_message
@@ -832,6 +833,11 @@ class UserCode(SyncableSyftObject):
                 return SyftError(f"Failed to execute 'run'. Error: {e}")
 
         return wrapper
+
+    @property
+    @deprecated(details="Use 'run' instead")
+    def unsafe_function(self) -> Callable | None:
+        return self.run
 
     def _inner_repr(self, level: int = 0) -> str:
         shared_with_line = ""
