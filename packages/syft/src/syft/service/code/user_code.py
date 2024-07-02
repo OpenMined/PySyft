@@ -1978,7 +1978,7 @@ def migrate_usercode_v5_to_v4() -> list[Callable]:
 @migrate(SubmitUserCodeV4, SubmitUserCode)
 def upgrade_submitusercode() -> list[Callable]:
     return [
-        make_set_default("runtime_policy_type", EmptyDeploymentPolicy),
+        make_set_default("runtime_policy_type", EmptyRuntimePolicy),
         make_set_default("runtime_policy_init_kwargs", None),
         drop("enclave_metadata"),
     ]
