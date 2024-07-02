@@ -58,13 +58,13 @@ def _repr_debug_(value: Any) -> str:
 
 def raise_exception(table_name: str, e: Exception) -> None:
     if "disk I/O error" in str(e):
-        message = f"Error usually related to concurrent writes. {str(e)}"
+        message = f"Error usually related to concurrent writes. {e!s}"
         raise Exception(message)
 
     if "Cannot operate on a closed database" in str(e):
         message = (
             "Error usually related to calling self.db.close()"
-            + f"before last SQLiteBackingStore.__del__ gets called. {str(e)}"
+            + f"before last SQLiteBackingStore.__del__ gets called. {e!s}"
         )
         raise Exception(message)
 
