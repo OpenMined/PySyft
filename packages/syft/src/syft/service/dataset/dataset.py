@@ -105,8 +105,29 @@ class Asset(SyftObject):
     created_at: DateTime = DateTime.now()
     uploader: Contributor | None = None
 
-    __repr_attrs__ = ["_kwarg_name", "name", "action_id", "_dataset_name", "node_uid"]
-    __clipboard_attrs__ = ["action_id", "node_uid", "_dataset_name"]
+    # _kwarg_name and _dataset_name are set by the UserCode.assets
+    _kwarg_name: str | None = None
+    _dataset_name: str | None = None
+
+    __clipboard_attrs__ = ["Action ID", "Node UID"]
+    __syft_include_id_coll_repr__ = False
+
+    def _coll_repr_(self) -> dict[str, Any]:
+        base_dict = {
+            "Asset Name": self.name,
+            "Action ID": self.action_id,
+            "Node UID": self.node_uid,
+        }
+
+        # _kwarg_name and _dataset_name are set by the UserCode.assets
+        if self._kwarg_name and self._dataset_name:
+            base_dict.update(
+                {
+                    "Parameter": self._kwarg_name,
+                    "Dataset Name": self._dataset_name,
+                }
+            )
+        return base_dict
 
     def __init__(
         self,
