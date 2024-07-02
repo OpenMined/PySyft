@@ -883,6 +883,7 @@ class UserCode(SyncableSyftObject):
     {shared_with_line}
     assets: dict = {asset_str}
     code:
+
 {self.raw_code}
 """
         if self.nested_codes != {}:
