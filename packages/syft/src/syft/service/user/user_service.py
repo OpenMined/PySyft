@@ -291,9 +291,7 @@ class UserService(AbstractService):
                 raise UserAlreadyExistsException.raise_with_context(context=context)
 
         if result.is_err():
-            error_msg = (
-                f"Failed to find user with UID: {uid}. Error: {str(result.err())}"
-            )
+            error_msg = f"Failed to find user with UID: {uid}. Error: {result.err()!s}"
             return SyftError(message=error_msg)
 
         user = result.ok()
@@ -348,7 +346,7 @@ class UserService(AbstractService):
 
         if result.is_err():
             error_msg = (
-                f"Failed to update user with UID: {uid}. Error: {str(result.err())}"
+                f"Failed to update user with UID: {uid}. Error: {result.err()!s}"
             )
             return SyftError(message=error_msg)
 
