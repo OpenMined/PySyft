@@ -1,4 +1,5 @@
 # stdlib
+from collections.abc import Callable
 import json
 from typing import Any
 
@@ -7,10 +8,13 @@ from ...client.api import APIRegistry
 from ...client.enclave_client import EnclaveMetadata
 from ...serde.serializable import serializable
 from ...service.user.user_roles import ServiceRole
+from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.syft_object import SyftVerifyKey
+from ...types.transforms import drop
+from ...types.transforms import make_set_default
 from ...types.uid import UID
 from ...util.notebook_ui.components.tabulator_template import (
     build_tabulator_table_with_data,
@@ -171,3 +175,15 @@ class UsersCodeHistoriesDict(SyftObject):
             "icon": None,
         }
         return build_tabulator_table_with_data(rows, metadata)
+
+
+@migrate(CodeHistoryV2, CodeHistory)
+def code_history_v2_to_v3() -> list[Callable]:
+    return [drop("enclave_metadata")]
+
+
+@migrate(CodeHistory, CodeHistoryV2)
+def code_history_v3_to_v2() -> list[Callable]:
+    return [
+        make_set_default("enclave_metadata", None),
+    ]
