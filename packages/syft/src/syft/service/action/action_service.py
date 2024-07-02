@@ -856,6 +856,7 @@ class ActionService(AbstractService):
         self, context: AuthedServiceContext, uid: UID
     ) -> SyftSuccess | SyftError:
         # delete object's blob storage entry
+        return_msg = []
         get_res = self.store.get(uid=uid, credentials=context.credentials)
         if get_res.is_err():
             return SyftError(message=get_res.err())
@@ -867,13 +868,12 @@ class ActionService(AbstractService):
             )
             if isinstance(blob_del_res, SyftError):
                 return SyftError(message=blob_del_res.message)
-            return_msg: list = [blob_del_res.message]
+            return_msg.append(blob_del_res.message)
         # delete from the action store
         res = self.store.delete(credentials=context.credentials, uid=uid)
         if res.is_err():
             return SyftError(message=res.err())
-        space_14: str = 14 * " "  # used to make the SyftSuccess message look nice
-        return_msg.append(f"{space_14}Action object with uid '{uid}' deleted.")
+        return_msg.append(f"Action object with uid '{uid}' deleted.")
 
         return SyftSuccess(message="\n".join(return_msg))
 
