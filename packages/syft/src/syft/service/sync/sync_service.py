@@ -1,9 +1,9 @@
 # stdlib
 from collections import defaultdict
+import logging
 from typing import Any
 
 # third party
-from loguru import logger
 from result import Err
 from result import Ok
 from result import Result
@@ -36,6 +36,8 @@ from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from .sync_stash import SyncStash
 from .sync_state import SyncState
+
+logger = logging.getLogger(__name__)
 
 
 def get_store(context: AuthedServiceContext, item: SyncableSyftObject) -> Any:

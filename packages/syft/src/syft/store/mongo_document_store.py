@@ -376,7 +376,7 @@ class MongoStorePartition(StorePartition):
             except Exception as e:
                 return Err(f"Failed to update obj: {obj} with qk: {qk}. Error: {e}")
 
-            return Ok(obj)
+            return Ok(prev_obj)
         else:
             return Err(f"Failed to update obj {obj}, you have no permission")
 
