@@ -47,10 +47,12 @@ def test_repr_markdown_not_throwing_error(guest_client: DomainClient) -> None:
     assert result[0]._repr_markdown_()
 
 
+@pytest.mark.parametrize("delete_original_admin", [False, True])
 def test_new_admin_can_list_user_code(
     worker: Worker,
     ds_client: DomainClient,
     faker: Faker,
+    delete_original_admin: bool,
 ) -> None:
     root_client = worker.root_client
 
@@ -68,6 +70,10 @@ def test_new_admin_can_list_user_code(
     root_client.api.services.user.update(
         admin.me.id, UserUpdate(role=ServiceRole.ADMIN)
     )
+
+    if delete_original_admin:
+        res = root_client.api.services.user.delete(root_client.me.id)
+        assert not isinstance(res, SyftError)
 
     assert len(root_client.code.get_all()) == len(admin.code.get_all())
     assert {c.id for c in root_client.code} == {c.id for c in admin.code}
