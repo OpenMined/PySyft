@@ -274,6 +274,7 @@ class UserCodeStatusCollection(SyncableSyftObject):
         return [self.user_code_link.object_uid]
 
 
+@serializable()
 class UserCodeV4(SyncableSyftObject):
     # version
     __canonical_name__ = "UserCode"
