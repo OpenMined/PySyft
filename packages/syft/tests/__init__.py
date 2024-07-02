@@ -1,2 +1,2 @@
 # relative
-from . import conftest 
+from . import conftest
