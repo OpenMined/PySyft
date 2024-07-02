@@ -554,7 +554,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
             # TODO: cleanup typeerrors
             if context.role.value == 128 or isinstance(e, TypeError):
                 return SyftError(
-                    message=f"An error was raised during the execution of the API endpoint call: \n {str(e)}"
+                    message=f"An error was raised during the execution of the API endpoint call: \n {e!s}"
                 )
             else:
                 return SyftError(
