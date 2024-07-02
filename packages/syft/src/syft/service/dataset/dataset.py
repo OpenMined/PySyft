@@ -197,26 +197,25 @@ class Asset(SyftObject):
 
     def _coll_repr_(self) -> dict[str, Any]:
         base_dict = {
-            "Asset Name": self.name,
+            "Parameter": self._kwarg_name,
             "Action ID": self.action_id,
+            "Asset Name": self.name,
+            "Dataset Name": self._dataset_name,
             "Node UID": self.node_uid,
         }
 
         # _kwarg_name and _dataset_name are set by the UserCode.assets
-        if self._kwarg_name and self._dataset_name:
-            base_dict.update(
-                {
-                    "Parameter": self._kwarg_name,
-                    "Dataset Name": self._dataset_name,
-                }
-            )
-        return base_dict
+        # if they are None, we remove them from the dict
+        filtered_dict = {
+            key: value for key, value in base_dict.items() if value is not None
+        }
+        return filtered_dict
 
     def _get_dict_for_user_code_repr(self) -> dict[str, Any]:
         return {
-            "source_dataset": self._dataset_name,
-            "source_asset": self.name,
             "action_id": self.action_id.no_dash,
+            "source_asset": self.name,
+            "source_dataset": self._dataset_name,
             "source_node": self.node_uid.no_dash,
         }
 

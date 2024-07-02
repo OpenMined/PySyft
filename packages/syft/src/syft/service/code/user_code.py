@@ -50,6 +50,7 @@ from ...serde.signature import signature_remove_self
 from ...store.document_store import PartitionKey
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
+from ...types.dicttuple import DictTuple
 from ...types.syft_migration import migrate
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -744,7 +745,7 @@ class UserCode(SyncableSyftObject):
         return compile_byte_code(self.parsed_code)
 
     @property
-    def assets(self) -> list[Asset] | SyftError:
+    def assets(self) -> DictTuple[str, Asset] | SyftError:
         if not self.input_policy:
             return []
 
@@ -757,7 +758,7 @@ class UserCode(SyncableSyftObject):
         if isinstance(datasets, SyftError):
             return datasets
 
-        all_assets = {}
+        all_assets: dict[UID, Asset] = {}
         for dataset in datasets:
             for asset in dataset.asset_list:
                 asset._dataset_name = dataset.name
@@ -770,22 +771,24 @@ class UserCode(SyncableSyftObject):
             all_inputs.update(vals)
 
         # map the action_id to the asset
-        used_assets = []
+        used_assets: list[Asset] = []
         for kwarg_name, action_id in all_inputs.items():
             asset = all_assets.get(action_id, None)
             asset._kwarg_name = kwarg_name
             used_assets.append(asset)
-        return used_assets
+
+        asset_dict = {asset._kwarg_name: asset for asset in used_assets}
+        return DictTuple(asset_dict)
 
     @property
     def _asset_json(self) -> str | SyftError:
         if isinstance(self.assets, SyftError):
             return self.assets
-        used_assets = {
-            asset._kwarg_name: asset._get_dict_for_user_code_repr()
-            for asset in self.assets
+        asset_dict = {
+            argument: asset._get_dict_for_user_code_repr()
+            for argument, asset in self.assets.items()
         }
-        asset_str = json.dumps(used_assets, indent=2)
+        asset_str = json.dumps(asset_dict, indent=2)
         return asset_str
 
     def get_sync_dependencies(
