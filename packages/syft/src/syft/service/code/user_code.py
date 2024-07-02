@@ -57,7 +57,6 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SYFT_OBJECT_VERSION_5
-from ...types.syft_object import SYFT_OBJECT_VERSION_6
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.transforms import TransformContext
@@ -271,6 +270,7 @@ class UserCodeStatusCollection(SyncableSyftObject):
         return [self.user_code_link.object_uid]
 
 
+@serializable()
 class UserCodeV4(SyncableSyftObject):
     # version
     __canonical_name__ = "UserCode"
@@ -303,45 +303,10 @@ class UserCodeV4(SyncableSyftObject):
 
 
 @serializable()
-class UserCodeV5(SyncableSyftObject):
-    # version
-    __canonical_name__ = "UserCode"
-    __version__ = SYFT_OBJECT_VERSION_5
-
-    id: UID
-    node_uid: UID | None = None
-    user_verify_key: SyftVerifyKey
-    raw_code: str
-    input_policy_type: type[InputPolicy] | UserPolicy
-    input_policy_init_kwargs: dict[Any, Any] | None = None
-    input_policy_state: bytes = b""
-    output_policy_type: type[OutputPolicy] | UserPolicy
-    output_policy_init_kwargs: dict[Any, Any] | None = None
-    output_policy_state: bytes = b""
-    parsed_code: str
-    service_func_name: str
-    unique_func_name: str
-    user_unique_func_name: str
-    code_hash: str
-    signature: inspect.Signature
-    status_link: LinkedObject | None = None
-    input_kwargs: list[str]
-    enclave_metadata: EnclaveMetadata | None = None
-    submit_time: DateTime | None = None
-    # tracks if the code calls domain.something, variable is set during parsing
-    uses_domain: bool = False
-
-    nested_codes: dict[str, tuple[LinkedObject, dict]] | None = {}
-    worker_pool_name: str | None = None
-    origin_node_side_type: NodeSideType
-    l0_deny_reason: str | None = None
-
-
-@serializable()
 class UserCode(SyncableSyftObject):
     # version
     __canonical_name__ = "UserCode"
-    __version__ = SYFT_OBJECT_VERSION_6
+    __version__ = SYFT_OBJECT_VERSION_5
 
     id: UID
     node_uid: UID | None = None
@@ -1924,12 +1889,27 @@ def migrate_usercode_v4_to_v5() -> list[Callable]:
     return [
         make_set_default("origin_node_side_type", NodeSideType.HIGH_SIDE),
         make_set_default("l0_deny_reason", None),
+        drop("enclave_metadata"),
     ]
 
 
 @migrate(UserCode, UserCodeV4)
 def migrate_usercode_v5_to_v4() -> list[Callable]:
     return [
-        drop("origin_node_side_type"),
-        drop("l0_deny_reason"),
+        drop(["origin_node_side_type", "l0_deny_reason"]),
+        make_set_default("enclave_metadata", None),
+    ]
+
+
+@migrate(SubmitUserCodeV4, SubmitUserCode)
+def upgrade_submitusercode() -> list[Callable]:
+    return [
+        drop("enclave_metadata"),
+    ]
+
+
+@migrate(SubmitUserCode, SubmitUserCodeV4)
+def downgrade_submitusercode() -> list[Callable]:
+    return [
+        make_set_default("enclave_metadata", None),
     ]
