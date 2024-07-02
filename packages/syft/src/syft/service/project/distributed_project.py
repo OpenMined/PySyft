@@ -100,11 +100,11 @@ class DistributedProject(BaseModel):
     @field_validator("code", mode="before")
     @classmethod
     def verify_code(cls, code: UserCode | SubmitUserCode) -> UserCode | SubmitUserCode:
-        if not code.deployment_policy_init_kwargs:
-            raise ValueError("Deployment policy not found in code.")
-        provider = code.deployment_policy_init_kwargs.get("provider")
+        if not code.runtime_policy_init_kwargs:
+            raise ValueError("Runtime policy not found in code.")
+        provider = code.runtime_policy_init_kwargs.get("provider")
         if not provider:
-            raise ValueError("Provider not found in deployment policy.")
+            raise ValueError("Provider not found in runtime policy.")
         if not isinstance(provider, EnclaveInstance):
             raise SyftException(
                 "Only `EnclaveInstance` is supported as provider for now."
@@ -141,7 +141,7 @@ class DistributedProject(BaseModel):
         code = self.verify_code(self.code)
 
         # Request Enclave to be set up by its owner domain
-        provider = code.deployment_policy_init_kwargs.get("provider")
+        provider = code.runtime_policy_init_kwargs.get("provider")
         owner_node_id = provider.syft_node_location
         owner_client = self.clients.get(owner_node_id)
         if not owner_client:

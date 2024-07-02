@@ -340,7 +340,8 @@ class ProjectService(AbstractService):
         if result.is_err():
             return SyftError(message=str(result.err()))
         elif result.ok():
-            return result.ok()
+            project = result.ok()
+            return self.add_signing_key_to_project(context, project)
         return SyftError(message=f'Project(id="{uid}") does not exist')
 
     def add_signing_key_to_project(

@@ -18,7 +18,7 @@ from ...client.client import SyftClient
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.uid import UID
@@ -64,7 +64,9 @@ class NodeRoute:
 
         # generating a random challenge
         random_challenge = secrets.token_bytes(16)
-        challenge_signature = self_client.api.services.network.ping(random_challenge)
+        challenge_signature = self_client.api.services.network.challenge_nonce(
+            random_challenge
+        )
 
         if isinstance(challenge_signature, SyftError):
             return challenge_signature
@@ -87,14 +89,16 @@ class NodeRoute:
 @serializable()
 class HTTPNodeRoute(SyftObject, NodeRoute):
     __canonical_name__ = "HTTPNodeRoute"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
+    id: UID | None = None  # type: ignore
     host_or_ip: str
     private: bool = False
     protocol: str = "http"
     port: int = 80
     proxy_target_uid: UID | None = None
     priority: int = 1
+    rtunnel_token: str | None = None
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, HTTPNodeRoute):
@@ -107,6 +111,7 @@ class HTTPNodeRoute(SyftObject, NodeRoute):
             + hash(self.port)
             + hash(self.protocol)
             + hash(self.proxy_target_uid)
+            + hash(self.rtunnel_token)
         )
 
     def __str__(self) -> str:
@@ -116,8 +121,9 @@ class HTTPNodeRoute(SyftObject, NodeRoute):
 @serializable()
 class PythonNodeRoute(SyftObject, NodeRoute):
     __canonical_name__ = "PythonNodeRoute"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
+    id: UID | None = None  # type: ignore
     worker_settings: WorkerSettings
     proxy_target_uid: UID | None = None
     priority: int = 1

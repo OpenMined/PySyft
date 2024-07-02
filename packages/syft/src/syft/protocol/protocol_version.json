@@ -220,7 +220,7 @@
       "AssociationRequestChange": {
         "1": {
           "version": 1,
-          "hash": "508550c43e9e3f30243813c23eb6eec20918923d7ba09498cddbcd7e8bfa4539",
+          "hash": "fb6c4adb3e1111e6393e1d91fb965903943791bcfb9227452ab1fd2f98cdbeb0",
           "action": "add"
         }
       },
@@ -274,16 +274,26 @@
         }
       },
       "HTTPConnection": {
+        "2": {
+          "version": 2,
+          "hash": "68409295f8916ceb22a8cf4abf89f5e4bcff0d75dc37e16ede37250ada28df59",
+          "action": "remove"
+        },
         "3": {
           "version": 3,
-          "hash": "54b452bb4ab76691ac1e704b62e7bcec740850fea00805145259b37973ecd0f4",
+          "hash": "b61b30d10e2d25726c708ef34b69c7b730d41b16b315e7062f3d487e943143d5",
           "action": "add"
         }
       },
       "UserCode": {
         "5": {
           "version": 5,
-          "hash": "a60e08145b41f6a06822a8b6bba7419a3aaa2e8c08b6015ce072dc64aae26230",
+          "hash": "128705a5fdf308055ef857b25c80966c928938a05ec03459dae9b36bd6122aa2",
+          "action": "add"
+        },
+        "6": {
+          "version": 6,
+          "hash": "356eb4361896ee978f5739fcb5b02427c11159aba881ee42ad4e4908167a2fd0",
           "action": "add"
         }
       },
@@ -353,7 +363,7 @@
       "SubmitUserCode": {
         "5": {
           "version": 5,
-          "hash": "4bea63bf596ef7fdb42c6c962a41fce4676906e376fbac09f5a4280a979a32ba",
+          "hash": "96f8b1e6e68c1a96e5c4aedbff71cb4006ea0641ea59e1dac92bcbe2767d9bce",
           "action": "add"
         }
       },
@@ -361,6 +371,54 @@
         "3": {
           "version": 3,
           "hash": "1b9bd1d3d096abab5617c2ff597b4c80751f686d16482a2cff4efd8741b84d53",
+          "action": "add"
+        }
+      },
+      "PythonConnection": {
+        "2": {
+          "version": 2,
+          "hash": "eb479c671fc112b2acbedb88bc5624dfdc9592856c04c22c66410f6c863e1708",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "1084c85a59c0436592530b5fe9afc2394088c8d16faef2b19fdb9fb83ff0f0e2",
+          "action": "add"
+        }
+      },
+      "HTTPNodeRoute": {
+        "2": {
+          "version": 2,
+          "hash": "2134ea812f7c6ea41522727ae087245c4b1195ffbad554db638070861cd9eb1c",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "d26cb313e92b1fbe36995c8ed4103a9168ea6e589b2803ed9a91c23f14bf0c96",
+          "action": "add"
+        }
+      },
+      "PythonNodeRoute": {
+        "2": {
+          "version": 2,
+          "hash": "3eca5767ae4a8fbe67744509e58c6d9fb78f38fa0a0f7fcf5960ab4250acc1f0",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "1bc413ec7c1d498ec945878e21e00affd9bd6d53b564b1e10e52feb09f177d04",
+          "action": "add"
+        }
+      },
+      "SeaweedFSBlobDeposit": {
+        "3": {
+          "version": 3,
+          "hash": "05e61e6328b085b738e5d41c0781d87852d44d218894cb3008f5be46e337f6d8",
+          "action": "remove"
+        },
+        "4": {
+          "version": 4,
+          "hash": "f475543ed5e0066ca09c0dfd8c903e276d4974519e9958473d8141f8d446c881",
           "action": "add"
         }
       },
@@ -375,6 +433,37 @@
         "1": {
           "version": 1,
           "hash": "7f8d6c4e136b8ca8ecba3062367c2f82ae3e8cb9e04234f2e60524aa32f483b8",
+          "action": "add"
+        }
+      },
+      "ProjectRequestResponse": {
+        "2": {
+          "version": 2,
+          "hash": "31c346849ab131d6eddb109054a19118c6937b20586fe54f5c7a0a50ecc017e4",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "b3dfbfc5ef84cf299e0c55ff8a9d5b25db0fb22d13b20cbf658210c65103d40e",
+          "action": "add"
+        }
+      },
+      "ProjectRequest": {
+        "2": {
+          "version": 2,
+          "hash": "4051700e64dd28f6a928fd3e4cbaf989abf0e2345b7c086f3aa8917e30c756b2",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "d579da043a95e1a3048c213647c0203ef936ff49b249b9e85652a54969582d66",
+          "action": "add"
+        }
+      },
+      "ProjectCode": {
+        "1": {
+          "version": 1,
+          "hash": "04c9f5644857d68128263218cab8925549506c5f56f49525937b23ef707312a8",
           "action": "add"
         }
       }
