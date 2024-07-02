@@ -61,7 +61,7 @@ def test_user_code(worker) -> None:
     message = root_domain_client.notifications[-1]
     request = message.link
     user_code = request.changes[0].code
-    result = user_code.unsafe_function()
+    result = user_code.run()
     request.approve()
 
     result = guest_client.api.services.code.mock_syft_func()
@@ -355,7 +355,7 @@ def test_mock_no_arguments(worker) -> None:
     message = root_domain_client.notifications[-1]
     request = message.link
     user_code = request.changes[0].code
-    result = user_code.unsafe_function()
+    result = user_code.run()
     request.approve()
 
     result = ds_client.api.services.code.compute_sum()
