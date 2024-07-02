@@ -73,7 +73,12 @@ class KeyValueActionStore(ActionStore):
             root_verify_key = SyftSigningKey.generate().verify_key
         self.root_verify_key = root_verify_key
 
-        self.__document_store = document_store
+        self.__user_stash = None
+        if document_store is not None:
+            # relative
+            from ...service.user.user_stash import UserStash
+
+            self.__user_stash = UserStash(store=document_store)
 
     def get(
         self, uid: UID, credentials: SyftVerifyKey, has_permission: bool = False
@@ -238,14 +243,11 @@ class KeyValueActionStore(ActionStore):
         ):
             return True
 
-        if self.__document_store is not None:
+        if self.__user_stash is not None:
             # relative
             from ...service.user.user_roles import ServiceRole
-            from ...service.user.user_stash import UserStash
 
-            user_stash = UserStash(store=self.__document_store)
-
-            res = user_stash.get_by_verify_key(
+            res = self.__user_stash.get_by_verify_key(
                 credentials=permission.credentials,
                 verify_key=permission.credentials,
             )
