@@ -377,6 +377,7 @@ class UserCode(SyncableSyftObject):
     origin_node_side_type: NodeSideType
     l0_deny_reason: str | None = None
     _has_output_read_permissions_cache: bool | None = None
+    project_id: UID | None = None
 
     __table_coll_widths__ = [
         "min-content",
@@ -1008,6 +1009,7 @@ class SubmitUserCode(SyftObject):
     local_function: Callable | None = None
     input_kwargs: list[str]
     worker_pool_name: str | None = None
+    project_id: UID | None = None
 
     __repr_attrs__ = ["func_name", "code"]
 
@@ -1178,6 +1180,12 @@ class SubmitUserCode(SyftObject):
     def input_owner_verify_keys(self) -> list[str] | None:
         if self.input_policy_init_kwargs is not None:
             return [x.verify_key for x in self.input_policy_init_kwargs.keys()]
+        return None
+
+    @property
+    def input_owner_node_uids(self) -> list[UID] | None:
+        if self.input_policy_init_kwargs is not None:
+            return [x.node_id for x in self.input_policy_init_kwargs.keys()]
         return None
 
 

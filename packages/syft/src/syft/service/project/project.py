@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from collections.abc import Iterable
 import copy
+from enum import Enum
 import hashlib
 import textwrap
 import time
@@ -29,7 +30,9 @@ from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.identity import Identity
 from ...types.identity import UserIdentity
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.syft_object import short_qual_name
 from ...types.transforms import TransformContext
@@ -42,6 +45,7 @@ from ...util.decorators import deprecated
 from ...util.markdown import markdown_as_class_with_fields
 from ...util.util import full_name_with_qualname
 from ..code.user_code import SubmitUserCode
+from ..code.user_code import UserCodeStatus
 from ..network.network_service import NodePeer
 from ..network.routes import NodeRoute
 from ..network.routes import connection_to_route
@@ -253,18 +257,23 @@ class ProjectMessage(ProjectEventAddObject):
 @serializable()
 class ProjectRequestResponse(ProjectSubEvent):
     __canonical_name__ = "ProjectRequestResponse"
-    __version__ = SYFT_OBJECT_VERSION_2
+    # TODO: Create Migration for ProjectRequestResponse before
+    # merge
+    __version__ = SYFT_OBJECT_VERSION_3
 
-    response: bool
+    response: RequestStatus
 
 
 @serializable()
 class ProjectRequest(ProjectEventAddObject):
     __canonical_name__ = "ProjectRequest"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     linked_request: LinkedObject
     allowed_sub_types: list[type] = [ProjectRequestResponse]
+    # TODO: should all events have parent_event_id by default
+    # then we differentiate them by allowed sub types.
+    parent_event_id: UID
 
     @field_validator("linked_request", mode="before")
     @classmethod
@@ -311,39 +320,89 @@ class ProjectRequest(ProjectEventAddObject):
 
     # TODO: To add deny requests, when deny functionality is added
 
-    def status(self, project: Project) -> SyftInfo | SyftError | None:
+    def status(self, project: Project) -> RequestStatus:
         """Returns the status of the request.
 
         Args:
             project (Project): Project object to check the status
 
         Returns:
-            str: Status of the request.
+            RequestStatus: Status of the request.
 
         During Request  status calculation, we do not allow multiple responses
         """
-        responses: list[ProjectEvent] = project.get_children(self)
+        responses: list[ProjectRequestResponse] = project.get_children(self)
         if len(responses) == 0:
-            return SyftInfo(
-                "No one has responded to the request yet. Kindly recheck later 🙂"
-            )
-        elif len(responses) > 1:
-            return SyftError(
-                message="The Request Contains more than one Response"
-                "which is currently not possible"
-                "The request should contain only one response"
-                "Kindly re-submit a new request"
-                "The Syft Team is working on this issue to handle multiple responses"
-            )
-        response = responses[0]
-        if not isinstance(response, ProjectRequestResponse):
-            return SyftError(  # type: ignore[unreachable]
-                message=f"Response : {type(response)} is not of type ProjectRequestResponse"
+            return RequestStatus.PENDING
+
+        # Get the last response for the request
+        # That is the final state of the request
+        last_response = responses[-1]
+        return last_response.response
+
+
+@serializable()
+class ProjectCode(ProjectEventAddObject):
+    __canonical_name__ = "ProjectCode"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    code: SubmitUserCode
+    allowed_sub_types: list[type] = [ProjectRequest]
+
+    def aggregate_final_status(
+        self, status_list: list[UserCodeStatus]
+    ) -> UserCodeStatus:
+        if UserCodeStatus.DENIED in status_list:
+            return UserCodeStatus.DENIED
+        elif UserCodeStatus.PENDING in status_list:
+            return UserCodeStatus.PENDING
+        else:
+            return UserCodeStatus.APPROVED
+
+    def get_code_status_for_node(
+        self, node_uid: UID, project: Project
+    ) -> UserCodeStatus:
+        code_status = UserCodeStatus.PENDING
+        request_events: list[ProjectRequest] = project.get_children(self)
+
+        # We follow a very simple heuristic to calculate the status of the code
+        # Get the last request submitted for this code on that node_uid
+        # If the last response for the request is approved/denied,then the code status is approved/denied
+        # if there is no response for the request, then the code status is pending
+        # This is mainly until , we define all the request semantics in the CodeBase.
+        code_status = UserCodeStatus.PENDING
+        for request_event in request_events[::-1]:
+            if request_event.linked_request.node_uid == node_uid:
+                request_status = request_event.status(project)
+                if request_status is RequestStatus.APPROVED:
+                    code_status = UserCodeStatus.APPROVED
+                    break
+                elif request_status is RequestStatus.REJECTED:
+                    code_status = UserCodeStatus.DENIED
+                    break
+
+        return code_status
+
+    def status(self, project: Project, verbose: bool = False) -> UserCodeStatus:
+        input_owner_node_identities = self.code.input_policy_init_kwargs.keys()
+        if len(input_owner_node_identities) == 0:
+            # TODO: add the ability to calculate status for empty input policies.
+            raise NotImplementedError("This feature is not implemented yet")
+
+        code_status = {}
+        for node_identity in input_owner_node_identities:
+            code_status[node_identity] = self.get_code_status_for_node(
+                node_uid=node_identity.node_id, project=project
             )
 
-        print("Request Status : ", "Approved" if response.response else "Denied")
+        final_status = self.aggregate_final_status(list(code_status.values()))
 
-        return None
+        if verbose:
+            for node_identity, status in code_status.items():
+                print(f"{node_identity.__repr__()}: {status}")
+            print(f"\nFinal Status: {final_status}")
+
+        return final_status
 
 
 def poll_creation_wizard() -> tuple[str, list[str]]:
@@ -617,7 +676,7 @@ class DemocraticConsensusModel(ConsensusModel):
 def add_code_request_to_project(
     project: ProjectSubmit | Project,
     code: SubmitUserCode,
-    client: SyftClient | Any,
+    clients: list[SyftClient] | Any,
     reason: str | None = None,
 ) -> SyftError | SyftSuccess:
     # TODO: fix the mypy issue
@@ -626,26 +685,40 @@ def add_code_request_to_project(
             message=f"Currently we are only support creating requests for SubmitUserCode: {type(code)}"
         )
 
-    if not isinstance(client, SyftClient):
-        return SyftError(message="Client should be a valid SyftClient")
+    # Create a global ID for the Code to share among domain nodes
+    code_id = UID()
+    code.id = code_id
+
+    # Add Project UID to the code
+    code.project_id = project.id
+
+    # TODO: can we remove clients in code submission?
+    if not all(isinstance(client, SyftClient) for client in clients):
+        return SyftError(message=f"Clients should be of type SyftClient: {clients}")
 
     if reason is None:
         reason = f"Code Request for Project: {project.name} has been submitted by {project.created_by}"
 
-    submitted_req = client.api.services.code.request_code_execution(
-        code=code, reason=reason
-    )
-    if isinstance(submitted_req, SyftError):
-        return submitted_req
-
-    request_event = ProjectRequest(linked_request=submitted_req)
+    # TODO: Think more about different ID in
+    # the domain of project
+    # Project Code Event ID vs User Code ID.
+    code_event = ProjectCode(id=code_id, code=code)
 
     if isinstance(project, ProjectSubmit) and project.bootstrap_events is not None:
-        project.bootstrap_events.append(request_event)
+        project.bootstrap_events.append(code_event)
     else:
-        result = project.add_event(request_event)
+        result = project.add_event(code_event)
         if isinstance(result, SyftError):
             return result
+
+    # TODO: Modify request to be created at server side.
+    for client in clients:
+        submitted_req = client.api.services.code.request_code_execution(
+            code=code, reason=reason
+        )
+        # TODO: Do we need to rollback the request if one of the requests fails?
+        if isinstance(submitted_req, SyftError):
+            return submitted_req
 
     return SyftSuccess(
         message=f"Code request for '{code.func_name}' successfully added to '{project.name}' Project. "
@@ -920,22 +993,22 @@ class Project(SyftObject):
     def create_code_request(
         self,
         obj: SubmitUserCode,
-        client: SyftClient | None = None,
+        clients: SyftClient | None = None,
         reason: str | None = None,
     ) -> SyftSuccess | SyftError:
-        if client is None:
+        if clients is None:
             leader_client = self.get_leader_client(self.user_signing_key)
             res = add_code_request_to_project(
                 project=self,
                 code=obj,
-                client=leader_client,
+                clients=[leader_client],
                 reason=reason,
             )
             return res
         return add_code_request_to_project(
             project=self,
             code=obj,
-            client=client,
+            clients=clients,
             reason=reason,
         )
 
@@ -1046,16 +1119,27 @@ class Project(SyftObject):
             return SyftSuccess(message="Poll answered successfully")
         return result
 
-    def add_request(
-        self,
-        request: Request,
-    ) -> SyftSuccess | SyftError:
+    def add_request(self, request: Request, code_id: UID) -> SyftSuccess | SyftError:
         linked_request = LinkedObject.from_obj(request, node_uid=request.node_uid)
-        request_event = ProjectRequest(linked_request=linked_request)
+        request_event = ProjectRequest(
+            id=request.id, linked_request=linked_request, parent_event_id=code_id
+        )
         result = self.add_event(request_event)
 
         if isinstance(result, SyftSuccess):
             return SyftSuccess(message="Request created successfully")
+        return result
+
+    def add_request_response(
+        self, request_id: UID, response: RequestStatus
+    ) -> SyftSuccess | SyftError:
+        response_event = ProjectRequestResponse(
+            parent_event_id=request_id, response=response
+        )
+        result = self.add_event(response_event)
+
+        if isinstance(result, SyftSuccess):
+            return SyftSuccess(message="Response added successfully")
         return result
 
     # Since currently we do not have the notion of denying a request
@@ -1128,8 +1212,15 @@ class Project(SyftObject):
     @property
     def requests(self) -> list[Request]:
         return [
-            event.request for event in self.events if isinstance(event, ProjectRequest)
+            event.request
+            for event in self.events
+            if isinstance(event, ProjectRequest)
+            and self.syft_node_location == event.linked_request.node_uid
         ]
+
+    @property
+    def code(self) -> list[ProjectCode]:
+        return self.get_events(types=[ProjectCode])
 
     @property
     def pending_requests(self) -> int:
@@ -1253,12 +1344,12 @@ class ProjectSubmit(SyftObject):
             )
 
     def create_code_request(
-        self, obj: SubmitUserCode, client: SyftClient, reason: str | None = None
+        self, obj: SubmitUserCode, clients: SyftClient, reason: str | None = None
     ) -> SyftError | SyftSuccess:
         return add_code_request_to_project(
             project=self,
             code=obj,
-            client=client,
+            clients=clients,
             reason=reason,
         )
 
@@ -1272,14 +1363,17 @@ class ProjectSubmit(SyftObject):
         # Currently we are assuming that the first member is the leader
         # This would be changed in our future leaderless approach
         leader = self.clients[0]
-        followers = self.clients[1:]
 
         try:
+            # TODO: should we move this before initializing the project
+            # Check if all clients are reachable
+            self._connection_checks(self.clients)
+
             # Check for DS role across all members
             self._pre_submit_checks(self.clients)
 
-            # Exchange route between leaders and followers
-            self._exchange_routes(leader, followers)
+            # Create Leader Node Route
+            self.leader_node_route = connection_to_route(leader.connection)
 
             # create project for each node
             projects_map = self._create_projects(self.clients)
@@ -1306,19 +1400,13 @@ class ProjectSubmit(SyftObject):
 
         return True
 
-    def _exchange_routes(self, leader: SyftClient, followers: list[SyftClient]) -> None:
-        # Since we are implementing a leader based system
-        # To be able to optimize exchanging routes.
-        # We require only the leader to exchange routes with all the members
-        # Meaning if we could guarantee, that the leader node is able to reach the members
-        # the project events could be broadcasted to all the members
-
-        for follower in followers:
-            result = leader.exchange_route(follower)
-            if isinstance(result, SyftError):
-                raise SyftException(result.message)
-
-        self.leader_node_route = connection_to_route(leader.connection)
+    def _connection_checks(self, clients: list[SyftClient]) -> bool:
+        # Check if all clients are reachable
+        conn_res = check_route_reachability(clients)
+        if isinstance(conn_res, SyftError):
+            # TODO:  add a convienient way to connect clients
+            raise SyftException(conn_res.message)
+        return True
 
     def _create_projects(self, clients: list[SyftClient]) -> dict[SyftClient, Project]:
         projects: dict[SyftClient, Project] = {}
@@ -1441,3 +1529,36 @@ def create_project_event_hash(project_event: ProjectEvent) -> tuple[bytes, str]:
             hash_object(project_event.creator_verify_key)[1],
         ]
     )
+
+
+class NetworkTopology(Enum):
+    STAR = "STAR"
+    MESH = "MESH"
+    HYBRID = "HYBRID"
+
+
+def check_route_reachability(
+    clients: list[SyftClient], topology: NetworkTopology = NetworkTopology.MESH
+) -> SyftSuccess | SyftError:
+    if topology == NetworkTopology.STAR:
+        return SyftError("STAR topology is not supported yet")
+    elif topology == NetworkTopology.MESH:
+        return check_mesh_topology(clients)
+    else:
+        return SyftError(message=f"Invalid topology: {topology}")
+
+
+def check_mesh_topology(clients: list[SyftClient]) -> SyftSuccess | SyftError:
+    for client in clients:
+        for other_client in clients:
+            if client == other_client:
+                continue
+            result = client.api.services.network.ping_peer(
+                verify_key=other_client.root_verify_key
+            )
+            if isinstance(result, SyftError):
+                return SyftError(
+                    message=f"{client.name}-<{client.id}> - cannot reach"
+                    + f"{other_client.name}-<{other_client.id} - {result.message}"
+                )
+    return SyftSuccess(message="All clients are reachable")

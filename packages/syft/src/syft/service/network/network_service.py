@@ -18,11 +18,8 @@ from ...node.credentials import SyftVerifyKey
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
 from ...service.settings.settings import NodeSettings
-from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
-from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
 from ...types.grid_url import GridURL
 from ...types.transforms import TransformContext
 from ...types.transforms import keep
@@ -36,7 +33,6 @@ from ...util.util import get_env
 from ...util.util import prompt_warning_message
 from ...util.util import str_to_bool
 from ..context import AuthedServiceContext
-from ..data_subject.data_subject import NamePartitionKey
 from ..metadata.node_metadata import NodeMetadata
 from ..request.request import Request
 from ..request.request import RequestStatus
@@ -53,6 +49,7 @@ from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..warnings import CRUDWarning
 from .association_request import AssociationRequestChange
+from .network_stash import NetworkStash
 from .node_peer import NodePeer
 from .node_peer import NodePeerUpdate
 from .reverse_tunnel_service import ReverseTunnelService
@@ -79,81 +76,6 @@ class NodePeerAssociationStatus(Enum):
     PEER_ASSOCIATED = "PEER_ASSOCIATED"
     PEER_ASSOCIATION_PENDING = "PEER_ASSOCIATION_PENDING"
     PEER_NOT_FOUND = "PEER_NOT_FOUND"
-
-
-@instrument
-@serializable()
-class NetworkStash(BaseUIDStoreStash):
-    object_type = NodePeer
-    settings: PartitionSettings = PartitionSettings(
-        name=NodePeer.__canonical_name__, object_type=NodePeer
-    )
-
-    def __init__(self, store: DocumentStore) -> None:
-        super().__init__(store=store)
-
-    def get_by_name(
-        self, credentials: SyftVerifyKey, name: str
-    ) -> Result[NodePeer | None, str]:
-        qks = QueryKeys(qks=[NamePartitionKey.with_obj(name)])
-        return self.query_one(credentials=credentials, qks=qks)
-
-    def update(
-        self,
-        credentials: SyftVerifyKey,
-        peer_update: NodePeerUpdate,
-        has_permission: bool = False,
-    ) -> Result[NodePeer, str]:
-        valid = self.check_type(peer_update, NodePeerUpdate)
-        if valid.is_err():
-            return SyftError(message=valid.err())
-        return super().update(credentials, peer_update, has_permission=has_permission)
-
-    def create_or_update_peer(
-        self, credentials: SyftVerifyKey, peer: NodePeer
-    ) -> Result[NodePeer, str]:
-        """
-        Update the selected peer and its route priorities if the peer already exists
-        If the peer does not exist, simply adds it to the database.
-
-        Args:
-            credentials (SyftVerifyKey): The credentials used to authenticate the request.
-            peer (NodePeer): The peer to be updated or added.
-
-        Returns:
-            Result[NodePeer, str]: The updated or added peer if the operation
-            was successful, or an error message if the operation failed.
-        """
-        valid = self.check_type(peer, NodePeer)
-        if valid.is_err():
-            return SyftError(message=valid.err())
-        existing: Result | NodePeer = self.get_by_uid(
-            credentials=credentials, uid=peer.id
-        )
-        if existing.is_ok() and existing.ok():
-            existing_peer = existing.ok()
-            existing_peer.update_routes(peer.node_routes)
-            peer_update = NodePeerUpdate(
-                id=peer.id, node_routes=existing_peer.node_routes
-            )
-            result = self.update(credentials, peer_update)
-        else:
-            result = self.set(credentials, peer)
-        return result
-
-    def get_by_verify_key(
-        self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
-    ) -> Result[NodePeer | None, SyftError]:
-        qks = QueryKeys(qks=[VerifyKeyPartitionKey.with_obj(verify_key)])
-        return self.query_one(credentials, qks)
-
-    def get_by_node_type(
-        self, credentials: SyftVerifyKey, node_type: NodeType
-    ) -> Result[list[NodePeer], SyftError]:
-        qks = QueryKeys(qks=[NodeTypePartitionKey.with_obj(node_type)])
-        return self.query_all(
-            credentials=credentials, qks=qks, order_by=OrderByNamePartitionKey
-        )
 
 
 @instrument
@@ -278,27 +200,10 @@ class NetworkService(AbstractService):
         self,
         context: AuthedServiceContext,
         peer: NodePeer,
-        challenge: bytes,
-        self_node_route: NodeRoute,
-        verify_key: SyftVerifyKey,
     ) -> Request | SyftSuccess | SyftError:
         """Add a Network Node Peer. Called by a remote node to add
         itself as a peer for the current node.
         """
-        # Using the verify_key of the peer to verify the signature
-        # It is also our single source of truth for the peer
-        if peer.verify_key != context.credentials:
-            return SyftError(
-                message=(
-                    f"The {type(peer).__name__}.verify_key: "
-                    f"{peer.verify_key} does not match the signature of the message"
-                )
-            )
-
-        if verify_key != context.node.verify_key:
-            return SyftError(
-                message="verify_key does not match the remote node's verify_key for add_peer"
-            )
 
         # check if the peer already is a node peer
         existing_peer_res = self.stash.get_by_uid(context.node.verify_key, peer.id)
@@ -340,9 +245,7 @@ class NetworkService(AbstractService):
             return association_request
         # only create and submit a new request if there is no requests yet
         # or all previous requests have been rejected
-        association_request_change = AssociationRequestChange(
-            self_node_route=self_node_route, challenge=challenge, remote_peer=peer
-        )
+        association_request_change = AssociationRequestChange(remote_peer=peer)
         submit_request = SubmitRequest(
             changes=[association_request_change],
             requesting_user_verify_key=context.credentials,
@@ -358,11 +261,13 @@ class NetworkService(AbstractService):
 
         return request
 
-    @service_method(path="network.ping", name="ping", roles=GUEST_ROLE_LEVEL)
-    def ping(
+    @service_method(
+        path="network.challenge_nonce", name="challenge_nonce", roles=GUEST_ROLE_LEVEL
+    )
+    def challenge_nonce(
         self, context: AuthedServiceContext, challenge: bytes
     ) -> bytes | SyftError:
-        """To check alivesness/authenticity of a peer"""
+        """To check authenticity of the remote node"""
 
         # # Only the root user can ping the node to check its state
         # if context.node.verify_key != context.credentials:
@@ -376,6 +281,47 @@ class NetworkService(AbstractService):
         ).signature
 
         return challenge_signature
+
+    @service_method(path="network.ping", name="ping", roles=GUEST_ROLE_LEVEL)
+    def ping(self, context: AuthedServiceContext) -> SyftSuccess:
+        """To check liveness of the remote node"""
+        return SyftSuccess(
+            message=f"Reply from remote node:{context.node.name}-<{context.node.id}>"
+        )
+
+    @service_method(
+        path="network.ping_peer",
+        name="ping_peer",
+        roles=GUEST_ROLE_LEVEL,
+    )
+    def ping_peer(
+        self, context: AuthedServiceContext, verify_key: SyftVerifyKey
+    ) -> SyftSuccess | SyftError:
+        """Ping a remote node by its verify key"""
+
+        remote_peer = self.stash.get_by_verify_key(
+            credentials=context.node.verify_key, verify_key=verify_key
+        )
+        if remote_peer.is_err():
+            return SyftError(
+                message=f"Failed to query peer from stash. Err: {remote_peer}"
+            )
+
+        remote_peer = remote_peer.ok()
+        if remote_peer is None:
+            return SyftError(message=f"Peer not found with verify key: {verify_key}")
+        try:
+            remote_client = remote_peer.client_with_context(context=context)
+            if remote_client.is_err():
+                return SyftError(
+                    message=f"Failed to create remote client for peer: {remote_peer}. Error: {remote_client.err()}"
+                )
+            remote_client = remote_client.ok()
+            return remote_client.api.services.network.ping()
+        except Exception as e:
+            return SyftError(
+                message=f"Cannot Ping Remote Peer: {remote_peer}. Error: {e}"
+            )
 
     @service_method(
         path="network.check_peer_association",

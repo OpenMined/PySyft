@@ -344,6 +344,10 @@ class DomainClient(SyftClient):
         return self._get_service_by_name_if_exists("code")
 
     @property
+    def network(self) -> APIModule | None:
+        return self._get_service_by_name_if_exists("network")
+
+    @property
     def enclaves(self) -> APIModule | None:
         return self._get_service_by_name_if_exists("enclave")
 

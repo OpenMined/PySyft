@@ -16,7 +16,6 @@ from ..request.request import Change
 from ..response import SyftError
 from ..response import SyftSuccess
 from .node_peer import NodePeer
-from .routes import NodeRoute
 
 
 @serializable()
@@ -24,9 +23,7 @@ class AssociationRequestChange(Change):
     __canonical_name__ = "AssociationRequestChange"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    self_node_route: NodeRoute
     remote_peer: NodePeer
-    challenge: bytes
 
     __repr_attrs__ = ["self_node_route", "remote_peer"]
 
@@ -85,7 +82,7 @@ class AssociationRequestChange(Change):
                     )
                 remote_client = remote_client.ok()
                 random_challenge = secrets.token_bytes(16)
-                remote_res = remote_client.api.services.network.ping(
+                remote_res = remote_client.api.services.network.challenge_nonce(
                     challenge=random_challenge
                 )
             except Exception as e:
@@ -111,13 +108,6 @@ class AssociationRequestChange(Change):
 
         if result.is_err():
             return Err(SyftError(message=str(result.err())))
-
-        # this way they can match up who we are with who they think we are
-        # Sending a signed messages for the peer to verify
-        self_node_peer = self.self_node_route.validate_with_context(context=service_ctx)
-
-        if isinstance(self_node_peer, SyftError):
-            return Err(self_node_peer)
 
         return Ok(
             SyftSuccess(
