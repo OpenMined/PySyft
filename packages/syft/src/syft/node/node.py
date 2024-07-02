@@ -89,9 +89,9 @@ from ..service.queue.queue_stash import APIEndpointQueueItem
 from ..service.queue.queue_stash import ActionQueueItem
 from ..service.queue.queue_stash import QueueItem
 from ..service.queue.queue_stash import QueueStash
-from ..service.queue.zmq_queue import QueueConfig
-from ..service.queue.zmq_queue import ZMQClientConfig
-from ..service.queue.zmq_queue import ZMQQueueConfig
+from ..service.queue.zmq_client import QueueConfig
+from ..service.queue.zmq_client import ZMQClientConfig
+from ..service.queue.zmq_client import ZMQQueueConfig
 from ..service.request.request_service import RequestService
 from ..service.response import SyftError
 from ..service.service import AbstractService

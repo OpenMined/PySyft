@@ -13,11 +13,11 @@ from zmq import Socket
 import syft
 from syft.service.queue.base_queue import AbstractMessageHandler
 from syft.service.queue.queue import QueueManager
-from syft.service.queue.zmq_queue import ZMQClient
-from syft.service.queue.zmq_queue import ZMQClientConfig
-from syft.service.queue.zmq_queue import ZMQConsumer
-from syft.service.queue.zmq_queue import ZMQProducer
-from syft.service.queue.zmq_queue import ZMQQueueConfig
+from syft.service.queue.zmq_client import ZMQClient
+from syft.service.queue.zmq_client import ZMQClientConfig
+from syft.service.queue.zmq_client import ZMQQueueConfig
+from syft.service.queue.zmq_consumer import ZMQConsumer
+from syft.service.queue.zmq_producer import ZMQProducer
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.util.util import get_queue_address
