@@ -68,6 +68,7 @@ from ...types.transforms import transform
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
+from ...util.decorators import deprecated
 from ...util.markdown import CodeMarkdown
 from ...util.markdown import as_markdown_code
 from ...util.util import prompt_warning_message
@@ -808,7 +809,7 @@ class UserCode(SyncableSyftObject):
         return dependencies
 
     @property
-    def unsafe_function(self) -> Callable | None:
+    def run(self) -> Callable | None:
         warning = SyftWarning(
             message="This code was submitted by a User and could be UNSAFE."
         )
@@ -850,9 +851,14 @@ class UserCode(SyncableSyftObject):
                 # return the results
                 return result
             except Exception as e:
-                return SyftError(f"Failed to run unsafe_function. Error: {e}")
+                return SyftError(f"Failed to execute 'run'. Error: {e}")
 
         return wrapper
+
+    @property
+    @deprecated(reason="Use 'run' instead")
+    def unsafe_function(self) -> Callable | None:
+        return self.run
 
     def _inner_repr(self, level: int = 0) -> str:
         shared_with_line = ""
