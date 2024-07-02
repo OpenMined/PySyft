@@ -288,17 +288,7 @@
         },
         "5": {
           "version": 5,
-          "hash": "128705a5fdf308055ef857b25c80966c928938a05ec03459dae9b36bd6122aa2",
-          "action": "add"
-        },
-        "6": {
-          "version": 6,
-          "hash": "c48ec3160bb34adf937e6306523c7ebc52861ff84a576a30a28cd45c224ded0f",
-          "action": "add"
-        },
-        "7": {
-          "version": 7,
-          "hash": "021ea094e900b61066cd47acdc0ba54c6e6cf9ab07cca51735209a4797db85a1",
+          "hash": "a60e08145b41f6a06822a8b6bba7419a3aaa2e8c08b6015ce072dc64aae26230",
           "action": "add"
         }
       },
@@ -368,12 +358,7 @@
       "SubmitUserCode": {
         "5": {
           "version": 5,
-          "hash": "3135727b8f0ca7689d47c04e45a2bd6a7693f17c043f76fd2243135196c27232",
-          "action": "add"
-        },
-        "6": {
-          "version": 6,
-          "hash": "7905327032d92883db5d366620998c8a07c53f9d16815f2c4c4fb259bdb08e40",
+          "hash": "4bea63bf596ef7fdb42c6c962a41fce4676906e376fbac09f5a4280a979a32ba",
           "action": "add"
         }
       },
