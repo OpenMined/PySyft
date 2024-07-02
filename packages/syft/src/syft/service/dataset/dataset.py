@@ -499,8 +499,7 @@ class Dataset(SyftObject):
             """
 
     def action_ids(self) -> list[UID]:
-        data = [asset.action_id for asset in self.asset_list if asset.action_id]
-        return data
+        return [asset.action_id for asset in self.asset_list if asset.action_id]
 
     @property
     def assets(self) -> DictTuple[str, Asset]:

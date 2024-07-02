@@ -205,7 +205,7 @@ class DatasetService(AbstractService):
     def delete_dataset(
         self, context: AuthedServiceContext, uid: UID
     ) -> SyftSuccess | SyftError:
-        result = self.stash.delete_by_uid(context.credentials, uid)
+        result = self.stash.delete_by_uid(credentials=context.credentials, uid=uid)
         if result.is_ok():
             return result.ok()
         else:

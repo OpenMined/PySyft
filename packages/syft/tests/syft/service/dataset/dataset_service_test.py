@@ -301,3 +301,25 @@ def test_upload_dataset_with_assets_of_different_data_types(
     assert type(root_domain_client.datasets[0].assets[0].mock) == type(
         different_data_types
     )
+
+
+def test_delete_datasets(worker: Worker) -> None:
+    root_domain_client = worker.root_client
+    mock = np.array([0, 1, 2, 3, 4])
+    private = np.array([5, 6, 7, 8, 9])
+    assets = [
+        sy.Asset(
+            name="numpy-data",
+            mock=mock,
+            data=private,
+            shape=private.shape,
+        )
+    ]
+    dataset = sy.Dataset(
+        name="my-dataset", description="This is a cool dataset", asset_list=assets
+    )
+    upload_res = root_domain_client.upload_dataset(dataset)
+    assert isinstance(upload_res, SyftSuccess)
+    ds = root_domain_client.api.services.dataset.get_all()[0]
+    del_res = root_domain_client.api.services.dataset.delete_by_uid(uid=ds.id)
+    assert isinstance(del_res, SyftSuccess)

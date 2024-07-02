@@ -522,9 +522,13 @@ class KeyValueStorePartition(StorePartition):
 
     def _delete_search_keys_for(self, obj: SyftObject) -> Result[SyftSuccess, str]:
         for _search_ck in self.searchable_cks:
-            qk = _search_ck.with_obj(obj)
-            search_keys = self.searchable_keys[qk.key]
-            search_keys.pop(qk.value, None)
+            qk: QueryKey = _search_ck.with_obj(obj)
+            search_keys: defaultdict = self.searchable_keys[qk.key]
+            if isinstance(qk.value, list):
+                for qk_value in qk.value:
+                    search_keys.pop(qk_value, None)
+            else:
+                search_keys.pop(qk.value, None)
             self.searchable_keys[qk.key] = search_keys
         return Ok(SyftSuccess(message="Deleted"))
 
