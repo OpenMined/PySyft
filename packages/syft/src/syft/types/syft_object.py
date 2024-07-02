@@ -696,7 +696,9 @@ class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
         yield from ((k, v) for k, v in super().__iter__() if v is not Empty)
 
 
-recursive_serde_register_type(PartialSyftObject)
+recursive_serde_register_type(
+    PartialSyftObject, canonical_name="PartialSyftObject", version=1
+)
 
 
 def attach_attribute_to_syft_object(result: Any, attr_dict: dict[str, Any]) -> None:

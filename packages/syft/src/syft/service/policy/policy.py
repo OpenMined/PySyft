@@ -476,7 +476,7 @@ class CustomPolicy(type):
         return obj
 
 
-recursive_serde_register_type(CustomPolicy)
+recursive_serde_register_type(CustomPolicy, canonical_name="CustomPolicy", version=1)
 
 
 @serializable()

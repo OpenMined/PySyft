@@ -78,6 +78,33 @@ def check_fqn_alias(cls: object | type) -> tuple | None:
     return None
 
 
+def validate_cannonical_name_version(
+    cls: type, cannonical_name: str | None, version: int | None
+) -> tuple[str, int]:
+    cls_canonical_name = getattr(cls, "__canonical_name__", None)
+    cls_version = getattr(cls, "__version__", None)
+    if cls_canonical_name and cannonical_name:
+        raise ValueError(
+            "Cannot specify both __canonical_name__ attribute and cannonical_name argument."
+        )
+    if cls_version and version:
+        raise ValueError(
+            "Cannot specify both __version__ attribute and version argument."
+        )
+    if cls_canonical_name is None and cannonical_name is None:
+        raise ValueError(
+            "Must specify either __canonical_name__ attribute or cannonical_name argument."
+        )
+    if cls_version is None and version is None:
+        raise ValueError(
+            "Must specify either __version__ attribute or version argument."
+        )
+
+    cannonical_name = cannonical_name or cls_canonical_name
+    version = version or cls_version
+    return cannonical_name, version  # type: ignore
+
+
 def recursive_serde_register(
     cls: object | type,
     serialize: Callable | None = None,
@@ -86,6 +113,8 @@ def recursive_serde_register(
     exclude_attrs: list | None = None,
     inherit_attrs: bool | None = True,
     inheritable_attrs: bool | None = True,
+    canonical_name: str | None = None,
+    version: int | None = None,
 ) -> None:
     pydantic_fields = None
     base_attrs = None
@@ -94,6 +123,9 @@ def recursive_serde_register(
     alias_fqn = check_fqn_alias(cls)
     cls = type(cls) if not isinstance(cls, type) else cls
     fqn = f"{cls.__module__}.{cls.__name__}"
+    canonical_name, version = validate_cannonical_name_version(
+        cls, canonical_name, version
+    )
 
     nonrecursive = bool(serialize and deserialize)
     _serialize = serialize if nonrecursive else rs_object2proto
@@ -158,13 +190,6 @@ def recursive_serde_register(
     )
 
     TYPE_BANK[fqn] = serde_attributes
-    if hasattr(cls, "__canonical_name__"):
-        canonical_name = cls.__canonical_name__
-        version = cls.__version__
-    else:
-        # TODO: refactor
-        canonical_name = fqn
-        version = 1
 
     SyftObjectRegistry.register_cls(canonical_name, version, serde_attributes)
 

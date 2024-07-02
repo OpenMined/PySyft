@@ -43,25 +43,37 @@ recursive_serde_register(
     SigningKey,
     serialize=lambda x: bytes(x),
     deserialize=lambda x: SigningKey(x),
+    canonical_name="nacl_signing_key",
+    version=1,
 )
 
 recursive_serde_register(
     VerifyKey,
     serialize=lambda x: bytes(x),
     deserialize=lambda x: VerifyKey(x),
+    canonical_name="nacl_verify_key",
+    version=1,
 )
 
 
 # result Ok and Err
-recursive_serde_register(Ok, serialize_attrs=["_value"])
-recursive_serde_register(Err, serialize_attrs=["_value"])
-recursive_serde_register(Result)
+recursive_serde_register(
+    Ok, serialize_attrs=["_value"], canonical_name="result_Ok", version=1
+)
+recursive_serde_register(
+    Err, serialize_attrs=["_value"], canonical_name="result_Err", version=1
+)
+recursive_serde_register(
+    Result, serialize_attrs=["_value"], canonical_name="result_Result", version=1
+)
 
 # exceptions
-recursive_serde_register(cls=TypeError)
+recursive_serde_register(cls=TypeError, canonical_name="TypeError", version=1)
 
 # mongo collection
-recursive_serde_register_type(Collection)
+recursive_serde_register_type(
+    Collection, canonical_name="pymongo_collection", version=1
+)
 
 
 def serialize_dataframe(df: DataFrame) -> bytes:
@@ -91,6 +103,8 @@ recursive_serde_register(
     DataFrame,
     serialize=serialize_dataframe,
     deserialize=deserialize_dataframe,
+    canonical_name="pandas_dataframe",
+    version=1,
 )
 
 
@@ -103,30 +117,38 @@ recursive_serde_register(
     Series,
     serialize=lambda x: serialize(DataFrame(x).to_dict(), to_bytes=True),
     deserialize=deserialize_series,
+    canonical_name="pandas_series",
+    version=1,
 )
 
 recursive_serde_register(
     datetime,
     serialize=lambda x: serialize(x.isoformat(), to_bytes=True),
     deserialize=lambda x: parser.isoparse(deserialize(x, from_bytes=True)),
+    canonical_name="datetime_datetime",
+    version=1,
 )
 
 recursive_serde_register(
     time,
     serialize=lambda x: serialize(x.isoformat(), to_bytes=True),
     deserialize=lambda x: parser.parse(deserialize(x, from_bytes=True)).time(),
+    canonical_name="datetime_time",
+    version=1,
 )
 
 recursive_serde_register(
     date,
     serialize=lambda x: serialize(x.isoformat(), to_bytes=True),
     deserialize=lambda x: parser.parse(deserialize(x, from_bytes=True)).date(),
+    canonical_name="datetime_date",
 )
 
 recursive_serde_register(
     Timestamp,
     serialize=lambda x: serialize(x.value, to_bytes=True),
     deserialize=lambda x: Timestamp(deserialize(x, from_bytes=True)),
+    canonical_name="pandas_timestamp",
 )
 
 
@@ -138,11 +160,13 @@ recursive_serde_register(
     _DictTupleMetaClass,
     serialize=serialize_type,
     deserialize=deserialize_type,
+    canonical_name="dicttuple_meta",
 )
 recursive_serde_register(
     DictTuple,
     serialize=_serialize_dicttuple,
     deserialize=functools.partial(deserialize_kv, DictTuple),
+    canonical_name="dicttuple",
 )
 
 
@@ -150,11 +174,16 @@ recursive_serde_register(
     EmptyType,
     serialize=serialize_type,
     deserialize=deserialize_type,
+    canonical_name="empty_type",
 )
 
 
-recursive_serde_register_type(ModelMetaclass)
-recursive_serde_register_type(PartialModelMetaclass)
+recursive_serde_register_type(
+    ModelMetaclass, canonical_name="pydantic_model_metaclass", version=1
+)
+recursive_serde_register_type(
+    PartialModelMetaclass, canonical_name="partial_model_metaclass", version=1
+)
 
 
 def serialize_bytes_io(io: BytesIO) -> bytes:
@@ -166,13 +195,15 @@ recursive_serde_register(
     BytesIO,
     serialize=serialize_bytes_io,
     deserialize=lambda x: BytesIO(deserialize(x, from_bytes=True)),
+    canonical_name="bytes_io",
+    version=1,
 )
 
 try:
     # third party
     from IPython.display import Image
 
-    recursive_serde_register(Image)
+    recursive_serde_register(Image, canonical_name="IPython_display_Image", version=1)
 
 except Exception:  # nosec
     pass
@@ -196,6 +227,8 @@ try:
         _TensorMeta,
         serialize=serialize_torch_tensor_meta,
         deserialize=deserialize_torch_tensor_meta,
+        canonical_name="torch_tensor_meta",
+        version=1,
     )
 
     def torch_serialize(tensor: torch.Tensor) -> bytes:
@@ -209,18 +242,26 @@ try:
         torch.Tensor,
         serialize=torch_serialize,
         deserialize=lambda data: torch_deserialize(data),
+        canonical_name="torch_tensor",
+        version=1,
     )
 
-except Exception:  # nosec
+except ImportError:  # nosec
     pass
 
 # unsure why we have to register the object not the type but this works
-recursive_serde_register(np.core._ufunc_config._unspecified())
+recursive_serde_register(
+    np.core._ufunc_config._unspecified(),
+    canonical_name="numpy_ufunc_unspecified",
+    version=1,
+)
 
 recursive_serde_register(
     pydantic.EmailStr,
     serialize=lambda x: x.encode(),
     deserialize=lambda x: pydantic.EmailStr(x.decode()),
+    canonical_name="pydantic_emailstr",
+    version=1,
 )
 
 
@@ -246,13 +287,19 @@ try:
         return dataframe
 
     recursive_serde_register(
-        RowIterator, serialize=convert_to_dataframe, deserialize=convert_from_dataframe
+        RowIterator,
+        serialize=convert_to_dataframe,
+        deserialize=convert_from_dataframe,
+        canonical_name="bigquery_rowiterator",
+        version=1,
     )
 
     recursive_serde_register(
         QueryJob,
         serialize=lambda obj: convert_to_dataframe(obj.result()),
         deserialize=convert_from_dataframe,
+        canonical_name="bigquery_queryjob",
+        version=1,
     )
 except ImportError:
     pass
