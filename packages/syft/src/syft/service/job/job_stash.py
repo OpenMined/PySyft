@@ -783,7 +783,7 @@ class JobInfo(SyftObject):
 
         result_str = "<h4>Result</h4>"
         if self.includes_result:
-            result_str += f"<p style='margin-left: 10px;'>{str(self.result)}</p>"
+            result_str += f"<p style='margin-left: 10px;'>{self.result!s}</p>"
         else:
             result_str += "<p style='margin-left: 10px;'><i>No result included</i></p>"
 
