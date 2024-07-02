@@ -808,7 +808,8 @@ class Node(AbstractNode):
 
         if "usercodeservice" in self.service_path_map:
             user_code_service = self.get_service(UserCodeService)
-            user_code_service.load_user_code(context=context)
+            # TODO this does not work with un-migrated UserCode
+            # user_code_service.load_user_code(context=context)
 
         def reload_user_code() -> None:
             user_code_service.load_user_code(context=context)

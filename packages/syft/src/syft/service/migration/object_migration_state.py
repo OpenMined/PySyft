@@ -12,6 +12,7 @@ from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SyftBaseObject
 from ...types.syft_object import SyftObject
 from ...types.syft_object_registry import SyftObjectRegistry
 from ...types.uid import UID
@@ -85,10 +86,21 @@ class SyftMigrationStateStash(BaseStash):
 
 
 @serializable()
-class StoreMetadata(SyftObject):
+class StoreMetadata(SyftBaseObject):
     __canonical_name__ = "StoreMetadata"
     __version__ = SYFT_OBJECT_VERSION_1
 
     object_type: type
     permissions: dict[UID, set[str]]
     storage_permissions: dict[UID, set[UID]]
+
+
+@serializable()
+class MigrationData(SyftBaseObject):
+    __canonical_name__ = "MigrationData"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    store_objects: dict[type[SyftObject], list[SyftObject]]
+    metadata: dict[type[SyftObject], StoreMetadata]
+    action_objects: dict[type[SyftObject], list[SyftObject]]
+    blob_storage_objects: list[SyftObject]

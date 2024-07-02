@@ -16,6 +16,7 @@ from .client.client import login_as_guest
 from .client.client import register
 from .client.domain_client import DomainClient
 from .client.gateway_client import GatewayClient
+from .client.migrations import migrate
 from .client.registry import DomainRegistry
 from .client.registry import EnclaveRegistry
 from .client.registry import NetworkRegistry

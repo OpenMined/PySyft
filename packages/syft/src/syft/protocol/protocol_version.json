@@ -430,7 +430,14 @@
       "StoreMetadata": {
         "1": {
           "version": 1,
-          "hash": "bb9edb077f0214c5867d5349aa99eb584d133bd5f2cc5c824986c9174c0dbbc9",
+          "hash": "4a0522eaf28414dd53adcb7d5edb81b4a5b5bbe2e805cb78aa91329c3d6c32a8",
+          "action": "add"
+        }
+      },
+      "MigrationData": {
+        "1": {
+          "version": 1,
+          "hash": "492eae1c054298dc52a0bf8d5493249919d58c0201ef74c552746f89406d18cf",
           "action": "add"
         }
       }
