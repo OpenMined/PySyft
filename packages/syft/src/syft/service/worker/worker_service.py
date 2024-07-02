@@ -158,7 +158,11 @@ class WorkerService(AbstractService):
 
         if force and worker.job_id is not None:
             job_service = cast(JobService, context.node.get_service(JobService))
-            job_service.kill(context=context, id=worker.job_id)
+            res = job_service.kill(context=context, id=worker.job_id)
+            if isinstance(res, SyftError):
+                return SyftError(
+                    message=f"Failed to terminate the job associated with worker {uid}: {res.message}"
+                )
 
         worker_pool_service = cast(
             SyftWorkerPoolService, context.node.get_service(SyftWorkerPoolService)
@@ -241,7 +245,11 @@ class WorkerService(AbstractService):
         force: bool = False,
     ) -> SyftSuccess | SyftError:
         worker = self._get_worker(context=context, uid=uid)
-        worker._to_be_deleted = True
+        worker.to_be_deleted = True
+
+        res = self.stash.update(context.credentials, worker)
+        if isinstance(res, SyftError):
+            return res
 
         if not force:
             # relative

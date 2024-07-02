@@ -14,6 +14,7 @@ from ...store.linked_obj import LinkedObject
 from ...types.base import SyftBaseModel
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.syft_object import short_uid
 from ...types.uid import UID
@@ -49,7 +50,7 @@ class WorkerHealth(Enum):
 @serializable()
 class SyftWorker(SyftObject):
     __canonical_name__ = "SyftWorker"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     __attr_unique__ = ["name"]
     __attr_searchable__ = ["name", "container_id"]
@@ -73,7 +74,7 @@ class SyftWorker(SyftObject):
     worker_pool_name: str
     consumer_state: ConsumerState = ConsumerState.DETACHED
     job_id: UID | None = None
-    _to_be_deleted: bool = False
+    to_be_deleted: bool = False
 
     @property
     def logs(self) -> str | SyftError:

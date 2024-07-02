@@ -431,7 +431,7 @@ class ZMQProducer(QueueProducer):
                 logger.info("Failed to retrieve SyftWorker {worker.syft_worker_id}")
                 continue
 
-            if worker.has_expired() or syft_worker._to_be_deleted:
+            if worker.has_expired() or syft_worker.to_be_deleted:
                 logger.info(
                     "Deleting expired Worker id={} uid={} expiry={} now={}",
                     worker.identity,
@@ -439,7 +439,7 @@ class ZMQProducer(QueueProducer):
                     worker.get_expiry(),
                     Timeout.now(),
                 )
-                self.delete_worker(worker, syft_worker._to_be_deleted)
+                self.delete_worker(worker, syft_worker.to_be_deleted)
 
                 # relative
                 from ...service.worker.worker_service import WorkerService
