@@ -62,20 +62,21 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Upgrade pip
+      - name: Install pip packages
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pip install --upgrade pip==24.0 uv==0.2.13
+          python -m pip install --upgrade pip
+          pip install uv==0.2.17 tox tox-uv==1.9.0
           uv --version
 
-      - name: Get pip cache dir
+      - name: Get uv cache dir
         id: pip-cache
         if: steps.changes.outputs.syft == 'true'
         shell: bash
         run: |
           echo "dir=$(uv cache dir)" >> $GITHUB_OUTPUT
 
-      - name: pip cache
+      - name: Load github cache
         uses: actions/cache@v4
         if: steps.changes.outputs.syft == 'true'
         with:
@@ -89,11 +90,6 @@ jobs:
       #   uses: crazy-max/ghaction-setup-docker@v3.3.0
       #   with:
       #     set-host: true
-
-      - name: Install Dependencies
-        if: steps.changes.outputs.syft == 'true'
-        run: |
-          pip install --upgrade tox tox-uv==1.9.0
 
       - name: Run unit tests
         if: steps.changes.outputs.syft == 'true'
@@ -157,20 +153,21 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Upgrade pip
+      - name: Install pip packages
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         run: |
-          pip install --upgrade pip==24.0 uv==0.2.13
+          python -m pip install --upgrade pip
+          pip install uv==0.2.17 tox tox-uv==1.9.0
           uv --version
 
-      - name: Get pip cache dir
+      - name: Get uv cache dir
         id: pip-cache
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         shell: bash
         run: |
           echo "dir=$(uv cache dir)" >> $GITHUB_OUTPUT
 
-      - name: pip cache
+      - name: Load github cache
         uses: actions/cache@v4
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         with:
@@ -178,11 +175,6 @@ jobs:
           key: ${{ runner.os }}-uv-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
           restore-keys: |
             ${{ runner.os }}-uv-py${{ matrix.python-version }}-
-
-      - name: Install Dependencies
-        if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
-        run: |
-          pip install --upgrade tox tox-uv==1.9.0
 
       - name: Run notebook tests
         uses: nick-fields/retry@v3
@@ -239,20 +231,21 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Upgrade pip
+      - name: Install pip packages
         if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         run: |
-          pip install --upgrade pip==24.0 uv==0.2.13
+          python -m pip install --upgrade pip
+          pip install uv==0.2.17 tox tox-uv==1.9.0
           uv --version
 
-      - name: Get pip cache dir
+      - name: Get uv cache dir
         id: pip-cache
         if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         shell: bash
         run: |
           echo "dir=$(uv cache dir)" >> $GITHUB_OUTPUT
 
-      - name: pip cache
+      - name: Load github cache
         uses: actions/cache@v4
         if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         with:
@@ -260,11 +253,6 @@ jobs:
           key: ${{ runner.os }}-uv-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
           restore-keys: |
             ${{ runner.os }}-uv-py${{ matrix.python-version }}-
-
-      - name: Install Dependencies
-        if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
-        run: |
-          pip install --upgrade tox tox-uv==1.9.0
 
       - name: Docker Compose on Linux
         if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'ubuntu-latest'
@@ -340,20 +328,21 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Upgrade pip
+      - name: Install pip packages
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pip install --upgrade pip==24.0 uv==0.2.13
+          python -m pip install --upgrade pip
+          pip install uv==0.2.17 tox tox-uv==1.9.0
           uv --version
 
-      - name: Get pip cache dir
+      - name: Get uv cache dir
         if: steps.changes.outputs.syft == 'true'
         id: pip-cache
         shell: bash
         run: |
           echo "dir=$(uv cache dir)" >> $GITHUB_OUTPUT
 
-      - name: pip cache
+      - name: Load github cache
         uses: actions/cache@v4
         if: steps.changes.outputs.syft == 'true'
         with:
@@ -361,11 +350,6 @@ jobs:
           key: ${{ runner.os }}-uv-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
           restore-keys: |
             ${{ runner.os }}-uv-py${{ matrix.python-version }}-
-
-      - name: Install Dependencies
-        if: steps.changes.outputs.syft == 'true'
-        run: |
-          pip install --upgrade tox tox-uv==1.9.0
 
       - name: Scan for security issues
         if: steps.changes.outputs.syft == 'true'

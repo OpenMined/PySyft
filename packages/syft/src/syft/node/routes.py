@@ -1,6 +1,7 @@
 # stdlib
 import base64
 import binascii
+from collections.abc import AsyncGenerator
 import logging
 from typing import Annotated
 
@@ -18,6 +19,7 @@ import requests
 
 # relative
 from ..abstract_node import AbstractNode
+from ..client.connection import NodeConnection
 from ..protocol.data_protocol import PROTOCOL_TYPE
 from ..serde.deserialize import _deserialize as deserialize
 from ..serde.serialize import _serialize as serialize
@@ -42,7 +44,7 @@ def make_routes(worker: Worker) -> APIRouter:
     async def get_body(request: Request) -> bytes:
         return await request.body()
 
-    def _blob_url(peer_uid: UID, presigned_url: str) -> str:
+    def _get_node_connection(peer_uid: UID) -> NodeConnection:
         # relative
         from ..service.network.node_peer import route_to_connection
 
@@ -50,12 +52,10 @@ def make_routes(worker: Worker) -> APIRouter:
         peer = network_service.stash.get_by_uid(worker.verify_key, peer_uid).ok()
         peer_node_route = peer.pick_highest_priority_route()
         connection = route_to_connection(route=peer_node_route)
-        url = connection.to_blob_route(presigned_url)
-
-        return str(url)
+        return connection
 
     @router.get("/stream/{peer_uid}/{url_path}/", name="stream")
-    async def stream(peer_uid: str, url_path: str) -> StreamingResponse:
+    async def stream_download(peer_uid: str, url_path: str) -> StreamingResponse:
         try:
             url_path_parsed = base64.urlsafe_b64decode(url_path.encode()).decode()
         except binascii.Error:
@@ -63,16 +63,45 @@ def make_routes(worker: Worker) -> APIRouter:
 
         peer_uid_parsed = UID.from_string(peer_uid)
 
-        url = _blob_url(peer_uid=peer_uid_parsed, presigned_url=url_path_parsed)
-
         try:
-            resp = requests.get(url=url, stream=True)  # nosec
-            resp.raise_for_status()
+            peer_connection = _get_node_connection(peer_uid_parsed)
+            url = peer_connection.to_blob_route(url_path_parsed)
+            stream_response = peer_connection._make_get(url.path, stream=True)
         except requests.RequestException:
             raise HTTPException(404, "Failed to retrieve data from domain.")
 
-        return StreamingResponse(
-            resp.iter_content(chunk_size=None), media_type="text/event-stream"
+        return StreamingResponse(stream_response, media_type="text/event-stream")
+
+    async def read_request_body_in_chunks(
+        request: Request,
+    ) -> AsyncGenerator[bytes, None]:
+        async for chunk in request.stream():
+            yield chunk
+
+    @router.put("/stream/{peer_uid}/{url_path}/", name="stream")
+    async def stream_upload(peer_uid: str, url_path: str, request: Request) -> Response:
+        try:
+            url_path_parsed = base64.urlsafe_b64decode(url_path.encode()).decode()
+        except binascii.Error:
+            raise HTTPException(404, "Invalid `url_path`.")
+
+        data = await request.body()
+
+        peer_uid_parsed = UID.from_string(peer_uid)
+
+        try:
+            peer_connection = _get_node_connection(peer_uid_parsed)
+            url = peer_connection.to_blob_route(url_path_parsed)
+
+            print("Url on stream", url.path)
+            response = peer_connection._make_put(url.path, data=data, stream=True)
+        except requests.RequestException:
+            raise HTTPException(404, "Failed to upload data to domain")
+
+        return Response(
+            content=response.content,
+            headers=response.headers,
+            media_type="application/octet-stream",
         )
 
     @router.get(

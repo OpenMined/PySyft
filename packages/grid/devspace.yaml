@@ -25,9 +25,10 @@ vars:
   DOCKER_IMAGE_BACKEND: openmined/grid-backend
   DOCKER_IMAGE_FRONTEND: openmined/grid-frontend
   DOCKER_IMAGE_SEAWEEDFS: openmined/grid-seaweedfs
+  DOCKER_IMAGE_RATHOLE: openmined/grid-rathole
   DOCKER_IMAGE_ENCLAVE_ATTESTATION: openmined/grid-enclave-attestation
   CONTAINER_REGISTRY: "docker.io"
-  VERSION: "0.8.7-beta.11"
+  VERSION: "0.8.7-beta.13"
   PLATFORM: $(uname -m | grep -q 'arm64' && echo "arm64" || echo "amd64")
 
 # This is a list of `images` that DevSpace can build for this project
@@ -67,15 +68,16 @@ deployments:
       releaseName: syft-dev
       chart:
         name: ./helm/syft
+      # values that need to be templated go here
       values:
         global:
           registry: ${CONTAINER_REGISTRY}
           version: dev-${DEVSPACE_TIMESTAMP}
-        node:
-          type: domain # required for the gateway profile
-      # anything that does not need devspace $env vars should go in values.dev.yaml
+        node: {}
+      # anything that does not need templating should go in helm/examples/dev/base.yaml
+      # or profile specific values files
       valuesFiles:
-        - ./helm/values.dev.yaml
+        - ./helm/examples/dev/base.yaml
 
 dev:
   mongo:
@@ -115,46 +117,84 @@ dev:
           localPort: 3480
 
 profiles:
-  - name: dev-low
+  - name: domain-low
+    description: "Deploy a low-side domain"
     patches:
       - op: add
         path: deployments.syft.helm.values.node
         value:
           side: low
-  - name: dev-high
+
+  - name: domain-tunnel
+    description: "Deploy a domain with tunneling enabled"
     patches:
+      # enable rathole image
       - op: add
-        path: deployments.syft.helm.values.node
+        path: images
         value:
-          side: high
+          rathole:
+            image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_RATHOLE}"
+            buildKit:
+              args: ["--platform", "linux/${PLATFORM}"]
+            dockerfile: ./rathole/rathole.dockerfile
+            context: ./rathole
+            tags:
+              - dev-${DEVSPACE_TIMESTAMP}
+      # use rathole client-specific chart values
+      - op: add
+        path: deployments.syft.helm.valuesFiles
+        value: ./helm/examples/dev/domain.tunnel.yaml
 
   - name: gateway
+    description: "Deploy a Gateway Node with tunnel enabled"
     patches:
-      - op: replace
-        path: deployments.syft.helm.values.node.type
-        value: "gateway"
+      # enable rathole image
+      - op: add
+        path: images
+        value:
+          rathole:
+            image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_RATHOLE}"
+            buildKit:
+              args: ["--platform", "linux/${PLATFORM}"]
+            dockerfile: ./rathole/rathole.dockerfile
+            context: ./rathole
+            tags:
+              - dev-${DEVSPACE_TIMESTAMP}
+      # enable rathole `devspace dev` config
+      - op: add
+        path: dev
+        value:
+          rathole:
+            labelSelector:
+              app.kubernetes.io/name: syft
+              app.kubernetes.io/component: rathole
+            ports:
+              - port: "2333"
+      # use gateway-specific chart values
+      - op: add
+        path: deployments.syft.helm.valuesFiles
+        value: ./helm/examples/dev/gateway.yaml
+      # remove unused images
       - op: remove
         path: images.seaweedfs
       - op: remove
         path: dev.seaweedfs
-
       # Port Re-Mapping
-      # Mongo
       - op: replace
         path: dev.mongo.ports[0].port
         value: 27018:27017
-
-      # Backend
       - op: replace
         path: dev.backend.ports[0].port
         value: 5679:5678
-
-      # Backend Container SSH
       - op: replace
         path: dev.backend.containers.backend-container.ssh.localPort
         value: 3481
+      - op: replace
+        path: dev.rtunnel.ports[0].port
+        value: 2334:2333
 
   - name: gcp
+    description: "Deploy a high-side domain on GCP"
     patches:
       - op: replace
         path: deployments.syft.helm.valuesFiles
@@ -162,6 +202,7 @@ profiles:
           - ./helm/examples/gcp/gcp.high.yaml
 
   - name: gcp-low
+    description: "Deploy a low-side domain on GCP"
     patches:
       - op: replace
         path: deployments.syft.helm.valuesFiles
@@ -169,6 +210,7 @@ profiles:
           - ./helm/examples/gcp/gcp.low.yaml
 
   - name: azure
+    description: "Deploy a high-side domain on AKS"
     patches:
       - op: replace
         path: deployments.syft.helm.valuesFiles
@@ -176,11 +218,9 @@ profiles:
           - ./helm/examples/azure/azure.high.yaml
 
   - name: enclave
+    description: "Deploy an enclave node"
     patches:
-      - op: replace
-        path: deployments.syft.helm.values.node.type
-        value: "enclave"
-
+      # enable image build for enclave-attestation
       - op: add
         path: images
         value:
@@ -198,29 +238,20 @@ profiles:
           enclave-attestation:
             sync:
               - path: ./enclave/attestation/server:/app/server
-
+      # use gateway-specific chart values
       - op: add
-        path: deployments.syft.helm.values
-        value:
-          attestation:
-            enabled: true
-
+        path: deployments.syft.helm.valuesFiles
+        value: ./helm/examples/dev/enclave.yaml
       # Port Re-Mapping
-      # Mongo
       - op: replace
         path: dev.mongo.ports[0].port
         value: 27019:27017
-
-      # Backend
       - op: replace
         path: dev.backend.ports[0].port
         value: 5680:5678
-
-      # Backend Container SSH
       - op: replace
         path: dev.backend.containers.backend-container.ssh.localPort
         value: 3482
-
       - op: replace
         path: dev.seaweedfs.ports
         value:

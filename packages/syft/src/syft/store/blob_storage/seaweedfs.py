@@ -38,7 +38,8 @@ from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.blob_storage import SeaweedSecureFilePathLocation
 from ...types.blob_storage import SecureFilePathLocation
 from ...types.grid_url import GridURL
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
+from ...types.syft_object import SYFT_OBJECT_VERSION_4
+from ...types.uid import UID
 from ...util.constants import DEFAULT_TIMEOUT
 from ...util.telemetry import TRACING_ENABLED
 
@@ -62,10 +63,11 @@ if TRACING_ENABLED:
 @serializable()
 class SeaweedFSBlobDeposit(BlobDeposit):
     __canonical_name__ = "SeaweedFSBlobDeposit"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_4
 
     urls: list[GridURL]
     size: int
+    proxy_node_uid: UID | None = None
 
     def write(self, data: BytesIO) -> SyftSuccess | SyftError:
         # relative
@@ -100,9 +102,14 @@ class SeaweedFSBlobDeposit(BlobDeposit):
                     start=1,
                 ):
                     if api is not None and api.connection is not None:
-                        blob_url = api.connection.to_blob_route(
-                            url.url_path, host=url.host_or_ip
-                        )
+                        if self.proxy_node_uid is None:
+                            blob_url = api.connection.to_blob_route(
+                                url.url_path, host=url.host_or_ip
+                            )
+                        else:
+                            blob_url = api.connection.stream_via(
+                                self.proxy_node_uid, url.url_path
+                            )
                     else:
                         blob_url = url
 
