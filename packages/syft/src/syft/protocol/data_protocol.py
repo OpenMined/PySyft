@@ -183,14 +183,14 @@ class DataProtocol:
                     hash_str = object_metadata["hash"]
                     state_versions = state_dict[canonical_name]
                     state_version_hashes = [val[0] for val in state_versions.values()]
-                    if action == "add" and (
-                        str(version) in state_versions.keys()
-                        or hash_str in state_version_hashes
-                    ):
-                        raise Exception(
-                            f"Can't add {object_metadata} already in state {versions}"
-                        )
-                    elif action == "remove" and (
+                    # if action == "add" and (
+                    #     str(version) in state_versions.keys()
+                    #     or hash_str in state_version_hashes
+                    # ):
+                    #     raise Exception(
+                    #         f"Can't add {object_metadata} already in state {versions}"
+                    #     )
+                    if action == "remove" and (
                         str(version) not in state_versions.keys()
                         and hash_str not in state_version_hashes
                     ):

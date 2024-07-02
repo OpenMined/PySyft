@@ -3,18 +3,18 @@ from collections.abc import Callable
 import json
 from typing import Any
 
-from syft.types.syft_migration import migrate
-from syft.types.transforms import drop, make_set_default
-
 # relative
 from ...client.api import APIRegistry
 from ...client.enclave_client import EnclaveMetadata
 from ...serde.serializable import serializable
 from ...service.user.user_roles import ServiceRole
+from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.syft_object import SyftVerifyKey
+from ...types.transforms import drop
+from ...types.transforms import make_set_default
 from ...types.uid import UID
 from ...util.notebook_ui.components.tabulator_template import (
     build_tabulator_table_with_data,

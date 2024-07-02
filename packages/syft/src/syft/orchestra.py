@@ -166,7 +166,7 @@ def deploy_to_python(
     queue_port: int | None = None,
     association_request_auto_approval: bool = False,
     background_tasks: bool = False,
-    migrate: bool = True
+    migrate: bool = True,
 ) -> NodeHandle:
     worker_classes = {
         NodeType.DOMAIN: Domain,
@@ -194,7 +194,7 @@ def deploy_to_python(
         "create_producer": create_producer,
         "association_request_auto_approval": association_request_auto_approval,
         "background_tasks": background_tasks,
-        "migrate": migrate
+        "migrate": migrate,
     }
 
     if port:
@@ -248,7 +248,7 @@ def deploy_to_remote(
     deployment_type_enum: DeploymentType,
     name: str,
     node_side_type: NodeSideType,
-    migrate: bool = False
+    migrate: bool = False,
 ) -> NodeHandle:
     node_port = int(os.environ.get("NODE_PORT", f"{DEFAULT_PORT}"))
     node_url = str(os.environ.get("NODE_URL", f"{DEFAULT_URL}"))
@@ -287,7 +287,7 @@ class Orchestra:
         queue_port: int | None = None,
         association_request_auto_approval: bool = False,
         background_tasks: bool = False,
-        migrate: bool = True
+        migrate: bool = True,
     ) -> NodeHandle:
         if dev_mode is True:
             thread_workers = True
@@ -324,7 +324,7 @@ class Orchestra:
                 queue_port=queue_port,
                 association_request_auto_approval=association_request_auto_approval,
                 background_tasks=background_tasks,
-                migrate=migrate
+                migrate=migrate,
             )
         elif deployment_type_enum == DeploymentType.REMOTE:
             return deploy_to_remote(
@@ -332,7 +332,7 @@ class Orchestra:
                 deployment_type_enum=deployment_type_enum,
                 name=name,
                 node_side_type=node_side_type_enum,
-                migrate=migrate
+                migrate=migrate,
             )
         raise NotImplementedError(
             f"deployment_type: {deployment_type_enum} is not supported"

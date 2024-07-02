@@ -1,11 +1,6 @@
 # stdlib
-
-# stdlib
-
-# stdlib
-
-# stdlib
 from collections import defaultdict
+import sys
 from typing import cast
 
 # third party
@@ -97,7 +92,7 @@ class MigrationService(AbstractService):
 
     def _find_klasses_pending_for_migration(
         self, context: AuthedServiceContext, object_types: list[type[SyftObject]]
-    ) -> list[SyftObject]:
+    ) -> list[type[SyftObject]]:
         klasses_to_be_migrated = []
 
         for object_type in object_types:
@@ -153,7 +148,7 @@ class MigrationService(AbstractService):
         if issubclass(object_type, ActionObject):
             object_partition = cast(KeyValueActionStore, context.node.action_store)
         else:
-            canonical_name = object_type.__canonical_name__
+            canonical_name = object_type.__canonical_name__  # type: ignore[unreachable]
             object_partition = self.store.partitions.get(canonical_name)
 
         if object_partition is None:
@@ -489,12 +484,9 @@ class MigrationService(AbstractService):
             return SyftError(message=objects_update_update_result.value)
 
         # now action objects
-        migration_actionobjects_result: dict[type[SyftObject], list[SyftObject]] = (
-            self._get_migration_actionobjects(context)
-        )
-
+        migration_actionobjects_result = self._get_migration_actionobjects(context)
         if migration_actionobjects_result.is_err():
-            return migration_actionobjects_result
+            return SyftError(message=migration_actionobjects_result.err())
         migration_actionobjects = migration_actionobjects_result.ok()
 
         migrated_actionobjects = []

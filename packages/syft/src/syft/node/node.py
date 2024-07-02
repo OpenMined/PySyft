@@ -70,8 +70,8 @@ from ..service.job.job_stash import JobStatus
 from ..service.job.job_stash import JobType
 from ..service.log.log_service import LogService
 from ..service.metadata.metadata_service import MetadataService
-from ..service.migration.migration_service import MigrationService
 from ..service.metadata.node_metadata import NodeMetadata
+from ..service.migration.migration_service import MigrationService
 from ..service.network.network_service import NetworkService
 from ..service.network.utils import PeerHealthCheckTask
 from ..service.notification.notification_service import NotificationService
@@ -128,9 +128,9 @@ from ..store.linked_obj import LinkedObject
 from ..store.mongo_document_store import MongoStoreConfig
 from ..store.sqlite_document_store import SQLiteStoreClientConfig
 from ..store.sqlite_document_store import SQLiteStoreConfig
-from ..types.syft_object import Context
 from ..types.datetime import DATETIME_FORMAT
 from ..types.syft_metaclass import Empty
+from ..types.syft_object import Context
 from ..types.syft_object import PartialSyftObject
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftObject
