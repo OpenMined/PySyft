@@ -835,7 +835,7 @@ class UserCode(SyncableSyftObject):
         return wrapper
 
     @property
-    @deprecated(details="Use 'run' instead")
+    @deprecated(reason="Use 'run' instead")
     def unsafe_function(self) -> Callable | None:
         return self.run
 
