@@ -324,10 +324,10 @@ def test_delete_datasets(worker: Worker) -> None:
     dataset = root_client.api.services.dataset.get_all()[0]
     asset = dataset.asset_list[0]
     asset_mock = root_client.api.services.action.get(
-        uid=asset.action_id, twin_mode=sy.service.action.action_object.TwinMode.MOCK
+        uid=asset.action_id, twin_mode=TwinMode.MOCK
     )
     asset_private = root_client.api.services.action.get(
-        uid=asset.action_id, twin_mode=sy.service.action.action_object.TwinMode.PRIVATE
+        uid=asset.action_id, twin_mode=TwinMode.PRIVATE
     )
     assert isinstance(asset_mock, ActionObject)
     assert isinstance(asset_private, ActionObject)
@@ -336,10 +336,12 @@ def test_delete_datasets(worker: Worker) -> None:
     del_res = root_client.api.services.dataset.delete_by_uid(uid=dataset.id)
     assert isinstance(del_res, SyftSuccess)
     asset_mock = root_client.api.services.action.get(
-        uid=asset.action_id, twin_mode=sy.service.action.action_object.TwinMode.MOCK
+        uid=asset.action_id, twin_mode=TwinMode.MOCK
     )
     asset_private = root_client.api.services.action.get(
-        uid=asset.action_id, twin_mode=sy.service.action.action_object.TwinMode.PRIVATE
+        uid=asset.action_id, twin_mode=TwinMode.PRIVATE
     )
-    assert isinstance(asset_mock, SyftError)
-    assert isinstance(asset_private, SyftError)
+    assert isinstance(asset_mock, str)
+    assert f"Could not find item with uid {asset.action_id}" in asset_mock
+    assert isinstance(asset_private, str)
+    assert f"Could not find item with uid {asset.action_id}" in asset_private

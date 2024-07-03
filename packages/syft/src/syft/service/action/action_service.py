@@ -276,10 +276,6 @@ class ActionService(AbstractService):
         resolve_nested: bool = True,
     ) -> Result[ActionObject, str]:
         """Get an object from the action store"""
-        # stdlib
-
-        # relative
-
         result = self.store.get(
             uid=uid, credentials=context.credentials, has_permission=has_permission
         )
