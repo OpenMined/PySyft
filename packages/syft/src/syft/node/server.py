@@ -23,6 +23,7 @@ import uvicorn
 # relative
 from ..abstract_node import NodeSideType
 from ..client.client import API_PATH
+from ..util.autoreload import enable_autoreload
 from ..util.constants import DEFAULT_TIMEOUT
 from ..util.util import os_name
 from .domain import Domain
@@ -178,6 +179,11 @@ def serve_node(
     debug: bool = False,
 ) -> tuple[Callable, Callable]:
     starting_uvicorn_event = multiprocessing.Event()
+
+    # Enable IPython autoreload if dev_mode is enabled.
+    if dev_mode:
+        enable_autoreload()
+
     server_process = multiprocessing.Process(
         target=run_uvicorn,
         kwargs={
