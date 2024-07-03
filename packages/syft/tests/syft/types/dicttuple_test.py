@@ -197,7 +197,7 @@ class TestDictTupleProperties:
 
     def test_int_indexing(self, dict_tuple: DictTuple, case: Case) -> None:
         for i in range(len(dict_tuple)):
-            assert dict_tuple[i] == case.values[i]
+            assert dict_tuple[i] == case.values[i]  # noqa PD011
 
     def test_key_indexing(self, dict_tuple: DictTuple, case: Case) -> None:
         for k in case.keys:
