@@ -679,7 +679,7 @@ class CreateDataset(Dataset):
                 else:
                     self.asset_list[i] = asset
                     return SyftSuccess(
-                        f"Asset {asset.name} has been successfully replaced."
+                        message=f"Asset {asset.name} has been successfully replaced."
                     )
 
         self.asset_list.append(asset)
