@@ -77,6 +77,7 @@ class SyftResponseMessage(SyftBaseModel):
 @serializable()
 class SyftError(SyftResponseMessage):
     _bool: bool = False
+    tb: str | None = None
 
     @property
     def _repr_html_class_(self) -> str:
@@ -89,8 +90,10 @@ class SyftError(SyftResponseMessage):
         return False
 
     @classmethod
-    def from_exc(cls, exc: SyftExc, context: AuthedServiceContext) -> Self:
-        return cls(message=exc.get_message(context))
+    def from_exception(cls, context, exc) -> Self:
+        error_msg = exc.get_message(context)
+        tb = exc.get_tb(context)
+        return cls(message=error_msg, tb=tb)
 
 
 @serializable()

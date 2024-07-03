@@ -1289,7 +1289,7 @@ class Node(AbstractNode):
                 logger.info(f"API Call: {api_call}")
                 result = method(context, *api_call.args, **api_call.kwargs)
             except SyftException as exc:
-                result = SyftError.from_exc(exc, context)
+                result = SyftError.from_exception(context=context, exc=exc)
             except Exception:
                 result = SyftError(
                     message=f"Exception calling {api_call.path}. {traceback.format_exc()}"
