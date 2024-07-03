@@ -155,7 +155,8 @@ def test_upload_dataset_save_to_blob_storage(worker):
     assert len(blob_storage.get_all_blob_storage_entries(context=root_authed_ctx)) == 0
 
     num_elements = 50 * 1024 * 1024
-    data_big = np.random.randint(0, 100, size=num_elements)
+    rng = np.random.default_rng()
+    data_big = rng.integers(0, 100, size=num_elements)
     dataset_big = sy.Dataset(
         name="big_dataset",
         asset_list=[
