@@ -68,14 +68,16 @@ class SyftException(Exception):
         Returns the error traceback as a string, if the user is able to see it.
 
         Args:
-            context (AuthedServiceContext): The authenticated service context which 
+            context (AuthedServiceContext): The authenticated service context which
                 contains the user's role.
 
         Returns:
-            str | None: A string representation of the current stack trace if the 
+            str | None: A string representation of the current stack trace if the
                 user is a DataOwner or higher, otherwise None.
         """
+        # stdlib
         import traceback
+
         if context.role.value >= ServiceRole.DATA_OWNER.value:
             return traceback.format_exc()
         return None

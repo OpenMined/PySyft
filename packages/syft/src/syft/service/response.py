@@ -2,6 +2,7 @@
 import sys
 import traceback
 from typing import Any
+from typing import TYPE_CHECKING
 
 # third party
 from IPython.display import display
@@ -11,9 +12,12 @@ from typing_extensions import Self
 # relative
 from ..serde.serializable import serializable
 from ..types.base import SyftBaseModel
-from ..types.errors import SyftException as SyftExc
 from ..util.util import sanitize_html
-from .context import AuthedServiceContext
+
+if TYPE_CHECKING:
+    # relative
+    from ..types.errors import SyftException as NewSyftException
+    from .context import AuthedServiceContext
 
 
 class SyftResponseMessage(SyftBaseModel):
@@ -90,7 +94,9 @@ class SyftError(SyftResponseMessage):
         return False
 
     @classmethod
-    def from_exception(cls, context, exc) -> Self:
+    def from_exception(
+        cls, context: "AuthedServiceContext", exc: "NewSyftException"
+    ) -> Self:
         error_msg = exc.get_message(context)
         tb = exc.get_tb(context)
         return cls(message=error_msg, tb=tb)
