@@ -811,7 +811,9 @@ class ActionObject(SyncableSyftObject):
                     syft_node_location=self.syft_node_location,
                     syft_client_verify_key=self.syft_client_verify_key,
                 )
-                if not can_upload_to_blob_storage(data, get_metadata()):
+                if get_metadata is not None and not can_upload_to_blob_storage(
+                    data, get_metadata()
+                ):
                     return SyftWarning(
                         message=f"The action object {self.id} was not saved to "
                         f"the blob store but to memory cache since it is small."
