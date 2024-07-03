@@ -2,6 +2,7 @@
 from collections.abc import Callable
 from datetime import datetime
 from enum import Enum
+import logging
 import textwrap
 from typing import Any
 
@@ -49,6 +50,7 @@ from ..response import SyftSuccess
 from ..response import SyftWarning
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
+logger = logging.getLogger(__name__)
 
 
 @serializable()
@@ -336,7 +338,7 @@ class CreateAsset(SyftObject):
     uploader: Contributor | None = None
 
     __repr_attrs__ = ["name"]
-    model_config = ConfigDict(validate_assignment=True)
+    model_config = ConfigDict(validate_assignment=True, extra="forbid")
 
     def __init__(self, description: str | None = None, **data: Any) -> None:
         if isinstance(description, str):
@@ -615,7 +617,7 @@ class CreateDataset(Dataset):
     created_at: DateTime | None = None  # type: ignore[assignment]
     uploader: Contributor | None = None  # type: ignore[assignment]
 
-    model_config = ConfigDict(validate_assignment=True)
+    model_config = ConfigDict(validate_assignment=True, extra="forbid")
 
     def _check_asset_must_contain_mock(self) -> None:
         _check_asset_must_contain_mock(self.asset_list)
@@ -677,7 +679,7 @@ class CreateDataset(Dataset):
                 else:
                     self.asset_list[i] = asset
                     return SyftSuccess(
-                        f"Asset {asset.name} has been successfully replaced."
+                        message=f"Asset {asset.name} has been successfully replaced."
                     )
 
         self.asset_list.append(asset)
@@ -739,7 +741,11 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
         res = twin._save_to_blob_storage(allow_empty=contains_empty)
         if isinstance(res, SyftError):
             raise ValueError(res.message)
-
+        if isinstance(res, SyftWarning):
+            logger.debug(res.message)
+            skip_save_to_blob_store = True
+        else:
+            skip_save_to_blob_store = False
         # TODO, upload to blob storage here
         if context.node is None:
             raise ValueError(
@@ -749,6 +755,7 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
         result = action_service._set(
             context=context.to_node_context(),
             action_object=twin,
+            skip_save_to_blob_store=skip_save_to_blob_store,
         )
         if result.is_err():
             raise RuntimeError(f"Failed to create and store twin. Error: {result}")
