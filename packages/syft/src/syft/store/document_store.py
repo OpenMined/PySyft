@@ -852,6 +852,8 @@ class NewBaseStash:
                 return value
             case Err(err):
                 raise StashError(err)
+            case _:
+                raise StashError("Unexpected error")
 
     def add_permissions(self, permissions: list[ActionObjectPermission]) -> None:
         self.partition.add_permissions(permissions)
@@ -893,6 +895,8 @@ class NewBaseStash:
                 return value
             case Err(err):
                 raise StashError(err)
+            case _:
+                raise StashError("Unexpected error")
 
     @as_result(StashError)
     def query_all(
@@ -933,6 +937,8 @@ class NewBaseStash:
                 return value
             case Err(err):
                 raise StashError(err)
+            case _:
+                raise StashError("Unexpected error")
 
     @as_result(StashError)
     def query_all_kwargs(
@@ -964,6 +970,8 @@ class NewBaseStash:
                 return value
             case Err(err):
                 raise StashError(err)
+            case _:
+                raise StashError("Unexpected error")
 
     @as_result(StashError, NotFoundError)
     def query_one_kwargs(
@@ -981,6 +989,8 @@ class NewBaseStash:
                 return value
             case Err(err):
                 raise StashError(err)
+            case _:
+                raise StashError("Unexpected error")
 
     @as_result(StashError)
     def find_all(
@@ -1015,6 +1025,8 @@ class NewBaseStash:
                 return True
             case Err(err):
                 raise StashError(str(err))
+            case _:
+                raise StashError("Unexpected error")
 
     @as_result(StashError)
     def update(
@@ -1033,6 +1045,8 @@ class NewBaseStash:
                 return value
             case Err(err):
                 raise StashError(err)
+            case _:
+                raise StashError("Unexpected error")
 
 
 @instrument
@@ -1056,6 +1070,8 @@ class NewBaseUIDStoreStash(NewBaseStash):
                 return value
             case Err(err):
                 raise StashError(err)
+            case _:
+                raise StashError("Unexpected error")
 
     @as_result(StashError)
     def set(
