@@ -71,6 +71,7 @@ from ...util.colors import SURFACE
 from ...util.decorators import deprecated
 from ...util.markdown import CodeMarkdown
 from ...util.markdown import as_markdown_code
+from ...util.notebook_ui.styles import FONT_CSS
 from ...util.util import prompt_warning_message
 from ..action.action_endpoint import CustomEndpointActionObject
 from ..action.action_object import Action
@@ -914,6 +915,42 @@ class UserCode(SyncableSyftObject):
 
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         return as_markdown_code(self._inner_repr())
+
+    def _repr_html_(self) -> str:
+        shared_with_line = ""
+        if len(self.output_readers) > 0 and self.output_reader_names is not None:
+            owners_string = " and ".join([f"*{x}*" for x in self.output_reader_names])
+            shared_with_line += (
+                f"<p>Custom Policy: "
+                f"outputs are *shared* with the owners of {owners_string} once computed</p>"
+            )
+
+        repr_str = f"""
+    <style>
+    {FONT_CSS}
+    .syft-code {{color: {SURFACE[options.color_theme]};}}
+    .syft-code h3,
+    .syft-code p {{font-family: 'Open Sans'}}
+    </style>
+    <div class="syft-code">
+    <h3>UserCode</h3>
+    <p><strong>id:</strong> UID = {self.id}</p>
+    <p><strong>service_func_name:</strong> str = {self.service_func_name}</p>
+    <p><strong>shareholders:</strong> list = {self.input_owners}</p>
+    <p><strong>status:</strong> list = {self.code_status}</p>
+    {shared_with_line}
+    <p><strong>code:</strong><p>
+    </div>
+    """
+        return repr_str
+
+    def _ipython_display_(self) -> None:
+        # third party
+        from IPython.display import HTML
+        from IPython.display import Markdown
+
+        # display_html()
+        display(HTML(self._repr_html_()), Markdown(as_markdown_code(self.raw_code)))
 
     @property
     def show_code(self) -> CodeMarkdown:
