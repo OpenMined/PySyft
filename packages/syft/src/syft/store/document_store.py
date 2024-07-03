@@ -25,13 +25,14 @@ from ..service.action.action_permissions import StoragePermission
 from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
 from ..types.base import SyftBaseModel
+from ..types.result import as_result
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
 from ..util.telemetry import instrument
-from .errors import NotFoundError
-from .errors import StashError
+from .document_store_errors import NotFoundError
+from .document_store_errors import StashError
 from .locks import LockingConfig
 from .locks import NoLockingConfig
 from .locks import SyftLock
