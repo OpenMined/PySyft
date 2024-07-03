@@ -23,11 +23,14 @@ from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
+from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
+from ...types.transforms import drop
 from ...types.transforms import generate_id
+from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.transforms import validate_url
 from ...types.uid import UID
@@ -537,6 +540,13 @@ class Dataset(SyftObject):
             if self.uploader
             else ""
         )
+        if self.description is not None and self.description.text:
+            description_info_message = (
+                "<p class='paragraph-sm'> A more detailed description is available by calling \
+                <strong>dataset.description</strong>.</p>"
+            )
+        else:
+            description_info_message = ""
         return f"""
             <style>
             {FONT_CSS}
@@ -549,13 +559,13 @@ class Dataset(SyftObject):
             <div class='syft-dataset'>
             <h3>{self.name}</h3>
             <p class='paragraph-sm'><strong><span class='pr-8'>Summary: </span></strong>{self.summary}</p>
-            {"<p class='paragraph-sm'> A more detailed description is available by calling <strong>dataset.description</strong></p>" if self.description is not None and self.description.text else ""}
+            {description_info_message}
             {uploaded_by_line}
             <p class='paragraph-sm'><strong><span class='pr-8'>Created on: </span></strong>{self.created_at}</p>
             <p class='paragraph-sm'><strong><span class='pr-8'>URL:
             </span></strong><a href='{self.url}'>{self.url}</a></p>
             <p class='paragraph-sm'><strong><span class='pr-8'>Contributors:</span></strong>
-            to see full details call <strong>dataset.contributors</strong></p>
+            To see full details call <strong>dataset.contributors</strong>.</p>
             {self.assets._repr_html_()}
             """
 
@@ -642,7 +652,7 @@ class CreateDatasetV2(DatasetV2):
     __version__ = SYFT_OBJECT_VERSION_2
     asset_list: list[CreateAsset] = []
 
-    __repr_attrs__ = ["name", "summary", "url"]
+    __repr_attrs__ = ["name", "url"]
 
     id: UID | None = None  # type: ignore[assignment]
     created_at: DateTime | None = None  # type: ignore[assignment]
@@ -905,6 +915,34 @@ def createdataset_to_dataset() -> list[Callable]:
         validate_url,
         convert_asset,
         add_current_date,
+    ]
+
+
+@migrate(DatasetV2, Dataset)
+def migrate_dataset_v2_to_v3() -> list[Callable]:
+    return [
+        make_set_default("summary", None),
+    ]
+
+
+@migrate(Dataset, DatasetV2)
+def migrate_dataset_v3_to_v2() -> list[Callable]:
+    return [
+        drop("summary"),
+    ]
+
+
+@migrate(CreateDatasetV2, CreateDataset)
+def migrate_create_dataset_v2_to_v3() -> list[Callable]:
+    return [
+        make_set_default("summary", None),
+    ]
+
+
+@migrate(CreateDataset, CreateDatasetV2)
+def migrate_create_dataset_v3_to_v2() -> list[Callable]:
+    return [
+        drop("summary"),
     ]
 
 
