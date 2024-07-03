@@ -1,5 +1,6 @@
 # stdlib
 import importlib
+import logging
 from typing import Any
 
 # third party
@@ -23,6 +24,7 @@ from ..policy.policy import OutputPolicy
 from ..policy.policy import retrieve_from_db
 from ..response import SyftError
 from ..response import SyftSuccess
+from ..response import SyftWarning
 from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
@@ -47,6 +49,8 @@ from .numpy import NumpyArrayObject
 from .pandas import PandasDataFrameObject  # noqa: F401
 from .pandas import PandasSeriesObject  # noqa: F401
 
+logger = logging.getLogger(__name__)
+
 
 @serializable()
 class ActionService(AbstractService):
@@ -69,8 +73,17 @@ class ActionService(AbstractService):
         blob_store_result = np_obj._save_to_blob_storage()
         if isinstance(blob_store_result, SyftError):
             return blob_store_result
+        if isinstance(blob_store_result, SyftWarning):
+            logger.debug(blob_store_result.message)
+            skip_save_to_blob_store = True
+        else:
+            skip_save_to_blob_store = False
 
-        np_pointer = self._set(context, np_obj)
+        np_pointer = self._set(
+            context,
+            np_obj,
+            skip_save_to_blob_store=skip_save_to_blob_store,
+        )
         return np_pointer
 
     @service_method(
@@ -84,6 +97,7 @@ class ActionService(AbstractService):
         action_object: ActionObject | TwinObject,
         add_storage_permission: bool = True,
         ignore_detached_objs: bool = False,
+        skip_save_to_blob_store: bool = False,
     ) -> ActionObject | SyftError:
         res = self._set(
             context,
@@ -91,6 +105,7 @@ class ActionService(AbstractService):
             has_result_read_permission=True,
             add_storage_permission=add_storage_permission,
             ignore_detached_objs=ignore_detached_objs,
+            skip_save_to_blob_store=skip_save_to_blob_store,
         )
         if res.is_err():
             return SyftError(message=res.value)
@@ -102,6 +117,9 @@ class ActionService(AbstractService):
         action_object: ActionObject | TwinObject,
         ignore_detached_obj: bool = False,
     ) -> bool:
+        """
+        A detached object is an object that is not yet saved to the blob storage.
+        """
         if (
             isinstance(action_object, TwinObject)
             and (
@@ -124,23 +142,26 @@ class ActionService(AbstractService):
         has_result_read_permission: bool = False,
         add_storage_permission: bool = True,
         ignore_detached_objs: bool = False,
-        skip_clear_cache: bool = False,
+        skip_save_to_blob_store: bool = False,
     ) -> Result[ActionObject, str]:
-        if self.is_detached_obj(action_object, ignore_detached_objs):
+        if (
+            self.is_detached_obj(action_object, ignore_detached_objs)
+            and not skip_save_to_blob_store
+        ):
             return Err(
-                "you uploaded an ActionObject that is not yet in the blob storage"
+                "You uploaded an ActionObject that is not yet in the blob storage"
             )
         """Save an object to the action store"""
         # 🟡 TODO 9: Create some kind of type checking / protocol for SyftSerializable
 
         if isinstance(action_object, ActionObject):
             action_object.syft_created_at = DateTime.now()
-            if not skip_clear_cache:
+            if not skip_save_to_blob_store:
                 action_object._clear_cache()
-        else:
+        else:  # TwinObject
             action_object.private_obj.syft_created_at = DateTime.now()  # type: ignore[unreachable]
             action_object.mock_obj.syft_created_at = DateTime.now()
-            if not skip_clear_cache:
+            if not skip_save_to_blob_store:
                 action_object.private_obj._clear_cache()
                 action_object.mock_obj._clear_cache()
 
@@ -504,6 +525,11 @@ class ActionService(AbstractService):
         blob_store_result = result_action_object._save_to_blob_storage()
         if isinstance(blob_store_result, SyftError):
             return Err(blob_store_result.message)
+        if isinstance(blob_store_result, SyftWarning):
+            logger.debug(blob_store_result.message)
+            skip_save_to_blob_store = True
+        else:
+            skip_save_to_blob_store = False
 
         # IMPORTANT: DO THIS ONLY AFTER ._save_to_blob_storage
         if isinstance(result_action_object, TwinObject):
@@ -516,7 +542,10 @@ class ActionService(AbstractService):
 
         # Since this just meta data about the result, they always have access to it.
         set_result = self._set(
-            context, result_action_object, has_result_read_permission=True
+            context,
+            result_action_object,
+            has_result_read_permission=True,
+            skip_save_to_blob_store=skip_save_to_blob_store,
         )
 
         if set_result.is_err():
@@ -775,7 +804,6 @@ class ActionService(AbstractService):
             context.node.id,
             context.credentials,
         )
-
         blob_store_result = result_action_object._save_to_blob_storage()
         if isinstance(blob_store_result, SyftError):
             return blob_store_result
@@ -784,8 +812,16 @@ class ActionService(AbstractService):
         context.extra_kwargs = {
             "has_result_read_permission": has_result_read_permission
         }
-
-        set_result = self._set(context, result_action_object)
+        if isinstance(blob_store_result, SyftWarning):
+            logger.debug(blob_store_result.message)
+            skip_save_to_blob_store = True
+        else:
+            skip_save_to_blob_store = False
+        set_result = self._set(
+            context,
+            result_action_object,
+            skip_save_to_blob_store=skip_save_to_blob_store,
+        )
         if set_result.is_err():
             return Err(
                 f"Failed executing action {action}, set result is an error: {set_result.err()}"

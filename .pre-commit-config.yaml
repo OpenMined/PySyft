@@ -13,7 +13,7 @@ repos:
         exclude: ^(packages/syft/tests/mongomock)
       - id: check-json
         always_run: true
-        exclude: ^(packages/grid/frontend/|packages/syft/tests/mongomock)
+        exclude: ^(packages/grid/frontend/|packages/syft/tests/mongomock|.vscode)
       - id: check-added-large-files
         always_run: true
         exclude: ^(packages/grid/backend/wheels/.*|docs/img/header.png|docs/img/terminalizer.gif)
@@ -179,7 +179,7 @@ repos:
     rev: "v3.0.0-alpha.9-for-vscode"
     hooks:
       - id: prettier
-        exclude: ^(packages/grid/helm|packages/grid/frontend/pnpm-lock.yaml|packages/syft/tests/mongomock)
+        exclude: ^(packages/grid/helm|packages/grid/frontend/pnpm-lock.yaml|packages/syft/tests/mongomock|.vscode)
 
   # - repo: meta
   #   hooks:

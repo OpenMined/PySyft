@@ -54,7 +54,7 @@ class SyftException(Exception):
         `context.role`.
 
         Args:
-            context (AuthedServiceContext): The context containing user role information.
+            context (AuthedServiceContext): The node context.
 
         Returns:
             str: The private or public message based on the role.
@@ -62,6 +62,25 @@ class SyftException(Exception):
         if context.role.value >= ServiceRole.DATA_OWNER.value:
             return self._private_message or self.public
         return self.public
+
+    def get_tb(self, context: AuthedServiceContext) -> str | None:
+        """
+        Returns the error traceback as a string, if the user is able to see it.
+
+        Args:
+            context (AuthedServiceContext): The authenticated service context which
+                contains the user's role.
+
+        Returns:
+            str | None: A string representation of the current stack trace if the
+                user is a DataOwner or higher, otherwise None.
+        """
+        # stdlib
+        import traceback
+
+        if context.role.value >= ServiceRole.DATA_OWNER.value:
+            return traceback.format_exc()
+        return None
 
     @classmethod
     def from_exception(
