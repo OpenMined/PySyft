@@ -918,15 +918,15 @@ class UserCode(SyncableSyftObject):
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         return as_markdown_code(self._inner_repr())
 
-    def _repr_html_(self) -> str:
+    def _repr_html_(self, level: int = 0) -> str:
+        tabs = "&emsp;" * level
         shared_with_line = ""
         if len(self.output_readers) > 0 and self.output_reader_names is not None:
             owners_string = " and ".join([f"*{x}*" for x in self.output_reader_names])
             shared_with_line += (
-                f"<p>Custom Policy: "
+                f"<p>{tabs}Custom Policy: "
                 f"outputs are *shared* with the owners of {owners_string} once computed</p>"
             )
-
         repr_str = f"""
     <style>
     {FONT_CSS}
@@ -935,24 +935,37 @@ class UserCode(SyncableSyftObject):
     .syft-code p {{font-family: 'Open Sans'}}
     </style>
     <div class="syft-code">
-    <h3>UserCode</h3>
-    <p><strong>id:</strong> UID = {self.id}</p>
-    <p><strong>service_func_name:</strong> str = {self.service_func_name}</p>
-    <p><strong>shareholders:</strong> list = {self.input_owners}</p>
-    <p><strong>status:</strong> list = {self.code_status}</p>
+    <h3>{tabs}UserCode</h3>
+    <p>{tabs}<strong>id:</strong> UID = {self.id}</p>
+    <p>{tabs}<strong>service_func_name:</strong> str = {self.service_func_name}</p>
+    <p>{tabs}<strong>shareholders:</strong> list = {self.input_owners}</p>
+    <p>{tabs}<strong>status:</strong> list = {self.code_status}</p>
     {shared_with_line}
-    <p><strong>code:</strong><p>
+    <p>{tabs}<strong>code:</strong><p>
+    </div>
+    """
+        if self.nested_codes != {}:
+            repr_str += f"""
+    <p>{tabs}<strong>Nested Requests:</p>
+    """
+        repr_str += """
     </div>
     """
         return repr_str
 
-    def _ipython_display_(self) -> None:
+    def _ipython_display_(self, level: int = 0) -> None:
         # third party
         from IPython.display import HTML
         from IPython.display import Markdown
 
-        # display_html()
-        display(HTML(self._repr_html_()), Markdown(as_markdown_code(self.raw_code)))
+        md = "\n".join(
+            [f"{'  '*level}{substring}" for substring in self.raw_code.split("\n")[:-1]]
+        )
+        display(HTML(self._repr_html_(level=level)), Markdown(as_markdown_code(md)))
+        if self.nested_codes is not None:
+            for obj, _ in self.nested_codes.values():
+                code = obj.resolve
+                code._ipython_display_(level=level + 1)
 
     @property
     def show_code(self) -> CodeMarkdown:
