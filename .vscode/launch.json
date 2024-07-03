@@ -1,0 +1,25 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Syft Debugger",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": {
+        "host": "localhost",
+        "port": "${input:port}"
+      }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "port",
+      "description": "Port on which the debugger is listening",
+      "type": "promptString",
+      "default": "5678"
+    }
+  ]
+}

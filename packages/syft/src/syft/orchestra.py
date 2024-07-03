@@ -8,6 +8,7 @@ from collections.abc import Callable
 from enum import Enum
 import getpass
 import inspect
+import logging
 import os
 import sys
 from typing import Any
@@ -23,6 +24,8 @@ from .node.server import serve_node
 from .protocol.data_protocol import stage_protocol_changes
 from .service.response import SyftError
 from .util.util import get_random_available_port
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_PORT = 8080
 DEFAULT_URL = "http://localhost"
@@ -166,6 +169,7 @@ def deploy_to_python(
     queue_port: int | None = None,
     association_request_auto_approval: bool = False,
     background_tasks: bool = False,
+    debug: bool = False,
 ) -> NodeHandle:
     worker_classes = {
         NodeType.DOMAIN: Domain,
@@ -174,7 +178,7 @@ def deploy_to_python(
     }
 
     if dev_mode:
-        print("Staging Protocol Changes...")
+        logger.debug("Staging Protocol Changes...")
         stage_protocol_changes()
 
     kwargs = {
@@ -193,6 +197,7 @@ def deploy_to_python(
         "create_producer": create_producer,
         "association_request_auto_approval": association_request_auto_approval,
         "background_tasks": background_tasks,
+        "debug": debug,
     }
 
     if port:
@@ -282,6 +287,7 @@ class Orchestra:
         queue_port: int | None = None,
         association_request_auto_approval: bool = False,
         background_tasks: bool = False,
+        debug: bool = False,
     ) -> NodeHandle:
         if dev_mode is True:
             thread_workers = True
@@ -318,6 +324,7 @@ class Orchestra:
                 queue_port=queue_port,
                 association_request_auto_approval=association_request_auto_approval,
                 background_tasks=background_tasks,
+                debug=debug,
             )
         elif deployment_type_enum == DeploymentType.REMOTE:
             return deploy_to_remote(
