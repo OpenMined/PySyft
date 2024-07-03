@@ -104,9 +104,14 @@ class SyftError(SyftResponseMessage):
 
 @serializable()
 class SyftSuccess(SyftResponseMessage):
+    value: Any | None = None
+
     @property
     def _repr_html_class_(self) -> str:
         return "alert-success"
+
+    def unwrap_value(self) -> Any:
+        return self.value
 
 
 @serializable()
