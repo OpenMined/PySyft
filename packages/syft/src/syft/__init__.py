@@ -75,6 +75,8 @@ from .service.response import SyftSuccess
 from .service.user.roles import Roles as roles
 from .service.user.user_service import UserService
 from .stable_version import LATEST_STABLE_SYFT
+from .types.syft_autobox import Box
+from .types.syft_autobox import SyftAutobox
 from .types.twin_object import TwinObject
 from .types.uid import UID
 from .util import filterwarnings
