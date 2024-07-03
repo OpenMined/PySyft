@@ -105,9 +105,10 @@ from ..response import SyftWarning
 from ..service import ServiceConfigRegistry
 from ..user.user import UserView
 from ..user.user_roles import ServiceRole
-from .code_parse import GlobalsVisitor
 from .code_parse import LaunchJobVisitor
 from .unparse import unparse
+from .utils import check_for_global_vars
+from .utils import parse_code
 from .utils import submit_subjobs_code
 
 if TYPE_CHECKING:
@@ -1327,31 +1328,6 @@ def generate_unique_func_name(context: TransformContext) -> TransformContext:
     return context
 
 
-def _check_global(code_tree: ast.Module) -> GlobalsVisitor | SyftWarning:
-    """
-    Check that the code does not contain any global variables
-    """
-    v = GlobalsVisitor()
-    try:
-        v.visit(code_tree)
-    except Exception:
-        raise SyftException(
-            "Your code contains (a) global variable(s), which is not allowed"
-        )
-    return v
-
-
-def _parse_code(raw_code: str) -> ast.Module | SyftWarning:
-    """
-    Parse the code into an AST tree and return a warning if there are syntax errors
-    """
-    try:
-        tree = ast.parse(raw_code)
-    except SyntaxError as e:
-        raise SyftException(f"Your code contains syntax error: {e}")
-    return tree
-
-
 def parse_user_code(
     raw_code: str,
     func_name: str,
@@ -1360,8 +1336,8 @@ def parse_user_code(
 ) -> str:
     # parse the code, check for syntax errors and if there are global variables
     try:
-        tree: ast.Module = _parse_code(raw_code=raw_code)
-        _check_global(code_tree=tree)
+        tree: ast.Module = parse_code(raw_code=raw_code)
+        check_for_global_vars(code_tree=tree)
     except SyftException as e:
         raise SyftException(f"{e}")
 
