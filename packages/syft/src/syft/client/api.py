@@ -52,13 +52,17 @@ from ..service.user.user_roles import ServiceRole
 from ..service.warnings import APIEndpointWarning
 from ..service.warnings import WarningContext
 from ..types.cache_object import CachedSyftObject
+from ..types.errors import SyftException
 from ..types.identity import Identity
+from ..types.syft_migration import migrate
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SYFT_OBJECT_VERSION_3
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftMigrationRegistry
 from ..types.syft_object import SyftObject
+from ..types.transforms import drop
+from ..types.transforms import make_set_default
 from ..types.uid import LineageID
 from ..types.uid import UID
 from ..util.autoreload import autoreload_enabled
@@ -139,6 +143,23 @@ class APIRegistry:
 @serializable()
 class APIEndpoint(SyftObject):
     __canonical_name__ = "APIEndpoint"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    id: UID
+    service_path: str
+    module_path: str
+    name: str
+    description: str
+    doc_string: str | None = None
+    signature: Signature
+    has_self: bool = False
+    pre_kwargs: dict[str, Any] | None = None
+    warning: APIEndpointWarning | None = None
+    unwrap_on_success: bool = True
+
+
+class APIEndpointV1(SyftObject):
+    __canonical_name__ = "APIEndpoint"
     __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
@@ -151,6 +172,16 @@ class APIEndpoint(SyftObject):
     has_self: bool = False
     pre_kwargs: dict[str, Any] | None = None
     warning: APIEndpointWarning | None = None
+
+
+@migrate(APIEndpointV1, APIEndpoint)
+def upgrade_apiconfig() -> list[Callable]:
+    return [make_set_default("unwrap_on_success", False)]
+
+
+@migrate(APIEndpoint, APIEndpointV1)
+def downgrade_apiconfig() -> list[Callable]:
+    return [drop(["unwrap_on_success"])]
 
 
 @serializable()
@@ -270,6 +301,7 @@ class RemoteFunction(SyftObject):
     communication_protocol: PROTOCOL_TYPE
     warning: APIEndpointWarning | None = None
     custom_function: bool = False
+    unwrap_on_success: bool = True
 
     @property
     def __ipython_inspector_signature_override__(self) -> Signature | None:
@@ -511,6 +543,7 @@ def generate_remote_function(
     pre_kwargs: dict[str, Any] | None,
     communication_protocol: PROTOCOL_TYPE,
     warning: APIEndpointWarning | None,
+    unwrap_on_success: bool = True,
 ) -> RemoteFunction:
     if "blocking" in signature.parameters:
         raise Exception(
@@ -529,6 +562,7 @@ def generate_remote_function(
             communication_protocol=communication_protocol,
             warning=warning,
             user_code_id=pre_kwargs["uid"],
+            unwrap_on_success=unwrap_on_success,
         )
     else:
         custom_function = bool(path == "api.call_in_jobs")
@@ -542,6 +576,7 @@ def generate_remote_function(
             communication_protocol=communication_protocol,
             warning=warning,
             custom_function=custom_function,
+            unwrap_on_success=unwrap_on_success,
         )
 
     return remote_function
@@ -983,6 +1018,7 @@ class SyftAPI(SyftObject):
                     signature=signature,  # TODO: Migrate signature based on communication protocol
                     has_self=False,
                     warning=service_warning,
+                    unwrap_on_success=service_config.unwrap_on_success,
                 )
                 endpoints[path] = endpoint
 
@@ -1118,7 +1154,8 @@ class SyftAPI(SyftObject):
 
     def generate_endpoints(self) -> None:
         def build_endpoint_tree(
-            endpoints: dict[str, LibEndpoint], communication_protocol: PROTOCOL_TYPE
+            endpoints: dict[str, LibEndpoint | APIEndpoint],
+            communication_protocol: PROTOCOL_TYPE,
         ) -> APIModule:
             api_module = APIModule(path="", refresh_callback=self.refresh_api_callback)
             for v in endpoints.values():
@@ -1136,6 +1173,7 @@ class SyftAPI(SyftObject):
                         pre_kwargs=v.pre_kwargs,
                         warning=v.warning,
                         communication_protocol=communication_protocol,
+                        unwrap_on_success=v.unwrap_on_success,
                     )
                 elif isinstance(v, LibEndpoint):
                     endpoint_function = generate_remote_lib_function(
