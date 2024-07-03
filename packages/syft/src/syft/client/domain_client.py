@@ -7,7 +7,6 @@ from pathlib import Path
 import re
 from string import Template
 import traceback
-from typing import Any
 from typing import TYPE_CHECKING
 from typing import cast
 
@@ -17,8 +16,6 @@ from result import Result
 from tqdm import tqdm
 
 # relative
-from .. import deserialize
-from .. import serialize
 from ..abstract_node import NodeSideType
 from ..serde.serializable import serializable
 from ..service.action.action_object import ActionObject
@@ -27,6 +24,7 @@ from ..service.code_history.code_history import UsersCodeHistoriesDict
 from ..service.dataset.dataset import Contributor
 from ..service.dataset.dataset import CreateAsset
 from ..service.dataset.dataset import CreateDataset
+from ..service.migration.object_migration_state import MigrationData
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.sync.diff_state import ResolvedSyncState
@@ -34,7 +32,6 @@ from ..service.sync.sync_state import SyncState
 from ..service.user.roles import Roles
 from ..service.user.user import UserView
 from ..types.blob_storage import BlobFile
-from ..types.syft_object import Context
 from ..types.uid import UID
 from ..util.misc_objs import HTMLObject
 from ..util.util import get_mb_size
@@ -399,31 +396,47 @@ class DomainClient(SyftClient):
     def output(self) -> APIModule | None:
         return self._get_service_by_name_if_exists("output")
 
-    def save_migration_objects_to_file(
-        self, filename: str, get_all: bool = False
-    ) -> dict[Any, Any] | SyftError:
-        migration_dict = self.api.services.migration.get_migration_objects(
-            get_all=get_all
-        )
-        if isinstance(migration_dict, SyftError):
-            return migration_dict
-        ser_bytes = serialize(migration_dict, to_bytes=True)
-        with open(filename, "wb") as f:
-            f.write(ser_bytes)
-        return migration_dict
+    @property
+    def migration(self) -> APIModule | None:
+        return self._get_service_by_name_if_exists("migration")
 
-    def migrate_objects_from_file(self, filename: str) -> SyftSuccess | SyftError:
-        with open(filename, "rb") as f:
-            ser_bytes = f.read()
-        migration_dict = deserialize(ser_bytes, from_bytes=True)
-        context = Context()
-        migrated_objects = []
-        for klass, objects in migration_dict.items():
-            for obj in objects:
-                migrated_obj = obj.migrate_to(klass.__version__, context)
-                migrated_objects.append(migrated_obj)
-        res = self.api.services.migration.update_migrated_objects(migrated_objects)
+    def get_migration_data(
+        self, include_blobs: bool = True
+    ) -> MigrationData | SyftError:
+        res = self.api.services.migration.get_migration_data()
+        if isinstance(res, SyftError):
+            return res
+
+        if include_blobs:
+            res.download_blobs()
+
         return res
+
+    def load_migration_data(self, path: str | Path) -> SyftSuccess | SyftError:
+        migration_data = MigrationData.from_file(path)
+        if isinstance(migration_data, SyftError):
+            return migration_data
+        migration_data._set_obj_location_(self.id, self.verify_key)
+
+        if self.id != migration_data.node_uid:
+            return SyftError(
+                message=f"This Migration data is not for this node. Expected node id {self.id}, "
+                f"got {migration_data.node_uid}"
+            )
+
+        if migration_data.signing_key.verify_key != self.verify_key:
+            return SyftError(
+                message="Root verify key in migration data does not match this client's verify key"
+            )
+
+        res = migration_data.migrate_and_upload_blobs()
+        if isinstance(res, SyftError):
+            return res
+
+        migration_data_without_blobs = migration_data.copy_without_blobs()
+        return self.api.services.migration.apply_migration_data(
+            migration_data_without_blobs
+        )
 
     def get_project(
         self,

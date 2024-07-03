@@ -125,6 +125,13 @@ profiles:
         value:
           side: low
 
+  - name: migrated-domain
+    description: "Deploy a migrated domain"
+    patches:
+      - op: add
+        path: deployments.syft.helm.valuesFiles
+        value: ./helm/examples/dev/migrated.yaml
+
   - name: domain-tunnel
     description: "Deploy a domain with tunneling enabled"
     patches:

@@ -12,6 +12,7 @@ from result import Result
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.document_store import StorePartition
+from ...types.blob_storage import BlobStorageEntry
 from ...types.syft_object import SyftObject
 from ..action.action_object import Action
 from ..action.action_object import ActionObject
@@ -24,6 +25,7 @@ from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
+from .object_migration_state import MigrationData
 from .object_migration_state import StoreMetadata
 from .object_migration_state import SyftMigrationStateStash
 from .object_migration_state import SyftObjectMigrationState
@@ -251,6 +253,7 @@ class MigrationService(AbstractService):
     def _update_store_metadata(
         self, context: AuthedServiceContext, store_metadata: dict[type, StoreMetadata]
     ) -> Result[str, str]:
+        print("Updating store metadata")
         for metadata in store_metadata.values():
             result = self._update_store_metadata_for_klass(context, metadata)
             if result.is_err():
@@ -424,6 +427,30 @@ class MigrationService(AbstractService):
                 # return result
         return Ok(value="success")
 
+    def _migrate_objects(
+        self,
+        context: AuthedServiceContext,
+        migration_objects: dict[type[SyftObject], list[SyftObject]],
+    ) -> Result[list[SyftObject], str]:
+        migrated_objects = []
+        for klass, objects in migration_objects.items():
+            canonical_name = klass.__canonical_name__
+            # Migrate data for objects in document store
+            print(f"Migrating data for: {canonical_name} table.")
+            for object in objects:
+                try:
+                    migrated_value = object.migrate_to(klass.__version__, context)
+                    migrated_objects.append(migrated_value)
+                except Exception:
+                    # stdlib
+                    import traceback
+
+                    print(traceback.format_exc())
+                    return Err(
+                        f"Failed to migrate data to {klass} for qk {klass.__version__}: {object.id}"
+                    )
+        return Ok(migrated_objects)
+
     @service_method(
         path="migration.migrate_data",
         name="migrate_data",
@@ -458,24 +485,10 @@ class MigrationService(AbstractService):
             return migration_objects_result
         migration_objects = migration_objects_result.ok()
 
-        migrated_objects = []
-
-        for klass, objects in migration_objects.items():
-            canonical_name = klass.__canonical_name__
-            # Migrate data for objects in document store
-            print(f"Migrating data for: {canonical_name} table.")
-            for object in objects:
-                try:
-                    migrated_value = object.migrate_to(klass.__version__, context)
-                    migrated_objects.append(migrated_value)
-                except Exception:
-                    # stdlib
-                    import traceback
-
-                    print(traceback.format_exc())
-                    return Err(
-                        f"Failed to migrate data to {klass} for qk {klass.__version__}: {object.id}"
-                    )
+        migrated_objects_result = self._migrate_objects(context, migration_objects)
+        if migrated_objects_result.is_err():
+            return SyftError(message=migrated_objects_result.err())
+        migrated_objects = migrated_objects_result.ok()
 
         objects_update_update_result = self._update_migrated_objects(
             context, migrated_objects
@@ -485,27 +498,15 @@ class MigrationService(AbstractService):
 
         # now action objects
         migration_actionobjects_result = self._get_migration_actionobjects(context)
+
         if migration_actionobjects_result.is_err():
             return SyftError(message=migration_actionobjects_result.err())
         migration_actionobjects = migration_actionobjects_result.ok()
 
-        migrated_actionobjects = []
-        for klass, action_objects in migration_actionobjects.items():
-            # these are Actions, ActionObjects, and possibly others
-            for object in action_objects:
-                try:
-                    migrated_actionobject = object.migrate_to(
-                        klass.__version__, context
-                    )
-                    migrated_actionobjects.append(migrated_actionobject)
-                except Exception:
-                    # stdlib
-                    import traceback
-
-                    print(traceback.format_exc())
-                    return Err(
-                        f"Failed to migrate data to {klass} for qk {klass.__version__}: {object.id}"
-                    )
+        migrated_actionobjects = self._migrate_objects(context, migration_actionobjects)
+        if migrated_actionobjects.is_err():
+            return SyftError(message=migrated_actionobjects.err())
+        migrated_actionobjects = migrated_actionobjects.ok()
 
         actionobjects_update_update_result = self._update_migrated_actionobjects(
             context, migrated_actionobjects
@@ -579,3 +580,86 @@ class MigrationService(AbstractService):
             if res.is_err():
                 return res
         return Ok("success")
+
+    @service_method(
+        path="migration.get_migration_data",
+        name="get_migration_data",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def get_migration_data(
+        self, context: AuthedServiceContext
+    ) -> MigrationData | SyftError:
+        store_objects_result = self._get_migration_objects(context, get_all=True)
+        if store_objects_result.is_err():
+            return SyftError(message=store_objects_result.err())
+        store_objects = store_objects_result.ok()
+
+        action_objects_result = self._get_migration_actionobjects(context, get_all=True)
+        if action_objects_result.is_err():
+            return SyftError(message=action_objects_result.err())
+        action_objects = action_objects_result.ok()
+
+        blob_storage_objects = store_objects.pop(BlobStorageEntry, [])
+
+        store_metadata_result = self._get_all_store_metadata(context)
+        if store_metadata_result.is_err():
+            return SyftError(message=store_metadata_result.err())
+        store_metadata = store_metadata_result.ok()
+
+        return MigrationData(
+            node_uid=context.node.id,
+            signing_key=context.node.signing_key,
+            store_objects=store_objects,
+            metadata=store_metadata,
+            action_objects=action_objects,
+            blob_storage_objects=blob_storage_objects,
+        )
+
+    @service_method(
+        path="migration.apply_migration_data",
+        name="apply_migration_data",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def apply_migration_data(
+        self,
+        context: AuthedServiceContext,
+        migration_data: MigrationData,
+    ) -> SyftSuccess | SyftError:
+        # NOTE blob storage is migrated via client,
+        # it needs access to both source and destination blob storages.
+        if len(migration_data.blobs):
+            return SyftError(
+                message="Blob storage migration is not supported by this endpoint, "
+                "please use 'client.load_migration_data' instead."
+            )
+
+        # migrate + apply store objects
+        migrated_objects_result = self._migrate_objects(
+            context, migration_data.store_objects
+        )
+        if migrated_objects_result.is_err():
+            return SyftError(message=migrated_objects_result.err())
+        migrated_objects = migrated_objects_result.ok()
+        store_objects_result = self._create_migrated_objects(context, migrated_objects)
+        if store_objects_result.is_err():
+            return SyftError(message=store_objects_result.err())
+
+        # migrate+apply action objects
+        migrated_actionobjects = self._migrate_objects(
+            context, migration_data.action_objects
+        )
+        if migrated_actionobjects.is_err():
+            return SyftError(message=migrated_actionobjects.err())
+        migrated_actionobjects = migrated_actionobjects.ok()
+        action_objects_result = self._update_migrated_actionobjects(
+            context, migrated_actionobjects
+        )
+        if action_objects_result.is_err():
+            return SyftError(message=action_objects_result.err())
+
+        # apply metadata
+        metadata_result = self._update_store_metadata(context, migration_data.metadata)
+        if metadata_result.is_err():
+            return SyftError(message=metadata_result.err())
+
+        return SyftSuccess(message="Migration completed successfully")
