@@ -118,7 +118,8 @@ def test_action_obj_send_save_to_blob_storage(worker):
     # big object that should be saved to blob storage
     assert min_size_for_blob_storage_upload(root_client.api.metadata) == 16
     num_elements = 50 * 1024 * 1024
-    data_big = np.random.randint(0, 100, size=num_elements)  # 4 bytes per int32
+    rng = np.random.default_rng()
+    data_big = rng.integers(0, 100, size=num_elements)  # 4 bytes per int32
     action_obj_2 = ActionObject.from_obj(data_big)
     assert can_upload_to_blob_storage(action_obj_2, root_client.api.metadata)
     action_obj_2.send(root_client)
