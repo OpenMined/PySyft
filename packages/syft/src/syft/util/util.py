@@ -25,6 +25,7 @@ from pathlib import Path
 import platform
 import random
 import re
+import secrets
 from secrets import randbelow
 import socket
 import sys
@@ -41,6 +42,9 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import nh3
 import requests
+
+# relative
+from ..serde.serialize import _serialize as serialize
 
 logger = logging.getLogger(__name__)
 
@@ -91,6 +95,10 @@ def get_name_for(klass: type) -> str:
 
 def get_mb_size(data: Any) -> float:
     return sys.getsizeof(data) / (1024 * 1024)
+
+
+def get_mb_serialized_size(data: Any) -> float:
+    return sys.getsizeof(serialize(data, to_bytes=True)) / (1024 * 1024)
 
 
 def extract_name(klass: type) -> str:
@@ -916,6 +924,10 @@ def get_queue_address(port: int) -> str:
 
 def get_dev_mode() -> bool:
     return str_to_bool(os.getenv("DEV_MODE", "False"))
+
+
+def generate_token() -> str:
+    return secrets.token_hex(64)
 
 
 def sanitize_html(html: str) -> str:

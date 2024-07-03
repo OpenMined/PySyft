@@ -6,6 +6,9 @@ import inspect
 from IPython import get_ipython
 
 # relative
+from ..response import SyftException
+from ..response import SyftWarning
+from .code_parse import GlobalsVisitor
 from .code_parse import LaunchJobVisitor
 
 
@@ -36,3 +39,28 @@ def submit_subjobs_code(submit_user_code, ep_client) -> None:  # type: ignore
                 # fetch
                 if specs["type_name"] == "SubmitUserCode":
                     ep_client.code.submit(ipython.ev(call))
+
+
+def check_for_global_vars(code_tree: ast.Module) -> GlobalsVisitor | SyftWarning:
+    """
+    Check that the code does not contain any global variables
+    """
+    v = GlobalsVisitor()
+    try:
+        v.visit(code_tree)
+    except Exception:
+        raise SyftException(
+            "Your code contains (a) global variable(s), which is not allowed"
+        )
+    return v
+
+
+def parse_code(raw_code: str) -> ast.Module | SyftWarning:
+    """
+    Parse the code into an AST tree and return a warning if there are syntax errors
+    """
+    try:
+        tree = ast.parse(raw_code)
+    except SyntaxError as e:
+        raise SyftException(f"Your code contains syntax error: {e}")
+    return tree
