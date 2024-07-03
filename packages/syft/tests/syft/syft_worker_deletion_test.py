@@ -83,4 +83,4 @@ def test_delete_worker(node: NodeHandle, force: bool) -> None:
     else:
         assert job.status == JobStatus.COMPLETED
 
-    # assert len(node.python_node.queue_manager.consumers["api_call"]) == 0
+    assert len(client.worker.get_all()) == 0
