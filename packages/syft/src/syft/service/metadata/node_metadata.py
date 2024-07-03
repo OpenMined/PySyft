@@ -60,6 +60,7 @@ class NodeMetadata(SyftObject):
     node_side_type: str
     show_warnings: bool
     eager_execution_enabled: bool
+    min_size_blob_storage_mb: int
 
     def check_version(self, client_version: str) -> bool:
         return check_version(
@@ -112,6 +113,7 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
     node_side_type: str
     show_warnings: bool
     supported_protocols: list = []
+    min_size_blob_storage_mb: int
 
     @model_validator(mode="before")
     @classmethod
