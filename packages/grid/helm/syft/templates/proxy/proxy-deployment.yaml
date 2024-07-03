@@ -57,7 +57,11 @@ spec:
           readinessProbe: null
       terminationGracePeriodSeconds: 5
       volumes:
-      - configMap:
-          name: proxy-config
-        name: traefik-conf
+      - name: traefik-conf
+        projected:
+          sources:
+          - configMap:
+              name: proxy-config
+          - configMap:
+              name: proxy-config-dynamic
 {{- end }}
