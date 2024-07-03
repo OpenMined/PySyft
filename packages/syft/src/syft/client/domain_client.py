@@ -400,8 +400,42 @@ class DomainClient(SyftClient):
     def migration(self) -> APIModule | None:
         return self._get_service_by_name_if_exists("migration")
 
-    def get_migration_data(self) -> MigrationData | SyftError:
-        return self.api.services.migration.get_migration_data()
+    def get_migration_data(
+        self, include_blobs: bool = True
+    ) -> MigrationData | SyftError:
+        res = self.api.services.migration.get_migration_data()
+        if isinstance(res, SyftError):
+            return res
+
+        if include_blobs:
+            res.download_blobs()
+
+        return res
+
+    def load_migration_data(self, path: str | Path) -> SyftSuccess | SyftError:
+        migration_data = MigrationData.from_file(path)
+        if isinstance(migration_data, SyftError):
+            return migration_data
+        migration_data._set_obj_location_(self.id, self.verify_key)
+
+        # if self.id != migration_data.node_uid:
+        #     return SyftError(
+        #         message=f"Migration data is not for this node. Expected {self.id}, got {migration_data.node_uid}"
+        #     )
+
+        # if migration_data.root_verify_key != self.verify_key:
+        #     return SyftError(
+        #         message="Root verify key in migration data does not match this client's verify key"
+        #     )
+
+        res = migration_data.migrate_and_upload_blobs()
+        if isinstance(res, SyftError):
+            return res
+
+        migration_data_without_blobs = migration_data.copy_without_blobs()
+        return self.api.services.migration.apply_migration_data(
+            migration_data_without_blobs
+        )
 
     def get_project(
         self,

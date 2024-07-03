@@ -475,7 +475,7 @@ def prompt_warning_message(message: str, confirm: bool = False) -> bool:
         if response == "y":
             return True
         elif response == "n":
-            display("Aborted !!")
+            print("Aborted.")
             return False
         else:
             print("Invalid response. Please enter Y or N.")

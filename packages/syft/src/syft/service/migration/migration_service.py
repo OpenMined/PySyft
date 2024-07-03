@@ -7,6 +7,7 @@ from typing import cast
 from result import Err
 from result import Ok
 from result import Result
+from syft.service.user.user_service import UserService
 
 # relative
 from ...serde.serializable import serializable
@@ -605,8 +606,13 @@ class MigrationService(AbstractService):
         if store_metadata_result.is_err():
             return SyftError(message=store_metadata_result.err())
         store_metadata = store_metadata_result.ok()
+        root_verify_key = context.node.get_service_method(
+            UserService.admin_verify_key
+        )()
 
         return MigrationData(
+            node_uid=context.node.id,
+            signing_key=context.node.signing_key,
             store_objects=store_objects,
             metadata=store_metadata,
             action_objects=action_objects,
@@ -623,7 +629,13 @@ class MigrationService(AbstractService):
         context: AuthedServiceContext,
         migration_data: MigrationData,
     ) -> SyftSuccess | SyftError:
-        # NOTE blob storage is migrated via client, it needs access to both source and destination blob storages.
+        # NOTE blob storage is migrated via client,
+        # it needs access to both source and destination blob storages.
+        if len(migration_data.blobs):
+            return SyftError(
+                message="Blob storage migration is not supported by this endpoint, "
+                "please use 'client.load_migration_data' instead."
+            )
 
         # migrate + apply store objects
         migrated_objects_result = self._migrate_objects(
