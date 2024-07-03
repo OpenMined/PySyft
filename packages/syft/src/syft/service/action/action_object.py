@@ -799,18 +799,21 @@ class ActionObject(SyncableSyftObject):
         from ...types.blob_storage import CreateBlobStorageEntry
 
         if not isinstance(data, ActionDataEmpty):
-            api = APIRegistry.api_for(
-                self.syft_node_location, self.syft_client_verify_key
-            )
             if isinstance(data, BlobFile):
                 if not data.uploaded:
+                    api = APIRegistry.api_for(
+                        self.syft_node_location, self.syft_client_verify_key
+                    )
                     data._upload_to_blobstorage_from_api(api)
             else:
-                if api is None:
-                    raise ValueError(
-                        f"api is None. You must login to {self.syft_node_location}"
-                    )
-                if not can_upload_to_blob_storage(data, api.metadata):
+                get_metadata = from_api_or_context(
+                    func_or_path="metadata.get_metadata",
+                    syft_node_location=self.syft_node_location,
+                    syft_client_verify_key=self.syft_client_verify_key,
+                )
+                if get_metadata is not None and not can_upload_to_blob_storage(
+                    data, get_metadata()
+                ):
                     return SyftWarning(
                         message=f"The action object {self.id} was not saved to "
                         f"the blob store but to memory cache since it is small."
@@ -847,11 +850,12 @@ class ActionObject(SyncableSyftObject):
             self.syft_action_data_type = type(data)
             self._set_reprs(data)
             self.syft_has_bool_attr = hasattr(data, "__bool__")
-            self.syft_action_data_cache = data
         else:
             logger.debug(
                 "skipping writing action object to store, passed data was empty."
             )
+
+        self.syft_action_data_cache = data
 
         return None
 
@@ -877,14 +881,7 @@ class ActionObject(SyncableSyftObject):
                 message=f"Saved action object {self.id} to the blob store"
             )
         except Exception as e:
-            print(
-                f"Failed to save action object {self.id} to the blob store. Error: {e}"
-            )
-
-        return SyftWarning(
-            message=f"The action object {self.id} was not saved to "
-            f"the blob store but to memory cache since it is small."
-        )
+            raise e
 
     def _clear_cache(self) -> None:
         self.syft_action_data_cache = self.as_empty_data()
