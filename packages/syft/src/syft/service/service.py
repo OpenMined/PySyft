@@ -32,8 +32,8 @@ from ..serde.signature import Signature
 from ..serde.signature import signature_remove_context
 from ..serde.signature import signature_remove_self
 from ..store.linked_obj import LinkedObject
-from ..types.syft_object import SYFT_OBJECT_VERSION_2
-from ..types.syft_object import SyftBaseObject
+from ..types.syft_object import SYFT_OBJECT_VERSION_1
+from ..types.syft_object import SYFT_OBJECT_VERSION_3
 from ..types.syft_object import SyftObject
 from ..types.syft_object import attach_attribute_to_syft_object
 from ..types.uid import UID
@@ -86,9 +86,9 @@ class AbstractService:
 
 
 @serializable()
-class BaseConfig(SyftBaseObject):
+class BaseConfig(SyftObject):
     __canonical_name__ = "BaseConfig"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     public_path: str
     private_path: str
@@ -98,11 +98,14 @@ class BaseConfig(SyftBaseObject):
     signature: Signature | None = None
     is_from_lib: bool = False
     warning: APIEndpointWarning | None = None
+    unwrap_on_success: bool = True
 
 
 @serializable()
 class ServiceConfig(BaseConfig):
     __canonical_name__ = "ServiceConfig"
+    __version__ = SYFT_OBJECT_VERSION_1
+
     permissions: list
     roles: list[ServiceRole]
 
@@ -336,6 +339,7 @@ def service_method(
     roles: list[ServiceRole] | None = None,
     autosplat: list[str] | None = None,
     warning: APIEndpointWarning | None = None,
+    unwrap_on_success: bool = True,
 ) -> Callable:
     if roles is None or len(roles) == 0:
         # TODO: this is dangerous, we probably want to be more conservative
@@ -395,6 +399,7 @@ def service_method(
             roles=roles,
             permissions=["Guest"],
             warning=warning,
+            unwrap_on_success=unwrap_on_success,
         )
         ServiceConfigRegistry.register(config)
 
