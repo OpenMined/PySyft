@@ -6,7 +6,8 @@
 .idea/
 .mypy_cache
 .python-version
-.vscode/
+.vscode/*
+!.vscode/launch.json
 .tox/*
 .creds
 build

@@ -178,10 +178,12 @@ class UsersCodeHistoriesDict(SyftObject):
 
 
 @migrate(CodeHistoryV2, CodeHistory)
-def codehistory_v2_to_v3() -> list[Callable]:
+def code_history_v2_to_v3() -> list[Callable]:
     return [drop("enclave_metadata")]
 
 
 @migrate(CodeHistory, CodeHistoryV2)
-def codehistory_v3_to_v2() -> list[Callable]:
-    return [make_set_default("enclave_metadata", None)]
+def code_history_v3_to_v2() -> list[Callable]:
+    return [
+        make_set_default("enclave_metadata", None),
+    ]

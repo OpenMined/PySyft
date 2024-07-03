@@ -16,7 +16,7 @@
       "NodeMetadata": {
         "5": {
           "version": 5,
-          "hash": "70197b4725dbdea0560ed8388e4d20b76808bee988f3630c5f916ee8f48761f8",
+          "hash": "f3927d167073a4db369a07e3bbbf756075bbb29e9addec324b8cd2c3597b75a1",
           "action": "add"
         }
       },
@@ -293,12 +293,7 @@
         },
         "5": {
           "version": 5,
-          "hash": "128705a5fdf308055ef857b25c80966c928938a05ec03459dae9b36bd6122aa2",
-          "action": "add"
-        },
-        "6": {
-          "version": 6,
-          "hash": "c48ec3160bb34adf937e6306523c7ebc52861ff84a576a30a28cd45c224ded0f",
+          "hash": "c2409f51bf920cce557d288c40b6964ec4df3d8c23e33c5d5668addc30368632",
           "action": "add"
         }
       },
