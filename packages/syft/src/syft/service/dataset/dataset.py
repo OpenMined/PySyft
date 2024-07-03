@@ -24,6 +24,7 @@ from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import generate_id
@@ -451,7 +452,7 @@ def get_shape_or_len(obj: Any) -> tuple[int, ...] | int | None:
 
 
 @serializable()
-class Dataset(SyftObject):
+class DatasetV2(SyftObject):
     # version
     __canonical_name__: str = "Dataset"
     __version__ = SYFT_OBJECT_VERSION_2
@@ -470,9 +471,38 @@ class Dataset(SyftObject):
     created_at: DateTime = DateTime.now()
     uploader: Contributor
 
-    __attr_searchable__ = ["name", "citation", "url", "description", "action_ids"]
+
+@serializable()
+class Dataset(SyftObject):
+    # version
+    __canonical_name__: str = "Dataset"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    id: UID
+    name: str
+    node_uid: UID | None = None
+    asset_list: list[Asset] = []
+    contributors: set[Contributor] = set()
+    citation: str | None = None
+    url: str | None = None
+    description: MarkdownDescription | None = None
+    updated_at: str | None = None
+    requests: int | None = 0
+    mb_size: float | None = None
+    created_at: DateTime = DateTime.now()
+    uploader: Contributor
+    summary: str | None = None
+
+    __attr_searchable__ = [
+        "name",
+        "citation",
+        "url",
+        "description",
+        "action_ids",
+        "summary",
+    ]
     __attr_unique__ = ["name"]
-    __repr_attrs__ = ["name", "url", "created_at"]
+    __repr_attrs__ = ["name", "summary", "url", "created_at"]
     __table_sort_attr__ = "Created at"
 
     def __init__(
@@ -491,6 +521,7 @@ class Dataset(SyftObject):
     def _coll_repr_(self) -> dict[str, Any]:
         return {
             "Name": self.name,
+            "Summary": self.summary,
             "Assets": len(self.asset_list),
             "Size": f"{self.mb_size} (MB)",
             "Url": self.url,
@@ -501,12 +532,11 @@ class Dataset(SyftObject):
         uploaded_by_line = (
             (
                 "<p class='paragraph-sm'><strong>"
-                + f"<span class='pr-8'>Uploaded by:</span></strong>{self.uploader.name} ({self.uploader.email})</p>"
+                + f"<span class='pr-8'>Uploaded by: </span></strong>{self.uploader.name} ({self.uploader.email})</p>"
             )
             if self.uploader
             else ""
         )
-        description_text: str = self.description.text if self.description else ""
         return f"""
             <style>
             {FONT_CSS}
@@ -518,7 +548,8 @@ class Dataset(SyftObject):
             </style>
             <div class='syft-dataset'>
             <h3>{self.name}</h3>
-            <p>{description_text}</p>
+            <p class='paragraph-sm'><strong><span class='pr-8'>Summary: </span></strong>{self.summary}</p>
+            {"<p class='paragraph-sm'> A more detailed description is available by calling <strong>dataset.description</strong></p>" if self.description is not None and self.description.text else ""}
             {uploaded_by_line}
             <p class='paragraph-sm'><strong><span class='pr-8'>Created on: </span></strong>{self.created_at}</p>
             <p class='paragraph-sm'><strong><span class='pr-8'>URL:
@@ -605,13 +636,27 @@ class DatasetPageView(SyftObject):
 
 
 @serializable()
-class CreateDataset(Dataset):
+class CreateDatasetV2(DatasetV2):
     # version
     __canonical_name__ = "CreateDataset"
     __version__ = SYFT_OBJECT_VERSION_2
     asset_list: list[CreateAsset] = []
 
-    __repr_attrs__ = ["name", "url"]
+    __repr_attrs__ = ["name", "summary", "url"]
+
+    id: UID | None = None  # type: ignore[assignment]
+    created_at: DateTime | None = None  # type: ignore[assignment]
+    uploader: Contributor | None = None  # type: ignore[assignment]
+
+
+@serializable()
+class CreateDataset(Dataset):
+    # version
+    __canonical_name__ = "CreateDataset"
+    __version__ = SYFT_OBJECT_VERSION_3
+    asset_list: list[CreateAsset] = []
+
+    __repr_attrs__ = ["name", "summary", "url"]
 
     id: UID | None = None  # type: ignore[assignment]
     created_at: DateTime | None = None  # type: ignore[assignment]
@@ -632,6 +677,9 @@ class CreateDataset(Dataset):
 
     def set_description(self, description: str) -> None:
         self.description = MarkdownDescription(text=description)
+
+    def set_summary(self, summary: str) -> None:
+        self.summary = summary
 
     def add_citation(self, citation: str) -> None:
         self.citation = citation
