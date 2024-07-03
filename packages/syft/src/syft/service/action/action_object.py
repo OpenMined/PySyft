@@ -799,18 +799,19 @@ class ActionObject(SyncableSyftObject):
         from ...types.blob_storage import CreateBlobStorageEntry
 
         if not isinstance(data, ActionDataEmpty):
-            api = APIRegistry.api_for(
-                self.syft_node_location, self.syft_client_verify_key
-            )
             if isinstance(data, BlobFile):
                 if not data.uploaded:
+                    api = APIRegistry.api_for(
+                        self.syft_node_location, self.syft_client_verify_key
+                    )
                     data._upload_to_blobstorage_from_api(api)
             else:
-                if api is None:
-                    raise ValueError(
-                        f"api is None. You must login to {self.syft_node_location}"
-                    )
-                if not can_upload_to_blob_storage(data, api.metadata):
+                get_metadata = from_api_or_context(
+                    func_or_path="metadata.get_metadata",
+                    syft_node_location=self.syft_node_location,
+                    syft_client_verify_key=self.syft_client_verify_key,
+                )
+                if not can_upload_to_blob_storage(data, get_metadata()):
                     return SyftWarning(
                         message=f"The action object {self.id} was not saved to "
                         f"the blob store but to memory cache since it is small."
