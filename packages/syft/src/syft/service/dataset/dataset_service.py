@@ -205,11 +205,26 @@ class DatasetService(AbstractService):
     def delete_dataset(
         self, context: AuthedServiceContext, uid: UID
     ) -> SyftSuccess | SyftError:
+        # check if the dataset exists
+        dataset = self.get_by_id(context=context, uid=uid)
+        if isinstance(dataset, SyftError):
+            return dataset
+        # delete the dataset's assets
+        return_msg = []
+        for asset in dataset.asset_list:
+            action_service = context.node.get_service("ActionService")
+            del_res: SyftSuccess | SyftError = action_service.delete(
+                context=context, uid=asset.action_id
+            )
+            if isinstance(del_res, SyftError):
+                return del_res
+            return_msg.append(f"Asset with id '{asset.id}' deleted.")
+        # delete the dataset object from the store
         result = self.stash.delete_by_uid(credentials=context.credentials, uid=uid)
-        if result.is_ok():
-            return result.ok()
-        else:
+        if result.is_err():
             return SyftError(message=result.err())
+        return_msg.append(f"Dataset with id '{uid}' deleted.")
+        return SyftSuccess(message="\n".join(return_msg))
 
 
 TYPE_TO_SERVICE[Dataset] = DatasetService

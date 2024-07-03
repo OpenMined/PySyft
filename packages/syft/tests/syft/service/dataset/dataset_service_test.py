@@ -14,13 +14,13 @@ import torch
 import syft as sy
 from syft.node.worker import Worker
 from syft.service.action.action_object import ActionObject
+from syft.service.action.action_object import TwinMode
 from syft.service.dataset.dataset import CreateAsset as Asset
 from syft.service.dataset.dataset import CreateDataset as Dataset
 from syft.service.dataset.dataset import _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE
 from syft.service.response import SyftError
 from syft.service.response import SyftException
 from syft.service.response import SyftSuccess
-from syft.types.twin_object import TwinMode
 
 
 def random_hash() -> str:
@@ -304,7 +304,7 @@ def test_upload_dataset_with_assets_of_different_data_types(
 
 
 def test_delete_datasets(worker: Worker) -> None:
-    root_domain_client = worker.root_client
+    root_client = worker.root_client
     mock = np.array([0, 1, 2, 3, 4])
     private = np.array([5, 6, 7, 8, 9])
     assets = [
@@ -318,8 +318,28 @@ def test_delete_datasets(worker: Worker) -> None:
     dataset = sy.Dataset(
         name="my-dataset", description="This is a cool dataset", asset_list=assets
     )
-    upload_res = root_domain_client.upload_dataset(dataset)
+    upload_res = root_client.upload_dataset(dataset)
     assert isinstance(upload_res, SyftSuccess)
-    ds = root_domain_client.api.services.dataset.get_all()[0]
-    del_res = root_domain_client.api.services.dataset.delete_by_uid(uid=ds.id)
+
+    dataset = root_client.api.services.dataset.get_all()[0]
+    asset = dataset.asset_list[0]
+    asset_mock = root_client.api.services.action.get(
+        uid=asset.action_id, twin_mode=sy.service.action.action_object.TwinMode.MOCK
+    )
+    asset_private = root_client.api.services.action.get(
+        uid=asset.action_id, twin_mode=sy.service.action.action_object.TwinMode.PRIVATE
+    )
+    assert isinstance(asset_mock, ActionObject)
+    assert isinstance(asset_private, ActionObject)
+
+    # delete the dataset
+    del_res = root_client.api.services.dataset.delete_by_uid(uid=dataset.id)
     assert isinstance(del_res, SyftSuccess)
+    asset_mock = root_client.api.services.action.get(
+        uid=asset.action_id, twin_mode=sy.service.action.action_object.TwinMode.MOCK
+    )
+    asset_private = root_client.api.services.action.get(
+        uid=asset.action_id, twin_mode=sy.service.action.action_object.TwinMode.PRIVATE
+    )
+    assert isinstance(asset_mock, SyftError)
+    assert isinstance(asset_private, SyftError)
