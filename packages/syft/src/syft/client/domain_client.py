@@ -418,15 +418,16 @@ class DomainClient(SyftClient):
             return migration_data
         migration_data._set_obj_location_(self.id, self.verify_key)
 
-        # if self.id != migration_data.node_uid:
-        #     return SyftError(
-        #         message=f"Migration data is not for this node. Expected {self.id}, got {migration_data.node_uid}"
-        #     )
+        if self.id != migration_data.node_uid:
+            return SyftError(
+                message=f"This Migration data is not for this node. Expected node id {self.id}, "
+                f"got {migration_data.node_uid}"
+            )
 
-        # if migration_data.root_verify_key != self.verify_key:
-        #     return SyftError(
-        #         message="Root verify key in migration data does not match this client's verify key"
-        #     )
+        if migration_data.signing_key.verify_key != self.verify_key:
+            return SyftError(
+                message="Root verify key in migration data does not match this client's verify key"
+            )
 
         res = migration_data.migrate_and_upload_blobs()
         if isinstance(res, SyftError):

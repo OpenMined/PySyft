@@ -1,29 +1,37 @@
-from pathlib import Path
+# stdlib
 from io import BytesIO
+from pathlib import Path
 import sys
 from typing import Any
-from typing_extensions import Self
+
+# third party
 from result import Result
-from syft.serde.deserialize import _deserialize
-from syft.serde.serialize import _serialize
-from syft.service.response import SyftError, SyftSuccess
-from syft.types.blob_storage import BlobStorageEntry, CreateBlobStorageEntry
-from syft.util.util import prompt_warning_message
+from typing_extensions import Self
+import yaml
 
 # relative
+from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
+from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
+from ...serde.serialize import _serialize
 from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
-from ...types.syft_object import SYFT_OBJECT_VERSION_1, Context
+from ...types.blob_storage import BlobStorageEntry
+from ...types.blob_storage import CreateBlobStorageEntry
+from ...types.syft_object import Context
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftBaseObject
 from ...types.syft_object import SyftObject
 from ...types.syft_object_registry import SyftObjectRegistry
 from ...types.uid import UID
+from ...util.util import prompt_warning_message
 from ..action.action_permissions import ActionObjectPermission
+from ..response import SyftError
+from ..response import SyftSuccess
 
 
 @serializable()
@@ -108,7 +116,7 @@ class MigrationData(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     node_uid: UID
-    root_verify_key: SyftVerifyKey
+    signing_key: SyftSigningKey
     store_objects: dict[type[SyftObject], list[SyftObject]]
     metadata: dict[type[SyftObject], StoreMetadata]
     action_objects: dict[type[SyftObject], list[SyftObject]]
@@ -136,6 +144,19 @@ class MigrationData(SyftObject):
         blob_ids = [obj.id for obj in self.blob_storage_objects]
         return set(self.blobs.keys()) == set(blob_ids)
 
+    def make_migration_config(self) -> dict[str, Any]:
+        node_uid = self.node_uid.to_string()
+        node_private_key = str(self.signing_key)
+        migration_config = {
+            "node": {
+                "env": [
+                    {"name": "NODE_UID", "value": node_uid},
+                    {"name": "NODE_PRIVATE_KEY", "value": node_private_key},
+                ]
+            }
+        }
+        return migration_config
+
     @classmethod
     def from_file(self, path: str | Path) -> Self | SyftError:
         path = Path(path)
@@ -147,7 +168,7 @@ class MigrationData(SyftObject):
 
         return res
 
-    def save(self, path: str | Path) -> SyftSuccess | SyftError:
+    def save(self, path: str | Path, yaml_path: str | Path) -> SyftSuccess | SyftError:
         if not self.includes_blobs:
             proceed = prompt_warning_message(
                 "You are saving migration data without blob storage data. "
@@ -162,6 +183,11 @@ class MigrationData(SyftObject):
         with open(path, "wb") as f:
             f.write(_serialize(self, to_bytes=True))
 
+        yaml_path = Path(yaml_path)
+        migration_config = self.make_migration_config()
+        with open(yaml_path, "w") as f:
+            yaml.dump(migration_config, f)
+
         return SyftSuccess(message=f"Migration data saved to {str(path)}.")
 
     def download_blobs(self) -> None | SyftError:
@@ -170,6 +196,7 @@ class MigrationData(SyftObject):
             if isinstance(blob, SyftError):
                 return blob
             self.blobs[obj.id] = blob
+        return None
 
     def download_blob(self, obj_id: str) -> Any | SyftError:
         api = self._get_api()
@@ -215,7 +242,7 @@ class MigrationData(SyftObject):
         # This is required for sending the MigrationData to the backend.
         copy_data = self.__class__(
             node_uid=self.node_uid,
-            root_verify_key=self.root_verify_key,
+            signing_key=self.signing_key,
             store_objects=self.store_objects.copy(),
             metadata=self.metadata.copy(),
             action_objects=self.action_objects.copy(),

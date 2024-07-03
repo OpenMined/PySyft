@@ -25,7 +25,6 @@ from typing import cast
 from nacl.signing import SigningKey
 from result import Err
 from result import Result
-from typing_extensions import Self
 
 # relative
 from .. import __version__
@@ -645,7 +644,7 @@ class Node(AbstractNode):
 
     @classmethod
     def named(
-        cls,
+        cls: type[Node],
         *,  # Trasterisk
         name: str,
         processes: int = 0,
@@ -663,7 +662,7 @@ class Node(AbstractNode):
         in_memory_workers: bool = True,
         association_request_auto_approval: bool = False,
         background_tasks: bool = False,
-    ) -> Self:
+    ) -> Node:
         uid = UID.with_seed(name)
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
         key = SyftSigningKey(signing_key=SigningKey(name_hash))

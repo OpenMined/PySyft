@@ -55,7 +55,7 @@
         "3": {
           "version": 3,
           "hash": "2d5f6e79f074f75b5cfc2357eac7cf635b8f083421009a513240b4dbbd5a0fc1",
-          "action": "remove"
+          "action": "add"
         },
         "5": {
           "version": 5,
@@ -437,7 +437,7 @@
       "MigrationData": {
         "1": {
           "version": 1,
-          "hash": "636a430748dfd2bc3860772795e7071db39d7306904c2d82531f884fcd79f3e9",
+          "hash": "c5be6bb4f34b04f814e15468d5231e47540c5b7d2ea0f2770e6cd332f61173c7",
           "action": "add"
         }
       }

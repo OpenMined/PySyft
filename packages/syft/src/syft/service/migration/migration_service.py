@@ -7,7 +7,6 @@ from typing import cast
 from result import Err
 from result import Ok
 from result import Result
-from syft.service.user.user_service import UserService
 
 # relative
 from ...serde.serializable import serializable
@@ -606,9 +605,6 @@ class MigrationService(AbstractService):
         if store_metadata_result.is_err():
             return SyftError(message=store_metadata_result.err())
         store_metadata = store_metadata_result.ok()
-        root_verify_key = context.node.get_service_method(
-            UserService.admin_verify_key
-        )()
 
         return MigrationData(
             node_uid=context.node.id,
