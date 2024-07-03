@@ -332,8 +332,8 @@ class Orchestra:
             )
             display(
                 SyftInfo(
-                    message=f"You have created a development node at http://{host}:{node_handle.port}.\
-                            It is intended only for local use."
+                    message=f"You have launched a development node at http://{host}:{node_handle.port}."
+                    + "It is intended only for local use."
                 )
             )
             return node_handle
