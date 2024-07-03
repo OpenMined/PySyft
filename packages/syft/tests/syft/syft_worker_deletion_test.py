@@ -43,6 +43,26 @@ def node(node_args: dict[str, Any]) -> Generator[NodeHandle, None, None]:
 
 @pytest.mark.parametrize("node_args", [{"n_consumers": 1}])
 @pytest.mark.parametrize("force", [True, False])
+def test_delete_idle_worker(node: NodeHandle, force: bool) -> None:
+    client = node.login(email="info@openmined.org", password="changethis")
+    worker = client.worker.get_all()[0]
+
+    res = client.worker.delete(worker.id, force=force)
+    assert not isinstance(res, SyftError)
+
+    if force:
+        assert len(client.worker.get_all()) == 0
+
+    start = time.time()
+    while True:
+        if len(client.worker.get_all()) == 0:
+            break
+        if time.time() - start > 3:
+            raise TimeoutError("Worker did not get removed from stash.")
+
+
+@pytest.mark.parametrize("node_args", [{"n_consumers": 1}])
+@pytest.mark.parametrize("force", [True, False])
 def test_delete_worker(node: NodeHandle, force: bool) -> None:
     client = node.login(email="info@openmined.org", password="changethis")
 
