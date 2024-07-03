@@ -107,7 +107,10 @@ class Asset(SyftObject):
     created_at: DateTime = DateTime.now()
     uploader: Contributor | None = None
 
-    __repr_attrs__ = ["name", "shape"]
+    # _kwarg_name and _dataset_name are set by the UserCode.assets
+    _kwarg_name: str | None = None
+    _dataset_name: str | None = None
+    __syft_include_id_coll_repr__ = False
 
     def __init__(
         self,
@@ -180,6 +183,9 @@ class Asset(SyftObject):
             {mock_table_line}
             </div>"""
 
+    def __repr__(self) -> str:
+        return f"Asset(name='{self.name}', node_uid='{self.node_uid}', action_id='{self.action_id}')"
+
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         _repr_str = f"Asset: {self.name}\n"
         _repr_str += f"Pointer Id: {self.action_id}\n"
@@ -190,6 +196,30 @@ class Asset(SyftObject):
         for contributor in self.contributors:
             _repr_str += f"\t{contributor.name}: {contributor.email}\n"
         return as_markdown_python_code(_repr_str)
+
+    def _coll_repr_(self) -> dict[str, Any]:
+        base_dict = {
+            "Parameter": self._kwarg_name,
+            "Action ID": self.action_id,
+            "Asset Name": self.name,
+            "Dataset Name": self._dataset_name,
+            "Node UID": self.node_uid,
+        }
+
+        # _kwarg_name and _dataset_name are set by the UserCode.assets
+        # if they are None, we remove them from the dict
+        filtered_dict = {
+            key: value for key, value in base_dict.items() if value is not None
+        }
+        return filtered_dict
+
+    def _get_dict_for_user_code_repr(self) -> dict[str, Any]:
+        return {
+            "action_id": self.action_id.no_dash,
+            "source_asset": self.name,
+            "source_dataset": self._dataset_name,
+            "source_node": self.node_uid.no_dash,
+        }
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Asset):

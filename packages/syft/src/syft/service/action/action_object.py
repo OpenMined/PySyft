@@ -798,22 +798,23 @@ class ActionObject(SyncableSyftObject):
         from ...types.blob_storage import BlobFile
         from ...types.blob_storage import CreateBlobStorageEntry
 
-        api = APIRegistry.api_for(self.syft_node_location, self.syft_client_verify_key)
-        if api is None:
-            raise ValueError(
-                f"api is None. You must login to {self.syft_node_location}"
-            )
-        if not can_upload_to_blob_storage(data, api.metadata):
-            return SyftWarning(
-                message=f"The action object {self.id} was not saved to "
-                f"the blob store but to memory cache since it is small."
-            )
-
         if not isinstance(data, ActionDataEmpty):
+            api = APIRegistry.api_for(
+                self.syft_node_location, self.syft_client_verify_key
+            )
             if isinstance(data, BlobFile):
                 if not data.uploaded:
                     data._upload_to_blobstorage_from_api(api)
             else:
+                if api is None:
+                    raise ValueError(
+                        f"api is None. You must login to {self.syft_node_location}"
+                    )
+                if not can_upload_to_blob_storage(data, api.metadata):
+                    return SyftWarning(
+                        message=f"The action object {self.id} was not saved to "
+                        f"the blob store but to memory cache since it is small."
+                    )
                 serialized = serialize(data, to_bytes=True)
                 size = sys.getsizeof(serialized)
                 storage_entry = CreateBlobStorageEntry.from_obj(data, file_size=size)
@@ -830,13 +831,13 @@ class ActionObject(SyncableSyftObject):
                 )
                 if allocate_method is not None:
                     blob_deposit_object = allocate_method(storage_entry)
-
                     if isinstance(blob_deposit_object, SyftError):
                         return blob_deposit_object
 
                     result = blob_deposit_object.write(BytesIO(serialized))
                     if isinstance(result, SyftError):
                         return result
+
                     self.syft_blob_storage_entry_id = (
                         blob_deposit_object.blob_storage_entry_id
                     )
@@ -846,6 +847,7 @@ class ActionObject(SyncableSyftObject):
             self.syft_action_data_type = type(data)
             self._set_reprs(data)
             self.syft_has_bool_attr = hasattr(data, "__bool__")
+            self.syft_action_data_cache = data
         else:
             logger.debug(
                 "skipping writing action object to store, passed data was empty."
@@ -859,10 +861,12 @@ class ActionObject(SyncableSyftObject):
         data = self.syft_action_data
         if isinstance(data, SyftError):
             return data
+
         if isinstance(data, ActionDataEmpty):
             return SyftError(
                 message=f"cannot store empty object {self.id} to the blob storage"
             )
+
         try:
             result = self._save_to_blob_storage_(data)
             if isinstance(result, SyftError | SyftWarning):
@@ -877,7 +881,6 @@ class ActionObject(SyncableSyftObject):
                 f"Failed to save action object {self.id} to the blob store. Error: {e}"
             )
 
-        self.syft_action_data_cache = data
         return SyftWarning(
             message=f"The action object {self.id} was not saved to "
             f"the blob store but to memory cache since it is small."
