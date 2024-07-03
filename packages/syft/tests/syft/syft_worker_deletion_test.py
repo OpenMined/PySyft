@@ -103,4 +103,12 @@ def test_delete_worker(node: NodeHandle, force: bool) -> None:
     else:
         assert job.status == JobStatus.COMPLETED
 
+    start = time.time()
+    while True:
+        res = client.worker.get(syft_worker_id)
+        if isinstance(res, SyftError):
+            break
+        if time.time() - start > 5:
+            raise TimeoutError("Worker did not get removed from stash.")
+
     assert len(client.worker.get_all()) == 0
