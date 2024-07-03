@@ -847,11 +847,12 @@ class ActionObject(SyncableSyftObject):
             self.syft_action_data_type = type(data)
             self._set_reprs(data)
             self.syft_has_bool_attr = hasattr(data, "__bool__")
-            self.syft_action_data_cache = data
         else:
             logger.debug(
                 "skipping writing action object to store, passed data was empty."
             )
+
+        self.syft_action_data_cache = data
 
         return None
 
@@ -877,14 +878,7 @@ class ActionObject(SyncableSyftObject):
                 message=f"Saved action object {self.id} to the blob store"
             )
         except Exception as e:
-            print(
-                f"Failed to save action object {self.id} to the blob store. Error: {e}"
-            )
-
-        return SyftWarning(
-            message=f"The action object {self.id} was not saved to "
-            f"the blob store but to memory cache since it is small."
-        )
+            raise e
 
     def _clear_cache(self) -> None:
         self.syft_action_data_cache = self.as_empty_data()
