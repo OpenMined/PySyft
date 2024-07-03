@@ -77,7 +77,7 @@ body {
   line-height: 100%;
   leading-trim: both;
   text-edge: cap;
-  color: var(--colors-black);
+  color: var(--text-color);
 }
 
 .code-text {
