@@ -10,6 +10,7 @@ from IPython.display import display
 import jinja2
 
 # relative
+from ....types.uid import UID
 from ...assets import load_css
 from ...assets import load_js
 from ...table import TABLE_INDEX_KEY
@@ -82,6 +83,13 @@ def format_dict(data: Any) -> str:
     return sanitize_html(str(data))
 
 
+def format_uid(uid: UID) -> str:
+    # relative
+    from .sync import CopyButton
+
+    return CopyButton(copy_text=uid.no_dash).to_html()
+
+
 def format_table_data(table_data: list[dict[str, Any]]) -> list[dict[str, str]]:
     formatted: list[dict[str, str]] = []
     for row in table_data:
@@ -90,7 +98,11 @@ def format_table_data(table_data: list[dict[str, Any]]) -> list[dict[str, str]]:
             if isinstance(v, str):
                 row_formatted[k] = sanitize_html(v.replace("\n", "<br>"))
                 continue
-            v_formatted = format_dict(v)
+            # make UID copyable and trimmed
+            if isinstance(v, UID):
+                v_formatted = format_uid(v)
+            else:
+                v_formatted = format_dict(v)
             row_formatted[k] = v_formatted
         formatted.append(row_formatted)
     return formatted

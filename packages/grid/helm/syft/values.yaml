@@ -66,6 +66,8 @@ seaweedfs:
   s3:
     rootUser: admin
 
+  minSizeBlobStorageMB: 16
+
   # Mount API
   mountApi:
     # automount:
@@ -134,6 +136,7 @@ proxy:
 
 registry:
   enabled: true
+
   # Extra environment vars
   env: null
 
@@ -236,6 +239,31 @@ ingress:
   className: null
 
 # =================================================================================
+
+
+rtunnel:
+  enabled: false
+  logLevel: info
+
+  port: 2333
+  mode: client
+
+  # Extra environment vars
+  env: null
+
+  # Pod labels & annotations
+  podLabels: null
+  podAnnotations: null
+
+  # Node selector for pods
+  nodeSelector: null
+
+  # Pod Resource Limits
+  resourcesPreset: small
+  resources: null
+
+# =================================================================================
+
 
 # Enclave attestation Service
 attestation:
