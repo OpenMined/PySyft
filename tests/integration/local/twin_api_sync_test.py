@@ -56,7 +56,7 @@ def private_function(context) -> str:
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
-@pytest.mark.local_node
+@pytest.mark.local_node()
 def test_twin_api_integration(full_high_worker, full_low_worker):
     low_client = full_low_worker.login(
         email="info@openmined.org", password="changethis"
@@ -154,7 +154,7 @@ def test_twin_api_integration(full_high_worker, full_low_worker):
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
-@pytest.mark.local_node
+@pytest.mark.local_node()
 def test_function_error(full_low_worker) -> None:
     root_domain_client = full_low_worker.login(
         email="info@openmined.org", password="changethis"
