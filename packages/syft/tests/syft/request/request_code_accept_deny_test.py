@@ -23,9 +23,9 @@ from syft.store.document_store import DocumentStore
 from syft.store.linked_obj import LinkedObject
 
 
-@pytest.fixture
+@pytest.fixture()
 def request_service(document_store: DocumentStore):
-    yield RequestService(store=document_store)
+    return RequestService(store=document_store)
 
 
 def get_ds_client(faker: Faker, root_client: SyftClient, guest_client: SyftClient):
