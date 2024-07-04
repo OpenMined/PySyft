@@ -14,7 +14,7 @@ from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 
 
-@pytest.fixture
+@pytest.fixture()
 def node():
     _node = sy.orchestra.launch(
         name=token_hex(8),
