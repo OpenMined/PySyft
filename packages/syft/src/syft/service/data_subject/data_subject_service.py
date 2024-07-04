@@ -51,7 +51,7 @@ class DataSubjectStash(NewBaseUIDStoreStash):
     ) -> Result[DataSubject, str]:
         res = self.check_type(data_subject, DataSubject).unwrap()
         # we dont use and_then logic here as it is hard because of the order of the arguments
-        return super().update(credentials=credentials, obj=res.ok()).unwrap()
+        return super().update(credentials=credentials, obj=res).unwrap()
 
 
 @instrument
