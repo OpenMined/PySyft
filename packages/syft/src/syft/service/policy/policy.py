@@ -57,9 +57,36 @@ from ..dataset.dataset import Asset
 from ..response import SyftError
 from ..response import SyftSuccess
 
+# Use this for return type enums:
+# class MyEnum(Enum):
+#     MEMBER1 = ("Value1", True)
+#     MEMBER2 = ("Value2", False)
+#     MEMBER3 = ("Value3", True)
+
+#     def __init__(self, value: str, flag: bool):
+#         self._value_ = value
+#         self.flag = flag
+
+# # Example usage:
+# for member in MyEnum:
+#     print(f"Name: {member.name}, Value: {member.value}, Flag: {member.flag}")
+
+
+class InputPolicyValidEnum(Enum):
+    VALID = "valid"
+    INVALID = "invalid"
+
+
+class OutputPolicyValidEnum(Enum):
+    VALID = "valid"
+    INVALID = "invalid"
+    NOT_APPROVED = "not_approved"
+
+
 PolicyUserVerifyKeyPartitionKey = PartitionKey(
     key="user_verify_key", type_=SyftVerifyKey
 )
+
 PyCodeObject = Any
 
 
@@ -366,7 +393,7 @@ class InputPolicy(Policy):
         context: AuthedServiceContext,
         usr_input_kwargs: dict,
         code_item_id: UID,
-    ) -> Result[bool, str]:
+    ) -> InputPolicyValidEnum:
         raise NotImplementedError
 
     def filter_kwargs(
@@ -730,7 +757,7 @@ class OutputPolicy(Policy):
 
         return outputs
 
-    def is_valid(self, context: AuthedServiceContext) -> SyftSuccess | SyftError:  # type: ignore
+    def is_valid(self, context: AuthedServiceContext) -> OutputPolicyValidEnum:  # type: ignore
         raise NotImplementedError()
 
 
