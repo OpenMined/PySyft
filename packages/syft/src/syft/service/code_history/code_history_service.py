@@ -63,9 +63,7 @@ class CodeHistoryService(AbstractService):
                 user_verify_key=context.credentials,
                 service_func_name=code.service_func_name,
             )
-            result = self.stash.set(
-                credentials=context.credentials, obj=code_history
-            ).unwrap()
+            self.stash.set(credentials=context.credentials, obj=code_history).unwrap()
 
         code_history.add_code(code=code, comment=comment)
         res = self.stash.update(

@@ -60,7 +60,7 @@ class RequestService(AbstractService):
             request,
             add_permissions=[
                 ActionObjectPermission(
-                    uid=req.id, permission=ActionPermission.ALL_READ
+                    uid=request.id, permission=ActionPermission.ALL_READ
                 ),
             ],
         ).unwrap()

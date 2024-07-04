@@ -76,7 +76,7 @@ class DataSubjectService(AbstractService):
 
         member_relationships: set[tuple[str, str]] = data_subject.member_relationships
         if len(member_relationships) == 0:
-            result = self.stash.set(
+            self.stash.set(
                 context.credentials,
                 data_subject.to(DataSubject, context=context),
             ).unwrap()
@@ -84,7 +84,7 @@ class DataSubjectService(AbstractService):
             for member_relationship in member_relationships:
                 parent_ds, child_ds = member_relationship
                 for ds in [parent_ds, child_ds]:
-                    result = self.stash.set(
+                    self.stash.set(
                         context.credentials,
                         ds.to(DataSubject, context=context),
                         ignore_duplicates=True,
