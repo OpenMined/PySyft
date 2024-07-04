@@ -15,12 +15,14 @@ import syft as sy
 from syft.node.worker import Worker
 from syft.service.action.action_object import ActionObject
 from syft.service.action.action_object import TwinMode
+from syft.service.blob_storage.util import can_upload_to_blob_storage
 from syft.service.dataset.dataset import CreateAsset as Asset
 from syft.service.dataset.dataset import CreateDataset as Dataset
 from syft.service.dataset.dataset import _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE
 from syft.service.response import SyftError
 from syft.service.response import SyftException
 from syft.service.response import SyftSuccess
+from syft.store.blob_storage import SyftObjectRetrieval
 
 
 def random_hash() -> str:
@@ -303,45 +305,42 @@ def test_upload_dataset_with_assets_of_different_data_types(
     )
 
 
-def test_delete_datasets(worker: Worker) -> None:
+def test_delete_small_datasets(worker: Worker, small_dataset: Dataset) -> None:
     root_client = worker.root_client
-    mock = np.array([0, 1, 2, 3, 4])
-    private = np.array([5, 6, 7, 8, 9])
-    assets = [
-        sy.Asset(
-            name="numpy-data",
-            mock=mock,
-            data=private,
-            shape=private.shape,
-        )
-    ]
-    dataset = sy.Dataset(
-        name="my-dataset", description="This is a cool dataset", asset_list=assets
-    )
-    upload_res = root_client.upload_dataset(dataset)
+    assert not can_upload_to_blob_storage(small_dataset, root_client.api.metadata)
+    upload_res = root_client.upload_dataset(small_dataset)
     assert isinstance(upload_res, SyftSuccess)
 
     dataset = root_client.api.services.dataset.get_all()[0]
     asset = dataset.asset_list[0]
-    asset_mock = root_client.api.services.action.get(
-        uid=asset.action_id, twin_mode=TwinMode.MOCK
-    )
-    asset_private = root_client.api.services.action.get(
-        uid=asset.action_id, twin_mode=TwinMode.PRIVATE
-    )
-    assert isinstance(asset_mock, ActionObject)
-    assert isinstance(asset_private, ActionObject)
+    assert isinstance(asset.data, np.ndarray)
+    assert isinstance(asset.mock, np.ndarray)
 
     # delete the dataset
     del_res = root_client.api.services.dataset.delete_by_uid(uid=dataset.id)
     assert isinstance(del_res, SyftSuccess)
-    asset_mock = root_client.api.services.action.get(
-        uid=asset.action_id, twin_mode=TwinMode.MOCK
-    )
-    asset_private = root_client.api.services.action.get(
-        uid=asset.action_id, twin_mode=TwinMode.PRIVATE
-    )
-    assert isinstance(asset_mock, str)
-    assert f"Could not find item with uid {asset.action_id}" in asset_mock
-    assert isinstance(asset_private, str)
-    assert f"Could not find item with uid {asset.action_id}" in asset_private
+    assert isinstance(asset.data, SyftError)
+    assert isinstance(asset.mock, SyftError)
+
+
+def test_delete_big_datasets(worker: Worker, big_dataset: Dataset) -> None:
+    root_client = worker.root_client
+    assert can_upload_to_blob_storage(big_dataset, root_client.api.metadata)
+    upload_res = root_client.upload_dataset(big_dataset)
+    assert isinstance(upload_res, SyftSuccess)
+
+    dataset = root_client.api.services.dataset.get_all()[0]
+    asset = dataset.asset_list[0]
+    assert isinstance(asset.data, np.ndarray)
+    assert isinstance(asset.mock, np.ndarray)
+    # test that the data is saved in the blob storage
+    assert isinstance(asset.mock_blob, SyftObjectRetrieval)
+    assert isinstance(asset.data_blob, SyftObjectRetrieval)
+
+    # delete the dataset
+    del_res = root_client.api.services.dataset.delete_by_uid(uid=dataset.id)
+    assert isinstance(del_res, SyftSuccess)
+    assert isinstance(asset.data, SyftError)
+    assert isinstance(asset.mock, SyftError)
+    assert isinstance(asset.data_blob, SyftError)
+    assert isinstance(asset.mock_blob, SyftError)
