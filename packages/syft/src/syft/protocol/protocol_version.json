@@ -16,7 +16,7 @@
       "NodeMetadata": {
         "5": {
           "version": 5,
-          "hash": "70197b4725dbdea0560ed8388e4d20b76808bee988f3630c5f916ee8f48761f8",
+          "hash": "f3927d167073a4db369a07e3bbbf756075bbb29e9addec324b8cd2c3597b75a1",
           "action": "add"
         }
       },
@@ -274,26 +274,21 @@
         }
       },
       "HTTPConnection": {
+        "2": {
+          "version": 2,
+          "hash": "68409295f8916ceb22a8cf4abf89f5e4bcff0d75dc37e16ede37250ada28df59",
+          "action": "remove"
+        },
         "3": {
           "version": 3,
-          "hash": "54b452bb4ab76691ac1e704b62e7bcec740850fea00805145259b37973ecd0f4",
+          "hash": "b61b30d10e2d25726c708ef34b69c7b730d41b16b315e7062f3d487e943143d5",
           "action": "add"
         }
       },
       "UserCode": {
-        "4": {
-          "version": 4,
-          "hash": "0a7181cd5f76800b6566175ffa7276d0cf38c4ddc5110114430147dfc8bfdb2a",
-          "action": "remove"
-        },
         "5": {
           "version": 5,
-          "hash": "128705a5fdf308055ef857b25c80966c928938a05ec03459dae9b36bd6122aa2",
-          "action": "add"
-        },
-        "6": {
-          "version": 6,
-          "hash": "c48ec3160bb34adf937e6306523c7ebc52861ff84a576a30a28cd45c224ded0f",
+          "hash": "c2409f51bf920cce557d288c40b6964ec4df3d8c23e33c5d5668addc30368632",
           "action": "add"
         }
       },
@@ -371,6 +366,61 @@
         "3": {
           "version": 3,
           "hash": "1b9bd1d3d096abab5617c2ff597b4c80751f686d16482a2cff4efd8741b84d53",
+          "action": "add"
+        }
+      },
+      "PythonConnection": {
+        "2": {
+          "version": 2,
+          "hash": "eb479c671fc112b2acbedb88bc5624dfdc9592856c04c22c66410f6c863e1708",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "1084c85a59c0436592530b5fe9afc2394088c8d16faef2b19fdb9fb83ff0f0e2",
+          "action": "add"
+        }
+      },
+      "HTTPNodeRoute": {
+        "2": {
+          "version": 2,
+          "hash": "2134ea812f7c6ea41522727ae087245c4b1195ffbad554db638070861cd9eb1c",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "d26cb313e92b1fbe36995c8ed4103a9168ea6e589b2803ed9a91c23f14bf0c96",
+          "action": "add"
+        }
+      },
+      "PythonNodeRoute": {
+        "2": {
+          "version": 2,
+          "hash": "3eca5767ae4a8fbe67744509e58c6d9fb78f38fa0a0f7fcf5960ab4250acc1f0",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "1bc413ec7c1d498ec945878e21e00affd9bd6d53b564b1e10e52feb09f177d04",
+          "action": "add"
+        }
+      },
+      "SeaweedFSBlobDeposit": {
+        "3": {
+          "version": 3,
+          "hash": "05e61e6328b085b738e5d41c0781d87852d44d218894cb3008f5be46e337f6d8",
+          "action": "remove"
+        },
+        "4": {
+          "version": 4,
+          "hash": "f475543ed5e0066ca09c0dfd8c903e276d4974519e9958473d8141f8d446c881",
+          "action": "add"
+        }
+      },
+      "SyftWorker": {
+        "3": {
+          "version": 3,
+          "hash": "e124f56ddf4565df2be056553eecd15de7c80bd5f5fd0d06e8ff7815bb05563a",
           "action": "add"
         }
       }

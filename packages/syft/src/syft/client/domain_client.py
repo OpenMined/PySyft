@@ -26,6 +26,7 @@ from ..service.dataset.dataset import CreateAsset
 from ..service.dataset.dataset import CreateDataset
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
+from ..service.response import SyftWarning
 from ..service.sync.diff_state import ResolvedSyncState
 from ..service.sync.sync_state import SyncState
 from ..service.user.roles import Roles
@@ -131,7 +132,7 @@ class DomainClient(SyftClient):
         ) as pbar:
             for asset in dataset.asset_list:
                 try:
-                    contains_empty = asset.contains_empty()
+                    contains_empty: bool = asset.contains_empty()
                     twin = TwinObject(
                         private_obj=ActionObject.from_obj(asset.data),
                         mock_obj=ActionObject.from_obj(asset.mock),
@@ -145,8 +146,15 @@ class DomainClient(SyftClient):
                     tqdm.write(f"Failed to create twin for {asset.name}. {e}")
                     return SyftError(message=f"Failed to create twin. {e}")
 
+                if isinstance(res, SyftWarning):
+                    logger.debug(res.message)
+                    skip_save_to_blob_store = True
+                else:
+                    skip_save_to_blob_store = False
                 response = self.api.services.action.set(
-                    twin, ignore_detached_objs=contains_empty
+                    twin,
+                    ignore_detached_objs=contains_empty,
+                    skip_save_to_blob_store=skip_save_to_blob_store,
                 )
                 if isinstance(response, SyftError):
                     tqdm.write(f"Failed to upload asset: {asset.name}")
@@ -288,6 +296,7 @@ class DomainClient(SyftClient):
         email: str | None = None,
         password: str | None = None,
         protocol: str | SyftProtocol = SyftProtocol.HTTP,
+        reverse_tunnel: bool = False,
     ) -> SyftSuccess | SyftError | None:
         if isinstance(protocol, str):
             protocol = SyftProtocol(protocol)
@@ -305,7 +314,11 @@ class DomainClient(SyftClient):
             if isinstance(client, SyftError):
                 return client
 
-        res = self.exchange_route(client, protocol=protocol)
+        res = self.exchange_route(
+            client,
+            protocol=protocol,
+            reverse_tunnel=reverse_tunnel,
+        )
         if isinstance(res, SyftSuccess):
             if self.metadata:
                 return SyftSuccess(

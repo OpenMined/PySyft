@@ -275,6 +275,7 @@ class BlobStorageClient(SyftBaseModel):
 class BlobStorageConfig(SyftBaseModel):
     client_type: type[BlobStorageClient]
     client_config: BlobStorageClientConfig
+    min_blob_size: int  # in MB
 
 
 @migrate(BlobRetrievalByURLV4, BlobRetrievalByURL)

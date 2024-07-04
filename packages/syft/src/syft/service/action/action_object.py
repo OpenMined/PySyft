@@ -36,7 +36,10 @@ from ...client.client import SyftClient
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize as serialize
+from ...service.blob_storage.util import can_upload_to_blob_storage
 from ...service.response import SyftError
+from ...service.response import SyftSuccess
+from ...service.response import SyftWarning
 from ...store.linked_obj import LinkedObject
 from ...types.base import SyftBaseModel
 from ...types.datetime import DateTime
@@ -508,44 +511,33 @@ def convert_to_pointers(
     # relative
     from ..dataset.dataset import Asset
 
-    arg_list = []
-    kwarg_dict = {}
-    if args is not None:
-        for arg in args:
-            if (
-                not isinstance(arg, ActionObject | Asset | UID)
-                and api.signing_key is not None  # type: ignore[unreachable]
-            ):
-                arg = ActionObject.from_obj(  # type: ignore[unreachable]
-                    syft_action_data=arg,
-                    syft_client_verify_key=api.signing_key.verify_key,
-                    syft_node_location=api.node_uid,
-                )
-                arg.syft_node_uid = node_uid
-                r = arg._save_to_blob_storage()
-                if isinstance(r, SyftError):
-                    logger.error(r.message)
-                arg = api.services.action.set(arg)
-            arg_list.append(arg)
+    def process_arg(arg: ActionObject | Asset | UID | Any) -> Any:
+        if (
+            not isinstance(arg, ActionObject | Asset | UID)
+            and api.signing_key is not None  # type: ignore[unreachable]
+        ):
+            arg = ActionObject.from_obj(  # type: ignore[unreachable]
+                syft_action_data=arg,
+                syft_client_verify_key=api.signing_key.verify_key,
+                syft_node_location=api.node_uid,
+            )
+            arg.syft_node_uid = node_uid
+            r = arg._save_to_blob_storage()
+            if isinstance(r, SyftError):
+                print(r.message)
+            if isinstance(r, SyftWarning):
+                logger.debug(r.message)
+                skip_save_to_blob_store = True
+            else:
+                skip_save_to_blob_store = False
+            arg = api.services.action.set(
+                arg,
+                skip_save_to_blob_store=skip_save_to_blob_store,
+            )
+        return arg
 
-    if kwargs is not None:
-        for k, arg in kwargs.items():
-            if (
-                not isinstance(arg, ActionObject | Asset | UID)
-                and api.signing_key is not None  # type: ignore[unreachable]
-            ):
-                arg = ActionObject.from_obj(  # type: ignore[unreachable]
-                    syft_action_data=arg,
-                    syft_client_verify_key=api.signing_key.verify_key,
-                    syft_node_location=api.node_uid,
-                )
-                arg.syft_node_uid = node_uid
-                r = arg._save_to_blob_storage()
-                if isinstance(r, SyftError):
-                    logger.error(r.message)
-                arg = api.services.action.set(arg)
-
-            kwarg_dict[k] = arg
+    arg_list = [process_arg(arg) for arg in args] if args else []
+    kwarg_dict = {k: process_arg(v) for k, v in kwargs.items()} if kwargs else {}
 
     return arg_list, kwarg_dict
 
@@ -801,7 +793,7 @@ class ActionObject(SyncableSyftObject):
 
         return None
 
-    def _save_to_blob_storage_(self, data: Any) -> SyftError | None:
+    def _save_to_blob_storage_(self, data: Any) -> SyftError | SyftWarning | None:
         # relative
         from ...types.blob_storage import BlobFile
         from ...types.blob_storage import CreateBlobStorageEntry
@@ -814,6 +806,18 @@ class ActionObject(SyncableSyftObject):
                     )
                     data._upload_to_blobstorage_from_api(api)
             else:
+                get_metadata = from_api_or_context(
+                    func_or_path="metadata.get_metadata",
+                    syft_node_location=self.syft_node_location,
+                    syft_client_verify_key=self.syft_client_verify_key,
+                )
+                if get_metadata is not None and not can_upload_to_blob_storage(
+                    data, get_metadata()
+                ):
+                    return SyftWarning(
+                        message=f"The action object {self.id} was not saved to "
+                        f"the blob store but to memory cache since it is small."
+                    )
                 serialized = serialize(data, to_bytes=True)
                 size = sys.getsizeof(serialized)
                 storage_entry = CreateBlobStorageEntry.from_obj(data, file_size=size)
@@ -830,13 +834,13 @@ class ActionObject(SyncableSyftObject):
                 )
                 if allocate_method is not None:
                     blob_deposit_object = allocate_method(storage_entry)
-
                     if isinstance(blob_deposit_object, SyftError):
                         return blob_deposit_object
 
                     result = blob_deposit_object.write(BytesIO(serialized))
                     if isinstance(result, SyftError):
                         return result
+
                     self.syft_blob_storage_entry_id = (
                         blob_deposit_object.blob_storage_entry_id
                     )
@@ -855,6 +859,33 @@ class ActionObject(SyncableSyftObject):
 
         return None
 
+    def _save_to_blob_storage(
+        self, allow_empty: bool = False
+    ) -> SyftError | SyftSuccess | SyftWarning:
+        data = self.syft_action_data
+        if isinstance(data, SyftError):
+            return data
+
+        if isinstance(data, ActionDataEmpty):
+            return SyftError(
+                message=f"cannot store empty object {self.id} to the blob storage"
+            )
+
+        try:
+            result = self._save_to_blob_storage_(data)
+            if isinstance(result, SyftError | SyftWarning):
+                return result
+            if not TraceResultRegistry.current_thread_is_tracing():
+                self._clear_cache()
+            return SyftSuccess(
+                message=f"Saved action object {self.id} to the blob store"
+            )
+        except Exception as e:
+            raise e
+
+    def _clear_cache(self) -> None:
+        self.syft_action_data_cache = self.as_empty_data()
+
     def _set_reprs(self, data: any) -> None:
         if inspect.isclass(data):
             self.syft_action_data_repr_ = truncate_str(repr_cls(data))
@@ -865,22 +896,6 @@ class ActionObject(SyncableSyftObject):
                 else data.__repr__()
             )
         self.syft_action_data_str_ = truncate_str(str(data))
-
-    def _save_to_blob_storage(self, allow_empty: bool = False) -> SyftError | None:
-        data = self.syft_action_data
-        if isinstance(data, SyftError):
-            return data
-        if isinstance(data, ActionDataEmpty) and not allow_empty:
-            return SyftError(message=f"cannot store empty object {self.id}")
-        result = self._save_to_blob_storage_(data)
-        if isinstance(result, SyftError):
-            return result
-        if not TraceResultRegistry.current_thread_is_tracing():
-            self._clear_cache()
-        return None
-
-    def _clear_cache(self) -> None:
-        self.syft_action_data_cache = self.as_empty_data()
 
     @property
     def is_pointer(self) -> bool:
@@ -1229,8 +1244,16 @@ class ActionObject(SyncableSyftObject):
         api = self._get_api()
         if isinstance(api, SyftError):
             return api
+
+        if isinstance(blob_storage_res, SyftWarning):
+            logger.debug(blob_storage_res.message)
+            skip_save_to_blob_store = True
+        else:
+            skip_save_to_blob_store = False
         res = api.services.action.set(
-            self, add_storage_permission=add_storage_permission
+            self,
+            add_storage_permission=add_storage_permission,
+            skip_save_to_blob_store=skip_save_to_blob_store,
         )
         if isinstance(res, ActionObject):
             self.syft_created_at = res.syft_created_at
