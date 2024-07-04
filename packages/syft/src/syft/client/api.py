@@ -111,6 +111,7 @@ NEW_STYLE_SERVICES_LIST: list[str] = [
     "sync.",
     "blob_storage.",
     "notifier.",
+    "policy."
 ]
 
 

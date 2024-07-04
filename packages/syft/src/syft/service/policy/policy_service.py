@@ -27,33 +27,25 @@ class PolicyService(AbstractService):
     @service_method(path="policy.get_all", name="get_all")
     def get_all_user_policy(
         self, context: AuthedServiceContext
-    ) -> list[UserPolicy] | SyftError:
-        result = self.stash.get_all(context.credentials)
-        if result.is_ok():
-            return result.ok()
-        return SyftError(message=result.err())
+    ) -> list[UserPolicy]:
+        return self.stash.get_all(context.credentials).unwrap()
 
-    @service_method(path="policy.add", name="add")
+    @service_method(path="policy.add", name="add", unwrap_on_success=False)
     def add_user_policy(
         self,
         context: AuthedServiceContext,
         policy_code: SubmitUserPolicy | UserPolicy,
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         if isinstance(policy_code, SubmitUserPolicy):
             policy_code = policy_code.to(UserPolicy, context=context)
-        result = self.stash.set(context.credentials, policy_code)
-        if result.is_err():
-            return SyftError(message=str(result.err()))
-        return SyftSuccess(message="Policy Code Submitted")
+        result = self.stash.set(context.credentials, policy_code).unwrap()
+        return SyftSuccess(message="Policy Code Submitted", value=result)
 
     @service_method(path="policy.get_by_uid", name="get_by_uid")
     def get_policy_by_uid(
         self, context: AuthedServiceContext, uid: UID
-    ) -> SyftSuccess | SyftError:
-        result = self.stash.get_by_uid(context.credentials, uid=uid)
-        if result.is_ok():
-            return result.ok()
-        return SyftError(message=result.err())
+    ) -> UserPolicy:
+        return self.stash.get_by_uid(context.credentials, uid=uid).unwrap()
 
 
 TYPE_TO_SERVICE[UserPolicy] = UserPolicy
