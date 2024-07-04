@@ -236,7 +236,7 @@ def test_dataset_search(set_env_var, gateway_port: int, domain_1_port: int) -> N
 
 
 @pytest.mark.skip(reason="Possible bug")
-@pytest.mark.network
+@pytest.mark.network()
 def test_domain_gateway_user_code(
     set_env_var, domain_1_port: int, gateway_port: int
 ) -> None:
@@ -368,7 +368,7 @@ def test_deleting_peers(set_env_var, domain_1_port: int, gateway_port: int) -> N
     assert len(gateway_client.peers) == 0
 
 
-@pytest.mark.network
+@pytest.mark.network()
 def test_add_route(set_env_var, gateway_port: int, domain_1_port: int) -> None:
     """
     Test the network service's `add_route` functionalities to add routes directly
