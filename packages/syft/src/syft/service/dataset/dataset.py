@@ -9,6 +9,7 @@ from typing import Any
 # third party
 from IPython.display import display
 import itables
+import markdown
 import pandas as pd
 from pydantic import ConfigDict
 from pydantic import field_validator
@@ -553,10 +554,10 @@ class Dataset(SyftObject):
             else ""
         )
         if self.description is not None and self.description.text:
-            description_info_message = (
-                "<p class='paragraph-sm'> A more detailed description is available by calling \
-                <strong>dataset.description</strong>.</p>"
-            )
+            description_info_message = f"""
+            <h2><strong><span class='pr-8'>Description</span></strong></h2>
+            {markdown.markdown(self.description.text, extensions=["extra"])}
+            """
         else:
             description_info_message = ""
         return f"""
@@ -569,15 +570,18 @@ class Dataset(SyftObject):
               {ITABLES_CSS}
             </style>
             <div class='syft-dataset'>
-            <h3>{self.name}</h3>
-            <p class='paragraph-sm'><strong><span class='pr-8'>Summary: </span></strong>{self.summary}</p>
+            <h1>{self.name}</h1>
+            <h2><strong><span class='pr-8'>Summary</span></strong></h2>
+            <p>{self.summary}</p>
             {description_info_message}
+            <h2><strong><span class='pr-8'>Dataset Details</span></strong></h2>
             {uploaded_by_line}
             <p class='paragraph-sm'><strong><span class='pr-8'>Created on: </span></strong>{self.created_at}</p>
             <p class='paragraph-sm'><strong><span class='pr-8'>URL:
             </span></strong><a href='{self.url}'>{self.url}</a></p>
             <p class='paragraph-sm'><strong><span class='pr-8'>Contributors:</span></strong>
             To see full details call <strong>dataset.contributors</strong>.</p>
+            <h2><strong><span class='pr-8'>Assets</span></strong></h2>
             {self.assets._repr_html_()}
             """
 

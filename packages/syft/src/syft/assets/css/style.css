@@ -582,6 +582,8 @@ body {
   color: var(--surface-color);
 }
 
+.syft-dataset h1,
+.syft-dataset h2,
 .syft-dataset h3,
 .syft-dataset p,
 .syft-asset h3,
