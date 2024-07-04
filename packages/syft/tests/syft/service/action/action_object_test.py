@@ -722,9 +722,9 @@ def test_actionobject_syft_getattr_str(worker, scenario):
 
     assert obj.capitalize() == orig_obj.capitalize()
     assert obj.casefold() == orig_obj.casefold()
-    assert obj.endswith("C") == orig_obj.endswith("C")  # noqa
-    assert obj.isascii() == orig_obj.isascii()  # noqa
-    assert obj.isdigit() == orig_obj.isdigit()  # noqa
+    assert obj.endswith("C") == orig_obj.endswith("C")
+    assert obj.isascii() == orig_obj.isascii()
+    assert obj.isdigit() == orig_obj.isdigit()
     assert obj.upper() == orig_obj.upper()
     assert "C" in obj
     assert "z" not in obj
@@ -856,17 +856,17 @@ def test_actionobject_syft_getattr_bool(orig_obj, worker, scenario):
     obj = ActionObject.from_obj(orig_obj)
     obj = helper_prepare_obj_for_scenario(scenario, worker, obj)
 
-    assert obj.__and__(False) == (orig_obj and False)  # noqa
-    assert obj.__or__(False) == (orig_obj or False)  # noqa
-    assert (not obj) == (not orig_obj)  # noqa
-    assert (obj and True) == (orig_obj and True)  # noqa
-    assert (True and obj) == (orig_obj and True)  # noqa
-    assert (obj and False) == (orig_obj and False)  # noqa
-    assert (False and obj) == (orig_obj and False)  # noqa
-    assert (obj or False) == (orig_obj or False)  # noqa
-    assert (False or obj) == (orig_obj or False)  # noqa
-    assert (obj or True) == (orig_obj or True)  # noqa
-    assert (True or obj) == (orig_obj or True)  # noqa
+    assert obj.__and__(False) == (orig_obj and False)
+    assert obj.__or__(False) == (orig_obj or False)
+    assert (not obj) == (not orig_obj)
+    assert (obj and True) == (orig_obj and True)
+    assert (True and obj) == (orig_obj and True)
+    assert (obj and False) == (orig_obj and False)
+    assert (False and obj) == (orig_obj and False)
+    assert (obj or False) == (orig_obj or False)
+    assert (False or obj) == (orig_obj or False)
+    assert (obj or True) == (orig_obj or True)
+    assert (True or obj) == (orig_obj or True)
     assert (obj + obj) == orig_obj + orig_obj
 
 
