@@ -255,8 +255,8 @@ passthrough_attrs = [
     "_get_api",  # syft
     "__validate_private_attrs__",  # syft
     "id",  # syft
-    "created_date", #syft
-    "updated_date", #syft
+    "created_date",  # syft
+    "updated_date",  # syft
     "to_mongo",  # syft 🟡 TODO 23: Add composeable / inheritable object passthrough attrs
     "__attr_searchable__",  # syft
     "__canonical_name__",  # syft

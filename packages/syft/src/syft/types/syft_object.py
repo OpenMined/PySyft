@@ -33,7 +33,6 @@ from pydantic import Field
 from pydantic import model_validator
 from pydantic.fields import PydanticUndefined
 from result import OkErr
-from syft.types.basedatetime import BaseDateTime
 from typeguard import check_type
 from typing_extensions import Self
 
@@ -48,6 +47,7 @@ from ..util.notebook_ui.components.tabulator_template import build_tabulator_tab
 from ..util.util import aggressive_set_attr
 from ..util.util import full_name_with_qualname
 from ..util.util import get_qualname_for
+from .basedatetime import BaseDateTime
 from .syft_metaclass import Empty
 from .syft_metaclass import PartialModelMetaclass
 from .uid import UID
@@ -405,7 +405,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
 
     # all objects have a UID
     id: UID
-    
+
     created_date: BaseDateTime | None = BaseDateTime.now()
     updated_date: BaseDateTime | None = BaseDateTime.now()
 

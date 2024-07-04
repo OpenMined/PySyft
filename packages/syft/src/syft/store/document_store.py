@@ -13,7 +13,6 @@ from pydantic import Field
 from result import Err
 from result import Ok
 from result import Result
-from syft.types.basedatetime import BaseDateTime
 from typeguard import check_type
 
 # relative
@@ -25,6 +24,7 @@ from ..service.action.action_permissions import StoragePermission
 from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
 from ..types.base import SyftBaseModel
+from ..types.basedatetime import BaseDateTime
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
@@ -640,7 +640,6 @@ class BaseStash:
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> Result[BaseStash.object_type, str]:
-        
         res = self.check_type(obj, self.object_type)
         # we dont use and_then logic here as it is hard because of the order of the arguments
         if res.is_err():
@@ -779,9 +778,11 @@ class BaseStash:
             return Ok(None)
         return res
 
+
 @instrument
 class BaseUIDStoreStash(BaseStash):
     pass
+
 
 @serializable()
 class StoreConfig(SyftBaseObject):

@@ -1,14 +1,14 @@
-from datetime import datetime, timezone
+# stdlib
+from datetime import datetime
 from functools import total_ordering
 from typing import Any
 
 # third party
-from typing_extensions import Self
 import pydantic
+from typing_extensions import Self
 
 # relative
 from ..serde.serializable import serializable
-from datetime import datetime
 
 
 @serializable()
