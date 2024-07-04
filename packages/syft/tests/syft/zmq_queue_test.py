@@ -24,7 +24,7 @@ from syft.util.util import get_queue_address
 from syft.util.util import get_random_available_port
 
 
-@pytest.fixture
+@pytest.fixture()
 def client():
     hostname = "127.0.0.1"
     config = ZMQClientConfig(hostname=hostname)
@@ -114,7 +114,7 @@ def test_zmq_client(client):
     assert client.consumers[QueueName][0].alive is False
 
 
-@pytest.fixture
+@pytest.fixture()
 def producer():
     pub_port = get_random_available_port()
     QueueName = token_hex(8)
@@ -134,7 +134,7 @@ def producer():
     del producer
 
 
-@pytest.fixture
+@pytest.fixture()
 def consumer(producer):
     # Create a consumer
     consumer = ZMQConsumer(
@@ -203,7 +203,7 @@ def test_zmq_pub_sub(faker: Faker, producer, consumer):
     assert consumer.alive is False
 
 
-@pytest.fixture
+@pytest.fixture()
 def queue_manager():
     # Create a consumer
     config = ZMQQueueConfig()
