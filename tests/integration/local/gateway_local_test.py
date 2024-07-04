@@ -39,7 +39,7 @@ def _launch(
     )
 
 
-@pytest.fixture
+@pytest.fixture()
 def gateway():
     node = _launch(NodeType.GATEWAY)
     yield node
@@ -55,7 +55,7 @@ def gateway_association_request_auto_approval(request: pytest.FixtureRequest):
     node.land()
 
 
-@pytest.fixture
+@pytest.fixture()
 def domain():
     node = _launch(NodeType.DOMAIN)
     yield node
@@ -63,7 +63,7 @@ def domain():
     node.land()
 
 
-@pytest.fixture
+@pytest.fixture()
 def domain_2():
     node = _launch(NodeType.DOMAIN)
     yield node
@@ -71,7 +71,7 @@ def domain_2():
     node.land()
 
 
-@pytest.fixture
+@pytest.fixture()
 def enclave():
     node = _launch(NodeType.ENCLAVE)
     yield node
@@ -79,21 +79,21 @@ def enclave():
     node.land()
 
 
-@pytest.fixture
+@pytest.fixture()
 def gateway_webserver():
     node = _launch(node_type=NodeType.GATEWAY, port="auto")
     yield node
     node.land()
 
 
-@pytest.fixture
+@pytest.fixture()
 def domain_webserver():
     node = _launch(NodeType.DOMAIN, port="auto")
     yield node
     node.land()
 
 
-@pytest.fixture
+@pytest.fixture()
 def domain_2_webserver():
     node = _launch(NodeType.DOMAIN, port="auto")
     yield node
@@ -127,7 +127,7 @@ def set_network_json_env_var(gateway_webserver):
     del os.environ["NETWORK_REGISTRY_JSON"]
 
 
-@pytest.mark.local_node
+@pytest.mark.local_node()
 def test_create_gateway(
     set_network_json_env_var, gateway_webserver, domain_webserver, domain_2_webserver
 ):
@@ -171,7 +171,7 @@ def test_create_gateway(
     assert client.metadata.node_type == NodeType.GATEWAY.value
 
 
-@pytest.mark.local_node
+@pytest.mark.local_node()
 def test_domain_connect_to_gateway(gateway_association_request_auto_approval, domain):
     association_request_auto_approval, gateway = (
         gateway_association_request_auto_approval
@@ -242,7 +242,7 @@ def test_domain_connect_to_gateway(gateway_association_request_auto_approval, do
     assert all_peers[0].node_routes[0].priority == 1
 
 
-@pytest.mark.local_node
+@pytest.mark.local_node()
 def test_domain_connect_to_gateway_routes_priority(gateway, domain, domain_2) -> None:
     """
     A test for routes' priority (PythonNodeRoute)
@@ -286,7 +286,7 @@ def test_domain_connect_to_gateway_routes_priority(gateway, domain, domain_2) ->
         assert peer.node_routes[0].priority == 1
 
 
-@pytest.mark.local_node
+@pytest.mark.local_node()
 def test_enclave_connect_to_gateway(faker: Faker, gateway, enclave):
     gateway_client = gateway.client
     enclave_client: EnclaveClient = enclave.client
@@ -341,7 +341,7 @@ def test_enclave_connect_to_gateway(faker: Faker, gateway, enclave):
     )
 
 
-@pytest.mark.local_node
+@pytest.mark.local_node()
 @pytest.mark.parametrize(
     "gateway_association_request_auto_approval", [False], indirect=True
 )
