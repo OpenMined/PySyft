@@ -1,5 +1,7 @@
 # stdlib
 from collections.abc import Generator
+from collections.abc import Iterable
+from itertools import product
 from secrets import token_hex
 import time
 from typing import Any
@@ -41,7 +43,19 @@ def node(node_args: dict[str, Any]) -> Generator[NodeHandle, None, None]:
     _node.land()
 
 
-@pytest.mark.parametrize("node_args", [{"n_consumers": 1}])
+def node_args_combinations(**kwargs: Iterable) -> Iterable[dict[str, Any]]:
+    args = ([(k, v) for v in vs] for k, vs in kwargs.items())
+    return (dict(kvs) for kvs in product(*args))
+
+
+NODE_ARGS_TEST_CASES = node_args_combinations(
+    n_consumers=[1],
+    dev_mode=[True, False],
+    thread_workers=[True, False],
+)
+
+
+@pytest.mark.parametrize("node_args", NODE_ARGS_TEST_CASES)
 @pytest.mark.parametrize("force", [True, False])
 def test_delete_idle_worker(node: NodeHandle, force: bool) -> None:
     client = node.login(email="info@openmined.org", password="changethis")
@@ -61,7 +75,7 @@ def test_delete_idle_worker(node: NodeHandle, force: bool) -> None:
             raise TimeoutError("Worker did not get removed from stash.")
 
 
-@pytest.mark.parametrize("node_args", [{"n_consumers": 1}])
+@pytest.mark.parametrize("node_args", NODE_ARGS_TEST_CASES)
 @pytest.mark.parametrize("force", [True, False])
 def test_delete_worker(node: NodeHandle, force: bool) -> None:
     client = node.login(email="info@openmined.org", password="changethis")
