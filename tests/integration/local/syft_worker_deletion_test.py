@@ -43,9 +43,9 @@ def node(node_args: dict[str, Any]) -> Generator[NodeHandle, None, None]:
     _node.land()
 
 
-def node_args_combinations(**kwargs: Iterable) -> Iterable[dict[str, Any]]:
+def node_args_combinations(**kwargs: Iterable) -> list[dict[str, Any]]:
     args = ([(k, v) for v in vs] for k, vs in kwargs.items())
-    return (dict(kvs) for kvs in product(*args))
+    return [dict(kvs) for kvs in product(*args)]
 
 
 NODE_ARGS_TEST_CASES = node_args_combinations(
