@@ -12,3 +12,11 @@ class TooManyItemsFoundException(SyftException):
 
 class StashException(SyftException):
     public_message = "There was an error retrieving data. Contact your admin."
+
+
+class ObjectCRUDPermissionException(SyftException):
+    public_message = "You do not have permission to perform this action."
+
+
+class ObjectExecutionPermissionException(SyftException):
+    public_message = "You do not have permission to execute this action."
