@@ -66,7 +66,7 @@ def metadata_json(faker) -> NodeMetadataJSON:
         node_side_type=NodeSideType.LOW_SIDE.value,
         show_warnings=False,
         node_type=NodeType.DOMAIN.value,
-        min_size_blob_storage_mb=0,
+        min_size_blob_storage_mb=16,
     )
 
 
