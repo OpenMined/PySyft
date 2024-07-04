@@ -13,6 +13,9 @@ import os
 import sys
 from typing import Any
 
+# third party
+from IPython.display import display
+
 # relative
 from .abstract_node import NodeSideType
 from .abstract_node import NodeType
@@ -23,6 +26,7 @@ from .node.gateway import Gateway
 from .node.server import serve_node
 from .protocol.data_protocol import stage_protocol_changes
 from .service.response import SyftError
+from .service.response import SyftInfo
 from .util.util import get_random_available_port
 
 logger = logging.getLogger(__name__)
@@ -311,7 +315,7 @@ class Orchestra:
         )
 
         if deployment_type_enum == DeploymentType.PYTHON:
-            return deploy_to_python(
+            node_handle = deploy_to_python(
                 node_type_enum=node_type_enum,
                 deployment_type_enum=deployment_type_enum,
                 port=port,
@@ -333,6 +337,13 @@ class Orchestra:
                 debug=debug,
                 migrate=migrate,
             )
+            display(
+                SyftInfo(
+                    message=f"You have launched a development node at http://{host}:{node_handle.port}."
+                    + "It is intended only for local use."
+                )
+            )
+            return node_handle
         elif deployment_type_enum == DeploymentType.REMOTE:
             return deploy_to_remote(
                 node_type_enum=node_type_enum,
