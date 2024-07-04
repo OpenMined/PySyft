@@ -1,6 +1,7 @@
 # stdlib
 from collections.abc import Collection
 from collections.abc import Sequence
+import logging
 
 # relative
 from ...serde.serializable import serializable
@@ -27,6 +28,8 @@ from .dataset import CreateDataset
 from .dataset import Dataset
 from .dataset import DatasetPageView
 from .dataset_stash import DatasetStash
+
+logger = logging.getLogger(__name__)
 
 
 def _paginate_collection(
@@ -218,6 +221,7 @@ class DatasetService(AbstractService):
             )
             if isinstance(del_res, SyftError):
                 return del_res
+            logger.info(del_res.message)
             return_msg.append(f"Asset with id '{asset.id}' deleted.")
         # delete the dataset object from the store
         result = self.stash.delete_by_uid(credentials=context.credentials, uid=uid)
