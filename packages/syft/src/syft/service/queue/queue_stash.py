@@ -3,22 +3,21 @@ from enum import Enum
 from typing import Any
 
 # third party
-from result import Ok
-from result import Result
-from syft.store.document_store_errors import NotFoundException, StashException
-from syft.types.result import as_result
 
 # relative
 from ...node.credentials import SyftVerifyKey
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
-from ...store.document_store import BaseStash, NewBaseStash
 from ...store.document_store import DocumentStore
+from ...store.document_store import NewBaseStash
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
+from ...store.document_store_errors import NotFoundException
+from ...store.document_store_errors import StashException
 from ...store.linked_obj import LinkedObject
+from ...types.result import as_result
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SYFT_OBJECT_VERSION_4
@@ -26,8 +25,8 @@ from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
-from ..response import SyftError, SyftException
-from ..response import SyftSuccess
+from ..response import SyftError
+from ..response import SyftException
 
 
 @serializable()
@@ -141,16 +140,13 @@ class QueueStash(NewBaseStash):
         return item
 
     @as_result(StashException)
-    def get_by_uid(
-        self, credentials: SyftVerifyKey, uid: UID
-    ) -> QueueItem:
+    def get_by_uid(self, credentials: SyftVerifyKey, uid: UID) -> QueueItem:
         qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
         return self.query_one(credentials=credentials, qks=qks).unwrap()
 
     as_result(StashException)
-    def pop(
-        self, credentials: SyftVerifyKey, uid: UID
-    ) -> QueueItem | None:
+
+    def pop(self, credentials: SyftVerifyKey, uid: UID) -> QueueItem | None:
         try:
             item = self.get_by_uid(credentials=credentials, uid=uid).unwrap()
         except NotFoundException:
@@ -161,18 +157,14 @@ class QueueStash(NewBaseStash):
         return item
 
     @as_result(StashException)
-    def pop_on_complete(
-        self, credentials: SyftVerifyKey, uid: UID
-    ) -> QueueItem | None:
+    def pop_on_complete(self, credentials: SyftVerifyKey, uid: UID) -> QueueItem | None:
         queue_item = self.get_by_uid(credentials=credentials, uid=uid).unwrap()
         if queue_item.status == Status.COMPLETED:
             self.delete_by_uid(credentials=credentials, uid=uid)
         return queue_item
 
     @as_result(StashException)
-    def delete_by_uid(
-        self, credentials: SyftVerifyKey, uid: UID
-    ) -> UID:
+    def delete_by_uid(self, credentials: SyftVerifyKey, uid: UID) -> UID:
         qk = UIDPartitionKey.with_obj(uid)
         return super().delete(credentials=credentials, qk=qk).unwrap()
 

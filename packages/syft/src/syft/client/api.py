@@ -114,7 +114,7 @@ NEW_STYLE_SERVICES_LIST: list[str] = [
     "settings.",
     "policy.",
     "action.",
-    "queue."
+    "queue.",
 ]
 
 

@@ -5,7 +5,6 @@ from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...types.uid import UID
 from ..context import AuthedServiceContext
-from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import TYPE_TO_SERVICE
@@ -25,9 +24,7 @@ class PolicyService(AbstractService):
         self.stash = UserPolicyStash(store=store)
 
     @service_method(path="policy.get_all", name="get_all")
-    def get_all_user_policy(
-        self, context: AuthedServiceContext
-    ) -> list[UserPolicy]:
+    def get_all_user_policy(self, context: AuthedServiceContext) -> list[UserPolicy]:
         return self.stash.get_all(context.credentials).unwrap()
 
     @service_method(path="policy.add", name="add", unwrap_on_success=False)
@@ -42,9 +39,7 @@ class PolicyService(AbstractService):
         return SyftSuccess(message="Policy Code Submitted", value=result)
 
     @service_method(path="policy.get_by_uid", name="get_by_uid")
-    def get_policy_by_uid(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> UserPolicy:
+    def get_policy_by_uid(self, context: AuthedServiceContext, uid: UID) -> UserPolicy:
         return self.stash.get_by_uid(context.credentials, uid=uid).unwrap()
 
 

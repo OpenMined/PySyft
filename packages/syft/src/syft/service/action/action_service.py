@@ -4,18 +4,18 @@ import logging
 from typing import Any
 
 # third party
-import numpy as np
 from result import Err
 from result import Ok
 from result import Result
-from syft.store.document_store_errors import NotFoundException, StashException
-from syft.types.errors import SyftException
-from syft.types.result import as_result
 
 # relative
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...store.document_store_errors import NotFoundException
+from ...store.document_store_errors import StashException
 from ...types.datetime import DateTime
+from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.syft_object import SyftObject
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
@@ -48,7 +48,6 @@ from .action_permissions import ActionObjectREAD
 from .action_permissions import ActionPermission
 from .action_store import ActionStore
 from .action_types import action_type_for_type
-from .numpy import NumpyArrayObject
 from .pandas import PandasDataFrameObject  # noqa: F401
 from .pandas import PandasSeriesObject  # noqa: F401
 
@@ -119,7 +118,9 @@ class ActionService(AbstractService):
             self.is_detached_obj(action_object, ignore_detached_objs)
             and not skip_save_to_blob_store
         ):
-            raise SyftException(public_message="You uploaded an ActionObject that is not yet in the blob storage")
+            raise SyftException(
+                public_message="You uploaded an ActionObject that is not yet in the blob storage"
+            )
 
         """Save an object to the action store"""
         # 🟡 TODO 9: Create some kind of type checking / protocol for SyftSerializable
@@ -216,7 +217,9 @@ class ActionService(AbstractService):
         resolve_nested: bool = True,
     ) -> ActionObject:
         """Get an object from the action store"""
-        return self._get(context, uid, twin_mode, resolve_nested=resolve_nested).unwrap()
+        return self._get(
+            context, uid, twin_mode, resolve_nested=resolve_nested
+        ).unwrap()
 
     @as_result(StashException, NotFoundException, SyftException)
     def _get(

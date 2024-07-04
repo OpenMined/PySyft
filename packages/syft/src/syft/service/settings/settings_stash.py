@@ -3,14 +3,14 @@
 # third party
 
 # relative
-from syft.store.document_store_errors import StashException
-from syft.types.result import as_result
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.document_store import NewBaseUIDStoreStash
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
+from ...store.document_store_errors import StashException
+from ...types.result import as_result
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from .settings import NodeSettings

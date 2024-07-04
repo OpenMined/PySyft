@@ -4,8 +4,8 @@
 from typing import cast
 
 # syft absolute
-from syft.store.errors import NotFoundError
-from syft.store.errors import StashError
+from syft.store.document_store_errors import NotFoundException
+from syft.store.document_store_errors import StashException
 
 # relative
 from ...serde.serializable import serializable
@@ -63,12 +63,12 @@ class ProjectService(AbstractService):
             error_msg = "User does not have permission to sync events"
             raise SyftException(public_message=error_msg)
 
-    @as_result(StashError)
+    @as_result(StashException)
     def exists(self, context: AuthedServiceContext, project: ProjectSubmit) -> bool:
         credentials = (context.node.verify_key,)
         try:
             self.stash.get_by_uid(credentials=credentials, uid=project.id).unwrap()
-        except NotFoundError:
+        except NotFoundException:
             return False
         return True
 
@@ -319,8 +319,8 @@ class ProjectService(AbstractService):
             project = self.stash.get_by_name(
                 context.credentials, project_name=name
             ).unwrap()
-        except NotFoundError as exc:
-            raise NotFoundError.from_exception(
+        except NotFoundException as exc:
+            raise NotFoundException.from_exception(
                 exc, public_message="Project '{name}' does not exist"
             )
 
@@ -335,12 +335,12 @@ class ProjectService(AbstractService):
         try:
             credentials = context.node.verify_key
             return self.stash.get_by_uid(credentials=credentials, uid=uid).unwrap()
-        except NotFoundError as exc:
-            raise NotFoundError.from_exception(
+        except NotFoundException as exc:
+            raise NotFoundException.from_exception(
                 exc, public_message=f"Project {uid} not found"
             )
 
-    as_result(StashError, NotFoundError)
+    as_result(StashException, NotFoundException)
 
     def add_signing_key_to_project(
         self, context: AuthedServiceContext, project: Project
@@ -350,8 +350,8 @@ class ProjectService(AbstractService):
             user = user_service.stash.get_by_verify_key(
                 credentials=context.credentials, verify_key=context.credentials
             ).unwrap()
-        except NotFoundError as exc:
-            raise NotFoundError.from_exception(
+        except NotFoundException as exc:
+            raise NotFoundException.from_exception(
                 exc, public_message="User not found! Please register the user first"
             )
 

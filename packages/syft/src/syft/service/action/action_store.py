@@ -5,11 +5,6 @@ from __future__ import annotations
 import threading
 
 # third party
-from result import Err
-from result import Ok
-from result import Result
-from syft.store.document_store_errors import NotFoundException, ObjectCRUDPermissionException, StashException
-from syft.types.result import as_result
 
 # relative
 from ...node.credentials import SyftSigningKey
@@ -18,12 +13,15 @@ from ...serde.serializable import serializable
 from ...store.dict_document_store import DictStoreConfig
 from ...store.document_store import BasePartitionSettings
 from ...store.document_store import StoreConfig
+from ...store.document_store_errors import NotFoundException
+from ...store.document_store_errors import ObjectCRUDPermissionException
+from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.syft_object import SyftObject
 from ...types.twin_object import TwinObject
 from ...types.uid import LineageID
 from ...types.uid import UID
-from ..response import SyftSuccess
 from .action_object import is_action_data_empty
 from .action_permissions import ActionObjectEXECUTE
 from .action_permissions import ActionObjectOWNER
@@ -92,10 +90,14 @@ class KeyValueActionStore(ActionStore):
             elif isinstance(uid, UID):
                 syft_object = self.data[uid]
             else:
-                raise SyftException(public_message=f"Unrecognized UID type: {type(uid)}")
+                raise SyftException(
+                    public_message=f"Unrecognized UID type: {type(uid)}"
+                )
             return syft_object
         except Exception as e:
-            raise NotFoundException.from_exception(e, public_message=f"Object {uid} not found")
+            raise NotFoundException.from_exception(
+                e, public_message=f"Object {uid} not found"
+            )
 
     @as_result(NotFoundException, SyftException)
     def get_mock(self, uid: UID) -> SyftObject:
@@ -110,7 +112,9 @@ class KeyValueActionStore(ActionStore):
                 return syft_object.mock
             raise NotFoundException(public_message=f"No mock found for object {uid}")
         except Exception as e:
-            raise NotFoundException.from_exception(e, public_message=f"Object {uid} not found")
+            raise NotFoundException.from_exception(
+                e, public_message=f"Object {uid} not found"
+            )
 
     @as_result(NotFoundException, SyftException)
     def get_pointer(
@@ -203,9 +207,7 @@ class KeyValueActionStore(ActionStore):
         return uid
 
     @as_result(SyftException, StashException)
-    def take_ownership(
-        self, uid: UID, credentials: SyftVerifyKey
-    ) -> UID:
+    def take_ownership(self, uid: UID, credentials: SyftVerifyKey) -> UID:
         uid = uid.id  # We only need the UID from LineageID or UID
 
         # first person using this UID can claim ownership
@@ -233,7 +235,9 @@ class KeyValueActionStore(ActionStore):
         owner_permission = ActionObjectOWNER(uid=uid, credentials=credentials)
 
         if not self.has_permission(owner_permission):
-            raise StashException(public_message=f"Permission: {owner_permission} denied")
+            raise StashException(
+                public_message=f"Permission: {owner_permission} denied"
+            )
 
         if uid in self.data:
             del self.data[uid]
@@ -292,7 +296,9 @@ class KeyValueActionStore(ActionStore):
     def _get_permissions_for_uid(self, uid: UID) -> set[str]:
         if uid in self.permissions:
             return self.permissions[uid]
-        raise ObjectCRUDPermissionException(public_message=f"No permissions found for uid: {uid}")
+        raise ObjectCRUDPermissionException(
+            public_message=f"No permissions found for uid: {uid}"
+        )
 
     def add_storage_permission(self, permission: StoragePermission) -> None:
         permissions = self.storage_permissions[permission.uid]
@@ -324,13 +330,13 @@ class KeyValueActionStore(ActionStore):
         raise ObjectCRUDPermissionException(f"No storage permissions found for {uid}")
 
     @as_result(ObjectCRUDPermissionException)
-    def migrate_data(
-        self, to_klass: SyftObject, credentials: SyftVerifyKey
-    ) -> bool:
+    def migrate_data(self, to_klass: SyftObject, credentials: SyftVerifyKey) -> bool:
         has_root_permission = credentials == self.root_verify_key
 
         if not has_root_permission:
-            raise ObjectCRUDPermissionException(public_message="You don't have permissions to migrate data.")
+            raise ObjectCRUDPermissionException(
+                public_message="You don't have permissions to migrate data."
+            )
 
         for key, value in self.data.items():
             try:
@@ -338,8 +344,9 @@ class KeyValueActionStore(ActionStore):
                     continue
                 migrated_value = value.migrate_to(to_klass.__version__)
             except Exception as e:
-                raise SyftException.from_exception(e,
-                    public_message=f"Failed to migrate data to {to_klass} for qk: {key}"
+                raise SyftException.from_exception(
+                    e,
+                    public_message=f"Failed to migrate data to {to_klass} for qk: {key}",
                 )
             self.set(
                 uid=key,

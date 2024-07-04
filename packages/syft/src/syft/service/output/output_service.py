@@ -3,7 +3,6 @@ from typing import ClassVar
 
 # third party
 from pydantic import model_validator
-from result import Result
 from result import as_result
 
 # relative
@@ -15,7 +14,8 @@ from ...store.document_store import NewBaseUIDStoreStash
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
-from ...store.document_store_errors import NotFoundException, StashException
+from ...store.document_store_errors import NotFoundException
+from ...store.document_store_errors import StashException
 from ...store.document_store_errors import TooManyItemsFoundException
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime

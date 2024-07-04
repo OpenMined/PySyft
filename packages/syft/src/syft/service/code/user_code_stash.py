@@ -1,8 +1,8 @@
 # stdlib
 
 # syft absolute
-from syft.store.errors import NotFoundError
-from syft.store.errors import StashError
+from syft.store.document_store_errors import NotFoundException
+from syft.store.document_store_errors import StashException
 
 # relative
 from ...node.credentials import SyftVerifyKey
@@ -31,19 +31,19 @@ class UserCodeStash(NewBaseUIDStoreStash):
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
 
-    @as_result(StashError, NotFoundError)
+    @as_result(StashException, NotFoundException)
     def get_all_by_user_verify_key(
         self, credentials: SyftVerifyKey, user_verify_key: SyftVerifyKey
     ) -> list[UserCode]:
         qks = QueryKeys(qks=[UserVerifyKeyPartitionKey.with_obj(user_verify_key)])
         return self.query_one(credentials=credentials, qks=qks).unwrap()
 
-    @as_result(StashError, NotFoundError)
+    @as_result(StashException, NotFoundException)
     def get_by_code_hash(self, credentials: SyftVerifyKey, code_hash: str) -> UserCode:
         qks = QueryKeys(qks=[CodeHashPartitionKey.with_obj(code_hash)])
         return self.query_one(credentials=credentials, qks=qks).unwrap()
 
-    @as_result(StashError)
+    @as_result(StashException)
     def get_by_service_func_name(
         self, credentials: SyftVerifyKey, service_func_name: str
     ) -> list[UserCode]:

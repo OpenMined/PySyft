@@ -9,8 +9,8 @@ from result import Err
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
-from ...store.document_store_errors import NotFoundError
-from ...store.document_store_errors import StashError
+from ...store.document_store_errors import NotFoundException
+from ...store.document_store_errors import StashException
 from ...store.linked_obj import LinkedObject
 from ...types.cache_object import CachedSyftObject
 from ...types.errors import SyftException
@@ -120,7 +120,7 @@ class UserCodeService(AbstractService):
                     public_message="The code to be submitted already exists"
                 )
             return existing_code
-        except NotFoundError:
+        except NotFoundException:
             pass
 
         code = submit_code.to(UserCode, context=context)
@@ -288,7 +288,7 @@ class UserCodeService(AbstractService):
         # The Request service already returns either a SyftSuccess or SyftError
         return result
 
-    @as_result(SyftException, NotFoundError, StashError)
+    @as_result(SyftException, NotFoundException, StashException)
     def _get_or_submit_user_code(
         self,
         context: AuthedServiceContext,
@@ -303,8 +303,8 @@ class UserCodeService(AbstractService):
             # Get existing UserCode
             try:
                 return self.stash.get_by_uid(context.credentials, code.id).unwrap()
-            except NotFoundError as exc:
-                raise NotFoundError.from_exception(
+            except NotFoundException as exc:
+                raise NotFoundException.from_exception(
                     exc, public_message="UserCode {code.id} not found on this node"
                 )
         else:  # code: SubmitUserCode
