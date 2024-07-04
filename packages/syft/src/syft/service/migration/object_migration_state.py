@@ -132,6 +132,10 @@ class MigrationData(SyftObject):
     ]
 
     @property
+    def root_verify_key(self) -> SyftVerifyKey:
+        return self.signing_key.verify_key
+
+    @property
     def num_objects(self) -> int:
         return sum(len(objs) for objs in self.store_objects.values())
 
