@@ -46,14 +46,30 @@ def node(node_args: dict[str, Any]) -> Generator[NodeHandle, None, None]:
     _node.land()
 
 
-def node_args_combinations(**kwargs: Iterable) -> list[dict[str, Any]]:
+def matrix(
+    *,
+    excludes_: Iterable[dict[str, Any]] | None = None,
+    **kwargs: Iterable,
+) -> list[dict[str, Any]]:
     args = ([(k, v) for v in vs] for k, vs in kwargs.items())
-    return [dict(kvs) for kvs in product(*args)]
+    args = product(*args)
+
+    if excludes_ is None:
+        excludes_ = []
+    excludes_ = [kv.items() for kv in excludes_]
+
+    args = (
+        arg
+        for arg in args
+        if not any(all(kv in arg for kv in kvs) for kvs in excludes_)
+    )
+
+    return [dict(kvs) for kvs in args]
 
 
-NODE_ARGS_TEST_CASES = node_args_combinations(
+NODE_ARGS_TEST_CASES = matrix(
     n_consumers=[1],
-    # dev_mode=[True, False],
+    dev_mode=[True, False],
     thread_workers=[True, False],
 )
 
