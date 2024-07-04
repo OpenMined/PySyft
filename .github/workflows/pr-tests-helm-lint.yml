@@ -34,9 +34,9 @@ jobs:
 
           # Install python deps
           python -m pip install --upgrade pip
-          python -m pip install uv==0.2.18
+          python -m pip install uv
           uv --version
-          python -m uv pip install tox tox-uv==1.9.0
+          python -m uv pip install tox tox-uv==1.9.1
 
           kube-linter version
           polaris version
