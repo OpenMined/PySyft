@@ -6,13 +6,11 @@ from typing import TypeVar
 # third party
 from result import Err
 
-# syft absolute
-from syft.store.document_store_errors import NotFoundError
-from syft.store.document_store_errors import StashError
-
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
+from ...store.document_store_errors import NotFoundException
+from ...store.document_store_errors import StashException
 from ...store.linked_obj import LinkedObject
 from ...types.cache_object import CachedSyftObject
 from ...types.errors import SyftException
@@ -53,12 +51,12 @@ from .user_code import load_approved_policy_code
 from .user_code_stash import UserCodeStash
 
 
-class HasCodePermissionEnum(Enum, str):
+class HasCodePermissionEnum(str, Enum):
     ACCEPTED = "Has permission"
     DENIED = "Permission denied"
 
 
-class IsExecutionAllowedEnum(Enum, str):
+class IsExecutionAllowedEnum(str, Enum):
     ALLOWED = "Execution allowed"
     NO_PERMISSION = "Execution denied: You do not have permission to execute code"
     NOT_APPROVED = "Execution denied: Your code is waiting for approval"
@@ -122,7 +120,7 @@ class UserCodeService(AbstractService):
                     public_message="The code to be submitted already exists"
                 )
             return existing_code
-        except NotFoundError:
+        except NotFoundException:
             pass
 
         code = submit_code.to(UserCode, context=context)
@@ -290,7 +288,7 @@ class UserCodeService(AbstractService):
         # The Request service already returns either a SyftSuccess or SyftError
         return result
 
-    @as_result(SyftException, NotFoundError, StashError)
+    @as_result(SyftException, NotFoundException, StashException)
     def _get_or_submit_user_code(
         self,
         context: AuthedServiceContext,
@@ -305,8 +303,8 @@ class UserCodeService(AbstractService):
             # Get existing UserCode
             try:
                 return self.stash.get_by_uid(context.credentials, code.id).unwrap()
-            except NotFoundError as exc:
-                raise NotFoundError.from_exception(
+            except NotFoundException as exc:
+                raise NotFoundException.from_exception(
                     exc, public_message="UserCode {code.id} not found on this node"
                 )
         else:  # code: SubmitUserCode

@@ -4,7 +4,6 @@ import logging
 from typing import Any
 
 # third party
-import numpy as np
 from result import Err
 from result import Ok
 from result import Result
@@ -12,7 +11,11 @@ from result import Result
 # relative
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...store.document_store_errors import NotFoundException
+from ...store.document_store_errors import StashException
 from ...types.datetime import DateTime
+from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.syft_object import SyftObject
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
@@ -45,7 +48,6 @@ from .action_permissions import ActionObjectREAD
 from .action_permissions import ActionPermission
 from .action_store import ActionStore
 from .action_types import action_type_for_type
-from .numpy import NumpyArrayObject
 from .pandas import PandasDataFrameObject  # noqa: F401
 from .pandas import PandasSeriesObject  # noqa: F401
 
@@ -56,35 +58,6 @@ logger = logging.getLogger(__name__)
 class ActionService(AbstractService):
     def __init__(self, store: ActionStore) -> None:
         self.store = store
-
-    @service_method(path="action.np_array", name="np_array")
-    def np_array(self, context: AuthedServiceContext, data: Any) -> Any:
-        if not isinstance(data, np.ndarray):
-            data = np.array(data)
-        # cast here since we are sure that AuthedServiceContext has a node
-
-        np_obj = NumpyArrayObject(
-            dtype=data.dtype,
-            shape=data.shape,
-            syft_action_data_cache=data,
-            syft_node_location=context.node.id,
-            syft_client_verify_key=context.credentials,
-        )
-        blob_store_result = np_obj._save_to_blob_storage()
-        if isinstance(blob_store_result, SyftError):
-            return blob_store_result
-        if isinstance(blob_store_result, SyftWarning):
-            logger.debug(blob_store_result.message)
-            skip_save_to_blob_store = True
-        else:
-            skip_save_to_blob_store = False
-
-        np_pointer = self._set(
-            context,
-            np_obj,
-            skip_save_to_blob_store=skip_save_to_blob_store,
-        )
-        return np_pointer
 
     @service_method(
         path="action.set",
@@ -98,19 +71,15 @@ class ActionService(AbstractService):
         add_storage_permission: bool = True,
         ignore_detached_objs: bool = False,
         skip_save_to_blob_store: bool = False,
-    ) -> ActionObject | SyftError:
-        res = self._set(
+    ) -> ActionObject:
+        return self._set(
             context,
             action_object,
             has_result_read_permission=True,
             add_storage_permission=add_storage_permission,
             ignore_detached_objs=ignore_detached_objs,
             skip_save_to_blob_store=skip_save_to_blob_store,
-        )
-        if res.is_err():
-            return SyftError(message=res.value)
-        else:
-            return res.ok()
+        ).unwrap()
 
     def is_detached_obj(
         self,
@@ -135,6 +104,7 @@ class ActionService(AbstractService):
             return True
         return False
 
+    @as_result(StashException, SyftException)
     def _set(
         self,
         context: AuthedServiceContext,
@@ -143,17 +113,17 @@ class ActionService(AbstractService):
         add_storage_permission: bool = True,
         ignore_detached_objs: bool = False,
         skip_save_to_blob_store: bool = False,
-    ) -> Result[ActionObject, str]:
+    ) -> ActionObject:
         if (
             self.is_detached_obj(action_object, ignore_detached_objs)
             and not skip_save_to_blob_store
         ):
-            return Err(
-                "You uploaded an ActionObject that is not yet in the blob storage"
+            raise SyftException(
+                public_message="You uploaded an ActionObject that is not yet in the blob storage"
             )
+
         """Save an object to the action store"""
         # 🟡 TODO 9: Create some kind of type checking / protocol for SyftSerializable
-
         if isinstance(action_object, ActionObject):
             action_object.syft_created_at = DateTime.now()
             if not skip_save_to_blob_store:
@@ -171,89 +141,71 @@ class ActionService(AbstractService):
             or has_result_read_permission
         )
 
-        result = self.store.set(
+        self.store.set(
             uid=action_object.id,
             credentials=context.credentials,
             syft_object=action_object,
             has_result_read_permission=has_result_read_permission,
             add_storage_permission=add_storage_permission,
-        )
-        if result.is_ok():
-            if isinstance(action_object, TwinObject):
-                # give read permission to the mock
-                blob_id = action_object.mock_obj.syft_blob_storage_entry_id
-                permission = ActionObjectPermission(blob_id, ActionPermission.ALL_READ)
-                blob_storage_service: AbstractService = context.node.get_service(
-                    BlobStorageService
-                )
-                blob_storage_service.stash.add_permission(permission)
-                if has_result_read_permission:
-                    action_object = action_object.private
-                else:
-                    action_object = action_object.mock
+        ).unwrap()
 
-            action_object.syft_point_to(context.node.id)
-            return Ok(action_object)
-        return result.err()
+        if isinstance(action_object, TwinObject):
+            # give read permission to the mock
+            blob_id = action_object.mock_obj.syft_blob_storage_entry_id
+            permission = ActionObjectPermission(blob_id, ActionPermission.ALL_READ)
+            blob_storage_service: AbstractService = context.node.get_service(
+                BlobStorageService
+            )
+            blob_storage_service.stash.add_permission(permission)
+            if has_result_read_permission:
+                action_object = action_object.private
+            else:
+                action_object = action_object.mock
 
-    @service_method(
-        path="action.is_resolved", name="is_resolved", roles=GUEST_ROLE_LEVEL
-    )
+        action_object.syft_point_to(context.node.id)
+
+        return action_object
+
+    @as_result(StashException, NotFoundException)
     def is_resolved(
         self,
         context: AuthedServiceContext,
         uid: UID,
-    ) -> Result[Ok[bool], Err[str]]:
+    ) -> bool:
         """Get an object from the action store"""
-        result = self._get(context, uid)
-        if result.is_ok():
-            obj = result.ok()
-            if obj.is_link:
-                result = self.resolve_links(
-                    context, obj.syft_action_data.action_object_id.id
-                )
-                # Checking in case any error occurred
-                if result.is_err():
-                    return result
+        obj = self._get(context, uid).unwrap()
 
-                return Ok(result.syft_resolved)
+        if obj.is_link:
+            result = self.resolve_links(
+                context, obj.syft_action_data.action_object_id.id
+            ).unwrap()
+            return result.syft_resolved
 
-            # If it's a leaf but not resolved yet, return false
-            elif not obj.syft_resolved:
-                return Ok(False)
+        # If it's a leaf but not resolved yet, return false
+        if not obj.syft_resolved:
+            return False
 
-            # If it's not an action data link or non resolved (empty). It's resolved
-            return Ok(True)
-        # If it's not in the store or permission error, return the error
-        return result
+        # If it's not an action data link or non resolved (empty). It's resolved
+        return True
 
-    @service_method(
-        path="action.resolve_links", name="resolve_links", roles=GUEST_ROLE_LEVEL
-    )
+    @as_result(StashException, NotFoundException)
     def resolve_links(
         self,
         context: AuthedServiceContext,
         uid: UID,
         twin_mode: TwinMode = TwinMode.PRIVATE,
-    ) -> Result[Ok[ActionObject], Err[str]]:
+    ) -> ActionObject:
         """Get an object from the action store"""
-        # relative
-
-        result = self.store.get(uid=uid, credentials=context.credentials)
         # If user has permission to get the object / object exists
-        if result.is_ok():
-            obj = result.ok()
+        result = self.store.get(uid=uid, credentials=context.credentials).unwrap()
 
-            # If it's not a leaf
-            if obj.is_link:
-                nested_result = self.resolve_links(
-                    context, obj.syft_action_data.action_object_id.id, twin_mode
-                )
-                return nested_result
+        # If it's not a leaf
+        if result.is_link:
+            return self.resolve_links(
+                context, result.syft_action_data.action_object_id.id, twin_mode
+            ).unwrap()
 
-            # If it's a leaf
-            return result
-
+        # If it's a leaf
         return result
 
     @service_method(path="action.get", name="get", roles=GUEST_ROLE_LEVEL)
@@ -263,10 +215,13 @@ class ActionService(AbstractService):
         uid: UID,
         twin_mode: TwinMode = TwinMode.PRIVATE,
         resolve_nested: bool = True,
-    ) -> Result[ActionObject, str]:
+    ) -> ActionObject:
         """Get an object from the action store"""
-        return self._get(context, uid, twin_mode, resolve_nested=resolve_nested)
+        return self._get(
+            context, uid, twin_mode, resolve_nested=resolve_nested
+        ).unwrap()
 
+    @as_result(StashException, NotFoundException, SyftException)
     def _get(
         self,
         context: AuthedServiceContext,
@@ -274,68 +229,66 @@ class ActionService(AbstractService):
         twin_mode: TwinMode = TwinMode.PRIVATE,
         has_permission: bool = False,
         resolve_nested: bool = True,
-    ) -> Result[ActionObject, str]:
+    ) -> ActionObject:
         """Get an object from the action store"""
-        # stdlib
-
-        # relative
-
-        result = self.store.get(
+        obj: TwinObject | ActionObject = self.store.get(
             uid=uid, credentials=context.credentials, has_permission=has_permission
+        ).unwrap()
+
+        # TODO: Is this necessary?
+        if context.node is None:
+            raise SyftException(public_message=f"Node not found. Context: {context}")
+
+        obj._set_obj_location_(
+            context.node.id,
+            context.credentials,
         )
-        if result.is_ok() and context.node is not None:
-            obj: TwinObject | ActionObject = result.ok()
-            obj._set_obj_location_(
-                context.node.id,
-                context.credentials,
-            )
-            # Resolve graph links
-            if (
-                not isinstance(obj, TwinObject)  # type: ignore[unreachable]
-                and resolve_nested
-                and obj.is_link
+
+        # Resolve graph links
+        if (
+            not isinstance(obj, TwinObject)  # type: ignore[unreachable]
+            and resolve_nested
+            and obj.is_link
+        ):
+            if self.is_resolved(  # type: ignore[unreachable]
+                context, obj.syft_action_data.action_object_id.id
             ):
-                if not self.is_resolved(  # type: ignore[unreachable]
-                    context, obj.syft_action_data.action_object_id.id
-                ).ok():
-                    return SyftError(message="This object is not resolved yet.")
-                result = self.resolve_links(
-                    context, obj.syft_action_data.action_object_id.id, twin_mode
-                )
-                return result
-            if isinstance(obj, TwinObject):
-                if twin_mode == TwinMode.PRIVATE:
-                    obj = obj.private
-                    obj.syft_point_to(context.node.id)
-                elif twin_mode == TwinMode.MOCK:
-                    obj = obj.mock
-                    obj.syft_point_to(context.node.id)
-                else:
-                    obj.mock.syft_point_to(context.node.id)
-                    obj.private.syft_point_to(context.node.id)
-            return Ok(obj)
-        else:
-            return result
+                raise SyftException(public_message="This object is not resolved yet.")
+
+            return self.resolve_links(
+                context, obj.syft_action_data.action_object_id.id, twin_mode
+            ).unwrap()
+
+        if isinstance(obj, TwinObject):
+            if twin_mode == TwinMode.PRIVATE:
+                obj = obj.private
+                obj.syft_point_to(context.node.id)
+            elif twin_mode == TwinMode.MOCK:
+                obj = obj.mock
+                obj.syft_point_to(context.node.id)
+            else:
+                obj.mock.syft_point_to(context.node.id)
+                obj.private.syft_point_to(context.node.id)
+
+        return obj
 
     @service_method(
         path="action.get_pointer", name="get_pointer", roles=GUEST_ROLE_LEVEL
     )
     def get_pointer(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Result[ActionObjectPointer, str]:
+    ) -> ActionObjectPointer:
         """Get a pointer from the action store"""
-
-        result = self.store.get_pointer(
+        obj = self.store.get_pointer(
             uid=uid, credentials=context.credentials, node_uid=context.node.id
+        ).unwrap()
+
+        obj._set_obj_location_(
+            context.node.id,
+            context.credentials,
         )
-        if result.is_ok():
-            obj = result.ok()
-            obj._set_obj_location_(
-                context.node.id,
-                context.credentials,
-            )
-            return Ok(obj)
-        return Err(result.err())
+
+        return obj
 
     @service_method(path="action.get_mock", name="get_mock", roles=GUEST_ROLE_LEVEL)
     def get_mock(

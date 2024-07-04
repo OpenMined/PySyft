@@ -3,8 +3,8 @@
 # third party
 
 # syft absolute
-from syft.store.errors import NotFoundError
-from syft.store.errors import StashError
+from syft.store.document_store_errors import NotFoundException
+from syft.store.document_store_errors import StashException
 
 # relative
 from ...node.credentials import SyftVerifyKey
@@ -34,7 +34,7 @@ class ProjectStash(NewBaseUIDStoreStash):
     )
 
     # TODO: Shouldn't this be a list of projects?
-    @as_result(StashError)
+    @as_result(StashException)
     def get_all_for_verify_key(
         self, credentials: SyftVerifyKey, verify_key: VerifyKeyPartitionKey
     ) -> list[Request]:
@@ -46,12 +46,12 @@ class ProjectStash(NewBaseUIDStoreStash):
             qks=qks,
         ).unwrap()
 
-    @as_result(StashError, NotFoundError)
+    @as_result(StashException, NotFoundException)
     def get_by_uid(self, credentials: SyftVerifyKey, uid: UID) -> Project:
         qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
         return self.query_one(credentials=credentials, qks=qks).unwrap()
 
-    @as_result(StashError, NotFoundError)
+    @as_result(StashException, NotFoundException)
     def get_by_name(self, credentials: SyftVerifyKey, project_name: str) -> Project:
         qks = QueryKeys(qks=[NamePartitionKey.with_obj(project_name)])
         return self.query_one(credentials=credentials, qks=qks).unwrap()

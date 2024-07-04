@@ -3,7 +3,6 @@ from typing import ClassVar
 
 # third party
 from pydantic import model_validator
-from result import Result
 from result import as_result
 
 # relative
@@ -16,6 +15,7 @@ from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store_errors import NotFoundException
+from ...store.document_store_errors import StashException
 from ...store.document_store_errors import TooManyItemsFoundException
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
@@ -233,7 +233,7 @@ class OutputStash(NewBaseUIDStoreStash):
     @as_result(StashException)
     def get_by_output_policy_id(
         self, credentials: SyftVerifyKey, output_policy_id: UID
-    ) -> Result[list[ExecutionOutput], str]:
+    ) -> list[ExecutionOutput]:
         qks = QueryKeys(
             qks=[OutputPolicyIdPartitionKey.with_obj(output_policy_id)],
         )

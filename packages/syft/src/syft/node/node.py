@@ -25,6 +25,8 @@ from typing import cast
 from nacl.signing import SigningKey
 from result import Err
 from result import Result
+from syft.store.document_store_errors import StashException
+from syft.types.result import as_result
 from typing_extensions import Self
 
 # relative
@@ -438,7 +440,7 @@ class Node(AbstractNode):
 
         self.post_init()
 
-        self.create_initial_settings(admin_email=root_email)
+        self.create_initial_settings(admin_email=root_email).unwrap()
 
         self.init_queue_manager(queue_config=self.queue_config)
 
@@ -1676,49 +1678,48 @@ class Node(AbstractNode):
     ) -> NodeServiceContext:
         return UnauthedServiceContext(node=self, login_credentials=login_credentials)
 
-    def create_initial_settings(self, admin_email: str) -> NodeSettings | None:
-        try:
-            settings_stash = SettingsStash(store=self.document_store)
-            if self.signing_key is None:
-                logger.debug(
-                    "create_initial_settings failed as there is no signing key"
-                )
-                return None
-            settings_exists = settings_stash.get_all(self.signing_key.verify_key).ok()
-            if settings_exists:
-                node_settings = settings_exists[0]
-                self.name = node_settings.name
-                self.association_request_auto_approval = (
-                    node_settings.association_request_auto_approval
-                )
-                return None
-            else:
-                # Currently we allow automatic user registration on enclaves,
-                # as enclaves do not have superusers
-                if self.node_type == NodeType.ENCLAVE:
-                    flags.CAN_REGISTER = True
-                new_settings = NodeSettings(
-                    id=self.id,
-                    name=self.name,
-                    verify_key=self.verify_key,
-                    node_type=self.node_type,
-                    deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
-                    signup_enabled=flags.CAN_REGISTER,
-                    admin_email=admin_email,
-                    node_side_type=self.node_side_type.value,  # type: ignore
-                    show_warnings=self.enable_warnings,
-                    association_request_auto_approval=self.association_request_auto_approval,
-                    default_worker_pool=get_default_worker_pool_name(),
-                )
-                result = settings_stash.set(
-                    credentials=self.signing_key.verify_key, settings=new_settings
-                )
-                if result.is_ok():
-                    return result.ok()
-                return None
-        except Exception as e:
-            logger.error("create_initial_settings failed", exc_info=e)
-            return None
+    @as_result(SyftException, StashException)
+    def create_initial_settings(self, admin_email: str) -> NodeSettings:
+        settings_stash = SettingsStash(store=self.document_store)
+
+        if self.signing_key is None:
+            logger.debug(
+                "create_initial_settings failed as there is no signing key"
+            )
+            raise SyftException(public_message="create_initial_settings failed as there is no signing key")
+
+        settings_exists = settings_stash.get_all(self.signing_key.verify_key).unwrap()
+
+        if settings_exists:
+            node_settings = settings_exists[0]
+            self.name = node_settings.name
+            self.association_request_auto_approval = (
+                node_settings.association_request_auto_approval
+            )
+            return node_settings
+        else:
+            # Currently we allow automatic user registration on enclaves,
+            # as enclaves do not have superusers
+            if self.node_type == NodeType.ENCLAVE:
+                flags.CAN_REGISTER = True
+
+            new_settings = NodeSettings(
+                id=self.id,
+                name=self.name,
+                verify_key=self.verify_key,
+                node_type=self.node_type,
+                deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
+                signup_enabled=flags.CAN_REGISTER,
+                admin_email=admin_email,
+                node_side_type=self.node_side_type.value,  # type: ignore
+                show_warnings=self.enable_warnings,
+                association_request_auto_approval=self.association_request_auto_approval,
+                default_worker_pool=get_default_worker_pool_name(),
+            )
+
+            return settings_stash.set(
+                credentials=self.signing_key.verify_key, obj=new_settings
+            ).unwrap()
 
 
 def create_admin_new(

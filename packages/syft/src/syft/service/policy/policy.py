@@ -15,6 +15,7 @@ import sys
 import types
 from typing import Any
 from typing import ClassVar
+from typing import TYPE_CHECKING
 
 # third party
 from RestrictedPython import compile_restricted
@@ -34,7 +35,11 @@ from ...node.credentials import SyftVerifyKey
 from ...serde.recursive_primitives import recursive_serde_register_type
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
+from ...store.document_store_errors import NotFoundException
+from ...store.document_store_errors import StashException
 from ...types.datetime import DateTime
+from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
@@ -593,70 +598,78 @@ class MixedInputPolicy(InputPolicy):
         return Ok(True)
 
 
+@as_result(SyftException, NotFoundException, StashException)
 def retrieve_from_db(
     code_item_id: UID, allowed_inputs: dict[str, UID], context: AuthedServiceContext
-) -> Result[dict[str, Any], str]:
+) -> dict[str, Any]:
     # relative
     from ...service.action.action_object import TwinMode
 
-    action_service = context.node.get_service("actionservice")
+    if TYPE_CHECKING:
+        # relative
+        from ..action.action_service import ActionService
+
+    action_service: ActionService = context.node.get_service("actionservice")
     code_inputs = {}
 
     # When we are retrieving the code from the database, we need to use the node's
     # verify key as the credentials. This is because when we approve the code, we
     # we allow the private data to be used only for this specific code.
     # but we are not modifying the permissions of the private data
-
     root_context = AuthedServiceContext(
         node=context.node, credentials=context.node.verify_key
     )
-    if context.node.node_type == NodeType.DOMAIN:
-        for var_name, arg_id in allowed_inputs.items():
-            kwarg_value = action_service._get(
-                context=root_context,
-                uid=arg_id,
-                twin_mode=TwinMode.NONE,
-                has_permission=True,
-            )
-            if kwarg_value.is_err():
-                return Err(kwarg_value.err())
-            code_inputs[var_name] = kwarg_value.ok()
-    else:
-        raise Exception(
-            f"Invalid Node Type for Code Submission:{context.node.node_type}"
+
+    if context.node.node_type != NodeType.DOMAIN:
+        raise SyftException(
+            public_message=f"Invalid Node Type for Code Submission:{context.node.node_type}"
         )
-    return Ok(code_inputs)
+
+    for var_name, arg_id in allowed_inputs.items():
+        code_inputs[var_name] = action_service._get(
+            context=root_context,
+            uid=arg_id,
+            twin_mode=TwinMode.NONE,
+            has_permission=True,
+        ).unwrap()
+
+    return code_inputs
 
 
+@as_result(SyftException)
 def allowed_ids_only(
     allowed_inputs: dict[NodeIdentity, Any],
     kwargs: dict[str, Any],
     context: AuthedServiceContext,
 ) -> dict[NodeIdentity, UID]:
-    if context.node.node_type == NodeType.DOMAIN:
-        node_identity = NodeIdentity(
-            node_name=context.node.name,
-            node_id=context.node.id,
-            verify_key=context.node.signing_key.verify_key,
+    if context.node.node_type != NodeType.DOMAIN:
+        raise SyftException(
+            public_message=f"Invalid Node Type for Code Submission:{context.node.node_type}"
         )
-        allowed_inputs = allowed_inputs.get(node_identity, {})
-    else:
-        raise Exception(
-            f"Invalid Node Type for Code Submission:{context.node.node_type}"
-        )
+
+    node_identity = NodeIdentity(
+        node_name=context.node.name,
+        node_id=context.node.id,
+        verify_key=context.node.signing_key.verify_key,
+    )
+    allowed_inputs = allowed_inputs.get(node_identity, {})
+
     filtered_kwargs = {}
     for key in allowed_inputs.keys():
         if key in kwargs:
             value = kwargs[key]
             uid = value
+
             if not isinstance(uid, UID):
                 uid = getattr(value, "id", None)
 
             if uid != allowed_inputs[key]:
-                raise Exception(
-                    f"Input with uid: {uid} for `{key}` not in allowed inputs: {allowed_inputs}"
+                raise SyftException(
+                    public_message=f"Input with uid: {uid} for `{key}` not in allowed inputs: {allowed_inputs}"
                 )
+
             filtered_kwargs[key] = value
+
     return filtered_kwargs
 
 
@@ -666,57 +679,55 @@ class ExactMatch(InputPolicy):
     __canonical_name__ = "ExactMatch"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    def filter_kwargs(
+    # TODO: Improve exception handling here
+    @as_result(SyftException)
+    def filter_kwargs(  # type: ignore
         self,
         kwargs: dict[Any, Any],
         context: AuthedServiceContext,
         code_item_id: UID,
-    ) -> Result[dict[Any, Any], str]:
-        try:
-            allowed_inputs = allowed_ids_only(
-                allowed_inputs=self.inputs, kwargs=kwargs, context=context
-            )
+    ) -> dict[Any, Any]:
+        allowed_inputs = allowed_ids_only(
+            allowed_inputs=self.inputs, kwargs=kwargs, context=context
+        ).unwrap()
 
-            results = retrieve_from_db(
-                code_item_id=code_item_id,
-                allowed_inputs=allowed_inputs,
-                context=context,
-            )
-        except Exception as e:
-            return Err(str(e))
-        return results
+        return retrieve_from_db(
+            code_item_id=code_item_id,
+            allowed_inputs=allowed_inputs,
+            context=context,
+        ).unwrap()
 
-    def _is_valid(
+    @as_result(SyftException)
+    def _is_valid(  # type: ignore
         self,
         context: AuthedServiceContext,
         usr_input_kwargs: dict,
         code_item_id: UID,
-    ) -> Result[bool, str]:
+    ) -> bool:
         filtered_input_kwargs = self.filter_kwargs(
             kwargs=usr_input_kwargs,
             context=context,
             code_item_id=code_item_id,
-        )
-
-        if filtered_input_kwargs.is_err():
-            return filtered_input_kwargs
-
-        filtered_input_kwargs = filtered_input_kwargs.ok()
+        ).unwrap()
 
         expected_input_kwargs = set()
         for _inp_kwargs in self.inputs.values():
             for k in _inp_kwargs.keys():
                 if k not in usr_input_kwargs:
-                    return Err(f"Function missing required keyword argument: '{k}'")
+                    raise SyftException(
+                        public_message=f"Function missing required keyword argument: '{k}'"
+                    )
             expected_input_kwargs.update(_inp_kwargs.keys())
 
         permitted_input_kwargs = list(filtered_input_kwargs.keys())
+
         not_approved_kwargs = set(expected_input_kwargs) - set(permitted_input_kwargs)
         if len(not_approved_kwargs) > 0:
-            return Err(
-                f"Function arguments: {not_approved_kwargs} are not approved yet."
+            raise SyftException(
+                public_message=f"Function arguments: {not_approved_kwargs} are not approved yet."
             )
-        return Ok(True)
+
+        return True
 
 
 @serializable()
@@ -769,44 +780,33 @@ class OutputPolicyExecuteCount(OutputPolicy):
     limit: int
 
     @property
-    def count(self) -> SyftError | int:
-        api = APIRegistry.api_for(self.syft_node_location, self.syft_client_verify_key)
-        if api is None:
-            raise ValueError(
-                f"api is None. You must login to {self.syft_node_location}"
-            )
-        output_history = api.services.output.get_by_output_policy_id(self.id)
+    def is_valid(self) -> bool:  # type: ignore
+        return self.count().unwrap() < self.limit
 
-        if isinstance(output_history, SyftError):
-            return output_history
+    @as_result(SyftException)
+    def count(self) -> int:
+        api = APIRegistry._api_for(
+            self.syft_node_location, self.syft_client_verify_key
+        ).unwrap()
+        output_history = api.services.output.get_by_output_policy_id(self.id)
         return len(output_history)
 
-    @property
-    def is_valid(self) -> SyftSuccess | SyftError:  # type: ignore
-        execution_count = self.count
-        is_valid = execution_count < self.limit
-        if is_valid:
-            return SyftSuccess(
-                message=f"Policy is still valid. count: {execution_count} < limit: {self.limit}"
-            )
-        return SyftError(
-            message=f"Policy is no longer valid. count: {execution_count} >= limit: {self.limit}"
-        )
-
-    def _is_valid(self, context: AuthedServiceContext) -> SyftSuccess | SyftError:
+    def _is_valid(self, context: AuthedServiceContext) -> SyftSuccess:
         output_service = context.node.get_service("outputservice")
-        output_history = output_service.get_by_output_policy_id(context, self.id)
-        if isinstance(output_history, SyftError):
-            return output_history
+        output_history = output_service.get_by_output_policy_id(
+            context, self.id
+        )  # raises
+
         execution_count = len(output_history)
 
-        is_valid = execution_count < self.limit
-        if is_valid:
-            return SyftSuccess(
-                message=f"Policy is still valid. count: {execution_count} < limit: {self.limit}"
+        if execution_count >= self.limit:
+            raise SyftException(
+                public_message=f"Policy is no longer valid. count: {execution_count} >= limit: {self.limit}"
             )
-        return SyftError(
-            message=f"Policy is no longer valid. count: {execution_count} >= limit: {self.limit}"
+
+        return SyftSuccess(
+            message=f"Policy is still valid. count: {execution_count} < limit: {self.limit}",
+            value=True,
         )
 
     def public_state(self) -> dict[str, int]:
@@ -1005,17 +1005,19 @@ def process_class_code(raw_code: str, class_name: str) -> str:
     v = GlobalsVisitor()
     v.visit(tree)
     if len(tree.body) != 1 or not isinstance(tree.body[0], ast.ClassDef):
-        raise Exception(
-            "Class code should only contain the Class definition for your policy"
+        raise SyftException(
+            public_message="Class code should only contain the Class definition for your policy"
         )
     old_class = tree.body[0]
     if len(old_class.bases) != 1 or old_class.bases[0].attr not in [
         CustomInputPolicy.__name__,
         CustomOutputPolicy.__name__,
     ]:
-        raise Exception(
-            f"Class code should either implement {CustomInputPolicy.__name__} "
-            f"or {CustomOutputPolicy.__name__}"
+        raise SyftException(
+            public_message=(
+                f"Class code should either implement {CustomInputPolicy.__name__}"
+                f" or {CustomOutputPolicy.__name__}"
+            )
         )
 
     # TODO: changes the bases
@@ -1207,8 +1209,10 @@ def load_policy_code(user_policy: UserPolicy) -> Any:
     try:
         policy_class = execute_policy_code(user_policy)
         return policy_class
-    except Exception as e:
-        raise Exception(f"Exception loading code. {user_policy}. {e}")
+    except SyftException as exc:
+        raise SyftException.from_exception(
+            exc, public_message=f"Exception loading code. {user_policy}."
+        )
 
 
 def init_policy(user_policy: UserPolicy, init_args: dict[str, Any]) -> Any:
@@ -1222,7 +1226,9 @@ def init_policy(user_policy: UserPolicy, init_args: dict[str, Any]) -> Any:
     if len(init_args) and isinstance(list(init_args.keys())[0], NodeIdentity):
         unwrapped_init_kwargs = init_args
         if len(init_args) > 1:
-            raise Exception("You shoudn't have more than one Node Identity.")
+            raise SyftException(
+                public_message="You shoudn't have more than one Node Identity."
+            )
         # Otherwise, unwrapp it
         init_args = init_args[list(init_args.keys())[0]]
 

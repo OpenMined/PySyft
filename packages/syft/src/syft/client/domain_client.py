@@ -172,6 +172,7 @@ class DomainClient(SyftClient):
         valid = dataset.check()
         if isinstance(valid, SyftError):
             return valid
+
         return self.api.services.dataset.add(dataset=dataset)
 
     def refresh(self) -> None:
