@@ -395,6 +395,26 @@ def test_submit_invalid_name(worker) -> None:
         client.code.submit(valid_name_2)
 
 
+def test_submit_code_with_global_var(guest_client: DomainClient) -> None:
+    @sy.syft_function(
+        input_policy=sy.ExactMatch(), output_policy=sy.SingleExecutionExactOutput()
+    )
+    def mock_syft_func_with_global():
+        global x
+        return x
+
+    res = guest_client.code.submit(mock_syft_func_with_global)
+    assert isinstance(res, SyftError)
+
+    @sy.syft_function_single_use()
+    def mock_syft_func_single_use_with_global():
+        global x
+        return x
+
+    res = guest_client.code.submit(mock_syft_func_single_use_with_global)
+    assert isinstance(res, SyftError)
+
+
 def test_request_existing_usercodesubmit(worker) -> None:
     root_domain_client = worker.root_client
 

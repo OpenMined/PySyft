@@ -396,7 +396,7 @@ class CreateAsset(SyftObject):
     uploader: Contributor | None = None
 
     __repr_attrs__ = ["name"]
-    model_config = ConfigDict(validate_assignment=True)
+    model_config = ConfigDict(validate_assignment=True, extra="forbid")
 
     def __init__(self, description: str | None = None, **data: Any) -> None:
         if isinstance(description, str):
@@ -674,7 +674,7 @@ class CreateDataset(Dataset):
     created_at: DateTime | None = None  # type: ignore[assignment]
     uploader: Contributor | None = None  # type: ignore[assignment]
 
-    model_config = ConfigDict(validate_assignment=True)
+    model_config = ConfigDict(validate_assignment=True, extra="forbid")
 
     def _check_asset_must_contain_mock(self) -> None:
         _check_asset_must_contain_mock(self.asset_list)
@@ -736,7 +736,7 @@ class CreateDataset(Dataset):
                 else:
                     self.asset_list[i] = asset
                     return SyftSuccess(
-                        f"Asset {asset.name} has been successfully replaced."
+                        message=f"Asset {asset.name} has been successfully replaced."
                     )
 
         self.asset_list.append(asset)
