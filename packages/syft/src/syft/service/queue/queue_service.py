@@ -31,9 +31,6 @@ class QueueService(AbstractService):
     )
     def get_subjobs(
         self, context: AuthedServiceContext, uid: UID
-    ) -> list[QueueItem] | SyftError:
-        res = self.stash.get_by_parent_id(context.credentials, uid=uid)
-        if res.is_err():
-            return SyftError(message=res.err())
-        else:
-            return res.ok()
+    ) -> list[QueueItem]:
+        # FIX: There is no get_by_parent_id in QueueStash
+        return self.stash.get_by_parent_id(context.credentials, uid=uid)
