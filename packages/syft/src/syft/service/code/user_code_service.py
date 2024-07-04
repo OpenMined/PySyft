@@ -51,12 +51,12 @@ from .user_code import load_approved_policy_code
 from .user_code_stash import UserCodeStash
 
 
-class HasCodePermissionEnum(Enum, str):
+class HasCodePermissionEnum(str, Enum):
     ACCEPTED = "Has permission"
     DENIED = "Permission denied"
 
 
-class IsExecutionAllowedEnum(Enum, str):
+class IsExecutionAllowedEnum(str, Enum):
     ALLOWED = "Execution allowed"
     NO_PERMISSION = "Execution denied: You do not have permission to execute code"
     NOT_APPROVED = "Execution denied: Your code is waiting for approval"

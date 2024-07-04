@@ -136,7 +136,7 @@ class UserStash(NewBaseStash):
                 raise StashException
 
     @as_result(StashException, NotFoundException)
-    def _get_by_email(self, credentials: SyftVerifyKey, email: str) -> User:
+    def get_by_email(self, credentials: SyftVerifyKey, email: str) -> User:
         qks = QueryKeys(qks=[EmailPartitionKey.with_obj(email)])
 
         try:
