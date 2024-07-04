@@ -151,7 +151,7 @@ class ExceptionFilter(tuple):
 
         try:
             imported_module = import_module(module)
-        except ModuleNotFoundError:
+        except ModuleNotFoundException:
             # TODO: log warning
             exceptions = ()
         else:

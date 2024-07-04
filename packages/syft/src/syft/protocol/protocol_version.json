@@ -423,6 +423,54 @@
           "hash": "e124f56ddf4565df2be056553eecd15de7c80bd5f5fd0d06e8ff7815bb05563a",
           "action": "add"
         }
+      },
+      "BaseConfig": {
+        "2": {
+          "version": 2,
+          "hash": "383d9ce8873520c9224e00797a96d6dc2e64f054795e3b1de2ac7cd8ce68df86",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "d235087b08f56f9038a4162b588f2de2c4e5711d34657c3d207c278a80116ddb",
+          "action": "add"
+        }
+      },
+      "ServiceConfig": {
+        "1": {
+          "version": 1,
+          "hash": "bca789133d80b91d5097bfed595d9120d968b26bd537137cb14b341007096215",
+          "action": "add"
+        },
+        "2": {
+          "version": 2,
+          "hash": "4c79a399bbbd8571b712bdb957ff3bc4903aae59cc06bd584c248860dfdab9fe",
+          "action": "remove"
+        }
+      },
+      "LibConfig": {
+        "2": {
+          "version": 2,
+          "hash": "48924a4e5c9dfbc22ef7f2449ca82c7c8d6ae6f6eae070b87747e8a971bd1cb4",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "e9578bd3bf2a81e47f16c44ff0eeee0e457b660ef42119e580d46d86dade9747",
+          "action": "add"
+        }
+      },
+      "APIEndpoint": {
+        "2": {
+          "version": 2,
+          "hash": "1be1f6793478cd2e4a0cc84713426b2d5586969e98058f4e8b91fc19293cf445",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "22cff7416099f1a11655411f746c37cf217f0b5eff03f396ba846df6dd6485c7",
+          "action": "add"
+        }
       }
     }
   }

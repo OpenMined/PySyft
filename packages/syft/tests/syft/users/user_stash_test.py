@@ -127,7 +127,7 @@ def test_userstash_get_by_signing_key(
     assert searched_user is None
 
 
-def test_userstash_get_by_verify_key(
+def test_userstashget_by_verify_key(
     root_domain_client, user_stash: UserStash, guest_user: User
 ) -> None:
     # prepare: add mock data

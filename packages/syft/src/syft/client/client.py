@@ -10,6 +10,7 @@ from enum import Enum
 from getpass import getpass
 import json
 import logging
+import traceback
 from typing import Any
 from typing import TYPE_CHECKING
 from typing import cast
@@ -50,6 +51,7 @@ from ..service.user.user import UserPrivateKey
 from ..service.user.user import UserView
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
+from ..types.errors import SyftException
 from ..types.grid_url import GridURL
 from ..types.syft_object import SYFT_OBJECT_VERSION_3
 from ..types.uid import UID
@@ -532,7 +534,14 @@ class PythonConnection(NodeConnection):
         method = self.node.get_method_with_context(
             UserService.exchange_credentials, context
         )
-        result = method()
+        try:
+            result = method()
+        except SyftException as exc:
+            result = SyftError.from_exception(context=context, exc=exc)
+        except Exception:
+            result = SyftError(
+                message=f"Exception calling exchange credentials. {traceback.format_exc()}"
+            )
         return result
 
     def login(

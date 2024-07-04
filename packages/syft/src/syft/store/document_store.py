@@ -31,8 +31,8 @@ from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
 from ..util.telemetry import instrument
-from .document_store_errors import NotFoundError
-from .document_store_errors import StashError
+from .document_store_errors import NotFoundException
+from .document_store_errors import StashException
 from .locks import LockingConfig
 from .locks import NoLockingConfig
 from .locks import SyftLock
@@ -50,6 +50,13 @@ class BasePartitionSettings(SyftBaseModel):
     name: str
 
 
+def new_first_or_none(result: Any) -> Ok:
+    if hasattr(result, "__len__") and len(result) > 0:
+        return result[0]
+    return None
+
+
+# todo: remove
 def first_or_none(result: Any) -> Ok:
     if hasattr(result, "__len__") and len(result) > 0:
         return Ok(result[0])
@@ -609,10 +616,10 @@ class BaseStash:
             else Err(f"{type(obj)} does not match required type: {type_}")
         )
 
-    @as_result(StashError)
+    @as_result(StashException)
     def _check_type(self, obj: Any, type_: type) -> Any:
         if not isinstance(obj, type_):
-            raise StashError(f"{type(obj)} does not match required type: {type_}")
+            raise StashException(f"{type(obj)} does not match required type: {type_}")
         return obj
 
     def get_all(
@@ -838,13 +845,13 @@ class NewBaseStash:
         self.store = store
         self.partition = store.partition(type(self).settings)
 
-    @as_result(StashError)
+    @as_result(StashException)
     def check_type(self, obj: Any, type_: type) -> Any:
         if not isinstance(obj, type_):
-            raise StashError(f"{type(obj)} does not match required type: {type_}")
+            raise StashException(f"{type(obj)} does not match required type: {type_}")
         return obj
 
-    @as_result(StashError)
+    @as_result(StashException)
     def get_all(
         self,
         credentials: SyftVerifyKey,
@@ -857,9 +864,9 @@ class NewBaseStash:
             case Ok(value):
                 return value
             case Err(err):
-                raise StashError(err)
+                raise StashException(err)
             case _:
-                raise StashError("Unexpected error")
+                raise StashException("Unexpected error")
 
     def add_permissions(self, permissions: list[ActionObjectPermission]) -> None:
         self.partition.add_permissions(permissions)
@@ -879,7 +886,7 @@ class NewBaseStash:
     def __len__(self) -> int:
         return len(self.partition)
 
-    @as_result(StashError)
+    @as_result(StashException)
     def set(
         self,
         credentials: SyftVerifyKey,
@@ -900,11 +907,11 @@ class NewBaseStash:
             case Ok(value):
                 return value
             case Err(err):
-                raise StashError(err)
+                raise StashException(err)
             case _:
-                raise StashError("Unexpected error")
+                raise StashException("Unexpected error")
 
-    @as_result(StashError)
+    @as_result(StashException)
     def query_all(
         self,
         credentials: SyftVerifyKey,
@@ -924,7 +931,7 @@ class NewBaseStash:
             elif self.partition.matches_searchable_cks(pk):
                 searchable_keys.append(qk)
             else:
-                raise StashError(
+                raise StashException(
                     f"{qk} not in {type(self.partition)} unique or searchable keys"
                 )
 
@@ -942,11 +949,11 @@ class NewBaseStash:
             case Ok(value):
                 return value
             case Err(err):
-                raise StashError(err)
+                raise StashException(err)
             case _:
-                raise StashError("Unexpected error")
+                raise StashException("Unexpected error")
 
-    @as_result(StashError)
+    @as_result(StashException)
     def query_all_kwargs(
         self,
         credentials: SyftVerifyKey,
@@ -959,58 +966,46 @@ class NewBaseStash:
             credentials=credentials, qks=qks, order_by=order_by
         ).unwrap()
 
-    @as_result(StashError, NotFoundError)
+    @as_result(StashException, NotFoundException)
     def query_one(
         self,
         credentials: SyftVerifyKey,
         qks: QueryKey | QueryKeys,
         order_by: PartitionKey | None = None,
     ) -> NewBaseStash.object_type:
-        result = self.query_all(credentials=credentials, qks=qks, order_by=order_by)
-        result = first_or_none(result)
+        result = self.query_all(
+            credentials=credentials, qks=qks, order_by=order_by
+        ).unwrap()
+        value = new_first_or_none(result)
+        if value is None:
+            raise NotFoundException()
+        return value
 
-        match result:
-            case Ok(None):
-                raise NotFoundError
-            case Ok(value):
-                return value
-            case Err(err):
-                raise StashError(err)
-            case _:
-                raise StashError("Unexpected error")
-
-    @as_result(StashError, NotFoundError)
+    @as_result(StashException, NotFoundException)
     def query_one_kwargs(
         self,
         credentials: SyftVerifyKey,
         **kwargs: dict[str, Any],
     ) -> NewBaseStash.object_type:
         result = self.query_all_kwargs(credentials, **kwargs)
-        result = first_or_none(result)
+        value = new_first_or_none(result)
+        if value is None:
+            raise NotFoundException()
+        return value
 
-        match result:
-            case Ok(None):
-                raise NotFoundError
-            case Ok(value):
-                return value
-            case Err(err):
-                raise StashError(err)
-            case _:
-                raise StashError("Unexpected error")
-
-    @as_result(StashError)
+    @as_result(StashException)
     def find_all(
         self, credentials: SyftVerifyKey, **kwargs: dict[str, Any]
     ) -> list[NewBaseStash.object_type]:
         return self.query_all_kwargs(credentials=credentials, **kwargs).unwrap()
 
-    @as_result(StashError, NotFoundError)
+    @as_result(StashException, NotFoundException)
     def find_one(
         self, credentials: SyftVerifyKey, **kwargs: dict[str, Any]
     ) -> NewBaseStash.object_type:
         return self.query_one_kwargs(credentials=credentials, **kwargs).unwrap()
 
-    @as_result(StashError, NotFoundError)
+    @as_result(StashException, NotFoundException)
     def find_and_delete(
         self, credentials: SyftVerifyKey, **kwargs: dict[str, Any]
     ) -> Literal[True]:
@@ -1018,7 +1013,7 @@ class NewBaseStash:
         qk = self.partition.store_query_key(obj)
         return self.delete(credentials=credentials, qk=qk).unwrap()
 
-    @as_result(StashError)
+    @as_result(StashException)
     def delete(
         self, credentials: SyftVerifyKey, qk: QueryKey, has_permission: bool = False
     ) -> Literal[True]:
@@ -1030,11 +1025,11 @@ class NewBaseStash:
             case Ok(_):
                 return True
             case Err(err):
-                raise StashError(str(err))
+                raise StashException(str(err))
             case _:
-                raise StashError("Unexpected error")
+                raise StashException("Unexpected error")
 
-    @as_result(StashError)
+    @as_result(StashException)
     def update(
         self,
         credentials: SyftVerifyKey,
@@ -1050,20 +1045,20 @@ class NewBaseStash:
             case Ok(value):
                 return value
             case Err(err):
-                raise StashError(err)
+                raise StashException(err)
             case _:
-                raise StashError("Unexpected error")
+                raise StashException("Unexpected error")
 
 
 @instrument
 class NewBaseUIDStoreStash(NewBaseStash):
-    @as_result(StashError)
+    @as_result(StashException)
     def delete_by_uid(self, credentials: SyftVerifyKey, uid: UID) -> UID:
         qk = UIDPartitionKey.with_obj(uid)
         super().delete(credentials=credentials, qk=qk)
         return uid
 
-    @as_result(StashError, NotFoundError)
+    @as_result(StashException, NotFoundException)
     def get_by_uid(
         self, credentials: SyftVerifyKey, uid: UID
     ) -> NewBaseUIDStoreStash.object_type:
@@ -1071,15 +1066,15 @@ class NewBaseUIDStoreStash(NewBaseStash):
 
         match result:
             case Ok(None):
-                raise NotFoundError
+                raise NotFoundException
             case Ok(value):
                 return value
             case Err(err):
-                raise StashError(err)
+                raise StashException(err)
             case _:
-                raise StashError("Unexpected error")
+                raise StashException("Unexpected error")
 
-    @as_result(StashError)
+    @as_result(StashException)
     def set(
         self,
         credentials: SyftVerifyKey,

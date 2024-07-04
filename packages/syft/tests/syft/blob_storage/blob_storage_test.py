@@ -102,7 +102,7 @@ def test_blob_storage_delete(authed_context, blob_storage):
     blob_deposit = blob_storage.allocate(authed_context, blob_data)
     blob_storage.delete(authed_context, blob_deposit.blob_storage_entry_id)
 
-    with pytest.raises(FileNotFoundError):
+    with pytest.raises(FileNotFoundException):
         blob_storage.read(authed_context, blob_deposit.blob_storage_entry_id)
 
 

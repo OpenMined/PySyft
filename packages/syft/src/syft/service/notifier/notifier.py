@@ -72,7 +72,9 @@ class EmailNotifier(BaseNotifier):
         try:
             user_service = context.node.get_service("userservice")
 
-            receiver = user_service.get_by_verify_key(notification.to_user_verify_key)
+            receiver = user_service.get_by_verify_key(
+                notification.to_user_verify_key
+            ).unwrap()
 
             if not receiver.notifications_enabled[NOTIFIERS.EMAIL]:
                 return Ok(

@@ -1731,8 +1731,7 @@ def create_admin_new(
 
     email_exists = user_stash._email_exists(email=email).unwrap()
     if email_exists:
-        # TODO: Fail verbosely here!
-        return None
+        print("admin not created, already exists")
 
     create_user = UserCreate(
         name=name,

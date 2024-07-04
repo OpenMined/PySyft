@@ -352,13 +352,7 @@ class ProjectService(AbstractService):
         user_service = context.node.get_service("userservice")
         user = user_service.stash.get_by_verify_key(
             credentials=context.credentials, verify_key=context.credentials
-        )
-        if user.is_err():
-            return SyftError(message=str(user.err()))
-
-        user = user.ok()
-        if not user:
-            return SyftError(message="User not found! Kindly register user first")
+        ).unwrap()
 
         project.user_signing_key = user.signing_key
 

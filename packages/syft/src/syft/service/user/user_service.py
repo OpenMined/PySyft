@@ -11,8 +11,8 @@ from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
-from ...store.errors import NotFoundError
-from ...store.errors import StashError
+from ...store.document_store_errors import NotFoundException
+from ...store.document_store_errors import StashException
 from ...store.linked_obj import LinkedObject
 from ...types.errors import CredentialsError
 from ...types.result import as_result
@@ -102,9 +102,9 @@ class UserService(AbstractService):
 
     def _check_if_email_exists(self, credentials: SyftVerifyKey, email: str) -> bool:
         try:
-            self.stash._get_by_email(credentials=credentials, email=email).unwrap()
+            self.stash.get_by_email(credentials=credentials, email=email).unwrap()
             return True
-        except NotFoundError:
+        except NotFoundException:
             return False
 
     @service_method(path="user.create", name="create")
@@ -149,7 +149,7 @@ class UserService(AbstractService):
     def signing_key_for_verify_key(
         self, verify_key: SyftVerifyKey
     ) -> UserPrivateKey | SyftError:
-        user = self.stash._get_by_verify_key(
+        user = self.stash.get_by_verify_key(
             credentials=self.stash._admin_verify_key(), verify_key=verify_key
         ).unwrap()
 
@@ -162,7 +162,7 @@ class UserService(AbstractService):
             # they could be different
             # TODO: This fn is cryptic -- when does each situation occur?
             if isinstance(credentials, SyftVerifyKey):
-                user = self.stash._get_by_verify_key(
+                user = self.stash.get_by_verify_key(
                     credentials=credentials, verify_key=credentials
                 ).unwrap()
             elif isinstance(credentials, SyftSigningKey):
@@ -172,7 +172,7 @@ class UserService(AbstractService):
                 ).unwrap()
             else:
                 raise CredentialsError
-        except NotFoundError:
+        except NotFoundException:
             return ServiceRole.GUEST
 
         return cast(ServiceRole, user.role)
@@ -196,9 +196,9 @@ class UserService(AbstractService):
         _users = [user.to(UserView) for user in _users] if _users is not None else []
         return _paginate(_users, page_size, page_index)
 
-    @as_result(StashError, NotFoundError)
+    @as_result(StashException, NotFoundException)
     def get_user_id_for_credentials(self, credentials: SyftVerifyKey) -> UID:
-        user = self.stash._get_by_verify_key(
+        user = self.stash.get_by_verify_key(
             credentials=credentials, verify_key=credentials
         ).unwrap()
         return cast(UID, user.id)
@@ -207,7 +207,7 @@ class UserService(AbstractService):
         path="user.get_current_user", name="get_current_user", roles=GUEST_ROLE_LEVEL
     )
     def get_current_user(self, context: AuthedServiceContext) -> UserView:
-        user = self.stash._get_by_verify_key(
+        user = self.stash.get_by_verify_key(
             credentials=context.credentials, verify_key=context.credentials
         ).unwrap()
         return user.to(UserView)
@@ -218,7 +218,7 @@ class UserService(AbstractService):
     def get_by_verify_key_endpoint(
         self, context: AuthedServiceContext, verify_key: SyftVerifyKey
     ) -> UserView:
-        user = self.stash._get_by_verify_key(
+        user = self.stash.get_by_verify_key(
             credentials=context.credentials, verify_key=verify_key
         ).unwrap()
         return user.to(UserView)
@@ -344,7 +344,7 @@ class UserService(AbstractService):
         """Verify user
         TODO: We might want to use a SyftObject instead
         """
-        user = self.stash._get_by_email(
+        user = self.stash.get_by_email(
             credentials=self.admin_verify_key(), email=context.login_credentials.email
         ).unwrap()
 
@@ -425,29 +425,32 @@ class UserService(AbstractService):
 
         return user.to(UserPrivateKey)
 
+    @as_result(StashException)
     def user_verify_key(self, email: str) -> SyftVerifyKey:
         # we are bypassing permissions here, so dont use to return a result directly to the user
         credentials = self.admin_verify_key()
-        user = self.stash._get_by_email(credentials=credentials, email=email).unwrap()
+        user = self.stash.get_by_email(credentials=credentials, email=email).unwrap()
         if user.verify_key is None:
             raise UserError(f"User {email} has no verify key")
         return user.verify_key
 
+    @as_result(StashException)
     def get_by_verify_key(self, verify_key: SyftVerifyKey) -> UserView:
         # we are bypassing permissions here, so dont use to return a result directly to the user
         credentials = self.admin_verify_key()
-        user = self.stash._get_by_verify_key(
+        user = self.stash.get_by_verify_key(
             credentials=credentials, verify_key=verify_key
         ).unwrap()
         return user.to(UserView)
 
+    @as_result(StashException)
     def _set_notification_status(
         self,
         notifier_type: NOTIFIERS,
         new_status: bool,
         verify_key: SyftVerifyKey,
     ) -> None:
-        user = self.stash._get_by_verify_key(
+        user = self.stash.get_by_verify_key(
             credentials=verify_key, verify_key=verify_key
         ).unwrap()
         user.notifications_enabled[notifier_type] = new_status
@@ -458,7 +461,7 @@ class UserService(AbstractService):
     ) -> SyftSuccess:
         self._set_notification_status(
             notifier_type=notifier_type, new_status=True, verify_key=context.credentials
-        )
+        ).unwrap()
         return SyftSuccess(message="Notifications enabled successfully!")
 
     def disable_notifications(
@@ -468,7 +471,7 @@ class UserService(AbstractService):
             notifier_type=notifier_type,
             new_status=False,
             verify_key=context.credentials,
-        )
+        ).unwrap()
 
         return SyftSuccess(message="Notifications disabled successfully!")
 

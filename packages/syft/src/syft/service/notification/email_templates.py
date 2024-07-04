@@ -29,9 +29,11 @@ class OnBoardEmailTemplate(EmailTemplate):
     @staticmethod
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
         user_service = context.node.get_service("userservice")
-        admin_name = user_service.get_by_verify_key(
-            user_service.admin_verify_key()
-        ).name
+        admin_name = (
+            user_service.get_by_verify_key(user_service.admin_verify_key())
+            .unwrap()
+            .name
+        )
 
         head = (
             f"""
