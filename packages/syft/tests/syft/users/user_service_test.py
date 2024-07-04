@@ -1,15 +1,12 @@
 # stdlib
-from typing import Literal, NoReturn
+from typing import Literal
+from typing import NoReturn
 from unittest import mock
 
 # third party
 from faker import Faker
-from pytest import MonkeyPatch
 import pytest
-from syft.types.result import as_result
-from syft.store.errors import NotFoundError, StashError
-from syft.types.result import Err
-from syft.types.result import Ok
+from pytest import MonkeyPatch
 
 # syft absolute
 from syft.node.credentials import SyftVerifyKey
@@ -18,7 +15,6 @@ from syft.service.context import AuthedServiceContext
 from syft.service.context import NodeServiceContext
 from syft.service.context import UnauthedServiceContext
 from syft.service.response import SyftError
-from syft.service.response import SyftSuccess
 from syft.service.user import errors as user_errors
 from syft.service.user.user import User
 from syft.service.user.user import UserCreate
@@ -27,6 +23,11 @@ from syft.service.user.user import UserUpdate
 from syft.service.user.user import UserView
 from syft.service.user.user_roles import ServiceRole
 from syft.service.user.user_service import UserService
+from syft.store.errors import NotFoundError
+from syft.store.errors import StashError
+from syft.types.result import Err
+from syft.types.result import Ok
+from syft.types.result import as_result
 from syft.types.uid import UID
 
 
@@ -52,6 +53,7 @@ def test_userservice_create_when_user_exists(
     with pytest.raises(user_errors.UserCreateError):
         user_service.create(authed_context, guest_create_user)
 
+
 def test_userservice_create_error_on_get_by_email(
     monkeypatch: MonkeyPatch,
     user_service: UserService,
@@ -68,9 +70,12 @@ def test_userservice_create_error_on_get_by_email(
         user_service.create(authed_context, guest_create_user)
 
     assert exc.type == user_errors.UserCreateError
-    assert exc.value._private_message == f"User {guest_create_user.email} already exists"
+    assert (
+        exc.value._private_message == f"User {guest_create_user.email} already exists"
+    )
     assert exc.value.public == "Failed to create user."
     assert str(exc.value) == "Failed to create user."
+
 
 def test_userservice_create_success(
     monkeypatch: MonkeyPatch,
@@ -324,9 +329,7 @@ def test_userservice_update_get_by_uid_fails(
     monkeypatch.setattr(user_service.stash, "_get_by_uid", mock_get_by_uid)
 
     with pytest.raises(NotFoundError) as exc:
-        user_service.update(
-            authed_context, uid=random_uid, user_update=update_user
-        )
+        user_service.update(authed_context, uid=random_uid, user_update=update_user)
 
     assert exc.type == NotFoundError
     assert exc.value.public == expected_error_msg
@@ -348,9 +351,7 @@ def test_userservice_update_no_user_exists(
     monkeypatch.setattr(user_service.stash, "_get_by_uid", mock_get_by_uid)
 
     with pytest.raises(NotFoundError) as exc:
-        user_service.update(
-            authed_context, uid=random_uid, user_update=update_user
-        )
+        user_service.update(authed_context, uid=random_uid, user_update=update_user)
 
     assert exc.type == NotFoundError
     assert str(exc.value) == expected_error_msg
@@ -368,14 +369,16 @@ def test_userservice_update_success(
         return guest_user
 
     @as_result(NotFoundError)
-    def mock_update(credentials: SyftVerifyKey, user: User, has_permission: bool) -> User:
+    def mock_update(
+        credentials: SyftVerifyKey, user: User, has_permission: bool
+    ) -> User:
         guest_user.name = update_user.name
         guest_user.email = update_user.email
         return guest_user
 
     monkeypatch.setattr(user_service.stash, "_update", mock_update)
     monkeypatch.setattr(user_service.stash, "_get_by_uid", mock_get_by_uid)
-    
+
     authed_context.role = ServiceRole.ADMIN
     user = user_service.update(
         authed_context, uid=guest_user.id, user_update=update_user
@@ -409,9 +412,7 @@ def test_userservice_update_fails(
     authed_context.role = ServiceRole.ADMIN
 
     with pytest.raises(StashError) as exc:
-        user_service.update(
-            authed_context, uid=guest_user.id, user_update=update_user
-        )
+        user_service.update(authed_context, uid=guest_user.id, user_update=update_user)
 
     assert exc.type == StashError
     assert exc.value.public == StashError.public_message
@@ -423,7 +424,7 @@ def test_userservice_delete_failure(
     monkeypatch: MonkeyPatch,
     user_service: UserService,
     authed_context: AuthedServiceContext,
-    guest_user: User
+    guest_user: User,
 ) -> None:
     id_to_delete = UID()
 

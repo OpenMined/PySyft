@@ -2,6 +2,7 @@
 import sys
 import traceback
 from typing import Any
+from typing import Self
 from typing import TYPE_CHECKING
 
 # third party
@@ -99,6 +100,7 @@ class SyftError(SyftResponseMessage):
         error_msg = exc.get_message(context)
         tb = exc.get_tb(context)
         return cls(message=error_msg, tb=tb)
+
 
 @serializable()
 class SyftSuccess(SyftResponseMessage):

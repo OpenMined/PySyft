@@ -32,8 +32,8 @@ from ...types.uid import UID
 from ..notifier.notifier_enums import NOTIFIERS
 from ..response import SyftError
 from ..response import SyftSuccess
-from .errors import UserInvalidEmailError, UserUpdateError
 from .errors import UserPasswordMismatchError
+from .errors import UserUpdateError
 from .user_roles import ServiceRole
 
 
@@ -256,7 +256,7 @@ class UserView(SyftObject):
 
         if isinstance(result, SyftError):
             return result
-        
+
         return SyftSuccess(message=f"Email updated to '{result.email}'.")
 
     def update(

@@ -25,7 +25,6 @@ from typing import cast
 from nacl.signing import SigningKey
 from result import Err
 from result import Result
-from syft.store.errors import NotFoundError
 from typing_extensions import Self
 
 # relative

@@ -14,7 +14,6 @@ from syft.client.domain_client import DomainClient
 from syft.node.node import get_default_root_email
 from syft.node.worker import Worker
 from syft.service.context import AuthedServiceContext
-from syft.service.user.errors import UserInvalidEmailError, UserUpdateError
 from syft.service.user.user import ServiceRole
 from syft.service.user.user import UserCreate
 from syft.service.user.user import UserUpdate
@@ -314,6 +313,7 @@ def test_user_view_set_default_admin_email_failed(
 
     assert isinstance(result2, SyftError)
     assert result2.message == error_msg
+
 
 def test_user_view_set_duplicated_email(
     root_client: DomainClient, ds_client: DomainClient, guest_client: DomainClient

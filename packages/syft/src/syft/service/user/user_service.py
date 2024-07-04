@@ -1,6 +1,5 @@
 # stdlib
 from ast import TypeVar
-from typing import Literal
 from typing import cast
 
 # third party
@@ -36,11 +35,12 @@ from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..settings.settings_stash import SettingsStash
-from .errors import UserCreateError, UserUpdateError
+from .errors import UserCreateError
 from .errors import UserEnclaveAdminLoginError
 from .errors import UserError
 from .errors import UserPermissionError
 from .errors import UserSearchBadParamsError
+from .errors import UserUpdateError
 from .user import User
 from .user import UserCreate
 from .user import UserPrivateKey
@@ -74,7 +74,6 @@ def _paginate(
             _list_objs = _list_objs[page_index]
         else:
             _list_objs = _list_objs[0]
-
         return _list_objs
 
     return list_objs
@@ -168,7 +167,8 @@ class UserService(AbstractService):
                 ).unwrap()
             elif isinstance(credentials, SyftSigningKey):
                 user = self.stash._get_by_signing_key(
-                    credentials=credentials, signing_key=credentials # type: ignore
+                    credentials=credentials,
+                    signing_key=credentials,  # type: ignore
                 ).unwrap()
             else:
                 raise CredentialsError
@@ -251,7 +251,9 @@ class UserService(AbstractService):
         if user_update.email is not Empty:
             user_exists = self.stash._email_exists(email=user_update.email).unwrap()
             if user_exists:
-                raise UserUpdateError(public_message=f"User {user_update.email} already exists")
+                raise UserUpdateError(
+                    public_message=f"User {user_update.email} already exists"
+                )
 
         if updates_role:
             if context.role == ServiceRole.ADMIN:
@@ -259,6 +261,7 @@ class UserService(AbstractService):
                 pass
             elif (
                 context.role == ServiceRole.DATA_OWNER
+                and user.role is not None
                 and context.role.value > user.role.value
                 and context.role.value > user_update.role.value
             ):
