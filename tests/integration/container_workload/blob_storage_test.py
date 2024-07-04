@@ -13,7 +13,7 @@ import syft as sy
     or os.environ["AZURE_BLOB_STORAGE_KEY"] == "",
     reason="AZURE_BLOB_STORAGE_KEY is not set",
 )
-@pytest.mark.container_workload
+@pytest.mark.container_workload()
 def test_mount_azure_blob_storage(domain_1_port):
     domain_client = sy.login(
         email="info@openmined.org", password="changethis", port=domain_1_port
