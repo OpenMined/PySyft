@@ -1212,9 +1212,11 @@ class Node(AbstractNode):
         return SyftError(message=(f"Node has no route to {node_uid}"))
 
     def get_role_for_credentials(self, credentials: SyftVerifyKey) -> ServiceRole:
-        role = self.get_service("userservice").get_role_for_credentials(
-            credentials=credentials
-        ).unwrap()
+        role = (
+            self.get_service("userservice")
+            .get_role_for_credentials(credentials=credentials)
+            .unwrap()
+        )
         return role
 
     def handle_api_call(

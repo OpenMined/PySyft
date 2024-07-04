@@ -4,10 +4,9 @@ from datetime import datetime
 from enum import Enum
 import logging
 import textwrap
-from typing import Any, cast
+from typing import Any
 
 # third party
-from IPython.display import display
 import itables
 import pandas as pd
 from pydantic import ConfigDict
@@ -290,7 +289,9 @@ class Asset(SyftObject):
         res = api.services.action.get(uid=self.action_id)
 
         if not self.has_permission(res):
-            raise SyftException(public_message="You do not have permission to access private data.")
+            raise SyftException(
+                public_message="You do not have permission to access private data."
+            )
 
         return res.syft_action_data
 

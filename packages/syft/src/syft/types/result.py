@@ -1,7 +1,8 @@
 # stdlib
 from collections.abc import Callable
 import functools
-from typing import Any, Generic
+from typing import Any
+from typing import Generic
 from typing import Literal
 from typing import NoReturn
 from typing import ParamSpec
