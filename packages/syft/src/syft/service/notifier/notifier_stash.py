@@ -57,7 +57,7 @@ class NotifierStash(NewBaseStash):
         result = self.check_type(settings, self.object_type).unwrap()
         # we dont use and_then logic here as it is hard because of the order of the arguments
         return (
-            super().set(credentials=credentials, obj=result.ok()).unwrap()
+            super().set(credentials=credentials, obj=result).unwrap()
         )  # TODO check if result isInstance(Ok)
 
     @as_result(StashException)

@@ -243,7 +243,6 @@ class NotifierService(AbstractService):
 
             # Get the notifier
             # If notifier doesn't exist, create a new one
-
             if not notifier:
                 notifier = NotifierSettings()
                 notifier.active = False  # Default to False
@@ -272,6 +271,7 @@ class NotifierService(AbstractService):
                     notifier.email_port = smtp_port
                     notifier.active = True
 
+            print("notifier is setting")
             notifier_stash.set(node.signing_key.verify_key, notifier).unwrap()
             return SyftSuccess(message="Notifier initialized successfully")
 

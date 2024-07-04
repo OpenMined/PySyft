@@ -23,8 +23,8 @@ from syft.service.user.user import UserUpdate
 from syft.service.user.user import UserView
 from syft.service.user.user_roles import ServiceRole
 from syft.service.user.user_service import UserService
-from syft.store.errors import NotFoundException
-from syft.store.errors import StashException
+from syft.store.document_store_errors import NotFoundException
+from syft.store.document_store_errors import StashException
 from syft.types.result import Err
 from syft.types.result import Ok
 from syft.types.result import as_result

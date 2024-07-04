@@ -79,7 +79,7 @@ class KeyValueActionStore(ActionStore):
         # if you get something you need READ permission
         read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
 
-        if not has_permission or not self.has_permission(read_permission):
+        if not has_permission and not self.has_permission(read_permission):
             raise SyftException(public_message=f"Permission: {read_permission} denied")
 
         try:

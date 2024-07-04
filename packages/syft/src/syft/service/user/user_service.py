@@ -156,6 +156,7 @@ class UserService(AbstractService):
 
         return user.to(UserPrivateKey)
 
+    @as_result(SyftException)
     def get_role_for_credentials(
         self, credentials: SyftVerifyKey | SyftSigningKey
     ) -> ServiceRole:
