@@ -6,6 +6,7 @@ import logging
 import socketserver
 import sys
 import threading
+from threading import Event
 import time
 from time import sleep
 from typing import Any
@@ -51,7 +52,7 @@ from .queue_stash import Status
 HEARTBEAT_INTERVAL_SEC = 2
 
 # Thread join timeout (in seconds)
-THREAD_TIMEOUT_SEC = 5
+THREAD_TIMEOUT_SEC = 30
 
 # Max duration (in ms) to wait for ZMQ poller to return
 ZMQ_POLLER_TIMEOUT_MSEC = 1000
@@ -163,7 +164,7 @@ class ZMQProducer(QueueProducer):
         self.worker_stash = worker_stash
         self.queue_name = queue_name
         self.auth_context = context
-        self._stop = threading.Event()
+        self._stop = Event()
         self.post_init()
 
     @property
@@ -189,24 +190,33 @@ class ZMQProducer(QueueProducer):
 
     def close(self) -> None:
         self._stop.set()
-
         try:
-            self.poll_workers.unregister(self.socket)
-        except Exception as e:
-            logger.exception("Failed to unregister poller.", exc_info=e)
-        finally:
             if self.thread:
                 self.thread.join(THREAD_TIMEOUT_SEC)
+                if self.thread.is_alive():
+                    logger.error(
+                        f"ZMQProducer message sending thread join timed out during closing. "
+                        f"Queue name {self.queue_name}, "
+                    )
                 self.thread = None
 
             if self.producer_thread:
                 self.producer_thread.join(THREAD_TIMEOUT_SEC)
+                if self.producer_thread.is_alive():
+                    logger.error(
+                        f"ZMQProducer queue thread join timed out during closing. "
+                        f"Queue name {self.queue_name}, "
+                    )
                 self.producer_thread = None
 
+            self.poll_workers.unregister(self.socket)
+        except Exception as e:
+            logger.exception("Failed to unregister poller.", exc_info=e)
+        finally:
             self.socket.close()
             self.context.destroy()
 
-            self._stop.clear()
+            # self._stop.clear()
 
     @property
     def action_service(self) -> AbstractService:
@@ -675,7 +685,7 @@ class ZMQConsumer(QueueConsumer):
         self.socket = None
         self.verbose = verbose
         self.id = UID().short()
-        self._stop = threading.Event()
+        self._stop = Event()
         self.syft_worker_id = syft_worker_id
         self.worker_stash = worker_stash
         self.post_init()
@@ -712,16 +722,22 @@ class ZMQConsumer(QueueConsumer):
         self.disconnect_from_producer()
         self._stop.set()
         try:
-            self.poller.unregister(self.socket)
-        except Exception as e:
-            logger.exception("Failed to unregister worker.", exc_info=e)
-        finally:
             if self.thread is not None:
                 self.thread.join(timeout=THREAD_TIMEOUT_SEC)
+                if self.thread.is_alive():
+                    logger.error(
+                        f"ZMQConsumer thread join timed out during closing. "
+                        f"SyftWorker id {self.syft_worker_id}, "
+                        f"service name {self.service_name}."
+                    )
                 self.thread = None
+            self.poller.unregister(self.socket)
+        except Exception as e:
+            logger.error("Failed to unregister worker.", exc_info=e)
+        finally:
             self.socket.close()
             self.context.destroy()
-            self._stop.clear()
+            # self._stop.clear()
 
     def send_to_producer(
         self,
@@ -814,7 +830,8 @@ class ZMQConsumer(QueueConsumer):
                         self.reconnect_to_producer()
                         self.set_producer_alive()
 
-                self.send_heartbeat()
+                if not self._stop.is_set():
+                    self.send_heartbeat()
 
         except zmq.ZMQError as e:
             if e.errno == zmq.ETERM:
