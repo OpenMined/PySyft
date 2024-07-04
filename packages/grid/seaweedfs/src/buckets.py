@@ -42,7 +42,7 @@ class BaseBucket(BaseModel):
 
 def check_creds(v: Any) -> Any:
     if isinstance(v, Path) and not v.exists():
-        raise FileNotFoundException(f"Credentials file not found: {v}")
+        raise FileNotFoundError(f"Credentials file not found: {v}")
     return v
 
 
@@ -152,7 +152,7 @@ class GCSBucket(BaseBucket):
     @classmethod
     def validate_creds(cls, v: Any) -> GCSCreds:
         if isinstance(v, Path) and not v.exists():
-            raise FileNotFoundException(f"GCS credentials file not found: {v}")
+            raise FileNotFoundError(f"GCS credentials file not found: {v}")
 
         # we don't need to read the file, as we can just pass the path to Seaweed
         return GCSCreds(val=v)

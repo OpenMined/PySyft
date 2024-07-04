@@ -12,7 +12,7 @@ def test_load_assets():
     png = load_png_base64("logo.png")
     assert isinstance(png, str)
 
-    with pytest.raises(FileNotFoundException):
+    with pytest.raises(FileNotFoundError):
         load_png_base64("non_existent.png")
 
     svg = load_svg("copy.svg")
