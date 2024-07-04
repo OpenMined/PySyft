@@ -256,8 +256,6 @@ class Asset(SyftObject):
         if api is None:
             return SyftError(message=f"You must login to {self.node_uid}")
         result = api.services.action.get_mock(self.action_id)
-        if isinstance(result, SyftError):
-            return result
         try:
             if isinstance(result, SyftObject):
                 return result.syft_action_data
@@ -287,8 +285,6 @@ class Asset(SyftObject):
         if api is None or api.services is None:
             return None
         res = api.services.action.get(self.action_id)
-        if isinstance(res, str):
-            return SyftError(message=f"Could not access private data. {str(res)}")
         if self.has_permission(res):
             return res.syft_action_data
         else:
