@@ -112,7 +112,9 @@ NEW_STYLE_SERVICES_LIST: list[str] = [
     "blob_storage.",
     "notifier.",
     "settings.",
-    "policy."
+    "policy.",
+    "action.",
+    "queue."
 ]
 
 
