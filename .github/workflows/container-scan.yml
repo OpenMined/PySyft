@@ -195,7 +195,7 @@ jobs:
       - name: Generate SBOM
         run: |
           python --version
-          python -m pip install uv==0.2.18
+          python -m pip install uv
           python -m uv pip install ./packages/syft
           python -m uv pip install cyclonedx-bom
           python -m pip freeze > requirements.txt
