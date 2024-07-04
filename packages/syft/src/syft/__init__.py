@@ -58,6 +58,8 @@ from .service.data_subject import DataSubjectCreate as DataSubject
 from .service.dataset.dataset import Contributor
 from .service.dataset.dataset import CreateAsset as Asset
 from .service.dataset.dataset import CreateDataset as Dataset
+from .service.model.model import CreateModel as Model
+from .service.model.model import CreateModelAsset as ModelAsset
 from .service.notification.notifications import NotificationStatus
 from .service.policy.policy import CreatePolicyRuleConstant as Constant
 from .service.policy.policy import CustomInputPolicy
@@ -75,6 +77,7 @@ from .service.response import SyftSuccess
 from .service.user.roles import Roles as roles
 from .service.user.user_service import UserService
 from .stable_version import LATEST_STABLE_SYFT
+from .types.file import SyftFolder
 from .types.twin_object import TwinObject
 from .types.uid import UID
 from .util import filterwarnings

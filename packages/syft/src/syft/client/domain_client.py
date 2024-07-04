@@ -24,6 +24,7 @@ from ..service.code_history.code_history import UsersCodeHistoriesDict
 from ..service.dataset.dataset import Contributor
 from ..service.dataset.dataset import CreateAsset
 from ..service.dataset.dataset import CreateDataset
+from ..service.model.model import CreateModel
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.response import SyftWarning
@@ -93,6 +94,15 @@ def add_default_uploader(
 class DomainClient(SyftClient):
     def __repr__(self) -> str:
         return f"<DomainClient: {self.name}>"
+
+    @property
+    def models(self) -> APIModule | None:
+        if self.api.has_service("model"):
+            return self.api.services.model
+        return None
+
+    def upload_model(self, model: CreateModel) -> SyftSuccess | SyftError:
+        return self.api.services.model.add(model=model)
 
     def upload_dataset(self, dataset: CreateDataset) -> SyftSuccess | SyftError:
         # relative

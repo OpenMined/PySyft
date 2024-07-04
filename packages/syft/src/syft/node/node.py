@@ -71,6 +71,7 @@ from ..service.job.job_stash import JobType
 from ..service.log.log_service import LogService
 from ..service.metadata.metadata_service import MetadataService
 from ..service.metadata.node_metadata import NodeMetadata
+from ..service.model.model_service import ModelService
 from ..service.network.network_service import NetworkService
 from ..service.network.utils import PeerHealthCheckTask
 from ..service.notification.notification_service import NotificationService
@@ -971,7 +972,8 @@ class Node(AbstractNode):
             {"svc": SyftImageRegistryService},
             {"svc": SyncService},
             {"svc": OutputService},
-            {"svc": UserCodeStatusService},  # this is lazy
+            {"svc": UserCodeStatusService},
+            {"svc": ModelService},
         ]
 
         for svc_kwargs in default_services:
