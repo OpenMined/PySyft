@@ -70,24 +70,24 @@ def manually_call_service(worker, client, service, args=None, kwargs=None):
     return result
 
 
-@pytest.fixture
+@pytest.fixture()
 def guest_client(worker) -> DomainClient:
     return get_mock_client(worker.root_client, ServiceRole.GUEST)
 
 
-@pytest.fixture
+@pytest.fixture()
 def ds_client(worker) -> DomainClient:
     return get_mock_client(worker.root_client, ServiceRole.DATA_SCIENTIST)
 
 
-@pytest.fixture
+@pytest.fixture()
 def do_client(worker) -> DomainClient:
     return get_mock_client(worker.root_client, ServiceRole.DATA_OWNER)
 
 
 # this shadows the normal conftests.py/root_client, but I am experiencing a lot of problems
 # with that fixture
-@pytest.fixture
+@pytest.fixture()
 def root_client(worker):
     return get_mock_client(worker.root_client, ServiceRole.DATA_OWNER)
 
