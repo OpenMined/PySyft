@@ -140,7 +140,8 @@ def test_data_migration_same_version(tmp_path):
         assert isinstance(result, SyftError)
 
     # Load migration data on correct worker
-    # NOTE worker is correct because admin keys and node id are derived from node name
+    # NOTE worker is correct because admin keys and node id are derived from node name,
+    # so they match the first worker
     with named_worker_context(node_name) as migration_worker:
         client = migration_worker.root_client
 
