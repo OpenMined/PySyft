@@ -148,20 +148,16 @@ class DistributedProject(BaseModel):
             raise SyftException(
                 f"Can't access Syft client. You must login to {self.syft_node_location}"
             )
-        enclave_code_created = (
-            owner_client.api.services.enclave.request_enclave_for_code_execution(
-                user_code_id=self.code.id
-            )
+        enclave_code_created = owner_client.api.services.enclave.request_enclave(
+            user_code_id=self.code.id
         )
         if isinstance(enclave_code_created, SyftError):
             raise SyftException(enclave_code_created.message)
 
         # Request each domain to transfer their assets to the Enclave
         for client in self.clients.values():
-            assets_transferred = (
-                client.api.services.enclave.request_assets_transfer_to_enclave(
-                    user_code_id=self.code.id
-                )
+            assets_transferred = client.api.services.enclave.request_assets_upload(
+                user_code_id=self.code.id
             )
             if isinstance(assets_transferred, SyftError):
                 raise SyftException(assets_transferred.message)
@@ -169,7 +165,7 @@ class DistributedProject(BaseModel):
 
         result_parts = []
         for client in self.clients.values():
-            result = client.api.services.enclave.request_execution(
+            result = client.api.services.enclave.request_code_execution(
                 user_code_id=self.code.id
             )
             if isinstance(result, SyftError):

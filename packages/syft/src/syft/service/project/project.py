@@ -46,6 +46,7 @@ from ...util.markdown import markdown_as_class_with_fields
 from ...util.util import full_name_with_qualname
 from ..code.user_code import SubmitUserCode
 from ..code.user_code import UserCodeStatus
+from ..enclave.enclave import EnclaveInstance
 from ..network.network_service import NodePeer
 from ..network.routes import NodeRoute
 from ..network.routes import connection_to_route
@@ -403,6 +404,79 @@ class ProjectCode(ProjectEventAddObject):
             print(f"\nFinal Status: {final_status}")
 
         return final_status
+
+    @property
+    def is_enclave_code(self) -> bool:
+        if not self.code.runtime_policy_init_kwargs:
+            return False
+        provider = self.code.runtime_policy_init_kwargs.get("provider")
+        if not provider:
+            return False
+        if not isinstance(provider, EnclaveInstance):
+            return False
+        return True
+
+    def setup_enclave(self) -> SyftSuccess | SyftError:
+        if not self.is_enclave_code:
+            return SyftError(
+                message="This method is only supported for codes with Enclave runtime provider."
+            )
+        provider = self.code.runtime_policy_init_kwargs.get("provider")
+        owner_node_id = provider.syft_node_location
+        # TODO use node_uid, verify_key instead as there could be multiple logged-in users to the same client
+        owner_client = SyftClientSessionCache.get_client_for_node_uid(owner_node_id)
+        if not owner_client:
+            raise SyftException(
+                f"Can't access Syft client. You must login to {self.syft_node_location}"
+            )
+        return owner_client.api.services.enclave.request_enclave(
+            user_code_id=self.code.id
+        )
+
+    def request_asset_transfer(self) -> SyftSuccess | SyftError:
+        if not self.is_enclave_code:
+            return SyftError(
+                message="This method is only supported for codes with Enclave runtime provider."
+            )
+        clients = set()
+        for node_id in self.code.input_owner_node_uids:
+            client = SyftClientSessionCache.get_client_for_node_uid(node_id)
+            if not client:
+                raise SyftException(
+                    f"Can't access Syft client. You must login to {node_id}"
+                )
+            clients.add(client)
+        for client in clients:
+            assets_transferred = client.api.services.enclave.request_assets_upload(
+                user_code_id=self.code.id
+            )
+            if isinstance(assets_transferred, SyftError):
+                raise SyftException(assets_transferred.message)
+            print(assets_transferred.message)
+        return SyftSuccess(message="All assets transferred to the Enclave successfully")
+
+    def request_execution(self) -> Any:
+        if not self.is_enclave_code:
+            return SyftError(
+                message="This method is only supported for codes with Enclave runtime provider."
+            )
+        clients = set()
+        for node_id in self.code.input_owner_node_uids:
+            client = SyftClientSessionCache.get_client_for_node_uid(node_id)
+            if not client:
+                raise SyftException(
+                    f"Can't access Syft client. You must login to {node_id}"
+                )
+            clients.add(client)
+        result_parts = []
+        for client in clients:
+            result = client.api.services.enclave.request_code_execution(
+                user_code_id=self.code.id
+            )
+            if isinstance(result, SyftError):
+                return SyftError(message=f"Enclave execution failure: {result.message}")
+            result_parts.append(result)
+        return result_parts[0]
 
 
 def poll_creation_wizard() -> tuple[str, list[str]]:
