@@ -12,7 +12,7 @@ DOMAIN_PORT = 9082
 HOST_IP = os.environ.get("HOST_IP", "localhost")
 
 
-@pytest.mark.frontend
+@pytest.mark.frontend()
 def test_serves_domain_frontend() -> None:
     title_str = "PyGrid"
     url = f"http://{HOST_IP}:{DOMAIN_PORT}"
@@ -21,7 +21,7 @@ def test_serves_domain_frontend() -> None:
     assert title_str in result.text
 
 
-@pytest.mark.frontend
+@pytest.mark.frontend()
 def test_serves_network_frontend() -> None:
     title_str = "PyGrid"
     url = f"http://localhost:{NETWORK_PORT}"
