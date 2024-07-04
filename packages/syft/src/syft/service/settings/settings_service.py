@@ -2,9 +2,9 @@
 from string import Template
 
 # third party
-from result import Err
-from result import Ok
-from result import Result
+from syft.store.document_store_errors import NotFoundException, StashException
+from syft.types.errors import SyftException
+from syft.types.result import as_result
 
 # relative
 from ...abstract_node import NodeSideType
@@ -43,49 +43,39 @@ class SettingsService(AbstractService):
         self.stash = SettingsStash(store=store)
 
     @service_method(path="settings.get", name="get")
-    def get(self, context: UnauthedServiceContext) -> Result[Ok, Err]:
+    def get(self, context: UnauthedServiceContext) -> NodeSettings:
         """Get Settings"""
+        all_settings = self.stash.get_all(context.node.signing_key.verify_key).unwrap()
 
-        result = self.stash.get_all(context.node.signing_key.verify_key)
-        if result.is_ok():
-            settings = result.ok()
-            # check if the settings list is empty
-            if len(settings) == 0:
-                return SyftError(message="No settings found")
-            result = settings[0]
-            return Ok(result)
-        else:
-            return SyftError(message=result.err())
+        if len(all_settings) == 0:
+            raise NotFoundException(public_message="No settings found")
+
+        return all_settings[0]
 
     @service_method(path="settings.set", name="set")
     def set(
         self, context: AuthedServiceContext, settings: NodeSettings
-    ) -> Result[Ok, Err]:
+    ) -> NodeSettings:
         """Set a new the Node Settings"""
-        result = self.stash.set(context.credentials, settings)
-        if result.is_ok():
-            return result
-        else:
-            return SyftError(message=result.err())
+        return self.stash.set(context.credentials, settings).unwrap()
 
-    @service_method(path="settings.update", name="update", autosplat=["settings"])
+    @service_method(path="settings.update", name="update", autosplat=["settings"], unwrap_on_success=False)
     def update(
         self, context: AuthedServiceContext, settings: NodeSettingsUpdate
-    ) -> Result[SyftSuccess, SyftError]:
-        res = self._update(context, settings)
-        if res.is_ok():
-            return SyftSuccess(
-                message=(
-                    "Settings updated successfully. "
-                    + "You must call <client>.refresh() to sync your client with the changes."
-                )
-            )
-        else:
-            return SyftError(message=res.err())
+    ) -> SyftSuccess:
+        updated_settings = self._update(context, settings).unwrap()
+        return SyftSuccess(
+            message=(
+                "Settings updated successfully. "
+                + "You must call <client>.refresh() to sync your client with the changes."
+            ),
+            value=updated_settings,
+        )
 
+    @as_result(StashException, NotFoundException)
     def _update(
         self, context: AuthedServiceContext, settings: NodeSettingsUpdate
-    ) -> Result[Ok, Err]:
+    ) -> NodeSettings:
         """
         Update the Node Settings using the provided values.
 
@@ -111,54 +101,48 @@ class SettingsService(AbstractService):
         >>> node_client.update(name='foo', organization='bar', description='baz', signup_enabled=True)
         SyftSuccess: Settings updated successfully.
         """
-        result = self.stash.get_all(context.credentials)
-        if result.is_ok():
-            current_settings = result.ok()
-            if len(current_settings) > 0:
-                new_settings = current_settings[0].model_copy(
-                    update=settings.to_dict(exclude_empty=True)
-                )
-                update_result = self.stash.update(context.credentials, new_settings)
-                return update_result
-            else:
-                return Err(value="No settings found")
+        all_settings = self.stash.get_all(context.credentials).unwrap()
+        if len(all_settings) > 0:
+            new_settings = all_settings[0].model_copy(
+                update=settings.to_dict(exclude_empty=True)
+            )
+            update_result = self.stash.update(context.credentials, new_settings).unwrap()
+            return update_result
         else:
-            return result
+            raise NotFoundException(public_message="Node settings not found")
 
     @service_method(
         path="settings.set_node_side_type_dangerous",
         name="set_node_side_type_dangerous",
         roles=ADMIN_ROLE_LEVEL,
+        unwrap_on_success=False
     )
     def set_node_side_type_dangerous(
         self, context: AuthedServiceContext, node_side_type: str
-    ) -> Result[SyftSuccess, SyftError]:
+    ) -> SyftSuccess:
         side_type_options = [e.value for e in NodeSideType]
+
         if node_side_type not in side_type_options:
-            return SyftError(
-                message=f"Not a valid node_side_type, please use one of the options from: {side_type_options}"
+            raise SyftException(
+                public_message=f"Not a valid node_side_type, please use one of the options from: {side_type_options}"
             )
 
-        result = self.stash.get_all(context.credentials)
-        if result.is_ok():
-            current_settings = result.ok()
-            if len(current_settings) > 0:
-                new_settings = current_settings[0]
-                new_settings.node_side_type = node_side_type
-                update_result = self.stash.update(context.credentials, new_settings)
-                if update_result.is_ok():
-                    return SyftSuccess(
-                        message=(
-                            "Settings updated successfully. "
-                            + "You must call <client>.refresh() to sync your client with the changes."
-                        )
-                    )
-                else:
-                    return SyftError(message=update_result.err())
-            else:
-                return SyftError(message="No settings found")
+        all_settings = self.stash.get_all(context.credentials).unwrap()
+        current_settings = result.ok()
+        if len(current_settings) > 0:
+            new_settings = current_settings[0]
+            new_settings.node_side_type = node_side_type
+            updated_settings = self.stash.update(context.credentials, new_settings).unwrap()
+            return SyftSuccess(
+                message=(
+                    "Settings updated successfully. "
+                    + "You must call <client>.refresh() to sync your client with the changes."
+                ),
+                value=updated_settings
+            )
         else:
-            return SyftError(message=result.err())
+            # TODO: Turn this into a function?
+            raise NotFoundException(public_message="Node settings not found")
 
     @service_method(
         path="settings.enable_notifications",
@@ -173,9 +157,10 @@ class SettingsService(AbstractService):
         email_sender: str | None = None,
         email_server: str | None = None,
         email_port: str | None = None,
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         notifier_service = context.node.get_service("notifierservice")
-        return notifier_service.turn_on(
+        # FIX: NotificationService
+        res = notifier_service.turn_on(
             context=context,
             email_username=email_username,
             email_password=email_password,
@@ -183,58 +168,68 @@ class SettingsService(AbstractService):
             email_server=email_server,
             email_port=email_port,
         )
+        if res.is_err():
+            raise SyftException(public_message="Failed to enable notifications")
+        return SyftSuccess(message="Notifications enabled")
 
     @service_method(
         path="settings.disable_notifications",
         name="disable_notifications",
         roles=ADMIN_ROLE_LEVEL,
+        unwrap_on_success=False
     )
     def disable_notifications(
         self,
         context: AuthedServiceContext,
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         notifier_service = context.node.get_service("notifierservice")
-        return notifier_service.turn_off(context=context)
+        # FIX: NotificationService method fix
+        res = notifier_service.turn_off(context=context)
+        if isinstance(res, SyftError):
+            raise SyftException(public_message="Failed to disable notifications")
+        return SyftSuccess(message="Notifications disabled")
 
     @service_method(
         path="settings.allow_guest_signup",
         name="allow_guest_signup",
         warning=HighSideCRUDWarning(confirmation=True),
+        unwrap_on_success=False
     )
     def allow_guest_signup(
         self, context: AuthedServiceContext, enable: bool
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         """Enable/Disable Registration for Data Scientist or Guest Users."""
         flags.CAN_REGISTER = enable
 
         settings = NodeSettingsUpdate(signup_enabled=enable)
-        result = self._update(context=context, settings=settings)
+        result = self._update(context=context, settings=settings).unwrap()
 
         if isinstance(result, SyftError):
-            return SyftError(message=f"Failed to update settings: {result.err()}")
+            raise SyftException(public_message=f"Failed to update settings: {result.err()}")
 
         message = "enabled" if enable else "disabled"
-        return SyftSuccess(message=f"Registration feature successfully {message}")
+        return SyftSuccess(message=f"Registration feature successfully {message}", value=message)
 
     @service_method(
         path="settings.enable_eager_execution",
         name="enable_eager_execution",
         roles=ADMIN_ROLE_LEVEL,
         warning=HighSideCRUDWarning(confirmation=True),
+        unwrap_on_success=False
     )
     def enable_eager_execution(
         self, context: AuthedServiceContext, enable: bool
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         """Enable/Disable eager execution."""
         settings = NodeSettingsUpdate(eager_execution_enabled=enable)
 
-        result = self._update(context=context, settings=settings)
+        result = self._update(context=context, settings=settings).unwrap()
 
         if result.is_err():
-            return SyftError(message=f"Failed to update settings: {result.err()}")
+            raise SyftException(public_message=f"Failed to update settings: {result.err()}")
 
         message = "enabled" if enable else "disabled"
-        return SyftSuccess(message=f"Eager execution {message}")
+        return SyftSuccess(message=f"Eager execution {message}", value=message)
 
     @service_method(
         path="settings.allow_association_request_auto_approval",
@@ -264,8 +259,8 @@ class SettingsService(AbstractService):
         html: str = "",
     ) -> MarkdownDescription | HTMLObject | SyftError:
         if not markdown and not html or markdown and html:
-            return SyftError(
-                message="Invalid markdown/html fields. You must set one of them."
+            raise SyftException(
+                public_message="Invalid markdown/html fields. You must set one of them."
             )
 
         welcome_msg = None
@@ -279,17 +274,17 @@ class SettingsService(AbstractService):
     @service_method(
         path="settings.welcome_customize",
         name="welcome_customize",
+        unwrap_on_success=False
+
     )
     def welcome_customize(
         self,
         context: AuthedServiceContext,
         markdown: str = "",
         html: str = "",
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         if not markdown and not html or markdown and html:
-            return SyftError(
-                message="Invalid markdown/html fields. You must set one of them."
-            )
+            raise SyftException(public_message="Invalid markdown/html fields. You must set one of them.")
 
         welcome_msg = None
         if markdown:
@@ -298,9 +293,7 @@ class SettingsService(AbstractService):
             welcome_msg = HTMLObject(text=html)
 
         new_settings = NodeSettingsUpdate(welcome_markdown=welcome_msg)
-        result = self._update(context=context, settings=new_settings)
-        if isinstance(result, SyftError):
-            return result
+        self._update(context=context, settings=new_settings).unwrap()
 
         return SyftSuccess(message="Welcome Markdown was successfully updated!")
 
@@ -312,55 +305,53 @@ class SettingsService(AbstractService):
     def welcome_show(
         self,
         context: AuthedServiceContext,
-    ) -> HTMLObject | MarkdownDescription | SyftError:
-        result = self.stash.get_all(context.node.signing_key.verify_key)
+    ) -> HTMLObject | MarkdownDescription:
+        all_settings = self.stash.get_all(context.node.signing_key.verify_key).unwrap()
         user_service = context.node.get_service("userservice")
-        role = user_service.get_role_for_credentials(context.credentials)
-        if result.is_ok():
-            settings = result.ok()
-            # check if the settings list is empty
-            if len(settings) == 0:
-                return SyftError(message="No settings found")
-            settings = settings[0]
-            if settings.welcome_markdown:
-                str_tmp = Template(settings.welcome_markdown.text)
-                welcome_msg_class = type(settings.welcome_markdown)
-                node_side_type = (
-                    "Low Side"
-                    if context.node.metadata.node_side_type
-                    == NodeSideType.LOW_SIDE.value
-                    else "High Side"
-                )
-                commands = ""
-                if (
-                    role.value == ServiceRole.NONE.value
-                    or role.value == ServiceRole.GUEST.value
-                ):
-                    commands = GUEST_COMMANDS
-                elif (
-                    role is not None and role.value == ServiceRole.DATA_SCIENTIST.value
-                ):
-                    commands = DS_COMMANDS
-                elif role is not None and role.value >= ServiceRole.DATA_OWNER.value:
-                    commands = DO_COMMANDS
+        role = user_service.get_role_for_credentials(context.credentials).unwrap()
 
-                command_list = f"""
-                <ul style='padding-left: 1em;'>
-                    {commands}
-                </ul>
-                """
-                result = str_tmp.safe_substitute(
-                    FONT_CSS=FONT_CSS,
-                    grid_symbol=load_png_base64("small-grid-symbol-logo.png"),
-                    domain_name=context.node.name,
-                    description=context.node.metadata.description,
-                    # node_url='http://testing:8080',
-                    node_type=context.node.metadata.node_type.capitalize(),
-                    node_side_type=node_side_type,
-                    node_version=context.node.metadata.syft_version,
-                    command_list=command_list,
-                )
-                return welcome_msg_class(text=result)
-            return SyftError(message="There's no welcome message")
-        else:
-            return SyftError(message=result.err())
+        # check if the settings list is empty
+        if len(all_settings) == 0:
+            raise NotFoundException(public_message="Node settings not found")
+        settings = all_settings[0]
+
+        if settings.welcome_markdown:
+            str_tmp = Template(settings.welcome_markdown.text)
+            welcome_msg_class = type(settings.welcome_markdown)
+            node_side_type = (
+                "Low Side"
+                if context.node.metadata.node_side_type
+                == NodeSideType.LOW_SIDE.value
+                else "High Side"
+            )
+            commands = ""
+            if (
+                role.value == ServiceRole.NONE.value
+                or role.value == ServiceRole.GUEST.value
+            ):
+                commands = GUEST_COMMANDS
+            elif (
+                role is not None and role.value == ServiceRole.DATA_SCIENTIST.value
+            ):
+                commands = DS_COMMANDS
+            elif role is not None and role.value >= ServiceRole.DATA_OWNER.value:
+                commands = DO_COMMANDS
+
+            command_list = f"""
+            <ul style='padding-left: 1em;'>
+                {commands}
+            </ul>
+            """
+            result = str_tmp.safe_substitute(
+                FONT_CSS=FONT_CSS,
+                grid_symbol=load_png_base64("small-grid-symbol-logo.png"),
+                domain_name=context.node.name,
+                description=context.node.metadata.description,
+                # node_url='http://testing:8080',
+                node_type=context.node.metadata.node_type.capitalize(),
+                node_side_type=node_side_type,
+                node_version=context.node.metadata.syft_version,
+                command_list=command_list,
+            )
+            return welcome_msg_class(text=result)
+        raise SyftException(public_message="There's no welcome message")

@@ -3,6 +3,8 @@
 # third party
 
 # relative
+from syft.store.document_store_errors import StashException
+from syft.types.result import as_result
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
@@ -28,6 +30,8 @@ class SettingsStash(NewBaseUIDStoreStash):
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
 
+    # Should we have this at all?
+    @as_result(StashException)
     def update(
         self,
         credentials: SyftVerifyKey,
@@ -35,4 +39,5 @@ class SettingsStash(NewBaseUIDStoreStash):
         has_permission: bool = False,
     ) -> NodeSettings:
         obj = self.check_type(settings, self.object_type).unwrap()
+        # Is this working at all?
         return super().update(credentials=credentials, obj=obj).unwrap()
