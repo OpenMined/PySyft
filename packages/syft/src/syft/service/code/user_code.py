@@ -51,6 +51,8 @@ from ...store.document_store import PartitionKey
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
+from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.syft_migration import migrate
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -99,7 +101,6 @@ from ..policy.policy_service import PolicyService
 from ..response import SyftError
 from ..response import SyftException
 from ..response import SyftInfo
-from ..response import SyftNotReady
 from ..response import SyftSuccess
 from ..response import SyftWarning
 from ..service import ServiceConfigRegistry
@@ -191,9 +192,9 @@ class UserCodeStatusCollection(SyncableSyftObject):
             string += f"{node_identity.node_name}: {status}, {reason}<br>"
         return string
 
-    def get_status_message(self) -> SyftSuccess | SyftNotReady | SyftError:
+    def get_status_message(self) -> str:
         if self.approved:
-            return SyftSuccess(message=f"{type(self)} approved")
+            return f"{type(self)} approved"
         denial_string = ""
         string = ""
         for node_identity, (status, reason) in self.status_dict.items():
@@ -202,13 +203,9 @@ class UserCodeStatusCollection(SyncableSyftObject):
                 denial_string += "."
             string += f"Code status on node '{node_identity.node_name}' is '{status}'."
         if self.denied:
-            return SyftError(
-                message=f"{type(self)} Your code cannot be run: {denial_string}"
-            )
+            return f"{type(self)} Your code cannot be run: {denial_string}"
         else:
-            return SyftNotReady(
-                message=f"{type(self)} Your code is waiting for approval. {string}"
-            )
+            return f"{type(self)} Your code is waiting for approval. {string}"
 
     @property
     def approved(self) -> bool:
@@ -504,24 +501,31 @@ class UserCode(SyncableSyftObject):
         res = self.status_link.resolve
         return res
 
-    def get_status(
-        self, context: AuthedServiceContext
-    ) -> UserCodeStatusCollection | SyftError:
+    @as_result(SyftException)
+    def get_status(self, context: AuthedServiceContext) -> UserCodeStatusCollection:
         if self.is_l0_deployment:
             if self.status_link is not None:
-                return SyftError(
-                    message="Encountered a low side UserCode object with a status_link."
+                raise SyftException(
+                    public_message="Encountered a low side UserCode object with a status_link."
                 )
             return self._compute_status_l0(context)
+
         if self.status_link is None:
-            return SyftError(
-                message="This UserCode does not have a status. Please contact the Admin."
+            raise SyftException(
+                public_message="This UserCode does not have a status. Please contact the Admin."
             )
 
+        # FIX: status_link
         status = self.status_link.resolve_with_context(context)
         if status.is_err():
-            return SyftError(message=status.err())
+            raise SyftException(public_message=status.err())
+
         return status.ok()
+
+    @as_result(SyftException)
+    def is_status_approved(self, context: AuthedServiceContext) -> bool:
+        status = self.get_status(context).unwrap()
+        return status.approved
 
     @property
     def input_owners(self) -> list[str] | None:
@@ -575,6 +579,7 @@ class UserCode(SyncableSyftObject):
             return self._get_input_policy()
         return None
 
+    # TODO: Change the return type to follow the enum pattern + input policy
     def _get_input_policy(self) -> InputPolicy | None:
         if len(self.input_policy_state) == 0:
             input_policy = None
@@ -617,7 +622,8 @@ class UserCode(SyncableSyftObject):
             return None
 
     def is_output_policy_approved(self, context: AuthedServiceContext) -> bool:
-        return self.get_status(context).approved
+        status = self.get_status(context).unwrap()
+        return status.approved
 
     @input_policy.setter  # type: ignore
     def input_policy(self, value: Any) -> None:  # type: ignore
@@ -640,6 +646,7 @@ class UserCode(SyncableSyftObject):
             return self._get_output_policy()
         return None
 
+    # FIX: change return type like _get_input_policy
     def _get_output_policy(self) -> OutputPolicy | None:
         if len(self.output_policy_state) == 0:
             output_policy = None
@@ -706,27 +713,37 @@ class UserCode(SyncableSyftObject):
             )
         return api.services.output.get_by_user_code_id(self.id)
 
+    @as_result(SyftException)
     def get_output_history(
         self, context: AuthedServiceContext
-    ) -> list[ExecutionOutput] | SyftError:
+    ) -> list[ExecutionOutput]:
         output_service = cast(OutputService, context.node.get_service("outputservice"))
-        return output_service.get_by_user_code_id(context, self.id)
+        # FIX: unwrap OutputService
+        result = output_service.get_by_user_code_id(context, self.id)
+        if isinstance(result, SyftError):
+            raise SyftException(public_message=result.message)
+        return result
 
+    @as_result(SyftException)
     def store_execution_output(
         self,
         context: AuthedServiceContext,
         outputs: Any,
         job_id: UID | None = None,
         input_ids: dict[str, UID] | None = None,
-    ) -> ExecutionOutput | SyftError:
+    ) -> ExecutionOutput:
         is_admin = context.role == ServiceRole.ADMIN
+
         output_policy = self.get_output_policy(context)
+
         if output_policy is None and not is_admin:
-            return SyftError(
-                message="You must wait for the output policy to be approved"
+            raise SyftException(
+                public_message="You must wait for the output policy to be approved"
             )
+
         output_ids = filter_only_uids(outputs)
 
+        # FIX: outputservice unwrap
         output_service = context.node.get_service("outputservice")
         output_service = cast(OutputService, output_service)
         execution_result = output_service.create(
@@ -739,7 +756,7 @@ class UserCode(SyncableSyftObject):
             input_ids=input_ids,
         )
         if isinstance(execution_result, SyftError):
-            return execution_result
+            raise SyftException(public_message=execution_result.message)
 
         return execution_result
 
