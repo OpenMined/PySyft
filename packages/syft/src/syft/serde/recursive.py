@@ -172,6 +172,13 @@ def recursive_serde_register(
         for alias in alias_fqn:
             TYPE_BANK[alias] = serde_attributes
 
+            # TODO Refactor alias, required for typing.Any in python 3.12,
+            alias_canonical_name = alias
+            alias_version = 1
+            SyftObjectRegistry.register_cls(
+                alias_canonical_name, alias_version, serde_attributes
+            )
+
 
 def chunk_bytes(
     field_obj: Any,

@@ -34,6 +34,8 @@ class ActionObjectPermission:
         permission: ActionPermission,
         credentials: SyftVerifyKey | None = None,
     ):
+        if not isinstance(uid, UID):
+            raise ValueError(f"uid must be of type UID not {type(uid)}")
         if credentials is None:
             if permission not in COMPOUND_ACTION_PERMISSION:
                 raise Exception(f"{permission} not in {COMPOUND_ACTION_PERMISSION}")
