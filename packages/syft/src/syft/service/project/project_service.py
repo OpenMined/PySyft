@@ -347,9 +347,9 @@ class ProjectService(AbstractService):
     ) -> Project:
         user_service = context.node.get_service("userservice")
         try:
-          user = user_service.stash.get_by_verify_key(
-            credentials=context.credentials, verify_key=context.credentials
-          ).unwrap()
+            user = user_service.stash.get_by_verify_key(
+                credentials=context.credentials, verify_key=context.credentials
+            ).unwrap()
         except NotFoundError as exc:
             raise NotFoundError.from_exception(
                 exc, public_message="User not found! Please register the user first"

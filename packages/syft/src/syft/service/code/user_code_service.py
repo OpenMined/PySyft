@@ -6,13 +6,11 @@ from typing import TypeVar
 # third party
 from result import Err
 
-# syft absolute
-from syft.store.document_store_errors import NotFoundError
-from syft.store.document_store_errors import StashError
-
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
+from ...store.document_store_errors import NotFoundError
+from ...store.document_store_errors import StashError
 from ...store.linked_obj import LinkedObject
 from ...types.cache_object import CachedSyftObject
 from ...types.errors import SyftException

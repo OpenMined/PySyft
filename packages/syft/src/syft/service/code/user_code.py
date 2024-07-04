@@ -99,7 +99,6 @@ from ..policy.policy import load_policy_code
 from ..policy.policy import partition_by_node
 from ..policy.policy_service import PolicyService
 from ..response import SyftError
-from ..response import SyftException
 from ..response import SyftInfo
 from ..response import SyftSuccess
 from ..response import SyftWarning
@@ -621,6 +620,7 @@ class UserCode(SyncableSyftObject):
             print(f"Failed to deserialize custom input policy state. {e}")
             return None
 
+    @as_result(SyftException)
     def is_output_policy_approved(self, context: AuthedServiceContext) -> bool:
         status = self.get_status(context).unwrap()
         return status.approved
