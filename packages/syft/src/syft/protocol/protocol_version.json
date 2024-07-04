@@ -416,6 +416,13 @@
           "hash": "f475543ed5e0066ca09c0dfd8c903e276d4974519e9958473d8141f8d446c881",
           "action": "add"
         }
+      },
+      "SyftWorker": {
+        "3": {
+          "version": 3,
+          "hash": "e124f56ddf4565df2be056553eecd15de7c80bd5f5fd0d06e8ff7815bb05563a",
+          "action": "add"
+        }
       }
     }
   }

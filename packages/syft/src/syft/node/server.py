@@ -105,11 +105,12 @@ def attach_debugger() -> None:
     print(
         "\nStarting the server with the Python Debugger enabled (`debug=True`).\n"
         'To attach the debugger, open the command palette in VSCode and select "Debug: Start Debugging (F5)".\n'
-        f"Then, enter `{debug_port}` in the port field and press Enter.\n"
+        f"Then, enter `{debug_port}` in the port field and press Enter.\n",
+        flush=True,
     )
-    print(f"Waiting for debugger to attach on port `{debug_port}`...")
+    print(f"Waiting for debugger to attach on port `{debug_port}`...", flush=True)
     debugpy.wait_for_client()  # blocks execution until a remote debugger is attached
-    print("Debugger attached")
+    print("Debugger attached", flush=True)
 
 
 def run_uvicorn(
