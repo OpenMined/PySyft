@@ -422,6 +422,13 @@
           "action": "add"
         }
       },
+      "SyftWorker": {
+        "3": {
+          "version": 3,
+          "hash": "e124f56ddf4565df2be056553eecd15de7c80bd5f5fd0d06e8ff7815bb05563a",
+          "action": "add"
+        }
+      },
       "StoreMetadata": {
         "1": {
           "version": 1,
