@@ -4,9 +4,9 @@ import logging
 from typing import Any
 
 # third party
-from result import Err
 from result import Ok
 from result import Result
+from result import as_result
 
 # relative
 from ...client.api import NodeIdentity
@@ -15,6 +15,7 @@ from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
+from ...types.errors import SyftException
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import UID
@@ -148,9 +149,10 @@ class SyncService(AbstractService):
         store = get_store(context, item)
         store.add_storage_permissions(new_permissions)
 
+    @as_result(SyftException)
     def set_object(
         self, context: AuthedServiceContext, item: SyncableSyftObject
-    ) -> Result[SyftObject, str]:
+    ) -> SyftObject:
         stash = self.get_stash_for_item(context, item)
         creds = context.credentials
 
@@ -162,20 +164,21 @@ class SyncService(AbstractService):
             apiservice: APIService = context.node.get_service("apiservice")  # type: ignore
 
             res = apiservice.set(context=context, endpoint=item)
+            # TODO: resultify
             if isinstance(res, SyftError):
-                return Err(res.message)
+                raise SyftException(public_message=res.message)
             else:
-                return Ok(item)
+                return item
 
         if exists:
-            res = stash.update(creds, item)
+            res = stash.update(creds, item).unwrap()
         else:
             # Storage permissions are added separately
             res = stash.set(
                 creds,
                 item,
                 add_storage_permission=False,
-            )
+            ).unwrap()
 
         return res
 
@@ -192,7 +195,7 @@ class SyncService(AbstractService):
         storage_permissions: list[StoragePermission],
         ignored_batches: dict[UID, int],
         unignored_batches: set[UID],
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         permissions_dict = defaultdict(list)
         for permission in permissions:
             permissions_dict[permission.uid].append(permission)
@@ -211,37 +214,29 @@ class SyncService(AbstractService):
                 )
             else:
                 item = self.transform_item(context, item)  # type: ignore[unreachable]
-                res = self.set_object(context, item)
+                res = self.set_object(context, item).unwrap()
 
-                if res.is_ok():
-                    self.add_permissions_for_item(context, item, new_permissions)
-                    self.add_storage_permissions_for_item(
-                        context, item, new_storage_permissions
-                    )
-                else:
-                    return SyftError(message=f"Failed to sync {res.err()}")
+                self.add_permissions_for_item(context, item, new_permissions)
+                self.add_storage_permissions_for_item(
+                    context, item, new_storage_permissions
+                )
 
-        res = self.build_current_state(
+        new_state = self.build_current_state(
             context,
             new_items=items,
             new_ignored_batches=ignored_batches,
             new_unignored_batches=unignored_batches,
-        )
+        ).unwrap()
 
-        if res.is_err():
-            return SyftError(message=res.message)
-        else:
-            new_state = res.ok()
-            res = self.stash.set(context.credentials, new_state)
-            if res.is_err():
-                return SyftError(message=res.message)
-            else:
-                message = f"Synced {len(items)} items"
-                if len(ignored_batches) > 0:
-                    message += f", ignored {len(ignored_batches)} batches"
-                if len(unignored_batches) > 0:
-                    message += f", unignored {len(unignored_batches)} batches"
-                return SyftSuccess(message=message)
+        new_state = res.ok()
+        self.stash.set(context.credentials, new_state).unwrap()
+
+        message = f"Synced {len(items)} items"
+        if len(ignored_batches) > 0:
+            message += f", ignored {len(ignored_batches)} batches"
+        if len(unignored_batches) > 0:
+            message += f", unignored {len(unignored_batches)} batches"
+        return SyftSuccess(message=message)
 
     @service_method(
         path="sync.get_permissions",
@@ -271,10 +266,11 @@ class SyncService(AbstractService):
                     storage_permissions[uid] = item_storage_permissions.ok()
         return permissions, storage_permissions
 
+    @as_result(SyftException)
     def _get_all_items_for_jobs(
         self,
         context: AuthedServiceContext,
-    ) -> Result[tuple[list[SyncableSyftObject], dict[UID, str]], str]:
+    ) -> tuple[list[SyncableSyftObject], dict[UID, str]]:
         """
         Returns all Jobs, along with their Logs, ExecutionOutputs and ActionObjects
         """
@@ -283,8 +279,6 @@ class SyncService(AbstractService):
 
         job_service = context.node.get_service("jobservice")
         jobs = job_service.get_all(context)
-        if isinstance(jobs, SyftError):
-            return Err(jobs.message)
 
         for job in jobs:
             job_items_result = self._get_job_batch(context, job)
@@ -296,8 +290,9 @@ class SyncService(AbstractService):
                 continue
             items_for_jobs.extend(job_items_result.ok())
 
-        return Ok((items_for_jobs, errors))
+        return (items_for_jobs, errors)
 
+    @as_result(SyftException)
     def _get_job_batch(
         self, context: AuthedServiceContext, job: Job
     ) -> Result[list[SyncableSyftObject], str]:
@@ -305,14 +300,10 @@ class SyncService(AbstractService):
 
         log_service = context.node.get_service("logservice")
         log = log_service.get(context, job.log_id)
-        if isinstance(log, SyftError):
-            return Err(log.message)
         job_batch.append(log)
 
         output_service = context.node.get_service("outputservice")
-        output = output_service.get_by_job_id(context, job.id)
-        if isinstance(output, SyftError):
-            return Err(output.message)
+        output = output_service.get_by_job_id(context, job.id).unwrap()
 
         if output is not None:
             job_batch.append(output)
@@ -325,16 +316,18 @@ class SyncService(AbstractService):
 
         action_service = context.node.get_service("actionservice")
         for result_id in job_result_ids:
+            # TODO: unwrap
             action_object = action_service.get(context, result_id)
             if action_object.is_err():
                 return action_object
             job_batch.append(action_object.ok())
 
-        return Ok(job_batch)
+        return job_batch
 
+    @as_result(SyftException)
     def get_all_syncable_items(
         self, context: AuthedServiceContext
-    ) -> Result[tuple[list[SyncableSyftObject], dict[UID, str]], str]:
+    ) -> tuple[list[SyncableSyftObject], dict[UID, str]]:
         all_items: list[SyncableSyftObject] = []
 
         # NOTE Jobs are handled separately
@@ -347,27 +340,24 @@ class SyncService(AbstractService):
 
         for service_name in services_to_sync:
             service = context.node.get_service(service_name)
-            items = service.get_all(context)
-            if isinstance(items, SyftError):
-                return Err(items.message)
+            items = service.get_all(context).unwrap()
             all_items.extend(items)
 
         # Gather jobs, logs, outputs and action objects
-        items_for_jobs = self._get_all_items_for_jobs(context)
-        if items_for_jobs.is_err():
-            return items_for_jobs
-        items_for_jobs, errors = items_for_jobs.ok()
+        items_for_jobs = self._get_all_items_for_jobs(context).unwrap()
+        items_for_jobs, errors = items_for_jobs
         all_items.extend(items_for_jobs)
 
-        return Ok((all_items, errors))
+        return (all_items, errors)
 
+    @as_result(SyftException)
     def build_current_state(
         self,
         context: AuthedServiceContext,
         new_items: list[SyncableSyftObject] | None = None,
         new_ignored_batches: dict[UID, int] | None = None,
         new_unignored_batches: set[UID] | None = None,
-    ) -> Result[SyncState, str]:
+    ) -> SyncState:
         new_items = new_items if new_items is not None else []
         new_ignored_batches = (
             new_ignored_batches if new_ignored_batches is not None else {}
@@ -380,12 +370,10 @@ class SyncService(AbstractService):
             return objects_res
 
         objects, errors = objects_res.ok()
+
         permissions, storage_permissions = self.get_permissions(context, objects)
 
-        previous_state = self.stash.get_latest(context=context)
-        if previous_state.is_err():
-            return previous_state
-        previous_state = previous_state.ok()
+        previous_state = self.stash.get_latest(context=context).unwrap()
 
         if previous_state is not None:
             previous_state_link = LinkedObject.from_obj(
@@ -434,9 +422,5 @@ class SyncService(AbstractService):
         name="_get_state",
         roles=ADMIN_ROLE_LEVEL,
     )
-    def _get_state(self, context: AuthedServiceContext) -> SyncState | SyftError:
-        res = self.build_current_state(context)
-        if res.is_err():
-            return SyftError(message=res.value)
-        else:
-            return res.ok()
+    def _get_state(self, context: AuthedServiceContext) -> SyncState:
+        return self.build_current_state(context).unwrap()

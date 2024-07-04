@@ -1,18 +1,16 @@
 # stdlib
 
 # third party
-from result import Result
 
 # relative
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
-from ...store.document_store import BaseUIDStoreStash, NewBaseUIDStoreStash
 from ...store.document_store import DocumentStore
+from ...store.document_store import NewBaseUIDStoreStash
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...types.uid import UID
 from ...util.telemetry import instrument
-from ..action.action_permissions import ActionObjectPermission
 from .settings import NodeSettings
 
 NamePartitionKey = PartitionKey(key="name", type_=str)

@@ -76,7 +76,14 @@ class Err(Generic[E]):
         return False
 
     @exclude_from_traceback
-    def unwrap(self) -> NoReturn:
+    def unwrap(
+        self, public_message: str | None = None, private_message: str | None = None
+    ) -> NoReturn:
+        if isinstance(self.value, SyftException):
+            if public_message is not None:
+                self.value.public_message = public_message
+            if private_message is not None:
+                self.value._private_message = private_message
         if isinstance(self.value, BaseException):
             raise self.value
         raise TypeError("Error is not a BaseException")

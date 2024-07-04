@@ -1,7 +1,7 @@
 # relative
 from ...serde.serializable import serializable
-from ...store.document_store import NewBaseUIDStoreStash
 from ...store.document_store import DocumentStore
+from ...store.document_store import NewBaseUIDStoreStash
 from ...store.document_store import PartitionSettings
 from ...util.telemetry import instrument
 from .log import SyftLog

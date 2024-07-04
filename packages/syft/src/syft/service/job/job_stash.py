@@ -12,8 +12,8 @@ from typing import Any
 from pydantic import Field
 from pydantic import model_validator
 from result import Err
-from result import Ok
 from result import Result
+from result import as_result
 from typing_extensions import Self
 
 # relative
@@ -23,12 +23,15 @@ from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...service.context import AuthedServiceContext
 from ...service.worker.worker_pool import SyftWorker
-from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
+from ...store.document_store import NewBaseUIDStoreStash
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
+from ...store.document_store_errors import NotFoundException
+from ...store.document_store_errors import StashException
+from ...store.document_store_errors import TooManyItemsFoundException
 from ...types.datetime import DateTime
 from ...types.datetime import format_timedelta
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
@@ -827,7 +830,7 @@ class JobInfo(SyftObject):
 
 @instrument
 @serializable()
-class JobStash(BaseUIDStoreStash):
+class JobStash(NewBaseUIDStoreStash):
     object_type = Job
     settings: PartitionSettings = PartitionSettings(
         name=Job.__canonical_name__, object_type=Job
@@ -836,58 +839,56 @@ class JobStash(BaseUIDStoreStash):
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
 
+    @as_result(StashException)
     def set_result(
         self,
         credentials: SyftVerifyKey,
         item: Job,
         add_permissions: list[ActionObjectPermission] | None = None,
-    ) -> Result[Job | None, str]:
-        valid = self.check_type(item, self.object_type)
-        if valid.is_err():
-            return SyftError(message=valid.err())
-        return super().update(credentials, item, add_permissions)
+    ) -> Job:
+        # raises
+        self.check_type(item, self.object_type).unwrap()
+        res = super().update(credentials, item, add_permissions)
 
+        # todo, refactor partition level
+        if res.is_err():
+            raise StashException(public_message="Failed to update")
+        else:
+            return res.ok()
+
+    @as_result(StashException)
     def get_by_result_id(
         self,
         credentials: SyftVerifyKey,
         res_id: UID,
-    ) -> Result[Job | None, str]:
-        res = self.get_all(credentials)
-        if res.is_err():
-            return res
+    ) -> Job:
+        res = self.get_all(credentials).unwrap()
+        # beautiful query
+        res = [
+            x
+            for x in res
+            if isinstance(x.result, ActionObject) and x.result.id.id == res_id
+        ]
+        if len(res) == 0:
+            raise NotFoundException()
+        elif len(res) > 1:
+            raise TooManyItemsFoundException()
         else:
-            res = res.ok()
-            # beautiful query
-            res = [
-                x
-                for x in res
-                if isinstance(x.result, ActionObject) and x.result.id.id == res_id
-            ]
-            if len(res) == 0:
-                return Ok(None)
-            elif len(res) > 1:
-                return Err("multiple Jobs found")
-            else:
-                return Ok(res[0])
+            return res[0]
 
-    def get_by_parent_id(
-        self, credentials: SyftVerifyKey, uid: UID
-    ) -> Result[Job | None, str]:
+    @as_result(StashException)
+    def get_by_parent_id(self, credentials: SyftVerifyKey, uid: UID) -> Job:
         qks = QueryKeys(
             qks=[PartitionKey(key="parent_job_id", type_=UID).with_obj(uid)]
         )
-        item = self.query_all(credentials=credentials, qks=qks)
-        return item
+        return self.query_all(credentials=credentials, qks=qks).unwrap()
 
-    def delete_by_uid(
-        self, credentials: SyftVerifyKey, uid: UID
-    ) -> Result[SyftSuccess, str]:
+    @as_result(StashException)
+    def delete_by_uid(self, credentials: SyftVerifyKey, uid: UID) -> bool:
         qk = UIDPartitionKey.with_obj(uid)
-        result = super().delete(credentials=credentials, qk=qk)
-        if result.is_ok():
-            return Ok(SyftSuccess(message=f"ID: {uid} deleted"))
-        return result
+        return super().delete(credentials=credentials, qk=qk).unwrap()
 
+    @as_result(StashException)
     def get_active(self, credentials: SyftVerifyKey) -> Result[SyftSuccess, str]:
         qks = QueryKeys(
             qks=[
@@ -896,21 +897,20 @@ class JobStash(BaseUIDStoreStash):
                 )
             ]
         )
-        return self.query_all(credentials=credentials, qks=qks)
+        return self.query_all(credentials=credentials, qks=qks).unwrap()
 
-    def get_by_worker(
-        self, credentials: SyftVerifyKey, worker_id: str
-    ) -> Result[list[Job], str]:
+    @as_result(StashException)
+    def get_by_worker(self, credentials: SyftVerifyKey, worker_id: str) -> list[Job]:
         qks = QueryKeys(
             qks=[PartitionKey(key="job_worker_id", type_=str).with_obj(worker_id)]
         )
-        return self.query_all(credentials=credentials, qks=qks)
+        return self.query_all(credentials=credentials, qks=qks).unwrap()
 
+    @as_result(StashException)
     def get_by_user_code_id(
         self, credentials: SyftVerifyKey, user_code_id: UID
-    ) -> Result[list[Job], str]:
+    ) -> list[Job]:
         qks = QueryKeys(
             qks=[PartitionKey(key="user_code_id", type_=UID).with_obj(user_code_id)]
         )
-
-        return self.query_all(credentials=credentials, qks=qks)
+        return self.query_all(credentials=credentials, qks=qks).unwrap()

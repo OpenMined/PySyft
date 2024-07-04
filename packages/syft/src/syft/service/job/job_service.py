@@ -2,13 +2,13 @@
 from collections.abc import Callable
 import inspect
 import time
-from typing import Any
 from typing import cast
 
 # relative
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
+from ...types.errors import SyftException
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_object import ActionObject
@@ -59,25 +59,15 @@ class JobService(AbstractService):
         name="get",
         roles=GUEST_ROLE_LEVEL,
     )
-    def get(self, context: AuthedServiceContext, uid: UID) -> Job | SyftError:
-        res = self.stash.get_by_uid(context.credentials, uid=uid)
-        if res.is_err():
-            return SyftError(message=res.err())
-        else:
-            res = res.ok()
-            return res
+    def get(self, context: AuthedServiceContext, uid: UID) -> Job:
+        return self.stash.get_by_uid(context.credentials, uid=uid).unwrap()
 
     @service_method(
         path="job.get_all",
         name="get_all",
     )
-    def get_all(self, context: AuthedServiceContext) -> list[Job] | SyftError:
-        res = self.stash.get_all(context.credentials)
-        if res.is_err():
-            return SyftError(message=res.err())
-        else:
-            res = res.ok()
-            return res
+    def get_all(self, context: AuthedServiceContext) -> list[Job]:
+        return self.stash.get_all(context.credentials).unwrap()
 
     @service_method(
         path="job.get_by_user_code_id",
@@ -86,25 +76,18 @@ class JobService(AbstractService):
     )
     def get_by_user_code_id(
         self, context: AuthedServiceContext, user_code_id: UID
-    ) -> list[Job] | SyftError:
-        res = self.stash.get_by_user_code_id(context.credentials, user_code_id)
-        if res.is_err():
-            return SyftError(message=res.err())
-
-        res = res.ok()
-        return res
+    ) -> list[Job]:
+        return self.stash.get_by_user_code_id(
+            context.credentials, user_code_id
+        ).unwrap()
 
     @service_method(
         path="job.delete",
         name="delete",
         roles=ADMIN_ROLE_LEVEL,
     )
-    def delete(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> SyftSuccess | SyftError:
-        res = self.stash.delete_by_uid(context.credentials, uid)
-        if res.is_err():
-            return SyftError(message=res.err())
+    def delete(self, context: AuthedServiceContext, uid: UID) -> SyftSuccess:
+        self.stash.delete_by_uid(context.credentials, uid).unwrap()
         return SyftSuccess(message="Great Success!")
 
     @service_method(
@@ -112,29 +95,17 @@ class JobService(AbstractService):
         name="get_by_result_id",
         roles=ADMIN_ROLE_LEVEL,
     )
-    def get_by_result_id(
-        self, context: AuthedServiceContext, result_id: UID
-    ) -> Job | None | SyftError:
-        res = self.stash.get_by_result_id(context.credentials, result_id)
-        if res.is_err():
-            return SyftError(message=res.err())
-        return res.ok()
+    def get_by_result_id(self, context: AuthedServiceContext, result_id: UID) -> Job:
+        return self.stash.get_by_result_id(context.credentials, result_id).unwrap()
 
     @service_method(
         path="job.restart",
         name="restart",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
-    def restart(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> SyftSuccess | SyftError:
-        job_or_err = self.stash.get_by_uid(context.credentials, uid=uid)
-        if job_or_err.is_err():
-            return SyftError(message=job_or_err.err())
-        if job_or_err.ok() is None:
-            return SyftError(message="Job not found")
+    def restart(self, context: AuthedServiceContext, uid: UID) -> SyftSuccess:
+        job = self.stash.get_by_uid(context.credentials, uid=uid).unwrap()
 
-        job = job_or_err.ok()
         if job.parent_job_id is not None:
             return SyftError(
                 message="Not possible to restart subjobs. Please restart the parent job."
@@ -146,10 +117,12 @@ class JobService(AbstractService):
             )
 
         job.status = JobStatus.CREATED
-        self.update(context=context, job=job)
+        self.update(context=context, job=job).unwrap()
 
         task_uid = UID()
         worker_settings = WorkerSettings.from_node(context.node)
+
+        # TODO, fix return type of get_worker_pool_ref_by_name
         worker_pool_ref = context.node.get_worker_pool_ref_by_name(context.credentials)
         if isinstance(worker_pool_ref, SyftError):
             return worker_pool_ref
@@ -166,13 +139,15 @@ class JobService(AbstractService):
             worker_pool=worker_pool_ref,
         )
 
+        # TODO: unwrap
         context.node.queue_stash.set_placeholder(context.credentials, queue_item)
-        context.node.job_stash.set(context.credentials, job)
+
+        context.node.job_stash.set(context.credentials, job).unwrap()
 
         log_service = context.node.get_service("logservice")
-        result = log_service.restart(context, job.log_id)
-        if isinstance(result, SyftError):
-            return result
+
+        # may raise
+        log_service.restart(context, job.log_id)
 
         return SyftSuccess(message="Great Success!")
 
@@ -181,26 +156,20 @@ class JobService(AbstractService):
         name="update",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
-    def update(
-        self, context: AuthedServiceContext, job: Job
-    ) -> SyftSuccess | SyftError:
-        res = self.stash.update(context.credentials, obj=job)
-        if res.is_err():
-            return SyftError(message=res.err())
-        res = res.ok()
-        return SyftSuccess(message="Great Success!")
+    def update(self, context: AuthedServiceContext, job: Job) -> SyftSuccess:
+        res = self.stash.update(context.credentials, obj=job).unwrap()
+        return SyftSuccess(message="Job updated!", value=res)
 
     def _kill(self, context: AuthedServiceContext, job: Job) -> SyftSuccess | SyftError:
         # set job and subjobs status to TERMINATING
         # so that MonitorThread can kill them
         job.status = JobStatus.TERMINATING
-        res = self.stash.update(context.credentials, obj=job)
+        res = self.stash.update(context.credentials, obj=job).unwrap()
         results = [res]
 
         # attempt to kill all subjobs
-        subjobs_or_err = self.stash.get_by_parent_id(context.credentials, uid=job.id)
-        if subjobs_or_err.is_ok() and subjobs_or_err.ok() is not None:
-            subjobs = subjobs_or_err.ok()
+        subjobs = self.stash.get_by_parent_id(context.credentials, uid=job.id).unwrap()
+        if subjobs is not None:
             for subjob in subjobs:
                 subjob.status = JobStatus.TERMINATING
                 res = self.stash.update(context.credentials, obj=subjob)
@@ -225,23 +194,17 @@ class JobService(AbstractService):
         name="kill",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
-    def kill(self, context: AuthedServiceContext, id: UID) -> SyftSuccess | SyftError:
-        job_or_err = self.stash.get_by_uid(context.credentials, uid=id)
-        if job_or_err.is_err():
-            return SyftError(message=job_or_err.err())
-        if job_or_err.ok() is None:
-            return SyftError(message="Job not found")
-
-        job = job_or_err.ok()
+    def kill(self, context: AuthedServiceContext, id: UID) -> SyftSuccess:
+        job = self.stash.get_by_uid(context.credentials, uid=id).unwrap()
         if job.parent_job_id is not None:
-            return SyftError(
-                message="Not possible to cancel subjobs. To stop execution, please cancel the parent job."
+            raise SyftException(
+                public_message="Not possible to cancel subjobs. To stop execution, please cancel the parent job."
             )
         if job.status != JobStatus.PROCESSING:
-            return SyftError(message="Job is not running")
+            raise SyftException(public_message="Job is not running")
         if job.job_pid is None:
-            return SyftError(
-                message="Job termination disabled in dev mode. "
+            raise SyftException(
+                public_message="Job termination disabled in dev mode. "
                 "Set 'dev_mode=False' or 'thread_workers=False' to enable."
             )
 
@@ -252,23 +215,14 @@ class JobService(AbstractService):
         name="get_subjobs",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
-    def get_subjobs(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> list[Job] | SyftError:
-        res = self.stash.get_by_parent_id(context.credentials, uid=uid)
-        if res.is_err():
-            return SyftError(message=res.err())
-        else:
-            return res.ok()
+    def get_subjobs(self, context: AuthedServiceContext, uid: UID) -> list[Job]:
+        return self.stash.get_by_parent_id(context.credentials, uid=uid).unwrap()
 
     @service_method(
         path="job.get_active", name="get_active", roles=DATA_SCIENTIST_ROLE_LEVEL
     )
-    def get_active(self, context: AuthedServiceContext) -> list[Job] | SyftError:
-        res = self.stash.get_active(context.credentials)
-        if res.is_err():
-            return SyftError(message=res.err())
-        return res.ok()
+    def get_active(self, context: AuthedServiceContext) -> list[Job]:
+        return self.stash.get_active(context.credentials).unwrap()
 
     @service_method(
         path="job.add_read_permission_job_for_code_owner",
@@ -281,6 +235,7 @@ class JobService(AbstractService):
         permission = ActionObjectPermission(
             job.id, ActionPermission.READ, user_code.user_verify_key
         )
+        # TODO: make add_permission wrappable
         return self.stash.add_permission(permission=permission)
 
     @service_method(
@@ -290,7 +245,7 @@ class JobService(AbstractService):
     )
     def add_read_permission_log_for_code_owner(
         self, context: AuthedServiceContext, log_id: UID, user_code: UserCode
-    ) -> Any:
+    ) -> None:
         log_service = context.node.get_service("logservice")
         log_service = cast(LogService, log_service)
         return log_service.stash.add_permission(
@@ -313,7 +268,7 @@ class JobService(AbstractService):
         log_stderr: str = "",
         status: JobStatus = JobStatus.CREATED,
         add_code_owner_read_permissions: bool = True,
-    ) -> Job | SyftError:
+    ) -> Job:
         is_resolved = status in [JobStatus.COMPLETED, JobStatus.ERRORED]
         job = Job(
             id=UID(),
@@ -328,23 +283,21 @@ class JobService(AbstractService):
             resolved=is_resolved,
         )
         user_code_service = context.node.get_service("usercodeservice")
-        user_code = user_code_service.get_by_uid(context=context, uid=user_code_id)
-        if isinstance(user_code, SyftError):
-            return user_code
+        user_code = user_code_service.get_by_uid(
+            context=context, uid=user_code_id
+        ).unwrap()
 
         # The owner of the code should be able to read the job
-        self.stash.set(context.credentials, job)
+        self.stash.set(context.credentials, job).unwrap()
 
         log_service = context.node.get_service("logservice")
-        res = log_service.add(
+        log_service.add(
             context,
             job.log_id,
             job.id,
             stdout=log_stdout,
             stderr=log_stderr,
-        )
-        if isinstance(res, SyftError):
-            return res
+        ).unwrap()
 
         if add_code_owner_read_permissions:
             self.add_read_permission_job_for_code_owner(context, job, user_code)

@@ -104,6 +104,12 @@ NEW_STYLE_SERVICES_LIST: list[str] = [
     "code_status.",
     "code_history.",
     "output.",
+    "metadata.",
+    "log.",
+    "job.",
+    "data_subject.",
+    "sync.",
+    "blob_storage.",
 ]
 
 
