@@ -572,7 +572,7 @@ class Dataset(SyftObject):
             <div class='syft-dataset'>
             <h1>{self.name}</h1>
             <h2><strong><span class='pr-8'>Summary</span></strong></h2>
-            <p>{self.summary}</p>
+            {f"<p>{self.summary}</p>" if self.summary else ""}
             {description_info_message}
             <h2><strong><span class='pr-8'>Dataset Details</span></strong></h2>
             {uploaded_by_line}
