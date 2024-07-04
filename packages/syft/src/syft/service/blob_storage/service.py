@@ -283,7 +283,7 @@ class BlobStorageService(AbstractService):
 
         if isinstance(file_unlinked_result, SyftError):
             raise SyftException(public_message="unable to delete linked file")
-        blob_storage_entry_deleted = self.stash.delete(
+        self.stash.delete(
             context.credentials, UIDPartitionKey.with_obj(uid), has_permission=True
         ).unwrap()
         return file_unlinked_result

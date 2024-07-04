@@ -6,7 +6,6 @@ from typing import Any
 # third party
 from result import Ok
 from result import Result
-from result import as_result
 
 # relative
 from ...client.api import NodeIdentity
@@ -16,6 +15,7 @@ from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import UID

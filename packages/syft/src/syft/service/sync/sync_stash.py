@@ -3,7 +3,6 @@
 # stdlib
 
 # third party
-from result import as_result
 
 # relative
 from ...serde.serializable import serializable
@@ -13,6 +12,7 @@ from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store_errors import StashException
 from ...types.datetime import DateTime
+from ...types.result import as_result
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
 from .sync_state import SyncState

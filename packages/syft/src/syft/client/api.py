@@ -110,6 +110,7 @@ NEW_STYLE_SERVICES_LIST: list[str] = [
     "data_subject.",
     "sync.",
     "blob_storage.",
+    "notifier.",
 ]
 
 

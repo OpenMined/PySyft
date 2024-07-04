@@ -2,7 +2,6 @@
 
 # third party
 from result import Result
-from result import as_result
 
 # relative
 from ...node.credentials import SyftVerifyKey
@@ -12,6 +11,7 @@ from ...store.document_store import NewBaseUIDStoreStash
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store_errors import StashException
+from ...types.result import as_result
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
 from ..response import SyftError

@@ -13,7 +13,6 @@ from pydantic import Field
 from pydantic import model_validator
 from result import Err
 from result import Result
-from result import as_result
 from typing_extensions import Self
 
 # relative
@@ -34,6 +33,7 @@ from ...store.document_store_errors import StashException
 from ...store.document_store_errors import TooManyItemsFoundException
 from ...types.datetime import DateTime
 from ...types.datetime import format_timedelta
+from ...types.result import as_result
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_6
 from ...types.syft_object import SyftObject
