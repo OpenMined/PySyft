@@ -317,7 +317,7 @@ class SyncWidgetHeader(SyncTableObject):
             </div>
             {copy_id_button}
             </div>
-        """  # noqa: E501
+        """
 
         num_diffs = len(self.diff_batch.get_dependencies(include_roots=True))
         if self.diff_batch.sync_direction == SyncDirection.HIGH_TO_LOW:
