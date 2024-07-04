@@ -474,6 +474,18 @@ class DatasetV2(SyftObject):
     created_at: DateTime = DateTime.now()
     uploader: Contributor
 
+    __attr_searchable__ = [
+        "name",
+        "citation",
+        "url",
+        "description",
+        "action_ids",
+        "summary",
+    ]
+    __attr_unique__ = ["name"]
+    __repr_attrs__ = ["name", "url", "created_at"]
+    __table_sort_attr__ = "Created at"
+
 
 @serializable()
 class Dataset(SyftObject):
@@ -922,6 +934,8 @@ def createdataset_to_dataset() -> list[Callable]:
 def migrate_dataset_v2_to_v3() -> list[Callable]:
     return [
         make_set_default("summary", None),
+        drop("__repr_attrs__"),
+        make_set_default("__repr_attrs__", ["name", "summary", "url", "created_at"]),
     ]
 
 
@@ -929,6 +943,8 @@ def migrate_dataset_v2_to_v3() -> list[Callable]:
 def migrate_dataset_v3_to_v2() -> list[Callable]:
     return [
         drop("summary"),
+        drop("__repr_attrs__"),
+        make_set_default("__repr_attrs__", ["name", "url", "created_at"]),
     ]
 
 
@@ -936,6 +952,8 @@ def migrate_dataset_v3_to_v2() -> list[Callable]:
 def migrate_create_dataset_v2_to_v3() -> list[Callable]:
     return [
         make_set_default("summary", None),
+        drop("__repr_attrs__"),
+        make_set_default("__repr_attrs__", ["name", "summary", "url"]),
     ]
 
 
@@ -943,6 +961,8 @@ def migrate_create_dataset_v2_to_v3() -> list[Callable]:
 def migrate_create_dataset_v3_to_v2() -> list[Callable]:
     return [
         drop("summary"),
+        drop("__repr_attrs__"),
+        make_set_default("__repr_attrs__", ["name", "url"]),
     ]
 
 
