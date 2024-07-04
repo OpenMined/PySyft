@@ -170,7 +170,7 @@ def deploy_to_python(
     association_request_auto_approval: bool = False,
     background_tasks: bool = False,
     debug: bool = False,
-    migrate: bool = True,
+    migrate: bool = False,
 ) -> NodeHandle:
     worker_classes = {
         NodeType.DOMAIN: Domain,
@@ -293,7 +293,7 @@ class Orchestra:
         association_request_auto_approval: bool = False,
         background_tasks: bool = False,
         debug: bool = False,
-        migrate: bool = True,
+        migrate: bool = False,
     ) -> NodeHandle:
         if dev_mode is True:
             thread_workers = True
