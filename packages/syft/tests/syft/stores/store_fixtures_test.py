@@ -108,7 +108,7 @@ def sqlite_store_partition(
         root_verify_key, sqlite_workspace, locking_config_name=locking_config_name
     )
 
-    yield store
+    return store
 
 
 def sqlite_document_store_fn(
@@ -133,7 +133,7 @@ def sqlite_document_store(root_verify_key, sqlite_workspace: tuple[Path, str], r
     store = sqlite_document_store_fn(
         root_verify_key, sqlite_workspace, locking_config_name=locking_config_name
     )
-    yield store
+    return store
 
 
 def sqlite_queue_stash_fn(
@@ -152,7 +152,7 @@ def sqlite_queue_stash_fn(
 @pytest.fixture(scope="function", params=locking_scenarios)
 def sqlite_queue_stash(root_verify_key, sqlite_workspace: tuple[Path, str], request):
     locking_config_name = request.param
-    yield sqlite_queue_stash_fn(
+    return sqlite_queue_stash_fn(
         root_verify_key, sqlite_workspace, locking_config_name=locking_config_name
     )
 
@@ -171,7 +171,7 @@ def sqlite_action_store(sqlite_workspace: tuple[Path, str], request):
     )
 
     ver_key = SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_ROOT)
-    yield SQLiteActionStore(
+    return SQLiteActionStore(
         node_uid=UID(),
         store_config=store_config,
         root_verify_key=ver_key,
@@ -241,7 +241,7 @@ def mongo_document_store_fn(
 def mongo_document_store(root_verify_key, mongo_client, request):
     locking_config_name = request.param
     mongo_db_name = token_hex(8)
-    yield mongo_document_store_fn(
+    return mongo_document_store_fn(
         mongo_client,
         root_verify_key,
         mongo_db_name=mongo_db_name,
@@ -264,7 +264,7 @@ def mongo_queue_stash(root_verify_key, mongo_client, request):
         mongo_db_name=mongo_db_name,
         locking_config_name=locking_config_name,
     )
-    yield mongo_queue_stash_fn(store)
+    return mongo_queue_stash_fn(store)
 
 
 @pytest.fixture(scope="function", params=locking_scenarios)
@@ -284,7 +284,7 @@ def mongo_action_store(mongo_client, request):
         root_verify_key=ver_key,
     )
 
-    yield mongo_action_store
+    return mongo_action_store
 
 
 def dict_store_partition_fn(
@@ -303,7 +303,7 @@ def dict_store_partition_fn(
 @pytest.fixture(scope="function", params=locking_scenarios)
 def dict_store_partition(root_verify_key, request):
     locking_config_name = request.param
-    yield dict_store_partition_fn(
+    return dict_store_partition_fn(
         root_verify_key, locking_config_name=locking_config_name
     )
 
@@ -315,7 +315,7 @@ def dict_action_store(request):
 
     store_config = DictStoreConfig(locking_config=locking_config)
     ver_key = SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_ROOT)
-    yield DictActionStore(
+    return DictActionStore(
         node_uid=UID(),
         store_config=store_config,
         root_verify_key=ver_key,
@@ -331,7 +331,7 @@ def dict_document_store_fn(root_verify_key, locking_config_name: str = "nop"):
 @pytest.fixture(scope="function", params=locking_scenarios)
 def dict_document_store(root_verify_key, request):
     locking_config_name = request.param
-    yield dict_document_store_fn(
+    return dict_document_store_fn(
         root_verify_key, locking_config_name=locking_config_name
     )
 
@@ -342,4 +342,4 @@ def dict_queue_stash_fn(dict_document_store):
 
 @pytest.fixture(scope="function")
 def dict_queue_stash(dict_document_store):
-    yield dict_queue_stash_fn(dict_document_store)
+    return dict_queue_stash_fn(dict_document_store)
