@@ -587,8 +587,7 @@ class UserCodeService(AbstractService):
         # Execute the code item
         if not self.valid_worker_pool_for_context(context, code):
             raise SyftException(
-                public_message
-                == "You tried to run a syft function attached to a worker pool in blocking mode,"
+                public_message= "You tried to run a syft function attached to a worker pool in blocking mode,"
                 "which is currently not supported. Run your function with `blocking=False` to run"
                 " as a job on your worker pool"
             )
