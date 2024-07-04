@@ -55,6 +55,7 @@ NODE_ARGS_TEST_CASES = node_args_combinations(
 )
 
 
+@pytest.mark.local_node
 @pytest.mark.parametrize("node_args", NODE_ARGS_TEST_CASES)
 @pytest.mark.parametrize("force", [True, False])
 def test_delete_idle_worker(node: NodeHandle, force: bool) -> None:
@@ -75,6 +76,7 @@ def test_delete_idle_worker(node: NodeHandle, force: bool) -> None:
             raise TimeoutError("Worker did not get removed from stash.")
 
 
+@pytest.mark.local_node
 @pytest.mark.parametrize("node_args", NODE_ARGS_TEST_CASES)
 @pytest.mark.parametrize("force", [True, False])
 def test_delete_worker(node: NodeHandle, force: bool) -> None:
