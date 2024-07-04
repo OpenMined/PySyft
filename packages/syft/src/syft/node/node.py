@@ -25,8 +25,6 @@ from typing import cast
 from nacl.signing import SigningKey
 from result import Err
 from result import Result
-from syft.store.document_store_errors import StashException
-from syft.types.result import as_result
 from typing_extensions import Self
 
 # relative
@@ -127,12 +125,14 @@ from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
 from ..store.blob_storage.seaweedfs import SeaweedFSBlobDeposit
 from ..store.dict_document_store import DictStoreConfig
 from ..store.document_store import StoreConfig
+from ..store.document_store_errors import StashException
 from ..store.linked_obj import LinkedObject
 from ..store.mongo_document_store import MongoStoreConfig
 from ..store.sqlite_document_store import SQLiteStoreClientConfig
 from ..store.sqlite_document_store import SQLiteStoreConfig
 from ..types.datetime import DATETIME_FORMAT
 from ..types.errors import SyftException
+from ..types.result import as_result
 from ..types.syft_metaclass import Empty
 from ..types.syft_object import PartialSyftObject
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
@@ -1683,10 +1683,10 @@ class Node(AbstractNode):
         settings_stash = SettingsStash(store=self.document_store)
 
         if self.signing_key is None:
-            logger.debug(
-                "create_initial_settings failed as there is no signing key"
+            logger.debug("create_initial_settings failed as there is no signing key")
+            raise SyftException(
+                public_message="create_initial_settings failed as there is no signing key"
             )
-            raise SyftException(public_message="create_initial_settings failed as there is no signing key")
 
         settings_exists = settings_stash.get_all(self.signing_key.verify_key).unwrap()
 

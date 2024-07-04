@@ -3,13 +3,11 @@
 # stdlib
 from typing import cast
 
-# syft absolute
-from syft.store.document_store_errors import NotFoundException
-from syft.store.document_store_errors import StashException
-
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
+from ...store.document_store_errors import NotFoundException
+from ...store.document_store_errors import StashException
 from ...store.linked_obj import LinkedObject
 from ...types.errors import SyftException
 from ...types.result import as_result

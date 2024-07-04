@@ -11,7 +11,6 @@ from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..context import AuthedServiceContext
-from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
@@ -79,11 +78,9 @@ class DatasetService(AbstractService):
         path="dataset.add",
         name="add",
         roles=DATA_OWNER_ROLE_LEVEL,
-        unwrap_on_success=False
+        unwrap_on_success=False,
     )
-    def add(
-        self, context: AuthedServiceContext, dataset: CreateDataset
-    ) -> SyftSuccess:
+    def add(self, context: AuthedServiceContext, dataset: CreateDataset) -> SyftSuccess:
         """Add a Dataset"""
         dataset = dataset.to(Dataset, context=context)
 
@@ -100,7 +97,7 @@ class DatasetService(AbstractService):
         return SyftSuccess(
             message=f"Dataset uploaded to '{context.node.name}'. "
             f"To see the datasets uploaded by a client on this node, use command `[your_client].datasets`",
-            value=result
+            value=result,
         )
 
     @service_method(
@@ -146,9 +143,7 @@ class DatasetService(AbstractService):
         )
 
     @service_method(path="dataset.get_by_id", name="get_by_id")
-    def get_by_id(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> Dataset:
+    def get_by_id(self, context: AuthedServiceContext, uid: UID) -> Dataset:
         """Get a Dataset"""
         dataset = self.stash.get_by_uid(context.credentials, uid=uid).unwrap()
         if context.node is not None:
@@ -189,12 +184,9 @@ class DatasetService(AbstractService):
         name="delete_by_uid",
         roles=DATA_OWNER_ROLE_LEVEL,
         warning=HighSideCRUDWarning(confirmation=True),
-        unwrap_on_success=False
-
+        unwrap_on_success=False,
     )
-    def delete_dataset(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> SyftSuccess:
+    def delete_dataset(self, context: AuthedServiceContext, uid: UID) -> SyftSuccess:
         self.stash.delete_by_uid(context.credentials, uid).unwrap()
         return SyftSuccess(message=f"Dataset with UID {uid} deleted.", value=uid)
 

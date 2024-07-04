@@ -2,8 +2,6 @@
 from enum import Enum
 from typing import Any
 
-# third party
-
 # relative
 from ...node.credentials import SyftVerifyKey
 from ...node.worker_settings import WorkerSettings
