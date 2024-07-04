@@ -32,11 +32,11 @@ from .. import __version__
 from ..abstract_node import AbstractNode
 from ..abstract_node import NodeSideType
 from ..abstract_node import NodeType
+from ..client.api import NEW_STYLE_SERVICES_LIST
 from ..client.api import SignedSyftAPICall
 from ..client.api import SyftAPI
 from ..client.api import SyftAPICall
 from ..client.api import SyftAPIData
-from ..client.api import UNWRAPPABLE_SERVICES_LIST
 from ..client.api import debox_signed_syftapicall_response
 from ..client.client import SyftClient
 from ..protocol.data_protocol import PROTOCOL_TYPE
@@ -1291,7 +1291,7 @@ class Node(AbstractNode):
                 logger.info(f"API Call: {api_call}")
                 result = method(context, *api_call.args, **api_call.kwargs)
 
-                if any(api_call.path.startswith(x) for x in UNWRAPPABLE_SERVICES_LIST):
+                if any(api_call.path.startswith(x) for x in NEW_STYLE_SERVICES_LIST):
                     if isinstance(result, SyftError):
                         raise TypeError("Don't return a SyftError, raise instead")
                     if not isinstance(result, SyftSuccess):
