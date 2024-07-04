@@ -36,6 +36,7 @@ from ..client.api import SignedSyftAPICall
 from ..client.api import SyftAPI
 from ..client.api import SyftAPICall
 from ..client.api import SyftAPIData
+from ..client.api import UNWRAPPABLE_SERVICES_LIST
 from ..client.api import debox_signed_syftapicall_response
 from ..client.client import SyftClient
 from ..protocol.data_protocol import PROTOCOL_TYPE
@@ -93,6 +94,7 @@ from ..service.queue.zmq_queue import ZMQClientConfig
 from ..service.queue.zmq_queue import ZMQQueueConfig
 from ..service.request.request_service import RequestService
 from ..service.response import SyftError
+from ..service.response import SyftSuccess
 from ..service.service import AbstractService
 from ..service.service import ServiceConfigRegistry
 from ..service.service import UserServiceConfigRegistry
@@ -1288,6 +1290,14 @@ class Node(AbstractNode):
             try:
                 logger.info(f"API Call: {api_call}")
                 result = method(context, *api_call.args, **api_call.kwargs)
+
+                if any(api_call.path.startswith(x) for x in UNWRAPPABLE_SERVICES_LIST):
+                    if isinstance(result, SyftError):
+                        raise TypeError("Don't return a SyftError, raise instead")
+                    if not isinstance(result, SyftSuccess):
+                        result = SyftSuccess(
+                            message="Expected unwrap not unwrapped", value=result
+                        )
             except SyftException as exc:
                 result = SyftError.from_exception(context=context, exc=exc)
             except Exception:
