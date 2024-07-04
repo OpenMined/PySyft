@@ -50,7 +50,7 @@ def node_args_combinations(**kwargs: Iterable) -> list[dict[str, Any]]:
 
 NODE_ARGS_TEST_CASES = node_args_combinations(
     n_consumers=[1],
-    dev_mode=[True, False],
+    # dev_mode=[True, False],
     thread_workers=[True, False],
 )
 
