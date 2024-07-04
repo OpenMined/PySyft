@@ -19,6 +19,7 @@ from result import Result
 from typing_extensions import Self
 
 # relative
+from ...client.api import APIRegistry
 from ...serde.serializable import serializable
 from ...store.blob_storage import BlobRetrieval
 from ...store.document_store import PartitionKey
@@ -239,9 +240,6 @@ class Asset(SyftObject):
 
     @property
     def pointer(self) -> Any:
-        # relative
-        from ...client.api import APIRegistry
-
         api = APIRegistry.api_for(
             node_uid=self.node_uid,
             user_verify_key=self.syft_client_verify_key,
@@ -251,9 +249,6 @@ class Asset(SyftObject):
 
     @property
     def mock(self) -> SyftError | Any:
-        # relative
-        from ...client.api import APIRegistry
-
         api = APIRegistry.api_for(
             node_uid=self.node_uid,
             user_verify_key=self.syft_client_verify_key,
@@ -284,7 +279,6 @@ class Asset(SyftObject):
     @property
     def data(self) -> Any:
         # relative
-        from ...client.api import APIRegistry
 
         api = APIRegistry.api_for(
             node_uid=self.node_uid,
@@ -309,15 +303,15 @@ class Asset(SyftObject):
         """
         Return the blob entry for the data of the asset
         """
-        # relative
-        from ...client.api import APIRegistry
-
         api = APIRegistry.api_for(
             node_uid=self.node_uid,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None or api.services is None:
-            return None
+            return SyftError(
+                message=f"Could not get api for {self.node_uid}. You must login first."
+            )
+
         data_action_obj: str | ActionObject = api.services.action.get(self.action_id)
         if isinstance(data_action_obj, str):
             return SyftError(
@@ -327,6 +321,7 @@ class Asset(SyftObject):
             return SyftError(
                 message="You do not have permission to access private data."
             )
+
         blob_retrieval_res: BlobRetrieval | SyftError = api.services.blob_storage.read(
             uid=data_action_obj.syft_blob_storage_entry_id
         )
@@ -335,29 +330,31 @@ class Asset(SyftObject):
         return blob_retrieval_res
 
     @property
-    def mock_blob(self) -> Any:
+    def mock_blob(self) -> BlobRetrieval | SyftError | None:
         """
         Return the blob entry for the mock of the asset
         """
-        # relative
-        from ...client.api import APIRegistry
-
         api = APIRegistry.api_for(
             node_uid=self.node_uid,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None or api.services is None:
-            return None
+            return SyftError(
+                message=f"Could not get api for {self.node_uid}. You must login first."
+            )
+
         mock_action_obj: SyftError | ActionObject = api.services.action.get_mock(
             self.action_id
         )
         if isinstance(mock_action_obj, SyftError):
             return mock_action_obj
+
         blob_retrieval_res = api.services.blob_storage.read(
             uid=mock_action_obj.syft_blob_storage_entry_id
         )
         if isinstance(blob_retrieval_res, SyftError):
             return blob_retrieval_res
+
         return blob_retrieval_res
 
 
