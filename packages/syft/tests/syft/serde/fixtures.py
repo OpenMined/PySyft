@@ -2,6 +2,6 @@
 import pytest
 
 
-@pytest.fixture
+@pytest.fixture()
 def numpy_syft_instance(guest_client):
-    yield guest_client.api.lib.numpy
+    return guest_client.api.lib.numpy
