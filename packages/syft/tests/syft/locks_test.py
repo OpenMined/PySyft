@@ -25,13 +25,13 @@ def_params = {
 @pytest.fixture(scope="function")
 def locks_nop_config(request):
     def_params["lock_name"] = token_hex(8)
-    yield NoLockingConfig(**def_params)
+    return NoLockingConfig(**def_params)
 
 
 @pytest.fixture(scope="function")
 def locks_threading_config(request):
     def_params["lock_name"] = token_hex(8)
-    yield ThreadingLockingConfig(**def_params)
+    return ThreadingLockingConfig(**def_params)
 
 
 @pytest.mark.parametrize(
