@@ -216,7 +216,7 @@ class PydDerivedOnly(PydBase):
 
     source: str
     target: str
-    callback: Callable | None = lambda: None  # noqa: E731
+    callback: Callable | None = lambda: None
 
 
 def test_pydantic():
