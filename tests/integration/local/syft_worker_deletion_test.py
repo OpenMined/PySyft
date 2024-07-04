@@ -25,7 +25,7 @@ def node_args() -> dict[str, Any]:
     return {}
 
 
-@pytest.fixture
+@pytest.fixture()
 def node(node_args: dict[str, Any]) -> Generator[NodeHandle, None, None]:
     _node = sy.orchestra.launch(
         **{
