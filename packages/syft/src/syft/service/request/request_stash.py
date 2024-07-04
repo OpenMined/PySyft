@@ -1,17 +1,17 @@
 # stdlib
 
 # third party
-from result import Ok
-from result import Result
 
 # relative
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
-from ...store.document_store import BaseUIDStoreStash
+from ...store.document_store import NewBaseUIDStoreStash
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...types.datetime import DateTime
+from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from .request import Request
@@ -25,17 +25,18 @@ OrderByRequestTimeStampPartitionKey = PartitionKey(key="request_time", type_=Dat
 
 @instrument
 @serializable()
-class RequestStash(BaseUIDStoreStash):
+class RequestStash(NewBaseUIDStoreStash):
     object_type = Request
     settings: PartitionSettings = PartitionSettings(
         name=Request.__canonical_name__, object_type=Request
     )
 
+    @as_result(SyftException)
     def get_all_for_verify_key(
         self,
         credentials: SyftVerifyKey,
         verify_key: SyftVerifyKey,
-    ) -> Result[list[Request], str]:
+    ) -> list[Request]:
         if isinstance(verify_key, str):
             verify_key = SyftVerifyKey.from_string(verify_key)
         qks = QueryKeys(qks=[RequestingUserVerifyKeyPartitionKey.with_obj(verify_key)])
@@ -43,15 +44,11 @@ class RequestStash(BaseUIDStoreStash):
             credentials=credentials,
             qks=qks,
             order_by=OrderByRequestTimeStampPartitionKey,
-        )
+        ).unwrap()
 
+    @as_result(SyftException)
     def get_by_usercode_id(
         self, credentials: SyftVerifyKey, user_code_id: UID
-    ) -> Result[list[Request], str]:
-        query = self.get_all(credentials=credentials)
-        if query.is_err():
-            return query
-
-        all_requests: list[Request] = query.ok()
-        results = [r for r in all_requests if r.code_id == user_code_id]
-        return Ok(results)
+    ) -> list[Request]:
+        all_requests = self.get_all(credentials=credentials).unwrap()
+        return [r for r in all_requests if r.code_id == user_code_id]

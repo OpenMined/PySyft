@@ -25,6 +25,8 @@ from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
+from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
@@ -116,85 +118,82 @@ class ActionStoreChange(Change):
 
     __repr_attrs__ = ["linked_obj", "apply_permission_type"]
 
-    def _run(
-        self, context: ChangeContext, apply: bool
-    ) -> Result[SyftSuccess, SyftError]:
-        try:
-            action_service: ActionService = context.node.get_service(ActionService)  # type: ignore[assignment]
-            blob_storage_service = context.node.get_service(BlobStorageService)
-            action_store = action_service.store
+    @as_result(SyftException)
+    def _run(self, context: ChangeContext, apply: bool) -> SyftSuccess:
+        # FIX: action_service unwrap?
+        action_service: ActionService = context.node.get_service(ActionService)  # type: ignore[assignment]
+        # FIX: blob_storage_service unwrap?
+        blob_storage_service = context.node.get_service(BlobStorageService)
+        action_store = action_service.store
 
-            # can we ever have a lineage ID in the store?
-            obj_uid = self.linked_obj.object_uid
-            obj_uid = obj_uid.id if isinstance(obj_uid, LineageID) else obj_uid
+        # can we ever have a lineage ID in the store?
+        obj_uid = self.linked_obj.object_uid
+        obj_uid = obj_uid.id if isinstance(obj_uid, LineageID) else obj_uid
 
-            action_obj = action_store.get(
-                uid=obj_uid,
-                credentials=context.approving_user_credentials,
+        action_obj = action_store.get(
+            uid=obj_uid,
+            credentials=context.approving_user_credentials,
+        )
+
+        if action_obj.is_err():
+            raise SyftException(public_message=f"{action_obj.err()}")
+
+        action_obj = action_obj.ok()
+
+        owner_permission = ActionObjectPermission(
+            uid=obj_uid,
+            credentials=context.approving_user_credentials,
+            permission=self.apply_permission_type,
+        )
+
+        if action_store.has_permission(permission=owner_permission):
+            id_action = (
+                action_obj.id
+                if not isinstance(action_obj.id, LineageID)
+                else action_obj.id.id
             )
-
-            if action_obj.is_err():
-                return Err(SyftError(message=f"{action_obj.err()}"))
-
-            action_obj = action_obj.ok()
-
-            owner_permission = ActionObjectPermission(
-                uid=obj_uid,
-                credentials=context.approving_user_credentials,
+            requesting_permission_action_obj = ActionObjectPermission(
+                uid=id_action,
+                credentials=context.requesting_user_credentials,
                 permission=self.apply_permission_type,
             )
-            if action_store.has_permission(permission=owner_permission):
-                id_action = (
-                    action_obj.id
-                    if not isinstance(action_obj.id, LineageID)
-                    else action_obj.id.id
-                )
-                requesting_permission_action_obj = ActionObjectPermission(
-                    uid=id_action,
-                    credentials=context.requesting_user_credentials,
-                    permission=self.apply_permission_type,
-                )
-                if isinstance(action_obj, TwinObject):
-                    uid_blob = action_obj.private.syft_blob_storage_entry_id
-                else:
-                    uid_blob = action_obj.syft_blob_storage_entry_id
-                requesting_permission_blob_obj = ActionObjectPermission(
-                    uid=uid_blob,
-                    credentials=context.requesting_user_credentials,
-                    permission=self.apply_permission_type,
-                )
-                if apply:
-                    logger.debug(
-                        "ADDING PERMISSION", requesting_permission_action_obj, id_action
-                    )
-                    action_store.add_permission(requesting_permission_action_obj)
-                    blob_storage_service.stash.add_permission(
-                        requesting_permission_blob_obj
-                    )
-                else:
-                    if action_store.has_permission(requesting_permission_action_obj):
-                        action_store.remove_permission(requesting_permission_action_obj)
-                    if blob_storage_service.stash.has_permission(
-                        requesting_permission_blob_obj
-                    ):
-                        blob_storage_service.stash.remove_permission(
-                            requesting_permission_blob_obj
-                        )
+            if isinstance(action_obj, TwinObject):
+                uid_blob = action_obj.private.syft_blob_storage_entry_id
             else:
-                return Err(
-                    SyftError(
-                        message=f"No permission for approving_user_credentials {context.approving_user_credentials}"
-                    )
+                uid_blob = action_obj.syft_blob_storage_entry_id
+            requesting_permission_blob_obj = ActionObjectPermission(
+                uid=uid_blob,
+                credentials=context.requesting_user_credentials,
+                permission=self.apply_permission_type,
+            )
+            if apply:
+                logger.debug(
+                    "ADDING PERMISSION", requesting_permission_action_obj, id_action
                 )
-            return Ok(SyftSuccess(message=f"{type(self)} Success"))
-        except Exception as e:
-            logger.error(f"failed to apply {type(self)}", exc_info=e)
-            return Err(SyftError(message=str(e)))
+                action_store.add_permission(requesting_permission_action_obj)
+                blob_storage_service.stash.add_permission(
+                    requesting_permission_blob_obj
+                )
+            else:
+                if action_store.has_permission(requesting_permission_action_obj):
+                    action_store.remove_permission(requesting_permission_action_obj)
+                if blob_storage_service.stash.has_permission(
+                    requesting_permission_blob_obj
+                ):
+                    blob_storage_service.stash.remove_permission(
+                        requesting_permission_blob_obj
+                    )
+        else:
+            raise SyftException(
+                public_message=f"No permission for approving_user_credentials {context.approving_user_credentials}"
+            )
 
-    def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
+        return SyftSuccess(message=f"{type(self)} Success")
+
+    def apply(self, context: ChangeContext) -> SyftSuccess:
         return self._run(context=context, apply=True)
 
-    def undo(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
+    def undo(self, context: ChangeContext) -> SyftSuccess:
         return self._run(context=context, apply=False)
 
     def __repr_syft_nested__(self) -> str:
@@ -233,76 +232,66 @@ class CreateCustomImageChange(Change):
             raise ValueError("`tag` is required for `DockerWorkerConfig`.")
         return self
 
-    def _run(
-        self, context: ChangeContext, apply: bool
-    ) -> Result[SyftSuccess, SyftError]:
-        try:
-            worker_image_service = context.node.get_service("SyftWorkerImageService")
+    @as_result(SyftException)
+    def _run(self, context: ChangeContext, apply: bool) -> SyftSuccess:
+        # FIX: workerservice unwrap
+        worker_image_service = context.node.get_service("SyftWorkerImageService")
 
-            service_context = context.to_service_ctx()
-            result = worker_image_service.submit(
-                service_context, worker_config=self.config
+        service_context = context.to_service_ctx()
+        result = worker_image_service.submit(service_context, worker_config=self.config)
+
+        if isinstance(result, SyftError):
+            raise SyftException(public_message=result.message)
+
+        result = worker_image_service.stash.get_by_worker_config(
+            service_context.credentials, config=self.config
+        )
+
+        if result.is_err():
+            raise SyftException(public_message=f"{result.err()}")
+
+        if (worker_image := result.ok()) is None:
+            raise SyftException(public_message="The worker image does not exist.")
+
+        build_success_message = "Image was pre-built."
+
+        if not worker_image.is_prebuilt:
+            build_result = worker_image_service.build(
+                service_context,
+                image_uid=worker_image.id,
+                tag=self.tag,
+                registry_uid=self.registry_uid,
+                pull_image=self.pull_image,
             )
 
-            if isinstance(result, SyftError):
-                return Err(result)
+            if isinstance(build_result, SyftError):
+                raise SyftException(public_message=build_result)
 
-            result = worker_image_service.stash.get_by_worker_config(
-                service_context.credentials, config=self.config
+            build_success_message = build_result.message
+
+        build_success = f"Build result: {build_success_message}"
+
+        if IN_KUBERNETES and not worker_image.is_prebuilt:
+            push_result = worker_image_service.push(
+                service_context,
+                image_uid=worker_image.id,
+                username=context.extra_kwargs.get("registry_username", None),
+                password=context.extra_kwargs.get("registry_password", None),
             )
 
-            if result.is_err():
-                return Err(SyftError(message=f"{result.err()}"))
+            if isinstance(push_result, SyftError):
+                raise SyftException(public_message=push_result)
 
-            if (worker_image := result.ok()) is None:
-                return Err(SyftError(message="The worker image does not exist."))
-
-            build_success_message = "Image was pre-built."
-
-            if not worker_image.is_prebuilt:
-                build_result = worker_image_service.build(
-                    service_context,
-                    image_uid=worker_image.id,
-                    tag=self.tag,
-                    registry_uid=self.registry_uid,
-                    pull_image=self.pull_image,
-                )
-
-                if isinstance(build_result, SyftError):
-                    return Err(build_result)
-
-                build_success_message = build_result.message
-
-            build_success = SyftSuccess(
-                message=f"Build result: {build_success_message}"
+            return SyftSuccess(
+                message=f"{build_success}\nPush result: {push_result.message}"
             )
 
-            if IN_KUBERNETES and not worker_image.is_prebuilt:
-                push_result = worker_image_service.push(
-                    service_context,
-                    image_uid=worker_image.id,
-                    username=context.extra_kwargs.get("registry_username", None),
-                    password=context.extra_kwargs.get("registry_password", None),
-                )
+        return SyftSuccess(message=build_success)
 
-                if isinstance(push_result, SyftError):
-                    return Err(push_result)
-
-                return Ok(
-                    SyftSuccess(
-                        message=f"{build_success}\nPush result: {push_result.message}"
-                    )
-                )
-
-            return Ok(build_success)
-
-        except Exception as e:
-            return Err(SyftError(message=f"Failed to create/build image: {e}"))
-
-    def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
+    def apply(self, context: ChangeContext) -> SyftSuccess:
         return self._run(context=context, apply=True)
 
-    def undo(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
+    def undo(self, context: ChangeContext) -> SyftSuccess:
         return self._run(context=context, apply=False)
 
     def __repr_syft_nested__(self) -> str:
@@ -323,9 +312,8 @@ class CreateCustomWorkerPoolChange(Change):
 
     __repr_attrs__ = ["pool_name", "num_workers", "image_uid"]
 
-    def _run(
-        self, context: ChangeContext, apply: bool
-    ) -> Result[SyftSuccess, SyftError]:
+    @as_result(SyftException)
+    def _run(self, context: ChangeContext, apply: bool) -> SyftSuccess:
         """
         This function is run when the DO approves (apply=True)
         or deny (apply=False) the request.
@@ -342,7 +330,7 @@ class CreateCustomWorkerPoolChange(Change):
                     service_context.credentials, self.config
                 )
                 if result.is_err():
-                    return Err(SyftError(message=f"{result.err()}"))
+                    raise SyftException(public_message=f"{result.err()}")
                 worker_image = result.ok()
                 self.image_uid = worker_image.id
 
@@ -357,20 +345,18 @@ class CreateCustomWorkerPoolChange(Change):
                 pod_labels=self.pod_labels,
             )
             if isinstance(result, SyftError):
-                return Err(result)
+                raise SyftException(public_message=result)
             else:
-                return Ok(result)
+                return SyftSuccess(message=result)
         else:
-            return Err(
-                SyftError(
-                    message=f"Request to create a worker pool with name {self.name} denied"
-                )
+            raise SyftException(
+                public_message=f"Request to create a worker pool with name {self.name} denied"
             )
 
-    def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
+    def apply(self, context: ChangeContext) -> SyftSuccess:
         return self._run(context=context, apply=True)
 
-    def undo(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
+    def undo(self, context: ChangeContext) -> SyftSuccess:
         return self._run(context=context, apply=False)
 
     def __repr_syft_nested__(self) -> str:
@@ -737,29 +723,30 @@ class Request(SyncableSyftObject):
         print(f"Approving request for domain {client.name}")
         return client.api.services.request.apply(self.id)
 
-    def apply(self, context: AuthedServiceContext) -> Result[SyftSuccess, SyftError]:
+    @as_result(SyftException)
+    def apply(self, context: AuthedServiceContext) -> SyftSuccess:
         change_context: ChangeContext = ChangeContext.from_service(context)
         change_context.requesting_user_credentials = self.requesting_user_verify_key
+
         for change in self.changes:
             # by default change status is not applied
             change_status = ChangeStatus(change_id=change.id, applied=False)
-            result = change.apply(context=change_context)
-            if isinstance(result, SyftError):
-                return result
-            if result.is_err():
+
+            # FIX: Change change.apply
+            try:
+                change.apply(context=change_context).unwrap()
+                change_status.applied = True
+                self.history.append(change_status)
+            except:
                 # add to history and save history to request
                 self.history.append(change_status)
                 self.save(context=context)
-                return result
-
-            # If no error, then change successfully applied.
-            change_status.applied = True
-            self.history.append(change_status)
+                raise
 
         self.updated_at = DateTime.now()
         self.save(context=context)
 
-        return Ok(SyftSuccess(message=f"Request {self.id} changes applied"))
+        return SyftSuccess(message=f"Request {self.id} changes applied")
 
     def undo(self, context: AuthedServiceContext) -> Result[SyftSuccess, SyftError]:
         change_context: ChangeContext = ChangeContext.from_service(context)
@@ -1070,33 +1057,28 @@ class ObjectMutation(Change):
     def __repr_syft_nested__(self) -> str:
         return f"Mutate <b>{self.attr_name}</b> to <b>{self.value}</b>"
 
-    def _run(
-        self, context: ChangeContext, apply: bool
-    ) -> Result[SyftSuccess, SyftError]:
+    def _run(self, context: ChangeContext, apply: bool) -> SyftSuccess:
         if self.linked_obj is None:
-            return Err(SyftError(message=f"{self}'s linked object is None"))
-        try:
-            obj = self.linked_obj.resolve_with_context(context)
-            if obj.is_err():
-                return Err(SyftError(message=obj.err()))
-            obj = obj.ok()
-            if apply:
-                obj = self.mutate(obj, value=self.value)
-                self.linked_obj.update_with_context(context, obj)
-            else:
-                # unset the set value
-                obj = self.mutate(obj, value=self.previous_value)
-                self.linked_obj.update_with_context(context, obj)
+            raise SyftException(public_message=f"{self}'s linked object is None")
 
-            return Ok(SyftSuccess(message=f"{type(self)} Success"))
-        except Exception as e:
-            print(f"failed to apply {type(self)}. {e}")
-            return Err(SyftError(message=str(e)))
+        obj = self.linked_obj.resolve_with_context(context)
+        if obj.is_err():
+            raise SyftException(public_message=obj.err())
+        obj = obj.ok()
+        if apply:
+            obj = self.mutate(obj, value=self.value)
+            self.linked_obj.update_with_context(context, obj)
+        else:
+            # unset the set value
+            obj = self.mutate(obj, value=self.previous_value)
+            self.linked_obj.update_with_context(context, obj)
 
-    def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
+        return SyftSuccess(message=f"{type(self)} Success")
+
+    def apply(self, context: ChangeContext) -> SyftSuccess:
         return self._run(context=context, apply=True)
 
-    def undo(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
+    def undo(self, context: ChangeContext) -> SyftSuccess:
         return self._run(context=context, apply=False)
 
 
@@ -1144,34 +1126,31 @@ class EnumMutation(ObjectMutation):
             match_type=True,
         )
 
-    def _run(
-        self, context: ChangeContext, apply: bool
-    ) -> Result[SyftSuccess, SyftError]:
-        try:
-            valid = self.valid
-            if not valid:
-                return Err(valid)
-            if self.linked_obj is None:
-                return Err(SyftError(message=f"{self}'s linked object is None"))
-            obj = self.linked_obj.resolve_with_context(context)
-            if obj.is_err():
-                return Err(SyftError(message=obj.err()))
-            obj = obj.ok()
-            if apply:
-                obj = self.mutate(obj=obj)
+    @as_result(SyftException)
+    def _run(self, context: ChangeContext, apply: bool) -> SyftSuccess:
+        valid = self.valid
+        if not valid:
+            raise SyftException(public_message=valid.message)
+        if self.linked_obj is None:
+            raise SyftException(public_message=f"{self}'s linked object is None")
+        obj = self.linked_obj.resolve_with_context(context)
+        if obj.is_err():
+            raise SyftException(public_message=obj.err())
 
-                self.linked_obj.update_with_context(context, obj)
-            else:
-                raise NotImplementedError
-            return Ok(SyftSuccess(message=f"{type(self)} Success"))
-        except Exception as e:
-            print(f"failed to apply {type(self)}. {e}")
-            return Err(SyftError(message=e))
+        obj = obj.ok()
+        if apply:
+            obj = self.mutate(obj=obj)
 
-    def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
+            self.linked_obj.update_with_context(context, obj)
+        else:
+            raise SyftException(public_message="undo not implemented")
+
+        return SyftSuccess(message=f"{type(self)} Success")
+
+    def apply(self, context: ChangeContext) -> SyftSuccess:
         return self._run(context=context, apply=True)
 
-    def undo(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
+    def undo(self, context: ChangeContext) -> SyftSuccess:
         return self._run(context=context, apply=False)
 
     def __repr_syft_nested__(self) -> str:
@@ -1311,45 +1290,40 @@ class UserCodeStatusChange(Change):
             )
         return res
 
-    def _run(
-        self, context: ChangeContext, apply: bool
-    ) -> Result[SyftSuccess, SyftError]:
-        try:
-            valid = self.valid
-            if not valid:
-                return Err(valid)
-            user_code = self.linked_user_code.resolve_with_context(context)
-            if user_code.is_err():
-                return Err(SyftError(message=user_code.err()))
-            user_code = user_code.ok()
-            user_code_status = self.linked_obj.resolve_with_context(context)
-            if user_code_status.is_err():
-                return Err(SyftError(message=user_code_status.err()))
-            user_code_status = user_code_status.ok()
+    @as_result(SyftException)
+    def _run(self, context: ChangeContext, apply: bool) -> SyftSuccess:
+        valid = self.valid
+        if not valid:
+            raise SyftException(public_message=valid.message)
+        user_code = self.linked_user_code.resolve_with_context(context)
+        if user_code.is_err():
+            raise SyftException(public_message=user_code.err())
+        user_code = user_code.ok()
+        user_code_status = self.linked_obj.resolve_with_context(context)
+        if user_code_status.is_err():
+            raise SyftException(public_message=user_code_status.err())
+        user_code_status = user_code_status.ok()
 
-            if apply:
-                # Only mutate, does not write to stash
-                updated_status = self.mutate(user_code_status, context, undo=False)
+        if apply:
+            # Only mutate, does not write to stash
+            updated_status = self.mutate(user_code_status, context, undo=False)
 
-                if isinstance(updated_status, SyftError):
-                    return Err(updated_status.message)
+            if isinstance(updated_status, SyftError):
+                raise SyftException(public_message=updated_status.message)
 
-                self.linked_obj.update_with_context(context, updated_status)
-            else:
-                updated_status = self.mutate(user_code_status, context, undo=True)
-                if isinstance(updated_status, SyftError):
-                    return Err(updated_status.message)
+            self.linked_obj.update_with_context(context, updated_status)
+        else:
+            updated_status = self.mutate(user_code_status, context, undo=True)
+            if isinstance(updated_status, SyftError):
+                raise SyftException(public_message=updated_status.message)
 
-                self.linked_obj.update_with_context(context, updated_status)
-            return Ok(SyftSuccess(message=f"{type(self)} Success"))
-        except Exception as e:
-            logger.error(f"failed to apply {type(self)}", exc_info=e)
-            return Err(SyftError(message=str(e)))
+            self.linked_obj.update_with_context(context, updated_status)
+        return SyftSuccess(message=f"{type(self)} Success")
 
-    def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
+    def apply(self, context: ChangeContext) -> SyftSuccess:
         return self._run(context=context, apply=True)
 
-    def undo(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
+    def undo(self, context: ChangeContext) -> SyftSuccess:
         return self._run(context=context, apply=False)
 
     @property
