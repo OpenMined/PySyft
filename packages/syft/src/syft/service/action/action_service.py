@@ -565,14 +565,21 @@ class ActionService(AbstractService):
 
         def blob_permission(
             x: SyftVerifyKey | None = None,
-        ) -> ActionObjectPermission:
-            return ActionObjectPermission(result_blob_id, read_permission, x)
+        ) -> ActionObjectPermission | None:
+            if result_blob_id:
+                return ActionObjectPermission(result_blob_id, read_permission, x)
+            else:
+                return None
 
         if len(output_readers) > 0:
             store_permissions = [store_permission(x) for x in output_readers]
             self.store.add_permissions(store_permissions)
 
-            blob_permissions = [blob_permission(x) for x in output_readers]
+            blob_permissions = [
+                blob_permission(x)
+                for x in output_readers
+                if blob_permission(x) is not None
+            ]
             blob_storage_service.stash.add_permissions(blob_permissions)
 
         return set_result
