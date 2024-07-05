@@ -150,7 +150,9 @@ def test_diff_state_with_dataset(low_worker: Worker, high_worker: Worker):
     _ = client_low_ds.code.request_code_execution(compute_mean)
 
     result = client_low_ds.code.compute_mean(blocking=False)
-    assert isinstance(result, SyftError), "DS cannot start a job on low side"
+    assert isinstance(
+        result, SyftError
+    ), "DS cannot start a job on low side since the data was not passed as an argument"
 
     diff_state_before, diff_state_after = compare_and_resolve(
         from_client=low_client, to_client=high_client
