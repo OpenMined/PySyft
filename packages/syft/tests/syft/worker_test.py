@@ -26,6 +26,7 @@ from syft.service.user.user import User
 from syft.service.user.user import UserCreate
 from syft.service.user.user import UserView
 from syft.service.user.user_service import UserService
+from syft.types.errors import SyftException
 from syft.types.uid import UID
 
 test_signing_key_string = (
@@ -97,7 +98,9 @@ def test_action_store() -> None:
     test_verift_key_2 = SyftVerifyKey.from_string(test_verify_key_string_2)
     test_object_result_fail = action_store.get(uid=uid, credentials=test_verift_key_2)
     assert test_object_result_fail.is_err()
-    assert "denied" in test_object_result_fail.err()
+    exc = test_object_result_fail.err()
+    assert type(exc) == SyftException
+    assert "denied" in exc.public_message
 
 
 def test_user_transform() -> None:
@@ -243,7 +246,7 @@ def worker_with_proc(request):
     "path, kwargs",
     [
         ("data_subject.get_all", {}),
-        ("data_subject.get_by_name", {"name": "test"}),
+        ("user.get_all", {}),
         ("dataset.get_all", {}),
         ("dataset.search", {"name": "test"}),
         ("metadata", {}),
@@ -256,6 +259,7 @@ def test_worker_handle_api_request(
     kwargs: dict,
     blocking: bool,
 ) -> None:
+    print(f"run: blocking: {blocking} path: {path} kwargs: {kwargs}")
     node_uid = worker_with_proc.id
     root_client = worker_with_proc.root_client
     assert root_client.api is not None
@@ -295,7 +299,7 @@ def test_worker_handle_api_request(
     "path, kwargs",
     [
         ("data_subject.get_all", {}),
-        ("data_subject.get_by_name", {"name": "test"}),
+        ("user.get_all", {}),
         ("dataset.get_all", {}),
         ("dataset.search", {"name": "test"}),
         ("metadata", {}),
@@ -311,6 +315,8 @@ def test_worker_handle_api_response(
     node_uid = worker_with_proc.id
     n_processes = worker_with_proc.processes
     root_client = worker_with_proc.root_client
+
+    assert root_client.settings.allow_guest_signup(enable=True)
     assert root_client.api is not None
 
     guest_client = root_client.guest()
