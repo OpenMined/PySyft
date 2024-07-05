@@ -36,7 +36,6 @@ from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..settings.settings_stash import SettingsStash
-from .errors import UserCreateError
 from .errors import UserEnclaveAdminLoginError
 from .errors import UserError
 from .errors import UserPermissionError
@@ -193,13 +192,14 @@ class UserService(AbstractService):
         kwargs = user_search.to_dict(exclude_empty=True)
 
         if len(kwargs) == 0:
-            raise UserSearchBadParamsError
+            raise SyftException(public_message="Invalid search parameters")
 
-        _users = self.stash.find_all(
+        users = self.stash.find_all(
             credentials=context.credentials, **kwargs
         ).unwrap()
-        _users = [user.to(UserView) for user in _users] if _users is not None else []
-        return _paginate(_users, page_size, page_index)
+
+        users = [user.to(UserView) for user in users] if users is not None else []
+        return _paginate(users, page_size, page_index)
 
     @as_result(StashException, NotFoundException)
     def get_user_id_for_credentials(self, credentials: SyftVerifyKey) -> UID:
@@ -401,7 +401,7 @@ class UserService(AbstractService):
         )
 
         if user_exists:
-            raise UserCreateError(f"User {user.email} already exists")
+            raise SyftException(public_message=f"User {user.email} already exists")
 
         user = self._add_user(credentials=user.verify_key, user=user).unwrap()
 
