@@ -7,7 +7,9 @@ from collections.abc import KeysView
 from collections.abc import Mapping
 from collections.abc import Sequence
 from collections.abc import Set
+from datetime import datetime
 from functools import cache
+from functools import total_ordering
 from hashlib import sha256
 import inspect
 from inspect import Signature
@@ -39,6 +41,7 @@ from typing_extensions import Self
 # relative
 from ..node.credentials import SyftVerifyKey
 from ..serde.recursive_primitives import recursive_serde_register_type
+from ..serde.serializable import serializable
 from ..serde.serialize import _serialize as serialize
 from ..service.response import SyftError
 from ..util.autoreload import autoreload_enabled
@@ -47,7 +50,6 @@ from ..util.notebook_ui.components.tabulator_template import build_tabulator_tab
 from ..util.util import aggressive_set_attr
 from ..util.util import full_name_with_qualname
 from ..util.util import get_qualname_for
-from .basedatetime import BaseDateTime
 from .syft_metaclass import Empty
 from .syft_metaclass import PartialModelMetaclass
 from .uid import UID
@@ -394,7 +396,44 @@ base_attrs_sync_ignore = [
 ]
 
 
-class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
+class SyftObjectVersioned(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
+    __canonical_name__ = "SyftObjectVersioned"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+
+@serializable()
+@total_ordering
+class BaseDateTime(SyftObjectVersioned):
+    __canonical_name__ = "BaseDateTime"
+    __version__ = SYFT_OBJECT_VERSION_1
+    # id: UID | None = None  # type: ignore
+    utc_timestamp: float
+
+    @classmethod
+    def now(cls) -> Self:
+        return cls(utc_timestamp=datetime.utcnow().timestamp())
+
+    def __str__(self) -> str:
+        utc_datetime = datetime.utcfromtimestamp(self.utc_timestamp)
+        return utc_datetime.strftime("%Y-%m-%d %H:%M:%S")
+
+    def __hash__(self) -> int:
+        return hash(self.utc_timestamp)
+
+    def __sub__(self, other: Self) -> Self:
+        res = self.utc_timestamp - other.utc_timestamp
+        return BaseDateTime(utc_timestamp=res)
+
+    def __eq__(self, other: Any) -> bool:
+        if other is None:
+            return False
+        return self.utc_timestamp == other.utc_timestamp
+
+    def __lt__(self, other: Self) -> bool:
+        return self.utc_timestamp < other.utc_timestamp
+
+
+class SyftObject(SyftObjectVersioned):
     __canonical_name__ = "SyftObject"
     __version__ = SYFT_OBJECT_VERSION_3
 
@@ -406,8 +445,9 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
     # all objects have a UID
     id: UID
 
-    created_date: BaseDateTime | None = BaseDateTime.now()
-    updated_date: BaseDateTime | None = BaseDateTime.now()
+    created_date: BaseDateTime | None = None
+    updated_date: BaseDateTime | None = None
+    deleted_date: BaseDateTime | None = None
 
     # # move this to transforms
     @model_validator(mode="before")

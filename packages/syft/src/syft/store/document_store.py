@@ -24,7 +24,7 @@ from ..service.action.action_permissions import StoragePermission
 from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
 from ..types.base import SyftBaseModel
-from ..types.basedatetime import BaseDateTime
+from ..types.syft_object import BaseDateTime
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
