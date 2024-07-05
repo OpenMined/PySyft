@@ -1,6 +1,0 @@
-node:
-  env:
-    - name: NODE_UID
-      value: null
-    - name: NODE_PRIVATE_KEY
-      value: null

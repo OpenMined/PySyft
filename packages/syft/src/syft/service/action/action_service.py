@@ -181,12 +181,15 @@ class ActionService(AbstractService):
         if result.is_ok():
             if isinstance(action_object, TwinObject):
                 # give read permission to the mock
-                blob_id = action_object.mock_obj.syft_blob_storage_entry_id
-                permission = ActionObjectPermission(blob_id, ActionPermission.ALL_READ)
-                blob_storage_service: AbstractService = context.node.get_service(
-                    BlobStorageService
-                )
-                blob_storage_service.stash.add_permission(permission)
+                if not skip_save_to_blob_store:
+                    blob_id = action_object.mock_obj.syft_blob_storage_entry_id
+                    permission = ActionObjectPermission(
+                        blob_id, ActionPermission.ALL_READ
+                    )
+                    blob_storage_service: AbstractService = context.node.get_service(
+                        BlobStorageService
+                    )
+                    blob_storage_service.stash.add_permission(permission)
                 if has_result_read_permission:
                     action_object = action_object.private
                 else:

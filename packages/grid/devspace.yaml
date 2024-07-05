@@ -130,7 +130,7 @@ profiles:
     patches:
       - op: add
         path: deployments.syft.helm.valuesFiles
-        value: ./helm/examples/dev/migrated.yaml
+        value: ./helm/examples/dev/migration.yaml
 
   - name: domain-tunnel
     description: "Deploy a domain with tunneling enabled"
