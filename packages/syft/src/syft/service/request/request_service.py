@@ -218,7 +218,7 @@ class RequestService(AbstractService):
 
         return result
 
-    @service_method(path="request.undo", name="undo")
+    @service_method(path="request.undo", name="undo", unwrap_on_success=False)
     def undo(self, context: AuthedServiceContext, uid: UID, reason: str) -> SyftSuccess:
         request = self.stash.get_by_uid(
             credentials=context.credentials, uid=uid
@@ -242,7 +242,7 @@ class RequestService(AbstractService):
         send_notification = context.node.get_service_method(NotificationService.send)
         send_notification(context=context, notification=notification)
 
-        return SyftSuccess(message=f"Request {uid} successfully denied !")
+        return SyftSuccess(message=f"Request {uid} successfully denied!")
 
     def save(self, context: AuthedServiceContext, request: Request) -> Request:
         return self.stash.update(context.credentials, request).unwrap()

@@ -678,7 +678,7 @@ class Request(SyncableSyftObject):
         res = api.services.request.apply(self.id, **kwargs)
         return res
 
-    def deny(self, reason: str) -> SyftSuccess | SyftError:
+    def deny(self, reason: str) -> SyftSuccess:
         """Denies the particular request.
 
         Args:
@@ -742,7 +742,7 @@ class Request(SyncableSyftObject):
 
         return SyftSuccess(message=f"Request {self.id} changes applied")
 
-    def undo(self, context: AuthedServiceContext) -> Result[SyftSuccess, SyftError]:
+    def undo(self, context: AuthedServiceContext) -> SyftSuccess:
         change_context: ChangeContext = ChangeContext.from_service(context)
         change_context.requesting_user_credentials = self.requesting_user_verify_key
 
@@ -754,6 +754,7 @@ class Request(SyncableSyftObject):
                 change_id=change.id,
                 applied=is_change_applied,
             )
+
             # undo here may be deny for certain Changes (UserCodeChange)
             result = change.undo(context=change_context)
             if result.is_err():
@@ -769,10 +770,11 @@ class Request(SyncableSyftObject):
         self.updated_at = DateTime.now()
         result = self.save(context=context)
         if isinstance(result, SyftError):
-            return Err(result)
+            raise SyftException(public_message=result)
+
         # override object with latest changes.
         self = result
-        return Ok(SyftSuccess(message=f"Request {self.id} changes undone."))
+        return SyftSuccess(message=f"Request {self.id} changes undone.", value=self.id)
 
     def save(self, context: AuthedServiceContext) -> Result[SyftSuccess, SyftError]:
         # relative
