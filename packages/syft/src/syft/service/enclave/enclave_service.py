@@ -95,11 +95,7 @@ class EnclaveService(AbstractService):
         pending_assets_for_uploading_domain = set(kwargs_for_uploading_domain.values())
         for action_object in action_objects:
             result = action_service.set(
-                root_context,
-                action_object,
-                ignore_detached_objs=True,
-                skip_save_to_blob_store=True,  # TODO find out why this is needed in the latest dev version
-                # skip_clear_cache=True,
+                root_context, action_object, ignore_detached_objs=True
             )
             if isinstance(result, SyftError):
                 # TODO 🟣 Rollback previously uploaded assets if any error occurs
