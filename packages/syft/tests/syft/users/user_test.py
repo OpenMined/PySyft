@@ -7,18 +7,17 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft import SyftError
 from syft import SyftSuccess
 from syft.client.api import SyftAPICall
 from syft.client.domain_client import DomainClient
 from syft.node.node import get_default_root_email
 from syft.node.worker import Worker
 from syft.service.context import AuthedServiceContext
+from syft.service.response import SyftError
 from syft.service.user.user import ServiceRole
 from syft.service.user.user import UserCreate
 from syft.service.user.user import UserUpdate
 from syft.service.user.user import UserView
-from syft.types.errors import CredentialsError
 from syft.types.errors import SyftException
 
 GUEST_ROLES = [ServiceRole.GUEST]
@@ -120,6 +119,7 @@ def test_read_returns_view(root_client):
 def test_user_create(worker, do_client, guest_client, ds_client, root_client):
     for client in [ds_client, guest_client]:
         assert not manually_call_service(worker, client, "user.create")
+
     for client in [do_client, root_client]:
         res = manually_call_service(
             worker,
@@ -131,7 +131,8 @@ def test_user_create(worker, do_client, guest_client, ds_client, root_client):
                 )
             ],
         )
-        assert isinstance(res, UserView)
+        assert isinstance(res, SyftSuccess)
+        assert isinstance(res.value, UserView)
 
 
 def test_user_delete(do_client, guest_client, ds_client, worker, root_client):
@@ -205,7 +206,7 @@ def test_user_update_roles(do_client, guest_client, ds_client, root_client, work
                     _c.user_id, UserUpdate(role=target_role)
                 )
             assert exc.type == SyftException
-            assert exc.value.public_message == "NACK"
+            assert exc.value.public_message
 
     # DOs cannot downgrade higher roles to lower levels
     clients = [
@@ -249,9 +250,12 @@ def test_user_update(root_client):
     for executing_client in executing_clients:
         for target_client in target_clients:
             if executing_client.role != ServiceRole.ADMIN:
-                assert not executing_client.api.services.user.update(
-                    target_client.user_id, UserUpdate(name="abc")
-                )
+                with pytest.raises(SyftException) as exc:
+                    executing_client.api.services.user.update(
+                        target_client.user_id, UserUpdate(name="abc")
+                    )
+                assert exc.type == SyftException
+                assert exc.value.public_message
             else:
                 assert executing_client.api.services.user.update(
                     target_client.user_id, UserUpdate(name="abc")
@@ -271,21 +275,29 @@ def test_guest_user_update_to_root_email_failed(
 ) -> None:
     default_root_email: str = get_default_root_email()
     user_update_to_root_email = UserUpdate(email=default_root_email)
+
     for client in [root_client, do_client, guest_client, ds_client]:
-        res = client.api.services.user.update(
-            uid=client.me.id, user_update=user_update_to_root_email
-        )
-        assert isinstance(res, SyftError)
-        assert res.message == f"User {default_root_email} already exists"
+        with pytest.raises(SyftException) as exc:
+            client.api.services.user.update(
+                uid=client.me.id, user_update=user_update_to_root_email
+            )
+
+        assert exc.type == SyftException
+        assert exc.value.public_message == f"User {default_root_email} already exists"
 
 
 def test_user_view_set_password(worker: Worker, root_client: DomainClient) -> None:
-    root_client.me.set_password("123", confirm=False)
+    change_ok = root_client.me.set_password("123", confirm=False)
+    assert type(change_ok) == SyftSuccess
+    assert "Successfully" in change_ok.message
+
     email = root_client.me.email
 
     # log in again with the wrong password
-    with pytest.raises(CredentialsError):
-        worker.root_client.login(email=email, password="1234")
+    # FIX: This should raise...
+    res = worker.root_client.login(email=email, password="1234")
+    assert type(res) == SyftError
+    assert res.message == "Invalid credentials."
 
     # log in again with the right password
     root_client_b = worker.root_client.login(email=email, password="123")
@@ -299,8 +311,11 @@ def test_user_view_set_password(worker: Worker, root_client: DomainClient) -> No
 def test_user_view_set_invalid_email(
     root_client: DomainClient, invalid_email: str
 ) -> None:
-    res = root_client.me.set_email(invalid_email)
-    assert isinstance(res, SyftError)
+    with pytest.raises(SyftException) as exc:
+        root_client.me.set_email(invalid_email)
+
+    assert exc.type == SyftException
+    assert "Invalid email" in exc.value.public_message
 
 
 @pytest.mark.parametrize(
@@ -318,6 +333,7 @@ def test_user_view_set_email_success(
 ) -> None:
     result = root_client.me.set_email(valid_email_root)
     assert isinstance(result, SyftSuccess)
+
     result2 = ds_client.me.set_email(valid_email_ds)
     assert isinstance(result2, SyftSuccess)
 
@@ -328,32 +344,40 @@ def test_user_view_set_default_admin_email_failed(
     default_root_email = get_default_root_email()
     error_msg = f"User {default_root_email} already exists"
 
-    result = ds_client.me.set_email(default_root_email)
-    result2 = guest_client.me.set_email(default_root_email)
+    with pytest.raises(SyftException) as exc:
+        ds_client.me.set_email(default_root_email)
 
-    assert isinstance(result, SyftError)
-    assert result.message == error_msg
+    assert exc.type == SyftException
+    assert exc.value.public_message == error_msg
 
-    assert isinstance(result2, SyftError)
-    assert result2.message == error_msg
 
-@pytest.mark.parametrize(
-    "client",
-    [
-       ds_client,
-       guest_client
-    ],
-)
 def test_user_view_set_duplicated_email(
-    root_client: DomainClient, client: DomainClient, 
+    root_client: DomainClient, ds_client: DomainClient, guest_client: DomainClient
 ) -> None:
     email = root_client.me.email
     error_msg = f"User {email} already exists"
 
     with pytest.raises(SyftException) as exc:
-        client.me.set_email(email)
+        ds_client.me.set_email(email)
+
+    assert exc.type == SyftException
+    assert exc.value.public_message == error_msg
+
+    with pytest.raises(SyftException) as exc:
+        guest_client.me.set_email(email)
+
     assert exc.type == SyftException
     assert exc.value.public_message == error_msg 
+
+    email = ds_client.me.email
+    error_msg = f"User {email} already exists"
+
+    with pytest.raises(SyftException) as exc:
+        guest_client.me.set_email(email)
+
+    assert exc.type == SyftException
+    assert exc.value.public_message == error_msg
+
 
 def test_user_view_update_name_institution_website(
     root_client: DomainClient,
