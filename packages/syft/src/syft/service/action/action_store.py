@@ -4,8 +4,6 @@ from __future__ import annotations
 # stdlib
 import threading
 
-# third party
-
 # relative
 from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey

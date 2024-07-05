@@ -272,7 +272,7 @@ class NotifierService(AbstractService):
                     notifier.email_port = smtp_port
                     notifier.active = True
 
-            notifier_stash.set(node.signing_key.verify_key, notifier).unwrap()
+            res = notifier_stash.set(node.signing_key.verify_key, notifier).unwrap()
             return SyftSuccess(message="Notifier initialized successfully")
 
         except Exception as e:

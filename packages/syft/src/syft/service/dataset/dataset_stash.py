@@ -3,15 +3,19 @@
 # third party
 from pytest import Stash
 from result import Result
-from syft.store.document_store_errors import NotFoundException, StashException
+
+# syft absolute
+from syft.store.document_store_errors import NotFoundException
+from syft.store.document_store_errors import StashException
 from syft.types.errors import SyftException
 from syft.types.result import as_result
 
 # relative
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
-from ...store.document_store import BaseUIDStoreStash, NewBaseUIDStoreStash
+from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
+from ...store.document_store import NewBaseUIDStoreStash
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys

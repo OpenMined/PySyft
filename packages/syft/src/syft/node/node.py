@@ -25,9 +25,11 @@ from typing import cast
 from nacl.signing import SigningKey
 from result import Err
 from result import Result
+from typing_extensions import Self
+
+# syft absolute
 from syft.store.document_store_errors import StashException
 from syft.types.result import as_result
-from typing_extensions import Self
 
 # relative
 from .. import __version__
