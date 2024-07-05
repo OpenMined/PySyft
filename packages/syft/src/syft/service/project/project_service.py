@@ -62,13 +62,13 @@ class ProjectService(AbstractService):
             raise SyftException(public_message=error_msg)
 
     @as_result(StashException)
-    def exists(self, context: AuthedServiceContext, project: ProjectSubmit) -> bool:
-        credentials = (context.node.verify_key,)
+    def project_exists(self, context: AuthedServiceContext, project: ProjectSubmit) -> bool:
+        credentials = context.node.verify_key
         try:
             self.stash.get_by_uid(credentials=credentials, uid=project.id).unwrap()
+            return True
         except NotFoundException:
             return False
-        return True
 
     @as_result(SyftException)
     def validate_project_event_seq(
@@ -96,7 +96,7 @@ class ProjectService(AbstractService):
     )
     def can_create_project(self, context: AuthedServiceContext) -> bool:
         user_service: UserService = context.node.get_service("userservice")
-        role = user_service.get_role_for_credentials(credentials=context.credentials)
+        role = user_service.get_role_for_credentials(credentials=context.credentials).unwrap()
         # FIX: Shouldn't it be role >= DATA_SCIENTIST
         if role == ServiceRole.DATA_SCIENTIST:
             return True

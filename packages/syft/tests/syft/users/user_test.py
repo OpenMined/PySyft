@@ -345,50 +345,33 @@ def test_user_view_set_default_admin_email_failed(
     ],
 )
 def test_user_view_set_duplicated_email(
-    root_client: DomainClient, client: DomainClient
+    root_client: DomainClient, client: DomainClient, 
 ) -> None:
     email = root_client.me.email
     error_msg = f"User {email} already exists"
-# ds_client: DomainClient, guest_client: DomainClient
-    print("client", client)
+
     with pytest.raises(SyftException) as exc:
-        result = client.me.set_email(email)
+        client.me.set_email(email)
     assert exc.type == SyftException
-    assert exc.value.public_message == error_msg
-        
-    # result2 = guest_client.me.set_email(email)
-
-    # assert isinstance(result, SyftError)
-    # assert result.message == error_msg
-    # assert isinstance(result2, SyftError)
-    # assert result2.message == error_msg
-
-    # ds_email = ds_client.me.email
-    # result3 = guest_client.me.set_email(ds_email)
-    # assert isinstance(result3, SyftError)
-    # assert result3.message == f"User {ds_email} already exists"
-
+    assert exc.value.public_message == error_msg 
 
 def test_user_view_update_name_institution_website(
     root_client: DomainClient,
     ds_client: DomainClient,
     guest_client: DomainClient,
 ) -> None:
-    result = root_client.me.update(
+    root_client.me.update(
         name="syft", institution="OpenMined", website="https://syft.org"
     )
-    assert isinstance(result, SyftSuccess)
     assert root_client.me.name == "syft"
     assert root_client.me.institution == "OpenMined"
     assert root_client.me.website == "https://syft.org"
 
-    result2 = ds_client.me.update(name="syft2", institution="OpenMined")
-    assert isinstance(result2, SyftSuccess)
+    ds_client.me.update(name="syft2", institution="OpenMined")
     assert ds_client.me.name == "syft2"
     assert ds_client.me.institution == "OpenMined"
 
-    result3 = guest_client.me.update(name="syft3")
-    assert isinstance(result3, SyftSuccess)
+    guest_client.me.update(name="syft3")
     assert guest_client.me.name == "syft3"
 
 

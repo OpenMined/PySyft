@@ -1949,7 +1949,7 @@ def load_approved_policy_code(
             if context is None:
                 status = user_code.status
             else:
-                status = user_code.get_status(context)
+                status = user_code.get_status(context).unwrap()
 
             if status.approved:
                 if isinstance(user_code.input_policy_type, UserPolicy):

@@ -1327,6 +1327,8 @@ class ProjectSubmit(SyftObject):
             result = client.api.services.project.create_project(project=self)
             if isinstance(result, SyftError):
                 raise SyftException(result.message)
+            if isinstance(result, SyftSuccess):
+                result = result.value
             projects[client] = result
 
         return projects
