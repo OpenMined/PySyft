@@ -423,6 +423,13 @@
           "hash": "e124f56ddf4565df2be056553eecd15de7c80bd5f5fd0d06e8ff7815bb05563a",
           "action": "add"
         }
+      },
+      "EmptyInputPolicy": {
+        "2": {
+          "version": 2,
+          "hash": "3117e16cbe4dbc344ab90fbbd36ba90dfb518e66f0fb07644bbe7864dcdeb309",
+          "action": "add"
+        }
       }
     }
   }
