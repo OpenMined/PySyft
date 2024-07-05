@@ -1299,9 +1299,7 @@ class Node(AbstractNode):
                     if isinstance(result, SyftError):
                         raise TypeError("Don't return a SyftError, raise instead")
                     if not isinstance(result, SyftSuccess):
-                        result = SyftSuccess(
-                            message="Expected unwrap not unwrapped", value=result
-                        )
+                        result = SyftSuccess(message="", value=result)
             except SyftException as exc:
                 result = SyftError.from_exception(context=context, exc=exc)
             except Exception:
@@ -1729,13 +1727,13 @@ def create_admin_new(
     email: str,
     password: str,
     node: AbstractNode,
-) -> User:
+) -> User | None:
     user_stash = UserStash(store=node.document_store)
 
-    existing_user = user_stash.email_exists(email=email).unwrap()
-    if existing_user:
-        logger.debug(f"Admin not created, {existing_user.user} already exists")
-        return existing_user
+    user_exists = user_stash.email_exists(email=email).unwrap()
+    if user_exists:
+        logger.debug("Admin not created, admin already exists")
+        return None
 
     create_user = UserCreate(
         name=name,

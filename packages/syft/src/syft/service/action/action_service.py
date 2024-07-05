@@ -795,16 +795,16 @@ class ActionService(AbstractService):
         return self.store.has_permissions(permissions)
 
     @service_method(path="action.exists", name="exists", roles=GUEST_ROLE_LEVEL)
-    def exists(
-        self, context: AuthedServiceContext, obj_id: UID
-    ) -> Result[SyftSuccess, SyftError]:
+    def exists(self, context: AuthedServiceContext, obj_id: UID) -> bool:
         """Checks if the given object id exists in the Action Store"""
-        if self.store.exists(obj_id):
-            return SyftSuccess(message=f"Object: {obj_id} exists")
-        else:
-            return SyftError(message=f"Object: {obj_id} does not exist")
+        return self.store.exists(obj_id)
 
-    @service_method(path="action.delete", name="delete", roles=ADMIN_ROLE_LEVEL)
+    @service_method(
+        path="action.delete",
+        name="delete",
+        roles=ADMIN_ROLE_LEVEL,
+        unwrap_on_success=False,
+    )
     def delete(
         self, context: AuthedServiceContext, uid: UID
     ) -> SyftSuccess | SyftError:

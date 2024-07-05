@@ -32,6 +32,8 @@ from ..serde.signature import Signature
 from ..serde.signature import signature_remove_context
 from ..serde.signature import signature_remove_self
 from ..store.linked_obj import LinkedObject
+from ..types.result import Err as NewErr
+from ..types.result import Ok as NewOk
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SYFT_OBJECT_VERSION_3
 from ..types.syft_object import SyftObject
@@ -71,14 +73,23 @@ class AbstractService:
             return SyftError(message="wrong context passed")
 
         obj = self.stash.get_by_uid(credentials, uid=linked_obj.object_uid)
-        if isinstance(obj, OkErr) and obj.is_ok():
+        # new style:
+        if isinstance(obj, (NewOk, NewErr)):
+            old_style = False
+        else:
+            old_style = True
+
+        if isinstance(obj, (NewOk, NewErr, OkErr)) and obj.is_ok():
             obj = obj.ok()
         if hasattr(obj, "node_uid"):
             if context.node is None:
                 return SyftError(message=f"context {context}'s node is None")
             obj.node_uid = context.node.id
-        if not isinstance(obj, OkErr):
-            obj = Ok(obj)
+        if not isinstance(obj, (OkErr, NewErr, NewOk)):
+            if old_style:
+                obj = Ok(obj)
+            else:
+                obj = NewOk(obj)
         return obj
 
     def get_all(*arg: Any, **kwargs: Any) -> Any:

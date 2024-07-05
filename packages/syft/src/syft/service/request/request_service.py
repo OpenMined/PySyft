@@ -184,7 +184,7 @@ class RequestService(AbstractService):
         request: Request = self.stash.get_by_uid(context.credentials, uid).unwrap()
 
         context.extra_kwargs = kwargs
-        result = request.apply(context=context)
+        result = request.apply(context=context).unwrap()
 
         # TODO: maybe unwrap?
         filter_by_obj = context.node.get_service_method(

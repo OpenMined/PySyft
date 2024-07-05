@@ -573,7 +573,7 @@ class UserCode(SyncableSyftObject):
         return None
 
     def get_input_policy(self, context: AuthedServiceContext) -> InputPolicy | None:
-        status = self.get_status(context)
+        status = self.get_status(context).unwrap()
         if status.approved or self.input_policy_type.has_safe_serde:
             return self._get_input_policy()
         return None
@@ -635,7 +635,7 @@ class UserCode(SyncableSyftObject):
             raise Exception(f"You can't set {type(value)} as input_policy_state")
 
     def get_output_policy(self, context: AuthedServiceContext) -> OutputPolicy | None:
-        status = self.get_status(context)
+        status = self.get_status(context).unwrap()
         if status.approved or self.output_policy_type.has_safe_serde:
             return self._get_output_policy()
         return None
