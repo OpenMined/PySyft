@@ -16,7 +16,7 @@
       "NodeMetadata": {
         "5": {
           "version": 5,
-          "hash": "70197b4725dbdea0560ed8388e4d20b76808bee988f3630c5f916ee8f48761f8",
+          "hash": "f3927d167073a4db369a07e3bbbf756075bbb29e9addec324b8cd2c3597b75a1",
           "action": "add"
         }
       },
@@ -288,7 +288,7 @@
       "UserCode": {
         "5": {
           "version": 5,
-          "hash": "c2409f51bf920cce557d288c40b6964ec4df3d8c23e33c5d5668addc30368632",
+          "hash": "0601e3646ff120218c5c5627fb7704f90b65280de00e53808bf7ff6bb4e3de99",
           "action": "add"
         }
       },
@@ -459,6 +459,20 @@
         "1": {
           "version": 1,
           "hash": "04c9f5644857d68128263218cab8925549506c5f56f49525937b23ef707312a8",
+          "action": "add"
+        }
+      },
+      "SyftWorker": {
+        "3": {
+          "version": 3,
+          "hash": "e124f56ddf4565df2be056553eecd15de7c80bd5f5fd0d06e8ff7815bb05563a",
+          "action": "add"
+        }
+      },
+      "EmptyInputPolicy": {
+        "2": {
+          "version": 2,
+          "hash": "3117e16cbe4dbc344ab90fbbd36ba90dfb518e66f0fb07644bbe7864dcdeb309",
           "action": "add"
         }
       }

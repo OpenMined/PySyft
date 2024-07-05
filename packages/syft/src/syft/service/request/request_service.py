@@ -56,11 +56,8 @@ class RequestService(AbstractService):
         reason: str | None = "",
     ) -> Request | SyftError:
         """Submit a Request"""
-        print("Entered Submit request")
         try:
-            print("1")
             req = request.to(Request, context=context)
-            print("2", req)
             result = self.stash.set(
                 context.credentials,
                 req,
@@ -70,9 +67,7 @@ class RequestService(AbstractService):
                     ),
                 ],
             )
-            print("3")
             if result.is_ok():
-                print("Entered if")
                 request = result.ok()
 
                 # Apply Post Create Hooks to the request
@@ -110,7 +105,6 @@ class RequestService(AbstractService):
                         return SyftError(
                             message=f"Failed to send notification: {result.err()}"
                         )
-                print("Before Post Create Hooks")
                 # Apply Post Create Hooks to the request
                 for change in request.changes:
                     change_hook_res = change.post_create_hook(
@@ -118,14 +112,10 @@ class RequestService(AbstractService):
                     )
                     if isinstance(change_hook_res, SyftError):
                         return change_hook_res
-
-                print("After Post Create Hooks")
-
                 return request
 
             if result.is_err():
                 return SyftError(message=str(result.err()))
-            print("Sending Result last of try catch")
             return result.ok()
         except Exception as e:
             print("Failed to submit Request", e)

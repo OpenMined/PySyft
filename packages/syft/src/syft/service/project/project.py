@@ -384,7 +384,8 @@ class ProjectCode(ProjectEventAddObject):
         return code_status
 
     def status(self, project: Project, verbose: bool = False) -> UserCodeStatus:
-        input_owner_node_identities = self.code.input_policy_init_kwargs.keys()
+        init_kwargs = self.code.input_policy_init_kwargs or {}
+        input_owner_node_identities = init_kwargs.keys()
         if len(input_owner_node_identities) == 0:
             # TODO: add the ability to calculate status for empty input policies.
             raise NotImplementedError("This feature is not implemented yet")
