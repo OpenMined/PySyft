@@ -25,6 +25,7 @@ from syft.service.user.user_roles import ServiceRole
 from syft.service.user.user_service import UserService
 from syft.store.document_store_errors import NotFoundException
 from syft.store.document_store_errors import StashException
+from syft.types.errors import SyftException
 from syft.types.result import Err
 from syft.types.result import Ok
 from syft.types.result import as_result
@@ -48,9 +49,9 @@ def test_userservice_create_when_user_exists(
     def mock_get_by_email(credentials: SyftVerifyKey, email: str) -> User:
         return guest_create_user.to(User)
 
-    monkeypatch.setattr(user_service.stash, "_get_by_email", mock_get_by_email)
+    monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
 
-    with pytest.raises(user_errors.UserCreateError):
+    with pytest.raises(SyftException):
         user_service.create(authed_context, guest_create_user)
 
 
@@ -64,18 +65,12 @@ def test_userservice_create_error_on_get_by_email(
     def mock_get_by_email(credentials: SyftVerifyKey, email: str) -> User:
         return guest_create_user.to(User)
 
-    monkeypatch.setattr(user_service.stash, "_get_by_email", mock_get_by_email)
+    monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
 
-    with pytest.raises(user_errors.UserCreateError) as exc:
+    with pytest.raises(SyftException) as exc:
         user_service.create(authed_context, guest_create_user)
 
-    assert exc.type == user_errors.UserCreateError
-    assert (
-        exc.value._private_message == f"User {guest_create_user.email} already exists"
-    )
-    assert exc.value.public == "Failed to create user."
-    assert str(exc.value) == "Failed to create user."
-
+    assert exc.value.public_message == f"User {guest_create_user.email} already exists"
 
 def test_userservice_create_success(
     monkeypatch: MonkeyPatch,
@@ -92,17 +87,17 @@ def test_userservice_create_success(
     expected_output.syft_client_verify_key = authed_context.credentials
     expected_output.syft_node_location = authed_context.node.id
 
-    @as_result(user_errors.UserCreateError)
+    @as_result(StashException)
     def mock_set(
         credentials: SyftVerifyKey,
-        user: User,
+        obj: User,
         has_permission: bool = False,
         add_permissions=None,
     ) -> User:
         return expected_user
 
-    monkeypatch.setattr(user_service.stash, "_get_by_email", mock_get_by_email)
-    monkeypatch.setattr(user_service.stash, "_set", mock_set)
+    monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
+    monkeypatch.setattr(user_service.stash, "set", mock_set)
 
     response = user_service.create(authed_context, guest_create_user)
     assert isinstance(response, UserView)
@@ -122,14 +117,14 @@ def test_userservice_create_error_on_set(
     @as_result(StashException)
     def mock_set(
         credentials: SyftVerifyKey,
-        user: User,
+        obj: User,
         has_permission: bool = False,
         add_permissions=None,
     ) -> NoReturn:
         raise StashException
 
-    monkeypatch.setattr(user_service.stash, "_get_by_email", mock_get_by_email)
-    monkeypatch.setattr(user_service.stash, "_set", mock_set)
+    monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
+    monkeypatch.setattr(user_service.stash, "set", mock_set)
 
     with pytest.raises(StashException) as exc:
         user_service.create(authed_context, guest_create_user)
@@ -143,16 +138,18 @@ def test_userservice_view_error_on_get_by_uid(
     authed_context: AuthedServiceContext,
 ) -> None:
     uid_to_view = UID()
-    expected_error_msg = f"Failed to get uid: {uid_to_view}"
+    expected_error_msg = f"Item {uid_to_view} not found"
 
     @as_result(NotFoundException)
-    def mock_get_by_uid(credentials: SyftVerifyKey, uid: UID) -> Err:
-        raise NotFoundException
+    def mock_get_by_uid(credentials: SyftVerifyKey, uid: UID) -> NoReturn:
+        raise NotFoundException(public_message=expected_error_msg)
 
     monkeypatch.setattr(user_service.stash, "get_by_uid", mock_get_by_uid)
-    response = user_service.view(authed_context, uid_to_view)
-    assert isinstance(response, SyftError)
-    assert response.message == expected_error_msg
+
+    with pytest.raises(NotFoundException) as exc:
+        user_service.view(authed_context, uid_to_view)
+    assert exc.type == NotFoundException
+    assert exc.value.public_message == expected_error_msg
 
 
 def test_userservice_view_user_not_exists(
@@ -168,7 +165,7 @@ def test_userservice_view_user_not_exists(
     def mock_get_by_uid(credentials: SyftVerifyKey, uid: UID) -> NoReturn:
         raise NotFoundException(public_message=expected_error_msg)
 
-    monkeypatch.setattr(user_service.stash, "_get_by_uid", mock_get_by_uid)
+    monkeypatch.setattr(user_service.stash, "get_by_uid", mock_get_by_uid)
 
     with pytest.raises(NotFoundException) as exc:
         user_service.view(authed_context, uid_to_view)
@@ -213,7 +210,7 @@ def test_userservice_get_all_success(
     def mock_get_all(credentials: SyftVerifyKey) -> list[User]:
         return mock_get_all_output
 
-    monkeypatch.setattr(user_service.stash, "_get_all", mock_get_all)
+    monkeypatch.setattr(user_service.stash, "get_all", mock_get_all)
 
     response = user_service.get_all(authed_context)
     assert isinstance(response, list)
@@ -233,7 +230,7 @@ def test_userservice_get_all_error(
     def mock_get_all(credentials: SyftVerifyKey) -> NoReturn:
         raise StashException
 
-    monkeypatch.setattr(user_service.stash, "_get_all", mock_get_all)
+    monkeypatch.setattr(user_service.stash, "get_all", mock_get_all)
 
     with pytest.raises(StashException) as exc:
         user_service.get_all(authed_context)
@@ -247,11 +244,12 @@ def test_userservice_search(
     authed_context: AuthedServiceContext,
     guest_user: User,
 ) -> None:
-    def mock_find_all(credentials: SyftVerifyKey, **kwargs) -> Ok | Err:
+    @as_result(SyftException)
+    def mock_find_all(credentials: SyftVerifyKey, **kwargs) -> list[User]:
         for key in kwargs.keys():
             if hasattr(guest_user, key):
-                return Ok([guest_user])
-            return Err("Invalid kwargs")
+                return [guest_user]
+        return []
 
     monkeypatch.setattr(user_service.stash, "find_all", mock_find_all)
 
@@ -259,6 +257,7 @@ def test_userservice_search(
 
     # Search via id
     response = user_service.search(context=authed_context, id=guest_user.id)
+
     assert isinstance(response, list)
     assert all(
         r.to_dict() == expected.to_dict()
@@ -308,9 +307,11 @@ def test_userservice_search_with_invalid_kwargs(
     user_service: UserService, authed_context: AuthedServiceContext
 ) -> None:
     # Search with invalid kwargs
-    response = user_service.search(context=authed_context, role=ServiceRole.GUEST)
-    assert isinstance(response, SyftError)
-    assert "Invalid Search parameters" in response.message
+    with pytest.raises(SyftException) as exc:
+        user_service.search(context=authed_context, role=ServiceRole.GUEST)
+
+    assert exc.type == SyftException
+    assert "Invalid search parameters" in exc.value.public_message
 
 
 def test_userservice_update_get_by_uid_fails(
@@ -326,7 +327,7 @@ def test_userservice_update_get_by_uid_fails(
     def mock_get_by_uid(credentials: SyftVerifyKey, uid: UID) -> NoReturn:
         raise NotFoundException(public_message=expected_error_msg)
 
-    monkeypatch.setattr(user_service.stash, "_get_by_uid", mock_get_by_uid)
+    monkeypatch.setattr(user_service.stash, "get_by_uid", mock_get_by_uid)
 
     with pytest.raises(NotFoundException) as exc:
         user_service.update(authed_context, uid=random_uid, user_update=update_user)
@@ -348,7 +349,7 @@ def test_userservice_update_no_user_exists(
     def mock_get_by_uid(credentials: SyftVerifyKey, uid: UID) -> NoReturn:
         raise NotFoundException(public_message=expected_error_msg)
 
-    monkeypatch.setattr(user_service.stash, "_get_by_uid", mock_get_by_uid)
+    monkeypatch.setattr(user_service.stash, "get_by_uid", mock_get_by_uid)
 
     with pytest.raises(NotFoundException) as exc:
         user_service.update(authed_context, uid=random_uid, user_update=update_user)
@@ -370,14 +371,14 @@ def test_userservice_update_success(
 
     @as_result(NotFoundException)
     def mock_update(
-        credentials: SyftVerifyKey, user: User, has_permission: bool
+        credentials: SyftVerifyKey, obj: User, has_permission: bool
     ) -> User:
         guest_user.name = update_user.name
         guest_user.email = update_user.email
         return guest_user
 
-    monkeypatch.setattr(user_service.stash, "_update", mock_update)
-    monkeypatch.setattr(user_service.stash, "_get_by_uid", mock_get_by_uid)
+    monkeypatch.setattr(user_service.stash, "update", mock_update)
+    monkeypatch.setattr(user_service.stash, "get_by_uid", mock_get_by_uid)
 
     authed_context.role = ServiceRole.ADMIN
     user = user_service.update(
@@ -403,11 +404,11 @@ def test_userservice_update_fails(
         return guest_user
 
     @as_result(StashException)
-    def mock_update(credentials: SyftVerifyKey, user, has_permission: bool) -> NoReturn:
+    def mock_update(credentials: SyftVerifyKey, obj: User, has_permission: bool) -> NoReturn:
         raise StashException(update_error_msg)
 
-    monkeypatch.setattr(user_service.stash, "_update", mock_update)
-    monkeypatch.setattr(user_service.stash, "_get_by_uid", mock_get_by_uid)
+    monkeypatch.setattr(user_service.stash, "update", mock_update)
+    monkeypatch.setattr(user_service.stash, "get_by_uid", mock_get_by_uid)
 
     authed_context.role = ServiceRole.ADMIN
 
@@ -434,7 +435,7 @@ def test_userservice_delete_failure(
     def mock_get_by_uid(credentials: SyftVerifyKey, uid: UID) -> NoReturn:
         raise NotFoundException(public_message=expected_error_msg)
 
-    monkeypatch.setattr(user_service.stash, "_get_by_uid", mock_get_by_uid)
+    monkeypatch.setattr(user_service.stash, "get_by_uid", mock_get_by_uid)
 
     with pytest.raises(NotFoundException) as exc:
         user_service.delete(context=authed_context, uid=id_to_delete)
@@ -452,8 +453,8 @@ def test_userservice_delete_failure(
     ) -> NoReturn:
         raise user_errors.UserDeleteError(public_message=expected_error_msg)
 
-    monkeypatch.setattr(user_service.stash, "_get_by_uid", mock_get_by_uid_good)
-    monkeypatch.setattr(user_service.stash, "_delete_by_uid", mock_delete_by_uid)
+    monkeypatch.setattr(user_service.stash, "get_by_uid", mock_get_by_uid_good)
+    monkeypatch.setattr(user_service.stash, "delete_by_uid", mock_delete_by_uid)
 
     with pytest.raises(user_errors.UserPermissionError) as exc:
         user_service.delete(context=authed_context, uid=id_to_delete)
@@ -486,8 +487,8 @@ def test_userservice_delete_success(
     def mock_get_by_uid(credentials: SyftVerifyKey, uid: UID) -> User:
         return User(email=Faker().email())
 
-    monkeypatch.setattr(user_service.stash, "_delete_by_uid", mock_delete_by_uid)
-    monkeypatch.setattr(user_service.stash, "_get_by_uid", mock_get_by_uid)
+    monkeypatch.setattr(user_service.stash, "delete_by_uid", mock_delete_by_uid)
+    monkeypatch.setattr(user_service.stash, "get_by_uid", mock_get_by_uid)
 
     authed_context.role = ServiceRole.ADMIN
     response = user_service.delete(context=authed_context, uid=id_to_delete)
@@ -510,15 +511,19 @@ def test_userservice_user_verify_key_invalid_email(
     monkeypatch: MonkeyPatch, user_service: UserService, faker: Faker
 ) -> None:
     email = faker.email()
-    expected_output = SyftError(message=f"No user with email: {email}")
+    expected_output = f"User {email} not found"
 
-    def mock_get_by_email(credentials: SyftVerifyKey, email: str) -> Err:
-        return Err("No user found")
+    @as_result(NotFoundException)
+    def mock_get_by_email(credentials: SyftVerifyKey, email: str) -> NoReturn:
+        raise NotFoundException(public_message=expected_output)
 
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
 
-    response = user_service.user_verify_key(email=email).unwrap()
-    assert response == expected_output
+    with pytest.raises(NotFoundException) as exc:
+        user_service.user_verify_key(email=email)
+
+    assert exc.type == NotFoundException
+    assert exc.value.public_message == expected_output
 
 
 def test_userservice_admin_verify_key_error(
@@ -526,14 +531,16 @@ def test_userservice_admin_verify_key_error(
 ) -> None:
     expected_output = "failed to get admin verify_key"
 
-    def mock_admin_verify_key() -> Err:
-        return Err(expected_output)
+    def mock_admin_verify_key() -> UID:
+        raise SyftException(public_message=expected_output)
 
     monkeypatch.setattr(user_service.stash, "admin_verify_key", mock_admin_verify_key)
 
-    response = user_service.admin_verify_key()
-    assert isinstance(response, SyftError)
-    assert response.message == expected_output
+    with pytest.raises(SyftException) as exc:
+        user_service.admin_verify_key()
+            
+    assert exc.type == SyftException
+    assert exc.value.public_message == expected_output
 
 
 def test_userservice_admin_verify_key_success(
@@ -550,12 +557,14 @@ def test_userservice_register_user_exists(
     worker: Worker,
     guest_create_user: UserCreate,
 ) -> None:
-    def mock_get_by_email(credentials: SyftVerifyKey, email):
-        return Ok(guest_create_user)
+    @as_result(NotFoundException)
+    def mock_get_by_email(credentials: SyftVerifyKey, email) -> User:
+        return guest_create_user.to(User)
 
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
-    expected_error_msg = f"User already exists with email: {guest_create_user.email}"
 
+    expected_error_msg = f"User {guest_create_user.email} already exists"
+    
     # Patch Worker settings to enable signup
     with mock.patch(
         "syft.Worker.settings",
@@ -565,9 +574,12 @@ def test_userservice_register_user_exists(
         mock_worker = Worker.named(name="mock-node")
         node_context = NodeServiceContext(node=mock_worker)
 
-        response = user_service.register(node_context, guest_create_user)
-        assert isinstance(response, SyftError)
-        assert response.message == expected_error_msg
+        with pytest.raises(SyftException) as exc:
+            user_service.register(node_context, guest_create_user)
+
+
+        assert exc.type == SyftException
+        assert exc.value.public_message == expected_error_msg
 
 
 def test_userservice_register_error_on_get_email(
@@ -582,7 +594,7 @@ def test_userservice_register_error_on_get_email(
     def mock_get_by_email(credentials: SyftVerifyKey, email) -> NoReturn:
         raise StashException
 
-    monkeypatch.setattr(user_service.stash, "_get_by_email", mock_get_by_email)
+    monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
 
     # Patch Worker settings to enable signup
     with mock.patch(
@@ -623,8 +635,8 @@ def test_userservice_register_success(
         mock_worker = Worker.named(name="mock-node")
         node_context = NodeServiceContext(node=mock_worker)
 
-        monkeypatch.setattr(user_service.stash, "_get_by_email", mock_get_by_email)
-        monkeypatch.setattr(user_service.stash, "_set", mock_set)
+        monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
+        monkeypatch.setattr(user_service.stash, "set", mock_set)
 
         expected_private_key = guest_user.to(UserPrivateKey)
         response = user_service.register(node_context, guest_create_user)
@@ -647,7 +659,7 @@ def test_userservice_register_set_fail(
     @as_result(StashException)
     def mock_set(
         credentials: SyftVerifyKey,
-        user: User,
+        obj: User,
         add_permissions=None,
         has_permission: bool = False,
     ) -> NoReturn:
@@ -661,8 +673,8 @@ def test_userservice_register_set_fail(
         mock_worker = Worker.named(name="mock-node")
         node_context = NodeServiceContext(node=mock_worker)
 
-        monkeypatch.setattr(user_service.stash, "_get_by_email", mock_get_by_email)
-        monkeypatch.setattr(user_service.stash, "_set", mock_set)
+        monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
+        monkeypatch.setattr(user_service.stash, "set", mock_set)
 
         with pytest.raises(StashException) as exc:
             user_service.register(node_context, guest_create_user)
@@ -680,7 +692,7 @@ def test_userservice_exchange_credentials(
     def mock_get_by_email(credentials: SyftVerifyKey, email: str) -> User:
         return guest_user
 
-    monkeypatch.setattr(user_service.stash, "_get_by_email", mock_get_by_email)
+    monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
     expected_user_private_key = guest_user.to(UserPrivateKey)
 
     response = user_service.exchange_credentials(unauthed_context)
@@ -694,17 +706,19 @@ def test_userservice_exchange_credentials_invalid_user(
     unauthed_context: UnauthedServiceContext,
     guest_user: User,
 ) -> None:
-    def mock_get_by_email(credentials: SyftVerifyKey, email):
-        return Ok(None)
+    expected_error_msg = f"User {guest_user.email} not found"
+
+    @as_result(NotFoundException)
+    def mock_get_by_email(credentials: SyftVerifyKey, email) -> NoReturn:
+        raise NotFoundException(public_message=expected_error_msg)
 
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
-    expected_error_msg = (
-        f"No user exists with {guest_user.email} and supplied password."
-    )
 
-    response = user_service.exchange_credentials(unauthed_context)
-    assert isinstance(response, SyftError)
-    assert response.message == expected_error_msg
+    with pytest.raises(NotFoundException) as exc:
+        user_service.exchange_credentials(unauthed_context)
+
+    assert exc.type == NotFoundException
+    assert exc.value.public_message == expected_error_msg
 
 
 def test_userservice_exchange_credentials_get_email_fails(
@@ -715,12 +729,14 @@ def test_userservice_exchange_credentials_get_email_fails(
 ) -> None:
     get_by_email_error = "Failed to connect to server."
 
-    def mock_get_by_email(credentials: SyftVerifyKey, email: str) -> Err:
-        return Err(get_by_email_error)
+    @as_result(StashException)
+    def mock_get_by_email(credentials: SyftVerifyKey, email: str) -> NoReturn:
+        raise StashException(public_message=get_by_email_error)
 
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
-    expected_error_msg = f"Failed to retrieve user with {guest_user.email} with error: {get_by_email_error}"
 
-    response = user_service.exchange_credentials(unauthed_context)
-    assert isinstance(response, SyftError)
-    assert response.message == expected_error_msg
+    with pytest.raises(StashException) as exc:
+        user_service.exchange_credentials(unauthed_context)
+
+    assert exc.type == StashException
+    assert exc.value.public_message == get_by_email_error
