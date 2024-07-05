@@ -11,14 +11,12 @@ from pydantic import EmailStr
 from pydantic import ValidationError
 from pydantic import field_validator
 
-# syft absolute
-from syft.types.errors import SyftException
-
 # relative
 from ...client.api import APIRegistry
 from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...types.errors import SyftException
 from ...types.syft_metaclass import Empty
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
@@ -283,7 +281,7 @@ class UserView(SyftObject):
 
         result = api.services.user.update(uid=self.id, user_update=user_update)
 
-        for attr, val in result.model_dump(exclude_empty=True).items():
+        for attr, val in result.to_dict(exclude_empty=True).items():
             setattr(self, attr, val)
 
         return SyftSuccess(message="User details successfully updated.")

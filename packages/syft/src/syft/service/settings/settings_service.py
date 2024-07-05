@@ -236,11 +236,6 @@ class SettingsService(AbstractService):
 
         result = self._update(context=context, settings=settings).unwrap()
 
-        if result.is_err():
-            raise SyftException(
-                public_message=f"Failed to update settings: {result.err()}"
-            )
-
         message = "enabled" if enable else "disabled"
         return SyftSuccess(message=f"Eager execution {message}", value=message)
 

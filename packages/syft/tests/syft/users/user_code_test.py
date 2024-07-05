@@ -16,6 +16,7 @@ from syft.service.request.request import UserCodeStatusChange
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.user.user import User
+from syft.types.errors import SyftException
 
 
 @sy.syft_function(
@@ -97,8 +98,8 @@ def test_duplicated_user_code(worker) -> None:
     assert len(ds_client.code.get_all()) == 1
 
     # request the exact same code should return an error
-    result = ds_client.api.services.code.request_code_execution(mock_syft_func)
-    assert isinstance(result, SyftError)
+    with pytest.raises(Exception):
+        result = ds_client.api.services.code.request_code_execution(mock_syft_func)
     assert len(ds_client.code.get_all()) == 1
 
     # request the a different function name but same content will also succeed
@@ -245,12 +246,12 @@ def test_user_code_mock_execution(worker) -> None:
 
     # Guest attempts to set own permissions
     guest_user = ds_client.users.get_current_user()
-    res = guest_user.allow_mock_execution()
-    assert isinstance(res, SyftError)
+    with pytest.raises(SyftException):
+        res = guest_user.allow_mock_execution()
 
     # Mock execution fails, no permissions
-    result = ds_client.api.services.code.compute_mean(data=data.mock)
-    assert isinstance(result, SyftError)
+    with pytest.raises(SyftException):
+        result = ds_client.api.services.code.compute_mean(data=data.mock)
 
     # DO grants permissions
     users = root_domain_client.users.get_all()
@@ -306,16 +307,16 @@ def test_mock_multiple_arguments(worker) -> None:
     assert result.get() == 2
 
     # Mixed execution fails on input policy
-    result = ds_client.api.services.code.compute_sum(data1=1, data2=data)
-    assert isinstance(result, SyftError)
+    with pytest.raises(SyftException):
+        result = ds_client.api.services.code.compute_sum(data1=1, data2=data)
 
     # Real execution succeeds
     result = ds_client.api.services.code.compute_sum(data1=data, data2=data)
     assert np.equal(result.get(), np.array([0, 2, 4, 6, 8])).all()
 
     # Mixed execution fails, no result from cache
-    result = ds_client.api.services.code.compute_sum(data1=1, data2=data)
-    assert isinstance(result, SyftError)
+    with pytest.raises(SyftException):
+        result = ds_client.api.services.code.compute_sum(data1=1, data2=data)
 
 
 def test_mock_no_arguments(worker) -> None:
@@ -341,8 +342,8 @@ def test_mock_no_arguments(worker) -> None:
     ds_client.api.services.code.request_code_execution(compute_sum)
 
     # not approved, no mock execution
-    result = ds_client.api.services.code.compute_sum()
-    assert isinstance(result, SyftError)
+    with pytest.raises(Exception):
+        result = ds_client.api.services.code.compute_sum()
 
     # not approved, mock execution
     users[-1].allow_mock_execution()
@@ -396,23 +397,21 @@ def test_submit_invalid_name(worker) -> None:
 
 
 def test_submit_code_with_global_var(guest_client: DomainClient) -> None:
-    @sy.syft_function(
-        input_policy=sy.ExactMatch(), output_policy=sy.SingleExecutionExactOutput()
-    )
-    def mock_syft_func_with_global():
-        global x
-        return x
+    with pytest.raises(Exception):
 
-    res = guest_client.code.submit(mock_syft_func_with_global)
-    assert isinstance(res, SyftError)
+        @sy.syft_function(
+            input_policy=sy.ExactMatch(), output_policy=sy.SingleExecutionExactOutput()
+        )
+        def mock_syft_func_with_global():
+            global x
+            return x
 
-    @sy.syft_function_single_use()
-    def mock_syft_func_single_use_with_global():
-        global x
-        return x
+    with pytest.raises(Exception):
 
-    res = guest_client.code.submit(mock_syft_func_single_use_with_global)
-    assert isinstance(res, SyftError)
+        @sy.syft_function_single_use()
+        def mock_syft_func_single_use_with_global():
+            global x
+            return x
 
 
 def test_request_existing_usercodesubmit(worker) -> None:
@@ -439,8 +438,8 @@ def test_request_existing_usercodesubmit(worker) -> None:
     assert isinstance(res_request, Request)
 
     # Second request fails, cannot have multiple requests for the same code
-    res_request = ds_client.api.services.code.request_code_execution(my_func)
-    assert isinstance(res_request, SyftError)
+    with pytest.raises(Exception):
+        res_request = ds_client.api.services.code.request_code_execution(my_func)
 
     assert len(ds_client.code.get_all()) == 1
     assert len(ds_client.requests.get_all()) == 1
@@ -472,8 +471,8 @@ def test_request_existing_usercode(worker) -> None:
     assert isinstance(res_request, Request)
 
     # Second request fails, cannot have multiple requests for the same code
-    res_request = ds_client.api.services.code.request_code_execution(code)
-    assert isinstance(res_request, SyftError)
+    with pytest.raises(SyftException):
+        res_request = ds_client.api.services.code.request_code_execution(code)
 
     assert len(ds_client.code.get_all()) == 1
     assert len(ds_client.requests.get_all()) == 1
@@ -510,14 +509,15 @@ def test_submit_existing_code_different_user(worker):
 
     res_submit = ds_client_1.api.services.code.submit(my_func)
     assert isinstance(res_submit, SyftSuccess)
-    res_resubmit = ds_client_1.api.services.code.submit(my_func)
-    assert isinstance(res_resubmit, SyftError)
+    with pytest.raises(SyftException):
+        res_resubmit = ds_client_1.api.services.code.submit(my_func)
 
     # Resubmit with different user
     res_submit = ds_client_2.api.services.code.submit(my_func)
     assert isinstance(res_submit, SyftSuccess)
-    res_resubmit = ds_client_2.api.services.code.submit(my_func)
-    assert isinstance(res_resubmit, SyftError)
+
+    with pytest.raises(SyftException):
+        res_resubmit = ds_client_2.api.services.code.submit(my_func)
 
     assert len(ds_client_1.code.get_all()) == 1
     assert len(ds_client_2.code.get_all()) == 1
