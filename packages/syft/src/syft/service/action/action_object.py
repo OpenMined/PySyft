@@ -992,7 +992,11 @@ class ActionObject(SyncableSyftObject):
         api_call = SyftAPICall(
             node_uid=self.syft_node_uid, path="action.execute", args=[], kwargs=kwargs
         )
-        return api.make_call(api_call)
+        res = api.make_call(api_call)
+        if isinstance(res, SyftError):
+            print(f"Error during action:\n{res}")
+        if isinstance(res, SyftSuccess):
+            return res.value
 
     def request(self, client: SyftClient) -> Any | SyftError:
         # relative

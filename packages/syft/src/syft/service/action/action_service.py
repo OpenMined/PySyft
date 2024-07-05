@@ -736,7 +736,7 @@ class ActionService(AbstractService):
                 twin_mode=TwinMode.NONE,
                 has_permission=True,
             ).unwrap(
-                public_message=f"Failed executing action {action}, could not resolve self: {resolved_self.err()}"
+                public_message=f"Failed executing action {action}, could not resolve self: {action.remote_self}"
             )
             if action.op == "__call__" and resolved_self.syft_action_data_type == Plan:
                 result_action_object = self.execute_plan(
@@ -833,12 +833,13 @@ def resolve_action_args(
         arg_value = service._get(
             context=context, uid=arg_id, twin_mode=TwinMode.NONE, has_permission=True
         ).unwrap()
-        if isinstance(arg_value.ok(), TwinObject):
+        if isinstance(arg_value, TwinObject):
             has_twin_inputs = True
-        args.append(arg_value.ok())
+        args.append(arg_value)
     return args, has_twin_inputs
 
 
+@as_result(SyftException)
 def resolve_action_kwargs(
     action: Action, context: AuthedServiceContext, service: ActionService
 ) -> tuple[Ok[dict], bool]:
@@ -847,13 +848,11 @@ def resolve_action_kwargs(
     for key, arg_id in action.kwargs.items():
         kwarg_value = service._get(
             context=context, uid=arg_id, twin_mode=TwinMode.NONE, has_permission=True
-        )
-        if kwarg_value.is_err():
-            return kwarg_value, False
-        if isinstance(kwarg_value.ok(), TwinObject):
+        ).unwrap()
+        if isinstance(kwarg_value, TwinObject):
             has_twin_inputs = True
-        kwargs[key] = kwarg_value.ok()
-    return Ok(kwargs), has_twin_inputs
+        kwargs[key] = kwarg_value
+    return kwargs, has_twin_inputs
 
 
 @as_result(SyftException)
@@ -913,6 +912,7 @@ def execute_callable(
     return result_action_object
 
 
+@as_result(SyftException)
 def execute_object(
     service: ActionService,
     context: AuthedServiceContext,
@@ -921,84 +921,59 @@ def execute_object(
     twin_mode: TwinMode = TwinMode.NONE,
 ) -> Result[Ok[TwinObject | ActionObject], Err[str]]:
     unboxed_resolved_self = resolved_self.syft_action_data
-    _args, has_arg_twins = resolve_action_args(action, context, service)
+    args, has_arg_twins = resolve_action_args(action, context, service).unwrap()
 
-    kwargs, has_kwargs_twins = resolve_action_kwargs(action, context, service)
-    if _args.is_err():
-        return _args
-    else:
-        args = _args.ok()
-    if kwargs.is_err():
-        return kwargs
-    else:
-        kwargs = kwargs.ok()
+    kwargs, has_kwargs_twins = resolve_action_kwargs(action, context, service).unwrap()
     has_twin_inputs = has_arg_twins or has_kwargs_twins
 
     # 🔵 TODO 10: Get proper code From old RunClassMethodAction to ensure the function
     # is not bound to the original object or mutated
     target_method = getattr(unboxed_resolved_self, action.op, None)
     result = None
-    try:
-        if target_method:
-            if twin_mode == TwinMode.NONE and not has_twin_inputs:
-                # no twins
-                filtered_args = filter_twin_args(args, twin_mode=twin_mode).unwrap()
-                filtered_kwargs = filter_twin_kwargs(
-                    kwargs, twin_mode=twin_mode
-                ).unwrap()
-                result = target_method(*filtered_args, **filtered_kwargs)
-                result_action_object = wrap_result(action.result_id, result)
-            elif twin_mode == TwinMode.NONE and has_twin_inputs:
-                # self isn't a twin but one of the inputs is
-                private_args = filter_twin_args(
-                    args, twin_mode=TwinMode.PRIVATE
-                ).unwrap()
-                private_kwargs = filter_twin_kwargs(
-                    kwargs, twin_mode=TwinMode.PRIVATE
-                ).unwrap()
-                private_result = target_method(*private_args, **private_kwargs)
-                result_action_object_private = wrap_result(
-                    action.result_id, private_result
-                )
+    if not target_method:
+        raise SyftException(public_message="could not find target method")
+    if twin_mode == TwinMode.NONE and not has_twin_inputs:
+        # no twins
+        filtered_args = filter_twin_args(args, twin_mode=twin_mode).unwrap()
+        filtered_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode).unwrap()
+        result = target_method(*filtered_args, **filtered_kwargs)
+        result_action_object = wrap_result(action.result_id, result)
+    elif twin_mode == TwinMode.NONE and has_twin_inputs:
+        # self isn't a twin but one of the inputs is
+        private_args = filter_twin_args(args, twin_mode=TwinMode.PRIVATE).unwrap()
+        private_kwargs = filter_twin_kwargs(kwargs, twin_mode=TwinMode.PRIVATE).unwrap()
+        private_result = target_method(*private_args, **private_kwargs)
+        result_action_object_private = wrap_result(action.result_id, private_result)
 
-                mock_args = filter_twin_args(args, twin_mode=TwinMode.MOCK).unwrap()
-                mock_kwargs = filter_twin_kwargs(
-                    kwargs, twin_mode=TwinMode.MOCK
-                ).unwrap()
-                mock_result = target_method(*mock_args, **mock_kwargs)
-                result_action_object_mock = wrap_result(action.result_id, mock_result)
+        mock_args = filter_twin_args(args, twin_mode=TwinMode.MOCK).unwrap()
+        mock_kwargs = filter_twin_kwargs(kwargs, twin_mode=TwinMode.MOCK).unwrap()
+        mock_result = target_method(*mock_args, **mock_kwargs)
+        result_action_object_mock = wrap_result(action.result_id, mock_result)
 
-                result_action_object = TwinObject(
-                    id=action.result_id,
-                    private_obj=result_action_object_private,
-                    mock_obj=result_action_object_mock,
-                )
-            elif twin_mode == twin_mode.PRIVATE:  # type:ignore
-                # twin private path
-                private_args = filter_twin_args(args, twin_mode=twin_mode).unwrap()  # type:ignore[unreachable]
-                private_kwargs = filter_twin_kwargs(
-                    kwargs, twin_mode=twin_mode
-                ).unwrap()
-                result = target_method(*private_args, **private_kwargs)
-                result_action_object = wrap_result(action.result_id, result)
-            elif twin_mode == twin_mode.MOCK:  # type:ignore
-                # twin mock path
-                mock_args = filter_twin_args(args, twin_mode=twin_mode).unwrap()  # type:ignore[unreachable]
-                mock_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode).unwrap()
-                target_method = getattr(unboxed_resolved_self, action.op, None)
-                result = target_method(*mock_args, **mock_kwargs)
-                result_action_object = wrap_result(action.result_id, result)
-            else:
-                raise Exception(
-                    f"Bad combination of: twin_mode: {twin_mode} and has_twin_inputs: {has_twin_inputs}"
-                )
-        else:
-            return Err("Missing target method")
+        result_action_object = TwinObject(
+            id=action.result_id,
+            private_obj=result_action_object_private,
+            mock_obj=result_action_object_mock,
+        )
+    elif twin_mode == twin_mode.PRIVATE:  # type:ignore
+        # twin private path
+        private_args = filter_twin_args(args, twin_mode=twin_mode).unwrap()  # type:ignore[unreachable]
+        private_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode).unwrap()
+        result = target_method(*private_args, **private_kwargs)
+        result_action_object = wrap_result(action.result_id, result)
+    elif twin_mode == twin_mode.MOCK:  # type:ignore
+        # twin mock path
+        mock_args = filter_twin_args(args, twin_mode=twin_mode).unwrap()  # type:ignore[unreachable]
+        mock_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode).unwrap()
+        target_method = getattr(unboxed_resolved_self, action.op, None)
+        result = target_method(*mock_args, **mock_kwargs)
+        result_action_object = wrap_result(action.result_id, result)
+    else:
+        raise SyftException(
+            public_message=f"Bad combination of: twin_mode: {twin_mode} and has_twin_inputs: {has_twin_inputs}"
+        )
 
-    except Exception as e:
-        return Err(e)
-
-    return Ok(result_action_object)
+    return result_action_object
 
 
 def wrap_result(result_id: UID, result: Any) -> ActionObject:
