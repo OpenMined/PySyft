@@ -442,6 +442,13 @@
           "hash": "c5be6bb4f34b04f814e15468d5231e47540c5b7d2ea0f2770e6cd332f61173c7",
           "action": "add"
         }
+      },
+      "EmptyInputPolicy": {
+        "2": {
+          "version": 2,
+          "hash": "3117e16cbe4dbc344ab90fbbd36ba90dfb518e66f0fb07644bbe7864dcdeb309",
+          "action": "add"
+        }
       }
     }
   }
