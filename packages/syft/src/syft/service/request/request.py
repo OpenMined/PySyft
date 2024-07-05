@@ -94,13 +94,19 @@ class Change(SyftObject):
     # TODO: remove Any in argument by moving changes to a different file,
     # this is done as changes and request have a catch 22 situation in order of the code.
     # Runs a post hook after the change is created, applied, or undone
-    def post_create_hook(self, context: ChangeContext, request: Any) -> None:
+    def post_create_hook(
+        self, context: ChangeContext, request: Any
+    ) -> SyftSuccess | SyftError | None:
         pass
 
-    def post_apply_hook(self, context: ChangeContext, request: Any) -> None:
+    def post_apply_hook(
+        self, context: ChangeContext, request: Any
+    ) -> SyftSuccess | SyftError | None:
         pass
 
-    def post_undo_hook(self, context: ChangeContext, request: Any) -> None:
+    def post_undo_hook(
+        self, context: ChangeContext, request: Any
+    ) -> SyftSuccess | SyftError | None:
         pass
 
 
@@ -1388,7 +1394,6 @@ class UserCodeStatusChange(Change):
         from ..project.project_service import ProjectService
 
         code = self.get_user_code(context)
-        print("Entered Post Create Hook")
 
         # Perform Post Create Hook only when the code is part of a project
         if isinstance(code.project_id, UID):
@@ -1402,10 +1407,8 @@ class UserCodeStatusChange(Change):
                 return project_obj
 
             req_res = project_obj.add_request(request, code_id=code.id)
-            print("=" * 60)
-            print(req_res)
-            print("=" * 60)
             return req_res
+        return None
 
     def post_apply_hook(
         self, context: ChangeContext, request: Request
@@ -1415,7 +1418,6 @@ class UserCodeStatusChange(Change):
         from ..project.project_service import ProjectService
 
         code = self.get_user_code(context)
-        print("Entered Post Apply Hook")
 
         # Perform Post Apply Hook only when the code is part of a project
         if isinstance(code.project_id, UID):
@@ -1431,10 +1433,8 @@ class UserCodeStatusChange(Change):
             req_res = project_obj.add_request_response(
                 request_id=request.id, response=RequestStatus.APPROVED
             )
-            print("=" * 60)
-            print(req_res)
-            print("=" * 60)
             return req_res
+        return None
 
     def post_undo_hook(
         self, context: ChangeContext, request: Request
@@ -1444,7 +1444,6 @@ class UserCodeStatusChange(Change):
         from ..project.project_service import ProjectService
 
         code = self.get_user_code(context)
-        print("Entered Post Apply Hook")
 
         # Perform Post Apply Hook only when the code is part of a project
         if isinstance(code.project_id, UID):
@@ -1460,10 +1459,8 @@ class UserCodeStatusChange(Change):
             req_res = project_obj.add_request_response(
                 request_id=request.id, response=RequestStatus.REJECTED
             )
-            print("=" * 60)
-            print(req_res)
-            print("=" * 60)
             return req_res
+        return None
 
 
 @serializable()

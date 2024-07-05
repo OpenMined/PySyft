@@ -487,7 +487,10 @@ class Node(AbstractNode):
             client_config = OnDiskBlobStorageClientConfig(
                 base_directory=self.get_temp_dir("blob")
             )
-            config_ = OnDiskBlobStorageConfig(client_config=client_config)
+            config_ = OnDiskBlobStorageConfig(
+                client_config=client_config,
+                min_blob_size=os.getenv("MIN_SIZE_BLOB_STORAGE_MB", 16),
+            )
         else:
             config_ = config
         self.blob_store_config = config_
@@ -505,6 +508,17 @@ class Node(AbstractNode):
                 self.blob_store_config.client_config.remote_profiles[
                     remote_profile.profile_name
                 ] = remote_profile
+
+        if self.dev_mode:
+            if isinstance(self.blob_store_config, OnDiskBlobStorageConfig):
+                logger.debug(
+                    f"Using on-disk blob storage with path: "
+                    f"{self.blob_store_config.client_config.base_directory}",
+                )
+            logger.debug(
+                f"Minimum object size to be saved to the blob storage: "
+                f"{self.blob_store_config.min_blob_size} (MB)."
+            )
 
     def run_peer_health_checks(self, context: AuthedServiceContext) -> None:
         self.peer_health_manager = PeerHealthCheckTask()
@@ -1074,6 +1088,7 @@ class Node(AbstractNode):
             node_side_type=node_side_type,
             show_warnings=show_warnings,
             eager_execution_enabled=eager_execution_enabled,
+            min_size_blob_storage_mb=self.blob_store_config.min_blob_size,
         )
 
     @property
@@ -1798,7 +1813,7 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
         )
         return default_worker_pool
 
-    logger.info(f"Creating default worker image with tag='{default_worker_tag}'")
+    logger.info(f"Creating default worker image with tag='{default_worker_tag}'. ")
     # Get/Create a default worker SyftWorkerImage
     default_image = create_default_image(
         credentials=credentials,
@@ -1811,7 +1826,7 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
         return default_image
 
     if not default_image.is_built:
-        logger.info(f"Building default worker image with tag={default_worker_tag}")
+        logger.info(f"Building default worker image with tag={default_worker_tag}. ")
         image_build_method = node.get_service_method(SyftWorkerImageService.build)
         # Build the Image for given tag
         result = image_build_method(
@@ -1831,7 +1846,7 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
         f"name={default_pool_name} "
         f"workers={worker_count} "
         f"image_uid={default_image.id} "
-        f"in_memory={node.in_memory_workers}"
+        f"in_memory={node.in_memory_workers}. "
     )
     if default_worker_pool is None:
         worker_to_add_ = worker_count
