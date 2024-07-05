@@ -1241,9 +1241,7 @@ class ActionObject(SyncableSyftObject):
         if isinstance(blob_storage_res, SyftError):
             return blob_storage_res
 
-        api = self._get_api()
-        if isinstance(api, SyftError):
-            return api
+        api = self._get_api().unwrap()
 
         if isinstance(blob_storage_res, SyftWarning):
             logger.debug(blob_storage_res.message)

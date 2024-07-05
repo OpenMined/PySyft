@@ -640,9 +640,7 @@ class Request(SyncableSyftObject):
         approve_nested: bool = False,
         **kwargs: dict,
     ) -> Result[SyftSuccess, SyftError]:
-        api = self._get_api()
-        if isinstance(api, SyftError):
-            return api
+        api = self._get_api().unwrap()
 
         if self.is_l0_deployment:
             return SyftError(
@@ -686,9 +684,7 @@ class Request(SyncableSyftObject):
         Args:
             reason (str): Reason for which the request has been denied.
         """
-        api = self._get_api()
-        if isinstance(api, SyftError):
-            return api
+        api = self._get_api().unwrap()
 
         if self.is_l0_deployment:
             if self.status == RequestStatus.APPROVED:
@@ -696,9 +692,7 @@ class Request(SyncableSyftObject):
                     "This request already has results published to the data scientist. "
                     "They will still be able to access those results."
                 )
-            result = api.code.update(id=self.code_id, l0_deny_reason=reason)
-            if isinstance(result, SyftError):
-                return result
+            api.code.update(id=self.code_id, l0_deny_reason=reason)
             return SyftSuccess(message=f"Request denied with reason: {reason}")
 
         return api.services.request.undo(uid=self.id, reason=reason)
@@ -791,9 +785,7 @@ class Request(SyncableSyftObject):
         self,
         result: Any,
     ) -> ActionObject | SyftError:
-        api = self._get_api()
-        if isinstance(api, SyftError):
-            return api
+        api = self._get_api().unwrap()
 
         # Ensure result is an ActionObject
         if isinstance(result, ActionObject):
@@ -831,9 +823,8 @@ class Request(SyncableSyftObject):
         code = self.code
         if isinstance(code, SyftError):
             return code
-        api = self._get_api()
-        if isinstance(api, SyftError):
-            return api
+
+        api = self._get_api().unwrap()
 
         input_ids = {}
         input_policy = code.input_policy
@@ -871,10 +862,8 @@ class Request(SyncableSyftObject):
         """
 
         # TODO check if this is a low-side request. If not, SyftError
+        api = self._get_api().unwrap()
 
-        api = self._get_api()
-        if isinstance(api, SyftError):
-            return api
         code = self.code
         if isinstance(code, SyftError):
             return code

@@ -33,6 +33,8 @@ from pydantic import Field
 from pydantic import model_validator
 from pydantic.fields import PydanticUndefined
 from result import OkErr
+from syft.types.errors import SyftException
+from syft.types.result import as_result
 from typeguard import check_type
 from typing_extensions import Self
 
@@ -723,14 +725,11 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
                         diff_attrs.append(diff_attr)
         return diff_attrs
 
-    def _get_api(self) -> "SyftAPI | SyftError":
+    @as_result(SyftException)
+    def _get_api(self) -> "SyftAPI":
         # relative
         from ..client.api import APIRegistry
-
-        api = APIRegistry.api_for(self.syft_node_location, self.syft_client_verify_key)
-        if api is None:
-            return SyftError(f"Can't access the api. You must login to {self.node_uid}")
-        return api
+        return APIRegistry._api_for(self.syft_node_location, self.syft_client_verify_key).unwrap()
 
     ## OVERRIDING pydantic.BaseModel.__getattr__
     ## return super().__getattribute__(item) -> return self.__getattribute__(item)
