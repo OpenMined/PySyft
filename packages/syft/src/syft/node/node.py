@@ -1212,7 +1212,11 @@ class Node(AbstractNode):
         return SyftError(message=(f"Node has no route to {node_uid}"))
 
     def get_role_for_credentials(self, credentials: SyftVerifyKey) -> ServiceRole:
-        return self.get_service("userservice").get_role_for_credentials(credentials=credentials).unwrap()
+        return (
+            self.get_service("userservice")
+            .get_role_for_credentials(credentials=credentials)
+            .unwrap()
+        )
 
     def handle_api_call(
         self,
@@ -1295,12 +1299,20 @@ class Node(AbstractNode):
                         raise TypeError("Don't return a SyftError, raise instead")
                     if not isinstance(result, SyftSuccess):
                         result = SyftSuccess(message="", value=result)
+                tb = None
             except SyftException as exc:
                 result = SyftError.from_exception(context=context, exc=exc)
+                tb = exc.get_tb(context, overwrite_permission=True)
             except Exception:
                 result = SyftError(
                     message=f"Exception calling {api_call.path}. {traceback.format_exc()}"
                 )
+                tb = traceback.format_exc()
+            if (
+                isinstance(result, SyftError)
+                and role.value < ServiceRole.DATA_OWNER.value
+            ):
+                print(f"Exception (hidden from DS) happened on the server side:\n{tb}")
         else:
             return self.add_api_call_to_queue(api_call)
         return result
@@ -1458,9 +1470,7 @@ class Node(AbstractNode):
                 result = action_service.set_result_to_store(
                     result_action_object=result_obj,
                     context=context,
-                )
-                if result.is_err():
-                    return result.err()
+                ).unwrap()
 
         job = Job(
             id=queue_item.job_id,

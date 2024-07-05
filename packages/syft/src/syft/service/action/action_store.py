@@ -165,9 +165,6 @@ class KeyValueActionStore(ActionStore):
         write_permission = ActionObjectWRITE(uid=uid, credentials=credentials)
         can_write = self.has_permission(write_permission)
 
-        if not can_write:
-            raise SyftException(public_message=f"Permission: {write_permission} denied")
-
         if not self.exists(uid=uid):
             # attempt to claim it for writing
             if has_result_read_permission:
@@ -179,6 +176,9 @@ class KeyValueActionStore(ActionStore):
                     uid=uid, credentials=self.root_verify_key
                 )
                 can_write = True if ownership_result.is_ok() else False
+
+        if not can_write:
+            raise SyftException(public_message=f"Permission: {write_permission} denied")
 
         self.data[uid] = syft_object
         if uid not in self.permissions:

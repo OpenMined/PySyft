@@ -25,6 +25,12 @@ class SyftResponseMessage(SyftBaseModel):
     _bool: bool = True
     require_api_update: bool = False
 
+    def is_err(self):
+        return False
+
+    def is_ok(self):
+        return True
+
     def __getattr__(self, name: str) -> Any:
         if name in [
             "_bool",
@@ -93,6 +99,12 @@ class SyftError(SyftResponseMessage):
     def __bool__(self) -> bool:
         return False
 
+    def is_err(self):
+        return True
+
+    def is_ok(self):
+        return False
+
     @classmethod
     def from_exception(
         cls, context: "AuthedServiceContext", exc: "NewSyftException"
@@ -106,6 +118,12 @@ class SyftError(SyftResponseMessage):
 class SyftSuccess(SyftResponseMessage):
     value: Any | None = None
 
+    def is_err(self):
+        return False
+
+    def is_ok(self):
+        return True
+
     @property
     def _repr_html_class_(self) -> str:
         return "alert-success"
@@ -115,7 +133,7 @@ class SyftSuccess(SyftResponseMessage):
 
 
 @serializable()
-class SyftNotReady(SyftResponseMessage):
+class SyftNotReady(SyftError):
     _bool: bool = False
 
     @property

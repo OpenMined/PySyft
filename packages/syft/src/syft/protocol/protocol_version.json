@@ -451,27 +451,6 @@
           "action": "remove"
         }
       },
-      "NumpyArrayObject": {
-        "3": {
-          "version": 3,
-          "hash": "ff3e9e57df17d6027581ae1aa177199751d8685a3b0cb4359e7e55ace3514041",
-          "action": "remove"
-        }
-      },
-      "NumpyScalarObject": {
-        "3": {
-          "version": 3,
-          "hash": "9cc5eca915280827de912d66fbb345f43f80787de309613f3fc53130df5fa7d8",
-          "action": "remove"
-        }
-      },
-      "NumpyBoolObject": {
-        "3": {
-          "version": 3,
-          "hash": "808a042ea9bca5b621417296824bf2a0b170e66c1f714f91ec3feccace41e2a3",
-          "action": "remove"
-        }
-      },
       "JobInfo": {
         "2": {
           "version": 2,

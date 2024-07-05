@@ -4,6 +4,7 @@ import logging
 from typing import Any
 
 # third party
+import numpy as np
 from result import Err
 from result import Ok
 from result import Result
@@ -26,6 +27,7 @@ from ..context import AuthedServiceContext
 from ..policy.policy import OutputPolicy
 from ..policy.policy import retrieve_from_db
 from ..response import SyftError
+from ..response import SyftResponseMessage
 from ..response import SyftSuccess
 from ..response import SyftWarning
 from ..service import AbstractService
@@ -48,6 +50,7 @@ from .action_permissions import ActionObjectREAD
 from .action_permissions import ActionPermission
 from .action_store import ActionStore
 from .action_types import action_type_for_type
+from .numpy import NumpyArrayObject
 from .pandas import PandasDataFrameObject  # noqa: F401
 from .pandas import PandasSeriesObject  # noqa: F401
 
@@ -58,6 +61,36 @@ logger = logging.getLogger(__name__)
 class ActionService(AbstractService):
     def __init__(self, store: ActionStore) -> None:
         self.store = store
+
+    @service_method(path="action.np_array", name="np_array")
+    def np_array(self, context: AuthedServiceContext, data: Any) -> Any:
+        # TODO: REMOVE!
+        if not isinstance(data, np.ndarray):
+            data = np.array(data)
+        # cast here since we are sure that AuthedServiceContext has a node
+
+        np_obj = NumpyArrayObject(
+            dtype=data.dtype,
+            shape=data.shape,
+            syft_action_data_cache=data,
+            syft_node_location=context.node.id,
+            syft_client_verify_key=context.credentials,
+        )
+        blob_store_result = np_obj._save_to_blob_storage()
+        if isinstance(blob_store_result, SyftError):
+            return blob_store_result
+        if isinstance(blob_store_result, SyftWarning):
+            logger.debug(blob_store_result.message)
+            skip_save_to_blob_store = True
+        else:
+            skip_save_to_blob_store = False
+
+        np_pointer = self._set(
+            context,
+            np_obj,
+            skip_save_to_blob_store=skip_save_to_blob_store,
+        )
+        return np_pointer
 
     @service_method(
         path="action.set",
@@ -309,6 +342,7 @@ class ActionService(AbstractService):
         return self.store.has_storage_permission(uid)
 
     # not a public service endpoint
+    @as_result(SyftException)
     def _user_code_execute(
         self,
         context: AuthedServiceContext,
@@ -328,40 +362,32 @@ class ActionService(AbstractService):
         if not override_execution_permission:
             if input_policy is None:
                 if not code_item.is_output_policy_approved(context):
-                    return Err("Execution denied: Your code is waiting for approval")
-                return Err(f"No input policy defined for user code: {code_item.id}")
+                    raise SyftException(
+                        public_message="Execution denied: Your code is waiting for approval"
+                    )
+                raise SyftException(
+                    public_message=f"No input policy defined for user code: {code_item.id}"
+                )
 
             # Filter input kwargs based on policy
             filtered_kwargs = input_policy.filter_kwargs(
                 kwargs=kwargs, context=context, code_item_id=code_item.id
-            )
-            if filtered_kwargs.is_err():
-                return filtered_kwargs
-            filtered_kwargs = filtered_kwargs.ok()
+            ).unwrap()
 
-            # validate input policy
-            is_approved = input_policy._is_valid(
+            # validate input policy, raises if not valid
+            input_policy._is_valid(
                 context=context,
                 usr_input_kwargs=kwargs,
                 code_item_id=code_item.id,
-            )
-            if is_approved.is_err():
-                return is_approved
+            ).unwrap()
         else:
-            result = retrieve_from_db(code_item.id, kwargs, context)
-            if isinstance(result, SyftError):
-                return Err(result.message)
-            filtered_kwargs = result.ok()
+            filtered_kwargs = retrieve_from_db(code_item.id, kwargs, context).unwrap()
 
         if hasattr(input_policy, "transform_kwargs"):
-            filtered_kwargs_res = input_policy.transform_kwargs(  # type: ignore
+            filtered_kwargs = input_policy.transform_kwargs(  # type: ignore
                 context,
                 filtered_kwargs,
-            )
-            if filtered_kwargs_res.is_err():
-                return filtered_kwargs_res
-            else:
-                filtered_kwargs = filtered_kwargs_res.ok()
+            ).unwrap()
 
         # update input policy to track any input state
 
@@ -381,7 +407,7 @@ class ActionService(AbstractService):
                 # allow python types from inputpolicy
                 filtered_kwargs = filter_twin_kwargs(
                     real_kwargs, twin_mode=TwinMode.NONE, allow_python_types=True
-                )
+                ).unwrap()
                 exec_result = execute_byte_code(code_item, filtered_kwargs, context)
                 if output_policy:
                     exec_result.result = output_policy.apply_to_output(
@@ -401,7 +427,7 @@ class ActionService(AbstractService):
                 # twins
                 private_kwargs = filter_twin_kwargs(
                     real_kwargs, twin_mode=TwinMode.PRIVATE, allow_python_types=True
-                )
+                ).unwrap()
                 private_exec_result = execute_byte_code(
                     code_item, private_kwargs, context
                 )
@@ -419,7 +445,7 @@ class ActionService(AbstractService):
 
                 mock_kwargs = filter_twin_kwargs(
                     real_kwargs, twin_mode=TwinMode.MOCK, allow_python_types=True
-                )
+                ).unwrap()
                 # relative
                 from .action_data_empty import ActionDataEmpty
 
@@ -443,16 +469,20 @@ class ActionService(AbstractService):
                     mock_obj=result_action_object_mock,
                 )
         except Exception as e:
-            return Err(f"_user_code_execute failed. {e}")
-        return Ok(result_action_object)
+            # third party
+            raise SyftException.from_exception(
+                exc=e, public_message="_user_code_execute failed"
+            )
+        return result_action_object
 
+    @as_result(SyftException)
     def set_result_to_store(
         self,
         result_action_object: ActionObject | TwinObject,
         context: AuthedServiceContext,
         output_policy: OutputPolicy | None = None,
         has_result_read_permission: bool = False,
-    ) -> Result[ActionObject, str]:
+    ) -> ActionObject:
         result_id = result_action_object.id
         # result_blob_id = result_action_object.syft_blob_storage_entry_id
 
@@ -475,9 +505,12 @@ class ActionService(AbstractService):
             context.node.id,
             context.credentials,
         )
-        blob_store_result = result_action_object._save_to_blob_storage()
-        if isinstance(blob_store_result, SyftError):
-            return Err(blob_store_result.message)
+        blob_store_result: SyftResponseMessage = (
+            result_action_object._save_to_blob_storage()
+        )
+
+        if blob_store_result.is_err():
+            raise SyftException(public_message=blob_store_result.message)
         if isinstance(blob_store_result, SyftWarning):
             logger.debug(blob_store_result.message)
             skip_save_to_blob_store = True
@@ -499,10 +532,7 @@ class ActionService(AbstractService):
             result_action_object,
             has_result_read_permission=True,
             skip_save_to_blob_store=skip_save_to_blob_store,
-        )
-
-        if set_result.is_err():
-            return set_result
+        ).unwrap()
 
         blob_storage_service: AbstractService = context.node.get_service(
             BlobStorageService
@@ -596,12 +626,12 @@ class ActionService(AbstractService):
 
         if isinstance(resolved_self, TwinObject):
             # todo, create copy?
-            private_args = filter_twin_args(args, twin_mode=TwinMode.PRIVATE)
+            private_args = filter_twin_args(args, twin_mode=TwinMode.PRIVATE).unwrap()
             private_val = private_args[0]
             setattr(resolved_self.private.syft_action_data, name, private_val)
             # todo: what do we use as data for the mock here?
             # depending on permisisons?
-            public_args = filter_twin_args(args, twin_mode=TwinMode.MOCK)
+            public_args = filter_twin_args(args, twin_mode=TwinMode.MOCK).unwrap()
             public_val = public_args[0]
             setattr(resolved_self.mock.syft_action_data, name, public_val)
             return Ok(
@@ -617,7 +647,7 @@ class ActionService(AbstractService):
             )
         else:
             # TODO: Implement for twinobject args
-            args = filter_twin_args(args, twin_mode=TwinMode.NONE)  # type: ignore[unreachable]
+            args = filter_twin_args(args, twin_mode=TwinMode.NONE).unwrap()  # type: ignore[unreachable]
             val = args[0]
             setattr(resolved_self.syft_action_data, name, val)
             return Ok(
@@ -887,22 +917,26 @@ def execute_callable(
                 # if twin_mode == TwinMode.NONE and not has_twin_inputs:
                 twin_mode = TwinMode.NONE
                 # no twins
-                filtered_args = filter_twin_args(args, twin_mode=twin_mode)
-                filtered_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
+                filtered_args = filter_twin_args(args, twin_mode=twin_mode).unwrap()
+                filtered_kwargs = filter_twin_kwargs(
+                    kwargs, twin_mode=twin_mode
+                ).unwrap()
                 result = target_callable(*filtered_args, **filtered_kwargs)
                 result_action_object = wrap_result(action.result_id, result)
             else:
                 twin_mode = TwinMode.PRIVATE
-                private_args = filter_twin_args(args, twin_mode=twin_mode)
-                private_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
+                private_args = filter_twin_args(args, twin_mode=twin_mode).unwrap()
+                private_kwargs = filter_twin_kwargs(
+                    kwargs, twin_mode=twin_mode
+                ).unwrap()
                 private_result = target_callable(*private_args, **private_kwargs)
                 result_action_object_private = wrap_result(
                     action.result_id, private_result
                 )
 
                 twin_mode = TwinMode.MOCK
-                mock_args = filter_twin_args(args, twin_mode=twin_mode)
-                mock_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
+                mock_args = filter_twin_args(args, twin_mode=twin_mode).unwrap()
+                mock_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode).unwrap()
                 mock_result = target_callable(*mock_args, **mock_kwargs)
                 result_action_object_mock = wrap_result(action.result_id, mock_result)
 
@@ -947,21 +981,29 @@ def execute_object(
         if target_method:
             if twin_mode == TwinMode.NONE and not has_twin_inputs:
                 # no twins
-                filtered_args = filter_twin_args(args, twin_mode=twin_mode)
-                filtered_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
+                filtered_args = filter_twin_args(args, twin_mode=twin_mode).unwrap()
+                filtered_kwargs = filter_twin_kwargs(
+                    kwargs, twin_mode=twin_mode
+                ).unwrap()
                 result = target_method(*filtered_args, **filtered_kwargs)
                 result_action_object = wrap_result(action.result_id, result)
             elif twin_mode == TwinMode.NONE and has_twin_inputs:
                 # self isn't a twin but one of the inputs is
-                private_args = filter_twin_args(args, twin_mode=TwinMode.PRIVATE)
-                private_kwargs = filter_twin_kwargs(kwargs, twin_mode=TwinMode.PRIVATE)
+                private_args = filter_twin_args(
+                    args, twin_mode=TwinMode.PRIVATE
+                ).unwrap()
+                private_kwargs = filter_twin_kwargs(
+                    kwargs, twin_mode=TwinMode.PRIVATE
+                ).unwrap()
                 private_result = target_method(*private_args, **private_kwargs)
                 result_action_object_private = wrap_result(
                     action.result_id, private_result
                 )
 
-                mock_args = filter_twin_args(args, twin_mode=TwinMode.MOCK)
-                mock_kwargs = filter_twin_kwargs(kwargs, twin_mode=TwinMode.MOCK)
+                mock_args = filter_twin_args(args, twin_mode=TwinMode.MOCK).unwrap()
+                mock_kwargs = filter_twin_kwargs(
+                    kwargs, twin_mode=TwinMode.MOCK
+                ).unwrap()
                 mock_result = target_method(*mock_args, **mock_kwargs)
                 result_action_object_mock = wrap_result(action.result_id, mock_result)
 
@@ -972,14 +1014,16 @@ def execute_object(
                 )
             elif twin_mode == twin_mode.PRIVATE:  # type:ignore
                 # twin private path
-                private_args = filter_twin_args(args, twin_mode=twin_mode)  # type:ignore[unreachable]
-                private_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
+                private_args = filter_twin_args(args, twin_mode=twin_mode).unwrap()  # type:ignore[unreachable]
+                private_kwargs = filter_twin_kwargs(
+                    kwargs, twin_mode=twin_mode
+                ).unwrap()
                 result = target_method(*private_args, **private_kwargs)
                 result_action_object = wrap_result(action.result_id, result)
             elif twin_mode == twin_mode.MOCK:  # type:ignore
                 # twin mock path
-                mock_args = filter_twin_args(args, twin_mode=twin_mode)  # type:ignore[unreachable]
-                mock_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
+                mock_args = filter_twin_args(args, twin_mode=twin_mode).unwrap()  # type:ignore[unreachable]
+                mock_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode).unwrap()
                 target_method = getattr(unboxed_resolved_self, action.op, None)
                 result = target_method(*mock_args, **mock_kwargs)
                 result_action_object = wrap_result(action.result_id, result)
@@ -1003,6 +1047,7 @@ def wrap_result(result_id: UID, result: Any) -> ActionObject:
     return result_action_object
 
 
+@as_result(SyftException)
 def filter_twin_args(args: list[Any], twin_mode: TwinMode) -> Any:
     filtered = []
     for arg in args:
@@ -1012,14 +1057,15 @@ def filter_twin_args(args: list[Any], twin_mode: TwinMode) -> Any:
             elif twin_mode == TwinMode.MOCK:
                 filtered.append(arg.mock.syft_action_data)
             else:
-                raise Exception(
-                    f"Filter can only use {TwinMode.PRIVATE} or {TwinMode.MOCK}"
+                raise SyftException(
+                    public_message=f"Filter can only use {TwinMode.PRIVATE} or {TwinMode.MOCK}"
                 )
         else:
             filtered.append(arg.syft_action_data)
     return filtered
 
 
+@as_result(SyftException)
 def filter_twin_kwargs(
     kwargs: dict, twin_mode: TwinMode, allow_python_types: bool = False
 ) -> Any:
@@ -1031,8 +1077,8 @@ def filter_twin_kwargs(
             elif twin_mode == TwinMode.MOCK:
                 filtered[k] = v.mock.syft_action_data
             else:
-                raise Exception(
-                    f"Filter can only use {TwinMode.PRIVATE} or {TwinMode.MOCK}"
+                raise SyftException(
+                    public_message=f"Filter can only use {TwinMode.PRIVATE} or {TwinMode.MOCK}"
                 )
         else:
             if isinstance(v, ActionObject):
@@ -1044,8 +1090,8 @@ def filter_twin_kwargs(
                 filtered[k] = v
             else:
                 # third party
-                raise ValueError(
-                    f"unexepected value {v} passed to filtered twin kwargs"
+                raise SyftException(
+                    public_message=f"unexepected value {v} passed to filtered twin kwargs"
                 )
     return filtered
 

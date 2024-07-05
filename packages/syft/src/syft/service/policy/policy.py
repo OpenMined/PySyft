@@ -22,7 +22,6 @@ from RestrictedPython import compile_restricted
 from pydantic import field_validator
 from pydantic import model_validator
 import requests
-from result import Err
 from result import Ok
 from result import Result
 
@@ -472,6 +471,7 @@ class MixedInputPolicy(InputPolicy):
             *args, kwarg_rules=kwarg_rules, init_kwargs=kwarg_rules, **kwargs
         )
 
+    @as_result(SyftException)
     def transform_kwargs(
         self, context: AuthedServiceContext, kwargs: dict[str, Any]
     ) -> dict[str, Any]:
@@ -479,11 +479,12 @@ class MixedInputPolicy(InputPolicy):
             for kw, rule in rules.items():
                 if hasattr(rule, "transform_kwarg"):
                     res_val = rule.transform_kwarg(context, kwargs.get(kw, None))
+                    # TODO: new style resultify transform_kwarg
                     if res_val.is_err():
-                        return res_val
+                        raise SyftException(public_message=res_val.value)
                     else:
                         kwargs[kw] = res_val.ok()
-        return Ok(kwargs)
+        return kwargs
 
     def find_node_identity(
         self, kwargs: dict[str, Any], client: Any = None
@@ -537,6 +538,7 @@ class MixedInputPolicy(InputPolicy):
             pass  # just grab the first one
         return matches.pop()
 
+    @as_result(SyftException)
     def filter_kwargs(
         self,
         kwargs: dict[str, UID],
@@ -558,44 +560,44 @@ class MixedInputPolicy(InputPolicy):
                         # TODO
                         actionobject = rule.value
                     if not rule.is_met(context, *rule_check_args):
-                        raise ValueError(f"{rule} is not met")
+                        raise SyftException(public_message=f"{rule} is not met")
                     else:
                         res[kw] = actionobject
         except Exception as e:
-            return Err(str(e))
-        return Ok(res)
+            raise SyftException.from_exception(
+                e, public_message="failed to filter kwargs"
+            )
+        return res
 
+    @as_result(SyftException)
     def _is_valid(
         self,
         context: AuthedServiceContext,
         usr_input_kwargs: dict,
         code_item_id: UID,
-    ) -> Result[bool, str]:
+    ) -> bool:
         filtered_input_kwargs = self.filter_kwargs(
             kwargs=usr_input_kwargs,
             context=context,
             code_item_id=code_item_id,
-        )
-
-        if filtered_input_kwargs.is_err():
-            return filtered_input_kwargs
-
-        filtered_input_kwargs = filtered_input_kwargs.ok()
+        ).unwrap()
 
         expected_input_kwargs = set()
         for _inp_kwargs in self.inputs.values():
             for k in _inp_kwargs.keys():
                 if k not in usr_input_kwargs:
-                    return Err(f"Function missing required keyword argument: '{k}'")
+                    raise SyftException(
+                        public_message=f"Function missing required keyword argument: '{k}'"
+                    )
             expected_input_kwargs.update(_inp_kwargs.keys())
 
         permitted_input_kwargs = list(filtered_input_kwargs.keys())
         not_approved_kwargs = set(expected_input_kwargs) - set(permitted_input_kwargs)
         if len(not_approved_kwargs) > 0:
-            return Err(
-                f"Input arguments: {not_approved_kwargs} to the function are not approved yet."
+            raise SyftException(
+                public_message=f"Input arguments: {not_approved_kwargs} to the function are not approved yet."
             )
-        return Ok(True)
+        return True
 
 
 @as_result(SyftException, NotFoundException, StashException)
@@ -791,6 +793,7 @@ class OutputPolicyExecuteCount(OutputPolicy):
         output_history = api.services.output.get_by_output_policy_id(self.id)
         return len(output_history)
 
+    @as_result(SyftException)
     def _is_valid(self, context: AuthedServiceContext) -> SyftSuccess:
         output_service = context.node.get_service("outputservice")
         output_history = output_service.get_by_output_policy_id(

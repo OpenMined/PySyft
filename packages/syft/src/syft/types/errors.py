@@ -33,6 +33,12 @@ class SyftException(Exception):
         *args: Any,
         **kwargs: Any,
     ) -> None:
+        if public_message is not None:
+            if not isinstance(public_message, str):
+                raise TypeError("public message should be a string")
+        if private_message is not None:
+            if not isinstance(private_message, str):
+                raise TypeError("private message should be a string")
         if public_message:
             self.public_message = public_message
         self._private_message = private_message or ""
@@ -63,7 +69,9 @@ class SyftException(Exception):
             return self._private_message or self.public
         return self.public
 
-    def get_tb(self, context: AuthedServiceContext) -> str | None:
+    def get_tb(
+        self, context: AuthedServiceContext, overwrite_permission=False
+    ) -> str | None:
         """
         Returns the error traceback as a string, if the user is able to see it.
 
@@ -78,7 +86,7 @@ class SyftException(Exception):
         # stdlib
         import traceback
 
-        if context.role.value >= ServiceRole.DATA_OWNER.value:
+        if context.role.value >= ServiceRole.DATA_OWNER.value or overwrite_permission:
             return traceback.format_exc()
         return None
 

@@ -596,18 +596,11 @@ class UserCodeService(AbstractService):
             action_service._user_code_execute(
                 context, code, kwarg2id, result_id=result_id
             )
-        )
-        if result_action_object.is_err():
-            return result_action_object
-        else:
-            result_action_object = result_action_object.ok()
+        ).unwrap()
 
-        output_result = action_service.set_result_to_store(
+        result = action_service.set_result_to_store(
             result_action_object, context, code.get_output_policy(context)
-        )
-        if output_result.is_err():
-            return output_result
-        result = output_result.ok()
+        ).unwrap()
 
         # Apply Output Policy to the results and update the OutputPolicyState
 

@@ -188,7 +188,7 @@ class DataProtocol:
                         or hash_str in state_version_hashes
                     ):
                         raise Exception(
-                            f"Can't add {object_metadata} already in state {versions}"
+                            f"Can't add {object_metadata} for protocol {protocol_number} already in state {versions}"
                         )
                     elif action == "remove" and (
                         str(version) not in state_versions.keys()
