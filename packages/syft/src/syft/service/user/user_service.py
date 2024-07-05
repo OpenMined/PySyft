@@ -1,6 +1,5 @@
 # stdlib
-from ast import TypeVar
-from typing import cast
+from typing import cast, TypeVar
 
 # third party
 from IPython.display import display_html
@@ -90,14 +89,15 @@ class UserService(AbstractService):
         self.store = store
         self.stash = UserStash(store=store)
 
+    @as_result(StashException)
     def _add_user(self, credentials: SyftVerifyKey, user: User) -> User:
         action_object_permissions = ActionObjectPermission(
             uid=user.id, permission=ActionPermission.ALL_READ
         )
 
-        return self.stash._set(
+        return self.stash.set(
             credentials=credentials,
-            user=user,
+            obj=user,
             add_permissions=[action_object_permissions],
         ).unwrap()
 
@@ -119,16 +119,18 @@ class UserService(AbstractService):
             credentials=context.credentials, email=user.email
         )
 
-        if not user_exists:
-            new_user = self._add_user(context.credentials, user)
-            return new_user.to(UserView)
+        # TODO: Ensure we don't leak out the existence of a user
+        if user_exists:
+            raise SyftException(public_message=f"User {user.email} already exists")
 
-        raise UserCreateError(f"User {user.email} already exists")
+        new_user = self._add_user(context.credentials, user).unwrap()
+        return new_user.to(UserView)
+
 
     @service_method(path="user.view", name="view", roles=DATA_SCIENTIST_ROLE_LEVEL)
     def view(self, context: AuthedServiceContext, uid: UID) -> UserView:
         """Get user for given uid"""
-        user = self.stash._get_by_uid(credentials=context.credentials, uid=uid).unwrap()
+        user = self.stash.get_by_uid(credentials=context.credentials, uid=uid).unwrap()
         return user.to(UserView)
 
     @service_method(path="user.get_all", name="get_all", roles=DATA_OWNER_ROLE_LEVEL)
@@ -139,11 +141,11 @@ class UserService(AbstractService):
         page_index: int | None = 0,
     ) -> list[UserView]:
         if context.role in [ServiceRole.DATA_OWNER, ServiceRole.ADMIN]:
-            users = self.stash._get_all(
+            users = self.stash.get_all(
                 context.credentials, has_permission=True
             ).unwrap()
         else:
-            users = self.stash._get_all(context.credentials).unwrap()
+            users = self.stash.get_all(context.credentials).unwrap()
         users = [user.to(UserView) for user in users]
         return _paginate(users, page_size, page_index)
 
@@ -151,7 +153,7 @@ class UserService(AbstractService):
         self, verify_key: SyftVerifyKey
     ) -> UserPrivateKey | SyftError:
         user = self.stash.get_by_verify_key(
-            credentials=self.stash._admin_verify_key(), verify_key=verify_key
+            credentials=self.stash.admin_verify_key(), verify_key=verify_key
         ).unwrap()
 
         return user.to(UserPrivateKey)
@@ -168,7 +170,7 @@ class UserService(AbstractService):
                     credentials=credentials, verify_key=credentials
                 ).unwrap()
             elif isinstance(credentials, SyftSigningKey):
-                user = self.stash._get_by_signing_key(
+                user = self.stash.get_by_signing_key(
                     credentials=credentials,
                     signing_key=credentials,  # type: ignore
                 ).unwrap()
@@ -192,7 +194,7 @@ class UserService(AbstractService):
         if len(kwargs) == 0:
             raise UserSearchBadParamsError
 
-        _users = self.stash._find_all(
+        _users = self.stash.find_all(
             credentials=context.credentials, **kwargs
         ).unwrap()
         _users = [user.to(UserView) for user in _users] if _users is not None else []
@@ -240,6 +242,7 @@ class UserService(AbstractService):
             raise UserPermissionError(
                 f"User {context.credentials} tried to update user {uid} with {user_update}."
             )
+
         if (user_update.mock_execution_permission is not Empty) and not can_edit_roles:  # type: ignore[comparison-overlap]
             raise UserPermissionError(
                 f"User {context.credentials} with role {context.role} is not allowed"
@@ -247,11 +250,11 @@ class UserService(AbstractService):
             )
 
         # Get user to be updated by its UID
-        user = self.stash._get_by_uid(credentials=context.credentials, uid=uid).unwrap()
+        user = self.stash.get_by_uid(credentials=context.credentials, uid=uid).unwrap()
 
         # check if the email already exists (with root's key)
         if user_update.email is not Empty:
-            user_exists = self.stash._email_exists(email=user_update.email).unwrap()
+            user_exists = self.stash.email_exists(email=user_update.email).unwrap()
             if user_exists:
                 raise UserUpdateError(
                     public_message=f"User {user_update.email} already exists"
@@ -277,7 +280,7 @@ class UserService(AbstractService):
 
         edits_non_role_attrs = any(
             getattr(user_update, attr) is not Empty
-            for attr in user_update.to_dict()
+            for attr in user_update.model_dump()
             if attr != "role"
         )
 
@@ -301,9 +304,11 @@ class UserService(AbstractService):
             elif not name.startswith("__") and value is not None:
                 setattr(user, name, value)
 
-        user = self.stash._update(
-            credentials=context.credentials, user=user, has_permission=True
+        user = self.stash.update(
+            credentials=context.credentials, obj=user, has_permission=True
         ).unwrap()
+
+        print("updated user:", user)
 
         if user.role == ServiceRole.ADMIN:
             settings_stash = SettingsStash(store=self.store)
@@ -320,8 +325,8 @@ class UserService(AbstractService):
         return user.to(UserView)
 
     @service_method(path="user.delete", name="delete", roles=GUEST_ROLE_LEVEL)
-    def delete(self, context: AuthedServiceContext, uid: UID) -> bool:
-        user = self.stash._get_by_uid(credentials=context.credentials, uid=uid).unwrap()
+    def delete(self, context: AuthedServiceContext, uid: UID) -> UID:
+        user = self.stash.get_by_uid(credentials=context.credentials, uid=uid).unwrap()
 
         if (
             context.role == ServiceRole.ADMIN
@@ -339,10 +344,11 @@ class UserService(AbstractService):
             )
 
         # TODO: Remove notifications for the deleted user
-
-        return self.stash._delete_by_uid(
+        self.stash.delete_by_uid(
             credentials=context.credentials, uid=uid, has_permission=True
         ).unwrap()
+
+        return uid
 
     def exchange_credentials(self, context: UnauthedServiceContext) -> UserPrivateKey:
         """Verify user
@@ -367,7 +373,7 @@ class UserService(AbstractService):
 
     def admin_verify_key(self) -> SyftVerifyKey:
         # TODO: Remove passthrough method?
-        return self.stash._admin_verify_key()
+        return self.stash.admin_verify_key()
 
     def register(
         self, context: NodeServiceContext, new_user: UserCreate
@@ -376,7 +382,7 @@ class UserService(AbstractService):
         request_user_role = (
             ServiceRole.GUEST
             if new_user.created_by is None
-            else self.get_role_for_credentials(new_user.created_by)
+            else self.get_role_for_credentials(new_user.created_by).unwrap()
         )
 
         can_user_register = (
@@ -396,7 +402,7 @@ class UserService(AbstractService):
         if user_exists:
             raise UserCreateError(f"User {user.email} already exists")
 
-        user = self._add_user(credentials=user.verify_key, user=user)
+        user = self._add_user(credentials=user.verify_key, user=user).unwrap()
 
         success_message = f"User '{user.name}' successfully registered!"
 
@@ -458,7 +464,7 @@ class UserService(AbstractService):
             credentials=verify_key, verify_key=verify_key
         ).unwrap()
         user.notifications_enabled[notifier_type] = new_status
-        self.stash._update(credentials=user.verify_key, user=user).unwrap()
+        self.stash.update(credentials=user.verify_key, obj=user).unwrap()
 
     @as_result(SyftException)
     def enable_notifications(

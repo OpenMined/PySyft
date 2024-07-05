@@ -1732,9 +1732,10 @@ def create_admin_new(
 ) -> User | None:
     user_stash = UserStash(store=node.document_store)
 
-    email_exists = user_stash._email_exists(email=email).unwrap()
+    email_exists = user_stash.email_exists(email=email).unwrap()
     if email_exists:
-        print("admin not created, already exists")
+        logger.debug("Admin not created, already exists")
+        return
 
     create_user = UserCreate(
         name=name,
@@ -1750,13 +1751,14 @@ def create_admin_new(
     user.signing_key = node.signing_key
     user.verify_key = user.signing_key.verify_key
 
-    new_user = user_stash._set(
+    new_user = user_stash.set(
         credentials=node.signing_key.verify_key,
-        user=user,
+        obj=user,
         ignore_duplicates=True,
     ).unwrap()
 
-    print(f"created admin user {new_user.email}")
+    logger.debug(f"Created admin {new_user.email}")
+
     return new_user
 
 

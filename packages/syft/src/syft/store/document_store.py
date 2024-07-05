@@ -979,7 +979,7 @@ class NewBaseStash:
         ).unwrap()
         value = new_first_or_none(result)
         if value is None:
-            raise NotFoundException()
+            raise NotFoundException
         return value
 
     @as_result(StashException, NotFoundException)
@@ -988,10 +988,10 @@ class NewBaseStash:
         credentials: SyftVerifyKey,
         **kwargs: dict[str, Any],
     ) -> NewBaseStash.object_type:
-        result = self.query_all_kwargs(credentials, **kwargs)
+        result = self.query_all_kwargs(credentials, **kwargs).unwrap()
         value = new_first_or_none(result)
         if value is None:
-            raise NotFoundException()
+            raise NotFoundException
         return value
 
     @as_result(StashException)
@@ -1037,6 +1037,9 @@ class NewBaseStash:
         obj: NewBaseStash.object_type,
         has_permission: bool = False,
     ) -> NewBaseStash.object_type:
+        # TODO: See what breaks:
+        obj = self.check_type(obj, self.object_type).unwrap()
+
         qk = self.partition.store_query_key(obj)
         result = self.partition.update(
             credentials=credentials, qk=qk, obj=obj, has_permission=has_permission
