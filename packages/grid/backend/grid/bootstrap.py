@@ -101,8 +101,8 @@ def validate_private_key(private_key: str | bytes) -> str:
 def validate_uid(node_uid: str) -> str:
     try:
         uid = uuid.UUID(node_uid)
-        if node_uid == uid.hex:
-            return uid.hex
+        if node_uid == uid.hex or node_uid == str(uid):
+            return str(uid)
     except Exception:
         pass
     raise Exception(f"{NODE_UID} is invalid")
