@@ -64,15 +64,18 @@ class SyncService(AbstractService):
         action_object: ActionObject,
         new_permissions: list[ActionObjectPermission],
     ) -> None:
-        blob_id = action_object.syft_blob_storage_entry_id
-
         store_to = context.node.get_service("actionservice").store  # type: ignore
-        store_to_blob = context.node.get_service("blobstorageservice").stash.partition  # type: ignore
-
         for permission in new_permissions:
             if permission.permission == ActionPermission.READ:
                 store_to.add_permission(permission)
-                if blob_id is not None:
+
+        blob_id = action_object.syft_blob_storage_entry_id
+        if blob_id:
+            store_to_blob = context.node.get_service(
+                "blobstorageservice"
+            ).stash.partition  # type: ignore
+            for permission in new_permissions:
+                if permission.permission == ActionPermission.READ:
                     permission_blob = ActionObjectPermission(
                         uid=blob_id,
                         permission=permission.permission,

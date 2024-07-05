@@ -158,26 +158,32 @@ class ActionStoreChange(Change):
                     uid_blob = action_obj.private.syft_blob_storage_entry_id
                 else:
                     uid_blob = action_obj.syft_blob_storage_entry_id
-                if uid_blob is not None:
-                    requesting_permission_blob_obj = ActionObjectPermission(
+                requesting_permission_blob_obj = (
+                    ActionObjectPermission(
                         uid=uid_blob,
                         credentials=context.requesting_user_credentials,
                         permission=self.apply_permission_type,
                     )
+                    if uid_blob
+                    else None
+                )
                 if apply:
                     logger.debug(
                         "ADDING PERMISSION", requesting_permission_action_obj, id_action
                     )
                     action_store.add_permission(requesting_permission_action_obj)
-                    if uid_blob is not None:
+                    (
                         blob_storage_service.stash.add_permission(
                             requesting_permission_blob_obj
                         )
+                        if requesting_permission_blob_obj
+                        else None
+                    )
                 else:
                     if action_store.has_permission(requesting_permission_action_obj):
                         action_store.remove_permission(requesting_permission_action_obj)
                     if (
-                        uid_blob is not None
+                        requesting_permission_blob_obj
                         and blob_storage_service.stash.has_permission(
                             requesting_permission_blob_obj
                         )

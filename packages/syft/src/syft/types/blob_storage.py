@@ -27,15 +27,19 @@ from ..serde import serialize
 from ..serde.serializable import serializable
 from ..service.action.action_object import ActionObject
 from ..service.action.action_object import ActionObjectPointer
+from ..service.action.action_object import ActionObjectV3
 from ..service.action.action_object import BASE_PASSTHROUGH_ATTRS
 from ..service.action.action_types import action_types
 from ..service.response import SyftError
 from ..service.response import SyftException
 from ..service.service import from_api_or_context
 from ..types.grid_url import GridURL
+from ..types.transforms import drop
 from ..types.transforms import keep
+from ..types.transforms import make_set_default
 from ..types.transforms import transform
 from .datetime import DateTime
+from .syft_migration import migrate
 from .syft_object import SYFT_OBJECT_VERSION_2
 from .syft_object import SYFT_OBJECT_VERSION_3
 from .syft_object import SYFT_OBJECT_VERSION_4
@@ -192,9 +196,19 @@ class BlobFileObjectPointer(ActionObjectPointer):
 
 
 @serializable()
-class BlobFileObject(ActionObject):
+class BlobFileObjectV3(ActionObjectV3):
     __canonical_name__ = "BlobFileOBject"
     __version__ = SYFT_OBJECT_VERSION_2
+
+    syft_internal_type: ClassVar[type[Any]] = BlobFile
+    syft_pointer_type: ClassVar[type[ActionObjectPointer]] = BlobFileObjectPointer
+    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
+
+
+@serializable()
+class BlobFileObject(ActionObject):
+    __canonical_name__ = "BlobFileOBject"
+    __version__ = SYFT_OBJECT_VERSION_3
 
     syft_internal_type: ClassVar[type[Any]] = BlobFile
     syft_pointer_type: ClassVar[type[ActionObjectPointer]] = BlobFileObjectPointer
@@ -382,3 +396,13 @@ def storage_entry_to_metadata() -> list[Callable]:
 
 
 action_types[BlobFile] = BlobFileObject
+
+
+@migrate(BlobFileObjectV3, BlobFileObject)
+def upgrade_blobfile_object() -> list[Callable]:
+    return [make_set_default("syft_action_saved_to_blob_store", True)]
+
+
+@migrate(BlobFileObject, BlobFileObjectV3)
+def downgrade_blobfile_object() -> list[Callable]:
+    return [drop("syft_action_saved_to_blob_store")]
