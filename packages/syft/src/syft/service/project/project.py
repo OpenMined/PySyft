@@ -492,6 +492,15 @@ class ProjectCode(ProjectEventAddObject):
             result_parts.append(result)
         return result_parts[0]
 
+    def get_result(self) -> Any:
+        # Internally calling request_execution to get the result as it is idempotent
+        return self.request_execution()
+
+    def orchestrate_enclave_execution(self) -> Any:
+        self.setup_enclave()
+        self.request_asset_transfer()
+        return self.request_execution()
+
 
 def poll_creation_wizard() -> tuple[str, list[str]]:
     w = textwrap.TextWrapper(initial_indent="\t", subsequent_indent="\t")
