@@ -72,13 +72,13 @@ class SyncService(AbstractService):
         for permission in new_permissions:
             if permission.permission == ActionPermission.READ:
                 store_to.add_permission(permission)
-
-                permission_blob = ActionObjectPermission(
-                    uid=blob_id,
-                    permission=permission.permission,
-                    credentials=permission.credentials,
-                )
-                store_to_blob.add_permission(permission_blob)
+                if blob_id is not None:
+                    permission_blob = ActionObjectPermission(
+                        uid=blob_id,
+                        permission=permission.permission,
+                        credentials=permission.credentials,
+                    )
+                    store_to_blob.add_permission(permission_blob)
 
     def set_obj_ids(self, context: AuthedServiceContext, x: Any) -> None:
         if hasattr(x, "__dict__") and isinstance(x, SyftObject):
