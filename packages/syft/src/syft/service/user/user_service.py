@@ -307,9 +307,11 @@ class UserService(AbstractService):
 
         if user.role == ServiceRole.ADMIN:
             settings_stash = SettingsStash(store=self.store)
-            settings = settings_stash.get_all(context.credentials)
-            if settings.is_ok() and len(settings.ok()) > 0:
-                settings_data = settings.ok()[0]
+            settings = settings_stash.get_all(context.credentials).unwrap()
+
+            # TODO: Chance to refactor here in settings, as we're always doing get_att[0]
+            if len(settings) > 0:
+                settings_data = settings[0]
                 settings_data.admin_email = user.email
                 settings_stash.update(
                     credentials=context.credentials, settings=settings_data
