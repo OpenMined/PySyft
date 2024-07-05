@@ -10,6 +10,7 @@ from syft.client.domain_client import DomainClient
 from syft.client.sync_decision import SyncDecision
 from syft.client.syncing import compare_clients
 from syft.client.syncing import resolve
+from syft.node.worker import Worker
 from syft.service.job.job_stash import Job
 from syft.service.request.request import RequestStatus
 from syft.service.response import SyftError
@@ -135,7 +136,7 @@ def test_diff_state(low_worker, high_worker):
     assert res == compute(syft_no_node=True)
 
 
-def test_diff_state_with_dataset(low_worker, high_worker):
+def test_diff_state_with_dataset(low_worker: Worker, high_worker: Worker):
     low_client: DomainClient = low_worker.root_client
     client_low_ds = get_ds_client(low_client)
     high_client: DomainClient = high_worker.root_client
@@ -162,8 +163,14 @@ def test_diff_state_with_dataset(low_worker, high_worker):
 
     # run_and_deposit_result(high_client)
     data_high = high_client.datasets[0].assets[0]
-    result = high_client.code.compute_mean(data=data_high, blocking=True)
-    high_client.requests[0].deposit_result(result)
+    mean_result = high_client.code.compute_mean(data=data_high, blocking=True)
+    high_client.requests[0].deposit_result(mean_result)
+
+    # the high side client delete the dataset after depositing the result
+    dataset_del_res = high_client.api.services.dataset.delete_by_uid(
+        high_client.datasets[0].id
+    )
+    assert isinstance(dataset_del_res, SyftSuccess)
 
     diff_state_before, diff_state_after = compare_and_resolve(
         from_client=high_client, to_client=low_client
@@ -182,11 +189,7 @@ def test_diff_state_with_dataset(low_worker, high_worker):
     res_non_blocking = client_low_ds.code.compute_mean(blocking=False).wait()
 
     # expected_result = compute_mean(syft_no_node=True, data=)
-    assert (
-        res_blocking
-        == res_non_blocking
-        == high_client.datasets[0].assets[0].data.mean()
-    )
+    assert res_blocking == res_non_blocking == mean_result
 
 
 def test_sync_with_error(low_worker, high_worker):
