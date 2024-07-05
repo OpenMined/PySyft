@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 import types
 import typing
-from typing import Any
+from typing import Any, TypeVar
 from typing import Literal
 
 # third party
@@ -50,7 +50,8 @@ class BasePartitionSettings(SyftBaseModel):
     name: str
 
 
-def new_first_or_none(result: Any) -> Ok:
+T = TypeVar("T")
+def new_first_or_none(result: list[T]) -> T | None:
     if hasattr(result, "__len__") and len(result) > 0:
         return result[0]
     return None
