@@ -2,10 +2,6 @@
 
 # third party
 
-# syft absolute
-from syft.store.document_store_errors import NotFoundException
-from syft.store.document_store_errors import StashException
-
 # relative
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
@@ -14,6 +10,8 @@ from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
+from ...store.document_store_errors import NotFoundException
+from ...store.document_store_errors import StashException
 from ...types.result import as_result
 from ...types.uid import UID
 from ...util.telemetry import instrument

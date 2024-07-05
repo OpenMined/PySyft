@@ -5,7 +5,6 @@ from typing import Any
 
 # third party
 from result import Ok
-from result import Result
 
 # relative
 from ...client.api import NodeIdentity
@@ -228,7 +227,6 @@ class SyncService(AbstractService):
             new_unignored_batches=unignored_batches,
         ).unwrap()
 
-        new_state = res.ok()
         self.stash.set(context.credentials, new_state).unwrap()
 
         message = f"Synced {len(items)} items"
@@ -274,7 +272,7 @@ class SyncService(AbstractService):
         """
         Returns all Jobs, along with their Logs, ExecutionOutputs and ActionObjects
         """
-        items_for_jobs = []
+        items_for_jobs: list[SyncableSyftObject] = []
         errors = {}
 
         job_service = context.node.get_service("jobservice")
@@ -284,18 +282,19 @@ class SyncService(AbstractService):
             job_items_result = self._get_job_batch(context, job)
             if job_items_result.is_err():
                 logger.info(
-                    f"Job {job.id} could not be added to SyncState: {job_items_result.err()}"
+                    f"Job {job.id} could not be added to SyncState:"
+                    f" {type(job_items_result.err())}: {str(job_items_result.err())}"
                 )
-                errors[job.id] = job_items_result.err()
-                continue
-            items_for_jobs.extend(job_items_result.ok())
+                errors[job.id] = job_items_result.err()  # type: ignore
+            else:
+                items_for_jobs.extend(job_items_result.ok())  # type: ignore
 
         return (items_for_jobs, errors)
 
     @as_result(SyftException)
     def _get_job_batch(
         self, context: AuthedServiceContext, job: Job
-    ) -> Result[list[SyncableSyftObject], str]:
+    ) -> list[SyncableSyftObject]:
         job_batch = [job]
 
         log_service = context.node.get_service("logservice")
@@ -344,8 +343,8 @@ class SyncService(AbstractService):
             all_items.extend(items)
 
         # Gather jobs, logs, outputs and action objects
-        items_for_jobs = self._get_all_items_for_jobs(context).unwrap()
-        items_for_jobs, errors = items_for_jobs
+        items_for_jobs, errors = self._get_all_items_for_jobs(context).unwrap()
+        # items_for_jobs, errors = items_for_jobs
         all_items.extend(items_for_jobs)
 
         return (all_items, errors)
@@ -365,11 +364,7 @@ class SyncService(AbstractService):
         unignored_batches: set[UID] = (
             new_unignored_batches if new_unignored_batches is not None else set()
         )
-        objects_res = self.get_all_syncable_items(context)
-        if objects_res.is_err():
-            return objects_res
-
-        objects, errors = objects_res.ok()
+        objects, errors = self.get_all_syncable_items(context).unwrap()
 
         permissions, storage_permissions = self.get_permissions(context, objects)
 

@@ -11,6 +11,9 @@ from pydantic import EmailStr
 from pydantic import ValidationError
 from pydantic import field_validator
 
+# syft absolute
+from syft.types.errors import SyftException
+
 # relative
 from ...client.api import APIRegistry
 from ...node.credentials import SyftSigningKey
@@ -208,18 +211,15 @@ class UserView(SyftObject):
             ),
         }
 
-    def _set_password(self, new_password: str) -> SyftError | SyftSuccess:
+    def _set_password(self, new_password: str) -> SyftSuccess:
         client = APIRegistry._api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         ).unwrap()
 
-        result = client.services.user.update(
+        client.services.user.update(
             uid=self.id, user_update=UserUpdate(password=new_password)
         )
-
-        if isinstance(result, SyftError):
-            return result
 
         return SyftSuccess(
             message=f"Successfully updated password for user '{self.email}'."
@@ -227,7 +227,7 @@ class UserView(SyftObject):
 
     def set_password(
         self, new_password: str | None = None, confirm: bool = True
-    ) -> SyftError | SyftSuccess:
+    ) -> SyftSuccess:
         """Set a new password interactively with confirmed password from user input"""
         # TODO: Add password validation for special characters
         if not new_password:
@@ -240,11 +240,11 @@ class UserView(SyftObject):
 
         return self._set_password(new_password)
 
-    def set_email(self, email: str) -> SyftSuccess | SyftError:
+    def set_email(self, email: str) -> SyftSuccess:
         try:
             user_update = UserUpdate(email=email)
         except ValidationError:
-            return SyftError(message=f"Invalid email: '{email}'.")
+            raise SyftException(public_message=f"Invalid email: '{email}'.")
 
         client = APIRegistry._api_for(
             node_uid=self.syft_node_location,
@@ -253,9 +253,6 @@ class UserView(SyftObject):
 
         # TODO: Shouldn't this trigger an update on self?
         result = client.services.user.update(uid=self.id, user_update=user_update)
-
-        if isinstance(result, SyftError):
-            return result
 
         return SyftSuccess(message=f"Email updated to '{result.email}'.")
 
@@ -266,7 +263,7 @@ class UserView(SyftObject):
         website: type[Empty] | str = Empty,
         role: type[Empty] | str = Empty,
         mock_execution_permission: type[Empty] | bool = Empty,
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         """Used to update name, institution, website of a user."""
         try:
             user_update = UserUpdate(
@@ -277,7 +274,6 @@ class UserView(SyftObject):
                 mock_execution_permission=mock_execution_permission,
             )
         except ValidationError as exc:
-            print("Error is here")
             raise UserUpdateError.from_exception(exc, public_message=str(exc))
 
         api = APIRegistry._api_for(
@@ -287,10 +283,7 @@ class UserView(SyftObject):
 
         result = api.services.user.update(uid=self.id, user_update=user_update)
 
-        if isinstance(result, SyftError):
-            return result
-
-        for attr, val in result.to_dict(exclude_empty=True).items():
+        for attr, val in result.model_dump(exclude_empty=True).items():
             setattr(self, attr, val)
 
         return SyftSuccess(message="User details successfully updated.")

@@ -83,7 +83,10 @@ class AssociationRequestChange(Change):
                 )
                 if remote_client.is_err():
                     raise SyftException(
-                        public_message=f"Failed to create remote client for peer: {self.remote_peer.id}. Error: {remote_client.err()}"
+                        public_message=(
+                            f"Failed to create remote client for peer: {self.remote_peer.id}."
+                            f" Error: {remote_client.err()}"
+                        )
                     )
                 remote_client = remote_client.ok()
                 random_challenge = secrets.token_bytes(16)

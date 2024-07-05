@@ -81,7 +81,7 @@ class OnDiskBlobStorageConnection(BlobStorageConnection):
         try:
             (self._base_directory / fp.path).unlink()
             return SyftSuccess(message="Successfully deleted file.")
-        except FileNotFoundException as e:
+        except FileNotFoundError as e:
             return SyftError(message=f"Failed to delete file: {e}")
 
 

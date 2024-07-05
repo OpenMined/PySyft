@@ -163,7 +163,7 @@ class BlobStorageService(AbstractService):
     def get_blob_storage_entry_by_uid(
         self, context: AuthedServiceContext, uid: UID
     ) -> BlobStorageEntry:
-        result = self.stash.get_by_uid(context.credentials, uid=uid).unwrap()
+        return self.stash.get_by_uid(context.credentials, uid=uid).unwrap()
 
     @service_method(path="blob_storage.get_metadata", name="get_metadata")
     def get_blob_storage_metadata_by_uid(

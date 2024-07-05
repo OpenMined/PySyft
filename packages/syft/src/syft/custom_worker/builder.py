@@ -140,4 +140,4 @@ class CustomWorkerBuilder:
             if path.exists():
                 return path
 
-        raise FileNotFoundException(f"Cannot find the {filename}")
+        raise FileNotFoundError(f"Cannot find the {filename}")

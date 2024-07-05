@@ -1,6 +1,7 @@
 # stdlib
 from collections.abc import Callable
 import functools
+from typing import Any
 from typing import Generic
 from typing import Literal
 from typing import NoReturn
@@ -45,7 +46,7 @@ class Ok(Generic[T]):
     def is_ok(self) -> Literal[True]:
         return True
 
-    def unwrap(self) -> T:
+    def unwrap(self, *args: Any, **kwargs: Any) -> T:
         return self.value
 
 

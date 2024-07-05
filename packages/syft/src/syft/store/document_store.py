@@ -7,6 +7,7 @@ import types
 import typing
 from typing import Any
 from typing import Literal
+from typing import TypeVar
 
 # third party
 from pydantic import BaseModel
@@ -50,7 +51,8 @@ class BasePartitionSettings(SyftBaseModel):
     name: str
 
 
-def new_first_or_none(result: Any) -> Ok:
+T = TypeVar("T")
+def new_first_or_none(result: list[T]) -> T | None:
     if hasattr(result, "__len__") and len(result) > 0:
         return result[0]
     return None
@@ -978,7 +980,7 @@ class NewBaseStash:
         ).unwrap()
         value = new_first_or_none(result)
         if value is None:
-            raise NotFoundException()
+            raise NotFoundException
         return value
 
     @as_result(StashException, NotFoundException)
@@ -987,10 +989,10 @@ class NewBaseStash:
         credentials: SyftVerifyKey,
         **kwargs: dict[str, Any],
     ) -> NewBaseStash.object_type:
-        result = self.query_all_kwargs(credentials, **kwargs)
+        result = self.query_all_kwargs(credentials, **kwargs).unwrap()
         value = new_first_or_none(result)
         if value is None:
-            raise NotFoundException()
+            raise NotFoundException
         return value
 
     @as_result(StashException)
@@ -1036,6 +1038,9 @@ class NewBaseStash:
         obj: NewBaseStash.object_type,
         has_permission: bool = False,
     ) -> NewBaseStash.object_type:
+        # TODO: See what breaks:
+        obj = self.check_type(obj, self.object_type).unwrap()
+
         qk = self.partition.store_query_key(obj)
         result = self.partition.update(
             credentials=credentials, qk=qk, obj=obj, has_permission=has_permission
@@ -1053,15 +1058,16 @@ class NewBaseStash:
 @instrument
 class NewBaseUIDStoreStash(NewBaseStash):
     @as_result(StashException)
-    def delete_by_uid(self, credentials: SyftVerifyKey, uid: UID) -> UID:
+    def delete_by_uid(self, credentials: SyftVerifyKey, uid: UID, has_permission: bool = False) -> UID:
         qk = UIDPartitionKey.with_obj(uid)
-        super().delete(credentials=credentials, qk=qk)
+        super().delete(credentials=credentials, qk=qk, has_permission=has_permission).unwrap()
         return uid
 
     @as_result(StashException, NotFoundException)
     def get_by_uid(
         self, credentials: SyftVerifyKey, uid: UID
     ) -> NewBaseUIDStoreStash.object_type:
+        # TODO: Could change to query_one, no?
         result = self.partition.get(credentials=credentials, uid=uid)
 
         match result:
@@ -1083,8 +1089,7 @@ class NewBaseUIDStoreStash(NewBaseStash):
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> NewBaseUIDStoreStash.object_type:
-        self.check_type(obj, self.object_type)
-
+        self.check_type(obj, self.object_type).unwrap()
         return (
             super()
             .set(

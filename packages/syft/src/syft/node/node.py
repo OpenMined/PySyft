@@ -27,10 +27,6 @@ from result import Err
 from result import Result
 from typing_extensions import Self
 
-# syft absolute
-from syft.store.document_store_errors import StashException
-from syft.types.result import as_result
-
 # relative
 from .. import __version__
 from ..abstract_node import AbstractNode
@@ -129,12 +125,14 @@ from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
 from ..store.blob_storage.seaweedfs import SeaweedFSBlobDeposit
 from ..store.dict_document_store import DictStoreConfig
 from ..store.document_store import StoreConfig
+from ..store.document_store_errors import StashException
 from ..store.linked_obj import LinkedObject
 from ..store.mongo_document_store import MongoStoreConfig
 from ..store.sqlite_document_store import SQLiteStoreClientConfig
 from ..store.sqlite_document_store import SQLiteStoreConfig
 from ..types.datetime import DATETIME_FORMAT
 from ..types.errors import SyftException
+from ..types.result import as_result
 from ..types.syft_metaclass import Empty
 from ..types.syft_object import PartialSyftObject
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
@@ -1214,8 +1212,10 @@ class Node(AbstractNode):
         return SyftError(message=(f"Node has no route to {node_uid}"))
 
     def get_role_for_credentials(self, credentials: SyftVerifyKey) -> ServiceRole:
-        role = self.get_service("userservice").get_role_for_credentials(
-            credentials=credentials
+        role = (
+            self.get_service("userservice")
+            .get_role_for_credentials(credentials=credentials)
+            .unwrap()
         )
         return role
 
@@ -1685,10 +1685,10 @@ class Node(AbstractNode):
         settings_stash = SettingsStash(store=self.document_store)
 
         if self.signing_key is None:
-            logger.debug(
-                "create_initial_settings failed as there is no signing key"
+            logger.debug("create_initial_settings failed as there is no signing key")
+            raise SyftException(
+                public_message="create_initial_settings failed as there is no signing key"
             )
-            raise SyftException(public_message="create_initial_settings failed as there is no signing key")
 
         settings_exists = settings_stash.get_all(self.signing_key.verify_key).unwrap()
 
@@ -1729,12 +1729,13 @@ def create_admin_new(
     email: str,
     password: str,
     node: AbstractNode,
-) -> User | None:
+) -> User:
     user_stash = UserStash(store=node.document_store)
 
-    email_exists = user_stash._email_exists(email=email).unwrap()
-    if email_exists:
-        print("admin not created, already exists")
+    existing_user = user_stash.email_exists(email=email).unwrap()
+    if existing_user:
+        logger.debug(f"Admin not created, {existing_user.user} already exists")
+        return existing_user
 
     create_user = UserCreate(
         name=name,
@@ -1750,13 +1751,14 @@ def create_admin_new(
     user.signing_key = node.signing_key
     user.verify_key = user.signing_key.verify_key
 
-    new_user = user_stash._set(
+    new_user = user_stash.set(
         credentials=node.signing_key.verify_key,
-        user=user,
+        obj=user,
         ignore_duplicates=True,
     ).unwrap()
 
-    print(f"created admin user {new_user.email}")
+    logger.debug(f"Created admin {new_user.email}")
+
     return new_user
 
 

@@ -88,7 +88,7 @@ class LogService(AbstractService):
 
     @service_method(path="log.delete", name="delete", roles=DATA_SCIENTIST_ROLE_LEVEL)
     def delete(self, context: AuthedServiceContext, uid: UID) -> SyftSuccess:
-        result = self.stash.delete_by_uid(context.credentials, uid).unwrap()
+        self.stash.delete_by_uid(context.credentials, uid).unwrap()
         return SyftSuccess(message=f"log {uid} succesfully deleted")
 
     @service_method(

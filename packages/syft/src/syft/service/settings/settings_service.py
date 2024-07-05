@@ -111,7 +111,7 @@ class SettingsService(AbstractService):
                 update=settings.to_dict(exclude_empty=True)
             )
             update_result = self.stash.update(
-                context.credentials, new_settings
+                context.credentials, settings=new_settings
             ).unwrap()
             return update_result
         else:
@@ -133,8 +133,7 @@ class SettingsService(AbstractService):
                 public_message=f"Not a valid node_side_type, please use one of the options from: {side_type_options}"
             )
 
-        all_settings = self.stash.get_all(context.credentials).unwrap()
-        current_settings = result.ok()
+        current_settings = self.stash.get_all(context.credentials).unwrap()
         if len(current_settings) > 0:
             new_settings = current_settings[0]
             new_settings.node_side_type = node_side_type

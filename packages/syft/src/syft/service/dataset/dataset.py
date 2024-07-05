@@ -7,7 +7,6 @@ import textwrap
 from typing import Any
 
 # third party
-from IPython.display import display
 import itables
 import pandas as pd
 from pydantic import ConfigDict
@@ -23,6 +22,7 @@ from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
+from ...types.errors import SyftException
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
@@ -45,7 +45,6 @@ from ..data_subject.data_subject import DataSubject
 from ..data_subject.data_subject import DataSubjectCreate
 from ..data_subject.data_subject_service import DataSubjectService
 from ..response import SyftError
-from ..response import SyftException
 from ..response import SyftSuccess
 from ..response import SyftWarning
 
@@ -283,21 +282,18 @@ class Asset(SyftObject):
         # relative
         from ...client.api import APIRegistry
 
-        api = APIRegistry.api_for(
+        api = APIRegistry._api_for(
             node_uid=self.node_uid,
             user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None or api.services is None:
-            return None
-        res = api.services.action.get(self.action_id)
-        if self.has_permission(res):
-            return res.syft_action_data
-        else:
-            warning = SyftWarning(
-                message="You do not have permission to access private data."
+        ).unwrap()
+        res = api.services.action.get(uid=self.action_id)
+
+        if not self.has_permission(res):
+            raise SyftException(
+                public_message="You do not have permission to access private data."
             )
-            display(warning)
-            return None
+
+        return res.syft_action_data
 
 
 def _is_action_data_empty(obj: Any) -> bool:

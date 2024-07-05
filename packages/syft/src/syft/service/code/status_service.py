@@ -91,8 +91,8 @@ class UserCodeStatusService(AbstractService):
     )
     def remove(self, context: AuthedServiceContext, uid: UID) -> SyftSuccess:
         """Remove a user code item status"""
-        res = self.stash.delete_by_uid(context.credentials, uid=uid).unwrap()
-        return SyftSuccess(message=f"{uid} successfully deleted")
+        self.stash.delete_by_uid(context.credentials, uid=uid).unwrap()
+        return SyftSuccess(message=f"{uid} successfully deleted", value=uid)
 
 
 TYPE_TO_SERVICE[UserCodeStatusCollection] = UserCodeStatusService

@@ -19,6 +19,7 @@ from syft.service.user.user import UserCreate
 from syft.service.user.user import UserUpdate
 from syft.service.user.user import UserView
 from syft.types.errors import CredentialsError
+from syft.types.errors import SyftException
 
 GUEST_ROLES = [ServiceRole.GUEST]
 DS_ROLES = [ServiceRole.GUEST, ServiceRole.DATA_SCIENTIST]
@@ -43,20 +44,25 @@ def get_mock_client(root_client, role) -> DomainClient:
     mail = Faker().email()
     name = Faker().name()
     password = "pw"
+
     user = root_client.register(
         name=name, email=mail, password=password, password_verify=password
     )
+
     assert user
+
     user_id = [u for u in get_users(worker) if u.email == mail][0].id
     assert worker.root_client.api.services.user.update(
         user_id, UserUpdate(user_id=user_id, role=role)
     )
+
     client = client.login(email=mail, password=password)
     client._fetch_api(client.credentials)
 
     # hacky, but useful for testing: patch user id and role on client
     client.user_id = user_id
     client.role = role
+
     return client
 
 
@@ -147,23 +153,31 @@ def test_user_delete(do_client, guest_client, ds_client, worker, root_client):
     clients = [get_mock_client(root_client, role) for role in DS_ROLES]
     for c in clients:
         assert do_client.api.services.user.delete(c.user_id)
+    
     # but not higher or same roles
     clients = [
         get_mock_client(root_client, role)
         for role in [ServiceRole.DATA_OWNER, ServiceRole.ADMIN]
     ]
+
     for c in clients:
-        assert not do_client.api.services.user.delete(c.user_id)
+        with pytest.raises(SyftException) as exc:
+            do_client.api.services.user.delete(c.user_id)
+        assert exc.type == SyftException
 
     # DS cannot delete anything
     clients = [get_mock_client(root_client, role) for role in ADMIN_ROLES]
     for c in clients:
-        assert not ds_client.api.services.user.delete(c.user_id)
+        with pytest.raises(SyftException) as exc:
+            ds_client.api.services.user.delete(c.user_id)
+        assert exc.type == SyftException
 
     # Guests cannot delete anything
     clients = [get_mock_client(root_client, role) for role in ADMIN_ROLES]
     for c in clients:
-        assert not guest_client.api.services.user.delete(c.user_id)
+        with pytest.raises(SyftException) as exc:
+            guest_client.api.services.user.delete(c.user_id)
+        assert exc.type == SyftException
 
 
 def test_user_update_roles(do_client, guest_client, ds_client, root_client, worker):
@@ -186,9 +200,12 @@ def test_user_update_roles(do_client, guest_client, ds_client, root_client, work
     # DOs cannot update roles to greater than / equal to own role
     for _c in clients:
         for target_role in [ServiceRole.DATA_OWNER, ServiceRole.ADMIN]:
-            assert not do_client.api.services.user.update(
-                _c.user_id, UserUpdate(role=target_role)
-            )
+            with pytest.raises(SyftException) as exc:
+                do_client.api.services.user.update(
+                    _c.user_id, UserUpdate(role=target_role)
+                )
+            assert exc.type == SyftException
+            assert exc.value.public_message == "NACK"
 
     # DOs cannot downgrade higher roles to lower levels
     clients = [
@@ -198,25 +215,31 @@ def test_user_update_roles(do_client, guest_client, ds_client, root_client, work
     for _c in clients:
         for target_role in DO_ROLES:
             if target_role < _c.role:
-                assert not do_client.api.services.user.update(
-                    _c.user_id, UserUpdate(role=target_role)
-                )
+                with pytest.raises(SyftException) as exc:
+                    do_client.api.services.user.update(
+                        _c.user_id, UserUpdate(role=target_role)
+                    )
+                assert exc.type == SyftException
 
     # DSs cannot update any roles
     clients = [get_mock_client(root_client, role) for role in ADMIN_ROLES]
     for _c in clients:
         for target_role in ADMIN_ROLES:
-            assert not ds_client.api.services.user.update(
-                _c.user_id, UserUpdate(role=target_role)
-            )
+            with pytest.raises(SyftException) as exc:
+                ds_client.api.services.user.update(
+                    _c.user_id, UserUpdate(role=target_role)
+                )
+            assert exc.type == SyftException
 
     # Guests cannot update any roles
     clients = [get_mock_client(root_client, role) for role in ADMIN_ROLES]
     for _c in clients:
         for target_role in ADMIN_ROLES:
-            assert not guest_client.api.services.user.update(
-                _c.user_id, UserUpdate(role=target_role)
-            )
+            with pytest.raises(SyftException) as exc:
+                guest_client.api.services.user.update(
+                    _c.user_id, UserUpdate(role=target_role)
+                )
+            assert exc.type == SyftException
 
 
 def test_user_update(root_client):
@@ -314,25 +337,36 @@ def test_user_view_set_default_admin_email_failed(
     assert isinstance(result2, SyftError)
     assert result2.message == error_msg
 
-
+@pytest.mark.parametrize(
+    "client",
+    [
+       ds_client,
+       guest_client
+    ],
+)
 def test_user_view_set_duplicated_email(
-    root_client: DomainClient, ds_client: DomainClient, guest_client: DomainClient
+    root_client: DomainClient, client: DomainClient
 ) -> None:
     email = root_client.me.email
     error_msg = f"User {email} already exists"
+# ds_client: DomainClient, guest_client: DomainClient
+    print("client", client)
+    with pytest.raises(SyftException) as exc:
+        result = client.me.set_email(email)
+    assert exc.type == SyftException
+    assert exc.value.public_message == error_msg
+        
+    # result2 = guest_client.me.set_email(email)
 
-    result = ds_client.me.set_email(email)
-    result2 = guest_client.me.set_email(email)
+    # assert isinstance(result, SyftError)
+    # assert result.message == error_msg
+    # assert isinstance(result2, SyftError)
+    # assert result2.message == error_msg
 
-    assert isinstance(result, SyftError)
-    assert result.message == error_msg
-    assert isinstance(result2, SyftError)
-    assert result2.message == error_msg
-
-    ds_email = ds_client.me.email
-    result3 = guest_client.me.set_email(ds_email)
-    assert isinstance(result3, SyftError)
-    assert result3.message == f"User {ds_email} already exists"
+    # ds_email = ds_client.me.email
+    # result3 = guest_client.me.set_email(ds_email)
+    # assert isinstance(result3, SyftError)
+    # assert result3.message == f"User {ds_email} already exists"
 
 
 def test_user_view_update_name_institution_website(
@@ -360,6 +394,7 @@ def test_user_view_update_name_institution_website(
 
 def test_user_view_set_role(worker: Worker, guest_client: DomainClient) -> None:
     admin_client = get_mock_client(worker.root_client, ServiceRole.ADMIN)
+
     assert admin_client.me.role == ServiceRole.ADMIN
     admin_client.register(
         name="Sheldon Cooper",
@@ -369,6 +404,7 @@ def test_user_view_set_role(worker: Worker, guest_client: DomainClient) -> None:
         institution="Caltech",
         website="https://www.caltech.edu/",
     )
+
     sheldon = admin_client.users[-1]
     assert (
         sheldon.syft_client_verify_key
@@ -376,10 +412,13 @@ def test_user_view_set_role(worker: Worker, guest_client: DomainClient) -> None:
         == admin_client.verify_key
     )
     assert sheldon.role == ServiceRole.DATA_SCIENTIST
+
     sheldon.update(role="guest")
     assert sheldon.role == ServiceRole.GUEST
+
     sheldon.update(role="data_owner")
     assert sheldon.role == ServiceRole.DATA_OWNER
+
     # the data scientist (Sheldon) log in the domain, he should not
     # be able to change his role, even if he is a data owner now
     ds_client = guest_client.login(email="sheldon@caltech.edu", password="changethis")
@@ -390,15 +429,20 @@ def test_user_view_set_role(worker: Worker, guest_client: DomainClient) -> None:
     )
     assert ds_client.me.role == sheldon.role
     assert ds_client.me.role == ServiceRole.DATA_OWNER
-    assert isinstance(ds_client.me.update(role="guest"), SyftError)
-    assert isinstance(ds_client.me.update(role="data_scientist"), SyftError)
+
+    with pytest.raises(SyftException):
+        ds_client.me.update(role="guest")
+        ds_client.me.update(role="data_scientist")
+
     # now we set sheldon's role to admin. Only now he can change his role
     sheldon.update(role="admin")
     assert sheldon.role == ServiceRole.ADMIN
     # QA: this is different than when running in the notebook
     assert len(ds_client.users.get_all()) == len(admin_client.users.get_all())
     assert isinstance(ds_client.me.update(role="guest"), SyftSuccess)
-    assert isinstance(ds_client.me.update(role="admin"), SyftError)
+
+    with pytest.raises(SyftException):
+        ds_client.me.update(role="admin")
 
 
 def test_user_view_set_role_admin(faker: Faker) -> None:

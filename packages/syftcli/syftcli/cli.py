@@ -38,7 +38,7 @@ def get_syft_version() -> str:
         import syft
 
         return syft.__version__
-    except ModuleNotFoundException:
+    except ModuleNotFoundError:
         return "Not Installed"
 
 

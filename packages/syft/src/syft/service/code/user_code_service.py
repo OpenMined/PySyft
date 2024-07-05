@@ -575,7 +575,7 @@ class UserCodeService(AbstractService):
                             # admin overrides policy checks.
                             output_policy_message = output_policy_is_valid.value
                         return CachedSyftObject(
-                            result=res,
+                            result=result,
                             error_msg=output_policy_message,
                         )
                     else:
@@ -585,7 +585,7 @@ class UserCodeService(AbstractService):
         # Execute the code item
         if not self.valid_worker_pool_for_context(context, code):
             raise SyftException(
-                public_message= "You tried to run a syft function attached to a worker pool in blocking mode,"
+                public_message="You tried to run a syft function attached to a worker pool in blocking mode,"
                 "which is currently not supported. Run your function with `blocking=False` to run"
                 " as a job on your worker pool"
             )
