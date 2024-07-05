@@ -142,7 +142,6 @@ def test_diff_state_with_dataset(low_worker: Worker, high_worker: Worker):
     high_client: DomainClient = high_worker.root_client
 
     _ = create_dataset(high_client)
-    _ = create_dataset(low_client)
 
     @sy.syft_function_single_use()
     def compute_mean(data) -> int:
