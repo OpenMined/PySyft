@@ -10,6 +10,7 @@ import hashlib
 import textwrap
 import time
 from typing import Any
+from typing import cast
 
 # third party
 from pydantic import Field
@@ -408,22 +409,22 @@ class ProjectCode(ProjectEventAddObject):
 
     @property
     def is_enclave_code(self) -> bool:
-        if not self.code.runtime_policy_init_kwargs:
-            return False
-        provider = self.code.runtime_policy_init_kwargs.get("provider")
-        if not provider:
-            return False
-        if not isinstance(provider, EnclaveInstance):
-            return False
-        return True
+        return bool(
+            self.code.runtime_policy_init_kwargs
+            and isinstance(
+                self.code.runtime_policy_init_kwargs.get("provider"), EnclaveInstance
+            )
+        )
 
     def setup_enclave(self) -> SyftSuccess | SyftError:
         if not self.is_enclave_code:
             return SyftError(
                 message="This method is only supported for codes with Enclave runtime provider."
             )
-        provider = self.code.runtime_policy_init_kwargs.get("provider")
+        runtime_policy_init_kwargs = self.code.runtime_policy_init_kwargs or {}
+        provider = cast(EnclaveInstance, runtime_policy_init_kwargs.get("provider"))
         owner_node_id = provider.syft_node_location
+
         # TODO use node_uid, verify_key instead as there could be multiple logged-in users to the same client
         owner_client = SyftClientSessionCache.get_client_for_node_uid(owner_node_id)
         if not owner_client:
@@ -440,6 +441,12 @@ class ProjectCode(ProjectEventAddObject):
                 message="This method is only supported for codes with Enclave runtime provider."
             )
         clients = set()
+
+        if not self.code.input_owner_node_uids:
+            return SyftError(
+                message="No input assets owners found. Please check the code input policy."
+            )
+
         for node_id in self.code.input_owner_node_uids:
             client = SyftClientSessionCache.get_client_for_node_uid(node_id)
             if not client:
@@ -462,6 +469,12 @@ class ProjectCode(ProjectEventAddObject):
                 message="This method is only supported for codes with Enclave runtime provider."
             )
         clients = set()
+
+        if not self.code.input_owner_node_uids:
+            return SyftError(
+                message="No input assets owners found. Please check the code input policy."
+            )
+
         for node_id in self.code.input_owner_node_uids:
             client = SyftClientSessionCache.get_client_for_node_uid(node_id)
             if not client:
