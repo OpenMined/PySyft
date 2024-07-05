@@ -1054,15 +1054,16 @@ class NewBaseStash:
 @instrument
 class NewBaseUIDStoreStash(NewBaseStash):
     @as_result(StashException)
-    def delete_by_uid(self, credentials: SyftVerifyKey, uid: UID) -> UID:
+    def delete_by_uid(self, credentials: SyftVerifyKey, uid: UID, has_permission: bool = False) -> UID:
         qk = UIDPartitionKey.with_obj(uid)
-        super().delete(credentials=credentials, qk=qk)
+        super().delete(credentials=credentials, qk=qk, has_permission=has_permission).unwrap()
         return uid
 
     @as_result(StashException, NotFoundException)
     def get_by_uid(
         self, credentials: SyftVerifyKey, uid: UID
     ) -> NewBaseUIDStoreStash.object_type:
+        # TODO: Could change to query_one, no?
         result = self.partition.get(credentials=credentials, uid=uid)
 
         match result:
@@ -1084,8 +1085,7 @@ class NewBaseUIDStoreStash(NewBaseStash):
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> NewBaseUIDStoreStash.object_type:
-        self.check_type(obj, self.object_type)
-
+        self.check_type(obj, self.object_type).unwrap()
         return (
             super()
             .set(
