@@ -186,7 +186,8 @@ class ActionService(AbstractService):
                 blob_storage_service: AbstractService = context.node.get_service(
                     BlobStorageService
                 )
-                blob_storage_service.stash.add_permission(permission)
+                if not skip_save_to_blob_store:
+                    blob_storage_service.stash.add_permission(permission)
                 if has_result_read_permission:
                     action_object = action_object.private
                 else:
@@ -569,8 +570,9 @@ class ActionService(AbstractService):
             store_permissions = [store_permission(x) for x in output_readers]
             self.store.add_permissions(store_permissions)
 
-            blob_permissions = [blob_permission(x) for x in output_readers]
-            blob_storage_service.stash.add_permissions(blob_permissions)
+            if not skip_save_to_blob_store:
+                blob_permissions = [blob_permission(x) for x in output_readers]
+                blob_storage_service.stash.add_permissions(blob_permissions)
 
         return set_result
 
