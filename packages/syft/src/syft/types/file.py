@@ -129,6 +129,17 @@ class SyftFolder(SyftObject):
     def size_mb(self) -> float:
         return self.size_bytes / 1024 / 1024
 
+    # method to write the folder in current directory
+    def write_folder_to_current_path(self) -> bool:
+        try:
+            path = Path(os.getcwd()) / self.name
+            os.makedirs(path, exist_ok=True)
+            for syft_file in self.files:
+                syft_file.write_file(path)
+            return True
+        except Exception:
+            return False
+
     @property
     def model_folder(self) -> str:
         # TODO: make sure filenames are sanitized and arent file paths

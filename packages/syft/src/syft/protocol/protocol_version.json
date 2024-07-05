@@ -430,6 +430,41 @@
           "hash": "0885495752c6170b7ebd5a556303ca4ce477ad7b36fa4211cbe35662b1f8d8df",
           "action": "add"
         }
+      },
+      "ModelPageView": {
+        "1": {
+          "version": 1,
+          "hash": "25c02dc71310dc15dad1ad09a8d05c99f2fafb87b46db42af8b82862ec215fef",
+          "action": "add"
+        }
+      },
+      "ModelAsset": {
+        "1": {
+          "version": 1,
+          "hash": "c57f4c6d6932a7813f7d4c7358b8a680edb855da55fbf1054521cc92eae1e560",
+          "action": "add"
+        }
+      },
+      "CreateModelAsset": {
+        "1": {
+          "version": 1,
+          "hash": "187a10c82cce0d54b54185703e30e7cc6b34a65ccf6a9687706a69b862e514e1",
+          "action": "add"
+        }
+      },
+      "Model": {
+        "1": {
+          "version": 1,
+          "hash": "dab717d1d8cadab88d20bdefd960077c7bc676a162d55a4f3937f61284312bd7",
+          "action": "add"
+        }
+      },
+      "CreateModel": {
+        "1": {
+          "version": 1,
+          "hash": "6713c5202611493947cdb695bb4fe9aaad07ef5a342a4871f1fcf7478f422d36",
+          "action": "add"
+        }
       }
     }
   }
