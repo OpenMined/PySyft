@@ -10,6 +10,7 @@ import pytest
 # syft absolute
 import syft as sy
 from syft.client.domain_client import DomainClient
+from syft.service.action.action_data_empty import ActionDataEmpty
 from syft.service.action.action_object import ActionObject
 from syft.service.request.request import Request
 from syft.service.request.request import UserCodeStatusChange
@@ -61,7 +62,7 @@ def test_user_code(worker) -> None:
     message = root_domain_client.notifications[-1]
     request = message.link
     user_code = request.changes[0].code
-    result = user_code.unsafe_function()
+    result = user_code.run()
     request.approve()
 
     result = guest_client.api.services.code.mock_syft_func()
@@ -348,19 +349,20 @@ def test_mock_no_arguments(worker) -> None:
     users[-1].allow_mock_execution()
     result = ds_client.api.services.code.compute_sum()
     assert result, result
-    assert result.get() == 1
+    assert result == 1
 
     # approved, no mock execution
     users[-1].allow_mock_execution(allow=False)
     message = root_domain_client.notifications[-1]
     request = message.link
     user_code = request.changes[0].code
-    result = user_code.unsafe_function()
+    result = user_code.run()
     request.approve()
 
     result = ds_client.api.services.code.compute_sum()
     assert result, result
-    assert result.get() == 1
+    assert not isinstance(result.syft_action_data_cache, ActionDataEmpty)
+    assert result == 1
 
 
 def test_submit_invalid_name(worker) -> None:
@@ -393,6 +395,26 @@ def test_submit_invalid_name(worker) -> None:
     valid_name_2.func_name = "get_all"
     with pytest.raises(ValidationError):
         client.code.submit(valid_name_2)
+
+
+def test_submit_code_with_global_var(guest_client: DomainClient) -> None:
+    @sy.syft_function(
+        input_policy=sy.ExactMatch(), output_policy=sy.SingleExecutionExactOutput()
+    )
+    def mock_syft_func_with_global():
+        global x
+        return x
+
+    res = guest_client.code.submit(mock_syft_func_with_global)
+    assert isinstance(res, SyftError)
+
+    @sy.syft_function_single_use()
+    def mock_syft_func_single_use_with_global():
+        global x
+        return x
+
+    res = guest_client.code.submit(mock_syft_func_single_use_with_global)
+    assert isinstance(res, SyftError)
 
 
 def test_request_existing_usercodesubmit(worker) -> None:
