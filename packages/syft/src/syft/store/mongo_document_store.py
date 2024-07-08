@@ -494,10 +494,16 @@ class MongoStorePartition(StorePartition):
         if permissions is None:
             return False
 
-        # TODO: fix for other admins
         if (
             permission.credentials
             and self.root_verify_key.verify == permission.credentials.verify
+        ):
+            return True
+
+        if (
+            permission.credentials
+            and self.has_admin_permissions is not None
+            and self.has_admin_permissions(permission.credentials)
         ):
             return True
 
