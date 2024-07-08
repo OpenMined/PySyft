@@ -202,8 +202,8 @@ class DatasetService(AbstractService):
         ]
 
     @service_method(
-        path="dataset.delete_by_uid",
-        name="delete_by_uid",
+        path="dataset.delete",
+        name="delete",
         roles=DATA_OWNER_ROLE_LEVEL,
         warning=HighSideCRUDWarning(confirmation=True),
     )

@@ -22,7 +22,6 @@ from typing_extensions import Self
 # relative
 from ...client.api import APIRegistry
 from ...serde.serializable import serializable
-from ...store.blob_storage import BlobRetrieval
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
@@ -303,65 +302,6 @@ class Asset(SyftObject):
             display(warning)
             return None
 
-    @property
-    def data_blob(self) -> BlobRetrieval | SyftError:
-        """
-        Return the blob entry for the data of the asset
-        """
-        api = APIRegistry.api_for(
-            node_uid=self.node_uid,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None or api.services is None:
-            return SyftError(
-                message=f"Could not get api for {self.node_uid}. You must login first."
-            )
-
-        data_action_obj: str | ActionObject = api.services.action.get(self.action_id)
-        if isinstance(data_action_obj, str):
-            return SyftError(
-                message=f"Could not access private data. {str(data_action_obj)}"
-            )
-        if not self.has_permission(data_action_obj):
-            return SyftError(
-                message="You do not have permission to access private data."
-            )
-
-        blob_retrieval_res: BlobRetrieval | SyftError = api.services.blob_storage.read(
-            uid=data_action_obj.syft_blob_storage_entry_id
-        )
-        if isinstance(blob_retrieval_res, SyftError):
-            return blob_retrieval_res
-        return blob_retrieval_res
-
-    @property
-    def mock_blob(self) -> BlobRetrieval | SyftError | None:
-        """
-        Return the blob entry for the mock of the asset
-        """
-        api = APIRegistry.api_for(
-            node_uid=self.node_uid,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None or api.services is None:
-            return SyftError(
-                message=f"Could not get api for {self.node_uid}. You must login first."
-            )
-
-        mock_action_obj: SyftError | ActionObject = api.services.action.get_mock(
-            self.action_id
-        )
-        if isinstance(mock_action_obj, SyftError):
-            return mock_action_obj
-
-        blob_retrieval_res = api.services.blob_storage.read(
-            uid=mock_action_obj.syft_blob_storage_entry_id
-        )
-        if isinstance(blob_retrieval_res, SyftError):
-            return blob_retrieval_res
-
-        return blob_retrieval_res
-
 
 def _is_action_data_empty(obj: Any) -> bool:
     # just a wrapper of action_object.is_action_data_empty
@@ -566,6 +506,7 @@ class Dataset(SyftObject):
     created_at: DateTime = DateTime.now()
     uploader: Contributor
     summary: str | None = None
+    marked_as_deleted: bool = False
 
     __attr_searchable__ = [
         "name",
@@ -747,9 +688,6 @@ class CreateDataset(Dataset):
 
     model_config = ConfigDict(validate_assignment=True, extra="forbid")
 
-    def _check_asset_must_contain_mock(self) -> None:
-        _check_asset_must_contain_mock(self.asset_list)
-
     @field_validator("asset_list")
     @classmethod
     def __assets_must_contain_mock(
@@ -757,6 +695,13 @@ class CreateDataset(Dataset):
     ) -> list[CreateAsset]:
         _check_asset_must_contain_mock(asset_list)
         return asset_list
+
+    @field_validator("marked_as_deleted")
+    @classmethod
+    def __marked_as_deleted_must_be_false(cls, v: bool) -> bool:
+        if v is True:
+            raise ValueError("marked_as_deleted must be False")
+        return v
 
     def set_description(self, description: str) -> None:
         self.description = MarkdownDescription(text=description)
@@ -984,6 +929,7 @@ def createdataset_to_dataset() -> list[Callable]:
         validate_url,
         convert_asset,
         add_current_date,
+        make_set_default("marked_as_deleted", False),  # explicitly set it to False
     ]
 
 
@@ -993,6 +939,7 @@ def migrate_dataset_v2_to_v3() -> list[Callable]:
         make_set_default("summary", None),
         drop("__repr_attrs__"),
         make_set_default("__repr_attrs__", ["name", "summary", "url", "created_at"]),
+        make_set_default("marked_as_deleted", False),
     ]
 
 
@@ -1000,7 +947,7 @@ def migrate_dataset_v2_to_v3() -> list[Callable]:
 def migrate_dataset_v3_to_v2() -> list[Callable]:
     return [
         drop("summary"),
-        drop("__repr_attrs__"),
+        drop(["__repr_attrs__", "marked_as_deleted"]),
         make_set_default("__repr_attrs__", ["name", "url", "created_at"]),
     ]
 
@@ -1011,6 +958,7 @@ def migrate_create_dataset_v2_to_v3() -> list[Callable]:
         make_set_default("summary", None),
         drop("__repr_attrs__"),
         make_set_default("__repr_attrs__", ["name", "summary", "url"]),
+        make_set_default("marked_as_deleted", False),
     ]
 
 
@@ -1018,7 +966,7 @@ def migrate_create_dataset_v2_to_v3() -> list[Callable]:
 def migrate_create_dataset_v3_to_v2() -> list[Callable]:
     return [
         drop("summary"),
-        drop("__repr_attrs__"),
+        drop(["__repr_attrs__", "marked_as_deleted"]),
         make_set_default("__repr_attrs__", ["name", "url"]),
     ]
 
