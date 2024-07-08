@@ -1,0 +1,55 @@
+name: Conda Install - PySyft
+
+on:
+  workflow_call:
+
+  pull_request:
+    branches:
+      - dev
+      - main
+      - "0.8"
+
+  workflow_dispatch:
+    inputs:
+      none:
+        description: "Run Version Tests Manually"
+        required: false
+
+concurrency:
+  group: stack-${{ github.event_name == 'pull_request' && format('{0}-{1}', github.workflow, github.event.pull_request.number) || github.workflow_ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    strategy:
+      max-parallel: 99
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.12"]
+      fail-fast: false
+
+    runs-on: ${{matrix.os}}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          activate-environment: syft_conda_env
+          python-version: ${{ matrix.python-version }}
+          use-only-tar-bz2: true
+      - name: Conda info
+        shell: bash -el {0}
+        run: conda info
+      - name: Install syft (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          pip install ./packages/syft
+          echo "SYFT_VERSION=$(python -c 'import syft; print(syft.__version__)')" >> $GITHUB_ENV
+      - name: Install syft (MacOS or Linux)
+        if: matrix.os != 'windows-latest'
+        shell: bash -el {0}
+        run: |
+          pip install ./packages/syft
+          echo "SYFT_VERSION=$(python -c 'import syft; print(syft.__version__)')" >> $GITHUB_ENV
