@@ -535,7 +535,7 @@ class MigrationService(AbstractService):
         # Track all object types from action store
         action_object_types = [Action, ActionObject]
         action_object_types.extend(ActionObject.__subclasses__())
-        klass_by_canonical_name = {
+        klass_by_canonical_name: dict[str, type[SyftObject]] = {
             klass.__canonical_name__: klass for klass in action_object_types
         }
 
@@ -553,11 +553,8 @@ class MigrationService(AbstractService):
 
         for obj in action_store_objects:
             if get_all or type(obj) in action_object_pending_migration:
-                klass = klass_by_canonical_name.get(
-                    obj.__canonical_name__,
-                    type(obj),
-                )
-                result_dict[klass].append(obj)
+                klass = klass_by_canonical_name.get(obj.__canonical_name__, type(obj))
+                result_dict[klass].append(obj)  # type: ignore
         return Ok(dict(result_dict))
 
     @service_method(
