@@ -57,6 +57,11 @@ class SyftObjectRegistry:
         return cls.__object_serialization_registry__[canonical_name][version]
 
     @classmethod
+    def get_serde_class(cls, canonical_name: str, version: int) -> type["SyftObject"]:
+        serde_properties = cls.get_serde_properties(canonical_name, version)
+        return serde_properties[7]
+
+    @classmethod
     def get_serde_properties_bw_compatible(
         cls, fqn: str, canonical_name: str, version: int
     ) -> tuple:
