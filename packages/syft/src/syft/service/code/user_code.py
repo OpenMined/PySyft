@@ -856,7 +856,7 @@ class UserCode(SyncableSyftObject):
                 # return the results
                 return result
             except Exception as e:
-                return SyftError(f"Failed to execute 'run'. Error: {e}")
+                return SyftError(message=f"Failed to execute 'run'. Error: {e}")
 
         return wrapper
 

@@ -73,6 +73,7 @@ from .service.response import SyftError
 from .service.response import SyftNotReady
 from .service.response import SyftSuccess
 from .service.user.roles import Roles as roles
+from .service.user.user_roles import ServiceRole
 from .service.user.user_service import UserService
 from .stable_version import LATEST_STABLE_SYFT
 from .types.twin_object import TwinObject
