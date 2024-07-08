@@ -580,7 +580,7 @@ class UserCodeService(AbstractService):
                     "which is currently not supported. Run your function with `blocking=False` to run"
                     " as a job on your worker pool"
                 )
-            action_service: ActionService = context.node.get_service("actionservice")
+            action_service: ActionService = context.node.get_service("actionservice")  # type: ignore
             result_action_object: Result[ActionObject | TwinObject, str] = (
                 action_service._user_code_execute(
                     context, code, kwarg2id, result_id=result_id
