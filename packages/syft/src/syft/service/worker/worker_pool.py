@@ -178,7 +178,7 @@ class SyftWorker(SyftObject):
 @serializable()
 class WorkerPool(SyftObject):
     __canonical_name__ = "WorkerPool"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     __attr_unique__ = ["name"]
     __attr_searchable__ = ["name", "image_id"]
@@ -196,6 +196,7 @@ class WorkerPool(SyftObject):
     max_count: int
     worker_list: list[LinkedObject]
     created_at: DateTime = DateTime.now()
+    to_be_deleted: bool = False
 
     @property
     def image(self) -> SyftWorkerImage | SyftError | None:

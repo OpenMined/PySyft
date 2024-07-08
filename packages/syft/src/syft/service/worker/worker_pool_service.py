@@ -1,6 +1,7 @@
 # stdlib
 import logging
 from typing import Any
+from typing import cast
 
 # third party
 import pydantic
@@ -637,25 +638,73 @@ class SyftWorkerPoolService(AbstractService):
                 message=f"Invalid request object. Invalid image uid or config in the request changes. {request.changes}"
             )
 
+    @service_method(
+        path="worker_pool.delete",
+        name="delete",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
+    def delete(
+        self,
+        context: AuthedServiceContext,
+        uid: UID,
+        force: bool = False,
+    ) -> SyftSuccess | SyftError:
+        worker_pool = self._get_worker_pool(context, pool_id=uid)
+
+        if isinstance(worker_pool, SyftError):
+            return worker_pool
+
+        worker_service = cast(WorkerService, context.node.get_service("WorkerService"))
+        worker_ids = (w.id for w in worker_pool.worker_list)
+
+        worker_deletion = (
+            (id_, worker_service.delete(id_, force=force)) for id_ in worker_ids
+        )
+        worker_deletion_fails = cast(
+            list[tuple[UID, SyftError]],
+            [(id_, res) for id_, res in worker_deletion if isinstance(SyftError, res)],
+        )
+        if len(worker_deletion_fails) > 0:
+            failed_worker_ids = (id_ for id_, _ in worker_deletion_fails)
+            failure_messages = "\n".join(
+                f"{id_}: {res.message}" for id_, res in worker_deletion_fails
+            )
+            return SyftError(
+                message=f"Failed to delete worker(s) {", ".join(failed_worker_ids)}:\n{failure_messages}"
+            )
+
+        res = self.stash.delete_by_uid(uid)
+        if isinstance(res, SyftError):
+            return res
+
+        return SyftSuccess(message=f"Successfully deleted worker pool with id {uid}")
+
     def _get_worker_pool(
         self,
         context: AuthedServiceContext,
         pool_id: UID | None = None,
         pool_name: str | None = None,
     ) -> WorkerPool | SyftError:
-        if pool_id:
+        pool_: tuple[str, str] | tuple[str, UID]
+        if pool_id is not None:
+            pool_ = ("id", pool_id)
             result = self.stash.get_by_uid(
                 credentials=context.credentials,
                 uid=pool_id,
             )
-        else:
+        elif pool_name is not None:
+            pool_ = ("name", pool_name)
             result = self.stash.get_by_name(
                 credentials=context.credentials,
                 pool_name=pool_name,
             )
+        else:
+            return SyftError("One of `pool_id` or `pool_name` must be provided.")
 
         if result.is_err():
-            return SyftError(message=f"{result.err()}")
+            return SyftError(
+                message=f"Could not find worker pool with {pool_[0]} {pool_[1]}: {result.err()}"
+            )
 
         worker_pool = result.ok()
 
