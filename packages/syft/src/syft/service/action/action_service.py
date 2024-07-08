@@ -691,12 +691,12 @@ class ActionService(AbstractService):
                 action,
                 twin_mode=TwinMode.PRIVATE,
             ).unwrap(
-                public_message=f"Failed executing action {action}, result is an error: {private_result.err()}"
+                public_message=f"Failed executing action {action}"
             )
             mock_result = execute_object(
                 self, context, resolved_self.mock, action, twin_mode=TwinMode.MOCK
             ).unwrap(
-                public_message=f"Failed executing action {action}, result is an error: {mock_result.err()}"
+                public_message=f"Failed executing action {action}"
             )
 
             return TwinObject(
@@ -786,7 +786,7 @@ class ActionService(AbstractService):
             skip_save_to_blob_store=skip_save_to_blob_store,
         )
         set_result = set_result.unwrap(
-            public_message=f"Failed executing action {action}, set result is an error: {set_result.err()}"
+            public_message=f"Failed executing action {action}"
         )
 
         return set_result
@@ -866,7 +866,6 @@ def execute_callable(
     has_twin_inputs = has_arg_twins or has_kwargs_twins
     # 🔵 TODO 10: Get proper code From old RunClassMethodAction to ensure the function
     # is not bound to the original object or mutated
-    # stdlib
 
     # TODO: get from CMPTree is probably safer
     def _get_target_callable(path: str, op: str) -> Any:
@@ -909,6 +908,7 @@ def execute_callable(
             private_obj=result_action_object_private,
             mock_obj=result_action_object_mock,
         )
+
     return result_action_object
 
 
