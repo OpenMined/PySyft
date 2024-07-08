@@ -371,38 +371,36 @@ class CreateAsset(SyftObject):
         role: Enum | str | None = None,
         phone: str | None = None,
         note: str | None = None,
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         try:
             _role_str = role.value if isinstance(role, Enum) else role
             contributor = Contributor(
                 name=name, role=_role_str, email=email, phone=phone, note=note
             )
             if contributor in self.contributors:
-                return SyftError(
-                    message=f"Contributor with email: '{email}' already exists in '{self.name}' Asset."
-                )
+                raise SyftException(public_message=f"Contributor with email: '{email}' already exists in '{self.name}' Asset.")
             self.contributors.add(contributor)
 
             return SyftSuccess(
                 message=f"Contributor '{name}' added to '{self.name}' Asset."
             )
         except Exception as e:
-            return SyftError(message=f"Failed to add contributor. Error: {e}")
+            raise SyftException(public_message=f"Failed to add contributor. Error: {e}")
 
     def set_description(self, description: str) -> None:
         self.description = MarkdownDescription(text=description)
 
     def set_obj(self, data: Any) -> None:
         if isinstance(data, SyftError):
-            raise SyftException(data)
+            raise SyftException(public_message=data)
         self.data = data
 
     def set_mock(self, mock_data: Any, mock_is_real: bool) -> None:
         if isinstance(mock_data, SyftError):
-            raise SyftException(mock_data)
+            raise SyftException(public_message=mock_data)
 
         if mock_is_real and (mock_data is None or _is_action_data_empty(mock_data)):
-            raise SyftException("`mock_is_real` must be False if mock is empty")
+            raise SyftException(public_message="`mock_is_real` must be False if mock is empty")
 
         self.mock = mock_data
         self.mock_is_real = mock_is_real
@@ -642,36 +640,31 @@ class CreateDataset(Dataset):
         role: Enum | str | None = None,
         phone: str | None = None,
         note: str | None = None,
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         try:
             _role_str = role.value if isinstance(role, Enum) else role
             contributor = Contributor(
                 name=name, role=_role_str, email=email, phone=phone, note=note
             )
             if contributor in self.contributors:
-                return SyftError(
-                    message=f"Contributor with email: '{email}' already exists in '{self.name}' Dataset."
-                )
+                raise SyftException(public_message=f"Contributor with email: '{email}' already exists in '{self.name}' Dataset.")
             self.contributors.add(contributor)
             return SyftSuccess(
                 message=f"Contributor '{name}' added to '{self.name}' Dataset."
             )
         except Exception as e:
-            return SyftError(message=f"Failed to add contributor. Error: {e}")
+            raise SyftException(public_message=f"Failed to add contributor. Error: {e}")
 
     def add_asset(
         self, asset: CreateAsset, force_replace: bool = False
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         if asset.mock is None:
             raise ValueError(_ASSET_WITH_NONE_MOCK_ERROR_MESSAGE)
 
         for i, existing_asset in enumerate(self.asset_list):
             if existing_asset.name == asset.name:
                 if not force_replace:
-                    return SyftError(
-                        message=f"""Asset "{asset.name}" already exists in '{self.name}' Dataset."""
-                        """ Use add_asset(asset, force_replace=True) to replace."""
-                    )
+                    raise SyftException(public_message=f"Asset '{asset.name}' already exists in '{self.name}' Dataset.\nUse add_asset(asset, force_replace=True) to replace.")
                 else:
                     self.asset_list[i] = asset
                     return SyftSuccess(
@@ -684,10 +677,10 @@ class CreateDataset(Dataset):
             message=f"Asset '{asset.name}' added to '{self.name}' Dataset."
         )
 
-    def replace_asset(self, asset: CreateAsset) -> SyftSuccess | SyftError:
+    def replace_asset(self, asset: CreateAsset) -> SyftSuccess:
         return self.add_asset(asset=asset, force_replace=True)
 
-    def remove_asset(self, name: str) -> SyftSuccess | SyftError:
+    def remove_asset(self, name: str) -> SyftSuccess:
         asset_to_remove = None
         for asset in self.asset_list:
             if asset.name == name:
@@ -695,21 +688,21 @@ class CreateDataset(Dataset):
                 break
 
         if asset_to_remove is None:
-            return SyftError(message=f"No asset exists with name: {name}")
+            raise SyftException(public_message=f"No asset exists with name: {name}")
         self.asset_list.remove(asset_to_remove)
         return SyftSuccess(
             message=f"Asset '{self.name}' removed from '{self.name}' Dataset."
         )
 
-    def check(self) -> Result[SyftSuccess, list[SyftError]]:
+    def check(self) -> SyftSuccess:
         errors = []
         for asset in self.asset_list:
             result = asset.check()
             if not result:
                 errors.append(result)
         if len(errors):
-            return Err(errors)
-        return Ok(SyftSuccess(message="Dataset is Valid"))
+            raise SyftException(public_message=f"Errors: {errors}")
+        return SyftSuccess(message="Dataset is Valid")
 
 
 def create_and_store_twin(context: TransformContext) -> TransformContext:
@@ -773,7 +766,7 @@ def infer_shape(context: TransformContext) -> TransformContext:
     return context
 
 
-def set_data_subjects(context: TransformContext) -> TransformContext | SyftError:
+def set_data_subjects(context: TransformContext) -> TransformContext:
     if context.output is None:
         raise ValueError(f"{context}'s output is None. No transformation happened")
     if context.node is None:
@@ -785,8 +778,6 @@ def set_data_subjects(context: TransformContext) -> TransformContext | SyftError
     resultant_data_subjects = []
     for data_subject in data_subjects:
         result = get_data_subject(context=context, name=data_subject.name)
-        if isinstance(result, SyftError):
-            return result
         resultant_data_subjects.append(result)
     context.output["data_subjects"] = resultant_data_subjects
     return context

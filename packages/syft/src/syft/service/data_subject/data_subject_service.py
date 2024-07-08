@@ -14,7 +14,6 @@ from ...store.document_store_errors import StashException
 from ...types.result import as_result
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
-from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
@@ -92,7 +91,8 @@ class DataSubjectService(AbstractService):
                 member_relationship_add(context, parent_ds.name, child_ds.name)
 
         return SyftSuccess(
-            message=f"{len(member_relationships)+1} Data Subjects Registered"
+            message=f"{len(member_relationships)+1} Data Subjects Registered",
+            value=member_relationships
         )
 
     @service_method(path="data_subject.get_all", name="get_all")
@@ -120,7 +120,7 @@ class DataSubjectService(AbstractService):
     @service_method(path="data_subject.get_by_name", name="get_by_name")
     def get_by_name(
         self, context: AuthedServiceContext, name: str
-    ) -> SyftSuccess | SyftError:
+    ) -> DataSubject:
         """Get a Data Subject by its name."""
         return self.stash.get_by_name(context.credentials, name=name).unwrap()
 
