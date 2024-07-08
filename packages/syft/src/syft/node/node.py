@@ -1194,6 +1194,12 @@ class Node(AbstractNode):
         )
         return role
 
+    def get_payment_auth_token_for_credentials(self, credentials: SyftVerifyKey) -> str | None:
+        payment_auth_token = self.get_service("userservice").get_payment_auth_token_for_credentials(
+            credentials=credentials
+        )
+        return payment_auth_token
+
     def handle_api_call(
         self,
         api_call: SyftAPICall | SignedSyftAPICall,
@@ -1223,6 +1229,28 @@ class Node(AbstractNode):
             if not api_call.is_valid:
                 return SyftError(message="Your message signature is invalid")
 
+        credentials: SyftVerifyKey = api_call.credentials
+        path = api_call.message.path
+
+        if self.name.startswith("ephemeral_node_"):
+            print(
+                f'Not charging for API call {path} to node {self.name} '
+                'because this node is an ephemeral node running on the client machine'
+            )
+        elif path == 'user.update' or path == 'user.get_current_user':
+            print(
+                f'Not charging for API call {path} to node {self.name} '
+                f'because this call may be made before the payment auth token is stored on the node'
+            )
+        else: 
+            payment_auth_token = self.get_payment_auth_token_for_credentials(credentials=credentials)
+            if payment_auth_token == '':
+                return SyftError(message=(
+                    "Cannot pay for call as Payment Auth Token has not been set." 
+                    "Please set Payment Auth Token using 'client.me.set_payment_auth_token' API call."
+                ))
+            print(f"Ready to pay for API call {path} on node {self.name} with Payment Auth Token {payment_auth_token}")
+
         if api_call.message.node_uid != self.id and check_call_location:
             return self.forward_message(api_call=api_call)
 
@@ -1238,7 +1266,6 @@ class Node(AbstractNode):
         is_blocking = api_call.message.blocking
 
         if is_blocking or self.is_subprocess:
-            credentials: SyftVerifyKey = api_call.credentials
             api_call = api_call.message
 
             role = self.get_role_for_credentials(credentials=credentials)

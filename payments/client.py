@@ -1,143 +1,192 @@
 import pandas as pd
+import os 
 
 import syft as sy
 from syft import autocache
 
+DATA_SCIENTIST_EMAIL = "jane@caltech.edu" 
+DATA_SCIENTIST_PASSWORD = "abc123"
+
 # notebooks/api/0.8/00-load-data.ipynb  
 # Uploading a private dataset as a Data Owner
-def upload_data_to_node(domain_client):   
-  country = sy.DataSubject(name="Country", aliases=["country_code"])
-  canada = sy.DataSubject(name="Canada", aliases=["country_code:ca"])
-  country.add_member(canada)
-  response = domain_client.data_subject_registry.add_data_subject(country)
-  print(response)
-  data_subjects = domain_client.data_subject_registry.get_all()
-  print(data_subjects)
+def data_owner_uploads_data_to_node(data_owner):   
+    country = sy.DataSubject(name="Country", aliases=["country_code"])
+    canada = sy.DataSubject(name="Canada", aliases=["country_code:ca"])
+    country.add_member(canada)
+    response = data_owner.data_subject_registry.add_data_subject(country)
+    print(response)
+    data_subjects = data_owner.data_subject_registry.get_all()
+    print(data_subjects)
 
-  dataset = sy.Dataset(name="Canada Trade Value")
-  dataset.set_description("Canada Trade Data")
+    dataset = sy.Dataset(name="Canada Trade Value")
+    dataset.set_description("Canada Trade Data")
 
-  canada_dataset_url = "https://github.com/OpenMined/datasets/blob/main/trade_flow/ca%20-%20feb%202021.csv?raw=True"
-  df = pd.read_csv(autocache(canada_dataset_url))
-  ca_data = df[0:10]
-  mock_ca_data = df[10:20]
+    canada_dataset_url = "https://github.com/OpenMined/datasets/blob/main/trade_flow/ca%20-%20feb%202021.csv?raw=True"
+    df = pd.read_csv(autocache(canada_dataset_url))
+    ca_data = df[0:10]
+    mock_ca_data = df[10:20]
 
-  ctf = sy.Asset(name="canada_trade_flow")
-  ctf.set_description(
-      "Canada trade flow represents export & import of different commodities to other countries"
-  )
-  ctf.set_obj(ca_data)
-  ctf.set_shape(ca_data.shape)
-  ctf.add_data_subject(canada)
-  ctf.set_mock(mock_ca_data, mock_is_real=False)
-  
-  dataset.add_asset(ctf)
+    ctf = sy.Asset(name="canada_trade_flow")
+    ctf.set_description(
+        "Canada trade flow represents export & import of different commodities to other countries"
+    )
+    ctf.set_obj(ca_data)
+    ctf.set_shape(ca_data.shape)
+    ctf.add_data_subject(canada)
+    ctf.set_mock(mock_ca_data, mock_is_real=False)
+    
+    dataset.add_asset(ctf)
 
-  upload_res = domain_client.upload_dataset(dataset)
-  print(upload_res)
-  datasets = domain_client.datasets.get_all()
-  print(datasets)
+    upload_res = data_owner.upload_dataset(dataset)
+    print(upload_res)
+    datasets = data_owner.datasets.get_all()
+    print(datasets)
 
-  mock = domain_client.datasets[0].assets[0].mock
-  print(mock)
-  real = domain_client.datasets[0].assets[0].data
-  print(real)
+    mock = data_owner.datasets[0].assets[0].mock
+    print(mock)
+    real = data_owner.datasets[0].assets[0].data
+    print(real)
 
-  # domain_client.settings.allow_guest_signup(enable=True)
-  domain_client.register(
-    name="Jane Doe",
-    email="jane@caltech.edu",
-    password="abc123",
-    password_verify="abc123",
-    institution="Caltech",
-    website="https://www.caltech.edu/",
-  )
+    # register a data scientist
+    # domain_client.settings.allow_guest_signup(enable=True)
+    data_owner.register(
+        name="Jane Doe",
+        email=DATA_SCIENTIST_EMAIL,
+        password=DATA_SCIENTIST_PASSWORD,
+        password_verify=DATA_SCIENTIST_PASSWORD,
+        institution="Caltech",
+        website="https://www.caltech.edu/",
+    )
 
 # notebooks/api/0.8/01-submit-code.ipynb
 # Submitting code to run analysis on the private dataset as a Data Scientist
-def submit_code(domain_client):
-  jane_client = domain_client.login(email="jane@caltech.edu", password="abc123")
+def data_scientist_requests_code_execution(domain_client):
+    data_scientist = domain_client.login(
+        email=DATA_SCIENTIST_EMAIL, 
+        password=DATA_SCIENTIST_PASSWORD,
+    )
 
-  results = jane_client.datasets.get_all()
-  dataset = results[0]
-  asset = dataset.assets[0]
-  mock = asset.mock
-  print(asset.data) # cannot access the private data
+    data_scientist.me.set_payment_auth_token(os.environ.get('DATA_SCIENTIST_AUTH_TOKEN'))
 
-  print(mock["Trade Value (US$)"].sum())
+    results = data_scientist.datasets.get_all()
+    dataset = results[0]
+    asset = dataset.assets[0]
+    mock = asset.mock
+    print(asset.data) # cannot access the private data
 
-  # We wrap our compute function with this decorator to make the function run exactly on the `asset` dataset
-  @sy.syft_function_single_use(trade_data=asset)
-  def sum_trade_value_mil(trade_data):
-      # third party
-      import opendp.prelude as dp
+    print(mock["Trade Value (US$)"].sum())
 
-      dp.enable_features("contrib")
+    # We wrap our compute function with this decorator to make the function run exactly on the `asset` dataset
+    # This converts the function into a SubmitUserCode object 
+    @sy.syft_function_single_use(trade_data=asset)
+    def sum_trade_value_mil(trade_data):
+        # third party
+        import opendp.prelude as dp
 
-      aggregate = 0.0
-      base_lap = dp.m.make_base_laplace(
-          dp.atom_domain(T=float),
-          dp.absolute_distance(T=float),
-          scale=5.0,
-      )
-      noise = base_lap(aggregate)
+        dp.enable_features("contrib")
 
-      df = trade_data
-      total = df["Trade Value (US$)"].sum()
-      return (float(total / 1_000_000), float(noise))
+        aggregate = 0.0
+        base_lap = dp.m.make_base_laplace(
+            dp.atom_domain(T=float),
+            dp.absolute_distance(T=float),
+            scale=5.0,
+        )
+        noise = base_lap(aggregate)
 
-  #####################
-  # TODO: confirm: 
-  # Validate code against the mock data, on a mock server, 
-  # before submitting it to the Domain Server
-  #####################
+        df = trade_data
+        total = df["Trade Value (US$)"].sum()
+        return (float(total / 1_000_000), float(noise))
 
-  # pointer = sum_trade_value_mil(trade_data=asset)
-  # result = pointer.get()
-  # print(result[0])
+    #####################
+    # TODO: confirm this interpretation of the following code: 
+    # Validate code against the mock data, on a mock server, 
+    # before submitting it to the Domain Server
+    #####################
 
-  # print(sum_trade_value_mil.code) 
+    pointer = sum_trade_value_mil(trade_data=asset)
+    result = pointer.get()
+    print(result[0])
 
-  #####################
-  # Submit code to the Domain Server
-  #####################
+    print(sum_trade_value_mil.code) 
 
-  new_project = sy.Project(
-      name="My Cool UN Project",
-      description="Hi, I want to calculate the trade volume in million's with my cool code.",
-      members=[jane_client],
-  )
-  print(new_project)
+    #####################
+    # Submit code to the Domain Server
+    #####################
 
-  # this parses the code on the node, converts to byte-code, and sends a notification: 
-  result = new_project.create_code_request(sum_trade_value_mil, jane_client)
-  print(result)
+    new_project = sy.Project(
+        name="My Cool UN Project",
+        description="Hi, I want to calculate the trade volume in million's with my cool code.",
+        members=[data_scientist],
+    )
+    print(new_project)
 
-  # Not clear what this line does: 
-  project = new_project.send()
-  print(project)
+    # on the node, parse the code, convert to byte-code, send a notification, 
+    # on the client, create the RemoteUserCodeFunction: jane_client.code.sum_trade_value_mil
+    result = new_project.create_code_request(sum_trade_value_mil, data_scientist)
+    print(result)
 
-  #####################
-  # Running the Syft Function on the Domain Server
-  #####################
+    # Not clear what this line does: 
+    project = new_project.send()
+    print(project)
 
-  # this attempt to execute the code on the server will fail 
-  # ... as the code is not approved yet by the data owner: 
-  result = jane_client.code.sum_trade_value_mil(trade_data=asset) 
-  print(result)
+# notebooks/api/0.8/02-review-code-and-approve.ipynb
+# review and run code as data owner 
+def data_owner_reviews_and_runs_code(data_owner):
+    # review data scientist's code
+    # While Syft makes sure that the function is not tampered with, 
+    # it does not perform any validation on the implementation itself.
+    # It is the Data Owner's responsibility to review the code & verify if it's safe to execute.
+    project = data_owner.projects[0]
+    request = project.requests[0]
+    func = request.code
+    print(func)
+
+    # review data that the code will run on
+    asset = func.assets[0]
+    pvt_data = asset.data
+    print(pvt_data)
+
+    # execute the data scientist's code 
+    users_function = func.unsafe_function
+    real_result = users_function(trade_data=pvt_data)
+
+    # share result with data scientist 
+    # request object also has “approve” (which is called by “accept_by_depositing_result") and “approve_with_client”
+    result = request.accept_by_depositing_result(real_result, force=True)
+    print(result)
+
+# notebooks/api/0.8/03-data-scientist-download-result.ipynb
+# Data Scientist downloads the result
+def data_scientist_downloads_result(domain_client):
+    data_scientist = domain_client.login(
+        email=DATA_SCIENTIST_EMAIL, 
+        password=DATA_SCIENTIST_PASSWORD, 
+    )
+
+    asset = data_scientist.datasets[0].assets[0]
+
+    # this attempt to execute the code on the server will succeed 
+    # ... as the code is approved by the data owner: 
+    result_pointer = data_scientist.code.sum_trade_value_mil(trade_data=asset)
+    real_result = result_pointer.get()
+    print(real_result)
 
 def main(): 
-  sy.requires(">=0.8.6,<0.8.7")
-  
-  domain_client = sy.login(
-    port=8080,
-    email="info@openmined.org",
-    password="changethis"
-  )
+    sy.requires(">=0.8.6,<0.8.7")
+    
+    # Log into the node with default root credentials
+    domain_client = sy.login(
+        port=8080,
+        email="info@openmined.org",
+        password="changethis",
+    )
 
-  upload_data_to_node(domain_client)
-  
-  submit_code(domain_client)
+    domain_client.me.set_payment_auth_token(os.environ.get('DATA_OWNER_AUTH_TOKEN'))
+
+    data_owner_uploads_data_to_node(domain_client)
+    data_scientist_requests_code_execution(domain_client)
+    data_owner_reviews_and_runs_code(domain_client)
+    data_scientist_downloads_result(domain_client)
 
 if __name__ == '__main__':
-  main()
+    main()
