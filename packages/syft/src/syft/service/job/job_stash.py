@@ -780,7 +780,6 @@ def downgrade_job() -> list[Callable]:
     return [drop("requested_by")]
 
 
-@serializable()
 class JobInfo(SyftObject):
     __canonical_name__ = "JobInfo"
     __version__ = SYFT_OBJECT_VERSION_2
