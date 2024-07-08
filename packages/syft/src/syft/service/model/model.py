@@ -162,7 +162,6 @@ class Model(SyftObject):
     id: UID
     name: str
     asset_list: list[Any] = []
-    model_code: str
     contributors: set[Contributor] = set()
     citation: str | None = None
     url: str | None = None
