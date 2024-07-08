@@ -15,6 +15,7 @@ from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.dict_document_store import DictStoreConfig
 from ...store.document_store import BasePartitionSettings
+from ...store.document_store import DocumentStore
 from ...store.document_store import StoreConfig
 from ...types.syft_object import SyftObject
 from ...types.twin_object import TwinObject
@@ -53,6 +54,7 @@ class KeyValueActionStore(ActionStore):
         node_uid: UID,
         store_config: StoreConfig,
         root_verify_key: SyftVerifyKey | None = None,
+        document_store: DocumentStore | None = None,
     ) -> None:
         self.node_uid = node_uid
         self.store_config = store_config
@@ -70,6 +72,13 @@ class KeyValueActionStore(ActionStore):
         if root_verify_key is None:
             root_verify_key = SyftSigningKey.generate().verify_key
         self.root_verify_key = root_verify_key
+
+        self.__user_stash = None
+        if document_store is not None:
+            # relative
+            from ...service.user.user_stash import UserStash
+
+            self.__user_stash = UserStash(store=document_store)
 
     def get(
         self, uid: UID, credentials: SyftVerifyKey, has_permission: bool = False
@@ -234,6 +243,22 @@ class KeyValueActionStore(ActionStore):
         ):
             return True
 
+        if self.__user_stash is not None:
+            # relative
+            from ...service.user.user_roles import ServiceRole
+
+            res = self.__user_stash.get_by_verify_key(
+                credentials=permission.credentials,
+                verify_key=permission.credentials,
+            )
+
+            if (
+                res.is_ok()
+                and (user := res.ok()) is not None
+                and user.role in (ServiceRole.DATA_OWNER, ServiceRole.ADMIN)
+            ):
+                return True
+
         if (
             permission.uid in self.permissions
             and permission.permission_string in self.permissions[permission.uid]
@@ -362,12 +387,14 @@ class DictActionStore(KeyValueActionStore):
         node_uid: UID,
         store_config: StoreConfig | None = None,
         root_verify_key: SyftVerifyKey | None = None,
+        document_store: DocumentStore | None = None,
     ) -> None:
         store_config = store_config if store_config is not None else DictStoreConfig()
         super().__init__(
             node_uid=node_uid,
             store_config=store_config,
             root_verify_key=root_verify_key,
+            document_store=document_store,
         )
 
 
