@@ -10,6 +10,7 @@ import pytest
 # syft absolute
 import syft as sy
 from syft.client.domain_client import DomainClient
+from syft.service.action.action_data_empty import ActionDataEmpty
 from syft.service.action.action_object import ActionObject
 from syft.service.request.request import Request
 from syft.service.request.request import UserCodeStatusChange
@@ -348,7 +349,7 @@ def test_mock_no_arguments(worker) -> None:
     users[-1].allow_mock_execution()
     result = ds_client.api.services.code.compute_sum()
     assert result, result
-    assert result.get() == 1
+    assert result == 1
 
     # approved, no mock execution
     users[-1].allow_mock_execution(allow=False)
@@ -360,7 +361,8 @@ def test_mock_no_arguments(worker) -> None:
 
     result = ds_client.api.services.code.compute_sum()
     assert result, result
-    assert result.get() == 1
+    assert not isinstance(result.syft_action_data_cache, ActionDataEmpty)
+    assert result == 1
 
 
 def test_submit_invalid_name(worker) -> None:
