@@ -496,7 +496,6 @@ class MigrationService(AbstractService):
         if objects_update_update_result.is_err():
             return SyftError(message=objects_update_update_result.value)
 
-        # now action objects
         migration_actionobjects_result = self._get_migration_actionobjects(context)
 
         if migration_actionobjects_result.is_err():
@@ -536,6 +535,9 @@ class MigrationService(AbstractService):
         # Track all object types from action store
         action_object_types = [Action, ActionObject]
         action_object_types.extend(ActionObject.__subclasses__())
+        klass_by_canonical_name = {
+            klass.__canonical_name__: klass for klass in action_object_types
+        }
 
         action_object_pending_migration = self._find_klasses_pending_for_migration(
             context=context, object_types=action_object_types
@@ -551,7 +553,11 @@ class MigrationService(AbstractService):
 
         for obj in action_store_objects:
             if get_all or type(obj) in action_object_pending_migration:
-                result_dict[type(obj)].append(obj)
+                klass = klass_by_canonical_name.get(
+                    obj.__canonical_name__,
+                    type(obj),
+                )
+                result_dict[klass].append(obj)
         return Ok(dict(result_dict))
 
     @service_method(
