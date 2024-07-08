@@ -95,8 +95,7 @@ def test_queue_stash_set_get(root_verify_key, queue: Any) -> None:
         cnt -= 1
         assert len(queue) == cnt
         item = queue.find_one(root_verify_key, id=obj.id)
-        assert item.is_ok()
-        assert item.ok() is None
+        assert item.is_err()
 
 
 @pytest.mark.parametrize(

@@ -144,6 +144,7 @@ class QueueStash(NewBaseStash):
 
     as_result(StashException)
 
+    @as_result(StashException)
     def pop(self, credentials: SyftVerifyKey, uid: UID) -> QueueItem | None:
         try:
             item = self.get_by_uid(credentials=credentials, uid=uid).unwrap()
@@ -151,7 +152,7 @@ class QueueStash(NewBaseStash):
             # TODO: Handle NotfoundException in code?
             return None
 
-        self.delete_by_uid(credentials=credentials, uid=uid)
+        self.delete_by_uid(credentials=credentials, uid=uid).unwrap()
         return item
 
     @as_result(StashException)

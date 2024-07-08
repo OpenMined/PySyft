@@ -6,9 +6,8 @@ from unittest import mock
 
 # third party
 from faker import Faker
-from pytest import MonkeyPatch
 import pytest
-from result import Err
+from pytest import MonkeyPatch
 from result import Ok
 
 # syft absolute
@@ -17,17 +16,20 @@ from syft.abstract_node import NodeSideType
 from syft.node.credentials import SyftSigningKey
 from syft.node.credentials import SyftVerifyKey
 from syft.service.context import AuthedServiceContext
-from syft.types.errors import SyftException
-from syft.service.user.errors import UserPermissionError
-from syft.store.document_store_errors import NotFoundException, StashException
 from syft.service.response import SyftSuccess
-from syft.types.result import as_result
 from syft.service.settings.settings import NodeSettings
 from syft.service.settings.settings import NodeSettingsUpdate
 from syft.service.settings.settings_service import SettingsService
 from syft.service.settings.settings_stash import SettingsStash
-from syft.service.user.user import UserCreate, UserPrivateKey, UserView
+from syft.service.user.errors import UserPermissionError
+from syft.service.user.user import UserCreate
+from syft.service.user.user import UserPrivateKey
+from syft.service.user.user import UserView
 from syft.service.user.user_roles import ServiceRole
+from syft.store.document_store_errors import NotFoundException
+from syft.store.document_store_errors import StashException
+from syft.types.errors import SyftException
+from syft.types.result import as_result
 
 
 def test_settingsservice_get_success(
@@ -283,7 +285,9 @@ def test_settings_allow_guest_registration(
             )
 
         assert exc.type == UserPermissionError
-        assert exc.value.public_message == "You are not permitted to perform this action."
+        assert (
+            exc.value.public_message == "You are not permitted to perform this action."
+        )
         assert any(user.email == email1 for user in root_domain_client.users)
 
     # only after the root client enable other users to signup, they can
@@ -378,7 +382,9 @@ def test_settings_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker)
             )
 
         assert exc.type == UserPermissionError
-        assert exc.value.public_message == "You are not permitted to perform this action."
+        assert (
+            exc.value.public_message == "You are not permitted to perform this action."
+        )
 
         users_created_count = sum(
             [u.email in emails_added for u in root_client.users.get_all()]

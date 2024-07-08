@@ -52,6 +52,8 @@ class BasePartitionSettings(SyftBaseModel):
 
 
 T = TypeVar("T")
+
+
 def new_first_or_none(result: list[T]) -> T | None:
     if hasattr(result, "__len__") and len(result) > 0:
         return result[0]
@@ -1011,7 +1013,7 @@ class NewBaseStash:
     def find_and_delete(
         self, credentials: SyftVerifyKey, **kwargs: dict[str, Any]
     ) -> Literal[True]:
-        obj = self.query_one_kwargs(credentials=credentials, **kwargs)
+        obj = self.query_one_kwargs(credentials=credentials, **kwargs).unwrap()
         qk = self.partition.store_query_key(obj)
         return self.delete(credentials=credentials, qk=qk).unwrap()
 
@@ -1058,9 +1060,13 @@ class NewBaseStash:
 @instrument
 class NewBaseUIDStoreStash(NewBaseStash):
     @as_result(StashException)
-    def delete_by_uid(self, credentials: SyftVerifyKey, uid: UID, has_permission: bool = False) -> UID:
+    def delete_by_uid(
+        self, credentials: SyftVerifyKey, uid: UID, has_permission: bool = False
+    ) -> UID:
         qk = UIDPartitionKey.with_obj(uid)
-        super().delete(credentials=credentials, qk=qk, has_permission=has_permission).unwrap()
+        super().delete(
+            credentials=credentials, qk=qk, has_permission=has_permission
+        ).unwrap()
         return uid
 
     @as_result(StashException, NotFoundException)
