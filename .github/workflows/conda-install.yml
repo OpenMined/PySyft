@@ -3,12 +3,6 @@ name: Conda Install - PySyft
 on:
   workflow_call:
 
-  pull_request:
-    branches:
-      - dev
-      - main
-      - "0.8"
-
   workflow_dispatch:
     inputs:
       none:
