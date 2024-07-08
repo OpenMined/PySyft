@@ -26,6 +26,8 @@ from typing import cast
 from typing import final
 
 # third party
+from IPython.display import HTML
+from IPython.display import Markdown
 from IPython.display import display
 from pydantic import ValidationError
 from pydantic import field_validator
@@ -71,6 +73,7 @@ from ...util.colors import SURFACE
 from ...util.decorators import deprecated
 from ...util.markdown import CodeMarkdown
 from ...util.markdown import as_markdown_code
+from ...util.notebook_ui.styles import FONT_CSS
 from ...util.util import prompt_warning_message
 from ..action.action_endpoint import CustomEndpointActionObject
 from ..action.action_object import Action
@@ -97,6 +100,7 @@ from ..policy.policy import load_policy_code
 from ..policy.policy import partition_by_node
 from ..policy.policy_service import PolicyService
 from ..response import SyftError
+from ..response import SyftException
 from ..response import SyftInfo
 from ..response import SyftNotReady
 from ..response import SyftSuccess
@@ -104,9 +108,10 @@ from ..response import SyftWarning
 from ..service import ServiceConfigRegistry
 from ..user.user import UserView
 from ..user.user_roles import ServiceRole
-from .code_parse import GlobalsVisitor
 from .code_parse import LaunchJobVisitor
 from .unparse import unparse
+from .utils import check_for_global_vars
+from .utils import parse_code
 from .utils import submit_subjobs_code
 
 if TYPE_CHECKING:
@@ -915,6 +920,62 @@ class UserCode(SyncableSyftObject):
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         return as_markdown_code(self._inner_repr())
 
+    def _ipython_display_(self, level: int = 0) -> None:
+        tabs = "&emsp;" * level
+        shared_with_line = ""
+        if len(self.output_readers) > 0 and self.output_reader_names is not None:
+            owners_string = " and ".join([f"*{x}*" for x in self.output_reader_names])
+            shared_with_line += (
+                f"<p>{tabs}Custom Policy: "
+                f"outputs are *shared* with the owners of {owners_string} once computed</p>"
+            )
+        constants_str = ""
+        args = [
+            x
+            for _dict in self.input_policy_init_kwargs.values()  # type: ignore
+            for x in _dict.values()
+        ]
+        constants = [x for x in args if isinstance(x, Constant)]
+        constants_str = "\n&emsp;".join([f"{x.kw}: {x.val}" for x in constants])
+        # indent all lines except the first one
+        asset_str = "<br>".join(
+            [f"&emsp;&emsp;{line}" for line in self._asset_json.split("\n")]
+        ).lstrip()
+
+        repr_str = f"""
+    <style>
+    {FONT_CSS}
+    .syft-code {{color: {SURFACE[options.color_theme]};}}
+    .syft-code h3,
+    .syft-code p {{font-family: 'Open Sans'}}
+    </style>
+    <div class="syft-code">
+    <h3>{tabs}UserCode</h3>
+    <p>{tabs}<strong>id:</strong> UID = {self.id}</p>
+    <p>{tabs}<strong>service_func_name:</strong> str = {self.service_func_name}</p>
+    <p>{tabs}<strong>shareholders:</strong> list = {self.input_owners}</p>
+    <p>{tabs}<strong>status:</strong> list = {self.code_status}</p>
+    {tabs}{constants_str}
+    {tabs}{shared_with_line}
+    <p>{tabs}<strong>assets:</strong> dict = {asset_str}</p>
+    <p>{tabs}<strong>code:</strong></p>
+    </div>
+    """
+        md = "\n".join(
+            [f"{'  '*level}{substring}" for substring in self.raw_code.split("\n")[:-1]]
+        )
+        display(HTML(repr_str), Markdown(as_markdown_code(md)))
+        if self.nested_codes is not None and self.nested_codes != {}:
+            nested_line_html = f"""
+    <div class="syft-code">
+    <p>{tabs}<strong>Nested Requests:</p>
+    </div>
+    """
+            display(HTML(nested_line_html))
+            for obj, _ in self.nested_codes.values():
+                code = obj.resolve
+                code._ipython_display_(level=level + 1)
+
     @property
     def show_code(self) -> CodeMarkdown:
         return CodeMarkdown(self.raw_code)
@@ -1038,13 +1099,6 @@ class SubmitUserCode(SyftObject):
     def local_call(self, *args: Any, **kwargs: Any) -> Any:
         # only run this on the client side
         if self.local_function:
-            source = dedent(inspect.getsource(self.local_function))
-            tree = ast.parse(source)
-
-            # check there are no globals
-            v = GlobalsVisitor()
-            v.visit(tree)
-
             # filtered_args = []
             filtered_kwargs = {}
             # for arg in args:
@@ -1256,14 +1310,24 @@ def syft_function(
     else:
         output_policy_type = type(output_policy)
 
-    def decorator(f: Any) -> SubmitUserCode:
+    def decorator(f: Any) -> SubmitUserCode | SyftError:
         try:
             code = dedent(inspect.getsource(f))
+
             if name is not None:
                 fname = name
                 code = replace_func_name(code, fname)
             else:
                 fname = f.__name__
+
+            input_kwargs = f.__code__.co_varnames[: f.__code__.co_argcount]
+
+            parse_user_code(
+                raw_code=code,
+                func_name=fname,
+                original_func_name=f.__name__,
+                function_input_kwargs=input_kwargs,
+            )
 
             res = SubmitUserCode(
                 code=code,
@@ -1274,7 +1338,7 @@ def syft_function(
                 output_policy_type=output_policy_type,
                 output_policy_init_kwargs=getattr(output_policy, "init_kwargs", {}),
                 local_function=f,
-                input_kwargs=f.__code__.co_varnames[: f.__code__.co_argcount],
+                input_kwargs=input_kwargs,
                 worker_pool_name=worker_pool_name,
             )
 
@@ -1284,6 +1348,11 @@ def syft_function(
             for error in errors:
                 msg += f"\t{error['msg']}\n"
             err = SyftError(message=msg)
+            display(err)
+            return err
+
+        except SyftException as se:
+            err = SyftError(message=f"Error when parsing the code: {se}")
             display(err)
             return err
 
@@ -1318,26 +1387,23 @@ def generate_unique_func_name(context: TransformContext) -> TransformContext:
     return context
 
 
-def process_code(
-    context: TransformContext,
+def parse_user_code(
     raw_code: str,
     func_name: str,
     original_func_name: str,
-    policy_input_kwargs: list[str],
     function_input_kwargs: list[str],
 ) -> str:
-    tree = ast.parse(raw_code)
+    # parse the code, check for syntax errors and if there are global variables
+    try:
+        tree: ast.Module = parse_code(raw_code=raw_code)
+        check_for_global_vars(code_tree=tree)
+    except SyftException as e:
+        raise SyftException(f"{e}")
 
-    # check there are no globals
-    v = GlobalsVisitor()
-    v.visit(tree)
-
-    f = tree.body[0]
+    f: ast.stmt = tree.body[0]
     f.decorator_list = []
 
     call_args = function_input_kwargs
-    if "domain" in function_input_kwargs and context.output is not None:
-        context.output["uses_domain"] = True
     call_stmt_keywords = [ast.keyword(arg=i, value=[ast.Name(id=i)]) for i in call_args]
     call_stmt = ast.Assign(
         targets=[ast.Name(id="result")],
@@ -1360,6 +1426,25 @@ def process_code(
     )
 
     return unparse(wrapper_function)
+
+
+def process_code(
+    context: TransformContext,
+    raw_code: str,
+    func_name: str,
+    original_func_name: str,
+    policy_input_kwargs: list[str],
+    function_input_kwargs: list[str],
+) -> str:
+    if "domain" in function_input_kwargs and context.output is not None:
+        context.output["uses_domain"] = True
+
+    return parse_user_code(
+        raw_code=raw_code,
+        func_name=func_name,
+        original_func_name=original_func_name,
+        function_input_kwargs=function_input_kwargs,
+    )
 
 
 def new_check_code(context: TransformContext) -> TransformContext:

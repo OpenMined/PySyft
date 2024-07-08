@@ -16,7 +16,7 @@
       "NodeMetadata": {
         "5": {
           "version": 5,
-          "hash": "70197b4725dbdea0560ed8388e4d20b76808bee988f3630c5f916ee8f48761f8",
+          "hash": "f3927d167073a4db369a07e3bbbf756075bbb29e9addec324b8cd2c3597b75a1",
           "action": "add"
         }
       },
@@ -414,6 +414,90 @@
         "4": {
           "version": 4,
           "hash": "f475543ed5e0066ca09c0dfd8c903e276d4974519e9958473d8141f8d446c881",
+          "action": "add"
+        }
+      },
+      "SyftWorker": {
+        "3": {
+          "version": 3,
+          "hash": "e124f56ddf4565df2be056553eecd15de7c80bd5f5fd0d06e8ff7815bb05563a",
+          "action": "add"
+        }
+      },
+      "EmptyInputPolicy": {
+        "2": {
+          "version": 2,
+          "hash": "3117e16cbe4dbc344ab90fbbd36ba90dfb518e66f0fb07644bbe7864dcdeb309",
+          "action": "add"
+        }
+      },
+      "ActionObject": {
+        "4": {
+          "version": 4,
+          "hash": "a4dd2949af0f516d0f640d28e0fdfa026ba8d55bb29eaa7844c926e467606892",
+          "action": "add"
+        }
+      },
+      "AnyActionObject": {
+        "4": {
+          "version": 4,
+          "hash": "809bd7ffab211133a9be87e058facecf870a79cb2d4027616f5244323de27091",
+          "action": "add"
+        }
+      },
+      "BlobFileOBject": {
+        "3": {
+          "version": 3,
+          "hash": "27901fcd545ad0607dbfcbfa0141ee03b0f0f4bee8d23f2d661a4b22011bfd37",
+          "action": "add"
+        }
+      },
+      "NumpyArrayObject": {
+        "4": {
+          "version": 4,
+          "hash": "19e2ff3da78038d2164f86d1f9b0d1facc6008483be60d2852458e90202bb96b",
+          "action": "add"
+        }
+      },
+      "NumpyScalarObject": {
+        "4": {
+          "version": 4,
+          "hash": "5101d00dd92ac4391cae77629eb48aa25401cc8c5ebb28a8a969cd5eba35fb67",
+          "action": "add"
+        }
+      },
+      "NumpyBoolObject": {
+        "4": {
+          "version": 4,
+          "hash": "764cd93792c4dfe27b8952fde853626592fe58e1a341b5350b23f38ce474583f",
+          "action": "add"
+        }
+      },
+      "PandasDataframeObject": {
+        "4": {
+          "version": 4,
+          "hash": "b70f4bb32ba9f3f5ea89552649bf882d927cf9085fb573cc6d4841b32d653f84",
+          "action": "add"
+        }
+      },
+      "PandasSeriesObject": {
+        "4": {
+          "version": 4,
+          "hash": "6b0eb1f4dd80b729b713953bacaf9c0ea436a4d4eeb2dc0efbd8bff654d91f86",
+          "action": "add"
+        }
+      },
+      "Dataset": {
+        "3": {
+          "version": 3,
+          "hash": "12a24de2ec144fe54eb873767131abed362827e08cd47a5c4d128acee2f2db91",
+          "action": "add"
+        }
+      },
+      "CreateDataset": {
+        "3": {
+          "version": 3,
+          "hash": "c96a925ab43440b9c39ab5eb28d7fc4a4c8bf7934474b7c432dc7b12067c7766",
           "action": "add"
         }
       }

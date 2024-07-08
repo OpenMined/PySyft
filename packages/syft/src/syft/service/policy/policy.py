@@ -835,6 +835,7 @@ class UserInputPolicy(InputPolicy):
     pass
 
 
+@serializable()
 class EmpyInputPolicy(InputPolicy):
     __canonical_name__ = "EmptyInputPolicy"
     pass
