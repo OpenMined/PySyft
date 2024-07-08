@@ -6,12 +6,12 @@ NODE_NAME=""
 NODE_SIDE_TYPE="high" # Default value for NODE_SIDE_TYPE
 NODE_TYPE=""
 PORT=""
-DEFAULT_ROOT_EMAIL="info@openmined.org"
-DEFAULT_ROOT_PASSWORD="changethis"
+DEFAULT_ROOT_EMAIL=""
+DEFAULT_ROOT_PASSWORD=""
 
 # Function to display usage
 usage() {
-    echo "Usage: $0 -v|--version <version> -n|--name <node_name> -t|--type <node_type> -p|--port <port> [-s|--side <node_side_type>] [-email|--root-email <default_root_email>] [--password|--root-password <default_root_password>]"
+    echo "Usage: $0 -v|--version <version> -n|--name <node_name> -t|--type <node_type> -p|--port <port> [-s|--side <node_side_type>] [--root-email <default_root_email>] [--root-password <default_root_password>]"
     exit 1
 }
 
@@ -58,11 +58,11 @@ while [[ "$#" -gt 0 ]]; do
             PORT="$2"
             shift 2
             ;;
-        -email|--root-email)
+        --root-email)
             DEFAULT_ROOT_EMAIL="$2"
             shift 2
             ;;
-        -password|--root-password)
+        --root-password)
             DEFAULT_ROOT_PASSWORD="$2"
             shift 2
             ;;
@@ -80,7 +80,6 @@ echo "NODE_TYPE: $NODE_TYPE"
 echo "PORT: $PORT"
 echo "DEFAULT_ROOT_EMAIL: $DEFAULT_ROOT_EMAIL"
 echo "DEFAULT_ROOT_PASSWORD: $DEFAULT_ROOT_PASSWORD"
-
 
 # Check if all required options are set
 if [[ -z "$VERSION" || -z "$NODE_NAME" || -z "$NODE_TYPE" || -z "$PORT" ]]; then
@@ -100,27 +99,31 @@ if is_port_occupied "$PORT"; then
     exit 1
 fi
 
-# Build the Docker run command
-DOCKER_RUN_CMD="docker run --rm -d \
+# Run the Podman command with the specified environment variables in detached mode
+PODMAN_RUN_CMD="podman run --rm -d \
     --name \"$NODE_NAME\" \
     -e VERSION=\"$VERSION\" \
     -e NODE_NAME=\"$NODE_NAME\" \
     -e NODE_SIDE_TYPE=\"$NODE_SIDE_TYPE\" \
     -e NODE_TYPE=\"$NODE_TYPE\" \
     -e PORT=\"$PORT\" \
+    -e SINGLE_CONTAINER_MODE=true \
     -p \"$PORT:$PORT\""
 
 # Add optional environment variables if provided
 if [[ -n "$DEFAULT_ROOT_EMAIL" ]]; then
-    DOCKER_RUN_CMD="$DOCKER_RUN_CMD -e DEFAULT_ROOT_EMAIL=\"$DEFAULT_ROOT_EMAIL\""
+    PODMAN_RUN_CMD="$PODMAN_RUN_CMD -e DEFAULT_ROOT_EMAIL=\"$DEFAULT_ROOT_EMAIL\""
 fi
 
 if [[ -n "$DEFAULT_ROOT_PASSWORD" ]]; then
-    DOCKER_RUN_CMD="$DOCKER_RUN_CMD -e DEFAULT_ROOT_PASSWORD=\"$DEFAULT_ROOT_PASSWORD\""
+    PODMAN_RUN_CMD="$PODMAN_RUN_CMD -e DEFAULT_ROOT_PASSWORD=\"$DEFAULT_ROOT_PASSWORD\""
 fi
 
-# Add the Docker image
-DOCKER_RUN_CMD="$DOCKER_RUN_CMD \"openmined/grid-backend:$VERSION\""
+# Add the Podman image with the registry
+PODMAN_RUN_CMD="$PODMAN_RUN_CMD docker.io/openmined/grid-backend:$VERSION"
 
-# Execute the Docker run command
-eval $DOCKER_RUN_CMD
+# Debug output to verify Podman run command
+echo "PODMAN_RUN_CMD: $PODMAN_RUN_CMD"
+
+# Execute the Podman run command
+eval $PODMAN_RUN_CMD
