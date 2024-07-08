@@ -2,6 +2,7 @@
 import importlib
 import logging
 from typing import Any
+from typing import cast
 
 # third party
 import numpy as np
@@ -859,13 +860,13 @@ class ActionService(AbstractService):
         obj: ActionObject | TwinObject = get_res.ok()
         return_msg = []
 
-        # delete object's blob storage entry
-        blob_del_res = self._delete_blob_entry(context=context, obj=obj)
+        # delete any associated blob storage entry object to the action object
+        blob_del_res = self._delete_blob_storage_entry(context=context, obj=obj)
         if isinstance(blob_del_res, SyftError):
             return SyftError(message=blob_del_res.message)
         return_msg.append(blob_del_res.message)
 
-        # delete the object from the action store
+        # delete the action object from the action store
         store_del_res = self._delete_from_action_store(context=context, obj=obj)
         if isinstance(store_del_res, SyftError):
             return SyftError(message=store_del_res.message)
@@ -873,20 +874,23 @@ class ActionService(AbstractService):
 
         return SyftSuccess(message="\n".join(return_msg))
 
-    def _delete_blob_entry(
+    def _delete_blob_storage_entry(
         self,
         context: AuthedServiceContext,
         obj: TwinObject | ActionObject,
     ) -> SyftSuccess | SyftError:
-        return_msg = []
-        blob_store_service = context.node.get_service("BlobStorageService")
+        deleted_blob_ids = []
+        blob_store_service = cast(
+            BlobStorageService, context.node.get_service(BlobStorageService)
+        )
+
         if isinstance(obj, ActionObject) and obj.syft_blob_storage_entry_id:
             blob_del_res = blob_store_service.delete(
                 context=context, uid=obj.syft_blob_storage_entry_id
             )
             if isinstance(blob_del_res, SyftError):
                 return SyftError(message=blob_del_res.message)
-            return_msg.append(blob_del_res.message)
+            deleted_blob_ids.append(obj.syft_blob_storage_entry_id)
         if isinstance(obj, TwinObject):
             if obj.private.syft_blob_storage_entry_id:
                 blob_del_res = blob_store_service.delete(
@@ -894,15 +898,18 @@ class ActionService(AbstractService):
                 )
                 if isinstance(blob_del_res, SyftError):
                     return SyftError(message=blob_del_res.message)
-                return_msg.append(blob_del_res.message)
+                deleted_blob_ids.append(obj.private.syft_blob_storage_entry_id)
             if obj.mock.syft_blob_storage_entry_id:
                 blob_del_res = blob_store_service.delete(
                     context=context, uid=obj.mock.syft_blob_storage_entry_id
                 )
                 if isinstance(blob_del_res, SyftError):
                     return SyftError(message=blob_del_res.message)
-                return_msg.append(blob_del_res.message)
-        return SyftSuccess(message="\n".join(return_msg))
+                deleted_blob_ids.append(obj.mock.syft_blob_storage_entry_id)
+
+        message = f"Deleted blob storage entries: {', '.join(str(blob_id) for blob_id in deleted_blob_ids)}"
+
+        return SyftSuccess(message=message)
 
     def _delete_from_action_store(
         self,

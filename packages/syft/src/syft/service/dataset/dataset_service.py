@@ -2,6 +2,7 @@
 from collections.abc import Collection
 from collections.abc import Sequence
 import logging
+from typing import cast
 
 # relative
 from ...serde.serializable import serializable
@@ -11,6 +12,7 @@ from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
+from ..action.action_service import ActionService
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -215,19 +217,21 @@ class DatasetService(AbstractService):
         # delete the dataset's assets
         return_msg = []
         for asset in dataset.asset_list:
-            action_service = context.node.get_service("ActionService")
+            action_service = cast(
+                ActionService, context.node.get_service(ActionService)
+            )
             del_res: SyftSuccess | SyftError = action_service.delete(
                 context=context, uid=asset.action_id
             )
             if isinstance(del_res, SyftError):
                 return del_res
             logger.info(del_res.message)
-            return_msg.append(f"Asset with id '{asset.id}' deleted.")
+            return_msg.append(f"Asset with id '{asset.id}' successfully deleted.")
         # delete the dataset object from the store
         result = self.stash.delete_by_uid(credentials=context.credentials, uid=uid)
         if result.is_err():
             return SyftError(message=result.err())
-        return_msg.append(f"Dataset with id '{uid}' deleted.")
+        return_msg.append(f"Dataset with id '{uid}' successfully deleted.")
         return SyftSuccess(message="\n".join(return_msg))
 
 
