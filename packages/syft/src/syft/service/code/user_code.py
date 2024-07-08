@@ -4,16 +4,16 @@ from __future__ import annotations
 # stdlib
 import ast
 from collections.abc import Callable
-from collections.abc import Generator
 from copy import deepcopy
 import datetime
 from enum import Enum
 import hashlib
 import inspect
 from io import StringIO
-import itertools
+import json
 import keyword
 import random
+import re
 import sys
 from textwrap import dedent
 from threading import Thread
@@ -26,6 +26,8 @@ from typing import cast
 from typing import final
 
 # third party
+from IPython.display import HTML
+from IPython.display import Markdown
 from IPython.display import display
 from pydantic import ValidationError
 from pydantic import field_validator
@@ -39,14 +41,18 @@ from ...abstract_node import NodeSideType
 from ...abstract_node import NodeType
 from ...client.api import APIRegistry
 from ...client.api import NodeIdentity
+from ...client.api import generate_remote_function
 from ...client.enclave_client import EnclaveMetadata
 from ...node.credentials import SyftVerifyKey
 from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
+from ...serde.signature import signature_remove_context
+from ...serde.signature import signature_remove_self
 from ...store.document_store import PartitionKey
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
+from ...types.dicttuple import DictTuple
 from ...types.syft_migration import migrate
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -64,17 +70,21 @@ from ...types.transforms import transform
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
+from ...util.decorators import deprecated
 from ...util.markdown import CodeMarkdown
 from ...util.markdown import as_markdown_code
+from ...util.notebook_ui.styles import FONT_CSS
 from ...util.util import prompt_warning_message
 from ..action.action_endpoint import CustomEndpointActionObject
 from ..action.action_object import Action
 from ..action.action_object import ActionObject
 from ..context import AuthedServiceContext
 from ..dataset.dataset import Asset
+from ..dataset.dataset import Dataset
 from ..job.job_stash import Job
 from ..output.output_service import ExecutionOutput
 from ..output.output_service import OutputService
+from ..policy.policy import Constant
 from ..policy.policy import CustomInputPolicy
 from ..policy.policy import CustomOutputPolicy
 from ..policy.policy import EmpyInputPolicy
@@ -90,6 +100,7 @@ from ..policy.policy import load_policy_code
 from ..policy.policy import partition_by_node
 from ..policy.policy_service import PolicyService
 from ..response import SyftError
+from ..response import SyftException
 from ..response import SyftInfo
 from ..response import SyftNotReady
 from ..response import SyftSuccess
@@ -97,9 +108,10 @@ from ..response import SyftWarning
 from ..service import ServiceConfigRegistry
 from ..user.user import UserView
 from ..user.user_roles import ServiceRole
-from .code_parse import GlobalsVisitor
 from .code_parse import LaunchJobVisitor
 from .unparse import unparse
+from .utils import check_for_global_vars
+from .utils import parse_code
 from .utils import submit_subjobs_code
 
 if TYPE_CHECKING:
@@ -265,6 +277,7 @@ class UserCodeStatusCollection(SyncableSyftObject):
         return [self.user_code_link.object_uid]
 
 
+@serializable()
 class UserCodeV4(SyncableSyftObject):
     # version
     __canonical_name__ = "UserCode"
@@ -320,7 +333,6 @@ class UserCode(SyncableSyftObject):
     signature: inspect.Signature
     status_link: LinkedObject | None = None
     input_kwargs: list[str]
-    enclave_metadata: EnclaveMetadata | None = None
     submit_time: DateTime | None = None
     # tracks if the code calls domain.something, variable is set during parsing
     uses_domain: bool = False
@@ -329,6 +341,7 @@ class UserCode(SyncableSyftObject):
     worker_pool_name: str | None = None
     origin_node_side_type: NodeSideType
     l0_deny_reason: str | None = None
+    _has_output_read_permissions_cache: bool | None = None
 
     __table_coll_widths__ = [
         "min-content",
@@ -437,9 +450,14 @@ class UserCode(SyncableSyftObject):
             if isinstance(api, SyftError):
                 return api
             node_identity = NodeIdentity.from_api(api)
-            is_approved = api.output.has_output_read_permissions(
-                self.id, self.user_verify_key
-            )
+
+            if self._has_output_read_permissions_cache is None:
+                is_approved = api.output.has_output_read_permissions(
+                    self.id, self.user_verify_key
+                )
+                self._has_output_read_permissions_cache = is_approved
+            else:
+                is_approved = self._has_output_read_permissions_cache
         else:
             # Serverside
             node_identity = NodeIdentity.from_node(context.node)
@@ -509,10 +527,6 @@ class UserCode(SyncableSyftObject):
         return status.ok()
 
     @property
-    def is_enclave_code(self) -> bool:
-        return self.enclave_metadata is not None
-
-    @property
     def input_owners(self) -> list[str] | None:
         if self.input_policy_init_kwargs is not None:
             return [str(x.node_name) for x in self.input_policy_init_kwargs.keys()]
@@ -554,15 +568,15 @@ class UserCode(SyncableSyftObject):
 
     @property
     def input_policy(self) -> InputPolicy | None:
-        if not self.status.approved:
-            return None
-        return self._get_input_policy()
+        if self.status.approved or self.input_policy_type.has_safe_serde:
+            return self._get_input_policy()
+        return None
 
     def get_input_policy(self, context: AuthedServiceContext) -> InputPolicy | None:
         status = self.get_status(context)
-        if not status.approved:
-            return None
-        return self._get_input_policy()
+        if status.approved or self.input_policy_type.has_safe_serde:
+            return self._get_input_policy()
+        return None
 
     def _get_input_policy(self) -> InputPolicy | None:
         if len(self.input_policy_state) == 0:
@@ -618,13 +632,18 @@ class UserCode(SyncableSyftObject):
             raise Exception(f"You can't set {type(value)} as input_policy_state")
 
     def get_output_policy(self, context: AuthedServiceContext) -> OutputPolicy | None:
-        if not self.get_status(context).approved:
-            return None
-        return self._get_output_policy()
+        status = self.get_status(context)
+        if status.approved or self.output_policy_type.has_safe_serde:
+            return self._get_output_policy()
+        return None
+
+    @property
+    def output_policy(self) -> OutputPolicy | None:  # type: ignore
+        if self.status.approved or self.output_policy_type.has_safe_serde:
+            return self._get_output_policy()
+        return None
 
     def _get_output_policy(self) -> OutputPolicy | None:
-        # if not self.status.approved:
-        #     return None
         if len(self.output_policy_state) == 0:
             output_policy = None
             if isinstance(self.output_policy_type, type) and issubclass(
@@ -671,12 +690,6 @@ class UserCode(SyncableSyftObject):
         if self.input_policy_init_kwargs is not None:
             return self.input_policy_init_kwargs.get("id", None)
         return None
-
-    @property
-    def output_policy(self) -> OutputPolicy | None:  # type: ignore
-        if not self.status.approved:
-            return None
-        return self._get_output_policy()
 
     @output_policy.setter  # type: ignore
     def output_policy(self, value: Any) -> None:  # type: ignore
@@ -737,43 +750,52 @@ class UserCode(SyncableSyftObject):
     def byte_code(self) -> PyCodeObject | None:
         return compile_byte_code(self.parsed_code)
 
-    def get_results(self) -> Any:
-        # relative
-        from ...client.api import APIRegistry
+    @property
+    def assets(self) -> DictTuple[str, Asset] | SyftError:
+        if not self.input_policy:
+            return []
 
-        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
-        if api is None:
-            return SyftError(
-                message=f"Can't access the api. You must login to {self.node_uid}"
-            )
-        return api.services.code.get_results(self)
+        api = self._get_api()
+        if isinstance(api, SyftError):
+            return api
+
+        # get all assets on the node
+        datasets: list[Dataset] = api.services.dataset.get_all()
+        if isinstance(datasets, SyftError):
+            return datasets
+
+        all_assets: dict[UID, Asset] = {}
+        for dataset in datasets:
+            for asset in dataset.asset_list:
+                asset._dataset_name = dataset.name
+                all_assets[asset.action_id] = asset
+
+        # get a flat dict of all inputs
+        all_inputs = {}
+        inputs = self.input_policy.inputs or {}
+        for vals in inputs.values():
+            all_inputs.update(vals)
+
+        # map the action_id to the asset
+        used_assets: list[Asset] = []
+        for kwarg_name, action_id in all_inputs.items():
+            asset = all_assets.get(action_id, None)
+            asset._kwarg_name = kwarg_name
+            used_assets.append(asset)
+
+        asset_dict = {asset._kwarg_name: asset for asset in used_assets}
+        return DictTuple(asset_dict)
 
     @property
-    def assets(self) -> list[Asset]:
-        # relative
-        from ...client.api import APIRegistry
-
-        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
-        if api is None:
-            return SyftError(message=f"You must login to {self.node_uid}")
-
-        inputs: Generator = (x for x in range(0))  # create an empty generator
-        if self.input_policy_init_kwargs is not None:
-            inputs = (
-                uids
-                for node_identity, uids in self.input_policy_init_kwargs.items()
-                if node_identity.node_name == api.node_name
-            )
-
-        all_assets = []
-        for uid in itertools.chain.from_iterable(x.values() for x in inputs):
-            if isinstance(uid, UID):
-                assets = api.services.dataset.get_assets_by_action_id(uid)
-                if not isinstance(assets, list):
-                    return assets
-
-                all_assets += assets
-        return all_assets
+    def _asset_json(self) -> str | SyftError:
+        if isinstance(self.assets, SyftError):
+            return self.assets
+        asset_dict = {
+            argument: asset._get_dict_for_user_code_repr()
+            for argument, asset in self.assets.items()
+        }
+        asset_str = json.dumps(asset_dict, indent=2)
+        return asset_str
 
     def get_sync_dependencies(
         self, context: AuthedServiceContext
@@ -792,7 +814,7 @@ class UserCode(SyncableSyftObject):
         return dependencies
 
     @property
-    def unsafe_function(self) -> Callable | None:
+    def run(self) -> Callable | None:
         warning = SyftWarning(
             message="This code was submitted by a User and could be UNSAFE."
         )
@@ -834,9 +856,14 @@ class UserCode(SyncableSyftObject):
                 # return the results
                 return result
             except Exception as e:
-                return SyftError(f"Failed to run unsafe_function. Error: {e}")
+                return SyftError(f"Failed to execute 'run'. Error: {e}")
 
         return wrapper
+
+    @property
+    @deprecated(reason="Use 'run' instead")
+    def unsafe_function(self) -> Callable | None:
+        return self.run
 
     def _inner_repr(self, level: int = 0) -> str:
         shared_with_line = ""
@@ -847,12 +874,28 @@ class UserCode(SyncableSyftObject):
                 f"outputs are *shared* with the owners of {owners_string} once computed"
             )
 
+        constants_str = ""
+        args = [
+            x
+            for _dict in self.input_policy_init_kwargs.values()  # type: ignore
+            for x in _dict.values()
+        ]
+        constants = [x for x in args if isinstance(x, Constant)]
+        constants_str = "\n\t".join([f"{x.kw}: {x.val}" for x in constants])
+
+        # indent all lines except the first one
+        asset_str = "\n".join(
+            [f"    {line}" for line in self._asset_json.split("\n")]
+        ).lstrip()
+
         md = f"""class UserCode
     id: UID = {self.id}
     service_func_name: str = {self.service_func_name}
     shareholders: list = {self.input_owners}
     status: list = {self.code_status}
+    {constants_str}
     {shared_with_line}
+    assets: dict = {asset_str}
     code:
 
 {self.raw_code}
@@ -877,6 +920,62 @@ class UserCode(SyncableSyftObject):
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         return as_markdown_code(self._inner_repr())
 
+    def _ipython_display_(self, level: int = 0) -> None:
+        tabs = "&emsp;" * level
+        shared_with_line = ""
+        if len(self.output_readers) > 0 and self.output_reader_names is not None:
+            owners_string = " and ".join([f"*{x}*" for x in self.output_reader_names])
+            shared_with_line += (
+                f"<p>{tabs}Custom Policy: "
+                f"outputs are *shared* with the owners of {owners_string} once computed</p>"
+            )
+        constants_str = ""
+        args = [
+            x
+            for _dict in self.input_policy_init_kwargs.values()  # type: ignore
+            for x in _dict.values()
+        ]
+        constants = [x for x in args if isinstance(x, Constant)]
+        constants_str = "\n&emsp;".join([f"{x.kw}: {x.val}" for x in constants])
+        # indent all lines except the first one
+        asset_str = "<br>".join(
+            [f"&emsp;&emsp;{line}" for line in self._asset_json.split("\n")]
+        ).lstrip()
+
+        repr_str = f"""
+    <style>
+    {FONT_CSS}
+    .syft-code {{color: {SURFACE[options.color_theme]};}}
+    .syft-code h3,
+    .syft-code p {{font-family: 'Open Sans'}}
+    </style>
+    <div class="syft-code">
+    <h3>{tabs}UserCode</h3>
+    <p>{tabs}<strong>id:</strong> UID = {self.id}</p>
+    <p>{tabs}<strong>service_func_name:</strong> str = {self.service_func_name}</p>
+    <p>{tabs}<strong>shareholders:</strong> list = {self.input_owners}</p>
+    <p>{tabs}<strong>status:</strong> list = {self.code_status}</p>
+    {tabs}{constants_str}
+    {tabs}{shared_with_line}
+    <p>{tabs}<strong>assets:</strong> dict = {asset_str}</p>
+    <p>{tabs}<strong>code:</strong></p>
+    </div>
+    """
+        md = "\n".join(
+            [f"{'  '*level}{substring}" for substring in self.raw_code.split("\n")[:-1]]
+        )
+        display(HTML(repr_str), Markdown(as_markdown_code(md)))
+        if self.nested_codes is not None and self.nested_codes != {}:
+            nested_line_html = f"""
+    <div class="syft-code">
+    <p>{tabs}<strong>Nested Requests:</p>
+    </div>
+    """
+            display(HTML(nested_line_html))
+            for obj, _ in self.nested_codes.values():
+                code = obj.resolve
+                code._ipython_display_(level=level + 1)
+
     @property
     def show_code(self) -> CodeMarkdown:
         return CodeMarkdown(self.raw_code)
@@ -891,6 +990,26 @@ class UserCode(SyncableSyftObject):
         ip = get_ipython()
         ip.set_next_input(warning_message + self.raw_code)
 
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        api = self._get_api()
+        if isinstance(api, SyftError):
+            return api
+
+        signature = self.signature
+        signature = signature_remove_self(signature)
+        signature = signature_remove_context(signature)
+        remote_user_function = generate_remote_function(
+            api=api,
+            node_uid=self.node_uid,
+            signature=self.signature,
+            path="code.call",
+            make_call=api.make_call,
+            pre_kwargs={"uid": self.id},
+            warning=None,
+            communication_protocol=api.communication_protocol,
+        )
+        return remote_user_function(*args, **kwargs)
+
 
 class UserCodeUpdate(PartialSyftObject):
     __canonical_name__ = "UserCodeUpdate"
@@ -900,7 +1019,7 @@ class UserCodeUpdate(PartialSyftObject):
 
 
 @serializable(without=["local_function"])
-class SubmitUserCode(SyftObject):
+class SubmitUserCodeV4(SyftObject):
     # version
     __canonical_name__ = "SubmitUserCode"
     __version__ = SYFT_OBJECT_VERSION_4
@@ -916,6 +1035,25 @@ class SubmitUserCode(SyftObject):
     local_function: Callable | None = None
     input_kwargs: list[str]
     enclave_metadata: EnclaveMetadata | None = None
+    worker_pool_name: str | None = None
+
+
+@serializable(without=["local_function"])
+class SubmitUserCode(SyftObject):
+    # version
+    __canonical_name__ = "SubmitUserCode"
+    __version__ = SYFT_OBJECT_VERSION_5
+
+    id: UID | None = None  # type: ignore[assignment]
+    code: str
+    func_name: str
+    signature: inspect.Signature
+    input_policy_type: SubmitUserPolicy | UID | type[InputPolicy]
+    input_policy_init_kwargs: dict[Any, Any] | None = {}
+    output_policy_type: SubmitUserPolicy | UID | type[OutputPolicy]
+    output_policy_init_kwargs: dict[Any, Any] | None = {}
+    local_function: Callable | None = None
+    input_kwargs: list[str]
     worker_pool_name: str | None = None
 
     __repr_attrs__ = ["func_name", "code"]
@@ -961,13 +1099,6 @@ class SubmitUserCode(SyftObject):
     def local_call(self, *args: Any, **kwargs: Any) -> Any:
         # only run this on the client side
         if self.local_function:
-            source = dedent(inspect.getsource(self.local_function))
-            tree = ast.parse(source)
-
-            # check there are no globals
-            v = GlobalsVisitor()
-            v.visit(tree)
-
             # filtered_args = []
             filtered_kwargs = {}
             # for arg in args:
@@ -1090,6 +1221,11 @@ class SubmitUserCode(SyftObject):
         return None
 
 
+def get_code_hash(code: str, user_verify_key: SyftVerifyKey) -> str:
+    full_str = f"{code}{user_verify_key}"
+    return hashlib.sha256(full_str.encode()).hexdigest()
+
+
 def is_valid_usercode_name(func_name: str) -> Result[Any, str]:
     if len(func_name) == 0:
         return Err("Function name cannot be empty")
@@ -1141,11 +1277,19 @@ def syft_function_single_use(
     )
 
 
+def replace_func_name(src: str, new_func_name: str) -> str:
+    pattern = r"\bdef\s+(\w+)\s*\("
+    replacement = f"def {new_func_name}("
+    new_src = re.sub(pattern, replacement, src, count=1)
+    return new_src
+
+
 def syft_function(
     input_policy: InputPolicy | UID | None = None,
     output_policy: OutputPolicy | UID | None = None,
     share_results_with_owners: bool = False,
     worker_pool_name: str | None = None,
+    name: str | None = None,
 ) -> Callable:
     if input_policy is None:
         input_policy = EmpyInputPolicy()
@@ -1153,7 +1297,7 @@ def syft_function(
     init_input_kwargs = None
     if isinstance(input_policy, CustomInputPolicy):
         input_policy_type = SubmitUserPolicy.from_obj(input_policy)
-        init_input_kwargs = partition_by_node(input_policy.init_kwargs)
+        init_input_kwargs = partition_by_node(input_policy.init_kwargs)  # type: ignore
     else:
         input_policy_type = type(input_policy)
         init_input_kwargs = getattr(input_policy, "init_kwargs", {})
@@ -1168,24 +1312,47 @@ def syft_function(
 
     def decorator(f: Any) -> SubmitUserCode | SyftError:
         try:
+            code = dedent(inspect.getsource(f))
+
+            if name is not None:
+                fname = name
+                code = replace_func_name(code, fname)
+            else:
+                fname = f.__name__
+
+            input_kwargs = f.__code__.co_varnames[: f.__code__.co_argcount]
+
+            parse_user_code(
+                raw_code=code,
+                func_name=fname,
+                original_func_name=f.__name__,
+                function_input_kwargs=input_kwargs,
+            )
+
             res = SubmitUserCode(
-                code=dedent(inspect.getsource(f)),
-                func_name=f.__name__,
+                code=code,
+                func_name=fname,
                 signature=inspect.signature(f),
                 input_policy_type=input_policy_type,
                 input_policy_init_kwargs=init_input_kwargs,
                 output_policy_type=output_policy_type,
                 output_policy_init_kwargs=getattr(output_policy, "init_kwargs", {}),
                 local_function=f,
-                input_kwargs=f.__code__.co_varnames[: f.__code__.co_argcount],
+                input_kwargs=input_kwargs,
                 worker_pool_name=worker_pool_name,
             )
+
         except ValidationError as e:
             errors = e.errors()
             msg = "Failed to create syft function, encountered validation errors:\n"
             for error in errors:
                 msg += f"\t{error['msg']}\n"
             err = SyftError(message=msg)
+            display(err)
+            return err
+
+        except SyftException as se:
+            err = SyftError(message=f"Error when parsing the code: {se}")
             display(err)
             return err
 
@@ -1220,26 +1387,23 @@ def generate_unique_func_name(context: TransformContext) -> TransformContext:
     return context
 
 
-def process_code(
-    context: TransformContext,
+def parse_user_code(
     raw_code: str,
     func_name: str,
     original_func_name: str,
-    policy_input_kwargs: list[str],
     function_input_kwargs: list[str],
 ) -> str:
-    tree = ast.parse(raw_code)
+    # parse the code, check for syntax errors and if there are global variables
+    try:
+        tree: ast.Module = parse_code(raw_code=raw_code)
+        check_for_global_vars(code_tree=tree)
+    except SyftException as e:
+        raise SyftException(f"{e}")
 
-    # check there are no globals
-    v = GlobalsVisitor()
-    v.visit(tree)
-
-    f = tree.body[0]
+    f: ast.stmt = tree.body[0]
     f.decorator_list = []
 
     call_args = function_input_kwargs
-    if "domain" in function_input_kwargs and context.output is not None:
-        context.output["uses_domain"] = True
     call_stmt_keywords = [ast.keyword(arg=i, value=[ast.Name(id=i)]) for i in call_args]
     call_stmt = ast.Assign(
         targets=[ast.Name(id="result")],
@@ -1262,6 +1426,25 @@ def process_code(
     )
 
     return unparse(wrapper_function)
+
+
+def process_code(
+    context: TransformContext,
+    raw_code: str,
+    func_name: str,
+    original_func_name: str,
+    policy_input_kwargs: list[str],
+    function_input_kwargs: list[str],
+) -> str:
+    if "domain" in function_input_kwargs and context.output is not None:
+        context.output["uses_domain"] = True
+
+    return parse_user_code(
+        raw_code=raw_code,
+        func_name=func_name,
+        original_func_name=original_func_name,
+        function_input_kwargs=function_input_kwargs,
+    )
 
 
 def new_check_code(context: TransformContext) -> TransformContext:
@@ -1345,10 +1528,12 @@ def compile_code(context: TransformContext) -> TransformContext:
 def hash_code(context: TransformContext) -> TransformContext:
     if context.output is None:
         return context
+    if not isinstance(context.obj, SubmitUserCode):
+        return context
 
     code = context.output["code"]
     context.output["raw_code"] = code
-    code_hash = hashlib.sha256(code.encode("utf8")).hexdigest()
+    code_hash = get_code_hash(code, context.credentials)
     context.output["code_hash"] = code_hash
 
     return context
@@ -1822,12 +2007,27 @@ def migrate_usercode_v4_to_v5() -> list[Callable]:
     return [
         make_set_default("origin_node_side_type", NodeSideType.HIGH_SIDE),
         make_set_default("l0_deny_reason", None),
+        drop("enclave_metadata"),
     ]
 
 
 @migrate(UserCode, UserCodeV4)
 def migrate_usercode_v5_to_v4() -> list[Callable]:
     return [
-        drop("origin_node_side_type"),
-        drop("l0_deny_reason"),
+        drop(["origin_node_side_type", "l0_deny_reason"]),
+        make_set_default("enclave_metadata", None),
+    ]
+
+
+@migrate(SubmitUserCodeV4, SubmitUserCode)
+def upgrade_submitusercode() -> list[Callable]:
+    return [
+        drop("enclave_metadata"),
+    ]
+
+
+@migrate(SubmitUserCode, SubmitUserCodeV4)
+def downgrade_submitusercode() -> list[Callable]:
+    return [
+        make_set_default("enclave_metadata", None),
     ]

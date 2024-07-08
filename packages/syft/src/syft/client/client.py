@@ -4,15 +4,20 @@ from __future__ import annotations
 # stdlib
 import base64
 from collections.abc import Callable
+from collections.abc import Generator
+from collections.abc import Iterable
 from enum import Enum
 from getpass import getpass
 import json
+import logging
 from typing import Any
 from typing import TYPE_CHECKING
 from typing import cast
 
 # third party
 from argon2 import PasswordHasher
+from cachetools import TTLCache
+from cachetools import cached
 from pydantic import field_validator
 import requests
 from requests import Response
@@ -46,9 +51,8 @@ from ..service.user.user import UserView
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..types.grid_url import GridURL
-from ..types.syft_object import SYFT_OBJECT_VERSION_2
+from ..types.syft_object import SYFT_OBJECT_VERSION_3
 from ..types.uid import UID
-from ..util.logger import debug
 from ..util.telemetry import instrument
 from ..util.util import prompt_warning_message
 from ..util.util import thread_ident
@@ -62,14 +66,11 @@ from .api import debox_signed_syftapicall_response
 from .connection import NodeConnection
 from .protocol import SyftProtocol
 
+logger = logging.getLogger(__name__)
+
 if TYPE_CHECKING:
     # relative
     from ..service.network.node_peer import NodePeer
-
-
-# use to enable mitm proxy
-# from syft.grid.connections.http_connection import HTTPConnection
-# HTTPConnection.proxies = {"http": "http://127.0.0.1:8080"}
 
 
 def upgrade_tls(url: GridURL, response: Response) -> GridURL:
@@ -77,7 +78,7 @@ def upgrade_tls(url: GridURL, response: Response) -> GridURL:
         if response.url.startswith("https://") and url.protocol == "http":
             # we got redirected to https
             https_url = GridURL.from_url(response.url).with_path("")
-            debug(f"GridURL Upgraded to HTTPS. {https_url}")
+            logger.debug(f"GridURL Upgraded to HTTPS. {https_url}")
             return https_url
     except Exception as e:
         print(f"Failed to upgrade to HTTPS. {e}")
@@ -116,6 +117,7 @@ def forward_message_to_proxy(
 API_PATH = "/api/v2"
 DEFAULT_PYGRID_PORT = 80
 DEFAULT_PYGRID_ADDRESS = f"http://localhost:{DEFAULT_PYGRID_PORT}"
+INTERNAL_PROXY_TO_RATHOLE = "http://proxy:80/rtunnel/"
 
 
 class Routes(Enum):
@@ -128,15 +130,17 @@ class Routes(Enum):
     STREAM = f"{API_PATH}/stream"
 
 
-@serializable(attrs=["proxy_target_uid", "url"])
+@serializable(attrs=["proxy_target_uid", "url", "rtunnel_token"])
 class HTTPConnection(NodeConnection):
     __canonical_name__ = "HTTPConnection"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     url: GridURL
     proxy_target_uid: UID | None = None
     routes: type[Routes] = Routes
     session_cache: Session | None = None
+    headers: dict[str, str] | None = None
+    rtunnel_token: str | None = None
 
     @field_validator("url", mode="before")
     @classmethod
@@ -147,8 +151,15 @@ class HTTPConnection(NodeConnection):
             else v
         )
 
+    def set_headers(self, headers: dict[str, str]) -> None:
+        self.headers = headers
+
     def with_proxy(self, proxy_target_uid: UID) -> Self:
-        return HTTPConnection(url=self.url, proxy_target_uid=proxy_target_uid)
+        return HTTPConnection(
+            url=self.url,
+            proxy_target_uid=proxy_target_uid,
+            rtunnel_token=self.rtunnel_token,
+        )
 
     def stream_via(self, proxy_uid: UID, url_path: str) -> GridURL:
         # Update the presigned url path to
@@ -181,10 +192,28 @@ class HTTPConnection(NodeConnection):
             self.session_cache = session
         return self.session_cache
 
-    def _make_get(self, path: str, params: dict | None = None) -> bytes:
-        url = self.url.with_path(path)
+    def _make_get(
+        self, path: str, params: dict | None = None, stream: bool = False
+    ) -> bytes | Iterable:
+        if params is None:
+            return self._make_get_no_params(path, stream=stream)
+
+        url = self.url
+
+        if self.rtunnel_token:
+            self.headers = {} if self.headers is None else self.headers
+            url = GridURL.from_url(INTERNAL_PROXY_TO_RATHOLE)
+            self.headers["Host"] = self.url.host_or_ip
+
+        url = url.with_path(path)
+
         response = self.session.get(
-            str(url), verify=verify_tls(), proxies={}, params=params
+            str(url),
+            headers=self.headers,
+            verify=verify_tls(),
+            proxies={},
+            params=params,
+            stream=stream,
         )
         if response.status_code != 200:
             raise requests.ConnectionError(
@@ -196,15 +225,87 @@ class HTTPConnection(NodeConnection):
 
         return response.content
 
+    @cached(cache=TTLCache(maxsize=128, ttl=300))
+    def _make_get_no_params(self, path: str, stream: bool = False) -> bytes | Iterable:
+        url = self.url
+
+        if self.rtunnel_token:
+            self.headers = {} if self.headers is None else self.headers
+            url = GridURL.from_url(INTERNAL_PROXY_TO_RATHOLE)
+            self.headers["Host"] = self.url.host_or_ip
+
+        url = url.with_path(path)
+
+        response = self.session.get(
+            str(url),
+            headers=self.headers,
+            verify=verify_tls(),
+            proxies={},
+            stream=stream,
+        )
+        if response.status_code != 200:
+            raise requests.ConnectionError(
+                f"Failed to fetch {url}. Response returned with code {response.status_code}"
+            )
+
+        # upgrade to tls if available
+        self.url = upgrade_tls(self.url, response)
+
+        if stream:
+            return response.iter_content(chunk_size=None)
+
+        return response.content
+
+    def _make_put(
+        self, path: str, data: bytes | Generator, stream: bool = False
+    ) -> Response:
+        url = self.url
+
+        if self.rtunnel_token:
+            url = GridURL.from_url(INTERNAL_PROXY_TO_RATHOLE)
+            self.headers = {} if self.headers is None else self.headers
+            self.headers["Host"] = self.url.host_or_ip
+
+        url = url.with_path(path)
+        response = self.session.put(
+            str(url),
+            verify=verify_tls(),
+            proxies={},
+            data=data,
+            headers=self.headers,
+            stream=stream,
+        )
+        if response.status_code != 200:
+            raise requests.ConnectionError(
+                f"Failed to fetch {url}. Response returned with code {response.status_code}"
+            )
+
+        # upgrade to tls if available
+        self.url = upgrade_tls(self.url, response)
+
+        return response
+
     def _make_post(
         self,
         path: str,
         json: dict[str, Any] | None = None,
         data: bytes | None = None,
     ) -> bytes:
-        url = self.url.with_path(path)
+        url = self.url
+
+        if self.rtunnel_token:
+            url = GridURL.from_url(INTERNAL_PROXY_TO_RATHOLE)
+            self.headers = {} if self.headers is None else self.headers
+            self.headers["Host"] = self.url.host_or_ip
+
+        url = url.with_path(path)
         response = self.session.post(
-            str(url), verify=verify_tls(), json=json, proxies={}, data=data
+            str(url),
+            headers=self.headers,
+            verify=verify_tls(),
+            json=json,
+            proxies={},
+            data=data,
         )
         if response.status_code != 200:
             raise requests.ConnectionError(
@@ -219,7 +320,7 @@ class HTTPConnection(NodeConnection):
     def stream_data(self, credentials: SyftSigningKey) -> Response:
         url = self.url.with_path(self.routes.STREAM.value)
         response = self.session.get(
-            str(url), verify=verify_tls(), proxies={}, stream=True
+            str(url), verify=verify_tls(), proxies={}, stream=True, headers=self.headers
         )
         return response
 
@@ -306,9 +407,19 @@ class HTTPConnection(NodeConnection):
 
     def make_call(self, signed_call: SignedSyftAPICall) -> Any | SyftError:
         msg_bytes: bytes = _serialize(obj=signed_call, to_bytes=True)
+
+        if self.rtunnel_token:
+            api_url = GridURL.from_url(INTERNAL_PROXY_TO_RATHOLE)
+            api_url = api_url.with_path(self.routes.ROUTE_API_CALL.value)
+            self.headers = {} if self.headers is None else self.headers
+            self.headers["Host"] = self.url.host_or_ip
+        else:
+            api_url = self.api_url
+
         response = requests.post(  # nosec
-            url=str(self.api_url),
+            url=api_url,
             data=msg_bytes,
+            headers=self.headers,
         )
 
         if response.status_code != 200:
@@ -351,7 +462,7 @@ class HTTPConnection(NodeConnection):
 @serializable()
 class PythonConnection(NodeConnection):
     __canonical_name__ = "PythonConnection"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     node: AbstractNode
     proxy_target_uid: UID | None = None
@@ -530,6 +641,15 @@ class SyftClient:
             self.metadata.supported_protocols
         )
 
+    def set_headers(self, headers: dict[str, str]) -> None | SyftError:
+        if isinstance(self.connection, HTTPConnection):
+            self.connection.set_headers(headers)
+            return None
+        return SyftError(  # type: ignore
+            message="Incompatible connection type."
+            + f"Expected HTTPConnection, got {type(self.connection)}"
+        )
+
     def _get_communication_protocol(
         self, protocols_supported_by_server: list
     ) -> int | str:
@@ -636,7 +756,10 @@ class SyftClient:
         )
 
     def exchange_route(
-        self, client: Self, protocol: SyftProtocol = SyftProtocol.HTTP
+        self,
+        client: Self,
+        protocol: SyftProtocol = SyftProtocol.HTTP,
+        reverse_tunnel: bool = False,
     ) -> SyftSuccess | SyftError:
         # relative
         from ..service.network.routes import connection_to_route
@@ -651,6 +774,7 @@ class SyftClient:
                 self_node_route=self_node_route,
                 remote_node_route=remote_node_route,
                 remote_node_verify_key=client.metadata.to(NodeMetadata).verify_key,
+                reverse_tunnel=reverse_tunnel,
             )
         else:
             raise ValueError(
@@ -721,6 +845,22 @@ class SyftClient:
             )
 
         return _guest_client
+
+    def login_as(self, email: str) -> Self:
+        user_private_key = self.api.services.user.key_for_email(email=email)
+        if not isinstance(user_private_key, UserPrivateKey):
+            return user_private_key
+        if self.metadata is not None:
+            print(
+                f"Logged into <{self.name}: {self.metadata.node_side_type.capitalize()}-side "
+                f"{self.metadata.node_type.capitalize()}> as {email}"
+            )
+
+        return self.__class__(
+            connection=self.connection,
+            credentials=user_private_key.signing_key,
+            metadata=self.metadata,
+        )
 
     def login(
         self,

@@ -44,6 +44,7 @@ Read/retrieve SyftObject from blob storage
 from collections.abc import Callable
 from collections.abc import Generator
 from io import BytesIO
+import logging
 from typing import Any
 
 # third party
@@ -73,6 +74,8 @@ from ...types.syft_object import SyftObject
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
 from ...types.uid import UID
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_TIMEOUT = 10
 MAX_RETRIES = 20
@@ -138,11 +141,11 @@ def syft_iter_content(
             return  # If successful, exit the function
         except requests.exceptions.RequestException as e:
             if attempt < max_retries:
-                print(
+                logger.debug(
                     f"Attempt {attempt}/{max_retries} failed: {e} at byte {current_byte}. Retrying..."
                 )
             else:
-                print(f"Max retries reached. Failed with error: {e}")
+                logger.error(f"Max retries reached - {e}")
                 raise
 
 
@@ -272,6 +275,7 @@ class BlobStorageClient(SyftBaseModel):
 class BlobStorageConfig(SyftBaseModel):
     client_type: type[BlobStorageClient]
     client_config: BlobStorageClientConfig
+    min_blob_size: int  # in MB
 
 
 @migrate(BlobRetrievalByURLV4, BlobRetrievalByURL)

@@ -3,6 +3,7 @@ from collections.abc import Callable
 from enum import Enum
 import hashlib
 import inspect
+import logging
 from typing import Any
 
 # third party
@@ -24,13 +25,16 @@ from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
+from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import add_node_uid_for_key
+from ...types.transforms import drop
 from ...types.transforms import generate_id
+from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.twin_object import TwinObject
 from ...types.uid import LineageID
@@ -57,6 +61,8 @@ from ..notification.notifications import Notification
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..user.user import UserView
+
+logger = logging.getLogger(__name__)
 
 
 @serializable()
@@ -152,24 +158,35 @@ class ActionStoreChange(Change):
                     uid_blob = action_obj.private.syft_blob_storage_entry_id
                 else:
                     uid_blob = action_obj.syft_blob_storage_entry_id
-                requesting_permission_blob_obj = ActionObjectPermission(
-                    uid=uid_blob,
-                    credentials=context.requesting_user_credentials,
-                    permission=self.apply_permission_type,
+                requesting_permission_blob_obj = (
+                    ActionObjectPermission(
+                        uid=uid_blob,
+                        credentials=context.requesting_user_credentials,
+                        permission=self.apply_permission_type,
+                    )
+                    if uid_blob
+                    else None
                 )
                 if apply:
-                    print(
+                    logger.debug(
                         "ADDING PERMISSION", requesting_permission_action_obj, id_action
                     )
                     action_store.add_permission(requesting_permission_action_obj)
-                    blob_storage_service.stash.add_permission(
-                        requesting_permission_blob_obj
+                    (
+                        blob_storage_service.stash.add_permission(
+                            requesting_permission_blob_obj
+                        )
+                        if requesting_permission_blob_obj
+                        else None
                     )
                 else:
                     if action_store.has_permission(requesting_permission_action_obj):
                         action_store.remove_permission(requesting_permission_action_obj)
-                    if blob_storage_service.stash.has_permission(
+                    if (
                         requesting_permission_blob_obj
+                        and blob_storage_service.stash.has_permission(
+                            requesting_permission_blob_obj
+                        )
                     ):
                         blob_storage_service.stash.remove_permission(
                             requesting_permission_blob_obj
@@ -182,7 +199,7 @@ class ActionStoreChange(Change):
                 )
             return Ok(SyftSuccess(message=f"{type(self)} Success"))
         except Exception as e:
-            print(f"failed to apply {type(self)}", e)
+            logger.error(f"failed to apply {type(self)}", exc_info=e)
             return Err(SyftError(message=str(e)))
 
     def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
@@ -387,7 +404,7 @@ class CreateCustomWorkerPoolChangeV2(Change):
 
 
 @serializable()
-class Request(SyncableSyftObject):
+class RequestV2(SyncableSyftObject):
     __canonical_name__ = "Request"
     __version__ = SYFT_OBJECT_VERSION_2
 
@@ -402,6 +419,48 @@ class Request(SyncableSyftObject):
     request_hash: str
     changes: list[Change]
     history: list[ChangeStatus] = []
+    __table_coll_widths__ = [
+        "min-content",
+        "auto",
+        "auto",
+        "auto",
+        "auto",
+        "auto",
+    ]
+
+    __attr_searchable__ = [
+        "requesting_user_verify_key",
+        "approving_user_verify_key",
+    ]
+    __attr_unique__ = ["request_hash"]
+    __repr_attrs__ = [
+        "request_time",
+        "updated_at",
+        "status",
+        "changes",
+        "requesting_user_verify_key",
+    ]
+    __exclude_sync_diff_attrs__ = ["node_uid", "changes", "history"]
+    __table_sort_attr__ = "Request time"
+
+
+@serializable()
+class Request(SyncableSyftObject):
+    __canonical_name__ = "Request"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    requesting_user_verify_key: SyftVerifyKey
+    requesting_user_name: str = ""
+    requesting_user_email: str | None = ""
+    requesting_user_institution: str | None = ""
+    approving_user_verify_key: SyftVerifyKey | None = None
+    request_time: DateTime
+    updated_at: DateTime | None = None
+    node_uid: UID
+    request_hash: str
+    changes: list[Change]
+    history: list[ChangeStatus] = []
+    tags: list[str] = []
 
     __table_coll_widths__ = [
         "min-content",
@@ -562,9 +621,6 @@ class Request(SyncableSyftObject):
             message="This type of request does not have code associated with it."
         )
 
-    def get_results(self) -> Any:
-        return self.code.get_results()
-
     @property
     def current_change_state(self) -> dict[UID, bool]:
         change_applied_map = {}
@@ -622,7 +678,7 @@ class Request(SyncableSyftObject):
             metadata = api.connection.get_node_metadata(api.signing_key)
         else:
             metadata = None
-        message, is_enclave = None, False
+        message = None
 
         is_code_request = not isinstance(self.codes, SyftError)
 
@@ -631,12 +687,7 @@ class Request(SyncableSyftObject):
                 message="Multiple codes detected, please use approve_nested=True"
             )
 
-        if self.code and not isinstance(self.code, SyftError):
-            is_enclave = getattr(self.code, "enclave_metadata", None) is not None
-
-        if is_enclave:
-            message = "On approval, the result will be released to the enclave."
-        elif metadata and metadata.node_side_type == NodeSideType.HIGH_SIDE.value:
+        if metadata and metadata.node_side_type == NodeSideType.HIGH_SIDE.value:
             message = (
                 "You're approving a request on "
                 f"{metadata.node_side_type} side {metadata.node_type} "
@@ -1164,6 +1215,8 @@ class UserCodeStatusChange(Change):
 
     @property
     def code(self) -> UserCode:
+        if self.linked_user_code._resolve_cache:
+            return self.linked_user_code._resolve_cache
         return self.linked_user_code.resolve
 
     def get_user_code(self, context: AuthedServiceContext) -> UserCode:
@@ -1269,12 +1322,6 @@ class UserCodeStatusChange(Change):
             )
         return res
 
-    def is_enclave_request(self, user_code: UserCode) -> bool:
-        return (
-            user_code.is_enclave_code is not None
-            and self.value == UserCodeStatus.APPROVED
-        )
-
     def _run(
         self, context: ChangeContext, apply: bool
     ) -> Result[SyftSuccess, SyftError]:
@@ -1298,26 +1345,16 @@ class UserCodeStatusChange(Change):
                 if isinstance(updated_status, SyftError):
                     return Err(updated_status.message)
 
-                # relative
-                from ..enclave.enclave_service import propagate_inputs_to_enclave
-
                 self.linked_obj.update_with_context(context, updated_status)
-                if self.is_enclave_request(user_code):
-                    enclave_res = propagate_inputs_to_enclave(
-                        user_code=user_code, context=context
-                    )
-                    if isinstance(enclave_res, SyftError):
-                        return enclave_res
             else:
                 updated_status = self.mutate(user_code_status, context, undo=True)
                 if isinstance(updated_status, SyftError):
                     return Err(updated_status.message)
 
-                # TODO: Handle Enclave approval.
                 self.linked_obj.update_with_context(context, updated_status)
             return Ok(SyftSuccess(message=f"{type(self)} Success"))
         except Exception as e:
-            print(f"failed to apply {type(self)}. {e}")
+            logger.error(f"failed to apply {type(self)}", exc_info=e)
             return Err(SyftError(message=str(e)))
 
     def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
@@ -1364,3 +1401,17 @@ class SyncedUserCodeStatusChange(UserCodeStatusChange):
 
     def link(self) -> Any:  # type: ignore
         return self.code.status
+
+
+@migrate(RequestV2, Request)
+def migrate_request_v2_to_v3() -> list[Callable]:
+    return [
+        make_set_default("tags", []),
+    ]
+
+
+@migrate(Request, RequestV2)
+def migrate_usercode_v5_to_v4() -> list[Callable]:
+    return [
+        drop("tags"),
+    ]

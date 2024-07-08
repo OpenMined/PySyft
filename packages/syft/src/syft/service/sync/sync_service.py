@@ -1,9 +1,9 @@
 # stdlib
 from collections import defaultdict
+import logging
 from typing import Any
 
 # third party
-from loguru import logger
 from result import Err
 from result import Ok
 from result import Result
@@ -24,6 +24,7 @@ from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..action.action_permissions import StoragePermission
 from ..api.api import TwinAPIEndpoint
+from ..api.api_service import APIService
 from ..code.user_code import UserCodeStatusCollection
 from ..context import AuthedServiceContext
 from ..job.job_stash import Job
@@ -35,6 +36,8 @@ from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from .sync_stash import SyncStash
 from .sync_state import SyncState
+
+logger = logging.getLogger(__name__)
 
 
 def get_store(context: AuthedServiceContext, item: SyncableSyftObject) -> Any:
@@ -61,21 +64,24 @@ class SyncService(AbstractService):
         action_object: ActionObject,
         new_permissions: list[ActionObjectPermission],
     ) -> None:
-        blob_id = action_object.syft_blob_storage_entry_id
-
         store_to = context.node.get_service("actionservice").store  # type: ignore
-        store_to_blob = context.node.get_service("blobstorageservice").stash.partition  # type: ignore
-
         for permission in new_permissions:
             if permission.permission == ActionPermission.READ:
                 store_to.add_permission(permission)
 
-                permission_blob = ActionObjectPermission(
-                    uid=blob_id,
-                    permission=permission.permission,
-                    credentials=permission.credentials,
-                )
-                store_to_blob.add_permission(permission_blob)
+        blob_id = action_object.syft_blob_storage_entry_id
+        if blob_id:
+            store_to_blob = context.node.get_service(
+                "blobstorageservice"
+            ).stash.partition  # type: ignore
+            for permission in new_permissions:
+                if permission.permission == ActionPermission.READ:
+                    permission_blob = ActionObjectPermission(
+                        uid=blob_id,
+                        permission=permission.permission,
+                        credentials=permission.credentials,
+                    )
+                    store_to_blob.add_permission(permission_blob)
 
     def set_obj_ids(self, context: AuthedServiceContext, x: Any) -> None:
         if hasattr(x, "__dict__") and isinstance(x, SyftObject):
@@ -156,11 +162,11 @@ class SyncService(AbstractService):
         if isinstance(item, TwinAPIEndpoint):
             # we need the side effect of set function
             # to create an action object
-            res = context.node.get_service("apiservice").set(
-                context=context, endpoint=item
-            )
+            apiservice: APIService = context.node.get_service("apiservice")  # type: ignore
+
+            res = apiservice.set(context=context, endpoint=item)
             if isinstance(res, SyftError):
-                return res
+                return Err(res.message)
             else:
                 return Ok(item)
 

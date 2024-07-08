@@ -376,7 +376,7 @@ class MongoStorePartition(StorePartition):
             except Exception as e:
                 return Err(f"Failed to update obj: {obj} with qk: {qk}. Error: {e}")
 
-            return Ok(obj)
+            return Ok(prev_obj)
         else:
             return Err(f"Failed to update obj {obj}, you have no permission")
 
@@ -397,6 +397,21 @@ class MongoStorePartition(StorePartition):
     def data(self) -> dict:
         values: list = self._all(credentials=None, has_permission=True).ok()
         return {v.id: v for v in values}
+
+    def _get(
+        self,
+        uid: UID,
+        credentials: SyftVerifyKey,
+        has_permission: bool | None = False,
+    ) -> Result[SyftObject, str]:
+        qks = QueryKeys.from_dict({"id": uid})
+        res = self._get_all_from_store(
+            credentials, qks, order_by=None, has_permission=has_permission
+        )
+        if res.is_err():
+            return res
+        else:
+            return Ok(res.ok()[0])
 
     def _get_all_from_store(
         self,
@@ -479,10 +494,16 @@ class MongoStorePartition(StorePartition):
         if permissions is None:
             return False
 
-        # TODO: fix for other admins
         if (
             permission.credentials
             and self.root_verify_key.verify == permission.credentials.verify
+        ):
+            return True
+
+        if (
+            permission.credentials
+            and self.has_admin_permissions is not None
+            and self.has_admin_permissions(permission.credentials)
         ):
             return True
 
