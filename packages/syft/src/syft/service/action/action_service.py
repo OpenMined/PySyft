@@ -364,6 +364,11 @@ class ActionService(AbstractService):
     def has_storage_permission(self, context: AuthedServiceContext, uid: UID) -> bool:
         return self.store.has_storage_permission(uid)
 
+    def has_read_permission(self, context: AuthedServiceContext, uid: UID) -> bool:
+        return self.store.has_permissions(
+            [ActionObjectREAD(uid=uid, credentials=context.credentials)]
+        )
+
     # not a public service endpoint
     def _user_code_execute(
         self,
