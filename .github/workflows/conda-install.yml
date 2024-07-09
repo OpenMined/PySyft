@@ -35,12 +35,12 @@ jobs:
           EXPECTED_VERSION=$(python packages/grid/VERSION)
           SYFT_VERSION=$(python -c 'import syft; print(syft.__version__)')
           # Compare the versions
-          if [ "$EXPECTED_VERSION" != "$SYFT_VERSION" ]; then
-            echo "Expected version: $EXPECTED_VERSION"
-            echo "Actual version: $SYFT_VERSION"
-            echo "Version mismatch. Failing the CI job."
+          if ($expectedVersion -ne $syftVersion) {
+            Write-Output "Expected version: $expectedVersion"
+            Write-Output "Actual version: $syftVersion"
+            Write-Output "Version mismatch."
             exit 1
-          fi
+          }
       - name: Install syft (MacOS or Linux)
         if: matrix.os != 'windows-latest'
         shell: bash -el {0}
@@ -52,6 +52,6 @@ jobs:
           if [ "$EXPECTED_VERSION" != "$SYFT_VERSION" ]; then
             echo "Expected version: $EXPECTED_VERSION"
             echo "Actual version: $SYFT_VERSION"
-            echo "Version mismatch. Failing the CI job."
+            echo "Version mismatch."
             exit 1
           fi
