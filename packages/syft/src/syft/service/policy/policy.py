@@ -38,6 +38,7 @@ from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
+from ...types.syft_object_registry import SyftObjectRegistry
 from ...types.transforms import TransformContext
 from ...types.transforms import generate_id
 from ...types.transforms import transform
@@ -56,6 +57,8 @@ from ..context import NodeServiceContext
 from ..dataset.dataset import Asset
 from ..response import SyftError
 from ..response import SyftSuccess
+
+DEFAULT_USER_POLICY_VERSION = 1
 
 PolicyUserVerifyKeyPartitionKey = PartitionKey(
     key="user_verify_key", type_=SyftVerifyKey
@@ -1155,10 +1158,13 @@ def execute_policy_code(user_policy: UserPolicy) -> Any:
         sys.stdout = stdout
         sys.stderr = stderr
 
-        class_name = f"{user_policy.unique_name}"
-        if class_name in user_policy.__object_version_registry__.keys():
-            policy_class = user_policy.__object_version_registry__[class_name]
-        else:
+        class_name = user_policy.unique_name
+
+        try:
+            policy_class = SyftObjectRegistry.get_serde_class(
+                class_name, version=DEFAULT_USER_POLICY_VERSION
+            )
+        except Exception:
             exec(user_policy.byte_code)  # nosec
             policy_class = eval(user_policy.unique_name)  # nosec
 
