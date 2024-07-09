@@ -29,6 +29,7 @@ from .dataset import Asset
 from .dataset import CreateDataset
 from .dataset import Dataset
 from .dataset import DatasetPageView
+from .dataset import DatasetUpdate
 from .dataset_stash import DatasetStash
 
 logger = logging.getLogger(__name__)
@@ -234,8 +235,10 @@ class DatasetService(AbstractService):
                 return del_res
             logger.info(del_res.message)
             return_msg.append(f"Asset with id '{asset.id}' successfully deleted.")
-        # delete the dataset object from the store
-        result = self.stash.delete_by_uid(credentials=context.credentials, uid=uid)
+        # soft delete the dataset object from the store
+        # result = self.stash.delete_by_uid(credentials=context.credentials, uid=uid)
+        datset_update = DatasetUpdate(id=uid, marked_as_deleted=True)
+        result = self.stash.update(context.credentials, datset_update)
         if result.is_err():
             return SyftError(message=result.err())
         return_msg.append(f"Dataset with id '{uid}' successfully deleted.")

@@ -26,6 +26,8 @@ from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
 from ...types.syft_migration import migrate
+from ...types.syft_object import PartialSyftObject
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
@@ -971,5 +973,8 @@ def migrate_create_dataset_v3_to_v2() -> list[Callable]:
     ]
 
 
-class DatasetUpdate:
-    pass
+class DatasetUpdate(PartialSyftObject):
+    __canonical_name__ = "DatasetUpdate"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    marked_as_deleted: bool
