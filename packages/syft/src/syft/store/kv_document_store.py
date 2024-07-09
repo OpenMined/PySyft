@@ -28,6 +28,7 @@ from ..types.syft_object import SyftObject
 from ..types.uid import UID
 from .document_store import BaseStash
 from .document_store import PartitionKey
+from .document_store import PartitionKeys
 from .document_store import QueryKey
 from .document_store import QueryKeys
 from .document_store import StorePartition
@@ -270,10 +271,16 @@ class KeyValueStorePartition(StorePartition):
         if not isinstance(permission.permission, ActionPermission):
             raise Exception(f"ObjectPermission type: {permission.permission} not valid")
 
-        # TODO: fix for other admins
         if (
             permission.credentials
             and self.root_verify_key.verify == permission.credentials.verify
+        ):
+            return True
+
+        if (
+            permission.credentials
+            and self.has_admin_permissions is not None
+            and self.has_admin_permissions(permission.credentials)
         ):
             return True
 
@@ -307,6 +314,9 @@ class KeyValueStorePartition(StorePartition):
             return Ok(self.permissions[uid])
         return Err(f"No permissions found for uid: {uid}")
 
+    def get_all_permissions(self) -> Result[dict[UID, set[str]], str]:
+        return Ok(dict(self.permissions.items()))
+
     def add_storage_permission(self, permission: StoragePermission) -> None:
         permissions = self.storage_permissions[permission.uid]
         permissions.add(permission.node_uid)
@@ -329,6 +339,14 @@ class KeyValueStorePartition(StorePartition):
             return permission.node_uid in self.storage_permissions[permission.uid]
         return False
 
+    def _get_storage_permissions_for_uid(self, uid: UID) -> Result[set[UID], Err]:
+        if uid in self.storage_permissions:
+            return Ok(self.storage_permissions[uid])
+        return Err(f"No storage permissions found for uid: {uid}")
+
+    def get_all_storage_permissions(self) -> Result[dict[UID, set[UID]], str]:
+        return Ok(dict(self.storage_permissions.items()))
+
     def _all(
         self,
         credentials: SyftVerifyKey,
@@ -341,11 +359,6 @@ class KeyValueStorePartition(StorePartition):
         if order_by is not None:
             result = sorted(result, key=lambda x: getattr(x, order_by.key, ""))
         return Ok(result)
-
-    def _get_storage_permissions_for_uid(self, uid: UID) -> Result[set[UID], Err]:
-        if uid in self.storage_permissions:
-            return Ok(self.storage_permissions[uid])
-        return Err(f"No storage permissions found for uid: {uid}")
 
     def _remove_keys(
         self,
@@ -416,6 +429,7 @@ class KeyValueStorePartition(StorePartition):
         obj: SyftObject,
         has_permission: bool = False,
         overwrite: bool = False,
+        allow_missing_keys: bool = False,
     ) -> Result[SyftObject, str]:
         try:
             if qk.value not in self.data:
@@ -428,9 +442,20 @@ class KeyValueStorePartition(StorePartition):
                 _original_unique_keys = self.settings.unique_keys.with_obj(
                     _original_obj
                 )
-                _original_searchable_keys = self.settings.searchable_keys.with_obj(
-                    _original_obj
-                )
+                if allow_missing_keys:
+                    searchable_keys = PartitionKeys(
+                        pks=[
+                            x
+                            for x in self.settings.searchable_keys.all
+                            if hasattr(_original_obj, x.key)
+                        ]
+                    )
+                    _original_searchable_keys = searchable_keys.with_obj(_original_obj)
+
+                else:
+                    _original_searchable_keys = self.settings.searchable_keys.with_obj(
+                        _original_obj
+                    )
 
                 store_query_key = self.settings.store_key.with_obj(_original_obj)
 
@@ -470,6 +495,11 @@ class KeyValueStorePartition(StorePartition):
                 return Err(f"Failed to update obj {obj}, you have no permission")
 
         except Exception as e:
+            # third party
+            # stdlib
+            import traceback
+
+            print(traceback.format_exc())
             return Err(f"Failed to update obj {obj} with error: {e}")
 
     def _get_all_from_store(
@@ -674,7 +704,13 @@ class KeyValueStorePartition(StorePartition):
                 try:
                     migrated_value = value.migrate_to(to_klass.__version__, context)
                 except Exception:
-                    return Err(f"Failed to migrate data to {to_klass} for qk: {key}")
+                    # stdlib
+                    import traceback
+
+                    print(traceback.format_exc())
+                    return Err(
+                        f"Failed to migrate data to {to_klass} for qk {to_klass.__version__}: {key}"
+                    )
                 qk = self.settings.store_key.with_obj(key)
                 result = self._update(
                     credentials,
@@ -682,6 +718,7 @@ class KeyValueStorePartition(StorePartition):
                     obj=migrated_value,
                     has_permission=has_permission,
                     overwrite=True,
+                    allow_missing_keys=True,
                 )
 
                 if result.is_err():
