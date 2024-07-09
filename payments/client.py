@@ -1,15 +1,15 @@
 import pandas as pd
-import os 
+import os
 
 import syft as sy
 from syft import autocache
 
-DATA_SCIENTIST_EMAIL = "jane@caltech.edu" 
+DATA_SCIENTIST_EMAIL = "jane@caltech.edu"
 DATA_SCIENTIST_PASSWORD = "abc123"
 
-# notebooks/api/0.8/00-load-data.ipynb  
+# notebooks/api/0.8/00-load-data.ipynb
 # Uploading a private dataset as a Data Owner
-def data_owner_uploads_data_to_node(data_owner):   
+def data_owner_uploads_data_to_node(data_owner):
     country = sy.DataSubject(name="Country", aliases=["country_code"])
     canada = sy.DataSubject(name="Canada", aliases=["country_code:ca"])
     country.add_member(canada)
@@ -34,7 +34,7 @@ def data_owner_uploads_data_to_node(data_owner):
     ctf.set_shape(ca_data.shape)
     ctf.add_data_subject(canada)
     ctf.set_mock(mock_ca_data, mock_is_real=False)
-    
+
     dataset.add_asset(ctf)
 
     upload_res = data_owner.upload_dataset(dataset)
@@ -62,7 +62,7 @@ def data_owner_uploads_data_to_node(data_owner):
 # Submitting code to run analysis on the private dataset as a Data Scientist
 def data_scientist_requests_code_execution(domain_client):
     data_scientist = domain_client.login(
-        email=DATA_SCIENTIST_EMAIL, 
+        email=DATA_SCIENTIST_EMAIL,
         password=DATA_SCIENTIST_PASSWORD,
     )
 
@@ -77,7 +77,7 @@ def data_scientist_requests_code_execution(domain_client):
     print(mock["Trade Value (US$)"].sum())
 
     # We wrap our compute function with this decorator to make the function run exactly on the `asset` dataset
-    # This converts the function into a SubmitUserCode object 
+    # This converts the function into a SubmitUserCode object
     @sy.syft_function_single_use(trade_data=asset)
     def sum_trade_value_mil(trade_data):
         # third party
@@ -98,8 +98,8 @@ def data_scientist_requests_code_execution(domain_client):
         return (float(total / 1_000_000), float(noise))
 
     #####################
-    # TODO: confirm this interpretation of the following code: 
-    # Validate code against the mock data, on a mock server, 
+    # TODO: confirm this interpretation of the following code:
+    # Validate code against the mock data, on a mock server,
     # before submitting it to the Domain Server
     #####################
 
@@ -107,7 +107,7 @@ def data_scientist_requests_code_execution(domain_client):
     result = pointer.get()
     print(result[0])
 
-    print(sum_trade_value_mil.code) 
+    print(sum_trade_value_mil.code)
 
     #####################
     # Submit code to the Domain Server
@@ -120,20 +120,20 @@ def data_scientist_requests_code_execution(domain_client):
     )
     print(new_project)
 
-    # on the node, parse the code, convert to byte-code, send a notification, 
+    # on the node, parse the code, convert to byte-code, send a notification,
     # on the client, create the RemoteUserCodeFunction: jane_client.code.sum_trade_value_mil
     result = new_project.create_code_request(sum_trade_value_mil, data_scientist)
     print(result)
 
-    # Not clear what this line does: 
+    # Not clear what this line does:
     project = new_project.send()
     print(project)
 
 # notebooks/api/0.8/02-review-code-and-approve.ipynb
-# review and run code as data owner 
+# review and run code as data owner
 def data_owner_reviews_and_runs_code(data_owner):
     # review data scientist's code
-    # While Syft makes sure that the function is not tampered with, 
+    # While Syft makes sure that the function is not tampered with,
     # it does not perform any validation on the implementation itself.
     # It is the Data Owner's responsibility to review the code & verify if it's safe to execute.
     project = data_owner.projects[0]
@@ -146,11 +146,11 @@ def data_owner_reviews_and_runs_code(data_owner):
     pvt_data = asset.data
     print(pvt_data)
 
-    # execute the data scientist's code 
+    # execute the data scientist's code
     users_function = func.unsafe_function
     real_result = users_function(trade_data=pvt_data)
 
-    # share result with data scientist 
+    # share result with data scientist
     # request object also has “approve” (which is called by “accept_by_depositing_result") and “approve_with_client”
     result = request.accept_by_depositing_result(real_result, force=True)
     print(result)
@@ -159,21 +159,21 @@ def data_owner_reviews_and_runs_code(data_owner):
 # Data Scientist downloads the result
 def data_scientist_downloads_result(domain_client):
     data_scientist = domain_client.login(
-        email=DATA_SCIENTIST_EMAIL, 
-        password=DATA_SCIENTIST_PASSWORD, 
+        email=DATA_SCIENTIST_EMAIL,
+        password=DATA_SCIENTIST_PASSWORD,
     )
 
     asset = data_scientist.datasets[0].assets[0]
 
-    # this attempt to execute the code on the server will succeed 
-    # ... as the code is approved by the data owner: 
+    # this attempt to execute the code on the server will succeed
+    # ... as the code is approved by the data owner:
     result_pointer = data_scientist.code.sum_trade_value_mil(trade_data=asset)
     real_result = result_pointer.get()
     print(real_result)
 
-def main(): 
+def main():
     sy.requires(">=0.8.6,<0.8.7")
-    
+
     # Log into the node with default root credentials
     domain_client = sy.login(
         port=8080,

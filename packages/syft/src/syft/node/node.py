@@ -1217,11 +1217,11 @@ class Node(AbstractNode):
                 f'Not charging for API call {path} to node {self.name} '
                 f'because this call may be made before the payment auth token is stored on the node'
             )
-        else: 
+        else:
             payment_auth_token = self.get_payment_auth_token_for_credentials(credentials=credentials)
             if payment_auth_token == '':
                 return SyftError(message=(
-                    "Cannot pay for call as Payment Auth Token has not been set." 
+                    "Cannot pay for call as Payment Auth Token has not been set."
                     "Please set Payment Auth Token using 'client.me.set_payment_auth_token' API call."
                 ))
             print(f"Ready to pay for API call {path} on node {self.name} with Payment Auth Token {payment_auth_token}")

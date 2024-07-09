@@ -184,7 +184,7 @@ class UserService(AbstractService):
         if result.is_ok():
             user = result.ok()
             if user:
-                return user.payment_auth_token        
+                return user.payment_auth_token
 
     @service_method(path="user.search", name="search", autosplat=["user_search"])
     def search(

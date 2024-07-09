@@ -135,7 +135,7 @@ class UserUpdate(PartialSyftObject):
     institution: str
     website: str
     mock_execution_permission: bool
-    payment_auth_token: str 
+    payment_auth_token: str
 
 
 @serializable()
