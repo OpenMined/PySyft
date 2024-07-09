@@ -228,7 +228,7 @@ def test_dataset_search(set_env_var, gateway_port: int, domain_1_port: int) -> N
     assert len(wrong_search) == 0
 
     # the domain client delete the dataset
-    domain_client.api.services.dataset.delete_by_uid(uid=dataset.id)
+    domain_client.api.services.dataset.delete(uid=dataset.id)
 
     # Remove existing peers
     assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
@@ -310,7 +310,7 @@ def test_domain_gateway_user_code(
     assert (final_result == input_data + 1).all()
 
     # the domain client delete the dataset
-    domain_client.api.services.dataset.delete_by_uid(uid=dataset.id)
+    domain_client.api.services.dataset.delete(uid=dataset.id)
 
     # Remove existing peers
     assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
@@ -837,7 +837,7 @@ def test_dataset_stream(set_env_var, gateway_port: int, domain_1_port: int) -> N
     assert np.all(retrieved_asset.data == input_data)
 
     # the domain client delete the dataset
-    domain_client.api.services.dataset.delete_by_uid(uid=retrieved_dataset.id)
+    domain_client.api.services.dataset.delete(uid=retrieved_dataset.id)
 
     # Remove existing peers
     assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
