@@ -248,7 +248,7 @@ class UserView(SyftObject):
         except ValidationError:
             return SyftError(message="{email} is not a valid email address.")
 
-        result = api.services.user.update(uid=self.id, **user_update)
+        result = api.services.user.update(uid=self.id, email=user_update.email)
 
         if isinstance(result, SyftError):
             return result
