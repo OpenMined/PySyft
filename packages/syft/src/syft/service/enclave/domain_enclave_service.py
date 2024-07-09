@@ -141,7 +141,7 @@ class DomainEnclaveService(AbstractService):
         asset_action_ids_nested = [
             assets.values()
             for node_identity, assets in code.input_policy_init_kwargs.items()
-            if node_identity.node_name == context.node.name
+            if node_identity.node_id == context.node.id
         ]
         asset_action_ids = tuple(itertools.chain.from_iterable(asset_action_ids_nested))
         action_objects = [
