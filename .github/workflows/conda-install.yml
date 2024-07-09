@@ -32,8 +32,8 @@ jobs:
         shell: pwsh
         run: |
           python -m pip install ./packages/syft
-          EXPECTED_VERSION=$(python packages/grid/VERSION)
-          SYFT_VERSION=$(python -c 'import syft; print(syft.__version__)')
+          $expectedVersion = python packages/grid/VERSION
+          $syftVersion = python -c 'import syft; print(syft.__version__)'
           # Compare the versions
           if ($expectedVersion -ne $syftVersion) {
             Write-Output "Expected version: $expectedVersion"
