@@ -21,6 +21,8 @@ from syft.service.response import SyftSuccess
 from syft.service.settings.settings_service import SettingsService
 from syft.store.document_store import DocumentStore
 from syft.store.linked_obj import LinkedObject
+from syft.service.user.user import UserPrivateKey
+from syft.types.errors import SyftException
 
 
 @pytest.fixture
@@ -37,7 +39,7 @@ def get_ds_client(faker: Faker, root_client: SyftClient, guest_client: SyftClien
         password=password,
         password_verify=password,
     )
-    assert isinstance(result, SyftSuccess)
+    assert isinstance(result, UserPrivateKey)
     ds_client = guest_client.login(email=guest_email, password=password)
     return ds_client
 
@@ -112,8 +114,11 @@ def test_action_store_change(faker: Faker, worker: Worker):
     result = permission_change.undo(change_context)
     assert result.is_ok()
 
-    result = action_obj_ptr.get()
-    assert isinstance(result, SyftError)
+    with pytest.raises(SyftException) as exc:
+        action_obj_ptr.get()
+
+    assert exc.type is SyftException
+    assert "Permission", "denied" in exc.value.public_message
 
 
 def test_user_code_status_change(faker: Faker, worker: Worker):
@@ -191,7 +196,8 @@ def test_code_accept_deny(faker: Faker, worker: Worker):
     result = ds_client.code.simple_function(data=action_obj)
     assert result.get() == sum(dummy_data)
 
-    result = request.deny(reason="Function output needs differential privacy !!")
+    deny_reason = "Function output needs differential privacy!!"
+    result = request.deny(reason=deny_reason)
     assert isinstance(result, SyftSuccess)
 
     request = root_client.requests.get_all()[0]
@@ -200,6 +206,8 @@ def test_code_accept_deny(faker: Faker, worker: Worker):
     user_code = ds_client.code.get_all()[0]
     assert not user_code.status.approved
 
-    result = ds_client.code.simple_function(data=action_obj)
-    assert isinstance(result, SyftError)
-    assert "DENIED" in result.message
+    with pytest.raises(SyftException) as exc:
+        ds_client.code.simple_function(data=action_obj)
+
+    assert exc.type is SyftException
+    assert deny_reason in exc.value.public_message
