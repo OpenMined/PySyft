@@ -1261,18 +1261,19 @@ class Node(AbstractNode):
         result = None
         is_blocking = api_call.message.blocking
 
+        credentials: SyftVerifyKey = api_call.credentials
+        role = self.get_role_for_credentials(credentials=credentials)
+        context = AuthedServiceContext(
+            node=self,
+            credentials=credentials,
+            role=role,
+            job_id=job_id,
+            is_blocking_api_call=is_blocking,
+        )
+
         if is_blocking or self.is_subprocess:
-            credentials: SyftVerifyKey = api_call.credentials
             api_call = api_call.message
 
-            role = self.get_role_for_credentials(credentials=credentials)
-            context = AuthedServiceContext(
-                node=self,
-                credentials=credentials,
-                role=role,
-                job_id=job_id,
-                is_blocking_api_call=is_blocking,
-            )
             AuthNodeContextRegistry.set_node_context(self.id, context, credentials)
 
             user_config_registry = UserServiceConfigRegistry.from_role(role)
@@ -1314,7 +1315,20 @@ class Node(AbstractNode):
             ):
                 print(f"Exception (hidden from DS) happened on the server side:\n{tb}")
         else:
-            return self.add_api_call_to_queue(api_call)
+            try:
+                return self.add_api_call_to_queue(api_call)
+            except SyftException as e:
+                return SyftError.from_exception(context=context, exc=e)
+            except Exception:
+                result = SyftError(
+                    message=f"Exception calling {api_call.path}. {traceback.format_exc()}"
+                )
+                tb = traceback.format_exc()
+            if (
+                isinstance(result, SyftError)
+                and role.value < ServiceRole.DATA_OWNER.value
+            ):
+                print(f"Exception (hidden from DS) happened on the server side:\n{tb}")
         return result
 
     def add_api_endpoint_execution_to_queue(
@@ -1366,7 +1380,7 @@ class Node(AbstractNode):
             credentials=credentials,
             action=action,
             job_type=JobType.TWINAPIJOB,
-        )
+        ).unwrap()
 
     def get_worker_pool_ref_by_name(
         self, credentials: SyftVerifyKey, worker_pool_name: str | None = None
@@ -1389,6 +1403,7 @@ class Node(AbstractNode):
         )
         return worker_pool_ref
 
+    @as_result(SyftException)
     def add_action_to_queue(
         self,
         action: Action,
@@ -1396,7 +1411,7 @@ class Node(AbstractNode):
         parent_job_id: UID | None = None,
         has_execute_permissions: bool = False,
         worker_pool_name: str | None = None,
-    ) -> Job | SyftError:
+    ) -> Job:
         job_id = UID()
         task_uid = UID()
         worker_settings = WorkerSettings.from_node(node=self)
@@ -1416,7 +1431,7 @@ class Node(AbstractNode):
             credentials, worker_pool_name
         )
         if isinstance(worker_pool_ref, SyftError):
-            return worker_pool_ref
+            raise SyftException(public_message=worker_pool_ref.message)
         queue_item = ActionQueueItem(
             id=task_uid,
             node_uid=self.id,
@@ -1440,8 +1455,9 @@ class Node(AbstractNode):
             action=action,
             parent_job_id=parent_job_id,
             user_id=user_id,
-        )
+        ).unwrap()
 
+    @as_result(SyftException)
     def add_queueitem_to_queue(
         self,
         *,
@@ -1451,23 +1467,25 @@ class Node(AbstractNode):
         parent_job_id: UID | None = None,
         user_id: UID | None = None,
         job_type: JobType = JobType.JOB,
-    ) -> Job | SyftError:
+    ) -> Job:
         log_id = UID()
         role = self.get_role_for_credentials(credentials=credentials)
         context = AuthedServiceContext(node=self, credentials=credentials, role=role)
 
+        action_service = self.get_service("actionservice")
+        log_service = self.get_service("logservice")
+
         result_obj = ActionObject.empty()
         if action is not None:
-            result_obj = ActionObject.obj_not_ready(id=action.result_id)
+            result_obj = ActionObject.obj_not_ready(
+                id=action.result_id,
+                syft_node_location=self.id,
+                syft_client_verify_key=credentials,
+            )
             result_obj.id = action.result_id
-            result_obj.syft_resolved = False
-            result_obj.syft_node_location = self.id
-            result_obj.syft_client_verify_key = credentials
-
-            action_service = self.get_service("actionservice")
 
             if not action_service.store.exists(uid=action.result_id):
-                result = action_service.set_result_to_store(
+                action_service.set_result_to_store(
                     result_action_object=result_obj,
                     context=context,
                 ).unwrap()
@@ -1486,17 +1504,12 @@ class Node(AbstractNode):
         )
 
         # 🟡 TODO 36: Needs distributed lock
-        job_res = self.job_stash.set(credentials, job)
-        if job_res.is_err():
-            return SyftError(message=f"{job_res.err()}")
-        self.queue_stash.set_placeholder(credentials, queue_item)
+        self.job_stash.set(credentials, job).unwrap()
+        self.queue_stash.set_placeholder(credentials, queue_item).unwrap()
 
-        log_service = self.get_service("logservice")
+        log_service.add(context, log_id, queue_item.job_id)
 
-        result = log_service.add(context, log_id, queue_item.job_id)
-        if isinstance(result, SyftError):
-            return result
-        return SyftSuccess(message="succesfully queued job", value=job)
+        return job
 
     def _sort_jobs(self, jobs: list[Job]) -> list[Job]:
         job_datetimes = {}
@@ -1542,7 +1555,7 @@ class Node(AbstractNode):
 
     def add_api_call_to_queue(
         self, api_call: SyftAPICall, parent_job_id: UID | None = None
-    ) -> Job | SyftError:
+    ) -> SyftSuccess:
         unsigned_call = api_call
         if isinstance(api_call, SignedSyftAPICall):
             unsigned_call = api_call.message
@@ -1564,8 +1577,6 @@ class Node(AbstractNode):
             user_code_id = action.user_code_id
 
             user = self.get_service(UserService).get_current_user(context)
-            if isinstance(user, SyftError):
-                return user
             user = cast(UserView, user)
 
             is_execution_on_owned_kwargs_allowed = (
@@ -1581,7 +1592,7 @@ class Node(AbstractNode):
             ):
                 existing_jobs = self._get_existing_user_code_jobs(context, user_code_id)
                 if isinstance(existing_jobs, SyftError):
-                    return SyftSuccess(message="succesfully queued job", value=existing_jobs)
+                    return SyftSuccess(message="Got existing job", value=existing_jobs)
                 elif len(existing_jobs) > 0:
                     # Print warning if there are existing jobs for this user code
                     # relative
@@ -1590,23 +1601,27 @@ class Node(AbstractNode):
                     prompt_warning_message(
                         "There are existing jobs for this user code, returning the latest one"
                     )
-                    return SyftSuccess(message="succesfully queued job", value=existing_jobs[-1])
+                    return SyftSuccess(
+                        message="Found multiple existing jobs, got last",
+                        value=existing_jobs[-1],
+                    )
                 else:
-                    return SyftError(
-                        message="Please wait for the admin to allow the execution of this code"
+                    raise SyftException(
+                        public_message="Please wait for the admin to allow the execution of this code"
                     )
 
             elif (
                 is_usercode_call_on_owned_kwargs
                 and not is_execution_on_owned_kwargs_allowed
             ):
-                return SyftError(
+                raise SyftException(
                     message="You do not have the permissions for mock execution, please contact the admin"
                 )
 
-            return self.add_action_to_queue(
+            job = self.add_action_to_queue(
                 action, api_call.credentials, parent_job_id=parent_job_id
-            )
+            ).unwrap()
+            return SyftSuccess(message="Succesfully queued job", value=job)
 
         else:
             worker_settings = WorkerSettings.from_node(node=self)
@@ -1632,7 +1647,7 @@ class Node(AbstractNode):
                 credentials=api_call.credentials,
                 action=None,
                 parent_job_id=parent_job_id,
-            )
+            ).unwrap()
 
     @property
     def pool_stash(self) -> SyftWorkerPoolStash:

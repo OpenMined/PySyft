@@ -250,7 +250,7 @@ class BlobStorageService(AbstractService):
         uid: UID,
         etags: list,
         no_lines: int | None = 0,
-    ) -> SyftError:
+    ) -> SyftSuccess:
         obj = self.stash.get_by_uid(
             credentials=context.credentials,
             uid=uid,

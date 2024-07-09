@@ -412,8 +412,6 @@ class UserCodeService(AbstractService):
                 # Jobs have UID kwargs instead of ActionObject
                 # FIX: action_service will need to be unwrapped
                 v = action_service.get(context, uid=v)
-                if v.is_ok():
-                    v = v.ok()
             if (
                 isinstance(v, ActionObject)
                 and v.syft_client_verify_key == context.credentials

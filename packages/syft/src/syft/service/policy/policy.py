@@ -538,7 +538,6 @@ class MixedInputPolicy(InputPolicy):
             pass  # just grab the first one
         return matches.pop()
 
-    @as_result(SyftException)
     def filter_kwargs(
         self,
         kwargs: dict[str, UID],

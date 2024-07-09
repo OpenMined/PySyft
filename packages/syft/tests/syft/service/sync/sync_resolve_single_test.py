@@ -2,9 +2,9 @@
 
 # third party
 import numpy as np
+import pytest
 
 # syft absolute
-import pytest
 import syft
 import syft as sy
 from syft.client.domain_client import DomainClient

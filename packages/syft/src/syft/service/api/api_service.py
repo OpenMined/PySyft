@@ -392,21 +392,18 @@ class APIService(AbstractService):
         if isinstance(custom_endpoint, SyftError):
             return custom_endpoint
 
-        result = context.node.add_api_endpoint_execution_to_queue(
+        job = context.node.add_api_endpoint_execution_to_queue(
             context.credentials,
             method,
             path,
             *args,
             worker_pool=custom_endpoint.worker_pool,
             **kwargs,
-        )
-        if isinstance(result, SyftError):
-            return result
+        ).unwrap()
         # relative
         from ..job.job_stash import JobStatus
 
         # So result is a Job object
-        job = result
         job_service = context.node.get_service("jobservice")
         job_id = job.id
         # Question: For a small moment, when job status is updated, it doesn't return the job during the .get() as if

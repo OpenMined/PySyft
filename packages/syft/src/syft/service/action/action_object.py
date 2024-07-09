@@ -1488,13 +1488,16 @@ class ActionObject(SyncableSyftObject):
 
     @staticmethod
     def obj_not_ready(
-        id: UID,
+        id: UID, syft_node_location: UID, syft_client_verify_key: SyftVerifyKey
     ) -> ActionObject:
         inner_obj = ObjectNotReady(obj_id=id)
 
         res = ActionObject.from_obj(
             id=id,
             syft_action_data=inner_obj,
+            syft_resolved=False,
+            syft_node_location=syft_node_location,
+            syft_client_verify_key=syft_client_verify_key,
         )
         return res
 
