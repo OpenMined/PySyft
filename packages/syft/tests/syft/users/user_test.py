@@ -16,7 +16,6 @@ from syft.node.worker import Worker
 from syft.service.context import AuthedServiceContext
 from syft.service.user.user import ServiceRole
 from syft.service.user.user import UserCreate
-from syft.service.user.user import UserUpdate
 from syft.service.user.user import UserView
 
 GUEST_ROLES = [ServiceRole.GUEST]
@@ -179,7 +178,7 @@ def test_user_update_roles(do_client, guest_client, ds_client, root_client, work
     for _c in clients:
         for target_role in [ServiceRole.DATA_OWNER, ServiceRole.ADMIN]:
             assert not do_client.api.services.user.update(
-                _c.user_id, UserUpdate(role=target_role)
+                uid=_c.user_id, role=target_role
             )
 
     # DOs cannot downgrade higher roles to lower levels
@@ -191,7 +190,7 @@ def test_user_update_roles(do_client, guest_client, ds_client, root_client, work
         for target_role in DO_ROLES:
             if target_role < _c.role:
                 assert not do_client.api.services.user.update(
-                    _c.user_id, UserUpdate(role=target_role)
+                    uid=_c.user_id, role=target_role
                 )
 
     # DSs cannot update any roles
@@ -199,7 +198,7 @@ def test_user_update_roles(do_client, guest_client, ds_client, root_client, work
     for _c in clients:
         for target_role in ADMIN_ROLES:
             assert not ds_client.api.services.user.update(
-                _c.user_id, UserUpdate(role=target_role)
+                uid=_c.user_id, role=target_role
             )
 
     # Guests cannot update any roles
@@ -207,7 +206,7 @@ def test_user_update_roles(do_client, guest_client, ds_client, root_client, work
     for _c in clients:
         for target_role in ADMIN_ROLES:
             assert not guest_client.api.services.user.update(
-                _c.user_id, UserUpdate(role=target_role)
+                uid=_c.user_id, role=target_role
             )
 
 

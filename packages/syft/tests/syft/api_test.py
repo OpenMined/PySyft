@@ -8,7 +8,6 @@ import pytest
 # syft absolute
 import syft as sy
 from syft.service.response import SyftAttributeError
-from syft.service.user.user import UserUpdate
 from syft.service.user.user_roles import ServiceRole
 
 
