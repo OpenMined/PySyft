@@ -578,11 +578,8 @@ class ActionService(AbstractService):
 
         def blob_permission(
             x: SyftVerifyKey | None = None,
-        ) -> ActionObjectPermission | None:
-            if result_blob_id:
-                return ActionObjectPermission(result_blob_id, read_permission, x)
-            else:
-                return None
+        ) -> ActionObjectPermission:
+            return ActionObjectPermission(result_blob_id, read_permission, x)
 
         if len(output_readers) > 0:
             store_permissions = [store_permission(x) for x in output_readers]
