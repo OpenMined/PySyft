@@ -214,9 +214,7 @@ class UserView(SyftObject):
         if api is None:
             return SyftError(message=f"You must login to {self.server_uid}")
 
-        api.services.user.update(
-            uid=self.id, user_update=UserUpdate(password=new_password)
-        )
+        api.services.user.update(uid=self.id, password=new_password)
         return SyftSuccess(
             message=f"Successfully updated password for "
             f"user '{self.name}' with email '{self.email}'."
@@ -250,7 +248,7 @@ class UserView(SyftObject):
         except ValidationError:
             return SyftError(message="{email} is not a valid email address.")
 
-        result = api.services.user.update(uid=self.id, user_update=user_update)
+        result = api.services.user.update(uid=self.id, **user_update)
 
         if isinstance(result, SyftError):
             return result
@@ -283,7 +281,7 @@ class UserView(SyftObject):
             role=role,
             mock_execution_permission=mock_execution_permission,
         )
-        result = api.services.user.update(uid=self.id, user_update=user_update)
+        result = api.services.user.update(uid=self.id, **user_update)
 
         if isinstance(result, SyftError):
             return result
