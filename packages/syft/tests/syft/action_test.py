@@ -9,7 +9,7 @@ import pytest
 # syft absolute
 from syft import ActionObject
 from syft.client.api import SyftAPICall
-from syft.node.worker import Worker
+from syft.server.worker import Worker
 from syft.service.action.action_object import Action
 from syft.service.response import SyftError
 from syft.service.user.user import UserUpdate
@@ -108,7 +108,7 @@ def test_call_lib_wo_permission(worker):
     )
     kwargs = {"action": action}
     api_call = SyftAPICall(
-        node_uid=worker.id, path="action.execute", args=[], kwargs=kwargs
+        server_uid=worker.id, path="action.execute", args=[], kwargs=kwargs
     )
     res = root_datasite_client.api.make_call(api_call)
     assert isinstance(res, SyftError)
@@ -159,7 +159,7 @@ def test_call_lib_custom_signature(worker):
 #         return action_service_execute_method(context, action)
 
 #     with mock.patch(
-#         "syft.core.node.new.action_object.ActionObjectPointer.execute_action", mock_func
+#         "syft.core.server.new.action_object.ActionObjectPointer.execute_action", mock_func
 #     ):
 #         result = pointer1 + pointer2
 

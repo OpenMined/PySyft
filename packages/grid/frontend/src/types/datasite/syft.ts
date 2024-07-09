@@ -2,6 +2,6 @@ export interface SyftUID {
   value: string
 }
 
-export interface SyftNodeId {
+export interface SyftServerId {
   value: string
 }

@@ -156,7 +156,7 @@ registry:
 
 # =================================================================================
 
-node:
+server:
   # Syft settings
   name: null
   rootEmail: info@openmined.org

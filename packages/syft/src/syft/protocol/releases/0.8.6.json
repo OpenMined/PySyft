@@ -355,7 +355,7 @@
           "action": "add"
         }
       },
-      "NodeMetadata": {
+      "ServerMetadata": {
         "1": {
           "version": 1,
           "hash": "6bee018894dfdf697ea624740d0bf051750e0b0d8470ced59646f6d8812068ac",
@@ -377,7 +377,7 @@
           "action": "add"
         }
       },
-      "NodeSettings": {
+      "ServerSettings": {
         "1": {
           "version": 1,
           "hash": "b662047bb278f4f5db77c102f94b733c3a929839271b3d6b82ea174a60e2aaf0",
@@ -690,7 +690,7 @@
           "action": "add"
         }
       },
-      "NodeSettingsUpdate": {
+      "ServerSettingsUpdate": {
         "1": {
           "version": 1,
           "hash": "b6ddc66ff270a3c2c4760e31e1a55d72ed04ccae2d0115ebe2fba6f2bf9bd119",
@@ -776,7 +776,7 @@
           "action": "add"
         }
       },
-      "NodeMetadataUpdate": {
+      "ServerMetadataUpdate": {
         "1": {
           "version": 1,
           "hash": "569d124c23590360bda240c19b53314ccc6204c5d1ab0d2898976a028e002191",
@@ -1124,7 +1124,7 @@
           "action": "add"
         }
       },
-      "HTTPNodeRoute": {
+      "HTTPServerRoute": {
         "1": {
           "version": 1,
           "hash": "1901b9f53f9970ce2bd8307ba9f7cafc0e7eba1d2ec82e4014c6120e605e3741",
@@ -1136,7 +1136,7 @@
           "action": "add"
         }
       },
-      "PythonNodeRoute": {
+      "PythonServerRoute": {
         "1": {
           "version": 1,
           "hash": "15711e6e7a1ef726c8e8b5c35a6cb2d30b56ba5213cba489524bf63489e136cf",
@@ -1520,7 +1520,7 @@
           "action": "add"
         }
       },
-      "NodePeer": {
+      "ServerPeer": {
         "1": {
           "version": 1,
           "hash": "7b88de7e38490e2d69f31295137673e7ddabc16ab0e2272ff491f6cea1835d63",
@@ -1647,7 +1647,7 @@
           "action": "add"
         }
       },
-      "VeilidNodeRoute": {
+      "VeilidServerRoute": {
         "1": {
           "version": 1,
           "hash": "eadf99eac62574cdda61290c44c564a3ba22faebf27a661da4fc4a2643760376",

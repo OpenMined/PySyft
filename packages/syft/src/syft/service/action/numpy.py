@@ -20,7 +20,7 @@ from .action_object import ActionObjectV3
 from .action_object import BASE_PASSTHROUGH_ATTRS
 from .action_types import action_types
 
-# @serializable(attrs=["id", "node_uid", "parent_id"])
+# @serializable(attrs=["id", "server_uid", "parent_id"])
 # class NumpyArrayObjectPointer(ActionObjectPointer):
 #     _inflix_operations = ["__add__", "__sub__", "__eq__", "__mul__"]
 #     __canonical_name__ = "NumpyArrayObjectPointer"

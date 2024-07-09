@@ -16,9 +16,9 @@ from result import Result
 from typeguard import check_type
 
 # relative
-from ..node.credentials import SyftSigningKey
-from ..node.credentials import SyftVerifyKey
 from ..serde.serializable import serializable
+from ..server.credentials import SyftSigningKey
+from ..server.credentials import SyftVerifyKey
 from ..service.action.action_permissions import ActionObjectPermission
 from ..service.action.action_permissions import StoragePermission
 from ..service.context import AuthedServiceContext
@@ -305,7 +305,7 @@ class StorePartition:
 
     def __init__(
         self,
-        node_uid: UID,
+        server_uid: UID,
         root_verify_key: SyftVerifyKey | None,
         settings: PartitionSettings,
         store_config: StoreConfig,
@@ -313,7 +313,7 @@ class StorePartition:
     ) -> None:
         if root_verify_key is None:
             root_verify_key = SyftSigningKey.generate().verify_key
-        self.node_uid = node_uid
+        self.server_uid = server_uid
         self.root_verify_key = root_verify_key
         self.settings = settings
         self.store_config = store_config
@@ -568,7 +568,7 @@ class DocumentStore:
 
     def __init__(
         self,
-        node_uid: UID,
+        server_uid: UID,
         root_verify_key: SyftVerifyKey | None,
         store_config: StoreConfig,
     ) -> None:
@@ -576,7 +576,7 @@ class DocumentStore:
             raise Exception("must have store config")
         self.partitions = {}
         self.store_config = store_config
-        self.node_uid = node_uid
+        self.server_uid = server_uid
         self.root_verify_key = root_verify_key
 
     def __has_admin_permissions(
@@ -612,7 +612,7 @@ class DocumentStore:
     def partition(self, settings: PartitionSettings) -> StorePartition:
         if settings.name not in self.partitions:
             self.partitions[settings.name] = self.partition_type(
-                node_uid=self.node_uid,
+                server_uid=self.server_uid,
                 root_verify_key=self.root_verify_key,
                 settings=settings,
                 store_config=self.store_config,

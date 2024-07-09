@@ -121,7 +121,7 @@
             <div class="flex flex-col gap-1 pt-2 pb-4 w-full">
               <div class="flex gap-1 flex-wrap items-center">
                 <h4 class="text-gray-400 all-caps text-sm">ID#:</h4>
-                <Badge variant="gray">{metadata.node_id}</Badge>
+                <Badge variant="gray">{metadata.server_id}</Badge>
               </div>
               <div class="flex gap-1 items-center">
                 <h4 class="text-gray-400 all-caps text-sm">Deployed on:</h4>

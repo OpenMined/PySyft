@@ -13,9 +13,9 @@ import pandas as pd
 import requests
 
 # relative
-from ..service.metadata.node_metadata import NodeMetadataJSON
-from ..service.network.node_peer import NodePeer
-from ..service.network.node_peer import NodePeerConnectionStatus
+from ..service.metadata.server_metadata import ServerMetadataJSON
+from ..service.network.server_peer import ServerPeer
+from ..service.network.server_peer import ServerPeerConnectionStatus
 from ..service.response import SyftException
 from ..types.grid_url import GridURL
 from ..util.constants import DEFAULT_TIMEOUT
@@ -77,7 +77,7 @@ class NetworkRegistry:
             url = "http://" + network["host_or_ip"] + ":" + str(network["port"]) + "/"
             try:
                 res = requests.get(url, timeout=DEFAULT_TIMEOUT)  # nosec
-                online = "This is a PyGrid Network node." in res.text
+                online = "This is a PyGrid Network server." in res.text
             except Exception:
                 online = False
 
@@ -185,7 +185,7 @@ class NetworkRegistry:
 class DatasiteRegistry:
     def __init__(self) -> None:
         self.all_networks: list[dict] = []
-        self.all_datasites: dict[str, NodePeer] = {}
+        self.all_datasites: dict[str, ServerPeer] = {}
         try:
             network_json = NetworkRegistry.load_network_registry_json()
             self.all_networks = _get_all_networks(
@@ -200,7 +200,7 @@ class DatasiteRegistry:
     def _get_all_datasites(self) -> None:
         for network in self.all_networks:
             network_client = NetworkRegistry.create_client(network)
-            datasites: list[NodePeer] = network_client.datasites.retrieve_nodes()
+            datasites: list[ServerPeer] = network_client.datasites.retrieve_servers()
             for datasite in datasites:
                 self.all_datasites[str(datasite.id)] = datasite
 
@@ -212,7 +212,7 @@ class DatasiteRegistry:
             url = "http://" + network["host_or_ip"] + ":" + str(network["port"]) + "/"
             try:
                 res = requests.get(url, timeout=DEFAULT_TIMEOUT)
-                online = "This is a PyGrid Network node." in res.text
+                online = "This is a PyGrid Network server." in res.text
             except Exception:
                 online = False
 
@@ -254,7 +254,7 @@ class DatasiteRegistry:
         return [network for network in _online_networks if network is not None]
 
     @property
-    def online_datasites(self) -> list[tuple[NodePeer, NodeMetadataJSON | None]]:
+    def online_datasites(self) -> list[tuple[ServerPeer, ServerMetadataJSON | None]]:
         networks = self.online_networks
 
         _all_online_datasites = []
@@ -265,14 +265,14 @@ class DatasiteRegistry:
                 logger.error(f"Error in creating network client {e}")
                 continue
 
-            datasites: list[NodePeer] = network_client.datasites.retrieve_nodes()
+            datasites: list[ServerPeer] = network_client.datasites.retrieve_servers()
             for datasite in datasites:
                 self.all_datasites[str(datasite.id)] = datasite
 
             _all_online_datasites += [
                 (datasite, datasite.guest_client.metadata)
                 for datasite in datasites
-                if datasite.ping_status == NodePeerConnectionStatus.ACTIVE
+                if datasite.ping_status == ServerPeerConnectionStatus.ACTIVE
             ]
 
         return [datasite for datasite in _all_online_datasites if datasite is not None]
@@ -287,7 +287,7 @@ class DatasiteRegistry:
                 datasite_dict["organization"] = metadata.organization
                 datasite_dict["version"] = metadata.syft_version
             route = None
-            if len(datasite.node_routes) > 0:
+            if len(datasite.server_routes) > 0:
                 route = datasite.pick_highest_priority_route()
             datasite_dict["host_or_ip"] = route.host_or_ip if route else "-"
             datasite_dict["protocol"] = route.protocol if route else "-"
@@ -333,7 +333,7 @@ class DatasiteRegistry:
         df = pd.concat([df, total_df])
         return df._repr_html_()  # type: ignore
 
-    def create_client(self, peer: NodePeer) -> Client:
+    def create_client(self, peer: ServerPeer) -> Client:
         try:
             return peer.guest_client
         except Exception as e:
@@ -378,7 +378,7 @@ class EnclaveRegistry:
             url = "http://" + enclave["host_or_ip"] + ":" + str(enclave["port"]) + "/"
             try:
                 res = requests.get(url, timeout=DEFAULT_TIMEOUT)  # nosec
-                online = "OpenMined Enclave Node Running" in res.text
+                online = "OpenMined Enclave Server Running" in res.text
             except Exception:
                 online = False
 

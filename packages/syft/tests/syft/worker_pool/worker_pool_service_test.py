@@ -7,7 +7,7 @@ import syft as sy
 from syft.custom_worker.config import DockerWorkerConfig
 from syft.custom_worker.config import PrebuiltWorkerConfig
 from syft.custom_worker.config import WorkerConfig
-from syft.node.worker import Worker
+from syft.server.worker import Worker
 from syft.service.request.request import CreateCustomWorkerPoolChange
 from syft.service.response import SyftSuccess
 from syft.service.worker.worker_image import SyftWorkerImage

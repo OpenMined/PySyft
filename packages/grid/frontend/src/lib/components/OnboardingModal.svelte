@@ -7,7 +7,7 @@
   import Progress from "$lib/components/Progress.svelte"
   import Input from "$lib/components/Input.svelte"
   import ButtonGhost from "$lib/components/ButtonGhost.svelte"
-  import NodeIcon from "$lib/components/icons/NodeIcon.svelte"
+  import ServerIcon from "$lib/components/icons/ServerIcon.svelte"
   import CheckIcon from "$lib/components/icons/CheckIcon.svelte"
 
   export let metadata
@@ -125,7 +125,7 @@
           <Progress max={4} value={1} />
         </div>
         <p class="text-gray-400 py-2">
-          Congratulations on logging into {metadata?.name ?? ""} node. This wizard
+          Congratulations on logging into {metadata?.name ?? ""} server. This wizard
           will help get you started in setting up your user account. You can skip
           this wizard by pressing “Cancel” below. You can edit any of your responses
           later by going to "Account Settings" indicated by your avatar in the top
@@ -148,7 +148,7 @@
           <div
             class="w-min h-min rounded-full bg-primary-500 text-gray-800 p-2"
           >
-            <NodeIcon class="w-6 h-6" />
+            <ServerIcon class="w-6 h-6" />
           </div>
           <div class="text-center space-y-2">
             <h3 class="text-2xl capitalize font-bold">Datasite Profile</h3>
@@ -183,7 +183,7 @@
         </div>
         <p class="text-gray-400 py-2">
           Let's begin by describing some basic information about this datasite
-          node. This information will be shown to outside users to help them
+          server. This information will be shown to outside users to help them
           find and understand what your datasite offers.
         </p>
         <Input

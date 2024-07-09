@@ -97,9 +97,9 @@ class Settings(BaseSettings):
     DEFAULT_ROOT_PASSWORD: str = "changethis"
     USERS_OPEN_REGISTRATION: bool = False
 
-    NODE_NAME: str = "default_node_name"
+    SERVER_NAME: str = "default_server_name"
     STREAM_QUEUE: bool = False
-    NODE_TYPE: str = "datasite"
+    SERVER_TYPE: str = "datasite"
 
     OPEN_REGISTRATION: bool = True
 

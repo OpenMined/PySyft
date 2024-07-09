@@ -25,7 +25,7 @@ data = sy.serialize(raw_data, to_bytes=True)
 
 @pytest.fixture
 def authed_context(worker):
-    yield AuthedServiceContext(node=worker, credentials=worker.signing_key.verify_key)
+    yield AuthedServiceContext(server=worker, credentials=worker.signing_key.verify_key)
 
 
 @pytest.fixture(scope="function")
@@ -45,7 +45,7 @@ def test_blob_storage_write():
     worker = sy.Worker.named(name=name)
     blob_storage = worker.get_service("BlobStorageService")
     authed_context = AuthedServiceContext(
-        node=worker, credentials=worker.signing_key.verify_key
+        server=worker, credentials=worker.signing_key.verify_key
     )
     blob_data = CreateBlobStorageEntry.from_obj(data)
     blob_deposit = blob_storage.allocate(authed_context, blob_data)
@@ -63,7 +63,7 @@ def test_blob_storage_write_syft_object():
     worker = sy.Worker.named(name=name)
     blob_storage = worker.get_service("BlobStorageService")
     authed_context = AuthedServiceContext(
-        node=worker, credentials=worker.signing_key.verify_key
+        server=worker, credentials=worker.signing_key.verify_key
     )
     blob_data = CreateBlobStorageEntry.from_obj(data)
     blob_deposit = blob_storage.allocate(authed_context, blob_data)
@@ -81,7 +81,7 @@ def test_blob_storage_read():
     worker = sy.Worker.named(name=name)
     blob_storage = worker.get_service("BlobStorageService")
     authed_context = AuthedServiceContext(
-        node=worker, credentials=worker.signing_key.verify_key
+        server=worker, credentials=worker.signing_key.verify_key
     )
     blob_data = CreateBlobStorageEntry.from_obj(data)
     blob_deposit = blob_storage.allocate(authed_context, blob_data)
@@ -125,7 +125,7 @@ def test_action_obj_send_save_to_blob_storage(worker):
     assert isinstance(action_obj_2.syft_blob_storage_entry_id, sy.UID)
     # get back the object from blob storage to check if it is the same
     root_authed_ctx = AuthedServiceContext(
-        node=worker, credentials=root_client.verify_key
+        server=worker, credentials=root_client.verify_key
     )
     blob_storage = worker.get_service("BlobStorageService")
     syft_retrieved_data = blob_storage.read(
@@ -138,7 +138,7 @@ def test_action_obj_send_save_to_blob_storage(worker):
 def test_upload_dataset_save_to_blob_storage(worker):
     root_client: DatasiteClient = worker.root_client
     root_authed_ctx = AuthedServiceContext(
-        node=worker, credentials=root_client.verify_key
+        server=worker, credentials=root_client.verify_key
     )
     dataset = sy.Dataset(
         name="small_dataset",

@@ -9,13 +9,13 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.abstract_node import NodeType
+from syft.abstract_server import ServerType
 from syft.client.datasite_client import DatasiteClient
 from syft.client.enclave_client import EnclaveClient
 from syft.client.gateway_client import GatewayClient
-from syft.service.network.network_service import NodePeerAssociationStatus
-from syft.service.network.node_peer import NodePeer
-from syft.service.network.node_peer import NodePeerConnectionStatus
+from syft.service.network.network_service import ServerPeerAssociationStatus
+from syft.service.network.server_peer import ServerPeer
+from syft.service.network.server_peer import ServerPeerConnectionStatus
 from syft.service.network.utils import PeerHealthCheckTask
 from syft.service.request.request import Request
 from syft.service.response import SyftSuccess
@@ -23,13 +23,13 @@ from syft.service.user.user_roles import ServiceRole
 
 
 def _launch(
-    node_type: NodeType,
+    server_type: ServerType,
     association_request_auto_approval: bool = True,
     port: int | str | None = None,
 ):
     return sy.orchestra.launch(
         name=token_hex(8),
-        node_type=node_type,
+        server_type=server_type,
         dev_mode=True,
         reset=True,
         local_db=True,
@@ -41,63 +41,65 @@ def _launch(
 
 @pytest.fixture
 def gateway():
-    node = _launch(NodeType.GATEWAY)
-    yield node
-    node.python_node.cleanup()
-    node.land()
+    server = _launch(ServerType.GATEWAY)
+    yield server
+    server.python_server.cleanup()
+    server.land()
 
 
 @pytest.fixture(params=[True, False])
 def gateway_association_request_auto_approval(request: pytest.FixtureRequest):
-    node = _launch(NodeType.GATEWAY, association_request_auto_approval=request.param)
-    yield (request.param, node)
-    node.python_node.cleanup()
-    node.land()
+    server = _launch(
+        ServerType.GATEWAY, association_request_auto_approval=request.param
+    )
+    yield (request.param, server)
+    server.python_server.cleanup()
+    server.land()
 
 
 @pytest.fixture
 def datasite():
-    node = _launch(NodeType.DATASITE)
-    yield node
-    node.python_node.cleanup()
-    node.land()
+    server = _launch(ServerType.DATASITE)
+    yield server
+    server.python_server.cleanup()
+    server.land()
 
 
 @pytest.fixture
 def datasite_2():
-    node = _launch(NodeType.DATASITE)
-    yield node
-    node.python_node.cleanup()
-    node.land()
+    server = _launch(ServerType.DATASITE)
+    yield server
+    server.python_server.cleanup()
+    server.land()
 
 
 @pytest.fixture
 def enclave():
-    node = _launch(NodeType.ENCLAVE)
-    yield node
-    node.python_node.cleanup()
-    node.land()
+    server = _launch(ServerType.ENCLAVE)
+    yield server
+    server.python_server.cleanup()
+    server.land()
 
 
 @pytest.fixture
 def gateway_webserver():
-    node = _launch(node_type=NodeType.GATEWAY, port="auto")
-    yield node
-    node.land()
+    server = _launch(server_type=ServerType.GATEWAY, port="auto")
+    yield server
+    server.land()
 
 
 @pytest.fixture
 def datasite_webserver():
-    node = _launch(NodeType.DATASITE, port="auto")
-    yield node
-    node.land()
+    server = _launch(ServerType.DATASITE, port="auto")
+    yield server
+    server.land()
 
 
 @pytest.fixture
 def datasite_2_webserver():
-    node = _launch(NodeType.DATASITE, port="auto")
-    yield node
-    node.land()
+    server = _launch(ServerType.DATASITE, port="auto")
+    yield server
+    server.land()
 
 
 @pytest.fixture(scope="function")
@@ -127,7 +129,7 @@ def set_network_json_env_var(gateway_webserver):
     del os.environ["NETWORK_REGISTRY_JSON"]
 
 
-@pytest.mark.local_node
+@pytest.mark.local_server
 def test_create_gateway(
     set_network_json_env_var,
     gateway_webserver,
@@ -166,15 +168,15 @@ def test_create_gateway(
     assert len(sy.datasites.online_datasites) == 2
     # check for peer connection status
     for peer in gateway_client.api.services.network.get_all_peers():
-        assert peer.ping_status == NodePeerConnectionStatus.ACTIVE
+        assert peer.ping_status == ServerPeerConnectionStatus.ACTIVE
 
     # check the guest client
     client = gateway_webserver.client
     assert isinstance(client, GatewayClient)
-    assert client.metadata.node_type == NodeType.GATEWAY.value
+    assert client.metadata.server_type == ServerType.GATEWAY.value
 
 
-@pytest.mark.local_node
+@pytest.mark.local_server
 def test_datasite_connect_to_gateway(
     gateway_association_request_auto_approval, datasite
 ):
@@ -201,7 +203,7 @@ def test_datasite_connect_to_gateway(
 
     # check priority
     all_peers = gateway_client.api.services.network.get_all_peers()
-    assert all_peers[0].node_routes[0].priority == 1
+    assert all_peers[0].server_routes[0].priority == 1
 
     # Try again (via client approach)
     result_2 = datasite_client.connect_to_gateway(via_client=gateway_client)
@@ -214,10 +216,10 @@ def test_datasite_connect_to_gateway(
     datasite_peer = datasite_client.peers[0]
 
     assert isinstance(proxy_datasite_client, DatasiteClient)
-    assert isinstance(datasite_peer, NodePeer)
+    assert isinstance(datasite_peer, ServerPeer)
 
     # Datasite's peer is a gateway and vice-versa
-    assert datasite_peer.node_type == NodeType.GATEWAY
+    assert datasite_peer.server_type == ServerType.GATEWAY
 
     assert gateway_client.name == datasite_peer.name
     assert datasite_client.name == proxy_datasite_client.name
@@ -245,15 +247,15 @@ def test_datasite_connect_to_gateway(
 
     # check priority
     all_peers = gateway_client.api.services.network.get_all_peers()
-    assert all_peers[0].node_routes[0].priority == 1
+    assert all_peers[0].server_routes[0].priority == 1
 
 
-@pytest.mark.local_node
+@pytest.mark.local_server
 def test_datasite_connect_to_gateway_routes_priority(
     gateway, datasite, datasite_2
 ) -> None:
     """
-    A test for routes' priority (PythonNodeRoute)
+    A test for routes' priority (PythonServerRoute)
     """
     gateway_client: GatewayClient = gateway.login(
         email="info@openmined.org",
@@ -269,7 +271,7 @@ def test_datasite_connect_to_gateway_routes_priority(
 
     all_peers = gateway_client.api.services.network.get_all_peers()
     assert len(all_peers) == 1
-    datasite_1_routes = all_peers[0].node_routes
+    datasite_1_routes = all_peers[0].server_routes
     assert datasite_1_routes[0].priority == 1
 
     # reconnect to the gateway
@@ -277,7 +279,7 @@ def test_datasite_connect_to_gateway_routes_priority(
     assert isinstance(result, SyftSuccess)
     all_peers = gateway_client.api.services.network.get_all_peers()
     assert len(all_peers) == 1
-    datasite_1_routes = all_peers[0].node_routes
+    datasite_1_routes = all_peers[0].server_routes
     assert datasite_1_routes[0].priority == 1
 
     # another datasite client connects to the gateway
@@ -291,10 +293,10 @@ def test_datasite_connect_to_gateway_routes_priority(
     all_peers = gateway_client.api.services.network.get_all_peers()
     assert len(all_peers) == 2
     for peer in all_peers:
-        assert peer.node_routes[0].priority == 1
+        assert peer.server_routes[0].priority == 1
 
 
-@pytest.mark.local_node
+@pytest.mark.local_server
 def test_enclave_connect_to_gateway(faker: Faker, gateway, enclave):
     gateway_client = gateway.client
     enclave_client: EnclaveClient = enclave.client
@@ -313,13 +315,13 @@ def test_enclave_connect_to_gateway(faker: Faker, gateway, enclave):
     enclave_peer = enclave_client.peers[0]
 
     assert isinstance(proxy_enclave_client, EnclaveClient)
-    assert isinstance(enclave_peer, NodePeer)
+    assert isinstance(enclave_peer, ServerPeer)
 
     assert gateway_client.name == enclave_peer.name
     assert enclave_client.name == proxy_enclave_client.name
 
     # Datasite's peer is a gateway and vice-versa
-    assert enclave_peer.node_type == NodeType.GATEWAY
+    assert enclave_peer.server_type == ServerType.GATEWAY
 
     assert len(gateway_client.datasites) == 0
     assert len(gateway_client.enclaves) == 1
@@ -349,7 +351,7 @@ def test_enclave_connect_to_gateway(faker: Faker, gateway, enclave):
     )
 
 
-@pytest.mark.local_node
+@pytest.mark.local_server
 @pytest.mark.parametrize(
     "gateway_association_request_auto_approval", [False], indirect=True
 )
@@ -382,5 +384,5 @@ def test_repeated_association_requests_peers_health_check(
     res = gateway_client.api.services.network.check_peer_association(
         peer_id=datasite_client.id
     )
-    assert isinstance(res, NodePeerAssociationStatus)
+    assert isinstance(res, ServerPeerAssociationStatus)
     assert res.value == "PEER_ASSOCIATED"

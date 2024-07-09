@@ -30,7 +30,7 @@ def test_local_execution(worker):
     APIRegistry.__api_registry__ = OrderedDict()
 
     APIRegistry.set_api_for(
-        node_uid=worker.id,
+        server_uid=worker.id,
         user_verify_key=root_datasite_client.verify_key,
         api=root_datasite_client.api,
     )

@@ -10,7 +10,7 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.abstract_node import NodeType
+from syft.abstract_server import ServerType
 from syft.client.client import HTTPConnection
 from syft.client.client import SyftClient
 from syft.client.datasite_client import DatasiteClient
@@ -19,11 +19,11 @@ from syft.client.registry import NetworkRegistry
 from syft.client.search import SearchResults
 from syft.service.dataset.dataset import Dataset
 from syft.service.network.association_request import AssociationRequestChange
-from syft.service.network.network_service import NodePeerAssociationStatus
-from syft.service.network.node_peer import NodePeer
-from syft.service.network.node_peer import NodePeerConnectionStatus
-from syft.service.network.routes import HTTPNodeRoute
-from syft.service.network.routes import NodeRouteType
+from syft.service.network.network_service import ServerPeerAssociationStatus
+from syft.service.network.routes import HTTPServerRoute
+from syft.service.network.routes import ServerRouteType
+from syft.service.network.server_peer import ServerPeer
+from syft.service.network.server_peer import ServerPeerConnectionStatus
 from syft.service.network.utils import PeerHealthCheckTask
 from syft.service.request.request import Request
 from syft.service.response import SyftError
@@ -34,7 +34,7 @@ from syft.service.user.user_roles import ServiceRole
 @pytest.fixture(scope="function")
 def set_env_var(
     gateway_port: int,
-    gateway_node: str = "testgateway1",
+    gateway_server: str = "testgateway1",
     host_or_ip: str = "localhost",
     protocol: str = "http",
 ):
@@ -44,7 +44,7 @@ def set_env_var(
             "2.0.0": {{
                 "gateways": [
                     {{
-                        "name": "{gateway_node}",
+                        "name": "{gateway_server}",
                         "host_or_ip": "{host_or_ip}",
                         "protocol": "{protocol}",
                         "port": {gateway_port},
@@ -68,7 +68,7 @@ def _random_hash() -> str:
 
 
 def _remove_existing_peers(client: SyftClient) -> SyftSuccess | SyftError:
-    peers: list[NodePeer] | SyftError = client.api.services.network.get_all_peers()
+    peers: list[ServerPeer] | SyftError = client.api.services.network.get_all_peers()
     if isinstance(peers, SyftError):
         return peers
     for peer in peers:
@@ -141,10 +141,10 @@ def test_datasite_connect_to_gateway(
     datasite_peer = datasite_client.peers[0]
 
     assert isinstance(proxy_datasite_client, DatasiteClient)
-    assert isinstance(datasite_peer, NodePeer)
+    assert isinstance(datasite_peer, ServerPeer)
 
     # Datasite's peer is a gateway and vice-versa
-    assert datasite_peer.node_type == NodeType.GATEWAY
+    assert datasite_peer.server_type == ServerType.GATEWAY
 
     assert gateway_client.name == datasite_peer.name
     assert datasite_client.name == proxy_datasite_client.name
@@ -178,7 +178,7 @@ def test_datasite_connect_to_gateway(
 @pytest.mark.network
 def test_dataset_search(set_env_var, gateway_port: int, datasite_1_port: int) -> None:
     """
-    Scenario: Connecting a datasite node to a gateway node. The datasite
+    Scenario: Connecting a datasite server to a gateway server. The datasite
         client then upload a dataset, which should be searchable by the syft network.
         People who install syft can see the mock data and metadata of the uploaded datasets
     """
@@ -402,36 +402,36 @@ def test_add_route(set_env_var, gateway_port: int, datasite_1_port: int) -> None
     assert len(gateway_client.peers) == 1
 
     # add a new route to connect to the datasite
-    new_route = HTTPNodeRoute(host_or_ip="localhost", port=10000)
-    datasite_peer: NodePeer = gateway_client.api.services.network.get_all_peers()[0]
+    new_route = HTTPServerRoute(host_or_ip="localhost", port=10000)
+    datasite_peer: ServerPeer = gateway_client.api.services.network.get_all_peers()[0]
     res = gateway_client.api.services.network.add_route(
         peer_verify_key=datasite_peer.verify_key, route=new_route
     )
     assert isinstance(res, SyftSuccess)
     datasite_peer = gateway_client.api.services.network.get_all_peers()[0]
-    assert len(datasite_peer.node_routes) == 2
-    assert datasite_peer.node_routes[-1].port == new_route.port
+    assert len(datasite_peer.server_routes) == 2
+    assert datasite_peer.server_routes[-1].port == new_route.port
 
     # adding another route to the datasite
-    new_route2 = HTTPNodeRoute(host_or_ip="localhost", port=10001)
+    new_route2 = HTTPServerRoute(host_or_ip="localhost", port=10001)
     res = gateway_client.api.services.network.add_route(
         peer_verify_key=datasite_peer.verify_key, route=new_route2
     )
     assert isinstance(res, SyftSuccess)
     datasite_peer = gateway_client.api.services.network.get_all_peers()[0]
-    assert len(datasite_peer.node_routes) == 3
-    assert datasite_peer.node_routes[-1].port == new_route2.port
-    assert datasite_peer.node_routes[-1].priority == 3
+    assert len(datasite_peer.server_routes) == 3
+    assert datasite_peer.server_routes[-1].port == new_route2.port
+    assert datasite_peer.server_routes[-1].priority == 3
 
     # add an existed route to the datasite. Its priority should not be updated
     res = gateway_client.api.services.network.add_route(
-        peer_verify_key=datasite_peer.verify_key, route=datasite_peer.node_routes[0]
+        peer_verify_key=datasite_peer.verify_key, route=datasite_peer.server_routes[0]
     )
     assert "route already exists" in res.message
     assert isinstance(res, SyftSuccess)
     datasite_peer = gateway_client.api.services.network.get_all_peers()[0]
-    assert len(datasite_peer.node_routes) == 3
-    assert datasite_peer.node_routes[0].priority == 1
+    assert len(datasite_peer.server_routes) == 3
+    assert datasite_peer.server_routes[0].priority == 1
 
     # getting the proxy client using the current highest priority route should
     # be successful since now we pick the oldest route (port 9082 with priority 1)
@@ -440,8 +440,8 @@ def test_add_route(set_env_var, gateway_port: int, datasite_1_port: int) -> None
     assert isinstance(proxy_datasite_client, DatasiteClient)
 
     # the routes the datasite client uses to connect to the gateway should stay the same
-    gateway_peer: NodePeer = datasite_client.peers[0]
-    assert len(gateway_peer.node_routes) == 1
+    gateway_peer: ServerPeer = datasite_client.peers[0]
+    assert len(gateway_peer.server_routes) == 1
 
     # Remove existing peers
     assert isinstance(_remove_existing_peers(datasite_client), SyftSuccess)
@@ -478,15 +478,15 @@ def test_delete_route(set_env_var, gateway_port: int, datasite_1_port: int) -> N
     assert len(gateway_client.peers) == 1
 
     # add a new route to connect to the datasite
-    new_route = HTTPNodeRoute(host_or_ip="localhost", port=10000)
-    datasite_peer: NodePeer = gateway_client.api.services.network.get_all_peers()[0]
+    new_route = HTTPServerRoute(host_or_ip="localhost", port=10000)
+    datasite_peer: ServerPeer = gateway_client.api.services.network.get_all_peers()[0]
     res = gateway_client.api.services.network.add_route(
         peer_verify_key=datasite_peer.verify_key, route=new_route
     )
     assert isinstance(res, SyftSuccess)
     datasite_peer = gateway_client.api.services.network.get_all_peers()[0]
-    assert len(datasite_peer.node_routes) == 2
-    assert datasite_peer.node_routes[-1].port == new_route.port
+    assert len(datasite_peer.server_routes) == 2
+    assert datasite_peer.server_routes[-1].port == new_route.port
 
     # delete the added route
     res = gateway_client.api.services.network.delete_route(
@@ -494,8 +494,8 @@ def test_delete_route(set_env_var, gateway_port: int, datasite_1_port: int) -> N
     )
     assert isinstance(res, SyftSuccess)
     datasite_peer = gateway_client.api.services.network.get_all_peers()[0]
-    assert len(datasite_peer.node_routes) == 1
-    assert datasite_peer.node_routes[-1].port == datasite_1_port
+    assert len(datasite_peer.server_routes) == 1
+    assert datasite_peer.server_routes[-1].port == datasite_1_port
 
     # Remove existing peers
     assert isinstance(_remove_existing_peers(datasite_client), SyftSuccess)
@@ -533,42 +533,42 @@ def test_add_route_on_peer(
     assert isinstance(result, SyftSuccess)
     assert len(datasite_client.peers) == 1
     assert len(gateway_client.peers) == 1
-    gateway_peer: NodePeer = datasite_client.peers[0]
-    assert len(gateway_peer.node_routes) == 1
-    assert gateway_peer.node_routes[-1].priority == 1
+    gateway_peer: ServerPeer = datasite_client.peers[0]
+    assert len(gateway_peer.server_routes) == 1
+    assert gateway_peer.server_routes[-1].priority == 1
 
     # adding a new route for the datasite
-    new_route = HTTPNodeRoute(host_or_ip="localhost", port=10000)
-    datasite_peer: NodePeer = gateway_client.api.services.network.get_all_peers()[0]
+    new_route = HTTPServerRoute(host_or_ip="localhost", port=10000)
+    datasite_peer: ServerPeer = gateway_client.api.services.network.get_all_peers()[0]
     res = gateway_client.api.services.network.add_route_on_peer(
         peer=datasite_peer, route=new_route
     )
     assert isinstance(res, SyftSuccess)
     gateway_peer = datasite_client.api.services.network.get_all_peers()[0]
-    assert len(gateway_peer.node_routes) == 2
-    assert gateway_peer.node_routes[-1].port == new_route.port
-    assert gateway_peer.node_routes[-1].priority == 2
+    assert len(gateway_peer.server_routes) == 2
+    assert gateway_peer.server_routes[-1].port == new_route.port
+    assert gateway_peer.server_routes[-1].priority == 2
 
     # adding another route for the datasite
-    new_route2 = HTTPNodeRoute(host_or_ip="localhost", port=10001)
+    new_route2 = HTTPServerRoute(host_or_ip="localhost", port=10001)
     res = gateway_client.api.services.network.add_route_on_peer(
         peer=datasite_peer, route=new_route2
     )
     assert isinstance(res, SyftSuccess)
     gateway_peer = datasite_client.api.services.network.get_all_peers()[0]
-    assert len(gateway_peer.node_routes) == 3
-    assert gateway_peer.node_routes[-1].port == new_route2.port
-    assert gateway_peer.node_routes[-1].priority == 3
+    assert len(gateway_peer.server_routes) == 3
+    assert gateway_peer.server_routes[-1].port == new_route2.port
+    assert gateway_peer.server_routes[-1].priority == 3
 
     # the datasite calls `add_route_on_peer` to to add a route to itself for the gateway
-    assert len(datasite_peer.node_routes) == 1
+    assert len(datasite_peer.server_routes) == 1
     res = datasite_client.api.services.network.add_route_on_peer(
         peer=datasite_client.peers[0], route=new_route
     )
     assert isinstance(res, SyftSuccess)
     datasite_peer = gateway_client.api.services.network.get_all_peers()[0]
-    assert datasite_peer.node_routes[-1].port == new_route.port
-    assert len(datasite_peer.node_routes) == 2
+    assert datasite_peer.server_routes[-1].port == new_route.port
+    assert len(datasite_peer.server_routes) == 2
 
     # Remove existing peers
     assert isinstance(_remove_existing_peers(datasite_client), SyftSuccess)
@@ -605,9 +605,9 @@ def test_delete_route_on_peer(
     assert isinstance(result, SyftSuccess)
 
     # gateway adds 2 new routes for the datasite
-    new_route = HTTPNodeRoute(host_or_ip="localhost", port=10000)
-    new_route2 = HTTPNodeRoute(host_or_ip="localhost", port=10001)
-    datasite_peer: NodePeer = gateway_client.api.services.network.get_all_peers()[0]
+    new_route = HTTPServerRoute(host_or_ip="localhost", port=10000)
+    new_route2 = HTTPServerRoute(host_or_ip="localhost", port=10001)
+    datasite_peer: ServerPeer = gateway_client.api.services.network.get_all_peers()[0]
     res = gateway_client.api.services.network.add_route_on_peer(
         peer=datasite_peer, route=new_route
     )
@@ -617,8 +617,8 @@ def test_delete_route_on_peer(
     )
     assert isinstance(res, SyftSuccess)
 
-    gateway_peer: NodePeer = datasite_client.peers[0]
-    assert len(gateway_peer.node_routes) == 3
+    gateway_peer: ServerPeer = datasite_client.peers[0]
+    assert len(gateway_peer.server_routes) == 3
 
     # gateway delete the routes for the datasite
     res = gateway_client.api.services.network.delete_route_on_peer(
@@ -626,17 +626,17 @@ def test_delete_route_on_peer(
     )
     assert isinstance(res, SyftSuccess)
     gateway_peer = datasite_client.peers[0]
-    assert len(gateway_peer.node_routes) == 2
+    assert len(gateway_peer.server_routes) == 2
 
     res = gateway_client.api.services.network.delete_route_on_peer(
         peer=datasite_peer, route=new_route2
     )
     assert isinstance(res, SyftSuccess)
     gateway_peer = datasite_client.peers[0]
-    assert len(gateway_peer.node_routes) == 1
+    assert len(gateway_peer.server_routes) == 1
 
     # gateway deletes the last the route to it for the datasite
-    last_route: NodeRouteType = gateway_peer.node_routes[0]
+    last_route: ServerRouteType = gateway_peer.server_routes[0]
     res = gateway_client.api.services.network.delete_route_on_peer(
         peer=datasite_peer, route=last_route
     )
@@ -675,9 +675,9 @@ def test_update_route_priority(
     assert isinstance(result, SyftSuccess)
 
     # gateway adds 2 new routes to the datasite
-    new_route = HTTPNodeRoute(host_or_ip="localhost", port=10000)
-    new_route2 = HTTPNodeRoute(host_or_ip="localhost", port=10001)
-    datasite_peer: NodePeer = gateway_client.api.services.network.get_all_peers()[0]
+    new_route = HTTPServerRoute(host_or_ip="localhost", port=10000)
+    new_route2 = HTTPServerRoute(host_or_ip="localhost", port=10001)
+    datasite_peer: ServerPeer = gateway_client.api.services.network.get_all_peers()[0]
     res = gateway_client.api.services.network.add_route(
         peer_verify_key=datasite_peer.verify_key, route=new_route
     )
@@ -690,7 +690,7 @@ def test_update_route_priority(
     # check if the priorities of the routes are correct
     datasite_peer = gateway_client.api.services.network.get_all_peers()[0]
     routes_port_priority: dict = {
-        route.port: route.priority for route in datasite_peer.node_routes
+        route.port: route.priority for route in datasite_peer.server_routes
     }
     assert routes_port_priority[datasite_1_port] == 1
     assert routes_port_priority[new_route.port] == 2
@@ -703,7 +703,7 @@ def test_update_route_priority(
     assert isinstance(res, SyftSuccess)
     datasite_peer = gateway_client.api.services.network.get_all_peers()[0]
     routes_port_priority: dict = {
-        route.port: route.priority for route in datasite_peer.node_routes
+        route.port: route.priority for route in datasite_peer.server_routes
     }
     assert routes_port_priority[new_route.port] == 5
 
@@ -715,7 +715,7 @@ def test_update_route_priority(
     assert isinstance(res, SyftSuccess)
     datasite_peer = gateway_client.api.services.network.get_all_peers()[0]
     routes_port_priority: dict = {
-        route.port: route.priority for route in datasite_peer.node_routes
+        route.port: route.priority for route in datasite_peer.server_routes
     }
     assert routes_port_priority[new_route2.port] == 6
 
@@ -748,15 +748,15 @@ def test_update_route_priority_on_peer(
     result = datasite_client.connect_to_gateway(gateway_client)
     assert isinstance(result, SyftSuccess)
 
-    # gateway adds 2 new routes to itself remotely on the datasite node
-    datasite_peer: NodePeer = gateway_client.api.services.network.get_all_peers()[0]
-    new_route = HTTPNodeRoute(host_or_ip="localhost", port=10000)
+    # gateway adds 2 new routes to itself remotely on the datasite server
+    datasite_peer: ServerPeer = gateway_client.api.services.network.get_all_peers()[0]
+    new_route = HTTPServerRoute(host_or_ip="localhost", port=10000)
     res = gateway_client.api.services.network.add_route_on_peer(
         peer=datasite_peer, route=new_route
     )
     assert isinstance(res, SyftSuccess)
 
-    new_route2 = HTTPNodeRoute(host_or_ip="localhost", port=10001)
+    new_route2 = HTTPServerRoute(host_or_ip="localhost", port=10001)
     res = gateway_client.api.services.network.add_route_on_peer(
         peer=datasite_peer, route=new_route2
     )
@@ -765,7 +765,7 @@ def test_update_route_priority_on_peer(
     # check if the priorities of the routes are correct
     gateway_peer = datasite_client.api.services.network.get_all_peers()[0]
     routes_port_priority: dict = {
-        route.port: route.priority for route in gateway_peer.node_routes
+        route.port: route.priority for route in gateway_peer.server_routes
     }
     assert routes_port_priority[gateway_port] == 1
     assert routes_port_priority[new_route.port] == 2
@@ -783,7 +783,7 @@ def test_update_route_priority_on_peer(
 
     gateway_peer = datasite_client.api.services.network.get_all_peers()[0]
     routes_port_priority: dict = {
-        route.port: route.priority for route in gateway_peer.node_routes
+        route.port: route.priority for route in gateway_peer.server_routes
     }
     assert routes_port_priority[new_route.port] == 5
     assert routes_port_priority[new_route2.port] == 6
@@ -796,7 +796,7 @@ def test_update_route_priority_on_peer(
 @pytest.mark.network
 def test_dataset_stream(set_env_var, gateway_port: int, datasite_1_port: int) -> None:
     """
-    Scenario: Connecting a datasite node to a gateway node. The datasite
+    Scenario: Connecting a datasite server to a gateway server. The datasite
         client then upload a dataset, which should be searchable by the syft network.
         People who install syft can see the mock data and metadata of the uploaded datasets
     """
@@ -854,7 +854,7 @@ def test_peer_health_check(
     set_env_var, gateway_port: int, datasite_1_port: int
 ) -> None:
     """
-    Scenario: Connecting a datasite node to a gateway node.
+    Scenario: Connecting a datasite server to a gateway server.
     The gateway client approves the association request.
     The gateway client checks that the datasite peer is associated
     """
@@ -877,7 +877,7 @@ def test_peer_health_check(
     res = gateway_client.api.services.network.check_peer_association(
         peer_id=datasite_client.id
     )
-    assert isinstance(res, NodePeerAssociationStatus)
+    assert isinstance(res, ServerPeerAssociationStatus)
     assert res.value == "PEER_NOT_FOUND"
 
     # the datasite tries to connect to the gateway
@@ -889,7 +889,7 @@ def test_peer_health_check(
     res = gateway_client.api.services.network.check_peer_association(
         peer_id=datasite_client.id
     )
-    assert isinstance(res, NodePeerAssociationStatus)
+    assert isinstance(res, ServerPeerAssociationStatus)
     assert res.value == "PEER_ASSOCIATION_PENDING"
 
     # the datasite tries to connect to the gateway (again)
@@ -902,7 +902,7 @@ def test_peer_health_check(
     res = gateway_client.api.services.network.check_peer_association(
         peer_id=datasite_client.id
     )
-    assert isinstance(res, NodePeerAssociationStatus)
+    assert isinstance(res, ServerPeerAssociationStatus)
     assert res.value == "PEER_ASSOCIATION_PENDING"
 
     # the gateway client approves one of the association requests
@@ -914,12 +914,12 @@ def test_peer_health_check(
     res = gateway_client.api.services.network.check_peer_association(
         peer_id=datasite_client.id
     )
-    assert isinstance(res, NodePeerAssociationStatus)
+    assert isinstance(res, ServerPeerAssociationStatus)
     assert res.value == "PEER_ASSOCIATED"
 
     time.sleep(PeerHealthCheckTask.repeat_time * 2 + 1)
     datasite_peer = gateway_client.api.services.network.get_all_peers()[0]
-    assert datasite_peer.ping_status == NodePeerConnectionStatus.ACTIVE
+    assert datasite_peer.ping_status == ServerPeerConnectionStatus.ACTIVE
 
     # Remove existing peers
     assert isinstance(_remove_existing_peers(datasite_client), SyftSuccess)
@@ -953,8 +953,8 @@ def test_reverse_tunnel_connection(datasite_1_port: int, gateway_port: int):
 
     # Datasite's peer is a gateway and vice-versa
     datasite_peer = datasite_client.peers[0]
-    assert datasite_peer.node_type == NodeType.GATEWAY
-    assert datasite_peer.node_routes[0].rtunnel_token is None
+    assert datasite_peer.server_type == ServerType.GATEWAY
+    assert datasite_peer.server_routes[0].rtunnel_token is None
     assert len(gateway_client.peers) == 0
 
     gateway_client_root = gateway_client.login(
@@ -967,13 +967,13 @@ def test_reverse_tunnel_connection(datasite_1_port: int, gateway_port: int):
 
     gateway_peers = gateway_client.api.services.network.get_all_peers()
     assert len(gateway_peers) == 1
-    assert len(gateway_peers[0].node_routes) == 1
-    assert gateway_peers[0].node_routes[0].rtunnel_token is not None
+    assert len(gateway_peers[0].server_routes) == 1
+    assert gateway_peers[0].server_routes[0].rtunnel_token is not None
 
     proxy_datasite_client = gateway_client.peers[0]
 
     assert isinstance(proxy_datasite_client, DatasiteClient)
-    assert isinstance(datasite_peer, NodePeer)
+    assert isinstance(datasite_peer, ServerPeer)
     assert gateway_client.name == datasite_peer.name
     assert datasite_client.name == proxy_datasite_client.name
 

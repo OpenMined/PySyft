@@ -47,7 +47,7 @@
               {/if}
             </p>
           </div>
-          <input hidden name="node_id" value={metadata?.node_id} />
+          <input hidden name="server_id" value={metadata?.server_id} />
           <Input
             label="Email"
             type="email"

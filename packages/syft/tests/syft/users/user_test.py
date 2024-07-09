@@ -11,8 +11,8 @@ from syft import SyftError
 from syft import SyftSuccess
 from syft.client.api import SyftAPICall
 from syft.client.datasite_client import DatasiteClient
-from syft.node.node import get_default_root_email
-from syft.node.worker import Worker
+from syft.server.server import get_default_root_email
+from syft.server.worker import Worker
 from syft.service.context import AuthedServiceContext
 from syft.service.user.user import ServiceRole
 from syft.service.user.user import UserCreate
@@ -32,12 +32,12 @@ ADMIN_ROLES = [
 
 def get_users(worker):
     return worker.get_service("UserService").get_all(
-        AuthedServiceContext(node=worker, credentials=worker.signing_key.verify_key)
+        AuthedServiceContext(server=worker, credentials=worker.signing_key.verify_key)
     )
 
 
 def get_mock_client(root_client, role) -> DatasiteClient:
-    worker = root_client.api.connection.node
+    worker = root_client.api.connection.server
     client = worker.guest_client
     mail = Faker().email()
     name = Faker().name()
@@ -63,7 +63,7 @@ def manually_call_service(worker, client, service, args=None, kwargs=None):
     # while we mostly want to validate the server side permissions.
     args = args if args is not None else []
     kwargs = kwargs if kwargs is not None else {}
-    api_call = SyftAPICall(node_uid=worker.id, path=service, args=args, kwargs=kwargs)
+    api_call = SyftAPICall(server_uid=worker.id, path=service, args=args, kwargs=kwargs)
     signed_call = api_call.sign(client.api.signing_key)
     signed_result = client.api.connection.make_call(signed_call)
     result = signed_result.message.data
@@ -391,8 +391,8 @@ def test_user_view_set_role(worker: Worker, guest_client: DatasiteClient) -> Non
 
 
 def test_user_view_set_role_admin(faker: Faker) -> None:
-    node = sy.orchestra.launch(name=token_hex(8), reset=True)
-    datasite_client = node.login(email="info@openmined.org", password="changethis")
+    server = sy.orchestra.launch(name=token_hex(8), reset=True)
+    datasite_client = server.login(email="info@openmined.org", password="changethis")
     datasite_client.register(
         name="Sheldon Cooper",
         email="sheldon@caltech.edu",
@@ -412,17 +412,17 @@ def test_user_view_set_role_admin(faker: Faker) -> None:
     assert len(datasite_client.users.get_all()) == 3
 
     datasite_client.users[1].update(role="admin")
-    ds_client = node.login(email="sheldon@caltech.edu", password="changethis")
+    ds_client = server.login(email="sheldon@caltech.edu", password="changethis")
     assert ds_client.me.role == ServiceRole.ADMIN
     assert len(ds_client.users.get_all()) == len(datasite_client.users.get_all())
 
     datasite_client.users[2].update(role="admin")
-    ds_client_2 = node.login(email="sheldon2@caltech.edu", password="changethis")
+    ds_client_2 = server.login(email="sheldon2@caltech.edu", password="changethis")
     assert ds_client_2.me.role == ServiceRole.ADMIN
     assert len(ds_client_2.users.get_all()) == len(datasite_client.users.get_all())
 
-    node.python_node.cleanup()
-    node.land()
+    server.python_server.cleanup()
+    server.land()
 
 
 @pytest.mark.parametrize(

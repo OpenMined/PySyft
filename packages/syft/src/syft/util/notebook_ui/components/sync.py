@@ -328,7 +328,7 @@ class SyncWidgetHeader(SyncTableObject):
             target_side = "High"
 
         # Third line HTML
-        third_line_html = f"<span style='color: #5E5A72;'>This would sync <span style='color: #B8520A'>{num_diffs} changes </span> from <i>{source_side} Node</i> to <i>{target_side} Node</i></span>"  # noqa: E501
+        third_line_html = f"<span style='color: #5E5A72;'>This would sync <span style='color: #B8520A'>{num_diffs} changes </span> from <i>{source_side} Server</i> to <i>{target_side} Server</i></span>"  # noqa: E501
 
         header_html = f"""
         {style}

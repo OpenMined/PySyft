@@ -8,10 +8,10 @@ from IPython.display import display
 from pydantic import field_validator
 
 # relative
-from ...abstract_node import NodeSideType
-from ...abstract_node import NodeType
-from ...node.credentials import SyftVerifyKey
+from ...abstract_server import ServerSideType
+from ...abstract_server import ServerType
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
 from ...service.worker.utils import DEFAULT_WORKER_POOL_NAME
 from ...types.syft_metaclass import Empty
 from ...types.syft_migration import migrate
@@ -34,8 +34,8 @@ logger = logging.getLogger(__name__)
 
 
 @serializable()
-class NodeSettingsUpdateV4(PartialSyftObject):
-    __canonical_name__ = "NodeSettingsUpdate"
+class ServerSettingsUpdateV4(PartialSyftObject):
+    __canonical_name__ = "ServerSettingsUpdate"
     __version__ = SYFT_OBJECT_VERSION_4
     id: UID
     name: str
@@ -46,14 +46,14 @@ class NodeSettingsUpdateV4(PartialSyftObject):
     admin_email: str
     association_request_auto_approval: bool
     welcome_markdown: HTMLObject | MarkdownDescription
-    node_side_type: str
+    server_side_type: str
 
-    @field_validator("node_side_type", check_fields=False)
+    @field_validator("server_side_type", check_fields=False)
     @classmethod
-    def validate_node_side_type(cls, v: str) -> type[Empty]:
-        msg = f"You cannot update 'node_side_type' through NodeSettingsUpdate. \
-Please use client.set_node_side_type_dangerous(node_side_type={v}). \
-Be aware if you have private data on the node and you want to change it to the Low Side, \
+    def validate_server_side_type(cls, v: str) -> type[Empty]:
+        msg = f"You cannot update 'server_side_type' through ServerSettingsUpdate. \
+Please use client.set_server_side_type_dangerous(server_side_type={v}). \
+Be aware if you have private data on the server and you want to change it to the Low Side, \
 as information might be leaked."
         try:
             display(SyftInfo(message=msg))
@@ -63,8 +63,8 @@ as information might be leaked."
 
 
 @serializable()
-class NodeSettingsUpdate(PartialSyftObject):
-    __canonical_name__ = "NodeSettingsUpdate"
+class ServerSettingsUpdate(PartialSyftObject):
+    __canonical_name__ = "ServerSettingsUpdate"
     __version__ = SYFT_OBJECT_VERSION_5
     id: UID
     name: str
@@ -79,8 +79,8 @@ class NodeSettingsUpdate(PartialSyftObject):
 
 
 @serializable()
-class NodeSettings(SyftObject):
-    __canonical_name__ = "NodeSettings"
+class ServerSettings(SyftObject):
+    __canonical_name__ = "ServerSettings"
     __version__ = SYFT_OBJECT_VERSION_6
     __repr_attrs__ = [
         "name",
@@ -92,16 +92,16 @@ class NodeSettings(SyftObject):
     ]
 
     id: UID
-    name: str = "Node"
+    name: str = "Server"
     deployed_on: str
     organization: str = "OpenMined"
     verify_key: SyftVerifyKey
     on_board: bool = True
-    description: str = "This is the default description for a Datasite Node."
-    node_type: NodeType = NodeType.DATASITE
+    description: str = "This is the default description for a Datasite Server."
+    server_type: ServerType = ServerType.DATASITE
     signup_enabled: bool
     admin_email: str
-    node_side_type: NodeSideType = NodeSideType.HIGH_SIDE
+    server_side_type: ServerSideType = ServerSideType.HIGH_SIDE
     show_warnings: bool
     association_request_auto_approval: bool
     eager_execution_enabled: bool = False
@@ -130,8 +130,8 @@ class NodeSettings(SyftObject):
 
 
 @serializable()
-class NodeSettingsV5(SyftObject):
-    __canonical_name__ = "NodeSettings"
+class ServerSettingsV5(SyftObject):
+    __canonical_name__ = "ServerSettings"
     __version__ = SYFT_OBJECT_VERSION_5
     __repr_attrs__ = [
         "name",
@@ -142,16 +142,16 @@ class NodeSettingsV5(SyftObject):
     ]
 
     id: UID
-    name: str = "Node"
+    name: str = "Server"
     deployed_on: str
     organization: str = "OpenMined"
     verify_key: SyftVerifyKey
     on_board: bool = True
     description: str = "Text"
-    node_type: NodeType = NodeType.DATASITE
+    server_type: ServerType = ServerType.DATASITE
     signup_enabled: bool
     admin_email: str
-    node_side_type: NodeSideType = NodeSideType.HIGH_SIDE
+    server_side_type: ServerSideType = ServerSideType.HIGH_SIDE
     show_warnings: bool
     association_request_auto_approval: bool
     default_worker_pool: str = DEFAULT_WORKER_POOL_NAME
@@ -160,21 +160,21 @@ class NodeSettingsV5(SyftObject):
     )
 
 
-@migrate(NodeSettingsV5, NodeSettings)
-def upgrade_node_settings() -> list[Callable]:
+@migrate(ServerSettingsV5, ServerSettings)
+def upgrade_server_settings() -> list[Callable]:
     return [make_set_default("eager_execution_enabled", False)]
 
 
-@migrate(NodeSettings, NodeSettingsV5)
-def downgrade_node_settings() -> list[Callable]:
+@migrate(ServerSettings, ServerSettingsV5)
+def downgrade_server_settings() -> list[Callable]:
     return [drop(["eager_execution_enabled"])]
 
 
-@migrate(NodeSettingsUpdateV4, NodeSettingsUpdate)
-def upgrade_node_settings_update() -> list[Callable]:
+@migrate(ServerSettingsUpdateV4, ServerSettingsUpdate)
+def upgrade_server_settings_update() -> list[Callable]:
     return []
 
 
-@migrate(NodeSettingsUpdate, NodeSettingsUpdateV4)
-def downgrade_node_settings_update() -> list[Callable]:
+@migrate(ServerSettingsUpdate, ServerSettingsUpdateV4)
+def downgrade_server_settings_update() -> list[Callable]:
     return [drop(["eager_execution_enabled"])]

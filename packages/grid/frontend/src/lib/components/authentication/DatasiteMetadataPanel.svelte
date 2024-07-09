@@ -29,15 +29,15 @@
     <div class="flex flex-col gap-2.5 flex-shrink-0 pt-2 pb-4">
       <div class="flex gap-1 items-center group relative">
         <p class="uppercase text-gray-400">Id#:</p>
-        <Badge>{metadata.node_id}</Badge>
+        <Badge>{metadata.server_id}</Badge>
       </div>
       <div class="flex gap-1 items-center group relative">
         <p class="uppercase text-gray-400">Side:</p>
-        <p class="font-mono uppercase text-gray-600">{metadata.node_side}</p>
+        <p class="font-mono uppercase text-gray-600">{metadata.server_side}</p>
       </div>
       <div class="flex gap-1 items-center group relative">
         <p class="uppercase text-gray-400">Type:</p>
-        <p class="font-mono uppercase text-gray-600">{metadata.node_type}</p>
+        <p class="font-mono uppercase text-gray-600">{metadata.server_type}</p>
       </div>
     </div>
   {/if}

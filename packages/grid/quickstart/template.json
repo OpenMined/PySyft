@@ -140,7 +140,7 @@
         }
       },
       "tags": {
-        "node_type": "datasite",
+        "server_type": "datasite",
         "os_version": "ubuntu2004",
         "version": "0.6.0",
         "build": "1"
@@ -155,7 +155,7 @@
         "securityRules": "[parameters('networkSecurityGroupRules')]"
       },
       "tags": {
-        "node_type": "datasite",
+        "server_type": "datasite",
         "os_version": "ubuntu2004",
         "version": "0.6.0",
         "build": "1"
@@ -173,7 +173,7 @@
         "subnets": "[parameters('subnets')]"
       },
       "tags": {
-        "node_type": "datasite",
+        "server_type": "datasite",
         "os_version": "ubuntu2004",
         "version": "0.6.0",
         "build": "1"
@@ -191,7 +191,7 @@
         "name": "[parameters('publicIpAddressSku')]"
       },
       "tags": {
-        "node_type": "datasite",
+        "server_type": "datasite",
         "os_version": "ubuntu2004",
         "version": "0.6.0",
         "build": "1"
@@ -250,7 +250,7 @@
         "product": "openmined_mj_grid_datasite_ubuntu_1"
       },
       "tags": {
-        "node_type": "datasite",
+        "server_type": "datasite",
         "os_version": "ubuntu2004",
         "version": "0.6.0",
         "build": "1"

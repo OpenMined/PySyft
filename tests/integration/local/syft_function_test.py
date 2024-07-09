@@ -15,8 +15,8 @@ from syft.service.response import SyftSuccess
 
 
 @pytest.fixture
-def node():
-    _node = sy.orchestra.launch(
+def server():
+    _server = sy.orchestra.launch(
         name=token_hex(8),
         dev_mode=True,
         reset=True,
@@ -26,20 +26,20 @@ def node():
         local_db=False,
     )
     # startup code here
-    yield _node
+    yield _server
     # Cleanup code
-    _node.python_node.cleanup()
-    _node.land()
+    _server.python_server.cleanup()
+    _server.land()
 
 
 # @pytest.mark.flaky(reruns=3, reruns_delay=3)
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
-def test_nested_jobs(node):
-    client = node.login(email="info@openmined.org", password="changethis")
+def test_nested_jobs(server):
+    client = server.login(email="info@openmined.org", password="changethis")
 
     res = client.register(name="a", email="aa@b.org", password="c", password_verify="c")
     assert isinstance(res, SyftSuccess)
-    ds_client = node.login(email="aa@b.org", password="c")
+    ds_client = server.login(email="aa@b.org", password="c")
     ## Dataset
 
     x = ActionObject.from_obj([1, 2])

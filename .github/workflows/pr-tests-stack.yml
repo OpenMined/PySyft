@@ -68,7 +68,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.12"]
-        pytest-modules: ["local_node"]
+        pytest-modules: ["local_server"]
       fail-fast: false
 
     runs-on: ${{matrix.os}}

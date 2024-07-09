@@ -3,8 +3,8 @@ from enum import Enum
 from typing import Any
 
 # relative
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
 from ...types.uid import UID
 
 
@@ -96,15 +96,15 @@ class ActionObjectEXECUTE(ActionObjectPermission):
 
 @serializable()
 class StoragePermission:
-    def __init__(self, uid: UID, node_uid: UID):
+    def __init__(self, uid: UID, server_uid: UID):
         self.uid = uid
-        self.node_uid = node_uid
+        self.server_uid = server_uid
 
     def __repr__(self) -> str:
-        return f"StoragePermission: {self.uid} on {self.node_uid}"
+        return f"StoragePermission: {self.uid} on {self.server_uid}"
 
     def _coll_repr_(self) -> dict[str, Any]:
         return {
             "uid": str(self.uid),
-            "node_uid": str(self.node_uid),
+            "server_uid": str(self.server_uid),
         }

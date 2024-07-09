@@ -10,10 +10,10 @@ from pydantic import BaseModel
 from pydantic import model_validator
 
 # relative
-from ...abstract_node import NodeType
-from ...node.credentials import SyftVerifyKey
+from ...abstract_server import ServerType
 from ...protocol.data_protocol import get_data_protocol
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
 from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SYFT_OBJECT_VERSION_5
 from ...types.syft_object import StorableObjectType
@@ -29,14 +29,14 @@ def check_version(
     client_version: str, server_version: str, server_name: str, silent: bool = False
 ) -> bool:
     client_syft_version = version.parse(client_version)
-    node_syft_version = version.parse(server_version)
+    server_syft_version = version.parse(server_version)
     msg = (
         f"You are running syft=={client_version} but "
-        f"{server_name} node requires {server_version}"
+        f"{server_name} server requires {server_version}"
     )
-    if client_syft_version.base_version != node_syft_version.base_version:
+    if client_syft_version.base_version != server_syft_version.base_version:
         raise ValueError(msg)
-    if client_syft_version.pre != node_syft_version.pre:
+    if client_syft_version.pre != server_syft_version.pre:
         if not silent:
             print(f"Warning: {msg}")
             return False
@@ -44,8 +44,8 @@ def check_version(
 
 
 @serializable()
-class NodeMetadata(SyftObject):
-    __canonical_name__ = "NodeMetadata"
+class ServerMetadata(SyftObject):
+    __canonical_name__ = "ServerMetadata"
     __version__ = SYFT_OBJECT_VERSION_5
 
     name: str
@@ -54,10 +54,10 @@ class NodeMetadata(SyftObject):
     highest_version: int
     lowest_version: int
     syft_version: str
-    node_type: NodeType = NodeType.DATASITE
+    server_type: ServerType = ServerType.DATASITE
     organization: str = "OpenMined"
     description: str = "Text"
-    node_side_type: str
+    server_side_type: str
     show_warnings: bool
     eager_execution_enabled: bool
     min_size_blob_storage_mb: int
@@ -71,8 +71,8 @@ class NodeMetadata(SyftObject):
 
 
 @serializable()
-class NodeMetadataV4(SyftObject):
-    __canonical_name__ = "NodeMetadata"
+class ServerMetadataV4(SyftObject):
+    __canonical_name__ = "ServerMetadata"
     __version__ = SYFT_OBJECT_VERSION_4
 
     name: str
@@ -81,10 +81,10 @@ class NodeMetadataV4(SyftObject):
     highest_version: int
     lowest_version: int
     syft_version: str
-    node_type: NodeType = NodeType.DATASITE
+    server_type: ServerType = ServerType.DATASITE
     organization: str = "OpenMined"
     description: str = "Text"
-    node_side_type: str
+    server_side_type: str
     show_warnings: bool
 
     def check_version(self, client_version: str) -> bool:
@@ -96,7 +96,7 @@ class NodeMetadataV4(SyftObject):
 
 
 @serializable()
-class NodeMetadataJSON(BaseModel, StorableObjectType):
+class ServerMetadataJSON(BaseModel, StorableObjectType):
     metadata_version: int
     name: str
     id: str
@@ -104,13 +104,13 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
     highest_object_version: int | None = None
     lowest_object_version: int | None = None
     syft_version: str
-    node_type: str = NodeType.DATASITE.value
+    server_type: str = ServerType.DATASITE.value
     organization: str = "OpenMined"
     description: str = "My cool datasite"
     signup_enabled: bool = False
     eager_execution_enabled: bool = False
     admin_email: str = ""
-    node_side_type: str
+    server_side_type: str
     show_warnings: bool
     supported_protocols: list = []
     min_size_blob_storage_mb: int
@@ -131,23 +131,23 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
         )
 
 
-@transform(NodeMetadata, NodeMetadataJSON)
+@transform(ServerMetadata, ServerMetadataJSON)
 def metadata_to_json() -> list[Callable]:
     return [
         drop(["__canonical_name__"]),
         rename("__version__", "metadata_version"),
-        convert_types(["id", "verify_key", "node_type"], str),
+        convert_types(["id", "verify_key", "server_type"], str),
         rename("highest_version", "highest_object_version"),
         rename("lowest_version", "lowest_object_version"),
     ]
 
 
-@transform(NodeMetadataJSON, NodeMetadata)
+@transform(ServerMetadataJSON, ServerMetadata)
 def json_to_metadata() -> list[Callable]:
     return [
         drop(["metadata_version", "supported_protocols"]),
         convert_types(["id", "verify_key"], [UID, SyftVerifyKey]),
-        convert_types(["node_type"], NodeType),
+        convert_types(["server_type"], ServerType),
         rename("highest_object_version", "highest_version"),
         rename("lowest_object_version", "lowest_version"),
     ]

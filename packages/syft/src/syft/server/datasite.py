@@ -1,8 +1,8 @@
 # relative
 from ..serde.serializable import serializable
-from .node import Node
+from .server import Server
 
 
 @serializable(without=["queue_manager"])
-class Datasite(Node):
+class Datasite(Server):
     pass

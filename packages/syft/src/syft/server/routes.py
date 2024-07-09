@@ -18,14 +18,14 @@ from pydantic import ValidationError
 import requests
 
 # relative
-from ..abstract_node import AbstractNode
-from ..client.connection import NodeConnection
+from ..abstract_server import AbstractServer
+from ..client.connection import ServerConnection
 from ..protocol.data_protocol import PROTOCOL_TYPE
 from ..serde.deserialize import _deserialize as deserialize
 from ..serde.serialize import _serialize as serialize
-from ..service.context import NodeServiceContext
+from ..service.context import ServerServiceContext
 from ..service.context import UnauthedServiceContext
-from ..service.metadata.node_metadata import NodeMetadataJSON
+from ..service.metadata.server_metadata import ServerMetadataJSON
 from ..service.response import SyftError
 from ..service.user.user import UserCreate
 from ..service.user.user import UserPrivateKey
@@ -54,14 +54,14 @@ def make_routes(worker: Worker) -> APIRouter:
     async def get_body(request: Request) -> bytes:
         return await request.body()
 
-    def _get_node_connection(peer_uid: UID) -> NodeConnection:
+    def _get_server_connection(peer_uid: UID) -> ServerConnection:
         # relative
-        from ..service.network.node_peer import route_to_connection
+        from ..service.network.server_peer import route_to_connection
 
         network_service = worker.get_service("NetworkService")
         peer = network_service.stash.get_by_uid(worker.verify_key, peer_uid).ok()
-        peer_node_route = peer.pick_highest_priority_route()
-        connection = route_to_connection(route=peer_node_route)
+        peer_server_route = peer.pick_highest_priority_route()
+        connection = route_to_connection(route=peer_server_route)
         return connection
 
     @router.get("/stream/{peer_uid}/{url_path}/", name="stream")
@@ -74,7 +74,7 @@ def make_routes(worker: Worker) -> APIRouter:
         peer_uid_parsed = UID.from_string(peer_uid)
 
         try:
-            peer_connection = _get_node_connection(peer_uid_parsed)
+            peer_connection = _get_server_connection(peer_uid_parsed)
             url = peer_connection.to_blob_route(url_path_parsed)
             stream_response = peer_connection._make_get(url.path, stream=True)
         except requests.RequestException:
@@ -100,7 +100,7 @@ def make_routes(worker: Worker) -> APIRouter:
         peer_uid_parsed = UID.from_string(peer_uid)
 
         try:
-            peer_connection = _get_node_connection(peer_uid_parsed)
+            peer_connection = _get_server_connection(peer_uid_parsed)
             url = peer_connection.to_blob_route(url_path_parsed)
 
             print("Url on stream", url.path)
@@ -129,10 +129,10 @@ def make_routes(worker: Worker) -> APIRouter:
         """
         return {"status": "ok"}
 
-    # provide information about the node in JSON
+    # provide information about the server in JSON
     @router.get("/metadata", response_class=JSONResponse)
     def syft_metadata() -> JSONResponse:
-        return worker.metadata.to(NodeMetadataJSON)
+        return worker.metadata.to(ServerMetadataJSON)
 
     @router.get("/metadata_capnp")
     def syft_metadata_capnp() -> Response:
@@ -191,14 +191,16 @@ def make_routes(worker: Worker) -> APIRouter:
         else:
             return handle_new_api_call(data)
 
-    def handle_login(email: str, password: str, node: AbstractNode) -> Response:
+    def handle_login(email: str, password: str, server: AbstractServer) -> Response:
         try:
             login_credentials = UserLoginCredentials(email=email, password=password)
         except ValidationError as e:
             return {"Error": e.json()}
 
-        method = node.get_service_method(UserService.exchange_credentials)
-        context = UnauthedServiceContext(node=node, login_credentials=login_credentials)
+        method = server.get_service_method(UserService.exchange_credentials)
+        context = UnauthedServiceContext(
+            server=server, login_credentials=login_credentials
+        )
         result = method(context=context)
 
         if isinstance(result, SyftError):
@@ -215,14 +217,14 @@ def make_routes(worker: Worker) -> APIRouter:
             media_type="application/octet-stream",
         )
 
-    def handle_register(data: bytes, node: AbstractNode) -> Response:
+    def handle_register(data: bytes, server: AbstractServer) -> Response:
         user_create = deserialize(data, from_bytes=True)
 
         if not isinstance(user_create, UserCreate):
             raise Exception(f"Incorrect type received: {user_create}")
 
-        context = NodeServiceContext(node=node)
-        method = node.get_method_with_context(UserService.register, context)
+        context = ServerServiceContext(server=server)
+        method = server.get_method_with_context(UserService.register, context)
 
         result = method(new_user=user_create)
 

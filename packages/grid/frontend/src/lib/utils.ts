@@ -33,7 +33,7 @@ export function getInitials(name: string) {
 
 export function logout() {
   window.localStorage.removeItem("id")
-  window.localStorage.removeItem("nodeId")
+  window.localStorage.removeItem("serverId")
   window.localStorage.removeItem("key")
 }
 
@@ -51,7 +51,7 @@ export const default_cookie_config: CookieSerializeOptions = {
 
 interface CookieData {
   uid: string
-  node_id: string
+  server_id: string
   signing_key: string
 }
 

@@ -1,7 +1,7 @@
-syft.node.datasite
+syft.server.datasite
 ================
 
-.. automodule:: syft.node.datasite
+.. automodule:: syft.server.datasite
 
    
    

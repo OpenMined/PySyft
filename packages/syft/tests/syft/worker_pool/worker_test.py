@@ -1,7 +1,7 @@
 # syft absolute
 import syft as sy
 from syft.custom_worker.config import DockerWorkerConfig
-from syft.node.worker import Worker
+from syft.server.worker import Worker
 from syft.service.response import SyftSuccess
 from syft.service.worker.worker_image import SyftWorkerImage
 from syft.types.datetime import DateTime

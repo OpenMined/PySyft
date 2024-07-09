@@ -8,12 +8,12 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.node.worker import Worker
 from syft.protocol.data_protocol import get_data_protocol
 from syft.protocol.data_protocol import protocol_release_dir
 from syft.protocol.data_protocol import stage_protocol_changes
 from syft.serde.recursive import TYPE_BANK
 from syft.serde.serializable import serializable
+from syft.server.worker import Worker
 from syft.service.context import AuthedServiceContext
 from syft.service.response import SyftError
 from syft.service.service import AbstractService
@@ -115,7 +115,7 @@ def setup_service_method(syft_object):
     return SyftMockObjectService
 
 
-def setup_version_one(node_name: str):
+def setup_version_one(server_name: str):
     syft_klass_version_one = get_klass_version_1()
     sy.stage_protocol_changes()
     sy.bump_protocol_version()
@@ -124,23 +124,23 @@ def setup_version_one(node_name: str):
         syft_object=syft_klass_version_one,
     )
 
-    node = sy.orchestra.launch(node_name, dev_mode=True, reset=True)
+    server = sy.orchestra.launch(server_name, dev_mode=True, reset=True)
 
-    worker: Worker = node.python_node
+    worker: Worker = server.python_server
 
     worker.services.append(syft_service_klass)
     worker.service_path_map[syft_service_klass.__name__.lower()] = syft_service_klass(
         store=worker.document_store
     )
 
-    return node, syft_klass_version_one
+    return server, syft_klass_version_one
 
 
 def mock_syft_version():
     return f"{sy.__version__}.dev"
 
 
-def setup_version_second(node_name: str, klass_version_one: type):
+def setup_version_second(server_name: str, klass_version_one: type):
     syft_klass_version_second = get_klass_version_2()
     setup_migration_transforms(klass_version_one, syft_klass_version_second)
 
@@ -149,16 +149,16 @@ def setup_version_second(node_name: str, klass_version_one: type):
 
     syft_service_klass = setup_service_method(syft_object=syft_klass_version_second)
 
-    node = sy.orchestra.launch(node_name, dev_mode=True)
+    server = sy.orchestra.launch(server_name, dev_mode=True)
 
-    worker: Worker = node.python_node
+    worker: Worker = server.python_server
 
     worker.services.append(syft_service_klass)
     worker.service_path_map[syft_service_klass.__name__.lower()] = syft_service_klass(
         store=worker.document_store
     )
 
-    return node, syft_klass_version_second
+    return server, syft_klass_version_second
 
 
 @pytest.fixture
@@ -192,7 +192,7 @@ def test_client_server_running_different_protocols(my_stage_protocol):
 
         return index_syft_by_module_name(fully_qualified_name)
 
-    node_name = UID().to_string()
+    server_name = UID().to_string()
     with mock.patch("syft.serde.recursive.TYPE_BANK", MOCK_TYPE_BANK):
         with mock.patch(
             "syft.protocol.data_protocol.TYPE_BANK",
@@ -203,7 +203,7 @@ def test_client_server_running_different_protocols(my_stage_protocol):
                 patched_index_syft_by_module_name,
             ):
                 # Setup mock object version one
-                nh1, klass_v1 = setup_version_one(node_name)
+                nh1, klass_v1 = setup_version_one(server_name)
                 assert klass_v1.__canonical_name__ == "SyftMockObjectTest"
                 assert klass_v1.__name__ == "SyftMockObjectTestV1"
 
@@ -221,7 +221,7 @@ def test_client_server_running_different_protocols(my_stage_protocol):
                     "syft.protocol.data_protocol.__version__", mock_syft_version()
                 ):
                     nh2, klass_v2 = setup_version_second(
-                        node_name, klass_version_one=klass_v1
+                        server_name, klass_version_one=klass_v1
                     )
 
                     # Create a sample data in version second
@@ -237,9 +237,11 @@ def test_client_server_running_different_protocols(my_stage_protocol):
                     assert sample_data_v1.version == int(sample_data.version)
 
                     # Set the sample data in version second
-                    service_klass = nh1.python_node.get_service("SyftMockObjectService")
+                    service_klass = nh1.python_server.get_service(
+                        "SyftMockObjectService"
+                    )
                     service_klass.stash.set(
-                        nh1.python_node.root_client.verify_key,
+                        nh1.python_server.root_client.verify_key,
                         sample_data,
                     )
 

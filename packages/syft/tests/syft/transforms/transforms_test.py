@@ -75,7 +75,7 @@ def test_validate_klass_and_version(
         assert result == expected_result
 
 
-def test_generate_transform_wrapper(faker, monkeypatch, node_context):
+def test_generate_transform_wrapper(faker, monkeypatch, server_context):
     mock_value = faker.random_int()
 
     def mock_transform_method(context: TransformContext) -> TransformContext:
@@ -95,7 +95,7 @@ def test_generate_transform_wrapper(faker, monkeypatch, node_context):
 
     output = resultant_wrapper(
         MockObjectFromSyftBaseObj(),
-        node_context,
+        server_context,
     )
     assert isinstance(output, MockObjectToSyftBaseObj)
     assert output.value == mock_value

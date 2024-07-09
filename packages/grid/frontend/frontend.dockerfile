@@ -31,7 +31,7 @@ CMD pnpm test:unit
 
 FROM dependencies as grid-ui-development
 
-ENV NODE_ENV=development
+ENV SERVER_ENV=development
 
 COPY . .
 CMD pnpm dev
@@ -43,7 +43,7 @@ RUN pnpm build
 
 FROM base AS grid-ui-production
 
-ENV NODE_ENV=production
+ENV SERVER_ENV=production
 
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY --from=builder /app ./

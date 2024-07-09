@@ -10,7 +10,7 @@ import pytest
 # syft absolute
 import syft as sy
 from syft.client.datasite_client import DatasiteClient
-from syft.node.worker import Worker
+from syft.server.worker import Worker
 from syft.service.action.action_data_empty import ActionDataEmpty
 from syft.service.action.action_object import ActionObject
 from syft.service.request.request import Request
@@ -147,7 +147,7 @@ def test_duplicated_user_code(worker) -> None:
 
     # request the a different function name but same content will also succeed
     # flaky if not blocking
-    mock_syft_func_2(syft_no_node=True)
+    mock_syft_func_2(syft_no_server=True)
     result = ds_client.api.services.code.request_code_execution(mock_syft_func_2)
     assert isinstance(result, Request)
     assert len(ds_client.code.get_all()) == 2
@@ -242,8 +242,8 @@ def test_nested_requests(worker, guest_client: User):
     inner = codes[0] if codes[0].service_func_name == "mock_inner_func" else codes[1]
     outer = codes[0] if codes[0].service_func_name == "mock_outer_func" else codes[1]
     assert list(request.code.nested_codes.keys()) == ["mock_inner_func"]
-    (linked_obj, node) = request.code.nested_codes["mock_inner_func"]
-    assert node == {}
+    (linked_obj, server) = request.code.nested_codes["mock_inner_func"]
+    assert server == {}
     resolved = root_datasite_client.api.services.notifications.resolve_object(
         linked_obj
     )

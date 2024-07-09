@@ -1,3 +1,6 @@
+# future
+from __future__ import annotations
+
 # stdlib
 from collections.abc import Callable
 import multiprocessing
@@ -21,7 +24,8 @@ from starlette.middleware.cors import CORSMiddleware
 import uvicorn
 
 # relative
-from ..abstract_node import NodeSideType
+from ..abstract_server import ServerSideType
+from ..abstract_server import ServerType
 from ..client.client import API_PATH
 from ..util.autoreload import enable_autoreload
 from ..util.constants import DEFAULT_TIMEOUT
@@ -29,7 +33,6 @@ from ..util.util import os_name
 from .datasite import Datasite
 from .enclave import Enclave
 from .gateway import Gateway
-from .node import NodeType
 from .routes import make_routes
 
 if os_name() == "macOS":
@@ -42,8 +45,8 @@ WAIT_TIME_SECONDS = 20
 
 class AppSettings(BaseSettings):
     name: str
-    node_type: NodeType = NodeType.DATASITE
-    node_side_type: NodeSideType = NodeSideType.HIGH_SIDE
+    server_type: ServerType = ServerType.DATASITE
+    server_side_type: ServerSideType = ServerSideType.HIGH_SIDE
     processes: int = 1
     reset: bool = False
     dev_mode: bool = False
@@ -62,18 +65,20 @@ def app_factory() -> FastAPI:
     settings = AppSettings()
 
     worker_classes = {
-        NodeType.DATASITE: Datasite,
-        NodeType.GATEWAY: Gateway,
-        NodeType.ENCLAVE: Enclave,
+        ServerType.DATASITE: Datasite,
+        ServerType.GATEWAY: Gateway,
+        ServerType.ENCLAVE: Enclave,
     }
-    if settings.node_type not in worker_classes:
-        raise NotImplementedError(f"node_type: {settings.node_type} is not supported")
-    worker_class = worker_classes[settings.node_type]
+    if settings.server_type not in worker_classes:
+        raise NotImplementedError(
+            f"server_type: {settings.server_type} is not supported"
+        )
+    worker_class = worker_classes[settings.server_type]
 
     kwargs = settings.model_dump()
     if settings.dev_mode:
         print(
-            f"\nWARNING: private key is based on node name: {settings.name} in dev_mode. "
+            f"\nWARNING: private key is based on server name: {settings.name} in dev_mode. "
             "Don't run this in production."
         )
         worker = worker_class.named(**kwargs)
@@ -138,7 +143,7 @@ def run_uvicorn(
         key_with_prefix = f"{env_prefix}{key.upper()}"
         os.environ[key_with_prefix] = str(value)
 
-    # The `serve_node` function calls `run_uvicorn` in a separate process using `multiprocessing.Process`.
+    # The `serve_server` function calls `run_uvicorn` in a separate process using `multiprocessing.Process`.
     # When the child process is created, it inherits the file descriptors from the parent process.
     # If the parent process has a file descriptor open for sys.stdin, the child process will also have a file descriptor
     # open for sys.stdin. This can cause an OSError in uvicorn when it tries to access sys.stdin in the child process.
@@ -151,7 +156,7 @@ def run_uvicorn(
 
     # Finally, run the uvicorn server.
     uvicorn.run(
-        "syft.node.server:app_factory",
+        "syft.server.uvicorn:app_factory",
         host=host,
         port=port,
         factory=True,
@@ -160,10 +165,10 @@ def run_uvicorn(
     )
 
 
-def serve_node(
+def serve_server(
     name: str,
-    node_type: NodeType = NodeType.DATASITE,
-    node_side_type: NodeSideType = NodeSideType.HIGH_SIDE,
+    server_type: ServerType = ServerType.DATASITE,
+    server_side_type: ServerSideType = ServerSideType.HIGH_SIDE,
     host: str = "0.0.0.0",  # nosec
     port: int = 8080,
     processes: int = 1,
@@ -189,13 +194,13 @@ def serve_node(
         target=run_uvicorn,
         kwargs={
             "name": name,
-            "node_type": node_type,
+            "server_type": server_type,
             "host": host,
             "port": port,
             "processes": processes,
             "reset": reset,
             "dev_mode": dev_mode,
-            "node_side_type": node_side_type,
+            "server_side_type": server_side_type,
             "enable_warnings": enable_warnings,
             "in_memory_workers": in_memory_workers,
             "queue_port": queue_port,

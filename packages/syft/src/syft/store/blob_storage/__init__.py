@@ -163,14 +163,14 @@ class BlobRetrievalByURL(BlobRetrieval):
     __version__ = SYFT_OBJECT_VERSION_5
 
     url: GridURL | str
-    proxy_node_uid: UID | None = None
+    proxy_server_uid: UID | None = None
 
     def read(self) -> SyftObject | SyftError:
         if self.type_ is BlobFileType:
             return BlobFile(
                 file_name=self.file_name,
                 syft_client_verify_key=self.syft_client_verify_key,
-                syft_node_location=self.syft_node_location,
+                syft_server_location=self.syft_server_location,
                 syft_blob_storage_entry_id=self.syft_blob_storage_entry_id,
                 file_size=self.file_size,
             )
@@ -188,18 +188,18 @@ class BlobRetrievalByURL(BlobRetrieval):
         from ...client.api import APIRegistry
 
         api = APIRegistry.api_for(
-            node_uid=self.syft_node_location,
+            server_uid=self.syft_server_location,
             user_verify_key=self.syft_client_verify_key,
         )
 
         if api and api.connection and isinstance(self.url, GridURL):
-            if self.proxy_node_uid is None:
+            if self.proxy_server_uid is None:
                 blob_url = api.connection.to_blob_route(
                     self.url.url_path, host=self.url.host_or_ip
                 )
             else:
                 blob_url = api.connection.stream_via(
-                    self.proxy_node_uid, self.url.url_path
+                    self.proxy_server_uid, self.url.url_path
                 )
                 stream = True
         else:
@@ -280,9 +280,9 @@ class BlobStorageConfig(SyftBaseModel):
 
 @migrate(BlobRetrievalByURLV4, BlobRetrievalByURL)
 def upgrade_blob_retrieval_by_url() -> list[Callable]:
-    return [make_set_default("proxy_node_uid", None)]
+    return [make_set_default("proxy_server_uid", None)]
 
 
 @migrate(BlobRetrievalByURL, BlobRetrievalByURLV4)
 def downgrade_blob_retrieval_by_url() -> list[Callable]:
-    return [drop(["proxy_node_uid"])]
+    return [drop(["proxy_server_uid"])]

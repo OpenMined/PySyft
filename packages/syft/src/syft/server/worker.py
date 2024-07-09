@@ -1,8 +1,8 @@
 # relative
 from ..serde.serializable import serializable
-from .node import Node
+from .server import Server
 
 
 @serializable()
-class Worker(Node):
+class Worker(Server):
     pass

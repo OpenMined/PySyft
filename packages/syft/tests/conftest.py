@@ -14,12 +14,12 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.abstract_node import NodeSideType
+from syft.abstract_server import ServerSideType
 from syft.client.datasite_client import DatasiteClient
-from syft.node.worker import Worker
 from syft.protocol.data_protocol import get_data_protocol
 from syft.protocol.data_protocol import protocol_release_dir
 from syft.protocol.data_protocol import stage_protocol_changes
+from syft.server.worker import Worker
 from syft.service.user import user
 
 # relative
@@ -134,7 +134,7 @@ def worker() -> Worker:
 
 @pytest.fixture(scope="function")
 def second_worker() -> Worker:
-    # Used in node syncing tests
+    # Used in server syncing tests
     worker = sy.Worker.named(name=token_hex(8))
     yield worker
     worker.cleanup()
@@ -143,7 +143,9 @@ def second_worker() -> Worker:
 
 @pytest.fixture(scope="function")
 def high_worker() -> Worker:
-    worker = sy.Worker.named(name=token_hex(8), node_side_type=NodeSideType.HIGH_SIDE)
+    worker = sy.Worker.named(
+        name=token_hex(8), server_side_type=ServerSideType.HIGH_SIDE
+    )
     yield worker
     worker.cleanup()
     del worker
@@ -151,7 +153,9 @@ def high_worker() -> Worker:
 
 @pytest.fixture(scope="function")
 def low_worker() -> Worker:
-    worker = sy.Worker.named(name=token_hex(8), node_side_type=NodeSideType.LOW_SIDE)
+    worker = sy.Worker.named(
+        name=token_hex(8), server_side_type=ServerSideType.LOW_SIDE
+    )
     yield worker
     worker.cleanup()
     del worker

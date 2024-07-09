@@ -5,7 +5,7 @@ from result import Err
 
 # syft absolute
 from syft.client.client import SyftClient
-from syft.node.credentials import SyftVerifyKey
+from syft.server.credentials import SyftVerifyKey
 from syft.service.context import AuthedServiceContext
 from syft.service.request.request import Request
 from syft.service.request.request import SubmitRequest

@@ -15,9 +15,9 @@ from .code_parse import LaunchJobVisitor
 def submit_subjobs_code(submit_user_code, ep_client) -> None:  # type: ignore
     # TODO: fix the mypy issue. Reason: circular import
     # We are exploring the source code to automatically upload
-    # subjobs in the ephemeral node
+    # subjobs in the ephemeral server
     # Usually, a DS would manually submit the code for subjobs,
-    # but because we dont allow them to interact with the ephemeral node
+    # but because we dont allow them to interact with the ephemeral server
     # that would not be possible
     if "datasite" in submit_user_code.input_kwargs:
         tree = ast.parse(inspect.getsource(submit_user_code.local_function))

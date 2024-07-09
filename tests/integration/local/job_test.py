@@ -17,7 +17,7 @@ from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 
 
-@pytest.mark.local_node
+@pytest.mark.local_server
 def test_job_restart(job) -> None:
     job.wait(timeout=2)
 
@@ -61,28 +61,28 @@ def test_job_restart(job) -> None:
 
 
 @pytest.fixture
-def node():
-    node = sy.orchestra.launch(
+def server():
+    server = sy.orchestra.launch(
         name=token_hex(8),
         dev_mode=False,
         thread_workers=False,
         reset=True,
         n_consumers=4,
         create_producer=True,
-        node_side_type=sy.NodeSideType.LOW_SIDE,
+        server_side_type=sy.ServerSideType.LOW_SIDE,
     )
     try:
-        yield node
+        yield server
     finally:
-        node.python_node.cleanup()
-        node.land()
+        server.python_server.cleanup()
+        server.land()
 
 
 @pytest.fixture
-def job(node):
-    client = node.login(email="info@openmined.org", password="changethis")
+def job(server):
+    client = server.login(email="info@openmined.org", password="changethis")
     _ = client.register(name="a", email="aa@b.org", password="c", password_verify="c")
-    ds_client = node.login(email="aa@b.org", password="c")
+    ds_client = server.login(email="aa@b.org", password="c")
 
     @syft_function()
     def process_batch():
@@ -105,7 +105,7 @@ def job(node):
 
     _ = ds_client.code.request_code_execution(process_all)
     client.requests[-1].approve(approve_nested=True)
-    client = node.login(email="info@openmined.org", password="changethis")
+    client = server.login(email="info@openmined.org", password="changethis")
     job = client.code.process_all(blocking=False)
     try:
         yield job
@@ -113,7 +113,7 @@ def job(node):
         job.kill()
 
 
-@pytest.mark.local_node
+@pytest.mark.local_server
 def test_job_kill(job) -> None:
     job.wait(timeout=2)
     assert wait_until(

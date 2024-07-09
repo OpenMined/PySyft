@@ -132,7 +132,7 @@ def test_diff_state(low_worker, high_worker):
 
     client_low_ds.refresh()
     res = client_low_ds.code.compute(blocking=True)
-    assert res == compute(syft_no_node=True)
+    assert res == compute(syft_no_server=True)
 
 
 def test_diff_state_with_dataset(low_worker, high_worker):
@@ -181,7 +181,7 @@ def test_diff_state_with_dataset(low_worker, high_worker):
     res_blocking = client_low_ds.code.compute_mean(blocking=True)
     res_non_blocking = client_low_ds.code.compute_mean(blocking=False).wait()
 
-    # expected_result = compute_mean(syft_no_node=True, data=)
+    # expected_result = compute_mean(syft_no_server=True, data=)
     assert (
         res_blocking
         == res_non_blocking

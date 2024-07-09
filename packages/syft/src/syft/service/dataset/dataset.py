@@ -102,7 +102,7 @@ class Asset(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_2
 
     action_id: UID
-    node_uid: UID
+    server_uid: UID
     name: str
     description: MarkdownDescription | None = None
     contributors: set[Contributor] = set()
@@ -189,7 +189,7 @@ class Asset(SyftObject):
             </div>"""
 
     def __repr__(self) -> str:
-        return f"Asset(name='{self.name}', node_uid='{self.node_uid}', action_id='{self.action_id}')"
+        return f"Asset(name='{self.name}', server_uid='{self.server_uid}', action_id='{self.action_id}')"
 
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         _repr_str = f"Asset: {self.name}\n"
@@ -208,7 +208,7 @@ class Asset(SyftObject):
             "Action ID": self.action_id,
             "Asset Name": self.name,
             "Dataset Name": self._dataset_name,
-            "Node UID": self.node_uid,
+            "Server UID": self.server_uid,
         }
 
         # _kwarg_name and _dataset_name are set by the UserCode.assets
@@ -223,7 +223,7 @@ class Asset(SyftObject):
             "action_id": self.action_id.no_dash,
             "source_asset": self.name,
             "source_dataset": self._dataset_name,
-            "source_node": self.node_uid.no_dash,
+            "source_server": self.server_uid.no_dash,
         }
 
     def __eq__(self, other: object) -> bool:
@@ -247,7 +247,7 @@ class Asset(SyftObject):
         from ...client.api import APIRegistry
 
         api = APIRegistry.api_for(
-            node_uid=self.node_uid,
+            server_uid=self.server_uid,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is not None and api.services is not None:
@@ -259,11 +259,11 @@ class Asset(SyftObject):
         from ...client.api import APIRegistry
 
         api = APIRegistry.api_for(
-            node_uid=self.node_uid,
+            server_uid=self.server_uid,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None:
-            return SyftError(message=f"You must login to {self.node_uid}")
+            return SyftError(message=f"You must login to {self.server_uid}")
         result = api.services.action.get_mock(self.action_id)
         try:
             if isinstance(result, SyftObject):
@@ -289,7 +289,7 @@ class Asset(SyftObject):
         from ...client.api import APIRegistry
 
         api = APIRegistry.api_for(
-            node_uid=self.node_uid,
+            server_uid=self.server_uid,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None or api.services is None:
@@ -333,7 +333,7 @@ class CreateAsset(SyftObject):
     description: MarkdownDescription | None = None
     contributors: set[Contributor] = set()
     data_subjects: list[DataSubjectCreate] = []
-    node_uid: UID | None = None
+    server_uid: UID | None = None
     action_id: UID | None = None
     data: Any | None = None
     mock: Any | None = None
@@ -463,7 +463,7 @@ class DatasetV2(SyftObject):
 
     id: UID
     name: str
-    node_uid: UID | None = None
+    server_uid: UID | None = None
     asset_list: list[Asset] = []
     contributors: set[Contributor] = set()
     citation: str | None = None
@@ -496,7 +496,7 @@ class Dataset(SyftObject):
 
     id: UID
     name: str
-    node_uid: UID | None = None
+    server_uid: UID | None = None
     asset_list: list[Asset] = []
     contributors: set[Contributor] = set()
     citation: str | None = None
@@ -617,10 +617,10 @@ class Dataset(SyftObject):
         # relative
         from ...client.client import SyftClientSessionCache
 
-        client = SyftClientSessionCache.get_client_for_node_uid(self.node_uid)
+        client = SyftClientSessionCache.get_client_for_server_uid(self.server_uid)
         if client is None:
             return SyftError(
-                message=f"No clients for {self.node_uid} in memory. Please login with sy.login"
+                message=f"No clients for {self.server_uid} in memory. Please login with sy.login"
             )
         return client
 
@@ -809,7 +809,7 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
         twin = TwinObject(
             private_obj=asset.data,  # type: ignore
             mock_obj=asset.mock,  # type: ignore
-            syft_node_location=asset.syft_node_location,  # type: ignore
+            syft_server_location=asset.syft_server_location,  # type: ignore
             syft_client_verify_key=asset.syft_client_verify_key,  # type: ignore
         )
         res = twin._save_to_blob_storage(allow_empty=contains_empty)
@@ -818,13 +818,13 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
         if isinstance(res, SyftWarning):
             logger.debug(res.message)
         # TODO, upload to blob storage here
-        if context.node is None:
+        if context.server is None:
             raise ValueError(
-                "f{context}'s node is None, please log in. No trasformation happened"
+                "f{context}'s server is None, please log in. No trasformation happened"
             )
-        action_service = context.node.get_service("actionservice")
+        action_service = context.server.get_service("actionservice")
         result = action_service._set(
-            context=context.to_node_context(),
+            context=context.to_server_context(),
             action_object=twin,
         )
         if result.is_err():
@@ -850,12 +850,12 @@ def infer_shape(context: TransformContext) -> TransformContext:
 def set_data_subjects(context: TransformContext) -> TransformContext | SyftError:
     if context.output is None:
         raise ValueError(f"{context}'s output is None. No transformation happened")
-    if context.node is None:
+    if context.server is None:
         return SyftError(
-            "f{context}'s node is None, please log in. No trasformation happened"
+            "f{context}'s server is None, please log in. No trasformation happened"
         )
     data_subjects = context.output["data_subjects"]
-    get_data_subject = context.node.get_service_method(DataSubjectService.get_by_name)
+    get_data_subject = context.server.get_service_method(DataSubjectService.get_by_name)
     resultant_data_subjects = []
     for data_subject in data_subjects:
         result = get_data_subject(context=context, name=data_subject.name)
@@ -874,10 +874,10 @@ def add_msg_creation_time(context: TransformContext) -> TransformContext:
     return context
 
 
-def add_default_node_uid(context: TransformContext) -> TransformContext:
+def add_default_server_uid(context: TransformContext) -> TransformContext:
     if context.output is not None:
-        if context.output["node_uid"] is None and context.node is not None:
-            context.output["node_uid"] = context.node.id
+        if context.output["server_uid"] is None and context.server is not None:
+            context.output["server_uid"] = context.server.id
     else:
         raise ValueError(f"{context}'s output is None. No transformation happened")
     return context
@@ -891,7 +891,7 @@ def createasset_to_asset() -> list[Callable]:
         infer_shape,
         create_and_store_twin,
         set_data_subjects,
-        add_default_node_uid,
+        add_default_server_uid,
     ]
 
 

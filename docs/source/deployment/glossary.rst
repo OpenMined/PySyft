@@ -18,11 +18,11 @@ Differential Privacy
 ~~~~~~~~~~~~~~~~~~~~~
 While the textbook definition can be found here_, within the context of remote data science, ``differential privacy`` is a set of algorithms which empower a data owner to limit the probability that a data scientist will be able to use their statistical results to reverse engineer the data owner's def. of too much information about the underlying data that generated those results. In a nutshell, its aim is to prevent a Data Scientist from identifying any individual from the dataset through reverse-engineering.
 
-Datasite Node
+Datasite Server
 ~~~~~~~~~~~~~~~~~~~~~
 A ``computer system`` (or collection of computer systems) which manages the remote study of a data owner's data by a data scientist. It is responsible for allowing the `Data Owner` to manage the data, as well as incoming ``requests`` from data scientists and for gatekeeping the data scientist's access to data, compute, and experimental results stored within the data owner's compute infrastructure.
 
-Network Node
+Gateway Server
 ~~~~~~~~~~~~~~~~~~~~~
 A server which exists outside of any data owner's institution, providing services to the network of data owners and data scientists such as dataset search and bulk project approval (simultaneous legal/technical approval to participate in a project across groups of datasites and data scientists at a time). A Network acts as a bridge between between its members and subscribers. The members are ``Datasites`` while subscribers are the ``end users`` (e.g. Data Scientist) who explore and perform analysis on the datasets hosted by the members.
 A network is used to provide access to a collection of datasites at once i.e. if a user agrees to a ``Network Agreement``, then they automatically agree to the conditions to the Datasites enlisted in that Network.
@@ -56,7 +56,7 @@ Within the field of remote data science, a data owner is someone who has a (digi
 
 Datasite Owner
 ~~~~~~~~~~~~~~~~~~~~~
-A user of ``PyGrid`` who has deployed a datasite node.
+A user of ``PyGrid`` who has deployed a datasite server.
 
 Network Owner
 ~~~~~~~~~~~~~~~~~~~~~
@@ -90,7 +90,7 @@ Default permissions:
 
 Compliance Officer
 """"""""""""""""""""
-This role is for users who will help you manage requests made on your node. They should be users you trust. They are not able to change ``Datasite Settings`` or edit roles but they are by default able to accept or deny ``user requests`` on behalf of the ``datasite node``.
+This role is for users who will help you manage requests made on your server. They should be users you trust. They are not able to change ``Datasite Settings`` or edit roles but they are by default able to accept or deny ``user requests`` on behalf of the ``datasite server``.
 
 Default permissions:
 
@@ -100,7 +100,7 @@ Default permissions:
 
 Admin
 """"""
-This role is for users who will help you manage your node. This should be users you trust. The main difference between this ``user`` and a ``Compliance Officer`` is that this user by default not only can manage requests but can also edit ``Datasite Settings.`` This is the highest level permission outside of an Owner.
+This role is for users who will help you manage your server. This should be users you trust. The main difference between this ``user`` and a ``Compliance Officer`` is that this user by default not only can manage requests but can also edit ``Datasite Settings.`` This is the highest level permission outside of an Owner.
 
 Default permissions:
 
@@ -108,7 +108,7 @@ Default permissions:
 
 Owner
 """"""""
-There is only one Owner account assigned to any one datasite node. The owner account is the highest level permission and is a requirement for deploying a datasite node. If you should ever want to transfer ownership of your datasite node to someone, please contact us at support@openmined.org.
+There is only one Owner account assigned to any one datasite server. The owner account is the highest level permission and is a requirement for deploying a datasite server. If you should ever want to transfer ownership of your datasite server to someone, please contact us at support@openmined.org.
 
 Default permissions:
 
@@ -121,11 +121,11 @@ Datasite membership roles
 
 Guest
 """"""""""""""
-The lowest level of ``network membership``, a guest datasite is listed within a network node's registry and its datasets are searchable/discoverable by all users of the network, but the network has no legal relationship to the datasite nor any authority to grant data scientists access to its data. As such, upon discovering a datasite on the network, such a data scientist must apply directly to the datasite for access by creating an account on such a datasite and signing a legal agreement (a "data-sharing agreement") directly with its corresponding data owner.
+The lowest level of ``network membership``, a guest datasite is listed within a network server's registry and its datasets are searchable/discoverable by all users of the network, but the network has no legal relationship to the datasite nor any authority to grant data scientists access to its data. As such, upon discovering a datasite on the network, such a data scientist must apply directly to the datasite for access by creating an account on such a datasite and signing a legal agreement (a "data-sharing agreement") directly with its corresponding data owner.
 
 Member
 """"""""""""""
-The highest level of ``network membership``, a full datasite member is greater than a guest member because, beyond its listing within a network node's registry, the datasite has entered into a legal relationship with the network owner such that the network owner can unilaterally give its full data scientists access to data hosted by the datasite. Note that this does not mean that the network can control access to all potential users of the ``registered datasite``, because the datasite's membership in the network is non-exclusive (datasites can register in multiple networks and also accept direct data-scientist users on the side). A network node only has authority to give its own full data scientists access to any full datasite within its registry.
+The highest level of ``network membership``, a full datasite member is greater than a guest member because, beyond its listing within a network server's registry, the datasite has entered into a legal relationship with the network owner such that the network owner can unilaterally give its full data scientists access to data hosted by the datasite. Note that this does not mean that the network can control access to all potential users of the ``registered datasite``, because the datasite's membership in the network is non-exclusive (datasites can register in multiple networks and also accept direct data-scientist users on the side). A network server only has authority to give its own full data scientists access to any full datasite within its registry.
 
 .. |image0| image:: ../_static/deployment/image2.png
    :width: 95%

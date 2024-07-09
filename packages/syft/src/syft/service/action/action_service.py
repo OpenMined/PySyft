@@ -10,8 +10,8 @@ from result import Ok
 from result import Result
 
 # relative
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
 from ...types.datetime import DateTime
 from ...types.syft_object import SyftObject
 from ...types.twin_object import TwinObject
@@ -61,13 +61,13 @@ class ActionService(AbstractService):
     def np_array(self, context: AuthedServiceContext, data: Any) -> Any:
         if not isinstance(data, np.ndarray):
             data = np.array(data)
-        # cast here since we are sure that AuthedServiceContext has a node
+        # cast here since we are sure that AuthedServiceContext has a server
 
         np_obj = NumpyArrayObject(
             dtype=data.dtype,
             shape=data.shape,
             syft_action_data_cache=data,
-            syft_node_location=context.node.id,
+            syft_server_location=context.server.id,
             syft_client_verify_key=context.credentials,
         )
         blob_store_result = np_obj._save_to_blob_storage()
@@ -190,7 +190,7 @@ class ActionService(AbstractService):
                 # give read permission to the mock
                 blob_id = action_object.mock_obj.syft_blob_storage_entry_id
                 permission = ActionObjectPermission(blob_id, ActionPermission.ALL_READ)
-                blob_storage_service: AbstractService = context.node.get_service(
+                blob_storage_service: AbstractService = context.server.get_service(
                     BlobStorageService
                 )
                 # if mock is saved to blob store, then add READ permission
@@ -201,7 +201,7 @@ class ActionService(AbstractService):
                 else:
                     action_object = action_object.mock
 
-            action_object.syft_point_to(context.node.id)
+            action_object.syft_point_to(context.server.id)
             return Ok(action_object)
         return result.err()
 
@@ -292,10 +292,10 @@ class ActionService(AbstractService):
         result = self.store.get(
             uid=uid, credentials=context.credentials, has_permission=has_permission
         )
-        if result.is_ok() and context.node is not None:
+        if result.is_ok() and context.server is not None:
             obj: TwinObject | ActionObject = result.ok()
             obj._set_obj_location_(
-                context.node.id,
+                context.server.id,
                 context.credentials,
             )
             # Resolve graph links
@@ -315,13 +315,13 @@ class ActionService(AbstractService):
             if isinstance(obj, TwinObject):
                 if twin_mode == TwinMode.PRIVATE:
                     obj = obj.private
-                    obj.syft_point_to(context.node.id)
+                    obj.syft_point_to(context.server.id)
                 elif twin_mode == TwinMode.MOCK:
                     obj = obj.mock
-                    obj.syft_point_to(context.node.id)
+                    obj.syft_point_to(context.server.id)
                 else:
-                    obj.mock.syft_point_to(context.node.id)
-                    obj.private.syft_point_to(context.node.id)
+                    obj.mock.syft_point_to(context.server.id)
+                    obj.private.syft_point_to(context.server.id)
             return Ok(obj)
         else:
             return result
@@ -335,12 +335,12 @@ class ActionService(AbstractService):
         """Get a pointer from the action store"""
 
         result = self.store.get_pointer(
-            uid=uid, credentials=context.credentials, node_uid=context.node.id
+            uid=uid, credentials=context.credentials, server_uid=context.server.id
         )
         if result.is_ok():
             obj = result.ok()
             obj._set_obj_location_(
-                context.node.id,
+                context.server.id,
                 context.credentials,
             )
             return Ok(obj)
@@ -380,8 +380,8 @@ class ActionService(AbstractService):
         override_execution_permission = (
             context.has_execute_permissions or context.role == ServiceRole.ADMIN
         )
-        if context.node:
-            user_code_service = context.node.get_service("usercodeservice")
+        if context.server:
+            user_code_service = context.server.get_service("usercodeservice")
 
         input_policy = code_item.get_input_policy(context)
         output_policy = code_item.get_output_policy(context)
@@ -533,7 +533,7 @@ class ActionService(AbstractService):
         read_permission = ActionPermission.READ
 
         result_action_object._set_obj_location_(
-            context.node.id,
+            context.server.id,
             context.credentials,
         )
         blob_store_result = result_action_object._save_to_blob_storage()
@@ -561,7 +561,7 @@ class ActionService(AbstractService):
         if set_result.is_err():
             return set_result
 
-        blob_storage_service: AbstractService = context.node.get_service(
+        blob_storage_service: AbstractService = context.server.get_service(
             BlobStorageService
         )
 
@@ -758,7 +758,7 @@ class ActionService(AbstractService):
         if action.action_type == ActionType.CREATEOBJECT:
             result_action_object = Ok(action.create_object)
         elif action.action_type == ActionType.SYFTFUNCTION:
-            usercode_service = context.node.get_service("usercodeservice")
+            usercode_service = context.server.get_service("usercodeservice")
             kwarg_ids = {}
             for k, v in action.kwargs.items():
                 # transform lineage ids into ids
@@ -812,7 +812,7 @@ class ActionService(AbstractService):
         )
 
         result_action_object._set_obj_location_(
-            context.node.id,
+            context.server.id,
             context.credentials,
         )
         blob_store_result = result_action_object._save_to_blob_storage()

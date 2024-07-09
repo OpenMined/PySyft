@@ -7,10 +7,10 @@ from pydantic import EmailStr
 from typing_extensions import Self
 
 # relative
-from ..abstract_node import AbstractNode
-from ..node.credentials import SyftVerifyKey
+from ..abstract_server import AbstractServer
+from ..server.credentials import SyftVerifyKey
 from ..service.context import AuthedServiceContext
-from ..service.context import NodeServiceContext
+from ..service.context import ServerServiceContext
 from .grid_url import GridURL
 from .syft_object import Context
 from .syft_object import SyftBaseObject
@@ -24,7 +24,7 @@ class NotNone:
 
 class TransformContext(Context):
     output: dict[str, Any] | None = None
-    node: AbstractNode | None = None
+    server: AbstractServer | None = None
     credentials: SyftVerifyKey | None = None
     obj: Any | None = None
 
@@ -40,15 +40,17 @@ class TransformContext(Context):
             return t_context
         if hasattr(context, "credentials"):
             t_context.credentials = context.credentials
-        if hasattr(context, "node"):
-            t_context.node = context.node
+        if hasattr(context, "server"):
+            t_context.server = context.server
         return t_context
 
-    def to_node_context(self) -> NodeServiceContext:
+    def to_server_context(self) -> ServerServiceContext:
         if self.credentials:
-            return AuthedServiceContext(node=self.node, credentials=self.credentials)
-        if self.node:
-            return NodeServiceContext(node=self.node)
+            return AuthedServiceContext(
+                server=self.server, credentials=self.credentials
+            )
+        if self.server:
+            return ServerServiceContext(server=self.server)
         return Context()
 
 
@@ -182,13 +184,13 @@ def add_credentials_for_key(key: str) -> Callable:
     return add_credentials
 
 
-def add_node_uid_for_key(key: str) -> Callable:
-    def add_node_uid(context: TransformContext) -> TransformContext:
-        if context.output is not None and context.node is not None:
-            context.output[key] = context.node.id
+def add_server_uid_for_key(key: str) -> Callable:
+    def add_server_uid(context: TransformContext) -> TransformContext:
+        if context.output is not None and context.server is not None:
+            context.output[key] = context.server.id
         return context
 
-    return add_node_uid
+    return add_server_uid
 
 
 def generate_transform_wrapper(
@@ -196,7 +198,7 @@ def generate_transform_wrapper(
 ) -> Callable:
     def wrapper(
         self: klass_from,
-        context: TransformContext | NodeServiceContext | None = None,
+        context: TransformContext | ServerServiceContext | None = None,
     ) -> klass_to:
         t_context = TransformContext.from_context(obj=self, context=context)
         for transform in transforms:

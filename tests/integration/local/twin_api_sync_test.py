@@ -56,7 +56,7 @@ def private_function(context) -> str:
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
-@pytest.mark.local_node
+@pytest.mark.local_server
 def test_twin_api_integration(full_high_worker, full_low_worker):
     low_client = full_low_worker.login(
         email="info@openmined.org", password="changethis"
@@ -124,7 +124,7 @@ def test_twin_api_integration(full_high_worker, full_low_worker):
     # verify updating twin api endpoint works
 
     timeout_before = (
-        full_low_worker.python_node.get_service("apiservice")
+        full_low_worker.python_server.get_service("apiservice")
         .stash.get_all(
             credentials=full_low_worker.client.credentials, has_permission=True
         )
@@ -141,7 +141,7 @@ def test_twin_api_integration(full_high_worker, full_low_worker):
     assert result, result
 
     timeout_after = (
-        full_low_worker.python_node.get_service("apiservice")
+        full_low_worker.python_server.get_service("apiservice")
         .stash.get_all(
             credentials=full_low_worker.client.credentials, has_permission=True
         )
@@ -154,7 +154,7 @@ def test_twin_api_integration(full_high_worker, full_low_worker):
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
-@pytest.mark.local_node
+@pytest.mark.local_server
 def test_function_error(full_low_worker) -> None:
     root_datasite_client = full_low_worker.login(
         email="info@openmined.org", password="changethis"

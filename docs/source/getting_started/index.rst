@@ -9,7 +9,7 @@ Getting Started
 
 Welcome to the datasite deployment installation tutorials!
 This section of our documentation is designed to be the
-simplest way to get you started deploying your data to a datasite node
+simplest way to get you started deploying your data to a datasite server
 on an OSX, Linux, or Windows machine and interacting with it
 as a data scientist using PySyft.
 
@@ -20,7 +20,7 @@ as a data scientist using PySyft.
   `advanced deployment documentation <https://openmined.github.io/PySyft/deployment/index.html#>`__.
 
 The purpose of these tutorials is to help you install everything
-you need to run a Datasite node from your personal machine (such
+you need to run a Datasite server from your personal machine (such
 as if you're running through OpenMined
 `courses <https://courses.openmined.org/#>`__
 or

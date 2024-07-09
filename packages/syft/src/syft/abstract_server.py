@@ -13,19 +13,19 @@ if TYPE_CHECKING:
 
 
 @serializable()
-class NodeType(str, Enum):
+class ServerType(str, Enum):
     DATASITE = "datasite"
     NETWORK = "network"
     ENCLAVE = "enclave"
     GATEWAY = "gateway"
 
     def __str__(self) -> str:
-        # Use values when transforming NodeType to str
+        # Use values when transforming ServerType to str
         return self.value
 
 
 @serializable()
-class NodeSideType(str, Enum):
+class ServerSideType(str, Enum):
     LOW_SIDE = "low"
     HIGH_SIDE = "high"
 
@@ -33,11 +33,11 @@ class NodeSideType(str, Enum):
         return self.value
 
 
-class AbstractNode:
+class AbstractServer:
     id: UID | None
     name: str | None
-    node_type: NodeType | None
-    node_side_type: NodeSideType | None
+    server_type: ServerType | None
+    server_side_type: ServerSideType | None
     in_memory_workers: bool
 
     def get_service(self, path_or_func: str | Callable) -> "AbstractService":

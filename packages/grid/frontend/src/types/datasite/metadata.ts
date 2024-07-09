@@ -3,10 +3,10 @@ export type DatasiteMetadata = {
   name: string
   description: string
   organization: string
-  node_id: string
+  server_id: string
   deployed_on: string
-  node_side: string
-  node_type: string
+  server_side: string
+  server_type: string
   signup_enabled: boolean
   syft_version: string
   highest_version: string

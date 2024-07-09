@@ -24,7 +24,7 @@ $ pip install -U syft[data_science]
 # from Jupyter / Python
 import syft as sy
 sy.requires(">=0.8.6,<0.8.7")
-node = sy.orchestra.launch(
+server = sy.orchestra.launch(
     name="my-datasite",
     port=8080,
     create_producer=True,
@@ -38,7 +38,7 @@ node = sy.orchestra.launch(
 # or from the command line
 $ syft launch --name=my-datasite --port=8080 --reset=True
 
-Starting syft-node server on 0.0.0.0:8080
+Starting syft-datasite server on 0.0.0.0:8080
 ```
 
 ## Launch Client

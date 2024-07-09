@@ -28,7 +28,7 @@
       roleId: 128,
       title: "Admin",
       description:
-        "This role is for users who will help you manage your node. This should be users you trust as they will be users who will have full permissions to the node.",
+        "This role is for users who will help you manage your server. This should be users you trust as they will be users who will have full permissions to the server.",
     },
   ]
 
@@ -105,7 +105,7 @@
         </div>
         <p class="text-gray-400 py-2 text-center">
           To begin let's select the role this user is going to have on your
-          datasite node.
+          datasite server.
         </p>
         <div class="grid grid-cols-2 gap-6">
           {#each cardsContent as { title, description, roleId }}

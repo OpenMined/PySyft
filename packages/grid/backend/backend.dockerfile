@@ -73,8 +73,8 @@ ENV \
     VIRTUAL_ENV="/root/app/.venv" \
     # Syft
     APPDIR="/root/app" \
-    NODE_NAME="default_node_name" \
-    NODE_TYPE="datasite" \
+    SERVER_NAME="default_server_name" \
+    SERVER_TYPE="datasite" \
     SERVICE_NAME="backend" \
     RELEASE="production" \
     DEV_MODE="False" \

@@ -11,7 +11,7 @@ export interface DatasetContributor {
 
 export interface DatasetDataSubject {
   id: SyftUID
-  node_uid: SyftUID
+  server_uid: SyftUID
   aliases: string[]
   description?: string
   name: string
@@ -20,7 +20,7 @@ export interface DatasetDataSubject {
 export interface DatasetAsset {
   id: SyftUID
   action_id: SyftUID
-  node_uid: SyftUID
+  server_uid: SyftUID
   contributors: DatasetContributor[]
   data_subjects: DatasetDataSubject[]
   description: string
@@ -31,7 +31,7 @@ export interface DatasetAsset {
 
 export interface Dataset {
   id: SyftUID
-  node_id: SyftUID
+  server_id: SyftUID
   asset_list: DatasetAsset[]
   contributors: DatasetContributor[]
   citation: string

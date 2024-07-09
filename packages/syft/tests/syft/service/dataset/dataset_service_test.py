@@ -12,7 +12,7 @@ import torch
 
 # syft absolute
 import syft as sy
-from syft.node.worker import Worker
+from syft.server.worker import Worker
 from syft.service.action.action_object import ActionObject
 from syft.service.dataset.dataset import CreateAsset as Asset
 from syft.service.dataset.dataset import CreateDataset as Dataset

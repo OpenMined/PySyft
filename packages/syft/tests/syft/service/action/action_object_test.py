@@ -20,7 +20,7 @@ from syft.service.action.action_object import HOOK_ALWAYS
 from syft.service.action.action_object import HOOK_ON_POINTERS
 from syft.service.action.action_object import PreHookContext
 from syft.service.action.action_object import make_action_side_effect
-from syft.service.action.action_object import propagate_node_uid
+from syft.service.action.action_object import propagate_server_uid
 from syft.service.action.action_object import send_action_side_effect
 from syft.service.action.action_types import action_type_for_type
 from syft.types.uid import LineageID
@@ -172,7 +172,7 @@ def test_actionobject_add_pre_hooks():
 
     assert make_action_side_effect in obj.syft_pre_hooks__[HOOK_ALWAYS]
     assert send_action_side_effect not in obj.syft_pre_hooks__[HOOK_ON_POINTERS]
-    assert propagate_node_uid not in obj.syft_post_hooks__[HOOK_ALWAYS]
+    assert propagate_server_uid not in obj.syft_post_hooks__[HOOK_ALWAYS]
 
     # eager exec tests:
     obj._syft_add_pre_hooks__(eager_execution=True)
@@ -180,7 +180,7 @@ def test_actionobject_add_pre_hooks():
 
     assert make_action_side_effect in obj.syft_pre_hooks__[HOOK_ALWAYS]
     assert send_action_side_effect in obj.syft_pre_hooks__[HOOK_ON_POINTERS]
-    assert propagate_node_uid in obj.syft_post_hooks__[HOOK_ALWAYS]
+    assert propagate_server_uid in obj.syft_post_hooks__[HOOK_ALWAYS]
 
 
 @pytest.mark.parametrize(
@@ -299,18 +299,18 @@ def test_actionobject_hooks_send_action_side_effect_ok(worker, orig_obj_op):
     assert context.result_id is not None
 
 
-def test_actionobject_hooks_propagate_node_uid_err():
+def test_actionobject_hooks_propagate_server_uid_err():
     orig_obj = "abc"
     op = "capitalize"
 
     obj = ActionObject.from_obj(orig_obj)
 
     context = PreHookContext(obj=obj, op_name=op)
-    result = propagate_node_uid(context, op=op, result="orig_obj")
+    result = propagate_server_uid(context, op=op, result="orig_obj")
     assert result.is_err()
 
 
-def test_actionobject_hooks_propagate_node_uid_ok():
+def test_actionobject_hooks_propagate_server_uid_ok():
     orig_obj = "abc"
     op = "capitalize"
 
@@ -320,7 +320,7 @@ def test_actionobject_hooks_propagate_node_uid_ok():
     obj.syft_point_to(obj_id)
 
     context = PreHookContext(obj=obj, op_name=op)
-    result = propagate_node_uid(context, op=op, result="orig_obj")
+    result = propagate_server_uid(context, op=op, result="orig_obj")
     assert result.is_ok()
 
 
@@ -332,7 +332,7 @@ def test_actionobject_syft_point_to():
 
     obj.syft_point_to(obj_id)
 
-    assert obj.syft_node_uid == obj_id
+    assert obj.syft_server_uid == obj_id
 
 
 @pytest.mark.parametrize(
@@ -601,9 +601,9 @@ def test_actionobject_syft_execute_hooks(worker, testcase):
     )
     assert context.result_id is not None
 
-    context.obj.syft_node_uid = UID()
+    context.obj.syft_server_uid = UID()
     result = obj_pointer._syft_run_post_hooks__(context, name=op, result=obj_pointer)
-    assert result.syft_node_uid == context.obj.syft_node_uid
+    assert result.syft_server_uid == context.obj.syft_server_uid
 
 
 @pytest.mark.parametrize(
@@ -656,7 +656,7 @@ def test_actionobject_syft_wrap_attribute_for_properties(orig_obj):
             assert prop is not None
             assert isinstance(prop, ActionObject)
             assert hasattr(prop, "id")
-            assert hasattr(prop, "syft_node_uid")
+            assert hasattr(prop, "syft_server_uid")
             assert hasattr(prop, "syft_history_hash")
 
 

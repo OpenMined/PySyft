@@ -73,7 +73,7 @@ deployments:
         global:
           registry: ${CONTAINER_REGISTRY}
           version: dev-${DEVSPACE_TIMESTAMP}
-        node: {}
+        server: {}
       # anything that does not need templating should go in helm/examples/dev/base.yaml
       # or profile specific values files
       valuesFiles:
@@ -121,7 +121,7 @@ profiles:
     description: "Deploy a low-side datasite"
     patches:
       - op: add
-        path: deployments.syft.helm.values.node
+        path: deployments.syft.helm.values.server
         value:
           side: low
 
@@ -146,7 +146,7 @@ profiles:
         value: ./helm/examples/dev/datasite.tunnel.yaml
 
   - name: gateway
-    description: "Deploy a Gateway Node with tunnel enabled"
+    description: "Deploy a Gateway Server with tunnel enabled"
     patches:
       # enable rathole image
       - op: add
@@ -218,7 +218,7 @@ profiles:
           - ./helm/examples/azure/azure.high.yaml
 
   - name: enclave
-    description: "Deploy an enclave node"
+    description: "Deploy an enclave server"
     patches:
       # enable image build for enclave-attestation
       - op: add
