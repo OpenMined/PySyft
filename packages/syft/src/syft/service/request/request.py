@@ -344,9 +344,9 @@ class CreateCustomWorkerPoolChange(Change):
                 pod_labels=self.pod_labels,
             )
             if isinstance(result, SyftError):
-                raise SyftException(public_message=result)
+                raise SyftException(public_message=result.message)
             else:
-                return SyftSuccess(message=result)
+                return SyftSuccess(message="Worker successfully launched", value=result)
         else:
             raise SyftException(
                 public_message=f"Request to create a worker pool with name {self.name} denied"
