@@ -871,17 +871,14 @@ class ActionObject(SyncableSyftObject):
                 message=f"cannot store empty object {self.id} to the blob storage"
             )
 
-        try:
-            result = self._save_to_blob_storage_(data)
-            if isinstance(result, SyftError | SyftWarning):
-                return result
-            if not TraceResultRegistry.current_thread_is_tracing():
-                self._clear_cache()
-            return SyftSuccess(
-                message=f"Saved action object {self.id} to the blob store"
-            )
-        except Exception as e:
-            raise e
+        result = self._save_to_blob_storage_(data)
+        if isinstance(result, SyftError | SyftWarning):
+            return result
+        if not TraceResultRegistry.current_thread_is_tracing():
+            self._clear_cache()
+        return SyftSuccess(
+            message=f"Saved action object {self.id} to the blob store"
+        )
 
     def _clear_cache(self) -> None:
         self.syft_action_data_cache = self.as_empty_data()

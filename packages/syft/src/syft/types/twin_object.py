@@ -102,6 +102,7 @@ class TwinObject(SyftObject):
         mock_store_res = self.mock_obj._save_to_blob_storage(allow_empty=allow_empty)
         if isinstance(mock_store_res, SyftError):
             return mock_store_res
+        print(f"private_obj<{self.private_obj.id}>: {self.private_obj}")
         return self.private_obj._save_to_blob_storage(allow_empty=allow_empty)
 
     def send(self, client: SyftClient, add_storage_permission: bool = True) -> Any:

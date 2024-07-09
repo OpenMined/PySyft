@@ -13,6 +13,7 @@ from typing import cast
 # third party
 import markdown
 from result import Result
+from syft.types.errors import SyftException
 from tqdm import tqdm
 
 # relative
@@ -146,19 +147,22 @@ class DomainClient(SyftClient):
                     tqdm.write(f"Failed to create twin for {asset.name}. {e}")
                     return SyftError(message=f"Failed to create twin. {e}")
 
+                print(f"{res}")
                 if isinstance(res, SyftWarning):
                     logger.debug(res.message)
                     skip_save_to_blob_store = True
                 else:
                     skip_save_to_blob_store = False
-                response = self.api.services.action.set(
-                    twin,
-                    ignore_detached_objs=contains_empty,
-                    skip_save_to_blob_store=skip_save_to_blob_store,
-                )
-                if isinstance(response, SyftError):
+
+                try:
+                    self.api.services.action.set(
+                        twin,
+                        ignore_detached_objs=contains_empty,
+                        skip_save_to_blob_store=skip_save_to_blob_store,
+                    )
+                except SyftException:
                     tqdm.write(f"Failed to upload asset: {asset.name}")
-                    return response
+                    raise
 
                 asset.action_id = twin.id
                 asset.node_uid = self.id
