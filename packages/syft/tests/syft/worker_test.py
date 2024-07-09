@@ -145,7 +145,7 @@ def test_user_service(worker) -> None:
     context = AuthedServiceContext(node=worker, credentials=test_signing_key.verify_key)
 
     # call the create function
-    user_view = user_service.create(context=context, user_create=new_user)
+    user_view = user_service.create(context=context, **new_user)
 
     # get the result
     assert user_view is not None

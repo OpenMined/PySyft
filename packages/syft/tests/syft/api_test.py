@@ -62,12 +62,10 @@ def test_api_cache_invalidation_login(root_verify_key, worker):
     with pytest.raises(SyftAttributeError):
         assert guest_client.upload_dataset(dataset)
 
-    assert guest_client.api.services.user.update(
-        user_id, UserUpdate(user_id=user_id, name="abcdef")
-    )
+    assert guest_client.api.services.user.update(uid=user_id, name="abcdef")
 
     assert worker.root_client.api.services.user.update(
-        user_id, UserUpdate(user_id=user_id, role=ServiceRole.DATA_OWNER)
+        uid=user_id, role=ServiceRole.DATA_OWNER
     )
 
     assert get_role(guest_client.credentials.verify_key) == ServiceRole.DATA_OWNER
