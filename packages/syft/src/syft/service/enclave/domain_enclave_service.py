@@ -73,11 +73,11 @@ class DomainEnclaveService(AbstractService):
         return SyftError(message=result.err())
 
     @service_method(
-        path="enclave.request_enclave_for_code_execution",
-        name="request_enclave_for_code_execution",
+        path="enclave.request_enclave",
+        name="request_enclave",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
-    def request_enclave_for_code_execution(
+    def request_enclave(
         self, context: AuthedServiceContext, user_code_id: UID
     ) -> SyftSuccess | SyftError:
         """Request an Enclave for running a project."""
@@ -108,17 +108,15 @@ class DomainEnclaveService(AbstractService):
         current_node_credentials = context.node.signing_key
         enclave_client = provider.get_client(credentials=current_node_credentials)
 
-        result = enclave_client.api.services.enclave.setup_enclave_for_code_execution(
-            code=code
-        )
+        result = enclave_client.api.services.enclave.setup_enclave(code=code)
         return result
 
     @service_method(
-        path="enclave.request_assets_transfer_to_enclave",
-        name="request_assets_transfer_to_enclave",
+        path="enclave.request_assets_upload",
+        name="request_assets_upload",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
-    def request_assets_transfer_to_enclave(
+    def request_assets_upload(
         self, context: AuthedServiceContext, user_code_id: UID
     ) -> SyftSuccess | SyftError:
         if not context.node or not context.node.signing_key:
@@ -171,7 +169,7 @@ class DomainEnclaveService(AbstractService):
         enclave_client = provider.get_client(credentials=current_node_credentials)
 
         # Upload the assets to the enclave
-        result = enclave_client.api.services.enclave.upload_input_data_for_code(
+        result = enclave_client.api.services.enclave.upload_assets(
             user_code_id=user_code_id, action_objects=action_objects
         )
         if isinstance(result, SyftError):
@@ -182,11 +180,11 @@ class DomainEnclaveService(AbstractService):
         )
 
     @service_method(
-        path="enclave.request_execution",
-        name="request_execution",
+        path="enclave.request_code_execution",
+        name="request_code_execution",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
-    def request_execution(
+    def request_code_execution(
         self, context: AuthedServiceContext, user_code_id: UID
     ) -> Any:
         if not context.node or not context.node.signing_key:

@@ -28,11 +28,11 @@ class EnclaveService(AbstractService):
         self.store = store
 
     @service_method(
-        path="enclave.setup_enclave_for_code_execution",
-        name="setup_enclave_for_code_execution",
+        path="enclave.setup_enclave",
+        name="setup_enclave",
         roles=GUEST_ROLE_LEVEL,  # TODO 🟣 Only an enclave's owner domain node should call this
     )
-    def setup_enclave_for_code_execution(
+    def setup_enclave(
         self, context: AuthedServiceContext, code: UserCode | SubmitUserCode
     ) -> SyftSuccess | SyftError:
         if not context.node or not context.node.signing_key:
@@ -46,14 +46,16 @@ class EnclaveService(AbstractService):
             code = code.to(SubmitUserCode)
 
         result = context.node.get_service("usercodeservice").submit(root_context, code)
-        return result
+        if isinstance(result, SyftError):
+            return result
+        return SyftSuccess(message="Enclave setup successful")
 
     @service_method(
-        path="enclave.upload_input_data_for_code",
-        name="upload_input_data_for_code",
+        path="enclave.upload_assets",
+        name="upload_assets",
         roles=GUEST_ROLE_LEVEL,
     )
-    def upload_input_data_for_code(
+    def upload_assets(
         self,
         context: AuthedServiceContext,
         user_code_id: UID,
@@ -92,15 +94,12 @@ class EnclaveService(AbstractService):
 
         pending_assets_for_uploading_domain = set(kwargs_for_uploading_domain.values())
         for action_object in action_objects:
-            result = action_service._set(
-                root_context,
-                action_object,
-                ignore_detached_objs=True,
-                skip_clear_cache=True,
+            result = action_service.set(
+                root_context, action_object, ignore_detached_objs=True
             )
-            if result.is_err():
+            if isinstance(result, SyftError):
                 # TODO 🟣 Rollback previously uploaded assets if any error occurs
-                return SyftError(message=result.value)
+                return result
             pending_assets_for_uploading_domain.remove(action_object.id)
 
         # Let's approve the code
