@@ -2,17 +2,24 @@
 from collections.abc import Callable
 from importlib import import_module
 import inspect
+import os
+import traceback
 from types import CodeType
 from types import TracebackType
 from typing import Any
 from typing import TypeVar
+import uuid
 
 # third party
+from IPython import get_ipython
+from IPython.display import HTML
+from IPython.display import display
 from typing_extensions import Self
 
 # relative
 from ..service.context import AuthedServiceContext
 from ..service.user.user_roles import ServiceRole
+from ..util.util import sanitize_html
 
 
 class SyftException(Exception):
@@ -30,6 +37,7 @@ class SyftException(Exception):
         self,
         private_message: str | None = None,
         public_message: str | None = None,
+        server_trace: str | None = None,
         *args: Any,
         **kwargs: Any,
     ) -> None:
@@ -42,6 +50,7 @@ class SyftException(Exception):
         if public_message:
             self.public_message = public_message
         self._private_message = private_message or ""
+        self._server_trace = server_trace or ""
         super().__init__(self.public, *args, **kwargs)
 
     @property
@@ -127,6 +136,61 @@ class SyftException(Exception):
         new_exc = process_traceback(new_exc)
         return new_exc
 
+    @property
+    def _repr_html_class_(self) -> str:
+        return "alert-danger"
+
+    def _repr_html_(self) -> str:
+        html_id = uuid.uuid4().hex
+        traceback_str = traceback.format_exc()
+
+        server_trace_html = (
+            f"""<div> <strong>Server Trace:</strong> </div>
+        <pre style="display:inline;">{sanitize_html(self._server_trace, escape=True)}
+        </pre>"""
+            if self._server_trace
+            else ""
+        )
+
+        message = self._private_message or self.public
+        is_dev_mode = os.getenv("DEV_MODE", "false").lower() == "true"
+        display = "block" if self._server_trace or is_dev_mode else "none"
+        caret_right = "&#9654;"
+        caret_down = "&#9660;"
+        initial_caret = caret_down if display == "block" else caret_right
+
+        return (
+            f"""<div class="{self._repr_html_class_}" style="padding:5px; position: relative;">
+    <span id="caret-{html_id}" style="cursor: pointer;" onclick="toggleDropdown('{html_id}', 'caret-{html_id}')">
+        {initial_caret};
+    </span>
+   <strong>{type(self).__name__}</strong>:
+    <pre style="display:inline; font-family:inherit;">{sanitize_html(message, escape=True)}</pre></div><br/>
+    <div id="{html_id}" style="display: {display}; margin-top: 5px; padding: 10px; border-top: 1px solid #ccc;">
+        {server_trace_html}
+        <div><strong> Client Trace: </strong></div>
+        <pre style="display:inline;">{sanitize_html(traceback_str, escape=True)}
+        </pre>
+    </div>
+</div>
+
+<script>
+function toggleDropdown(dropdownId, caretId) {{
+    var dropdown = document.getElementById(dropdownId);
+    var caret = document.getElementById(caretId);
+    if (dropdown.style.display === "none") {{
+        dropdown.style.display = "block";
+        caret.innerHTML = "&#9660;";
+    }} else {{
+        dropdown.style.display = "none";
+        caret.innerHTML = "&#9654;";
+    }}
+}}
+</script>"""
+            # + f'<div class="{self._repr_html_class_}" style="padding:5px; position: relative;">'
+            # + f"<strong>{type(self).__name__}</strong>: {sanitize_html(str(self.args))}</div><br />"
+        )
+
 
 class ExceptionFilter(tuple):
     """
@@ -188,7 +252,7 @@ def exclude_from_traceback(f: F) -> F:
     exception is raised. This is useful for functions that are not relevant to
     the error message and would only clutter the traceback.
     """
-    _excluded_code_objects.add(f.__code__)
+    # _excluded_code_objects.add(f.__code__)
     return f
 
 
@@ -228,3 +292,23 @@ def process_traceback(exc: E) -> E:
 
 class CredentialsError(SyftException):
     public_message = "Invalid credentials."
+
+
+# third party
+
+# initialize the formatter for making the tracebacks into strings
+
+
+def syft_exception_handler(
+    shell: Any, etype: Any, evalue: Any, tb: Any, tb_offset: Any = None
+) -> None:
+    # template = evalue.format_traceback(
+    #     etype=etype, evalue=evalue, tb=tb, tb_offset=tb_offset
+    # )
+    # sys.stderr.write(template)
+    display(HTML(evalue._repr_html_()))
+
+
+# third party
+
+get_ipython().set_custom_exc((SyftException,), syft_exception_handler)  # noqa: F821

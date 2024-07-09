@@ -409,7 +409,9 @@ class RemoteFunction(SyftObject):
 
         if any(path.startswith(x) for x in NEW_STYLE_SERVICES_LIST):
             if isinstance(result, SyftError):
-                raise SyftException(public_message=result.message)
+                raise SyftException(
+                    public_message=result.message, server_trace=result.tb
+                )
             if self.unwrap_on_success:
                 result = result.unwrap_value()
 

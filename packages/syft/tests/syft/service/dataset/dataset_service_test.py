@@ -17,9 +17,8 @@ from syft.service.action.action_object import ActionObject
 from syft.service.dataset.dataset import CreateAsset as Asset
 from syft.service.dataset.dataset import CreateDataset as Dataset
 from syft.service.dataset.dataset import _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE
-from syft.types.errors import SyftException
-from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
+from syft.types.errors import SyftException
 from syft.types.twin_object import TwinMode
 
 
@@ -237,7 +236,6 @@ def test_adding_contributors_with_duplicate_email():
 
     assert isinstance(res1, SyftSuccess)
 
-
     with pytest.raises(SyftException) as exc:
         dataset.add_contributor(
             role=sy.roles.UPLOADER, name="Alice Smith", email="alice@naboo.net"
@@ -267,6 +265,7 @@ def test_adding_contributors_with_duplicate_email():
     dataset.add_asset(asset)
 
     assert len(asset.contributors) == 1
+
 
 @pytest.fixture(
     params=[

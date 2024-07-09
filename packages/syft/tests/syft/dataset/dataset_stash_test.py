@@ -1,6 +1,5 @@
 # third party
 import pytest
-from syft.store.document_store_errors import NotFoundException
 from typeguard import TypeCheckError
 
 # syft absolute
@@ -8,6 +7,7 @@ from syft.service.dataset.dataset import Dataset
 from syft.service.dataset.dataset_stash import ActionIDsPartitionKey
 from syft.service.dataset.dataset_stash import NamePartitionKey
 from syft.store.document_store import QueryKey
+from syft.store.document_store_errors import NotFoundException
 from syft.types.uid import UID
 
 

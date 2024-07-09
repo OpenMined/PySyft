@@ -8,7 +8,6 @@ from typing import Any
 
 # third party
 from pydantic import model_validator
-from result import Err
 from result import Ok
 from result import Result
 from typing_extensions import Self
@@ -895,7 +894,7 @@ class Request(SyncableSyftObject):
             return job
 
         # Add to output history
-        res = self._create_output_history_for_deposited_result(job, result)
+        res = self._create_output_history_for_deposited_result(job, action_object)
         if isinstance(res, SyftError):
             return res
 
