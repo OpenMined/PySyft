@@ -29,18 +29,6 @@ from ..response import SyftSuccess
 
 
 @serializable()
-class SyftModelClass:
-    def __init__(self) -> None:
-        self.__user_init__()
-
-    def __user_init__(self) -> None:
-        pass
-
-    def inference(self) -> Any:
-        pass
-
-
-@serializable()
 class ModelPageView(SyftObject):
     # version
     __canonical_name__ = "ModelPageView"
@@ -55,6 +43,8 @@ class ModelAsset(SyftObject):
     # version
     __canonical_name__ = "ModelAsset"
     __version__ = SYFT_OBJECT_VERSION_1
+
+    __repr_attrs__ = ["name", "url"]
 
     name: str
     description: MarkdownDescription | None = None
@@ -103,20 +93,33 @@ class ModelAsset(SyftObject):
 
 
 @serializable()
+class SyftModelClass:
+    def __init__(self, assets: list[ModelAsset]) -> None:
+        self.__user_init__(assets)
+
+    def __user_init__(self, assets: list[ModelAsset]) -> None:
+        pass
+
+    def inference(self) -> Any:
+        pass
+
+
+@serializable()
 class CreateModelAsset(SyftObject):
     # version
     __canonical_name__ = "CreateModelAsset"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: UID | None = None  # type:ignore[assignment]
+    __repr_attrs__ = ["name", "description", "contributors", "data", "created_at"]
+
     name: str
     node_uid: UID | None = None
     description: MarkdownDescription | None = None
     contributors: set[Contributor] = set()
-    data: Any | None = None
+    data: Any | None = None  # SyftFolder will go here!
+    mock: Any | None = None
     created_at: DateTime | None = None
 
-    __repr_attrs__ = ["name"]
     model_config = ConfigDict(validate_assignment=True)
 
     def __init__(self, description: str | None = "", **kwargs: Any) -> None:
@@ -159,19 +162,19 @@ class Model(SyftObject):
     __canonical_name__: str = "Model"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: UID
+    __attr_searchable__ = ["name", "citation", "url", "description"]
+    __attr_unique__ = ["name"]
+    __repr_attrs__ = ["name", "url", "created_at"]
+
     name: str
-    asset_list: list[Any] = []
+    model_code: str
+    asset_list: list[ModelAsset] = []
     contributors: set[Contributor] = set()
     citation: str | None = None
     url: str | None = None
     description: MarkdownDescription | None = None
     updated_at: str | None = None
     created_at: DateTime = DateTime.now()
-
-    __attr_searchable__ = ["name", "citation", "url", "description"]
-    __attr_unique__ = ["name"]
-    __repr_attrs__ = ["name", "url", "created_at"]
 
     def __init__(
         self,
@@ -194,8 +197,8 @@ class Model(SyftObject):
             "created at": str(self.created_at),
         }
 
-    def _repr_html_(self) -> Any:
-        return "todo table"
+    # def _repr_html_(self) -> Any:
+    #     return "todo table"
 
     @property
     def assets(self) -> DictTuple[str, ModelAsset]:
@@ -290,13 +293,12 @@ class CreateModel(Model):
     # version
     __canonical_name__ = "CreateModel"
     __version__ = SYFT_OBJECT_VERSION_1
-    asset_list: list[Any] = []
 
     __repr_attrs__ = ["name", "url"]
 
-    id: UID | None = None  # type: ignore[assignment]
+    model_code: str
+    asset_list: list[Any] = []
     created_at: DateTime | None = None  # type: ignore[assignment]
-
     model_config = ConfigDict(validate_assignment=True)
 
     def set_description(self, description: str) -> None:
