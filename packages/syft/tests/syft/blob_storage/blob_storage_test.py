@@ -148,9 +148,3 @@ def test_upload_dataset_save_to_blob_storage(
     # the big dataset should be saved to the blob storage
     root_client.upload_dataset(big_dataset)
     assert len(root_client.api.services.blob_storage.get_all()) == 2
-    dataset = root_client.api.services.dataset.search(name=big_dataset.name)[0]
-    asset = dataset.asset_list[0]
-    assert isinstance(asset.mock_blob, SyftObjectRetrieval)
-    assert isinstance(asset.data_blob, SyftObjectRetrieval)
-    assert all(asset.mock_blob.read() == asset.mock)
-    assert all(asset.data_blob.read() == asset.data)

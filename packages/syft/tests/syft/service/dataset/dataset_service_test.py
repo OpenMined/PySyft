@@ -22,7 +22,6 @@ from syft.service.dataset.dataset import _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE
 from syft.service.response import SyftError
 from syft.service.response import SyftException
 from syft.service.response import SyftSuccess
-from syft.store.blob_storage import SyftObjectRetrieval
 
 
 def random_hash() -> str:
@@ -317,7 +316,7 @@ def test_delete_small_datasets(worker: Worker, small_dataset: Dataset) -> None:
     assert isinstance(asset.mock, np.ndarray)
 
     # delete the dataset
-    del_res = root_client.api.services.dataset.delete_by_uid(uid=dataset.id)
+    del_res = root_client.api.services.dataset.delete(uid=dataset.id)
     assert isinstance(del_res, SyftSuccess)
     assert isinstance(asset.data, SyftError)
     assert isinstance(asset.mock, SyftError)
@@ -334,13 +333,11 @@ def test_delete_big_datasets(worker: Worker, big_dataset: Dataset) -> None:
     assert isinstance(asset.data, np.ndarray)
     assert isinstance(asset.mock, np.ndarray)
     # test that the data is saved in the blob storage
-    assert isinstance(asset.mock_blob, SyftObjectRetrieval)
-    assert isinstance(asset.data_blob, SyftObjectRetrieval)
+    assert len(root_client.api.services.blob_storage.get_all()) == 2
 
     # delete the dataset
-    del_res = root_client.api.services.dataset.delete_by_uid(uid=dataset.id)
+    del_res = root_client.api.services.dataset.delete(uid=dataset.id)
     assert isinstance(del_res, SyftSuccess)
     assert isinstance(asset.data, SyftError)
     assert isinstance(asset.mock, SyftError)
-    assert isinstance(asset.data_blob, SyftError)
-    assert isinstance(asset.mock_blob, SyftError)
+    assert len(root_client.api.services.blob_storage.get_all()) == 0

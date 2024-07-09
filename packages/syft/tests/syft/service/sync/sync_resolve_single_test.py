@@ -168,8 +168,8 @@ def test_diff_state_with_dataset(low_worker: Worker, high_worker: Worker):
     high_client.requests[0].deposit_result(mean_result)
 
     # the high side client delete the dataset after depositing the result
-    dataset_del_res = high_client.api.services.dataset.delete_by_uid(
-        high_client.datasets[0].id
+    dataset_del_res = high_client.api.services.dataset.delete(
+        uid=high_client.datasets[0].id
     )
     assert isinstance(dataset_del_res, SyftSuccess)
 

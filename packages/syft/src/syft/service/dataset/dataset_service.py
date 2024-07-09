@@ -207,9 +207,15 @@ class DatasetService(AbstractService):
         roles=DATA_OWNER_ROLE_LEVEL,
         warning=HighSideCRUDWarning(confirmation=True),
     )
-    def delete_dataset(
+    def delete(
         self, context: AuthedServiceContext, uid: UID
     ) -> SyftSuccess | SyftError:
+        """
+        Soft delete: after deleting a dataset, the user will not be able to
+        see it using the `datasets.get_all` endpoint
+        We still keep the object, delete the blob storage and return None
+        Delete unique dataset.name key and leave UID, just rename it
+        """
         # check if the dataset exists
         dataset = self.get_by_id(context=context, uid=uid)
         if isinstance(dataset, SyftError):
