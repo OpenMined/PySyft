@@ -3,9 +3,6 @@ from collections import defaultdict
 import logging
 from typing import Any
 
-# third party
-from result import Ok
-
 # relative
 from ...client.api import NodeIdentity
 from ...serde.serializable import serializable
@@ -185,7 +182,7 @@ class SyncService(AbstractService):
         path="sync.sync_items",
         name="sync_items",
         roles=ADMIN_ROLE_LEVEL,
-        unwrap_on_success=False
+        unwrap_on_success=False,
     )
     def sync_items(
         self,
@@ -303,7 +300,7 @@ class SyncService(AbstractService):
         job_batch.append(log)
 
         output_service = context.node.get_service("outputservice")
-        output = output_service.get_by_job_id(context, job.id).unwrap()
+        output = output_service.get_by_job_id(context, job.id)
 
         if output is not None:
             job_batch.append(output)
@@ -318,9 +315,7 @@ class SyncService(AbstractService):
         for result_id in job_result_ids:
             # TODO: unwrap
             action_object = action_service.get(context, result_id)
-            if action_object.is_err():
-                return action_object
-            job_batch.append(action_object.ok())
+            job_batch.append(action_object)
 
         return job_batch
 

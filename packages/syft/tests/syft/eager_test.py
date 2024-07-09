@@ -1,9 +1,11 @@
 # third party
 import numpy as np
+import pytest
 
 # syft absolute
 from syft.service.action.action_object import ActionObject
 from syft.service.action.plan import planify
+from syft.types.errors import SyftException
 from syft.types.twin_object import TwinObject
 
 # relative
@@ -59,9 +61,8 @@ def test_plan(worker):
     res_ptr = plan_ptr(x=pointer)
 
     # guest cannot access result
-    assert not isinstance(
-        guest_client.api.services.action.get(res_ptr.id), ActionObject
-    )
+    with pytest.raises(SyftException):
+        guest_client.api.services.action.get(res_ptr.id)
 
     # root can access result
     assert (

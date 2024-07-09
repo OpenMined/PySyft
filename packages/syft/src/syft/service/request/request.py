@@ -790,10 +790,13 @@ class Request(SyncableSyftObject):
 
         # Ensure result is an ActionObject
         if isinstance(result, ActionObject):
-            existing_job = api.services.job.get_by_result_id(result.id.id)
+            try:
+                existing_job = api.services.job.get_by_result_id(result.id.id)
+            except SyftException:
+                existing_job = None
             if existing_job is not None:
-                return SyftError(
-                    message=f"This ActionObject is already the result of Job {existing_job.id}"
+                raise SyftException(
+                    public_message=f"This ActionObject is already the result of Job {existing_job.id}"
                 )
             action_object = result
         else:

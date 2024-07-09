@@ -8,8 +8,6 @@ from typing import Any
 
 # third party
 import psutil
-from result import Err
-from result import Ok
 
 # relative
 from ...node.credentials import SyftVerifyKey
@@ -182,8 +180,9 @@ def handle_message_multiprocessing(
     if queue_item.service == "user":
         queue_item.service = "userservice"
 
+    # in case of error
+    result = None
     try:
-        call_method = getattr(worker.get_service(queue_item.service), queue_item.method)
         role = worker.get_role_for_credentials(credentials=credentials)
 
         context = AuthedServiceContext(
@@ -203,23 +202,11 @@ def handle_message_multiprocessing(
             user_verify_key=credentials,
         )
 
+        call_method = getattr(worker.get_service(queue_item.service), queue_item.method)
         result: Any = call_method(context, *queue_item.args, **queue_item.kwargs)
         status = Status.COMPLETED
         job_status = JobStatus.COMPLETED
 
-        if isinstance(result, Ok):
-            result = result.ok()
-            if hasattr(result, "syft_action_data") and isinstance(
-                result.syft_action_data, Err
-            ):
-                status = Status.ERRORED
-                job_status = JobStatus.ERRORED
-        elif isinstance(result, SyftError) or isinstance(result, Err):
-            status = Status.ERRORED
-            job_status = JobStatus.ERRORED
-
-        else:
-            raise Exception(f"Unknown result type: {type(result)}")
     except Exception as e:
         status = Status.ERRORED
         job_status = JobStatus.ERRORED
@@ -230,17 +217,21 @@ def handle_message_multiprocessing(
     queue_item.status = status
 
     # get new job item to get latest iter status
-    job_item = worker.job_stash.get_by_uid(credentials, queue_item.job_id).ok()
-    if job_item is None:
-        raise Exception(f"Job {queue_item.job_id} not found!")
+    job_item = worker.job_stash.get_by_uid(credentials, queue_item.job_id).unwrap(
+        public_message=f"Job {queue_item.job_id} not found!"
+    )
 
     job_item.node_uid = worker.id
     job_item.result = result
     job_item.resolved = True
     job_item.status = job_status
 
-    worker.queue_stash.set_result(credentials, queue_item)
-    worker.job_stash.set_result(credentials, job_item)
+    worker.queue_stash.set_result(credentials, queue_item).unwrap(
+        public_message="Failed to set result into QueueItem after running"
+    )
+    worker.job_stash.set_result(credentials, job_item).unwrap(
+        public_message="Failed to set job after running"
+    )
 
     # Finish monitor thread
     monitor_thread.stop()
