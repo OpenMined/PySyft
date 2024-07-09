@@ -36,7 +36,7 @@ from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import generate_id
@@ -97,7 +97,7 @@ def filter_only_uids(results: Any) -> list[UID] | dict[str, UID] | UID:
 class Policy(SyftObject):
     # version
     __canonical_name__: str = "Policy"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
     has_safe_serde: ClassVar[bool] = True
 
     id: UID
@@ -350,7 +350,7 @@ def retrieve_item_from_db(id: UID, context: AuthedServiceContext) -> ActionObjec
 
 class InputPolicy(Policy):
     __canonical_name__ = "InputPolicy"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         if "init_kwargs" in kwargs:
@@ -637,7 +637,7 @@ def allowed_ids_only(
 class ExactMatch(InputPolicy):
     # version
     __canonical_name__ = "ExactMatch"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     def filter_kwargs(
         self,
@@ -696,7 +696,7 @@ class ExactMatch(InputPolicy):
 class OutputHistory(SyftObject):
     # version
     __canonical_name__ = "OutputHistory"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     output_time: DateTime
     outputs: list[UID] | dict[str, UID] | None = None
@@ -706,7 +706,7 @@ class OutputHistory(SyftObject):
 class OutputPolicy(Policy):
     # version
     __canonical_name__ = "OutputPolicy"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     output_kwargs: list[str] = []
     node_uid: UID | None = None
@@ -737,7 +737,7 @@ class OutputPolicy(Policy):
 @serializable()
 class OutputPolicyExecuteCount(OutputPolicy):
     __canonical_name__ = "OutputPolicyExecuteCount"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     limit: int
 
@@ -789,7 +789,7 @@ class OutputPolicyExecuteCount(OutputPolicy):
 @serializable()
 class OutputPolicyExecuteOnce(OutputPolicyExecuteCount):
     __canonical_name__ = "OutputPolicyExecuteOnce"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     limit: int = 1
 
@@ -848,7 +848,7 @@ class CustomInputPolicy(metaclass=CustomPolicy):
 @serializable()
 class UserPolicy(Policy):
     __canonical_name__: str = "UserPolicy"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
     has_safe_serde: ClassVar[bool] = False
 
     id: UID
@@ -920,7 +920,7 @@ def get_code_from_class(policy: type[CustomPolicy]) -> str:
 @serializable()
 class SubmitUserPolicy(Policy):
     __canonical_name__ = "SubmitUserPolicy"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID | None = None  # type: ignore[assignment]
     code: str

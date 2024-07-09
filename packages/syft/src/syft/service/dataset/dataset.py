@@ -23,7 +23,7 @@ from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import generate_id
@@ -56,7 +56,7 @@ logger = logging.getLogger(__name__)
 @serializable()
 class Contributor(SyftObject):
     __canonical_name__ = "Contributor"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     name: str
     role: str | None = None
@@ -94,7 +94,7 @@ class Contributor(SyftObject):
 class Asset(SyftObject):
     # version
     __canonical_name__ = "Asset"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     action_id: UID
     node_uid: UID
@@ -321,7 +321,7 @@ def check_mock(data: Any, mock: Any) -> bool:
 class CreateAsset(SyftObject):
     # version
     __canonical_name__ = "CreateAsset"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID | None = None  # type:ignore[assignment]
     name: str
@@ -454,7 +454,7 @@ def get_shape_or_len(obj: Any) -> tuple[int, ...] | int | None:
 class Dataset(SyftObject):
     # version
     __canonical_name__: str = "Dataset"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
     name: str
@@ -598,7 +598,7 @@ def _check_asset_must_contain_mock(asset_list: list[CreateAsset]) -> None:
 class DatasetPageView(SyftObject):
     # version
     __canonical_name__ = "DatasetPageView"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     datasets: DictTuple
     total: int
@@ -608,7 +608,7 @@ class DatasetPageView(SyftObject):
 class CreateDataset(Dataset):
     # version
     __canonical_name__ = "CreateDataset"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
     asset_list: list[CreateAsset] = []
 
     __repr_attrs__ = ["name", "url"]

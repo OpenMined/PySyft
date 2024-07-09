@@ -7,7 +7,7 @@ from typing_extensions import Self
 
 # relative
 from ...serde.serializable import serializable
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 
 # Checks for
@@ -20,7 +20,7 @@ REGX_DOMAIN = re.compile(r"^(localhost|([a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*))(\:\d{1
 @serializable()
 class SyftImageRegistry(SyftObject):
     __canonical_name__ = "SyftImageRegistry"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     __attr_searchable__ = ["url"]
     __attr_unique__ = ["url"]

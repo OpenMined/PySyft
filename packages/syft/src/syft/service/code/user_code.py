@@ -56,9 +56,9 @@ from ...types.dicttuple import DictTuple
 from ...types.syft_migration import migrate
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_4
-from ...types.syft_object import SYFT_OBJECT_VERSION_5
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.transforms import TransformContext
@@ -278,42 +278,10 @@ class UserCodeStatusCollection(SyncableSyftObject):
 
 
 @serializable()
-class UserCodeV4(SyncableSyftObject):
-    # version
-    __canonical_name__ = "UserCode"
-    __version__ = SYFT_OBJECT_VERSION_4
-
-    id: UID
-    node_uid: UID | None = None
-    user_verify_key: SyftVerifyKey
-    raw_code: str
-    input_policy_type: type[InputPolicy] | UserPolicy
-    input_policy_init_kwargs: dict[Any, Any] | None = None
-    input_policy_state: bytes = b""
-    output_policy_type: type[OutputPolicy] | UserPolicy
-    output_policy_init_kwargs: dict[Any, Any] | None = None
-    output_policy_state: bytes = b""
-    parsed_code: str
-    service_func_name: str
-    unique_func_name: str
-    user_unique_func_name: str
-    code_hash: str
-    signature: inspect.Signature
-    status_link: LinkedObject
-    input_kwargs: list[str]
-    enclave_metadata: EnclaveMetadata | None = None
-    submit_time: DateTime | None = None
-    # tracks if the code calls domain.something, variable is set during parsing
-    uses_domain: bool = False
-    nested_codes: dict[str, tuple[LinkedObject, dict]] | None = {}
-    worker_pool_name: str | None = None
-
-
-@serializable()
 class UserCode(SyncableSyftObject):
     # version
     __canonical_name__ = "UserCode"
-    __version__ = SYFT_OBJECT_VERSION_5
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
     node_uid: UID | None = None
@@ -1019,30 +987,10 @@ class UserCodeUpdate(PartialSyftObject):
 
 
 @serializable(without=["local_function"])
-class SubmitUserCodeV4(SyftObject):
-    # version
-    __canonical_name__ = "SubmitUserCode"
-    __version__ = SYFT_OBJECT_VERSION_4
-
-    id: UID | None = None  # type: ignore[assignment]
-    code: str
-    func_name: str
-    signature: inspect.Signature
-    input_policy_type: SubmitUserPolicy | UID | type[InputPolicy]
-    input_policy_init_kwargs: dict[Any, Any] | None = {}
-    output_policy_type: SubmitUserPolicy | UID | type[OutputPolicy]
-    output_policy_init_kwargs: dict[Any, Any] | None = {}
-    local_function: Callable | None = None
-    input_kwargs: list[str]
-    enclave_metadata: EnclaveMetadata | None = None
-    worker_pool_name: str | None = None
-
-
-@serializable(without=["local_function"])
 class SubmitUserCode(SyftObject):
     # version
     __canonical_name__ = "SubmitUserCode"
-    __version__ = SYFT_OBJECT_VERSION_5
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID | None = None  # type: ignore[assignment]
     code: str
@@ -1685,7 +1633,7 @@ def submit_user_code_to_user_code() -> list[Callable]:
 class UserCodeExecutionResult(SyftObject):
     # version
     __canonical_name__ = "UserCodeExecutionResult"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
     user_code_id: UID
@@ -2000,34 +1948,3 @@ def load_approved_policy_code(
                     load_policy_code(user_code.output_policy_type)
     except Exception as e:
         raise Exception(f"Failed to load code: {user_code}: {e}")
-
-
-@migrate(UserCodeV4, UserCode)
-def migrate_usercode_v4_to_v5() -> list[Callable]:
-    return [
-        make_set_default("origin_node_side_type", NodeSideType.HIGH_SIDE),
-        make_set_default("l0_deny_reason", None),
-        drop("enclave_metadata"),
-    ]
-
-
-@migrate(UserCode, UserCodeV4)
-def migrate_usercode_v5_to_v4() -> list[Callable]:
-    return [
-        drop(["origin_node_side_type", "l0_deny_reason"]),
-        make_set_default("enclave_metadata", None),
-    ]
-
-
-@migrate(SubmitUserCodeV4, SubmitUserCode)
-def upgrade_submitusercode() -> list[Callable]:
-    return [
-        drop("enclave_metadata"),
-    ]
-
-
-@migrate(SubmitUserCode, SubmitUserCodeV4)
-def downgrade_submitusercode() -> list[Callable]:
-    return [
-        make_set_default("enclave_metadata", None),
-    ]

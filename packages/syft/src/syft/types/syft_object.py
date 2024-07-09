@@ -146,7 +146,7 @@ class SyftBaseObject(pydantic.BaseModel, SyftHashableObject):
 
 class Context(SyftBaseObject):
     __canonical_name__ = "Context"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     pass
 
@@ -435,7 +435,7 @@ class BaseDateTime(SyftObjectVersioned):
 
 class SyftObject(SyftObjectVersioned):
     __canonical_name__ = "SyftObject"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
@@ -861,7 +861,7 @@ class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
     """Syft Object to which partial arguments can be provided."""
 
     __canonical_name__ = "PartialSyftObject"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     def __iter__(self) -> TupleGenerator:
         yield from ((k, v) for k, v in super().__iter__() if v is not Empty)

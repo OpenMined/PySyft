@@ -9,8 +9,8 @@ from ...client.enclave_client import EnclaveMetadata
 from ...serde.serializable import serializable
 from ...service.user.user_roles import ServiceRole
 from ...types.syft_migration import migrate
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.syft_object import SyftVerifyKey
 from ...types.transforms import drop
@@ -25,25 +25,10 @@ from ..response import SyftError
 
 
 @serializable()
-class CodeHistoryV2(SyftObject):
-    # version
-    __canonical_name__ = "CodeHistory"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    id: UID
-    node_uid: UID
-    user_verify_key: SyftVerifyKey
-    enclave_metadata: EnclaveMetadata | None = None
-    user_code_history: list[UID] = []
-    service_func_name: str
-    comment_history: list[str] = []
-
-
-@serializable()
 class CodeHistory(SyftObject):
     # version
     __canonical_name__ = "CodeHistory"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
     node_uid: UID
@@ -65,7 +50,7 @@ class CodeHistory(SyftObject):
 class CodeHistoryView(SyftObject):
     # version
     __canonical_name__ = "CodeHistoryView"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
     user_code_history: list[UserCode] = []
@@ -115,7 +100,7 @@ class CodeHistoryView(SyftObject):
 class CodeHistoriesDict(SyftObject):
     # version
     __canonical_name__ = "CodeHistoriesDict"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
     code_versions: dict[str, CodeHistoryView] = {}
@@ -144,7 +129,7 @@ class CodeHistoriesDict(SyftObject):
 class UsersCodeHistoriesDict(SyftObject):
     # version
     __canonical_name__ = "UsersCodeHistoriesDict"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
     node_uid: UID
@@ -175,15 +160,3 @@ class UsersCodeHistoriesDict(SyftObject):
             "icon": None,
         }
         return build_tabulator_table_with_data(rows, metadata)
-
-
-@migrate(CodeHistoryV2, CodeHistory)
-def code_history_v2_to_v3() -> list[Callable]:
-    return [drop("enclave_metadata")]
-
-
-@migrate(CodeHistory, CodeHistoryV2)
-def code_history_v3_to_v2() -> list[Callable]:
-    return [
-        make_set_default("enclave_metadata", None),
-    ]

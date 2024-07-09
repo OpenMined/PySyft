@@ -131,7 +131,7 @@ from ..store.sqlite_document_store import SQLiteStoreConfig
 from ..types.datetime import DATETIME_FORMAT
 from ..types.syft_metaclass import Empty
 from ..types.syft_object import PartialSyftObject
-from ..types.syft_object import SYFT_OBJECT_VERSION_2
+from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
 from ..util.experimental_flags import flags
@@ -1077,8 +1077,8 @@ class Node(AbstractNode):
             name=name,
             id=self.id,
             verify_key=self.verify_key,
-            highest_version=SYFT_OBJECT_VERSION_2,
-            lowest_version=SYFT_OBJECT_VERSION_2,
+            highest_version=SYFT_OBJECT_VERSION_1,
+            lowest_version=SYFT_OBJECT_VERSION_1,
             syft_version=__version__,
             description=description,
             organization=organization,

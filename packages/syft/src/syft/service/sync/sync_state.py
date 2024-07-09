@@ -14,8 +14,8 @@ from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.transforms import drop
@@ -119,29 +119,10 @@ def td_format(td_object: timedelta) -> str:
 
     return ", ".join(strings)
 
-
-@serializable()
-class SyncStateV2(SyftObject):
-    __canonical_name__ = "SyncState"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    node_uid: UID
-    node_name: str
-    node_side_type: NodeSideType
-    objects: dict[UID, SyncableSyftObject] = {}
-    dependencies: dict[UID, list[UID]] = {}
-    created_at: DateTime = Field(default_factory=DateTime.now)
-    previous_state_link: LinkedObject | None = None
-    permissions: dict[UID, set[str]] = {}
-    storage_permissions: dict[UID, set[UID]] = {}
-    ignored_batches: dict[UID, int] = {}
-    object_sync_dates: dict[UID, DateTime] = {}
-
-
 @serializable()
 class SyncState(SyftObject):
     __canonical_name__ = "SyncState"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     node_uid: UID
     node_name: str
@@ -300,13 +281,3 @@ class SyncState(SyftObject):
         </div>
 """
         return repr + self.rows._repr_html_()
-
-
-@migrate(SyncStateV2, SyncState)
-def upgrade_syncstate_v2_to_v3() -> list[Callable]:
-    return [make_set_default("errors", {})]
-
-
-@migrate(SyncState, SyncStateV2)
-def downgrade_syncstate_v3_to_v2() -> list[Callable]:
-    return [drop("errors")]

@@ -8,7 +8,7 @@ from typing_extensions import Self
 
 # relative
 from ...serde.serializable import serializable
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from .action_object import ActionObject
 from .action_object import ActionObjectPointer
 from .action_object import BASE_PASSTHROUGH_ATTRS
@@ -18,7 +18,7 @@ from .action_types import action_types
 # class NumpyArrayObjectPointer(ActionObjectPointer):
 #     _inflix_operations = ["__add__", "__sub__", "__eq__", "__mul__"]
 #     __canonical_name__ = "NumpyArrayObjectPointer"
-#     __version__ = SYFT_OBJECT_VERSION_2
+#     __version__ = SYFT_OBJECT_VERSION_1
 
 #     def get_from(self, domain_client) -> Any:
 #         return domain_client.api.services.action.get(self.id).syft_action_data
@@ -43,7 +43,7 @@ def numpy_like_eq(left: Any, right: Any) -> bool:
 @serializable()
 class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
     __canonical_name__ = "NumpyArrayObject"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     syft_internal_type: ClassVar[type[Any]] = np.ndarray
     syft_pointer_type: ClassVar[type[ActionObjectPointer]] = NumpyArrayObjectPointer
@@ -86,7 +86,7 @@ class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
 @serializable()
 class NumpyScalarObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
     __canonical_name__ = "NumpyScalarObject"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     syft_internal_type: ClassVar[type] = np.number
     syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
@@ -99,7 +99,7 @@ class NumpyScalarObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
 @serializable()
 class NumpyBoolObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
     __canonical_name__ = "NumpyBoolObject"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     syft_internal_type: ClassVar[type] = np.bool_
     syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS

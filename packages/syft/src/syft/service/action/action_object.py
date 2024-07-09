@@ -43,8 +43,8 @@ from ...service.response import SyftWarning
 from ...store.linked_obj import LinkedObject
 from ...types.base import SyftBaseModel
 from ...types.datetime import DateTime
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftBaseObject
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
@@ -113,7 +113,7 @@ class Action(SyftObject):
     """
 
     __canonical_name__ = "Action"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     __attr_searchable__: ClassVar[list[str]] = []
 
@@ -401,7 +401,7 @@ methods_to_check_in_cache = [
 
 class PreHookContext(SyftBaseObject):
     __canonical_name__ = "PreHookContext"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     """Hook context
 
@@ -682,7 +682,7 @@ class ActionObject(SyncableSyftObject):
     """Action object for remote execution."""
 
     __canonical_name__ = "ActionObject"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
     __private_sync_attr_mocks__: ClassVar[dict[str, Any]] = {
         "syft_action_data_cache": None,
         "syft_blob_storage_entry_id": None,
@@ -2199,7 +2199,7 @@ class AnyActionObject(ActionObject):
     """
 
     __canonical_name__ = "AnyActionObject"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     syft_internal_type: ClassVar[type[Any]] = NoneType  # type: ignore
     # syft_passthrough_attrs: List[str] = []

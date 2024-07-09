@@ -51,7 +51,7 @@ from ..service.user.user import UserView
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..types.grid_url import GridURL
-from ..types.syft_object import SYFT_OBJECT_VERSION_3
+from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.uid import UID
 from ..util.telemetry import instrument
 from ..util.util import prompt_warning_message
@@ -133,7 +133,7 @@ class Routes(Enum):
 @serializable(attrs=["proxy_target_uid", "url", "rtunnel_token"])
 class HTTPConnection(NodeConnection):
     __canonical_name__ = "HTTPConnection"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     url: GridURL
     proxy_target_uid: UID | None = None
@@ -462,7 +462,7 @@ class HTTPConnection(NodeConnection):
 @serializable()
 class PythonConnection(NodeConnection):
     __canonical_name__ = "PythonConnection"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     node: AbstractNode
     proxy_target_uid: UID | None = None

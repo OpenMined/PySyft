@@ -54,8 +54,8 @@ from ..service.warnings import WarningContext
 from ..types.cache_object import CachedSyftObject
 from ..types.identity import Identity
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
-from ..types.syft_object import SYFT_OBJECT_VERSION_2
-from ..types.syft_object import SYFT_OBJECT_VERSION_3
+from ..types.syft_object import SYFT_OBJECT_VERSION_1
+from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftMigrationRegistry
 from ..types.syft_object import SyftObject
@@ -139,7 +139,7 @@ class APIRegistry:
 @serializable()
 class APIEndpoint(SyftObject):
     __canonical_name__ = "APIEndpoint"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
     service_path: str
@@ -156,7 +156,7 @@ class APIEndpoint(SyftObject):
 @serializable()
 class LibEndpoint(SyftBaseObject):
     __canonical_name__ = "LibEndpoint"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     # TODO: bad name, change
     service_path: str
@@ -172,7 +172,7 @@ class LibEndpoint(SyftBaseObject):
 @serializable(attrs=["signature", "credentials", "serialized_message"])
 class SignedSyftAPICall(SyftObject):
     __canonical_name__ = "SignedSyftAPICall"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     credentials: SyftVerifyKey
     signature: bytes
@@ -209,7 +209,7 @@ class SignedSyftAPICall(SyftObject):
 class SyftAPICall(SyftObject):
     # version
     __canonical_name__ = "SyftAPICall"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     # fields
     node_uid: UID
@@ -236,7 +236,7 @@ class SyftAPICall(SyftObject):
 class SyftAPIData(SyftBaseObject):
     # version
     __canonical_name__ = "SyftAPIData"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     # fields
     data: Any = None
@@ -253,7 +253,7 @@ class SyftAPIData(SyftBaseObject):
 
 class RemoteFunction(SyftObject):
     __canonical_name__ = "RemoteFunction"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
     __repr_attrs__ = [
         "id",
         "node_uid",
@@ -441,7 +441,7 @@ class RemoteFunction(SyftObject):
 
 class RemoteUserCodeFunction(RemoteFunction):
     __canonical_name__ = "RemoteUserFunction"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
     __repr_attrs__ = RemoteFunction.__repr_attrs__ + ["user_code_id"]
 
     api: SyftAPI
@@ -833,38 +833,6 @@ def result_needs_api_update(api_call_result: Any) -> bool:
     return False
 
 
-@serializable(
-    attrs=[
-        "endpoints",
-        "node_uid",
-        "node_name",
-        "lib_endpoints",
-        "communication_protocol",
-    ]
-)
-class SyftAPIV2(SyftObject):
-    # version
-    __canonical_name__ = "SyftAPI"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    # fields
-    connection: NodeConnection | None = None
-    node_uid: UID | None = None
-    node_name: str | None = None
-    endpoints: dict[str, APIEndpoint]
-    lib_endpoints: dict[str, LibEndpoint] | None = None
-    api_module: APIModule | None = None
-    libs: APIModule | None = None
-    signing_key: SyftSigningKey | None = None
-    # serde / storage rules
-    refresh_api_callback: Callable | None = None
-    __user_role: ServiceRole = ServiceRole.NONE
-    communication_protocol: PROTOCOL_TYPE
-
-    # informs getattr does not have nasty side effects
-    __syft_allow_autocomplete__ = ["services"]
-
-
 @instrument
 @serializable(
     attrs=[
@@ -878,7 +846,7 @@ class SyftAPIV2(SyftObject):
 class SyftAPI(SyftObject):
     # version
     __canonical_name__ = "SyftAPI"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     # fields
     connection: NodeConnection | None = None

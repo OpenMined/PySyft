@@ -14,8 +14,8 @@ from ...abstract_node import NodeType
 from ...node.credentials import SyftVerifyKey
 from ...protocol.data_protocol import get_data_protocol
 from ...serde.serializable import serializable
-from ...types.syft_object import SYFT_OBJECT_VERSION_4
-from ...types.syft_object import SYFT_OBJECT_VERSION_5
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import StorableObjectType
 from ...types.syft_object import SyftObject
 from ...types.transforms import convert_types
@@ -46,7 +46,7 @@ def check_version(
 @serializable()
 class NodeMetadata(SyftObject):
     __canonical_name__ = "NodeMetadata"
-    __version__ = SYFT_OBJECT_VERSION_5
+    __version__ = SYFT_OBJECT_VERSION_1
 
     name: str
     id: UID
@@ -68,32 +68,6 @@ class NodeMetadata(SyftObject):
             server_version=self.syft_version,
             server_name=self.name,
         )
-
-
-@serializable()
-class NodeMetadataV4(SyftObject):
-    __canonical_name__ = "NodeMetadata"
-    __version__ = SYFT_OBJECT_VERSION_4
-
-    name: str
-    id: UID
-    verify_key: SyftVerifyKey
-    highest_version: int
-    lowest_version: int
-    syft_version: str
-    node_type: NodeType = NodeType.DOMAIN
-    organization: str = "OpenMined"
-    description: str = "Text"
-    node_side_type: str
-    show_warnings: bool
-
-    def check_version(self, client_version: str) -> bool:
-        return check_version(
-            client_version=client_version,
-            server_version=self.syft_version,
-            server_name=self.name,
-        )
-
 
 @serializable()
 class NodeMetadataJSON(BaseModel, StorableObjectType):

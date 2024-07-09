@@ -20,8 +20,8 @@ from ...types.datetime import DateTime
 from ...types.syft_migration import migrate
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.uid import UID
@@ -47,28 +47,10 @@ class NodePeerConnectionStatus(Enum):
 
 
 @serializable()
-class NodePeerV2(SyftObject):
-    # version
-    __canonical_name__ = "NodePeer"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    __attr_searchable__ = ["name", "node_type"]
-    __attr_unique__ = ["verify_key"]
-    __repr_attrs__ = ["name", "node_type", "admin_email"]
-
-    id: UID | None = None  # type: ignore[assignment]
-    name: str
-    verify_key: SyftVerifyKey
-    node_routes: list[NodeRouteTypeV1] = []
-    node_type: NodeType
-    admin_email: str
-
-
-@serializable()
 class NodePeer(SyftObject):
     # version
     __canonical_name__ = "NodePeer"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     __attr_searchable__ = ["name", "node_type"]
     __attr_unique__ = ["verify_key"]
@@ -340,13 +322,3 @@ def drop_veilid_route() -> Callable:
         return context
 
     return _drop_veilid_route
-
-
-@migrate(NodePeerV2, NodePeer)
-def upgrade_node_peer() -> list[Callable]:
-    return [drop_veilid_route()]
-
-
-@migrate(NodePeerV2, NodePeer)
-def downgrade_node_peer() -> list[Callable]:
-    return []
