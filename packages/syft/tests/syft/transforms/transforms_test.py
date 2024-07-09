@@ -8,7 +8,7 @@ import pytest
 # syft absolute
 from syft.types import transforms
 from syft.types.syft_object import SyftBaseObject
-from syft.types.syft_object import SyftObjectRegistry
+from syft.types.syft_object_registry import SyftObjectRegistry
 from syft.types.transforms import TransformContext
 from syft.types.transforms import validate_klass_and_version
 
