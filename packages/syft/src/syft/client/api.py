@@ -407,9 +407,13 @@ class RemoteFunction(SyftObject):
         )
         result = result[0]
 
+        return self.post_process_result(api_call.path, result)
+
+    def post_process_result(self, path, result):
         if any(path.startswith(x) for x in NEW_STYLE_SERVICES_LIST):
             if isinstance(result, SyftError):
-                raise SyftException(public_message=result.message)
+                tb = result.tb if result.tb is not None else ""
+                raise SyftException(public_message=result.message + "\n" + tb)
             if self.unwrap_on_success:
                 result = result.unwrap_value()
 
@@ -575,7 +579,18 @@ class RemoteUserCodeFunction(RemoteFunction):
             kwargs={},
             blocking=True,
         )
-        return self.make_call(api_call=api_call)
+        result = self.make_call(api_call=api_call)
+        return self.post_process_result(api_call.path, result)
+
+    def post_process_result(self, path, result):
+        if any(path.startswith(x) for x in NEW_STYLE_SERVICES_LIST):
+            if isinstance(result, SyftError):
+                tb = result.tb if result.tb is not None else ""
+                raise SyftException(public_message=result.message + "\n" + tb)
+            if self.unwrap_on_success:
+                result = result.unwrap_value()
+
+        return result
 
 
 def generate_remote_function(

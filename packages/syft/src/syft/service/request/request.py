@@ -8,7 +8,6 @@ from typing import Any
 
 # third party
 from pydantic import model_validator
-from result import Err
 from result import Ok
 from result import Result
 from typing_extensions import Self
@@ -791,10 +790,13 @@ class Request(SyncableSyftObject):
 
         # Ensure result is an ActionObject
         if isinstance(result, ActionObject):
-            existing_job = api.services.job.get_by_result_id(result.id.id)
+            try:
+                existing_job = api.services.job.get_by_result_id(result.id.id)
+            except SyftException:
+                existing_job = None
             if existing_job is not None:
-                return SyftError(
-                    message=f"This ActionObject is already the result of Job {existing_job.id}"
+                raise SyftException(
+                    public_message=f"This ActionObject is already the result of Job {existing_job.id}"
                 )
             action_object = result
         else:
@@ -895,7 +897,7 @@ class Request(SyncableSyftObject):
             return job
 
         # Add to output history
-        res = self._create_output_history_for_deposited_result(job, result)
+        res = self._create_output_history_for_deposited_result(job, action_object)
         if isinstance(res, SyftError):
             return res
 

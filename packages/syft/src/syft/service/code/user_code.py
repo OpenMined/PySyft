@@ -1654,6 +1654,7 @@ class UserCodeExecutionOutput(SyftObject):
 
     id: UID
     user_code_id: UID
+    errored: False
     stdout: str
     stderr: str
     result: Any = None
@@ -1845,7 +1846,9 @@ def execute_byte_code(
         evil_string = f"{code_item.unique_func_name}(**kwargs)"
         try:
             result = eval(evil_string, _globals, _locals)  # nosec
+            errored = False
         except Exception as e:
+            errored = True
             error_msg = traceback_from_error(e, code_item)
             if context.job is not None:
                 time = datetime.datetime.now().strftime("%d/%m/%y %H:%M:%S")
@@ -1872,7 +1875,7 @@ def execute_byte_code(
             if context.dev_mode:
                 result_message += error_msg
 
-            result = Err(result_message)
+            result = SyftError(message=result_message)
 
         # reset print
         print = original_print
@@ -1886,6 +1889,7 @@ def execute_byte_code(
             stdout=str(stdout.getvalue()),
             stderr=str(stderr.getvalue()),
             result=result,
+            errored=errored,
         )
 
     except Exception as e:

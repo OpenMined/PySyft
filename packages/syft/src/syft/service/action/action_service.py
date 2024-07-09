@@ -409,6 +409,7 @@ class ActionService(AbstractService):
                     real_kwargs, twin_mode=TwinMode.NONE, allow_python_types=True
                 ).unwrap()
                 exec_result = execute_byte_code(code_item, filtered_kwargs, context)
+
                 if output_policy:
                     exec_result.result = output_policy.apply_to_output(
                         context,
@@ -431,6 +432,7 @@ class ActionService(AbstractService):
                 private_exec_result = execute_byte_code(
                     code_item, private_kwargs, context
                 )
+
                 if output_policy:
                     private_exec_result.result = output_policy.apply_to_output(
                         context,
@@ -473,7 +475,13 @@ class ActionService(AbstractService):
             raise SyftException.from_exception(
                 exc=e, public_message="_user_code_execute failed"
             )
+
         return result_action_object
+
+    # def raise_for_failed_execution(self, output: ExecutionOutput):
+    #     if output.errored:
+    #         raise SyftException(public_message="Execution of usercode failed, ask admin",
+    #                                 private_message=output.stdout + "\n" + output.stderr)
 
     @as_result(SyftException)
     def set_result_to_store(
@@ -690,14 +698,10 @@ class ActionService(AbstractService):
                 resolved_self.private,
                 action,
                 twin_mode=TwinMode.PRIVATE,
-            ).unwrap(
-                public_message=f"Failed executing action {action}"
-            )
+            ).unwrap(public_message=f"Failed executing action {action}")
             mock_result = execute_object(
                 self, context, resolved_self.mock, action, twin_mode=TwinMode.MOCK
-            ).unwrap(
-                public_message=f"Failed executing action {action}"
-            )
+            ).unwrap(public_message=f"Failed executing action {action}")
 
             return TwinObject(
                 id=action.result_id,

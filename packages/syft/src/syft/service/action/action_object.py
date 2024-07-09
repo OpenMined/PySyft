@@ -863,8 +863,8 @@ class ActionObject(SyncableSyftObject):
         self, allow_empty: bool = False
     ) -> SyftError | SyftSuccess | SyftWarning:
         data = self.syft_action_data
-        if isinstance(data, SyftError):
-            return data
+        # if isinstance(data, SyftError):
+        #     return data
 
         if isinstance(data, ActionDataEmpty):
             return SyftError(
