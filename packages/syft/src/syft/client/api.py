@@ -413,7 +413,8 @@ class RemoteFunction(SyftObject):
         if any(path.startswith(x) for x in NEW_STYLE_SERVICES_LIST):
             if isinstance(result, SyftError):
                 tb = result.tb if result.tb is not None else ""
-                raise SyftException(public_message=result.message + "\n" + tb)
+                msg = result.message + "\n" + tb if tb else result.message
+                raise SyftException(public_message=msg)
             if self.unwrap_on_success:
                 result = result.unwrap_value()
 
@@ -586,7 +587,8 @@ class RemoteUserCodeFunction(RemoteFunction):
         if any(path.startswith(x) for x in NEW_STYLE_SERVICES_LIST):
             if isinstance(result, SyftError):
                 tb = result.tb if result.tb is not None else ""
-                raise SyftException(public_message=result.message + "\n" + tb)
+                msg = result.message + "\n" + tb if tb else result.message
+                raise SyftException(public_message=msg)
             if self.unwrap_on_success:
                 result = result.unwrap_value()
 
