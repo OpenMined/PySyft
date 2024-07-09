@@ -142,8 +142,6 @@ class QueueStash(NewBaseStash):
         qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
         return self.query_one(credentials=credentials, qks=qks).unwrap()
 
-    as_result(StashException)
-
     @as_result(StashException)
     def pop(self, credentials: SyftVerifyKey, uid: UID) -> QueueItem | None:
         try:
