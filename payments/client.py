@@ -146,13 +146,14 @@ def data_owner_reviews_and_runs_code(data_owner):
     pvt_data = asset.data
     print(pvt_data)
 
-    # execute the data scientist's code
-    users_function = func.unsafe_function
+    # execute the data scientist's code on the private data
+    users_function = func.run 
     real_result = users_function(trade_data=pvt_data)
+    print(real_result)
 
-    # share result with data scientist
-    # request object also has “approve” (which is called by “accept_by_depositing_result") and “approve_with_client”
-    result = request.accept_by_depositing_result(real_result, force=True)
+    # By calling request.approve(), the data scientist can execute their function on the real data, 
+    # and obtain the result
+    result = request.approve() 
     print(result)
 
 # notebooks/api/0.8/03-data-scientist-download-result.ipynb
@@ -165,8 +166,10 @@ def data_scientist_downloads_result(domain_client):
 
     asset = data_scientist.datasets[0].assets[0]
 
-    # this attempt to execute the code on the server will succeed
-    # ... as the code is approved by the data owner:
+    # We run the function against the input to verify if the function is approved 
+    # and if the results are ready
+    # This attempt to execute the code on the server will succeed
+    # as the code is approved by the data owner.
     result_pointer = data_scientist.code.sum_trade_value_mil(trade_data=asset)
     real_result = result_pointer.get()
     print(real_result)
