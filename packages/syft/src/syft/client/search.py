@@ -11,7 +11,7 @@ from ..service.network.network_service import NodePeer
 from ..service.response import SyftWarning
 from ..types.uid import UID
 from .client import SyftClient
-from .registry import DomainRegistry
+from .registry import DatasiteRegistry
 
 
 class SearchResults:
@@ -58,9 +58,9 @@ class SearchResults:
 
 
 class Search:
-    def __init__(self, domains: DomainRegistry) -> None:
-        self.domains: list[tuple[NodePeer, NodeMetadataJSON | None]] = (
-            domains.online_domains
+    def __init__(self, datasites: DatasiteRegistry) -> None:
+        self.datasites: list[tuple[NodePeer, NodeMetadataJSON | None]] = (
+            datasites.online_datasites
         )
 
     @staticmethod
@@ -82,12 +82,12 @@ class Search:
     def __search(self, name: str) -> list[tuple[SyftClient, list[Dataset]]]:
         with ThreadPoolExecutor(max_workers=20) as executor:
             # results: list[tuple[SyftClient | None, list[Dataset]]] = [
-            #     self.__search_one_node(peer_tuple, name) for peer_tuple in self.domains
+            #     self.__search_one_node(peer_tuple, name) for peer_tuple in self.datasites
             # ]
             results: list[tuple[SyftClient | None, list[Dataset]]] = list(
                 executor.map(
                     lambda peer_tuple: self.__search_one_node(peer_tuple, name),
-                    self.domains,
+                    self.datasites,
                 )
             )
         # filter out SyftError

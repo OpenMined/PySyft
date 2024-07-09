@@ -1,4 +1,4 @@
-export type DomainMetadata = {
+export type DatasiteMetadata = {
   admin_email: string
   name: string
   description: string

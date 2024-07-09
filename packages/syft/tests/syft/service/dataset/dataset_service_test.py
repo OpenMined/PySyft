@@ -197,11 +197,11 @@ def test_guest_client_get_empty_mock_as_private_pointer(
     asset = Asset(**asset_with_empty_mock)
     dataset = Dataset(name=random_hash(), asset_list=[asset])
 
-    root_domain_client = worker.root_client
-    root_domain_client.upload_dataset(dataset)
+    root_datasite_client = worker.root_client
+    root_datasite_client.upload_dataset(dataset)
 
-    guest_domain_client = root_domain_client.guest()
-    guest_datasets = guest_domain_client.api.services.dataset.get_all()
+    guest_datasite_client = root_datasite_client.guest()
+    guest_datasets = guest_datasite_client.api.services.dataset.get_all()
     guest_dataset = guest_datasets[0]
 
     mock = guest_dataset.assets[0].pointer
@@ -211,16 +211,16 @@ def test_guest_client_get_empty_mock_as_private_pointer(
     assert mock.syft_twin_type is TwinMode.MOCK
 
 
-def test_domain_client_cannot_upload_dataset_with_non_mock(worker: Worker) -> None:
+def test_datasite_client_cannot_upload_dataset_with_non_mock(worker: Worker) -> None:
     assets = [Asset(**make_asset_with_mock()) for _ in range(10)]
     dataset = Dataset(name=random_hash(), asset_list=assets)
 
     dataset.asset_list[0].mock = None
 
-    root_domain_client = worker.root_client
+    root_datasite_client = worker.root_client
 
     with pytest.raises(ValueError) as excinfo:
-        root_domain_client.upload_dataset(dataset)
+        root_datasite_client.upload_dataset(dataset)
 
     assert _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE in str(excinfo.value)
 
@@ -291,13 +291,13 @@ def test_upload_dataset_with_assets_of_different_data_types(
     )
     dataset = Dataset(name=random_hash())
     dataset.add_asset(asset)
-    root_domain_client = worker.root_client
-    res = root_domain_client.upload_dataset(dataset)
+    root_datasite_client = worker.root_client
+    res = root_datasite_client.upload_dataset(dataset)
     assert isinstance(res, SyftSuccess)
-    assert len(root_domain_client.api.services.dataset.get_all()) == 1
-    assert type(root_domain_client.datasets[0].assets[0].data) == type(
+    assert len(root_datasite_client.api.services.dataset.get_all()) == 1
+    assert type(root_datasite_client.datasets[0].assets[0].data) == type(
         different_data_types
     )
-    assert type(root_domain_client.datasets[0].assets[0].mock) == type(
+    assert type(root_datasite_client.datasets[0].assets[0].mock) == type(
         different_data_types
     )

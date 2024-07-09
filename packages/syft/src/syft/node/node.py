@@ -169,7 +169,7 @@ def get_private_key_env() -> str | None:
 
 
 def get_node_type() -> str | None:
-    return get_env(NODE_TYPE, "domain")
+    return get_env(NODE_TYPE, "datasite")
 
 
 def get_node_name() -> str | None:
@@ -333,7 +333,7 @@ class Node(AbstractNode):
         root_password: str | None = default_root_password,
         processes: int = 0,
         is_subprocess: bool = False,
-        node_type: str | NodeType = NodeType.DOMAIN,
+        node_type: str | NodeType = NodeType.DATASITE,
         local_db: bool = False,
         reset: bool = False,
         blob_storage_config: BlobStorageConfig | None = None,
@@ -660,7 +660,7 @@ class Node(AbstractNode):
         processes: int = 0,
         reset: bool = False,
         local_db: bool = False,
-        node_type: str | NodeType = NodeType.DOMAIN,
+        node_type: str | NodeType = NodeType.DATASITE,
         node_side_type: str | NodeSideType = NodeSideType.HIGH_SIDE,
         enable_warnings: bool = False,
         n_consumers: int = 0,

@@ -56,7 +56,7 @@ DEFAULT_WELCOME_MSG = """
         <div class="syft-client syft-container">
             <img src="$grid_symbol" alt="Logo"
             style="width:48px;height:48px;padding:3px;">
-            <h2>Welcome to $domain_name</h2>
+            <h2>Welcome to $datasite_name</h2>
             <div class="syft-space">
             <strong>URL:</strong> $node_url <br />
             <strong>Node Description:</strong> $description <br />
@@ -67,7 +67,7 @@ DEFAULT_WELCOME_MSG = """
             </div>
             <div class='syft-alert-info syft-space'>
                 &#9432;&nbsp;
-                This domain is run by the library PySyft to learn more about how it works visit
+                This datasite is run by the library PySyft to learn more about how it works visit
                 <a href="https://github.com/OpenMined/PySyft">github.com/OpenMined/PySyft</a>.
             </div>
             <h4>Commands to Get Started</h4>

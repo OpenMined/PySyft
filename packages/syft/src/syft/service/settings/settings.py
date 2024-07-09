@@ -97,8 +97,8 @@ class NodeSettings(SyftObject):
     organization: str = "OpenMined"
     verify_key: SyftVerifyKey
     on_board: bool = True
-    description: str = "This is the default description for a Domain Node."
-    node_type: NodeType = NodeType.DOMAIN
+    description: str = "This is the default description for a Datasite Node."
+    node_type: NodeType = NodeType.DATASITE
     signup_enabled: bool
     admin_email: str
     node_side_type: NodeSideType = NodeSideType.HIGH_SIDE
@@ -148,7 +148,7 @@ class NodeSettingsV5(SyftObject):
     verify_key: SyftVerifyKey
     on_board: bool = True
     description: str = "Text"
-    node_type: NodeType = NodeType.DOMAIN
+    node_type: NodeType = NodeType.DATASITE
     signup_enabled: bool
     admin_email: str
     node_side_type: NodeSideType = NodeSideType.HIGH_SIDE

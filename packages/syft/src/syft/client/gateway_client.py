@@ -24,7 +24,7 @@ class GatewayClient(SyftClient):
 
     def proxy_to(self, peer: Any) -> SyftClient:
         # relative
-        from .domain_client import DomainClient
+        from .datasite_client import DatasiteClient
         from .enclave_client import EnclaveClient
 
         connection: type[NodeConnection] = self.connection.with_proxy(peer.id)
@@ -33,8 +33,8 @@ class GatewayClient(SyftClient):
         )
         if isinstance(metadata, SyftError):
             return metadata
-        if metadata.node_type == NodeType.DOMAIN.value:
-            client_type: type[SyftClient] = DomainClient
+        if metadata.node_type == NodeType.DATASITE.value:
+            client_type: type[SyftClient] = DatasiteClient
         elif metadata.node_type == NodeType.ENCLAVE.value:
             client_type = EnclaveClient
         else:
@@ -59,7 +59,7 @@ class GatewayClient(SyftClient):
         if self.api.has_service("network"):
             peer = self.api.services.network.get_peer_by_name(name=name)
         if peer is None:
-            return SyftError(message=f"No domain with name {name}")
+            return SyftError(message=f"No datasite with name {name}")
         res = self.proxy_to(peer)
         if email and password:
             res = res.login(email=email, password=password, **kwargs)
@@ -70,8 +70,8 @@ class GatewayClient(SyftClient):
         return ProxyClient(routing_client=self)
 
     @property
-    def domains(self) -> list[NodePeer] | SyftError | None:
-        return ProxyClient(routing_client=self, node_type=NodeType.DOMAIN)
+    def datasites(self) -> list[NodePeer] | SyftError | None:
+        return ProxyClient(routing_client=self, node_type=NodeType.DATASITE)
 
     @property
     def enclaves(self) -> list[NodePeer] | SyftError | None:
@@ -80,9 +80,9 @@ class GatewayClient(SyftClient):
     def _repr_html_(self) -> str:
         commands = """
         <li><span class='syft-code-block'>&lt;your_client&gt;
-        .domains</span> - list domains connected to this gateway</li>
+        .datasites</span> - list datasites connected to this gateway</li>
         <li><span class='syft-code-block'>&lt;your_client&gt;
-        .proxy_client_for</span> - get a connection to a listed domain</li>
+        .proxy_client_for</span> - get a connection to a listed datasite</li>
         <li><span class='syft-code-block'>&lt;your_client&gt;
         .login</span> - log into the gateway</li>
         """
@@ -159,7 +159,7 @@ class ProxyClient(SyftObject):
     node_type: NodeType | None = None
 
     def retrieve_nodes(self) -> list[NodePeer]:
-        if self.node_type in [NodeType.DOMAIN, NodeType.ENCLAVE]:
+        if self.node_type in [NodeType.DATASITE, NodeType.ENCLAVE]:
             return self.routing_client.api.services.network.get_peers_by_type(
                 node_type=self.node_type
             )

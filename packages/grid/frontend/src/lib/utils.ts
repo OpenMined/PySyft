@@ -1,4 +1,4 @@
-import { ServiceRoles } from "../types/domain/users"
+import { ServiceRoles } from "../types/datasite/users"
 import { COOKIES } from "./constants"
 import type { CookieSerializeOptions } from "cookie"
 import type { Cookies } from "@sveltejs/kit"

@@ -10,7 +10,7 @@ import syft as sy
 from syft.node.node import Node
 
 
-@pytest.mark.parametrize("node_type", ["domain", "gateway", "enclave"])
+@pytest.mark.parametrize("node_type", ["datasite", "gateway", "enclave"])
 def test_orchestra_python_local(node_type):
     name = token_hex(8)
     node = sy.orchestra.launch(name=name, node_type=node_type, local_db=False)
@@ -25,7 +25,7 @@ def test_orchestra_python_local(node_type):
         node.land()
 
 
-@pytest.mark.parametrize("node_type", ["domain", "gateway", "enclave"])
+@pytest.mark.parametrize("node_type", ["datasite", "gateway", "enclave"])
 def test_orchestra_python_server(node_type):
     name = token_hex(8)
     node = sy.orchestra.launch(

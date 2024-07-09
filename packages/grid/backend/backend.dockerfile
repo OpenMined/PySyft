@@ -74,7 +74,7 @@ ENV \
     # Syft
     APPDIR="/root/app" \
     NODE_NAME="default_node_name" \
-    NODE_TYPE="domain" \
+    NODE_TYPE="datasite" \
     SERVICE_NAME="backend" \
     RELEASE="production" \
     DEV_MODE="False" \

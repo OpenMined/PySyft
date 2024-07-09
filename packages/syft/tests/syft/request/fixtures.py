@@ -17,8 +17,8 @@ def request_stash(document_store: DocumentStore) -> RequestStash:
 
 
 @pytest.fixture
-def authed_context_guest_domain_client(
-    guest_domain_client: SyftClient, worker: Worker
+def authed_context_guest_datasite_client(
+    guest_datasite_client: SyftClient, worker: Worker
 ) -> AuthedServiceContext:
-    verify_key: SyftVerifyKey = guest_domain_client.credentials.verify_key
+    verify_key: SyftVerifyKey = guest_datasite_client.credentials.verify_key
     yield AuthedServiceContext(credentials=verify_key, node=worker)

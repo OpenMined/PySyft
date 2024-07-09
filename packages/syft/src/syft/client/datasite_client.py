@@ -90,9 +90,9 @@ def add_default_uploader(
 
 
 @serializable()
-class DomainClient(SyftClient):
+class DatasiteClient(SyftClient):
     def __repr__(self) -> str:
-        return f"<DomainClient: {self.name}>"
+        return f"<DatasiteClient: {self.name}>"
 
     def upload_dataset(self, dataset: CreateDataset) -> SyftSuccess | SyftError:
         # relative

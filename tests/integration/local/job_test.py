@@ -94,11 +94,11 @@ def job(node):
     ds_client.code.submit(process_batch)
 
     @syft_function_single_use()
-    def process_all(domain):
+    def process_all(datasite):
         # stdlib
 
-        _ = domain.launch_job(process_batch)
-        _ = domain.launch_job(process_batch)
+        _ = datasite.launch_job(process_batch)
+        _ = datasite.launch_job(process_batch)
 
         while time.sleep(1) is None:
             ...

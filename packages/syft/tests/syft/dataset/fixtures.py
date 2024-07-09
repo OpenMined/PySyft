@@ -30,7 +30,7 @@ def mock_dataset_stash(document_store) -> DatasetStash:
 
 
 @pytest.fixture
-def mock_asset(worker, root_domain_client) -> Asset:
+def mock_asset(worker, root_datasite_client) -> Asset:
     # sometimes the access rights for client are overwritten
     # so we need to assing the root_client manually
     uploader = Contributor(
@@ -48,11 +48,11 @@ def mock_asset(worker, root_domain_client) -> Asset:
         uploader=uploader,
         contributors=[uploader],
         syft_node_location=worker.id,
-        syft_client_verify_key=root_domain_client.credentials.verify_key,
+        syft_client_verify_key=root_datasite_client.credentials.verify_key,
     )
     node_transform_context = TransformContext(
         node=worker,
-        credentials=root_domain_client.credentials.verify_key,
+        credentials=root_datasite_client.credentials.verify_key,
         obj=create_asset,
     )
     mock_asset = create_asset.to(Asset, context=node_transform_context)

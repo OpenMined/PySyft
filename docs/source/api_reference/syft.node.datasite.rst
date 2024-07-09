@@ -1,7 +1,7 @@
-syft.node.domain
+syft.node.datasite
 ================
 
-.. automodule:: syft.node.domain
+.. automodule:: syft.node.datasite
 
    
    
@@ -17,7 +17,7 @@ syft.node.domain
 
    .. autosummary::
    
-      Domain
+      Datasite
    
    
 

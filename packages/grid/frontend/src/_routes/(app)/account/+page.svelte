@@ -85,8 +85,8 @@
         </h2>
         <p class="text-left text-gray-500">
           When you delete your user account all information relating to you will be deleted as well
-          as any permissions and requests. If you are the domain owner the domain node will be
-          deleted as well and will be closed to all users. To transfer ownership of a domain node
+          as any permissions and requests. If you are the datasite owner the datasite node will be
+          deleted as well and will be closed to all users. To transfer ownership of a datasite node
           before deleting your account you can follow the instructions <a href="/">here</a>
         </p>
         <div class="inline-flex py-6">
@@ -134,10 +134,10 @@
         <p class="text-center text-2xl font-bold">Are you sure you want to delete your node?</p>
       </div>
       <p slot="body" class="text-center">
-        Because you are the domain owner, the domain node along with all uploaded datasets, user
+        Because you are the datasite owner, the datasite node along with all uploaded datasets, user
         accounts, and requests will be deleted. All network memberships will also be removed. If you
-        would like to keep this domain node but no longer want to be an owner press “cancel” and
-        follow the instructions here to transfer ownership of your domain node.
+        would like to keep this datasite node but no longer want to be an owner press “cancel” and
+        follow the instructions here to transfer ownership of your datasite node.
       </p>
       <div slot="footer" class="flex justify-center pt-6">
         <Button

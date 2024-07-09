@@ -78,7 +78,7 @@ def make_routes(worker: Worker) -> APIRouter:
             url = peer_connection.to_blob_route(url_path_parsed)
             stream_response = peer_connection._make_get(url.path, stream=True)
         except requests.RequestException:
-            raise HTTPException(404, "Failed to retrieve data from domain.")
+            raise HTTPException(404, "Failed to retrieve data from datasite.")
 
         return StreamingResponse(stream_response, media_type="text/event-stream")
 
@@ -106,7 +106,7 @@ def make_routes(worker: Worker) -> APIRouter:
             print("Url on stream", url.path)
             response = peer_connection._make_put(url.path, data=data, stream=True)
         except requests.RequestException:
-            raise HTTPException(404, "Failed to upload data to domain")
+            raise HTTPException(404, "Failed to upload data to datasite")
 
         return Response(
             content=response.content,

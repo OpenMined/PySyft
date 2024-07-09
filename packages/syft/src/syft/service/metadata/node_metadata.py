@@ -54,7 +54,7 @@ class NodeMetadata(SyftObject):
     highest_version: int
     lowest_version: int
     syft_version: str
-    node_type: NodeType = NodeType.DOMAIN
+    node_type: NodeType = NodeType.DATASITE
     organization: str = "OpenMined"
     description: str = "Text"
     node_side_type: str
@@ -81,7 +81,7 @@ class NodeMetadataV4(SyftObject):
     highest_version: int
     lowest_version: int
     syft_version: str
-    node_type: NodeType = NodeType.DOMAIN
+    node_type: NodeType = NodeType.DATASITE
     organization: str = "OpenMined"
     description: str = "Text"
     node_side_type: str
@@ -104,9 +104,9 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
     highest_object_version: int | None = None
     lowest_object_version: int | None = None
     syft_version: str
-    node_type: str = NodeType.DOMAIN.value
+    node_type: str = NodeType.DATASITE.value
     organization: str = "OpenMined"
-    description: str = "My cool domain"
+    description: str = "My cool datasite"
     signup_enabled: bool = False
     eager_execution_enabled: bool = False
     admin_email: str = ""

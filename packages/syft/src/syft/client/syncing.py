@@ -18,7 +18,7 @@ from ..service.sync.sync_state import SyncState
 from ..types.uid import UID
 from ..util.decorators import deprecated
 from ..util.util import prompt_warning_message
-from .domain_client import DomainClient
+from .datasite_client import DatasiteClient
 from .sync_decision import SyncDecision
 from .sync_decision import SyncDirection
 
@@ -26,8 +26,8 @@ logger = logging.getLogger(__name__)
 
 
 def sync(
-    from_client: DomainClient,
-    to_client: DomainClient,
+    from_client: DatasiteClient,
+    to_client: DatasiteClient,
     include_ignored: bool = False,
     include_same: bool = False,
     filter_by_email: str | None = None,
@@ -102,8 +102,8 @@ def compare_states(
 
 
 def compare_clients(
-    from_client: DomainClient,
-    to_client: DomainClient,
+    from_client: DatasiteClient,
+    to_client: DatasiteClient,
     include_ignored: bool = False,
     include_same: bool = False,
     filter_by_email: str | None = None,

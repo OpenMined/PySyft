@@ -1279,7 +1279,7 @@ class NodeIdentity(Identity):
 
     @staticmethod
     def from_api(api: SyftAPI) -> NodeIdentity:
-        # stores the name root verify key of the domain node
+        # stores the name root verify key of the datasite node
         if api.connection is None:
             raise ValueError("{api}'s connection is None. Can't get the node identity")
         node_metadata = api.connection.get_node_metadata(api.signing_key)

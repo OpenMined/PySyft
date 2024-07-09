@@ -236,7 +236,7 @@ class UserCodeStatusCollection(SyncableSyftObject):
             else:
                 raise Exception(f"Invalid types in {keys} for Code Submission")
 
-        elif context.node.node_type == NodeType.DOMAIN:
+        elif context.node.node_type == NodeType.DATASITE:
             node_identity = NodeIdentity(
                 node_name=context.node.name,
                 node_id=context.node.id,
@@ -246,7 +246,7 @@ class UserCodeStatusCollection(SyncableSyftObject):
                 return self.status_dict[node_identity][0]
             else:
                 raise Exception(
-                    f"Code Object does not contain {context.node.name} Domain's data"
+                    f"Code Object does not contain {context.node.name} Datasite's data"
                 )
         else:
             raise Exception(
@@ -270,7 +270,7 @@ class UserCodeStatusCollection(SyncableSyftObject):
             return self
         else:
             return SyftError(
-                message="Cannot Modify Status as the Domain's data is not included in the request"
+                message="Cannot Modify Status as the Datasite's data is not included in the request"
             )
 
     def get_sync_dependencies(self, context: AuthedServiceContext) -> list[UID]:
@@ -303,8 +303,8 @@ class UserCodeV4(SyncableSyftObject):
     input_kwargs: list[str]
     enclave_metadata: EnclaveMetadata | None = None
     submit_time: DateTime | None = None
-    # tracks if the code calls domain.something, variable is set during parsing
-    uses_domain: bool = False
+    # tracks if the code calls datasite.something, variable is set during parsing
+    uses_datasite: bool = False
     nested_codes: dict[str, tuple[LinkedObject, dict]] | None = {}
     worker_pool_name: str | None = None
 
@@ -334,8 +334,8 @@ class UserCode(SyncableSyftObject):
     status_link: LinkedObject | None = None
     input_kwargs: list[str]
     submit_time: DateTime | None = None
-    # tracks if the code calls domain.something, variable is set during parsing
-    uses_domain: bool = False
+    # tracks if the code calls datasite.something, variable is set during parsing
+    uses_datasite: bool = False
 
     nested_codes: dict[str, tuple[LinkedObject, dict]] | None = {}
     worker_pool_name: str | None = None
@@ -1436,8 +1436,8 @@ def process_code(
     policy_input_kwargs: list[str],
     function_input_kwargs: list[str],
 ) -> str:
-    if "domain" in function_input_kwargs and context.output is not None:
-        context.output["uses_domain"] = True
+    if "datasite" in function_input_kwargs and context.output is not None:
+        context.output["uses_datasite"] = True
 
     return parse_user_code(
         raw_code=raw_code,
@@ -1484,8 +1484,8 @@ def locate_launch_jobs(context: TransformContext) -> TransformContext:
     if context.output is not None:
         nested_codes = {}
         tree = ast.parse(context.output["raw_code"])
-        # look for domain arg
-        if "domain" in [arg.arg for arg in tree.body[0].args.args]:
+        # look for datasite arg
+        if "datasite" in [arg.arg for arg in tree.body[0].args.args]:
             v = LaunchJobVisitor()
             v.visit(tree)
             nested_calls = v.nested_calls
@@ -1600,7 +1600,7 @@ def create_code_status(context: TransformContext) -> TransformContext:
         service_type=UserCodeService,
         node_uid=context.node.id,
     )
-    if context.node.node_type == NodeType.DOMAIN:
+    if context.node.node_type == NodeType.DATASITE:
         node_identity = NodeIdentity(
             node_name=context.node.name,
             node_id=context.node.id,
@@ -1806,7 +1806,7 @@ def execute_byte_code(
 
         safe_context = SecureContext(context=context)
 
-        class LocalDomainClient:
+        class LocalDatasiteClient:
             def init_progress(self, n_iters: int) -> None:
                 if safe_context.is_async:
                     safe_context.job_set_current_iter(0)
@@ -1869,8 +1869,8 @@ def execute_byte_code(
         else:
             print = original_print
 
-        if code_item.uses_domain:
-            kwargs["domain"] = LocalDomainClient()
+        if code_item.uses_datasite:
+            kwargs["datasite"] = LocalDatasiteClient()
 
         for k, v in kwargs.items():
             if isinstance(v, CustomEndpointActionObject):

@@ -23,15 +23,15 @@
     website: "",
   }
 
-  let domainSettings = {
+  let datasiteSettings = {
     name: "",
     description: "",
     organization: "",
     on_board: false,
   }
 
-  let checkRequiredDomainFields = () => {
-    return domainSettings.name !== "" ? true : false
+  let checkRequiredDatasiteFields = () => {
+    return datasiteSettings.name !== "" ? true : false
   }
 
   let checkRequiredUserFields = () => {
@@ -49,7 +49,7 @@
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(domainSettings),
+        body: JSON.stringify(datasiteSettings),
       })
 
       await fetch(`/_syft_api/users/${userSettings.id}`, {
@@ -86,7 +86,7 @@
       website: "",
     }
 
-    domainSettings = {
+    datasiteSettings = {
       name: "",
       description: "",
       organization: "",
@@ -151,7 +151,7 @@
             <NodeIcon class="w-6 h-6" />
           </div>
           <div class="text-center space-y-2">
-            <h3 class="text-2xl capitalize font-bold">Domain Profile</h3>
+            <h3 class="text-2xl capitalize font-bold">Datasite Profile</h3>
             <p class="text-primary-500">Step 2 of 4</p>
           </div>
         </div>
@@ -182,28 +182,28 @@
           <Progress max={4} value={2} />
         </div>
         <p class="text-gray-400 py-2">
-          Let's begin by describing some basic information about this domain
+          Let's begin by describing some basic information about this datasite
           node. This information will be shown to outside users to help them
-          find and understand what your domain offers.
+          find and understand what your datasite offers.
         </p>
         <Input
-          label="Domain Name"
-          id="domainName"
+          label="Datasite Name"
+          id="datasiteName"
           required
-          bind:value={domainSettings.name}
-          placeholder="ABC University Domain"
+          bind:value={datasiteSettings.name}
+          placeholder="ABC University Datasite"
         />
         <Input
           label="Organization"
-          id="domainOrganization"
-          bind:value={domainSettings.organization}
+          id="datasiteOrganization"
+          bind:value={datasiteSettings.organization}
           placeholder="ABC University"
         />
         <Input
           label="Description"
-          id="domainDescription"
-          bind:value={domainSettings.description}
-          placeholder="Describe your domain here ..."
+          id="datasiteDescription"
+          bind:value={datasiteSettings.description}
+          placeholder="Describe your datasite here ..."
         />
       </div>
     </Modal>
@@ -232,7 +232,7 @@
           <Progress max={3} value={2} />
         </div>
         <p class="text-gray-400 py-2">
-          Now that we have described our domain, let's update our password and
+          Now that we have described our datasite, let's update our password and
           describe some basic information about ourselves for our "User
           Profile". User profile information will be shown to teammates and
           collaborators when working on studies together.

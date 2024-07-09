@@ -49,7 +49,7 @@ def test_create_image_and_pool_request_accept(
     Test the functionality of `SyftWorkerPoolService.create_image_and_pool_request`
     when the request is accepted
     """
-    # construct a root client and data scientist client for a domain
+    # construct a root client and data scientist client for a datasite
     root_client = worker.root_client
     ds_client = get_ds_client(faker, root_client, worker.guest_client)
     assert root_client.credentials != ds_client.credentials
@@ -104,7 +104,7 @@ def test_create_pool_request_accept(
     Test the functionality of `SyftWorkerPoolService.create_pool_request`
     when the request is accepted
     """
-    # construct a root client and data scientist client for a domain
+    # construct a root client and data scientist client for a datasite
     root_client = worker.root_client
     ds_client = get_ds_client(faker, root_client, worker.guest_client)
     assert root_client.credentials != ds_client.credentials

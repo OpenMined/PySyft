@@ -19,7 +19,7 @@ def submit_subjobs_code(submit_user_code, ep_client) -> None:  # type: ignore
     # Usually, a DS would manually submit the code for subjobs,
     # but because we dont allow them to interact with the ephemeral node
     # that would not be possible
-    if "domain" in submit_user_code.input_kwargs:
+    if "datasite" in submit_user_code.input_kwargs:
         tree = ast.parse(inspect.getsource(submit_user_code.local_function))
         v = LaunchJobVisitor()
         v.visit(tree)

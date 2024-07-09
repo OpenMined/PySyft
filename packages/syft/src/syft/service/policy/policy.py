@@ -179,7 +179,7 @@ def partition_by_node(kwargs: dict[str, Any]) -> dict[NodeIdentity, dict[str, UI
                 continue
 
         if not _obj_exists:
-            raise Exception(f"Input data {k}:{uid} does not belong to any Domain")
+            raise Exception(f"Input data {k}:{uid} does not belong to any Datasite")
 
     return output_kwargs
 
@@ -583,7 +583,7 @@ def retrieve_from_db(
     root_context = AuthedServiceContext(
         node=context.node, credentials=context.node.verify_key
     )
-    if context.node.node_type == NodeType.DOMAIN:
+    if context.node.node_type == NodeType.DATASITE:
         for var_name, arg_id in allowed_inputs.items():
             kwarg_value = action_service._get(
                 context=root_context,
@@ -606,7 +606,7 @@ def allowed_ids_only(
     kwargs: dict[str, Any],
     context: AuthedServiceContext,
 ) -> dict[NodeIdentity, UID]:
-    if context.node.node_type == NodeType.DOMAIN:
+    if context.node.node_type == NodeType.DATASITE:
         node_identity = NodeIdentity(
             node_name=context.node.name,
             node_id=context.node.id,

@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 @serializable()
 class NodeType(str, Enum):
-    DOMAIN = "domain"
+    DATASITE = "datasite"
     NETWORK = "network"
     ENCLAVE = "enclave"
     GATEWAY = "gateway"

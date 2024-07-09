@@ -1,7 +1,7 @@
 # syft absolute
 from syft.abstract_node import NodeType
-from syft.node.domain import Domain
-from syft.node.domain import Node
+from syft.node.datasite import Datasite
+from syft.node.datasite import Node
 from syft.node.enclave import Enclave
 from syft.node.gateway import Gateway
 from syft.node.node import get_default_bucket_name
@@ -79,7 +79,7 @@ node_side_type = get_node_side_type()
 enable_warnings = get_enable_warnings()
 
 worker_classes = {
-    NodeType.DOMAIN: Domain,
+    NodeType.DATASITE: Datasite,
     NodeType.GATEWAY: Gateway,
     NodeType.ENCLAVE: Enclave,
 }

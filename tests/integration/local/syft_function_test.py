@@ -64,13 +64,13 @@ def test_nested_jobs(node):
     ## Main function
 
     @syft_function_single_use(x=x_ptr)
-    def process_all(domain, x):
+    def process_all(datasite, x):
         job_results = []
         for elem in x:
-            batch_job = domain.launch_job(process_batch, batch=elem)
+            batch_job = datasite.launch_job(process_batch, batch=elem)
             job_results += [batch_job.result]
 
-        job = domain.launch_job(aggregate_job, job_results=job_results)
+        job = datasite.launch_job(aggregate_job, job_results=job_results)
         return job.result
 
     assert process_all.worker_pool_name is None

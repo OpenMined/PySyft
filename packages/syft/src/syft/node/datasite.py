@@ -4,5 +4,5 @@ from .node import Node
 
 
 @serializable(without=["queue_manager"])
-class Domain(Node):
+class Datasite(Node):
     pass

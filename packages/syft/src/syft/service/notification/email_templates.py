@@ -113,7 +113,7 @@ class RequestEmailTemplate(EmailTemplate):
         notification.linked_obj = cast(LinkedObject, notification.linked_obj)
         request_obj = notification.linked_obj.resolve_with_context(context=context).ok()
 
-        return f"Domain {context.node.name}: A New Request ({str(request_obj.id)[:4]}) has been received!"
+        return f"Datasite {context.node.name}: A New Request ({str(request_obj.id)[:4]}) has been received!"
 
     @staticmethod
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
@@ -257,7 +257,7 @@ class RequestEmailTemplate(EmailTemplate):
 class RequestUpdateEmailTemplate(EmailTemplate):
     @staticmethod
     def email_title(notification: "Notification", context: AuthedServiceContext) -> str:
-        return f"Domain {context.node.name}: {notification.subject}"
+        return f"Datasite {context.node.name}: {notification.subject}"
 
     @staticmethod
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:

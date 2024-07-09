@@ -1,25 +1,25 @@
 <script lang="ts">
   import Avatar from "$lib/components/Avatar.svelte"
   import Badge from "$lib/components/Badge.svelte"
-  import DomainOnlineIndicator from "$lib/components/DomainOnlineIndicator.svelte"
+  import DatasiteOnlineIndicator from "$lib/components/DatasiteOnlineIndicator.svelte"
   import { getInitials } from "$lib/utils"
-  import type { DomainMetadata } from "../../../types/domain/metadata"
+  import type { DatasiteMetadata } from "../../../types/datasite/metadata"
 
-  export let metadata: DomainMetadata
+  export let metadata: DatasiteMetadata
 
-  $: domainInitials = getInitials(metadata?.name)
+  $: datasiteInitials = getInitials(metadata?.name)
 </script>
 
 <section
   class="flex flex-col w-full sm:w-[36%] sm:min-w-[544px] max-w-[784px] gap-4 py-11 px-8"
-  data-testid="domain-metadata-panel"
+  data-testid="datasite-metadata-panel"
 >
   {#if metadata}
     <div class="w-[97.5px] relative">
       <div class="absolute right-0">
-        <DomainOnlineIndicator />
+        <DatasiteOnlineIndicator />
       </div>
-      <Avatar bigText initials={domainInitials} />
+      <Avatar bigText initials={datasiteInitials} />
     </div>
     <h2>{metadata.name}</h2>
     {#if metadata.organization}

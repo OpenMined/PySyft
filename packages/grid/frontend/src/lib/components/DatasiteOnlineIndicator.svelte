@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { DomainOnlineStatus } from '../../types/domain/onlineIndicator';
-  let status: DomainOnlineStatus = 'online';
+  import type { DatasiteOnlineStatus } from '../../types/datasite/onlineIndicator';
+  let status: DatasiteOnlineStatus = 'online';
 </script>
 
 <div class="flex justify-center items-center gap-2">

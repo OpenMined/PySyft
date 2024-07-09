@@ -27,12 +27,12 @@ def gateway_port() -> int:
 
 
 @pytest.fixture
-def domain_1_port() -> int:
+def datasite_1_port() -> int:
     return 9082
 
 
 @pytest.fixture
-def domain_2_port() -> int:
+def datasite_2_port() -> int:
     return 9083
 
 

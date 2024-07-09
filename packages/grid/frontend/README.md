@@ -1,7 +1,7 @@
 # PyGrid UI
 
 The PyGrid UI is the user interface that allows data owners to manage their
-**deployed** PyGrid domains and networks.
+**deployed** PyGrid datasites and networks.
 
 ## Installation
 

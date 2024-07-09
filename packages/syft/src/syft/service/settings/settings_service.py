@@ -352,7 +352,7 @@ class SettingsService(AbstractService):
                 result = str_tmp.safe_substitute(
                     FONT_CSS=FONT_CSS,
                     grid_symbol=load_png_base64("small-grid-symbol-logo.png"),
-                    domain_name=context.node.name,
+                    datasite_name=context.node.name,
                     description=context.node.metadata.description,
                     # node_url='http://testing:8080',
                     node_type=context.node.metadata.node_type.capitalize(),

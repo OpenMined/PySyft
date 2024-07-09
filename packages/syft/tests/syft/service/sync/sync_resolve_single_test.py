@@ -6,7 +6,7 @@ import numpy as np
 # syft absolute
 import syft
 import syft as sy
-from syft.client.domain_client import DomainClient
+from syft.client.datasite_client import DatasiteClient
 from syft.client.sync_decision import SyncDecision
 from syft.client.syncing import compare_clients
 from syft.client.syncing import resolve
@@ -34,8 +34,8 @@ def handle_decision(
 
 def compare_and_resolve(
     *,
-    from_client: DomainClient,
-    to_client: DomainClient,
+    from_client: DatasiteClient,
+    to_client: DatasiteClient,
     decision: SyncDecision = SyncDecision.LOW,
     decision_callback: callable = None,
     share_private_data: bool = True,
@@ -90,7 +90,7 @@ def compute() -> int:
     return 42
 
 
-def get_ds_client(client: DomainClient) -> DomainClient:
+def get_ds_client(client: DatasiteClient) -> DatasiteClient:
     client.register(
         name="a",
         email="a@a.com",
@@ -101,9 +101,9 @@ def get_ds_client(client: DomainClient) -> DomainClient:
 
 
 def test_diff_state(low_worker, high_worker):
-    low_client: DomainClient = low_worker.root_client
+    low_client: DatasiteClient = low_worker.root_client
     client_low_ds = get_ds_client(low_client)
-    high_client: DomainClient = high_worker.root_client
+    high_client: DatasiteClient = high_worker.root_client
 
     @sy.syft_function_single_use()
     def compute() -> int:
@@ -136,9 +136,9 @@ def test_diff_state(low_worker, high_worker):
 
 
 def test_diff_state_with_dataset(low_worker, high_worker):
-    low_client: DomainClient = low_worker.root_client
+    low_client: DatasiteClient = low_worker.root_client
     client_low_ds = get_ds_client(low_client)
-    high_client: DomainClient = high_worker.root_client
+    high_client: DatasiteClient = high_worker.root_client
 
     _ = create_dataset(high_client)
     _ = create_dataset(low_client)
@@ -191,9 +191,9 @@ def test_diff_state_with_dataset(low_worker, high_worker):
 
 def test_sync_with_error(low_worker, high_worker):
     """Check syncing with an error in a syft function"""
-    low_client: DomainClient = low_worker.root_client
+    low_client: DatasiteClient = low_worker.root_client
     client_low_ds = get_ds_client(low_client)
-    high_client: DomainClient = high_worker.root_client
+    high_client: DatasiteClient = high_worker.root_client
 
     @sy.syft_function_single_use()
     def compute() -> int:
@@ -224,9 +224,9 @@ def test_sync_with_error(low_worker, high_worker):
 
 
 def test_ignore_unignore_single(low_worker, high_worker):
-    low_client: DomainClient = low_worker.root_client
+    low_client: DatasiteClient = low_worker.root_client
     client_low_ds = get_ds_client(low_client)
-    high_client: DomainClient = high_worker.root_client
+    high_client: DatasiteClient = high_worker.root_client
 
     @sy.syft_function_single_use()
     def compute() -> int:

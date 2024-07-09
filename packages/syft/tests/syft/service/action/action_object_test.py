@@ -32,9 +32,9 @@ def helper_make_action_obj(orig_obj: Any):
 
 
 def helper_make_action_pointers(worker, obj, *args, **kwargs):
-    root_domain_client = worker.root_client
-    res = obj.send(root_domain_client)
-    obj_pointer = root_domain_client.api.services.action.get_pointer(res.id)
+    root_datasite_client = worker.root_client
+    res = obj.send(root_datasite_client)
+    obj_pointer = root_datasite_client.api.services.action.get_pointer(res.id)
 
     # The args and kwargs should automatically be pointerized by obj_pointer
     return obj_pointer, args, kwargs
@@ -251,12 +251,12 @@ def test_actionobject_hooks_send_action_side_effect_err_invalid_args(worker):
     ],
 )
 def test_actionobject_hooks_send_action_side_effect_ignore_op(
-    root_domain_client, orig_obj_op
+    root_datasite_client, orig_obj_op
 ):
     orig_obj, op, args, kwargs = orig_obj_op
 
     obj = helper_make_action_obj(orig_obj)
-    obj = obj.send(root_domain_client)
+    obj = obj.send(root_datasite_client)
 
     context = PreHookContext(obj=obj, op_name=op)
     result = send_action_side_effect(context, *args, **kwargs)
@@ -503,8 +503,8 @@ def test_actionobject_syft_get_path(testcase):
     ],
 )
 def test_actionobject_syft_send_get(worker, testcase):
-    root_domain_client = worker.root_client
-    root_domain_client._fetch_api(root_domain_client.credentials)
+    root_datasite_client = worker.root_client
+    root_datasite_client._fetch_api(root_datasite_client.credentials)
     action_store = worker.get_service("actionservice").store
 
     orig_obj = testcase
@@ -512,7 +512,7 @@ def test_actionobject_syft_send_get(worker, testcase):
 
     assert len(action_store.data) == 0
 
-    ptr = obj.send(root_domain_client)
+    ptr = obj.send(root_datasite_client)
     assert len(action_store.data) == 1
     retrieved = ptr.get()
 

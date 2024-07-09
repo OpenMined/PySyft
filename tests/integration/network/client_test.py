@@ -3,15 +3,15 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.client.domain_client import DomainClient
+from syft.client.datasite_client import DatasiteClient
 from syft.client.gateway_client import GatewayClient
 
-DOMAIN_PORT = 9082
+DATASITE_PORT = 9082
 NETWORK_PORT = 9081
 
 
 @pytest.mark.parametrize(
-    "node_metadata", [(NETWORK_PORT, GatewayClient), (DOMAIN_PORT, DomainClient)]
+    "node_metadata", [(NETWORK_PORT, GatewayClient), (DATASITE_PORT, DatasiteClient)]
 )
 @pytest.mark.network
 def test_client_type(node_metadata):

@@ -117,16 +117,16 @@ dev:
           localPort: 3480
 
 profiles:
-  - name: domain-low
-    description: "Deploy a low-side domain"
+  - name: datasite-low
+    description: "Deploy a low-side datasite"
     patches:
       - op: add
         path: deployments.syft.helm.values.node
         value:
           side: low
 
-  - name: domain-tunnel
-    description: "Deploy a domain with tunneling enabled"
+  - name: datasite-tunnel
+    description: "Deploy a datasite with tunneling enabled"
     patches:
       # enable rathole image
       - op: add
@@ -143,7 +143,7 @@ profiles:
       # use rathole client-specific chart values
       - op: add
         path: deployments.syft.helm.valuesFiles
-        value: ./helm/examples/dev/domain.tunnel.yaml
+        value: ./helm/examples/dev/datasite.tunnel.yaml
 
   - name: gateway
     description: "Deploy a Gateway Node with tunnel enabled"
@@ -194,7 +194,7 @@ profiles:
         value: 2334:2333
 
   - name: gcp
-    description: "Deploy a high-side domain on GCP"
+    description: "Deploy a high-side datasite on GCP"
     patches:
       - op: replace
         path: deployments.syft.helm.valuesFiles
@@ -202,7 +202,7 @@ profiles:
           - ./helm/examples/gcp/gcp.high.yaml
 
   - name: gcp-low
-    description: "Deploy a low-side domain on GCP"
+    description: "Deploy a low-side datasite on GCP"
     patches:
       - op: replace
         path: deployments.syft.helm.valuesFiles
@@ -210,7 +210,7 @@ profiles:
           - ./helm/examples/gcp/gcp.low.yaml
 
   - name: azure
-    description: "Deploy a high-side domain on AKS"
+    description: "Deploy a high-side datasite on AKS"
     patches:
       - op: replace
         path: deployments.syft.helm.valuesFiles

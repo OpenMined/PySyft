@@ -26,7 +26,7 @@ from ..client.client import API_PATH
 from ..util.autoreload import enable_autoreload
 from ..util.constants import DEFAULT_TIMEOUT
 from ..util.util import os_name
-from .domain import Domain
+from .datasite import Datasite
 from .enclave import Enclave
 from .gateway import Gateway
 from .node import NodeType
@@ -42,7 +42,7 @@ WAIT_TIME_SECONDS = 20
 
 class AppSettings(BaseSettings):
     name: str
-    node_type: NodeType = NodeType.DOMAIN
+    node_type: NodeType = NodeType.DATASITE
     node_side_type: NodeSideType = NodeSideType.HIGH_SIDE
     processes: int = 1
     reset: bool = False
@@ -62,7 +62,7 @@ def app_factory() -> FastAPI:
     settings = AppSettings()
 
     worker_classes = {
-        NodeType.DOMAIN: Domain,
+        NodeType.DATASITE: Datasite,
         NodeType.GATEWAY: Gateway,
         NodeType.ENCLAVE: Enclave,
     }
@@ -162,7 +162,7 @@ def run_uvicorn(
 
 def serve_node(
     name: str,
-    node_type: NodeType = NodeType.DOMAIN,
+    node_type: NodeType = NodeType.DATASITE,
     node_side_type: NodeSideType = NodeSideType.HIGH_SIDE,
     host: str = "0.0.0.0",  # nosec
     port: int = 8080,

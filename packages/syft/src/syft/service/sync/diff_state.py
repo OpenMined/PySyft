@@ -651,10 +651,10 @@ class ObjectDiffBatch(SyftObject):
 
     def build(self, node_uid: UID, syft_client_verify_key: SyftVerifyKey):  # type: ignore
         # relative
-        from ...client.domain_client import DomainClient
+        from ...client.datasite_client import DatasiteClient
 
         api = APIRegistry.api_for(node_uid, syft_client_verify_key)
-        client = DomainClient(
+        client = DatasiteClient(
             api=api,
             connection=api.connection,  # type: ignore
             credentials=api.signing_key,  # type: ignore

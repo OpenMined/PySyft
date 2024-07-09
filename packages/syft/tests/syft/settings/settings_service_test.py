@@ -246,19 +246,19 @@ def test_settings_allow_guest_registration(
         return_value=mock_node_settings,
     ):
         worker = syft.Worker.named(name=faker.name(), reset=True)
-        guest_domain_client = worker.guest_client
-        root_domain_client = worker.root_client
+        guest_datasite_client = worker.guest_client
+        root_datasite_client = worker.root_client
 
         email1 = faker.email()
         email2 = faker.email()
 
-        response_1 = root_domain_client.register(
+        response_1 = root_datasite_client.register(
             email=email1, password="joker123", password_verify="joker123", name="Joker"
         )
         assert isinstance(response_1, SyftSuccess)
 
         # by default, the guest client can't register new user
-        response_2 = guest_domain_client.register(
+        response_2 = guest_datasite_client.register(
             email=email2,
             password="harley123",
             password_verify="harley123",
@@ -266,7 +266,7 @@ def test_settings_allow_guest_registration(
         )
         assert isinstance(response_2, SyftError)
 
-        assert any(user.email == email1 for user in root_domain_client.users)
+        assert any(user.email == email1 for user in root_datasite_client.users)
 
     # only after the root client enable other users to signup, they can
     mock_node_settings.signup_enabled = True
@@ -276,11 +276,11 @@ def test_settings_allow_guest_registration(
         return_value=mock_node_settings,
     ):
         worker = syft.Worker.named(name=faker.name(), reset=True)
-        guest_domain_client = worker.guest_client
-        root_domain_client = worker.root_client
+        guest_datasite_client = worker.guest_client
+        root_datasite_client = worker.root_client
 
         password = faker.email()
-        response_3 = guest_domain_client.register(
+        response_3 = guest_datasite_client.register(
             email=email2,
             password=password,
             password_verify=password,
@@ -288,7 +288,7 @@ def test_settings_allow_guest_registration(
         )
         assert isinstance(response_3, SyftSuccess)
 
-        assert any(user.email == email2 for user in root_domain_client.users)
+        assert any(user.email == email2 for user in root_datasite_client.users)
 
 
 def test_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker):

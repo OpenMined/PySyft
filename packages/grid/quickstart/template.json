@@ -8,11 +8,11 @@
     },
     "networkInterfaceName": {
       "type": "string",
-      "defaultValue": "domain-nic"
+      "defaultValue": "datasite-nic"
     },
     "networkSecurityGroupName": {
       "type": "string",
-      "defaultValue": "domain-nsg"
+      "defaultValue": "datasite-nsg"
     },
     "networkSecurityGroupRules": {
       "type": "array",
@@ -51,7 +51,7 @@
     },
     "virtualNetworkName": {
       "type": "string",
-      "defaultValue": "domain-vnet"
+      "defaultValue": "datasite-vnet"
     },
     "addressPrefixes": {
       "type": "array",
@@ -70,7 +70,7 @@
     },
     "publicIpAddressName": {
       "type": "string",
-      "defaultValue": "domain-ip"
+      "defaultValue": "datasite-ip"
     },
     "publicIpAddressType": {
       "type": "string",
@@ -82,11 +82,11 @@
     },
     "virtualMachineName": {
       "type": "string",
-      "defaultValue": "domain"
+      "defaultValue": "datasite"
     },
     "virtualMachineComputerName": {
       "type": "string",
-      "defaultValue": "domain"
+      "defaultValue": "datasite"
     },
     "osDiskType": {
       "type": "string",
@@ -140,7 +140,7 @@
         }
       },
       "tags": {
-        "node_type": "domain",
+        "node_type": "datasite",
         "os_version": "ubuntu2004",
         "version": "0.6.0",
         "build": "1"
@@ -155,7 +155,7 @@
         "securityRules": "[parameters('networkSecurityGroupRules')]"
       },
       "tags": {
-        "node_type": "domain",
+        "node_type": "datasite",
         "os_version": "ubuntu2004",
         "version": "0.6.0",
         "build": "1"
@@ -173,7 +173,7 @@
         "subnets": "[parameters('subnets')]"
       },
       "tags": {
-        "node_type": "domain",
+        "node_type": "datasite",
         "os_version": "ubuntu2004",
         "version": "0.6.0",
         "build": "1"
@@ -191,7 +191,7 @@
         "name": "[parameters('publicIpAddressSku')]"
       },
       "tags": {
-        "node_type": "domain",
+        "node_type": "datasite",
         "os_version": "ubuntu2004",
         "version": "0.6.0",
         "build": "1"
@@ -218,8 +218,8 @@
           },
           "imageReference": {
             "publisher": "madhavajay1632269232059",
-            "offer": "openmined_mj_grid_domain_ubuntu_1",
-            "sku": "domain_1",
+            "offer": "openmined_mj_grid_datasite_ubuntu_1",
+            "sku": "datasite_1",
             "version": "latest"
           }
         },
@@ -245,12 +245,12 @@
         }
       },
       "plan": {
-        "name": "domain_1",
+        "name": "datasite_1",
         "publisher": "madhavajay1632269232059",
-        "product": "openmined_mj_grid_domain_ubuntu_1"
+        "product": "openmined_mj_grid_datasite_ubuntu_1"
       },
       "tags": {
-        "node_type": "domain",
+        "node_type": "datasite",
         "os_version": "ubuntu2004",
         "version": "0.6.0",
         "build": "1"

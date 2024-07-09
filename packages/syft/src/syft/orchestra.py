@@ -20,7 +20,7 @@ from IPython.display import display
 from .abstract_node import NodeSideType
 from .abstract_node import NodeType
 from .client.client import login_as_guest as sy_login_as_guest
-from .node.domain import Domain
+from .node.datasite import Datasite
 from .node.enclave import Enclave
 from .node.gateway import Gateway
 from .node.server import serve_node
@@ -39,7 +39,7 @@ ClientAlias = Any  # we don't want to import Client in case it changes
 
 def get_node_type(node_type: str | NodeType | None) -> NodeType | None:
     if node_type is None:
-        node_type = os.environ.get("ORCHESTRA_NODE_TYPE", NodeType.DOMAIN)
+        node_type = os.environ.get("ORCHESTRA_NODE_TYPE", NodeType.DATASITE)
     try:
         return NodeType(node_type)
     except ValueError:
@@ -176,7 +176,7 @@ def deploy_to_python(
     debug: bool = False,
 ) -> NodeHandle:
     worker_classes = {
-        NodeType.DOMAIN: Domain,
+        NodeType.DATASITE: Datasite,
         NodeType.GATEWAY: Gateway,
         NodeType.ENCLAVE: Enclave,
     }

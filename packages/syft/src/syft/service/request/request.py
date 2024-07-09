@@ -698,7 +698,7 @@ class Request(SyncableSyftObject):
         msg = (
             "Approving request ",
             f"on change {self.code.service_func_name} " if is_code_request else "",
-            f"for domain {api.node_name}",
+            f"for datasite {api.node_name}",
         )
 
         print("".join(msg))
@@ -745,7 +745,7 @@ class Request(SyncableSyftObject):
                 message="This request is a low-side request. Please sync your results to approve."
             )
 
-        print(f"Approving request for domain {client.name}")
+        print(f"Approving request for datasite {client.name}")
         return client.api.services.request.apply(self.id)
 
     def apply(self, context: AuthedServiceContext) -> Result[SyftSuccess, SyftError]:

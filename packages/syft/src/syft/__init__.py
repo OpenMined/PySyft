@@ -14,9 +14,9 @@ from .client.client import connect
 from .client.client import login
 from .client.client import login_as_guest
 from .client.client import register
-from .client.domain_client import DomainClient
+from .client.datasite_client import DatasiteClient
 from .client.gateway_client import GatewayClient
-from .client.registry import DomainRegistry
+from .client.registry import DatasiteRegistry
 from .client.registry import EnclaveRegistry
 from .client.registry import NetworkRegistry
 from .client.search import Search
@@ -29,7 +29,7 @@ from .client.user_settings import settings
 from .custom_worker.config import DockerWorkerConfig
 from .custom_worker.config import PrebuiltWorkerConfig
 from .node.credentials import SyftSigningKey
-from .node.domain import Domain
+from .node.datasite import Datasite
 from .node.enclave import Enclave
 from .node.gateway import Gateway
 from .node.server import serve_node
@@ -130,8 +130,8 @@ def _enclaves() -> EnclaveRegistry:
 
 
 @module_property
-def _domains() -> DomainRegistry:
-    return DomainRegistry()
+def _datasites() -> DatasiteRegistry:
+    return DatasiteRegistry()
 
 
 @module_property
@@ -146,4 +146,4 @@ def hello_baby() -> None:
 
 
 def search(name: str) -> SearchResults:
-    return Search(_domains()).search(name=name)
+    return Search(_datasites()).search(name=name)

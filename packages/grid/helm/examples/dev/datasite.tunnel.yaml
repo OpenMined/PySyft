@@ -1,4 +1,4 @@
-# Values for deploying a domain with a reverse tunnel server in client-mode
+# Values for deploying a datasite with a reverse tunnel server in client-mode
 # Patched on top of patch `base.yaml`
 
 # Proxy is required for the tunnel to work

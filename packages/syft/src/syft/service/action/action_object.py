@@ -820,7 +820,7 @@ class ActionObject(SyncableSyftObject):
                     return None
                 else:
                     # In the case of gateway, we directly receive the actual object
-                    # TODO: The ideal solution would be to stream the object from the domain through the gateway
+                    # TODO: The ideal solution would be to stream the object from the datasite through the gateway
                     # Currently , we are just passing the object as it is, which would be fixed later.
                     self.syft_action_data_cache = blob_retrieval_object
                     self.syft_action_data_type = type(self.syft_action_data)

@@ -10,8 +10,8 @@ test_suite = [
     (None, None, "http://localhost:80"),
     ("http://0.0.0.0:8081", 8082, "http://0.0.0.0:8081"),
     ("0.0.0.0:8081", None, "http://0.0.0.0:8081"),
-    ("domainname.com", None, "http://domainname.com:80"),
-    ("https://domainname.com", None, "https://domainname.com:80"),
+    ("example.com", None, "http://example.com:80"),
+    ("https://example.com", None, "https://example.com:80"),
 ]
 
 

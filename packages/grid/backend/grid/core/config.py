@@ -99,11 +99,11 @@ class Settings(BaseSettings):
 
     NODE_NAME: str = "default_node_name"
     STREAM_QUEUE: bool = False
-    NODE_TYPE: str = "domain"
+    NODE_TYPE: str = "datasite"
 
     OPEN_REGISTRATION: bool = True
 
-    # DOMAIN_ASSOCIATION_REQUESTS_AUTOMATICALLY_ACCEPTED: bool = True
+    # DATASITE_ASSOCIATION_REQUESTS_AUTOMATICALLY_ACCEPTED: bool = True
     USE_BLOB_STORAGE: bool = (
         True if os.getenv("USE_BLOB_STORAGE", "false").lower() == "true" else False
     )
@@ -124,7 +124,7 @@ class Settings(BaseSettings):
     # STORE_DB_ID: int = int(os.getenv("STORE_DB_ID", 0))
     # LEDGER_DB_ID: int = int(os.getenv("LEDGER_DB_ID", 1))
     # NETWORK_CHECK_INTERVAL: int = int(os.getenv("NETWORK_CHECK_INTERVAL", 60))
-    # DOMAIN_CHECK_INTERVAL: int = int(os.getenv("DOMAIN_CHECK_INTERVAL", 60))
+    # DATASITE_CHECK_INTERVAL: int = int(os.getenv("DATASITE_CHECK_INTERVAL", 60))
     CONTAINER_HOST: str = str(os.getenv("CONTAINER_HOST", "docker"))
     MONGO_HOST: str = str(os.getenv("MONGO_HOST", ""))
     MONGO_PORT: int = int(os.getenv("MONGO_PORT", 27017))

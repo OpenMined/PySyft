@@ -38,7 +38,7 @@ def settings(worker, faker) -> NodeSettings:
         node_side_type=NodeSideType.LOW_SIDE,
         show_warnings=False,
         verify_key=SyftSigningKey.generate().verify_key,
-        node_type=NodeType.DOMAIN,
+        node_type=NodeType.DATASITE,
         association_request_auto_approval=False,
         default_worker_pool="default-pool",
     )
@@ -65,7 +65,7 @@ def metadata_json(faker) -> NodeMetadataJSON:
         syft_version=__version__,
         node_side_type=NodeSideType.LOW_SIDE.value,
         show_warnings=False,
-        node_type=NodeType.DOMAIN.value,
+        node_type=NodeType.DATASITE.value,
         min_size_blob_storage_mb=16,
     )
 

@@ -15,7 +15,7 @@ import pytest
 # syft absolute
 import syft as sy
 from syft.abstract_node import NodeSideType
-from syft.client.domain_client import DomainClient
+from syft.client.datasite_client import DatasiteClient
 from syft.node.worker import Worker
 from syft.protocol.data_protocol import get_data_protocol
 from syft.protocol.data_protocol import protocol_release_dir
@@ -158,7 +158,7 @@ def low_worker() -> Worker:
 
 
 @pytest.fixture
-def root_domain_client(worker) -> DomainClient:
+def root_datasite_client(worker) -> DatasiteClient:
     yield worker.root_client
 
 
@@ -168,7 +168,7 @@ def root_verify_key(worker):
 
 
 @pytest.fixture
-def guest_client(worker) -> DomainClient:
+def guest_client(worker) -> DatasiteClient:
     yield worker.guest_client
 
 
@@ -178,8 +178,8 @@ def guest_verify_key(worker):
 
 
 @pytest.fixture
-def guest_domain_client(root_domain_client) -> DomainClient:
-    yield root_domain_client.guest()
+def guest_datasite_client(root_datasite_client) -> DatasiteClient:
+    yield root_datasite_client.guest()
 
 
 @pytest.fixture

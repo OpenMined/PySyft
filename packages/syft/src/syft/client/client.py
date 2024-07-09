@@ -444,13 +444,13 @@ class HTTPConnection(NodeConnection):
         # when metadata are proxy forwarded in the grid routes
         # in the gateway fixes PR
         # relative
-        from .domain_client import DomainClient
+        from .datasite_client import DatasiteClient
         from .enclave_client import EnclaveClient
         from .gateway_client import GatewayClient
 
         metadata = self.get_node_metadata(credentials=SyftSigningKey.generate())
-        if metadata.node_type == NodeType.DOMAIN.value:
-            return DomainClient
+        if metadata.node_type == NodeType.DATASITE.value:
+            return DatasiteClient
         elif metadata.node_type == NodeType.GATEWAY.value:
             return GatewayClient
         elif metadata.node_type == NodeType.ENCLAVE.value:
@@ -577,13 +577,13 @@ class PythonConnection(NodeConnection):
 
     def get_client_type(self) -> type[SyftClient] | SyftError:
         # relative
-        from .domain_client import DomainClient
+        from .datasite_client import DatasiteClient
         from .enclave_client import EnclaveClient
         from .gateway_client import GatewayClient
 
         metadata = self.get_node_metadata(credentials=SyftSigningKey.generate())
-        if metadata.node_type == NodeType.DOMAIN.value:
-            return DomainClient
+        if metadata.node_type == NodeType.DATASITE.value:
+            return DatasiteClient
         elif metadata.node_type == NodeType.GATEWAY.value:
             return GatewayClient
         elif metadata.node_type == NodeType.ENCLAVE.value:

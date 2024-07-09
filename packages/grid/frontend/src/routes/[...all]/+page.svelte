@@ -1,6 +1,6 @@
 <script>
   import { onMount } from "svelte"
-  import DomainMetadataPanel from "$lib/components/authentication/DomainMetadataPanel.svelte"
+  import DatasiteMetadataPanel from "$lib/components/authentication/DatasiteMetadataPanel.svelte"
   import AuthCircles from "$lib/components/AuthCircles.svelte"
   import Nav from "$lib/components/authentication/Nav.svelte"
   import Footer from "$lib/components/authentication/Footer.svelte"
@@ -51,7 +51,7 @@
     <div
       class="flex flex-col xl:flex-row w-full h-full xl:justify-around items-center gap-12"
     >
-      <DomainMetadataPanel {metadata} />
+      <DatasiteMetadataPanel {metadata} />
     </div>
   </div>
   <Footer />

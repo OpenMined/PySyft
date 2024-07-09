@@ -431,8 +431,8 @@ class UserCodeService(AbstractService):
             return False
         code = code.ok()
 
-        # Skip the domain and context kwargs, they are passed by the backend
-        code_kwargs = set(code.signature.parameters.keys()) - {"domain", "context"}
+        # Skip the datasite and context kwargs, they are passed by the backend
+        code_kwargs = set(code.signature.parameters.keys()) - {"datasite", "context"}
 
         passed_kwarg_keys = set(passed_kwargs.keys())
         return passed_kwarg_keys == code_kwargs

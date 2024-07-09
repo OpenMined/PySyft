@@ -26,8 +26,8 @@ from .action_types import action_types
 #     __canonical_name__ = "NumpyArrayObjectPointer"
 #     __version__ = SYFT_OBJECT_VERSION_2
 
-#     def get_from(self, domain_client) -> Any:
-#         return domain_client.api.services.action.get(self.id).syft_action_data
+#     def get_from(self, datasite_client) -> Any:
+#         return datasite_client.api.services.action.get(self.id).syft_action_data
 
 
 class NumpyArrayObjectPointer(ActionObjectPointer):

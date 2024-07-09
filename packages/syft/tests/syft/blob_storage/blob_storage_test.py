@@ -9,7 +9,7 @@ import pytest
 # syft absolute
 import syft as sy
 from syft import ActionObject
-from syft.client.domain_client import DomainClient
+from syft.client.datasite_client import DatasiteClient
 from syft.service.blob_storage.util import can_upload_to_blob_storage
 from syft.service.blob_storage.util import min_size_for_blob_storage_upload
 from syft.service.context import AuthedServiceContext
@@ -111,7 +111,7 @@ def test_action_obj_send_save_to_blob_storage(worker):
     data_small: np.ndarray = np.array([1, 2, 3])
     action_obj = ActionObject.from_obj(data_small)
     assert action_obj.dtype == data_small.dtype
-    root_client: DomainClient = worker.root_client
+    root_client: DatasiteClient = worker.root_client
     action_obj.send(root_client)
     assert action_obj.syft_blob_storage_entry_id is None
 
@@ -136,7 +136,7 @@ def test_action_obj_send_save_to_blob_storage(worker):
 
 
 def test_upload_dataset_save_to_blob_storage(worker):
-    root_client: DomainClient = worker.root_client
+    root_client: DatasiteClient = worker.root_client
     root_authed_ctx = AuthedServiceContext(
         node=worker, credentials=root_client.verify_key
     )

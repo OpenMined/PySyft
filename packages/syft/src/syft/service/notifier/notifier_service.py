@@ -119,7 +119,7 @@ class NotifierService(AbstractService):
         if not (email_username and email_password):
             if not (notifier.email_username and notifier.email_password):
                 return SyftError(
-                    message="No valid token has been added to the domain."
+                    message="No valid token has been added to the datasite."
                     + "You can add a pair of SMTP credentials via "
                     + "<client>.settings.enable_notifications(email=<>, password=<>)"
                 )
@@ -200,7 +200,7 @@ class NotifierService(AbstractService):
     ) -> SyftSuccess | SyftError:
         """
         Activate email notifications for the authenticated user.
-        This will only work if the domain owner has enabled notifications.
+        This will only work if the datasite owner has enabled notifications.
         """
 
         user_service = context.node.get_service("userservice")
@@ -210,7 +210,7 @@ class NotifierService(AbstractService):
         self, context: AuthedServiceContext, notifier_type: NOTIFIERS = NOTIFIERS.EMAIL
     ) -> SyftSuccess | SyftError:
         """Deactivate email notifications for the authenticated user
-        This will only work if the domain owner has enabled notifications.
+        This will only work if the datasite owner has enabled notifications.
         """
 
         user_service = context.node.get_service("userservice")

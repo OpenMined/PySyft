@@ -545,7 +545,7 @@ class NetworkService(AbstractService):
                 else None
             )
 
-        # TODO: Handle the case when peer is deleted from domain node
+        # TODO: Handle the case when peer is deleted from datasite node
 
         result = self.stash.delete_by_uid(context.credentials, uid)
         if err := result.is_err():
