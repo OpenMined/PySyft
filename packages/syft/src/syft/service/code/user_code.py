@@ -432,7 +432,7 @@ class UserCode(SyncableSyftObject):
             return SyftError(
                 message=f"Can't access Syft API. You must login to {self.syft_node_location}"
             )
-        return api.services.user.get_by_verify_key(self.user_verify_key).unwrap()
+        return api.services.user.get_by_verify_key(self.user_verify_key)
 
     def _compute_status_l0(
         self, context: AuthedServiceContext | None = None

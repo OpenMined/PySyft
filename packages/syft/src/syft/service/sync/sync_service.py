@@ -185,6 +185,7 @@ class SyncService(AbstractService):
         path="sync.sync_items",
         name="sync_items",
         roles=ADMIN_ROLE_LEVEL,
+        unwrap_on_success=False
     )
     def sync_items(
         self,
@@ -339,7 +340,7 @@ class SyncService(AbstractService):
 
         for service_name in services_to_sync:
             service = context.node.get_service(service_name)
-            items = service.get_all(context).unwrap()
+            items = service.get_all(context)
             all_items.extend(items)
 
         # Gather jobs, logs, outputs and action objects
@@ -410,7 +411,7 @@ class SyncService(AbstractService):
 
         new_state.add_objects(objects, context)
 
-        return Ok(new_state)
+        return new_state
 
     @service_method(
         path="sync._get_state",

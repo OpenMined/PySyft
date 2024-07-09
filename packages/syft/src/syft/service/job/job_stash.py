@@ -318,9 +318,11 @@ class Job(SyncableSyftObject):
             kwargs={"uid": self.id},
             blocking=True,
         )
-        job: Job | None = api.make_call(call)
-        if job is None:
+        job_res: SyftSuccess | SyftError = api.make_call(call)
+        if job_res.is_err():
             return None
+        job = job_res.value
+
         self.resolved = job.resolved
         if job.resolved:
             self.result = job.result

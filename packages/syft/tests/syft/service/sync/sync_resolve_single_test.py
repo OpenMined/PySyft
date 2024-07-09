@@ -4,6 +4,7 @@
 import numpy as np
 
 # syft absolute
+import pytest
 import syft
 import syft as sy
 from syft.client.domain_client import DomainClient
@@ -15,6 +16,7 @@ from syft.service.request.request import RequestStatus
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.sync.resolve_widget import ResolveWidget
+from syft.types.errors import SyftException
 
 
 def handle_decision(
@@ -149,8 +151,8 @@ def test_diff_state_with_dataset(low_worker, high_worker):
 
     _ = client_low_ds.code.request_code_execution(compute_mean)
 
-    result = client_low_ds.code.compute_mean(blocking=False)
-    assert isinstance(result, SyftError), "DS cannot start a job on low side"
+    with pytest.raises(SyftException):
+        result = client_low_ds.code.compute_mean(blocking=False)
 
     diff_state_before, diff_state_after = compare_and_resolve(
         from_client=low_client, to_client=high_client
@@ -219,8 +221,8 @@ def test_sync_with_error(low_worker, high_worker):
     assert diff_state_after.is_same
 
     client_low_ds.refresh()
-    res = client_low_ds.code.compute(blocking=True)
-    assert isinstance(res.get(), SyftError)
+    with pytest.raises(SyftException):
+        res = client_low_ds.code.compute(blocking=True)
 
 
 def test_ignore_unignore_single(low_worker, high_worker):
@@ -307,8 +309,8 @@ def test_approve_request_on_sync_blocking(low_worker, high_worker):
     _ = client_low_ds.code.request_code_execution(compute)
 
     # No execute permissions
-    result_error = client_low_ds.code.compute(blocking=True)
-    assert isinstance(result_error, SyftError)
+    with pytest.raises(SyftException):
+        result_error = client_low_ds.code.compute(blocking=True)
     assert low_client.requests[0].status == RequestStatus.PENDING
 
     # Sync request to high side
@@ -350,8 +352,8 @@ def test_deny_and_sync(low_worker, high_worker):
     _ = client_low_ds.code.request_code_execution(compute)
 
     # No execute permissions
-    result_error = client_low_ds.code.compute(blocking=True)
-    assert isinstance(result_error, SyftError)
+    with pytest.raises(SyftException):
+        result_error = client_low_ds.code.compute(blocking=True)
     assert low_client.requests[0].status == RequestStatus.PENDING
 
     # Deny on low side

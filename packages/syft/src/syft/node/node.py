@@ -1496,7 +1496,7 @@ class Node(AbstractNode):
         result = log_service.add(context, log_id, queue_item.job_id)
         if isinstance(result, SyftError):
             return result
-        return job
+        return SyftSuccess(message="succesfully queued job", value=job)
 
     def _sort_jobs(self, jobs: list[Job]) -> list[Job]:
         job_datetimes = {}
@@ -1581,7 +1581,7 @@ class Node(AbstractNode):
             ):
                 existing_jobs = self._get_existing_user_code_jobs(context, user_code_id)
                 if isinstance(existing_jobs, SyftError):
-                    return existing_jobs
+                    return SyftSuccess(message="succesfully queued job", value=existing_jobs)
                 elif len(existing_jobs) > 0:
                     # Print warning if there are existing jobs for this user code
                     # relative
@@ -1590,7 +1590,7 @@ class Node(AbstractNode):
                     prompt_warning_message(
                         "There are existing jobs for this user code, returning the latest one"
                     )
-                    return existing_jobs[-1]
+                    return SyftSuccess(message="succesfully queued job", value=existing_jobs[-1])
                 else:
                     return SyftError(
                         message="Please wait for the admin to allow the execution of this code"

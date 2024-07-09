@@ -63,7 +63,7 @@ class LogService(AbstractService):
         path="log.get_stdout", name="get_stdout", roles=DATA_SCIENTIST_ROLE_LEVEL
     )
     def get_stdout(self, context: AuthedServiceContext, uid: UID) -> str:
-        result = self.get(context, uid).unwrap()
+        result = self.get(context, uid)
         return result.stdout
 
     @service_method(path="log.get_stderr", name="get_stderr", roles=ADMIN_ROLE_LEVEL)
