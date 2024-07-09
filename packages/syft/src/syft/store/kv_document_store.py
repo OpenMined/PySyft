@@ -495,11 +495,6 @@ class KeyValueStorePartition(StorePartition):
                 return Err(f"Failed to update obj {obj}, you have no permission")
 
         except Exception as e:
-            # third party
-            # stdlib
-            import traceback
-
-            print(traceback.format_exc())
             return Err(f"Failed to update obj {obj} with error: {e}")
 
     def _get_all_from_store(
@@ -704,10 +699,6 @@ class KeyValueStorePartition(StorePartition):
                 try:
                     migrated_value = value.migrate_to(to_klass.__version__, context)
                 except Exception:
-                    # stdlib
-                    import traceback
-
-                    print(traceback.format_exc())
                     return Err(
                         f"Failed to migrate data to {to_klass} for qk {to_klass.__version__}: {key}"
                     )
