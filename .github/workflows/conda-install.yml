@@ -9,12 +9,8 @@ on:
         description: "Run Version Tests Manually"
         required: false
 
-concurrency:
-  group: stack-${{ github.event_name == 'pull_request' && format('{0}-{1}', github.workflow, github.event.pull_request.number) || github.workflow_ref }}
-  cancel-in-progress: true
-
 jobs:
-  build:
+  constall-install-syft:
     strategy:
       max-parallel: 99
       matrix:
@@ -31,19 +27,31 @@ jobs:
           auto-update-conda: true
           activate-environment: syft_conda_env
           python-version: ${{ matrix.python-version }}
-          use-only-tar-bz2: true
-      - name: Conda info
-        shell: bash -el {0}
-        run: conda info
       - name: Install syft (Windows)
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
-          pip install ./packages/syft
-          echo "SYFT_VERSION=$(python -c 'import syft; print(syft.__version__)')" >> $GITHUB_ENV
+          python -m pip install ./packages/syft
+          EXPECTED_VERSION=$(python packages/grid/VERSION)
+          SYFT_VERSION=$(python -c 'import syft; print(syft.__version__)')
+          # Compare the versions
+          if [ "$EXPECTED_VERSION" != "$SYFT_VERSION" ]; then
+            echo "Expected version: $EXPECTED_VERSION"
+            echo "Actual version: $SYFT_VERSION"
+            echo "Version mismatch. Failing the CI job."
+            exit 1
+          fi
       - name: Install syft (MacOS or Linux)
         if: matrix.os != 'windows-latest'
         shell: bash -el {0}
         run: |
-          pip install ./packages/syft
-          echo "SYFT_VERSION=$(python -c 'import syft; print(syft.__version__)')" >> $GITHUB_ENV
+          python -m pip install ./packages/syft
+          EXPECTED_VERSION=$(python packages/grid/VERSION)
+          SYFT_VERSION=$(python -c 'import syft; print(syft.__version__)')
+          # Compare the versions
+          if [ "$EXPECTED_VERSION" != "$SYFT_VERSION" ]; then
+            echo "Expected version: $EXPECTED_VERSION"
+            echo "Actual version: $SYFT_VERSION"
+            echo "Version mismatch. Failing the CI job."
+            exit 1
+          fi
