@@ -5,7 +5,6 @@ from IPython.display import display
 # relative
 from ..serde.serializable import serializable
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftObject
 
 

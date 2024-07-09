@@ -31,7 +31,6 @@ from ...client.sync_decision import SyncDirection
 from ...node.credentials import SyftVerifyKey
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.syft_object import short_uid
 from ...types.syncable_object import SyncableSyftObject

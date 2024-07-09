@@ -1,5 +1,4 @@
 # stdlib
-from collections.abc import Callable
 from datetime import timedelta
 from typing import Any
 from typing import Optional
@@ -12,14 +11,9 @@ from ...abstract_node import NodeSideType
 from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
-from ...types.syft_migration import migrate
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
-from ...types.transforms import drop
-from ...types.transforms import make_set_default
 from ...types.uid import LineageID
 from ...types.uid import UID
 from ...util import options
@@ -118,6 +112,7 @@ def td_format(td_object: timedelta) -> str:
             strings.append(f"{period_value} {period_name}{has_s}")
 
     return ", ".join(strings)
+
 
 @serializable()
 class SyncState(SyftObject):

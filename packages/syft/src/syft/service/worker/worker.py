@@ -1,5 +1,4 @@
 # stdlib
-from collections.abc import Callable
 from typing import Any
 
 # relative
@@ -7,9 +6,7 @@ from ...serde.serializable import serializable
 from ...store.document_store import SYFT_OBJECT_VERSION_1
 from ...store.document_store import SyftObject
 from ...types.datetime import DateTime
-from ...types.syft_migration import migrate
-from ...types.transforms import drop
-from ...types.transforms import make_set_default
+
 
 @serializable()
 class DockerWorker(SyftObject):

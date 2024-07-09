@@ -32,7 +32,6 @@ from ...store.document_store import UIDPartitionKey
 from ...types.datetime import DateTime
 from ...types.datetime import format_timedelta
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import UID

@@ -15,7 +15,6 @@ from ...node.credentials import SyftVerifyKey
 from ...protocol.data_protocol import get_data_protocol
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import StorableObjectType
 from ...types.syft_object import SyftObject
 from ...types.transforms import convert_types
@@ -68,6 +67,7 @@ class NodeMetadata(SyftObject):
             server_version=self.syft_version,
             server_name=self.name,
         )
+
 
 @serializable()
 class NodeMetadataJSON(BaseModel, StorableObjectType):

@@ -1,5 +1,4 @@
 # stdlib
-from collections.abc import Callable
 from enum import Enum
 from typing import Any
 from typing import cast
@@ -14,13 +13,9 @@ from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
 from ...types.base import SyftBaseModel
 from ...types.datetime import DateTime
-from ...types.syft_migration import migrate
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.syft_object import short_uid
-from ...types.transforms import drop
-from ...types.transforms import make_set_default
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE

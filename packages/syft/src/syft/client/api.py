@@ -54,8 +54,6 @@ from ..service.warnings import WarningContext
 from ..types.cache_object import CachedSyftObject
 from ..types.identity import Identity
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftMigrationRegistry
 from ..types.syft_object import SyftObject

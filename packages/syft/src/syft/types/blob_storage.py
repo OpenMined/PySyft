@@ -37,8 +37,6 @@ from ..types.transforms import keep
 from ..types.transforms import transform
 from .datetime import DateTime
 from .syft_object import SYFT_OBJECT_VERSION_1
-from .syft_object import SYFT_OBJECT_VERSION_1
-from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftObject
 from .uid import UID
 

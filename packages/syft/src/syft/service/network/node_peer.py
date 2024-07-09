@@ -17,10 +17,7 @@ from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...service.response import SyftError
 from ...types.datetime import DateTime
-from ...types.syft_migration import migrate
 from ...types.syft_object import PartialSyftObject
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
@@ -30,7 +27,6 @@ from ..metadata.node_metadata import NodeMetadata
 from .routes import HTTPNodeRoute
 from .routes import NodeRoute
 from .routes import NodeRouteType
-from .routes import NodeRouteTypeV1
 from .routes import PythonNodeRoute
 from .routes import VeilidNodeRoute
 from .routes import connection_to_route
