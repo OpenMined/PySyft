@@ -188,13 +188,15 @@ class ActionService(AbstractService):
         if result.is_ok():
             if isinstance(action_object, TwinObject):
                 # give read permission to the mock
-                blob_id = action_object.mock_obj.syft_blob_storage_entry_id
-                permission = ActionObjectPermission(blob_id, ActionPermission.ALL_READ)
-                blob_storage_service: AbstractService = context.node.get_service(
-                    BlobStorageService
-                )
                 # if mock is saved to blob store, then add READ permission
                 if action_object.mock_obj.syft_action_saved_to_blob_store:
+                    blob_id = action_object.mock_obj.syft_blob_storage_entry_id
+                    permission = ActionObjectPermission(
+                        blob_id, ActionPermission.ALL_READ
+                    )
+                    blob_storage_service: AbstractService = context.node.get_service(
+                        BlobStorageService
+                    )
                     blob_storage_service.stash.add_permission(permission)
                 if has_result_read_permission:
                     action_object = action_object.private
@@ -572,8 +574,11 @@ class ActionService(AbstractService):
 
         def blob_permission(
             x: SyftVerifyKey | None = None,
-        ) -> ActionObjectPermission:
-            return ActionObjectPermission(result_blob_id, read_permission, x)
+        ) -> ActionObjectPermission | None:
+            if result_blob_id:
+                return ActionObjectPermission(result_blob_id, read_permission, x)
+            else:
+                return None
 
         if len(output_readers) > 0:
             store_permissions = [store_permission(x) for x in output_readers]

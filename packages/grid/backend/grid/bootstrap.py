@@ -101,11 +101,11 @@ def validate_private_key(private_key: str | bytes) -> str:
 def validate_uid(node_uid: str) -> str:
     try:
         uid = uuid.UUID(node_uid)
-        if node_uid == str(uid):
+        if node_uid == uid.hex or node_uid == str(uid):
             return str(uid)
     except Exception:
         pass
-    raise Exception(f"{NODE_PRIVATE_KEY} is invalid")
+    raise Exception(f"{NODE_UID} is invalid")
 
 
 def get_credential(
