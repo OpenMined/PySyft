@@ -17,8 +17,8 @@ from syft.service.action.action_object import ActionObject
 from syft.service.dataset.dataset import CreateAsset as Asset
 from syft.service.dataset.dataset import CreateDataset as Dataset
 from syft.service.dataset.dataset import _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE
+from syft.types.errors import SyftException
 from syft.service.response import SyftError
-from syft.service.response import SyftException
 from syft.service.response import SyftSuccess
 from syft.types.twin_object import TwinMode
 
@@ -127,10 +127,12 @@ def test_cannot_set_empty_mock_with_true_mock_is_real(
     asset = Asset(**asset_with_mock, mock_is_real=True)
     assert asset.mock_is_real
 
-    with pytest.raises(SyftException):
+    with pytest.raises(SyftException) as exc:
         asset.set_mock(empty_mock, mock_is_real=True)
 
     assert asset.mock is asset_with_mock["mock"]
+    assert exc.type == SyftException
+    assert exc.value.public_message
 
 
 def test_dataset_cannot_have_assets_with_none_mock() -> None:
@@ -232,12 +234,17 @@ def test_adding_contributors_with_duplicate_email():
     res1 = dataset.add_contributor(
         role=sy.roles.UPLOADER, name="Alice", email="alice@naboo.net"
     )
-    res2 = dataset.add_contributor(
-        role=sy.roles.UPLOADER, name="Alice Smith", email="alice@naboo.net"
-    )
 
     assert isinstance(res1, SyftSuccess)
-    assert isinstance(res2, SyftError)
+
+
+    with pytest.raises(SyftException) as exc:
+        dataset.add_contributor(
+            role=sy.roles.UPLOADER, name="Alice Smith", email="alice@naboo.net"
+        )
+    assert exc.type == SyftException
+    assert exc.value.public_message
+
     assert len(dataset.contributors) == 1
 
     # Assets
@@ -247,15 +254,19 @@ def test_adding_contributors_with_duplicate_email():
         role=sy.roles.UPLOADER, name="Bob", email="bob@naboo.net"
     )
 
-    res4 = asset.add_contributor(
-        role=sy.roles.UPLOADER, name="Bob Abraham", email="bob@naboo.net"
-    )
+    assert isinstance(res3, SyftSuccess)
+
+    with pytest.raises(SyftException) as exc:
+        asset.add_contributor(
+            role=sy.roles.UPLOADER, name="Bob Abraham", email="bob@naboo.net"
+        )
+
+    assert exc.type == SyftException
+    assert exc.value.public_message
+
     dataset.add_asset(asset)
 
-    assert isinstance(res3, SyftSuccess)
-    assert isinstance(res4, SyftError)
     assert len(asset.contributors) == 1
-
 
 @pytest.fixture(
     params=[
