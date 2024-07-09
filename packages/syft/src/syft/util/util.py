@@ -7,9 +7,13 @@ from collections.abc import Sequence
 from concurrent.futures import ProcessPoolExecutor
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
+from copy import deepcopy
+from datetime import datetime
 import functools
 import hashlib
 from itertools import repeat
+import json
+import logging
 import multiprocessing
 import multiprocessing as mp
 from multiprocessing import set_start_method
@@ -21,6 +25,7 @@ from pathlib import Path
 import platform
 import random
 import re
+import secrets
 from secrets import randbelow
 import socket
 import sys
@@ -35,13 +40,13 @@ from IPython.display import display
 from forbiddenfruit import curse
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+import nh3
 import requests
 
 # relative
-from .logger import critical
-from .logger import debug
-from .logger import error
-from .logger import traceback_and_raise
+from ..serde.serialize import _serialize as serialize
+
+logger = logging.getLogger(__name__)
 
 DATASETS_URL = "https://raw.githubusercontent.com/OpenMined/datasets/main"
 PANDAS_DATA = f"{DATASETS_URL}/pandas_cookbook"
@@ -57,9 +62,9 @@ def full_name_with_qualname(klass: type) -> str:
         if not hasattr(klass, "__module__"):
             return f"builtins.{get_qualname_for(klass)}"
         return f"{klass.__module__}.{get_qualname_for(klass)}"
-    except Exception:
+    except Exception as e:
         # try name as backup
-        print("Failed to get FQN for:", klass, type(klass))
+        logger.error(f"Failed to get FQN for: {klass} {type(klass)}", exc_info=e)
     return full_name_with_name(klass=klass)
 
 
@@ -70,7 +75,7 @@ def full_name_with_name(klass: type) -> str:
             return f"builtins.{get_name_for(klass)}"
         return f"{klass.__module__}.{get_name_for(klass)}"
     except Exception as e:
-        print("Failed to get FQN for:", klass, type(klass))
+        logger.error(f"Failed to get FQN for: {klass} {type(klass)}", exc_info=e)
         raise e
 
 
@@ -92,6 +97,10 @@ def get_mb_size(data: Any) -> float:
     return sys.getsizeof(data) / (1024 * 1024)
 
 
+def get_mb_serialized_size(data: Any) -> float:
+    return sys.getsizeof(serialize(data, to_bytes=True)) / (1024 * 1024)
+
+
 def extract_name(klass: type) -> str:
     name_regex = r".+class.+?([\w\._]+).+"
     regex2 = r"([\w\.]+)"
@@ -107,7 +116,7 @@ def extract_name(klass: type) -> str:
                 return fqn.split(".")[-1]
             return fqn
         except Exception as e:
-            print(f"Failed to get klass name {klass}")
+            logger.error(f"Failed to get klass name {klass}", exc_info=e)
             raise e
     else:
         raise ValueError(f"Failed to match regex for klass {klass}")
@@ -117,9 +126,7 @@ def validate_type(_object: object, _type: type, optional: bool = False) -> Any:
     if isinstance(_object, _type) or (optional and (_object is None)):
         return _object
 
-    traceback_and_raise(
-        f"Object {_object} should've been of type {_type}, not {_object}."
-    )
+    raise Exception(f"Object {_object} should've been of type {_type}, not {_object}.")
 
 
 def validate_field(_object: object, _field: str) -> Any:
@@ -128,7 +135,7 @@ def validate_field(_object: object, _field: str) -> Any:
     if object is not None:
         return object
 
-    traceback_and_raise(f"Object {_object} has no {_field} field set.")
+    raise Exception(f"Object {_object} has no {_field} field set.")
 
 
 def get_fully_qualified_name(obj: object) -> str:
@@ -150,7 +157,7 @@ def get_fully_qualified_name(obj: object) -> str:
     try:
         fqn += "." + obj.__class__.__name__
     except Exception as e:
-        error(f"Failed to get FQN: {e}")
+        logger.error(f"Failed to get FQN: {e}")
     return fqn
 
 
@@ -175,7 +182,7 @@ def key_emoji(key: object) -> str:
             hex_chars = bytes(key).hex()[-8:]
             return char_emoji(hex_chars=hex_chars)
     except Exception as e:
-        error(f"Fail to get key emoji: {e}")
+        logger.error(f"Fail to get key emoji: {e}")
         pass
     return "ALL"
 
@@ -332,7 +339,7 @@ def find_available_port(
             sock.close()
 
         except Exception as e:
-            print(f"Failed to check port {port}. {e}")
+            logger.error(f"Failed to check port {port}. {e}")
     sock.close()
 
     if search is False and port_available is False:
@@ -446,7 +453,7 @@ def obj2pointer_type(obj: object | None = None, fqn: str | None = None) -> type:
         except Exception as e:
             # sometimes the object doesn't have a __module__ so you need to use the type
             # like: collections.OrderedDict
-            debug(
+            logger.debug(
                 f"Unable to get get_fully_qualified_name of {type(obj)} trying type. {e}"
             )
             fqn = get_fully_qualified_name(obj=type(obj))
@@ -457,10 +464,8 @@ def obj2pointer_type(obj: object | None = None, fqn: str | None = None) -> type:
 
     try:
         ref = get_loaded_syft().lib_ast.query(fqn, obj_type=type(obj))
-    except Exception as e:
-        log = f"Cannot find {type(obj)} {fqn} in lib_ast. {e}"
-        critical(log)
-        raise Exception(log)
+    except Exception:
+        raise Exception(f"Cannot find {type(obj)} {fqn} in lib_ast.")
 
     return ref.pointer_type
 
@@ -919,3 +924,75 @@ def get_queue_address(port: int) -> str:
 
 def get_dev_mode() -> bool:
     return str_to_bool(os.getenv("DEV_MODE", "False"))
+
+
+def generate_token() -> str:
+    return secrets.token_hex(64)
+
+
+def sanitize_html(html: str) -> str:
+    policy = {
+        "tags": ["svg", "strong", "rect", "path", "circle"],
+        "attributes": {
+            "*": {"class", "style"},
+            "svg": {
+                "class",
+                "style",
+                "xmlns",
+                "width",
+                "height",
+                "viewBox",
+                "fill",
+                "stroke",
+                "stroke-width",
+            },
+            "path": {"d", "fill", "stroke", "stroke-width"},
+            "rect": {"x", "y", "width", "height", "fill", "stroke", "stroke-width"},
+            "circle": {"cx", "cy", "r", "fill", "stroke", "stroke-width"},
+        },
+        "remove": {"script", "style"},
+    }
+
+    tags = nh3.ALLOWED_TAGS
+    for tag in policy["tags"]:
+        tags.add(tag)
+
+    _attributes = deepcopy(nh3.ALLOWED_ATTRIBUTES)
+    attributes = {**_attributes, **policy["attributes"]}  # type: ignore
+
+    return nh3.clean(
+        html,
+        tags=tags,
+        clean_content_tags=policy["remove"],
+        attributes=attributes,
+    )
+
+
+def parse_iso8601_date(date_string: str) -> datetime:
+    # Handle variable length of microseconds by trimming to 6 digits
+    if "." in date_string:
+        base_date, microseconds = date_string.split(".")
+        microseconds = microseconds.rstrip("Z")  # Remove trailing 'Z'
+        microseconds = microseconds[:6]  # Trim to 6 digits
+        date_string = f"{base_date}.{microseconds}Z"
+    return datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%S.%fZ")
+
+
+def get_latest_tag(registry: str, repo: str) -> str | None:
+    repo_url = f"http://{registry}/v2/{repo}"
+    res = requests.get(url=f"{repo_url}/tags/list", timeout=5)
+    tags = res.json().get("tags", [])
+
+    tag_times = []
+    for tag in tags:
+        manifest_response = requests.get(f"{repo_url}/manifests/{tag}", timeout=5)
+        manifest = manifest_response.json()
+        created_time = json.loads(manifest["history"][0]["v1Compatibility"])["created"]
+        created_datetime = parse_iso8601_date(created_time)
+        tag_times.append((tag, created_datetime))
+
+    # sort tags by datetime
+    tag_times.sort(key=lambda x: x[1], reverse=True)
+    if len(tag_times) > 0:
+        return tag_times[0][0]
+    return None

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+import logging
 from typing import Any
 from typing import ClassVar
 
@@ -11,14 +12,19 @@ from pydantic import model_validator
 from typing_extensions import Self
 
 # relative
+from ..client.client import SyftClient
 from ..serde.serializable import serializable
 from ..service.action.action_object import ActionObject
 from ..service.action.action_object import TwinMode
 from ..service.action.action_types import action_types
 from ..service.response import SyftError
+from ..service.response import SyftSuccess
+from ..service.response import SyftWarning
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from .syft_object import SyftObject
 from .uid import UID
+
+logger = logging.getLogger(__name__)
 
 
 def to_action_object(obj: Any) -> ActionObject:
@@ -81,15 +87,30 @@ class TwinObject(SyftObject):
         mock.id = twin_id
         return mock
 
-    def _save_to_blob_storage(self) -> SyftError | None:
+    def _save_to_blob_storage(
+        self, allow_empty: bool = False
+    ) -> SyftError | SyftSuccess | SyftWarning:
         # Set node location and verify key
         self.private_obj._set_obj_location_(
             self.syft_node_location,
             self.syft_client_verify_key,
         )
-        # self.mock_obj._set_obj_location_(
-        #     self.syft_node_location,
-        #     self.syft_client_verify_key,
-        # )
-        return self.private_obj._save_to_blob_storage()
-        # self.mock_obj._save_to_blob_storage()
+        self.mock_obj._set_obj_location_(
+            self.syft_node_location,
+            self.syft_client_verify_key,
+        )
+        mock_store_res = self.mock_obj._save_to_blob_storage(allow_empty=allow_empty)
+        if isinstance(mock_store_res, SyftError):
+            return mock_store_res
+        return self.private_obj._save_to_blob_storage(allow_empty=allow_empty)
+
+    def send(self, client: SyftClient, add_storage_permission: bool = True) -> Any:
+        self._set_obj_location_(client.id, client.verify_key)
+        blob_store_result = self._save_to_blob_storage()
+        if isinstance(blob_store_result, SyftWarning):
+            logger.debug(blob_store_result.message)
+        res = client.api.services.action.set(
+            self,
+            add_storage_permission=add_storage_permission,
+        )
+        return res

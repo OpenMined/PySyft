@@ -4,6 +4,7 @@ from collections.abc import Callable
 import inspect
 from inspect import Signature
 import keyword
+import linecache
 import re
 import textwrap
 from typing import Any
@@ -19,6 +20,7 @@ from result import Result
 
 # relative
 from ...abstract_node import AbstractNode
+from ...client.client import SyftClient
 from ...serde.serializable import serializable
 from ...serde.signature import signature_remove_context
 from ...types.syft_object import PartialSyftObject
@@ -35,6 +37,7 @@ from ...util.misc_objs import MarkdownDescription
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..user.user import UserView
+from ..user.user_service import UserService
 
 NOT_ACCESSIBLE_STRING = "N / A"
 
@@ -54,6 +57,8 @@ class TwinAPIAuthedContext(AuthedServiceContext):
     settings: dict[str, Any] | None = None
     code: HelperFunctionSet | None = None
     state: dict[Any, Any] | None = None
+    admin_client: SyftClient | None = None
+    user_client: SyftClient | None = None
 
 
 @serializable()
@@ -71,6 +76,15 @@ def get_signature(func: Callable) -> Signature:
     sig = inspect.signature(func)
     sig = signature_remove_context(sig)
     return sig
+
+
+def register_fn_in_linecache(fname: str, src: str) -> None:
+    """adds a function to linecache, such that inspect.getsource works for functions nested in this function.
+    This only works if the same function is compiled under the same filename"""
+    lines = [
+        line + "\n" for line in src.splitlines()
+    ]  # use same splitting method same as linecache 112 (py3.12)
+    linecache.cache[fname] = (137, None, lines, fname)
 
 
 @serializable()
@@ -191,7 +205,10 @@ class Endpoint(SyftObject):
         self.state = state
 
     def build_internal_context(
-        self, context: AuthedServiceContext
+        self,
+        context: AuthedServiceContext,
+        admin_client: SyftClient | None = None,
+        user_client: SyftClient | None = None,
     ) -> TwinAPIAuthedContext:
         helper_function_dict: dict[str, Callable] = {}
         self.helper_functions = self.helper_functions or {}
@@ -220,6 +237,8 @@ class Endpoint(SyftObject):
             code=helper_function_set,
             state=self.state or {},
             user=user,
+            admin_client=admin_client,
+            user_client=user_client,
         )
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
@@ -243,7 +262,7 @@ class Endpoint(SyftObject):
         # load it
         exec(raw_byte_code)  # nosec
 
-        internal_context = self.build_internal_context(context)
+        internal_context = self.build_internal_context(context=context)
 
         # execute it
         evil_string = f"{self.func_name}(*args, **kwargs,context=internal_context)"
@@ -365,6 +384,10 @@ class TwinAPIEndpoint(SyncableSyftObject):
     # version
     __canonical_name__: str = "TwinAPIEndpoint"
     __version__ = SYFT_OBJECT_VERSION_1
+    __exclude_sync_diff_attrs__ = ["private_function"]
+    __private_sync_attr_mocks__ = {
+        "private_function": None,
+    }
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
@@ -377,10 +400,6 @@ class TwinAPIEndpoint(SyncableSyftObject):
     action_object_id: UID
     worker_pool: str | None = None
     endpoint_timeout: int = 60
-
-    __private_sync_attr_mocks__ = {
-        "private_function": None,
-    }
 
     __attr_searchable__ = ["path"]
     __attr_unique__ = ["path"]
@@ -465,6 +484,25 @@ class TwinAPIEndpoint(SyncableSyftObject):
 
         return SyftError(message="You're not allowed to run this code.")
 
+    def get_user_client_from_node(self, context: AuthedServiceContext) -> SyftClient:
+        # get a user client
+        guest_client = context.node.get_guest_client()
+        user_client = guest_client
+        signing_key_for_verify_key = context.node.get_service_method(
+            UserService.signing_key_for_verify_key
+        )
+        private_key = signing_key_for_verify_key(
+            context=context, verify_key=context.credentials
+        )
+        signing_key = private_key.signing_key
+        user_client.credentials = signing_key
+        return user_client
+
+    def get_admin_client_from_node(self, context: AuthedServiceContext) -> SyftClient:
+        admin_client = context.node.get_guest_client()
+        admin_client.credentials = context.node.signing_key
+        return admin_client
+
     def exec_code(
         self,
         code: PrivateAPIEndpoint | PublicAPIEndpoint,
@@ -476,12 +514,18 @@ class TwinAPIEndpoint(SyncableSyftObject):
             inner_function = ast.parse(code.api_code).body[0]
             inner_function.decorator_list = []
             # compile the function
-            raw_byte_code = compile(ast.unparse(inner_function), "<string>", "exec")
+            src = ast.unparse(inner_function)
+            raw_byte_code = compile(src, code.func_name, "exec")
+            register_fn_in_linecache(code.func_name, src)
+            user_client = self.get_user_client_from_node(context)
+            admin_client = self.get_admin_client_from_node(context)
 
             # load it
             exec(raw_byte_code)  # nosec
 
-            internal_context = code.build_internal_context(context)
+            internal_context = code.build_internal_context(
+                context=context, admin_client=admin_client, user_client=user_client
+            )
 
             # execute it
             evil_string = f"{code.func_name}(*args, **kwargs,context=internal_context)"
@@ -507,7 +551,8 @@ class TwinAPIEndpoint(SyncableSyftObject):
             return result
         except Exception as e:
             # If it's admin, return the error message.
-            if context.role.value == 128:
+            # TODO: cleanup typeerrors
+            if context.role.value == 128 or isinstance(e, TypeError):
                 return SyftError(
                     message=f"An error was raised during the execution of the API endpoint call: \n {str(e)}"
                 )
@@ -610,6 +655,7 @@ def endpoint_to_private_endpoint() -> list[Callable]:
                 "api_code",
                 "func_name",
                 "settings",
+                "view_access",
                 "helper_functions",
                 "state",
                 "signature",
@@ -703,6 +749,8 @@ def create_new_api_endpoint(
     description: MarkdownDescription | None = None,
     worker_pool: str | None = None,
     endpoint_timeout: int = 60,
+    hide_mock_definition: bool = False,
+    hide_private_definition: bool = True,
 ) -> CreateTwinAPIEndpoint | SyftError:
     try:
         # Parse the string to extract the function name
@@ -712,7 +760,8 @@ def create_new_api_endpoint(
             if private_function.signature != mock_function.signature:
                 return SyftError(message="Signatures don't match")
             endpoint_signature = mock_function.signature
-            private_function.view_access = False
+            private_function.view_access = not hide_private_definition
+            mock_function.view_access = not hide_mock_definition
 
             return CreateTwinAPIEndpoint(
                 path=path,

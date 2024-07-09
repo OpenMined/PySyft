@@ -423,3 +423,21 @@ def test_user_view_set_role_admin(faker: Faker) -> None:
 
     node.python_node.cleanup()
     node.land()
+
+
+@pytest.mark.parametrize(
+    "search_param",
+    [
+        ("email", "logged_in_user"),
+        ("name", "logged_in_username"),
+    ],
+)
+def test_user_search(
+    root_client: DomainClient, ds_client: DomainClient, search_param: tuple[str, str]
+) -> None:
+    k, attr = search_param
+    v = getattr(ds_client, attr)
+    users = root_client.api.services.user.search(**{k: v})
+
+    for user in users:
+        assert getattr(user, k) == v

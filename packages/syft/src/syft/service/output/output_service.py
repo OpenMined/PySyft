@@ -23,6 +23,7 @@ from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_object import ActionObject
+from ..action.action_permissions import ActionObjectREAD
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..service import AbstractService
@@ -298,6 +299,40 @@ class OutputService(AbstractService):
         return SyftError(message=result.err())
 
     @service_method(
+        path="output.has_output_read_permissions",
+        name="has_output_read_permissions",
+        roles=GUEST_ROLE_LEVEL,
+    )
+    def has_output_read_permissions(
+        self,
+        context: AuthedServiceContext,
+        user_code_id: UID,
+        user_verify_key: SyftVerifyKey,
+    ) -> bool | SyftError:
+        action_service = context.node.get_service("actionservice")
+        all_outputs = self.get_by_user_code_id(context, user_code_id)
+        if isinstance(all_outputs, SyftError):
+            return all_outputs
+        for output in all_outputs:
+            # TODO tech debt: unclear why code owner can see outputhistory without permissions.
+            # It is not a security issue (output history has no data) it is confusing for user
+            # if not self.stash.has_permission(
+            #     ActionObjectREAD(uid=output.id, credentials=user_verify_key)
+            # ):
+            #     continue
+
+            # Check if all output ActionObjects have permissions
+            result_ids = output.output_id_list
+            permissions = [
+                ActionObjectREAD(uid=_id.id, credentials=user_verify_key)
+                for _id in result_ids
+            ]
+            if action_service.store.has_permissions(permissions):
+                return True
+
+        return False
+
+    @service_method(
         path="output.get_by_job_id",
         name="get_by_job_id",
         roles=ADMIN_ROLE_LEVEL,
@@ -325,6 +360,19 @@ class OutputService(AbstractService):
             credentials=context.node.verify_key,  # type: ignore
             output_policy_id=output_policy_id,  # type: ignore
         )
+        if result.is_ok():
+            return result.ok()
+        return SyftError(message=result.err())
+
+    @service_method(
+        path="output.get",
+        name="get",
+        roles=GUEST_ROLE_LEVEL,
+    )
+    def get(
+        self, context: AuthedServiceContext, id: UID
+    ) -> ExecutionOutput | SyftError:
+        result = self.stash.get_by_uid(context.credentials, id)
         if result.is_ok():
             return result.ok()
         return SyftError(message=result.err())

@@ -16,7 +16,7 @@
       "NodeMetadata": {
         "5": {
           "version": 5,
-          "hash": "70197b4725dbdea0560ed8388e4d20b76808bee988f3630c5f916ee8f48761f8",
+          "hash": "f3927d167073a4db369a07e3bbbf756075bbb29e9addec324b8cd2c3597b75a1",
           "action": "add"
         }
       },
@@ -203,6 +203,11 @@
           "version": 2,
           "hash": "925f1b8ccd4b9d542700a111f9c4bdd28bfa55978d805ddb2fb3c108cc940d19",
           "action": "add"
+        },
+        "3": {
+          "version": 3,
+          "hash": "1b5fd28919cb496f8073a64a57736d477ace1ed969962b1b049cecf766f2661c",
+          "action": "add"
         }
       },
       "NodePeer": {
@@ -258,6 +263,241 @@
         "1": {
           "version": 1,
           "hash": "9e7cd39f6a9f90e8c595452865525e0989df1688236acfd1a665ed047ba47de9",
+          "action": "add"
+        }
+      },
+      "JobInfo": {
+        "2": {
+          "version": 2,
+          "hash": "89dbd4a810586b49498be1f5299b565a19871487e14a120433b0a4cf607b6dee",
+          "action": "remove"
+        }
+      },
+      "HTTPConnection": {
+        "2": {
+          "version": 2,
+          "hash": "68409295f8916ceb22a8cf4abf89f5e4bcff0d75dc37e16ede37250ada28df59",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "b61b30d10e2d25726c708ef34b69c7b730d41b16b315e7062f3d487e943143d5",
+          "action": "add"
+        }
+      },
+      "UserCode": {
+        "5": {
+          "version": 5,
+          "hash": "c2409f51bf920cce557d288c40b6964ec4df3d8c23e33c5d5668addc30368632",
+          "action": "add"
+        }
+      },
+      "SyncedUserCodeStatusChange": {
+        "3": {
+          "version": 3,
+          "hash": "9b8ab2d513d84006bdd1329cd0bb636e7e62100a6227d8b772a5bf7c0c45b72f",
+          "action": "add"
+        }
+      },
+      "PolicyRule": {
+        "1": {
+          "version": 1,
+          "hash": "31a982b94654ce27ad27a6622c6fa26dfe3f759a7824ac21d104390f10a5aa82",
+          "action": "add"
+        }
+      },
+      "CreatePolicyRule": {
+        "1": {
+          "version": 1,
+          "hash": "9b82e36c63e10c5b7b76b3b8ec1da1d2dfdce39f2cce98603a418ec221621874",
+          "action": "add"
+        }
+      },
+      "CreatePolicyRuleConstant": {
+        "1": {
+          "version": 1,
+          "hash": "9e821ddd383b6472f95dad2b56ebaefad225ff49c96b89b4ce35dc99c422ba76",
+          "action": "add"
+        }
+      },
+      "Matches": {
+        "1": {
+          "version": 1,
+          "hash": "d1e875a6332a481458e83db364dfdf92bd34a87093d9762dfe8e136e5088bc4e",
+          "action": "add"
+        }
+      },
+      "PreFill": {
+        "1": {
+          "version": 1,
+          "hash": "22c38b8ad68409493810362e6c48822d3e2919760f26eba2d1de3f2ad394e314",
+          "action": "add"
+        }
+      },
+      "UserOwned": {
+        "1": {
+          "version": 1,
+          "hash": "b5cbb44d742fa51b9adf2a48bb56d9ff5ca82a25f8568a2505961bd906d9d084",
+          "action": "add"
+        }
+      },
+      "MixedInputPolicy": {
+        "1": {
+          "version": 1,
+          "hash": "0e84e4c91e378717e1a4703574b07e3b1e6a3e5707401b4e0cc8d30088a506b9",
+          "action": "add"
+        }
+      },
+      "Request": {
+        "3": {
+          "version": 3,
+          "hash": "ba9ebb04cc3e8b3ae3302fd42a67e47261a0a330bae5f189d8f4819cf2804711",
+          "action": "add"
+        }
+      },
+      "SubmitUserCode": {
+        "5": {
+          "version": 5,
+          "hash": "3135727b8f0ca7689d47c04e45a2bd6a7693f17c043f76fd2243135196c27232",
+          "action": "add"
+        }
+      },
+      "CodeHistory": {
+        "3": {
+          "version": 3,
+          "hash": "1b9bd1d3d096abab5617c2ff597b4c80751f686d16482a2cff4efd8741b84d53",
+          "action": "add"
+        }
+      },
+      "PythonConnection": {
+        "2": {
+          "version": 2,
+          "hash": "eb479c671fc112b2acbedb88bc5624dfdc9592856c04c22c66410f6c863e1708",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "1084c85a59c0436592530b5fe9afc2394088c8d16faef2b19fdb9fb83ff0f0e2",
+          "action": "add"
+        }
+      },
+      "HTTPNodeRoute": {
+        "2": {
+          "version": 2,
+          "hash": "2134ea812f7c6ea41522727ae087245c4b1195ffbad554db638070861cd9eb1c",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "d26cb313e92b1fbe36995c8ed4103a9168ea6e589b2803ed9a91c23f14bf0c96",
+          "action": "add"
+        }
+      },
+      "PythonNodeRoute": {
+        "2": {
+          "version": 2,
+          "hash": "3eca5767ae4a8fbe67744509e58c6d9fb78f38fa0a0f7fcf5960ab4250acc1f0",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "1bc413ec7c1d498ec945878e21e00affd9bd6d53b564b1e10e52feb09f177d04",
+          "action": "add"
+        }
+      },
+      "SeaweedFSBlobDeposit": {
+        "3": {
+          "version": 3,
+          "hash": "05e61e6328b085b738e5d41c0781d87852d44d218894cb3008f5be46e337f6d8",
+          "action": "remove"
+        },
+        "4": {
+          "version": 4,
+          "hash": "f475543ed5e0066ca09c0dfd8c903e276d4974519e9958473d8141f8d446c881",
+          "action": "add"
+        }
+      },
+      "SyftWorker": {
+        "3": {
+          "version": 3,
+          "hash": "e124f56ddf4565df2be056553eecd15de7c80bd5f5fd0d06e8ff7815bb05563a",
+          "action": "add"
+        }
+      },
+      "EmptyInputPolicy": {
+        "2": {
+          "version": 2,
+          "hash": "3117e16cbe4dbc344ab90fbbd36ba90dfb518e66f0fb07644bbe7864dcdeb309",
+          "action": "add"
+        }
+      },
+      "ActionObject": {
+        "4": {
+          "version": 4,
+          "hash": "a4dd2949af0f516d0f640d28e0fdfa026ba8d55bb29eaa7844c926e467606892",
+          "action": "add"
+        }
+      },
+      "AnyActionObject": {
+        "4": {
+          "version": 4,
+          "hash": "809bd7ffab211133a9be87e058facecf870a79cb2d4027616f5244323de27091",
+          "action": "add"
+        }
+      },
+      "BlobFileOBject": {
+        "3": {
+          "version": 3,
+          "hash": "27901fcd545ad0607dbfcbfa0141ee03b0f0f4bee8d23f2d661a4b22011bfd37",
+          "action": "add"
+        }
+      },
+      "NumpyArrayObject": {
+        "4": {
+          "version": 4,
+          "hash": "19e2ff3da78038d2164f86d1f9b0d1facc6008483be60d2852458e90202bb96b",
+          "action": "add"
+        }
+      },
+      "NumpyScalarObject": {
+        "4": {
+          "version": 4,
+          "hash": "5101d00dd92ac4391cae77629eb48aa25401cc8c5ebb28a8a969cd5eba35fb67",
+          "action": "add"
+        }
+      },
+      "NumpyBoolObject": {
+        "4": {
+          "version": 4,
+          "hash": "764cd93792c4dfe27b8952fde853626592fe58e1a341b5350b23f38ce474583f",
+          "action": "add"
+        }
+      },
+      "PandasDataframeObject": {
+        "4": {
+          "version": 4,
+          "hash": "b70f4bb32ba9f3f5ea89552649bf882d927cf9085fb573cc6d4841b32d653f84",
+          "action": "add"
+        }
+      },
+      "PandasSeriesObject": {
+        "4": {
+          "version": 4,
+          "hash": "6b0eb1f4dd80b729b713953bacaf9c0ea436a4d4eeb2dc0efbd8bff654d91f86",
+          "action": "add"
+        }
+      },
+      "Dataset": {
+        "3": {
+          "version": 3,
+          "hash": "12a24de2ec144fe54eb873767131abed362827e08cd47a5c4d128acee2f2db91",
+          "action": "add"
+        }
+      },
+      "CreateDataset": {
+        "3": {
+          "version": 3,
+          "hash": "c96a925ab43440b9c39ab5eb28d7fc4a4c8bf7934474b7c432dc7b12067c7766",
           "action": "add"
         }
       },

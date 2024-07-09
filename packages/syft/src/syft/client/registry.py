@@ -4,6 +4,7 @@ from __future__ import annotations
 # stdlib
 from concurrent import futures
 import json
+import logging
 import os
 from typing import Any
 
@@ -18,10 +19,9 @@ from ..service.network.node_peer import NodePeerConnectionStatus
 from ..service.response import SyftException
 from ..types.grid_url import GridURL
 from ..util.constants import DEFAULT_TIMEOUT
-from ..util.logger import error
-from ..util.logger import warning
 from .client import SyftClient as Client
 
+logger = logging.getLogger(__name__)
 NETWORK_REGISTRY_URL = (
     "https://raw.githubusercontent.com/OpenMined/NetworkRegistry/main/gateways.json"
 )
@@ -43,7 +43,7 @@ class NetworkRegistry:
                 network_json=network_json, version="2.0.0"
             )
         except Exception as e:
-            warning(
+            logger.warning(
                 f"Failed to get Network Registry, go checkout: {NETWORK_REGISTRY_REPO}. Exception: {e}"
             )
 
@@ -64,7 +64,7 @@ class NetworkRegistry:
             return network_json
 
         except Exception as e:
-            warning(
+            logger.warning(
                 f"Failed to get Network Registry from {NETWORK_REGISTRY_REPO}. Exception: {e}"
             )
             return {}
@@ -169,7 +169,6 @@ class NetworkRegistry:
             client = connect(url=str(grid_url))
             return client.guest()
         except Exception as e:
-            error(f"Failed to login with: {network}. {e}")
             raise SyftException(f"Failed to login with: {network}. {e}")
 
     def __getitem__(self, key: str | int) -> Client:
@@ -194,7 +193,7 @@ class DomainRegistry:
             )
             self._get_all_domains()
         except Exception as e:
-            warning(
+            logger.warning(
                 f"Failed to get Network Registry, go checkout: {NETWORK_REGISTRY_REPO}. {e}"
             )
 
@@ -263,7 +262,7 @@ class DomainRegistry:
             try:
                 network_client = NetworkRegistry.create_client(network)
             except Exception as e:
-                print(f"Error in creating network client with exception {e}")
+                logger.error(f"Error in creating network client {e}")
                 continue
 
             domains: list[NodePeer] = network_client.domains.retrieve_nodes()
@@ -334,7 +333,6 @@ class DomainRegistry:
         try:
             return peer.guest_client
         except Exception as e:
-            error(f"Failed to login to: {peer}. {e}")
             raise SyftException(f"Failed to login to: {peer}. {e}")
 
     def __getitem__(self, key: str | int) -> Client:
@@ -364,7 +362,7 @@ class EnclaveRegistry:
             enclaves_json = response.json()
             self.all_enclaves = enclaves_json["2.0.0"]["enclaves"]
         except Exception as e:
-            warning(
+            logger.warning(
                 f"Failed to get Enclave Registry, go checkout: {ENCLAVE_REGISTRY_REPO}. {e}"
             )
 
@@ -405,10 +403,7 @@ class EnclaveRegistry:
                 executor.map(lambda enclave: check_enclave(enclave), enclaves)
             )
 
-        online_enclaves = []
-        for each in _online_enclaves:
-            if each is not None:
-                online_enclaves.append(each)
+        online_enclaves = [each for each in _online_enclaves if each is not None]
         return online_enclaves
 
     def _repr_html_(self) -> str:
@@ -436,7 +431,6 @@ class EnclaveRegistry:
             client = connect(url=str(grid_url))
             return client.guest()
         except Exception as e:
-            error(f"Failed to login with: {enclave}. {e}")
             raise SyftException(f"Failed to login with: {enclave}. {e}")
 
     def __getitem__(self, key: str | int) -> Client:

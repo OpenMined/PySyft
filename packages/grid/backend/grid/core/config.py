@@ -155,6 +155,10 @@ class Settings(BaseSettings):
     ASSOCIATION_REQUEST_AUTO_APPROVAL: bool = str_to_bool(
         os.getenv("ASSOCIATION_REQUEST_AUTO_APPROVAL", "False")
     )
+    MIN_SIZE_BLOB_STORAGE_MB: int = int(os.getenv("MIN_SIZE_BLOB_STORAGE_MB", 16))
+    REVERSE_TUNNEL_ENABLED: bool = str_to_bool(
+        os.getenv("REVERSE_TUNNEL_ENABLED", "false")
+    )
     model_config = SettingsConfigDict(case_sensitive=True)
 
 

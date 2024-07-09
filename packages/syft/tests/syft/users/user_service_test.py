@@ -219,7 +219,7 @@ def test_userservice_search(
     guest_user: User,
 ) -> None:
     def mock_find_all(credentials: SyftVerifyKey, **kwargs) -> Ok | Err:
-        for key, _ in kwargs.items():
+        for key in kwargs.keys():
             if hasattr(guest_user, key):
                 return Ok([guest_user])
             return Err("Invalid kwargs")

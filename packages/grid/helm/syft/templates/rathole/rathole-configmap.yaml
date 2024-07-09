@@ -1,0 +1,32 @@
+{{- if .Values.rtunnel.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rathole-config
+  resourceVersion: ""
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app.kubernetes.io/component: rathole
+data:
+  {{- if eq .Values.rtunnel.mode "server" }}
+  server.toml: |
+    [server]
+    bind_addr = "0.0.0.0:2333"
+
+    [server.transport]
+    type = "websocket"
+    [server.transport.websocket]
+    tls = false
+  {{- end }}
+
+  {{- if eq .Values.rtunnel.mode "client" }}
+  client.toml: |
+    [client]
+    remote_addr = "0.0.0.0:2333"
+
+    [client.transport]
+    type = "websocket"
+    [client.transport.websocket]
+    tls = false
+  {{- end }}
+{{- end }}

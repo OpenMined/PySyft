@@ -2,14 +2,15 @@
 from __future__ import annotations
 
 # stdlib
+import logging
 from pathlib import Path
 import re
 from string import Template
+import traceback
 from typing import TYPE_CHECKING
 from typing import cast
 
 # third party
-from loguru import logger
 import markdown
 from result import Result
 from tqdm import tqdm
@@ -25,6 +26,7 @@ from ..service.dataset.dataset import CreateAsset
 from ..service.dataset.dataset import CreateDataset
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
+from ..service.response import SyftWarning
 from ..service.sync.diff_state import ResolvedSyncState
 from ..service.sync.sync_state import SyncState
 from ..service.user.roles import Roles
@@ -40,6 +42,8 @@ from .client import login
 from .client import login_as_guest
 from .connection import NodeConnection
 from .protocol import SyftProtocol
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     # relative
@@ -123,51 +127,47 @@ class DomainClient(SyftClient):
             )
             prompt_warning_message(message=message, confirm=True)
 
-        for asset in tqdm(dataset.asset_list, colour="green"):
-            print(f"Uploading: {asset.name}")
-            try:
-                twin = TwinObject(
-                    private_obj=asset.data,
-                    mock_obj=asset.mock,
-                    syft_node_location=self.id,
-                    syft_client_verify_key=self.verify_key,
+        with tqdm(
+            total=len(dataset.asset_list), colour="green", desc="Uploading"
+        ) as pbar:
+            for asset in dataset.asset_list:
+                try:
+                    contains_empty: bool = asset.contains_empty()
+                    twin = TwinObject(
+                        private_obj=ActionObject.from_obj(asset.data),
+                        mock_obj=ActionObject.from_obj(asset.mock),
+                        syft_node_location=self.id,
+                        syft_client_verify_key=self.verify_key,
+                    )
+                    res = twin._save_to_blob_storage(allow_empty=contains_empty)
+                    if isinstance(res, SyftError):
+                        return res
+                except Exception as e:
+                    tqdm.write(f"Failed to create twin for {asset.name}. {e}")
+                    return SyftError(message=f"Failed to create twin. {e}")
+
+                if isinstance(res, SyftWarning):
+                    logger.debug(res.message)
+                response = self.api.services.action.set(
+                    twin, ignore_detached_objs=contains_empty
                 )
-                twin._save_to_blob_storage()
-            except Exception as e:
-                return SyftError(message=f"Failed to create twin. {e}")
-            response = self.api.services.action.set(twin)
-            if isinstance(response, SyftError):
-                print(f"Failed to upload asset\n: {asset}")
-                return response
-            asset.action_id = twin.id
-            asset.node_uid = self.id
-            dataset_size += get_mb_size(asset.data)
+                if isinstance(response, SyftError):
+                    tqdm.write(f"Failed to upload asset: {asset.name}")
+                    return response
+
+                asset.action_id = twin.id
+                asset.node_uid = self.id
+                dataset_size += get_mb_size(asset.data)
+
+                # Update the progress bar and set the dynamic description
+                pbar.set_description(f"Uploading: {asset.name}")
+                pbar.update(1)
+
         dataset.mb_size = dataset_size
         valid = dataset.check()
         if isinstance(valid, SyftError):
             return valid
         return self.api.services.dataset.add(dataset=dataset)
-
-    # def get_permissions_for_other_node(
-    #     self,
-    #     items: list[Union[ActionObject, SyftObject]],
-    # ) -> dict:
-    #     if len(items) > 0:
-    #         if not len({i.syft_node_location for i in items}) == 1 or (
-    #             not len({i.syft_client_verify_key for i in items}) == 1
-    #         ):
-    #             raise ValueError("permissions from different nodes")
-    #         item = items[0]
-    #         api = APIRegistry.api_for(
-    #             item.syft_node_location, item.syft_client_verify_key
-    #         )
-    #         if api is None:
-    #             raise ValueError(
-    #                 f"Can't access the api. Please log in to {item.syft_node_location}"
-    #             )
-    #         return api.services.sync.get_permissions(items)
-    #     else:
-    #         return {}
 
     def refresh(self) -> None:
         if self.credentials:
@@ -184,7 +184,6 @@ class DomainClient(SyftClient):
         for uid, obj in state.objects.items():
             if isinstance(obj, ActionObject):
                 obj = obj.refresh_object(resolve_nested=False)
-                obj.reload_cache()
                 state.objects[uid] = obj
         return state
 
@@ -196,8 +195,10 @@ class DomainClient(SyftClient):
         action_objects = [x for x in items if isinstance(x, ActionObject)]
 
         for action_object in action_objects:
+            action_object.reload_cache()
             # NOTE permissions are added separately server side
-            action_object._send(self, add_storage_permission=False)
+            action_object._send(self.id, self.verify_key, add_storage_permission=False)
+            action_object._clear_cache()
 
         ignored_batches = resolved_state.ignored_batches
 
@@ -277,8 +278,9 @@ class DomainClient(SyftClient):
 
             return ActionObject.from_obj(result).send(self)
         except Exception as err:
-            logger.debug("upload_files: Error creating action_object: {}", err)
-            return SyftError(message=f"Failed to upload files: {err}")
+            return SyftError(
+                message=f"Failed to upload files: {err}.\n{traceback.format_exc()}"
+            )
 
     def connect_to_gateway(
         self,
@@ -289,6 +291,7 @@ class DomainClient(SyftClient):
         email: str | None = None,
         password: str | None = None,
         protocol: str | SyftProtocol = SyftProtocol.HTTP,
+        reverse_tunnel: bool = False,
     ) -> SyftSuccess | SyftError | None:
         if isinstance(protocol, str):
             protocol = SyftProtocol(protocol)
@@ -306,7 +309,11 @@ class DomainClient(SyftClient):
             if isinstance(client, SyftError):
                 return client
 
-        res = self.exchange_route(client, protocol=protocol)
+        res = self.exchange_route(
+            client,
+            protocol=protocol,
+            reverse_tunnel=reverse_tunnel,
+        )
         if isinstance(res, SyftSuccess):
             if self.metadata:
                 return SyftSuccess(

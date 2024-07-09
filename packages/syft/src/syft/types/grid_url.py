@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 import copy
+import logging
 import os
 import re
 from urllib.parse import urlparse
@@ -14,6 +15,8 @@ from typing_extensions import Self
 # relative
 from ..serde.serializable import serializable
 from ..util.util import verify_tls
+
+logger = logging.getLogger(__name__)
 
 
 @serializable(attrs=["protocol", "host_or_ip", "port", "path", "query"])
@@ -43,7 +46,7 @@ class GridURL:
                 query=getattr(parts, "query", ""),
             )
         except Exception as e:
-            print(f"Failed to convert url: {url} to GridURL. {e}")
+            logger.error(f"Failed to convert url: {url} to GridURL. {e}")
             raise e
 
     def __init__(
@@ -134,6 +137,10 @@ class GridURL:
     @property
     def base_url_no_port(self) -> str:
         return f"{self.protocol}://{self.host_or_ip}"
+
+    @property
+    def url_no_protocol(self) -> str:
+        return f"{self.host_or_ip}:{self.port}{self.path}"
 
     @property
     def url_path(self) -> str:

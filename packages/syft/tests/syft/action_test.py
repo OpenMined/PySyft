@@ -1,11 +1,19 @@
+# stdlib
+import uuid
+
 # third party
+from faker import Faker
 import numpy as np
+import pytest
 
 # syft absolute
 from syft import ActionObject
 from syft.client.api import SyftAPICall
+from syft.node.worker import Worker
 from syft.service.action.action_object import Action
 from syft.service.response import SyftError
+from syft.service.user.user import UserUpdate
+from syft.service.user.user_roles import ServiceRole
 from syft.types.uid import LineageID
 
 # relative
@@ -17,11 +25,48 @@ def test_actionobject_method(worker):
     assert root_domain_client.settings.enable_eager_execution(enable=True)
     action_store = worker.get_service("actionservice").store
     obj = ActionObject.from_obj("abc")
-    pointer = root_domain_client.api.services.action.set(obj)
+    pointer = obj.send(root_domain_client)
     assert len(action_store.data) == 1
     res = pointer.capitalize()
     assert len(action_store.data) == 2
     assert res[0] == "A"
+
+
+@pytest.mark.parametrize("delete_original_admin", [False, True])
+def test_new_admin_has_action_object_permission(
+    worker: Worker,
+    faker: Faker,
+    delete_original_admin: bool,
+) -> None:
+    root_client = worker.root_client
+
+    email = uuid.uuid4().hex[:6] + faker.email()  # avoid collision
+    pw = uuid.uuid4().hex
+    root_client.register(
+        name=faker.name(), email=email, password=pw, password_verify=pw
+    )
+    ds_client = root_client.login(email=email, password=pw)
+
+    obj = ActionObject.from_obj("abc")
+    obj.send(ds_client)
+
+    email = faker.email()
+    pw = uuid.uuid4().hex
+    root_client.register(
+        name=faker.name(), email=email, password=pw, password_verify=pw
+    )
+
+    admin = root_client.login(email=email, password=pw)
+
+    root_client.api.services.user.update(
+        admin.me.id, UserUpdate(role=ServiceRole.ADMIN)
+    )
+
+    if delete_original_admin:
+        res = root_client.api.services.user.delete(root_client.me.id)
+        assert not isinstance(res, SyftError)
+
+    assert admin.api.services.action.get(obj.id) == obj
 
 
 @currently_fail_on_python_3_12(raises=AttributeError)

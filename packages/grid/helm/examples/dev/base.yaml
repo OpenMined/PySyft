@@ -1,0 +1,58 @@
+# Base Helm chart values used for development and testing
+# Can be used through `helm install -f packages/grid/helm/examples/dev/base.yaml` or devspace `valuesFiles`
+
+global:
+  randomizedSecrets: false
+
+node:
+  rootEmail: info@openmined.org
+  associationRequestAutoApproval: true
+
+  resourcesPreset: null
+  resources: null
+
+  defaultWorkerPool:
+    count: 1
+    podLabels: null
+    podAnnotations: null
+
+  secret:
+    defaultRootPassword: changethis
+
+mongo:
+  resourcesPreset: null
+  resources: null
+
+  secret:
+    rootPassword: example
+
+seaweedfs:
+  resourcesPreset: null
+  resources: null
+
+  secret:
+    s3RootPassword: admin
+
+frontend:
+  resourcesPreset: null
+  resources: null
+
+proxy:
+  enabled: true
+
+  resourcesPreset: null
+  resources: null
+
+registry:
+  enabled: true
+
+  resourcesPreset: null
+  resources: null
+
+  storageSize: "5Gi"
+
+rtunnel:
+  enabled: false
+
+attestation:
+  enabled: false

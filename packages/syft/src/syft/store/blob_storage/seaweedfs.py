@@ -1,6 +1,7 @@
 # stdlib
 from collections.abc import Generator
 from io import BytesIO
+import logging
 import math
 from queue import Queue
 import threading
@@ -37,8 +38,11 @@ from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.blob_storage import SeaweedSecureFilePathLocation
 from ...types.blob_storage import SecureFilePathLocation
 from ...types.grid_url import GridURL
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
+from ...types.syft_object import SYFT_OBJECT_VERSION_4
+from ...types.uid import UID
 from ...util.constants import DEFAULT_TIMEOUT
+
+logger = logging.getLogger(__name__)
 
 MAX_QUEUE_SIZE = 100
 WRITE_EXPIRATION_TIME = 900  # seconds
@@ -49,10 +53,11 @@ DEFAULT_UPLOAD_CHUNK_SIZE = 1024 * 800  # 800KB
 @serializable()
 class SeaweedFSBlobDeposit(BlobDeposit):
     __canonical_name__ = "SeaweedFSBlobDeposit"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_4
 
     urls: list[GridURL]
     size: int
+    proxy_node_uid: UID | None = None
 
     def write(self, data: BytesIO) -> SyftSuccess | SyftError:
         # relative
@@ -87,9 +92,14 @@ class SeaweedFSBlobDeposit(BlobDeposit):
                     start=1,
                 ):
                     if api is not None and api.connection is not None:
-                        blob_url = api.connection.to_blob_route(
-                            url.url_path, host=url.host_or_ip
-                        )
+                        if self.proxy_node_uid is None:
+                            blob_url = api.connection.to_blob_route(
+                                url.url_path, host=url.host_or_ip
+                            )
+                        else:
+                            blob_url = api.connection.stream_via(
+                                self.proxy_node_uid, url.url_path
+                            )
                     else:
                         blob_url = url
 
@@ -121,16 +131,17 @@ class SeaweedFSBlobDeposit(BlobDeposit):
                             """Creates a data geneator for the part"""
                             n = 0
 
-                            while n * chunk_size <= part_size:
-                                try:
+                            try:
+                                while n * chunk_size <= part_size:
                                     chunk = data.read(chunk_size)
+                                    if not chunk:
+                                        break
                                     self.no_lines += chunk.count(b"\n")
                                     n += 1
                                     queue.put(chunk)
-                                except BlockingIOError:
-                                    # if end of file, stop
-                                    queue.put(0)
-                            # if end of part, stop
+                            except BlockingIOError:
+                                pass
+                            # if end of file or part, stop
                             queue.put(0)
 
                     gen = PartGenerator()
@@ -148,7 +159,7 @@ class SeaweedFSBlobDeposit(BlobDeposit):
                     etags.append({"ETag": etag, "PartNumber": part_no})
 
         except requests.RequestException as e:
-            print(e)
+            logger.error(f"Failed to upload file to SeaweedFS - {e}")
             return SyftError(message=str(e))
 
         mark_write_complete_method = from_api_or_context(

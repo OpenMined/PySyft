@@ -5,6 +5,8 @@ body.vscode-dark {
   --tertiary-color: #cfcdd6;
   --button-color: #111111;
   --colors-black: #ffffff;
+  --surface-color: #fff;
+  --text-color: #ffffff;
 }
 
 body {
@@ -13,6 +15,8 @@ body {
   --tertiary-color: #000000de;
   --button-color: #d1d5db;
   --colors-black: #17161d;
+  --surface-color: #464158;
+  --text-color: #2e2b3b;
 }
 
 .header-1 {
@@ -62,7 +66,7 @@ body {
   line-height: 100%;
   leading-trim: both;
   text-edge: cap;
-  color: #2e2b3b;
+  color: var(--text-color);
 }
 
 .paragraph-sm {
@@ -73,7 +77,7 @@ body {
   line-height: 100%;
   leading-trim: both;
   text-edge: cap;
-  color: #2e2b3b;
+  color: var(--text-color);
 }
 
 .code-text {
@@ -84,7 +88,7 @@ body {
   line-height: 130%;
   leading-trim: both;
   text-edge: cap;
-  color: #2e2b3b;
+  color: var(--text-color);
 }
 
 .numbering-entry {
@@ -563,4 +567,55 @@ body {
 
 .syft-widget li a:hover {
   background-color: #c2def0;
+}
+
+.syft-user_code,
+.syft-project,
+.syft-project-create,
+.syft-settings,
+.syft-dataset,
+.syft-asset,
+.syft-contributor,
+.syft-request,
+.syft-syncstate,
+.job-info {
+  color: var(--surface-color);
+}
+
+.syft-dataset h1,
+.syft-dataset h2,
+.syft-dataset h3,
+.syft-dataset p,
+.syft-asset h3,
+.syft-asset p,
+.syft-syncstate h3,
+.syft-syncstate p {
+  font-family: "Open Sans";
+}
+
+.diff-container {
+  border: 0.5px solid #b4b0bf;
+}
+
+.syft-container {
+  padding: 5px;
+  font-family: "Open Sans";
+}
+
+.syft-alert-info {
+  color: #1f567a;
+  background-color: #c2def0;
+  border-radius: 4px;
+  padding: 5px;
+  padding: 13px 10px;
+}
+
+.syft-code-block {
+  background-color: #f7f7f7;
+  border: 1px solid #cfcfcf;
+  padding: 0px 2px;
+}
+
+.syft-space {
+  margin-top: 1em;
 }
