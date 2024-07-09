@@ -320,6 +320,7 @@ def test_delete_small_datasets(worker: Worker, small_dataset: Dataset) -> None:
     assert isinstance(del_res, SyftSuccess)
     assert isinstance(asset.data, SyftError)
     assert isinstance(asset.mock, SyftError)
+    assert len(root_client.api.services.dataset.get_all()) == 0
 
 
 def test_delete_big_datasets(worker: Worker, big_dataset: Dataset) -> None:
@@ -341,3 +342,4 @@ def test_delete_big_datasets(worker: Worker, big_dataset: Dataset) -> None:
     assert isinstance(asset.data, SyftError)
     assert isinstance(asset.mock, SyftError)
     assert len(root_client.api.services.blob_storage.get_all()) == 0
+    assert len(root_client.api.services.dataset.get_all()) == 0

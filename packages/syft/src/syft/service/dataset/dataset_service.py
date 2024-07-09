@@ -129,6 +129,8 @@ class DatasetService(AbstractService):
         for dataset in datasets:
             if context.node is not None:
                 dataset.node_uid = context.node.id
+            if dataset.marked_as_deleted:
+                datasets.remove(dataset)
 
         return _paginate_dataset_collection(
             datasets=datasets, page_size=page_size, page_index=page_index
