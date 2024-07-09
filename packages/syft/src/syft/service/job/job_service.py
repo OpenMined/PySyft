@@ -65,10 +65,7 @@ class JobService(AbstractService):
             res = res.ok()
             return res
 
-    @service_method(
-        path="job.get_all",
-        name="get_all",
-    )
+    @service_method(path="job.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL)
     def get_all(self, context: AuthedServiceContext) -> list[Job] | SyftError:
         res = self.stash.get_all(context.credentials)
         if res.is_err():

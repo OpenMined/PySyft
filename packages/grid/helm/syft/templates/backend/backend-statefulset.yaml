@@ -137,6 +137,8 @@ spec:
                     name: {{ .Values.seaweedfs.secretKeyName | required "seaweedfs.secretKeyName is required" }}
                     key: s3RootPassword
             {{- end }}
+            - name: MIN_SIZE_BLOB_STORAGE_MB
+              value: {{ .Values.seaweedfs.minSizeBlobStorageMB | quote }}
             # Tracing
             {{- if .Values.node.tracing }}
             - name: TRACING

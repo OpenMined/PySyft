@@ -144,28 +144,26 @@ class WorkerService(AbstractService):
 
         return logs if raw else logs.decode(errors="ignore")
 
-    @service_method(
-        path="worker.delete",
-        name="delete",
-        roles=DATA_OWNER_ROLE_LEVEL,
-    )
-    def delete(
-        self,
-        context: AuthedServiceContext,
-        uid: UID,
-        force: bool = False,
+    def _delete(
+        self, context: AuthedServiceContext, worker: SyftWorker, force: bool = False
     ) -> SyftSuccess | SyftError:
-        worker = self._get_worker(context=context, uid=uid)
-        if isinstance(worker, SyftError):
-            return worker
-
+        uid = worker.id
         worker_pool_name = worker.worker_pool_name
 
         # relative
+        from ...service.job.job_service import JobService
         from .worker_pool_service import SyftWorkerPoolService
 
-        worker_pool_service: AbstractService = context.node.get_service(
-            SyftWorkerPoolService
+        if force and worker.job_id is not None:
+            job_service = cast(JobService, context.node.get_service(JobService))
+            res = job_service.kill(context=context, id=worker.job_id)
+            if isinstance(res, SyftError):
+                return SyftError(
+                    message=f"Failed to terminate the job associated with worker {uid}: {res.message}"
+                )
+
+        worker_pool_service = cast(
+            SyftWorkerPoolService, context.node.get_service(SyftWorkerPoolService)
         )
         worker_pool_stash = worker_pool_service.stash
         result = worker_pool_stash.get_by_name(
@@ -203,7 +201,7 @@ class WorkerService(AbstractService):
                 if isinstance(docker_container, SyftError):
                     return docker_container
 
-                stopped = _stop_worker_container(worker, docker_container, force)
+                stopped = _stop_worker_container(worker, docker_container, force=force)
                 if stopped is not None:
                     return stopped
         else:
@@ -232,6 +230,30 @@ class WorkerService(AbstractService):
         return SyftSuccess(
             message=f"Worker with id: {uid} deleted successfully from pool: {worker_pool.name}"
         )
+
+    @service_method(
+        path="worker.delete",
+        name="delete",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
+    def delete(
+        self,
+        context: AuthedServiceContext,
+        uid: UID,
+        force: bool = False,
+    ) -> SyftSuccess | SyftError:
+        worker = self._get_worker(context=context, uid=uid)
+        worker.to_be_deleted = True
+
+        res = self.stash.update(context.credentials, worker)
+        if isinstance(res, SyftError):
+            return res
+
+        if not force:
+            # relative
+            return SyftSuccess(message=f"Worker {uid} has been marked for deletion.")
+
+        return self._delete(context, worker, force=True)
 
     def _get_worker(
         self, context: AuthedServiceContext, uid: UID

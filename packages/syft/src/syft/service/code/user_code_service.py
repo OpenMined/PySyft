@@ -19,6 +19,7 @@ from ...types.uid import UID
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
+from ..action.action_service import ActionService
 from ..context import AuthedServiceContext
 from ..output.output_service import ExecutionOutput
 from ..policy.policy import OutputPolicy
@@ -306,7 +307,6 @@ class UserCodeService(AbstractService):
 
     @service_method(path="code.get_all", name="get_all", roles=GUEST_ROLE_LEVEL)
     def get_all(self, context: AuthedServiceContext) -> list[UserCode] | SyftError:
-        """Get a Dataset"""
         result = self.stash.get_all(context.credentials)
         if result.is_ok():
             return result.ok()
@@ -356,6 +356,8 @@ class UserCodeService(AbstractService):
         result = self.stash.get_all(credentials=context.credentials)
         if result.is_ok():
             user_code_items = result.ok()
+            # Filter out UserCode items that are not updated to the latest versio
+            user_code_items = [x for x in user_code_items if isinstance(x, UserCode)]
             load_approved_policy_code(user_code_items=user_code_items, context=context)
 
     def is_execution_allowed(
@@ -577,7 +579,7 @@ class UserCodeService(AbstractService):
                     "which is currently not supported. Run your function with `blocking=False` to run"
                     " as a job on your worker pool"
                 )
-            action_service = context.node.get_service("actionservice")
+            action_service: ActionService = context.node.get_service("actionservice")  # type: ignore
             result_action_object: Result[ActionObject | TwinObject, str] = (
                 action_service._user_code_execute(
                     context, code, kwarg2id, result_id=result_id
@@ -617,13 +619,9 @@ class UserCodeService(AbstractService):
             # res = self.update_code_state(context, code)
             # print(res)
 
-            has_result_read_permission = context.extra_kwargs.get(
-                "has_result_read_permission", False
+            has_result_read_permission = action_service.has_read_permission(
+                context, result.id
             )
-
-            # TODO: Just to fix the issue with the current implementation
-            if context.role == ServiceRole.ADMIN:
-                has_result_read_permission = True
 
             if isinstance(result, TwinObject):
                 if has_result_read_permission:

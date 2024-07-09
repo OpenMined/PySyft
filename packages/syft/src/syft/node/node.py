@@ -25,7 +25,6 @@ from typing import cast
 from nacl.signing import SigningKey
 from result import Err
 from result import Result
-from typing_extensions import Self
 
 # relative
 from .. import __version__
@@ -71,11 +70,11 @@ from ..service.job.job_stash import JobType
 from ..service.log.log_service import LogService
 from ..service.metadata.metadata_service import MetadataService
 from ..service.metadata.node_metadata import NodeMetadata
+from ..service.migration.migration_service import MigrationService
 from ..service.network.network_service import NetworkService
 from ..service.network.utils import PeerHealthCheckTask
 from ..service.notification.notification_service import NotificationService
 from ..service.notifier.notifier_service import NotifierService
-from ..service.object_search.migration_state_service import MigrateStateService
 from ..service.output.output_service import OutputService
 from ..service.policy.policy_service import PolicyService
 from ..service.project.project_service import ProjectService
@@ -130,6 +129,7 @@ from ..store.sqlite_document_store import SQLiteStoreClientConfig
 from ..store.sqlite_document_store import SQLiteStoreConfig
 from ..types.datetime import DATETIME_FORMAT
 from ..types.syft_metaclass import Empty
+from ..types.syft_object import Context
 from ..types.syft_object import PartialSyftObject
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftObject
@@ -435,11 +435,19 @@ class Node(AbstractNode):
 
         self.post_init()
 
+        if migrate:
+            self.find_and_migrate_data()
+        else:
+            self.find_and_migrate_data([NodeSettings])
+
         self.create_initial_settings(admin_email=root_email)
 
-        self.init_queue_manager(queue_config=self.queue_config)
-
         self.init_blob_storage(config=blob_storage_config)
+
+        # Migrate data before any operation on db
+
+        # first migrate, for backwards compatibility
+        self.init_queue_manager(queue_config=self.queue_config)
 
         context = AuthedServiceContext(
             node=self,
@@ -450,10 +458,6 @@ class Node(AbstractNode):
         self.peer_health_manager: PeerHealthCheckTask | None = None
         if background_tasks:
             self.run_peer_health_checks(context=context)
-
-        # Migrate data before any operation on db
-        if migrate:
-            self.find_and_migrate_data()
 
         NodeRegistry.set_node_for(self.id, self)
 
@@ -485,7 +489,10 @@ class Node(AbstractNode):
             client_config = OnDiskBlobStorageClientConfig(
                 base_directory=self.get_temp_dir("blob")
             )
-            config_ = OnDiskBlobStorageConfig(client_config=client_config)
+            config_ = OnDiskBlobStorageConfig(
+                client_config=client_config,
+                min_blob_size=os.getenv("MIN_SIZE_BLOB_STORAGE_MB", 16),
+            )
         else:
             config_ = config
         self.blob_store_config = config_
@@ -503,6 +510,17 @@ class Node(AbstractNode):
                 self.blob_store_config.client_config.remote_profiles[
                     remote_profile.profile_name
                 ] = remote_profile
+
+        if self.dev_mode:
+            if isinstance(self.blob_store_config, OnDiskBlobStorageConfig):
+                logger.debug(
+                    f"Using on-disk blob storage with path: "
+                    f"{self.blob_store_config.client_config.base_directory}",
+                )
+            logger.debug(
+                f"Minimum object size to be saved to the blob storage: "
+                f"{self.blob_store_config.min_blob_size} (MB)."
+            )
 
     def run_peer_health_checks(self, context: AuthedServiceContext) -> None:
         self.peer_health_manager = PeerHealthCheckTask()
@@ -639,7 +657,7 @@ class Node(AbstractNode):
 
     @classmethod
     def named(
-        cls,
+        cls: type[Node],
         *,  # Trasterisk
         name: str,
         processes: int = 0,
@@ -657,7 +675,7 @@ class Node(AbstractNode):
         in_memory_workers: bool = True,
         association_request_auto_approval: bool = False,
         background_tasks: bool = False,
-    ) -> Self:
+    ) -> Node:
         uid = UID.with_seed(name)
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
         key = SyftSigningKey(signing_key=SigningKey(name_hash))
@@ -713,7 +731,7 @@ class Node(AbstractNode):
             credentials=self.verify_key,
             role=ServiceRole.ADMIN,
         )
-        migration_state_service = self.get_service(MigrateStateService)
+        migration_state_service = self.get_service(MigrationService)
 
         klasses_to_be_migrated = []
 
@@ -740,67 +758,16 @@ class Node(AbstractNode):
 
         return klasses_to_be_migrated
 
-    def find_and_migrate_data(self) -> None:
-        # Track all object type that need migration for document store
+    def find_and_migrate_data(
+        self, document_store_object_types: list[type[SyftObject]] | None = None
+    ) -> None:
         context = AuthedServiceContext(
             node=self,
             credentials=self.verify_key,
             role=ServiceRole.ADMIN,
         )
-        document_store_object_types = [
-            partition.settings.object_type
-            for partition in self.document_store.partitions.values()
-        ]
-
-        object_pending_migration = self._find_klasses_pending_for_migration(
-            object_types=document_store_object_types
-        )
-
-        if object_pending_migration:
-            logger.debug(
-                f"Object in Document Store that needs migration: {object_pending_migration}"
-            )
-
-        # Migrate data for objects in document store
-        for object_type in object_pending_migration:
-            canonical_name = object_type.__canonical_name__
-            object_partition = self.document_store.partitions.get(canonical_name)
-            if object_partition is None:
-                continue
-
-            logger.debug(f"Migrating data for: {canonical_name} table.")
-            migration_status = object_partition.migrate_data(
-                to_klass=object_type, context=context
-            )
-            if migration_status.is_err():
-                raise Exception(
-                    f"Failed to migrate data for {canonical_name}. Error: {migration_status.err()}"
-                )
-
-        # Track all object types from action store
-        action_object_types = [Action, ActionObject]
-        action_object_types.extend(ActionObject.__subclasses__())
-        action_object_pending_migration = self._find_klasses_pending_for_migration(
-            action_object_types
-        )
-
-        if action_object_pending_migration:
-            logger.info(
-                f"Object in Action Store that needs migration: {action_object_pending_migration}",
-            )
-
-        # Migrate data for objects in action store
-        for object_type in action_object_pending_migration:
-            canonical_name = object_type.__canonical_name__
-
-            migration_status = self.action_store.migrate_data(
-                to_klass=object_type, credentials=self.verify_key
-            )
-            if migration_status.is_err():
-                raise Exception(
-                    f"Failed to migrate data for {canonical_name}. Error: {migration_status.err()}"
-                )
-        logger.info("Data Migrated to latest version !!!")
+        migration_service = self.get_service("migrationservice")
+        return migration_service.migrate_data(context, document_store_object_types)
 
     @property
     def guest_client(self) -> SyftClient:
@@ -886,6 +853,7 @@ class Node(AbstractNode):
                 node_uid=self.id,
                 store_config=action_store_config,
                 root_verify_key=self.verify_key,
+                document_store=self.document_store,
             )
         elif isinstance(action_store_config, MongoStoreConfig):
             # We add the python id of the current node in order
@@ -898,11 +866,13 @@ class Node(AbstractNode):
                 node_uid=self.id,
                 root_verify_key=self.verify_key,
                 store_config=action_store_config,
+                document_store=self.document_store,
             )
         else:
             self.action_store = DictActionStore(
                 node_uid=self.id,
                 root_verify_key=self.verify_key,
+                document_store=self.document_store,
             )
 
         self.action_store_config = action_store_config
@@ -950,7 +920,7 @@ class Node(AbstractNode):
             {"svc": CodeHistoryService},
             {"svc": MetadataService},
             {"svc": BlobStorageService},
-            {"svc": MigrateStateService},
+            {"svc": MigrationService},
             {"svc": SyftWorkerImageService},
             {"svc": SyftWorkerPoolService},
             {"svc": SyftImageRegistryService},
@@ -1071,6 +1041,7 @@ class Node(AbstractNode):
             node_side_type=node_side_type,
             show_warnings=show_warnings,
             eager_execution_enabled=eager_execution_enabled,
+            min_size_blob_storage_mb=self.blob_store_config.min_blob_size,
         )
 
     @property
@@ -1667,6 +1638,19 @@ class Node(AbstractNode):
             settings_exists = settings_stash.get_all(self.signing_key.verify_key).ok()
             if settings_exists:
                 node_settings = settings_exists[0]
+                if node_settings.__version__ != NodeSettings.__version__:
+                    context = Context()
+                    node_settings = node_settings.migrate_to(
+                        NodeSettings.__version__, context
+                    )
+                    res = settings_stash.delete_by_uid(
+                        self.signing_key.verify_key, node_settings.id
+                    )
+                    if res.is_err():
+                        raise Exception(res.value)
+                    res = settings_stash.set(self.signing_key.verify_key, node_settings)
+                    if res.is_err():
+                        raise Exception(res.value)
                 self.name = node_settings.name
                 self.association_request_auto_approval = (
                     node_settings.association_request_auto_approval
@@ -1802,7 +1786,7 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
         )
         return default_worker_pool
 
-    logger.info(f"Creating default worker image with tag='{default_worker_tag}'")
+    logger.info(f"Creating default worker image with tag='{default_worker_tag}'. ")
     # Get/Create a default worker SyftWorkerImage
     default_image = create_default_image(
         credentials=credentials,
@@ -1815,7 +1799,7 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
         return default_image
 
     if not default_image.is_built:
-        logger.info(f"Building default worker image with tag={default_worker_tag}")
+        logger.info(f"Building default worker image with tag={default_worker_tag}. ")
         image_build_method = node.get_service_method(SyftWorkerImageService.build)
         # Build the Image for given tag
         result = image_build_method(
@@ -1835,7 +1819,7 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
         f"name={default_pool_name} "
         f"workers={worker_count} "
         f"image_uid={default_image.id} "
-        f"in_memory={node.in_memory_workers}"
+        f"in_memory={node.in_memory_workers}. "
     )
     if default_worker_pool is None:
         worker_to_add_ = worker_count
@@ -1853,12 +1837,17 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
         worker_to_add_ = max(default_worker_pool.max_count, worker_count) - len(
             default_worker_pool.worker_list
         )
-        add_worker_method = node.get_service_method(SyftWorkerPoolService.add_workers)
-        result = add_worker_method(
-            context=context,
-            number=worker_to_add_,
-            pool_name=default_pool_name,
-        )
+        if worker_to_add_ > 0:
+            add_worker_method = node.get_service_method(
+                SyftWorkerPoolService.add_workers
+            )
+            result = add_worker_method(
+                context=context,
+                number=worker_to_add_,
+                pool_name=default_pool_name,
+            )
+        else:
+            return None
 
     if isinstance(result, SyftError):
         logger.info(f"Default worker pool error. {result.message}")
