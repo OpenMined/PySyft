@@ -151,7 +151,9 @@ class DatasetService(AbstractService):
             return results
 
         filtered_results = [
-            dataset for dataset_name, dataset in results.items() if name in dataset_name
+            dataset
+            for dataset_name, dataset in results.items()
+            if name in dataset_name and not dataset.marked_as_deleted
         ]
 
         return _paginate_dataset_collection(
@@ -164,12 +166,14 @@ class DatasetService(AbstractService):
     ) -> SyftSuccess | SyftError:
         """Get a Dataset"""
         result = self.stash.get_by_uid(context.credentials, uid=uid)
-        if result.is_ok():
-            dataset = result.ok()
-            if context.node is not None:
-                dataset.node_uid = context.node.id
-            return dataset
-        return SyftError(message=result.err())
+        if result.is_err():
+            return SyftError(message=result.err())
+        dataset = result.ok()
+        if dataset.marked_as_deleted:
+            return SyftError(message="Dataset not found.")
+        if context.node is not None:
+            dataset.node_uid = context.node.id
+        return dataset
 
     @service_method(path="dataset.get_by_action_id", name="get_by_action_id")
     def get_by_action_id(
@@ -177,13 +181,15 @@ class DatasetService(AbstractService):
     ) -> list[Dataset] | SyftError:
         """Get Datasets by an Action ID"""
         result = self.stash.search_action_ids(context.credentials, uid=uid)
-        if result.is_ok():
-            datasets = result.ok()
-            for dataset in datasets:
-                if context.node is not None:
-                    dataset.node_uid = context.node.id
-            return datasets
-        return SyftError(message=result.err())
+        if result.is_err():
+            return SyftError(message=result.err())
+        datasets = result.ok()
+        for dataset in datasets:
+            if context.node is not None:
+                dataset.node_uid = context.node.id
+            if dataset.marked_as_deleted:
+                datasets.remove(dataset)
+        return datasets
 
     @service_method(
         path="dataset.get_assets_by_action_id",
@@ -197,6 +203,9 @@ class DatasetService(AbstractService):
         datasets = self.get_by_action_id(context=context, uid=uid)
         if isinstance(datasets, SyftError):
             return datasets
+        for dataset in datasets:
+            if dataset.marked_as_deleted:
+                datasets.remove(dataset)
         return [
             asset
             for dataset in datasets
