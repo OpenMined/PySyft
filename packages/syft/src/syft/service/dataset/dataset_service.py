@@ -211,10 +211,11 @@ class DatasetService(AbstractService):
         self, context: AuthedServiceContext, uid: UID
     ) -> SyftSuccess | SyftError:
         """
-        Soft delete: after deleting a dataset, the user will not be able to
-        see it using the `datasets.get_all` endpoint
-        We still keep the object, delete the blob storage and return None
-        Delete unique dataset.name key and leave UID, just rename it
+        Soft delete: keep the dataset object, only remove the blob store entries
+        After soft deleting a dataset, the user will not be able to
+        see it using the `datasets.get_all` endpoint.
+        Delete unique `dataset.name` key and leave UID, just rename it in case the
+        user upload a new dataset with the same name.
         """
         # check if the dataset exists
         dataset = self.get_by_id(context=context, uid=uid)
