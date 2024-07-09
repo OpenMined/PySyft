@@ -3,8 +3,6 @@ from collections import defaultdict
 import logging
 from typing import Any
 
-# third party
-
 # relative
 from ...client.api import NodeIdentity
 from ...serde.serializable import serializable

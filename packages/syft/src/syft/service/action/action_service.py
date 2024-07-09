@@ -157,6 +157,7 @@ class ActionService(AbstractService):
 
         """Save an object to the action store"""
         # 🟡 TODO 9: Create some kind of type checking / protocol for SyftSerializable
+
         if isinstance(action_object, ActionObject):
             action_object.syft_created_at = DateTime.now()
             if not skip_save_to_blob_store:
@@ -597,7 +598,7 @@ class ActionService(AbstractService):
 
         result_id = plan.outputs[0].id
         return self._get(
-            context, result_id, TwinMode.MOCK, has_permission=True
+            context, result_id, TwinMode.NONE, has_permission=True
         ).unwrap()
 
     @as_result(SyftException)
