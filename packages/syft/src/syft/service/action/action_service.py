@@ -388,6 +388,10 @@ class ActionService(AbstractService):
         input_policy = code_item.get_input_policy(context)
         output_policy = code_item.get_output_policy(context)
 
+        # Unwrap nested ActionObjects
+        for _, arg in kwargs.items():
+            self.preprocess_action_arg(context, arg) if isinstance(arg, UID) else None
+
         if not override_execution_permission:
             if input_policy is None:
                 if not code_item.is_output_policy_approved(context):
@@ -751,6 +755,88 @@ class ActionService(AbstractService):
             )
         else:
             return execute_object(self, context, resolved_self, action)  # type:ignore[unreachable]
+
+    def unwrap_nested_actionobjects(
+        self, context: AuthedServiceContext, data: Any
+    ) -> Any:
+        """recursively unwraps nested action objects"""
+
+        if isinstance(data, list):
+            return [self.unwrap_nested_actionobjects(context, obj) for obj in data]
+        if isinstance(data, dict):
+            return {
+                key: self.unwrap_nested_actionobjects(context, obj)
+                for key, obj in data.items()
+            }
+        if isinstance(data, ActionObject):
+            res = self.get(context=context, uid=data.id)
+            res = res.ok() if res.is_ok() else res.err()
+            if not isinstance(res, ActionObject):
+                return SyftError(message=f"{res}")
+            else:
+                nested_res = res.syft_action_data
+                if isinstance(nested_res, ActionObject):
+                    raise ValueError(
+                        "More than double nesting of ActionObjects is currently not supported"
+                    )
+                return nested_res
+        return data
+
+    def contains_nested_actionobjects(self, data: Any) -> bool:
+        """
+        returns if this is a list/set/dict that contains ActionObjects
+        """
+
+        def unwrap_collection(col: set | dict | list) -> [Any]:  # type: ignore
+            return_values = []
+            if isinstance(col, dict):
+                values = list(col.values()) + list(col.keys())
+            else:
+                values = list(col)
+            for v in values:
+                if isinstance(v, list | dict | set):
+                    return_values += unwrap_collection(v)
+                else:
+                    return_values.append(v)
+            return return_values
+
+        if isinstance(data, list | dict | set):
+            values = unwrap_collection(data)
+            has_action_object = any(isinstance(x, ActionObject) for x in values)
+            return has_action_object
+        elif isinstance(data, ActionObject):
+            return True
+        return False
+
+    def preprocess_action_arg(
+        self, context: AuthedServiceContext, arg: UID
+    ) -> UID | None:
+        """ "If the argument is a collection (of collections) of ActionObjects,
+        We want to flatten the collection and upload a new ActionObject that contains
+        its values. E.g. [[ActionObject1, ActionObject2],[ActionObject3, ActionObject4]]
+        -> [[value1, value2],[value3, value4]]
+        """
+        res = self.get(context=context, uid=arg)
+        if res.is_err():
+            return arg
+
+        action_object = res.ok()
+        data = action_object.syft_action_data
+
+        if self.contains_nested_actionobjects(data):
+            new_data = self.unwrap_nested_actionobjects(context, data)
+
+            new_action_object = ActionObject.from_obj(
+                new_data,
+                id=action_object.id,
+                syft_blob_storage_entry_id=action_object.syft_blob_storage_entry_id,
+            )
+            new_action_object._save_to_blob_storage()
+            res = self.action_service._set(
+                context=self.auth_context, action_object=new_action_object
+            )
+
+        return None
 
     @service_method(path="action.execute", name="execute", roles=GUEST_ROLE_LEVEL)
     def execute(
