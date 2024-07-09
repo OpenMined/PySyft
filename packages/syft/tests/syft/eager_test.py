@@ -32,8 +32,13 @@ def test_eager_permissions(worker, guest_client):
 
     flat_ptr = pointer.flatten()
 
-    res_guest = guest_client.api.services.action.get(flat_ptr.id)
-    assert not isinstance(res_guest, ActionObject)
+    with pytest.raises(SyftException) as exc:
+        guest_client.api.services.action.get(flat_ptr.id)
+
+    # TODO: Improve this error msg
+    assert exc.type == SyftException
+    assert "denied" in str(exc.value)
+
     res_root = root_domain_client.api.services.action.get(flat_ptr.id)
     assert all(res_root == [3, 3, 3, 3, 3, 3])
 
