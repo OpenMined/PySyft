@@ -720,6 +720,10 @@ def generate_remote_lib_function(
         )
 
         result = wrapper_make_call(api_call=api_call)
+
+        if isinstance(result, SyftSuccess):
+            return result.value
+
         return result
 
     wrapper.__ipython_inspector_signature_override__ = signature
