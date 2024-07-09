@@ -5,10 +5,14 @@ from typing import Any
 
 # third party
 from pydantic import field_validator
+from result import Result
 
 # relative
+from ...node.credentials import SyftVerifyKey
 from ...types.base import SyftBaseModel
 from ...types.uid import UID
+from ..worker.worker_pool import SyftWorker
+from ..worker.worker_stash import WorkerStash
 
 # Producer/Consumer heartbeat interval (in seconds)
 HEARTBEAT_INTERVAL_SEC = 2
@@ -83,8 +87,6 @@ class Worker(SyftBaseModel):
     syft_worker_id: UID | None = None
     expiry_t: Timeout = Timeout(WORKER_TIMEOUT_SEC)
 
-    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @field_validator("syft_worker_id", mode="before")
     @classmethod
     def set_syft_worker_id(cls, v: Any) -> Any:
@@ -100,6 +102,11 @@ class Worker(SyftBaseModel):
 
     def reset_expiry(self) -> None:
         self.expiry_t.reset()
+
+    def _syft_worker(
+        self, stash: WorkerStash, credentials: SyftVerifyKey
+    ) -> Result[SyftWorker | None, str]:
+        return stash.get_by_uid(credentials=credentials, uid=self.syft_worker_id)
 
     def __str__(self) -> str:
         svc = self.service.name if self.service else None
