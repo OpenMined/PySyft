@@ -727,6 +727,7 @@ def map_kwargs_to_id(kwargs: dict[str, Any]) -> dict[str, Any]:
     from ...types.twin_object import TwinObject
     from ..action.action_object import ActionObject
     from ..dataset.dataset import Asset
+    from ..model.model import Model
 
     filtered_kwargs = {}
     for k, v in kwargs.items():
@@ -737,6 +738,8 @@ def map_kwargs_to_id(kwargs: dict[str, Any]) -> dict[str, Any]:
             value = v.id
         if isinstance(v, Asset):
             value = v.action_id
+        if isinstance(v, Model):
+            value = v.id
 
         if not isinstance(value, UID):
             raise Exception(f"Input {k} must have a UID not {type(v)}")

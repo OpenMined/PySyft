@@ -104,6 +104,7 @@ class DomainClient(SyftClient):
 
     def upload_model(self, model: CreateModel) -> SyftSuccess | SyftError:
         # relative
+        from ..service.model.model import ModelRef
         from ..types.twin_object import TwinObject
 
         model_size: float = 0.0
@@ -144,6 +145,20 @@ class DomainClient(SyftClient):
                 # Update the progress bar and set the dynamic description
                 pbar.set_description(f"Uploading: {asset.name}")
                 pbar.update(1)
+
+            # Upload Model Ref to Action Store
+            model_ref = ModelRef(
+                id=model.id,
+                syft_action_data_cache=model.id,
+                syft_node_location=self.id,
+                syft_client_verify_key=self.verify_key,
+            )
+            model_ref_blob = model_ref._save_to_blob_storage()
+            if isinstance(model_ref_blob, SyftError):
+                return model_ref_blob
+            model_ref_res = self.api.services.action.set(model_ref)
+            if isinstance(model_ref_res, SyftError):
+                return model_ref_res
 
         model.mb_size = model_size
         valid = model.check()

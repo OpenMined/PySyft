@@ -28,6 +28,7 @@ from ...util.markdown import as_markdown_python_code
 from ..action.action_object import ActionDataEmpty
 from ..action.action_object import ActionObject
 from ..action.action_object import BASE_PASSTHROUGH_ATTRS
+from ..context import AuthedServiceContext
 from ..dataset.dataset import Contributor
 from ..dataset.dataset import MarkdownDescription
 from ..policy.policy import get_code_from_class
@@ -555,4 +556,18 @@ class ModelRef(ActionObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     syft_internal_type: ClassVar[type] = UID
-    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
+    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS + ["load_model"]
+
+    def load_model(self, context: AuthedServiceContext) -> SyftModelClass:
+        admin_client = context.node.root_client
+        model = admin_client.models.get_by_uid(self.id)
+
+        # TODO : Simply this having a get_asset_list method or
+        # an equivalent
+        asset_list = []
+        for asset in model.asset_list:
+            res = admin_client.services.action.get(asset.action_id)
+            asset_list.append(res.syft_action_data)
+
+        loaded_model = model.submit_model(assets=asset_list)
+        return loaded_model
