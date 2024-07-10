@@ -54,6 +54,8 @@ logger = logging.getLogger(__name__)
 
 @serializable()
 class ActionService(AbstractService):
+    store_type = ActionStore
+
     def __init__(self, store: ActionStore) -> None:
         self.store = store
 
