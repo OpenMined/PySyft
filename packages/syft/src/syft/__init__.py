@@ -61,6 +61,7 @@ from .service.dataset.dataset import CreateDataset as Dataset
 from .service.model.model import CreateModel as Model
 from .service.model.model import CreateModelAsset as ModelAsset
 from .service.model.model import SyftModelClass
+from .service.model.model import syft_model
 from .service.notification.notifications import NotificationStatus
 from .service.policy.policy import CreatePolicyRuleConstant as Constant
 from .service.policy.policy import CustomInputPolicy

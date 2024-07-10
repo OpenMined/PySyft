@@ -2,9 +2,11 @@
 from collections.abc import Callable
 from datetime import datetime
 from enum import Enum
+from textwrap import dedent
 from typing import Any
 
 # third party
+from IPython.display import display
 from pydantic import ConfigDict
 from result import Err
 from result import Ok
@@ -24,6 +26,7 @@ from ...types.uid import UID
 from ...util.markdown import as_markdown_python_code
 from ..dataset.dataset import Contributor
 from ..dataset.dataset import MarkdownDescription
+from ..policy.policy import get_code_from_class
 from ..response import SyftError
 from ..response import SyftSuccess
 
@@ -102,6 +105,41 @@ class SyftModelClass:
 
     def inference(self) -> Any:
         pass
+
+
+def syft_model(
+    name: str | None = None,
+) -> Callable:
+    def decorator(cls: Any) -> Callable:
+        try:
+            code = dedent(get_code_from_class(cls))
+            class_name = cls.__name__
+            res = SubmitModelCode(code=code, class_name=class_name)
+        except Exception as e:
+            print("e", e)
+            raise e
+
+        success_message = SyftSuccess(
+            message=f"Syft Model Class '{cls.__name__}' successfully created. "
+        )
+        display(success_message)
+        return res
+
+    return decorator
+
+
+@serializable()
+class SubmitModelCode(SyftObject):
+    # version
+    __canonical_name__ = "SubmitModelCode"
+    __version_ = SYFT_OBJECT_VERSION_1
+
+    id: UID | None = None  # type: ignore[assignment]
+    code: str
+    class_name: str
+    # signature: inspect.Signature
+
+    __repr_attrs__ = ["class_name", "code"]
 
 
 @serializable()

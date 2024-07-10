@@ -1,11 +1,11 @@
+# future
+from __future__ import annotations
+
 # stdlib
 import mimetypes
 import os
 from pathlib import Path
 import tempfile
-
-# third party
-from typing_extensions import Self
 
 # relative
 from ..serde.serializable import serializable
@@ -51,7 +51,7 @@ class SyftFile(SyftObject):
     __repr_attrs__ = ["filename", "mimetype", "size_bytes"]
 
     def head(self, length: int = 200) -> str:
-        print(self.decode(length=length))
+        return self.decode(length=length)
 
     def decode(self, length: int = -1) -> str:
         output = ""
@@ -81,7 +81,7 @@ class SyftFile(SyftObject):
     @staticmethod
     def from_string(
         content: str, filename: str = "file.txt", mime_type: str | None = None
-    ) -> Self | None:
+    ) -> SyftFile | None:
         data = content.encode("utf-8")
         if mime_type is None:
             mime_type = get_mimetype(filename, filename)
@@ -93,7 +93,7 @@ class SyftFile(SyftObject):
         )
 
     @staticmethod
-    def from_path(path: str) -> Self | None:
+    def from_path(path: str) -> SyftFile | None:
         abs_path = os.path.abspath(os.path.expanduser(path))
         if os.path.exists(abs_path):
             try:
@@ -148,16 +148,16 @@ class SyftFolder(SyftObject):
         os.makedirs(path, exist_ok=True)
         for syft_file in self.files:
             syft_file.write_file(path)
-        return path
+        return str(path)
 
     @staticmethod
-    def from_dir(name: str, path: str, ignore_hidden: bool = True) -> Self:
+    def from_dir(name: str, path: str, ignore_hidden: bool = True) -> SyftFolder:
         syft_files = []
-        path = Path(os.path.abspath(os.path.expanduser(path)))
-        if not os.path.exists(path):
-            raise Exception(f"{path} does not exist")
+        abs_path = Path(os.path.abspath(os.path.expanduser(path)))
+        if not os.path.exists(abs_path):
+            raise Exception(f"{abs_path} does not exist")
 
-        with os.scandir(path) as entries:
+        with os.scandir(abs_path) as entries:
             for entry in entries:
                 if entry.is_file():
                     if ignore_hidden and entry.name.startswith("."):
