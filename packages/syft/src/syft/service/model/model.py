@@ -24,6 +24,8 @@ from ...types.transforms import transform
 from ...types.transforms import validate_url
 from ...types.uid import UID
 from ...util.markdown import as_markdown_python_code
+from ..action.action_object import ActionDataEmpty
+from ..action.action_object import ActionObject
 from ..dataset.dataset import Contributor
 from ..dataset.dataset import MarkdownDescription
 from ..policy.policy import get_code_from_class
@@ -157,6 +159,7 @@ class CreateModelAsset(SyftObject):
     data: Any | None = None  # SyftFolder will go here!
     mock: Any | None = None
     created_at: DateTime | None = None
+    action_id: UID | None = None
 
     model_config = ConfigDict(validate_assignment=True)
 
@@ -193,6 +196,20 @@ class CreateModelAsset(SyftObject):
     def set_description(self, description: str) -> None:
         self.description = MarkdownDescription(text=description)
 
+    def check(self) -> SyftSuccess | SyftError:
+        return SyftSuccess(message="Model Asset is Valid")
+
+    def contains_empty(self) -> bool:
+        if isinstance(self.mock, ActionObject) and isinstance(
+            self.mock.syft_action_data_cache, ActionDataEmpty
+        ):
+            return True
+        if isinstance(self.data, ActionObject) and isinstance(
+            self.data.syft_action_data_cache, ActionDataEmpty
+        ):
+            return True
+        return False
+
 
 @serializable()
 class Model(SyftObject):
@@ -205,7 +222,7 @@ class Model(SyftObject):
     __repr_attrs__ = ["name", "url", "created_at"]
 
     name: str
-    model_code: str
+    submit_model: SubmitModelCode
     asset_list: list[ModelAsset] = []
     contributors: set[Contributor] = set()
     citation: str | None = None
@@ -213,6 +230,10 @@ class Model(SyftObject):
     description: MarkdownDescription | None = None
     updated_at: str | None = None
     created_at: DateTime = DateTime.now()
+    show_code: bool = False
+    show_interface: bool = True
+    example_text: str | None = None
+    mb_size: float | None = None
 
     def __init__(
         self,
@@ -232,6 +253,7 @@ class Model(SyftObject):
             "Name": self.name,
             "Assets": len(self.asset_list),
             "Url": self.url,
+            "Size": f"{self.mb_size} (MB)",
             "created at": str(self.created_at),
         }
 
@@ -255,7 +277,7 @@ class Model(SyftObject):
         if self.url:
             _repr_str += f"URL: {self.url}\n"
         if self.description:
-            _repr_str += f"Description: {self.description.text}\n"
+            _repr_str += f"Description:\n{self.description.text}\n"
         return as_markdown_python_code(_repr_str)
 
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
@@ -276,6 +298,8 @@ class Model(SyftObject):
             _repr_str += f"URL: {self.url}\n\n"
         if self.description:
             _repr_str += f"Description: \n\n{self.description.text}\n\n"
+        if self.example_text:
+            _repr_str += f"Example: \n\n{self.example_text}\n\n"
         return _repr_str
 
     # @property
@@ -334,7 +358,7 @@ class CreateModel(Model):
 
     __repr_attrs__ = ["name", "url"]
 
-    model_code: str
+    submit_model: SubmitModelCode
     asset_list: list[Any] = []
     created_at: DateTime | None = None  # type: ignore[assignment]
     model_config = ConfigDict(validate_assignment=True)

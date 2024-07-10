@@ -103,6 +103,52 @@ class DomainClient(SyftClient):
         return None
 
     def upload_model(self, model: CreateModel) -> SyftSuccess | SyftError:
+        # relative
+        from ..types.twin_object import TwinObject
+
+        model_size: float = 0.0
+        with tqdm(
+            total=len(model.asset_list), colour="green", desc="Uploading"
+        ) as pbar:
+            for asset in model.asset_list:
+                try:
+                    contains_empty: bool = asset.contains_empty()
+                    twin = TwinObject(
+                        private_obj=ActionObject.from_obj(
+                            asset.data
+                        ),  # same on both for now
+                        mock_obj=ActionObject.from_obj(asset.data),
+                        syft_node_location=self.id,
+                        syft_client_verify_key=self.verify_key,
+                    )
+                    res = twin._save_to_blob_storage(allow_empty=contains_empty)
+                    if isinstance(res, SyftError):
+                        return res
+                except Exception as e:
+                    tqdm.write(f"Failed to create twin for {asset.name}. {e}")
+                    return SyftError(message=f"Failed to create twin. {e}")
+
+                if isinstance(res, SyftWarning):
+                    logger.debug(res.message)
+                response = self.api.services.action.set(
+                    twin, ignore_detached_objs=contains_empty
+                )
+                if isinstance(response, SyftError):
+                    tqdm.write(f"Failed to upload asset: {asset.name}")
+                    return response
+
+                asset.action_id = twin.id
+                asset.node_uid = self.id
+                model_size += get_mb_size(asset.data)
+
+                # Update the progress bar and set the dynamic description
+                pbar.set_description(f"Uploading: {asset.name}")
+                pbar.update(1)
+
+        model.mb_size = model_size
+        valid = model.check()
+        if isinstance(valid, SyftError):
+            return valid
         return self.api.services.model.add(model=model)
 
     def upload_dataset(self, dataset: CreateDataset) -> SyftSuccess | SyftError:
