@@ -133,10 +133,3 @@ class ServiceRegistry:
             return self.service_path_map[service_name.lower()]
         except KeyError:
             raise ValueError(f"Service {path} not found.")
-
-    def to_dict(self) -> dict[str, AbstractService]:
-        d: dict[str, AbstractService] = {}
-        for name in self.get_service_classes().keys():
-            service = getattr(self, name)
-            d[name] = service
-        return d
