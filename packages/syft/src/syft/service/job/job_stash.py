@@ -311,18 +311,7 @@ class Job(SyncableSyftObject):
             raise ValueError(
                 f"Can't access Syft API. You must login to {self.syft_node_location}"
             )
-        call = SyftAPICall(
-            node_uid=self.node_uid,
-            path="job.get",
-            args=[],
-            kwargs={"uid": self.id},
-            blocking=True,
-        )
-        job_res: SyftSuccess | SyftError = api.make_call(call)
-        if job_res.is_err():
-            return None
-        job = job_res.value
-
+        job = api.job.get(self.id)
         self.resolved = job.resolved
         if job.resolved:
             self.result = job.result
