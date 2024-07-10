@@ -53,6 +53,7 @@ from ..service.warnings import APIEndpointWarning
 from ..service.warnings import WarningContext
 from ..types.cache_object import CachedSyftObject
 from ..types.errors import SyftException
+from ..types.errors import exclude_from_traceback
 from ..types.identity import Identity
 from ..types.result import as_result
 from ..types.syft_migration import migrate
@@ -118,12 +119,13 @@ NEW_STYLE_SERVICES_LIST: list[str] = [
 ]
 
 
+@exclude_from_traceback
 def post_process_result(path:str , result: Any, unwrap_on_success: bool=False) -> Any:
     if any(path.startswith(x) for x in NEW_STYLE_SERVICES_LIST):
         if isinstance(result, SyftError):
-            tb = result.tb if result.tb is not None else ""
-            msg = result.message + "\n" + tb if tb else result.message
-            raise SyftException(public_message=msg)
+            raise SyftException(
+                public_message=result.message, server_trace=result.tb
+            )
         if unwrap_on_success:
             result = result.unwrap_value()
 
@@ -418,9 +420,9 @@ class RemoteFunction(SyftObject):
             [result], kwargs={}, to_latest_protocol=True
         )
         result = result[0]
-
         return post_process_result(api_call.path, result, self.unwrap_on_success)
 
+    @exclude_from_traceback
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         return self.function_call(self.path, *args, **kwargs)
 
@@ -710,14 +712,7 @@ def generate_remote_lib_function(
         )
 
         result = wrapper_make_call(api_call=api_call)
-
-        if isinstance(result, SyftError):
-            tb = result.tb if result.tb is not None else ""
-            msg = result.message + "\n" + tb if tb else result.message
-            raise SyftException(public_message=msg)
-
-        if isinstance(result, SyftSuccess):
-            result = result.value
+        result = post_process_result("action.execute", result, unwrap_on_success=True)
 
         return result
 
