@@ -200,6 +200,27 @@
           "action": "add"
         }
       },
+      "NodePeer": {
+        "3": {
+          "version": 3,
+          "hash": "ec0e39fc77ddb542558519d6a1f7c55f41cc037b6312792333792a04feea57e6",
+          "action": "add"
+        }
+      },
+      "NodePeerUpdate": {
+        "1": {
+          "version": 1,
+          "hash": "9e7cd39f6a9f90e8c595452865525e0989df1688236acfd1a665ed047ba47de9",
+          "action": "add"
+        }
+      },
+      "EnclaveInstance": {
+        "1": {
+          "version": 1,
+          "hash": "4ccf585328e191d22e974fac0370618ad4c020eb768f9effd231ed8b37e22808",
+          "action": "add"
+        }
+      },
       "PolicyRule": {
         "1": {
           "version": 1,
@@ -249,6 +270,13 @@
           "action": "add"
         }
       },
+      "RunOnEnclave": {
+        "1": {
+          "version": 1,
+          "hash": "7f8d6c4e136b8ca8ecba3062367c2f82ae3e8cb9e04234f2e60524aa32f483b8",
+          "action": "add"
+        }
+      },
       "EmptyInputPolicy": {
         "2": {
           "version": 2,
@@ -288,6 +316,48 @@
         "1": {
           "version": 1,
           "hash": "c5be6bb4f34b04f814e15468d5231e47540c5b7d2ea0f2770e6cd332f61173c7",
+          "action": "add"
+        }
+      },
+      "ModelPageView": {
+        "1": {
+          "version": 1,
+          "hash": "25c02dc71310dc15dad1ad09a8d05c99f2fafb87b46db42af8b82862ec215fef",
+          "action": "add"
+        }
+      },
+      "ModelAsset": {
+        "1": {
+          "version": 1,
+          "hash": "c57f4c6d6932a7813f7d4c7358b8a680edb855da55fbf1054521cc92eae1e560",
+          "action": "add"
+        }
+      },
+      "SubmitModelCode": {
+        "2": {
+          "version": 2,
+          "hash": "d76577c9a47f8c4d231ed64ae2dc858db5dde9f6bc945daecad6ce6b98860a8a",
+          "action": "add"
+        }
+      },
+      "CreateModelAsset": {
+        "1": {
+          "version": 1,
+          "hash": "edac32d8bf7b77830e985d86cb4b4314b51a586698d51da75e9bf2e8c6a89fb3",
+          "action": "add"
+        }
+      },
+      "Model": {
+        "1": {
+          "version": 1,
+          "hash": "86a2aa0581fded0cffa660fea344acf2806d09393ca41dab54a106bbfce08c45",
+          "action": "add"
+        }
+      },
+      "CreateModel": {
+        "1": {
+          "version": 1,
+          "hash": "934759e5a0abc001af9ba9a5b7770de9ea39a635503096e82511bd81a528d5b2",
           "action": "add"
         }
       },
@@ -439,20 +509,6 @@
           "action": "add"
         }
       },
-      "NodePeer": {
-        "3": {
-          "version": 3,
-          "hash": "ec0e39fc77ddb542558519d6a1f7c55f41cc037b6312792333792a04feea57e6",
-          "action": "add"
-        }
-      },
-      "NodePeerUpdate": {
-        "1": {
-          "version": 1,
-          "hash": "9e7cd39f6a9f90e8c595452865525e0989df1688236acfd1a665ed047ba47de9",
-          "action": "add"
-        }
-      },
       "AssociationRequestChange": {
         "1": {
           "version": 1,
@@ -464,48 +520,6 @@
         "1": {
           "version": 1,
           "hash": "d31b2edfb767401c810584baccd27e4f566181c3ef7706618a82eb25ae20ff6d",
-          "action": "add"
-        }
-      },
-      "NodeMetadataUpdate": {
-        "2": {
-          "version": 2,
-          "hash": "520ae8ffc0c057ffa827cb7b267a19fb6b92e3cf3c0a3666ac34e271b6dd0aed",
-          "action": "remove"
-        }
-      },
-      "JobInfo": {
-        "2": {
-          "version": 2,
-          "hash": "89dbd4a810586b49498be1f5299b565a19871487e14a120433b0a4cf607b6dee",
-          "action": "remove"
-        }
-      },
-      "SyncStateItem": {
-        "1": {
-          "version": 1,
-          "hash": "4dbfa0813f5a3f7be0b36249ff2d67e395ad7c9e138c5a122fc7342b8dcc4b92",
-          "action": "remove"
-        }
-      },
-      "VeilidConnection": {
-        "1": {
-          "version": 1,
-          "hash": "c1796e7b01c9eae0dbf59cfd5c2c2f0e7eba593e0cea615717246572b27aae4b",
-          "action": "remove"
-        }
-      },
-      "EnclaveInstance": {
-        "1": {
-          "version": 1,
-          "hash": "4ccf585328e191d22e974fac0370618ad4c020eb768f9effd231ed8b37e22808",
-          "action": "add"
-        }
-      },
-      "RunOnEnclave": {
-        "1": {
-          "version": 1,
-          "hash": "7f8d6c4e136b8ca8ecba3062367c2f82ae3e8cb9e04234f2e60524aa32f483b8",
           "action": "add"
         }
       },
@@ -538,6 +552,48 @@
           "version": 1,
           "hash": "04c9f5644857d68128263218cab8925549506c5f56f49525937b23ef707312a8",
           "action": "add"
+        }
+      },
+      "SyftFile": {
+        "1": {
+          "version": 1,
+          "hash": "a21073b872477c41b829eef92e5a2b89ba9674ba22a1dffeb1949616e604b9ef",
+          "action": "add"
+        }
+      },
+      "SyftFolder": {
+        "1": {
+          "version": 1,
+          "hash": "0885495752c6170b7ebd5a556303ca4ce477ad7b36fa4211cbe35662b1f8d8df",
+          "action": "add"
+        }
+      },
+      "NodeMetadataUpdate": {
+        "2": {
+          "version": 2,
+          "hash": "520ae8ffc0c057ffa827cb7b267a19fb6b92e3cf3c0a3666ac34e271b6dd0aed",
+          "action": "remove"
+        }
+      },
+      "JobInfo": {
+        "2": {
+          "version": 2,
+          "hash": "89dbd4a810586b49498be1f5299b565a19871487e14a120433b0a4cf607b6dee",
+          "action": "remove"
+        }
+      },
+      "SyncStateItem": {
+        "1": {
+          "version": 1,
+          "hash": "4dbfa0813f5a3f7be0b36249ff2d67e395ad7c9e138c5a122fc7342b8dcc4b92",
+          "action": "remove"
+        }
+      },
+      "VeilidConnection": {
+        "1": {
+          "version": 1,
+          "hash": "c1796e7b01c9eae0dbf59cfd5c2c2f0e7eba593e0cea615717246572b27aae4b",
+          "action": "remove"
         }
       }
     }
