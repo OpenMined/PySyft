@@ -118,9 +118,12 @@ class SyftError(SyftResponseMessage):
             if include_traceback:
                 tb = exc.get_tb(context)
         else:
-            error_msg = f"Something unexpected happened server side {exc}"
+            # by default only type
+            error_msg = f"Something unexpected happened server side {type(exc)}"
             if include_traceback:
                 tb = traceback.format_exc()
+                # if they can see the tb, they can also see the exception message
+                error_msg = f"Something unexpected happened server side {exc}"
         return cls(message=error_msg, tb=tb)
 
 
