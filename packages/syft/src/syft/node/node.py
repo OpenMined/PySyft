@@ -394,7 +394,7 @@ class Node(AbstractNode):
         )
 
         # construct services only after init stores
-        self.services: ServiceRegistry = ServiceRegistry(node=self)
+        self.services: ServiceRegistry = ServiceRegistry.for_node(self)
 
         create_admin_new(  # nosec B106
             name=root_username,
@@ -864,9 +864,6 @@ class Node(AbstractNode):
     @property
     def worker_stash(self) -> WorkerStash:
         return self.get_service("workerservice").stash
-
-    def _construct_services(self) -> None:
-        self.services = ServiceRegistry(node=self)
 
     @property
     def service_path_map(self) -> dict[str, AbstractService]:

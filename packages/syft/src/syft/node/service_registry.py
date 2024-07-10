@@ -1,10 +1,13 @@
 # stdlib
 from collections.abc import Callable
+from dataclasses import dataclass
+from dataclasses import field
 import typing
 from typing import Any
 from typing import TYPE_CHECKING
 
 # relative
+from ..serde.serializable import serializable
 from ..service.action.action_service import ActionService
 from ..service.action.action_store import ActionStore
 from ..service.api.api_service import APIService
@@ -43,8 +46,9 @@ if TYPE_CHECKING:
     from .node import Node
 
 
+@serializable()
+@dataclass
 class ServiceRegistry:
-    # Services
     action: ActionService
     user: UserService
     attestation: AttestationService
@@ -76,12 +80,20 @@ class ServiceRegistry:
     output: OutputService
     user_code_status: UserCodeStatusService
 
-    def __init__(self, node: "Node") -> None:
-        self.node = node
-        self.service_classes = self.get_service_classes()
-        self.services: list[AbstractService] = []
-        self.service_path_map: dict[str, AbstractService] = {}
-        self._construct_services()
+    services: list[AbstractService] = field(default_factory=list, init=False)
+    service_path_map: dict[str, AbstractService] = field(
+        default_factory=dict, init=False
+    )
+
+    @classmethod
+    def for_node(cls, node: "Node") -> "ServiceRegistry":
+        return cls(**cls._construct_services(node))
+
+    def __post_init__(self) -> None:
+        for name, service_cls in self.get_service_classes().items():
+            service = getattr(self, name)
+            self.services.append(service)
+            self.service_path_map[service_cls.__name__.lower()] = service
 
     @classmethod
     def get_service_classes(
@@ -93,18 +105,19 @@ class ServiceRegistry:
             if issubclass(cls, AbstractService)
         }
 
-    def _construct_services(self) -> None:
-        for field_name, service_cls in self.get_service_classes().items():
+    @classmethod
+    def _construct_services(cls, node: "Node") -> dict[str, AbstractService]:
+        service_dict = {}
+        for field_name, service_cls in cls.get_service_classes().items():
             svc_kwargs: dict[str, Any] = {}
             if issubclass(service_cls.store_type, ActionStore):
-                svc_kwargs["store"] = self.node.action_store
+                svc_kwargs["store"] = node.action_store
             else:
-                svc_kwargs["store"] = self.node.document_store
+                svc_kwargs["store"] = node.document_store
 
             service = service_cls(**svc_kwargs)
-            setattr(self, field_name, service)
-            self.services.append(service)
-            self.service_path_map[service.__class__.__name__.lower()] = service
+            service_dict[field_name] = service
+        return service_dict
 
     def get_service(self, path_or_func: str | Callable) -> AbstractService:
         if callable(path_or_func):
@@ -120,3 +133,10 @@ class ServiceRegistry:
             return self.service_path_map[service_name.lower()]
         except KeyError:
             raise ValueError(f"Service {path} not found.")
+
+    def to_dict(self) -> dict[str, AbstractService]:
+        d: dict[str, AbstractService] = {}
+        for name in self.get_service_classes().keys():
+            service = getattr(self, name)
+            d[name] = service
+        return d
