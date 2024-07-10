@@ -29,7 +29,7 @@ from ..action.action_object import ActionObject
 from ..dataset.dataset import Contributor
 from ..dataset.dataset import MarkdownDescription
 from ..policy.policy import get_code_from_class
-from ..response import SyftError
+from ..response import SyftError,SyftWarning
 from ..response import SyftSuccess
 
 
@@ -90,6 +90,35 @@ class ModelAsset(SyftObject):
             and self.action_id == other.action_id
             and self.created_at == other.created_at
         )
+    
+    def has_permission(self, data_result: Any) -> bool:
+        # TODO: implement in a better way
+        return not (
+            isinstance(data_result, str)
+            and data_result.startswith("Permission")
+            and data_result.endswith("denied")
+        )
+
+    @property
+    def data(self) -> Any:
+        # relative
+        from ...client.api import APIRegistry
+
+        api = APIRegistry.api_for(
+            node_uid=self.node_uid,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None or api.services is None:
+            return None
+        res = api.services.action.get(self.action_id)
+        if self.has_permission(res):
+            return res.syft_action_data
+        else:
+            warning = SyftWarning(
+                message="You do not have permission to access private data."
+            )
+            display(warning)
+            return None
 
     # def __call__(self, *args, **kwargs) -> Any:
     #     endpoint = self.endpoint
@@ -115,6 +144,7 @@ def syft_model(
     def decorator(cls: Any) -> Callable:
         try:
             code = dedent(get_code_from_class(cls))
+            code = f"import syft as sy\n{code}"
             class_name = cls.__name__
             res = SubmitModelCode(code=code, class_name=class_name)
         except Exception as e:
@@ -134,12 +164,22 @@ def syft_model(
 class SubmitModelCode(SyftObject):
     # version
     __canonical_name__ = "SubmitModelCode"
-    __version_ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID | None = None  # type: ignore[assignment]
     code: str
     class_name: str
     # signature: inspect.Signature
+
+    def __call__(self, **kwargs) -> Any:
+        # Load Class
+        exec(self.code)
+        
+        # execute it
+        func_string = f"{self.class_name}(**kwargs)"
+        result = eval(func_string, None, locals())  # nosec
+
+        return result
 
     __repr_attrs__ = ["class_name", "code"]
 
