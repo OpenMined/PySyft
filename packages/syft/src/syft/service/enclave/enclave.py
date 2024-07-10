@@ -60,7 +60,7 @@ class EnclaveInstance(SyftObject):
                 {
                     "node_uid": UID(metadata.id),
                     "name": metadata.name,
-                    "status": EnclaveStatus.NOT_INITIALIZED,
+                    "status": cls.get_status(),
                     "metadata": metadata,
                 }
             )

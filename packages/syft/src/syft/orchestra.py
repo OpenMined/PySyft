@@ -257,12 +257,17 @@ def deploy_to_remote(
     deployment_type_enum: DeploymentType,
     name: str,
     node_side_type: NodeSideType,
+    host: str | None = None,
+    port: int | None = None,
     migrate: bool = False,
 ) -> NodeHandle:
-    node_port = int(os.environ.get("NODE_PORT", f"{DEFAULT_PORT}"))
-    node_url = str(os.environ.get("NODE_URL", f"{DEFAULT_URL}"))
     if migrate:
         raise ValueError("Cannot migrate via orchestra on remote node")
+
+    # Preference order: Environment Variable > Argument > Default
+    node_url = os.getenv("NODE_URL") or host or DEFAULT_URL
+    node_port = int(os.getenv("NODE_PORT") or port or DEFAULT_PORT)
+
     return NodeHandle(
         node_type=node_type_enum,
         deployment_type=deployment_type_enum,
@@ -349,6 +354,8 @@ class Orchestra:
                 node_type_enum=node_type_enum,
                 deployment_type_enum=deployment_type_enum,
                 name=name,
+                host=host,
+                port=port,
                 node_side_type=node_side_type_enum,
                 migrate=migrate,
             )
