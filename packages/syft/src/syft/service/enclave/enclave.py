@@ -76,6 +76,13 @@ class EnclaveInstance(SyftObject):
         client = EnclaveClient(connection=connection, credentials=credentials)
         return client
 
+    def get_guest_client(self) -> SyftClient:
+        connection = route_to_connection(route=self.route)
+        client = EnclaveClient(
+            connection=connection, credentials=SyftSigningKey.generate()
+        )
+        return client
+
     def __hash__(self) -> int:
         return hash(self.name)
 
