@@ -12,9 +12,6 @@ import pandas as pd
 from pydantic import ConfigDict
 from pydantic import field_validator
 from pydantic import model_validator
-from result import Err
-from result import Ok
-from result import Result
 from typing_extensions import Self
 
 # relative
@@ -138,24 +135,30 @@ class Asset(SyftObject):
             if self.uploader
             else ""
         )
+        try:
+            data = self.data
+        except SyftException:
+            data = None
 
-        if isinstance(self.data, ActionObject):
+        mock = self.mock
+
+        if isinstance(data, ActionObject):
             data_table_line = itables.to_html_datatable(
-                df=self.data.syft_action_data, css=itables_css
+                df=data.syft_action_data, css=itables_css
             )
-        elif isinstance(self.data, pd.DataFrame):
-            data_table_line = itables.to_html_datatable(df=self.data, css=itables_css)
+        elif isinstance(data, pd.DataFrame):
+            data_table_line = itables.to_html_datatable(df=data, css=itables_css)
         else:
-            data_table_line = self.data
+            data_table_line = data
 
-        if isinstance(self.mock, ActionObject):
+        if isinstance(mock, ActionObject):
             mock_table_line = itables.to_html_datatable(
-                df=self.mock.syft_action_data, css=itables_css
+                df=mock.syft_action_data, css=itables_css
             )
-        elif isinstance(self.mock, pd.DataFrame):
-            mock_table_line = itables.to_html_datatable(df=self.mock, css=itables_css)
+        elif isinstance(mock, pd.DataFrame):
+            mock_table_line = itables.to_html_datatable(df=mock, css=itables_css)
         else:
-            mock_table_line = self.mock
+            mock_table_line = mock
             if isinstance(mock_table_line, SyftError):
                 mock_table_line = mock_table_line.message
 
@@ -378,7 +381,9 @@ class CreateAsset(SyftObject):
                 name=name, role=_role_str, email=email, phone=phone, note=note
             )
             if contributor in self.contributors:
-                raise SyftException(public_message=f"Contributor with email: '{email}' already exists in '{self.name}' Asset.")
+                raise SyftException(
+                    public_message=f"Contributor with email: '{email}' already exists in '{self.name}' Asset."
+                )
             self.contributors.add(contributor)
 
             return SyftSuccess(
@@ -400,7 +405,9 @@ class CreateAsset(SyftObject):
             raise SyftException(public_message=mock_data)
 
         if mock_is_real and (mock_data is None or _is_action_data_empty(mock_data)):
-            raise SyftException(public_message="`mock_is_real` must be False if mock is empty")
+            raise SyftException(
+                public_message="`mock_is_real` must be False if mock is empty"
+            )
 
         self.mock = mock_data
         self.mock_is_real = mock_is_real
@@ -647,7 +654,9 @@ class CreateDataset(Dataset):
                 name=name, role=_role_str, email=email, phone=phone, note=note
             )
             if contributor in self.contributors:
-                raise SyftException(public_message=f"Contributor with email: '{email}' already exists in '{self.name}' Dataset.")
+                raise SyftException(
+                    public_message=f"Contributor with email: '{email}' already exists in '{self.name}' Dataset."
+                )
             self.contributors.add(contributor)
             return SyftSuccess(
                 message=f"Contributor '{name}' added to '{self.name}' Dataset."
@@ -655,16 +664,16 @@ class CreateDataset(Dataset):
         except Exception as e:
             raise SyftException(public_message=f"Failed to add contributor. Error: {e}")
 
-    def add_asset(
-        self, asset: CreateAsset, force_replace: bool = False
-    ) -> SyftSuccess:
+    def add_asset(self, asset: CreateAsset, force_replace: bool = False) -> SyftSuccess:
         if asset.mock is None:
             raise ValueError(_ASSET_WITH_NONE_MOCK_ERROR_MESSAGE)
 
         for i, existing_asset in enumerate(self.asset_list):
             if existing_asset.name == asset.name:
                 if not force_replace:
-                    raise SyftException(public_message=f"Asset '{asset.name}' already exists in '{self.name}' Dataset.\nUse add_asset(asset, force_replace=True) to replace.")
+                    raise SyftException(
+                        public_message=f"Asset '{asset.name}' already exists in '{self.name}' Dataset.\nUse add_asset(asset, force_replace=True) to replace."
+                    )
                 else:
                     self.asset_list[i] = asset
                     return SyftSuccess(

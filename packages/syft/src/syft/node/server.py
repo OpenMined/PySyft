@@ -3,7 +3,6 @@ from collections.abc import Callable
 import multiprocessing
 import multiprocessing.synchronize
 import os
-from pathlib import Path
 import platform
 import signal
 import subprocess  # nosec
@@ -155,8 +154,8 @@ def run_uvicorn(
         host=host,
         port=port,
         factory=True,
-        reload=kwargs.get("dev_mode"),
-        reload_dirs=[Path(__file__).parent.parent] if kwargs.get("dev_mode") else None,
+        # reload=kwargs.get("dev_mode"),
+        # reload_dirs=[Path(__file__).parent.parent] if kwargs.get("dev_mode") else None,
     )
 
 

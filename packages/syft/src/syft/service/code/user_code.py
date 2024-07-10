@@ -1177,17 +1177,19 @@ class SubmitUserCode(SyftObject):
             # Also, this works only on the assumption that all inputs
             # are ActionObjects, which might change in the future
             for id in obj_dict.values():
-                mock_obj = api.services.action.get_mock(id)
-                if isinstance(mock_obj, SyftError):
-                    data_obj = api.services.action.get(id)
-                    if isinstance(data_obj, SyftError):
-                        return SyftError(
-                            message="You do not have access to object you want \
+                try:
+                    mock_obj = api.services.action.get_mock(id)
+                    data_obj = mock_obj
+                except SyftException:
+                    try:
+                        data_obj = api.services.action.get(id)
+                    except SyftException:
+                        raise SyftException(
+                            public_message="You do not have access to object you want \
                                 to use, or the private object does not have mock \
                                 data. Contact the Node Admin."
                         )
-                else:
-                    data_obj = mock_obj
+
                 data_obj.id = id
                 new_obj = ActionObject.from_obj(
                     data_obj.syft_action_data,

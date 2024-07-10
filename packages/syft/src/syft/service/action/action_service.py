@@ -338,10 +338,7 @@ class ActionService(AbstractService):
         self, context: AuthedServiceContext, uid: UID
     ) -> Result[SyftError, SyftObject]:
         """Get a pointer from the action store"""
-        result = self.store.get_mock(uid=uid)
-        if result.is_ok():
-            return result.ok()
-        return SyftError(message=result.err())
+        result = self.store.get_mock(uid=uid).unwrap()
 
     @service_method(
         path="action.has_storage_permission",

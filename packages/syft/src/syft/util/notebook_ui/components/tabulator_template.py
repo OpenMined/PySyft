@@ -180,7 +180,10 @@ def build_tabulator_table(
     pagination: bool = True,
     header_sort: bool = True,
 ) -> str | None:
-    table_data, table_metadata = prepare_table_data(obj)
+    try:
+        table_data, table_metadata = prepare_table_data(obj)
+    except Exception:
+        return None
     if len(table_data) == 0:
         return obj.__repr__()
     uid = uid if uid is not None else secrets.token_hex(4)
