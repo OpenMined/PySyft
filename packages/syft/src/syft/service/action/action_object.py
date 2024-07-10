@@ -43,11 +43,15 @@ from ...service.response import SyftWarning
 from ...store.linked_obj import LinkedObject
 from ...types.base import SyftBaseModel
 from ...types.datetime import DateTime
+from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
+from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SyftBaseObject
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
+from ...types.transforms import drop
+from ...types.transforms import make_set_default
 from ...types.uid import LineageID
 from ...types.uid import UID
 from ...util.util import prompt_warning_message
@@ -527,13 +531,7 @@ def convert_to_pointers(
                 print(r.message)
             if isinstance(r, SyftWarning):
                 logger.debug(r.message)
-                skip_save_to_blob_store = True
-            else:
-                skip_save_to_blob_store = False
-            arg = api.services.action.set(
-                arg,
-                skip_save_to_blob_store=skip_save_to_blob_store,
-            )
+            arg = api.services.action.set(arg)
         return arg
 
     arg_list = [process_arg(arg) for arg in args] if args else []
@@ -675,7 +673,7 @@ def truncate_str(string: str, length: int = 100) -> str:
 
 
 @serializable(without=["syft_pre_hooks__", "syft_post_hooks__"])
-class ActionObject(SyncableSyftObject):
+class ActionObjectV3(SyncableSyftObject):
     """Action object for remote execution."""
 
     __canonical_name__ = "ActionObject"
@@ -710,6 +708,45 @@ class ActionObject(SyncableSyftObject):
     syft_created_at: DateTime | None = None
     syft_resolved: bool = True
     syft_action_data_node_id: UID | None = None
+
+
+@serializable(without=["syft_pre_hooks__", "syft_post_hooks__"])
+class ActionObject(SyncableSyftObject):
+    """Action object for remote execution."""
+
+    __canonical_name__ = "ActionObject"
+    __version__ = SYFT_OBJECT_VERSION_4
+    __private_sync_attr_mocks__: ClassVar[dict[str, Any]] = {
+        "syft_action_data_cache": None,
+        "syft_blob_storage_entry_id": None,
+    }
+
+    __attr_searchable__: list[str] = []  # type: ignore[misc]
+    syft_action_data_cache: Any | None = None
+    syft_blob_storage_entry_id: UID | None = None
+    syft_pointer_type: ClassVar[type[ActionObjectPointer]]
+
+    # Help with calculating history hash for code verification
+    syft_parent_hashes: int | list[int] | None = None
+    syft_parent_op: str | None = None
+    syft_parent_args: Any | None = None
+    syft_parent_kwargs: Any | None = None
+    syft_history_hash: int | None = None
+    syft_internal_type: ClassVar[type[Any]]
+    syft_node_uid: UID | None = None
+    syft_pre_hooks__: dict[str, list] = {}
+    syft_post_hooks__: dict[str, list] = {}
+    syft_twin_type: TwinMode = TwinMode.NONE
+    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
+    syft_action_data_type: type | None = None
+    syft_action_data_repr_: str | None = None
+    syft_action_data_str_: str | None = None
+    syft_has_bool_attr: bool | None = None
+    syft_resolve_data: bool | None = None
+    syft_created_at: DateTime | None = None
+    syft_resolved: bool = True
+    syft_action_data_node_id: UID | None = None
+    syft_action_saved_to_blob_store: bool = True
     # syft_dont_wrap_attrs = ["shape"]
 
     def syft_get_diffs(self, ext_obj: Any) -> list[AttrDiff]:
@@ -814,6 +851,7 @@ class ActionObject(SyncableSyftObject):
                 if get_metadata is not None and not can_upload_to_blob_storage(
                     data, get_metadata()
                 ):
+                    self.syft_action_saved_to_blob_store = False
                     return SyftWarning(
                         message=f"The action object {self.id} was not saved to "
                         f"the blob store but to memory cache since it is small."
@@ -1246,13 +1284,9 @@ class ActionObject(SyncableSyftObject):
 
         if isinstance(blob_storage_res, SyftWarning):
             logger.debug(blob_storage_res.message)
-            skip_save_to_blob_store = True
-        else:
-            skip_save_to_blob_store = False
         res = api.services.action.set(
             self,
             add_storage_permission=add_storage_permission,
-            skip_save_to_blob_store=skip_save_to_blob_store,
         )
         if isinstance(res, ActionObject):
             self.syft_created_at = res.syft_created_at
@@ -2191,7 +2225,7 @@ class ActionObject(SyncableSyftObject):
 
 
 @serializable()
-class AnyActionObject(ActionObject):
+class AnyActionObjectV3(ActionObjectV3):
     """
     This is a catch-all class for all objects that are not
     defined in the `action_types` dictionary.
@@ -2199,6 +2233,22 @@ class AnyActionObject(ActionObject):
 
     __canonical_name__ = "AnyActionObject"
     __version__ = SYFT_OBJECT_VERSION_3
+
+    syft_internal_type: ClassVar[type[Any]] = NoneType  # type: ignore
+    # syft_passthrough_attrs: List[str] = []
+    syft_dont_wrap_attrs: list[str] = ["__str__", "__repr__", "syft_action_data_str_"]
+    syft_action_data_str_: str = ""
+
+
+@serializable()
+class AnyActionObject(ActionObject):
+    """
+    This is a catch-all class for all objects that are not
+    defined in the `action_types` dictionary.
+    """
+
+    __canonical_name__ = "AnyActionObject"
+    __version__ = SYFT_OBJECT_VERSION_4
 
     syft_internal_type: ClassVar[type[Any]] = NoneType  # type: ignore
     # syft_passthrough_attrs: List[str] = []
@@ -2240,3 +2290,23 @@ def has_action_data_empty(args: Any, kwargs: Any) -> bool:
         if is_action_data_empty(a):
             return True
     return False
+
+
+@migrate(ActionObjectV3, ActionObject)
+def upgrade_action_object() -> list[Callable]:
+    return [make_set_default("syft_action_saved_to_blob_store", True)]
+
+
+@migrate(ActionObject, ActionObjectV3)
+def downgrade_action_object() -> list[Callable]:
+    return [drop("syft_action_saved_to_blob_store")]
+
+
+@migrate(AnyActionObjectV3, AnyActionObject)
+def upgrade_anyaction_object() -> list[Callable]:
+    return [make_set_default("syft_action_saved_to_blob_store", True)]
+
+
+@migrate(AnyActionObject, AnyActionObjectV3)
+def downgrade_anyaction_object() -> list[Callable]:
+    return [drop("syft_action_saved_to_blob_store")]

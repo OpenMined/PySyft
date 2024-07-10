@@ -119,6 +119,19 @@ NEW_STYLE_SERVICES_LIST: list[str] = [
 ]
 
 
+@exclude_from_traceback
+def post_process_result(path:str , result: Any, unwrap_on_success: bool=False) -> Any:
+    if any(path.startswith(x) for x in NEW_STYLE_SERVICES_LIST):
+        if isinstance(result, SyftError):
+            raise SyftException(
+                public_message=result.message, server_trace=result.tb
+            )
+        if unwrap_on_success:
+            result = result.unwrap_value()
+
+    return result
+
+
 def _has_config_dict(t: Any) -> bool:
     return (
         # Use this instead of `issubclass`` to be compatible with python 3.10
@@ -407,19 +420,7 @@ class RemoteFunction(SyftObject):
             [result], kwargs={}, to_latest_protocol=True
         )
         result = result[0]
-
-        return self.post_process_result(api_call.path, result)
-
-    @exclude_from_traceback
-    def post_process_result(self, path: str, result: Any) -> Any:
-        if any(path.startswith(x) for x in NEW_STYLE_SERVICES_LIST):
-            if isinstance(result, SyftError):
-                raise SyftException(
-                    public_message=result.message, server_trace=result.tb
-                )
-            if self.unwrap_on_success:
-                result = result.unwrap_value()
-        return result
+        return post_process_result(api_call.path, result, self.unwrap_on_success)
 
     @exclude_from_traceback
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
@@ -583,7 +584,7 @@ class RemoteUserCodeFunction(RemoteFunction):
             blocking=True,
         )
         result = self.make_call(api_call=api_call)
-        return self.post_process_result(api_call.path, result)
+        return post_process_result(api_call.path, result, self.unwrap_on_success)
 
 
 def generate_remote_function(
@@ -711,12 +712,7 @@ def generate_remote_lib_function(
         )
 
         result = wrapper_make_call(api_call=api_call)
-
-        if isinstance(result, SyftError):
-            raise SyftException(public_message=result.message, server_trace=result.tb)
-
-        if isinstance(result, SyftSuccess):
-            result = result.value
+        result = post_process_result("action.execute", result, unwrap_on_success=True)
 
         return result
 

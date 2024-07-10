@@ -8,6 +8,7 @@ from ...client.api import APIRegistry
 from ...client.enclave_client import EnclaveMetadata
 from ...serde.serializable import serializable
 from ...service.user.user_roles import ServiceRole
+from ...types.errors import SyftException
 from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
@@ -104,8 +105,8 @@ class CodeHistoryView(SyftObject):
             and index < 0
         ):
             # negative index would dynamically resolve to a different version
-            return SyftError(
-                message="For security concerns we do not allow negative indexing. \
+            raise SyftException(
+                public_message="For security concerns we do not allow negative indexing. \
                 Try using absolute values when indexing"
             )
         return self.user_code_history[index]

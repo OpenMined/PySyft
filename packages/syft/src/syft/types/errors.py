@@ -160,6 +160,40 @@ class SyftException(Exception):
         return table_html
 
 
+# third party
+from IPython.display import HTML
+from IPython.display import display
+
+
+class raises:
+    def __init__(self, expected_exception, show=False):
+        self.expected_exception = expected_exception
+        self.show = show
+
+    def __enter__(self):
+        # Before block of code
+        pass
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        # After block of code
+        if exc_type is None:
+            raise AssertionError(
+                f"Expected {self.expected_exception} to be raised, but no exception was raised."
+            )
+        if not issubclass(exc_type, self.expected_exception):
+            raise AssertionError(
+                f"Expected {self.expected_exception} to be raised, but got {exc_type}."
+            )
+        if self.show:
+            if hasattr(exc_value, "_repr_html_"):
+                display(HTML(exc_value._repr_html_()))
+            else:
+                print(
+                    f"The following exception was catched\n{exc_value}",
+                )
+        return True  # Suppress the exception
+
+
 class ExceptionFilter(tuple):
     """
     Filter and store all exception classes from a given module path. This class can be
