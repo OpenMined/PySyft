@@ -2,16 +2,16 @@
 
 # Initialize default values
 VERSION=""
-NODE_NAME=""
-NODE_SIDE_TYPE="high" # Default value for NODE_SIDE_TYPE
-NODE_TYPE=""
+SERVER_NAME=""
+SERVER_SIDE_TYPE="high" # Default value for SERVER_SIDE_TYPE
+SERVER_TYPE=""
 PORT=""
 DEFAULT_ROOT_EMAIL="info@openmined.org"
 DEFAULT_ROOT_PASSWORD="changethis"
 
 # Function to display usage
 usage() {
-    echo "Usage: $0 -v|--version <version> -n|--name <node_name> -t|--type <node_type> -p|--port <port> [-s|--side <node_side_type>] [-email|--root-email <default_root_email>] [--password|--root-password <default_root_password>]"
+    echo "Usage: $0 -v|--version <version> -n|--name <server_name> -t|--type <server_type> -p|--port <port> [-s|--side <server_side_type>] [-email|--root-email <default_root_email>] [--password|--root-password <default_root_password>]"
     exit 1
 }
 
@@ -43,15 +43,15 @@ while [[ "$#" -gt 0 ]]; do
             shift 2
             ;;
         -n|--name)
-            NODE_NAME="$2"
+            SERVER_NAME="$2"
             shift 2
             ;;
         -s|--side)
-            NODE_SIDE_TYPE="$2"
+            SERVER_SIDE_TYPE="$2"
             shift 2
             ;;
         -t|--type)
-            NODE_TYPE="$2"
+            SERVER_TYPE="$2"
             shift 2
             ;;
         -p|--port)
@@ -74,16 +74,16 @@ done
 
 # Debug output to verify parsed values
 echo "VERSION: $VERSION"
-echo "NODE_NAME: $NODE_NAME"
-echo "NODE_SIDE_TYPE: $NODE_SIDE_TYPE"
-echo "NODE_TYPE: $NODE_TYPE"
+echo "SERVER_NAME: $SERVER_NAME"
+echo "SERVER_SIDE_TYPE: $SERVER_SIDE_TYPE"
+echo "SERVER_TYPE: $SERVER_TYPE"
 echo "PORT: $PORT"
 echo "DEFAULT_ROOT_EMAIL: $DEFAULT_ROOT_EMAIL"
 echo "DEFAULT_ROOT_PASSWORD: $DEFAULT_ROOT_PASSWORD"
 
 
 # Check if all required options are set
-if [[ -z "$VERSION" || -z "$NODE_NAME" || -z "$NODE_TYPE" || -z "$PORT" ]]; then
+if [[ -z "$VERSION" || -z "$SERVER_NAME" || -z "$SERVER_TYPE" || -z "$PORT" ]]; then
     echo "All options are required."
     usage
 fi
@@ -102,11 +102,11 @@ fi
 
 # Build the Docker run command
 DOCKER_RUN_CMD="docker run --rm -d \
-    --name \"$NODE_NAME\" \
+    --name \"$SERVER_NAME\" \
     -e VERSION=\"$VERSION\" \
-    -e NODE_NAME=\"$NODE_NAME\" \
-    -e NODE_SIDE_TYPE=\"$NODE_SIDE_TYPE\" \
-    -e NODE_TYPE=\"$NODE_TYPE\" \
+    -e SERVER_NAME=\"$SERVER_NAME\" \
+    -e SERVER_SIDE_TYPE=\"$SERVER_SIDE_TYPE\" \
+    -e SERVER_TYPE=\"$SERVER_TYPE\" \
     -e PORT=\"$PORT\" \
     -p \"$PORT:$PORT\""
 
