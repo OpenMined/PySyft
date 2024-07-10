@@ -872,65 +872,6 @@ class Node(AbstractNode):
     @property
     def initialized_services(self) -> list[AbstractService]:
         return self.services.services
-        # service_path_map: dict[str, AbstractService] = {}
-        # initialized_services: list[AbstractService] = []
-
-        # # A dict of service and init kwargs.
-        # # - "svc" expects a callable (class or function)
-        # #     - The callable must return AbstractService or None
-        # # - "store" expects a store type
-        # #     - By default all services get the document store
-        # #     - Pass a custom "store" to override this
-        # default_services: list[dict] = [
-        #     {"svc": ActionService, "store": self.action_store},
-        #     {"svc": UserService},
-        #     {"svc": AttestationService},
-        #     {"svc": WorkerService},
-        #     {"svc": SettingsService},
-        #     {"svc": DatasetService},
-        #     {"svc": UserCodeService},
-        #     {"svc": LogService},
-        #     {"svc": RequestService},
-        #     {"svc": QueueService},
-        #     {"svc": JobService},
-        #     {"svc": APIService},
-        #     {"svc": DataSubjectService},
-        #     {"svc": NetworkService},
-        #     {"svc": PolicyService},
-        #     {"svc": NotifierService},
-        #     {"svc": NotificationService},
-        #     {"svc": DataSubjectMemberService},
-        #     {"svc": ProjectService},
-        #     {"svc": EnclaveService},
-        #     {"svc": CodeHistoryService},
-        #     {"svc": MetadataService},
-        #     {"svc": BlobStorageService},
-        #     {"svc": MigrationService},
-        #     {"svc": SyftWorkerImageService},
-        #     {"svc": SyftWorkerPoolService},
-        #     {"svc": SyftImageRegistryService},
-        #     {"svc": SyncService},
-        #     {"svc": OutputService},
-        #     {"svc": UserCodeStatusService},  # this is lazy
-        # ]
-
-        # for svc_kwargs in default_services:
-        #     ServiceCls = svc_kwargs.pop("svc")
-        #     svc_kwargs.setdefault("store", self.document_store)
-
-        #     svc_instance = ServiceCls(**svc_kwargs)
-        #     if not svc_instance:
-        #         continue
-        #     elif not isinstance(svc_instance, AbstractService):
-        #         raise ValueError(
-        #             f"Service {ServiceCls.__name__} must be an instance of AbstractService"
-        #         )
-
-        #     service_path_map[ServiceCls.__name__.lower()] = svc_instance
-        #     initialized_services.append(ServiceCls)
-
-        # self.services = initialized_services
-        # self.service_path_map = service_path_map
 
     def get_service_method(self, path_or_func: str | Callable) -> Callable:
         if callable(path_or_func):
