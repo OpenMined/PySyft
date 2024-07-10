@@ -205,7 +205,7 @@ class Model(SyftObject):
     __repr_attrs__ = ["name", "url", "created_at"]
 
     name: str
-    model_code: str
+    arch: str
     asset_list: list[ModelAsset] = []
     contributors: set[Contributor] = set()
     citation: str | None = None
@@ -334,7 +334,7 @@ class CreateModel(Model):
 
     __repr_attrs__ = ["name", "url"]
 
-    model_code: str
+    arch: str
     asset_list: list[Any] = []
     created_at: DateTime | None = None  # type: ignore[assignment]
     model_config = ConfigDict(validate_assignment=True)
