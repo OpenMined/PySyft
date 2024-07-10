@@ -4,6 +4,7 @@ from datetime import datetime
 from enum import Enum
 from textwrap import dedent
 from typing import Any
+from typing import ClassVar
 
 # third party
 from IPython.display import display
@@ -26,11 +27,13 @@ from ...types.uid import UID
 from ...util.markdown import as_markdown_python_code
 from ..action.action_object import ActionDataEmpty
 from ..action.action_object import ActionObject
+from ..action.action_object import BASE_PASSTHROUGH_ATTRS
 from ..dataset.dataset import Contributor
 from ..dataset.dataset import MarkdownDescription
 from ..policy.policy import get_code_from_class
-from ..response import SyftError,SyftWarning
+from ..response import SyftError
 from ..response import SyftSuccess
+from ..response import SyftWarning
 
 
 @serializable()
@@ -90,7 +93,7 @@ class ModelAsset(SyftObject):
             and self.action_id == other.action_id
             and self.created_at == other.created_at
         )
-    
+
     def has_permission(self, data_result: Any) -> bool:
         # TODO: implement in a better way
         return not (
@@ -174,7 +177,7 @@ class SubmitModelCode(SyftObject):
     def __call__(self, **kwargs) -> Any:
         # Load Class
         exec(self.code)
-        
+
         # execute it
         func_string = f"{self.class_name}(**kwargs)"
         result = eval(func_string, None, locals())  # nosec
@@ -544,3 +547,12 @@ def createmodel_to_model() -> list[Callable]:
         convert_asset,
         add_current_date,
     ]
+
+
+@serializable()
+class ModelRef(ActionObject):
+    __canonical_name__ = "ModelRef"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    syft_internal_type: ClassVar[type] = UID
+    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
