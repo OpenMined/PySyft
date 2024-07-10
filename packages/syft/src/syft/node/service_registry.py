@@ -1,6 +1,8 @@
 # stdlib
 from collections.abc import Callable
 import typing
+from typing import Any
+from typing import TYPE_CHECKING
 
 # relative
 from ..service.action.action_service import ActionService
@@ -35,7 +37,10 @@ from ..service.worker.image_registry_service import SyftImageRegistryService
 from ..service.worker.worker_image_service import SyftWorkerImageService
 from ..service.worker.worker_pool_service import SyftWorkerPoolService
 from ..service.worker.worker_service import WorkerService
-from .node import Node
+
+if TYPE_CHECKING:
+    # relative
+    from .node import Node
 
 
 class ServiceRegistry:
@@ -71,7 +76,7 @@ class ServiceRegistry:
     output: OutputService
     user_code_status: UserCodeStatusService
 
-    def __init__(self, node: Node) -> None:
+    def __init__(self, node: "Node") -> None:
         self.node = node
         self.service_classes = self.get_service_classes()
         self.services: list[AbstractService] = []
@@ -90,10 +95,11 @@ class ServiceRegistry:
 
     def _construct_services(self) -> None:
         for field_name, service_cls in self.get_service_classes().items():
+            svc_kwargs: dict[str, Any] = {}
             if issubclass(service_cls.store_type, ActionStore):
-                svc_kwargs = {"store": self.node.action_store}
+                svc_kwargs["store"] = self.node.action_store
             else:
-                svc_kwargs = {"store": self.node.document_store}
+                svc_kwargs["store"] = self.node.document_store
 
             service = service_cls(**svc_kwargs)
             setattr(self, field_name, service)
