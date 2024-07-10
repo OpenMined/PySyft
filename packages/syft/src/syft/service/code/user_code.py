@@ -771,6 +771,7 @@ class UserCode(SyncableSyftObject):
             return api
 
         # get all assets on the node
+        # TODO: only gets datasets from its node not the others
         datasets: list[Dataset] = api.services.dataset.get_all()
         if isinstance(datasets, SyftError):
             return datasets
@@ -791,8 +792,11 @@ class UserCode(SyncableSyftObject):
         used_assets: list[Asset] = []
         for kwarg_name, action_id in all_inputs.items():
             asset = all_assets.get(action_id, None)
-            asset._kwarg_name = kwarg_name
-            used_assets.append(asset)
+            if asset:
+                asset._kwarg_name = kwarg_name
+                used_assets.append(asset)
+            else:
+                print("WARNING asset", action_id, "not in ", all_assets)
 
         asset_dict = {asset._kwarg_name: asset for asset in used_assets}
         return DictTuple(asset_dict)

@@ -478,6 +478,7 @@ class Node(AbstractNode):
             file_name: str = f"{self.id}.sqlite"
             if self.dev_mode:
                 logger.debug(f"{store_type}'s SQLite DB path: {path/file_name}")
+                print(f"{store_type}'s SQLite DB path: {path/file_name}")
             return SQLiteStoreConfig(
                 client_config=SQLiteStoreClientConfig(
                     filename=file_name,

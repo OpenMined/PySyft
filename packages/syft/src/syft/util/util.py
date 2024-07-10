@@ -1031,3 +1031,18 @@ def human_friendly_join(
         return items[0]
     else:
         return sep.join(items[:-1]) + last_sep + items[-1]
+
+
+def get_nb_secrets(defaults: dict | None = None) -> dict:
+    if defaults is None:
+        defaults = {}
+
+    try:
+        filename = "./secrets.json"
+        with open(filename) as f:
+            loaded = json.loads(f.read())
+            defaults.update(loaded)
+    except Exception:
+        print(f"Unable to load {filename}")
+
+    return defaults

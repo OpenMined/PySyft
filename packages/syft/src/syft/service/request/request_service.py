@@ -55,6 +55,7 @@ class RequestService(AbstractService):
         send_message: bool = True,
         reason: str | None = "",
     ) -> Request | SyftError:
+        print("Submitting a request")
         """Submit a Request"""
         try:
             req = request.to(Request, context=context)
@@ -67,25 +68,29 @@ class RequestService(AbstractService):
                     ),
                 ],
             )
+            print("req set", result)
             if result.is_ok():
                 request = result.ok()
 
                 # Apply Post Create Hooks to the request
                 for change in request.changes:
+                    print("each change", change)
                     create_hook_res = change.post_create_hook(
                         context=context, request=request
                     )
+                    print("create_hook_res", create_hook_res)
                     if isinstance(create_hook_res, SyftError):
                         return create_hook_res
 
                 # Creating Notification
                 link = LinkedObject.with_context(request, context=context)
-
+                print("request link", link)
                 admin_verify_key = context.node.get_service_method(
                     UserService.admin_verify_key
                 )
 
                 root_verify_key = admin_verify_key()
+
                 if send_message:
                     subject_msg = f"Result to request {str(request.id)[:4]}...{str(request.id)[-3:]}\
                         has been successfully deposited."
@@ -99,19 +104,18 @@ class RequestService(AbstractService):
                     )
                     method = context.node.get_service_method(NotificationService.send)
                     result = method(context=context, notification=message)
+
+                    # do we override the return here?
                     if isinstance(result, Notification):
                         return request
                     else:
-                        return SyftError(
-                            message=f"Failed to send notification: {result.err()}"
-                        )
-                # Apply Post Create Hooks to the request
-                for change in request.changes:
-                    change_hook_res = change.post_create_hook(
-                        context=context, request=request
-                    )
-                    if isinstance(change_hook_res, SyftError):
-                        return change_hook_res
+                        if isinstance(result, SyftError):
+                            return result
+                        else:
+                            return SyftError(
+                                message=f"Failed to send notification: {str(result)}"
+                            )
+
                 return request
 
             if result.is_err():
