@@ -174,6 +174,7 @@ def deploy_to_python(
     association_request_auto_approval: bool = False,
     background_tasks: bool = False,
     debug: bool = False,
+    migrate: bool = False,
 ) -> NodeHandle:
     worker_classes = {
         NodeType.DOMAIN: Domain,
@@ -202,6 +203,7 @@ def deploy_to_python(
         "association_request_auto_approval": association_request_auto_approval,
         "background_tasks": background_tasks,
         "debug": debug,
+        "migrate": migrate,
     }
 
     if port:
@@ -232,7 +234,7 @@ def deploy_to_python(
             sig = inspect.signature(worker_class.named)
             supported_kwargs = {k: v for k, v in kwargs.items() if k in sig.parameters}
             if "node_type" in sig.parameters.keys() and "migrate" in sig.parameters:
-                supported_kwargs["migrate"] = True
+                supported_kwargs["migrate"] = migrate
             worker = worker_class.named(**supported_kwargs)
         else:
             raise NotImplementedError(f"node_type: {node_type_enum} is not supported")
@@ -255,9 +257,12 @@ def deploy_to_remote(
     deployment_type_enum: DeploymentType,
     name: str,
     node_side_type: NodeSideType,
+    migrate: bool = False,
 ) -> NodeHandle:
     node_port = int(os.environ.get("NODE_PORT", f"{DEFAULT_PORT}"))
     node_url = str(os.environ.get("NODE_URL", f"{DEFAULT_URL}"))
+    if migrate:
+        raise ValueError("Cannot migrate via orchestra on remote node")
     return NodeHandle(
         node_type=node_type_enum,
         deployment_type=deployment_type_enum,
@@ -292,6 +297,7 @@ class Orchestra:
         association_request_auto_approval: bool = False,
         background_tasks: bool = False,
         debug: bool = False,
+        migrate: bool = False,
     ) -> NodeHandle:
         if dev_mode is True:
             thread_workers = True
@@ -329,6 +335,7 @@ class Orchestra:
                 association_request_auto_approval=association_request_auto_approval,
                 background_tasks=background_tasks,
                 debug=debug,
+                migrate=migrate,
             )
             display(
                 SyftInfo(
@@ -343,6 +350,7 @@ class Orchestra:
                 deployment_type_enum=deployment_type_enum,
                 name=name,
                 node_side_type=node_side_type_enum,
+                migrate=migrate,
             )
         raise NotImplementedError(
             f"deployment_type: {deployment_type_enum} is not supported"
