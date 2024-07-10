@@ -118,6 +118,18 @@ NEW_STYLE_SERVICES_LIST: list[str] = [
 ]
 
 
+def post_process_result(path:str , result: Any, unwrap_on_success: bool=False) -> Any:
+    if any(path.startswith(x) for x in NEW_STYLE_SERVICES_LIST):
+        if isinstance(result, SyftError):
+            tb = result.tb if result.tb is not None else ""
+            msg = result.message + "\n" + tb if tb else result.message
+            raise SyftException(public_message=msg)
+        if unwrap_on_success:
+            result = result.unwrap_value()
+
+    return result
+
+
 def _has_config_dict(t: Any) -> bool:
     return (
         # Use this instead of `issubclass`` to be compatible with python 3.10
@@ -407,18 +419,7 @@ class RemoteFunction(SyftObject):
         )
         result = result[0]
 
-        return self.post_process_result(api_call.path, result)
-
-    def post_process_result(self, path, result):
-        if any(path.startswith(x) for x in NEW_STYLE_SERVICES_LIST):
-            if isinstance(result, SyftError):
-                tb = result.tb if result.tb is not None else ""
-                msg = result.message + "\n" + tb if tb else result.message
-                raise SyftException(public_message=msg)
-            if self.unwrap_on_success:
-                result = result.unwrap_value()
-
-        return result
+        return post_process_result(api_call.path, result, self.unwrap_on_success)
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         return self.function_call(self.path, *args, **kwargs)
@@ -581,18 +582,7 @@ class RemoteUserCodeFunction(RemoteFunction):
             blocking=True,
         )
         result = self.make_call(api_call=api_call)
-        return self.post_process_result(api_call.path, result)
-
-    def post_process_result(self, path, result):
-        if any(path.startswith(x) for x in NEW_STYLE_SERVICES_LIST):
-            if isinstance(result, SyftError):
-                tb = result.tb if result.tb is not None else ""
-                msg = result.message + "\n" + tb if tb else result.message
-                raise SyftException(public_message=msg)
-            if self.unwrap_on_success:
-                result = result.unwrap_value()
-
-        return result
+        return post_process_result(api_call.path, result, self.unwrap_on_success)
 
 
 def generate_remote_function(
@@ -725,7 +715,7 @@ def generate_remote_lib_function(
             tb = result.tb if result.tb is not None else ""
             msg = result.message + "\n" + tb if tb else result.message
             raise SyftException(public_message=msg)
-        
+
         if isinstance(result, SyftSuccess):
             result = result.value
 

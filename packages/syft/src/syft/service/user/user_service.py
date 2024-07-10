@@ -39,7 +39,6 @@ from ..settings.settings_stash import SettingsStash
 from .errors import UserEnclaveAdminLoginError
 from .errors import UserError
 from .errors import UserPermissionError
-from .errors import UserSearchBadParamsError
 from .errors import UserUpdateError
 from .user import User
 from .user import UserCreate
@@ -71,10 +70,10 @@ def _paginate(
 
         # Return the proper slice using chunk_index
         if page_index is not None:
-            _list_objs = _list_objs[page_index]
+            _list_objs = _list_objs[page_index]  # type: ignore
         else:
-            _list_objs = _list_objs[0]
-        return _list_objs
+            _list_objs = _list_objs[0]  # type: ignore
+        return _list_objs  # type: ignore
 
     return list_objs
 
@@ -125,7 +124,6 @@ class UserService(AbstractService):
 
         new_user = self._add_user(context.credentials, user).unwrap()
         return new_user.to(UserView)
-
 
     @service_method(path="user.view", name="view", roles=DATA_SCIENTIST_ROLE_LEVEL)
     def view(self, context: AuthedServiceContext, uid: UID) -> UserView:
@@ -194,9 +192,7 @@ class UserService(AbstractService):
         if len(kwargs) == 0:
             raise SyftException(public_message="Invalid search parameters")
 
-        users = self.stash.find_all(
-            credentials=context.credentials, **kwargs
-        ).unwrap()
+        users = self.stash.find_all(credentials=context.credentials, **kwargs).unwrap()
 
         users = [user.to(UserView) for user in users] if users is not None else []
         return _paginate(users, page_size, page_index)
@@ -378,8 +374,12 @@ class UserService(AbstractService):
 
     def register(
         self, context: NodeServiceContext, new_user: UserCreate
-    ) -> UserPrivateKey:
+    ) -> UserPrivateKey | SyftError:
         """Register new user"""
+
+        # this method handles errors in a slightly different way as it is directly called instead of
+        # going through Node.handle_message
+
         request_user_role = (
             ServiceRole.GUEST
             if new_user.created_by is None
@@ -392,7 +392,7 @@ class UserService(AbstractService):
         )
 
         if not can_user_register:
-            raise UserPermissionError
+            return SyftError(message="You have no permission to register")
 
         user = new_user.to(User)
 
@@ -401,9 +401,12 @@ class UserService(AbstractService):
         )
 
         if user_exists:
-            raise SyftException(public_message=f"User {user.email} already exists")
+            return SyftError(message=f"User {user.email} already exists")
 
-        user = self._add_user(credentials=user.verify_key, user=user).unwrap()
+        user = self._add_user(credentials=user.verify_key, user=user)
+        if user.is_err():
+            return SyftError(message=f"Failed to create user {user.email}")
+        user = user.unwrap()
 
         success_message = f"User '{user.name}' successfully registered!"
 
@@ -434,7 +437,7 @@ class UserService(AbstractService):
         msg = SyftSuccess(message=success_message)
         display_html(msg)
 
-        return user.to(UserPrivateKey)
+        return SyftSuccess(message=success_message, value=user.to(UserPrivateKey))
 
     @as_result(StashException)
     def user_verify_key(self, email: str) -> SyftVerifyKey:
