@@ -22,11 +22,13 @@ from typing_extensions import Self
 from ...client.api import NodeIdentity
 from ...client.client import SyftClient
 from ...client.client import SyftClientSessionCache
+from ...client.enclave_client import EnclaveClient
 from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
 from ...service.metadata.node_metadata import NodeMetadata
+from ...service.network.node_peer import route_to_connection
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.identity import Identity
@@ -500,6 +502,18 @@ class ProjectCode(ProjectEventAddObject):
         self.setup_enclave()
         self.request_asset_transfer()
         return self.request_execution()
+
+    def get_enclave_attestation(self) -> Any:
+        if not self.is_enclave_code:
+            return SyftError(
+                message="This method is only supported for codes with Enclave runtime provider."
+            )
+        runtime_policy_init_kwargs = self.code.runtime_policy_init_kwargs or {}
+        provider = cast(EnclaveInstance, runtime_policy_init_kwargs.get("provider"))
+        connection = route_to_connection(provider.route)
+        client = EnclaveClient(connection=connection)
+        report = client.api.services.attestation.get_cpu_attestation(raw_token=True)
+        return report
 
 
 def poll_creation_wizard() -> tuple[str, list[str]]:
