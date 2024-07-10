@@ -1,7 +1,9 @@
+# stdlib
+from typing import NoReturn
+
 # third party
 import pytest
 from pytest import MonkeyPatch
-from result import Err
 
 # syft absolute
 from syft.client.client import SyftClient
@@ -13,6 +15,7 @@ from syft.service.request.request_stash import RequestStash
 from syft.service.request.request_stash import RequestingUserVerifyKeyPartitionKey
 from syft.store.document_store import PartitionKey
 from syft.store.document_store import QueryKeys
+from syft.types.errors import SyftException
 
 
 def test_requeststash_get_all_for_verify_key_no_requests(
@@ -89,15 +92,16 @@ def test_requeststash_get_all_for_verify_key_fail(
 
     def mock_query_all_error(
         credentials: SyftVerifyKey, qks: QueryKeys, order_by: PartitionKey | None
-    ) -> Err:
-        return Err(mock_error_message)
+    ) -> NoReturn:
+        raise SyftException(public_message=mock_error_message)
 
     monkeypatch.setattr(request_stash, "query_all", mock_query_all_error)
 
-    requests = request_stash.get_all_for_verify_key(root_verify_key, verify_key)
+    with pytest.raises(SyftException) as exc:
+        request_stash.get_all_for_verify_key(root_verify_key, verify_key).unwrap()
 
-    assert requests.is_err() is True
-    assert requests.err() == mock_error_message
+    assert exc.type is SyftException
+    assert exc.value.public_message == mock_error_message
 
 
 def test_requeststash_get_all_for_verify_key_find_index_fail(
@@ -116,8 +120,8 @@ def test_requeststash_get_all_for_verify_key_find_index_fail(
         index_qks: QueryKeys,
         search_qks: QueryKeys,
         order_by: PartitionKey | None,
-    ) -> Err:
-        return Err(mock_error_message)
+    ) -> NoReturn:
+        raise SyftException(public_message=mock_error_message)
 
     monkeypatch.setattr(
         request_stash.partition,
@@ -125,6 +129,8 @@ def test_requeststash_get_all_for_verify_key_find_index_fail(
         mock_find_index_or_search_keys_error,
     )
 
-    requests = request_stash.get_all_for_verify_key(root_verify_key, verify_key)
-    assert requests.is_err() is True
-    assert requests.err() == mock_error_message
+    with pytest.raises(SyftException) as exc:
+        request_stash.get_all_for_verify_key(root_verify_key, verify_key).unwrap()
+
+    assert exc.type == SyftException
+    assert exc.value.public_message == mock_error_message

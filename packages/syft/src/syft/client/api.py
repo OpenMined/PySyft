@@ -708,6 +708,15 @@ def generate_remote_lib_function(
         )
 
         result = wrapper_make_call(api_call=api_call)
+
+        if isinstance(result, SyftError):
+            tb = result.tb if result.tb is not None else ""
+            msg = result.message + "\n" + tb if tb else result.message
+            raise SyftException(public_message=msg)
+
+        if isinstance(result, SyftSuccess):
+            result = result.value
+
         return result
 
     wrapper.__ipython_inspector_signature_override__ = signature

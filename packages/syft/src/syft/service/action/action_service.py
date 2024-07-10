@@ -625,7 +625,7 @@ class ActionService(AbstractService):
         resolved_self: ActionObject | TwinObject,
     ) -> TwinObject:
         args, _ = resolve_action_args(action, context, self).unwrap(
-            public_message=f"Failed executing action {action}, could not resolve args: {args.err()}"
+            public_message=f"Failed executing action {action} (could not resolve args)"
         )
         if not isinstance(args[0], ActionObject):
             raise SyftException(
