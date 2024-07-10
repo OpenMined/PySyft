@@ -19,9 +19,9 @@ from syft.service.request.request_service import RequestService
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.settings.settings_service import SettingsService
+from syft.service.user.user import UserPrivateKey
 from syft.store.document_store import DocumentStore
 from syft.store.linked_obj import LinkedObject
-from syft.service.user.user import UserPrivateKey
 from syft.types.errors import SyftException
 
 

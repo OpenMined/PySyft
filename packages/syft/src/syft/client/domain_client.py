@@ -13,7 +13,6 @@ from typing import cast
 # third party
 import markdown
 from result import Result
-from syft.types.errors import SyftException
 from tqdm import tqdm
 
 # relative
@@ -33,6 +32,7 @@ from ..service.sync.sync_state import SyncState
 from ..service.user.roles import Roles
 from ..service.user.user import UserView
 from ..types.blob_storage import BlobFile
+from ..types.errors import SyftException
 from ..types.uid import UID
 from ..util.misc_objs import HTMLObject
 from ..util.util import get_mb_size

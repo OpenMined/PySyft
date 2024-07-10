@@ -1,8 +1,9 @@
-# third party
+# stdlib
 from typing import NoReturn
+
+# third party
 import pytest
 from pytest import MonkeyPatch
-from result import Err
 
 # syft absolute
 from syft.client.client import SyftClient
@@ -131,5 +132,5 @@ def test_requeststash_get_all_for_verify_key_find_index_fail(
     with pytest.raises(SyftException) as exc:
         request_stash.get_all_for_verify_key(root_verify_key, verify_key).unwrap()
 
-    assert exc.type == SyftException 
+    assert exc.type == SyftException
     assert exc.value.public_message == mock_error_message
