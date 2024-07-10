@@ -19,7 +19,7 @@ from typing_extensions import Self
 # relative
 from ..service.context import AuthedServiceContext
 from ..service.user.user_roles import ServiceRole
-from ..util.util import sanitize_html
+from ..util.notebook_ui.components.tabulator_template import jinja_env
 
 
 class SyftException(Exception):
@@ -79,7 +79,7 @@ class SyftException(Exception):
         return self.public
 
     def get_tb(
-        self, context: AuthedServiceContext, overwrite_permission=False
+        self, context: AuthedServiceContext, overwrite_permission: bool = False
     ) -> str | None:
         """
         Returns the error traceback as a string, if the user is able to see it.
@@ -141,55 +141,19 @@ class SyftException(Exception):
         return "alert-danger"
 
     def _repr_html_(self) -> str:
-        html_id = uuid.uuid4().hex
-        traceback_str = traceback.format_exc()
-
-        server_trace_html = (
-            f"""<div> <strong>Server Trace:</strong> </div>
-        <pre style="display:inline;">{sanitize_html(self._server_trace, escape=True)}
-        </pre>"""
-            if self._server_trace
-            else ""
-        )
-
-        message = self._private_message or self.public
         is_dev_mode = os.getenv("DEV_MODE", "false").lower() == "true"
         display = "block" if self._server_trace or is_dev_mode else "none"
-        caret_right = "&#9654;"
-        caret_down = "&#9660;"
-        initial_caret = caret_down if display == "block" else caret_right
 
-        return (
-            f"""<div class="{self._repr_html_class_}" style="padding:5px; position: relative;">
-    <span id="caret-{html_id}" style="cursor: pointer;" onclick="toggleDropdown('{html_id}', 'caret-{html_id}')">
-        {initial_caret};
-    </span>
-   <strong>{type(self).__name__}</strong>:
-    <pre style="display:inline; font-family:inherit;">{sanitize_html(message, escape=True)}</pre></div><br/>
-    <div id="{html_id}" style="display: {display}; margin-top: 5px; padding: 10px; border-top: 1px solid #ccc;">
-        {server_trace_html}
-        <div><strong> Client Trace: </strong></div>
-        <pre style="display:inline;">{sanitize_html(traceback_str, escape=True)}
-        </pre>
-    </div>
-</div>
-
-<script>
-function toggleDropdown(dropdownId, caretId) {{
-    var dropdown = document.getElementById(dropdownId);
-    var caret = document.getElementById(caretId);
-    if (dropdown.style.display === "none") {{
-        dropdown.style.display = "block";
-        caret.innerHTML = "&#9660;";
-    }} else {{
-        dropdown.style.display = "none";
-        caret.innerHTML = "&#9654;";
-    }}
-}}
-</script>"""
-            # + f'<div class="{self._repr_html_class_}" style="padding:5px; position: relative;">'
-            # + f"<strong>{type(self).__name__}</strong>: {sanitize_html(str(self.args))}</div><br />"
+        table_template = jinja_env.get_template("syft_exception.jinja2")
+        table_html = table_template.render(
+            name=type(self).__name__,
+            html_id=uuid.uuid4().hex,
+            server_trace=self._server_trace,
+            message=self._private_message or self.public,
+            traceback_str=traceback.format_exc(),
+            display=display,
         )
+        return table_html
 
 
 class ExceptionFilter(tuple):
@@ -252,7 +216,7 @@ def exclude_from_traceback(f: F) -> F:
     exception is raised. This is useful for functions that are not relevant to
     the error message and would only clutter the traceback.
     """
-    # _excluded_code_objects.add(f.__code__)
+    _excluded_code_objects.add(f.__code__)
     return f
 
 
@@ -294,21 +258,13 @@ class CredentialsError(SyftException):
     public_message = "Invalid credentials."
 
 
-# third party
-
-# initialize the formatter for making the tracebacks into strings
-
-
 def syft_exception_handler(
     shell: Any, etype: Any, evalue: Any, tb: Any, tb_offset: Any = None
 ) -> None:
-    # template = evalue.format_traceback(
-    #     etype=etype, evalue=evalue, tb=tb, tb_offset=tb_offset
-    # )
-    # sys.stderr.write(template)
     display(HTML(evalue._repr_html_()))
 
 
-# third party
-
-get_ipython().set_custom_exc((SyftException,), syft_exception_handler)  # noqa: F821
+try:
+    get_ipython().set_custom_exc((SyftException,), syft_exception_handler)  # noqa: F821
+except Exception:
+    pass  # nosec
