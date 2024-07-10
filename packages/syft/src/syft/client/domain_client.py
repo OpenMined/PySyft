@@ -150,15 +150,9 @@ class DomainClient(SyftClient):
                 print(f"{res}")
                 if isinstance(res, SyftWarning):
                     logger.debug(res.message)
-                    skip_save_to_blob_store = True
-                else:
-                    skip_save_to_blob_store = False
-
                 try:
                     self.api.services.action.set(
-                        twin,
-                        ignore_detached_objs=contains_empty,
-                        skip_save_to_blob_store=skip_save_to_blob_store,
+                        twin, ignore_detached_objs=contains_empty
                     )
                 except SyftException:
                     tqdm.write(f"Failed to upload asset: {asset.name}")
