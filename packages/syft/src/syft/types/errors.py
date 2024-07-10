@@ -144,13 +144,17 @@ class SyftException(Exception):
         is_dev_mode = os.getenv("DEV_MODE", "false").lower() == "true"
         display = "block" if self._server_trace or is_dev_mode else "none"
 
+        exc = process_traceback(self)
+        _traceback_str_list = traceback.format_tb(exc.__traceback__)
+        traceback_str = "".join(_traceback_str_list)
+
         table_template = jinja_env.get_template("syft_exception.jinja2")
         table_html = table_template.render(
             name=type(self).__name__,
             html_id=uuid.uuid4().hex,
             server_trace=self._server_trace,
             message=self._private_message or self.public,
-            traceback_str=traceback.format_exc(),
+            traceback_str=traceback_str,
             display=display,
         )
         return table_html

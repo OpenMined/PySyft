@@ -1,47 +1,25 @@
-<div class="alert-danger syft-exception-repr-html">
-    <span id="caret-{{html_id}}" class="syft-exception-caret"
-        onclick="toggleDropdown('{{html_id}}', 'caret-{{html_id}}')">
-        {% if display == "none" %}
-        &#9654;
-        {% else %}
-        &#9660;
-        {% endif %}
+<details>
+  <summary class="alert-danger syft-exception-summary">
+    <span>
+      <strong>{{name}}</strong>:
+      <pre class="alert-danger syft-exception-message">{{message | escape}}</pre>
     </span>
-    <strong>{{name}}</strong>:
-    <pre class="alert-danger syft-exception-message">{{message | escape}}</pre>
-</div>
-<div id="{{html_id}}" class="syft-exception-dropdown" style="display: {{display}};">
-    {% if server_trace%}
-    <div> <strong>Server Trace:</strong> </div>
-    <pre class="syft-exception-trace">{{server_trace | escape}}</pre>
-    {% endif %}
-    <br>
-    <br>
-    <div> <strong>Client Trace:</strong> </div>
-    <pre class="syft-exception-trace">{{traceback_str | escape}}</pre>
-</div>
-
-<script>
-    function toggleDropdown(dropdownId, caretId) {
-        var dropdown = document.getElementById(dropdownId);
-        var caret = document.getElementById(caretId);
-        if (dropdown.style.display === "none") {
-            dropdown.style.display = "block";
-            caret.innerHTML = "&#9660;";
-        } else {
-            dropdown.style.display = "none";
-            caret.innerHTML = "&#9654;";
-        }
-    }
-</script>
+  </summary>
+  <div id="{{html_id}}" class="syft-exception-dropdown">
+      {% if server_trace%}
+        <div><strong>Server Trace:</strong></div>
+        <pre class="syft-exception-trace">{{server_trace | escape}}</pre>
+        <br>
+        <br>
+      {% endif %}
+      <div><strong>Client Trace:</strong></div>
+      <pre class="syft-exception-trace">{{traceback_str | escape}}</pre>
+  </div>
+</details>
 
 <style>
-    .syft-exception-repr-html {
+    .syft-exception-summary {
         padding: 5px;
-        position: relative;
-    }
-
-    .syft-exception-caret {
         cursor: pointer;
     }
 
