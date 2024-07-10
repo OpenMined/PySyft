@@ -84,6 +84,7 @@ class SyftResponseMessage(SyftBaseModel):
         )
 
 
+Exception
 @serializable()
 class SyftError(SyftResponseMessage):
     _bool: bool = False
@@ -107,10 +108,19 @@ class SyftError(SyftResponseMessage):
 
     @classmethod
     def from_exception(
-        cls, context: "AuthedServiceContext", exc: "NewSyftException"
+        cls, context: "AuthedServiceContext", exc: Exception, include_traceback: bool =False
     ) -> Self:
-        error_msg = exc.get_message(context)
-        tb = exc.get_tb(context)
+        # traceback may contain private information
+        from ..types.errors import SyftException as NewSyftException
+        tb = None
+        if isinstance(exc, NewSyftException):
+            error_msg = exc.get_message(context)
+            if include_traceback:
+                tb = exc.get_tb(context)
+        else:
+            error_msg = f"Something unexpected happened server side {exc}"
+            if include_traceback:
+                tb = traceback.format_exc()
         return cls(message=error_msg, tb=tb)
 
 

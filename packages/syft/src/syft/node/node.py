@@ -1301,19 +1301,17 @@ class Node(AbstractNode):
                     if not isinstance(result, SyftSuccess):
                         result = SyftSuccess(message="", value=result)
                 tb = None
-            except SyftException as exc:
-                result = SyftError.from_exception(context=context, exc=exc)
-                tb = exc.get_tb(context, overwrite_permission=True)
-            except Exception:
-                result = SyftError(
-                    message=f"Exception calling {api_call.path}. {traceback.format_exc()}"
-                )
-                tb = traceback.format_exc()
-            if (
-                isinstance(result, SyftError)
-                and role.value < ServiceRole.DATA_OWNER.value
-            ):
-                print(f"Exception (hidden from DS) happened on the server side:\n{tb}")
+            except Exception as e:
+                include_traceback = self.dev_mode or role.value >= ServiceRole.DATA_OWNER.value
+                result = SyftError.from_exception(context=context, exc=e, include_traceback=include_traceback)
+                if not include_traceback:
+                    # then at least log it server side
+                    if isinstance(e, SyftException):
+                        tb = e.get_tb(context, overwrite_permission=True)
+                    else:
+                        tb = traceback.format_exc()
+                    logger.debug(f"Exception (hidden from DS) happened on the server side:\n{tb}")
+
         else:
             try:
                 return self.add_api_call_to_queue(api_call)
