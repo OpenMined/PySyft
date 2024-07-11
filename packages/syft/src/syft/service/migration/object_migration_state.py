@@ -165,7 +165,7 @@ class MigrationData(SyftObject):
     def from_file(self, path: str | Path) -> Self | SyftError:
         path = Path(path)
         if not path.exists():
-             return SyftError(f"File {path!s} does not exist.")
+            return SyftError(f"File {path!s} does not exist.")
 
         with open(path, "rb") as f:
             res: MigrationData = _deserialize(f.read(), from_bytes=True)
