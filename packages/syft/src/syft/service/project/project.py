@@ -50,6 +50,7 @@ from ...util.colors import SURFACE
 from ...util.decorators import deprecated
 from ...util.markdown import markdown_as_class_with_fields
 from ...util.util import full_name_with_qualname
+from ...util.util import human_friendly_join
 from ..code.user_code import SubmitUserCode
 from ..code.user_code import UserCodeStatus
 from ..enclave.enclave import EnclaveInstance
@@ -508,13 +509,23 @@ class ProjectCode(ProjectEventAddObject):
 
     def view_attestation_report(
         self,
-        attestation_type: AttestationType = AttestationType.CPU,
+        attestation_type: AttestationType | str = AttestationType.CPU,
         return_report: bool = False,
     ) -> dict | None:
         if not self.is_enclave_code:
             return SyftError(
                 message="This method is only supported for codes with Enclave runtime provider."
             )
+        if isinstance(attestation_type, str):
+            try:
+                attestation_type = AttestationType(attestation_type)
+            except ValueError:
+                all_attestation_types = human_friendly_join(
+                    [e.value for e in AttestationType]
+                )
+                return SyftError(
+                    message=f"Invalid attestation type. Accepted values are {all_attestation_types}."
+                )
         runtime_policy_init_kwargs = self.code.runtime_policy_init_kwargs or {}
         provider = cast(EnclaveInstance, runtime_policy_init_kwargs.get("provider"))
         print(
