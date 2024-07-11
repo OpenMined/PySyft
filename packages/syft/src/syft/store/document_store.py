@@ -982,7 +982,9 @@ class NewBaseStash:
         ).unwrap()
         value = new_first_or_none(result)
         if value is None:
-            raise NotFoundException
+            keys = qks.all if isinstance(qks, QueryKeys) else [qks]
+            keys_str = ", ".join(f"{x.key}: {x.value}" for x in keys)
+            raise NotFoundException(public_message=f"Could not find {self.object_type} with {keys_str}")
         return value
 
     @as_result(StashException, NotFoundException)
@@ -1078,7 +1080,7 @@ class NewBaseUIDStoreStash(NewBaseStash):
 
         match result:
             case Ok(None):
-                raise NotFoundException
+                raise NotFoundException(public_message=f"{self.object_type} with uid {uid} not found")
             case Ok(value):
                 return value
             case Err(err):
@@ -1105,5 +1107,5 @@ class NewBaseUIDStoreStash(NewBaseStash):
                 add_permissions=add_permissions,
                 add_storage_permission=add_storage_permission,
             )
-            .unwrap()
+            .unwrap(public_message=f"Failed ot set {self.object_type} with uid {obj.id} not found")
         )

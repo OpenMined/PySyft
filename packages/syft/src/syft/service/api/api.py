@@ -23,6 +23,8 @@ from ...abstract_node import AbstractNode
 from ...client.client import SyftClient
 from ...serde.serializable import serializable
 from ...serde.signature import signature_remove_context
+from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
@@ -503,6 +505,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
         admin_client.credentials = context.node.signing_key
         return admin_client
 
+    @as_result(SyftException)
     def exec_code(
         self,
         code: PrivateAPIEndpoint | PublicAPIEndpoint,
@@ -542,10 +545,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
             api_service = context.node.get_service("apiservice")
             upsert_result = api_service.stash.upsert(
                 context.node.get_service("userservice").admin_verify_key(), self
-            )
-
-            if upsert_result.is_err():
-                raise Exception(upsert_result.err())
+            ).unwrap()
 
             # return the results
             return result
@@ -553,12 +553,12 @@ class TwinAPIEndpoint(SyncableSyftObject):
             # If it's admin, return the error message.
             # TODO: cleanup typeerrors
             if context.role.value == 128 or isinstance(e, TypeError):
-                return SyftError(
-                    message=f"An error was raised during the execution of the API endpoint call: \n {str(e)}"
+                raise SyftException(
+                    public_message=f"An error was raised during the execution of the API endpoint call: \n {str(e)}"
                 )
             else:
-                return SyftError(
-                    message="Ops something went wrong during this endpoint execution, please contact your admin."
+                raise SyftException(
+                    public_message="Ops something went wrong during this endpoint execution, please contact your admin."
                 )
 
 

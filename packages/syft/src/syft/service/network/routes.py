@@ -7,6 +7,7 @@ from typing import Any
 from typing import TYPE_CHECKING
 
 # third party
+from result import as_result
 from typing_extensions import Self
 
 # relative
@@ -17,6 +18,7 @@ from ...client.client import PythonConnection
 from ...client.client import SyftClient
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
+from ...types.errors import SyftException
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
@@ -52,6 +54,7 @@ class NodeRoute:
             return client_type
         return client_type(connection=connection, credentials=context.node.signing_key)
 
+    @as_result(SyftException)
     def validate_with_context(
         self, context: AuthedServiceContext
     ) -> NodePeer | SyftError:
@@ -65,17 +68,13 @@ class NodeRoute:
         # generating a random challenge
         random_challenge = secrets.token_bytes(16)
         challenge_signature = self_client.api.services.network.ping(random_challenge)
-
-        if isinstance(challenge_signature, SyftError):
-            return challenge_signature
-
         try:
             # Verifying if the challenge is valid
             context.node.verify_key.verify_key.verify(
                 random_challenge, challenge_signature
             )
         except Exception:
-            return SyftError(message="Signature Verification Failed in ping")
+            raise SyftException(public_message="Signature Verification Failed in ping")
 
         # Step 2: Create a Node Peer with the given route
         self_node_peer: NodePeer = context.node.settings.to(NodePeer)

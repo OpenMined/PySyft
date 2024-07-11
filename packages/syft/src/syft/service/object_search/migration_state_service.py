@@ -3,8 +3,8 @@
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
+from ...types.errors import SyftException
 from ..context import AuthedServiceContext
-from ..response import SyftError
 from ..service import AbstractService
 from ..service import service_method
 from .object_migration_state import SyftMigrationStateStash
@@ -21,39 +21,25 @@ class MigrateStateService(AbstractService):
         self.stash = SyftMigrationStateStash(store=store)
 
     @service_method(path="migration", name="get_version")
-    def get_version(
-        self, context: AuthedServiceContext, canonical_name: str
-    ) -> int | SyftError:
+    def get_version(self, context: AuthedServiceContext, canonical_name: str) -> int:
         """Search for the metadata for an object."""
 
-        result = self.stash.get_by_name(
+        migration_state = self.stash.get_by_name(
             canonical_name=canonical_name, credentials=context.credentials
-        )
-
-        if result.is_err():
-            return SyftError(message=f"{result.err()}")
-
-        migration_state = result.ok()
+        ).unwrap()
 
         if migration_state is None:
-            return SyftError(
+            raise SyftException(
                 message=f"No migration state exists for canonical name: {canonical_name}"
             )
 
         return migration_state.current_version
 
     @service_method(path="migration", name="get_state")
-    def get_state(
-        self, context: AuthedServiceContext, canonical_name: str
-    ) -> bool | SyftError:
-        result = self.stash.get_by_name(
+    def get_state(self, context: AuthedServiceContext, canonical_name: str) -> bool:
+        return self.stash.get_by_name(
             canonical_name=canonical_name, credentials=context.credentials
-        )
-
-        if result.is_err():
-            return SyftError(message=f"{result.err()}")
-
-        return result.ok()
+        ).unwrap()
 
     @service_method(path="migration", name="register_migration_state")
     def register_migration_state(
@@ -61,13 +47,10 @@ class MigrateStateService(AbstractService):
         context: AuthedServiceContext,
         current_version: int,
         canonical_name: str,
-    ) -> SyftObjectMigrationState | SyftError:
+    ) -> SyftObjectMigrationState:
         obj = SyftObjectMigrationState(
             current_version=current_version, canonical_name=canonical_name
         )
-        result = self.stash.set(migration_state=obj, credentials=context.credentials)
-
-        if result.is_err():
-            return SyftError(message=f"{result.err()}")
-
-        return result.ok()
+        return self.stash.set(
+            migration_state=obj, credentials=context.credentials
+        ).unwrap()

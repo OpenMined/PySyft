@@ -5,14 +5,16 @@ from typing import cast
 
 # third party
 from pydantic import ValidationError
-from result import Err
-from result import Ok
+from result import as_result
 
 # relative
 from ...serde.serializable import serializable
 from ...service.action.action_endpoint import CustomEndpointActionObject
 from ...service.action.action_object import ActionObject
 from ...store.document_store import DocumentStore
+from ...store.document_store_errors import NotFoundException
+from ...store.document_store_errors import StashException
+from ...types.errors import SyftException
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_service import ActionService
@@ -55,7 +57,7 @@ class APIService(AbstractService):
         self,
         context: AuthedServiceContext,
         endpoint: CreateTwinAPIEndpoint | TwinAPIEndpoint,
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         """Register an CustomAPIEndpoint."""
         try:
             new_endpoint = None
@@ -65,9 +67,9 @@ class APIService(AbstractService):
                 new_endpoint = endpoint
 
             if new_endpoint is None:
-                return SyftError(message="Invalid endpoint type.")  # type: ignore
+                raise SyftException(public_message="Invalid endpoint type.")
         except ValueError as e:
-            return SyftError(message=str(e))
+            raise SyftException(message=str(e))
 
         if isinstance(endpoint, CreateTwinAPIEndpoint):
             endpoint_exists = self.stash.path_exists(
@@ -75,16 +77,14 @@ class APIService(AbstractService):
             )
 
             if endpoint_exists.is_err():
-                return SyftError(message=endpoint_exists.err())
+                raise SyftException(public_message=endpoint_exists.err())
 
             if endpoint_exists.is_ok() and endpoint_exists.ok():
-                return SyftError(
-                    message="An API endpoint already exists at the given path."
+                raise SyftException(
+                    public_message="An API endpoint already exists at the given path."
                 )
 
-        result = self.stash.upsert(context.credentials, endpoint=new_endpoint)
-        if result.is_err():
-            return SyftError(message=result.err())
+        result = self.stash.upsert(context.credentials, endpoint=new_endpoint).unwrap()
 
         result = result.ok()
         action_obj = ActionObject.from_obj(
@@ -98,9 +98,7 @@ class APIService(AbstractService):
             context=context,
             result_action_object=action_obj,
             has_result_read_permission=True,
-        )
-        if res.is_err():
-            return SyftError(message=res.err())
+        ).unwrap()
 
         return SyftSuccess(message="Endpoint successfully created.")
 
@@ -117,7 +115,7 @@ class APIService(AbstractService):
         private_function: Endpoint | None = None,
         hide_mock_definition: bool | None = None,
         endpoint_timeout: int | None = None,
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         """Updates an specific API endpoint."""
 
         # if any of these are supplied e.g. truthy then keep going otherwise return
@@ -129,20 +127,12 @@ class APIService(AbstractService):
             or (hide_mock_definition is not None)
             or endpoint_timeout
         ):
-            return SyftError(
-                message='At least one of "mock_function", "private_function", '
+            raise SyftException(
+                public_message='At least one of "mock_function", "private_function", '
                 '"hide_mock_definition" or "endpoint_timeout" is required.'
             )
 
-        endpoint_result = self.stash.get_by_path(context.credentials, endpoint_path)
-
-        if endpoint_result.is_err():
-            return SyftError(message=endpoint_result.err())
-
-        if not endpoint_result.ok():
-            return SyftError(message=f"Enpoint at path {endpoint_path} doesn't exist")
-
-        endpoint: TwinAPIEndpoint = endpoint_result.ok()
+        endpoint = self.stash.get_by_path(context.credentials, endpoint_path).unwrap()
 
         endpoint_timeout = (
             endpoint_timeout
@@ -169,7 +159,7 @@ class APIService(AbstractService):
                 endpoint_timeout=endpoint_timeout,
             )
         except ValidationError as e:
-            return SyftError(message=str(e))
+            raise SyftException(public_message=str(e))
 
         endpoint.mock_function = endpoint_update.mock_function
         endpoint.private_function = endpoint_update.private_function
@@ -181,10 +171,7 @@ class APIService(AbstractService):
             endpoint.mock_function.view_access = view_access
 
         # save changes
-        result = self.stash.upsert(context.credentials, endpoint=endpoint)
-        if result.is_err():
-            return SyftError(message=result.err())
-
+        self.stash.upsert(context.credentials, endpoint=endpoint).unwrap()
         return SyftSuccess(message="Endpoint successfully updated.")
 
     @service_method(
@@ -192,25 +179,10 @@ class APIService(AbstractService):
         name="delete",
         roles=ADMIN_ROLE_LEVEL,
     )
-    def delete(
-        self, context: AuthedServiceContext, endpoint_path: str
-    ) -> SyftSuccess | SyftError:
+    def delete(self, context: AuthedServiceContext, endpoint_path: str) -> SyftSuccess:
         """Deletes an specific API endpoint."""
-
-        result = self.stash.get_by_path(context.credentials, endpoint_path)
-
-        if result.is_err():
-            return SyftError(message=result.err())
-
-        endpoint = result.ok()
-        if not endpoint:
-            return SyftError(message=f"Enpoint at path {endpoint_path} doesn't exist")
-
-        result = self.stash.delete_by_uid(context.credentials, endpoint.id)
-
-        if result.is_err():
-            return SyftError(message=result.err())
-
+        endpoint = self.stash.get_by_path(context.credentials, endpoint_path).unwrap()
+        self.stash.delete_by_uid(context.credentials, endpoint.id).unwrap()
         return SyftSuccess(message="Endpoint successfully deleted.")
 
     @service_method(
@@ -218,15 +190,9 @@ class APIService(AbstractService):
         name="view",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
-    def view(
-        self, context: AuthedServiceContext, path: str
-    ) -> TwinAPIEndpointView | SyftError:
+    def view(self, context: AuthedServiceContext, path: str) -> TwinAPIEndpointView:
         """Retrieves an specific API endpoint."""
-        result = self.stash.get_by_path(context.node.verify_key, path)
-        if result.is_err():
-            return SyftError(message=result.err())
-        api_endpoint = result.ok()
-
+        api_endpoint = self.stash.get_by_path(context.node.verify_key, path).unwrap()
         return api_endpoint.to(TwinAPIEndpointView, context=context)
 
     @service_method(
@@ -234,16 +200,9 @@ class APIService(AbstractService):
         name="get",
         roles=ADMIN_ROLE_LEVEL,
     )
-    def get(
-        self, context: AuthedServiceContext, api_path: str
-    ) -> TwinAPIEndpoint | SyftError:
+    def get(self, context: AuthedServiceContext, api_path: str) -> TwinAPIEndpoint:
         """Retrieves an specific API endpoint."""
-        result = self.stash.get_by_path(context.node.verify_key, api_path)
-        if result.is_err():
-            return SyftError(message=result.err())
-        api_endpoint = result.ok()
-
-        return api_endpoint
+        return self.stash.get_by_path(context.node.verify_key, api_path).unwrap()
 
     @service_method(
         path="api.set_state",
@@ -263,19 +222,16 @@ class APIService(AbstractService):
         if both:
             private = True
             mock = True
-        result = self.stash.get_by_path(context.node.verify_key, api_path)
-        if result.is_err():
-            return SyftError(message=result.err())
-        api_endpoint = result.ok()
+        api_endpoint = self.stash.get_by_path(
+            context.node.verify_key, api_path
+        ).unwrap()
 
         if private and api_endpoint.private_function:
             api_endpoint.private_function.state = state
         if mock and api_endpoint.mock_function:
             api_endpoint.mock_function.state = state
 
-        result = self.stash.upsert(context.credentials, endpoint=api_endpoint)
-        if result.is_err():
-            return SyftError(message=result.err())
+        self.stash.upsert(context.credentials, endpoint=api_endpoint).unwrap()
         return SyftSuccess(message=f"APIEndpoint {api_path} state updated.")
 
     @service_method(
@@ -296,19 +252,16 @@ class APIService(AbstractService):
         if both:
             private = True
             mock = True
-        result = self.stash.get_by_path(context.node.verify_key, api_path)
-        if result.is_err():
-            return SyftError(message=result.err())
-        api_endpoint = result.ok()
+        api_endpoint = self.stash.get_by_path(
+            context.node.verify_key, api_path
+        ).unwrap()
 
         if private and api_endpoint.private_function:
             api_endpoint.private_function.settings = settings
         if mock and api_endpoint.mock_function:
             api_endpoint.mock_function.settings = settings
 
-        result = self.stash.upsert(context.credentials, endpoint=api_endpoint)
-        if result.is_err():
-            return SyftError(message=result.err())
+        self.stash.upsert(context.credentials, endpoint=api_endpoint).unwrap()
         return SyftSuccess(message=f"APIEndpoint {api_path} settings updated.")
 
     @service_method(
@@ -322,11 +275,8 @@ class APIService(AbstractService):
     ) -> list[TwinAPIEndpointView] | SyftError:
         """Retrieves a list of available API endpoints view available to the user."""
         admin_key = context.node.get_service("userservice").admin_verify_key()
-        result = self.stash.get_all(admin_key)
-        if result.is_err():
-            return SyftError(message=result.err())
+        all_api_endpoints = self.stash.get_all(admin_key).unwrap()
 
-        all_api_endpoints = result.ok()
         api_endpoint_view = [
             api_endpoint.to(TwinAPIEndpointView, context=context)
             for api_endpoint in all_api_endpoints
@@ -343,9 +293,9 @@ class APIService(AbstractService):
         path: str,
         *args: Any,
         **kwargs: Any,
-    ) -> Any | SyftError:
+    ) -> Any:
         """Call a Custom API Method in a Job"""
-        return self._call_in_jobs(context, "call", path, *args, **kwargs)
+        return self._call_in_jobs(context, "call", path, *args, **kwargs).unwrap()
 
     @service_method(
         path="api.call_private_in_jobs",
@@ -358,9 +308,11 @@ class APIService(AbstractService):
         path: str,
         *args: Any,
         **kwargs: Any,
-    ) -> Any | SyftError:
+    ) -> Any:
         """Call a Custom API Method in a Job"""
-        return self._call_in_jobs(context, "call_private", path, *args, **kwargs)
+        return self._call_in_jobs(
+            context, "call_private", path, *args, **kwargs
+        ).unwrap()
 
     @service_method(
         path="api.call_public_in_jobs",
@@ -373,10 +325,13 @@ class APIService(AbstractService):
         path: str,
         *args: Any,
         **kwargs: Any,
-    ) -> Any | SyftError:
+    ) -> Any:
         """Call a Custom API Method in a Job"""
-        return self._call_in_jobs(context, "call_public", path, *args, **kwargs)
+        return self._call_in_jobs(
+            context, "call_public", path, *args, **kwargs
+        ).unwrap()
 
+    @as_result(SyftException)
     def _call_in_jobs(
         self,
         context: AuthedServiceContext,
@@ -384,14 +339,11 @@ class APIService(AbstractService):
         path: str,
         *args: Any,
         **kwargs: Any,
-    ) -> Any | SyftError:
+    ) -> Any:
         custom_endpoint = self.get_code(
             context=context,
             endpoint_path=path,
-        )
-        if isinstance(custom_endpoint, SyftError):
-            return custom_endpoint
-
+        ).unwrap()
         job = context.node.add_api_endpoint_execution_to_queue(
             context.credentials,
             method,
@@ -419,8 +371,8 @@ class APIService(AbstractService):
             job = job_service.get(context, job_id)
             time.sleep(0.1)
             if (time.time() - custom_endpoint.endpoint_timeout) > start:
-                return SyftError(
-                    message=(
+                raise SyftException(
+                    public_message=(
                         f"Function timed out in {custom_endpoint.endpoint_timeout} seconds. "
                         + f"Get the Job with id: {job_id} to check results."
                     )
@@ -429,21 +381,19 @@ class APIService(AbstractService):
         if job.status == JobStatus.COMPLETED:
             return job.result
         else:
-            return SyftError(message="Function failed to complete.")
+            raise SyftException(public_message="Function failed to complete.")
 
     @service_method(
         path="api.get_public_context", name="get_public_context", roles=ADMIN_ROLE_LEVEL
     )
     def get_public_context(
         self, context: AuthedServiceContext, path: str
-    ) -> dict[str, Any] | SyftError:
+    ) -> dict[str, Any]:
         """Get specific public api context."""
         custom_endpoint = self.get_code(
             context=context,
             endpoint_path=path,
-        )
-        if isinstance(custom_endpoint, SyftError):
-            return custom_endpoint
+        ).unwrap()
 
         return custom_endpoint.mock_function.build_internal_context(context=context).to(
             TwinAPIContextView
@@ -456,14 +406,12 @@ class APIService(AbstractService):
     )
     def get_private_context(
         self, context: AuthedServiceContext, path: str
-    ) -> dict[str, Any] | SyftError:
+    ) -> dict[str, Any]:
         """Get specific private api context."""
         custom_endpoint = self.get_code(
             context=context,
             endpoint_path=path,
-        )
-        if isinstance(custom_endpoint, SyftError):
-            return custom_endpoint
+        ).unwrap()
 
         custom_endpoint.private_function = cast(
             PrivateAPIEndpoint, custom_endpoint.private_function
@@ -477,12 +425,9 @@ class APIService(AbstractService):
     def get_all(
         self,
         context: AuthedServiceContext,
-    ) -> list[TwinAPIEndpoint] | SyftError:
+    ) -> list[TwinAPIEndpoint]:
         """Get all API endpoints."""
-        result = self.stash.get_all(context.credentials)
-        if result.is_ok():
-            return result.ok()
-        return SyftError(message=result.err())
+        return self.stash.get_all(context.credentials).unwrap()
 
     @service_method(path="api.call", name="call", roles=GUEST_ROLE_LEVEL)
     def call(
@@ -491,39 +436,29 @@ class APIService(AbstractService):
         path: str,
         *args: Any,
         **kwargs: Any,
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         """Call a Custom API Method"""
         custom_endpoint = self.get_code(
             context=context,
             endpoint_path=path,
-        )
-        if isinstance(custom_endpoint, SyftError):
-            return custom_endpoint
+        ).unwrap()
 
-        exec_result = custom_endpoint.exec(context, *args, **kwargs)
-
-        if isinstance(exec_result, SyftError):
-            return Ok(exec_result)
-
+        exec_result = custom_endpoint.exec(context, *args, **kwargs).unwrap()
         action_obj = ActionObject.from_obj(exec_result)
         action_service = cast(ActionService, context.node.get_service(ActionService))
         try:
-            result = action_service.set_result_to_store(
+            return action_service.set_result_to_store(
                 context=context,
                 result_action_object=action_obj,
                 has_result_read_permission=True,
-            )
-            if result.is_err():
-                return SyftError(
-                    message=f"Failed to set result to store: {result.err()}"
-                )
-
-            return Ok(result.ok())
+            ).unwrap()
         except Exception as e:
             # stdlib
             import traceback
 
-            return Err(value=f"Failed to run. {e}, {traceback.format_exc()}")
+            raise SyftException(
+                public_message=f"Failed to run. {e}, {traceback.format_exc()}"
+            )
 
     @service_method(path="api.call_public", name="call_public", roles=GUEST_ROLE_LEVEL)
     def call_public(
@@ -532,38 +467,31 @@ class APIService(AbstractService):
         path: str,
         *args: Any,
         **kwargs: Any,
-    ) -> ActionObject | SyftError:
+    ) -> ActionObject:
         """Call a Custom API Method in public mode"""
         custom_endpoint = self.get_code(
             context=context,
             endpoint_path=path,
-        )
-        if isinstance(custom_endpoint, SyftError):
-            return custom_endpoint
-        exec_result = custom_endpoint.exec_mock_function(context, *args, **kwargs)
-
-        if isinstance(exec_result, SyftError):
-            return Ok(exec_result)
+        ).unwrap()
+        exec_result = custom_endpoint.exec_mock_function(
+            context, *args, **kwargs
+        ).unwrap()
 
         action_obj = ActionObject.from_obj(exec_result)
         action_service = cast(ActionService, context.node.get_service(ActionService))
         try:
-            result = action_service.set_result_to_store(
+            return action_service.set_result_to_store(
                 context=context,
                 result_action_object=action_obj,
                 has_result_read_permission=True,
-            )
-            if result.is_err():
-                return SyftError(
-                    message=f"Failed to set result to store: {result.err()}"
-                )
-
-            return Ok(result.ok())
+            ).unwrap()
         except Exception as e:
             # stdlib
             import traceback
 
-            return Err(value=f"Failed to run. {e}, {traceback.format_exc()}")
+            raise SyftException(
+                public_message=f"Failed to run. {e}, {traceback.format_exc()}"
+            )
 
     @service_method(
         path="api.call_private", name="call_private", roles=GUEST_ROLE_LEVEL
@@ -574,57 +502,44 @@ class APIService(AbstractService):
         path: str,
         *args: Any,
         **kwargs: Any,
-    ) -> ActionObject | SyftError:
+    ) -> ActionObject:
         """Call a Custom API Method in private mode"""
         custom_endpoint = self.get_code(
             context=context,
             endpoint_path=path,
-        )
-        if isinstance(custom_endpoint, SyftError):
-            return custom_endpoint
+        ).unwrap()
 
-        exec_result = custom_endpoint.exec_private_function(context, *args, **kwargs)
-
-        if isinstance(exec_result, SyftError):
-            return Ok(exec_result)
+        exec_result = custom_endpoint.exec_private_function(
+            context, *args, **kwargs
+        ).unwrap()
 
         action_obj = ActionObject.from_obj(exec_result)
 
         action_service = cast(ActionService, context.node.get_service(ActionService))
         try:
-            result = action_service.set_result_to_store(
+            return action_service.set_result_to_store(
                 context=context, result_action_object=action_obj
-            )
-            if result.is_err():
-                return SyftError(
-                    message=f"Failed to set result to store: {result.err()}"
-                )
-
-            return Ok(result.ok())
-
+            ).unwrap()
         except Exception as e:
             # stdlib
             import traceback
 
-            return Err(value=f"Failed to run. {e}, {traceback.format_exc()}")
+            raise SyftException(
+                public_message=f"Failed to run. {e}, {traceback.format_exc()}"
+            )
 
     @service_method(
         path="api.exists",
         name="exists",
     )
-    def exists(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> SyftSuccess | SyftError:
+    def exists(self, context: AuthedServiceContext, uid: UID) -> SyftSuccess:
         """Check if an endpoint exists"""
-        endpoint = self.get_endpoint_by_uid(context, uid)
-        return (
-            SyftSuccess(message="Endpoint exists")
-            if not isinstance(endpoint, SyftError)
-            else endpoint
-        )
+        endpoint = self.get_endpoint_by_uid(context, uid).unwrap()
+        return SyftSuccess(message="Endpoint exists")
 
     # ==== The methods below aren't meant to be called directly by the user, but rather by the node server context. ===
     # Therefore, they are not decorated with @service_method
+    @as_result(SyftException)
     def execute_server_side_endpoint_by_id(
         self,
         context: AuthedServiceContext,
@@ -632,15 +547,14 @@ class APIService(AbstractService):
         *args: Any,
         **kwargs: Any,
     ) -> Any:
-        endpoint = self.get_endpoint_by_uid(context, endpoint_uid)
-        if isinstance(endpoint, SyftError):
-            return endpoint
+        endpoint = self.get_endpoint_by_uid(context, endpoint_uid).unwrap()
         selected_code = endpoint.private_function
         if not selected_code:
             selected_code = endpoint.mock_function
 
-        return endpoint.exec_code(selected_code, context, *args, **kwargs)
+        return endpoint.exec_code(selected_code, context, *args, **kwargs).unwrap()
 
+    @as_result(StashException, NotFoundException, SyftException)
     def execute_service_side_endpoint_private_by_id(
         self,
         context: AuthedServiceContext,
@@ -648,13 +562,12 @@ class APIService(AbstractService):
         *args: Any,
         **kwargs: Any,
     ) -> Any:
-        endpoint = self.get_endpoint_by_uid(context, endpoint_uid)
-        if isinstance(endpoint, SyftError):
-            return endpoint
-        if not endpoint.private_function:
-            return SyftError(message="This endpoint does not have a private code")
-        return endpoint.exec_code(endpoint.private_function, context, *args, **kwargs)
+        endpoint = self.get_endpoint_by_uid(context, endpoint_uid).unwrap()
+        return endpoint.exec_code(
+            endpoint.private_function, context, *args, **kwargs
+        ).unwrap()
 
+    @as_result(StashException, NotFoundException, SyftException)
     def execute_server_side_endpoint_mock_by_id(
         self,
         context: AuthedServiceContext,
@@ -662,43 +575,31 @@ class APIService(AbstractService):
         *args: Any,
         **kwargs: Any,
     ) -> Any:
-        endpoint = self.get_endpoint_by_uid(context, endpoint_uid)
-        if isinstance(endpoint, SyftError):
-            return endpoint
-        return endpoint.exec_code(endpoint.mock_function, context, *args, **kwargs)
+        endpoint = self.get_endpoint_by_uid(context, endpoint_uid).unwrap()
+        return endpoint.exec_code(
+            endpoint.mock_function, context, *args, **kwargs
+        ).unwrap()
 
+    @as_result(StashException, NotFoundException)
     def get_endpoint_by_uid(
         self, context: AuthedServiceContext, uid: UID
-    ) -> TwinAPIEndpoint | SyftError:
+    ) -> TwinAPIEndpoint:
         admin_key = context.node.get_service("userservice").admin_verify_key()
-        result = self.stash.get_by_uid(admin_key, uid)
-        if result.is_err():
-            return SyftError(message=result.err())
-        return result.ok()
+        return self.stash.get_by_uid(admin_key, uid).unwrap()
 
-    def get_endpoints(
-        self, context: AuthedServiceContext
-    ) -> list[TwinAPIEndpoint] | SyftError:
+    @as_result(StashException)
+    def get_endpoints(self, context: AuthedServiceContext) -> list[TwinAPIEndpoint]:
         # TODO: Add ability to specify which roles see which endpoints
         # for now skip auth
-        results = self.stash.get_all(context.node.verify_key)
-        if results.is_ok():
-            return results.ok()
-        return SyftError(messages="Unable to get CustomAPIEndpoint")
+        return self.stash.get_all(context.node.verify_key).unwrap()
 
+    @as_result(StashException, NotFoundException)
     def get_code(
         self, context: AuthedServiceContext, endpoint_path: str
-    ) -> TwinAPIEndpoint | SyftError:
-        result = self.stash.get_by_path(context.node.verify_key, path=endpoint_path)
-        if result.is_err():
-            return SyftError(
-                message=f"CustomAPIEndpoint: {endpoint_path} does not exist"
-            )
-
-        if result.is_ok():
-            return result.ok()
-
-        return SyftError(message=f"Unable to get {endpoint_path} CustomAPIEndpoint")
+    ) -> TwinAPIEndpoint:
+        return self.stash.get_by_path(
+            context.node.verify_key, path=endpoint_path
+        ).unwrap()
 
 
 TYPE_TO_SERVICE[TwinAPIEndpoint] = APIService
