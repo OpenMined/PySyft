@@ -70,11 +70,11 @@ class SyftMigrationStateStash(NewBaseStash):
         res = self.check_type(migration_state, self.object_type).unwrap()
         return super().set(
             credentials=credentials,
-            obj=res.ok(),
+            obj=res,
             add_permissions=add_permissions,
             add_storage_permission=add_storage_permission,
             ignore_duplicates=ignore_duplicates,
-        )
+        ).unwrap()
 
     @as_result(StashException, NotFoundException)
     def get_by_name(
@@ -82,5 +82,5 @@ class SyftMigrationStateStash(NewBaseStash):
     ) -> Result[SyftObjectMigrationState, str]:
         qks = KlassNamePartitionKey.with_obj(canonical_name)
         return self.query_one(credentials=credentials, qks=qks).unwrap(
-            public_message="Migration State with canonical name {canonical_name} not found"
+            public_message=f"Migration State with canonical name {canonical_name} not found"
         )

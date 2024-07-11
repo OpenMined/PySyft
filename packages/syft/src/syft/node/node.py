@@ -124,7 +124,7 @@ from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
 from ..store.blob_storage.seaweedfs import SeaweedFSBlobDeposit
 from ..store.dict_document_store import DictStoreConfig
 from ..store.document_store import StoreConfig
-from ..store.document_store_errors import StashException
+from ..store.document_store_errors import NotFoundException, StashException
 from ..store.linked_obj import LinkedObject
 from ..store.mongo_document_store import MongoStoreConfig
 from ..store.sqlite_document_store import SQLiteStoreClientConfig
@@ -739,22 +739,17 @@ class Node(AbstractNode):
             canonical_name = object_type.__canonical_name__
             object_version = object_type.__version__
 
-            migration_state = migration_state_service.get_state(context, canonical_name)
-            if isinstance(migration_state, SyftError):
-                raise Exception(
-                    f"Failed to get migration state for {canonical_name}. Error: {migration_state}"
-                )
-            if (
-                migration_state is not None
-                and migration_state.current_version != migration_state.latest_version
-            ):
-                klasses_to_be_migrated.append(object_type)
-            else:
+            try:
+                migration_state = migration_state_service.get_state(context, canonical_name).unwrap()
+                if migration_state.current_version != migration_state.latest_version:
+                    klasses_to_be_migrated.append(object_type)
+            except NotFoundException:
                 migration_state_service.register_migration_state(
                     context,
                     current_version=object_version,
                     canonical_name=canonical_name,
                 )
+            
 
         return klasses_to_be_migrated
 
@@ -1347,14 +1342,9 @@ class Node(AbstractNode):
         worker_settings = WorkerSettings.from_node(node=self)
 
         if worker_pool is None:
-            worker_pool = self.get_default_worker_pool()
+            worker_pool = self.get_default_worker_pool().unwrap()
         else:
-            worker_pool = self.get_worker_pool_by_name(worker_pool)
-
-        if isinstance(worker_pool, SyftError):
-            return worker_pool
-        elif worker_pool is None:
-            return SyftError(message="Worker pool not found")
+            worker_pool = self.get_worker_pool_by_name(worker_pool).unwrap()
 
         # Create a Worker pool reference object
         worker_pool_ref = LinkedObject.from_obj(
@@ -1390,12 +1380,9 @@ class Node(AbstractNode):
         # If worker pool id is not set, then use default worker pool
         # Else, get the worker pool for given uid
         if worker_pool_name is None:
-            worker_pool = self.get_default_worker_pool()
+            worker_pool = self.get_default_worker_pool().unwrap()
         else:
-            result = self.pool_stash.get_by_name(credentials, worker_pool_name)
-            if result.is_err():
-                return SyftError(message=f"{result.err()}")
-            worker_pool = result.ok()
+            worker_pool = self.pool_stash.get_by_name(credentials, worker_pool_name).unwrap()
 
         # Create a Worker pool reference object
         worker_pool_ref = LinkedObject.from_obj(
@@ -1659,24 +1646,18 @@ class Node(AbstractNode):
     def user_code_stash(self) -> UserCodeStash:
         return self.get_service(UserCodeService).stash
 
+    @as_result(NotFoundException)
     def get_default_worker_pool(self) -> WorkerPool | None | SyftError:
-        result = self.pool_stash.get_by_name(
+        return self.pool_stash.get_by_name(
             credentials=self.verify_key,
             pool_name=self.settings.default_worker_pool,
-        )
-        if result.is_err():
-            return SyftError(message=f"{result.err()}")
-        worker_pool = result.ok()
-        return worker_pool
+        ).unwrap()
 
-    def get_worker_pool_by_name(self, name: str) -> WorkerPool | None | SyftError:
-        result = self.pool_stash.get_by_name(
+    @as_result(NotFoundException)
+    def get_worker_pool_by_name(self, name: str) -> WorkerPool:
+        return self.pool_stash.get_by_name(
             credentials=self.verify_key, pool_name=name
-        )
-        if result.is_err():
-            return SyftError(message=f"{result.err()}")
-        worker_pool = result.ok()
-        return worker_pool
+        ).unwrap()
 
     def get_api(
         self,
@@ -1824,7 +1805,10 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
     pull_image = not node.dev_mode
     image_stash = node.get_service(SyftWorkerImageService).stash
     default_pool_name = node.settings.default_worker_pool
-    default_worker_pool = node.get_default_worker_pool()
+    try:
+        default_worker_pool = node.get_default_worker_pool().unwrap(public_message="Failed to get default worker pool")
+    except SyftException:
+        default_worker_pool = None
     default_worker_tag = get_default_worker_tag_by_env(node.dev_mode)
     default_worker_pool_pod_annotations = get_default_worker_pool_pod_annotations()
     default_worker_pool_pod_labels = get_default_worker_pool_pod_labels()
@@ -1835,13 +1819,6 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
         role=ServiceRole.ADMIN,
     )
 
-    if isinstance(default_worker_pool, SyftError):
-        logger.error(
-            f"Failed to get default worker pool {default_pool_name}. "
-            f"Error: {default_worker_pool.message}"
-        )
-        return default_worker_pool
-
     logger.info(f"Creating default worker image with tag='{default_worker_tag}'. ")
     # Get/Create a default worker SyftWorkerImage
     default_image = create_default_image(
@@ -1849,10 +1826,7 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
         image_stash=image_stash,
         tag=default_worker_tag,
         in_kubernetes=in_kubernetes(),
-    )
-    if isinstance(default_image, SyftError):
-        logger.error(f"Failed to create default worker image: {default_image.message}")
-        return default_image
+    ).unwrap(public_message="Failed to create default worker image:")
 
     if not default_image.is_built:
         logger.info(f"Building default worker image with tag={default_worker_tag}. ")
@@ -1864,10 +1838,6 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
             tag=DEFAULT_WORKER_IMAGE_TAG,
             pull_image=pull_image,
         )
-
-        if isinstance(result, SyftError):
-            logger.error(f"Failed to build default worker image: {result.message}")
-            return None
 
     # Create worker pool if it doesn't exists
     logger.info(
@@ -1899,10 +1869,6 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
             number=worker_to_add_,
             pool_name=default_pool_name,
         )
-
-    if isinstance(result, SyftError):
-        logger.info(f"Default worker pool error. {result.message}")
-        return None
 
     for n in range(worker_to_add_):
         container_status = result[n]

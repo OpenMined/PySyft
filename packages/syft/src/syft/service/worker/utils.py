@@ -564,6 +564,7 @@ def run_containers(
     return results
 
 
+@as_result(SyftException)
 def create_default_image(
     credentials: SyftVerifyKey,
     image_stash: SyftWorkerImageStash,
@@ -578,26 +579,19 @@ def create_default_image(
         description="Prebuilt default worker image",
     )
 
-    # create SyftWorkerImage from a pre-built image
-    _new_image = SyftWorkerImage(
-        config=worker_config,
-        created_by=credentials,
-        image_identifier=SyftWorkerImageIdentifier.from_str(tag),
-    )
-
     result = image_stash.get_by_worker_config(
         credentials=credentials,
         config=worker_config,
     )
-
-    if result.ok() is None:
-        result = image_stash.set(credentials, _new_image)
-        if result.is_err():
-            return SyftError(message=f"Failed to save image stash: {result.err()}")
-
-    default_syft_image = result.ok()
-
-    return default_syft_image
+    if result.is_err():
+        # create SyftWorkerImage from a pre-built image
+        _new_image = SyftWorkerImage(
+            config=worker_config,
+            created_by=credentials,
+            image_identifier=SyftWorkerImageIdentifier.from_str(tag),
+        )
+        return image_stash.set(credentials, _new_image).unwrap(public_message="Failed to save image stash")
+    return result.unwrap()
 
 
 def _get_healthcheck_based_on_status(status: WorkerStatus) -> WorkerHealth:

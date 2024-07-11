@@ -1086,7 +1086,7 @@ class SyftAPI(SyftObject):
 
         # get admin defined custom api endpoints
         method = node.get_method_with_context(APIService.get_endpoints, context)
-        custom_endpoints = method()
+        custom_endpoints = method().unwrap()
         for custom_endpoint in custom_endpoints:
             pre_kwargs = {"path": custom_endpoint.path}
             service_path = "api.call_in_jobs"
