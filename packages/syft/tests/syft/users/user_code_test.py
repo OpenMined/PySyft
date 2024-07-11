@@ -445,7 +445,7 @@ def test_submit_code_with_global_var(guest_client: DomainClient) -> None:
         input_policy=sy.ExactMatch(), output_policy=sy.SingleExecutionExactOutput()
     )
     def mock_syft_func_with_global():
-        global x
+        global x  # noqa: PLW0602
         return x
 
     res = guest_client.code.submit(mock_syft_func_with_global)
@@ -453,7 +453,7 @@ def test_submit_code_with_global_var(guest_client: DomainClient) -> None:
 
     @sy.syft_function_single_use()
     def mock_syft_func_single_use_with_global():
-        global x
+        global x  # noqa: PLW0602
         return x
 
     res = guest_client.code.submit(mock_syft_func_single_use_with_global)
