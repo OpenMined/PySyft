@@ -13,6 +13,9 @@ from typing import Any
 from typing import cast
 
 # third party
+from IPython.display import JSON
+from IPython.display import display
+import ipywidgets as widgets
 from pydantic import Field
 from pydantic import field_validator
 from rich.progress import Progress
@@ -26,6 +29,7 @@ from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
+from ...service.attestation.utils import verify_attestation_report
 from ...service.metadata.node_metadata import NodeMetadata
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
@@ -501,16 +505,44 @@ class ProjectCode(ProjectEventAddObject):
         self.request_asset_transfer()
         return self.request_execution()
 
-    def get_enclave_attestation(self) -> Any:
+    def view_attestation_report(self, return_report: bool = False) -> dict | None:
         if not self.is_enclave_code:
             return SyftError(
                 message="This method is only supported for codes with Enclave runtime provider."
             )
         runtime_policy_init_kwargs = self.code.runtime_policy_init_kwargs or {}
         provider = cast(EnclaveInstance, runtime_policy_init_kwargs.get("provider"))
+        print(
+            f"Getting attestation report from the Enclave {provider.name} at {provider.route}...",
+            flush=True,
+        )
         client = provider.get_guest_client()
-        report = client.api.services.attestation.get_cpu_attestation(raw_token=True)
-        return report
+        raw_jwt_report = client.api.services.attestation.get_cpu_attestation(
+            raw_token=True
+        )
+        print(
+            f"Got encrypted attestation report of {len(raw_jwt_report)} bytes. Verifying it...",
+            flush=True,
+        )
+        report = verify_attestation_report(raw_jwt_report)
+        if report.is_err():
+            print(
+                f"❌ Attestation report verification failed. {report.err()}", flush=True
+            )
+
+        output = widgets.Output()
+
+        def display_report(_: widgets.Button) -> None:
+            with output:
+                output.clear_output()
+                display(JSON(report.ok()))
+
+        print("✅ Attestation report verified successfully.", flush=True)
+        button = widgets.Button(description="View full report")
+        button.on_click(display_report)
+        display(button)
+        display(output)
+        return report.ok() if return_report else None
 
 
 def poll_creation_wizard() -> tuple[str, list[str]]:
