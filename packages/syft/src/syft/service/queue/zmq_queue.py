@@ -328,7 +328,10 @@ class ZMQProducer(QueueProducer):
                 new_data,
                 id=action_object.id,
                 syft_blob_storage_entry_id=action_object.syft_blob_storage_entry_id,
+                syft_node_location=action_object.syft_node_location,
+                syft_client_verify_key=action_object.syft_client_verify_key,
             )
+            new_action_object._save_to_blob_storage()
             res = self.action_service._set(
                 context=self.auth_context, action_object=new_action_object
             )
