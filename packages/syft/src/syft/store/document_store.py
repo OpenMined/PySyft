@@ -982,7 +982,9 @@ class NewBaseStash:
         ).unwrap()
         value = new_first_or_none(result)
         if value is None:
-            raise NotFoundException
+            keys = qks.all if isinstance(qks, QueryKeys) else [qks]
+            keys_str = ", ".join(f"{x.key}: {x.value}" for x in keys)
+            raise NotFoundException(public_message=f"Could not find {self.object_type} with {keys_str}")
         return value
 
     @as_result(StashException, NotFoundException)

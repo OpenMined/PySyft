@@ -65,13 +65,7 @@ class WorkerStash(NewBaseUIDStoreStash):
         self, credentials: SyftVerifyKey, worker_name: str
     ) -> SyftWorker:
         qks = QueryKeys(qks=[WorkerContainerNamePartitionKey.with_obj(worker_name)])
-        try:
-            return self.query_one(credentials=credentials, qks=qks).unwrap()
-        except NotFoundException as exc:
-            raise NotFoundException.from_exception(
-                exc,
-                public_message=f"SyftWorker with worker name {worker_name} not found",
-            )
+        return self.query_one(credentials=credentials, qks=qks).unwrap()
 
     @as_result(StashException, NotFoundException)
     def update_consumer_state(
