@@ -165,7 +165,7 @@ try:
     # third party
     from IPython import get_ipython
 
-    get_ipython().set_custom_exc((SyftException,), syft_exception_handler)  # noqa: F821
+    get_ipython().set_custom_exc((SyftException,), syft_exception_handler)
 except Exception:
     pass  # nosec
 
