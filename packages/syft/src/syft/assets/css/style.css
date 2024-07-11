@@ -6,6 +6,7 @@ body.vscode-dark {
   --button-color: #111111;
   --colors-black: #ffffff;
   --surface-color: #fff;
+  --text-color: #ffffff;
 }
 
 body {
@@ -15,6 +16,7 @@ body {
   --button-color: #d1d5db;
   --colors-black: #17161d;
   --surface-color: #464158;
+  --text-color: #2e2b3b;
 }
 
 .header-1 {
@@ -64,7 +66,7 @@ body {
   line-height: 100%;
   leading-trim: both;
   text-edge: cap;
-  color: #2e2b3b;
+  color: var(--text-color);
 }
 
 .paragraph-sm {
@@ -75,7 +77,7 @@ body {
   line-height: 100%;
   leading-trim: both;
   text-edge: cap;
-  color: #2e2b3b;
+  color: var(--text-color);
 }
 
 .code-text {
@@ -86,7 +88,7 @@ body {
   line-height: 130%;
   leading-trim: both;
   text-edge: cap;
-  color: #2e2b3b;
+  color: var(--text-color);
 }
 
 .numbering-entry {
@@ -580,6 +582,8 @@ body {
   color: var(--surface-color);
 }
 
+.syft-dataset h1,
+.syft-dataset h2,
 .syft-dataset h3,
 .syft-dataset p,
 .syft-asset h3,

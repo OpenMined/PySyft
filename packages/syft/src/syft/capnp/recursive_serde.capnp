@@ -5,4 +5,6 @@ struct RecursiveSerde {
     fieldsData @1 :List(List(Data));
     fullyQualifiedName @2 :Text;
     nonrecursiveBlob @3 :List(Data);
+    canonicalName @4 :Text;
+    version @5 :Int32;
 }

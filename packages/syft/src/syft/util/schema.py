@@ -8,6 +8,9 @@ from typing import Any
 # syft absolute
 import syft as sy
 
+# relative
+from .decorators import deprecated
+
 RELATIVE_PATH_TO_FRONTEND = "/../../../../grid/frontend/"
 SCHEMA_FOLDER = "schema"
 
@@ -209,7 +212,11 @@ def resolve_references(json_mappings: dict[str, dict]) -> dict[str, dict]:
     return json_mappings
 
 
+@deprecated(
+    reason="generate_json_schemas is outdated, #1603 for more info",
+)
 def generate_json_schemas(output_path: str | None = None) -> None:
+    # TODO: should we also replace this with the SyftObjectRegistry?
     json_mappings = process_type_bank(sy.serde.recursive.TYPE_BANK)
     json_mappings = resolve_references(json_mappings)
     if not output_path:
