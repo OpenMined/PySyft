@@ -752,8 +752,8 @@ class UserCode(SyncableSyftObject):
 
     @property
     def assets(self) -> DictTuple[str, Asset] | SyftError:
-        if not self.input_policy:
-            return []
+        if not self.input_policy_init_kwargs:
+            return DictTuple({})
 
         api = self._get_api()
         if isinstance(api, SyftError):
@@ -772,7 +772,7 @@ class UserCode(SyncableSyftObject):
 
         # get a flat dict of all inputs
         all_inputs = {}
-        inputs = self.input_policy.inputs or {}
+        inputs = self.input_policy_init_kwargs or {}
         for vals in inputs.values():
             all_inputs.update(vals)
 
@@ -780,11 +780,27 @@ class UserCode(SyncableSyftObject):
         used_assets: list[Asset] = []
         for kwarg_name, action_id in all_inputs.items():
             asset = all_assets.get(action_id, None)
-            asset._kwarg_name = kwarg_name
+            if asset:
+                asset._kwarg_name = kwarg_name
             used_assets.append(asset)
 
         asset_dict = {asset._kwarg_name: asset for asset in used_assets}
         return DictTuple(asset_dict)
+
+    @property
+    def inputs(self) -> dict:
+        if not self.input_policy_init_kwargs:
+            return {}
+
+        all_inputs = {}
+        for vals in self.input_policy_init_kwargs.values():
+            all_inputs.update(vals)
+
+        # map uid to string
+        for k, v in vals.items():
+            if isinstance(v, UID):
+                all_inputs[k] = str(v)
+        return all_inputs
 
     @property
     def _asset_json(self) -> str | SyftError:
@@ -796,6 +812,11 @@ class UserCode(SyncableSyftObject):
         }
         asset_str = json.dumps(asset_dict, indent=2)
         return asset_str
+
+    @property
+    def _inputs_json(self) -> str | SyftError:
+        input_str = json.dumps(self.inputs, indent=2)
+        return input_str
 
     def get_sync_dependencies(
         self, context: AuthedServiceContext
@@ -888,6 +909,10 @@ class UserCode(SyncableSyftObject):
             [f"    {line}" for line in self._asset_json.split("\n")]
         ).lstrip()
 
+        inputs_str = "\n".join(
+            [f"    {line}" for line in self._inputs_json.split("\n")]
+        ).lstrip()
+
         md = f"""class UserCode
     id: UID = {self.id}
     service_func_name: str = {self.service_func_name}
@@ -896,6 +921,7 @@ class UserCode(SyncableSyftObject):
     {constants_str}
     {shared_with_line}
     assets: dict = {asset_str}
+    inputs: dict = {inputs_str}
     code:
 
 {self.raw_code}
@@ -938,10 +964,6 @@ class UserCode(SyncableSyftObject):
         constants = [x for x in args if isinstance(x, Constant)]
         constants_str = "\n&emsp;".join([f"{x.kw}: {x.val}" for x in constants])
         # indent all lines except the first one
-        asset_str = "<br>".join(
-            [f"&emsp;&emsp;{line}" for line in self._asset_json.split("\n")]
-        ).lstrip()
-
         repr_str = f"""
     <style>
     {FONT_CSS}
@@ -957,7 +979,8 @@ class UserCode(SyncableSyftObject):
     <p>{tabs}<strong>status:</strong> list = {self.code_status}</p>
     {tabs}{constants_str}
     {tabs}{shared_with_line}
-    <p>{tabs}<strong>assets:</strong> dict = {asset_str}</p>
+    <p>{tabs}<strong>assets:</strong> dict = <pre>{self._asset_json}</pre></p>
+    <p>{tabs}<strong>inputs:</strong> dict = <pre>{self._inputs_json}</pre></p>
     <p>{tabs}<strong>code:</strong></p>
     </div>
     """
