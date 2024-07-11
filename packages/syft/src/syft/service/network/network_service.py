@@ -7,9 +7,8 @@ from typing import Any
 from typing import cast
 
 # third party
-from result import Result, as_result
-from syft.store.document_store_errors import NotFoundException, StashException
-from syft.types.errors import SyftException
+from result import Result
+from result import as_result
 
 # relative
 from ...abstract_node import NodeType
@@ -20,11 +19,14 @@ from ...node.credentials import SyftVerifyKey
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
 from ...service.settings.settings import NodeSettings
-from ...store.document_store import BaseUIDStoreStash, NewBaseUIDStoreStash
 from ...store.document_store import DocumentStore
+from ...store.document_store import NewBaseUIDStoreStash
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
+from ...store.document_store_errors import NotFoundException
+from ...store.document_store_errors import StashException
+from ...types.errors import SyftException
 from ...types.grid_url import GridURL
 from ...types.transforms import TransformContext
 from ...types.transforms import keep
@@ -102,7 +104,9 @@ class NetworkStash(NewBaseUIDStoreStash):
         try:
             return self.query_one(credentials=credentials, qks=qks).unwrap()
         except NotFoundException as exc:
-            raise NotFoundException.from_exception(exc, public_message=f"NodePeer with {name} not found")
+            raise NotFoundException.from_exception(
+                exc, public_message=f"NodePeer with {name} not found"
+            )
 
     @as_result(StashException)
     def update(
@@ -135,15 +139,13 @@ class NetworkStash(NewBaseUIDStoreStash):
             existing_peer: Result | NodePeer = self.get_by_uid(
                 credentials=credentials, uid=peer.id
             ).unwrap()
-        except Exception as exc:
+        except Exception:
             return self.set(credentials, peer)
-            
+
         existing_peer.update_routes(peer.node_routes)
-        peer_update = NodePeerUpdate(
-            id=peer.id, node_routes=existing_peer.node_routes
-        )
+        peer_update = NodePeerUpdate(id=peer.id, node_routes=existing_peer.node_routes)
         return self.update(credentials, peer_update)
-        
+
     @as_result(StashException, NotFoundException)
     def get_by_verify_key(
         self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
@@ -152,7 +154,9 @@ class NetworkStash(NewBaseUIDStoreStash):
         try:
             return self.query_one(credentials, qks).unwrap()
         except NotFoundException as exc:
-            raise NotFoundException.from_exception(exc, private_message=f"NodePeer with {verify_key} not found")
+            raise NotFoundException.from_exception(
+                exc, private_message=f"NodePeer with {verify_key} not found"
+            )
 
     @as_result(StashException)
     def get_by_node_type(
@@ -198,7 +202,9 @@ class NetworkService(AbstractService):
         self_node_peer = self_node_route.validate_with_context(context=context).unwrap()
 
         if reverse_tunnel and not reverse_tunnel_enabled():
-            raise SyftException(public_message="Reverse tunneling is not enabled on this node.")
+            raise SyftException(
+                public_message="Reverse tunneling is not enabled on this node."
+            )
         elif reverse_tunnel:
             _rtunnel_route = self_node_peer.node_routes[-1]
             _rtunnel_route.rtunnel_token = generate_token()
@@ -244,7 +250,9 @@ class NetworkService(AbstractService):
                 challenge=random_challenge,
                 self_node_route=remote_node_route,
                 verify_key=remote_node_verify_key,
-            ).unwrap(public_message=f"Failed to add peer to remote client: {remote_client.id}. Error: {remote_res.message}")
+            ).unwrap(
+                public_message=f"Failed to add peer to remote client: {remote_client.id}."
+            )
             association_request_approved = not isinstance(remote_res, Request)
 
         # Step 4: Save the remote peer for later
@@ -300,7 +308,9 @@ class NetworkService(AbstractService):
             )
 
         # check if the peer already is a node peer
-        existing_peer_res = self.stash.get_by_uid(context.node.verify_key, peer.id).unwrap(public_message=f"Failed to query peer from stash: {existing_peer_res.err()}")
+        existing_peer_res = self.stash.get_by_uid(
+            context.node.verify_key, peer.id
+        ).unwrap()
 
         if isinstance(existing_peer := existing_peer_res, NodePeer):
             msg = [
@@ -312,8 +322,12 @@ class NetworkService(AbstractService):
                 result = self.stash.create_or_update_peer(
                     context.node.verify_key,
                     peer,
-                ).unwrap(public_message="\n".join(msg + ["Attempt to update peer information failed."]))
-                
+                ).unwrap(
+                    public_message="\n".join(
+                        msg + ["Attempt to update peer information failed."]
+                    )
+                )
+
                 msg.append("Peer information successfully updated.")
                 return SyftSuccess(message="\n".join(msg))
 
@@ -350,9 +364,7 @@ class NetworkService(AbstractService):
         return request
 
     @service_method(path="network.ping", name="ping", roles=GUEST_ROLE_LEVEL)
-    def ping(
-        self, context: AuthedServiceContext, challenge: bytes
-    ) -> bytes:
+    def ping(self, context: AuthedServiceContext, challenge: bytes) -> bytes:
         """To check alivesness/authenticity of a peer"""
 
         # # Only the root user can ping the node to check its state
@@ -382,7 +394,7 @@ class NetworkService(AbstractService):
         try:
             peer = self.stash.get_by_uid(context.node.verify_key, peer_id).unwrap()
             return NodePeerAssociationStatus.PEER_ASSOCIATED
-        except NotFoundException as exc:
+        except NotFoundException:
             association_requests: list[Request] = (
                 self._get_association_requests_by_peer_id(
                     context=context, peer_id=peer_id
@@ -399,9 +411,7 @@ class NetworkService(AbstractService):
     @service_method(
         path="network.get_all_peers", name="get_all_peers", roles=GUEST_ROLE_LEVEL
     )
-    def get_all_peers(
-        self, context: AuthedServiceContext
-    ) -> list[NodePeer]:
+    def get_all_peers(self, context: AuthedServiceContext) -> list[NodePeer]:
         """Get all Peers"""
         return self.stash.get_all(
             credentials=context.node.verify_key,
@@ -411,9 +421,7 @@ class NetworkService(AbstractService):
     @service_method(
         path="network.get_peer_by_name", name="get_peer_by_name", roles=GUEST_ROLE_LEVEL
     )
-    def get_peer_by_name(
-        self, context: AuthedServiceContext, name: str
-    ) -> NodePeer:
+    def get_peer_by_name(self, context: AuthedServiceContext, name: str) -> NodePeer:
         """Get Peer by Name"""
         return self.stash.get_by_name(
             credentials=context.node.verify_key,
@@ -489,9 +497,7 @@ class NetworkService(AbstractService):
         name="delete_peer_by_id",
         roles=DATA_OWNER_ROLE_LEVEL,
     )
-    def delete_peer_by_id(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> SyftSuccess:
+    def delete_peer_by_id(self, context: AuthedServiceContext, uid: UID) -> SyftSuccess:
         """Delete Node Peer"""
         peer_to_delete = self.stash.get_by_uid(context.credentials, uid).unwrap()
         peer_to_delete = cast(NodePeer, peer_to_delete)
@@ -579,9 +585,9 @@ class NetworkService(AbstractService):
                 )
             )
         # get the full peer object from the store to update its routes
-        remote_node_peer: NodePeer = (
-            self._get_remote_node_peer_by_verify_key(context, peer_verify_key).unwrap()
-        )
+        remote_node_peer: NodePeer = self._get_remote_node_peer_by_verify_key(
+            context, peer_verify_key
+        ).unwrap()
         # add and update the priority for the peer
         if route in remote_node_peer.node_routes:
             return SyftSuccess(
@@ -669,11 +675,9 @@ class NetworkService(AbstractService):
                 )
             )
 
-        remote_node_peer: NodePeer = (
-            self._get_remote_node_peer_by_verify_key(
-                context=context, peer_verify_key=peer_verify_key
-            ).unwrap()
-        )
+        remote_node_peer: NodePeer = self._get_remote_node_peer_by_verify_key(
+            context=context, peer_verify_key=peer_verify_key
+        ).unwrap()
 
         if len(remote_node_peer.node_routes) == 1:
             warning_message = (
@@ -791,9 +795,9 @@ class NetworkService(AbstractService):
                 )
             )
         # get the full peer object from the store to update its routes
-        remote_node_peer: NodePeer = (
-            self._get_remote_node_peer_by_verify_key(context, peer_verify_key).unwrap()
-        )
+        remote_node_peer: NodePeer = self._get_remote_node_peer_by_verify_key(
+            context, peer_verify_key
+        ).unwrap()
         # update the route's priority for the peer
         updated_node_route: NodeRouteType = (
             remote_node_peer.update_existed_route_priority(
@@ -820,10 +824,10 @@ class NetworkService(AbstractService):
         he stash using its verify key
         """
         return self.stash.get_by_verify_key(
-                credentials=context.node.verify_key,
-                verify_key=peer_verify_key,
-            ).unwrap()
-    
+            credentials=context.node.verify_key,
+            verify_key=peer_verify_key,
+        ).unwrap()
+
     def _get_association_requests_by_peer_id(
         self, context: AuthedServiceContext, peer_id: UID
     ) -> list[Request]:

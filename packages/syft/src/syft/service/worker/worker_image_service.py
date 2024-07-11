@@ -4,7 +4,6 @@ import contextlib
 # third party
 import docker
 import pydantic
-from syft.types.errors import SyftException
 
 # relative
 from ...custom_worker.config import PrebuiltWorkerConfig
@@ -14,6 +13,7 @@ from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
+from ...types.errors import SyftException
 from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..response import SyftError
@@ -54,8 +54,10 @@ class SyftWorkerImageService(AbstractService):
                 image_identifier = SyftWorkerImageIdentifier.from_str(worker_config.tag)
             except Exception:
                 raise SyftException(
-                    public_message=(f"Invalid Docker image name: {worker_config.tag}.\n"
-                    + "Please specify the image name in this format <registry>/<repo>:<tag>.")
+                    public_message=(
+                        f"Invalid Docker image name: {worker_config.tag}.\n"
+                        + "Please specify the image name in this format <registry>/<repo>:<tag>."
+                    )
                 )
         worker_image = SyftWorkerImage(
             config=worker_config,
@@ -83,9 +85,13 @@ class SyftWorkerImageService(AbstractService):
         registry: SyftImageRegistry | None = None
 
         if IN_KUBERNETES and registry_uid is None:
-            raise SyftException(public_message="Registry UID is required in Kubernetes mode.")
+            raise SyftException(
+                public_message="Registry UID is required in Kubernetes mode."
+            )
 
-        worker_image = self.stash.get_by_uid(credentials=context.credentials, uid=image_uid).unwrap()
+        worker_image = self.stash.get_by_uid(
+            credentials=context.credentials, uid=image_uid
+        ).unwrap()
         if registry_uid:
             # get registry from image registry service
             image_registry_service: AbstractService = context.node.get_service(
@@ -110,7 +116,9 @@ class SyftWorkerImageService(AbstractService):
             and worker_image.image_identifier.full_name_with_tag
             == image_identifier.full_name_with_tag
         ):
-            raise SyftException(public_message=f"Image ID: {image_uid} is already built")
+            raise SyftException(
+                public_message=f"Image ID: {image_uid} is already built"
+            )
 
         worker_image.image_identifier = image_identifier
         result = None
@@ -144,10 +152,14 @@ class SyftWorkerImageService(AbstractService):
         username: str | None = None,
         password: str | None = None,
     ) -> SyftSuccess:
-        worker_image = self.stash.get_by_uid(credentials=context.credentials, uid=image_uid).unwrap()
+        worker_image = self.stash.get_by_uid(
+            credentials=context.credentials, uid=image_uid
+        ).unwrap()
 
         if not worker_image.is_built:
-            raise SyftException(public_message=f"Image ID: {worker_image.id} is not built yet.")
+            raise SyftException(
+                public_message=f"Image ID: {worker_image.id} is not built yet."
+            )
         elif (
             worker_image.image_identifier is None
             or worker_image.image_identifier.registry_host == ""
@@ -167,9 +179,7 @@ class SyftWorkerImageService(AbstractService):
         name="get_all",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
-    def get_all(
-        self, context: AuthedServiceContext
-    ) -> DictTuple[str, SyftWorkerImage]:
+    def get_all(self, context: AuthedServiceContext) -> DictTuple[str, SyftWorkerImage]:
         """
         One image one docker file for now
         """
@@ -192,9 +202,7 @@ class SyftWorkerImageService(AbstractService):
         name="remove",
         roles=DATA_OWNER_ROLE_LEVEL,
     )
-    def remove(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> SyftSuccess:
+    def remove(self, context: AuthedServiceContext, uid: UID) -> SyftSuccess:
         #  Delete Docker image given image tag
         image = self.stash.get_by_uid(credentials=context.credentials, uid=uid).unwrap()
 
@@ -241,4 +249,3 @@ class SyftWorkerImageService(AbstractService):
         return self.stash.get_by_worker_config(
             credentials=context.credentials, config=worker_config
         ).unwrap()
-        

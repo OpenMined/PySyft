@@ -3,12 +3,12 @@ from collections.abc import Callable
 
 # third party
 import requests
-from syft.types.errors import SyftException
-from syft.types.result import as_result
 
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
+from ...types.errors import SyftException
+from ...types.result import as_result
 from ...util.util import str_to_bool
 from ..context import AuthedServiceContext
 from ..response import SyftError
@@ -56,7 +56,9 @@ class AttestationService(AbstractService):
     def get_cpu_attestation(
         self, context: AuthedServiceContext, raw_token: bool = False
     ) -> str | SyftSuccess:
-        return self.perform_request(requests.get, ATTEST_CPU_ENDPOINT, raw_token).unwrap()
+        return self.perform_request(
+            requests.get, ATTEST_CPU_ENDPOINT, raw_token
+        ).unwrap()
 
     @service_method(
         path="attestation.get_gpu_attestation",
@@ -66,4 +68,6 @@ class AttestationService(AbstractService):
     def get_gpu_attestation(
         self, context: AuthedServiceContext, raw_token: bool = False
     ) -> str | SyftSuccess:
-        return self.perform_request(requests.get, ATTEST_GPU_ENDPOINT, raw_token).unwrap()
+        return self.perform_request(
+            requests.get, ATTEST_GPU_ENDPOINT, raw_token
+        ).unwrap()

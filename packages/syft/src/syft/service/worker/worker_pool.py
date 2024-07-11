@@ -7,8 +7,6 @@ from typing import cast
 # third party
 import docker
 from docker.models.containers import Container
-from syft.types.errors import SyftException
-from syft.types.result import as_result
 
 # relative
 from ...client.api import APIRegistry
@@ -16,6 +14,8 @@ from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
 from ...types.base import SyftBaseModel
 from ...types.datetime import DateTime
+from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
@@ -313,7 +313,9 @@ def _get_worker_container(
     try:
         return cast(Container, client.containers.get(worker.container_id))
     except docker.errors.NotFound as e:
-        raise SyftException(public_message=f"Worker {worker.id} container not found. Error {e}")
+        raise SyftException(
+            public_message=f"Worker {worker.id} container not found. Error {e}"
+        )
     except docker.errors.APIError as e:
         raise SyftException(
             public_message=f"Unable to access worker {worker.id} container. "
@@ -333,6 +335,7 @@ _CONTAINER_STATUS_TO_WORKER_STATUS: dict[str, WorkerStatus] = dict(
     ]
 )
 
+
 @as_result(SyftException)
 def _get_worker_container_status(
     client: docker.DockerClient,
@@ -342,10 +345,13 @@ def _get_worker_container_status(
     if container is None:
         container = _get_worker_container(client, worker).unwrap()
     container_status = container.status
-    try: 
+    try:
         return _CONTAINER_STATUS_TO_WORKER_STATUS[container_status]
     except Exception:
-        raise SyftException(public_message=f"Unknown container status: {container_status}")
+        raise SyftException(
+            public_message=f"Unknown container status: {container_status}"
+        )
+
 
 @migrate(SyftWorkerV2, SyftWorker)
 def upgrade_syft_worker() -> list[Callable]:

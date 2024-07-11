@@ -1,11 +1,10 @@
 # stdlib
 
 # relative
-from syft.types.errors import SyftException
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
+from ...types.errors import SyftException
 from ..context import AuthedServiceContext
-from ..response import SyftError
 from ..service import AbstractService
 from ..service import service_method
 from .object_migration_state import SyftMigrationStateStash
@@ -22,9 +21,7 @@ class MigrateStateService(AbstractService):
         self.stash = SyftMigrationStateStash(store=store)
 
     @service_method(path="migration", name="get_version")
-    def get_version(
-        self, context: AuthedServiceContext, canonical_name: str
-    ) -> int:
+    def get_version(self, context: AuthedServiceContext, canonical_name: str) -> int:
         """Search for the metadata for an object."""
 
         migration_state = self.stash.get_by_name(
@@ -39,9 +36,7 @@ class MigrateStateService(AbstractService):
         return migration_state.current_version
 
     @service_method(path="migration", name="get_state")
-    def get_state(
-        self, context: AuthedServiceContext, canonical_name: str
-    ) -> bool:
+    def get_state(self, context: AuthedServiceContext, canonical_name: str) -> bool:
         return self.stash.get_by_name(
             canonical_name=canonical_name, credentials=context.credentials
         ).unwrap()
@@ -56,4 +51,6 @@ class MigrateStateService(AbstractService):
         obj = SyftObjectMigrationState(
             current_version=current_version, canonical_name=canonical_name
         )
-        return self.stash.set(migration_state=obj, credentials=context.credentials).unwrap()
+        return self.stash.set(
+            migration_state=obj, credentials=context.credentials
+        ).unwrap()

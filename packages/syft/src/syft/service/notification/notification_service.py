@@ -1,11 +1,11 @@
 # stdlib
 
 # relative
-from syft.store.document_store_errors import StashException
-from syft.types.errors import SyftException
-from syft.types.result import as_result
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
+from ...store.document_store_errors import StashException
+from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectREAD
@@ -69,10 +69,14 @@ class NotificationService(AbstractService):
     ) -> ReplyNotification:
         msg = self.stash.get_by_uid(
             credentials=context.credentials, uid=reply.target_msg
-        ).unwrap()
+        ).unwrap(
+            public_message=f"The target notification id {reply.target_msg} was not found!"
+        )
         reply.from_user_verify_key = context.credentials
         msg.replies.append(reply)
-        return self.stash.update(credentials=context.credentials, obj=msg).unwrap()
+        return self.stash.update(credentials=context.credentials, obj=msg).unwrap(
+            public_message="Couldn't add a new notification reply in the target notification"
+        )
 
     @service_method(
         path="notifications.user_settings",
@@ -143,9 +147,7 @@ class NotificationService(AbstractService):
         name="outbox",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
-    def get_all_sent(
-        self, context: AuthedServiceContext
-    ) -> list[Notification]:
+    def get_all_sent(self, context: AuthedServiceContext) -> list[Notification]:
         return self.stash.get_all_sent_for_verify_key(
             context.credentials, context.credentials
         ).unwrap()
@@ -192,17 +194,13 @@ class NotificationService(AbstractService):
         ).unwrap()
 
     @service_method(path="notifications.mark_as_read", name="mark_as_read")
-    def mark_as_read(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> Notification:
+    def mark_as_read(self, context: AuthedServiceContext, uid: UID) -> Notification:
         return self.stash.update_notification_status(
             context.credentials, uid=uid, status=NotificationStatus.READ
         ).unwrap()
 
     @service_method(path="notifications.mark_as_unread", name="mark_as_unread")
-    def mark_as_unread(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> Notification:
+    def mark_as_unread(self, context: AuthedServiceContext, uid: UID) -> Notification:
         return self.stash.update_notification_status(
             context.credentials, uid=uid, status=NotificationStatus.UNREAD
         ).unwrap()

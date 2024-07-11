@@ -1,12 +1,11 @@
 # stdlib
 
 # relative
-from syft.types.errors import SyftException
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
+from ...types.errors import SyftException
 from ...types.uid import UID
 from ..context import AuthedServiceContext
-from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
@@ -93,10 +92,9 @@ class SyftImageRegistryService(AbstractService):
         name="get_by_id",
         roles=DATA_OWNER_ROLE_LEVEL,
     )
-    def get_by_id(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> SyftImageRegistry:
+    def get_by_id(self, context: AuthedServiceContext, uid: UID) -> SyftImageRegistry:
         return self.stash.get_by_uid(context.credentials, uid).unwrap()
+
 
 TYPE_TO_SERVICE[SyftImageRegistry] = SyftImageRegistryService
 SERVICE_TO_TYPES[SyftImageRegistryService].update({SyftImageRegistry})

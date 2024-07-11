@@ -12,8 +12,6 @@ from typing import Any
 import docker
 from docker.models.containers import Container
 from kr8s.objects import Pod
-from syft.types.errors import SyftException
-from syft.types.result import as_result
 
 # relative
 from ...abstract_node import AbstractNode
@@ -25,6 +23,8 @@ from ...custom_worker.k8s import KubeUtils
 from ...custom_worker.k8s import PodStatus
 from ...custom_worker.runner_k8s import KubernetesRunner
 from ...node.credentials import SyftVerifyKey
+from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.uid import UID
 from ...util.util import get_queue_address
 from ..response import SyftError
@@ -385,6 +385,7 @@ def create_kubernetes_pool(
 
     return runner.get_pool_pods(pool_name=pool_name)
 
+
 @as_result(SyftException)
 def scale_kubernetes_pool(
     runner: KubernetesRunner,
@@ -505,6 +506,7 @@ def map_pod_to_worker_status(
 
     return worker_status, worker_healthcheck, worker_error
 
+
 @as_result(SyftException)
 def run_containers(
     pool_name: str,
@@ -604,10 +606,9 @@ def _get_healthcheck_based_on_status(status: WorkerStatus) -> WorkerHealth:
     else:
         return WorkerHealth.UNHEALTHY
 
+
 @as_result(SyftException)
-def image_build(
-    image: SyftWorkerImage, **kwargs: dict[str, Any]
-) -> ImageBuildResult:
+def image_build(image: SyftWorkerImage, **kwargs: dict[str, Any]) -> ImageBuildResult:
     if image.image_identifier is not None:
         full_tag = image.image_identifier.full_name_with_tag
         try:
@@ -661,7 +662,9 @@ def image_push(
 
             return result
         except docker.errors.APIError as e:
-            raise SyftException(public_message=f"Docker API error when pushing {full_tag}. {e}")
+            raise SyftException(
+                public_message=f"Docker API error when pushing {full_tag}. {e}"
+            )
         except docker.errors.DockerException as e:
             raise SyftException(
                 public_message=f"Docker exception when pushing {full_tag}. Reason - {e}"

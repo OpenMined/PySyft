@@ -6,9 +6,6 @@ from typing import cast
 # third party
 import docker
 from docker.models.containers import Container
-from syft.store.document_store_errors import StashException
-from syft.types.errors import SyftException
-from syft.types.result import as_result
 
 # relative
 from ...custom_worker.k8s import IN_KUBERNETES
@@ -18,6 +15,9 @@ from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.document_store import SyftSuccess
+from ...store.document_store_errors import StashException
+from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..service import AbstractService
@@ -75,7 +75,9 @@ class WorkerService(AbstractService):
             return workers
         else:
             # If container workers, check their statuses
-            workers = refresh_worker_status(workers, self.stash, context.credentials).unwrap()
+            workers = refresh_worker_status(
+                workers, self.stash, context.credentials
+            ).unwrap()
         return workers
 
     @service_method(
@@ -183,7 +185,7 @@ class WorkerService(AbstractService):
 
         # Delete worker from worker stash
         self.stash.delete_by_uid(credentials=context.credentials, uid=uid).unwrap()
-        
+
         # Update worker pool
         worker_pool_stash.update(context.credentials, obj=worker_pool).unwrap()
 
@@ -218,6 +220,7 @@ class WorkerService(AbstractService):
     ) -> SyftWorker | SyftError:
         return self.stash.get_by_uid(credentials=context.credentials, uid=uid).unwrap()
 
+
 @as_result(SyftException)
 def refresh_worker_status(
     workers: list[SyftWorker],
@@ -228,7 +231,7 @@ def refresh_worker_status(
         workers = refresh_status_kubernetes(workers).unwrap()
     else:
         workers = refresh_status_docker(workers).unwrap()
-        
+
     for worker in workers:
         worker_stash.update(
             credentials=credentials,
@@ -245,13 +248,16 @@ def refresh_status_kubernetes(workers: list[SyftWorker]) -> list[SyftWorker]:
     for worker in workers:
         status: PodStatus | WorkerStatus | None = runner.get_pod_status(pod=worker.name)
         if not status:
-            raise SyftException(public_message=f"Pod does not exist. name={worker.name}")
+            raise SyftException(
+                public_message=f"Pod does not exist. name={worker.name}"
+            )
         status, health, _ = map_pod_to_worker_status(status)
         worker.status = status
         worker.healthcheck = health
         updated_workers.append(worker)
 
     return updated_workers
+
 
 @as_result(SyftException)
 def refresh_status_docker(workers: list[SyftWorker]) -> list[SyftWorker]:
@@ -263,6 +269,7 @@ def refresh_status_docker(workers: list[SyftWorker]) -> list[SyftWorker]:
             worker.healthcheck = _get_healthcheck_based_on_status(status=status)
             updated_workers.append(worker)
     return updated_workers
+
 
 @as_result(SyftException)
 def _stop_worker_container(
@@ -280,6 +287,7 @@ def _stop_worker_container(
         raise SyftException(
             public_message=f"Failed to delete worker with id: {worker.id}. Error: {e}"
         )
+
 
 def _remove_worker_container(container: Container, **kwargs: Any) -> None:
     try:

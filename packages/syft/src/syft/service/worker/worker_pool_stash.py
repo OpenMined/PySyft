@@ -1,9 +1,6 @@
 # stdlib
 
 # third party
-from result import Result
-from syft.store.document_store_errors import NotFoundException, StashException
-from syft.types.result import as_result
 
 # relative
 from ...node.credentials import SyftVerifyKey
@@ -13,6 +10,9 @@ from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
+from ...store.document_store_errors import NotFoundException
+from ...store.document_store_errors import StashException
+from ...types.result import as_result
 from ...types.uid import UID
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
@@ -34,14 +34,11 @@ class SyftWorkerPoolStash(BaseUIDStoreStash):
         super().__init__(store=store)
 
     @as_result(StashException, NotFoundException)
-    def get_by_name(
-        self, credentials: SyftVerifyKey, pool_name: str
-    ) -> WorkerPool:
+    def get_by_name(self, credentials: SyftVerifyKey, pool_name: str) -> WorkerPool:
         qks = QueryKeys(qks=[PoolNamePartitionKey.with_obj(pool_name)])
-        try:
-            return self.query_one(credentials=credentials, qks=qks).unwrap()
-        except NotFoundException as exc:
-            raise NotFoundException.from_exception(exc, public_message=f"WorkerPool with name {pool_name} not found")
+        return self.query_one(credentials=credentials, qks=qks).unwrap(
+            public_message=f"WorkerPool with name {pool_name} not found"
+        )
 
     @as_result(StashException)
     def set(
@@ -57,13 +54,17 @@ class SyftWorkerPoolStash(BaseUIDStoreStash):
         add_permissions.append(
             ActionObjectPermission(uid=obj.id, permission=ActionPermission.ALL_READ)
         )
-        return super().set(
-            credentials,
-            obj,
-            add_permissions=add_permissions,
-            add_storage_permission=add_storage_permission,
-            ignore_duplicates=ignore_duplicates,
-        ).unwrap()
+        return (
+            super()
+            .set(
+                credentials,
+                obj,
+                add_permissions=add_permissions,
+                add_storage_permission=add_storage_permission,
+                ignore_duplicates=ignore_duplicates,
+            )
+            .unwrap()
+        )
 
     @as_result(StashException)
     def get_by_image_uid(

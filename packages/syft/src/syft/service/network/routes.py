@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 
 # third party
 from result import as_result
-from syft.types.errors import SyftException
 from typing_extensions import Self
 
 # relative
@@ -19,6 +18,7 @@ from ...client.client import PythonConnection
 from ...client.client import SyftClient
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
+from ...types.errors import SyftException
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject

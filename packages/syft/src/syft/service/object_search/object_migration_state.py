@@ -2,16 +2,17 @@
 
 # third party
 from result import Result
-from syft.store.document_store_errors import NotFoundException, StashException
-from syft.types.result import as_result
 
 # relative
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
-from ...store.document_store import BaseStash, NewBaseStash
 from ...store.document_store import DocumentStore
+from ...store.document_store import NewBaseStash
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
+from ...store.document_store_errors import NotFoundException
+from ...store.document_store_errors import StashException
+from ...types.result import as_result
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftMigrationRegistry
 from ...types.syft_object import SyftObject
@@ -80,8 +81,6 @@ class SyftMigrationStateStash(NewBaseStash):
         self, canonical_name: str, credentials: SyftVerifyKey
     ) -> Result[SyftObjectMigrationState, str]:
         qks = KlassNamePartitionKey.with_obj(canonical_name)
-        try:
-            return self.query_one(credentials=credentials, qks=qks).unwrap()
-        except NotFoundException as exc:
-            raise NotFoundException.from_exception(exc, public_message=f"Migration State with canonical name {canonical_name} not found")
-
+        return self.query_one(credentials=credentials, qks=qks).unwrap(
+            public_message="Migration State with canonical name {canonical_name} not found"
+        )

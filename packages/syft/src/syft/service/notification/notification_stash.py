@@ -1,21 +1,19 @@
 # stdlib
 
 # third party
-from result import Err
-from result import Ok
-from result import Result
-from syft.store.document_store_errors import NotFoundException, StashException
-from syft.types.result import as_result
 
 # relative
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
-from ...store.document_store import BaseUIDStoreStash, NewBaseUIDStoreStash
+from ...store.document_store import NewBaseUIDStoreStash
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
+from ...store.document_store_errors import NotFoundException
+from ...store.document_store_errors import StashException
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
+from ...types.result import as_result
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from .notifications import Notification
@@ -65,7 +63,9 @@ class NotificationStash(NewBaseUIDStoreStash):
                 FromUserVerifyKeyPartitionKey.with_obj(verify_key),
             ]
         )
-        return self.get_all_for_verify_key(credentials, verify_key=verify_key, qks=qks).unwrap()
+        return self.get_all_for_verify_key(
+            credentials, verify_key=verify_key, qks=qks
+        ).unwrap()
 
     @as_result(StashException)
     def get_all_for_verify_key(
@@ -109,10 +109,9 @@ class NotificationStash(NewBaseUIDStoreStash):
                 LinkedObjectPartitionKey.with_obj(linked_obj),
             ]
         )
-        try:
-            return self.query_one(credentials=credentials, qks=qks).unwrap()
-        except NotFoundException as exc:
-            raise NotFoundException.from_exception(exc, public_message=f"Notifications for Linked Object {linked_obj} not found")
+        return self.query_one(credentials=credentials, qks=qks).unwrap(
+            public_message=f"Notifications for Linked Object {linked_obj} not found"
+        )
 
     @as_result(StashException, NotFoundException)
     def update_notification_status(

@@ -17,13 +17,14 @@ from pydantic import model_validator
 from result import Err
 from result import Ok
 from result import Result
-from syft.types.errors import SyftException
 
 # relative
 from ...abstract_node import AbstractNode
 from ...client.client import SyftClient
 from ...serde.serializable import serializable
 from ...serde.signature import signature_remove_context
+from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
@@ -503,7 +504,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
         admin_client = context.node.get_guest_client()
         admin_client.credentials = context.node.signing_key
         return admin_client
-    
+
     @as_result(SyftException)
     def exec_code(
         self,
