@@ -1,0 +1,57 @@
+name: Conda Install - PySyft
+
+on:
+  workflow_call:
+
+  workflow_dispatch:
+    inputs:
+      none:
+        description: "Run Version Tests Manually"
+        required: false
+
+jobs:
+  constall-install-syft:
+    strategy:
+      max-parallel: 99
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.12"]
+      fail-fast: false
+
+    runs-on: ${{matrix.os}}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          activate-environment: syft_conda_env
+          python-version: ${{ matrix.python-version }}
+      - name: Install syft (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          python -m pip install ./packages/syft
+          $expectedVersion = python packages/grid/VERSION
+          $syftVersion = python -c 'import syft; print(syft.__version__)'
+          # Compare the versions
+          if ($expectedVersion -ne $syftVersion) {
+            Write-Output "Expected version: $expectedVersion"
+            Write-Output "Actual version: $syftVersion"
+            Write-Output "Version mismatch."
+            exit 1
+          }
+      - name: Install syft (MacOS or Linux)
+        if: matrix.os != 'windows-latest'
+        shell: bash -el {0}
+        run: |
+          python -m pip install ./packages/syft
+          EXPECTED_VERSION=$(python packages/grid/VERSION)
+          SYFT_VERSION=$(python -c 'import syft; print(syft.__version__)')
+          # Compare the versions
+          if [ "$EXPECTED_VERSION" != "$SYFT_VERSION" ]; then
+            echo "Expected version: $EXPECTED_VERSION"
+            echo "Actual version: $SYFT_VERSION"
+            echo "Version mismatch."
+            exit 1
+          fi

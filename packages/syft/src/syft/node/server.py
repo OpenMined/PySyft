@@ -31,6 +31,8 @@ from .enclave import Enclave
 from .gateway import Gateway
 from .node import NodeType
 from .routes import make_routes
+from .utils import get_named_node_uid
+from .utils import remove_temp_dir_for_node
 
 if os_name() == "macOS":
     # needed on MacOS to prevent [__NSCFConstantString initialize] may have been in
@@ -73,12 +75,11 @@ def app_factory() -> FastAPI:
     kwargs = settings.model_dump()
     if settings.dev_mode:
         print(
-            f"\nWARNING: private key is based on node name: {settings.name} in dev_mode. "
+            f"WARN: private key is based on node name: {settings.name} in dev_mode. "
             "Don't run this in production."
         )
         worker = worker_class.named(**kwargs)
     else:
-        del kwargs["reset"]  # Explicitly remove reset from kwargs for non-dev mode
         worker = worker_class(**kwargs)
 
     app = FastAPI(title=settings.name)
@@ -119,7 +120,15 @@ def run_uvicorn(
     starting_uvicorn_event: multiprocessing.synchronize.Event,
     **kwargs: Any,
 ) -> None:
-    if kwargs.get("reset"):
+    should_reset = kwargs.get("dev_mode") and kwargs.get("reset")
+
+    if should_reset:
+        print("Found `reset=True` in the launch configuration. Resetting the node...")
+        named_node_uid = get_named_node_uid(kwargs.get("name"))
+        remove_temp_dir_for_node(named_node_uid)
+        # Explicitly set `reset` to False to prevent multiple resets during hot-reload
+        kwargs["reset"] = False
+        # Kill all old python processes
         try:
             python_pids = find_python_processes_on_port(port)
             for pid in python_pids:

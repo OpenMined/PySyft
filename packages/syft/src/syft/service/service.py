@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Callable
 from copy import deepcopy
+import functools
 from functools import partial
 import inspect
 from inspect import Parameter
@@ -31,6 +32,7 @@ from ..serde.serializable import serializable
 from ..serde.signature import Signature
 from ..serde.signature import signature_remove_context
 from ..serde.signature import signature_remove_self
+from ..store.document_store import DocumentStore
 from ..store.linked_obj import LinkedObject
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftBaseObject
@@ -57,6 +59,7 @@ SERVICE_TO_TYPES: defaultdict = defaultdict(set)
 class AbstractService:
     node: AbstractNode
     node_uid: UID
+    store_type: type = DocumentStore
 
     def resolve_link(
         self,
@@ -351,6 +354,7 @@ def service_method(
 
         input_signature = deepcopy(signature)
 
+        @functools.wraps(func)
         def _decorator(self: Any, *args: Any, **kwargs: Any) -> Callable:
             communication_protocol = kwargs.pop("communication_protocol", None)
 

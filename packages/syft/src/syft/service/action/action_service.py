@@ -54,6 +54,8 @@ logger = logging.getLogger(__name__)
 
 @serializable()
 class ActionService(AbstractService):
+    store_type = ActionStore
+
     def __init__(self, store: ActionStore) -> None:
         self.store = store
 
@@ -827,6 +829,8 @@ class ActionService(AbstractService):
                 new_data,
                 id=action_object.id,
                 syft_blob_storage_entry_id=action_object.syft_blob_storage_entry_id,
+                syft_client_verify_key=action_object.syft_client_verify_key,
+                syft_node_location=action_object.syft_node_location,
             )
             new_action_object._save_to_blob_storage()
             res = self.action_service._set(
