@@ -165,7 +165,7 @@ class MigrationData(SyftObject):
     def from_file(self, path: str | Path) -> Self | SyftError:
         path = Path(path)
         if not path.exists():
-            return SyftError(f"File {str(path)} does not exist.")
+            return SyftError(f"File {path!s} does not exist.")
 
         with open(path, "rb") as f:
             res: MigrationData = _deserialize(f.read(), from_bytes=True)
@@ -192,7 +192,7 @@ class MigrationData(SyftObject):
         with open(yaml_path, "w") as f:
             yaml.dump(migration_config, f)
 
-        return SyftSuccess(message=f"Migration data saved to {str(path)}.")
+        return SyftSuccess(message=f"Migration data saved to {path!s}.")
 
     def download_blobs(self) -> None | SyftError:
         for obj in self.blob_storage_objects:
