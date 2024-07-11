@@ -26,6 +26,8 @@ from typing import cast
 from typing import final
 
 # third party
+from IPython.display import HTML
+from IPython.display import Markdown
 from IPython.display import display
 from pydantic import ValidationError
 from pydantic import field_validator
@@ -71,6 +73,7 @@ from ...util.colors import SURFACE
 from ...util.decorators import deprecated
 from ...util.markdown import CodeMarkdown
 from ...util.markdown import as_markdown_code
+from ...util.notebook_ui.styles import FONT_CSS
 from ...util.util import prompt_warning_message
 from ..action.action_endpoint import CustomEndpointActionObject
 from ..action.action_object import Action
@@ -916,6 +919,62 @@ class UserCode(SyncableSyftObject):
 
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         return as_markdown_code(self._inner_repr())
+
+    def _ipython_display_(self, level: int = 0) -> None:
+        tabs = "&emsp;" * level
+        shared_with_line = ""
+        if len(self.output_readers) > 0 and self.output_reader_names is not None:
+            owners_string = " and ".join([f"*{x}*" for x in self.output_reader_names])
+            shared_with_line += (
+                f"<p>{tabs}Custom Policy: "
+                f"outputs are *shared* with the owners of {owners_string} once computed</p>"
+            )
+        constants_str = ""
+        args = [
+            x
+            for _dict in self.input_policy_init_kwargs.values()  # type: ignore
+            for x in _dict.values()
+        ]
+        constants = [x for x in args if isinstance(x, Constant)]
+        constants_str = "\n&emsp;".join([f"{x.kw}: {x.val}" for x in constants])
+        # indent all lines except the first one
+        asset_str = "<br>".join(
+            [f"&emsp;&emsp;{line}" for line in self._asset_json.split("\n")]
+        ).lstrip()
+
+        repr_str = f"""
+    <style>
+    {FONT_CSS}
+    .syft-code {{color: {SURFACE[options.color_theme]};}}
+    .syft-code h3,
+    .syft-code p {{font-family: 'Open Sans'}}
+    </style>
+    <div class="syft-code">
+    <h3>{tabs}UserCode</h3>
+    <p>{tabs}<strong>id:</strong> UID = {self.id}</p>
+    <p>{tabs}<strong>service_func_name:</strong> str = {self.service_func_name}</p>
+    <p>{tabs}<strong>shareholders:</strong> list = {self.input_owners}</p>
+    <p>{tabs}<strong>status:</strong> list = {self.code_status}</p>
+    {tabs}{constants_str}
+    {tabs}{shared_with_line}
+    <p>{tabs}<strong>assets:</strong> dict = {asset_str}</p>
+    <p>{tabs}<strong>code:</strong></p>
+    </div>
+    """
+        md = "\n".join(
+            [f"{'  '*level}{substring}" for substring in self.raw_code.split("\n")[:-1]]
+        )
+        display(HTML(repr_str), Markdown(as_markdown_code(md)))
+        if self.nested_codes is not None and self.nested_codes != {}:
+            nested_line_html = f"""
+    <div class="syft-code">
+    <p>{tabs}<strong>Nested Requests:</p>
+    </div>
+    """
+            display(HTML(nested_line_html))
+            for obj, _ in self.nested_codes.values():
+                code = obj.resolve
+                code._ipython_display_(level=level + 1)
 
     @property
     def show_code(self) -> CodeMarkdown:
