@@ -135,16 +135,18 @@ class NetworkStash(NewBaseUIDStoreStash):
             was successful, or an error message if the operation failed.
         """
         self.check_type(peer, NodePeer).unwrap()
-        try:
-            existing_peer: Result | NodePeer = self.get_by_uid(
-                credentials=credentials, uid=peer.id
-            ).unwrap()
-        except Exception:
-            return self.set(credentials, peer)
+        existing_peer: Result | NodePeer = self.get_by_uid(
+            credentials=credentials, uid=peer.id
+        )
 
-        existing_peer.update_routes(peer.node_routes)
-        peer_update = NodePeerUpdate(id=peer.id, node_routes=existing_peer.node_routes)
-        return self.update(credentials, peer_update)
+        if existing_peer.is_err() and isinstance(existing_peer.err(), NotFoundException):
+            return self.set(credentials, peer).unwrap()
+        else:
+            existing_peer = existing_peer.ok()
+            existing_peer.update_routes(peer.node_routes)
+            peer_update = NodePeerUpdate(id=peer.id, node_routes=existing_peer.node_routes)
+            return self.update(credentials, peer_update)
+
 
     @as_result(StashException, NotFoundException)
     def get_by_verify_key(
