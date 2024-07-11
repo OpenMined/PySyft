@@ -23,6 +23,7 @@ from pydantic import EmailStr
 from pydantic import TypeAdapter
 from result import OkErr
 from result import Result
+from typeguard import TypeCheckError
 from typeguard import check_type
 
 # relative
@@ -1385,7 +1386,7 @@ def validate_callable_args_and_kwargs(
                             break  # only need one to match
                     else:
                         check_type(arg, t)  # raises Exception
-            except TypeError:
+            except TypeCheckError:
                 t_arg = type(arg)
                 if (
                     autoreload_enabled()
@@ -1396,7 +1397,7 @@ def validate_callable_args_and_kwargs(
                     pass
                 else:
                     _type_str = getattr(t, "__name__", str(t))
-                    msg = f"Arg: {arg} must be {_type_str} not {type(arg).__name__}"
+                    msg = f"Arg is `{arg}`. \nIt must be of type `{_type_str}`, not `{type(arg).__name__}`"
 
             if msg:
                 return SyftError(message=msg)

@@ -158,10 +158,14 @@ class ActionStoreChange(Change):
                     uid_blob = action_obj.private.syft_blob_storage_entry_id
                 else:
                     uid_blob = action_obj.syft_blob_storage_entry_id
-                requesting_permission_blob_obj = ActionObjectPermission(
-                    uid=uid_blob,
-                    credentials=context.requesting_user_credentials,
-                    permission=self.apply_permission_type,
+                requesting_permission_blob_obj = (
+                    ActionObjectPermission(
+                        uid=uid_blob,
+                        credentials=context.requesting_user_credentials,
+                        permission=self.apply_permission_type,
+                    )
+                    if uid_blob
+                    else None
                 )
                 if apply:
                     logger.debug(
@@ -170,14 +174,21 @@ class ActionStoreChange(Change):
                         id_action,
                     )
                     action_store.add_permission(requesting_permission_action_obj)
-                    blob_storage_service.stash.add_permission(
-                        requesting_permission_blob_obj
+                    (
+                        blob_storage_service.stash.add_permission(
+                            requesting_permission_blob_obj
+                        )
+                        if requesting_permission_blob_obj
+                        else None
                     )
                 else:
                     if action_store.has_permission(requesting_permission_action_obj):
                         action_store.remove_permission(requesting_permission_action_obj)
-                    if blob_storage_service.stash.has_permission(
+                    if (
                         requesting_permission_blob_obj
+                        and blob_storage_service.stash.has_permission(
+                            requesting_permission_blob_obj
+                        )
                     ):
                         blob_storage_service.stash.remove_permission(
                             requesting_permission_blob_obj

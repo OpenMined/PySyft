@@ -6,18 +6,22 @@ import logging
 import socketserver
 import sys
 import threading
+from threading import Event
 import time
 from time import sleep
 from typing import Any
+from typing import cast
 
 # third party
 from pydantic import field_validator
+from result import Result
 import zmq
 from zmq import Frame
 from zmq import LINGER
 from zmq.error import ContextTerminated
 
 # relative
+from ...node.credentials import SyftVerifyKey
 from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize as serialize
@@ -32,6 +36,7 @@ from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..worker.worker_pool import ConsumerState
+from ..worker.worker_pool import SyftWorker
 from ..worker.worker_stash import WorkerStash
 from .base_queue import AbstractMessageHandler
 from .base_queue import QueueClient
@@ -47,7 +52,7 @@ from .queue_stash import Status
 HEARTBEAT_INTERVAL_SEC = 2
 
 # Thread join timeout (in seconds)
-THREAD_TIMEOUT_SEC = 5
+THREAD_TIMEOUT_SEC = 30
 
 # Max duration (in ms) to wait for ZMQ poller to return
 ZMQ_POLLER_TIMEOUT_MSEC = 1000
@@ -112,8 +117,6 @@ class Worker(SyftBaseModel):
     syft_worker_id: UID | None = None
     expiry_t: Timeout = Timeout(WORKER_TIMEOUT_SEC)
 
-    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @field_validator("syft_worker_id", mode="before")
     @classmethod
     def set_syft_worker_id(cls, v: Any) -> Any:
@@ -129,6 +132,11 @@ class Worker(SyftBaseModel):
 
     def reset_expiry(self) -> None:
         self.expiry_t.reset()
+
+    def _syft_worker(
+        self, stash: WorkerStash, credentials: SyftVerifyKey
+    ) -> Result[SyftWorker | None, str]:
+        return stash.get_by_uid(credentials=credentials, uid=self.syft_worker_id)
 
     def __str__(self) -> str:
         svc = self.service.name if self.service else None
@@ -156,7 +164,7 @@ class ZMQProducer(QueueProducer):
         self.worker_stash = worker_stash
         self.queue_name = queue_name
         self.auth_context = context
-        self._stop = threading.Event()
+        self._stop = Event()
         self.post_init()
 
     @property
@@ -182,24 +190,33 @@ class ZMQProducer(QueueProducer):
 
     def close(self) -> None:
         self._stop.set()
-
         try:
-            self.poll_workers.unregister(self.socket)
-        except Exception as e:
-            logger.exception("Failed to unregister poller.", exc_info=e)
-        finally:
             if self.thread:
                 self.thread.join(THREAD_TIMEOUT_SEC)
+                if self.thread.is_alive():
+                    logger.error(
+                        f"ZMQProducer message sending thread join timed out during closing. "
+                        f"Queue name {self.queue_name}, "
+                    )
                 self.thread = None
 
             if self.producer_thread:
                 self.producer_thread.join(THREAD_TIMEOUT_SEC)
+                if self.producer_thread.is_alive():
+                    logger.error(
+                        f"ZMQProducer queue thread join timed out during closing. "
+                        f"Queue name {self.queue_name}, "
+                    )
                 self.producer_thread = None
 
+            self.poll_workers.unregister(self.socket)
+        except Exception as e:
+            logger.exception("Failed to unregister poller.", exc_info=e)
+        finally:
             self.socket.close()
             self.context.destroy()
 
-            self._stop.clear()
+            # self._stop.clear()
 
     @property
     def action_service(self) -> AbstractService:
@@ -423,10 +440,23 @@ class ZMQProducer(QueueProducer):
         Workers are oldest to most recent, so we stop at the first alive worker.
         """
         # work on a copy of the iterator
-        for worker in list(self.waiting):
-            if worker.has_expired():
+        for worker in self.waiting:
+            res = worker._syft_worker(self.worker_stash, self.auth_context.credentials)
+            if res.is_err() or (syft_worker := res.ok()) is None:
+                logger.info(f"Failed to retrieve SyftWorker {worker.syft_worker_id}")
+                continue
+
+            if worker.has_expired() or syft_worker.to_be_deleted:
                 logger.info(f"Deleting expired worker id={worker}")
-                self.delete_worker(worker, False)
+                self.delete_worker(worker, syft_worker.to_be_deleted)
+
+                # relative
+                from ...service.worker.worker_service import WorkerService
+
+                worker_service = cast(
+                    WorkerService, self.auth_context.node.get_service(WorkerService)
+                )
+                worker_service._delete(self.auth_context, syft_worker)
 
     def update_consumer_state_for_worker(
         self, syft_worker_id: UID, consumer_state: ConsumerState
@@ -655,7 +685,7 @@ class ZMQConsumer(QueueConsumer):
         self.socket = None
         self.verbose = verbose
         self.id = UID().short()
-        self._stop = threading.Event()
+        self._stop = Event()
         self.syft_worker_id = syft_worker_id
         self.worker_stash = worker_stash
         self.post_init()
@@ -692,16 +722,22 @@ class ZMQConsumer(QueueConsumer):
         self.disconnect_from_producer()
         self._stop.set()
         try:
-            self.poller.unregister(self.socket)
-        except Exception as e:
-            logger.exception("Failed to unregister worker.", exc_info=e)
-        finally:
             if self.thread is not None:
                 self.thread.join(timeout=THREAD_TIMEOUT_SEC)
+                if self.thread.is_alive():
+                    logger.error(
+                        f"ZMQConsumer thread join timed out during closing. "
+                        f"SyftWorker id {self.syft_worker_id}, "
+                        f"service name {self.service_name}."
+                    )
                 self.thread = None
+            self.poller.unregister(self.socket)
+        except Exception as e:
+            logger.error("Failed to unregister worker.", exc_info=e)
+        finally:
             self.socket.close()
             self.context.destroy()
-            self._stop.clear()
+            # self._stop.clear()
 
     def send_to_producer(
         self,
@@ -793,7 +829,8 @@ class ZMQConsumer(QueueConsumer):
                     self.reconnect_to_producer()
                     self.set_producer_alive()
 
-                self.send_heartbeat()
+                if not self._stop.is_set():
+                    self.send_heartbeat()
 
         except zmq.ZMQError as e:
             if e.errno == zmq.ETERM:

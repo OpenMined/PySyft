@@ -8,9 +8,13 @@ from collections.abc import Callable
 from enum import Enum
 import getpass
 import inspect
+import logging
 import os
 import sys
 from typing import Any
+
+# third party
+from IPython.display import display
 
 # relative
 from .abstract_node import NodeSideType
@@ -22,7 +26,10 @@ from .node.gateway import Gateway
 from .node.server import serve_node
 from .protocol.data_protocol import stage_protocol_changes
 from .service.response import SyftError
+from .service.response import SyftInfo
 from .util.util import get_random_available_port
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_PORT = 8080
 DEFAULT_URL = "http://localhost"
@@ -166,6 +173,8 @@ def deploy_to_python(
     queue_port: int | None = None,
     association_request_auto_approval: bool = False,
     background_tasks: bool = False,
+    debug: bool = False,
+    migrate: bool = False,
 ) -> NodeHandle:
     worker_classes = {
         NodeType.DOMAIN: Domain,
@@ -174,7 +183,7 @@ def deploy_to_python(
     }
 
     if dev_mode:
-        print("Staging Protocol Changes...")
+        logger.debug("Staging Protocol Changes...")
         stage_protocol_changes()
 
     kwargs = {
@@ -193,6 +202,8 @@ def deploy_to_python(
         "create_producer": create_producer,
         "association_request_auto_approval": association_request_auto_approval,
         "background_tasks": background_tasks,
+        "debug": debug,
+        "migrate": migrate,
     }
 
     if port:
@@ -223,7 +234,7 @@ def deploy_to_python(
             sig = inspect.signature(worker_class.named)
             supported_kwargs = {k: v for k, v in kwargs.items() if k in sig.parameters}
             if "node_type" in sig.parameters.keys() and "migrate" in sig.parameters:
-                supported_kwargs["migrate"] = True
+                supported_kwargs["migrate"] = migrate
             worker = worker_class.named(**supported_kwargs)
         else:
             raise NotImplementedError(f"node_type: {node_type_enum} is not supported")
@@ -246,9 +257,12 @@ def deploy_to_remote(
     deployment_type_enum: DeploymentType,
     name: str,
     node_side_type: NodeSideType,
+    migrate: bool = False,
 ) -> NodeHandle:
     node_port = int(os.environ.get("NODE_PORT", f"{DEFAULT_PORT}"))
     node_url = str(os.environ.get("NODE_URL", f"{DEFAULT_URL}"))
+    if migrate:
+        raise ValueError("Cannot migrate via orchestra on remote node")
     return NodeHandle(
         node_type=node_type_enum,
         deployment_type=deployment_type_enum,
@@ -282,6 +296,8 @@ class Orchestra:
         queue_port: int | None = None,
         association_request_auto_approval: bool = False,
         background_tasks: bool = False,
+        debug: bool = False,
+        migrate: bool = False,
     ) -> NodeHandle:
         if dev_mode is True:
             thread_workers = True
@@ -299,7 +315,7 @@ class Orchestra:
         )
 
         if deployment_type_enum == DeploymentType.PYTHON:
-            return deploy_to_python(
+            node_handle = deploy_to_python(
                 node_type_enum=node_type_enum,
                 deployment_type_enum=deployment_type_enum,
                 port=port,
@@ -318,13 +334,23 @@ class Orchestra:
                 queue_port=queue_port,
                 association_request_auto_approval=association_request_auto_approval,
                 background_tasks=background_tasks,
+                debug=debug,
+                migrate=migrate,
             )
+            display(
+                SyftInfo(
+                    message=f"You have launched a development node at http://{host}:{node_handle.port}."
+                    + "It is intended only for local use."
+                )
+            )
+            return node_handle
         elif deployment_type_enum == DeploymentType.REMOTE:
             return deploy_to_remote(
                 node_type_enum=node_type_enum,
                 deployment_type_enum=deployment_type_enum,
                 name=name,
                 node_side_type=node_side_type_enum,
+                migrate=migrate,
             )
         raise NotImplementedError(
             f"deployment_type: {deployment_type_enum} is not supported"
