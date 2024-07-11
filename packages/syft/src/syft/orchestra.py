@@ -274,9 +274,9 @@ def deploy_to_remote(
         node_type=node_type_enum,
         deployment_type=deployment_type_enum,
         name=name,
-        port=int(node_port),
-        url=node_url,
         node_side_type=node_side_type,
+        url=node_url,
+        port=int(node_port),
     )
 
 
