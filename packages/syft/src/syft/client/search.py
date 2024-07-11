@@ -72,7 +72,7 @@ class Search:
             client = peer.guest_client
             results = client.api.services.dataset.search(name=name)
             return (client, results)
-        except Exception as e:  # noqa
+        except Exception as e:
             warning = SyftWarning(
                 message=f"Got exception {e} at node {node_metadata.name}"
             )
