@@ -55,7 +55,6 @@ class RequestService(AbstractService):
         send_message: bool = True,
         reason: str | None = "",
     ) -> Request | SyftError:
-        print("Submitting a request")
         """Submit a Request"""
         try:
             req = request.to(Request, context=context)
@@ -68,23 +67,19 @@ class RequestService(AbstractService):
                     ),
                 ],
             )
-            print("req set", result)
             if result.is_ok():
                 request = result.ok()
 
                 # Apply Post Create Hooks to the request
                 for change in request.changes:
-                    print("each change", change)
                     create_hook_res = change.post_create_hook(
                         context=context, request=request
                     )
-                    print("create_hook_res", create_hook_res)
                     if isinstance(create_hook_res, SyftError):
                         return create_hook_res
 
                 # Creating Notification
                 link = LinkedObject.with_context(request, context=context)
-                print("request link", link)
                 admin_verify_key = context.node.get_service_method(
                     UserService.admin_verify_key
                 )
