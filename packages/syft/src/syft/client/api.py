@@ -95,27 +95,27 @@ IPYNB_BACKGROUND_PREFIXES = ["_ipy", "_repr", "__ipython", "__pydantic"]
 
 
 # Temporary list of services that have been updated to the new error handling/result types
-NEW_STYLE_SERVICES_LIST: list[str] = [
-    "user.",
-    "dataset.",
-    "project.",
-    "request.",
-    "code.",
-    "code_status.",
-    "code_history.",
-    "output.",
-    "metadata.",
-    "log.",
-    "job.",
-    "data_subject.",
-    "sync.",
-    "blob_storage.",
-    "notifier.",
-    "settings.",
-    "policy.",
-    "action.",
-    "queue.",
-]
+# NEW_STYLE_SERVICES_LIST: list[str] = [
+#     "user.",
+#     "dataset.",
+#     "project.",
+#     "request.",
+#     "code.",
+#     "code_status.",
+#     "code_history.",
+#     "output.",
+#     "metadata.",
+#     "log.",
+#     "job.",
+#     "data_subject.",
+#     "sync.",
+#     "blob_storage.",
+#     "notifier.",
+#     "settings.",
+#     "policy.",
+#     "action.",
+#     "queue.",
+# ]
 
 
 def _has_config_dict(t: Any) -> bool:
@@ -407,11 +407,10 @@ class RemoteFunction(SyftObject):
         )
         result = result[0]
 
-        if any(path.startswith(x) for x in NEW_STYLE_SERVICES_LIST):
-            if isinstance(result, SyftError):
-                raise SyftException(public_message=result.message)
-            if self.unwrap_on_success:
-                result = result.unwrap_value()
+        if isinstance(result, SyftError):
+            raise SyftException(public_message=result.message)
+        if self.unwrap_on_success:
+            result = result.unwrap_value()
 
         return result
 

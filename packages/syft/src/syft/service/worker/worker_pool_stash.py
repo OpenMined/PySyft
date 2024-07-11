@@ -5,8 +5,8 @@
 # relative
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
-from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
+from ...store.document_store import NewBaseUIDStoreStash
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
@@ -23,7 +23,7 @@ PoolImageIDPartitionKey = PartitionKey(key="image_id", type_=UID)
 
 
 @serializable()
-class SyftWorkerPoolStash(BaseUIDStoreStash):
+class SyftWorkerPoolStash(NewBaseUIDStoreStash):
     object_type = WorkerPool
     settings: PartitionSettings = PartitionSettings(
         name=WorkerPool.__canonical_name__,
