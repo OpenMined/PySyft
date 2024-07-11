@@ -12,10 +12,8 @@ import json
 import logging
 import os
 from pathlib import Path
-import shutil
 import subprocess  # nosec
 import sys
-import tempfile
 from time import sleep
 import traceback
 from typing import Any
@@ -122,6 +120,9 @@ from ..util.util import thread_ident
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
 from .service_registry import ServiceRegistry
+from .utils import get_named_node_uid
+from .utils import get_temp_dir_for_node
+from .utils import remove_temp_dir_for_node
 from .worker_settings import WorkerSettings
 
 logger = logging.getLogger(__name__)
@@ -655,7 +656,7 @@ class Node(AbstractNode):
         association_request_auto_approval: bool = False,
         background_tasks: bool = False,
     ) -> Node:
-        uid = UID.with_seed(name)
+        uid = get_named_node_uid(name)
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
         key = SyftSigningKey(signing_key=SigningKey(name_hash))
         blob_storage_config = None
@@ -893,18 +894,13 @@ class Node(AbstractNode):
         Get a temporary directory unique to the node.
         Provide all dbs, blob dirs, and locks using this directory.
         """
-        root = os.getenv("SYFT_TEMP_ROOT", "syft")
-        p = Path(tempfile.gettempdir(), root, str(self.id), dir_name)
-        p.mkdir(parents=True, exist_ok=True)
-        return p
+        return get_temp_dir_for_node(self.id, dir_name)
 
     def remove_temp_dir(self) -> None:
         """
         Remove the temporary directory for this node.
         """
-        rootdir = self.get_temp_dir()
-        if rootdir.exists():
-            shutil.rmtree(rootdir, ignore_errors=True)
+        remove_temp_dir_for_node(self.id)
 
     def update_self(self, settings: NodeSettings) -> None:
         updateable_attrs = (
