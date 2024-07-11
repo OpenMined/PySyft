@@ -32,6 +32,7 @@ def verify_attestation_report(token: str) -> Result[Ok[dict], Err[str]]:
     try:
         # Attempt to retrieve 'jku' from the unverified header to determine the JWKS URL
         unverified_header = jwt.get_unverified_header(token)
+        # TODO this is vulnerable. Hardcode the jwks_url to the actual Azure Attestation Service URL
         jwks_url = unverified_header.get("jku", "")
         token_type = "cpu" if jwks_url else "gpu"
         if not jwks_url:
