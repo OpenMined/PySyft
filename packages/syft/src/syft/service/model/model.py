@@ -165,17 +165,23 @@ def syft_model(
 
 
 @serializable()
-class SubmitModelCode(SyftObject):
+class SubmitModelCode(ActionObject):
     # version
     __canonical_name__ = "SubmitModelCode"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: UID | None = None  # type: ignore[assignment]
+    syft_internal_type = None
+    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS + [
+        "code",
+        "class_name",
+        "__call__",
+    ]
+
     code: str
     class_name: str
     # signature: inspect.Signature
 
-    def __call__(self, **kwargs) -> Any:
+    def __call__(self, **kwargs: dict) -> Any:
         # Load Class
         exec(self.code)
 
