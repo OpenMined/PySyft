@@ -782,13 +782,13 @@ class UserCode(SyncableSyftObject):
             asset = all_assets.get(action_id, None)
             if asset:
                 asset._kwarg_name = kwarg_name
-            used_assets.append(asset)
+                used_assets.append(asset)
 
         asset_dict = {asset._kwarg_name: asset for asset in used_assets}
         return DictTuple(asset_dict)
 
     @property
-    def inputs(self) -> dict:
+    def action_objects(self) -> dict:
         if not self.input_policy_init_kwargs:
             return {}
 
@@ -796,22 +796,26 @@ class UserCode(SyncableSyftObject):
         for vals in self.input_policy_init_kwargs.values():
             all_inputs.update(vals)
 
-        # map uid to string
-        for k, v in vals.items():
-            if isinstance(v, UID):
-                all_inputs[k] = str(v)
-        return all_inputs
+        # filter out the assets
+        action_objects = {
+            arg_name: str(uid)
+            for arg_name, uid in all_inputs.items()
+            if arg_name not in self.assets.keys()
+        }
+
+        return action_objects
 
     @property
-    def _asset_json(self) -> str | SyftError:
-        if isinstance(self.assets, SyftError):
-            return self.assets
-        asset_dict = {
-            argument: asset._get_dict_for_user_code_repr()
-            for argument, asset in self.assets.items()
-        }
-        asset_str = json.dumps(asset_dict, indent=2)
-        return asset_str
+    def inputs(self) -> dict:
+        inputs = {}
+        if self.action_objects:
+            inputs["action_objects"] = self.action_objects
+        if self.assets:
+            inputs["assets"] = {
+                argument: asset._get_dict_for_user_code_repr()
+                for argument, asset in self.assets.items()
+            }
+        return inputs
 
     @property
     def _inputs_json(self) -> str | SyftError:
@@ -905,10 +909,6 @@ class UserCode(SyncableSyftObject):
         constants_str = "\n\t".join([f"{x.kw}: {x.val}" for x in constants])
 
         # indent all lines except the first one
-        asset_str = "\n".join(
-            [f"    {line}" for line in self._asset_json.split("\n")]
-        ).lstrip()
-
         inputs_str = "\n".join(
             [f"    {line}" for line in self._inputs_json.split("\n")]
         ).lstrip()
@@ -920,7 +920,6 @@ class UserCode(SyncableSyftObject):
     status: list = {self.code_status}
     {constants_str}
     {shared_with_line}
-    assets: dict = {asset_str}
     inputs: dict = {inputs_str}
     code:
 
@@ -979,7 +978,6 @@ class UserCode(SyncableSyftObject):
     <p>{tabs}<strong>status:</strong> list = {self.code_status}</p>
     {tabs}{constants_str}
     {tabs}{shared_with_line}
-    <p>{tabs}<strong>assets:</strong> dict = <pre>{self._asset_json}</pre></p>
     <p>{tabs}<strong>inputs:</strong> dict = <pre>{self._inputs_json}</pre></p>
     <p>{tabs}<strong>code:</strong></p>
     </div>
