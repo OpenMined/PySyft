@@ -29,6 +29,7 @@ from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
+from ...service.attestation.utils import AttestationType
 from ...service.attestation.utils import verify_attestation_report
 from ...service.metadata.node_metadata import NodeMetadata
 from ...store.linked_obj import LinkedObject
@@ -505,7 +506,11 @@ class ProjectCode(ProjectEventAddObject):
         self.request_asset_transfer()
         return self.request_execution()
 
-    def view_attestation_report(self, return_report: bool = False) -> dict | None:
+    def view_attestation_report(
+        self,
+        attestation_type: AttestationType = AttestationType.CPU,
+        return_report: bool = False,
+    ) -> dict | None:
         if not self.is_enclave_code:
             return SyftError(
                 message="This method is only supported for codes with Enclave runtime provider."
@@ -513,18 +518,22 @@ class ProjectCode(ProjectEventAddObject):
         runtime_policy_init_kwargs = self.code.runtime_policy_init_kwargs or {}
         provider = cast(EnclaveInstance, runtime_policy_init_kwargs.get("provider"))
         print(
-            f"Getting attestation report from the Enclave {provider.name} at {provider.route}...",
+            f"Getting {attestation_type} attestation report from the Enclave {provider.name} at {provider.route}...",
             flush=True,
         )
         client = provider.get_guest_client()
-        raw_jwt_report = client.api.services.attestation.get_cpu_attestation(
-            raw_token=True
+        raw_jwt_report = (
+            client.api.services.attestation.get_cpu_attestation(raw_token=True)
+            if attestation_type == AttestationType.CPU
+            else client.api.services.attestation.get_gpu_attestation(raw_token=True)
         )
         print(
             f"Got encrypted attestation report of {len(raw_jwt_report)} bytes. Verifying it...",
             flush=True,
         )
-        report = verify_attestation_report(raw_jwt_report)
+        report = verify_attestation_report(
+            token=raw_jwt_report, attestation_type=attestation_type
+        )
         if report.is_err():
             print(
                 f"❌ Attestation report verification failed. {report.err()}", flush=True

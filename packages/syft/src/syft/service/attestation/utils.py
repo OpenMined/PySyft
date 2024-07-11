@@ -1,5 +1,6 @@
 # stdlib
 import base64
+from enum import StrEnum
 
 # third party
 from cryptography.x509 import load_der_x509_certificate
@@ -9,12 +10,28 @@ import requests
 from result import Err
 from result import Ok
 from result import Result
+from typing_extensions import Self
 
 
-def verify_attestation_report(token: str) -> Result[Ok[dict], Err[str]]:
+class AttestationType(StrEnum):
+    # Define enum members with their corresponding JWKS URLs
+    CPU = ("CPU", "https://sharedeus2.eus2.attest.azure.net/certs")
+    GPU = ("GPU", "https://nras.attestation.nvidia.com/.well-known/jwks.json")
+
+    def __new__(cls, value: str, jwks_url: str) -> Self:
+        obj = str.__new__(cls, value)
+        obj._value_ = value
+        obj.jwks_url = jwks_url
+        return obj
+
+
+def verify_attestation_report(
+    token: str, attestation_type: AttestationType = AttestationType.CPU
+) -> Result[Ok[dict], Err[str]]:
     """
-    Verifies a JSON Web Token (JWT) using a public key obtained from a JWKS (JSON Web Key Set) endpoint.
-    The function handles two distinct processes for token verification depending on the token type:
+    Verifies a JSON Web Token (JWT) using a public key obtained from a JWKS (JSON Web Key Set) endpoint,
+    based on the specified type of token ('cpu' or 'gpu'). The function handles two distinct processes
+    for token verification depending on the type specified:
 
     - 'cpu': Fetches the JWKS from the 'jku' URL specified in the JWT's unverified header,
              finds the key by 'kid', and converts the JWK to a PEM format public key for verification.
@@ -24,21 +41,14 @@ def verify_attestation_report(token: str) -> Result[Ok[dict], Err[str]]:
 
     Parameters:
         token (str): The JWT that needs to be verified.
+        token_type (AttestationType): The type of token to be verified (CPU or GPU).
 
     Returns:
         Result[Ok[dict], Err[str]]: A Result object containing the payload of the verified token if successful,
                                     or an Err object with an error message if the verification fails.
     """
-    try:
-        # Attempt to retrieve 'jku' from the unverified header to determine the JWKS URL
-        unverified_header = jwt.get_unverified_header(token)
-        # TODO this is vulnerable. Hardcode the jwks_url to the actual Azure Attestation Service URL
-        jwks_url = unverified_header.get("jku", "")
-        token_type = "cpu" if jwks_url else "gpu"
-        if not jwks_url:
-            jwks_url = "https://nras.attestation.nvidia.com/.well-known/jwks.json"
-    except Exception as e:
-        return Err(f"Failed to determine JWKS URL: {str(e)}")
+    jwks_url = attestation_type.jwks_url
+    unverified_header = jwt.get_unverified_header(token)
 
     try:
         # Fetch the JWKS from the endpoint
@@ -57,11 +67,11 @@ def verify_attestation_report(token: str) -> Result[Ok[dict], Err[str]]:
 
     try:
         # Convert the key based on the token type
-        if token_type == "gpu" and "x5c" in key:
+        if attestation_type == AttestationType.GPU and "x5c" in key:
             cert_bytes = base64.b64decode(key["x5c"][0])
             cert = load_der_x509_certificate(cert_bytes)
             public_key = cert.public_key()
-        elif token_type == "cpu":
+        elif attestation_type == AttestationType.CPU:
             public_key = RSAAlgorithm.from_jwk(key)
         else:
             return Err("Invalid token type or key information.")
