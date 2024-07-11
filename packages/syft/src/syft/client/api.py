@@ -53,6 +53,7 @@ from ..service.warnings import APIEndpointWarning
 from ..service.warnings import WarningContext
 from ..types.cache_object import CachedSyftObject
 from ..types.errors import SyftException
+from ..types.errors import exclude_from_traceback
 from ..types.identity import Identity
 from ..types.result import as_result
 from ..types.syft_migration import migrate
@@ -116,6 +117,19 @@ NEW_STYLE_SERVICES_LIST: list[str] = [
     "action.",
     "queue.",
 ]
+
+
+@exclude_from_traceback
+def post_process_result(path:str , result: Any, unwrap_on_success: bool=False) -> Any:
+    if any(path.startswith(x) for x in NEW_STYLE_SERVICES_LIST):
+        if isinstance(result, SyftError):
+            raise SyftException(
+                public_message=result.message, server_trace=result.tb
+            )
+        if unwrap_on_success:
+            result = result.unwrap_value()
+
+    return result
 
 
 def _has_config_dict(t: Any) -> bool:
@@ -406,15 +420,9 @@ class RemoteFunction(SyftObject):
             [result], kwargs={}, to_latest_protocol=True
         )
         result = result[0]
+        return post_process_result(api_call.path, result, self.unwrap_on_success)
 
-        if any(path.startswith(x) for x in NEW_STYLE_SERVICES_LIST):
-            if isinstance(result, SyftError):
-                raise SyftException(public_message=result.message)
-            if self.unwrap_on_success:
-                result = result.unwrap_value()
-
-        return result
-
+    @exclude_from_traceback
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         return self.function_call(self.path, *args, **kwargs)
 
@@ -575,7 +583,8 @@ class RemoteUserCodeFunction(RemoteFunction):
             kwargs={},
             blocking=True,
         )
-        return self.make_call(api_call=api_call)
+        result = self.make_call(api_call=api_call)
+        return post_process_result(api_call.path, result, self.unwrap_on_success)
 
 
 def generate_remote_function(
@@ -703,6 +712,8 @@ def generate_remote_lib_function(
         )
 
         result = wrapper_make_call(api_call=api_call)
+        result = post_process_result("action.execute", result, unwrap_on_success=True)
+
         return result
 
     wrapper.__ipython_inspector_signature_override__ = signature

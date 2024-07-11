@@ -283,8 +283,7 @@ def test_guest_user_update_to_root_email_failed(
             )
 
         assert exc.type == SyftException
-        assert exc.value.public_message == f"User {default_root_email} already exists"
-
+        assert f"User {default_root_email} already exists" in exc.value.public_message
 
 def test_user_view_set_password(worker: Worker, root_client: DomainClient) -> None:
     change_ok = root_client.me.set_password("123", confirm=False)

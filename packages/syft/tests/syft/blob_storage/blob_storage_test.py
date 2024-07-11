@@ -17,6 +17,7 @@ from syft.service.response import SyftSuccess
 from syft.service.user.user import UserCreate
 from syft.store.blob_storage import BlobDeposit
 from syft.store.blob_storage import SyftObjectRetrieval
+from syft.store.document_store_errors import StashException
 from syft.types.blob_storage import CreateBlobStorageEntry
 
 raw_data = {"test": "test"}
@@ -100,9 +101,21 @@ def test_blob_storage_read():
 def test_blob_storage_delete(authed_context, blob_storage):
     blob_data = CreateBlobStorageEntry.from_obj(data)
     blob_deposit = blob_storage.allocate(authed_context, blob_data)
-    blob_storage.delete(authed_context, blob_deposit.blob_storage_entry_id)
 
-    with pytest.raises(FileNotFoundError):
+    assert isinstance(blob_deposit, BlobDeposit)
+
+    file_data = io.BytesIO(data)
+    written_data = blob_deposit.write(file_data)
+    assert type(written_data) is SyftSuccess
+
+    item = blob_storage.read(authed_context, blob_deposit.blob_storage_entry_id)
+    assert isinstance(item, SyftObjectRetrieval)
+    assert item.read() == raw_data
+
+    del_type = blob_storage.delete(authed_context, blob_deposit.blob_storage_entry_id)
+    assert type(del_type) is SyftSuccess
+
+    with pytest.raises(StashException):
         blob_storage.read(authed_context, blob_deposit.blob_storage_entry_id)
 
 
@@ -167,6 +180,7 @@ def test_upload_dataset_save_to_blob_storage(worker):
         ],
     )
     root_client.upload_dataset(dataset_big)
+
     # the private data should be saved to the blob storage
     blob_entries: list = blob_storage.get_all_blob_storage_entries(
         context=root_authed_ctx

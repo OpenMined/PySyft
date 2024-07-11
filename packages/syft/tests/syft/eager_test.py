@@ -1,9 +1,11 @@
 # third party
 import numpy as np
+import pytest
 
 # syft absolute
 from syft.service.action.action_object import ActionObject
 from syft.service.action.plan import planify
+from syft.types.errors import SyftException
 from syft.types.twin_object import TwinObject
 
 # relative
@@ -30,8 +32,13 @@ def test_eager_permissions(worker, guest_client):
 
     flat_ptr = pointer.flatten()
 
-    res_guest = guest_client.api.services.action.get(flat_ptr.id)
-    assert not isinstance(res_guest, ActionObject)
+    with pytest.raises(SyftException) as exc:
+        guest_client.api.services.action.get(flat_ptr.id)
+
+    # TODO: Improve this error msg
+    assert exc.type == SyftException
+    assert "denied" in str(exc.value)
+
     res_root = root_domain_client.api.services.action.get(flat_ptr.id)
     assert all(res_root == [3, 3, 3, 3, 3, 3])
 
@@ -59,9 +66,8 @@ def test_plan(worker):
     res_ptr = plan_ptr(x=pointer)
 
     # guest cannot access result
-    assert not isinstance(
-        guest_client.api.services.action.get(res_ptr.id), ActionObject
-    )
+    with pytest.raises(SyftException):
+        guest_client.api.services.action.get(res_ptr.id)
 
     # root can access result
     assert (

@@ -635,7 +635,6 @@ def add_code_request_to_project(
     submitted_req = client.api.services.code.request_code_execution(
         code=code, reason=reason
     )
-
     if isinstance(submitted_req, SyftError):
         return submitted_req
 

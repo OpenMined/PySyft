@@ -283,9 +283,7 @@ class JobService(AbstractService):
             resolved=is_resolved,
         )
         user_code_service = context.node.get_service("usercodeservice")
-        user_code = user_code_service.get_by_uid(
-            context=context, uid=user_code_id
-        ).unwrap()
+        user_code = user_code_service.get_by_uid(context=context, uid=user_code_id)
 
         # The owner of the code should be able to read the job
         self.stash.set(context.credentials, job).unwrap()
@@ -297,7 +295,7 @@ class JobService(AbstractService):
             job.id,
             stdout=log_stdout,
             stderr=log_stderr,
-        ).unwrap()
+        )
 
         if add_code_owner_read_permissions:
             self.add_read_permission_job_for_code_owner(context, job, user_code)

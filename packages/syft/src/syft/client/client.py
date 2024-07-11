@@ -65,6 +65,7 @@ from .api import SignedSyftAPICall
 from .api import SyftAPI
 from .api import SyftAPICall
 from .api import debox_signed_syftapicall_response
+from .api import post_process_result
 from .connection import NodeConnection
 from .protocol import SyftProtocol
 
@@ -1006,7 +1007,7 @@ class SyftClient:
                 return None
 
         response = self.connection.register(new_user=new_user)
-        return response
+        return post_process_result("user.register", response, unwrap_on_success=False)
 
     def __hash__(self) -> int:
         return hash(self.id) + hash(self.connection)

@@ -8,7 +8,6 @@ from typing import Any
 
 # third party
 from pydantic import model_validator
-from result import Err
 from result import Ok
 from result import Result
 from typing_extensions import Self
@@ -161,24 +160,35 @@ class ActionStoreChange(Change):
                 uid_blob = action_obj.private.syft_blob_storage_entry_id
             else:
                 uid_blob = action_obj.syft_blob_storage_entry_id
-            requesting_permission_blob_obj = ActionObjectPermission(
-                uid=uid_blob,
-                credentials=context.requesting_user_credentials,
-                permission=self.apply_permission_type,
+            requesting_permission_blob_obj = (
+                ActionObjectPermission(
+                    uid=uid_blob,
+                    credentials=context.requesting_user_credentials,
+                    permission=self.apply_permission_type,
+                )
+                if uid_blob
+                else None
             )
             if apply:
                 logger.debug(
                     "ADDING PERMISSION", requesting_permission_action_obj, id_action
                 )
                 action_store.add_permission(requesting_permission_action_obj)
-                blob_storage_service.stash.add_permission(
-                    requesting_permission_blob_obj
+                (
+                    blob_storage_service.stash.add_permission(
+                        requesting_permission_blob_obj
+                    )
+                    if requesting_permission_blob_obj
+                    else None
                 )
             else:
                 if action_store.has_permission(requesting_permission_action_obj):
                     action_store.remove_permission(requesting_permission_action_obj)
-                if blob_storage_service.stash.has_permission(
+                if (
                     requesting_permission_blob_obj
+                    and blob_storage_service.stash.has_permission(
+                        requesting_permission_blob_obj
+                    )
                 ):
                     blob_storage_service.stash.remove_permission(
                         requesting_permission_blob_obj
@@ -345,9 +355,9 @@ class CreateCustomWorkerPoolChange(Change):
                 pod_labels=self.pod_labels,
             )
             if isinstance(result, SyftError):
-                raise SyftException(public_message=result)
+                raise SyftException(public_message=result.message)
             else:
-                return SyftSuccess(message=result)
+                return SyftSuccess(message="Worker successfully launched", value=result)
         else:
             raise SyftException(
                 public_message=f"Request to create a worker pool with name {self.name} denied"
@@ -791,10 +801,13 @@ class Request(SyncableSyftObject):
 
         # Ensure result is an ActionObject
         if isinstance(result, ActionObject):
-            existing_job = api.services.job.get_by_result_id(result.id.id)
+            try:
+                existing_job = api.services.job.get_by_result_id(result.id.id)
+            except SyftException:
+                existing_job = None
             if existing_job is not None:
-                return SyftError(
-                    message=f"This ActionObject is already the result of Job {existing_job.id}"
+                raise SyftException(
+                    public_message=f"This ActionObject is already the result of Job {existing_job.id}"
                 )
             action_object = result
         else:
@@ -895,7 +908,7 @@ class Request(SyncableSyftObject):
             return job
 
         # Add to output history
-        res = self._create_output_history_for_deposited_result(job, result)
+        res = self._create_output_history_for_deposited_result(job, action_object)
         if isinstance(res, SyftError):
             return res
 

@@ -351,7 +351,6 @@ class ZMQProducer(QueueProducer):
                 ).unwrap()
 
                 items_processing = [] if items_processing is None else items_processing
-                print(items_to_queue, file=sys.stderr)
 
                 for item in itertools.chain(items_to_queue, items_processing):
                     # TODO: if resolving fails, set queueitem to errored, and jobitem as well
