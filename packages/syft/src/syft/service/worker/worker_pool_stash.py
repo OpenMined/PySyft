@@ -2,6 +2,8 @@
 
 # third party
 from result import Result
+from syft.store.document_store_errors import NotFoundException, StashException
+from syft.types.result import as_result
 
 # relative
 from ...node.credentials import SyftVerifyKey
@@ -31,12 +33,17 @@ class SyftWorkerPoolStash(BaseUIDStoreStash):
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
 
+    @as_result(StashException, NotFoundException)
     def get_by_name(
         self, credentials: SyftVerifyKey, pool_name: str
-    ) -> Result[WorkerPool | None, str]:
+    ) -> WorkerPool:
         qks = QueryKeys(qks=[PoolNamePartitionKey.with_obj(pool_name)])
-        return self.query_one(credentials=credentials, qks=qks)
+        try:
+            return self.query_one(credentials=credentials, qks=qks).unwrap()
+        except NotFoundException as exc:
+            raise NotFoundException.from_exception(exc, public_message=f"WorkerPool with name {pool_name} not found")
 
+    @as_result(StashException)
     def set(
         self,
         credentials: SyftVerifyKey,
@@ -44,7 +51,7 @@ class SyftWorkerPoolStash(BaseUIDStoreStash):
         add_permissions: list[ActionObjectPermission] | None = None,
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
-    ) -> Result[WorkerPool, str]:
+    ) -> WorkerPool:
         # By default all worker pools have all read permission
         add_permissions = [] if add_permissions is None else add_permissions
         add_permissions.append(
@@ -56,10 +63,11 @@ class SyftWorkerPoolStash(BaseUIDStoreStash):
             add_permissions=add_permissions,
             add_storage_permission=add_storage_permission,
             ignore_duplicates=ignore_duplicates,
-        )
+        ).unwrap()
 
+    @as_result(StashException)
     def get_by_image_uid(
         self, credentials: SyftVerifyKey, image_uid: UID
     ) -> list[WorkerPool]:
         qks = QueryKeys(qks=[PoolImageIDPartitionKey.with_obj(image_uid)])
-        return self.query_all(credentials=credentials, qks=qks)
+        return self.query_all(credentials=credentials, qks=qks).unwrap()

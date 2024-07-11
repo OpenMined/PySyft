@@ -7,6 +7,8 @@ from typing import cast
 # third party
 import docker
 from docker.models.containers import Container
+from syft.types.errors import SyftException
+from syft.types.result import as_result
 
 # relative
 from ...client.api import APIRegistry
@@ -303,17 +305,18 @@ class ContainerSpawnStatus(SyftBaseModel):
     error: str | None = None
 
 
+@as_result(SyftException)
 def _get_worker_container(
     client: docker.DockerClient,
     worker: SyftWorker,
-) -> Container | SyftError:
+) -> Container:
     try:
         return cast(Container, client.containers.get(worker.container_id))
     except docker.errors.NotFound as e:
-        return SyftError(message=f"Worker {worker.id} container not found. Error {e}")
+        raise SyftException(public_message=f"Worker {worker.id} container not found. Error {e}")
     except docker.errors.APIError as e:
-        return SyftError(
-            message=f"Unable to access worker {worker.id} container. "
+        raise SyftException(
+            public_message=f"Unable to access worker {worker.id} container. "
             + f"Container server error {e}"
         )
 
@@ -330,25 +333,19 @@ _CONTAINER_STATUS_TO_WORKER_STATUS: dict[str, WorkerStatus] = dict(
     ]
 )
 
-
+@as_result(SyftException)
 def _get_worker_container_status(
     client: docker.DockerClient,
     worker: SyftWorker,
     container: Container | None = None,
-) -> Container | SyftError:
+) -> Container:
     if container is None:
-        container = _get_worker_container(client, worker)
-
-    if isinstance(container, SyftError):
-        return container
-
+        container = _get_worker_container(client, worker).unwrap()
     container_status = container.status
-
-    return _CONTAINER_STATUS_TO_WORKER_STATUS.get(
-        container_status,
-        SyftError(message=f"Unknown container status: {container_status}"),
-    )
-
+    try: 
+        return _CONTAINER_STATUS_TO_WORKER_STATUS[container_status]
+    except Exception:
+        raise SyftException(public_message=f"Unknown container status: {container_status}")
 
 @migrate(SyftWorkerV2, SyftWorker)
 def upgrade_syft_worker() -> list[Callable]:

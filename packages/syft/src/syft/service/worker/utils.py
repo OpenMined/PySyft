@@ -12,6 +12,8 @@ from typing import Any
 import docker
 from docker.models.containers import Container
 from kr8s.objects import Pod
+from syft.types.errors import SyftException
+from syft.types.result import as_result
 
 # relative
 from ...abstract_node import AbstractNode
@@ -383,21 +385,21 @@ def create_kubernetes_pool(
 
     return runner.get_pool_pods(pool_name=pool_name)
 
-
+@as_result(SyftException)
 def scale_kubernetes_pool(
     runner: KubernetesRunner,
     pool_name: str,
     replicas: int,
-) -> list[Pod] | SyftError:
+) -> list[Pod]:
     pool = runner.get_pool(pool_name)
     if not pool:
-        return SyftError(message=f"Pool does not exist. name={pool_name}")
+        raise SyftException(public_message=f"Pool does not exist. name={pool_name}")
 
     try:
         logger.info(f"Scaling pool name={pool_name} to replicas={replicas}")
         runner.scale_pool(pool_name=pool_name, replicas=replicas)
     except Exception as e:
-        return SyftError(message=f"Failed to scale workers {e}")
+        raise SyftException(public_message=f"Failed to scale workers {e}")
 
     return runner.get_pool_pods(pool_name=pool_name)
 
@@ -503,7 +505,7 @@ def map_pod_to_worker_status(
 
     return worker_status, worker_healthcheck, worker_error
 
-
+@as_result(SyftException)
 def run_containers(
     pool_name: str,
     worker_image: SyftWorkerImage,
@@ -517,11 +519,11 @@ def run_containers(
     reg_url: str | None = None,
     pod_annotations: dict[str, str] | None = None,
     pod_labels: dict[str, str] | None = None,
-) -> list[ContainerSpawnStatus] | SyftError:
+) -> list[ContainerSpawnStatus]:
     results = []
 
     if not worker_image.is_built:
-        return SyftError(message="Image must be built before running it.")
+        raise SyftException(public_message="Image must be built before running it.")
 
     logger.info(f"Starting workers with start_idx={start_idx} count={number}")
 
@@ -602,10 +604,10 @@ def _get_healthcheck_based_on_status(status: WorkerStatus) -> WorkerHealth:
     else:
         return WorkerHealth.UNHEALTHY
 
-
+@as_result(SyftException)
 def image_build(
     image: SyftWorkerImage, **kwargs: dict[str, Any]
-) -> ImageBuildResult | SyftError:
+) -> ImageBuildResult:
     if image.image_identifier is not None:
         full_tag = image.image_identifier.full_name_with_tag
         try:
@@ -616,28 +618,28 @@ def image_build(
                 **kwargs,
             )
         except docker.errors.APIError as e:
-            return SyftError(
-                message=f"Docker API error when building '{full_tag}'. Reason - {e}"
+            raise SyftException(
+                public_message=f"Docker API error when building '{full_tag}'. Reason - {e}"
             )
         except docker.errors.DockerException as e:
-            return SyftError(
-                message=f"Docker exception when building '{full_tag}'. Reason - {e}"
+            raise SyftException(
+                public_message=f"Docker exception when building '{full_tag}'. Reason - {e}"
             )
         except Exception as e:
-            return SyftError(
-                message=f"Unknown exception when building '{full_tag}'. Reason - {e}"
+            raise SyftException(
+                public_message=f"Unknown exception when building '{full_tag}'. Reason - {e}"
             )
-    else:
-        return SyftError(
-            message=f"image with uid {image.id} does not have an image identifier"
-        )
+    raise SyftException(
+        public_message=f"image with uid {image.id} does not have an image identifier"
+    )
 
 
+@as_result(SyftException)
 def image_push(
     image: SyftWorkerImage,
     username: str | None = None,
     password: str | None = None,
-) -> ImagePushResult | SyftError:
+) -> ImagePushResult:
     if image.image_identifier is not None:
         full_tag = image.image_identifier.full_name_with_tag
         try:
@@ -651,28 +653,27 @@ def image_push(
             )
 
             if "error" in result.logs.lower() or result.exit_code:
-                return SyftError(
-                    message=f"Failed to push {full_tag}. "
+                raise SyftException(
+                    public_message=f"Failed to push {full_tag}. "
                     f"Exit code: {result.exit_code}. "
                     f"Logs:\n{result.logs}"
                 )
 
             return result
         except docker.errors.APIError as e:
-            return SyftError(message=f"Docker API error when pushing {full_tag}. {e}")
+            raise SyftException(public_message=f"Docker API error when pushing {full_tag}. {e}")
         except docker.errors.DockerException as e:
-            return SyftError(
-                message=f"Docker exception when pushing {full_tag}. Reason - {e}"
+            raise SyftException(
+                public_message=f"Docker exception when pushing {full_tag}. Reason - {e}"
             )
         except Exception as e:
-            return SyftError(
-                message=f"Unknown exception when pushing {image.image_identifier}. Reason - {e}"
+            raise SyftException(
+                public_message=f"Unknown exception when pushing {image.image_identifier}. Reason - {e}"
             )
-    else:
-        return SyftError(
-            message=f"image with uid {image.id} does not have an "
-            "image identifier and tag, hence we can't push it."
-        )
+    raise SyftException(
+        public_message=f"image with uid {image.id} does not have an "
+        "image identifier and tag, hence we can't push it."
+    )
 
 
 def get_orchestration_type() -> WorkerOrchestrationType:
