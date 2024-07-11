@@ -347,11 +347,11 @@ class MongoStorePartition(StorePartition):
 
         prev_obj_status = self._get_all_from_store(credentials, QueryKeys(qks=[qk]))
         if prev_obj_status.is_err():
-            return Err(f"No object found with query key: {qk}")
+            return Err(f"No {type(obj)} found with query key: {qk}")
 
         prev_obj = prev_obj_status.ok()
         if len(prev_obj) == 0:
-            return Err(f"Missing values for query key: {qk}")
+            return Err(f"Failed to update missing values for query key: {qk} for type {type(obj)}")
 
         prev_obj = prev_obj[0]
         if has_permission or self.has_permission(

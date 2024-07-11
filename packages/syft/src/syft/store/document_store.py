@@ -1078,7 +1078,7 @@ class NewBaseUIDStoreStash(NewBaseStash):
 
         match result:
             case Ok(None):
-                raise NotFoundException
+                raise NotFoundException(public_message=f"{self.object_type} with uid {uid} not found")
             case Ok(value):
                 return value
             case Err(err):
@@ -1105,5 +1105,5 @@ class NewBaseUIDStoreStash(NewBaseStash):
                 add_permissions=add_permissions,
                 add_storage_permission=add_storage_permission,
             )
-            .unwrap()
+            .unwrap(public_message=f"Failed ot set {self.object_type} with uid {obj.id} not found")
         )

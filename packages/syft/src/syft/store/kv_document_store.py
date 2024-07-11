@@ -419,7 +419,7 @@ class KeyValueStorePartition(StorePartition):
     ) -> Result[SyftObject, str]:
         try:
             if qk.value not in self.data:
-                return Err(f"No object exists for query key: {qk}")
+                return Err(f"No {type(obj)} exists for query key: {qk}")
 
             if has_permission or self.has_permission(
                 ActionObjectWRITE(uid=qk.value, credentials=credentials)
