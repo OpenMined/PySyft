@@ -66,7 +66,10 @@ def seaweedfs_config() -> SeaweedFSConfig:
         mount_port=settings.SEAWEED_MOUNT_PORT,
     )
 
-    return SeaweedFSConfig(client_config=seaweed_client_config)
+    return SeaweedFSConfig(
+        client_config=seaweed_client_config,
+        min_blob_size=settings.MIN_SIZE_BLOB_STORAGE_MB,
+    )
 
 
 node_type = NodeType(get_node_type())

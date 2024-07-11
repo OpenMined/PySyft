@@ -15,6 +15,7 @@ from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.dict_document_store import DictStoreConfig
 from ...store.document_store import BasePartitionSettings
+from ...store.document_store import DocumentStore
 from ...store.document_store import StoreConfig
 from ...types.syft_object import SyftObject
 from ...types.twin_object import TwinObject
@@ -53,6 +54,7 @@ class KeyValueActionStore(ActionStore):
         node_uid: UID,
         store_config: StoreConfig,
         root_verify_key: SyftVerifyKey | None = None,
+        document_store: DocumentStore | None = None,
     ) -> None:
         self.node_uid = node_uid
         self.store_config = store_config
@@ -70,6 +72,13 @@ class KeyValueActionStore(ActionStore):
         if root_verify_key is None:
             root_verify_key = SyftSigningKey.generate().verify_key
         self.root_verify_key = root_verify_key
+
+        self.__user_stash = None
+        if document_store is not None:
+            # relative
+            from ...service.user.user_stash import UserStash
+
+            self.__user_stash = UserStash(store=document_store)
 
     def get(
         self, uid: UID, credentials: SyftVerifyKey, has_permission: bool = False
@@ -234,6 +243,22 @@ class KeyValueActionStore(ActionStore):
         ):
             return True
 
+        if self.__user_stash is not None:
+            # relative
+            from ...service.user.user_roles import ServiceRole
+
+            res = self.__user_stash.get_by_verify_key(
+                credentials=permission.credentials,
+                verify_key=permission.credentials,
+            )
+
+            if (
+                res.is_ok()
+                and (user := res.ok()) is not None
+                and user.role in (ServiceRole.DATA_OWNER, ServiceRole.ADMIN)
+            ):
+                return True
+
         if (
             permission.uid in self.permissions
             and permission.permission_string in self.permissions[permission.uid]
@@ -274,6 +299,9 @@ class KeyValueActionStore(ActionStore):
             return Ok(self.permissions[uid])
         return Err(f"No permissions found for uid: {uid}")
 
+    def get_all_permissions(self) -> Result[dict[UID, set[str]], str]:
+        return Ok(dict(self.permissions.items()))
+
     def add_storage_permission(self, permission: StoragePermission) -> None:
         permissions = self.storage_permissions[permission.uid]
         permissions.add(permission.node_uid)
@@ -301,6 +329,19 @@ class KeyValueActionStore(ActionStore):
             return Ok(self.storage_permissions[uid])
         return Err(f"No storage permissions found for uid: {uid}")
 
+    def get_all_storage_permissions(self) -> Result[dict[UID, set[UID]], str]:
+        return Ok(dict(self.storage_permissions.items()))
+
+    def _all(
+        self,
+        credentials: SyftVerifyKey,
+        has_permission: bool | None = False,
+    ) -> Result[list[SyftObject], str]:
+        # this checks permissions
+        res = [self.get(uid, credentials, has_permission) for uid in self.data.keys()]
+        result = [x.ok() for x in res if x.is_ok()]
+        return Ok(result)
+
     def migrate_data(
         self, to_klass: SyftObject, credentials: SyftVerifyKey
     ) -> Result[bool, str]:
@@ -314,7 +355,7 @@ class KeyValueActionStore(ActionStore):
                     migrated_value = value.migrate_to(to_klass.__version__)
                 except Exception as e:
                     return Err(
-                        f"Failed to migrate data to {to_klass} for qk: {key}. Exception: {e}"
+                        f"Failed to migrate data to {to_klass} {to_klass.__version__} for qk: {key}. Exception: {e}"
                     )
                 result = self.set(
                     uid=key,
@@ -346,12 +387,14 @@ class DictActionStore(KeyValueActionStore):
         node_uid: UID,
         store_config: StoreConfig | None = None,
         root_verify_key: SyftVerifyKey | None = None,
+        document_store: DocumentStore | None = None,
     ) -> None:
         store_config = store_config if store_config is not None else DictStoreConfig()
         super().__init__(
             node_uid=node_uid,
             store_config=store_config,
             root_verify_key=root_verify_key,
+            document_store=document_store,
         )
 
 
