@@ -139,26 +139,26 @@ class NetworkStash(NewBaseUIDStoreStash):
             credentials=credentials, uid=peer.id
         )
 
-        if existing_peer.is_err() and isinstance(existing_peer.err(), NotFoundException):
+        if existing_peer.is_err() and isinstance(
+            existing_peer.err(), NotFoundException
+        ):
             return self.set(credentials, peer).unwrap()
         else:
             existing_peer = existing_peer.ok()
             existing_peer.update_routes(peer.node_routes)
-            peer_update = NodePeerUpdate(id=peer.id, node_routes=existing_peer.node_routes)
+            peer_update = NodePeerUpdate(
+                id=peer.id, node_routes=existing_peer.node_routes
+            )
             return self.update(credentials, peer_update)
-
 
     @as_result(StashException, NotFoundException)
     def get_by_verify_key(
         self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
     ) -> Result[NodePeer | None, SyftError]:
         qks = QueryKeys(qks=[VerifyKeyPartitionKey.with_obj(verify_key)])
-        try:
-            return self.query_one(credentials, qks).unwrap()
-        except NotFoundException as exc:
-            raise NotFoundException.from_exception(
-                exc, private_message=f"NodePeer with {verify_key} not found"
-            )
+        return self.query_one(credentials, qks).unwrap(
+            private_message=f"NodePeer with {verify_key} not found"
+        )
 
     @as_result(StashException)
     def get_by_node_type(
