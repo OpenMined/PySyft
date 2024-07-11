@@ -24,8 +24,10 @@ from ..service.code_history.code_history import UsersCodeHistoriesDict
 from ..service.dataset.dataset import Contributor
 from ..service.dataset.dataset import CreateAsset
 from ..service.dataset.dataset import CreateDataset
+from ..service.migration.object_migration_state import MigrationData
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
+from ..service.response import SyftWarning
 from ..service.sync.diff_state import ResolvedSyncState
 from ..service.sync.sync_state import SyncState
 from ..service.user.roles import Roles
@@ -131,7 +133,7 @@ class DomainClient(SyftClient):
         ) as pbar:
             for asset in dataset.asset_list:
                 try:
-                    contains_empty = asset.contains_empty()
+                    contains_empty: bool = asset.contains_empty()
                     twin = TwinObject(
                         private_obj=ActionObject.from_obj(asset.data),
                         mock_obj=ActionObject.from_obj(asset.mock),
@@ -145,6 +147,8 @@ class DomainClient(SyftClient):
                     tqdm.write(f"Failed to create twin for {asset.name}. {e}")
                     return SyftError(message=f"Failed to create twin. {e}")
 
+                if isinstance(res, SyftWarning):
+                    logger.debug(res.message)
                 response = self.api.services.action.set(
                     twin, ignore_detached_objs=contains_empty
                 )
@@ -394,6 +398,48 @@ class DomainClient(SyftClient):
     @property
     def output(self) -> APIModule | None:
         return self._get_service_by_name_if_exists("output")
+
+    @property
+    def migration(self) -> APIModule | None:
+        return self._get_service_by_name_if_exists("migration")
+
+    def get_migration_data(
+        self, include_blobs: bool = True
+    ) -> MigrationData | SyftError:
+        res = self.api.services.migration.get_migration_data()
+        if isinstance(res, SyftError):
+            return res
+
+        if include_blobs:
+            res.download_blobs()
+
+        return res
+
+    def load_migration_data(self, path: str | Path) -> SyftSuccess | SyftError:
+        migration_data = MigrationData.from_file(path)
+        if isinstance(migration_data, SyftError):
+            return migration_data
+        migration_data._set_obj_location_(self.id, self.verify_key)
+
+        if self.id != migration_data.node_uid:
+            return SyftError(
+                message=f"This Migration data is not for this node. Expected node id {self.id}, "
+                f"got {migration_data.node_uid}"
+            )
+
+        if migration_data.signing_key.verify_key != self.verify_key:
+            return SyftError(
+                message="Root verify key in migration data does not match this client's verify key"
+            )
+
+        res = migration_data.migrate_and_upload_blobs()
+        if isinstance(res, SyftError):
+            return res
+
+        migration_data_without_blobs = migration_data.copy_without_blobs()
+        return self.api.services.migration.apply_migration_data(
+            migration_data_without_blobs
+        )
 
     def get_project(
         self,

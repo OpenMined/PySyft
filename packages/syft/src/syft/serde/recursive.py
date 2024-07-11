@@ -15,7 +15,7 @@ from pydantic import BaseModel
 import syft as sy
 
 # relative
-from ..util.util import get_fully_qualified_name
+from ..types.syft_object_registry import SyftObjectRegistry
 from ..util.util import index_syft_by_module_name
 from .capnp import get_capnp_schema
 from .util import compatible_with_large_file_writes_capnp
@@ -158,10 +158,26 @@ def recursive_serde_register(
     )
 
     TYPE_BANK[fqn] = serde_attributes
+    if hasattr(cls, "__canonical_name__"):
+        canonical_name = cls.__canonical_name__
+        version = cls.__version__
+    else:
+        # TODO: refactor
+        canonical_name = fqn
+        version = 1
+
+    SyftObjectRegistry.register_cls(canonical_name, version, serde_attributes)
 
     if isinstance(alias_fqn, tuple):
         for alias in alias_fqn:
             TYPE_BANK[alias] = serde_attributes
+
+            # TODO Refactor alias, required for typing.Any in python 3.12,
+            alias_canonical_name = alias
+            alias_version = 1
+            SyftObjectRegistry.register_cls(
+                alias_canonical_name, alias_version, serde_attributes
+            )
 
 
 def chunk_bytes(
@@ -215,23 +231,33 @@ def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuild
         is_type = True
 
     msg = recursive_scheme.new_message()
-    fqn = get_fully_qualified_name(self)
-    if fqn not in TYPE_BANK:
+
+    # todo: rewrite and make sure every object has a canonical name and version
+    canonical_name = SyftObjectRegistry.get_canonical_name(self)
+    if is_type:
+        version = 1
+    else:
+        version = getattr(self, "__version__", 1)
+
+    if not SyftObjectRegistry.has_serde_class("", canonical_name, version):
         # third party
-        raise Exception(f"{fqn} not in TYPE_BANK")
-    msg.fullyQualifiedName = fqn
+        raise Exception(f"{canonical_name} version {version} not in SyftObjectRegistry")
+
+    msg.canonicalName = canonical_name
+    msg.version = version
+
     (
         nonrecursive,
         serialize,
-        deserialize,
+        _,
         attribute_list,
         exclude_attrs_list,
         serde_overrides,
         hash_exclude_attrs,
-        cls,
-        attribute_types,
-        version,
-    ) = TYPE_BANK[fqn]
+        _,
+        _,
+        _,
+    ) = SyftObjectRegistry.get_serde_properties(canonical_name, version)
 
     if nonrecursive or is_type:
         if serialize is None:
@@ -291,6 +317,19 @@ def rs_bytes2object(blob: bytes) -> Any:
         return rs_proto2object(msg)
 
 
+def map_fqns_for_backward_compatibility(fqn: str) -> str:
+    """for backwards compatibility with 0.8.6. Sometimes classes where moved to another file. Which is
+    exactly why we are implementing it differently"""
+    mapping = {
+        "syft.service.dataset.dataset.MarkdownDescription": "syft.util.misc_objs.MarkdownDescription",
+        "syft.service.object_search.object_migration_state.SyftObjectMigrationState": "syft.service.migration.object_migration_state.SyftObjectMigrationState",  # noqa: E501
+    }
+    if fqn in mapping:
+        return mapping[fqn]
+    else:
+        return fqn
+
+
 def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
     # relative
     from .deserialize import _deserialize
@@ -318,8 +357,13 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
                 except Exception:  # nosec
                     pass
 
-    if proto.fullyQualifiedName not in TYPE_BANK:
-        raise Exception(f"{proto.fullyQualifiedName} not in TYPE_BANK")
+    canonical_name = proto.canonicalName
+    version = getattr(proto, "version", -1)
+    fqn = getattr(proto, "fullyQualifiedName", "")
+    fqn = map_fqns_for_backward_compatibility(fqn)
+    if not SyftObjectRegistry.has_serde_class(fqn, canonical_name, version):
+        # third party
+        raise Exception(f"{canonical_name} version {version} not in SyftObjectRegistry")
 
     # TODO: 🐉 sort this out, basically sometimes the syft.user classes are not in the
     # module name space in sub-processes or threads even though they are loaded on start
@@ -328,18 +372,20 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
     # causes some errors so it seems like we want to get the local one where possible
     (
         nonrecursive,
-        serialize,
+        _,
         deserialize,
-        attribute_list,
-        exclude_attrs_list,
+        _,
+        _,
         serde_overrides,
-        hash_exclude_attrs,
+        _,
         cls,
-        attribute_types,
+        _,
         version,
-    ) = TYPE_BANK[proto.fullyQualifiedName]
+    ) = SyftObjectRegistry.get_serde_properties_bw_compatible(
+        fqn, canonical_name, version
+    )
 
-    if class_type == type(None):
+    if class_type == type(None) or fqn != "":
         # yes this looks stupid but it works and the opposite breaks
         class_type = cls
 

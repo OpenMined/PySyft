@@ -14,7 +14,7 @@ from ..service.context import NodeServiceContext
 from .grid_url import GridURL
 from .syft_object import Context
 from .syft_object import SyftBaseObject
-from .syft_object import SyftObjectRegistry
+from .syft_object_registry import SyftObjectRegistry
 from .uid import UID
 
 
