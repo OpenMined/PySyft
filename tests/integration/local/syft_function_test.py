@@ -10,6 +10,7 @@ import syft as sy
 from syft import ActionObject
 from syft import syft_function
 from syft import syft_function_single_use
+from syft.service.job.job_stash import Job
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 
@@ -38,13 +39,25 @@ def node():
 def test_nested_jobs(node):
     client = node.login(email="info@openmined.org", password="changethis")
 
-    res = client.register(name="a", email="aa@b.org", password="c", password_verify="c")
+    new_user_email = "aa@b.org"
+    res = client.register(
+        name="a", email=new_user_email, password="c", password_verify="c"
+    )
     assert isinstance(res, SyftSuccess)
-    ds_client = node.login(email="aa@b.org", password="c")
+
     ## Dataset
 
     x = ActionObject.from_obj([1, 2])
     x_ptr = x.send(client)
+
+    search_result = [u for u in client.users.get_all() if u.email == new_user_email]
+    assert len(search_result) == 1
+
+    new_ds_user = search_result[0]
+    new_ds_user.allow_mock_execution()
+
+    # Login as data scientist
+    ds_client = node.login(email=new_user_email, password="c")
 
     ## aggregate function
     @sy.syft_function()
@@ -86,7 +99,9 @@ def test_nested_jobs(node):
 
     job = ds_client.code.process_all(x=x_ptr, blocking=False)
 
-    job.wait(timeout=0)
+    assert isinstance(job, Job)
+
+    job.wait(timeout=5)
 
     assert len(job.subjobs) == 3
 
