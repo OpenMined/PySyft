@@ -20,8 +20,8 @@ from syft.service.service import AbstractService
 from syft.service.service import ServiceConfigRegistry
 from syft.service.service import service_method
 from syft.service.user.user_roles import GUEST_ROLE_LEVEL
-from syft.store.document_store import BaseStash
 from syft.store.document_store import DocumentStore
+from syft.store.document_store import NewBaseStash
 from syft.store.document_store import PartitionSettings
 from syft.types.syft_migration import migrate
 from syft.types.syft_object import SYFT_OBJECT_VERSION_2
@@ -75,7 +75,7 @@ def setup_migration_transforms(mock_klass_v1, mock_klass_v2):
 
 def get_stash_klass(syft_object: type[SyftBaseObject]):
     @serializable()
-    class SyftMockObjectStash(BaseStash):
+    class SyftMockObjectStash(NewBaseStash):
         object_type = syft_object
         settings: PartitionSettings = PartitionSettings(
             name=object_type.__canonical_name__,
@@ -89,12 +89,12 @@ def get_stash_klass(syft_object: type[SyftBaseObject]):
 
 
 def setup_service_method(syft_object):
-    stash_klass: BaseStash = get_stash_klass(syft_object=syft_object)
+    stash_klass: NewBaseStash = get_stash_klass(syft_object=syft_object)
 
     @serializable()
     class SyftMockObjectService(AbstractService):
         store: DocumentStore
-        stash: stash_klass
+        stash: stash_klass  # type: ignore
         __module__: str = "syft.test"
 
         def __init__(self, store: DocumentStore) -> None:

@@ -15,7 +15,7 @@ from ...node.worker_settings import WorkerSettings
 from ...serde.deserialize import _deserialize as deserialize
 from ...serde.serializable import serializable
 from ...service.context import AuthedServiceContext
-from ...store.document_store import BaseStash
+from ...store.document_store import NewBaseStash
 from ...types.datetime import DateTime
 from ...types.uid import UID
 from ..job.job_stash import Job
@@ -114,7 +114,7 @@ class QueueManager(BaseQueueManager):
     def create_producer(
         self,
         queue_name: str,
-        queue_stash: type[BaseStash],
+        queue_stash: type[NewBaseStash],
         context: AuthedServiceContext,
         worker_stash: WorkerStash,
     ) -> QueueProducer:

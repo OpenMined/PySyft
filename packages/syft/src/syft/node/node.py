@@ -32,7 +32,6 @@ from .. import __version__
 from ..abstract_node import AbstractNode
 from ..abstract_node import NodeSideType
 from ..abstract_node import NodeType
-from ..client.api import NEW_STYLE_SERVICES_LIST
 from ..client.api import SignedSyftAPICall
 from ..client.api import SyftAPI
 from ..client.api import SyftAPICall
@@ -1295,22 +1294,27 @@ class Node(AbstractNode):
                 logger.info(f"API Call: {api_call}")
                 result = method(context, *api_call.args, **api_call.kwargs)
 
-                if any(api_call.path.startswith(x) for x in NEW_STYLE_SERVICES_LIST):
-                    if isinstance(result, SyftError):
-                        raise TypeError("Don't return a SyftError, raise instead")
-                    if not isinstance(result, SyftSuccess):
-                        result = SyftSuccess(message="", value=result)
+                if isinstance(result, SyftError):
+                    raise TypeError("Don't return a SyftError, raise instead")
+                if not isinstance(result, SyftSuccess):
+                    result = SyftSuccess(message="", value=result)
                 tb = None
             except Exception as e:
-                include_traceback = self.dev_mode or role.value >= ServiceRole.DATA_OWNER.value
-                result = SyftError.from_exception(context=context, exc=e, include_traceback=include_traceback)
+                include_traceback = (
+                    self.dev_mode or role.value >= ServiceRole.DATA_OWNER.value
+                )
+                result = SyftError.from_exception(
+                    context=context, exc=e, include_traceback=include_traceback
+                )
                 if not include_traceback:
                     # then at least log it server side
                     if isinstance(e, SyftException):
                         tb = e.get_tb(context, overwrite_permission=True)
                     else:
                         tb = traceback.format_exc()
-                    logger.debug(f"Exception (hidden from DS) happened on the server side:\n{tb}")
+                    logger.debug(
+                        f"Exception (hidden from DS) happened on the server side:\n{tb}"
+                    )
 
         else:
             try:

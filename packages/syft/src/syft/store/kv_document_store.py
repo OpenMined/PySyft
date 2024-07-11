@@ -26,7 +26,7 @@ from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
-from .document_store import BaseStash
+from .document_store import NewBaseStash
 from .document_store import PartitionKey
 from .document_store import QueryKey
 from .document_store import QueryKeys
@@ -334,7 +334,7 @@ class KeyValueStorePartition(StorePartition):
         credentials: SyftVerifyKey,
         order_by: PartitionKey | None = None,
         has_permission: bool | None = False,
-    ) -> Result[list[BaseStash.object_type], str]:
+    ) -> Result[list[NewBaseStash.object_type], str]:
         # this checks permissions
         res = [self._get(uid, credentials, has_permission) for uid in self.data.keys()]
         result = [x.ok() for x in res if x.is_ok()]

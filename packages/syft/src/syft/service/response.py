@@ -16,7 +16,6 @@ from ..util.util import sanitize_html
 
 if TYPE_CHECKING:
     # relative
-    from ..types.errors import SyftException as NewSyftException
     from .context import AuthedServiceContext
 
 
@@ -85,6 +84,8 @@ class SyftResponseMessage(SyftBaseModel):
 
 
 Exception
+
+
 @serializable()
 class SyftError(SyftResponseMessage):
     _bool: bool = False
@@ -108,10 +109,15 @@ class SyftError(SyftResponseMessage):
 
     @classmethod
     def from_exception(
-        cls, context: "AuthedServiceContext", exc: Exception, include_traceback: bool =False
+        cls,
+        context: "AuthedServiceContext",
+        exc: Exception,
+        include_traceback: bool = False,
     ) -> Self:
         # traceback may contain private information
+        # relative
         from ..types.errors import SyftException as NewSyftException
+
         tb = None
         if isinstance(exc, NewSyftException):
             error_msg = exc.get_message(context)

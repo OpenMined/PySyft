@@ -468,7 +468,7 @@ class StorePartition:
         credentials: SyftVerifyKey,
         order_by: PartitionKey | None = None,
         has_permission: bool | None = False,
-    ) -> Result[list[BaseStash.object_type], str]:
+    ) -> Result[list[NewBaseStash.object_type], str]:
         return self._thread_safe_cbk(self._all, credentials, order_by, has_permission)
 
     def migrate_data(
@@ -524,7 +524,7 @@ class StorePartition:
         credentials: SyftVerifyKey,
         order_by: PartitionKey | None = None,
         has_permission: bool | None = False,
-    ) -> Result[list[BaseStash.object_type], str]:
+    ) -> Result[list[NewBaseStash.object_type], str]:
         raise NotImplementedError
 
     def add_permission(self, permission: ActionObjectPermission) -> None:
@@ -601,218 +601,6 @@ class DocumentStore:
                 store_config=self.store_config,
             )
         return self.partitions[settings.name]
-
-
-@instrument
-class BaseStash:
-    object_type: type[SyftObject]
-    settings: PartitionSettings
-    partition: StorePartition
-
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
-        self.partition = store.partition(type(self).settings)
-
-    def check_type(self, obj: Any, type_: type) -> Result[Any, str]:
-        return (
-            Ok(obj)
-            if isinstance(obj, type_)
-            else Err(f"{type(obj)} does not match required type: {type_}")
-        )
-
-    @as_result(StashException)
-    def _check_type(self, obj: Any, type_: type) -> Any:
-        if not isinstance(obj, type_):
-            raise StashException(f"{type(obj)} does not match required type: {type_}")
-        return obj
-
-    def get_all(
-        self,
-        credentials: SyftVerifyKey,
-        order_by: PartitionKey | None = None,
-        has_permission: bool = False,
-    ) -> Result[list[BaseStash.object_type], str]:
-        return self.partition.all(credentials, order_by, has_permission)
-
-    def add_permissions(self, permissions: list[ActionObjectPermission]) -> None:
-        self.partition.add_permissions(permissions)
-
-    def add_permission(self, permission: ActionObjectPermission) -> None:
-        self.partition.add_permission(permission)
-
-    def remove_permission(self, permission: ActionObjectPermission) -> None:
-        self.partition.remove_permission(permission)
-
-    def has_permission(self, permission: ActionObjectPermission) -> bool:
-        return self.partition.has_permission(permission=permission)
-
-    def has_storage_permission(self, permission: StoragePermission) -> bool:
-        return self.partition.has_storage_permission(permission=permission)
-
-    def __len__(self) -> int:
-        return len(self.partition)
-
-    def set(
-        self,
-        credentials: SyftVerifyKey,
-        obj: BaseStash.object_type,
-        add_permissions: list[ActionObjectPermission] | None = None,
-        add_storage_permission: bool = True,
-        ignore_duplicates: bool = False,
-    ) -> Result[BaseStash.object_type, str]:
-        res = self.partition.set(
-            credentials=credentials,
-            obj=obj,
-            ignore_duplicates=ignore_duplicates,
-            add_permissions=add_permissions,
-            add_storage_permission=add_storage_permission,
-        )
-
-        return res
-
-    def query_all(
-        self,
-        credentials: SyftVerifyKey,
-        qks: QueryKey | QueryKeys,
-        order_by: PartitionKey | None = None,
-    ) -> Result[list[BaseStash.object_type], str]:
-        if isinstance(qks, QueryKey):
-            qks = QueryKeys(qks=qks)
-
-        unique_keys = []
-        searchable_keys = []
-
-        for qk in qks.all:
-            pk = qk.partition_key
-            if self.partition.matches_unique_cks(pk):
-                unique_keys.append(qk)
-            elif self.partition.matches_searchable_cks(pk):
-                searchable_keys.append(qk)
-            else:
-                return Err(
-                    f"{qk} not in {type(self.partition)} unique or searchable keys"
-                )
-
-        index_qks = QueryKeys(qks=unique_keys)
-        search_qks = QueryKeys(qks=searchable_keys)
-
-        return self.partition.find_index_or_search_keys(
-            credentials=credentials,
-            index_qks=index_qks,
-            search_qks=search_qks,
-            order_by=order_by,
-        )
-
-    def query_all_kwargs(
-        self,
-        credentials: SyftVerifyKey,
-        **kwargs: dict[str, Any],
-    ) -> Result[list[BaseStash.object_type], str]:
-        order_by = kwargs.pop("order_by", None)
-        qks = QueryKeys.from_dict(kwargs)
-        return self.query_all(credentials=credentials, qks=qks, order_by=order_by)
-
-    def query_one(
-        self,
-        credentials: SyftVerifyKey,
-        qks: QueryKey | QueryKeys,
-        order_by: PartitionKey | None = None,
-    ) -> Result[BaseStash.object_type | None, str]:
-        return self.query_all(
-            credentials=credentials, qks=qks, order_by=order_by
-        ).and_then(first_or_none)
-
-    def query_one_kwargs(
-        self,
-        credentials: SyftVerifyKey,
-        **kwargs: dict[str, Any],
-    ) -> Result[BaseStash.object_type | None, str]:
-        return self.query_all_kwargs(credentials, **kwargs).and_then(first_or_none)
-
-    def find_all(
-        self, credentials: SyftVerifyKey, **kwargs: dict[str, Any]
-    ) -> Result[list[BaseStash.object_type], str]:
-        return self.query_all_kwargs(credentials=credentials, **kwargs)
-
-    def find_one(
-        self, credentials: SyftVerifyKey, **kwargs: dict[str, Any]
-    ) -> Result[BaseStash.object_type | None, str]:
-        return self.query_one_kwargs(credentials=credentials, **kwargs)
-
-    def find_and_delete(
-        self, credentials: SyftVerifyKey, **kwargs: dict[str, Any]
-    ) -> Result[SyftSuccess, Err]:
-        obj = self.query_one_kwargs(credentials=credentials, **kwargs)
-        if obj.is_err():
-            return obj
-        else:
-            obj = obj.ok()
-
-        if not obj:
-            return Err(f"Object does not exists with kwargs: {kwargs}")
-        qk = self.partition.store_query_key(obj)
-        return self.delete(credentials=credentials, qk=qk)
-
-    def delete(
-        self, credentials: SyftVerifyKey, qk: QueryKey, has_permission: bool = False
-    ) -> Result[SyftSuccess, Err]:
-        return self.partition.delete(
-            credentials=credentials, qk=qk, has_permission=has_permission
-        )
-
-    def update(
-        self,
-        credentials: SyftVerifyKey,
-        obj: BaseStash.object_type,
-        has_permission: bool = False,
-    ) -> Result[BaseStash.object_type, str]:
-        qk = self.partition.store_query_key(obj)
-        res = self.partition.update(
-            credentials=credentials, qk=qk, obj=obj, has_permission=has_permission
-        )
-        return res
-
-
-@instrument
-class BaseUIDStoreStash(BaseStash):
-    def delete_by_uid(
-        self, credentials: SyftVerifyKey, uid: UID
-    ) -> Result[SyftSuccess, str]:
-        qk = UIDPartitionKey.with_obj(uid)
-        result = super().delete(credentials=credentials, qk=qk)
-        if result.is_ok():
-            return Ok(SyftSuccess(message=f"ID: {uid} deleted"))
-        return result
-
-    def get_by_uid(
-        self, credentials: SyftVerifyKey, uid: UID
-    ) -> Result[BaseUIDStoreStash.object_type | None, str]:
-        res = self.partition.get(credentials=credentials, uid=uid)
-
-        # NOTE Return Ok(None) when no results are found for backwards compatibility
-        if res.is_err():
-            return Ok(None)
-        return res
-
-    def set(
-        self,
-        credentials: SyftVerifyKey,
-        obj: BaseUIDStoreStash.object_type,
-        add_permissions: list[ActionObjectPermission] | None = None,
-        add_storage_permission: bool = True,
-        ignore_duplicates: bool = False,
-    ) -> Result[BaseUIDStoreStash.object_type, str]:
-        res = self.check_type(obj, self.object_type)
-        # we dont use and_then logic here as it is hard because of the order of the arguments
-        if res.is_err():
-            return res
-        return super().set(
-            credentials=credentials,
-            obj=res.ok(),
-            ignore_duplicates=ignore_duplicates,
-            add_permissions=add_permissions,
-            add_storage_permission=add_storage_permission,
-        )
 
 
 @serializable()
@@ -921,7 +709,7 @@ class NewBaseStash:
         credentials: SyftVerifyKey,
         qks: QueryKey | QueryKeys,
         order_by: PartitionKey | None = None,
-    ) -> list[BaseStash.object_type]:
+    ) -> list[NewBaseStash.object_type]:
         if isinstance(qks, QueryKey):
             qks = QueryKeys(qks=qks)
 
@@ -984,7 +772,9 @@ class NewBaseStash:
         if value is None:
             keys = qks.all if isinstance(qks, QueryKeys) else [qks]
             keys_str = ", ".join(f"{x.key}: {x.value}" for x in keys)
-            raise NotFoundException(public_message=f"Could not find {self.object_type} with {keys_str}")
+            raise NotFoundException(
+                public_message=f"Could not find {self.object_type} with {keys_str}"
+            )
         return value
 
     @as_result(StashException, NotFoundException)
@@ -1080,7 +870,9 @@ class NewBaseUIDStoreStash(NewBaseStash):
 
         match result:
             case Ok(None):
-                raise NotFoundException(public_message=f"{self.object_type} with uid {uid} not found")
+                raise NotFoundException(
+                    public_message=f"{self.object_type} with uid {uid} not found"
+                )
             case Ok(value):
                 return value
             case Err(err):
@@ -1107,5 +899,7 @@ class NewBaseUIDStoreStash(NewBaseStash):
                 add_permissions=add_permissions,
                 add_storage_permission=add_storage_permission,
             )
-            .unwrap(public_message=f"Failed ot set {self.object_type} with uid {obj.id} not found")
+            .unwrap(
+                public_message=f"Failed ot set {self.object_type} with uid {obj.id} not found"
+            )
         )

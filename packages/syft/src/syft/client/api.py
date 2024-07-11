@@ -95,39 +95,12 @@ IPYNB_BACKGROUND_METHODS = {
 IPYNB_BACKGROUND_PREFIXES = ["_ipy", "_repr", "__ipython", "__pydantic"]
 
 
-# Temporary list of services that have been updated to the new error handling/result types
-NEW_STYLE_SERVICES_LIST: list[str] = [
-    "user.",
-    "dataset.",
-    "project.",
-    "request.",
-    "code.",
-    "code_status.",
-    "code_history.",
-    "output.",
-    "metadata.",
-    "log.",
-    "job.",
-    "data_subject.",
-    "sync.",
-    "blob_storage.",
-    "notifier.",
-    "settings.",
-    "policy.",
-    "action.",
-    "queue.",
-]
-
-
 @exclude_from_traceback
-def post_process_result(path:str , result: Any, unwrap_on_success: bool=False) -> Any:
-    if any(path.startswith(x) for x in NEW_STYLE_SERVICES_LIST):
-        if isinstance(result, SyftError):
-            raise SyftException(
-                public_message=result.message, server_trace=result.tb
-            )
-        if unwrap_on_success:
-            result = result.unwrap_value()
+def post_process_result(path: str, result: Any, unwrap_on_success: bool = False) -> Any:
+    if isinstance(result, SyftError):
+        raise SyftException(public_message=result.message, server_trace=result.tb)
+    if unwrap_on_success:
+        result = result.unwrap_value()
 
     return result
 
@@ -422,7 +395,6 @@ class RemoteFunction(SyftObject):
         result = result[0]
         return post_process_result(api_call.path, result, self.unwrap_on_success)
 
-    @exclude_from_traceback
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         return self.function_call(self.path, *args, **kwargs)
 

@@ -6,8 +6,8 @@ from typing import Any
 # relative
 from ...client.api import NodeIdentity
 from ...serde.serializable import serializable
-from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
+from ...store.document_store import NewBaseStash
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.errors import SyftException
@@ -114,7 +114,7 @@ class SyncService(AbstractService):
 
     def get_stash_for_item(
         self, context: AuthedServiceContext, item: SyftObject
-    ) -> BaseStash:
+    ) -> NewBaseStash:
         services = list(context.node.service_path_map.values())  # type: ignore
 
         all_stashes = {}
@@ -214,7 +214,7 @@ class SyncService(AbstractService):
                 )
             else:
                 item = self.transform_item(context, item)  # type: ignore[unreachable]
-                res = self.set_object(context, item).unwrap()
+                self.set_object(context, item).unwrap()
 
                 self.add_permissions_for_item(context, item, new_permissions)
                 self.add_storage_permissions_for_item(
