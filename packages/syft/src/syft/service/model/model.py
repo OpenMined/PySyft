@@ -37,6 +37,15 @@ from ..response import SyftSuccess
 from ..response import SyftWarning
 
 
+def has_permission(data_result: Any) -> bool:
+    # TODO: implement in a better way
+    return not (
+        isinstance(data_result, str)
+        and data_result.startswith("Permission")
+        and data_result.endswith("denied")
+    )
+
+
 @serializable()
 class ModelPageView(SyftObject):
     # version
@@ -95,14 +104,6 @@ class ModelAsset(SyftObject):
             and self.created_at == other.created_at
         )
 
-    def has_permission(self, data_result: Any) -> bool:
-        # TODO: implement in a better way
-        return not (
-            isinstance(data_result, str)
-            and data_result.startswith("Permission")
-            and data_result.endswith("denied")
-        )
-
     @property
     def data(self) -> Any:
         # relative
@@ -115,7 +116,7 @@ class ModelAsset(SyftObject):
         if api is None or api.services is None:
             return None
         res = api.services.action.get(self.action_id)
-        if self.has_permission(res):
+        if has_permission(res):
             return res.syft_action_data
         else:
             warning = SyftWarning(
@@ -272,7 +273,6 @@ class Model(SyftObject):
     __repr_attrs__ = ["name", "url", "created_at"]
 
     name: str
-    submit_model: SubmitModelCode
     asset_list: list[ModelAsset] = []
     contributors: set[Contributor] = set()
     citation: str | None = None
@@ -284,6 +284,7 @@ class Model(SyftObject):
     show_interface: bool = True
     example_text: str | None = None
     mb_size: float | None = None
+    code_action_id: UID | None = None
 
     def __init__(
         self,
@@ -297,6 +298,27 @@ class Model(SyftObject):
     @property
     def icon(self) -> str:
         return "no icon"
+
+    @property
+    def model_code(self) -> SubmitModelCode | None:
+        # relative
+        from ...client.api import APIRegistry
+
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None or api.services is None:
+            return None
+        res = api.services.action.get(self.code_action_id)
+        if has_permission(res):
+            return res
+        else:
+            warning = SyftWarning(
+                message="You do not have permission to access private data."
+            )
+            display(warning)
+            return None
 
     def _coll_repr_(self) -> dict[str, Any]:
         return {
@@ -408,7 +430,8 @@ class CreateModel(Model):
 
     __repr_attrs__ = ["name", "url"]
 
-    submit_model: SubmitModelCode
+    code: SubmitModelCode
+    code_action_id: UID | None = None
     asset_list: list[Any] = []
     created_at: DateTime | None = None  # type: ignore[assignment]
     model_config = ConfigDict(validate_assignment=True)
@@ -561,19 +584,21 @@ class ModelRef(ActionObject):
     __canonical_name__ = "ModelRef"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    syft_internal_type: ClassVar[type] = UID
+    syft_internal_type: ClassVar[type] = list[UID]
     syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS + ["load_model"]
 
     def load_model(self, context: AuthedServiceContext) -> SyftModelClass:
         admin_client = context.node.root_client
-        model = admin_client.models.get_by_uid(self.id)
 
-        # TODO : Simply this having a get_asset_list method or
-        # an equivalent
+        code_action_id = self.syft_action_data[0]
+        asset_action_ids = self.syft_action_data[1::]
+
+        model = admin_client.services.action.get(code_action_id)
+
         asset_list = []
-        for asset in model.asset_list:
-            res = admin_client.services.action.get(asset.action_id)
+        for asset_action_id in asset_action_ids:
+            res = admin_client.services.action.get(asset_action_id)
             asset_list.append(res.syft_action_data)
 
-        loaded_model = model.submit_model(assets=asset_list)
+        loaded_model = model(assets=asset_list)
         return loaded_model
