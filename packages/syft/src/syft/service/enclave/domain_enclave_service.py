@@ -15,6 +15,7 @@ from ...store.document_store import DocumentStore
 from ...types.uid import UID
 from ..code.user_code import UserCode
 from ..context import AuthedServiceContext
+from ..model.model import ModelRef
 from ..service import AbstractService
 from ..service import service_method
 from .enclave import EnclaveInstance
@@ -152,7 +153,15 @@ class DomainEnclaveService(AbstractService):
         ]
         # Actual data from blob storage is lazy-loaded when the `syft_action_data` property is used for the
         # first time. Let's load it now so that it can get properly transferred along with the action objects.
-        [action_object.syft_action_data for action_object in action_objects]
+        for action_object in action_objects:
+            # If it is ModelRef, then load all the references
+            # and wrap them to the Model Ref object
+            if isinstance(action_object, ModelRef):
+                action_object.load_data(
+                    context=context, wrap_ref_to_obj=True, unwrap_action_data=False
+                )
+
+            _ = action_object.syft_action_data
 
         # Get the enclave client
         if not code.runtime_policy_init_kwargs:

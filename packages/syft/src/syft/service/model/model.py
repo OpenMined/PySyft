@@ -171,7 +171,7 @@ class SubmitModelCode(ActionObject):
     __canonical_name__ = "SubmitModelCode"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    syft_internal_type = None
+    syft_internal_type: type | None = None  # type: ignore
     syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS + [
         "code",
         "class_name",
@@ -585,9 +585,45 @@ class ModelRef(ActionObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     syft_internal_type: ClassVar[type] = list[UID]
-    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS + ["load_model"]
+    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS + [
+        "ref_objs",
+        "load_model",
+        "load_data",
+        "store_ref_objs_to_store",
+    ]
+    ref_objs: list = []  # Contains the loaded data
 
-    def load_model(self, context: AuthedServiceContext) -> SyftModelClass:
+    # Schema:
+    # [model_code_id, asset1_id, asset2_id, ...]
+
+    def store_ref_objs_to_store(
+        self, context: AuthedServiceContext, clear_ref_objs: bool = False
+    ) -> SyftError | None:
+        admin_client = context.node.root_client
+
+        if not self.ref_objs:
+            return SyftError(message="No ref_objs to store in Model Ref")
+
+        for ref_obj in self.ref_objs:
+            res = admin_client.services.action.set(ref_obj)
+            if isinstance(res, SyftError):
+                return res
+
+        if clear_ref_objs:
+            self.ref_objs = []
+
+        model_ref_res = admin_client.services.action.set(self)
+        if isinstance(model_ref_res, SyftError):
+            return model_ref_res
+
+        return None
+
+    def load_data(
+        self,
+        context: AuthedServiceContext,
+        wrap_ref_to_obj: bool = False,
+        unwrap_action_data: bool = True,
+    ) -> list:
         admin_client = context.node.root_client
 
         code_action_id = self.syft_action_data[0]
@@ -598,7 +634,18 @@ class ModelRef(ActionObject):
         asset_list = []
         for asset_action_id in asset_action_ids:
             res = admin_client.services.action.get(asset_action_id)
-            asset_list.append(res.syft_action_data)
+            asset_list.append(res.syft_action_data if unwrap_action_data else res)
+
+        loaded_data = [model] + asset_list
+        if wrap_ref_to_obj:
+            self.ref_objs = loaded_data
+
+        return loaded_data
+
+    def load_model(self, context: AuthedServiceContext) -> SyftModelClass:
+        loaded_data = self.load_data(context)
+        model = loaded_data[0]
+        asset_list = loaded_data[1::]
 
         loaded_model = model(assets=asset_list)
         return loaded_model
