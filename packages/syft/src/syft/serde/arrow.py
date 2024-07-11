@@ -63,10 +63,10 @@ def numpyutf8toarray(input_index: np.ndarray) -> np.ndarray:
         np.ndarray: decoded NumpyArray.
     """
     shape_length = int(input_index[-1])
-    shape = tuple(input_index[-(shape_length + 1) : -1])  # noqa
+    shape = tuple(input_index[-(shape_length + 1) : -1])
     string_index = input_index[: -(shape_length + 1)]
     index_length = int(string_index[-1])
-    index_array = string_index[-(index_length + 1) : -1]  # noqa
+    index_array = string_index[-(index_length + 1) : -1]
     string_array: np.ndarray = string_index[: -(index_length + 1)]
     output_bytes: bytes = string_array.astype(np.uint8).tobytes()
     output_list = []
