@@ -156,11 +156,11 @@ registry:
 
 # =================================================================================
 
-node:
+server:
   # Syft settings
   name: null
   rootEmail: info@openmined.org
-  type: domain
+  type: datasite
   side: high
   defaultBucketName: null
   inMemoryWorkers: false
@@ -240,7 +240,6 @@ ingress:
 
 # =================================================================================
 
-
 rtunnel:
   enabled: false
   logLevel: info
@@ -263,7 +262,6 @@ rtunnel:
   resources: null
 
 # =================================================================================
-
 
 # Enclave attestation Service
 attestation:

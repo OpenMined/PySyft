@@ -16,19 +16,19 @@
       roleId: 2,
       title: "Data Scientist",
       description:
-        "This role is for users who will be performing computations on your datasets. They may be users you know directly or those who found your domain through search and discovery. By default this user can see a list of your datasets and can request to get results.",
+        "This role is for users who will be performing computations on your datasets. They may be users you know directly or those who found your datasite through search and discovery. By default this user can see a list of your datasets and can request to get results.",
     },
     {
       roleId: 32,
       title: "Data Owner",
       description:
-        "This role is for users on your team who will be responsible for uploading data to the domain.",
+        "This role is for users on your team who will be responsible for uploading data to the datasite.",
     },
     {
       roleId: 128,
       title: "Admin",
       description:
-        "This role is for users who will help you manage your node. This should be users you trust as they will be users who will have full permissions to the node.",
+        "This role is for users who will help you manage your server. This should be users you trust as they will be users who will have full permissions to the server.",
     },
   ]
 
@@ -105,7 +105,7 @@
         </div>
         <p class="text-gray-400 py-2 text-center">
           To begin let's select the role this user is going to have on your
-          domain node.
+          datasite server.
         </p>
         <div class="grid grid-cols-2 gap-6">
           {#each cardsContent as { title, description, roleId }}
@@ -221,8 +221,8 @@
             Welcome to {metadata?.name}
             {name},
             <br />
-            You are formally invited you to join {metadata?.name} Domain. Below is
-            your login credentials and the URL to the domain. After logging in you
+            You are formally invited you to join {metadata?.name} Datasite. Below is
+            your login credentials and the URL to the datasite. After logging in you
             will be prompted to customize your account.
           </p>
           <a {href}>{href}</a>

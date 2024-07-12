@@ -5,8 +5,8 @@ from pathlib import Path
 import requests
 
 # relative
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
 from ...service.action.action_object import ActionObject
 from ...store.blob_storage import BlobRetrieval
 from ...store.blob_storage.on_disk import OnDiskBlobDeposit
@@ -88,17 +88,17 @@ class BlobStorageService(AbstractService):
             return SyftError(message=res.value)
         remote_profile = res.ok()
 
-        seaweed_config = context.node.blob_storage_client.config
+        seaweed_config = context.server.blob_storage_client.config
         # we cache this here such that we can use it when reading a file from azure
         # from the remote_name
         seaweed_config.remote_profiles[remote_name] = remote_profile
 
         # TODO: possible wrap this in try catch
-        cfg = context.node.blob_store_config.client_config
+        cfg = context.server.blob_store_config.client_config
         init_request = requests.post(url=cfg.mount_url, json=args_dict)  # nosec
         print(init_request.content)
         # TODO check return code
-        res = context.node.blob_storage_client.connect().client.list_objects(
+        res = context.server.blob_storage_client.connect().client.list_objects(
             Bucket=bucket_name
         )
         # stdlib
@@ -159,8 +159,8 @@ class BlobStorageService(AbstractService):
             blob_file = ActionObject.empty()
             blob_file.syft_blob_storage_entry_id = bse.id
             blob_file.syft_client_verify_key = context.credentials
-            if context.node is not None:
-                blob_file.syft_node_location = context.node.id
+            if context.server is not None:
+                blob_file.syft_server_location = context.server.id
             blob_file.reload_cache()
             blob_files.append(blob_file.syft_action_data)
 
@@ -202,7 +202,7 @@ class BlobStorageService(AbstractService):
                     message=f"No blob storage entry exists for uid: {uid}, or you have no permissions to read it"
                 )
 
-            with context.node.blob_storage_client.connect() as conn:
+            with context.server.blob_storage_client.connect() as conn:
                 res: BlobRetrieval = conn.read(
                     obj.location, obj.type_, bucket_name=obj.bucket_name
                 )
@@ -234,7 +234,7 @@ class BlobStorageService(AbstractService):
         """
         upload_credentials = uploaded_by or context.credentials
 
-        with context.node.blob_storage_client.connect() as conn:
+        with context.server.blob_storage_client.connect() as conn:
             secure_location = conn.allocate(obj)
 
             if isinstance(secure_location, SyftError):
@@ -343,7 +343,7 @@ class BlobStorageService(AbstractService):
         if result.is_err():
             return SyftError(message=f"{result.err()}")
 
-        with context.node.blob_storage_client.connect() as conn:
+        with context.server.blob_storage_client.connect() as conn:
             result = conn.complete_multipart_upload(obj, etags)
 
         return result
@@ -362,7 +362,7 @@ class BlobStorageService(AbstractService):
                 )
 
             try:
-                with context.node.blob_storage_client.connect() as conn:
+                with context.server.blob_storage_client.connect() as conn:
                     file_unlinked_result = conn.delete(obj.location)
             except Exception as e:
                 return SyftError(message=f"Failed to delete file: {e}")

@@ -39,7 +39,7 @@ interface InputObject {
 class InputPolicy {
   id: UUID
   inputs: Map<string, any>
-  node_id?: UUID
+  server_id?: UUID
 
   /**
    * Creates a new instance of InputPolicy.

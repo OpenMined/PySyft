@@ -21,10 +21,10 @@ from zmq import LINGER
 from zmq.error import ContextTerminated
 
 # relative
-from ...node.credentials import SyftVerifyKey
 from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize as serialize
+from ...server.credentials import SyftVerifyKey
 from ...service.action.action_object import ActionObject
 from ...service.context import AuthedServiceContext
 from ...types.base import SyftBaseModel
@@ -220,10 +220,10 @@ class ZMQProducer(QueueProducer):
 
     @property
     def action_service(self) -> AbstractService:
-        if self.auth_context.node is not None:
-            return self.auth_context.node.get_service("ActionService")
+        if self.auth_context.server is not None:
+            return self.auth_context.server.get_service("ActionService")
         else:
-            raise Exception(f"{self.auth_context} does not have a node.")
+            raise Exception(f"{self.auth_context} does not have a server.")
 
     def contains_unresolved_action_objects(self, arg: Any, recursion: int = 0) -> bool:
         """recursively check collections for unresolved action objects"""
@@ -328,7 +328,10 @@ class ZMQProducer(QueueProducer):
                 new_data,
                 id=action_object.id,
                 syft_blob_storage_entry_id=action_object.syft_blob_storage_entry_id,
+                syft_server_location=action_object.syft_server_location,
+                syft_client_verify_key=action_object.syft_client_verify_key,
             )
+            new_action_object._save_to_blob_storage()
             res = self.action_service._set(
                 context=self.auth_context, action_object=new_action_object
             )
@@ -454,7 +457,7 @@ class ZMQProducer(QueueProducer):
                 from ...service.worker.worker_service import WorkerService
 
                 worker_service = cast(
-                    WorkerService, self.auth_context.node.get_service(WorkerService)
+                    WorkerService, self.auth_context.server.get_service(WorkerService)
                 )
                 worker_service._delete(self.auth_context, syft_worker)
 

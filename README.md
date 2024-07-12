@@ -24,8 +24,8 @@ $ pip install -U syft[data_science]
 # from Jupyter / Python
 import syft as sy
 sy.requires(">=0.8.6,<0.8.7")
-node = sy.orchestra.launch(
-    name="my-domain",
+server = sy.orchestra.launch(
+    name="my-datasite",
     port=8080,
     create_producer=True,
     n_consumers=1,
@@ -36,9 +36,9 @@ node = sy.orchestra.launch(
 
 ```bash
 # or from the command line
-$ syft launch --name=my-domain --port=8080 --reset=True
+$ syft launch --name=my-datasite --port=8080 --reset=True
 
-Starting syft-node server on 0.0.0.0:8080
+Starting syft-datasite server on 0.0.0.0:8080
 ```
 
 ## Launch Client
@@ -46,7 +46,7 @@ Starting syft-node server on 0.0.0.0:8080
 ```python
 import syft as sy
 sy.requires(">=0.8.6,<0.8.7")
-domain_client = sy.login(
+datasite_client = sy.login(
     port=8080,
     email="info@openmined.org",
     password="changethis"
@@ -64,7 +64,7 @@ domain_client = sy.login(
 - <a href="notebooks/api/0.8/04-pytorch-example.ipynb">04-pytorch-example.ipynb</a>
 - <a href="notebooks/api/0.8/05-custom-policy.ipynb">05-custom-policy.ipynb</a>
 - <a href="notebooks/api/0.8/06-multiple-code-requests.ipynb">06-multiple-code-requests.ipynb</a>
-- <a href="notebooks/api/0.8/07-domain-register-control-flow.ipynb">07-domain-register-control-flow.ipynb</a>
+- <a href="notebooks/api/0.8/07-datasite-register-control-flow.ipynb">07-datasite-register-control-flow.ipynb</a>
 - <a href="notebooks/api/0.8/08-code-version.ipynb">08-code-version.ipynb</a>
 - <a href="notebooks/api/0.8/09-blob-storage.ipynb">09-blob-storage.ipynb</a>
 - <a href="notebooks/api/0.8/10-container-images.ipynb">10-container-images.ipynb</a>
@@ -104,7 +104,7 @@ SYFT_VERSION="<paste the chart version number>"
 #### 4. Provisioning Helm Charts
 
 ```sh
-helm install my-domain openmined/syft --version $SYFT_VERSION --namespace syft --create-namespace --set ingress.className="traefik"
+helm install my-datasite openmined/syft --version $SYFT_VERSION --namespace syft --create-namespace --set ingress.className="traefik"
 ```
 
 ### Ingress Controllers
@@ -141,7 +141,7 @@ helm install ... --set ingress.class="gce"
 # Install Notes
 
 - PySyft 0.8.6 Requires: 🐍 `python 3.10 - 3.12` - Run: `pip install -U syft`
-- PyGrid Requires: 🐳 `docker` or ☸️ `kubernetes`
+- Syft Server Requires: 🐳 `docker` or ☸️ `kubernetes`
 
 # Versions
 
@@ -162,7 +162,7 @@ Deprecated:
 - `0.5.1` - <a href="https://github.com/OpenMined/courses/tree/foundations-of-private-computation">Course 2</a> + M1 Hotfix
 - `0.2.0` - `0.5.0`
 
-PySyft and PyGrid use the same `version` and its best to match them up where possible. We release weekly betas which can be used in each context:
+PySyft and Syft Server use the same `version` and its best to match them up where possible. We release weekly betas which can be used in each context:
 
 PySyft (Stable): `pip install -U syft`
 
@@ -179,9 +179,9 @@ PySyft (Beta): `pip install -U syft --pre`
 
 ### Why should I use Syft?
 
-`Syft` allows a `Data Scientist` to ask `questions` about a `dataset` and, within `privacy limits` set by the `data owner`, get `answers` to those `questions`, all without obtaining a `copy` of the data itself. We call this process `Remote Data Science`. It means in a wide variety of `domains` across society, the current `risks` of sharing information (`copying` data) with someone such as, privacy invasion, IP theft and blackmail will no longer prevent the vast `benefits` such as innovation, insights and scientific discovery which secure access will provide.
+`Syft` allows a `Data Scientist` to ask `questions` about a `dataset` and, within `privacy limits` set by the `data owner`, get `answers` to those `questions`, all without obtaining a `copy` of the data itself. We call this process `Remote Data Science`. It means in a wide variety of `datasites` across society, the current `risks` of sharing information (`copying` data) with someone such as, privacy invasion, IP theft and blackmail will no longer prevent the vast `benefits` such as innovation, insights and scientific discovery which secure access will provide.
 
-No more cold calls to get `access` to a dataset. No more weeks of `wait times` to get a `result` on your `query`. It also means `1000x more data` in every domain. PySyft opens the doors to a streamlined Data Scientist `workflow`, all with the individual's `privacy` at its heart.
+No more cold calls to get `access` to a dataset. No more weeks of `wait times` to get a `result` on your `query`. It also means `1000x more data` in every datasite. PySyft opens the doors to a streamlined Data Scientist `workflow`, all with the individual's `privacy` at its heart.
 
 <!--
 # Tutorials
@@ -211,7 +211,7 @@ No more cold calls to get `access` to a dataset. No more weeks of `wait times` t
 <tr>
 <td valign="top">
 
-- <a href="notebooks/quickstart/data-owner/00-deploy-domain.ipynb">Deploy a Domain Server</a>
+- <a href="notebooks/quickstart/data-owner/00-deploy-datasite.ipynb">Deploy a Datasite Server</a>
 - <a href="notebooks/quickstart/data-owner/01-upload-data.ipynb">Upload Private Data</a>
 - <a href="notebooks/quickstart/data-owner/02-create-account-configure-pb.ipynb">Create Accounts</a>
 - Manage Privacy Budget</a>
@@ -222,7 +222,7 @@ No more cold calls to get `access` to a dataset. No more weeks of `wait times` t
 <td valign="top">
 
 - Install Syft</a>
-- Connect to a Domain</a>
+- Connect to a Datasite</a>
 - Search for Datasets</a>
 - Train Models
 - Retrieve Secure Results
@@ -236,7 +236,7 @@ No more cold calls to get `access` to a dataset. No more weeks of `wait times` t
 - Deploy to GCP
 - Deploy to Kubernetes
 - Customize Networking
-- Modify PyGrid UI
+- Modify Syft UI
 </td>
 </tr>
 </table>
@@ -272,7 +272,7 @@ Are end `users` who desire to perform `computations` or `answer` a specific `que
 <tr>
 <th align="center">
 <img width="441" height="1">
-<p>🏰 Domain Server</p>
+<p>🏰 Datasite Server</p>
 </th>
 <th align="center">
 <img width="441" height="1">
@@ -289,7 +289,7 @@ Manages the `remote study` of the data by a `Data Scientist` and allows the `Dat
 <td valign="top">
 <!-- REMOVE THE BACKSLASHES -->
 
-Provides services to a group of `Data Owners` and `Data Scientists`, such as dataset `search` and bulk `project approval` (legal / technical) to participate in a project. A gateway server acts as a bridge between it's members (`Domains`) and their subscribers (`Data Scientists`) and can provide access to a collection of `domains` at once.</td>
+Provides services to a group of `Data Owners` and `Data Scientists`, such as dataset `search` and bulk `project approval` (legal / technical) to participate in a project. A gateway server acts as a bridge between it's members (`Datasites`) and their subscribers (`Data Scientists`) and can provide access to a collection of `datasites` at once.</td>
 
 </tr>
 <tr>
