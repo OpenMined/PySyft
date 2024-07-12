@@ -49,7 +49,7 @@ class ProjectService(AbstractService):
     def validate_project_leader(
         self, context: AuthedServiceContext, project: Project
     ) -> None:
-        if project.state_sync_leader.verify_key != context.node.verify_key:
+        if project.state_sync_leader.verify_key != context.server.verify_key:
             error_msg = "Only the project leader can do this operation"
             raise SyftException(public_message=error_msg)
 
@@ -63,7 +63,7 @@ class ProjectService(AbstractService):
 
     @as_result(StashException)
     def project_exists(self, context: AuthedServiceContext, project: ProjectSubmit) -> bool:
-        credentials = context.node.verify_key
+        credentials = context.server.verify_key
         try:
             self.stash.get_by_uid(credentials=credentials, uid=project.id).unwrap()
             return True
@@ -95,9 +95,10 @@ class ProjectService(AbstractService):
         roles=ONLY_DATA_SCIENTIST_ROLE_LEVEL,
     )
     def can_create_project(self, context: AuthedServiceContext) -> bool:
-        user_service: UserService = context.node.get_service("userservice")
+        user_service: UserService = context.server.get_service("userservice")
         role = user_service.get_role_for_credentials(credentials=context.credentials).unwrap()
-        # FIX: Shouldn't it be role >= DATA_SCIENTIST
+
+        # FIX: Shouldn't it be role >= DATA_SCIENTIST?
         if role == ServiceRole.DATA_SCIENTIST:
             return True
         # TODO: Add Project Errors
@@ -121,48 +122,47 @@ class ProjectService(AbstractService):
 
         _project: Project = project.to(Project, context=context)
 
-        # Updating the leader node route of the project object
-        # In case the current node, is the leader, they would input their node route
-        # For the followers, they would check if the leader is their node peer
+        # Updating the leader server route of the project object
+        # In case the current server, is the leader, they would input their server route
+        # For the followers, they would check if the leader is their server peer
         # using the leader's verify_key
         # If the follower do not have the leader as its peer in its routes
         # They would raise as error
-        leader_node = _project.state_sync_leader
+        leader_server = _project.state_sync_leader
 
-        # If the current node is a follower
-        # For followers the leader node route is retrieved from its peer
-        if leader_node.verify_key != context.node.verify_key:
+        # If the current server is a follower
+        # For followers the leader server route is retrieved from its peer
+        if leader_server.verify_key != context.server.verify_key:
             # FIX: networkservice stash to new BaseStash
-            network_service = context.node.get_service("networkservice")
+            network_service = context.server.get_service("networkservice")
             network_service = cast(NetworkService, network_service)
             peer = network_service.stash.get_by_verify_key(
-                credentials=context.node.verify_key,
-                verify_key=leader_node.verify_key,
+                credentials=context.server.verify_key,
+                verify_key=leader_server.verify_key,
             )
             if peer.is_err():
-                this_node_id = context.node.id.short() if context.node.id else ""
+                this_server_id = context.server.id.short() if context.server.id else ""
                 raise SyftException(
                     public_message=(
-                        f"Leader Node(id={leader_node.id.short()}) is not a "
-                        f"peer of this Node(id={this_node_id})"
+                        f"Leader Server(id={leader_server.id.short()}) is not a "
+                        f"peer of this Server(id={this_server_id})"
                     )
                 )
-            leader_node_peer = peer.ok()
+            leader_server_peer = peer.ok()
         else:
-            # for the leader node, as it does not have route information to itself
+            # for the leader server, as it does not have route information to itself
             # we rely on the data scientist to provide the route
             # the route is then validated by the leader
-            if project.leader_node_route is not None:
-                leader_node_peer = project.leader_node_route.validate_with_context(
+            if project.leader_server_route is not None:
+                leader_server_peer = project.leader_server_route.validate_with_context(
                     context=context
                 ).unwrap()
             else:
                 raise SyftException(
-                    message=f"project {project}'s leader_node_route is None"
+                    message=f"project {project}'s leader_server_route is None"
                 )
 
-        _project.leader_node_peer = leader_node_peer
-
+        _project.leader_server_peer = leader_server_peer
         # This should always be the last call before flushing to DB
         _project.start_hash = create_project_hash(_project)[1]
 
@@ -188,15 +188,14 @@ class ProjectService(AbstractService):
             )
 
         project = self.stash.get_by_uid(
-            context.node.verify_key, uid=project_event.project_id
+            context.server.verify_key, uid=project_event.project_id
         ).unwrap()
 
-        # if project.state_sync_leader.verify_key == context.node.verify_key:
-        #     return SyftError(
-        #         message="Project Events should be passed to leader by broadcast endpoint"
-        #     )
-        self.is_project_leader(context, project)
-        self.validate_project_leader(context, project)
+        # FIX: MERGE: Rename function below
+        self.validate_project_leader(context, project).unwrap(public_message="Project Events should be passed to leader by broadcast endpoint")
+
+        if not self.is_project_leader(context, project):
+            raise SyfyException(public_message="Only the leader of the project can add events")
 
         project.events.append(project_event)
         project.event_id_hashmap[project_event.id] = project_event
@@ -204,10 +203,10 @@ class ProjectService(AbstractService):
         # TODO: better name for the function should be check_and_notify or something?
         self.check_for_project_request(project, project_event, context)
 
-        updated_project = self.stash.update(context.node.verify_key, project).unwrap()
+        updated_project = self.stash.update(context.server.verify_key, project).unwrap()
 
         return SyftSuccess(
-            message=f"Project event {project_event.id} added successfully ",
+            message=f"Project event {project_event.id} added successfully",
             value=updated_project,
         )
 
@@ -226,14 +225,10 @@ class ProjectService(AbstractService):
         # The leader broadcasts the event to all the members of the project
 
         project = self.stash.get_by_uid(
-            context.node.verify_key, uid=project_event.project_id
+            context.server.verify_key, uid=project_event.project_id
         ).unwrap()
 
-        # FIX: context.node.verify_key or context.credentials?
-        if project.state_sync_leader.verify_key != context.node.verify_key:
-            raise SyftException(
-                public_message="Only the leader of the project can broadcast events"
-            )
+        self.validate_project_leader(context, project).unwrap(public_message="Only the leader of the project can broadcast events")
         self.validate_user_permission_for_project(context, project)
         self.validate_project_event_seq(project_event, project).unwrap()
 
@@ -243,19 +238,19 @@ class ProjectService(AbstractService):
         self.check_for_project_request(project, project_event, context)
 
         # Broadcast the event to all the members of the project
-        network_service = context.node.get_service("networkservice")
+        network_service = context.server.get_service("networkservice")
         for member in project.members:
-            if member.verify_key != context.node.verify_key:
-                # Retrieving the NodePeer Object to communicate with the node
+            if member.verify_key != context.server.verify_key:
+                # Retrieving the ServerPeer Object to communicate with the server
                 peer = network_service.stash.get_by_verify_key(
-                    credentials=context.node.verify_key,
+                    credentials=context.server.verify_key,
                     verify_key=member.verify_key,
                 )
 
                 if peer.is_err():
                     raise SyftException(
-                        public_message=f"Leader node does not have peer {member.name}-{member.id.short()}"
-                        + " Kindly exchange routes with the peer"
+                        public_message=f"Leader server does not have peer {member.name}-{member.id.short()}"
+                        + ". Please exchange routes with the peer."
                     )
                 peer = peer.ok()
                 remote_client = peer.client_with_context(context=context)
@@ -267,7 +262,7 @@ class ProjectService(AbstractService):
                 remote_client = remote_client.ok()
                 remote_client.api.services.project.add_event(project_event)
 
-        updated_project = self.stash.update(context.node.verify_key, project).unwrap()
+        updated_project = self.stash.update(context.server.verify_key, project).unwrap()
 
         return SyftSuccess(
             message=f"Event #{project_event.seq_no} of {project.name} broadcasted successfully",
@@ -290,7 +285,7 @@ class ProjectService(AbstractService):
 
         # Event object should be received from the leader of the project
         project = self.stash.get_by_uid(
-            context.node.verify_key, uid=project_id
+            context.server.verify_key, uid=project_id
         ).unwrap()
 
         self.validate_project_leader(context, project)
@@ -331,7 +326,7 @@ class ProjectService(AbstractService):
     )
     def get_by_uid(self, context: AuthedServiceContext, uid: UID) -> Project:
         try:
-            credentials = context.node.verify_key
+            credentials = context.server.verify_key
             return self.stash.get_by_uid(credentials=credentials, uid=uid).unwrap()
         except NotFoundException as exc:
             raise NotFoundException.from_exception(
@@ -343,7 +338,7 @@ class ProjectService(AbstractService):
     def add_signing_key_to_project(
         self, context: AuthedServiceContext, project: Project
     ) -> Project:
-        user_service = context.node.get_service("userservice")
+        user_service = context.server.get_service("userservice")
         try:
             user = user_service.stash.get_by_verify_key(
                 credentials=context.credentials, verify_key=context.credentials
@@ -352,7 +347,6 @@ class ProjectService(AbstractService):
             raise NotFoundException.from_exception(
                 exc, public_message="User not found! Please register the user first"
             )
-
         # Automatically infuse signing key of user
         project.user_signing_key = user.signing_key
 
@@ -377,26 +371,26 @@ class ProjectService(AbstractService):
         Args:
             project (Project): Project object
             project_event (ProjectEvent): Project event object
-            context (AuthedServiceContext): Context of the node
+            context (AuthedServiceContext): Context of the server
 
         Returns:
             SyftSuccess: SyftSuccess if message is created else SyftError
         """
         if (
             isinstance(project_event, ProjectRequest)
-            and project_event.linked_request.node_uid == context.node.id
+            and project_event.linked_request.server_uid == context.server.id
         ):
             link = LinkedObject.with_context(project, context=context)
 
             message = CreateNotification(
                 subject=f"A new request has been added to the project {project.name}",
                 from_user_verify_key=context.credentials,
-                to_user_verify_key=context.node.verify_key,
+                to_user_verify_key=context.server.verify_key,
                 linked_obj=link,
             )
 
             # TODO: Update noteificationservice result
-            method = context.node.get_service_method(NotificationService.send)
+            method = context.server.get_service_method(NotificationService.send)
             result = method(context=context, notification=message)
             if isinstance(result, SyftError):
                 raise SyftException(public_message=result)

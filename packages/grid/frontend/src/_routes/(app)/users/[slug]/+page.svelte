@@ -3,7 +3,7 @@
   import Badge from "$lib/components/Badge.svelte"
   import CaretLeft from "$lib/components/icons/CaretLeft.svelte"
   import { getInitials, getUserRole } from "$lib/utils"
-  import type { UserView } from "../../../../types/domain/users"
+  import type { UserView } from "../../../../types/datasite/users"
   import type { PageData } from "./$types"
 
   export let data: PageData

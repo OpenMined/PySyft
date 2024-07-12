@@ -56,7 +56,7 @@ class NotificationService(AbstractService):
             context.credentials, new_notification, add_permissions=permissions
         ).unwrap()
 
-        notifier_service = context.node.get_service("notifierservice")
+        notifier_service = context.server.get_service("notifierservice")
 
         notifier_service.dispatch_notification(context, new_notification).unwrap()
         return result
@@ -86,7 +86,7 @@ class NotificationService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> NotifierSettings:
-        notifier_service = context.node.get_service("notifierservice")
+        notifier_service = context.server.get_service("notifierservice")
         return notifier_service.user_settings(context)
 
     @service_method(
@@ -98,7 +98,7 @@ class NotificationService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> NotifierSettings:
-        notifier_service = context.node.get_service("notifierservice")
+        notifier_service = context.server.get_service("notifierservice")
         result = notifier_service.settings(context)
         return result
 
@@ -111,7 +111,7 @@ class NotificationService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> Notification:
-        notifier_service = context.node.get_service("notifierservice")
+        notifier_service = context.server.get_service("notifierservice")
         result = notifier_service.activate(context)
         return result
 
@@ -124,7 +124,7 @@ class NotificationService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> Notification:
-        notifier_service = context.node.get_service("notifierservice")
+        notifier_service = context.server.get_service("notifierservice")
         result = notifier_service.deactivate(context)
         return result
 
@@ -213,7 +213,7 @@ class NotificationService(AbstractService):
     def resolve_object(
         self, context: AuthedServiceContext, linked_obj: LinkedObject
     ) -> Notification:
-        service = context.node.get_service(linked_obj.service_type)
+        service = context.server.get_service(linked_obj.service_type)
         return service.resolve_link(context=context, linked_obj=linked_obj).unwrap()
 
     @service_method(path="notifications.clear", name="clear")
@@ -222,6 +222,7 @@ class NotificationService(AbstractService):
             credentials=context.credentials, verify_key=context.credentials
         ).unwrap()
 
+    @as_result(SyftException)
     def filter_by_obj(
         self, context: AuthedServiceContext, obj_uid: UID
     ) -> Notification:

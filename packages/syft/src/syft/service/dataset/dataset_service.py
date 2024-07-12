@@ -95,8 +95,8 @@ class DatasetService(AbstractService):
         ).unwrap()
 
         return SyftSuccess(
-            message=f"Dataset uploaded to '{context.node.name}'. "
-            f"To see the datasets uploaded by a client on this node, use command `[your_client].datasets`",
+            message=f"Dataset uploaded to '{context.server.name}'. "
+            f"To see the datasets uploaded by a client on this server, use command `[your_client].datasets`"
             value=result,
         )
 
@@ -116,8 +116,8 @@ class DatasetService(AbstractService):
         datasets = self.stash.get_all(context.credentials).unwrap()
 
         for dataset in datasets:
-            if context.node is not None:
-                dataset.node_uid = context.node.id
+            if context.server is not None:
+                dataset.server_uid = context.server.id
 
         return _paginate_dataset_collection(
             datasets=datasets, page_size=page_size, page_index=page_index

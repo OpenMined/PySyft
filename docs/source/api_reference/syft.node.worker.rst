@@ -1,7 +1,7 @@
-syft.node.worker
+syft.server.worker
 ================
 
-.. automodule:: syft.node.worker
+.. automodule:: syft.server.worker
 
    
    

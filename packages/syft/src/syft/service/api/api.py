@@ -19,7 +19,7 @@ from result import Ok
 from result import Result
 
 # relative
-from ...abstract_node import AbstractNode
+from ...abstract_server import AbstractServer
 from ...client.client import SyftClient
 from ...serde.serializable import serializable
 from ...serde.signature import signature_remove_context
@@ -118,9 +118,9 @@ class TwinAPIEndpointView(SyftObject):
         if self.mock_function:
             mock_parsed_code = ast.parse(self.mock_function)
             mock_function_name = [
-                node.name
-                for node in ast.walk(mock_parsed_code)
-                if isinstance(node, ast.FunctionDef)
+                server.name
+                for server in ast.walk(mock_parsed_code)
+                if isinstance(server, ast.FunctionDef)
             ][0]
         else:
             mock_function_name = NOT_ACCESSIBLE_STRING
@@ -128,9 +128,9 @@ class TwinAPIEndpointView(SyftObject):
         if self.private_function:
             private_parsed_code = ast.parse(self.private_function)
             private_function_name = [
-                node.name
-                for node in ast.walk(private_parsed_code)
-                if isinstance(node, ast.FunctionDef)
+                server.name
+                for server in ast.walk(private_parsed_code)
+                if isinstance(server, ast.FunctionDef)
             ][0]
         else:
             private_function_name = NOT_ACCESSIBLE_STRING
@@ -224,7 +224,7 @@ class Endpoint(SyftObject):
 
         helper_function_set = HelperFunctionSet(helper_function_dict)
 
-        user_service = context.node.get_service("userservice")
+        user_service = context.server.get_service("userservice")
         user = user_service.get_current_user(context)
 
         return TwinAPIAuthedContext(
@@ -233,7 +233,7 @@ class Endpoint(SyftObject):
             job_id=context.job_id,
             extra_kwargs=context.extra_kwargs,
             has_execute_permissions=context.has_execute_permissions,
-            node=context.node,
+            server=context.server,
             id=context.id,
             settings=self.settings or {},
             code=helper_function_set,
@@ -249,7 +249,7 @@ class Endpoint(SyftObject):
         from ..context import AuthedServiceContext
 
         mock_context = AuthedServiceContext(
-            node=AbstractNode(), credentials=SyftSigningKey.generate().verify_key
+            server=AbstractServer(), credentials=SyftSigningKey.generate().verify_key
         )
         return self.call_locally(mock_context, *args, **kwargs)
 
@@ -486,11 +486,11 @@ class TwinAPIEndpoint(SyncableSyftObject):
 
         return SyftError(message="You're not allowed to run this code.")
 
-    def get_user_client_from_node(self, context: AuthedServiceContext) -> SyftClient:
+    def get_user_client_from_server(self, context: AuthedServiceContext) -> SyftClient:
         # get a user client
-        guest_client = context.node.get_guest_client()
+        guest_client = context.server.get_guest_client()
         user_client = guest_client
-        signing_key_for_verify_key = context.node.get_service_method(
+        signing_key_for_verify_key = context.server.get_service_method(
             UserService.signing_key_for_verify_key
         )
         private_key = signing_key_for_verify_key(
@@ -500,9 +500,9 @@ class TwinAPIEndpoint(SyncableSyftObject):
         user_client.credentials = signing_key
         return user_client
 
-    def get_admin_client_from_node(self, context: AuthedServiceContext) -> SyftClient:
-        admin_client = context.node.get_guest_client()
-        admin_client.credentials = context.node.signing_key
+    def get_admin_client_from_server(self, context: AuthedServiceContext) -> SyftClient:
+        admin_client = context.server.get_guest_client()
+        admin_client.credentials = context.server.signing_key
         return admin_client
 
     @as_result(SyftException)
@@ -520,8 +520,8 @@ class TwinAPIEndpoint(SyncableSyftObject):
             src = ast.unparse(inner_function)
             raw_byte_code = compile(src, code.func_name, "exec")
             register_fn_in_linecache(code.func_name, src)
-            user_client = self.get_user_client_from_node(context)
-            admin_client = self.get_admin_client_from_node(context)
+            user_client = self.get_user_client_from_server(context)
+            admin_client = self.get_admin_client_from_server(context)
 
             # load it
             exec(raw_byte_code)  # nosec
@@ -542,9 +542,9 @@ class TwinAPIEndpoint(SyncableSyftObject):
             else:
                 self.private_function = code  # type: ignore
 
-            api_service = context.node.get_service("apiservice")
+            api_service = context.server.get_service("apiservice")
             upsert_result = api_service.stash.upsert(
-                context.node.get_service("userservice").admin_verify_key(), self
+                context.server.get_service("userservice").admin_verify_key(), self
             ).unwrap()
 
             # return the results
@@ -609,8 +609,8 @@ def extract_code_string(code_field: str) -> Callable:
                 else "private_helper_functions"
             )
 
-            context.node = cast(AbstractNode, context.node)
-            admin_key = context.node.get_service("userservice").admin_verify_key()
+            context.server = cast(AbstractServer, context.server)
+            admin_key = context.server.get_service("userservice").admin_verify_key()
 
             # If endpoint exists **AND** (has visible access **OR** the user is admin)
             if endpoint_type is not None and (

@@ -38,7 +38,7 @@ class SyncStash(NewBaseUIDStoreStash):
     @as_result(StashException)
     def get_latest(self, context: AuthedServiceContext) -> SyncState | None:
         all_states = self.get_all(
-            credentials=context.node.verify_key,  # type: ignore
+            credentials=context.server.verify_key,  # type: ignore
             order_by=OrderByDatePartitionKey,
         ).unwrap()
 

@@ -90,10 +90,10 @@ class APIService(AbstractService):
         action_obj = ActionObject.from_obj(
             id=new_endpoint.action_object_id,
             syft_action_data=CustomEndpointActionObject(endpoint_id=result.id),
-            syft_node_location=context.node.id,
+            syft_server_location=context.server.id,
             syft_client_verify_key=context.credentials,
         )
-        action_service = context.node.get_service("actionservice")
+        action_service = context.server.get_service("actionservice")
         res = action_service.set_result_to_store(
             context=context,
             result_action_object=action_obj,
@@ -192,7 +192,7 @@ class APIService(AbstractService):
     )
     def view(self, context: AuthedServiceContext, path: str) -> TwinAPIEndpointView:
         """Retrieves an specific API endpoint."""
-        api_endpoint = self.stash.get_by_path(context.node.verify_key, path).unwrap()
+        api_endpoint = self.stash.get_by_path(context.server.verify_key, path).unwrap()
         return api_endpoint.to(TwinAPIEndpointView, context=context)
 
     @service_method(
@@ -202,7 +202,7 @@ class APIService(AbstractService):
     )
     def get(self, context: AuthedServiceContext, api_path: str) -> TwinAPIEndpoint:
         """Retrieves an specific API endpoint."""
-        return self.stash.get_by_path(context.node.verify_key, api_path).unwrap()
+        return self.stash.get_by_path(context.server.verify_key, api_path).unwrap()
 
     @service_method(
         path="api.set_state",
@@ -223,7 +223,7 @@ class APIService(AbstractService):
             private = True
             mock = True
         api_endpoint = self.stash.get_by_path(
-            context.node.verify_key, api_path
+            context.server.verify_key, api_path
         ).unwrap()
 
         if private and api_endpoint.private_function:
@@ -253,7 +253,7 @@ class APIService(AbstractService):
             private = True
             mock = True
         api_endpoint = self.stash.get_by_path(
-            context.node.verify_key, api_path
+            context.server.verify_key, api_path
         ).unwrap()
 
         if private and api_endpoint.private_function:
@@ -274,7 +274,7 @@ class APIService(AbstractService):
         context: AuthedServiceContext,
     ) -> list[TwinAPIEndpointView] | SyftError:
         """Retrieves a list of available API endpoints view available to the user."""
-        admin_key = context.node.get_service("userservice").admin_verify_key()
+        admin_key = context.server.get_service("userservice").admin_verify_key()
         all_api_endpoints = self.stash.get_all(admin_key).unwrap()
 
         api_endpoint_view = [
@@ -344,7 +344,7 @@ class APIService(AbstractService):
             context=context,
             endpoint_path=path,
         ).unwrap()
-        job = context.node.add_api_endpoint_execution_to_queue(
+        job = context.server.add_api_endpoint_execution_to_queue(
             context.credentials,
             method,
             path,
@@ -356,7 +356,7 @@ class APIService(AbstractService):
         from ..job.job_stash import JobStatus
 
         # So result is a Job object
-        job_service = context.node.get_service("jobservice")
+        job_service = context.server.get_service("jobservice")
         job_id = job.id
         # Question: For a small moment, when job status is updated, it doesn't return the job during the .get() as if
         # it's not in the stash. Then afterwards if appears again. Is this a bug?
@@ -445,7 +445,7 @@ class APIService(AbstractService):
 
         exec_result = custom_endpoint.exec(context, *args, **kwargs).unwrap()
         action_obj = ActionObject.from_obj(exec_result)
-        action_service = cast(ActionService, context.node.get_service(ActionService))
+        action_service = cast(ActionService, context.server.get_service(ActionService))
         try:
             return action_service.set_result_to_store(
                 context=context,
@@ -478,7 +478,7 @@ class APIService(AbstractService):
         ).unwrap()
 
         action_obj = ActionObject.from_obj(exec_result)
-        action_service = cast(ActionService, context.node.get_service(ActionService))
+        action_service = cast(ActionService, context.server.get_service(ActionService))
         try:
             return action_service.set_result_to_store(
                 context=context,
@@ -515,7 +515,7 @@ class APIService(AbstractService):
 
         action_obj = ActionObject.from_obj(exec_result)
 
-        action_service = cast(ActionService, context.node.get_service(ActionService))
+        action_service = cast(ActionService, context.server.get_service(ActionService))
         try:
             return action_service.set_result_to_store(
                 context=context, result_action_object=action_obj
@@ -537,7 +537,8 @@ class APIService(AbstractService):
         endpoint = self.get_endpoint_by_uid(context, uid).unwrap()
         return SyftSuccess(message="Endpoint exists")
 
-    # ==== The methods below aren't meant to be called directly by the user, but rather by the node server context. ===
+    # ==== The methods below aren't meant to be called directly by the user, but
+    # rather by the server context. ===
     # Therefore, they are not decorated with @service_method
     @as_result(SyftException)
     def execute_server_side_endpoint_by_id(
@@ -584,21 +585,21 @@ class APIService(AbstractService):
     def get_endpoint_by_uid(
         self, context: AuthedServiceContext, uid: UID
     ) -> TwinAPIEndpoint:
-        admin_key = context.node.get_service("userservice").admin_verify_key()
+        admin_key = context.server.get_service("userservice").admin_verify_key()
         return self.stash.get_by_uid(admin_key, uid).unwrap()
 
     @as_result(StashException)
     def get_endpoints(self, context: AuthedServiceContext) -> list[TwinAPIEndpoint]:
         # TODO: Add ability to specify which roles see which endpoints
         # for now skip auth
-        return self.stash.get_all(context.node.verify_key).unwrap()
-
+        return self.stash.get_all(context.server.verify_key).unwrap()
+        
     @as_result(StashException, NotFoundException)
     def get_code(
         self, context: AuthedServiceContext, endpoint_path: str
     ) -> TwinAPIEndpoint:
         return self.stash.get_by_path(
-            context.node.verify_key, path=endpoint_path
+            context.server.verify_key, path=endpoint_path
         ).unwrap()
 
 

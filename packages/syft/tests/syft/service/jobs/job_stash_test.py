@@ -32,7 +32,7 @@ from syft.types.uid import UID
 def test_eta_string(current_iter, n_iters, status, creation_time_delta, expected):
     job = Job(
         id=UID(),
-        node_uid=UID(),
+        server_uid=UID(),
         n_iters=n_iters,
         current_iter=current_iter,
         creation_time=(datetime.now(tz=timezone.utc) - creation_time_delta).isoformat(),

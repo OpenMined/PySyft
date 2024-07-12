@@ -98,7 +98,7 @@ class SyftWorkerImageService(AbstractService):
         ).unwrap()
         if registry_uid:
             # get registry from image registry service
-            image_registry_service: AbstractService = context.node.get_service(
+            image_registry_service: AbstractService = context.server.get_service(
                 SyftImageRegistryService
             )
             registry = image_registry_service.get_by_id(context, registry_uid).unwrap()
@@ -127,7 +127,7 @@ class SyftWorkerImageService(AbstractService):
         worker_image.image_identifier = image_identifier
         result = None
 
-        if not context.node.in_memory_workers:
+        if not context.server.in_memory_workers:
             build_result = image_build(worker_image, pull=pull_image).unwrap()
 
             worker_image.image_hash = build_result.image_hash
@@ -210,7 +210,7 @@ class SyftWorkerImageService(AbstractService):
         #  Delete Docker image given image tag
         image = self.stash.get_by_uid(credentials=context.credentials, uid=uid).unwrap()
 
-        if context.node.in_memory_workers:
+        if context.server.in_memory_workers:
             pass
         elif IN_KUBERNETES:
             # TODO: Implement image deletion in kubernetes

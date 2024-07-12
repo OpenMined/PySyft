@@ -3,9 +3,11 @@ from pathlib import Path
 
 # third party
 import requests
+from syft.types.result import as_result
 
 # relative
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
 from ...service.action.action_object import ActionObject
 from ...store.blob_storage import BlobRetrieval
 from ...store.blob_storage.on_disk import OnDiskBlobDeposit
@@ -26,6 +28,7 @@ from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
+from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from .remote_profile import AzureRemoteProfile
 from .remote_profile import RemoteProfileStash
@@ -83,17 +86,17 @@ class BlobStorageService(AbstractService):
             context.credentials, new_profile
         ).unwrap()
 
-        seaweed_config = context.node.blob_storage_client.config
+        seaweed_config = context.server.blob_storage_client.config
         # we cache this here such that we can use it when reading a file from azure
         # from the remote_name
         seaweed_config.remote_profiles[remote_name] = remote_profile
 
         # TODO: possible wrap this in try catch
-        cfg = context.node.blob_store_config.client_config
+        cfg = context.server.blob_store_config.client_config
         init_request = requests.post(url=cfg.mount_url, json=args_dict)  # nosec
         print(init_request.content)
         # TODO check return code
-        res = context.node.blob_storage_client.connect().client.list_objects(
+        res = context.server.blob_storage_client.connect().client.list_objects(
             Bucket=bucket_name
         )
         # stdlib
@@ -152,8 +155,8 @@ class BlobStorageService(AbstractService):
             blob_file = ActionObject.empty()
             blob_file.syft_blob_storage_entry_id = bse.id
             blob_file.syft_client_verify_key = context.credentials
-            if context.node is not None:
-                blob_file.syft_node_location = context.node.id
+            if context.server is not None:
+                blob_file.syft_server_location = context.server.id
             blob_file.reload_cache()
             blob_files.append(blob_file.syft_action_data)
 
@@ -183,13 +186,56 @@ class BlobStorageService(AbstractService):
     def read(self, context: AuthedServiceContext, uid: UID) -> BlobRetrieval:
         obj = self.stash.get_by_uid(context.credentials, uid=uid).unwrap()
 
-        with context.node.blob_storage_client.connect() as conn:
+        with context.server.blob_storage_client.connect() as conn:
             res: BlobRetrieval = conn.read(
                 obj.location, obj.type_, bucket_name=obj.bucket_name
             )
             res.syft_blob_storage_entry_id = uid
             res.file_size = obj.file_size
             return res
+
+    @as_result(SyftException)
+    def _allocate(
+        self,
+        context: AuthedServiceContext,
+        obj: CreateBlobStorageEntry,
+        uploaded_by: SyftVerifyKey | None = None,
+    ) -> BlobDepositType | SyftError:
+        """
+        Allocate a secure location for the blob storage entry.
+
+        If uploaded_by is None, the credentials of the context will be used.
+
+        Args:
+            context (AuthedServiceContext): context
+            obj (CreateBlobStorageEntry): create blob parameters
+            uploaded_by (SyftVerifyKey | None, optional): Uploader credentials.
+                Can be used to upload on behalf of another user, needed for data migrations.
+                Defaults to None.
+
+        Returns:
+            BlobDepositType | SyftError: Blob deposit
+        """
+        upload_credentials = uploaded_by or context.credentials
+
+        with context.server.blob_storage_client.connect() as conn:
+            secure_location = conn.allocate(obj)
+
+            if isinstance(secure_location, SyftError):
+                raise SyftException(private_message=secure_location.message)
+
+            blob_storage_entry = BlobStorageEntry(
+                id=obj.id,
+                location=secure_location,
+                type_=obj.type_,
+                mimetype=obj.mimetype,
+                file_size=obj.file_size,
+                uploaded_by=upload_credentials,
+            )
+            blob_deposit = conn.write(blob_storage_entry)
+
+        self.stash.set(context.credentials, blob_storage_entry).unwrap()
+        return blob_deposit
 
     @service_method(
         path="blob_storage.allocate",
@@ -199,24 +245,20 @@ class BlobStorageService(AbstractService):
     def allocate(
         self, context: AuthedServiceContext, obj: CreateBlobStorageEntry
     ) -> BlobDepositType:
-        with context.node.blob_storage_client.connect() as conn:
-            secure_location = conn.allocate(obj)
+        return self._allocate(context, obj).unwrap()
 
-            if isinstance(secure_location, SyftError):
-                return secure_location
-
-            blob_storage_entry = BlobStorageEntry(
-                id=obj.id,
-                location=secure_location,
-                type_=obj.type_,
-                mimetype=obj.mimetype,
-                file_size=obj.file_size,
-                uploaded_by=context.credentials,
-            )
-            blob_deposit = conn.write(blob_storage_entry)
-
-        self.stash.set(context.credentials, blob_storage_entry).unwrap()
-        return blob_deposit
+    @service_method(
+        path="blob_storage.allocate_for_user",
+        name="allocate_for_user",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def allocate_for_user(
+        self,
+        context: AuthedServiceContext,
+        obj: CreateBlobStorageEntry,
+        uploaded_by: SyftVerifyKey,
+    ) -> BlobDepositType | SyftError:
+        return self._allocate(context, obj, uploaded_by)
 
     @service_method(
         path="blob_storage.write_to_disk",
@@ -264,7 +306,7 @@ class BlobStorageService(AbstractService):
             obj=obj,
         ).unwrap()
 
-        with context.node.blob_storage_client.connect() as conn:
+        with context.server.blob_storage_client.connect() as conn:
             result = conn.complete_multipart_upload(obj, etags)
 
         return result
@@ -276,17 +318,18 @@ class BlobStorageService(AbstractService):
         )
 
         try:
-            with context.node.blob_storage_client.connect() as conn:
+            with context.server.blob_storage_client.connect() as conn:
                 file_unlinked_result = conn.delete(obj.location)
         except Exception as e:
             raise SyftException(public_message=f"Failed to delete file: {e}")
 
         if isinstance(file_unlinked_result, SyftError):
             raise SyftException(public_message="unable to delete linked file")
+
         self.stash.delete(
             context.credentials, UIDPartitionKey.with_obj(uid), has_permission=True
         ).unwrap()
-        return file_unlinked_result
 
+        return file_unlinked_result
 
 TYPE_TO_SERVICE[BlobStorageEntry] = BlobStorageEntry

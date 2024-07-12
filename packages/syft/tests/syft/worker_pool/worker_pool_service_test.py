@@ -7,7 +7,7 @@ import syft as sy
 from syft.custom_worker.config import DockerWorkerConfig
 from syft.custom_worker.config import PrebuiltWorkerConfig
 from syft.custom_worker.config import WorkerConfig
-from syft.node.worker import Worker
+from syft.server.worker import Worker
 from syft.service.request.request import CreateCustomWorkerPoolChange
 from syft.service.response import SyftSuccess
 from syft.service.worker.worker_image import SyftWorkerImage
@@ -16,7 +16,7 @@ from syft.service.worker.worker_pool import WorkerPool
 # relative
 from ..request.request_code_accept_deny_test import get_ds_client
 
-PREBUILT_IMAGE_TAG = f"docker.io/openmined/grid-backend:{sy.__version__}"
+PREBUILT_IMAGE_TAG = f"docker.io/openmined/syft-backend:{sy.__version__}"
 
 CUSTOM_DOCKERFILE = f"""
 FROM {PREBUILT_IMAGE_TAG}
@@ -49,7 +49,7 @@ def test_create_image_and_pool_request_accept(
     Test the functionality of `SyftWorkerPoolService.create_image_and_pool_request`
     when the request is accepted
     """
-    # construct a root client and data scientist client for a domain
+    # construct a root client and data scientist client for a datasite
     root_client = worker.root_client
     ds_client = get_ds_client(faker, root_client, worker.guest_client)
     assert root_client.credentials != ds_client.credentials
@@ -104,7 +104,7 @@ def test_create_pool_request_accept(
     Test the functionality of `SyftWorkerPoolService.create_pool_request`
     when the request is accepted
     """
-    # construct a root client and data scientist client for a domain
+    # construct a root client and data scientist client for a datasite
     root_client = worker.root_client
     ds_client = get_ds_client(faker, root_client, worker.guest_client)
     assert root_client.credentials != ds_client.credentials

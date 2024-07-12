@@ -18,7 +18,7 @@ syft.service.action.action\_object
       has_action_data_empty
       is_action_data_empty
       make_action_side_effect
-      propagate_node_uid
+      propagate_server_uid
       send_action_side_effect
    
    

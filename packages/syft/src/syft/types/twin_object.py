@@ -90,13 +90,13 @@ class TwinObject(SyftObject):
     def _save_to_blob_storage(
         self, allow_empty: bool = False
     ) -> SyftError | SyftSuccess | SyftWarning:
-        # Set node location and verify key
+        # Set server location and verify key
         self.private_obj._set_obj_location_(
-            self.syft_node_location,
+            self.syft_server_location,
             self.syft_client_verify_key,
         )
         self.mock_obj._set_obj_location_(
-            self.syft_node_location,
+            self.syft_server_location,
             self.syft_client_verify_key,
         )
         mock_store_res = self.mock_obj._save_to_blob_storage(allow_empty=allow_empty)

@@ -6,7 +6,7 @@
   import GreenCheck from '$lib/components/icons/GreenCheck.svelte';
   import Info from '$lib/components/icons/Info.svelte';
 
-  let showDeleteNodeModal = false;
+  let showDeleteServerModal = false;
   let showDeleteAccountModal = false;
   let showDeleteConfirmModal = false;
 
@@ -23,7 +23,7 @@
   >
     <Info />
     <p>
-      Your profile information is public-facing information that other users and node owners can
+      Your profile information is public-facing information that other users and server owners can
       see.
     </p>
   </div>
@@ -85,8 +85,8 @@
         </h2>
         <p class="text-left text-gray-500">
           When you delete your user account all information relating to you will be deleted as well
-          as any permissions and requests. If you are the domain owner the domain node will be
-          deleted as well and will be closed to all users. To transfer ownership of a domain node
+          as any permissions and requests. If you are the datasite owner the datasite server will be
+          deleted as well and will be closed to all users. To transfer ownership of a datasite server
           before deleting your account you can follow the instructions <a href="/">here</a>
         </p>
         <div class="inline-flex py-6">
@@ -127,27 +127,27 @@
     </Modal>
   {/if}
 
-  {#if showDeleteNodeModal}
+  {#if showDeleteServerModal}
     <Modal>
       <div slot="header" class="flex justify-center">
         <YellowWarn />
-        <p class="text-center text-2xl font-bold">Are you sure you want to delete your node?</p>
+        <p class="text-center text-2xl font-bold">Are you sure you want to delete your server?</p>
       </div>
       <p slot="body" class="text-center">
-        Because you are the domain owner, the domain node along with all uploaded datasets, user
+        Because you are the datasite owner, the datasite server along with all uploaded datasets, user
         accounts, and requests will be deleted. All network memberships will also be removed. If you
-        would like to keep this domain node but no longer want to be an owner press “cancel” and
-        follow the instructions here to transfer ownership of your domain node.
+        would like to keep this datasite server but no longer want to be an owner press “cancel” and
+        follow the instructions here to transfer ownership of your datasite server.
       </p>
       <div slot="footer" class="flex justify-center pt-6">
         <Button
           variant="delete"
           action={() => {
-            showDeleteNodeModal = false;
+            showDeleteServerModal = false;
             showDeleteConfirmModal = true;
           }}
         >
-          Delete Node
+          Delete Server
         </Button>
         <a class="flex items-center no-underline pl-8 font-bold text-magenta-500" href="/">
           Cancel
@@ -165,7 +165,7 @@
       <div slot="body">
         <p class="text-center">
           To help us improve future experiences could you share with us any frustrations or
-          suggestions you have with or for the PyGridUI Platform?
+          suggestions you have with or for the Syft UI Platform?
         </p>
 
         <form class="flex-shrink-0 pt-6">

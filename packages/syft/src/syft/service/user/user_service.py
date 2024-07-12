@@ -6,10 +6,12 @@ from typing import cast
 from IPython.display import display_html
 
 # relative
-from ...abstract_node import NodeType
 from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
+from ...abstract_server import ServerType
 from ...serde.serializable import serializable
+from ...server.credentials import SyftSigningKey
+from ...server.credentials import SyftVerifyKey
 from ...store.document_store import DocumentStore
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
@@ -23,7 +25,7 @@ from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..context import AuthedServiceContext
-from ..context import NodeServiceContext
+from ..context import ServerServiceContext
 from ..context import UnauthedServiceContext
 from ..notification.email_templates import OnBoardEmailTemplate
 from ..notification.notification_service import CreateNotification
@@ -357,13 +359,14 @@ class UserService(AbstractService):
 
         if check_pwd(context.login_credentials.password, user.hashed_password):
             if (
-                context.node
-                and context.node.node_type == NodeType.ENCLAVE
+                context.server
+                and context.server.server_type == ServerType.ENCLAVE
                 and user.role == ServiceRole.ADMIN
             ):
-                # TODO: Entertain an auth service?
+                # FIX: Replace with SyftException
                 raise UserEnclaveAdminLoginError
         else:
+            # FIX: Replace this below
             raise CredentialsError
 
         return user.to(UserPrivateKey)
@@ -373,12 +376,12 @@ class UserService(AbstractService):
         return self.stash.admin_verify_key()
 
     def register(
-        self, context: NodeServiceContext, new_user: UserCreate
+        self, context: ServerServiceContext, new_user: UserCreate
     ) -> UserPrivateKey:
         """Register new user"""
 
         # this method handles errors in a slightly different way as it is directly called instead of
-        # going through Node.handle_message
+        # going through Server.handle_message
 
         request_user_role = (
             ServiceRole.GUEST
@@ -387,12 +390,12 @@ class UserService(AbstractService):
         )
 
         can_user_register = (
-            context.node.settings.signup_enabled
+            context.server.settings.signup_enabled
             or request_user_role in DATA_OWNER_ROLE_LEVEL
         )
 
         if not can_user_register:
-            raise SyftException(public_message="You have no permission to register")
+            raise SyftException(public_message="You have no permission to create an account. Please contact the Datasite owner.")
 
         user = new_user.to(User)
 
@@ -408,7 +411,7 @@ class UserService(AbstractService):
 
         # Notification Step
         root_key = self.admin_verify_key()
-        root_context = AuthedServiceContext(node=context.node, credentials=root_key)
+        root_context = AuthedServiceContext(server=context.server, credentials=root_key)
         link = None
 
         if new_user.created_by:
@@ -423,15 +426,11 @@ class UserService(AbstractService):
             email_template=OnBoardEmailTemplate,
         )
 
-        method = context.node.get_service_method(NotificationService.send)
+        method = context.server.get_service_method(NotificationService.send)
         method(context=root_context, notification=message)
 
         if request_user_role in DATA_OWNER_ROLE_LEVEL:
             success_message += " To see users, run `[your_client].users`"
-
-        # TODO: Add a notification for the new user
-        msg = SyftSuccess(message=success_message)
-        display_html(msg)
 
         return SyftSuccess(message=success_message, value=user.to(UserPrivateKey))
 

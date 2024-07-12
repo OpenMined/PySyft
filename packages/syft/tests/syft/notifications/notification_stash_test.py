@@ -6,8 +6,8 @@ import pytest
 from pytest import MonkeyPatch
 
 # syft absolute
-from syft.node.credentials import SyftSigningKey
-from syft.node.credentials import SyftVerifyKey
+from syft.server.credentials import SyftSigningKey
+from syft.server.credentials import SyftVerifyKey
 from syft.service.notification.notification_stash import (
     OrderByCreatedAtTimeStampPartitionKey,
 )
@@ -44,7 +44,7 @@ def add_mock_notification(
 
     mock_notification = Notification(
         subject="test_notification",
-        node_uid=UID(),
+        server_uid=UID(),
         from_user_verify_key=from_user_verify_key,
         to_user_verify_key=to_user_verify_key,
         created_at=DateTime.now(),

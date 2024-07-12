@@ -127,7 +127,7 @@ class SyftWorkerPoolService(AbstractService):
             credentials=context.credentials, uid=image_uid
         ).unwrap()
 
-        worker_service: AbstractService = context.node.get_service("WorkerService")
+        worker_service: AbstractService = context.server.get_service("WorkerService")
         worker_stash = worker_service.stash
 
         # Create worker pool from given image, with the given worker pool
@@ -151,7 +151,7 @@ class SyftWorkerPoolService(AbstractService):
             max_count=num_workers,
             image_id=worker_image.id,
             worker_list=worker_list,
-            syft_node_location=context.node.id,
+            syft_server_location=context.server.id,
             syft_client_verify_key=context.credentials,
         )
         self.stash.set(credentials=context.credentials, obj=worker_pool).unwrap()
@@ -215,8 +215,9 @@ class SyftWorkerPoolService(AbstractService):
         # Create a the request object with the changes and submit it
         # for approval.
         request = SubmitRequest(changes=changes)
-        method = context.node.get_service_method(RequestService.submit)
+        method = context.server.get_service_method(RequestService.submit)
         return method(context=context, request=request, reason=reason)
+
 
     @service_method(
         path="worker_pool.create_image_and_pool_request",
@@ -319,10 +320,8 @@ class SyftWorkerPoolService(AbstractService):
 
         # Create a request object and submit a request for approval
         request = SubmitRequest(changes=changes)
-        method = context.node.get_service_method(RequestService.submit)
-        result = method(context=context, request=request, reason=reason)
-
-        return result
+        method = context.server.get_service_method(RequestService.submit)
+        return method(context=context, request=request, reason=reason)
 
     @service_method(
         path="worker_pool.get_all",
@@ -386,7 +385,7 @@ class SyftWorkerPoolService(AbstractService):
             uid=worker_pool.image_id,
         ).unwrap()
 
-        worker_service: AbstractService = context.node.get_service("WorkerService")
+        worker_service: AbstractService = context.server.get_service("WorkerService")
         worker_stash = worker_service.stash
 
         # Add workers to given pool from the given image
@@ -461,7 +460,7 @@ class SyftWorkerPoolService(AbstractService):
                 -(current_worker_count - number) :
             ]
 
-            worker_stash = context.node.get_service("WorkerService").stash
+            worker_stash = context.server.get_service("WorkerService").stash
             # delete linkedobj workers
             for worker in workers_to_delete:
                 worker_stash.delete_by_uid(
@@ -514,7 +513,7 @@ class SyftWorkerPoolService(AbstractService):
         context: AuthedServiceContext,
         request: Request,
     ) -> SyftSuccess:
-        """Re-submit request from a different node"""
+        """Re-submit request from a different server"""
 
         num_of_changes = len(request.changes)
         pool_name, num_workers, config, image_uid, tag = None, None, None, None, None
@@ -593,15 +592,15 @@ def _create_workers_in_pool(
     pod_annotations: dict[str, str] | None = None,
     pod_labels: dict[str, str] | None = None,
 ) -> tuple[list[LinkedObject], list[ContainerSpawnStatus]]:
-    queue_port = context.node.queue_config.client_config.queue_port
+    queue_port = context.server.queue_config.client_config.queue_port
 
     # Check if workers needs to be run in memory or as containers
-    start_workers_in_memory = context.node.in_memory_workers
+    start_workers_in_memory = context.server.in_memory_workers
 
     if start_workers_in_memory:
         # Run in-memory workers in threads
         container_statuses: list[ContainerSpawnStatus] = run_workers_in_threads(
-            node=context.node,
+            server=context.server,
             pool_name=pool_name,
             start_idx=existing_worker_cnt,
             number=worker_cnt + existing_worker_cnt,
@@ -619,7 +618,7 @@ def _create_workers_in_pool(
             number=worker_cnt + existing_worker_cnt,
             orchestration=get_orchestration_type(),
             queue_port=queue_port,
-            dev_mode=context.node.dev_mode,
+            dev_mode=context.server.dev_mode,
             registry_username=registry_username,
             registry_password=registry_password,
             reg_url=registry_host,
@@ -634,17 +633,20 @@ def _create_workers_in_pool(
         if worker is None:
             continue
 
-        node = context.node
+        server = context.server
+
         try:
             obj = worker_stash.set(
                 credentials=context.credentials,
                 obj=worker,
             ).unwrap()
+
             worker_obj = LinkedObject.from_obj(
                 obj=obj,
                 service_type=WorkerService,
-                node_uid=node.id,
+                server_uid=server.id,
             )
+
             linked_worker_list.append(worker_obj)
         except SyftException as exc:
             container_status.error = exc.public_message

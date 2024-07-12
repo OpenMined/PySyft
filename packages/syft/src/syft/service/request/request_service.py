@@ -67,8 +67,7 @@ class RequestService(AbstractService):
 
         link = LinkedObject.with_context(request, context=context)
 
-        admin_verify_key = context.node.get_service_method(UserService.admin_verify_key)
-
+        admin_verify_key = context.server.get_service_method(UserService.admin_verify_key)
         root_verify_key = admin_verify_key()
 
         if send_message:
@@ -83,7 +82,7 @@ class RequestService(AbstractService):
                 email_template=RequestEmailTemplate,
             )
             # FIX: notificationservice unwrap
-            method = context.node.get_service_method(NotificationService.send)
+            method = context.server.get_service_method(NotificationService.send)
             result = method(context=context, notification=message)
 
             if not isinstance(result, Notification):
@@ -115,15 +114,15 @@ class RequestService(AbstractService):
         """Get the information of all requests"""
         result = self.stash.get_all(context.credentials).unwrap()
 
-        get_user_by_verify_key = context.node.get_service_method(
+        get_user_by_verify_key = context.server.get_service_method(
             UserService.get_by_verify_key
         )
-        get_message = context.node.get_service_method(NotificationService.filter_by_obj)
+        get_message = context.server.get_service_method(NotificationService.filter_by_obj)
 
         requests: list[RequestInfo] = []
         for req in result:
             user = get_user_by_verify_key(req.requesting_user_verify_key).to(UserView)
-            message = get_message(context=context, obj_uid=req.id)
+            message = get_message(context=context, obj_uid=req.id).unwrap()
             requests.append(RequestInfo(user=user, request=req, notification=message))
         if not page_size:
             return requests
@@ -186,11 +185,10 @@ class RequestService(AbstractService):
         context.extra_kwargs = kwargs
         result = request.apply(context=context).unwrap()
 
-        # TODO: maybe unwrap?
-        filter_by_obj = context.node.get_service_method(
+        filter_by_obj = context.server.get_service_method(
             NotificationService.filter_by_obj
         )
-        request_notification = filter_by_obj(context=context, obj_uid=uid)
+        request_notification = filter_by_obj(context=context, obj_uid=uid).unwrap()
 
         link = LinkedObject.with_context(request, context=context)
 
@@ -198,7 +196,7 @@ class RequestService(AbstractService):
             if request_notification is not None and not isinstance(
                 request_notification, SyftError
             ):
-                mark_as_read = context.node.get_service_method(
+                mark_as_read = context.server.get_service_method(
                     NotificationService.mark_as_read
                 )
                 mark_as_read(context=context, uid=request_notification.id)
@@ -211,7 +209,8 @@ class RequestService(AbstractService):
                     notifier_types=[NOTIFIERS.EMAIL],
                     email_template=RequestUpdateEmailTemplate,
                 )
-                send_notification = context.node.get_service_method(
+
+                send_notification = context.server.get_service_method(
                     NotificationService.send
                 )
                 send_notification(context=context, notification=notification)
@@ -239,7 +238,7 @@ class RequestService(AbstractService):
             email_template=RequestUpdateEmailTemplate,
         )
 
-        send_notification = context.node.get_service_method(NotificationService.send)
+        send_notification = context.server.get_service_method(NotificationService.send)
         send_notification(context=context, notification=notification)
 
         return SyftSuccess(message=f"Request {uid} successfully denied!")

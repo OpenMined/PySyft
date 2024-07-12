@@ -17,14 +17,14 @@ from rich.progress import Progress
 from typing_extensions import Self
 
 # relative
-from ...client.api import NodeIdentity
+from ...client.api import ServerIdentity
 from ...client.client import SyftClient
 from ...client.client import SyftClientSessionCache
-from ...node.credentials import SyftSigningKey
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
-from ...service.metadata.node_metadata import NodeMetadata
+from ...server.credentials import SyftSigningKey
+from ...server.credentials import SyftVerifyKey
+from ...service.metadata.server_metadata import ServerMetadata
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.identity import Identity
@@ -42,8 +42,8 @@ from ...util.decorators import deprecated
 from ...util.markdown import markdown_as_class_with_fields
 from ...util.util import full_name_with_qualname
 from ..code.user_code import SubmitUserCode
-from ..network.network_service import NodePeer
-from ..network.routes import NodeRoute
+from ..network.network_service import ServerPeer
+from ..network.routes import ServerRoute
 from ..network.routes import connection_to_route
 from ..request.request import Request
 from ..request.request import RequestStatus
@@ -60,9 +60,9 @@ class EventAlreadyAddedException(SyftException):
     pass
 
 
-@transform(NodeMetadata, NodeIdentity)
-def metadata_to_node_identity() -> list[Callable]:
-    return [rename("id", "node_id"), rename("name", "node_name")]
+@transform(ServerMetadata, ServerIdentity)
+def metadata_to_server_identity() -> list[Callable]:
+    return [rename("id", "server_id"), rename("name", "server_name")]
 
 
 class ProjectEvent(SyftObject):
@@ -270,7 +270,7 @@ class ProjectRequest(ProjectEventAddObject):
     @classmethod
     def _validate_linked_request(cls, v: Any) -> LinkedObject:
         if isinstance(v, Request):
-            linked_request = LinkedObject.from_obj(v, node_uid=v.node_uid)
+            linked_request = LinkedObject.from_obj(v, server_uid=v.server_uid)
             return linked_request
         elif isinstance(v, LinkedObject):
             return v
@@ -661,20 +661,20 @@ class Project(SyftObject):
     __repr_attrs__ = ["name", "description", "created_by"]
     __attr_unique__ = ["name"]
 
-    # TODO: re-add users, members, leader_node_peer
+    # TODO: re-add users, members, leader_server_peer
     __hash_exclude_attrs__ = [
         "user_signing_key",
         "start_hash",
         "users",
         "members",
-        "leader_node_peer",
+        "leader_server_peer",
         "event_id_hashmap",
     ]
 
     id: UID | None = None  # type: ignore[assignment]
     name: str
     description: str | None = None
-    members: list[NodeIdentity]
+    members: list[ServerIdentity]
     users: list[UserIdentity] = []
     username: str | None = None
     created_by: str
@@ -687,8 +687,8 @@ class Project(SyftObject):
     event_id_hashmap: dict[UID, ProjectEvent] = {}
 
     # Project sync
-    state_sync_leader: NodeIdentity
-    leader_node_peer: NodePeer | None = None
+    state_sync_leader: ServerIdentity
+    leader_server_peer: ServerPeer | None = None
 
     # Unused
     consensus_model: ConsensusModel
@@ -737,7 +737,7 @@ class Project(SyftObject):
 
     def get_identity_from_key(
         self, verify_key: SyftVerifyKey
-    ) -> list[NodeIdentity | UserIdentity]:
+    ) -> list[ServerIdentity | UserIdentity]:
         identities: list[Identity] = self.get_all_identities()
         for identity in identities:
             if identity.verify_key == verify_key:
@@ -745,8 +745,8 @@ class Project(SyftObject):
         return SyftError(message=f"Member with verify key: {verify_key} not found")
 
     def get_leader_client(self, signing_key: SyftSigningKey) -> SyftClient:
-        if self.leader_node_peer is None:
-            raise Exception("Leader node peer is not set")
+        if self.leader_server_peer is None:
+            raise Exception("Leader server peer is not set")
 
         if signing_key is None:
             raise Exception("Signing key is required to create leader client")
@@ -754,14 +754,14 @@ class Project(SyftObject):
         verify_key = signing_key.verify_key
 
         leader_client = SyftClientSessionCache.get_client_by_uid_and_verify_key(
-            verify_key=verify_key, node_uid=self.leader_node_peer.id
+            verify_key=verify_key, server_uid=self.leader_server_peer.id
         )
 
         if leader_client is None:
-            leader_client = self.leader_node_peer.client_with_key(signing_key)
+            leader_client = self.leader_server_peer.client_with_key(signing_key)
             SyftClientSessionCache.add_client_by_uid_and_verify_key(
                 verify_key=verify_key,
-                node_uid=leader_client.id,
+                server_uid=leader_client.id,
                 syft_client=leader_client,
             )
 
@@ -793,7 +793,7 @@ class Project(SyftObject):
             # Retrying broadcasting the event to leader
             # recursively call _append_event as due to network latency the event could reach late
             # and other events would be being streamed to the leader
-            # This scenario could lead to starvation of node trying to sync with the leader
+            # This scenario could lead to starvation of server trying to sync with the leader
             # This would be solved in our future leaderless approach
             return self._append_event(event=event, credentials=credentials)
 
@@ -1050,7 +1050,7 @@ class Project(SyftObject):
         self,
         request: Request,
     ) -> SyftSuccess | SyftError:
-        linked_request = LinkedObject.from_obj(request, node_uid=request.node_uid)
+        linked_request = LinkedObject.from_obj(request, server_uid=request.server_uid)
         request_event = ProjectRequest(linked_request=linked_request)
         result = self.add_event(request_event)
 
@@ -1148,7 +1148,7 @@ class ProjectSubmit(SyftObject):
         "users",
         "members",
         "clients",
-        "leader_node_route",
+        "leader_server_route",
         "bootstrap_events",
     ]
 
@@ -1161,7 +1161,7 @@ class ProjectSubmit(SyftObject):
     # Init args
     name: str
     description: str | None = None
-    members: list[SyftClient] | list[NodeIdentity]
+    members: list[SyftClient] | list[ServerIdentity]
 
     # These will be automatically populated
     users: list[UserIdentity] = []
@@ -1171,8 +1171,8 @@ class ProjectSubmit(SyftObject):
     start_hash: str = ""
 
     # Project sync args
-    leader_node_route: NodeRoute | None = None
-    state_sync_leader: NodeIdentity | None = None
+    leader_server_route: ServerRoute | None = None
+    state_sync_leader: ServerIdentity | None = None
     bootstrap_events: list[ProjectEvent] | None = []
 
     # Unused at the moment
@@ -1183,10 +1183,10 @@ class ProjectSubmit(SyftObject):
         super().__init__(*args, **kwargs)
 
         # Preserve member SyftClients in a private variable clients
-        # self.members will be List[NodeIdentity] on the node i.e. self.clients = []
+        # self.members will be List[ServerIdentity] on the server i.e. self.clients = []
         self.clients = self.get_syft_clients(self.members)
 
-        # If ProjectSubmit is being re-created at node side
+        # If ProjectSubmit is being re-created at server side
         if len(self.clients) == 0:
             return
 
@@ -1202,8 +1202,8 @@ class ProjectSubmit(SyftObject):
         else:
             self.username = ""
 
-        # Convert SyftClients to NodeIdentities
-        self.members = list(map(self.to_node_identity, self.members))
+        # Convert SyftClients to ServerIdentities
+        self.members = list(map(self.to_server_identity, self.members))
 
     def _repr_html_(self) -> Any:
         return (
@@ -1222,8 +1222,8 @@ class ProjectSubmit(SyftObject):
     @field_validator("members", mode="before")
     @classmethod
     def verify_members(
-        cls, val: list[SyftClient] | list[NodeIdentity]
-    ) -> list[SyftClient] | list[NodeIdentity]:
+        cls, val: list[SyftClient] | list[ServerIdentity]
+    ) -> list[SyftClient] | list[ServerIdentity]:
         # SyftClients must be logged in by the same emails
         clients = cls.get_syft_clients(val)
         if len(clients) > 0:
@@ -1236,20 +1236,20 @@ class ProjectSubmit(SyftObject):
 
     @staticmethod
     def get_syft_clients(
-        vals: list[SyftClient] | list[NodeIdentity],
+        vals: list[SyftClient] | list[ServerIdentity],
     ) -> list[SyftClient]:
         return [client for client in vals if isinstance(client, SyftClient)]
 
     @staticmethod
-    def to_node_identity(val: SyftClient | NodeIdentity) -> NodeIdentity:
-        if isinstance(val, NodeIdentity):
+    def to_server_identity(val: SyftClient | ServerIdentity) -> ServerIdentity:
+        if isinstance(val, ServerIdentity):
             return val
         elif isinstance(val, SyftClient) and val.metadata is not None:
-            metadata = val.metadata.to(NodeMetadata)
-            return metadata.to(NodeIdentity)
+            metadata = val.metadata.to(ServerMetadata)
+            return metadata.to(ServerIdentity)
         else:
             raise SyftException(
-                f"members must be SyftClient or NodeIdentity. Received: {type(val)}"
+                f"members must be SyftClient or ServerIdentity. Received: {type(val)}"
             )
 
     def create_code_request(
@@ -1281,10 +1281,10 @@ class ProjectSubmit(SyftObject):
             # Exchange route between leaders and followers
             self._exchange_routes(leader, followers)
 
-            # create project for each node
+            # create project for each server
             projects_map = self._create_projects(self.clients)
 
-            # bootstrap project with pending events on leader node's project
+            # bootstrap project with pending events on leader server's project
             self._bootstrap_events(projects_map[leader])
 
             if return_all_projects:
@@ -1310,7 +1310,7 @@ class ProjectSubmit(SyftObject):
         # Since we are implementing a leader based system
         # To be able to optimize exchanging routes.
         # We require only the leader to exchange routes with all the members
-        # Meaning if we could guarantee, that the leader node is able to reach the members
+        # Meaning if we could guarantee, that the leader server is able to reach the members
         # the project events could be broadcasted to all the members
 
         for follower in followers:
@@ -1318,7 +1318,7 @@ class ProjectSubmit(SyftObject):
             if isinstance(result, SyftError):
                 raise SyftException(result.message)
 
-        self.leader_node_route = connection_to_route(leader.connection)
+        self.leader_server_route = connection_to_route(leader.connection)
 
     def _create_projects(self, clients: list[SyftClient]) -> dict[SyftClient, Project]:
         projects: dict[SyftClient, Project] = {}
@@ -1366,7 +1366,7 @@ def check_permissions(context: TransformContext) -> TransformContext:
         return context
 
     if len(context.output["members"]) > 1:
-        # more than 1 node
+        # more than 1 server
         pass
     # check at least one owner
     if len(context.output["project_permissions"]) == 0:

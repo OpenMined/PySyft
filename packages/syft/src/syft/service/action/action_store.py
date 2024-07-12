@@ -5,11 +5,12 @@ from __future__ import annotations
 import threading
 
 # relative
-from ...node.credentials import SyftSigningKey
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftSigningKey
+from ...server.credentials import SyftVerifyKey
 from ...store.dict_document_store import DictStoreConfig
 from ...store.document_store import BasePartitionSettings
+from ...store.document_store import DocumentStore
 from ...store.document_store import StoreConfig
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import ObjectCRUDPermissionException
@@ -49,11 +50,12 @@ class KeyValueActionStore(ActionStore):
 
     def __init__(
         self,
-        node_uid: UID,
+        server_uid: UID,
         store_config: StoreConfig,
         root_verify_key: SyftVerifyKey | None = None,
+        document_store: DocumentStore | None = None,
     ) -> None:
-        self.node_uid = node_uid
+        self.server_uid = server_uid
         self.store_config = store_config
         self.settings = BasePartitionSettings(name="Action")
         self.data = self.store_config.backing_store(
@@ -70,6 +72,13 @@ class KeyValueActionStore(ActionStore):
             root_verify_key = SyftSigningKey.generate().verify_key
         self.root_verify_key = root_verify_key
 
+        self.__user_stash = None
+        if document_store is not None:
+            # relative
+            from ...service.user.user_stash import UserStash
+
+            self.__user_stash = UserStash(store=document_store)
+
     @as_result(NotFoundException, SyftException)
     def get(
         self, uid: UID, credentials: SyftVerifyKey, has_permission: bool = False
@@ -82,6 +91,7 @@ class KeyValueActionStore(ActionStore):
         if not has_permission and not self.has_permission(read_permission):
             raise SyftException(public_message=f"Permission: {read_permission} denied")
 
+        # TODO: Remove try/except?
         try:
             if isinstance(uid, LineageID):
                 syft_object = self.data[uid.id]
@@ -119,7 +129,7 @@ class KeyValueActionStore(ActionStore):
         self,
         uid: UID,
         credentials: SyftVerifyKey,
-        node_uid: UID,
+        server_uid: UID,
     ) -> SyftObject:
         uid = uid.id  # We only need the UID from LineageID or UID
 
@@ -130,19 +140,18 @@ class KeyValueActionStore(ActionStore):
             obj = self.data[uid]
             read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
 
-            # FIX: Do they throw? What do they throw?
             # if you have permission you can have private data
             if self.has_permission(read_permission):
                 if isinstance(obj, TwinObject):
-                    return obj.private.syft_point_to(node_uid)
-                return obj.syft_point_to(node_uid)
+                    return obj.private.syft_point_to(server_uid)
+                return obj.syft_point_to(server_uid)
 
             # if its a twin with a mock anyone can have this
             if isinstance(obj, TwinObject):
-                return obj.mock.syft_point_to(node_uid)
+                return obj.mock.syft_point_to(server_uid)
 
             # finally worst case you get ActionDataEmpty so you can still trace
-            return obj.as_empty().syft_point_to(node_uid)
+            return obj.as_empty().syft_point_to(server_uid)
         # TODO: Check if this can be removed
         except Exception as e:
             raise SyftException(public_message=str(e))
@@ -199,7 +208,7 @@ class KeyValueActionStore(ActionStore):
             self.storage_permissions[uid] = set()
         if add_storage_permission:
             self.add_storage_permission(
-                StoragePermission(uid=uid, node_uid=self.node_uid)
+                StoragePermission(uid=uid, server_uid=self.server_uid)
             )
 
         return uid
@@ -255,6 +264,22 @@ class KeyValueActionStore(ActionStore):
         ):
             return True
 
+        if self.__user_stash is not None:
+            # relative
+            from ...service.user.user_roles import ServiceRole
+
+            res = self.__user_stash.get_by_verify_key(
+                credentials=permission.credentials,
+                verify_key=permission.credentials,
+            )
+
+            if (
+                res.is_ok()
+                and (user := res.ok()) is not None
+                and user.role in (ServiceRole.DATA_OWNER, ServiceRole.ADMIN)
+            ):
+                return True
+
         if (
             permission.uid in self.permissions
             and permission.permission_string in self.permissions[permission.uid]
@@ -298,9 +323,12 @@ class KeyValueActionStore(ActionStore):
             public_message=f"No permissions found for uid: {uid}"
         )
 
+    def get_all_permissions(self) -> Result[dict[UID, set[str]], str]:
+        return Ok(dict(self.permissions.items()))
+
     def add_storage_permission(self, permission: StoragePermission) -> None:
         permissions = self.storage_permissions[permission.uid]
-        permissions.add(permission.node_uid)
+        permissions.add(permission.server_uid)
         self.storage_permissions[permission.uid] = permissions
 
     def add_storage_permissions(self, permissions: list[StoragePermission]) -> None:
@@ -309,15 +337,15 @@ class KeyValueActionStore(ActionStore):
 
     def remove_storage_permission(self, permission: StoragePermission) -> None:
         permissions = self.storage_permissions[permission.uid]
-        permissions.remove(permission.node_uid)
+        permissions.remove(permission.server_uid)
         self.storage_permissions[permission.uid] = permissions
 
     def has_storage_permission(self, permission: StoragePermission | UID) -> bool:
         if isinstance(permission, UID):
-            permission = StoragePermission(uid=permission, node_uid=self.node_uid)
+            permission = StoragePermission(uid=permission, server_uid=self.server_uid)
 
         if permission.uid in self.storage_permissions:
-            return permission.node_uid in self.storage_permissions[permission.uid]
+            return permission.server_uid in self.storage_permissions[permission.uid]
 
         return False
 
@@ -326,6 +354,19 @@ class KeyValueActionStore(ActionStore):
         if uid in self.storage_permissions:
             return self.storage_permissions[uid]
         raise ObjectCRUDPermissionException(f"No storage permissions found for {uid}")
+
+    def get_all_storage_permissions(self) -> dict[UID, set[UID]]:
+        return dict(self.storage_permissions.items())
+
+    def _all(
+        self,
+        credentials: SyftVerifyKey,
+        has_permission: bool | None = False,
+    ) -> list[SyftObject]:
+        # this checks permissions
+        res = [self.get(uid, credentials, has_permission) for uid in self.data.keys()]
+        return [x.ok() for x in res if x.is_ok()]
+
 
     @as_result(ObjectCRUDPermissionException)
     def migrate_data(self, to_klass: SyftObject, credentials: SyftVerifyKey) -> bool:
@@ -346,6 +387,7 @@ class KeyValueActionStore(ActionStore):
                     e,
                     public_message=f"Failed to migrate data to {to_klass} for qk: {key}",
                 )
+
             self.set(
                 uid=key,
                 credentials=credentials,
@@ -368,15 +410,17 @@ class DictActionStore(KeyValueActionStore):
 
     def __init__(
         self,
-        node_uid: UID,
+        server_uid: UID,
         store_config: StoreConfig | None = None,
         root_verify_key: SyftVerifyKey | None = None,
+        document_store: DocumentStore | None = None,
     ) -> None:
         store_config = store_config if store_config is not None else DictStoreConfig()
         super().__init__(
-            node_uid=node_uid,
+            server_uid=server_uid,
             store_config=store_config,
             root_verify_key=root_verify_key,
+            document_store=document_store,
         )
 
 

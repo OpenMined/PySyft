@@ -13,10 +13,10 @@ from pydantic import field_validator
 
 # relative
 from ...client.api import APIRegistry
-from ...node.credentials import SyftSigningKey
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...types.errors import SyftException
+from ...server.credentials import SyftSigningKey
+from ...server.credentials import SyftVerifyKey
 from ...types.syft_metaclass import Empty
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
@@ -211,7 +211,7 @@ class UserView(SyftObject):
 
     def _set_password(self, new_password: str) -> SyftSuccess:
         client = APIRegistry._api_for(
-            node_uid=self.syft_node_location,
+            node_uid=self.syft_server_location,
             user_verify_key=self.syft_client_verify_key,
         ).unwrap()
 
@@ -269,13 +269,13 @@ class UserView(SyftObject):
                 institution=institution,
                 website=website,
                 role=role,
-                mock_execution_permission=mock_execution_permission,
+                mock_execution_permission=mock_execution_permission
             )
         except ValidationError as exc:
             raise UserUpdateError.from_exception(exc, public_message=str(exc))
 
         api = APIRegistry._api_for(
-            node_uid=self.syft_node_location,
+            node_uid=self.syft_server_location,
             user_verify_key=self.syft_client_verify_key,
         ).unwrap()
 

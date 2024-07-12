@@ -5,8 +5,8 @@ import time
 from typing import cast
 
 # relative
-from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
+from ...server.worker_settings import WorkerSettings
 from ...store.document_store import DocumentStore
 from ...types.errors import SyftException
 from ...types.uid import UID
@@ -120,18 +120,19 @@ class JobService(AbstractService):
         self.update(context=context, job=job).unwrap()
 
         task_uid = UID()
-        worker_settings = WorkerSettings.from_node(context.node)
+        worker_settings = WorkerSettings.from_server(context.server)
 
         # TODO, fix return type of get_worker_pool_ref_by_name
-        worker_pool_ref = context.node.get_worker_pool_ref_by_name(context.credentials)
+        worker_pool_ref = context.server.get_worker_pool_ref_by_name(context.credentials)
+
         if isinstance(worker_pool_ref, SyftError):
             return worker_pool_ref
 
         queue_item = ActionQueueItem(
             id=task_uid,
-            node_uid=context.node.id,
+            server_uid=context.server.id,
             syft_client_verify_key=context.credentials,
-            syft_node_location=context.node.id,
+            syft_server_location=context.server.id,
             job_id=job.id,
             worker_settings=worker_settings,
             args=[],
@@ -139,14 +140,11 @@ class JobService(AbstractService):
             worker_pool=worker_pool_ref,
         )
 
-        # TODO: unwrap
-        context.node.queue_stash.set_placeholder(context.credentials, queue_item)
+        context.server.queue_stash.set_placeholder(context.credentials, queue_item).unwrap()
 
-        context.node.job_stash.set(context.credentials, job).unwrap()
+        context.server.job_stash.set(context.credentials, job).unwrap()
 
-        log_service = context.node.get_service("logservice")
-
-        # may raise
+        log_service = context.server.get_service("logservice")
         log_service.restart(context, job.log_id)
 
         return SyftSuccess(message="Great Success!")
@@ -246,7 +244,7 @@ class JobService(AbstractService):
     def add_read_permission_log_for_code_owner(
         self, context: AuthedServiceContext, log_id: UID, user_code: UserCode
     ) -> None:
-        log_service = context.node.get_service("logservice")
+        log_service = context.server.get_service("logservice")
         log_service = cast(LogService, log_service)
         return log_service.stash.add_permission(
             ActionObjectPermission(
@@ -272,7 +270,7 @@ class JobService(AbstractService):
         is_resolved = status in [JobStatus.COMPLETED, JobStatus.ERRORED]
         job = Job(
             id=UID(),
-            node_uid=context.node.id,
+            server_uid=context.server.id,
             action=None,
             result=result,
             status=status,
@@ -282,13 +280,13 @@ class JobService(AbstractService):
             user_code_id=user_code_id,
             resolved=is_resolved,
         )
-        user_code_service = context.node.get_service("usercodeservice")
+        user_code_service = context.server.get_service("usercodeservice")
         user_code = user_code_service.get_by_uid(context=context, uid=user_code_id)
 
         # The owner of the code should be able to read the job
         self.stash.set(context.credentials, job).unwrap()
 
-        log_service = context.node.get_service("logservice")
+        log_service = context.server.get_service("logservice")
         log_service.add(
             context,
             job.log_id,

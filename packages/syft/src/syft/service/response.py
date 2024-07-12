@@ -44,10 +44,12 @@ class SyftResponseMessage(SyftBaseModel):
             # '_repr_html_',
             "_ipython_canary_method_should_not_exist_",
             "_ipython_display_",
+            "__canonical_name__",
+            "__version__",
         ] or name.startswith("_repr"):
             return super().__getattr__(name)
         display(self)
-        raise Exception(
+        raise AttributeError(
             f"You have tried accessing `{name}` on a {type(self).__name__} with message: {self.message}"
         )
 

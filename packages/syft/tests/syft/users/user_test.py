@@ -9,9 +9,9 @@ import pytest
 import syft as sy
 from syft import SyftSuccess
 from syft.client.api import SyftAPICall
-from syft.client.domain_client import DomainClient
-from syft.node.node import get_default_root_email
-from syft.node.worker import Worker
+from syft.client.datasite_client import DatasiteClient
+from syft.server.server import get_default_root_email
+from syft.server.worker import Worker
 from syft.service.context import AuthedServiceContext
 from syft.service.response import SyftError
 from syft.service.user.user import ServiceRole
@@ -33,12 +33,12 @@ ADMIN_ROLES = [
 
 def get_users(worker):
     return worker.get_service("UserService").get_all(
-        AuthedServiceContext(node=worker, credentials=worker.signing_key.verify_key)
+        AuthedServiceContext(server=worker, credentials=worker.signing_key.verify_key)
     )
 
 
-def get_mock_client(root_client, role) -> DomainClient:
-    worker = root_client.api.connection.node
+def get_mock_client(root_client, role) -> DatasiteClient:
+    worker = root_client.api.connection.server
     client = worker.guest_client
     mail = Faker().email()
     name = Faker().name()
@@ -70,7 +70,7 @@ def manually_call_service(worker, client, service, args=None, kwargs=None):
     # while we mostly want to validate the server side permissions.
     args = args if args is not None else []
     kwargs = kwargs if kwargs is not None else {}
-    api_call = SyftAPICall(node_uid=worker.id, path=service, args=args, kwargs=kwargs)
+    api_call = SyftAPICall(server_uid=worker.id, path=service, args=args, kwargs=kwargs)
     signed_call = api_call.sign(client.api.signing_key)
     signed_result = client.api.connection.make_call(signed_call)
     result = signed_result.message.data
@@ -78,17 +78,17 @@ def manually_call_service(worker, client, service, args=None, kwargs=None):
 
 
 @pytest.fixture
-def guest_client(worker) -> DomainClient:
+def guest_client(worker) -> DatasiteClient:
     return get_mock_client(worker.root_client, ServiceRole.GUEST)
 
 
 @pytest.fixture
-def ds_client(worker) -> DomainClient:
+def ds_client(worker) -> DatasiteClient:
     return get_mock_client(worker.root_client, ServiceRole.DATA_SCIENTIST)
 
 
 @pytest.fixture
-def do_client(worker) -> DomainClient:
+def do_client(worker) -> DatasiteClient:
     return get_mock_client(worker.root_client, ServiceRole.DATA_OWNER)
 
 
@@ -268,10 +268,10 @@ def test_user_update(root_client):
 
 
 def test_guest_user_update_to_root_email_failed(
-    root_client: DomainClient,
-    do_client: DomainClient,
-    guest_client: DomainClient,
-    ds_client: DomainClient,
+    root_client: DatasiteClient,
+    do_client: DatasiteClient,
+    guest_client: DatasiteClient,
+    ds_client: DatasiteClient,
 ) -> None:
     default_root_email: str = get_default_root_email()
     user_update_to_root_email = UserUpdate(email=default_root_email)
@@ -285,7 +285,7 @@ def test_guest_user_update_to_root_email_failed(
         assert exc.type == SyftException
         assert f"User {default_root_email} already exists" in exc.value.public_message
 
-def test_user_view_set_password(worker: Worker, root_client: DomainClient) -> None:
+def test_user_view_set_password(worker: Worker, root_client: DatasiteClient) -> None:
     change_ok = root_client.me.set_password("123", confirm=False)
     assert type(change_ok) == SyftSuccess
     assert "Successfully" in change_ok.message
@@ -308,7 +308,7 @@ def test_user_view_set_password(worker: Worker, root_client: DomainClient) -> No
     ["syft", "syft.com", "syft@.com"],
 )
 def test_user_view_set_invalid_email(
-    root_client: DomainClient, invalid_email: str
+    root_client: DatasiteClient, invalid_email: str
 ) -> None:
     with pytest.raises(SyftException) as exc:
         root_client.me.set_email(invalid_email)
@@ -325,8 +325,8 @@ def test_user_view_set_invalid_email(
     ],
 )
 def test_user_view_set_email_success(
-    root_client: DomainClient,
-    ds_client: DomainClient,
+    root_client: DatasiteClient,
+    ds_client: DatasiteClient,
     valid_email_root: str,
     valid_email_ds: str,
 ) -> None:
@@ -338,7 +338,7 @@ def test_user_view_set_email_success(
 
 
 def test_user_view_set_default_admin_email_failed(
-    ds_client: DomainClient, guest_client: DomainClient
+    ds_client: DatasiteClient, guest_client: DatasiteClient
 ) -> None:
     default_root_email = get_default_root_email()
     error_msg = f"User {default_root_email} already exists"
@@ -351,7 +351,7 @@ def test_user_view_set_default_admin_email_failed(
 
 
 def test_user_view_set_duplicated_email(
-    root_client: DomainClient, ds_client: DomainClient, guest_client: DomainClient
+    root_client: DatasiteClient, ds_client: DatasiteClient, guest_client: DatasiteClient
 ) -> None:
     email = root_client.me.email
     error_msg = f"User {email} already exists"
@@ -379,9 +379,9 @@ def test_user_view_set_duplicated_email(
 
 
 def test_user_view_update_name_institution_website(
-    root_client: DomainClient,
-    ds_client: DomainClient,
-    guest_client: DomainClient,
+    root_client: DatasiteClient,
+    ds_client: DatasiteClient,
+    guest_client: DatasiteClient,
 ) -> None:
     root_client.me.update(
         name="syft", institution="OpenMined", website="https://syft.org"
@@ -398,7 +398,7 @@ def test_user_view_update_name_institution_website(
     assert guest_client.me.name == "syft3"
 
 
-def test_user_view_set_role(worker: Worker, guest_client: DomainClient) -> None:
+def test_user_view_set_role(worker: Worker, guest_client: DatasiteClient) -> None:
     admin_client = get_mock_client(worker.root_client, ServiceRole.ADMIN)
 
     assert admin_client.me.role == ServiceRole.ADMIN
@@ -425,7 +425,7 @@ def test_user_view_set_role(worker: Worker, guest_client: DomainClient) -> None:
     sheldon.update(role="data_owner")
     assert sheldon.role == ServiceRole.DATA_OWNER
 
-    # the data scientist (Sheldon) log in the domain, he should not
+    # the data scientist (Sheldon) log in the datasite, he should not
     # be able to change his role, even if he is a data owner now
     ds_client = guest_client.login(email="sheldon@caltech.edu", password="changethis")
     assert (
@@ -452,9 +452,9 @@ def test_user_view_set_role(worker: Worker, guest_client: DomainClient) -> None:
 
 
 def test_user_view_set_role_admin(faker: Faker) -> None:
-    node = sy.orchestra.launch(name=token_hex(8), reset=True)
-    domain_client = node.login(email="info@openmined.org", password="changethis")
-    domain_client.register(
+    server = sy.orchestra.launch(name=token_hex(8), reset=True)
+    datasite_client = server.login(email="info@openmined.org", password="changethis")
+    datasite_client.register(
         name="Sheldon Cooper",
         email="sheldon@caltech.edu",
         password="changethis",
@@ -462,7 +462,7 @@ def test_user_view_set_role_admin(faker: Faker) -> None:
         institution="Caltech",
         website="https://www.caltech.edu/",
     )
-    domain_client.register(
+    datasite_client.register(
         name="Sheldon Cooper",
         email="sheldon2@caltech.edu",
         password="changethis",
@@ -470,20 +470,20 @@ def test_user_view_set_role_admin(faker: Faker) -> None:
         institution="Caltech",
         website="https://www.caltech.edu/",
     )
-    assert len(domain_client.users.get_all()) == 3
+    assert len(datasite_client.users.get_all()) == 3
 
-    domain_client.users[1].update(role="admin")
-    ds_client = node.login(email="sheldon@caltech.edu", password="changethis")
+    datasite_client.users[1].update(role="admin")
+    ds_client = server.login(email="sheldon@caltech.edu", password="changethis")
     assert ds_client.me.role == ServiceRole.ADMIN
-    assert len(ds_client.users.get_all()) == len(domain_client.users.get_all())
+    assert len(ds_client.users.get_all()) == len(datasite_client.users.get_all())
 
-    domain_client.users[2].update(role="admin")
-    ds_client_2 = node.login(email="sheldon2@caltech.edu", password="changethis")
+    datasite_client.users[2].update(role="admin")
+    ds_client_2 = server.login(email="sheldon2@caltech.edu", password="changethis")
     assert ds_client_2.me.role == ServiceRole.ADMIN
-    assert len(ds_client_2.users.get_all()) == len(domain_client.users.get_all())
+    assert len(ds_client_2.users.get_all()) == len(datasite_client.users.get_all())
 
-    node.python_node.cleanup()
-    node.land()
+    server.python_server.cleanup()
+    server.land()
 
 
 @pytest.mark.parametrize(
@@ -494,7 +494,9 @@ def test_user_view_set_role_admin(faker: Faker) -> None:
     ],
 )
 def test_user_search(
-    root_client: DomainClient, ds_client: DomainClient, search_param: tuple[str, str]
+    root_client: DatasiteClient,
+    ds_client: DatasiteClient,
+    search_param: tuple[str, str],
 ) -> None:
     k, attr = search_param
     v = getattr(ds_client, attr)

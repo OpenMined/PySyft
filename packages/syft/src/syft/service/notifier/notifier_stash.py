@@ -5,8 +5,9 @@ from result import Err
 from result import Result
 
 # relative
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
+from ...service.response import SyftError
 from ...store.document_store import DocumentStore
 from ...store.document_store import NewBaseStash
 from ...store.document_store import PartitionKey

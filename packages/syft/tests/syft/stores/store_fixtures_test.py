@@ -4,19 +4,27 @@ import os
 from pathlib import Path
 from secrets import token_hex
 import tempfile
+import uuid
 
 # third party
 import pytest
 
 # syft absolute
-from syft.node.credentials import SyftVerifyKey
+from syft.server.credentials import SyftVerifyKey
+from syft.service.action.action_permissions import ActionObjectPermission
+from syft.service.action.action_permissions import ActionPermission
 from syft.service.action.action_store import DictActionStore
 from syft.service.action.action_store import MongoActionStore
 from syft.service.action.action_store import SQLiteActionStore
 from syft.service.queue.queue_stash import QueueStash
+from syft.service.user.user import User
+from syft.service.user.user import UserCreate
+from syft.service.user.user_roles import ServiceRole
+from syft.service.user.user_stash import UserStash
 from syft.store.dict_document_store import DictDocumentStore
 from syft.store.dict_document_store import DictStoreConfig
 from syft.store.dict_document_store import DictStorePartition
+from syft.store.document_store import DocumentStore
 from syft.store.document_store import PartitionSettings
 from syft.store.locks import LockingConfig
 from syft.store.locks import NoLockingConfig
@@ -32,6 +40,8 @@ from syft.store.sqlite_document_store import SQLiteStorePartition
 from syft.types.uid import UID
 
 # relative
+from .store_constants_test import TEST_SIGNING_KEY_NEW_ADMIN
+from .store_constants_test import TEST_VERIFY_KEY_NEW_ADMIN
 from .store_constants_test import TEST_VERIFY_KEY_STRING_ROOT
 from .store_mocks_test import MockObjectType
 
@@ -50,6 +60,40 @@ def str_to_locking_config(conf: str) -> LockingConfig:
         return ThreadingLockingConfig()
     else:
         raise NotImplementedError(f"unknown locking config {conf}")
+
+
+def document_store_with_admin(
+    server_uid: UID, verify_key: SyftVerifyKey
+) -> DocumentStore:
+    document_store = DictDocumentStore(
+        server_uid=server_uid, root_verify_key=verify_key
+    )
+
+    password = uuid.uuid4().hex
+
+    user_stash = UserStash(store=document_store)
+    admin_user = UserCreate(
+        email="mail@example.org",
+        name="Admin",
+        password=password,
+        password_verify=password,
+        role=ServiceRole.ADMIN,
+    ).to(User)
+
+    admin_user.signing_key = TEST_SIGNING_KEY_NEW_ADMIN
+    admin_user.verify_key = TEST_VERIFY_KEY_NEW_ADMIN
+
+    user_stash.set(
+        credentials=verify_key,
+        user=admin_user,
+        add_permissions=[
+            ActionObjectPermission(
+                uid=admin_user.id, permission=ActionPermission.ALL_READ
+            ),
+        ],
+    )
+
+    return document_store
 
 
 @pytest.fixture(scope="function")
@@ -171,10 +215,15 @@ def sqlite_action_store(sqlite_workspace: tuple[Path, str], request):
     )
 
     ver_key = SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_ROOT)
+
+    server_uid = UID()
+    document_store = document_store_with_admin(server_uid, ver_key)
+
     yield SQLiteActionStore(
-        node_uid=UID(),
+        server_uid=server_uid,
         store_config=store_config,
         root_verify_key=ver_key,
+        document_store=document_store,
     )
 
 
@@ -278,10 +327,13 @@ def mongo_action_store(mongo_client, request):
         client_config=mongo_config, db_name=mongo_db_name, locking_config=locking_config
     )
     ver_key = SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_ROOT)
+    server_uid = UID()
+    document_store = document_store_with_admin(server_uid, ver_key)
     mongo_action_store = MongoActionStore(
-        node_uid=UID(),
+        server_uid=server_uid,
         store_config=store_config,
         root_verify_key=ver_key,
+        document_store=document_store,
     )
 
     yield mongo_action_store
@@ -315,10 +367,14 @@ def dict_action_store(request):
 
     store_config = DictStoreConfig(locking_config=locking_config)
     ver_key = SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_ROOT)
+    server_uid = UID()
+    document_store = document_store_with_admin(server_uid, ver_key)
+
     yield DictActionStore(
-        node_uid=UID(),
+        server_uid=server_uid,
         store_config=store_config,
         root_verify_key=ver_key,
+        document_store=document_store,
     )
 
 

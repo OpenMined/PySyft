@@ -6,8 +6,8 @@ import pytest
 from pytest import MonkeyPatch
 
 # syft absolute
-from syft.node.credentials import SyftSigningKey
-from syft.node.credentials import SyftVerifyKey
+from syft.server.credentials import SyftSigningKey
+from syft.server.credentials import SyftVerifyKey
 from syft.service.context import AuthedServiceContext
 from syft.service.notification.notification_service import NotificationService
 from syft.service.notification.notification_stash import NotificationStash
@@ -40,7 +40,7 @@ def add_mock_notification(
 
     mock_notification = Notification(
         subject="mock_notification",
-        node_uid=UID(),
+        server_uid=UID(),
         from_user_verify_key=from_user_verify_key,
         to_user_verify_key=to_user_verify_key,
         created_at=DateTime.now(),
@@ -591,7 +591,7 @@ def test_resolve_object_success(
         return test_notification_service
 
     monkeypatch.setattr(
-        authed_context.node,
+        authed_context.server,
         "get_service",
         mock_get_service,
     )
@@ -627,7 +627,7 @@ def test_resolve_object_error_on_resolve_link(
         return test_notification_service
 
     monkeypatch.setattr(
-        authed_context.node,
+        authed_context.server,
         "get_service",
         mock_get_service,
     )

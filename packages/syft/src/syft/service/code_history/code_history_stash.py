@@ -4,8 +4,8 @@
 from result import as_result
 
 # relative
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
 from ...store.document_store import DocumentStore
 from ...store.document_store import NewBaseUIDStoreStash
 from ...store.document_store import PartitionKey

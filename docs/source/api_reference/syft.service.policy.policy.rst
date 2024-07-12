@@ -29,7 +29,7 @@ syft.service.policy.policy
       init_policy
       load_policy_code
       new_getfile
-      partition_by_node
+      partition_by_server
       process_class_code
       retrieve_from_db
       submit_policy_code_to_user_code

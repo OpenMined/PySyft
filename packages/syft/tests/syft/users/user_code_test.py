@@ -9,7 +9,9 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.client.domain_client import DomainClient
+from syft.client.datasite_client import DatasiteClient
+from syft.server.worker import Worker
+from syft.service.action.action_data_empty import ActionDataEmpty
 from syft.service.action.action_object import ActionObject
 from syft.service.request.request import Request
 from syft.service.request.request import UserCodeStatusChange
@@ -17,6 +19,13 @@ from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.user.user import User
 from syft.types.errors import SyftException
+from syft.service.user.user import UserUpdate
+from syft.service.user.user_roles import ServiceRole
+
+# relative
+from .user_test import ds_client as ds_client_fixture
+
+ds_client = ds_client_fixture  # work around some ruff quirks
 
 
 @sy.syft_function(
@@ -33,33 +42,68 @@ def mock_syft_func_2():
     return 1
 
 
-def test_repr_markdown_not_throwing_error(guest_client: DomainClient) -> None:
+def test_repr_markdown_not_throwing_error(guest_client: DatasiteClient) -> None:
     guest_client.code.submit(mock_syft_func)
     result = guest_client.code.get_by_service_func_name("mock_syft_func")
     assert len(result) == 1
     assert result[0]._repr_markdown_()
 
 
+@pytest.mark.parametrize("delete_original_admin", [False, True])
+def test_new_admin_can_list_user_code(
+    worker: Worker,
+    ds_client: DatasiteClient,
+    faker: Faker,
+    delete_original_admin: bool,
+) -> None:
+    root_client = worker.root_client
+
+    project = sy.Project(name="", members=[ds_client])
+    project.create_code_request(mock_syft_func, ds_client)
+
+    email = faker.email()
+    pw = uuid.uuid4().hex
+    root_client.register(
+        name=faker.name(), email=email, password=pw, password_verify=pw
+    )
+
+    admin = root_client.login(email=email, password=pw)
+
+    root_client.api.services.user.update(
+        admin.me.id, UserUpdate(role=ServiceRole.ADMIN)
+    )
+
+    if delete_original_admin:
+        res = root_client.api.services.user.delete(root_client.me.id)
+        assert not isinstance(res, SyftError)
+
+    user_code_stash = worker.get_service("usercodeservice").stash
+    user_code = user_code_stash.get_all(user_code_stash.store.root_verify_key).ok()
+
+    assert len(user_code) == len(admin.code.get_all())
+    assert {c.id for c in user_code} == {c.id for c in admin.code}
+
+
 def test_user_code(worker) -> None:
-    root_domain_client = worker.root_client
-    root_domain_client.register(
+    root_datasite_client = worker.root_client
+    root_datasite_client.register(
         name="data-scientist",
         email="test_user@openmined.org",
         password="0000",
         password_verify="0000",
     )
-    guest_client = root_domain_client.login(
+    guest_client = root_datasite_client.login(
         email="test_user@openmined.org",
         password="0000",
     )
 
-    users = root_domain_client.users.get_all()
+    users = root_datasite_client.users.get_all()
     users[-1].allow_mock_execution()
 
     guest_client.api.services.code.request_code_execution(mock_syft_func)
 
-    root_domain_client = worker.root_client
-    message = root_domain_client.notifications[-1]
+    root_datasite_client = worker.root_client
+    message = root_datasite_client.notifications[-1]
     request = message.link
     user_code = request.changes[0].code
     result = user_code.run()
@@ -104,7 +148,7 @@ def test_duplicated_user_code(worker) -> None:
 
     # request the a different function name but same content will also succeed
     # flaky if not blocking
-    mock_syft_func_2(syft_no_node=True)
+    mock_syft_func_2(syft_no_server=True)
     result = ds_client.api.services.code.request_code_execution(mock_syft_func_2)
     assert isinstance(result, Request)
     assert len(ds_client.code.get_all()) == 2
@@ -180,8 +224,8 @@ def mock_inner_func():
 @sy.syft_function(
     input_policy=sy.ExactMatch(), output_policy=sy.SingleExecutionExactOutput()
 )
-def mock_outer_func(domain):
-    job = domain.launch_job(mock_inner_func)
+def mock_outer_func(datasite):
+    job = datasite.launch_job(mock_inner_func)
     return job
 
 
@@ -189,19 +233,21 @@ def test_nested_requests(worker, guest_client: User):
     guest_client.api.services.code.submit(mock_inner_func)
     guest_client.api.services.code.request_code_execution(mock_outer_func)
 
-    root_domain_client = worker.root_client
-    request = root_domain_client.requests[-1]
+    root_datasite_client = worker.root_client
+    request = root_datasite_client.requests[-1]
 
-    root_domain_client.api.services.request.apply(request.id)
-    request = root_domain_client.requests[-1]
+    root_datasite_client.api.services.request.apply(request.id)
+    request = root_datasite_client.requests[-1]
 
-    codes = root_domain_client.code
+    codes = root_datasite_client.code
     inner = codes[0] if codes[0].service_func_name == "mock_inner_func" else codes[1]
     outer = codes[0] if codes[0].service_func_name == "mock_outer_func" else codes[1]
     assert list(request.code.nested_codes.keys()) == ["mock_inner_func"]
-    (linked_obj, node) = request.code.nested_codes["mock_inner_func"]
-    assert node == {}
-    resolved = root_domain_client.api.services.notifications.resolve_object(linked_obj)
+    (linked_obj, server) = request.code.nested_codes["mock_inner_func"]
+    assert server == {}
+    resolved = root_datasite_client.api.services.notifications.resolve_object(
+        linked_obj
+    )
     assert resolved.id == inner.id
     assert outer.status.approved
     assert not inner.status.approved
@@ -209,16 +255,16 @@ def test_nested_requests(worker, guest_client: User):
 
 def test_user_code_mock_execution(worker) -> None:
     # Setup
-    root_domain_client = worker.root_client
+    root_datasite_client = worker.root_client
 
-    # TODO guest_client fixture is not in root_domain_client.users
-    root_domain_client.register(
+    # TODO guest_client fixture is not in root_datasite_client.users
+    root_datasite_client.register(
         name="data-scientist",
         email="test_user@openmined.org",
         password="0000",
         password_verify="0000",
     )
-    ds_client = root_domain_client.login(
+    ds_client = root_datasite_client.login(
         email="test_user@openmined.org",
         password="0000",
     )
@@ -233,7 +279,7 @@ def test_user_code_mock_execution(worker) -> None:
             )
         ],
     )
-    root_domain_client.upload_dataset(dataset)
+    root_datasite_client.upload_dataset(dataset)
 
     # DS requests code execution
     data = ds_client.datasets[0].assets[0]
@@ -254,7 +300,7 @@ def test_user_code_mock_execution(worker) -> None:
         result = ds_client.api.services.code.compute_mean(data=data.mock)
 
     # DO grants permissions
-    users = root_domain_client.users.get_all()
+    users = root_datasite_client.users.get_all()
     guest_user = [u for u in users if u.id == guest_user.id][0]
     guest_user.allow_mock_execution()
 
@@ -265,15 +311,15 @@ def test_user_code_mock_execution(worker) -> None:
 
 def test_mock_multiple_arguments(worker) -> None:
     # Setup
-    root_domain_client = worker.root_client
+    root_datasite_client = worker.root_client
 
-    root_domain_client.register(
+    root_datasite_client.register(
         name="data-scientist",
         email="test_user@openmined.org",
         password="0000",
         password_verify="0000",
     )
-    ds_client = root_domain_client.login(
+    ds_client = root_datasite_client.login(
         email="test_user@openmined.org",
         password="0000",
     )
@@ -288,8 +334,8 @@ def test_mock_multiple_arguments(worker) -> None:
             )
         ],
     )
-    root_domain_client.upload_dataset(dataset)
-    users = root_domain_client.users.get_all()
+    root_datasite_client.upload_dataset(dataset)
+    users = root_datasite_client.users.get_all()
     users[-1].allow_mock_execution()
 
     # DS requests code execution
@@ -300,7 +346,7 @@ def test_mock_multiple_arguments(worker) -> None:
         return data1 + data2
 
     ds_client.api.services.code.request_code_execution(compute_sum)
-    root_domain_client.requests[-1].approve()
+    root_datasite_client.requests[-1].approve()
 
     # Mock execution succeeds, result not cached
     result = ds_client.api.services.code.compute_sum(data1=1, data2=1)
@@ -320,20 +366,20 @@ def test_mock_multiple_arguments(worker) -> None:
 
 
 def test_mock_no_arguments(worker) -> None:
-    root_domain_client = worker.root_client
+    root_datasite_client = worker.root_client
 
-    root_domain_client.register(
+    root_datasite_client.register(
         name="data-scientist",
         email="test_user@openmined.org",
         password="0000",
         password_verify="0000",
     )
-    ds_client = root_domain_client.login(
+    ds_client = root_datasite_client.login(
         email="test_user@openmined.org",
         password="0000",
     )
 
-    users = root_domain_client.users.get_all()
+    users = root_datasite_client.users.get_all()
 
     @sy.syft_function_single_use()
     def compute_sum():
@@ -349,11 +395,11 @@ def test_mock_no_arguments(worker) -> None:
     users[-1].allow_mock_execution()
     result = ds_client.api.services.code.compute_sum()
     assert result, result
-    assert result.get() == 1
+    assert result == 1
 
     # approved, no mock execution
     users[-1].allow_mock_execution(allow=False)
-    message = root_domain_client.notifications[-1]
+    message = root_datasite_client.notifications[-1]
     request = message.link
     user_code = request.changes[0].code
     result = user_code.run()
@@ -361,7 +407,8 @@ def test_mock_no_arguments(worker) -> None:
 
     result = ds_client.api.services.code.compute_sum()
     assert result, result
-    assert result.get() == 1
+    assert not isinstance(result.syft_action_data_cache, ActionDataEmpty)
+    assert result == 1
 
 
 def test_submit_invalid_name(worker) -> None:
@@ -396,18 +443,16 @@ def test_submit_invalid_name(worker) -> None:
         client.code.submit(valid_name_2)
 
 
-def test_submit_code_with_global_var(guest_client: DomainClient) -> None:
+def test_submit_code_with_global_var(guest_client: DatasiteClient) -> None:
+    @sy.syft_function(
+        input_policy=sy.ExactMatch(), output_policy=sy.SingleExecutionExactOutput()
+    )
+    def mock_syft_func_with_global():
+        global x
+        return x
+
+
     with pytest.raises(Exception):
-
-        @sy.syft_function(
-            input_policy=sy.ExactMatch(), output_policy=sy.SingleExecutionExactOutput()
-        )
-        def mock_syft_func_with_global():
-            global x
-            return x
-
-    with pytest.raises(Exception):
-
         @sy.syft_function_single_use()
         def mock_syft_func_single_use_with_global():
             global x
@@ -415,15 +460,15 @@ def test_submit_code_with_global_var(guest_client: DomainClient) -> None:
 
 
 def test_request_existing_usercodesubmit(worker) -> None:
-    root_domain_client = worker.root_client
+    root_datasite_client = worker.root_client
 
-    root_domain_client.register(
+    root_datasite_client.register(
         name="data-scientist",
         email="test_user@openmined.org",
         password="0000",
         password_verify="0000",
     )
-    ds_client = root_domain_client.login(
+    ds_client = root_datasite_client.login(
         email="test_user@openmined.org",
         password="0000",
     )
@@ -446,15 +491,15 @@ def test_request_existing_usercodesubmit(worker) -> None:
 
 
 def test_request_existing_usercode(worker) -> None:
-    root_domain_client = worker.root_client
+    root_datasite_client = worker.root_client
 
-    root_domain_client.register(
+    root_datasite_client.register(
         name="data-scientist",
         email="test_user@openmined.org",
         password="0000",
         password_verify="0000",
     )
-    ds_client = root_domain_client.login(
+    ds_client = root_datasite_client.login(
         email="test_user@openmined.org",
         password="0000",
     )
@@ -479,26 +524,26 @@ def test_request_existing_usercode(worker) -> None:
 
 
 def test_submit_existing_code_different_user(worker):
-    root_domain_client = worker.root_client
+    root_datasite_client = worker.root_client
 
-    root_domain_client.register(
+    root_datasite_client.register(
         name="data-scientist",
         email="test_user@openmined.org",
         password="0000",
         password_verify="0000",
     )
-    ds_client_1 = root_domain_client.login(
+    ds_client_1 = root_datasite_client.login(
         email="test_user@openmined.org",
         password="0000",
     )
 
-    root_domain_client.register(
+    root_datasite_client.register(
         name="data-scientist-2",
         email="test_user_2@openmined.org",
         password="0000",
         password_verify="0000",
     )
-    ds_client_2 = root_domain_client.login(
+    ds_client_2 = root_datasite_client.login(
         email="test_user_2@openmined.org",
         password="0000",
     )
@@ -521,4 +566,4 @@ def test_submit_existing_code_different_user(worker):
 
     assert len(ds_client_1.code.get_all()) == 1
     assert len(ds_client_2.code.get_all()) == 1
-    assert len(root_domain_client.code.get_all()) == 2
+    assert len(root_datasite_client.code.get_all()) == 2
