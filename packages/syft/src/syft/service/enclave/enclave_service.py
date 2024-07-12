@@ -100,9 +100,7 @@ class EnclaveService(AbstractService):
                     context=root_context, clear_ref_objs=True
                 )
             else:
-                result = action_service.set(
-                    root_context, action_object, ignore_detached_objs=True
-                )
+                result = action_service.set(root_context, action_object)
             if isinstance(result, SyftError):
                 # TODO 🟣 Rollback previously uploaded assets if any error occurs
                 return result

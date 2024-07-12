@@ -14,6 +14,7 @@ from result import Ok
 from result import Result
 
 # relative
+from ...client.client import SyftClient
 from ...serde.serializable import serializable
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
@@ -605,9 +606,11 @@ class ModelRef(ActionObject):
             return SyftError(message="No ref_objs to store in Model Ref")
 
         for ref_obj in self.ref_objs:
-            print("ref_obj", ref_obj)
-            print("ref obj", ref_obj.syft_action_data, type(ref_obj.syft_action_data))
-            res = admin_client.services.action.set(ref_obj, ignore_detached_objs=True)
+            # print("ref_obj", type(ref_obj))
+            #  print("ref obj", ref_obj.syft_action_data, type(ref_obj.syft_action_data))
+            print("ref obj blob id", ref_obj.syft_blob_storage_entry_id)
+            res = admin_client.services.action.set(ref_obj)
+            print("res", res)
             ret_action_obj = admin_client.services.action.get(res.id)
             print("ret_action_obj", ret_action_obj)
             print(
@@ -632,6 +635,7 @@ class ModelRef(ActionObject):
         context: AuthedServiceContext,
         wrap_ref_to_obj: bool = False,
         unwrap_action_data: bool = True,
+        remote_client: SyftClient | None = None,
     ) -> list:
         admin_client = context.node.root_client
 
@@ -644,8 +648,14 @@ class ModelRef(ActionObject):
         for asset_action_id in asset_action_ids:
             res = admin_client.services.action.get(asset_action_id)
             action_data = res.syft_action_data
-            # TODO: hack until blob upload is fixed
-            res.syft_blob_storage_entry_id = None
+
+            # Save to blob storage of remote client if provided
+            if remote_client is not None:
+                res.syft_blob_storage_entry_id = None
+                blob_res = res._save_to_blob_storage(client=remote_client)
+                if isinstance(blob_res, SyftError):
+                    return blob_res
+
             print("type(action_data)", type(action_data))
             print("res", res)
             asset_list.append(action_data if unwrap_action_data else res)

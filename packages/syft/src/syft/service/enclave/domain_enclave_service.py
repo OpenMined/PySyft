@@ -151,17 +151,6 @@ class DomainEnclaveService(AbstractService):
             .ok()
             for action_id in asset_action_ids
         ]
-        # Actual data from blob storage is lazy-loaded when the `syft_action_data` property is used for the
-        # first time. Let's load it now so that it can get properly transferred along with the action objects.
-        for action_object in action_objects:
-            # If it is ModelRef, then load all the references
-            # and wrap them to the Model Ref object
-            if isinstance(action_object, ModelRef):
-                action_object.load_data(
-                    context=context, wrap_ref_to_obj=True, unwrap_action_data=False
-                )
-
-            _ = action_object.syft_action_data
 
         # Get the enclave client
         if not code.runtime_policy_init_kwargs:
@@ -176,6 +165,27 @@ class DomainEnclaveService(AbstractService):
 
         current_node_credentials = context.node.signing_key
         enclave_client = provider.get_client(credentials=current_node_credentials)
+
+        # Actual data from blob storage is lazy-loaded when the `syft_action_data` property is used for the
+        # first time. Let's load it now so that it can get properly transferred along with the action objects.
+        for action_object in action_objects:
+            # If it is ModelRef, then load all the references
+            # and wrap them to the Model Ref object
+            if isinstance(action_object, ModelRef):
+                action_object.load_data(
+                    context=context,
+                    wrap_ref_to_obj=True,
+                    unwrap_action_data=False,
+                    remote_client=enclave_client,
+                )
+
+            # TODO: Optimize this, currently, we load the full action object from blob
+            # and then send the data to enclave.
+            _ = action_object.syft_action_data
+            action_object.syft_blob_storage_entry_id = None
+            blob_res = action_object._save_to_blob_storage(client=enclave_client)
+            if isinstance(blob_res, SyftError):
+                return blob_res
 
         # Upload the assets to the enclave
         result = enclave_client.api.services.enclave.upload_assets(
