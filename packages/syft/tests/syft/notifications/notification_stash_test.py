@@ -1,7 +1,9 @@
+# stdlib
+from typing import NoReturn
+
 # third party
 import pytest
 from pytest import MonkeyPatch
-from result import Err
 
 # syft absolute
 from syft.node.credentials import SyftSigningKey
@@ -16,7 +18,9 @@ from syft.service.notification.notification_stash import ToUserVerifyKeyPartitio
 from syft.service.notification.notifications import Notification
 from syft.service.notification.notifications import NotificationExpiryStatus
 from syft.service.notification.notifications import NotificationStatus
+from syft.store.document_store_errors import StashException
 from syft.types.datetime import DateTime
+from syft.types.result import as_result
 from syft.types.uid import UID
 
 test_signing_key_string = (
@@ -277,14 +281,15 @@ def test_update_notification_status(root_verify_key, document_store) -> None:
     random_uid = UID()
     random_verify_key = SyftSigningKey.generate().verify_key
     test_stash = NotificationStash(store=document_store)
-    expected_error = Err(f"No notification exists for id: {random_uid}")
+    expected_error = f"No notification exists for id: {random_uid}"
 
-    response = test_stash.update_notification_status(
-        root_verify_key, uid=random_uid, status=NotificationStatus.READ
-    )
+    with pytest.raises(StashException) as exc:
+        test_stash.update_notification_status(
+            root_verify_key, uid=random_uid, status=NotificationStatus.READ
+        ).unwrap()
 
-    assert response.is_err()
-    assert response == expected_error
+    assert exc.type is StashException
+    assert exc.value.public_message
 
     mock_notification = add_mock_notification(
         root_verify_key, test_stash, test_verify_key, random_verify_key
@@ -315,11 +320,11 @@ def test_update_notification_status_error_on_get_by_uid(
 ) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
-    random_uid = UID()
     test_stash = NotificationStash(store=document_store)
 
-    def mock_get_by_uid(root_verify_key, uid: random_uid) -> Err:
-        return Err(None)
+    @as_result(StashException)
+    def mock_get_by_uid(root_verify_key: SyftVerifyKey, uid: UID) -> NoReturn:
+        raise StashException(public_message=f"No notification exists for id: {uid}")
 
     monkeypatch.setattr(
         test_stash,
@@ -331,11 +336,16 @@ def test_update_notification_status_error_on_get_by_uid(
         root_verify_key, test_stash, test_verify_key, random_verify_key
     )
 
-    response = test_stash.update_notification_status(
-        root_verify_key, random_verify_key, NotificationStatus.READ
-    )
+    with pytest.raises(StashException) as exc:
+        test_stash.update_notification_status(
+            root_verify_key, random_verify_key, NotificationStatus.READ
+        ).unwrap()
 
-    assert response is None
+    assert exc.type is StashException
+    assert (
+        exc.value.public_message
+        == f"No notification exists for id: {random_verify_key}"
+    )
 
 
 def test_delete_all_for_verify_key(root_verify_key, document_store) -> None:
@@ -381,11 +391,11 @@ def test_delete_all_for_verify_key_error_on_get_all_inbox_for_verify_key(
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
     test_stash = NotificationStash(store=document_store)
+    error_msg = "Database failure"
 
-    def mock_get_all_inbox_for_verify_key(
-        root_verify_key, verify_key: random_verify_key
-    ) -> Err:
-        return Err(None)
+    @as_result(StashException)
+    def mock_get_all_inbox_for_verify_key(root_verify_key, verify_key) -> NoReturn:
+        raise StashException(public_message=error_msg)
 
     monkeypatch.setattr(
         test_stash,
@@ -393,9 +403,13 @@ def test_delete_all_for_verify_key_error_on_get_all_inbox_for_verify_key(
         mock_get_all_inbox_for_verify_key,
     )
 
-    response = test_stash.delete_all_for_verify_key(root_verify_key, random_verify_key)
+    with pytest.raises(StashException) as exc:
+        test_stash.delete_all_for_verify_key(
+            root_verify_key, random_verify_key
+        ).unwrap()
 
-    assert response == Err(None)
+    assert exc.type is StashException
+    assert exc.value.public_message == error_msg
 
 
 def test_delete_all_for_verify_key_error_on_delete_by_uid(
@@ -404,12 +418,11 @@ def test_delete_all_for_verify_key_error_on_delete_by_uid(
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
     test_stash = NotificationStash(store=document_store)
-    mock_notification = add_mock_notification(
-        root_verify_key, test_stash, test_verify_key, random_verify_key
-    )
+    error_msg = "Failed to delete notification"
 
-    def mock_delete_by_uid(root_verify_key, uid=mock_notification.id) -> Err:
-        return Err(None)
+    @as_result(StashException)
+    def mock_delete_by_uid(root_verify_key, uid: UID) -> NoReturn:
+        raise StashException(public_message=error_msg)
 
     monkeypatch.setattr(
         test_stash,
@@ -417,8 +430,14 @@ def test_delete_all_for_verify_key_error_on_delete_by_uid(
         mock_delete_by_uid,
     )
 
-    response = test_stash.delete_all_for_verify_key(
-        root_verify_key, random_verify_key
-    ).value
+    add_mock_notification(
+        root_verify_key, test_stash, test_verify_key, random_verify_key
+    )
 
-    assert response is None
+    with pytest.raises(StashException) as exc:
+        test_stash.delete_all_for_verify_key(
+            root_verify_key, random_verify_key
+        ).unwrap()
+
+    assert exc.type is StashException
+    assert exc.value.public_message == error_msg

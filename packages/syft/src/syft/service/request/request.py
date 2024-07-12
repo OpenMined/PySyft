@@ -1306,7 +1306,7 @@ class UserCodeStatusChange(Change):
         user_code_status = self.linked_obj.resolve_with_context(context)
         if user_code_status.is_err():
             raise SyftException(public_message=user_code_status.err())
-        user_code_status = user_code_status.ok()
+        user_code_status = user_code_status.unwrap()
 
         if apply:
             # Only mutate, does not write to stash

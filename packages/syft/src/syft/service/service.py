@@ -13,7 +13,6 @@ from typing import Any
 from typing import TYPE_CHECKING
 
 # third party
-from result import Ok
 from result import OkErr
 from typing_extensions import Self
 
@@ -74,14 +73,18 @@ class AbstractService:
 
         obj = self.stash.get_by_uid(credentials, uid=linked_obj.object_uid)
 
-        if isinstance(obj, (NewOk, NewErr)) and obj.is_ok():
+        if isinstance(obj, NewOk | NewErr) and obj.is_ok():
             obj = obj.ok()
+        elif isinstance(obj, OkErr) and obj.is_ok():
+            obj = obj.ok()
+
         if hasattr(obj, "node_uid"):
             if context.node is None:
                 return SyftError(message=f"context {context}'s node is None")
             obj.node_uid = context.node.id
-        if not isinstance(obj, (NewErr, NewOk)):
+        if not isinstance(obj, NewErr | NewOk):
             obj = NewOk(obj)
+
         return obj
 
     def get_all(*arg: Any, **kwargs: Any) -> Any:

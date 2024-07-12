@@ -2,12 +2,12 @@
 import sys
 import traceback
 from typing import Any
-from typing import Self
 from typing import TYPE_CHECKING
 
 # third party
 from IPython.display import display
 from result import Err
+from typing_extensions import Self
 
 # relative
 from ..serde.serializable import serializable
@@ -81,9 +81,6 @@ class SyftResponseMessage(SyftBaseModel):
             f'<pre class="{self._repr_html_class_}" style="display:inline; font-family:inherit;">'
             f"{sanitize_html(self.message)}</pre></div><br/>"
         )
-
-
-Exception
 
 
 @serializable()

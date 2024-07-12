@@ -1651,7 +1651,7 @@ class Node(AbstractNode):
         return self.get_service(UserCodeService).stash
 
     @as_result(NotFoundException)
-    def get_default_worker_pool(self) -> WorkerPool | None | SyftError:
+    def get_default_worker_pool(self) -> WorkerPool | None:
         return self.pool_stash.get_by_name(
             credentials=self.verify_key,
             pool_name=self.settings.default_worker_pool,

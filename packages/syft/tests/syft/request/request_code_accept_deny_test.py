@@ -39,7 +39,7 @@ def get_ds_client(faker: Faker, root_client: SyftClient, guest_client: SyftClien
         password=password,
         password_verify=password,
     )
-    assert isinstance(result, UserPrivateKey)
+    assert isinstance(result.value, UserPrivateKey)
     ds_client = guest_client.login(email=guest_email, password=password)
     return ds_client
 

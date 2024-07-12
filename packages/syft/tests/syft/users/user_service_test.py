@@ -26,7 +26,6 @@ from syft.service.user.user_service import UserService
 from syft.store.document_store_errors import NotFoundException
 from syft.store.document_store_errors import StashException
 from syft.types.errors import SyftException
-from syft.types.result import Err
 from syft.types.result import Ok
 from syft.types.result import as_result
 from syft.types.uid import UID
@@ -71,6 +70,7 @@ def test_userservice_create_error_on_get_by_email(
         user_service.create(authed_context, guest_create_user)
 
     assert exc.value.public_message == f"User {guest_create_user.email} already exists"
+
 
 def test_userservice_create_success(
     monkeypatch: MonkeyPatch,
@@ -404,7 +404,9 @@ def test_userservice_update_fails(
         return guest_user
 
     @as_result(StashException)
-    def mock_update(credentials: SyftVerifyKey, obj: User, has_permission: bool) -> NoReturn:
+    def mock_update(
+        credentials: SyftVerifyKey, obj: User, has_permission: bool
+    ) -> NoReturn:
         raise StashException(update_error_msg)
 
     monkeypatch.setattr(user_service.stash, "update", mock_update)
@@ -538,7 +540,7 @@ def test_userservice_admin_verify_key_error(
 
     with pytest.raises(SyftException) as exc:
         user_service.admin_verify_key()
-            
+
     assert exc.type == SyftException
     assert exc.value.public_message == expected_output
 
@@ -564,7 +566,7 @@ def test_userservice_register_user_exists(
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
 
     expected_error_msg = f"User {guest_create_user.email} already exists"
-    
+
     # Patch Worker settings to enable signup
     with mock.patch(
         "syft.Worker.settings",
@@ -576,7 +578,6 @@ def test_userservice_register_user_exists(
 
         with pytest.raises(SyftException) as exc:
             res = user_service.register(node_context, guest_create_user)
-            print(res)
 
         assert exc.type == SyftException
         assert exc.value.public_message == expected_error_msg
@@ -676,10 +677,8 @@ def test_userservice_register_set_fail(
         monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
         monkeypatch.setattr(user_service.stash, "set", mock_set)
 
-        with pytest.raises(StashException) as exc:
-            user_service.register(node_context, guest_create_user)
-
-        assert exc.type == StashException
+        result = user_service.register(node_context, guest_create_user)
+        assert isinstance(result, SyftError)
 
 
 def test_userservice_exchange_credentials(

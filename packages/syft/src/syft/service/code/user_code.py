@@ -517,6 +517,7 @@ class UserCode(SyncableSyftObject):
 
         # FIX: status_link
         status = self.status_link.resolve_with_context(context)
+
         if status.is_err():
             raise SyftException(public_message=status.err())
 
