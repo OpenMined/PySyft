@@ -34,12 +34,12 @@ an ``outside party`` they may or may not ``fully trust`` has good intentions.
 You Will Learn ⬇️
 """"""""""""""""""""
     
-| :doc:`Part 1: Deploying your own Domain Server <data-owner/00-deploy-domain>`
-| :doc:`Part 2: Uploading Private Data to a Domain Server <data-owner/01-upload-data>`
-| :doc:`Part 3: Creating User Accounts on your Domain Server <data-owner/02-create-account-configure-pb>`
+| :doc:`Part 1: Deploying your own Datasite Server <data-owner/00-deploy-datasite>`
+| :doc:`Part 2: Uploading Private Data to a Datasite Server <data-owner/01-upload-data>`
+| :doc:`Part 3: Creating User Accounts on your Datasite Server <data-owner/02-create-account-configure-pb>`
 | :doc:`Part 4: Joining a Network <data-owner/03-join-network>`
 | :doc:`Part 5: Creating a Network <04-create-network>`
-| :doc:`Part 6: Configuring Privacy Budget on your Domain Server <05-configure-pb>`
+| :doc:`Part 6: Configuring Privacy Budget on your Datasite Server <05-configure-pb>`
 
 
 B. Getting Started with Data Scientist 👩🏽‍🔬
@@ -50,9 +50,9 @@ specific ``question`` using one or more data owners' ``datasets``.
 You Will Learn ⬇️
 """"""""""""""""""""
 
-| :doc:`Part 7: Connect to a Domain`
-| :doc:`Part 8: Searching for Datasets on the Domain`
-| :doc:`Part 9: Exploring a Dataset in the Domain`
+| :doc:`Part 7: Connect to a Datasite`
+| :doc:`Part 8: Searching for Datasets on the Datasite`
+| :doc:`Part 9: Exploring a Dataset in the Datasite`
 | :doc:`Part 10: Training a Model`
 | :doc:`Part 11: Retrieving Secure Results <>`
 

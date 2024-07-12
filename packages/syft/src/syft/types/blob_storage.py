@@ -22,9 +22,9 @@ from typing_extensions import Self
 # relative
 from ..client.api import SyftAPI
 from ..client.client import SyftClient
-from ..node.credentials import SyftVerifyKey
 from ..serde import serialize
 from ..serde.serializable import serializable
+from ..server.credentials import SyftVerifyKey
 from ..service.action.action_object import ActionObject
 from ..service.action.action_object import ActionObjectPointer
 from ..service.action.action_object import ActionObjectV3
@@ -33,7 +33,7 @@ from ..service.action.action_types import action_types
 from ..service.response import SyftError
 from ..service.response import SyftException
 from ..service.service import from_api_or_context
-from ..types.grid_url import GridURL
+from ..types.server_url import ServerURL
 from ..types.transforms import drop
 from ..types.transforms import keep
 from ..types.transforms import make_set_default
@@ -77,7 +77,7 @@ class BlobFile(SyftObject):
     ) -> Any:
         # get blob retrieval object from api + syft_blob_storage_entry_id
         read_method = from_api_or_context(
-            "blob_storage.read", self.syft_node_location, self.syft_client_verify_key
+            "blob_storage.read", self.syft_server_location, self.syft_client_verify_key
         )
         if read_method is not None:
             blob_retrieval_object = read_method(self.syft_blob_storage_entry_id)
@@ -116,7 +116,7 @@ class BlobFile(SyftObject):
         return None
 
     def upload_to_blobstorage(self, client: SyftClient) -> SyftError | None:
-        self.syft_node_location = client.id
+        self.syft_server_location = client.id
         self.syft_client_verify_key = client.verify_key
         return self._upload_to_blobstorage_from_api(client.api)
 
@@ -261,7 +261,7 @@ class SeaweedSecureFilePathLocation(SecureFilePathLocation):
             from ..store.blob_storage import BlobRetrievalByURL
 
             return BlobRetrievalByURL(
-                url=GridURL.from_url(url), file_name=Path(self.path).name, type_=type_
+                url=ServerURL.from_url(url), file_name=Path(self.path).name, type_=type_
             )
         except BotoClientError as e:
             raise SyftException(e)

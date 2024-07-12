@@ -22,7 +22,7 @@ objects, functions and methods.
 
    syft.client
    syft.external
-   syft.node
+   syft.server
    syft.serde
    syft.service
    syft.store

@@ -12,10 +12,10 @@ from result import Ok
 import syft as sy
 from syft.client.api import SignedSyftAPICall
 from syft.client.api import SyftAPICall
-from syft.node.credentials import SIGNING_KEY_FOR
-from syft.node.credentials import SyftSigningKey
-from syft.node.credentials import SyftVerifyKey
-from syft.node.worker import Worker
+from syft.server.credentials import SIGNING_KEY_FOR
+from syft.server.credentials import SyftSigningKey
+from syft.server.credentials import SyftVerifyKey
+from syft.server.worker import Worker
 from syft.service.action.action_object import ActionObject
 from syft.service.action.action_store import DictActionStore
 from syft.service.context import AuthedServiceContext
@@ -78,7 +78,7 @@ def test_signing_key() -> None:
 
 def test_action_store() -> None:
     test_signing_key = SyftSigningKey.from_string(test_signing_key_string)
-    action_store = DictActionStore(node_uid=UID())
+    action_store = DictActionStore(server_uid=UID())
     uid = UID()
     raw_data = np.array([1, 2, 3])
     test_object = ActionObject.from_obj(raw_data)
@@ -142,7 +142,9 @@ def test_user_service(worker) -> None:
     )
 
     # create a context
-    context = AuthedServiceContext(node=worker, credentials=test_signing_key.verify_key)
+    context = AuthedServiceContext(
+        server=worker, credentials=test_signing_key.verify_key
+    )
 
     # call the create function
     user_view = user_service.create(context=context, user_create=new_user)
@@ -256,7 +258,7 @@ def test_worker_handle_api_request(
     kwargs: dict,
     blocking: bool,
 ) -> None:
-    node_uid = worker_with_proc.id
+    server_uid = worker_with_proc.id
     root_client = worker_with_proc.root_client
     assert root_client.api is not None
 
@@ -266,7 +268,7 @@ def test_worker_handle_api_request(
     root_client = worker_with_proc.root_client
 
     api_call = SyftAPICall(
-        node_uid=node_uid, path=path, args=[], kwargs=kwargs, blocking=blocking
+        server_uid=server_uid, path=path, args=[], kwargs=kwargs, blocking=blocking
     )
     # should fail on unsigned requests
     result = worker_with_proc.handle_api_call(api_call).message.data
@@ -308,7 +310,7 @@ def test_worker_handle_api_response(
     kwargs: dict,
     blocking: bool,
 ) -> None:
-    node_uid = worker_with_proc.id
+    server_uid = worker_with_proc.id
     n_processes = worker_with_proc.processes
     root_client = worker_with_proc.root_client
     assert root_client.api is not None
@@ -326,7 +328,7 @@ def test_worker_handle_api_response(
     root_client = worker_with_proc.root_client
 
     call = SyftAPICall(
-        node_uid=node_uid, path=path, args=[], kwargs=kwargs, blocking=blocking
+        server_uid=server_uid, path=path, args=[], kwargs=kwargs, blocking=blocking
     )
     signed_api_call = call.sign(root_client.credentials)
 
