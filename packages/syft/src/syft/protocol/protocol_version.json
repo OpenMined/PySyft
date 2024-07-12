@@ -267,6 +267,11 @@
         }
       },
       "ServerSettings": {
+        "3": {
+          "version": 3,
+          "hash": "6b2240b92099684b0e431d27c0be2a22daad234b890c95eb607f0cc9e73c9f0d",
+          "action": "add"
+        },
         "5": {
           "version": 5,
           "hash": "522690efe97c50dff81936640e95207861406e480d7e1d87587e558dbd7a506c",
@@ -281,7 +286,7 @@
       "HTTPConnection": {
         "3": {
           "version": 3,
-          "hash": "b58f9e16879e87169ccfac55504c8ae65dbc7a8345f6e361af4133e5572e2b13",
+          "hash": "2e567111a679e9f01b84eafc96d5e14e52b12fea991957e547f2edcbc0ede34c",
           "action": "add"
         }
       },
@@ -422,12 +427,12 @@
       "BlobRetrievalByURL": {
         "4": {
           "version": 4,
-          "hash": "4ed706c90c5835959993bf9ebd61577829cdf8d2e51d4fd9606c68928f7be658",
+          "hash": "6a77259a8c83f85e83e89cee4c7ea7b1d57ccac4f70ecfb86b6c5db21c62ee79",
           "action": "add"
         },
         "5": {
           "version": 5,
-          "hash": "2c6528e3efa7473a73951c4dec5e58547afdec8d0ba58807a0556733fd6217a5",
+          "hash": "e9c5e16f14e5bd45209f44ebf6c758a8c4a315b2d335a33bc529606506037890",
           "action": "add"
         }
       },
@@ -554,6 +559,11 @@
         }
       },
       "SyftLog": {
+        "3": {
+          "version": 3,
+          "hash": "c2ee3f4c34dc7af3af533865dc07384403fb757e7959272c9d6d08110623a216",
+          "action": "add"
+        },
         "4": {
           "version": 4,
           "hash": "3b90dcb66359a1d03345291b47dcb8b5c166b1e0344dbe84d9c1f3a8e57f99eb",
@@ -561,6 +571,11 @@
         }
       },
       "JobItem": {
+        "4": {
+          "version": 4,
+          "hash": "3e2eaae1b2c367b5bc52cbc4eb3390b1f5a6a6f8cae69523bbfc8e071c314bf8",
+          "action": "add"
+        },
         "6": {
           "version": 6,
           "hash": "b633f770c9c47a849b75fe6b93c573c94eadab23c689aa812a8671cec9543650",
@@ -568,6 +583,11 @@
         }
       },
       "ExecutionOutput": {
+        "1": {
+          "version": 1,
+          "hash": "c6cb71d6ae689e71c31685c29a7ecd44d1c0c5b31fd19991b535cb597db7b44a",
+          "action": "add"
+        },
         "2": {
           "version": 2,
           "hash": "1b045334d8049f3970e655da11f3f62bc8a9f78e562fd75ed517c97fc95bb1c3",
@@ -781,7 +801,7 @@
       "SeaweedFSBlobDeposit": {
         "4": {
           "version": 4,
-          "hash": "84cdecd1a4ae0713a1e2992ba00ef74363996855c0b864b6fcd0e2fef2e3b44c",
+          "hash": "d5c268e0ccbb00149319679b95eb43134ae80ae43814d7f991732530c79399a1",
           "action": "add"
         }
       },
@@ -1154,6 +1174,20 @@
         "2": {
           "version": 2,
           "hash": "eec308b8fd9437fc74a65f0cf70dff586130b35866d1e1512de49d45e7896981",
+          "action": "add"
+        }
+      },
+      "StoreMetadata": {
+        "1": {
+          "version": 1,
+          "hash": "8de9a22a2765ef976bc161cb0704347d30350c085da8c8ffa876065cfca3e5fd",
+          "action": "add"
+        }
+      },
+      "MigrationData": {
+        "1": {
+          "version": 1,
+          "hash": "ae07a6345762b8ebe9d2a100776e2405fd17516c9d224913a3358c96480ba889",
           "action": "add"
         }
       }

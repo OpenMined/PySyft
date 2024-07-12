@@ -32,7 +32,7 @@ spec:
       {{- end }}
       containers:
         - name: backend-container
-          image: {{ .Values.global.registry }}/openmined/grid-backend:{{ .Values.global.version }}
+          image: {{ .Values.global.registry }}/openmined/syft-backend:{{ .Values.global.version }}
           imagePullPolicy: Always
           resources: {{ include "common.resources.set" (dict "resources" .Values.server.resources "preset" .Values.server.resourcesPreset) | nindent 12 }}
           env:
@@ -70,7 +70,7 @@ spec:
             - name: INMEMORY_WORKERS
               value: {{ .Values.server.inMemoryWorkers | quote }}
             - name: DEFAULT_WORKER_POOL_IMAGE
-              value: "{{ .Values.global.registry }}/openmined/grid-backend:{{ .Values.global.version }}"
+              value: "{{ .Values.global.registry }}/openmined/syft-backend:{{ .Values.global.version }}"
             - name: DEFAULT_WORKER_POOL_COUNT
               value: {{ .Values.server.defaultWorkerPool.count | quote }}
             - name: DEFAULT_WORKER_POOL_POD_LABELS
@@ -180,7 +180,7 @@ spec:
           readinessProbe: null
         {{- if .Values.attestation.enabled }}
         - name: enclave-attestation
-          image: {{ .Values.global.registry }}/openmined/grid-enclave-attestation:{{ .Values.global.version }}
+          image: {{ .Values.global.registry }}/openmined/syft-enclave-attestation:{{ .Values.global.version }}
           imagePullPolicy: Always
           resources: {{ include "common.resources.set" (dict "resources" .Values.attestation.resources "preset" .Values.attestation.resourcesPreset) | nindent 12 }}
           env:

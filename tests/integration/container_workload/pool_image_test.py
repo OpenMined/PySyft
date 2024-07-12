@@ -21,7 +21,7 @@ from syft.types.uid import UID
 from syft.util.util import get_latest_tag
 
 registry = os.getenv("SYFT_BASE_IMAGE_REGISTRY", "docker.io")
-repo = "openmined/grid-backend"
+repo = "openmined/syft-backend"
 
 if "k3d" in registry:
     tag = get_latest_tag(registry, repo)

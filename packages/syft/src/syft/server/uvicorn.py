@@ -162,7 +162,7 @@ def run_uvicorn(
 
     # Finally, run the uvicorn server.
     uvicorn.run(
-        "syft.server.server:app_factory",
+        "syft.server.uvicorn:app_factory",
         host=host,
         port=port,
         factory=True,

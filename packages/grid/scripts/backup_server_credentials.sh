@@ -67,7 +67,7 @@ docker_cp() {
 
 
 k8s_cp() {
-    IMAGE_TAG="grid-backend"
+    IMAGE_TAG="syft-backend"
 
     # Get a list of available contexts
     CONTEXTS=($(kubectl config get-contexts -o name))

@@ -16,7 +16,7 @@ from syft.service.worker.worker_pool import WorkerPool
 # relative
 from ..request.request_code_accept_deny_test import get_ds_client
 
-PREBUILT_IMAGE_TAG = f"docker.io/openmined/grid-backend:{sy.__version__}"
+PREBUILT_IMAGE_TAG = f"docker.io/openmined/syft-backend:{sy.__version__}"
 
 CUSTOM_DOCKERFILE = f"""
 FROM {PREBUILT_IMAGE_TAG}

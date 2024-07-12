@@ -60,7 +60,7 @@ WORKDIR /root/app/
 # Copy pre-built syft dependencies
 COPY --from=syft_deps /root/app/.venv .venv
 
-# copy grid
+# copy server
 COPY grid/backend/grid ./grid/
 
 # copy syft

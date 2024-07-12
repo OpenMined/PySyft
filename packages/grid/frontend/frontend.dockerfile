@@ -22,14 +22,14 @@ FROM base AS dependencies
 
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
-FROM dependencies as grid-ui-tests
+FROM dependencies as syft-ui-tests
 COPY vite.config.ts ./
 COPY ./tests ./tests
 COPY ./src/ ./src
 
 CMD pnpm test:unit
 
-FROM dependencies as grid-ui-development
+FROM dependencies as syft-ui-development
 
 ENV SERVER_ENV=development
 
@@ -41,7 +41,7 @@ FROM dependencies AS builder
 COPY . .
 RUN pnpm build
 
-FROM base AS grid-ui-production
+FROM base AS syft-ui-production
 
 ENV SERVER_ENV=production
 

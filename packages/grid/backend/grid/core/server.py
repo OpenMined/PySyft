@@ -20,7 +20,7 @@ from syft.store.sqlite_document_store import SQLiteStoreClientConfig
 from syft.store.sqlite_document_store import SQLiteStoreConfig
 from syft.types.uid import UID
 
-# grid absolute
+# server absolute
 from grid.core.config import settings
 
 

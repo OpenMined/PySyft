@@ -441,7 +441,7 @@ class HTTPConnection(ServerConnection):
 
     def get_client_type(self) -> type[SyftClient] | SyftError:
         # TODO: Rasswanth, should remove passing in credentials
-        # when metadata are proxy forwarded in the grid routes
+        # when metadata are proxy forwarded in the server routes
         # in the gateway fixes PR
         # relative
         from .datasite_client import DatasiteClient

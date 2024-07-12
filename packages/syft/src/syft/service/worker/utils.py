@@ -567,7 +567,7 @@ def create_default_image(
     in_kubernetes: bool = False,
 ) -> SyftError | SyftWorkerImage:
     if not in_kubernetes:
-        tag = f"openmined/grid-backend:{tag}"
+        tag = f"openmined/syft-backend:{tag}"
 
     worker_config = PrebuiltWorkerConfig(
         tag=tag,

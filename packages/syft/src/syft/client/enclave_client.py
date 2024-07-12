@@ -117,7 +117,7 @@ class EnclaveClient(SyftClient):
         </ul>
         """
 
-        small_grid_symbol_logo = load_png_base64("small-grid-symbol-logo.png")
+        small_server_symbol_logo = load_png_base64("small-syft-symbol-logo.png")
 
         url = getattr(self.connection, "url", None)
         server_details = f"<strong>URL:</strong> {url}<br />" if url else ""
@@ -160,7 +160,7 @@ class EnclaveClient(SyftClient):
             }}
         </style>
         <div class="syft-client syft-container">
-            <img src="{small_grid_symbol_logo}" alt="Logo"
+            <img src="{small_server_symbol_logo}" alt="Logo"
             style="width:48px;height:48px;padding:3px;">
             <h2>Welcome to {self.name}</h2>
             <div class="syft-space">

@@ -57,7 +57,7 @@ DEFAULT_WELCOME_MSG = """
             }
         </style>
         <div class="syft-client syft-container">
-            <img src="$grid_symbol" alt="Logo"
+            <img src="$server_symbol" alt="Logo"
             style="width:48px;height:48px;padding:3px;">
             <h2>Welcome to $datasite_name</h2>
             <div class="syft-space">
