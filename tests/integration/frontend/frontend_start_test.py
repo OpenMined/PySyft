@@ -14,7 +14,7 @@ HOST_IP = os.environ.get("HOST_IP", "localhost")
 
 @pytest.mark.frontend
 def test_serves_datasite_frontend() -> None:
-    title_str = "PyGrid"
+    title_str = "Syft UI"
     url = f"http://{HOST_IP}:{DATASITE_PORT}"
     result = requests.get(url)
     assert result.status_code == 200
@@ -23,7 +23,7 @@ def test_serves_datasite_frontend() -> None:
 
 @pytest.mark.frontend
 def test_serves_network_frontend() -> None:
-    title_str = "PyGrid"
+    title_str = "Syft UI"
     url = f"http://localhost:{NETWORK_PORT}"
     result = requests.get(url)
     assert result.status_code == 200

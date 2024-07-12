@@ -23,7 +23,7 @@ from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
-from ...types.grid_url import GridURL
+from ...types.server_url import ServerURL
 from ...types.transforms import TransformContext
 from ...types.transforms import keep
 from ...types.transforms import make_set_default
@@ -948,7 +948,7 @@ TYPE_TO_SERVICE[ServerPeer] = NetworkService
 SERVICE_TO_TYPES[NetworkService].update({ServerPeer})
 
 
-def from_grid_url(context: TransformContext) -> TransformContext:
+def from_server_url(context: TransformContext) -> TransformContext:
     if context.obj is not None and context.output is not None:
         url = context.obj.url.as_container_host()
         context.output["host_or_ip"] = url.host_or_ip
@@ -964,7 +964,7 @@ def from_grid_url(context: TransformContext) -> TransformContext:
 
 @transform(HTTPConnection, HTTPServerRoute)
 def http_connection_to_server_route() -> list[Callable]:
-    return [from_grid_url]
+    return [from_server_url]
 
 
 def get_python_server_route(context: TransformContext) -> TransformContext:
@@ -993,7 +993,7 @@ def server_route_to_python_connection(
 def server_route_to_http_connection(
     obj: Any, context: TransformContext | None = None
 ) -> list[Callable]:
-    url = GridURL(
+    url = ServerURL(
         protocol=obj.protocol, host_or_ip=obj.host_or_ip, port=obj.port
     ).as_container_host()
     return HTTPConnection(

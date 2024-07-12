@@ -37,7 +37,7 @@ from ...types.blob_storage import BlobStorageEntry
 from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.blob_storage import SeaweedSecureFilePathLocation
 from ...types.blob_storage import SecureFilePathLocation
-from ...types.grid_url import GridURL
+from ...types.server_url import ServerURL
 from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.uid import UID
 from ...util.constants import DEFAULT_TIMEOUT
@@ -55,7 +55,7 @@ class SeaweedFSBlobDeposit(BlobDeposit):
     __canonical_name__ = "SeaweedFSBlobDeposit"
     __version__ = SYFT_OBJECT_VERSION_4
 
-    urls: list[GridURL]
+    urls: list[ServerURL]
     size: int
     proxy_server_uid: UID | None = None
 
@@ -187,8 +187,8 @@ class SeaweedFSClientConfig(BlobStorageClientConfig):
 
     @property
     def endpoint_url(self) -> str:
-        grid_url = GridURL(host_or_ip=self.host, port=self.port)
-        return grid_url.url
+        server_url = ServerURL(host_or_ip=self.host, port=self.port)
+        return server_url.url
 
     @property
     def mount_url(self) -> str:
@@ -280,7 +280,7 @@ class SeaweedFSConnection(BlobStorageConnection):
         total_parts = math.ceil(obj.file_size / DEFAULT_FILE_PART_SIZE)
 
         urls = [
-            GridURL.from_url(
+            ServerURL.from_url(
                 self.client.generate_presigned_url(
                     ClientMethod="upload_part",
                     Params={

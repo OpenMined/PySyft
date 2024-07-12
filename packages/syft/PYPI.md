@@ -138,7 +138,7 @@ helm install ... --set ingress.class="gce"
 # Install Notes
 
 - PySyft 0.8.6 Requires: 🐍 `python 3.10 - 3.12` - Run: `pip install -U syft`
-- PyGrid Requires: 🐳 `docker` or ☸️ `kubernetes`
+- Syft Server Requires: 🐳 `docker` or ☸️ `kubernetes`
 
 # Versions
 
@@ -159,7 +159,7 @@ Deprecated:
 - `0.5.1` - <a href="https://github.com/OpenMined/courses/tree/foundations-of-private-computation">Course 2</a> + M1 Hotfix
 - `0.2.0` - `0.5.0`
 
-PySyft and PyGrid use the same `version` and its best to match them up where possible. We release weekly betas which can be used in each context:
+PySyft and Syft Server use the same `version` and its best to match them up where possible. We release weekly betas which can be used in each context:
 
 PySyft (Stable): `pip install -U syft`
 
@@ -230,7 +230,7 @@ No more cold calls to get `access` to a dataset. No more weeks of `wait times` t
 - Deploy to GCP
 - Deploy to Kubernetes
 - Customize Networking
-- Modify PyGrid UI
+- Modify Syft UI
 </td>
 </tr>
 </table>

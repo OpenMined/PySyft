@@ -1,5 +1,5 @@
 # relative
-from ...types.grid_url import GridURL
+from ...types.server_url import ServerURL
 from .rathole_config_builder import RatholeConfigBuilder
 from .routes import ServerRoute
 from .server_peer import ServerPeer
@@ -21,7 +21,7 @@ class ReverseTunnelService:
                 + f"Peer: {self_server_peer} has no rathole route: {rathole_route}"
             )
 
-        remote_url = GridURL(
+        remote_url = ServerURL(
             host_or_ip=remote_server_route.host_or_ip, port=remote_server_route.port
         )
         rathole_remote_addr = remote_url.as_container_host()

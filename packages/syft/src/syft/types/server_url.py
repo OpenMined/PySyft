@@ -20,10 +20,10 @@ logger = logging.getLogger(__name__)
 
 
 @serializable(attrs=["protocol", "host_or_ip", "port", "path", "query"])
-class GridURL:
+class ServerURL:
     @classmethod
-    def from_url(cls, url: str | GridURL) -> GridURL:
-        if isinstance(url, GridURL):
+    def from_url(cls, url: str | ServerURL) -> ServerURL:
+        if isinstance(url, ServerURL):
             return url
         try:
             # urlparse doesnt handle no protocol properly
@@ -38,7 +38,7 @@ class GridURL:
             host_or_ip = host_or_ip_parts[0]
             if parts.scheme == "https":
                 port = 443
-            return GridURL(
+            return ServerURL(
                 host_or_ip=host_or_ip,
                 path=parts.path,
                 port=port,
@@ -46,7 +46,7 @@ class GridURL:
                 query=getattr(parts, "query", ""),
             )
         except Exception as e:
-            logger.error(f"Failed to convert url: {url} to GridURL. {e}")
+            logger.error(f"Failed to convert url: {url} to ServerURL. {e}")
             raise e
 
     def __init__(
@@ -61,11 +61,11 @@ class GridURL:
         # port was included in the supplied host_or_ip:port combo passed in earlier
         match_port = re.search(":[0-9]{1,5}", host_or_ip)
         if match_port:
-            sub_grid_url: GridURL = GridURL.from_url(host_or_ip)
-            host_or_ip = str(sub_grid_url.host_or_ip)  # type: ignore
-            port = int(sub_grid_url.port)  # type: ignore
-            protocol = str(sub_grid_url.protocol)  # type: ignore
-            path = str(sub_grid_url.path)  # type: ignore
+            sub_server_url: ServerURL = ServerURL.from_url(host_or_ip)
+            host_or_ip = str(sub_server_url.host_or_ip)  # type: ignore
+            port = int(sub_server_url.port)  # type: ignore
+            protocol = str(sub_server_url.protocol)  # type: ignore
+            path = str(sub_server_url.path)  # type: ignore
 
         prtcl_pattrn = "://"
         if prtcl_pattrn in host_or_ip:
@@ -146,7 +146,7 @@ class GridURL:
     def url_path(self) -> str:
         return f"{self.path}{self.query_string}"
 
-    def to_tls(self) -> GridURL:
+    def to_tls(self) -> ServerURL:
         if self.protocol == "https":
             return self
 
@@ -170,7 +170,7 @@ class GridURL:
     def __hash__(self) -> int:
         return hash(self.__str__())
 
-    def __copy__(self) -> GridURL:
+    def __copy__(self) -> ServerURL:
         return self.__class__.from_url(self.url)
 
     def set_port(self, port: int) -> Self:

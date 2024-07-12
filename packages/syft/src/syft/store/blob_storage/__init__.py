@@ -64,7 +64,7 @@ from ...types.blob_storage import BlobStorageEntry
 from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.blob_storage import DEFAULT_CHUNK_SIZE
 from ...types.blob_storage import SecureFilePathLocation
-from ...types.grid_url import GridURL
+from ...types.server_url import ServerURL
 from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
@@ -119,7 +119,7 @@ class SyftObjectRetrieval(BlobRetrieval):
 
 
 def syft_iter_content(
-    blob_url: str | GridURL,
+    blob_url: str | ServerURL,
     chunk_size: int,
     max_retries: int = MAX_RETRIES,
     timeout: int = DEFAULT_TIMEOUT,
@@ -154,7 +154,7 @@ class BlobRetrievalByURLV4(BlobRetrieval):
     __canonical_name__ = "BlobRetrievalByURL"
     __version__ = SYFT_OBJECT_VERSION_4
 
-    url: GridURL | str
+    url: ServerURL | str
 
 
 @serializable()
@@ -162,7 +162,7 @@ class BlobRetrievalByURL(BlobRetrieval):
     __canonical_name__ = "BlobRetrievalByURL"
     __version__ = SYFT_OBJECT_VERSION_5
 
-    url: GridURL | str
+    url: ServerURL | str
     proxy_server_uid: UID | None = None
 
     def read(self) -> SyftObject | SyftError:
@@ -192,7 +192,7 @@ class BlobRetrievalByURL(BlobRetrieval):
             user_verify_key=self.syft_client_verify_key,
         )
 
-        if api and api.connection and isinstance(self.url, GridURL):
+        if api and api.connection and isinstance(self.url, ServerURL):
             if self.proxy_server_uid is None:
                 blob_url = api.connection.to_blob_route(
                     self.url.url_path, host=self.url.host_or_ip

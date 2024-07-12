@@ -11,7 +11,7 @@ from ..abstract_server import AbstractServer
 from ..server.credentials import SyftVerifyKey
 from ..service.context import AuthedServiceContext
 from ..service.context import ServerServiceContext
-from .grid_url import GridURL
+from .server_url import ServerURL
 from .syft_object import Context
 from .syft_object import SyftBaseObject
 from .syft_object_registry import SyftObjectRegistry
@@ -157,7 +157,7 @@ def generate_action_object_id(context: TransformContext) -> TransformContext:
 
 def validate_url(context: TransformContext) -> TransformContext:
     if context.output and context.output["url"] is not None:
-        context.output["url"] = GridURL.from_url(context.output["url"]).url_no_port
+        context.output["url"] = ServerURL.from_url(context.output["url"]).url_no_port
     return context
 
 
@@ -167,11 +167,11 @@ def validate_email(context: TransformContext) -> TransformContext:
     return context
 
 
-def str_url_to_grid_url(context: TransformContext) -> TransformContext:
+def str_url_to_server_url(context: TransformContext) -> TransformContext:
     if context.output:
         url = context.output.get("url", None)
         if url is not None and isinstance(url, str):
-            context.output["url"] = GridURL.from_url(str)
+            context.output["url"] = ServerURL.from_url(str)
     return context
 
 

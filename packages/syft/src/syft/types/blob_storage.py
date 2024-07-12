@@ -33,7 +33,7 @@ from ..service.action.action_types import action_types
 from ..service.response import SyftError
 from ..service.response import SyftException
 from ..service.service import from_api_or_context
-from ..types.grid_url import GridURL
+from ..types.server_url import ServerURL
 from ..types.transforms import drop
 from ..types.transforms import keep
 from ..types.transforms import make_set_default
@@ -261,7 +261,7 @@ class SeaweedSecureFilePathLocation(SecureFilePathLocation):
             from ..store.blob_storage import BlobRetrievalByURL
 
             return BlobRetrievalByURL(
-                url=GridURL.from_url(url), file_name=Path(self.path).name, type_=type_
+                url=ServerURL.from_url(url), file_name=Path(self.path).name, type_=type_
             )
         except BotoClientError as e:
             raise SyftException(e)

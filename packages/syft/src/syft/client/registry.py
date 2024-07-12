@@ -17,7 +17,7 @@ from ..service.metadata.server_metadata import ServerMetadataJSON
 from ..service.network.server_peer import ServerPeer
 from ..service.network.server_peer import ServerPeerConnectionStatus
 from ..service.response import SyftException
-from ..types.grid_url import GridURL
+from ..types.server_url import ServerURL
 from ..util.constants import DEFAULT_TIMEOUT
 from .client import SyftClient as Client
 
@@ -77,7 +77,7 @@ class NetworkRegistry:
             url = "http://" + network["host_or_ip"] + ":" + str(network["port"]) + "/"
             try:
                 res = requests.get(url, timeout=DEFAULT_TIMEOUT)  # nosec
-                online = "This is a PyGrid Network server." in res.text
+                online = "This is a Syft Gateway server." in res.text
             except Exception:
                 online = False
 
@@ -165,8 +165,8 @@ class NetworkRegistry:
             port = int(network["port"])
             protocol = network["protocol"]
             host_or_ip = network["host_or_ip"]
-            grid_url = GridURL(port=port, protocol=protocol, host_or_ip=host_or_ip)
-            client = connect(url=str(grid_url))
+            server_url = ServerURL(port=port, protocol=protocol, host_or_ip=host_or_ip)
+            client = connect(url=str(server_url))
             return client.guest()
         except Exception as e:
             raise SyftException(f"Failed to login with: {network}. {e}")
@@ -212,7 +212,7 @@ class DatasiteRegistry:
             url = "http://" + network["host_or_ip"] + ":" + str(network["port"]) + "/"
             try:
                 res = requests.get(url, timeout=DEFAULT_TIMEOUT)
-                online = "This is a PyGrid Network server." in res.text
+                online = "This is a Syft Gateway server." in res.text
             except Exception:
                 online = False
 
@@ -431,8 +431,8 @@ class EnclaveRegistry:
             port = int(enclave["port"])
             protocol = enclave["protocol"]
             host_or_ip = enclave["host_or_ip"]
-            grid_url = GridURL(port=port, protocol=protocol, host_or_ip=host_or_ip)
-            client = connect(url=str(grid_url))
+            server_url = ServerURL(port=port, protocol=protocol, host_or_ip=host_or_ip)
+            client = connect(url=str(server_url))
             return client.guest()
         except Exception as e:
             raise SyftException(f"Failed to login with: {enclave}. {e}")

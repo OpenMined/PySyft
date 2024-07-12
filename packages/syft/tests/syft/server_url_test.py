@@ -2,7 +2,7 @@
 import pytest
 
 # syft absolute
-from syft.types.grid_url import GridURL
+from syft.types.server_url import ServerURL
 
 test_suite = [
     ("http://0.0.0.0", 8081, "http://0.0.0.0:8081"),
@@ -16,12 +16,12 @@ test_suite = [
 
 
 @pytest.mark.parametrize("url, port, ground_truth", test_suite)
-def test_grid_url(url, port, ground_truth) -> None:
+def test_server_url(url, port, ground_truth) -> None:
     if not url and not port:
-        assert GridURL().base_url == ground_truth
+        assert ServerURL().base_url == ground_truth
     elif not url:
-        assert GridURL(port=port).base_url == ground_truth
+        assert ServerURL(port=port).base_url == ground_truth
     elif not port:
-        assert GridURL(host_or_ip=url).base_url == ground_truth
+        assert ServerURL(host_or_ip=url).base_url == ground_truth
     else:
-        assert GridURL(host_or_ip=url, port=port).base_url == ground_truth
+        assert ServerURL(host_or_ip=url, port=port).base_url == ground_truth

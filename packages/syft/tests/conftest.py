@@ -113,10 +113,11 @@ def stage_protocol(protocol_file: Path):
         dp.save_history(dp.protocol_history)
 
         # Cleanup release dir, remove unused released files
-        for _file_path in protocol_release_dir().iterdir():
-            for version in dp.read_json(_file_path):
-                if version not in dp.protocol_history.keys():
-                    _file_path.unlink()
+        if os.path.exists(protocol_release_dir()):
+            for _file_path in protocol_release_dir().iterdir():
+                for version in dp.read_json(_file_path):
+                    if version not in dp.protocol_history.keys():
+                        _file_path.unlink()
 
 
 @pytest.fixture

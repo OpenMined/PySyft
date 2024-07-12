@@ -30,7 +30,7 @@ notebooks with PySyft installed, such as if you're pretending to be
 both Data Owner and Data Scientist as a part of a tutorial or course.
 
 
-**We will be setting up the following dependencies before PySyft and PyGrid:**
+**We will be setting up the following dependencies before PySyft and Syft Server:**
 
 * Python >=3.9
 * pip

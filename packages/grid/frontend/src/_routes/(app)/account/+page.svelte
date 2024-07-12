@@ -165,7 +165,7 @@
       <div slot="body">
         <p class="text-center">
           To help us improve future experiences could you share with us any frustrations or
-          suggestions you have with or for the PyGridUI Platform?
+          suggestions you have with or for the Syft UI Platform?
         </p>
 
         <form class="flex-shrink-0 pt-6">

@@ -105,13 +105,13 @@
             <img
               width="264px"
               height="224px"
-              src="/assets/2023_welcome_to_pygrid.png"
-              alt="Welcome to PyGrid"
+              src="/assets/2023_welcome_to_syft_ui.png"
+              alt="Welcome to Syft UI"
             />
           </div>
           <div class="text-center space-y-2">
             <h3 class="text-2xl capitalize font-bold">
-              Welcome to PyGrid Admin!
+              Welcome to Syft UI!
             </h3>
             <p class="text-primary-500">Step 1 of 4</p>
           </div>

@@ -39,9 +39,9 @@ PySyft
 ~~~~~~~~~~~~~~~~~~~~~
 An open-source platform that enables remote data science experiments by combining ``federated learning`` and ``differentialy privacy`` techniques.
 
-PyGrid
+Syft Server
 ~~~~~~~~~~~~~~~~~~~~~
-``PyGrid`` is a ``peer-to-peer network`` of data owners and data scientists who can collectively train AI models using ``PySyft``. ``PyGrid`` is also the central server for conducting both model-centric and data-centric ``federated learning``. You may control PyGrid via our user-interface, ``PyGrid Admin``.
+``Syft Server`` is also the central server for conducting both model-centric and data-centric ``federated learning``. You may control Syft Server via our user-interface, ``Syft UI``.
 
 Remote Data Science
 ~~~~~~~~~~~~~~~~~~~~~
@@ -56,7 +56,7 @@ Within the field of remote data science, a data owner is someone who has a (digi
 
 Datasite Owner
 ~~~~~~~~~~~~~~~~~~~~~
-A user of ``PyGrid`` who has deployed a datasite server.
+A user of ``Syft Server`` who has deployed a datasite server.
 
 Network Owner
 ~~~~~~~~~~~~~~~~~~~~~

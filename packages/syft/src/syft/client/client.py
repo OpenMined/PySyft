@@ -50,7 +50,7 @@ from ..service.user.user import UserPrivateKey
 from ..service.user.user import UserView
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
-from ..types.grid_url import GridURL
+from ..types.server_url import ServerURL
 from ..types.syft_object import SYFT_OBJECT_VERSION_3
 from ..types.uid import UID
 from ..util.telemetry import instrument
@@ -73,12 +73,12 @@ if TYPE_CHECKING:
     from ..service.network.server_peer import ServerPeer
 
 
-def upgrade_tls(url: GridURL, response: Response) -> GridURL:
+def upgrade_tls(url: ServerURL, response: Response) -> ServerURL:
     try:
         if response.url.startswith("https://") and url.protocol == "http":
             # we got redirected to https
-            https_url = GridURL.from_url(response.url).with_path("")
-            logger.debug(f"GridURL Upgraded to HTTPS. {https_url}")
+            https_url = ServerURL.from_url(response.url).with_path("")
+            logger.debug(f"ServerURL Upgraded to HTTPS. {https_url}")
             return https_url
     except Exception as e:
         print(f"Failed to upgrade to HTTPS. {e}")
@@ -115,8 +115,8 @@ def forward_message_to_proxy(
 
 
 API_PATH = "/api/v2"
-DEFAULT_PYGRID_PORT = 80
-DEFAULT_PYGRID_ADDRESS = f"http://localhost:{DEFAULT_PYGRID_PORT}"
+DEFAULT_SYFT_UI_PORT = 80
+DEFAULT_SYFT_UI_ADDRESS = f"http://localhost:{DEFAULT_SYFT_UI_PORT}"
 INTERNAL_PROXY_TO_RATHOLE = "http://proxy:80/rtunnel/"
 
 
@@ -135,7 +135,7 @@ class HTTPConnection(ServerConnection):
     __canonical_name__ = "HTTPConnection"
     __version__ = SYFT_OBJECT_VERSION_3
 
-    url: GridURL
+    url: ServerURL
     proxy_target_uid: UID | None = None
     routes: type[Routes] = Routes
     session_cache: Session | None = None
@@ -146,8 +146,8 @@ class HTTPConnection(ServerConnection):
     @classmethod
     def make_url(cls, v: Any) -> Any:
         return (
-            GridURL.from_url(v).as_container_host()
-            if isinstance(v, str | GridURL)
+            ServerURL.from_url(v).as_container_host()
+            if isinstance(v, str | ServerURL)
             else v
         )
 
@@ -161,7 +161,7 @@ class HTTPConnection(ServerConnection):
             rtunnel_token=self.rtunnel_token,
         )
 
-    def stream_via(self, proxy_uid: UID, url_path: str) -> GridURL:
+    def stream_via(self, proxy_uid: UID, url_path: str) -> ServerURL:
         # Update the presigned url path to
         # <gatewayurl>/<peer_uid>/<presigned_url>
         # url_path_bytes = _serialize(url_path, to_bytes=True)
@@ -174,10 +174,10 @@ class HTTPConnection(ServerConnection):
         return str(self.url)
 
     @property
-    def api_url(self) -> GridURL:
+    def api_url(self) -> ServerURL:
         return self.url.with_path(self.routes.ROUTE_API_CALL.value)
 
-    def to_blob_route(self, path: str, **kwargs: Any) -> GridURL:
+    def to_blob_route(self, path: str, **kwargs: Any) -> ServerURL:
         _path = self.routes.ROUTE_BLOB_STORE.value + path
         return self.url.with_path(_path)
 
@@ -202,7 +202,7 @@ class HTTPConnection(ServerConnection):
 
         if self.rtunnel_token:
             self.headers = {} if self.headers is None else self.headers
-            url = GridURL.from_url(INTERNAL_PROXY_TO_RATHOLE)
+            url = ServerURL.from_url(INTERNAL_PROXY_TO_RATHOLE)
             self.headers["Host"] = self.url.host_or_ip
 
         url = url.with_path(path)
@@ -231,7 +231,7 @@ class HTTPConnection(ServerConnection):
 
         if self.rtunnel_token:
             self.headers = {} if self.headers is None else self.headers
-            url = GridURL.from_url(INTERNAL_PROXY_TO_RATHOLE)
+            url = ServerURL.from_url(INTERNAL_PROXY_TO_RATHOLE)
             self.headers["Host"] = self.url.host_or_ip
 
         url = url.with_path(path)
@@ -262,7 +262,7 @@ class HTTPConnection(ServerConnection):
         url = self.url
 
         if self.rtunnel_token:
-            url = GridURL.from_url(INTERNAL_PROXY_TO_RATHOLE)
+            url = ServerURL.from_url(INTERNAL_PROXY_TO_RATHOLE)
             self.headers = {} if self.headers is None else self.headers
             self.headers["Host"] = self.url.host_or_ip
 
@@ -294,7 +294,7 @@ class HTTPConnection(ServerConnection):
         url = self.url
 
         if self.rtunnel_token:
-            url = GridURL.from_url(INTERNAL_PROXY_TO_RATHOLE)
+            url = ServerURL.from_url(INTERNAL_PROXY_TO_RATHOLE)
             self.headers = {} if self.headers is None else self.headers
             self.headers["Host"] = self.url.host_or_ip
 
@@ -409,7 +409,7 @@ class HTTPConnection(ServerConnection):
         msg_bytes: bytes = _serialize(obj=signed_call, to_bytes=True)
 
         if self.rtunnel_token:
-            api_url = GridURL.from_url(INTERNAL_PROXY_TO_RATHOLE)
+            api_url = ServerURL.from_url(INTERNAL_PROXY_TO_RATHOLE)
             api_url = api_url.with_path(self.routes.ROUTE_API_CALL.value)
             self.headers = {} if self.headers is None else self.headers
             self.headers["Host"] = self.url.host_or_ip
@@ -484,12 +484,12 @@ class PythonConnection(ServerConnection):
         else:
             return self.server.metadata.to(ServerMetadataJSON)
 
-    def to_blob_route(self, path: str, host: str | None = None) -> GridURL:
+    def to_blob_route(self, path: str, host: str | None = None) -> ServerURL:
         # TODO: FIX!
         if host is not None:
-            return GridURL(host_or_ip=host, port=8333).with_path(path)
+            return ServerURL(host_or_ip=host, port=8333).with_path(path)
         else:
-            return GridURL(port=8333).with_path(path)
+            return ServerURL(port=8333).with_path(path)
 
     def get_api(
         self,
@@ -711,8 +711,8 @@ class SyftClient:
         return self.credentials.verify_key
 
     @classmethod
-    def from_url(cls, url: str | GridURL) -> Self:
-        return cls(connection=HTTPConnection(url=GridURL.from_url(url)))
+    def from_url(cls, url: str | ServerURL) -> Self:
+        return cls(connection=HTTPConnection(url=ServerURL.from_url(url)))
 
     @classmethod
     def from_server(cls, server: AbstractServer) -> Self:
@@ -1060,14 +1060,14 @@ class SyftClient:
 
 @instrument
 def connect(
-    url: str | GridURL = DEFAULT_PYGRID_ADDRESS,
+    url: str | ServerURL = DEFAULT_SYFT_UI_ADDRESS,
     server: AbstractServer | None = None,
     port: int | None = None,
 ) -> SyftClient:
     if server:
         connection = PythonConnection(server=server)
     else:
-        url = GridURL.from_url(url)
+        url = ServerURL.from_url(url)
         if isinstance(port, int | str):
             url.set_port(int(port))
         connection = HTTPConnection(url=url)
@@ -1082,7 +1082,7 @@ def connect(
 
 @instrument
 def register(
-    url: str | GridURL,
+    url: str | ServerURL,
     port: int,
     name: str,
     email: str,
@@ -1103,7 +1103,7 @@ def register(
 @instrument
 def login_as_guest(
     # HTTPConnection
-    url: str | GridURL = DEFAULT_PYGRID_ADDRESS,
+    url: str | ServerURL = DEFAULT_SYFT_UI_ADDRESS,
     port: int | None = None,
     # PythonConnection
     server: AbstractServer | None = None,
@@ -1131,7 +1131,7 @@ def login_as_guest(
 def login(
     email: str,
     # HTTPConnection
-    url: str | GridURL = DEFAULT_PYGRID_ADDRESS,
+    url: str | ServerURL = DEFAULT_SYFT_UI_ADDRESS,
     port: int | None = None,
     # PythonConnection
     server: AbstractServer | None = None,
