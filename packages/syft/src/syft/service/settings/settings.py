@@ -112,6 +112,22 @@ class NodeSettings(SyftObject):
     )
 
     def _repr_html_(self) -> Any:
+        preferences = self._get_api().services.notifications.user_settings()
+        notifications = []
+        if preferences.email:
+            notifications.append("email")
+        if preferences.sms:
+            notifications.append("sms")
+        if preferences.slack:
+            notifications.append("slack")
+        if preferences.app:
+            notifications.append("app")
+
+        if notifications:
+            notifications_enabled = f"True via {', '.join(notifications)}"
+        else:
+            notifications_enabled = "False"
+
         return f"""
             <style>
             .syft-settings {{color: {SURFACE[options.color_theme]};}}
@@ -124,6 +140,7 @@ class NodeSettings(SyftObject):
                 <p><strong>Description: </strong>{self.description}</p>
                 <p><strong>Deployed on: </strong>{self.deployed_on}</p>
                 <p><strong>Signup enabled: </strong>{self.signup_enabled}</p>
+                <p><strong>Notifications enabled: </strong>{notifications_enabled}</p>
                 <p><strong>Admin email: </strong>{self.admin_email}</p>
             </div>
 
