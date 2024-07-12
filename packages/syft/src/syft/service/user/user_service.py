@@ -374,7 +374,7 @@ class UserService(AbstractService):
 
     def register(
         self, context: NodeServiceContext, new_user: UserCreate
-    ) -> UserPrivateKey | SyftError:
+    ) -> UserPrivateKey:
         """Register new user"""
 
         # this method handles errors in a slightly different way as it is directly called instead of
@@ -392,7 +392,7 @@ class UserService(AbstractService):
         )
 
         if not can_user_register:
-            return SyftError(message="You have no permission to register")
+            raise SyftException(public_message="You have no permission to register")
 
         user = new_user.to(User)
 
@@ -401,13 +401,9 @@ class UserService(AbstractService):
         )
 
         if user_exists:
-            return SyftError(message=f"User {user.email} already exists")
+            raise SyftException(public_message=f"User {user.email} already exists")
 
-        user = self._add_user(credentials=user.verify_key, user=user)
-        if user.is_err():
-            return SyftError(message=f"Failed to create user {user.email}")
-        user = user.unwrap()
-
+        user = self._add_user(credentials=user.verify_key, user=user).unwrap(public_message=f"Failed to create user {user.email}")
         success_message = f"User '{user.name}' successfully registered!"
 
         # Notification Step

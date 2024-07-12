@@ -64,7 +64,7 @@ class SyftWorkerImageService(AbstractService):
             created_by=context.credentials,
             image_identifier=image_identifier,
         )
-        self.stash.set(context.credentials, worker_image).unwrap()
+        res = self.stash.set(context.credentials, worker_image).unwrap()
         return SyftSuccess(
             message=f"Dockerfile ID: {worker_image.id} successfully submitted."
         )

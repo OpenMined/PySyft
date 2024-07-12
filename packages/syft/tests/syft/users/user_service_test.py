@@ -575,8 +575,8 @@ def test_userservice_register_user_exists(
         node_context = NodeServiceContext(node=mock_worker)
 
         with pytest.raises(SyftException) as exc:
-            user_service.register(node_context, guest_create_user)
-
+            res = user_service.register(node_context, guest_create_user)
+            print(res)
 
         assert exc.type == SyftException
         assert exc.value.public_message == expected_error_msg
@@ -640,7 +640,7 @@ def test_userservice_register_success(
 
         expected_private_key = guest_user.to(UserPrivateKey)
         response = user_service.register(node_context, guest_create_user)
-        user_private_key = response
+        user_private_key = response.value
 
         assert isinstance(user_private_key, UserPrivateKey)
         assert user_private_key == expected_private_key

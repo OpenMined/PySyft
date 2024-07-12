@@ -155,7 +155,7 @@ class ProjectService(AbstractService):
             if project.leader_node_route is not None:
                 leader_node_peer = project.leader_node_route.validate_with_context(
                     context=context
-                )
+                ).unwrap()
             else:
                 raise SyftException(
                     message=f"project {project}'s leader_node_route is None"
