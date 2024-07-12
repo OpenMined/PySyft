@@ -273,18 +273,20 @@ def test_settings_allow_guest_registration(
         response_1 = root_domain_client.register(
             email=email1, password="joker123", password_verify="joker123", name="Joker"
         )
+
+        assert isinstance(response_1, SyftSuccess)
         assert isinstance(response_1.value, UserPrivateKey)
 
         # by default, the guest client can't register new user
-        response = guest_domain_client.register(
-            email=email2,
-            password="harley123",
-            password_verify="harley123",
-            name="Harley",
-        )
+        with pytest.raises(SyftException) as exc:
+            guest_domain_client.register(
+                email=email2,
+                password="harley123",
+                password_verify="harley123",
+                name="Harley",
+            )
 
-        assert isinstance(response, SyftError)
-        assert response.message == "You have no permission to register"
+        assert exc.value.public_message == "You have no permission to register"
         assert any(user.email == email1 for user in root_domain_client.users)
 
     # only after the root client enable other users to signup, they can
@@ -370,15 +372,16 @@ def test_settings_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker)
             faker=faker, root_client=root_client, role=ServiceRole.DATA_SCIENTIST
         )
 
-        result = ds_client.register(
-            name=faker.name(),
-            email=faker.email(),
-            password="password",
-            password_verify="password",
-        )
+        with pytest.raises(SyftException) as exc:
+            ds_client.register(
+                name=faker.name(),
+                email=faker.email(),
+                password="password",
+                password_verify="password",
+            )
 
-        assert isinstance(result, SyftError)
-        assert result.message == "You have no permission to register"
+        assert exc.type is SyftException 
+        assert exc.value.public_message == "You have no permission to register"
 
         users_created_count = sum(
             [u.email in emails_added for u in root_client.users.get_all()]

@@ -18,7 +18,7 @@ from ...store.document_store_errors import StashException
 from ...types.result import as_result
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
-from ..response import SyftException
+from ...types.errors import SyftException
 from .worker_image import SyftWorkerImage
 
 WorkerConfigPK = PartitionKey(key="config", type_=WorkerConfig)
@@ -75,7 +75,7 @@ class SyftWorkerImageStash(NewBaseUIDStoreStash):
     @as_result(StashException, NotFoundException)
     def worker_config_exists(
         self, credentials: SyftVerifyKey, config: WorkerConfig
-    ) -> Result[SyftWorkerImage | None, str]:
+    ) -> bool:
         try:
             self.get_by_worker_config(credentials=credentials, config=config).unwrap()
             return True
@@ -85,7 +85,7 @@ class SyftWorkerImageStash(NewBaseUIDStoreStash):
     @as_result(StashException, NotFoundException)
     def get_by_worker_config(
         self, credentials: SyftVerifyKey, config: WorkerConfig
-    ) -> Result[SyftWorkerImage | None, str]:
+    ) -> SyftWorkerImage:
         qks = QueryKeys(qks=[WorkerConfigPK.with_obj(config)])
         return self.query_one(credentials=credentials, qks=qks).unwrap(
             public_message=f"Worker Image with config {config} not found"

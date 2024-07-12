@@ -73,7 +73,7 @@ class SyftWorkerPoolService(AbstractService):
     @as_result(StashException)
     def image_exists(self, context: AuthedServiceContext, uid: UID) -> bool:
         try:
-            self.image_stash.get_by_name(context.credentials, uid=uid).unwrap()
+            self.image_stash.get_by_uid(context.credentials, uid=uid).unwrap()
             return True
         except NotFoundException:
             return False
@@ -171,7 +171,7 @@ class SyftWorkerPoolService(AbstractService):
         reason: str | None = "",
         pod_annotations: dict[str, str] | None = None,
         pod_labels: dict[str, str] | None = None,
-    ) -> SyftSuccess:
+    ) -> Request:
         """
         Create a request to launch the worker pool based on a built image.
 
@@ -183,9 +183,8 @@ class SyftWorkerPoolService(AbstractService):
             reason (Optional[str], optional): The reason for creating the
                 worker pool. Defaults to "".
         """
-
         # Check if image exists for the given image id
-        worker_image_exists = self.image_exists(context, uid=image_uid)
+        worker_image_exists = self.image_exists(context, uid=image_uid).unwrap()
 
         # Raise error if worker image doesn't exists
         if not worker_image_exists:
@@ -194,7 +193,7 @@ class SyftWorkerPoolService(AbstractService):
             )
 
         # Check if pool already exists for the given pool name
-        worker_pool_exists = self.pool_exists(context.credentials, pool_name=pool_name)
+        worker_pool_exists = self.pool_exists(context, pool_name=pool_name).unwrap()
 
         if worker_pool_exists:
             raise SyftException(
@@ -217,9 +216,7 @@ class SyftWorkerPoolService(AbstractService):
         # for approval.
         request = SubmitRequest(changes=changes)
         method = context.node.get_service_method(RequestService.submit)
-        result = method(context=context, request=request, reason=reason)
-
-        return result
+        return method(context=context, request=request, reason=reason)
 
     @service_method(
         path="worker_pool.create_image_and_pool_request",
@@ -252,7 +249,6 @@ class SyftWorkerPoolService(AbstractService):
                 only needed for `DockerWorkerConfig` to tag the image after it is built.
             reason (str | None, optional): The reason for creating the worker image and pool. Defaults to "".
         """
-
         if not isinstance(config, DockerWorkerConfig | PrebuiltWorkerConfig):
             raise SyftException(
                 public_message="We only support either `DockerWorkerConfig` or `PrebuiltWorkerConfig`."
@@ -300,13 +296,13 @@ class SyftWorkerPoolService(AbstractService):
         )
 
         # Check if a pool already exists for given pool name
-        worekr_pool_exists = self.pool_exists(context.credentials, pool_name=pool_name)
+        worker_pool_exists = self.pool_exists(context, pool_name=pool_name).unwrap()
 
         # Raise an error if worker pool already exists for the given worker pool name
-        if worekr_pool_exists:
-            return SyftError(
-                message=f"Worker Pool with name: {pool_name} already "
-                f"exists. Please choose another name!"
+        if worker_pool_exists:
+            raise SyftException(
+                public_message=f"Worker Pool with name: {pool_name} already"
+                f" exists. Please choose another name!"
             )
 
         # Add create worker pool change

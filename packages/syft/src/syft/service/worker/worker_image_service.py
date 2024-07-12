@@ -44,6 +44,7 @@ class SyftWorkerImageService(AbstractService):
         path="worker_image.submit",
         name="submit",
         roles=DATA_OWNER_ROLE_LEVEL,
+        unwrap_on_success=False
     )
     def submit(
         self, context: AuthedServiceContext, worker_config: WorkerConfig
@@ -64,15 +65,18 @@ class SyftWorkerImageService(AbstractService):
             created_by=context.credentials,
             image_identifier=image_identifier,
         )
-        res = self.stash.set(context.credentials, worker_image).unwrap()
+        stored_image = self.stash.set(context.credentials, worker_image).unwrap()
+
         return SyftSuccess(
-            message=f"Dockerfile ID: {worker_image.id} successfully submitted."
+            message=f"Dockerfile ID: {worker_image.id} successfully submitted.",
+            value=stored_image,
         )
 
     @service_method(
         path="worker_image.build",
         name="build",
         roles=DATA_OWNER_ROLE_LEVEL,
+        unwrap_on_success=False
     )
     def build(
         self,
@@ -245,7 +249,7 @@ class SyftWorkerImageService(AbstractService):
     )
     def get_by_config(
         self, context: AuthedServiceContext, worker_config: WorkerConfig
-    ) -> SyftWorkerImage | SyftError:
+    ) -> SyftWorkerImage:
         return self.stash.get_by_worker_config(
             credentials=context.credentials, config=worker_config
         ).unwrap()

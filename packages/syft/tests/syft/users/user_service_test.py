@@ -677,8 +677,11 @@ def test_userservice_register_set_fail(
         monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
         monkeypatch.setattr(user_service.stash, "set", mock_set)
 
-        result = user_service.register(node_context, guest_create_user)
-        assert isinstance(result, SyftError)
+        with pytest.raises(StashException) as exc:
+            user_service.register(node_context, guest_create_user)
+
+        assert exc.type is StashException
+        assert exc.value.public_message == f"Failed to create user {guest_create_user.email}"
 
 
 def test_userservice_exchange_credentials(

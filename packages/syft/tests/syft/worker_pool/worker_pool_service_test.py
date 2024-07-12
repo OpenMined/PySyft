@@ -136,6 +136,7 @@ def test_create_pool_request_accept(
     request = ds_client.api.services.worker_pool.pool_creation_request(
         pool_name="opendp-pool", num_workers=3, image_uid=worker_image.id
     )
+
     assert len(request.changes) == 1
     change = request.changes[0]
     assert isinstance(change, CreateCustomWorkerPoolChange)
