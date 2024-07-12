@@ -54,6 +54,8 @@ logger = logging.getLogger(__name__)
 
 @serializable()
 class ActionService(AbstractService):
+    store_type = ActionStore
+
     def __init__(self, store: ActionStore) -> None:
         self.store = store
 
@@ -188,13 +190,15 @@ class ActionService(AbstractService):
         if result.is_ok():
             if isinstance(action_object, TwinObject):
                 # give read permission to the mock
-                blob_id = action_object.mock_obj.syft_blob_storage_entry_id
-                permission = ActionObjectPermission(blob_id, ActionPermission.ALL_READ)
-                blob_storage_service: AbstractService = context.server.get_service(
-                    BlobStorageService
-                )
                 # if mock is saved to blob store, then add READ permission
                 if action_object.mock_obj.syft_action_saved_to_blob_store:
+                    blob_id = action_object.mock_obj.syft_blob_storage_entry_id
+                    permission = ActionObjectPermission(
+                        blob_id, ActionPermission.ALL_READ
+                    )
+                    blob_storage_service: AbstractService = context.server.get_service(
+                        BlobStorageService
+                    )
                     blob_storage_service.stash.add_permission(permission)
                 if has_result_read_permission:
                     action_object = action_object.private

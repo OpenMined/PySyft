@@ -12,10 +12,8 @@ import json
 import logging
 import os
 from pathlib import Path
-import shutil
 import subprocess  # nosec
 import sys
-import tempfile
 from time import sleep
 import traceback
 from typing import Any
@@ -25,7 +23,6 @@ from typing import cast
 from nacl.signing import SigningKey
 from result import Err
 from result import Result
-from typing_extensions import Self
 
 # relative
 from .. import __version__
@@ -43,48 +40,30 @@ from ..protocol.data_protocol import PROTOCOL_TYPE
 from ..protocol.data_protocol import get_data_protocol
 from ..service.action.action_object import Action
 from ..service.action.action_object import ActionObject
-from ..service.action.action_service import ActionService
 from ..service.action.action_store import ActionStore
 from ..service.action.action_store import DictActionStore
 from ..service.action.action_store import MongoActionStore
 from ..service.action.action_store import SQLiteActionStore
-from ..service.api.api_service import APIService
-from ..service.attestation.attestation_service import AttestationService
 from ..service.blob_storage.service import BlobStorageService
-from ..service.code.status_service import UserCodeStatusService
 from ..service.code.user_code_service import UserCodeService
 from ..service.code.user_code_stash import UserCodeStash
-from ..service.code_history.code_history_service import CodeHistoryService
 from ..service.context import AuthedServiceContext
 from ..service.context import ServerServiceContext
 from ..service.context import UnauthedServiceContext
 from ..service.context import UserLoginCredentials
-from ..service.data_subject.data_subject_member_service import DataSubjectMemberService
-from ..service.data_subject.data_subject_service import DataSubjectService
-from ..service.dataset.dataset_service import DatasetService
-from ..service.enclave.enclave_service import EnclaveService
-from ..service.job.job_service import JobService
 from ..service.job.job_stash import Job
 from ..service.job.job_stash import JobStash
 from ..service.job.job_stash import JobStatus
 from ..service.job.job_stash import JobType
-from ..service.log.log_service import LogService
-from ..service.metadata.metadata_service import MetadataService
 from ..service.metadata.server_metadata import ServerMetadata
 from ..service.network.network_service import NetworkService
 from ..service.network.utils import PeerHealthCheckTask
-from ..service.notification.notification_service import NotificationService
 from ..service.notifier.notifier_service import NotifierService
-from ..service.object_search.migration_state_service import MigrateStateService
-from ..service.output.output_service import OutputService
-from ..service.policy.policy_service import PolicyService
-from ..service.project.project_service import ProjectService
 from ..service.queue.base_queue import AbstractMessageHandler
 from ..service.queue.base_queue import QueueConsumer
 from ..service.queue.base_queue import QueueProducer
 from ..service.queue.queue import APICallMessageHandler
 from ..service.queue.queue import QueueManager
-from ..service.queue.queue_service import QueueService
 from ..service.queue.queue_stash import APIEndpointQueueItem
 from ..service.queue.queue_stash import ActionQueueItem
 from ..service.queue.queue_stash import QueueItem
@@ -92,23 +71,19 @@ from ..service.queue.queue_stash import QueueStash
 from ..service.queue.zmq_queue import QueueConfig
 from ..service.queue.zmq_queue import ZMQClientConfig
 from ..service.queue.zmq_queue import ZMQQueueConfig
-from ..service.request.request_service import RequestService
 from ..service.response import SyftError
 from ..service.service import AbstractService
 from ..service.service import ServiceConfigRegistry
 from ..service.service import UserServiceConfigRegistry
 from ..service.settings.settings import ServerSettings
 from ..service.settings.settings import ServerSettingsUpdate
-from ..service.settings.settings_service import SettingsService
 from ..service.settings.settings_stash import SettingsStash
-from ..service.sync.sync_service import SyncService
 from ..service.user.user import User
 from ..service.user.user import UserCreate
 from ..service.user.user import UserView
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..service.user.user_stash import UserStash
-from ..service.worker.image_registry_service import SyftImageRegistryService
 from ..service.worker.utils import DEFAULT_WORKER_IMAGE_TAG
 from ..service.worker.utils import DEFAULT_WORKER_POOL_NAME
 from ..service.worker.utils import create_default_image
@@ -116,7 +91,6 @@ from ..service.worker.worker_image_service import SyftWorkerImageService
 from ..service.worker.worker_pool import WorkerPool
 from ..service.worker.worker_pool_service import SyftWorkerPoolService
 from ..service.worker.worker_pool_stash import SyftWorkerPoolStash
-from ..service.worker.worker_service import WorkerService
 from ..service.worker.worker_stash import WorkerStash
 from ..store.blob_storage import BlobStorageConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageClientConfig
@@ -130,6 +104,7 @@ from ..store.sqlite_document_store import SQLiteStoreClientConfig
 from ..store.sqlite_document_store import SQLiteStoreConfig
 from ..types.datetime import DATETIME_FORMAT
 from ..types.syft_metaclass import Empty
+from ..types.syft_object import Context
 from ..types.syft_object import PartialSyftObject
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftObject
@@ -144,6 +119,10 @@ from ..util.util import str_to_bool
 from ..util.util import thread_ident
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
+from .service_registry import ServiceRegistry
+from .utils import get_named_server_uid
+from .utils import get_temp_dir_for_server
+from .utils import remove_temp_dir_for_server
 from .worker_settings import WorkerSettings
 
 logger = logging.getLogger(__name__)
@@ -416,7 +395,7 @@ class Server(AbstractServer):
         )
 
         # construct services only after init stores
-        self._construct_services()
+        self.services: ServiceRegistry = ServiceRegistry.for_server(self)
 
         create_admin_new(  # nosec B106
             name=root_username,
@@ -436,11 +415,19 @@ class Server(AbstractServer):
 
         self.post_init()
 
+        if migrate:
+            self.find_and_migrate_data()
+        else:
+            self.find_and_migrate_data([ServerSettings])
+
         self.create_initial_settings(admin_email=root_email)
 
-        self.init_queue_manager(queue_config=self.queue_config)
-
         self.init_blob_storage(config=blob_storage_config)
+
+        # Migrate data before any operation on db
+
+        # first migrate, for backwards compatibility
+        self.init_queue_manager(queue_config=self.queue_config)
 
         context = AuthedServiceContext(
             server=self,
@@ -451,10 +438,6 @@ class Server(AbstractServer):
         self.peer_health_manager: PeerHealthCheckTask | None = None
         if background_tasks:
             self.run_peer_health_checks(context=context)
-
-        # Migrate data before any operation on db
-        if migrate:
-            self.find_and_migrate_data()
 
         ServerRegistry.set_server_for(self.id, self)
 
@@ -654,7 +637,7 @@ class Server(AbstractServer):
 
     @classmethod
     def named(
-        cls,
+        cls: type[Server],
         *,  # Trasterisk
         name: str,
         processes: int = 0,
@@ -672,8 +655,8 @@ class Server(AbstractServer):
         in_memory_workers: bool = True,
         association_request_auto_approval: bool = False,
         background_tasks: bool = False,
-    ) -> Self:
-        uid = UID.with_seed(name)
+    ) -> Server:
+        uid = get_named_server_uid(name)
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
         key = SyftSigningKey(signing_key=SigningKey(name_hash))
         blob_storage_config = None
@@ -728,7 +711,7 @@ class Server(AbstractServer):
             credentials=self.verify_key,
             role=ServiceRole.ADMIN,
         )
-        migration_state_service = self.get_service(MigrateStateService)
+        migration_state_service = self.services.migration
 
         klasses_to_be_migrated = []
 
@@ -755,67 +738,16 @@ class Server(AbstractServer):
 
         return klasses_to_be_migrated
 
-    def find_and_migrate_data(self) -> None:
-        # Track all object type that need migration for document store
+    def find_and_migrate_data(
+        self, document_store_object_types: list[type[SyftObject]] | None = None
+    ) -> None:
         context = AuthedServiceContext(
             server=self,
             credentials=self.verify_key,
             role=ServiceRole.ADMIN,
         )
-        document_store_object_types = [
-            partition.settings.object_type
-            for partition in self.document_store.partitions.values()
-        ]
-
-        object_pending_migration = self._find_klasses_pending_for_migration(
-            object_types=document_store_object_types
-        )
-
-        if object_pending_migration:
-            logger.debug(
-                f"Object in Document Store that needs migration: {object_pending_migration}"
-            )
-
-        # Migrate data for objects in document store
-        for object_type in object_pending_migration:
-            canonical_name = object_type.__canonical_name__
-            object_partition = self.document_store.partitions.get(canonical_name)
-            if object_partition is None:
-                continue
-
-            logger.debug(f"Migrating data for: {canonical_name} table.")
-            migration_status = object_partition.migrate_data(
-                to_klass=object_type, context=context
-            )
-            if migration_status.is_err():
-                raise Exception(
-                    f"Failed to migrate data for {canonical_name}. Error: {migration_status.err()}"
-                )
-
-        # Track all object types from action store
-        action_object_types = [Action, ActionObject]
-        action_object_types.extend(ActionObject.__subclasses__())
-        action_object_pending_migration = self._find_klasses_pending_for_migration(
-            action_object_types
-        )
-
-        if action_object_pending_migration:
-            logger.info(
-                f"Object in Action Store that needs migration: {action_object_pending_migration}",
-            )
-
-        # Migrate data for objects in action store
-        for object_type in action_object_pending_migration:
-            canonical_name = object_type.__canonical_name__
-
-            migration_status = self.action_store.migrate_data(
-                to_klass=object_type, credentials=self.verify_key
-            )
-            if migration_status.is_err():
-                raise Exception(
-                    f"Failed to migrate data for {canonical_name}. Error: {migration_status.err()}"
-                )
-        logger.info("Data Migrated to latest version !!!")
+        migration_service = self.get_service("migrationservice")
+        return migration_service.migrate_data(context, document_store_object_types)
 
     @property
     def guest_client(self) -> SyftClient:
@@ -934,66 +866,13 @@ class Server(AbstractServer):
     def worker_stash(self) -> WorkerStash:
         return self.get_service("workerservice").stash
 
-    def _construct_services(self) -> None:
-        service_path_map: dict[str, AbstractService] = {}
-        initialized_services: list[AbstractService] = []
+    @property
+    def service_path_map(self) -> dict[str, AbstractService]:
+        return self.services.service_path_map
 
-        # A dict of service and init kwargs.
-        # - "svc" expects a callable (class or function)
-        #     - The callable must return AbstractService or None
-        # - "store" expects a store type
-        #     - By default all services get the document store
-        #     - Pass a custom "store" to override this
-        default_services: list[dict] = [
-            {"svc": ActionService, "store": self.action_store},
-            {"svc": UserService},
-            {"svc": AttestationService},
-            {"svc": WorkerService},
-            {"svc": SettingsService},
-            {"svc": DatasetService},
-            {"svc": UserCodeService},
-            {"svc": LogService},
-            {"svc": RequestService},
-            {"svc": QueueService},
-            {"svc": JobService},
-            {"svc": APIService},
-            {"svc": DataSubjectService},
-            {"svc": NetworkService},
-            {"svc": PolicyService},
-            {"svc": NotifierService},
-            {"svc": NotificationService},
-            {"svc": DataSubjectMemberService},
-            {"svc": ProjectService},
-            {"svc": EnclaveService},
-            {"svc": CodeHistoryService},
-            {"svc": MetadataService},
-            {"svc": BlobStorageService},
-            {"svc": MigrateStateService},
-            {"svc": SyftWorkerImageService},
-            {"svc": SyftWorkerPoolService},
-            {"svc": SyftImageRegistryService},
-            {"svc": SyncService},
-            {"svc": OutputService},
-            {"svc": UserCodeStatusService},  # this is lazy
-        ]
-
-        for svc_kwargs in default_services:
-            ServiceCls = svc_kwargs.pop("svc")
-            svc_kwargs.setdefault("store", self.document_store)
-
-            svc_instance = ServiceCls(**svc_kwargs)
-            if not svc_instance:
-                continue
-            elif not isinstance(svc_instance, AbstractService):
-                raise ValueError(
-                    f"Service {ServiceCls.__name__} must be an instance of AbstractService"
-                )
-
-            service_path_map[ServiceCls.__name__.lower()] = svc_instance
-            initialized_services.append(ServiceCls)
-
-        self.services = initialized_services
-        self.service_path_map = service_path_map
+    @property
+    def initialized_services(self) -> list[AbstractService]:
+        return self.services.services
 
     def get_service_method(self, path_or_func: str | Callable) -> Callable:
         if callable(path_or_func):
@@ -1001,21 +880,12 @@ class Server(AbstractServer):
         return self._get_service_method_from_path(path_or_func)
 
     def get_service(self, path_or_func: str | Callable) -> AbstractService:
-        if callable(path_or_func):
-            path_or_func = path_or_func.__qualname__
-        return self._get_service_from_path(path_or_func)
-
-    def _get_service_from_path(self, path: str) -> AbstractService:
-        path_list = path.split(".")
-        if len(path_list) > 1:
-            _ = path_list.pop()
-        service_name = path_list.pop()
-        return self.service_path_map[service_name.lower()]
+        return self.services.get_service(path_or_func)
 
     def _get_service_method_from_path(self, path: str) -> Callable:
         path_list = path.split(".")
         method_name = path_list.pop()
-        service_obj = self._get_service_from_path(path=path)
+        service_obj = self.services._get_service_from_path(path=path)
 
         return getattr(service_obj, method_name)
 
@@ -1024,18 +894,13 @@ class Server(AbstractServer):
         Get a temporary directory unique to the server.
         Provide all dbs, blob dirs, and locks using this directory.
         """
-        root = os.getenv("SYFT_TEMP_ROOT", "syft")
-        p = Path(tempfile.gettempdir(), root, str(self.id), dir_name)
-        p.mkdir(parents=True, exist_ok=True)
-        return p
+        return get_temp_dir_for_server(self.id, dir_name)
 
     def remove_temp_dir(self) -> None:
         """
         Remove the temporary directory for this server.
         """
-        rootdir = self.get_temp_dir()
-        if rootdir.exists():
-            shutil.rmtree(rootdir, ignore_errors=True)
+        remove_temp_dir_for_server(self.id)
 
     def update_self(self, settings: ServerSettings) -> None:
         updateable_attrs = (
@@ -1683,6 +1548,21 @@ class Server(AbstractServer):
             settings_exists = settings_stash.get_all(self.signing_key.verify_key).ok()
             if settings_exists:
                 server_settings = settings_exists[0]
+                if server_settings.__version__ != ServerSettings.__version__:
+                    context = Context()
+                    server_settings = server_settings.migrate_to(
+                        ServerSettings.__version__, context
+                    )
+                    res = settings_stash.delete_by_uid(
+                        self.signing_key.verify_key, server_settings.id
+                    )
+                    if res.is_err():
+                        raise Exception(res.value)
+                    res = settings_stash.set(
+                        self.signing_key.verify_key, server_settings
+                    )
+                    if res.is_err():
+                        raise Exception(res.value)
                 self.name = server_settings.name
                 self.association_request_auto_approval = (
                     server_settings.association_request_auto_approval
@@ -1869,12 +1749,17 @@ def create_default_worker_pool(server: Server) -> SyftError | None:
         worker_to_add_ = max(default_worker_pool.max_count, worker_count) - len(
             default_worker_pool.worker_list
         )
-        add_worker_method = server.get_service_method(SyftWorkerPoolService.add_workers)
-        result = add_worker_method(
-            context=context,
-            number=worker_to_add_,
-            pool_name=default_pool_name,
-        )
+        if worker_to_add_ > 0:
+            add_worker_method = server.get_service_method(
+                SyftWorkerPoolService.add_workers
+            )
+            result = add_worker_method(
+                context=context,
+                number=worker_to_add_,
+                pool_name=default_pool_name,
+            )
+        else:
+            return None
 
     if isinstance(result, SyftError):
         logger.info(f"Default worker pool error. {result.message}")

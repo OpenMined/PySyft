@@ -16,11 +16,11 @@ from ...service.worker.utils import DEFAULT_WORKER_POOL_NAME
 from ...types.syft_metaclass import Empty
 from ...types.syft_migration import migrate
 from ...types.syft_object import PartialSyftObject
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SYFT_OBJECT_VERSION_5
 from ...types.syft_object import SYFT_OBJECT_VERSION_6
 from ...types.syft_object import SyftObject
-from ...types.transforms import drop
 from ...types.transforms import make_set_default
 from ...types.uid import UID
 from ...util import options
@@ -28,6 +28,7 @@ from ...util.colors import SURFACE
 from ...util.misc_objs import HTMLObject
 from ...util.misc_objs import MarkdownDescription
 from ...util.schema import DEFAULT_WELCOME_MSG
+from ...util.util import get_env
 from ..response import SyftInfo
 
 logger = logging.getLogger(__name__)
@@ -111,6 +112,22 @@ class ServerSettings(SyftObject):
     )
 
     def _repr_html_(self) -> Any:
+        preferences = self._get_api().services.notifications.user_settings()
+        notifications = []
+        if preferences.email:
+            notifications.append("email")
+        if preferences.sms:
+            notifications.append("sms")
+        if preferences.slack:
+            notifications.append("slack")
+        if preferences.app:
+            notifications.append("app")
+
+        if notifications:
+            notifications_enabled = f"True via {', '.join(notifications)}"
+        else:
+            notifications_enabled = "False"
+
         return f"""
             <style>
             .syft-settings {{color: {SURFACE[options.color_theme]};}}
@@ -123,6 +140,7 @@ class ServerSettings(SyftObject):
                 <p><strong>Description: </strong>{self.description}</p>
                 <p><strong>Deployed on: </strong>{self.deployed_on}</p>
                 <p><strong>Signup enabled: </strong>{self.signup_enabled}</p>
+                <p><strong>Notifications enabled: </strong>{notifications_enabled}</p>
                 <p><strong>Admin email: </strong>{self.admin_email}</p>
             </div>
 
@@ -160,21 +178,61 @@ class ServerSettingsV5(SyftObject):
     )
 
 
-@migrate(ServerSettingsV5, ServerSettings)
+@serializable()
+class ServerSettingsV2(SyftObject):
+    __canonical_name__ = "ServerSettings"
+    __version__ = SYFT_OBJECT_VERSION_3
+    __repr_attrs__ = [
+        "name",
+        "organization",
+        "deployed_on",
+        "signup_enabled",
+        "admin_email",
+    ]
+
+    id: UID
+    name: str = "Server"
+    deployed_on: str
+    organization: str = "OpenMined"
+    verify_key: SyftVerifyKey
+    on_board: bool = True
+    description: str = "Text"
+    server_type: ServerType = ServerType.DATASITE
+    signup_enabled: bool
+    admin_email: str
+    server_side_type: ServerSideType = ServerSideType.HIGH_SIDE
+    show_warnings: bool
+
+
+# @migrate(ServerSettingsV3, ServerSettingsV5)
+# def upgrade_server_settings() -> list[Callable]:
+#     return [
+#         make_set_default("association_request_auto_approval", False),
+#         make_set_default(
+#             "default_worker_pool",
+#             get_env("DEFAULT_WORKER_POOL_NAME", DEFAULT_WORKER_POOL_NAME),
+#         ),
+#     ]
+
+# @migrate(ServerSettingsV3, ServerSettings)
+# def upgrade_server_settings_v3_to_v6() -> list[Callable]:
+#     return [
+#         make_set_default("association_request_auto_approval", False),
+#         make_set_default(
+#             "default_worker_pool",
+#             get_env("DEFAULT_WORKER_POOL_NAME", DEFAULT_WORKER_POOL_NAME),
+#         ),
+#         make_set_default("eager_execution_enabled", False),
+#     ]
+
+
+@migrate(ServerSettingsV2, ServerSettings)
 def upgrade_server_settings() -> list[Callable]:
-    return [make_set_default("eager_execution_enabled", False)]
-
-
-@migrate(ServerSettings, ServerSettingsV5)
-def downgrade_server_settings() -> list[Callable]:
-    return [drop(["eager_execution_enabled"])]
-
-
-@migrate(ServerSettingsUpdateV4, ServerSettingsUpdate)
-def upgrade_server_settings_update() -> list[Callable]:
-    return []
-
-
-@migrate(ServerSettingsUpdate, ServerSettingsUpdateV4)
-def downgrade_server_settings_update() -> list[Callable]:
-    return [drop(["eager_execution_enabled"])]
+    return [
+        make_set_default("association_request_auto_approval", False),
+        make_set_default(
+            "default_worker_pool",
+            get_env("DEFAULT_WORKER_POOL_NAME", DEFAULT_WORKER_POOL_NAME),
+        ),
+        make_set_default("eager_execution_enabled", False),
+    ]

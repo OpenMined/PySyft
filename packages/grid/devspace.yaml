@@ -125,6 +125,13 @@ profiles:
         value:
           side: low
 
+  - name: migrated-datasite
+    description: "Deploy a migrated datasite"
+    patches:
+      - op: add
+        path: deployments.syft.helm.valuesFiles
+        value: ./helm/examples/dev/migration.yaml
+
   - name: datasite-tunnel
     description: "Deploy a datasite with tunneling enabled"
     patches:

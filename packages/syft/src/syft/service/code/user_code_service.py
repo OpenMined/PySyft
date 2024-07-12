@@ -362,6 +362,8 @@ class UserCodeService(AbstractService):
         result = self.stash.get_all(credentials=context.credentials)
         if result.is_ok():
             user_code_items = result.ok()
+            # Filter out UserCode items that are not updated to the latest versio
+            user_code_items = [x for x in user_code_items if isinstance(x, UserCode)]
             load_approved_policy_code(user_code_items=user_code_items, context=context)
 
     def is_execution_allowed(

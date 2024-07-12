@@ -1764,7 +1764,7 @@ class SecureContext:
             for k, v in kwargs.items():
                 value = ActionObject.from_obj(v)
                 ptr = action_service.set_result_to_store(
-                    value, context, has_result_read_permissions=False
+                    value, context, has_result_read_permission=False
                 )
                 if ptr.is_err():
                     raise ValueError(

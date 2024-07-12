@@ -41,6 +41,20 @@ class ActionObjectPermission:
         self.credentials = credentials
         self.permission = permission
 
+    @classmethod
+    def from_permission_string(
+        cls, uid: UID, permission_string: str
+    ) -> "ActionObjectPermission":
+        if permission_string.startswith("ALL_"):
+            permission = ActionPermission[permission_string]
+            verify_key = None
+        else:
+            verify_key_str, perm_str = permission_string.split("_", 1)
+            permission = ActionPermission[perm_str]
+            verify_key = SyftVerifyKey.from_string(verify_key_str)
+
+        return cls(uid=uid, permission=permission, credentials=verify_key)
+
     @property
     def permission_string(self) -> str:
         if self.permission in COMPOUND_ACTION_PERMISSION:

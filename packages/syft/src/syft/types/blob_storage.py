@@ -341,6 +341,18 @@ class CreateBlobStorageEntry(SyftObject):
     extensions: list[str] = []
 
     @classmethod
+    def from_blob_storage_entry(cls, entry: BlobStorageEntry) -> Self:
+        # TODO extensions are not stored in the BlobStorageEntry,
+        # so a blob entry from path might get a different filename
+        # after uploading.
+        return cls(
+            id=entry.id,
+            type_=entry.type_,
+            mimetype=entry.mimetype,
+            file_size=entry.file_size,
+        )
+
+    @classmethod
     def from_obj(cls, obj: SyftObject, file_size: int | None = None) -> Self:
         if file_size is None:
             file_size = sys.getsizeof(serialize._serialize(obj=obj, to_bytes=True))

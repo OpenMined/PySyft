@@ -101,11 +101,11 @@ def validate_private_key(private_key: str | bytes) -> str:
 def validate_uid(server_uid: str) -> str:
     try:
         uid = uuid.UUID(server_uid)
-        if server_uid == str(uid):
+        if server_uid == uid.hex or server_uid == str(uid):
             return str(uid)
     except Exception:
         pass
-    raise Exception(f"{SERVER_PRIVATE_KEY} is invalid")
+    raise Exception(f"{SERVER_UID} is invalid")
 
 
 def get_credential(

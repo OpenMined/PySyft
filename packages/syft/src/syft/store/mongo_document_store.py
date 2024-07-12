@@ -336,6 +336,7 @@ class MongoStorePartition(StorePartition):
         obj: SyftObject,
         has_permission: bool = False,
         overwrite: bool = False,
+        allow_missing_keys: bool = False,
     ) -> Result[SyftObject, str]:
         collection_status = self.collection
         if collection_status.is_err():
@@ -522,7 +523,7 @@ class MongoStorePartition(StorePartition):
 
         return False
 
-    def _get_permissions_for_uid(self, uid: UID) -> Result[Set[str], Err]:  # noqa: UP006
+    def _get_permissions_for_uid(self, uid: UID) -> Result[Set[str], str]:  # noqa: UP006
         collection_permissions_status = self.permissions
         if collection_permissions_status.is_err():
             return collection_permissions_status
@@ -534,6 +535,20 @@ class MongoStorePartition(StorePartition):
             return Err(f"Permissions for object with UID {uid} not found!")
 
         return Ok(set(permissions["permissions"]))
+
+    def get_all_permissions(self) -> Result[dict[UID, Set[str]], str]:  # noqa: UP006
+        # Returns a dictionary of all permissions {object_uid: {*permissions}}
+        collection_permissions_status = self.permissions
+        if collection_permissions_status.is_err():
+            return collection_permissions_status
+        collection_permissions: MongoCollection = collection_permissions_status.ok()
+
+        permissions = collection_permissions.find({})
+        permissions_dict = {}
+        for permission in permissions:
+            permissions_dict[permission["_id"]] = permission["permissions"]
+
+        return Ok(permissions_dict)
 
     def add_permission(self, permission: ActionObjectPermission) -> Result[None, Err]:
         collection_permissions_status = self.permissions
@@ -668,7 +683,7 @@ class MongoStorePartition(StorePartition):
                 f"the server_uid {storage_permission.server_uid} does not exist in the storage permission!"
             )
 
-    def _get_storage_permissions_for_uid(self, uid: UID) -> Result[Set[UID], Err]:  # noqa: UP006
+    def _get_storage_permissions_for_uid(self, uid: UID) -> Result[Set[UID], str]:  # noqa: UP006
         storage_permissions_or_err = self.storage_permissions
         if storage_permissions_or_err.is_err():
             return storage_permissions_or_err
@@ -684,6 +699,24 @@ class MongoStorePartition(StorePartition):
             return Err(f"Storage permissions for object with UID {uid} not found!")
 
         return Ok(set(storage_permissions["server_uids"]))
+
+    def get_all_storage_permissions(self) -> Result[dict[UID, Set[UID]], str]:  # noqa: UP006
+        # Returns a dictionary of all storage permissions {object_uid: {*server_uids}}
+        storage_permissions_or_err = self.storage_permissions
+        if storage_permissions_or_err.is_err():
+            return storage_permissions_or_err
+        storage_permissions_collection: MongoCollection = (
+            storage_permissions_or_err.ok()
+        )
+
+        storage_permissions = storage_permissions_collection.find({})
+        storage_permissions_dict = {}
+        for storage_permission in storage_permissions:
+            storage_permissions_dict[storage_permission["_id"]] = storage_permission[
+                "server_uids"
+            ]
+
+        return Ok(storage_permissions_dict)
 
     def take_ownership(
         self, uid: UID, credentials: SyftVerifyKey

@@ -299,6 +299,9 @@ class KeyValueActionStore(ActionStore):
             return Ok(self.permissions[uid])
         return Err(f"No permissions found for uid: {uid}")
 
+    def get_all_permissions(self) -> Result[dict[UID, set[str]], str]:
+        return Ok(dict(self.permissions.items()))
+
     def add_storage_permission(self, permission: StoragePermission) -> None:
         permissions = self.storage_permissions[permission.uid]
         permissions.add(permission.server_uid)
@@ -326,6 +329,19 @@ class KeyValueActionStore(ActionStore):
             return Ok(self.storage_permissions[uid])
         return Err(f"No storage permissions found for uid: {uid}")
 
+    def get_all_storage_permissions(self) -> Result[dict[UID, set[UID]], str]:
+        return Ok(dict(self.storage_permissions.items()))
+
+    def _all(
+        self,
+        credentials: SyftVerifyKey,
+        has_permission: bool | None = False,
+    ) -> Result[list[SyftObject], str]:
+        # this checks permissions
+        res = [self.get(uid, credentials, has_permission) for uid in self.data.keys()]
+        result = [x.ok() for x in res if x.is_ok()]
+        return Ok(result)
+
     def migrate_data(
         self, to_klass: SyftObject, credentials: SyftVerifyKey
     ) -> Result[bool, str]:
@@ -339,7 +355,7 @@ class KeyValueActionStore(ActionStore):
                     migrated_value = value.migrate_to(to_klass.__version__)
                 except Exception as e:
                     return Err(
-                        f"Failed to migrate data to {to_klass} for qk: {key}. Exception: {e}"
+                        f"Failed to migrate data to {to_klass} {to_klass.__version__} for qk: {key}. Exception: {e}"
                     )
                 result = self.set(
                     uid=key,

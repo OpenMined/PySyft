@@ -148,90 +148,6 @@ class Context(SyftBaseObject):
     pass
 
 
-class SyftObjectRegistry:
-    __object_version_registry__: dict[
-        str, type["SyftObject"] | type["SyftObjectRegistry"]
-    ] = {}
-    __object_transform_registry__: dict[str, Callable] = {}
-
-    def __init_subclass__(cls, **kwargs: Any) -> None:
-        super().__init_subclass__(**kwargs)
-        if hasattr(cls, "__canonical_name__") and hasattr(cls, "__version__"):
-            mapping_string = f"{cls.__canonical_name__}_{cls.__version__}"
-
-            if (
-                mapping_string in cls.__object_version_registry__
-                and not autoreload_enabled()
-            ):
-                current_cls = cls.__object_version_registry__[mapping_string]
-                if cls == current_cls:
-                    # same class so noop
-                    return None
-
-                # user code is reinitialized which means it might have a new address
-                # in memory so for that we can just skip
-                if "syft.user" in cls.__module__:
-                    # this happens every time we reload the user code
-                    return None
-                else:
-                    # this shouldn't happen and is usually a mistake of reusing the
-                    # same __canonical_name__ and __version__ in two classes
-                    raise Exception(f"Duplicate mapping for {mapping_string} and {cls}")
-            else:
-                # only if the cls has not been registered do we want to register it
-                cls.__object_version_registry__[mapping_string] = cls
-
-    @classmethod
-    def versioned_class(
-        cls, name: str, version: int
-    ) -> type["SyftObject"] | type["SyftObjectRegistry"] | None:
-        mapping_string = f"{name}_{version}"
-        if mapping_string not in cls.__object_version_registry__:
-            return None
-        return cls.__object_version_registry__[mapping_string]
-
-    @classmethod
-    def add_transform(
-        cls,
-        klass_from: str,
-        version_from: int,
-        klass_to: str,
-        version_to: int,
-        method: Callable,
-    ) -> None:
-        mapping_string = f"{klass_from}_{version_from}_x_{klass_to}_{version_to}"
-        cls.__object_transform_registry__[mapping_string] = method
-
-    @classmethod
-    def get_transform(
-        cls, type_from: type["SyftObject"], type_to: type["SyftObject"]
-    ) -> Callable:
-        for type_from_mro in type_from.mro():
-            if issubclass(type_from_mro, SyftObject):
-                klass_from = type_from_mro.__canonical_name__
-                version_from = type_from_mro.__version__
-            else:
-                klass_from = type_from_mro.__name__
-                version_from = None
-            for type_to_mro in type_to.mro():
-                if issubclass(type_to_mro, SyftBaseObject):
-                    klass_to = type_to_mro.__canonical_name__
-                    version_to = type_to_mro.__version__
-                else:
-                    klass_to = type_to_mro.__name__
-                    version_to = None
-
-                mapping_string = (
-                    f"{klass_from}_{version_from}_x_{klass_to}_{version_to}"
-                )
-                if mapping_string in cls.__object_transform_registry__:
-                    return cls.__object_transform_registry__[mapping_string]
-        raise Exception(
-            f"No mapping found for: {type_from} to {type_to} in"
-            f"the registry: {cls.__object_transform_registry__.keys()}"
-        )
-
-
 @cache
 def cached_get_type_hints(cls: type) -> dict[str, Any]:
     return typing.get_type_hints(cls)
@@ -239,7 +155,7 @@ def cached_get_type_hints(cls: type) -> dict[str, Any]:
 
 class SyftMigrationRegistry:
     __migration_version_registry__: dict[str, dict[int, str]] = {}
-    __migration_transform_registry__: dict[str, dict[str, Callable]] = {}
+    __migration_function_registry__: dict[str, dict[str, Callable]] = {}
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         """
@@ -276,16 +192,16 @@ class SyftMigrationRegistry:
                     klass_version: fqn
                 }
 
-    @classmethod
-    def get_versions(cls, canonical_name: str) -> list[int]:
-        available_versions: dict = cls.__migration_version_registry__.get(
-            canonical_name,
-            {},
-        )
-        return list(available_versions.keys())
+    # @classmethod
+    # def get_versions(cls, canonical_name: str) -> list[int]:
+    #     available_versions: dict = cls.__migration_version_registry__.get(
+    #         canonical_name,
+    #         {},
+    #     )
+    #     return list(available_versions.keys())
 
     @classmethod
-    def register_transform(
+    def register_migration_function(
         cls, klass_type_str: str, version_from: int, version_to: int, method: Callable
     ) -> None:
         """
@@ -308,11 +224,9 @@ class SyftMigrationRegistry:
 
         if versions_exists:
             mapping_string = f"{version_from}x{version_to}"
-            if klass_type_str not in cls.__migration_transform_registry__:
-                cls.__migration_transform_registry__[klass_type_str] = {}
-            cls.__migration_transform_registry__[klass_type_str][mapping_string] = (
-                method
-            )
+            if klass_type_str not in cls.__migration_function_registry__:
+                cls.__migration_function_registry__[klass_type_str] = {}
+            cls.__migration_function_registry__[klass_type_str][mapping_string] = method
         else:
             raise Exception(
                 f"Available versions for {klass_type_str} are: {available_versions}."
@@ -343,9 +257,9 @@ class SyftMigrationRegistry:
                         mapping_string = f"{version_from}x{version_to}"
                         if (
                             mapping_string
-                            in cls.__migration_transform_registry__[klass_from]
+                            in cls.__migration_function_registry__[klass_from]
                         ):
-                            return cls.__migration_transform_registry__[klass_from][
+                            return cls.__migration_function_registry__[klass_from][
                                 mapping_string
                             ]
         raise ValueError(
@@ -370,11 +284,9 @@ class SyftMigrationRegistry:
                 mapping_string = f"{version_from}x{version_to}"
                 if (
                     mapping_string
-                    in cls.__migration_transform_registry__[
-                        type_from.__canonical_name__
-                    ]
+                    in cls.__migration_function_registry__[type_from.__canonical_name__]
                 ):
-                    return cls.__migration_transform_registry__[klass_from][
+                    return cls.__migration_function_registry__[klass_from][
                         mapping_string
                     ]
 
@@ -393,7 +305,7 @@ base_attrs_sync_ignore = [
 ]
 
 
-class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
+class SyftObject(SyftBaseObject, SyftMigrationRegistry):
     __canonical_name__ = "SyftObject"
     __version__ = SYFT_OBJECT_VERSION_2
 
@@ -544,21 +456,11 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
     def __getitem__(self, key: str | int) -> Any:
         return self.__dict__.__getitem__(key)  # type: ignore
 
-    def _upgrade_version(self, latest: bool = True) -> "SyftObject":
-        constructor = SyftObjectRegistry.versioned_class(
-            name=self.__canonical_name__, version=self.__version__ + 1
-        )
-        if not constructor:
-            return self
-        else:
-            # should we do some kind of recursive upgrades?
-            upgraded = constructor._from_previous_version(self)
-            if latest:
-                upgraded = upgraded._upgrade_version(latest=latest)
-            return upgraded
-
     # transform from one supported type to another
     def to(self, projection: type[T], context: Context | None = None) -> T:
+        # relative
+        from .syft_object_registry import SyftObjectRegistry
+
         # 🟡 TODO 19: Could we do an mro style inheritence conversion? Risky?
         transform = SyftObjectRegistry.get_transform(type(self), projection)
         return transform(self, context)
@@ -807,6 +709,9 @@ aggressive_set_attr(tuple, "_repr_html_", build_tabulator_table)
 class StorableObjectType:
     def to(self, projection: type, context: Context | None = None) -> Any:
         # 🟡 TODO 19: Could we do an mro style inheritence conversion? Risky?
+        # relative
+        from .syft_object_registry import SyftObjectRegistry
+
         transform = SyftObjectRegistry.get_transform(type(self), projection)
         return transform(self, context)
 
