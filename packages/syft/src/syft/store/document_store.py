@@ -868,18 +868,16 @@ class NewBaseUIDStoreStash(NewBaseStash):
         # TODO: Could change to query_one, no?
         result = self.partition.get(credentials=credentials, uid=uid)
 
-        match result:
-            case Ok(None):
-                raise NotFoundException(
-                    public_message=f"{self.object_type} with uid {uid} not found"
-                )
-            case Ok(value):
-                return value
-            case Err(err):
-                raise StashException(err)
-            case _:
-                raise StashException("Unexpected error")
+        if result.is_err():
+            raise StashException(result.err())
 
+        if result.ok() is None:
+            raise NotFoundException(
+                public_message=f"{self.object_type} with uid {uid} not found"
+            )
+
+        return result.ok()
+        
     @as_result(StashException)
     def set(
         self,
