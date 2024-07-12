@@ -48,6 +48,7 @@ from .action_object import TwinMode
 from .action_permissions import ActionObjectPermission
 from .action_permissions import ActionObjectREAD
 from .action_permissions import ActionPermission
+from .action_store import ActionStore
 from .action_store import KeyValueActionStore
 from .action_types import action_type_for_type
 from .numpy import NumpyArrayObject

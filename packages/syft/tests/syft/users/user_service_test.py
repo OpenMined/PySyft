@@ -14,7 +14,7 @@ from syft.server.worker import Worker
 from syft.service.context import AuthedServiceContext
 from syft.service.context import ServerServiceContext
 from syft.service.context import UnauthedServiceContext
-from syft.service.response import SyftError
+from syft.service.response import SyftError, SyftSuccess
 from syft.service.user import errors as user_errors
 from syft.service.user.user import User
 from syft.service.user.user import UserCreate
@@ -606,17 +606,11 @@ def test_userservice_register_error_on_get_email(
         mock_worker = Worker.named(name="mock-server")
         server_context = ServerServiceContext(server=mock_worker)
 
-<<<<<<< HEAD
         with pytest.raises(StashException) as exc:
             user_service.register(server_context, guest_create_user)
 
         assert str(exc.value) == error_msg
         assert exc.value.public == error_msg
-=======
-        response = user_service.register(server_context, guest_create_user)
-        assert isinstance(response, SyftError)
-        assert response.message == expected_error_msg
->>>>>>> origin/dev
 
 
 def test_userservice_register_success(
@@ -646,19 +640,10 @@ def test_userservice_register_success(
         monkeypatch.setattr(user_service.stash, "set", mock_set)
 
         expected_private_key = guest_user.to(UserPrivateKey)
-<<<<<<< HEAD
         response = user_service.register(server_context, guest_create_user)
+
+        assert isinstance(response, SyftSuccess)
         user_private_key = response.value
-=======
-
-        response = user_service.register(server_context, guest_create_user)
-        assert isinstance(response, tuple)
-
-        syft_success_response, user_private_key = response
-        assert isinstance(syft_success_response, SyftSuccess)
-        assert syft_success_response.message == expected_msg
->>>>>>> origin/dev
-
         assert isinstance(user_private_key, UserPrivateKey)
         assert user_private_key == expected_private_key
 

@@ -112,13 +112,8 @@ class NotifierService(AbstractService):
         # If no new credentials provided, check for existing ones
         if not (email_username and email_password):
             if not (notifier.email_username and notifier.email_password):
-<<<<<<< HEAD
                 raise SyftException(
-                    message="No valid token has been added to the domain."
-=======
-                return SyftError(
                     message="No valid token has been added to the datasite."
->>>>>>> origin/dev
                     + "You can add a pair of SMTP credentials via "
                     + "<client>.settings.enable_notifications(email=<>, password=<>)"
                 )

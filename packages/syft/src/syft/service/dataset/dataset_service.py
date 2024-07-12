@@ -95,8 +95,10 @@ class DatasetService(AbstractService):
         ).unwrap()
 
         return SyftSuccess(
-            message=f"Dataset uploaded to '{context.server.name}'. "
-            f"To see the datasets uploaded by a client on this server, use command `[your_client].datasets`"
+            message=(
+                f"Dataset uploaded to '{context.server.name}'."
+                f" To see the datasets uploaded by a client on this server, use command `[your_client].datasets`"
+            ),
             value=result,
         )
 
@@ -146,8 +148,8 @@ class DatasetService(AbstractService):
     def get_by_id(self, context: AuthedServiceContext, uid: UID) -> Dataset:
         """Get a Dataset"""
         dataset = self.stash.get_by_uid(context.credentials, uid=uid).unwrap()
-        if context.node is not None:
-            dataset.node_uid = context.node.id
+        if context.server is not None:
+            dataset.server_uid = context.server.id
         return dataset
 
     @service_method(path="dataset.get_by_action_id", name="get_by_action_id")
@@ -157,8 +159,8 @@ class DatasetService(AbstractService):
         """Get Datasets by an Action ID"""
         datasets = self.stash.search_action_ids(context.credentials, uid=uid).unwrap()
         for dataset in datasets:
-            if context.node is not None:
-                dataset.node_uid = context.node.id
+            if context.server is not None:
+                dataset.server_uid = context.server.id
         return datasets
 
     @service_method(

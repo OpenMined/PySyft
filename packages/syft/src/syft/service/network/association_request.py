@@ -126,7 +126,7 @@ class AssociationRequestChange(Change):
         )
 
         if isinstance(self_server_peer, SyftError):
-            raise SyftException(public_message=self_node_peer)
+            raise SyftException(public_message=self_server_peer)
 
         return SyftSuccess(
             message=f"Routes successfully added for peer: {self.remote_peer.name}"

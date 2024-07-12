@@ -648,7 +648,7 @@ def allowed_ids_only(
 ) -> dict[ServerIdentity, UID]:
     if context.server.server_type != ServerType.DATASITE:
         raise SyftException(
-            public_message=f"Invalid server type for code submission: context.server.server_type}"
+            public_message=f"Invalid server type for code submission: {context.server.server_type}"
         )
 
     server_identity = ServerIdentity(

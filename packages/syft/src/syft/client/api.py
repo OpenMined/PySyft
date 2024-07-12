@@ -142,12 +142,12 @@ class APIRegistry:
 
     @classmethod
     @as_result(SyftException)
-    def _api_for(cls, node_uid: UID, user_verify_key: SyftVerifyKey) -> SyftAPI:
-        key = (node_uid, user_verify_key)
+    def _api_for(cls, server_uid: UID, user_verify_key: SyftVerifyKey) -> SyftAPI:
+        key = (server_uid, user_verify_key)
         api_instance = cls.__api_registry__.get(key, None)
 
         if api_instance is None:
-            msg = f"Unable to get the API. Please login to domain {node_uid}"
+            msg = f"Unable to get the API. Please login to datasite {server_uid}"
             raise SyftException(public_message=msg)
 
         return api_instance

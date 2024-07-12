@@ -261,12 +261,8 @@ def test_worker_handle_api_request(
     kwargs: dict,
     blocking: bool,
 ) -> None:
-<<<<<<< HEAD
     print(f"run: blocking: {blocking} path: {path} kwargs: {kwargs}")
-    node_uid = worker_with_proc.id
-=======
     server_uid = worker_with_proc.id
->>>>>>> origin/dev
     root_client = worker_with_proc.root_client
     assert root_client.api is not None
 

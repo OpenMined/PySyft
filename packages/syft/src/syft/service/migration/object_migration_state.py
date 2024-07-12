@@ -6,6 +6,8 @@ from typing import Any
 
 # third party
 from result import Result
+from syft.store.document_store_errors import StashException
+from syft.types.result import as_result
 from typing_extensions import Self
 import yaml
 
@@ -15,7 +17,7 @@ from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
 from ...server.credentials import SyftSigningKey
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import BaseStash
+from ...store.document_store import NewBaseStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
@@ -63,7 +65,7 @@ KlassNamePartitionKey = PartitionKey(key="canonical_name", type_=str)
 
 
 @serializable()
-class SyftMigrationStateStash(BaseStash):
+class SyftMigrationStateStash(NewBaseStash):
     object_type = SyftObjectMigrationState
     settings: PartitionSettings = PartitionSettings(
         name=SyftObjectMigrationState.__canonical_name__,
@@ -73,6 +75,7 @@ class SyftMigrationStateStash(BaseStash):
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
 
+    @as_result(StashException)
     def set(
         self,
         credentials: SyftVerifyKey,
@@ -81,23 +84,21 @@ class SyftMigrationStateStash(BaseStash):
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> Result[SyftObjectMigrationState, str]:
-        res = self.check_type(migration_state, self.object_type)
-        # we dont use and_then logic here as it is hard because of the order of the arguments
-        if res.is_err():
-            return res
+        obj = self.check_type(migration_state, self.object_type).unwrap()
         return super().set(
             credentials=credentials,
-            obj=res.ok(),
+            obj=obj,
             add_permissions=add_permissions,
             add_storage_permission=add_storage_permission,
             ignore_duplicates=ignore_duplicates,
-        )
+        ).unwrap()
 
+    @as_result(StashException)
     def get_by_name(
         self, canonical_name: str, credentials: SyftVerifyKey
     ) -> Result[SyftObjectMigrationState, str]:
         qks = KlassNamePartitionKey.with_obj(canonical_name)
-        return self.query_one(credentials=credentials, qks=qks)
+        return self.query_one(credentials=credentials, qks=qks).unwrap()
 
 
 @serializable()

@@ -69,7 +69,7 @@ class SyftException(Exception):
         `context.role`.
 
         Args:
-            context (AuthedServiceContext): The node context.
+            context (AuthedServiceContext): The server context.
 
         Returns:
             str: The private or public message based on the role.

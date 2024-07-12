@@ -1344,7 +1344,7 @@ class Server(AbstractServer):
         if action is not None:
             result_obj = ActionObject.obj_not_ready(
                 id=action.result_id,
-                syft_node_location=self.id,
+                syft_server_location=self.id,
                 syft_client_verify_key=credentials,
             )
             result_obj.id = action.result_id
@@ -1595,18 +1595,18 @@ class Server(AbstractServer):
         else:
             # Currently we allow automatic user registration on enclaves,
             # as enclaves do not have superusers
-            if self.node_type == NodeType.ENCLAVE:
+            if self.server_type == ServerType.ENCLAVE:
                 flags.CAN_REGISTER = True
 
             new_settings = ServerSettings(
                 id=self.id,
                 name=self.name,
                 verify_key=self.verify_key,
-                node_type=self.node_type,
+                server_type=self.server_type,
                 deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
                 signup_enabled=flags.CAN_REGISTER,
                 admin_email=admin_email,
-                node_side_type=self.node_side_type.value,  # type: ignore
+                server_side_type=self.server_side_type.value,  # type: ignore
                 show_warnings=self.enable_warnings,
                 association_request_auto_approval=self.association_request_auto_approval,
                 default_worker_pool=get_default_worker_pool_name(),
@@ -1623,7 +1623,7 @@ def create_admin_new(
     password: str,
     server: AbstractServer,
 ) -> User | None:
-    user_stash = UserStash(store=node.document_store)
+    user_stash = UserStash(store=server.document_store)
 
     user_exists = user_stash.email_exists(email=email).unwrap()
     if user_exists:
@@ -1641,11 +1641,11 @@ def create_admin_new(
     # New User Initialization
     # 🟡 TODO: change later but for now this gives the main user super user automatically
     user = create_user.to(User)
-    user.signing_key = node.signing_key
+    user.signing_key = server.signing_key
     user.verify_key = user.signing_key.verify_key
 
     new_user = user_stash.set(
-        credentials=node.signing_key.verify_key,
+        credentials=server.signing_key.verify_key,
         obj=user,
         ignore_duplicates=True,
     ).unwrap()

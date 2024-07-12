@@ -305,7 +305,7 @@ class UserCodeService(AbstractService):
                 return self.stash.get_by_uid(context.credentials, code.id).unwrap()
             except NotFoundException as exc:
                 raise NotFoundException.from_exception(
-                    exc, public_message="UserCode {code.id} not found on this node"
+                    exc, public_message=f"UserCode {code.id} not found on this server"
                 )
         else:  # code: SubmitUserCode
             # Submit new UserCode, or get existing UserCode with the same code hash
@@ -344,9 +344,9 @@ class UserCodeService(AbstractService):
     def get_by_uid(self, context: AuthedServiceContext, uid: UID) -> UserCode:
         """Get a User Code Item"""
         user_code = self.stash.get_by_uid(context.credentials, uid=uid).unwrap()
-        if user_code and user_code.input_policy_state and context.node is not None:
+        if user_code and user_code.input_policy_state and context.server is not None:
             # TODO replace with LinkedObject Context
-            user_code.node_uid = context.node.id
+            user_code.server_uid = context.server.id
         return user_code
 
     @service_method(
@@ -589,7 +589,7 @@ class UserCodeService(AbstractService):
             )
 
         # FIX: actionservice unwrap
-        action_service = context.node.get_service("actionservice")
+        action_service = context.server.get_service("actionservice")
         result_action_object: ActionObject | TwinObject = (
             action_service._user_code_execute(
                 context, code, kwarg2id, result_id=result_id

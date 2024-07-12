@@ -149,7 +149,7 @@ class SettingsService(AbstractService):
             )
         else:
             # TODO: Turn this into a function?
-            raise NotFoundException(public_message="Node settings not found")
+            raise NotFoundException(public_message="Server settings not found")
 
     @service_method(
         path="settings.enable_notifications",

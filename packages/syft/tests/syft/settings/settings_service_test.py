@@ -42,7 +42,7 @@ def test_settingsservice_get_success(
     expected_output = mock_stash_get_all_output[0]
 
     @as_result(SyftException)
-    def mock_stash_get_all(credentials) -> list[NodeSettings]:
+    def mock_stash_get_all(credentials) -> list[ServerSettings]:
         return mock_stash_get_all_output
 
     monkeypatch.setattr(settings_service.stash, "get_all", mock_stash_get_all)
@@ -59,7 +59,7 @@ def test_settingsservice_get_stash_fail(
     authed_context: AuthedServiceContext,
 ) -> None:
     @as_result(StashException)
-    def mock_empty_stash(credentials) -> list[NodeSettings]:
+    def mock_empty_stash(credentials) -> list[ServerSettings]:
         return []
 
     monkeypatch.setattr(settings_service.stash, "get_all", mock_empty_stash)
@@ -106,7 +106,7 @@ def test_settingsservice_set_fail(
     mock_error_message = "database failure"
 
     @as_result(StashException)
-    def mock_stash_set_error(credentials, settings: NodeSettings) -> NoReturn:
+    def mock_stash_set_error(credentials, settings: ServerSettings) -> NoReturn:
         raise StashException(public_message=mock_error_message)
 
     monkeypatch.setattr(settings_service.stash, "set", mock_stash_set_error)
@@ -205,7 +205,7 @@ def test_settingsservice_update_stash_empty(
         settings_service.update(context=authed_context, settings=update_settings)
 
     assert exc.type == NotFoundException
-    assert exc.value.public_message == "Node settings not found"
+    assert exc.value.public_message == "Server settings not found"
 
 
 def test_settingsservice_update_fail(
@@ -220,7 +220,7 @@ def test_settingsservice_update_fail(
     mock_stash_get_all_output = [settings, settings]
 
     @as_result(StashException)
-    def mock_stash_get_all(credentials) -> list[NodeSettings]:
+    def mock_stash_get_all(credentials) -> list[ServerSettings]:
         return mock_stash_get_all_output
 
     monkeypatch.setattr(settings_service.stash, "get_all", mock_stash_get_all)

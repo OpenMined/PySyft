@@ -6,8 +6,8 @@ from typing import cast
 from IPython.display import display_html
 
 # relative
-from ...node.credentials import SyftSigningKey
-from ...node.credentials import SyftVerifyKey
+from ...server.credentials import SyftSigningKey
+from ...server.credentials import SyftVerifyKey
 from ...abstract_server import ServerType
 from ...serde.serializable import serializable
 from ...server.credentials import SyftSigningKey
@@ -377,7 +377,7 @@ class UserService(AbstractService):
 
     def register(
         self, context: ServerServiceContext, new_user: UserCreate
-    ) -> UserPrivateKey:
+    ) -> SyftSuccess:
         """Register new user"""
 
         # this method handles errors in a slightly different way as it is directly called instead of

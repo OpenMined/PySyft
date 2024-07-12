@@ -211,7 +211,7 @@ class UserView(SyftObject):
 
     def _set_password(self, new_password: str) -> SyftSuccess:
         client = APIRegistry._api_for(
-            node_uid=self.syft_server_location,
+            server_uid=self.syft_server_location,
             user_verify_key=self.syft_client_verify_key,
         ).unwrap()
 
@@ -245,7 +245,7 @@ class UserView(SyftObject):
             raise SyftException(public_message=f"Invalid email: '{email}'.")
 
         client = APIRegistry._api_for(
-            node_uid=self.syft_node_location,
+            server_uid=self.syft_server_location,
             user_verify_key=self.syft_client_verify_key,
         ).unwrap()
 
@@ -275,7 +275,7 @@ class UserView(SyftObject):
             raise UserUpdateError.from_exception(exc, public_message=str(exc))
 
         api = APIRegistry._api_for(
-            node_uid=self.syft_server_location,
+            server_uid=self.syft_server_location,
             user_verify_key=self.syft_client_verify_key,
         ).unwrap()
 

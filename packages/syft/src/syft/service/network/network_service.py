@@ -105,7 +105,7 @@ class NetworkStash(NewBaseUIDStoreStash):
             return self.query_one(credentials=credentials, qks=qks).unwrap()
         except NotFoundException as exc:
             raise NotFoundException.from_exception(
-                exc, public_message=f"NodePeer with {name} not found"
+                exc, public_message=f"ServerPeer with {name} not found"
             )
 
     @as_result(StashException)
@@ -157,7 +157,7 @@ class NetworkStash(NewBaseUIDStoreStash):
     ) -> Result[ServerPeer | None, SyftError]:
         qks = QueryKeys(qks=[VerifyKeyPartitionKey.with_obj(verify_key)])
         return self.query_one(credentials, qks).unwrap(
-            private_message=f"NodePeer with {verify_key} not found"
+            private_message=f"ServerPeer with {verify_key} not found"
         )
 
     @as_result(StashException)
@@ -205,7 +205,7 @@ class NetworkService(AbstractService):
 
         if reverse_tunnel and not reverse_tunnel_enabled():
             raise SyftException(
-                public_message="Reverse tunneling is not enabled on this node."
+                public_message="Reverse tunneling is not enabled on this server."
             )
 
         elif reverse_tunnel:
@@ -397,7 +397,7 @@ class NetworkService(AbstractService):
 
         # get the server peer for the given sender peer_id
         try:
-            peer = self.stash.get_by_uid(context.node.verify_key, peer_id).unwrap()
+            peer = self.stash.get_by_uid(context.server.verify_key, peer_id).unwrap()
             return ServerPeerAssociationStatus.PEER_ASSOCIATED
         except NotFoundException:
             association_requests: list[Request] = (
@@ -728,13 +728,9 @@ class NetworkService(AbstractService):
                 id=remote_server_peer.id, server_routes=remote_server_peer.server_routes
             )
             self.stash.update(
-                credentials=context.node.verify_key, peer_update=peer_update
-            ).unwrap()
-            
-            self.stash.update(
                 credentials=context.server.verify_key, peer_update=peer_update
             ).unwrap()
-
+           
         return SyftSuccess(message=return_message)
 
     @service_method(

@@ -104,7 +104,6 @@ class DataSubjectService(AbstractService):
     def get_members(
         self, context: AuthedServiceContext, data_subject_name: str
     ) -> list[DataSubject]:
-    ) -> list[DataSubject] | SyftError:
         get_relatives = context.server.get_service_method(
             DataSubjectMemberService.get_relatives
         )
