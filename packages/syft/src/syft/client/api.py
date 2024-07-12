@@ -98,6 +98,7 @@ IPYNB_BACKGROUND_PREFIXES = ["_ipy", "_repr", "__ipython", "__pydantic"]
 @exclude_from_traceback
 def post_process_result(path: str, result: Any, unwrap_on_success: bool = False) -> Any:
     if isinstance(result, SyftError):
+        print(result.tb)
         raise SyftException(public_message=result.message, server_trace=result.tb)
     if unwrap_on_success:
         result = result.unwrap_value()

@@ -374,7 +374,7 @@ class UserService(AbstractService):
 
     def register(
         self, context: NodeServiceContext, new_user: UserCreate
-    ) -> UserPrivateKey | SyftError:
+    ) -> SyftSuccess | SyftError:
         """Register new user"""
 
         # this method handles errors in a slightly different way as it is directly called instead of
@@ -403,10 +403,10 @@ class UserService(AbstractService):
         if user_exists:
             return SyftError(message=f"User {user.email} already exists")
 
-        user = self._add_user(credentials=user.verify_key, user=user)
-        if user.is_err():
+        user_result = self._add_user(credentials=user.verify_key, user=user)
+        if user_result.is_err():
             return SyftError(message=f"Failed to create user {user.email}")
-        user = user.unwrap()
+        user = user_result.unwrap()
 
         success_message = f"User '{user.name}' successfully registered!"
 

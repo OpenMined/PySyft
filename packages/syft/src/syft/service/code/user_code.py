@@ -517,6 +517,7 @@ class UserCode(SyncableSyftObject):
 
         # FIX: status_link
         status = self.status_link.resolve_with_context(context)
+
         if status.is_err():
             raise SyftException(public_message=status.err())
 
@@ -1662,7 +1663,7 @@ def set_default_pool_if_empty(context: TransformContext) -> TransformContext:
         and context.output
         and context.output.get("worker_pool_name", None) is None
     ):
-        default_pool = context.node.get_default_worker_pool()
+        default_pool = context.node.get_default_worker_pool().unwrap()
         context.output["worker_pool_name"] = default_pool.name
     return context
 

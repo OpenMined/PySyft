@@ -16,12 +16,12 @@ from syft.abstract_node import NodeSideType
 from syft.node.credentials import SyftSigningKey
 from syft.node.credentials import SyftVerifyKey
 from syft.service.context import AuthedServiceContext
+from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.settings.settings import NodeSettings
 from syft.service.settings.settings import NodeSettingsUpdate
 from syft.service.settings.settings_service import SettingsService
 from syft.service.settings.settings_stash import SettingsStash
-from syft.service.user.errors import UserPermissionError
 from syft.service.user.user import UserCreate
 from syft.service.user.user import UserPrivateKey
 from syft.service.user.user import UserView
@@ -273,21 +273,18 @@ def test_settings_allow_guest_registration(
         response_1 = root_domain_client.register(
             email=email1, password="joker123", password_verify="joker123", name="Joker"
         )
-        assert isinstance(response_1, UserPrivateKey)
+        assert isinstance(response_1.value, UserPrivateKey)
 
         # by default, the guest client can't register new user
-        with pytest.raises(UserPermissionError) as exc:
-            guest_domain_client.register(
-                email=email2,
-                password="harley123",
-                password_verify="harley123",
-                name="Harley",
-            )
-
-        assert exc.type == UserPermissionError
-        assert (
-            exc.value.public_message == "You are not permitted to perform this action."
+        response = guest_domain_client.register(
+            email=email2,
+            password="harley123",
+            password_verify="harley123",
+            name="Harley",
         )
+
+        assert isinstance(response, SyftError)
+        assert response.message == "You have no permission to register"
         assert any(user.email == email1 for user in root_domain_client.users)
 
     # only after the root client enable other users to signup, they can
@@ -309,7 +306,7 @@ def test_settings_allow_guest_registration(
             password_verify=password,
             name=faker.name(),
         )
-        assert isinstance(response_3, UserPrivateKey)
+        assert isinstance(response_3.value, UserPrivateKey)
         assert any(user.email == email2 for user in root_domain_client.users)
 
 
@@ -366,25 +363,22 @@ def test_settings_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker)
                 password="password",
                 password_verify="password",
             )
-            assert isinstance(result, UserPrivateKey)
+            assert isinstance(result.value, UserPrivateKey)
             emails_added.append(email)
 
         ds_client = get_mock_client(
             faker=faker, root_client=root_client, role=ServiceRole.DATA_SCIENTIST
         )
 
-        with pytest.raises(UserPermissionError) as exc:
-            ds_client.register(
-                name=faker.name(),
-                email=faker.email(),
-                password="password",
-                password_verify="password",
-            )
-
-        assert exc.type == UserPermissionError
-        assert (
-            exc.value.public_message == "You are not permitted to perform this action."
+        result = ds_client.register(
+            name=faker.name(),
+            email=faker.email(),
+            password="password",
+            password_verify="password",
         )
+
+        assert isinstance(result, SyftError)
+        assert result.message == "You have no permission to register"
 
         users_created_count = sum(
             [u.email in emails_added for u in root_client.users.get_all()]

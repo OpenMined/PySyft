@@ -48,7 +48,7 @@ from .action_object import TwinMode
 from .action_permissions import ActionObjectPermission
 from .action_permissions import ActionObjectREAD
 from .action_permissions import ActionPermission
-from .action_store import ActionStore
+from .action_store import KeyValueActionStore
 from .action_types import action_type_for_type
 from .numpy import NumpyArrayObject
 from .pandas import PandasDataFrameObject  # noqa: F401
@@ -59,7 +59,7 @@ logger = logging.getLogger(__name__)
 
 @serializable()
 class ActionService(AbstractService):
-    def __init__(self, store: ActionStore) -> None:
+    def __init__(self, store: KeyValueActionStore) -> None:
         self.store = store
 
     @service_method(path="action.np_array", name="np_array")
@@ -334,11 +334,9 @@ class ActionService(AbstractService):
         return obj
 
     @service_method(path="action.get_mock", name="get_mock", roles=GUEST_ROLE_LEVEL)
-    def get_mock(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> Result[SyftError, SyftObject]:
+    def get_mock(self, context: AuthedServiceContext, uid: UID) -> SyftObject:
         """Get a pointer from the action store"""
-        result = self.store.get_mock(uid=uid).unwrap()
+        return self.store.get_mock(uid=uid).unwrap()
 
     @service_method(
         path="action.has_storage_permission",
