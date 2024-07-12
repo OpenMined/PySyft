@@ -1,8 +1,9 @@
-# third party
+# stdlib
 from typing import NoReturn
+
+# third party
 import pytest
 from pytest import MonkeyPatch
-from result import Err
 
 # syft absolute
 from syft.node.credentials import SyftSigningKey
@@ -341,7 +342,10 @@ def test_update_notification_status_error_on_get_by_uid(
         ).unwrap()
 
     assert exc.type is StashException
-    assert exc.value.public_message == f"No notification exists for id: {random_verify_key}"
+    assert (
+        exc.value.public_message
+        == f"No notification exists for id: {random_verify_key}"
+    )
 
 
 def test_delete_all_for_verify_key(root_verify_key, document_store) -> None:
@@ -415,7 +419,7 @@ def test_delete_all_for_verify_key_error_on_delete_by_uid(
     random_verify_key = random_signing_key.verify_key
     test_stash = NotificationStash(store=document_store)
     error_msg = "Failed to delete notification"
- 
+
     @as_result(StashException)
     def mock_delete_by_uid(root_verify_key, uid: UID) -> NoReturn:
         raise StashException(public_message=error_msg)

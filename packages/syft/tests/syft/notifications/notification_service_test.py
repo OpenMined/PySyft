@@ -1,7 +1,9 @@
-# third party
+# stdlib
 from typing import NoReturn
-from pytest import MonkeyPatch, Stash
+
+# third party
 import pytest
+from pytest import MonkeyPatch
 
 # syft absolute
 from syft.node.credentials import SyftSigningKey
@@ -12,7 +14,6 @@ from syft.service.notification.notification_stash import NotificationStash
 from syft.service.notification.notifications import CreateNotification
 from syft.service.notification.notifications import Notification
 from syft.service.notification.notifications import NotificationStatus
-from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.store.document_store import DocumentStore
 from syft.store.document_store_errors import StashException
@@ -519,6 +520,7 @@ def test_mark_as_unread_success(
     assert expected_notification.status == NotificationStatus.READ
 
     as_result(StashException)
+
     def mock_update_notification_status() -> Notification:
         return expected_notification
 
@@ -567,10 +569,8 @@ def test_mark_as_unread_error_on_update_notification_status(
         mock_update_notification_status,
     )
 
-    with pytest.raises(StashException) as exc: 
-        notification_service.mark_as_unread(
-            authed_context, expected_notification.id
-        )
+    with pytest.raises(StashException) as exc:
+        notification_service.mark_as_unread(authed_context, expected_notification.id)
 
     assert exc.type is StashException
     assert exc.value.public_message == expected_error
@@ -728,7 +728,7 @@ def test_clear_error_on_delete_all_for_verify_key(
 
     with pytest.raises(StashException) as exc:
         test_notification_service.clear(authed_context)
-    
+
     inbox_after_delete = test_notification_service.get_all(authed_context)
 
     assert exc.type is StashException

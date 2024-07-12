@@ -44,16 +44,15 @@ def test_list_dict_repr_html(test_case):
     obj, should_create_table = test_case
 
     if should_create_table:
-        assert (obj._repr_html_() is not None)
-        assert (dict(enumerate(obj))._repr_html_() is not None)
-        assert (set(obj)._repr_html_() is not None)
-        assert (tuple(obj)._repr_html_() is not None)
+        assert isinstance(obj._repr_html_(), str)
+        assert isinstance(dict(enumerate(obj))._repr_html_(), str)
+        assert isinstance(set(obj)._repr_html_(), str)
+        assert isinstance(tuple(obj)._repr_html_(), str)
     else:
-        with pytest.raises(ValueError):
-            obj._repr_html_()
-            dict(enumerate(obj))._repr_html_()
-            set(obj)._repr_html_()
-            tuple(obj)._repr_html_()
+        assert obj._repr_html_() is None
+        assert dict(enumerate(obj))._repr_html_() is None
+        assert set(obj)._repr_html_() is None
+        assert tuple(obj)._repr_html_() is None
 
 
 def test_sort_table_rows():
