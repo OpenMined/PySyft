@@ -9,8 +9,8 @@ def main():
         dev_mode=True,
         reset=True,
         payment_required=True,
-        node_payment_handle='corrib-node-payment-handle',
-        payment_api='https://corrib.io/api/payments/',
+        node_payment_handle='node-payment-handle',
+        payment_api='https://domain.tld/api/payments/',
     )
 
     print(node)
