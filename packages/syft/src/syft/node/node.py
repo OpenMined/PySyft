@@ -124,7 +124,8 @@ from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
 from ..store.blob_storage.seaweedfs import SeaweedFSBlobDeposit
 from ..store.dict_document_store import DictStoreConfig
 from ..store.document_store import StoreConfig
-from ..store.document_store_errors import NotFoundException, StashException
+from ..store.document_store_errors import NotFoundException
+from ..store.document_store_errors import StashException
 from ..store.linked_obj import LinkedObject
 from ..store.mongo_document_store import MongoStoreConfig
 from ..store.sqlite_document_store import SQLiteStoreClientConfig
@@ -740,7 +741,9 @@ class Node(AbstractNode):
             object_version = object_type.__version__
 
             try:
-                migration_state = migration_state_service.get_state(context, canonical_name).unwrap()
+                migration_state = migration_state_service.get_state(
+                    context, canonical_name
+                ).unwrap()
                 if migration_state.current_version != migration_state.latest_version:
                     klasses_to_be_migrated.append(object_type)
             except NotFoundException:
@@ -749,7 +752,6 @@ class Node(AbstractNode):
                     current_version=object_version,
                     canonical_name=canonical_name,
                 )
-            
 
         return klasses_to_be_migrated
 
@@ -1382,7 +1384,9 @@ class Node(AbstractNode):
         if worker_pool_name is None:
             worker_pool = self.get_default_worker_pool().unwrap()
         else:
-            worker_pool = self.pool_stash.get_by_name(credentials, worker_pool_name).unwrap()
+            worker_pool = self.pool_stash.get_by_name(
+                credentials, worker_pool_name
+            ).unwrap()
 
         # Create a Worker pool reference object
         worker_pool_ref = LinkedObject.from_obj(
@@ -1806,7 +1810,9 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
     image_stash = node.get_service(SyftWorkerImageService).stash
     default_pool_name = node.settings.default_worker_pool
     try:
-        default_worker_pool = node.get_default_worker_pool().unwrap(public_message="Failed to get default worker pool")
+        default_worker_pool = node.get_default_worker_pool().unwrap(
+            public_message="Failed to get default worker pool"
+        )
     except SyftException:
         default_worker_pool = None
     default_worker_tag = get_default_worker_tag_by_env(node.dev_mode)

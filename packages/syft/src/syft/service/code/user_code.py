@@ -1715,7 +1715,7 @@ class UserCodeExecutionOutput(SyftObject):
 
     id: UID
     user_code_id: UID
-    errored: False
+    errored: bool = False
     stdout: str
     stderr: str
     result: Any = None
