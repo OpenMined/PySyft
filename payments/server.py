@@ -7,7 +7,10 @@ def main():
         name="test-domain-1",
         port=8080,
         dev_mode=True,
-        reset=True
+        reset=True,
+        payment_required=True,
+        node_payment_handle='corrib-node-payment-handle',
+        payment_api='https://corrib.io/api/payments/',
     )
 
     print(node)

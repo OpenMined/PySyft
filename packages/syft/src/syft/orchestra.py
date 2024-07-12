@@ -175,6 +175,9 @@ def deploy_to_python(
     background_tasks: bool = False,
     debug: bool = False,
     migrate: bool = False,
+    payment_required: bool = False,
+    node_payment_handle: str | None = None,
+    payment_api: str | None = None
 ) -> NodeHandle:
     worker_classes = {
         NodeType.DOMAIN: Domain,
@@ -204,6 +207,9 @@ def deploy_to_python(
         "background_tasks": background_tasks,
         "debug": debug,
         "migrate": migrate,
+        "payment_required": payment_required,
+        "node_payment_handle": node_payment_handle,
+        "payment_api": payment_api
     }
 
     if port:
@@ -298,6 +304,9 @@ class Orchestra:
         background_tasks: bool = False,
         debug: bool = False,
         migrate: bool = False,
+        payment_required: bool = False,
+        node_payment_handle: str | None = None,
+        payment_api: str | None = None,
     ) -> NodeHandle:
         if dev_mode is True:
             thread_workers = True
@@ -336,6 +345,9 @@ class Orchestra:
                 background_tasks=background_tasks,
                 debug=debug,
                 migrate=migrate,
+                payment_required=payment_required,
+                node_payment_handle=node_payment_handle,
+                payment_api=payment_api
             )
             display(
                 SyftInfo(

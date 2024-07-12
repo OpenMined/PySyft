@@ -21,7 +21,7 @@ def run() -> NodeHandle | None:
         "--name", help="node name", type=str, default="syft-node", dest="name"
     )
     parser.add_argument(
-        "--node-type", help="node type", type=str, default="python", dest="node_type"
+        "--node-type", help="node type", type=str, default="domain", dest="node_type"
     )
     parser.add_argument(
         "--host",
@@ -69,6 +69,27 @@ def run() -> NodeHandle | None:
         default="True",
         dest="tail",
     )
+    parser.add_argument(
+        "--payment-required",
+        help="payment required",
+        type=str,
+        default="False",
+        dest="payment_required",
+    )
+    parser.add_argument(
+        "--node-payment-handle",
+        help="node payment handle",
+        type=str,
+        default="",
+        dest="node_payment_handle",
+    )
+    parser.add_argument(
+        "--payment-api",
+        help="payment api",
+        type=str,
+        default="",
+        dest="payment_api",
+    )
 
     args = parser.parse_args()
     if args.command != "launch":
@@ -78,7 +99,9 @@ def run() -> NodeHandle | None:
     args.reset = str_to_bool(args.reset)
     args.local_db = str_to_bool(args.local_db)
     args.tail = str_to_bool(args.tail)
-    args.cmd = str_to_bool(args.cmd)
+    args.payment_required = str_to_bool(args.payment_required)
+    args.node_payment_handle = str(args.node_payment_handle)
+    args.payment_api = str(args.payment_api)
 
     node = Orchestra.launch(
         name=args.name,
@@ -90,6 +113,9 @@ def run() -> NodeHandle | None:
         local_db=args.local_db,
         processes=args.processes,
         tail=args.tail,
+        payment_required=args.payment_required,
+        node_payment_handle=args.node_payment_handle,
+        payment_api=args.payment_api
     )
     if not args.tail:
         return node

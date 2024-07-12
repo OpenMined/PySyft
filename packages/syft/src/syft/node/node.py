@@ -354,6 +354,9 @@ class Node(AbstractNode):
         smtp_host: str | None = None,
         association_request_auto_approval: bool = False,
         background_tasks: bool = False,
+        payment_required: bool = False,
+        node_payment_handle: str | None = None,
+        payment_api: str | None = None
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -369,6 +372,21 @@ class Node(AbstractNode):
         self.node_side_type = NodeSideType(node_side_type)
         self.client_cache: dict = {}
         self.peer_client_cache: dict = {}
+        self.payment_required = payment_required
+        self.node_payment_handle = node_payment_handle
+        self.payment_api = payment_api
+
+        if self.payment_required:
+            if self.node_payment_handle is None or self.node_payment_handle == "": 
+                raise ValueError("Payment handle is required.")
+            if self.payment_api is None or self.payment_api == "":
+                raise ValueError("Payment API is required.")
+            print(
+                f'\n'
+                f'This node charges for services.\n'
+                f'Payment handle: {self.node_payment_handle}\n'
+                f'Payment API: {self.payment_api}\n'
+            )
 
         if isinstance(node_type, str):
             node_type = NodeType(node_type)
@@ -676,6 +694,9 @@ class Node(AbstractNode):
         in_memory_workers: bool = True,
         association_request_auto_approval: bool = False,
         background_tasks: bool = False,
+        payment_required: bool = False,
+        node_payment_handle: str | None = None,
+        payment_api: str | None = None
     ) -> Node:
         uid = UID.with_seed(name)
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
@@ -705,6 +726,9 @@ class Node(AbstractNode):
             reset=reset,
             association_request_auto_approval=association_request_auto_approval,
             background_tasks=background_tasks,
+            payment_required=payment_required,
+            node_payment_handle=node_payment_handle,
+            payment_api=payment_api
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
