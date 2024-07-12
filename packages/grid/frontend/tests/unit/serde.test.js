@@ -184,10 +184,10 @@ it("Test  Update Metadata APICall serialization/deserialization", () => {
   const uuid = uuidv4()
 
   let newMetadata = {
-    name: "New Node",
+    name: "New Server",
     organization: "New Organization",
     description: "New Description",
-    fqn: "syft.service.metadata.node_metadata.NodeMetadataUpdate",
+    fqn: "syft.service.metadata.server_metadata.ServerMetadataUpdate",
   }
 
   const apiCall = new APICall(uuid, "metadata.update", [], newMetadata)

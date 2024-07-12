@@ -41,12 +41,18 @@ def table_test_cases() -> list[tuple[list, str | None]]:
 
 @pytest.mark.parametrize("test_case", table_test_cases())
 def test_list_dict_repr_html(test_case):
-    obj, expected = test_case
+    obj, should_create_table = test_case
 
-    assert (obj._repr_html_() is not None) == expected
-    assert (dict(enumerate(obj))._repr_html_() is not None) == expected
-    assert (set(obj)._repr_html_() is not None) == expected
-    assert (tuple(obj)._repr_html_() is not None) == expected
+    if should_create_table:
+        assert isinstance(obj._repr_html_(), str)
+        assert isinstance(dict(enumerate(obj))._repr_html_(), str)
+        assert isinstance(set(obj)._repr_html_(), str)
+        assert isinstance(tuple(obj)._repr_html_(), str)
+    else:
+        assert obj._repr_html_() is None
+        assert dict(enumerate(obj))._repr_html_() is None
+        assert set(obj)._repr_html_() is None
+        assert tuple(obj)._repr_html_() is None
 
 
 def test_sort_table_rows():

@@ -1,12 +1,12 @@
-# PyGrid UI
+# Syft UI
 
-The PyGrid UI is the user interface that allows data owners to manage their
-**deployed** PyGrid domains and networks.
+The Syft UI is the user interface that allows data owners to manage their
+**deployed** Syft datasites and gateways.
 
 ## Installation
 
 ```bash
-cd <pysyft-root>/packages/grid/frontend
+cd <syft-root>/packages/grid/frontend
 pnpm install
 ```
 

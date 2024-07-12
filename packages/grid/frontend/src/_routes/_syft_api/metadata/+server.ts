@@ -17,9 +17,9 @@ export const GET: RequestHandler = async () => {
       highest_version: metadata_raw?.highest_version,
       lowest_version: metadata_raw?.lowest_version,
       name: metadata_raw?.name,
-      node_id: metadata_raw?.id?.value,
-      node_side: metadata_raw?.node_side_type,
-      node_type: metadata_raw?.node_type?.value,
+      server_id: metadata_raw?.id?.value,
+      server_side: metadata_raw?.server_side_type,
+      server_type: metadata_raw?.server_type?.value,
       organization: metadata_raw?.organization,
       signup_enabled: metadata_raw?.signup_enabled,
       syft_version: metadata_raw?.syft_version,
@@ -32,7 +32,7 @@ export const GET: RequestHandler = async () => {
 
 export const PATCH: RequestHandler = async ({ cookies, request }) => {
   try {
-    const { signing_key, node_id } = unload_cookies(cookies)
+    const { signing_key, server_id } = unload_cookies(cookies)
 
     const metadata = await request.json()
 
@@ -41,10 +41,10 @@ export const PATCH: RequestHandler = async ({ cookies, request }) => {
       payload: {
         settings: {
           ...metadata,
-          fqn: "syft.service.settings.settings.NodeSettingsUpdate",
+          fqn: "syft.service.settings.settings.ServerSettingsUpdate",
         },
       },
-      node_id,
+      server_id,
       signing_key,
     })
 

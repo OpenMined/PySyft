@@ -5,12 +5,12 @@ from collections.abc import Collection
 import logging
 
 # relative
-from ..abstract_node import NodeSideType
-from ..node.credentials import SyftVerifyKey
+from ..abstract_server import ServerSideType
+from ..server.credentials import SyftVerifyKey
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
-from ..service.sync.diff_state import NodeDiff
 from ..service.sync.diff_state import ObjectDiffBatch
+from ..service.sync.diff_state import ServerDiff
 from ..service.sync.diff_state import SyncInstruction
 from ..service.sync.resolve_widget import PaginatedResolveWidget
 from ..service.sync.resolve_widget import ResolveWidget
@@ -18,7 +18,7 @@ from ..service.sync.sync_state import SyncState
 from ..types.uid import UID
 from ..util.decorators import deprecated
 from ..util.util import prompt_warning_message
-from .domain_client import DomainClient
+from .datasite_client import DatasiteClient
 from .sync_decision import SyncDecision
 from .sync_decision import SyncDirection
 
@@ -26,8 +26,8 @@ logger = logging.getLogger(__name__)
 
 
 def sync(
-    from_client: DomainClient,
-    to_client: DomainClient,
+    from_client: DatasiteClient,
+    to_client: DatasiteClient,
     include_ignored: bool = False,
     include_same: bool = False,
     filter_by_email: str | None = None,
@@ -60,25 +60,25 @@ def compare_states(
     include_types: Collection[str | type] | None = None,
     exclude_types: Collection[str | type] | None = None,
     hide_usercode: bool = True,
-) -> NodeDiff | SyftError:
-    # NodeDiff
+) -> ServerDiff | SyftError:
+    # ServerDiff
     if (
-        from_state.node_side_type == NodeSideType.LOW_SIDE
-        and to_state.node_side_type == NodeSideType.HIGH_SIDE
+        from_state.server_side_type == ServerSideType.LOW_SIDE
+        and to_state.server_side_type == ServerSideType.HIGH_SIDE
     ):
         low_state = from_state
         high_state = to_state
         direction = SyncDirection.LOW_TO_HIGH
     elif (
-        from_state.node_side_type == NodeSideType.HIGH_SIDE
-        and to_state.node_side_type == NodeSideType.LOW_SIDE
+        from_state.server_side_type == ServerSideType.HIGH_SIDE
+        and to_state.server_side_type == ServerSideType.LOW_SIDE
     ):
         low_state = to_state
         high_state = from_state
         direction = SyncDirection.HIGH_TO_LOW
     else:
         return SyftError(
-            "Invalid node side types: can only compare a high and low node"
+            "Invalid server side types: can only compare a high and low server"
         )
 
     if hide_usercode:
@@ -89,7 +89,7 @@ def compare_states(
         exclude_types = exclude_types or []
         exclude_types.append("usercode")
 
-    return NodeDiff.from_sync_state(
+    return ServerDiff.from_sync_state(
         low_state=low_state,
         high_state=high_state,
         direction=direction,
@@ -102,15 +102,15 @@ def compare_states(
 
 
 def compare_clients(
-    from_client: DomainClient,
-    to_client: DomainClient,
+    from_client: DatasiteClient,
+    to_client: DatasiteClient,
     include_ignored: bool = False,
     include_same: bool = False,
     filter_by_email: str | None = None,
     include_types: Collection[str | type] | None = None,
     exclude_types: Collection[str | type] | None = None,
     hide_usercode: bool = True,
-) -> NodeDiff | SyftError:
+) -> ServerDiff | SyftError:
     from_state = from_client.get_sync_state()
     if isinstance(from_state, SyftError):
         return from_state
@@ -132,9 +132,9 @@ def compare_clients(
 
 
 def resolve(
-    obj: ObjectDiffBatch | NodeDiff,
+    obj: ObjectDiffBatch | ServerDiff,
 ) -> ResolveWidget | PaginatedResolveWidget | SyftSuccess | SyftError:
-    if not isinstance(obj, ObjectDiffBatch | NodeDiff):
+    if not isinstance(obj, ObjectDiffBatch | ServerDiff):
         raise ValueError(
             f"Invalid type: could not resolve object with type {type(obj).__qualname__}"
         )

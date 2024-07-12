@@ -1,4 +1,5 @@
 # stdlib
+from collections.abc import Callable
 from enum import Enum
 from typing import Any
 from typing import cast
@@ -13,9 +14,15 @@ from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
 from ...types.base import SyftBaseModel
 from ...types.datetime import DateTime
+from ...types.errors import SyftException
+from ...types.result import as_result
+from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.syft_object import short_uid
+from ...types.transforms import drop
+from ...types.transforms import make_set_default
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
@@ -47,7 +54,7 @@ class WorkerHealth(Enum):
 
 
 @serializable()
-class SyftWorker(SyftObject):
+class SyftWorkerV2(SyftObject):
     __canonical_name__ = "SyftWorker"
     __version__ = SYFT_OBJECT_VERSION_2
 
@@ -74,24 +81,54 @@ class SyftWorker(SyftObject):
     consumer_state: ConsumerState = ConsumerState.DETACHED
     job_id: UID | None = None
 
+
+@serializable()
+class SyftWorker(SyftObject):
+    __canonical_name__ = "SyftWorker"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    __attr_unique__ = ["name"]
+    __attr_searchable__ = ["name", "container_id", "to_be_deleted"]
+    __repr_attrs__ = [
+        "name",
+        "container_id",
+        "image",
+        "status",
+        "healthcheck",
+        "worker_pool_name",
+        "created_at",
+    ]
+
+    id: UID
+    name: str
+    container_id: str | None = None
+    created_at: DateTime = DateTime.now()
+    healthcheck: WorkerHealth | None = None
+    status: WorkerStatus
+    image: SyftWorkerImage | None = None
+    worker_pool_name: str
+    consumer_state: ConsumerState = ConsumerState.DETACHED
+    job_id: UID | None = None
+    to_be_deleted: bool = False
+
     @property
     def logs(self) -> str | SyftError:
         api = APIRegistry.api_for(
-            node_uid=self.syft_node_location,
+            server_uid=self.syft_server_location,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None:
-            return SyftError(message=f"You must login to {self.node_uid}")
+            return SyftError(message=f"You must login to {self.server_uid}")
         return api.services.worker.logs(uid=self.id)
 
     def get_job_repr(self) -> str:
         if self.job_id is not None:
             api = APIRegistry.api_for(
-                node_uid=self.syft_node_location,
+                server_uid=self.syft_server_location,
                 user_verify_key=self.syft_client_verify_key,
             )
             if api is None:
-                return SyftError(message=f"You must login to {self.node_uid}")
+                return SyftError(message=f"You must login to {self.server_uid}")
             job = api.services.job.get(self.job_id)
             if job.action.user_code_id is not None:
                 func_name = api.services.code.get_by_id(
@@ -105,11 +142,11 @@ class SyftWorker(SyftObject):
 
     def refresh_status(self) -> SyftError | None:
         api = APIRegistry.api_for(
-            node_uid=self.syft_node_location,
+            server_uid=self.syft_server_location,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None:
-            return SyftError(message=f"You must login to {self.node_uid}")
+            return SyftError(message=f"You must login to {self.server_uid}")
 
         res = api.services.worker.status(uid=self.id)
         if isinstance(res, SyftError):
@@ -169,7 +206,7 @@ class WorkerPool(SyftObject):
         get the latest state of the image from the SyftWorkerImageStash
         """
         api = APIRegistry.api_for(
-            node_uid=self.syft_node_location,
+            server_uid=self.syft_server_location,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is not None and api.services is not None:
@@ -268,17 +305,20 @@ class ContainerSpawnStatus(SyftBaseModel):
     error: str | None = None
 
 
+@as_result(SyftException)
 def _get_worker_container(
     client: docker.DockerClient,
     worker: SyftWorker,
-) -> Container | SyftError:
+) -> Container:
     try:
         return cast(Container, client.containers.get(worker.container_id))
     except docker.errors.NotFound as e:
-        return SyftError(message=f"Worker {worker.id} container not found. Error {e}")
+        raise SyftException(
+            public_message=f"Worker {worker.id} container not found. Error {e}"
+        )
     except docker.errors.APIError as e:
-        return SyftError(
-            message=f"Unable to access worker {worker.id} container. "
+        raise SyftException(
+            public_message=f"Unable to access worker {worker.id} container. "
             + f"Container server error {e}"
         )
 
@@ -296,20 +336,32 @@ _CONTAINER_STATUS_TO_WORKER_STATUS: dict[str, WorkerStatus] = dict(
 )
 
 
+@as_result(SyftException)
 def _get_worker_container_status(
     client: docker.DockerClient,
     worker: SyftWorker,
     container: Container | None = None,
-) -> Container | SyftError:
+) -> Container:
     if container is None:
-        container = _get_worker_container(client, worker)
-
-    if isinstance(container, SyftError):
-        return container
-
+        container = _get_worker_container(client, worker).unwrap()
     container_status = container.status
+    try:
+        return _CONTAINER_STATUS_TO_WORKER_STATUS[container_status]
+    except Exception:
+        raise SyftException(
+            public_message=f"Unknown container status: {container_status}"
+        )
 
-    return _CONTAINER_STATUS_TO_WORKER_STATUS.get(
-        container_status,
-        SyftError(message=f"Unknown container status: {container_status}"),
-    )
+
+@migrate(SyftWorkerV2, SyftWorker)
+def upgrade_syft_worker() -> list[Callable]:
+    return [
+        make_set_default("to_be_deleted", False),
+    ]
+
+
+@migrate(SyftWorker, SyftWorkerV2)
+def downgrade_syft_worker() -> list[Callable]:
+    return [
+        drop(["to_be_deleted"]),
+    ]

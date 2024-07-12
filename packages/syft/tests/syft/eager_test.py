@@ -1,9 +1,11 @@
 # third party
 import numpy as np
+import pytest
 
 # syft absolute
 from syft.service.action.action_object import ActionObject
 from syft.service.action.plan import planify
+from syft.types.errors import SyftException
 from syft.types.twin_object import TwinObject
 
 # relative
@@ -11,8 +13,8 @@ from ..utils.custom_markers import currently_fail_on_python_3_12
 
 
 def test_eager_permissions(worker, guest_client):
-    root_domain_client = worker.root_client
-    assert root_domain_client.settings.enable_eager_execution(enable=True)
+    root_datasite_client = worker.root_client
+    assert root_datasite_client.settings.enable_eager_execution(enable=True)
     guest_client = worker.guest_client
 
     input_obj = TwinObject(
@@ -20,25 +22,30 @@ def test_eager_permissions(worker, guest_client):
         mock_obj=np.array([[1, 1, 1], [1, 1, 1]]),
     )
 
-    input_ptr = input_obj.send(root_domain_client)
+    input_ptr = input_obj.send(root_datasite_client)
 
     pointer = guest_client.api.services.action.get_pointer(input_ptr.id)
 
-    input_ptr = input_obj.send(root_domain_client)
+    input_ptr = input_obj.send(root_datasite_client)
 
     pointer = guest_client.api.services.action.get_pointer(input_ptr.id)
 
     flat_ptr = pointer.flatten()
 
-    res_guest = guest_client.api.services.action.get(flat_ptr.id)
-    assert not isinstance(res_guest, ActionObject)
-    res_root = root_domain_client.api.services.action.get(flat_ptr.id)
+    with pytest.raises(SyftException) as exc:
+        guest_client.api.services.action.get(flat_ptr.id)
+
+    # TODO: Improve this error msg
+    assert exc.type == SyftException
+    assert "denied" in str(exc.value)
+
+    res_root = root_datasite_client.api.services.action.get(flat_ptr.id)
     assert all(res_root == [3, 3, 3, 3, 3, 3])
 
 
 def test_plan(worker):
-    root_domain_client = worker.root_client
-    assert root_domain_client.settings.enable_eager_execution(enable=True)
+    root_datasite_client = worker.root_client
+    assert root_datasite_client.settings.enable_eager_execution(enable=True)
     guest_client = worker.guest_client
 
     @planify
@@ -53,19 +60,18 @@ def test_plan(worker):
         mock_obj=np.array([[1, 1, 1], [1, 1, 1]]),
     )
 
-    input_ptr = input_obj.send(root_domain_client)
+    input_ptr = input_obj.send(root_datasite_client)
 
     pointer = guest_client.api.services.action.get_pointer(input_ptr.id)
     res_ptr = plan_ptr(x=pointer)
 
     # guest cannot access result
-    assert not isinstance(
-        guest_client.api.services.action.get(res_ptr.id), ActionObject
-    )
+    with pytest.raises(SyftException):
+        guest_client.api.services.action.get(res_ptr.id)
 
     # root can access result
     assert (
-        root_domain_client.api.services.action.get(res_ptr.id)
+        root_datasite_client.api.services.action.get(res_ptr.id)
         == np.array([[3, 3, 3], [3, 3, 3]]).flatten().prod()
     )
 
@@ -73,15 +79,17 @@ def test_plan(worker):
     res_ptr.request(guest_client)
 
     # root approves result
-    root_domain_client.api.services.request[-1].approve_with_client(root_domain_client)
+    root_datasite_client.api.services.request[-1].approve_with_client(
+        root_datasite_client
+    )
 
     assert res_ptr.get_from(guest_client) == 729
 
 
 @currently_fail_on_python_3_12(raises=AttributeError)
 def test_plan_with_function_call(worker, guest_client):
-    root_domain_client = worker.root_client
-    assert root_domain_client.settings.enable_eager_execution(enable=True)
+    root_datasite_client = worker.root_client
+    assert root_datasite_client.settings.enable_eager_execution(enable=True)
     guest_client = worker.guest_client
 
     @planify
@@ -96,16 +104,16 @@ def test_plan_with_function_call(worker, guest_client):
         mock_obj=np.array([[1, 1, 1], [1, 1, 1]]),
     )
 
-    input_obj = input_obj.send(root_domain_client)
+    input_obj = input_obj.send(root_datasite_client)
     pointer = guest_client.api.services.action.get_pointer(input_obj.id)
     res_ptr = plan_ptr(x=pointer)
 
-    assert root_domain_client.api.services.action.get(res_ptr.id) == 18
+    assert root_datasite_client.api.services.action.get(res_ptr.id) == 18
 
 
 def test_plan_with_object_instantiation(worker, guest_client):
-    root_domain_client = worker.root_client
-    assert root_domain_client.settings.enable_eager_execution(enable=True)
+    root_datasite_client = worker.root_client
+    assert root_datasite_client.settings.enable_eager_execution(enable=True)
     guest_client = worker.guest_client
 
     @planify
@@ -118,20 +126,20 @@ def test_plan_with_object_instantiation(worker, guest_client):
         private_obj=np.array([1, 2, 3, 4, 5, 6]), mock_obj=np.array([1, 1, 1, 1, 1, 1])
     )
 
-    _id = input_obj.send(root_domain_client).id
+    _id = input_obj.send(root_datasite_client).id
     pointer = guest_client.api.services.action.get_pointer(_id)
 
     res_ptr = plan_ptr(x=pointer)
 
     assert all(
-        root_domain_client.api.services.action.get(res_ptr.id).syft_action_data
+        root_datasite_client.api.services.action.get(res_ptr.id).syft_action_data
         == np.array([2, 3, 4, 5, 6, 7])
     )
 
 
 def test_setattribute(worker, guest_client):
-    root_domain_client = worker.root_client
-    assert root_domain_client.settings.enable_eager_execution(enable=True)
+    root_datasite_client = worker.root_client
+    assert root_datasite_client.settings.enable_eager_execution(enable=True)
     guest_client = worker.guest_client
 
     private_data, mock_data = (
@@ -143,7 +151,7 @@ def test_setattribute(worker, guest_client):
 
     assert private_data.dtype != np.int32
 
-    obj_pointer = obj.send(root_domain_client)
+    obj_pointer = obj.send(root_datasite_client)
     obj_pointer = guest_client.api.services.action.get_pointer(obj_pointer.id)
 
     original_id = obj_pointer.id
@@ -155,7 +163,7 @@ def test_setattribute(worker, guest_client):
     assert obj_pointer.id.id in worker.action_store.data
     assert obj_pointer.id != original_id
 
-    res = root_domain_client.api.services.action.get(obj_pointer.id)
+    res = root_datasite_client.api.services.action.get(obj_pointer.id)
 
     # check if updated
     assert res.dtype == np.int32
@@ -169,8 +177,8 @@ def test_setattribute(worker, guest_client):
 
 
 def test_getattribute(worker, guest_client):
-    root_domain_client = worker.root_client
-    assert root_domain_client.settings.enable_eager_execution(enable=True)
+    root_datasite_client = worker.root_client
+    assert root_datasite_client.settings.enable_eager_execution(enable=True)
     guest_client = worker.guest_client
 
     obj = TwinObject(
@@ -178,18 +186,18 @@ def test_getattribute(worker, guest_client):
         mock_obj=np.array([[1, 1, 1], [1, 1, 1]]),
     )
 
-    obj_pointer = obj.send(root_domain_client)
+    obj_pointer = obj.send(root_datasite_client)
     obj_pointer = guest_client.api.services.action.get_pointer(obj_pointer.id)
     size_pointer = obj_pointer.size
 
     # check result
     assert size_pointer.id.id in worker.action_store.data
-    assert root_domain_client.api.services.action.get(size_pointer.id) == 6
+    assert root_datasite_client.api.services.action.get(size_pointer.id) == 6
 
 
 def test_eager_method(worker, guest_client):
-    root_domain_client = worker.root_client
-    assert root_domain_client.settings.enable_eager_execution(enable=True)
+    root_datasite_client = worker.root_client
+    assert root_datasite_client.settings.enable_eager_execution(enable=True)
     guest_client = worker.guest_client
 
     obj = TwinObject(
@@ -197,7 +205,7 @@ def test_eager_method(worker, guest_client):
         mock_obj=np.array([[1, 1, 1], [1, 1, 1]]),
     )
 
-    obj_pointer = obj.send(root_domain_client)
+    obj_pointer = obj.send(root_datasite_client)
     obj_pointer = guest_client.api.services.action.get_pointer(obj_pointer.id)
 
     flat_pointer = obj_pointer.flatten()
@@ -205,14 +213,14 @@ def test_eager_method(worker, guest_client):
     assert flat_pointer.id.id in worker.action_store.data
     # check result
     assert all(
-        root_domain_client.api.services.action.get(flat_pointer.id)
+        root_datasite_client.api.services.action.get(flat_pointer.id)
         == np.array([1, 2, 3, 4, 5, 6])
     )
 
 
 def test_eager_dunder_method(worker, guest_client):
-    root_domain_client = worker.root_client
-    assert root_domain_client.settings.enable_eager_execution(enable=True)
+    root_datasite_client = worker.root_client
+    assert root_datasite_client.settings.enable_eager_execution(enable=True)
     guest_client = worker.guest_client
 
     obj = TwinObject(
@@ -220,7 +228,7 @@ def test_eager_dunder_method(worker, guest_client):
         mock_obj=np.array([[1, 1, 1], [1, 1, 1]]),
     )
 
-    obj_pointer = obj.send(root_domain_client)
+    obj_pointer = obj.send(root_datasite_client)
     obj_pointer = guest_client.api.services.action.get_pointer(obj_pointer.id)
 
     first_row_pointer = obj_pointer[0]
@@ -228,6 +236,6 @@ def test_eager_dunder_method(worker, guest_client):
     assert first_row_pointer.id.id in worker.action_store.data
     # check result
     assert all(
-        root_domain_client.api.services.action.get(first_row_pointer.id)
+        root_datasite_client.api.services.action.get(first_row_pointer.id)
         == np.array([1, 2, 3])
     )

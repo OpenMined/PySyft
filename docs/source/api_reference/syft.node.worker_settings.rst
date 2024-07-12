@@ -1,7 +1,7 @@
-syft.node.worker\_settings
+syft.server.worker\_settings
 ==========================
 
-.. automodule:: syft.node.worker_settings
+.. automodule:: syft.server.worker_settings
 
    
    

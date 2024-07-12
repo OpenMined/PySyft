@@ -14,7 +14,7 @@ from docker.models.containers import Container
 from kr8s.objects import Pod
 
 # relative
-from ...abstract_node import AbstractNode
+from ...abstract_server import AbstractServer
 from ...custom_worker.builder import CustomWorkerBuilder
 from ...custom_worker.builder_types import ImageBuildResult
 from ...custom_worker.builder_types import ImagePushResult
@@ -22,7 +22,9 @@ from ...custom_worker.config import PrebuiltWorkerConfig
 from ...custom_worker.k8s import KubeUtils
 from ...custom_worker.k8s import PodStatus
 from ...custom_worker.runner_k8s import KubernetesRunner
-from ...node.credentials import SyftVerifyKey
+from ...types.errors import SyftException
+from ...types.result import as_result
+from ...server.credentials import SyftVerifyKey
 from ...types.uid import UID
 from ...util.util import get_queue_address
 from ..response import SyftError
@@ -39,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_WORKER_IMAGE_TAG = "openmined/default-worker-image-cpu:0.0.1"
 DEFAULT_WORKER_POOL_NAME = "default-pool"
-K8S_NODE_CREDS_NAME = "node-creds"
+K8S_SERVER_CREDS_NAME = "server-creds"
 
 
 def backend_container_name() -> str:
@@ -102,7 +104,7 @@ def extract_config_from_backend(
         mode = parts[2]
 
         if "/root/data/creds" in vol:
-            # we need this because otherwise we are using the same node private key
+            # we need this because otherwise we are using the same server private key
             # which will make account creation fail
             key = f"{key}-{worker_name}"
         elif bind not in valid_binds:
@@ -239,7 +241,7 @@ def run_container_using_docker(
 
 
 def run_workers_in_threads(
-    node: AbstractNode,
+    server: AbstractServer,
     pool_name: str,
     number: int,
     start_idx: int = 0,
@@ -256,9 +258,9 @@ def run_workers_in_threads(
             healthcheck=WorkerHealth.HEALTHY,
         )
         try:
-            port = node.queue_config.client_config.queue_port
+            port = server.queue_config.client_config.queue_port
             address = get_queue_address(port)
-            node.add_consumer_for_service(
+            server.add_consumer_for_service(
                 service_name=pool_name,
                 syft_worker_id=worker.id,
                 address=address,
@@ -299,9 +301,9 @@ def prepare_kubernetes_pool_env(
     if creds_path is not None and not creds_path.exists():
         raise ValueError("Credentials file does not exist")
 
-    # create a secret for the node credentials owned by the backend, not the pool.
-    node_secret = KubeUtils.create_secret(
-        secret_name=K8S_NODE_CREDS_NAME,
+    # create a secret for the server credentials owned by the backend, not the pool.
+    server_secret = KubeUtils.create_secret(
+        secret_name=K8S_SERVER_CREDS_NAME,
         type="Opaque",
         component=backend_pod_name,
         data={creds_path.name: creds_path.read_text()},
@@ -312,7 +314,7 @@ def prepare_kubernetes_pool_env(
     backend_env = runner.get_pod_env_vars(backend_pod_name) or []
     env_vars_: list = KubeUtils.patch_env_vars(backend_env, env_vars)
     mount_secrets = {
-        node_secret.metadata.name: {
+        server_secret.metadata.name: {
             "mountPath": str(creds_path),
             "subPath": creds_path.name,
         },
@@ -384,20 +386,21 @@ def create_kubernetes_pool(
     return runner.get_pool_pods(pool_name=pool_name)
 
 
+@as_result(SyftException)
 def scale_kubernetes_pool(
     runner: KubernetesRunner,
     pool_name: str,
     replicas: int,
-) -> list[Pod] | SyftError:
+) -> list[Pod]:
     pool = runner.get_pool(pool_name)
     if not pool:
-        return SyftError(message=f"Pool does not exist. name={pool_name}")
+        raise SyftException(public_message=f"Pool does not exist. name={pool_name}")
 
     try:
         logger.info(f"Scaling pool name={pool_name} to replicas={replicas}")
         runner.scale_pool(pool_name=pool_name, replicas=replicas)
     except Exception as e:
-        return SyftError(message=f"Failed to scale workers {e}")
+        raise SyftException(public_message=f"Failed to scale workers {e}")
 
     return runner.get_pool_pods(pool_name=pool_name)
 
@@ -504,6 +507,7 @@ def map_pod_to_worker_status(
     return worker_status, worker_healthcheck, worker_error
 
 
+@as_result(SyftException)
 def run_containers(
     pool_name: str,
     worker_image: SyftWorkerImage,
@@ -517,11 +521,11 @@ def run_containers(
     reg_url: str | None = None,
     pod_annotations: dict[str, str] | None = None,
     pod_labels: dict[str, str] | None = None,
-) -> list[ContainerSpawnStatus] | SyftError:
+) -> list[ContainerSpawnStatus]:
     results = []
 
     if not worker_image.is_built:
-        return SyftError(message="Image must be built before running it.")
+        raise SyftException(public_message="Image must be built before running it.")
 
     logger.info(f"Starting workers with start_idx={start_idx} count={number}")
 
@@ -560,6 +564,7 @@ def run_containers(
     return results
 
 
+@as_result(SyftException)
 def create_default_image(
     credentials: SyftVerifyKey,
     image_stash: SyftWorkerImageStash,
@@ -567,33 +572,26 @@ def create_default_image(
     in_kubernetes: bool = False,
 ) -> SyftError | SyftWorkerImage:
     if not in_kubernetes:
-        tag = f"openmined/grid-backend:{tag}"
+        tag = f"openmined/syft-backend:{tag}"
 
     worker_config = PrebuiltWorkerConfig(
         tag=tag,
         description="Prebuilt default worker image",
     )
 
-    # create SyftWorkerImage from a pre-built image
-    _new_image = SyftWorkerImage(
-        config=worker_config,
-        created_by=credentials,
-        image_identifier=SyftWorkerImageIdentifier.from_str(tag),
-    )
-
     result = image_stash.get_by_worker_config(
         credentials=credentials,
         config=worker_config,
     )
-
-    if result.ok() is None:
-        result = image_stash.set(credentials, _new_image)
-        if result.is_err():
-            return SyftError(message=f"Failed to save image stash: {result.err()}")
-
-    default_syft_image = result.ok()
-
-    return default_syft_image
+    if result.is_err():
+        # create SyftWorkerImage from a pre-built image
+        _new_image = SyftWorkerImage(
+            config=worker_config,
+            created_by=credentials,
+            image_identifier=SyftWorkerImageIdentifier.from_str(tag),
+        )
+        return image_stash.set(credentials, _new_image).unwrap(public_message="Failed to save image stash")
+    return result.unwrap()
 
 
 def _get_healthcheck_based_on_status(status: WorkerStatus) -> WorkerHealth:
@@ -603,9 +601,8 @@ def _get_healthcheck_based_on_status(status: WorkerStatus) -> WorkerHealth:
         return WorkerHealth.UNHEALTHY
 
 
-def image_build(
-    image: SyftWorkerImage, **kwargs: dict[str, Any]
-) -> ImageBuildResult | SyftError:
+@as_result(SyftException)
+def image_build(image: SyftWorkerImage, **kwargs: dict[str, Any]) -> ImageBuildResult:
     if image.image_identifier is not None:
         full_tag = image.image_identifier.full_name_with_tag
         try:
@@ -616,28 +613,28 @@ def image_build(
                 **kwargs,
             )
         except docker.errors.APIError as e:
-            return SyftError(
-                message=f"Docker API error when building '{full_tag}'. Reason - {e}"
+            raise SyftException(
+                public_message=f"Docker API error when building '{full_tag}'. Reason - {e}"
             )
         except docker.errors.DockerException as e:
-            return SyftError(
-                message=f"Docker exception when building '{full_tag}'. Reason - {e}"
+            raise SyftException(
+                public_message=f"Docker exception when building '{full_tag}'. Reason - {e}"
             )
         except Exception as e:
-            return SyftError(
-                message=f"Unknown exception when building '{full_tag}'. Reason - {e}"
+            raise SyftException(
+                public_message=f"Unknown exception when building '{full_tag}'. Reason - {e}"
             )
-    else:
-        return SyftError(
-            message=f"image with uid {image.id} does not have an image identifier"
-        )
+    raise SyftException(
+        public_message=f"image with uid {image.id} does not have an image identifier"
+    )
 
 
+@as_result(SyftException)
 def image_push(
     image: SyftWorkerImage,
     username: str | None = None,
     password: str | None = None,
-) -> ImagePushResult | SyftError:
+) -> ImagePushResult:
     if image.image_identifier is not None:
         full_tag = image.image_identifier.full_name_with_tag
         try:
@@ -651,28 +648,29 @@ def image_push(
             )
 
             if "error" in result.logs.lower() or result.exit_code:
-                return SyftError(
-                    message=f"Failed to push {full_tag}. "
+                raise SyftException(
+                    public_message=f"Failed to push {full_tag}. "
                     f"Exit code: {result.exit_code}. "
                     f"Logs:\n{result.logs}"
                 )
 
             return result
         except docker.errors.APIError as e:
-            return SyftError(message=f"Docker API error when pushing {full_tag}. {e}")
+            raise SyftException(
+                public_message=f"Docker API error when pushing {full_tag}. {e}"
+            )
         except docker.errors.DockerException as e:
-            return SyftError(
-                message=f"Docker exception when pushing {full_tag}. Reason - {e}"
+            raise SyftException(
+                public_message=f"Docker exception when pushing {full_tag}. Reason - {e}"
             )
         except Exception as e:
-            return SyftError(
-                message=f"Unknown exception when pushing {image.image_identifier}. Reason - {e}"
+            raise SyftException(
+                public_message=f"Unknown exception when pushing {image.image_identifier}. Reason - {e}"
             )
-    else:
-        return SyftError(
-            message=f"image with uid {image.id} does not have an "
-            "image identifier and tag, hence we can't push it."
-        )
+    raise SyftException(
+        public_message=f"image with uid {image.id} does not have an "
+        "image identifier and tag, hence we can't push it."
+    )
 
 
 def get_orchestration_type() -> WorkerOrchestrationType:

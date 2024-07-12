@@ -2,17 +2,18 @@
 
 # third party
 from result import Err
-from result import Ok
 from result import Result
 
 # relative
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
 from ...service.response import SyftError
-from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
+from ...store.document_store import NewBaseStash
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
+from ...store.document_store_errors import StashException
+from ...types.result import as_result
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
@@ -24,7 +25,7 @@ ActionIDsPartitionKey = PartitionKey(key="action_ids", type_=list[UID])
 
 @instrument
 @serializable()
-class NotifierStash(BaseStash):
+class NotifierStash(NewBaseStash):
     object_type = NotifierSettings
     settings: PartitionSettings = PartitionSettings(
         name=NotifierSettings.__canonical_name__, object_type=NotifierSettings
@@ -37,22 +38,15 @@ class NotifierStash(BaseStash):
         return self.partition.root_verify_key
 
     # TODO: should this method behave like a singleton?
-    def get(self, credentials: SyftVerifyKey) -> Result[NotifierSettings, Err]:
+    @as_result(StashException)
+    def get(self, credentials: SyftVerifyKey) -> NotifierSettings:
         """Get Settings"""
-        result = self.get_all(credentials)
-        if result.is_ok():
-            settings = result.ok()
-            if len(settings) == 0:
-                return Ok(
-                    None
-                )  # TODO: Stash shouldn't be empty after init. Return Err instead?
-            result = settings[
-                0
-            ]  # TODO: Should we check if theres more than one? => Report corruption
-            return Ok(result)
-        else:
-            return Err(SyftError(message=result.err()))
+        settings = self.get_all(credentials).unwrap()
+        if len(settings) == 0:
+            return None
+        return settings[0]
 
+    @as_result(StashException)
     def set(
         self,
         credentials: SyftVerifyKey,
@@ -60,25 +54,22 @@ class NotifierStash(BaseStash):
         add_permissions: list[ActionObjectPermission] | None = None,
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
-    ) -> Result[NotifierSettings, Err]:
-        result = self.check_type(settings, self.object_type)
+    ) -> NotifierSettings:
+        result = self.check_type(settings, self.object_type).unwrap()
         # we dont use and_then logic here as it is hard because of the order of the arguments
-        if result.is_err():
-            return Err(SyftError(message=result.err()))
-        return super().set(
-            credentials=credentials, obj=result.ok()
+        return (
+            super().set(credentials=credentials, obj=result).unwrap()
         )  # TODO check if result isInstance(Ok)
 
+    @as_result(StashException)
     def update(
         self,
         credentials: SyftVerifyKey,
         settings: NotifierSettings,
         has_permission: bool = False,
     ) -> Result[NotifierSettings, Err]:
-        result = self.check_type(settings, self.object_type)
+        result = self.check_type(settings, self.object_type).unwrap()
         # we dont use and_then logic here as it is hard because of the order of the arguments
-        if result.is_err():
-            return Err(SyftError(message=result.err()))
-        return super().update(
-            credentials=credentials, obj=result.ok()
+        return (
+            super().update(credentials=credentials, obj=result.ok()).unwrap()
         )  # TODO check if result isInstance(Ok)

@@ -2,18 +2,20 @@
 from faker import Faker
 
 # syft absolute
-from syft.node.credentials import SyftSigningKey
+from syft.server.credentials import SyftSigningKey
 from syft.service.response import SyftSuccess
 from syft.service.user.user import User
 from syft.service.user.user import UserUpdate
 from syft.service.user.user_roles import ServiceRole
 from syft.service.user.user_stash import UserStash
+from syft.store.document_store_errors import NotFoundException
+from syft.store.document_store_errors import StashException
 from syft.types.uid import UID
 
 
-def add_mock_user(root_domain_client, user_stash: UserStash, user: User) -> User:
+def add_mock_user(root_datasite_client, user_stash: UserStash, user: User) -> User:
     # prepare: add mock data
-    result = user_stash.partition.set(root_domain_client.credentials.verify_key, user)
+    result = user_stash.partition.set(root_datasite_client.credentials.verify_key, user)
     assert result.is_ok()
 
     user = result.ok()
@@ -23,9 +25,9 @@ def add_mock_user(root_domain_client, user_stash: UserStash, user: User) -> User
 
 
 def test_userstash_set(
-    root_domain_client, user_stash: UserStash, guest_user: User
+    root_datasite_client, user_stash: UserStash, guest_user: User
 ) -> None:
-    result = user_stash.set(root_domain_client.credentials.verify_key, guest_user)
+    result = user_stash.set(root_datasite_client.credentials.verify_key, guest_user)
     assert result.is_ok()
 
     created_user = result.ok()
@@ -35,29 +37,31 @@ def test_userstash_set(
 
 
 def test_userstash_set_duplicate(
-    root_domain_client, user_stash: UserStash, guest_user: User
+    root_datasite_client, user_stash: UserStash, guest_user: User
 ) -> None:
-    result = user_stash.set(root_domain_client.credentials.verify_key, guest_user)
+    result = user_stash.set(root_datasite_client.credentials.verify_key, guest_user)
     assert result.is_ok()
 
     original_count = len(user_stash.partition.data)
 
-    result = user_stash.set(root_domain_client.credentials.verify_key, guest_user)
+    result = user_stash.set(root_datasite_client.credentials.verify_key, guest_user)
     assert result.is_err()
 
-    assert "Duplication Key Error" in result.err()
+    exc = result.err()
+    assert type(exc) == StashException
+    assert exc.public_message
 
     assert len(user_stash.partition.data) == original_count
 
 
 def test_userstash_get_by_uid(
-    root_domain_client, user_stash: UserStash, guest_user: User
+    root_datasite_client, user_stash: UserStash, guest_user: User
 ) -> None:
     # prepare: add mock data
-    user = add_mock_user(root_domain_client, user_stash, guest_user)
+    user = add_mock_user(root_datasite_client, user_stash, guest_user)
 
     result = user_stash.get_by_uid(
-        root_domain_client.credentials.verify_key, uid=user.id
+        root_datasite_client.credentials.verify_key, uid=user.id
     )
     assert result.is_ok()
 
@@ -67,22 +71,23 @@ def test_userstash_get_by_uid(
 
     random_uid = UID()
     result = user_stash.get_by_uid(
-        root_domain_client.credentials.verify_key, uid=random_uid
+        root_datasite_client.credentials.verify_key, uid=random_uid
     )
-    assert result.is_ok()
+    assert result.is_err()
 
-    searched_user = result.ok()
-    assert searched_user is None
+    exc = result.err()
+    assert type(exc) == NotFoundException
+    assert exc.public_message
 
 
 def test_userstash_get_by_email(
-    root_domain_client, faker: Faker, user_stash: UserStash, guest_user: User
+    root_datasite_client, faker: Faker, user_stash: UserStash, guest_user: User
 ) -> None:
     # prepare: add mock data
-    user = add_mock_user(root_domain_client, user_stash, guest_user)
+    user = add_mock_user(root_datasite_client, user_stash, guest_user)
 
     result = user_stash.get_by_email(
-        root_domain_client.credentials.verify_key, email=user.email
+        root_datasite_client.credentials.verify_key, email=user.email
     )
     assert result.is_ok()
     searched_user = result.ok()
@@ -90,21 +95,23 @@ def test_userstash_get_by_email(
 
     random_email = faker.email()
     result = user_stash.get_by_email(
-        root_domain_client.credentials.verify_key, email=random_email
+        root_datasite_client.credentials.verify_key, email=random_email
     )
-    searched_user = result.ok()
-    assert result.is_ok()
-    assert searched_user is None
+
+    exc = result.err()
+    assert result.is_err()
+    assert type(exc) == NotFoundException
+    assert "not found" in exc.public_message
 
 
 def test_userstash_get_by_signing_key(
-    root_domain_client, user_stash: UserStash, guest_user: User
+    root_datasite_client, user_stash: UserStash, guest_user: User
 ) -> None:
     # prepare: add mock data
-    user = add_mock_user(root_domain_client, user_stash, guest_user)
+    user = add_mock_user(root_datasite_client, user_stash, guest_user)
 
     result = user_stash.get_by_signing_key(
-        root_domain_client.credentials.verify_key, signing_key=user.signing_key
+        root_datasite_client.credentials.verify_key, signing_key=user.signing_key
     )
     assert result.is_ok()
     searched_user = result.ok()
@@ -112,7 +119,7 @@ def test_userstash_get_by_signing_key(
 
     signing_key_as_str = str(user.signing_key)
     result = user_stash.get_by_signing_key(
-        root_domain_client.credentials.verify_key, signing_key=signing_key_as_str
+        root_datasite_client.credentials.verify_key, signing_key=signing_key_as_str
     )
     assert result.is_ok()
     searched_user = result.ok()
@@ -120,21 +127,23 @@ def test_userstash_get_by_signing_key(
 
     random_singing_key = SyftSigningKey.generate()
     result = user_stash.get_by_signing_key(
-        root_domain_client.credentials.verify_key, signing_key=random_singing_key
+        root_datasite_client.credentials.verify_key, signing_key=random_singing_key
     )
-    searched_user = result.ok()
-    assert result.is_ok()
-    assert searched_user is None
+
+    exc = result.err()
+    assert result.is_err()
+    assert type(exc) == NotFoundException
+    assert exc.public_message
 
 
 def test_userstash_get_by_verify_key(
-    root_domain_client, user_stash: UserStash, guest_user: User
+    root_datasite_client, user_stash: UserStash, guest_user: User
 ) -> None:
     # prepare: add mock data
-    user = add_mock_user(root_domain_client, user_stash, guest_user)
+    user = add_mock_user(root_datasite_client, user_stash, guest_user)
 
     result = user_stash.get_by_verify_key(
-        root_domain_client.credentials.verify_key, verify_key=user.verify_key
+        root_datasite_client.credentials.verify_key, verify_key=user.verify_key
     )
     assert result.is_ok()
     searched_user = result.ok()
@@ -142,7 +151,7 @@ def test_userstash_get_by_verify_key(
 
     verify_key_as_str = str(user.verify_key)
     result = user_stash.get_by_verify_key(
-        root_domain_client.credentials.verify_key, verify_key=verify_key_as_str
+        root_datasite_client.credentials.verify_key, verify_key=verify_key_as_str
     )
     assert result.is_ok()
     searched_user = result.ok()
@@ -150,21 +159,22 @@ def test_userstash_get_by_verify_key(
 
     random_verify_key = SyftSigningKey.generate().verify_key
     result = user_stash.get_by_verify_key(
-        root_domain_client.credentials.verify_key, verify_key=random_verify_key
+        root_datasite_client.credentials.verify_key, verify_key=random_verify_key
     )
-    searched_user = result.ok()
-    assert result.is_ok()
-    assert searched_user is None
+    searched_user = result.err()
+    assert result.is_err()
+    assert type(searched_user) == NotFoundException
+    assert searched_user.public_message
 
 
 def test_userstash_get_by_role(
-    root_domain_client, user_stash: UserStash, guest_user: User
+    root_datasite_client, user_stash: UserStash, guest_user: User
 ) -> None:
     # prepare: add mock data
-    user = add_mock_user(root_domain_client, user_stash, guest_user)
+    user = add_mock_user(root_datasite_client, user_stash, guest_user)
 
     result = user_stash.get_by_role(
-        root_domain_client.credentials.verify_key, role=ServiceRole.GUEST
+        root_datasite_client.credentials.verify_key, role=ServiceRole.GUEST
     )
     assert result.is_ok()
     searched_user = result.ok()
@@ -172,39 +182,43 @@ def test_userstash_get_by_role(
 
 
 def test_userstash_delete_by_uid(
-    root_domain_client, user_stash: UserStash, guest_user: User
+    root_datasite_client, user_stash: UserStash, guest_user: User
 ) -> None:
     # prepare: add mock data
-    user = add_mock_user(root_domain_client, user_stash, guest_user)
+    user = add_mock_user(root_datasite_client, user_stash, guest_user)
 
     result = user_stash.delete_by_uid(
-        root_domain_client.credentials.verify_key, uid=user.id
+        root_datasite_client.credentials.verify_key, uid=user.id
     )
     assert result.is_ok()
     response = result.ok()
-    assert isinstance(response, SyftSuccess)
-    assert str(user.id) in response.message
+    assert isinstance(response, UID)
+    assert user.id == response
 
     result = user_stash.get_by_uid(
-        root_domain_client.credentials.verify_key, uid=user.id
+        root_datasite_client.credentials.verify_key, uid=user.id
     )
-    assert result.is_ok()
-    searched_user = result.ok()
-    assert searched_user is None
+    assert result.is_err()
+    searched_user = result.err()
+    assert type(searched_user) is NotFoundException
 
 
 def test_userstash_update(
-    root_domain_client, user_stash: UserStash, guest_user: User, update_user: UserUpdate
+    root_datasite_client,
+    user_stash: UserStash,
+    guest_user: User,
+    update_user: UserUpdate,
 ) -> None:
     # prepare: add mock data
-    user = add_mock_user(root_domain_client, user_stash, guest_user)
+    user = add_mock_user(root_datasite_client, user_stash, guest_user)
 
     update_kwargs = update_user.to_dict(exclude_empty=True).items()
 
     for field_name, value in update_kwargs:
         setattr(user, field_name, value)
 
-    result = user_stash.update(root_domain_client.credentials.verify_key, user=user)
+    result = user_stash.update(root_datasite_client.credentials.verify_key, user=user)
+
     assert result.is_ok()
     updated_user = result.ok()
     assert isinstance(updated_user, User)

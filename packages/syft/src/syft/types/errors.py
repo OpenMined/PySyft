@@ -2,17 +2,24 @@
 from collections.abc import Callable
 from importlib import import_module
 import inspect
+import os
+import traceback
 from types import CodeType
 from types import TracebackType
 from typing import Any
 from typing import TypeVar
+import uuid
 
 # third party
+from IPython import get_ipython
+from IPython.display import HTML
+from IPython.display import display
 from typing_extensions import Self
 
 # relative
 from ..service.context import AuthedServiceContext
 from ..service.user.user_roles import ServiceRole
+from ..util.notebook_ui.components.tabulator_template import jinja_env
 
 
 class SyftException(Exception):
@@ -30,12 +37,20 @@ class SyftException(Exception):
         self,
         private_message: str | None = None,
         public_message: str | None = None,
+        server_trace: str | None = None,
         *args: Any,
         **kwargs: Any,
     ) -> None:
+        if public_message is not None:
+            if not isinstance(public_message, str):
+                raise TypeError("public message should be a string")
+        if private_message is not None:
+            if not isinstance(private_message, str):
+                raise TypeError("private message should be a string")
         if public_message:
             self.public_message = public_message
         self._private_message = private_message or ""
+        self._server_trace = server_trace or ""
         super().__init__(self.public, *args, **kwargs)
 
     @property
@@ -60,10 +75,12 @@ class SyftException(Exception):
             str: The private or public message based on the role.
         """
         if context.role.value >= ServiceRole.DATA_OWNER.value:
-            return self._private_message
+            return self._private_message or self.public
         return self.public
 
-    def get_tb(self, context: AuthedServiceContext) -> str | None:
+    def get_tb(
+        self, context: AuthedServiceContext, overwrite_permission: bool = False
+    ) -> str | None:
         """
         Returns the error traceback as a string, if the user is able to see it.
 
@@ -78,7 +95,7 @@ class SyftException(Exception):
         # stdlib
         import traceback
 
-        if context.role.value >= ServiceRole.DATA_OWNER.value:
+        if context.role.value >= ServiceRole.DATA_OWNER.value or overwrite_permission:
             return traceback.format_exc()
         return None
 
@@ -118,6 +135,63 @@ class SyftException(Exception):
         new_exc.__cause__ = exc
         new_exc = process_traceback(new_exc)
         return new_exc
+
+    @property
+    def _repr_html_class_(self) -> str:
+        return "alert-danger"
+
+    def _repr_html_(self) -> str:
+        is_dev_mode = os.getenv("DEV_MODE", "false").lower() == "true"
+        display = "block" if self._server_trace or is_dev_mode else "none"
+
+        exc = process_traceback(self)
+        _traceback_str_list = traceback.format_tb(exc.__traceback__)
+        traceback_str = "".join(_traceback_str_list)
+
+        table_template = jinja_env.get_template("syft_exception.jinja2")
+        table_html = table_template.render(
+            name=type(self).__name__,
+            html_id=uuid.uuid4().hex,
+            server_trace=self._server_trace,
+            message=self._private_message or self.public,
+            traceback_str=traceback_str,
+            display=display,
+        )
+        return table_html
+
+
+# third party
+from IPython.display import HTML
+from IPython.display import display
+
+
+class raises:
+    def __init__(self, expected_exception, show=False):
+        self.expected_exception = expected_exception
+        self.show = show
+
+    def __enter__(self):
+        # Before block of code
+        pass
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        # After block of code
+        if exc_type is None:
+            raise AssertionError(
+                f"Expected {self.expected_exception} to be raised, but no exception was raised."
+            )
+        if not issubclass(exc_type, self.expected_exception):
+            raise AssertionError(
+                f"Expected {self.expected_exception} to be raised, but got {exc_type}."
+            )
+        if self.show:
+            if hasattr(exc_value, "_repr_html_"):
+                display(HTML(exc_value._repr_html_()))
+            else:
+                print(
+                    f"The following exception was catched\n{exc_value}",
+                )
+        return True  # Suppress the exception
 
 
 class ExceptionFilter(tuple):
@@ -216,3 +290,19 @@ def process_traceback(exc: E) -> E:
             tb.tb_next = frames[i + 1]
 
     return exc
+
+
+class CredentialsError(SyftException):
+    public_message = "Invalid credentials."
+
+
+def syft_exception_handler(
+    shell: Any, etype: Any, evalue: Any, tb: Any, tb_offset: Any = None
+) -> None:
+    display(HTML(evalue._repr_html_()))
+
+
+try:
+    get_ipython().set_custom_exc((SyftException,), syft_exception_handler)  # noqa: F821
+except Exception:
+    pass  # nosec

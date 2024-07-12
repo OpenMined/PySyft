@@ -2,9 +2,9 @@
 import pytest
 
 # syft absolute
-from syft.node.credentials import SyftSigningKey
-from syft.node.credentials import SyftVerifyKey
-from syft.node.worker import Worker
+from syft.server.credentials import SyftSigningKey
+from syft.server.credentials import SyftVerifyKey
+from syft.server.worker import Worker
 from syft.service.context import AuthedServiceContext
 from syft.service.notification.notification_service import NotificationService
 from syft.service.notification.notification_stash import NotificationStash
@@ -34,13 +34,13 @@ def notification_service(document_store):
 
 @pytest.fixture
 def authed_context(admin_user: User, worker: Worker) -> AuthedServiceContext:
-    yield AuthedServiceContext(credentials=test_verify_key, node=worker)
+    yield AuthedServiceContext(credentials=test_verify_key, server=worker)
 
 
 @pytest.fixture
 def linked_object():
     yield LinkedObject(
-        node_uid=UID(),
+        server_uid=UID(),
         service_type=NotificationService,
         object_type=Notification,
         object_uid=UID(),
@@ -57,7 +57,7 @@ def mock_create_notification(faker) -> CreateNotification:
     mock_notification = CreateNotification(
         subject="mock_created_notification",
         id=UID(),
-        node_uid=UID(),
+        server_uid=UID(),
         from_user_verify_key=test_verify_key1,
         to_user_verify_key=test_verify_key2,
         created_at=DateTime.now(),
@@ -73,7 +73,7 @@ def mock_notification(
 ) -> Notification:
     mock_notification = Notification(
         subject="mock_notification",
-        node_uid=UID(),
+        server_uid=UID(),
         from_user_verify_key=SyftSigningKey.generate().verify_key,
         to_user_verify_key=SyftSigningKey.generate().verify_key,
         created_at=DateTime.now(),

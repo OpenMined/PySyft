@@ -8,15 +8,15 @@ import sys
 from typing import Any
 
 # relative
-from .abstract_node import NodeSideType
-from .abstract_node import NodeType
+from .abstract_server import ServerSideType
+from .abstract_server import ServerType
 from .client.client import connect
 from .client.client import login
 from .client.client import login_as_guest
 from .client.client import register
-from .client.domain_client import DomainClient
+from .client.datasite_client import DatasiteClient
 from .client.gateway_client import GatewayClient
-from .client.registry import DomainRegistry
+from .client.registry import DatasiteRegistry
 from .client.registry import EnclaveRegistry
 from .client.registry import NetworkRegistry
 from .client.search import Search
@@ -28,13 +28,6 @@ from .client.user_settings import UserSettings
 from .client.user_settings import settings
 from .custom_worker.config import DockerWorkerConfig
 from .custom_worker.config import PrebuiltWorkerConfig
-from .node.credentials import SyftSigningKey
-from .node.domain import Domain
-from .node.enclave import Enclave
-from .node.gateway import Gateway
-from .node.server import serve_node
-from .node.server import serve_node as bind_worker
-from .node.worker import Worker
 from .orchestra import Orchestra as orchestra
 from .protocol.data_protocol import bump_protocol_version
 from .protocol.data_protocol import check_or_stage_protocol
@@ -44,6 +37,13 @@ from .serde import NOTHING
 from .serde.deserialize import _deserialize as deserialize
 from .serde.serializable import serializable
 from .serde.serialize import _serialize as serialize
+from .server.credentials import SyftSigningKey
+from .server.datasite import Datasite
+from .server.enclave import Enclave
+from .server.gateway import Gateway
+from .server.uvicorn import serve_server
+from .server.uvicorn import serve_server as bind_worker
+from .server.worker import Worker
 from .service.action.action_data_empty import ActionDataEmpty
 from .service.action.action_object import ActionObject
 from .service.action.plan import Plan
@@ -75,6 +75,8 @@ from .service.response import SyftSuccess
 from .service.user.roles import Roles as roles
 from .service.user.user_service import UserService
 from .stable_version import LATEST_STABLE_SYFT
+from .types.errors import SyftException
+from .types.errors import raises
 from .types.twin_object import TwinObject
 from .types.uid import UID
 from .util import filterwarnings
@@ -130,8 +132,8 @@ def _enclaves() -> EnclaveRegistry:
 
 
 @module_property
-def _domains() -> DomainRegistry:
-    return DomainRegistry()
+def _datasites() -> DatasiteRegistry:
+    return DatasiteRegistry()
 
 
 @module_property
@@ -146,4 +148,4 @@ def hello_baby() -> None:
 
 
 def search(name: str) -> SearchResults:
-    return Search(_domains()).search(name=name)
+    return Search(_datasites()).search(name=name)

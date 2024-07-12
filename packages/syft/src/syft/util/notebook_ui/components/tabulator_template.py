@@ -21,7 +21,7 @@ from ..icons import Icon
 logger = logging.getLogger(__name__)
 
 DEFAULT_ID_WIDTH = 110
-env = jinja2.Environment(loader=jinja2.PackageLoader("syft", "assets/jinja"))  # nosec
+jinja_env = jinja2.Environment(loader=jinja2.PackageLoader("syft", "assets/jinja"))  # nosec
 
 
 def create_tabulator_columns(
@@ -116,7 +116,7 @@ def _render_tabulator_table(
     pagination: bool,
     header_sort: bool,
 ) -> str:
-    table_template = env.get_template("table.jinja2")
+    table_template = jinja_env.get_template("table.jinja2")
     tabulator_js = load_js("tabulator.min.js")
     tabulator_css = load_css("tabulator_pysyft.min.css")
     js = load_js("table.js")
@@ -182,15 +182,14 @@ def build_tabulator_table(
 ) -> str | None:
     try:
         table_data, table_metadata = prepare_table_data(obj)
-        if len(table_data) == 0:
-            return obj.__repr__()
-        uid = uid if uid is not None else secrets.token_hex(4)
-        return _render_tabulator_table(
-            uid, table_data, table_metadata, max_height, pagination, header_sort
-        )
-    except Exception as e:
-        logger.debug("error building table", exc_info=e)
+    except Exception:
         return None
+    if len(table_data) == 0:
+        return obj.__repr__()
+    uid = uid if uid is not None else secrets.token_hex(4)
+    return _render_tabulator_table(
+        uid, table_data, table_metadata, max_height, pagination, header_sort
+    )
 
 
 def show_table(obj: Any) -> None:

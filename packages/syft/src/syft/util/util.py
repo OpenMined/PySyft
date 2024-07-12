@@ -11,6 +11,7 @@ from copy import deepcopy
 from datetime import datetime
 import functools
 import hashlib
+import html
 from itertools import repeat
 import json
 import logging
@@ -482,7 +483,7 @@ def prompt_warning_message(message: str, confirm: bool = False) -> bool:
         if response == "y":
             return True
         elif response == "n":
-            display("Aborted !!")
+            print("Aborted.")
             return False
         else:
             print("Invalid response. Please enter Y or N.")
@@ -930,7 +931,7 @@ def generate_token() -> str:
     return secrets.token_hex(64)
 
 
-def sanitize_html(html: str) -> str:
+def sanitize_html(html_str: str, escape: bool = False) -> str:
     policy = {
         "tags": ["svg", "strong", "rect", "path", "circle"],
         "attributes": {
@@ -960,8 +961,10 @@ def sanitize_html(html: str) -> str:
     _attributes = deepcopy(nh3.ALLOWED_ATTRIBUTES)
     attributes = {**_attributes, **policy["attributes"]}  # type: ignore
 
+    if escape:
+        html_str = html.escape(html_str)
     return nh3.clean(
-        html,
+        html_str,
         tags=tags,
         clean_content_tags=policy["remove"],
         attributes=attributes,

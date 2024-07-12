@@ -16,7 +16,6 @@ from ..util.util import sanitize_html
 
 if TYPE_CHECKING:
     # relative
-    from ..types.errors import SyftException as NewSyftException
     from .context import AuthedServiceContext
 
 
@@ -24,6 +23,12 @@ class SyftResponseMessage(SyftBaseModel):
     message: str
     _bool: bool = True
     require_api_update: bool = False
+
+    def is_err(self):
+        return False
+
+    def is_ok(self):
+        return True
 
     def __getattr__(self, name: str) -> Any:
         if name in [
@@ -39,10 +44,12 @@ class SyftResponseMessage(SyftBaseModel):
             # '_repr_html_',
             "_ipython_canary_method_should_not_exist_",
             "_ipython_display_",
+            "__canonical_name__",
+            "__version__",
         ] or name.startswith("_repr"):
             return super().__getattr__(name)
         display(self)
-        raise Exception(
+        raise AttributeError(
             f"You have tried accessing `{name}` on a {type(self).__name__} with message: {self.message}"
         )
 
@@ -93,18 +100,47 @@ class SyftError(SyftResponseMessage):
     def __bool__(self) -> bool:
         return False
 
+    def is_err(self):
+        return True
+
+    def is_ok(self):
+        return False
+
     @classmethod
     def from_exception(
-        cls, context: "AuthedServiceContext", exc: "NewSyftException"
+        cls,
+        context: "AuthedServiceContext",
+        exc: Exception,
+        include_traceback: bool = False,
     ) -> Self:
-        error_msg = exc.get_message(context)
-        tb = exc.get_tb(context)
+        # traceback may contain private information
+        # relative
+        from ..types.errors import SyftException as NewSyftException
+
+        tb = None
+        if isinstance(exc, NewSyftException):
+            error_msg = exc.get_message(context)
+            if include_traceback:
+                tb = exc.get_tb(context)
+        else:
+            # by default only type
+            error_msg = f"Something unexpected happened server side {type(exc)}"
+            if include_traceback:
+                tb = traceback.format_exc()
+                # if they can see the tb, they can also see the exception message
+                error_msg = f"Something unexpected happened server side {exc}"
         return cls(message=error_msg, tb=tb)
 
 
 @serializable()
 class SyftSuccess(SyftResponseMessage):
     value: Any | None = None
+
+    def is_err(self):
+        return False
+
+    def is_ok(self):
+        return True
 
     @property
     def _repr_html_class_(self) -> str:
@@ -115,7 +151,7 @@ class SyftSuccess(SyftResponseMessage):
 
 
 @serializable()
-class SyftNotReady(SyftResponseMessage):
+class SyftNotReady(SyftError):
     _bool: bool = False
 
     @property

@@ -8,6 +8,7 @@ from ...client.api import APIRegistry
 from ...client.enclave_client import EnclaveMetadata
 from ...serde.serializable import serializable
 from ...service.user.user_roles import ServiceRole
+from ...types.errors import SyftException
 from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
@@ -31,7 +32,7 @@ class CodeHistoryV2(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
-    node_uid: UID
+    server_uid: UID
     user_verify_key: SyftVerifyKey
     enclave_metadata: EnclaveMetadata | None = None
     user_code_history: list[UID] = []
@@ -46,7 +47,7 @@ class CodeHistory(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_3
 
     id: UID
-    node_uid: UID
+    server_uid: UID
     user_verify_key: SyftVerifyKey
     user_code_history: list[UID] = []
     service_func_name: str
@@ -94,18 +95,20 @@ class CodeHistoryView(SyftObject):
     def __getitem__(self, index: int | str) -> UserCode | SyftError:
         if isinstance(index, str):
             raise TypeError(f"index {index} must be an integer, not a string")
-        api = APIRegistry.api_for(self.syft_node_location, self.syft_client_verify_key)
+        api = APIRegistry.api_for(
+            self.syft_server_location, self.syft_client_verify_key
+        )
         if api is None:
             return SyftError(
-                message=f"Can't access the api. You must login to {self.node_uid}"
+                message=f"Can't access the api. You must login to {self.server_uid}"
             )
         if (
             api.user.get_current_user().role.value >= ServiceRole.DATA_OWNER.value
             and index < 0
         ):
             # negative index would dynamically resolve to a different version
-            return SyftError(
-                message="For security concerns we do not allow negative indexing. \
+            raise SyftException(
+                public_message="For security concerns we do not allow negative indexing. \
                 Try using absolute values when indexing"
             )
         return self.user_code_history[index]
@@ -147,7 +150,7 @@ class UsersCodeHistoriesDict(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
-    node_uid: UID
+    server_uid: UID
     user_dict: dict[str, list[str]] = {}
 
     __repr_attrs__ = ["available_keys"]
@@ -157,10 +160,10 @@ class UsersCodeHistoriesDict(SyftObject):
         return json.dumps(self.user_dict, sort_keys=True, indent=4)
 
     def __getitem__(self, key: str | int) -> CodeHistoriesDict | SyftError:
-        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
+        api = APIRegistry.api_for(self.server_uid, self.syft_client_verify_key)
         if api is None:
             return SyftError(
-                message=f"Can't access the api. You must login to {self.node_uid}"
+                message=f"Can't access the api. You must login to {self.server_uid}"
             )
         return api.services.code_history.get_history_for_user(key)
 

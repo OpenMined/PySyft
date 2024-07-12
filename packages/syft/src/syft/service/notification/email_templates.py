@@ -24,19 +24,19 @@ class EmailTemplate:
 class OnBoardEmailTemplate(EmailTemplate):
     @staticmethod
     def email_title(notification: "Notification", context: AuthedServiceContext) -> str:
-        return f"Welcome to {context.node.name} node!"
+        return f"Welcome to {context.server.name} server!"
 
     @staticmethod
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
-        user_service = context.node.get_service("userservice")
-        admin_name = user_service.get_by_verify_key(
-            user_service.admin_verify_key()
-        ).name
+        user_service = context.server.get_service("userservice")
+        admin_verify_key = user_service.admin_verify_key()
+        admin = user_service.get_by_verify_key(admin_verify_key)
+        admin_name = admin.name
 
         head = (
             f"""
         <head>
-            <title>Welcome to {context.node.name}</title>
+            <title>Welcome to {context.server.name}</title>
         """
             + """
             <style>
@@ -74,7 +74,7 @@ class OnBoardEmailTemplate(EmailTemplate):
         body = f"""
         <body>
             <div class="container">
-                <h1>Welcome to {context.node.name} node!</h1>
+                <h1>Welcome to {context.server.name} server!</h1>
                 <p>Hello,</p>
                 <p>We're thrilled to have you on board and
                 excited to help you get started with our powerful features:</p>
@@ -113,7 +113,7 @@ class RequestEmailTemplate(EmailTemplate):
         notification.linked_obj = cast(LinkedObject, notification.linked_obj)
         request_obj = notification.linked_obj.resolve_with_context(context=context).ok()
 
-        return f"Domain {context.node.name}: A New Request ({str(request_obj.id)[:4]}) has been received!"
+        return f"Datasite {context.server.name}: A New Request ({str(request_obj.id)[:4]}) has been received!"
 
     @staticmethod
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
@@ -257,7 +257,7 @@ class RequestEmailTemplate(EmailTemplate):
 class RequestUpdateEmailTemplate(EmailTemplate):
     @staticmethod
     def email_title(notification: "Notification", context: AuthedServiceContext) -> str:
-        return f"Domain {context.node.name}: {notification.subject}"
+        return f"Datasite {context.server.name}: {notification.subject}"
 
     @staticmethod
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:

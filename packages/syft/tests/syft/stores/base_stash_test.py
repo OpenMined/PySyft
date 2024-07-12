@@ -8,13 +8,13 @@ from typing import TypeVar
 # third party
 from faker import Faker
 import pytest
+from syft.store.document_store_errors import NotFoundException, StashException
 from typing_extensions import ParamSpec
 
 # syft absolute
 from syft.serde.serializable import serializable
-from syft.service.response import SyftSuccess
 from syft.store.dict_document_store import DictDocumentStore
-from syft.store.document_store import BaseUIDStoreStash
+from syft.store.document_store import NewBaseUIDStoreStash
 from syft.store.document_store import PartitionKey
 from syft.store.document_store import PartitionSettings
 from syft.store.document_store import QueryKey
@@ -42,7 +42,7 @@ DescPartitionKey = PartitionKey(key="desc", type_=str)
 ImportancePartitionKey = PartitionKey(key="importance", type_=int)
 
 
-class MockStash(BaseUIDStoreStash):
+class MockStash(NewBaseUIDStoreStash):
     object_type = MockObject
     settings = PartitionSettings(
         name=MockObject.__canonical_name__, object_type=MockObject
@@ -245,9 +245,10 @@ def test_basestash_get_by_uid(
     assert result.ok() == mock_object
 
     random_uid = create_unique(UID, [mock_object.id])
-    result = base_stash.get_by_uid(root_verify_key, random_uid)
-    assert result.is_ok()
-    assert result.ok() is None
+    bad_uid = base_stash.get_by_uid(root_verify_key, random_uid)
+    assert bad_uid.is_err()
+    # FIX: partition should return Ok(None), but it's not consistent; thus we might get NotFoundException or StashException
+    assert isinstance(bad_uid.err(), StashException) or isinstance(bad_uid.err(), NotFoundException)
 
 
 def test_basestash_delete_by_uid(
@@ -257,12 +258,14 @@ def test_basestash_delete_by_uid(
 
     result = base_stash.delete_by_uid(root_verify_key, mock_object.id)
     assert result.is_ok()
+
     response = result.ok()
-    assert isinstance(response, SyftSuccess)
+    assert isinstance(response, UID)
 
     result = base_stash.get_by_uid(root_verify_key, mock_object.id)
-    assert result.is_ok()
-    assert result.ok() is None
+    assert result.is_err()
+    # FIX: partition should return Ok(None), but it's not consistent; thus we might get NotFoundException or StashException
+    assert isinstance(result.err(), StashException) or isinstance(result.err(), NotFoundException)
 
 
 def test_basestash_query_one(
@@ -291,8 +294,8 @@ def test_basestash_query_one(
             root_verify_key, QueryKey.from_obj(NamePartitionKey, random_name)
         ),
     ):
-        assert result.is_ok()
-        assert result.ok() is None
+        assert result.is_err()
+        assert isinstance(result.err(), NotFoundException)
 
     params = {"name": obj.name, "desc": obj.desc}
     for result in [
@@ -307,8 +310,8 @@ def test_basestash_query_one(
         base_stash.query_one_kwargs(root_verify_key, **params),
         base_stash.query_one(root_verify_key, QueryKeys.from_dict(params)),
     ]:
-        assert result.is_ok()
-        assert result.ok() is None
+        assert result.is_err()
+        assert isinstance(result.err(), NotFoundException)
 
 
 def test_basestash_query_all(

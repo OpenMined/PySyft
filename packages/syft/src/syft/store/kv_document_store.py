@@ -13,8 +13,8 @@ from result import Result
 from typing_extensions import Self
 
 # relative
-from ..node.credentials import SyftVerifyKey
 from ..serde.serializable import serializable
+from ..server.credentials import SyftVerifyKey
 from ..service.action.action_permissions import ActionObjectEXECUTE
 from ..service.action.action_permissions import ActionObjectOWNER
 from ..service.action.action_permissions import ActionObjectPermission
@@ -26,8 +26,9 @@ from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
-from .document_store import BaseStash
+from .document_store import NewBaseStash
 from .document_store import PartitionKey
+from .document_store import PartitionKeys
 from .document_store import QueryKey
 from .document_store import QueryKeys
 from .document_store import StorePartition
@@ -116,7 +117,7 @@ class KeyValueStorePartition(StorePartition):
                 "permissions", self.settings, self.store_config, ddtype=set
             )
 
-            # uid -> set['<node_uid>']
+            # uid -> set['<server_uid>']
             self.storage_permissions: dict[UID, set[UID]] = (
                 self.store_config.backing_store(
                     "storage_permissions",
@@ -226,7 +227,7 @@ class KeyValueStorePartition(StorePartition):
                     self.add_storage_permission(
                         StoragePermission(
                             uid=uid,
-                            node_uid=self.node_uid,
+                            server_uid=self.server_uid,
                         )
                     )
 
@@ -270,10 +271,16 @@ class KeyValueStorePartition(StorePartition):
         if not isinstance(permission.permission, ActionPermission):
             raise Exception(f"ObjectPermission type: {permission.permission} not valid")
 
-        # TODO: fix for other admins
         if (
             permission.credentials
             and self.root_verify_key.verify == permission.credentials.verify
+        ):
+            return True
+
+        if (
+            permission.credentials
+            and self.has_admin_permissions is not None
+            and self.has_admin_permissions(permission.credentials)
         ):
             return True
 
@@ -307,9 +314,12 @@ class KeyValueStorePartition(StorePartition):
             return Ok(self.permissions[uid])
         return Err(f"No permissions found for uid: {uid}")
 
+    def get_all_permissions(self) -> Result[dict[UID, set[str]], str]:
+        return Ok(dict(self.permissions.items()))
+
     def add_storage_permission(self, permission: StoragePermission) -> None:
         permissions = self.storage_permissions[permission.uid]
-        permissions.add(permission.node_uid)
+        permissions.add(permission.server_uid)
         self.storage_permissions[permission.uid] = permissions
 
     def add_storage_permissions(self, permissions: list[StoragePermission]) -> None:
@@ -318,34 +328,37 @@ class KeyValueStorePartition(StorePartition):
 
     def remove_storage_permission(self, permission: StoragePermission) -> None:
         permissions = self.storage_permissions[permission.uid]
-        permissions.remove(permission.node_uid)
+        permissions.remove(permission.server_uid)
         self.storage_permissions[permission.uid] = permissions
 
     def has_storage_permission(self, permission: StoragePermission | UID) -> bool:
         if isinstance(permission, UID):
-            permission = StoragePermission(uid=permission, node_uid=self.node_uid)
+            permission = StoragePermission(uid=permission, server_uid=self.server_uid)
 
         if permission.uid in self.storage_permissions:
-            return permission.node_uid in self.storage_permissions[permission.uid]
+            return permission.server_uid in self.storage_permissions[permission.uid]
         return False
+
+    def _get_storage_permissions_for_uid(self, uid: UID) -> Result[set[UID], Err]:
+        if uid in self.storage_permissions:
+            return Ok(self.storage_permissions[uid])
+        return Err(f"No storage permissions found for uid: {uid}")
+
+    def get_all_storage_permissions(self) -> Result[dict[UID, set[UID]], str]:
+        return Ok(dict(self.storage_permissions.items()))
 
     def _all(
         self,
         credentials: SyftVerifyKey,
         order_by: PartitionKey | None = None,
         has_permission: bool | None = False,
-    ) -> Result[list[BaseStash.object_type], str]:
+    ) -> Result[list[NewBaseStash.object_type], str]:
         # this checks permissions
         res = [self._get(uid, credentials, has_permission) for uid in self.data.keys()]
         result = [x.ok() for x in res if x.is_ok()]
         if order_by is not None:
             result = sorted(result, key=lambda x: getattr(x, order_by.key, ""))
         return Ok(result)
-
-    def _get_storage_permissions_for_uid(self, uid: UID) -> Result[set[UID], Err]:
-        if uid in self.storage_permissions:
-            return Ok(self.storage_permissions[uid])
-        return Err(f"No storage permissions found for uid: {uid}")
 
     def _remove_keys(
         self,
@@ -416,10 +429,11 @@ class KeyValueStorePartition(StorePartition):
         obj: SyftObject,
         has_permission: bool = False,
         overwrite: bool = False,
+        allow_missing_keys: bool = False,
     ) -> Result[SyftObject, str]:
         try:
             if qk.value not in self.data:
-                return Err(f"No object exists for query key: {qk}")
+                return Err(f"No {type(obj)} exists for query key: {qk}")
 
             if has_permission or self.has_permission(
                 ActionObjectWRITE(uid=qk.value, credentials=credentials)
@@ -428,9 +442,20 @@ class KeyValueStorePartition(StorePartition):
                 _original_unique_keys = self.settings.unique_keys.with_obj(
                     _original_obj
                 )
-                _original_searchable_keys = self.settings.searchable_keys.with_obj(
-                    _original_obj
-                )
+                if allow_missing_keys:
+                    searchable_keys = PartitionKeys(
+                        pks=[
+                            x
+                            for x in self.settings.searchable_keys.all
+                            if hasattr(_original_obj, x.key)
+                        ]
+                    )
+                    _original_searchable_keys = searchable_keys.with_obj(_original_obj)
+
+                else:
+                    _original_searchable_keys = self.settings.searchable_keys.with_obj(
+                        _original_obj
+                    )
 
                 store_query_key = self.settings.store_key.with_obj(_original_obj)
 
@@ -674,7 +699,9 @@ class KeyValueStorePartition(StorePartition):
                 try:
                     migrated_value = value.migrate_to(to_klass.__version__, context)
                 except Exception:
-                    return Err(f"Failed to migrate data to {to_klass} for qk: {key}")
+                    return Err(
+                        f"Failed to migrate data to {to_klass} for qk {to_klass.__version__}: {key}"
+                    )
                 qk = self.settings.store_key.with_obj(key)
                 result = self._update(
                     credentials,
@@ -682,6 +709,7 @@ class KeyValueStorePartition(StorePartition):
                     obj=migrated_value,
                     has_permission=has_permission,
                     overwrite=True,
+                    allow_missing_keys=True,
                 )
 
                 if result.is_err():

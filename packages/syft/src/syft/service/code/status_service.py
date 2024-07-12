@@ -2,19 +2,20 @@
 
 # third party
 from result import Result
+from result import as_result
 
 # relative
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
-from ...store.document_store import BaseUIDStoreStash
+from ...server.credentials import SyftVerifyKey
 from ...store.document_store import DocumentStore
+from ...store.document_store import NewBaseUIDStoreStash
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
+from ...store.document_store_errors import StashException
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
-from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import TYPE_TO_SERVICE
@@ -26,7 +27,7 @@ from .user_code import UserCodeStatusCollection
 
 @instrument
 @serializable()
-class StatusStash(BaseUIDStoreStash):
+class StatusStash(NewBaseUIDStoreStash):
     object_type = UserCodeStatusCollection
     settings: PartitionSettings = PartitionSettings(
         name=UserCodeStatusCollection.__canonical_name__,
@@ -39,11 +40,12 @@ class StatusStash(BaseUIDStoreStash):
         self.settings = self.settings
         self._object_type = self.object_type
 
+    @as_result(StashException)
     def get_by_uid(
         self, credentials: SyftVerifyKey, uid: UID
     ) -> Result[UserCodeStatusCollection, str]:
         qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
-        return self.query_one(credentials=credentials, qks=qks)
+        return self.query_one(credentials=credentials, qks=qks).unwrap()
 
 
 @instrument
@@ -61,46 +63,36 @@ class UserCodeStatusService(AbstractService):
         self,
         context: AuthedServiceContext,
         status: UserCodeStatusCollection,
-    ) -> UserCodeStatusCollection | SyftError:
-        result = self.stash.set(
+    ) -> UserCodeStatusCollection:
+        return self.stash.set(
             credentials=context.credentials,
             obj=status,
-        )
-        if result.is_ok():
-            return result.ok()
-        return SyftError(message=result.err())
+        ).unwrap()
 
     @service_method(
         path="code_status.get_by_uid", name="get_by_uid", roles=GUEST_ROLE_LEVEL
     )
     def get_status(
         self, context: AuthedServiceContext, uid: UID
-    ) -> UserCodeStatusCollection | SyftError:
+    ) -> UserCodeStatusCollection:
         """Get the status of a user code item"""
-        result = self.stash.get_by_uid(context.credentials, uid=uid)
-        if result.is_ok():
-            return result.ok()
-        return SyftError(message=result.err())
+        return self.stash.get_by_uid(context.credentials, uid=uid).unwrap()
 
     @service_method(path="code_status.get_all", name="get_all", roles=ADMIN_ROLE_LEVEL)
-    def get_all(
-        self, context: AuthedServiceContext
-    ) -> list[UserCodeStatusCollection] | SyftError:
+    def get_all(self, context: AuthedServiceContext) -> list[UserCodeStatusCollection]:
         """Get all user code item statuses"""
-        result = self.stash.get_all(context.credentials)
-        if result.is_ok():
-            return result.ok()
-        return SyftError(message=result.err())
+        return self.stash.get_all(context.credentials).unwrap()
 
-    @service_method(path="code_status.remove", name="remove", roles=ADMIN_ROLE_LEVEL)
-    def remove(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> SyftSuccess | SyftError:
+    @service_method(
+        path="code_status.remove",
+        name="remove",
+        roles=ADMIN_ROLE_LEVEL,
+        unwrap_on_success=False,
+    )
+    def remove(self, context: AuthedServiceContext, uid: UID) -> SyftSuccess:
         """Remove a user code item status"""
-        result = self.stash.delete_by_uid(context.credentials, uid=uid)
-        if result.is_ok():
-            return result.ok()
-        return SyftError(message=result.err())
+        self.stash.delete_by_uid(context.credentials, uid=uid).unwrap()
+        return SyftSuccess(message=f"{uid} successfully deleted", value=uid)
 
 
 TYPE_TO_SERVICE[UserCodeStatusCollection] = UserCodeStatusService

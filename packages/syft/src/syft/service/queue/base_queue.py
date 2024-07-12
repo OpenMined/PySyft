@@ -5,7 +5,7 @@ from typing import ClassVar
 # relative
 from ...serde.serializable import serializable
 from ...service.context import AuthedServiceContext
-from ...store.document_store import BaseStash
+from ...store.document_store import NewBaseStash
 from ...types.uid import UID
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -102,7 +102,7 @@ class BaseQueueManager:
     def create_producer(
         self,
         queue_name: str,
-        queue_stash: type[BaseStash],
+        queue_stash: type[NewBaseStash],
         context: AuthedServiceContext,
         worker_stash: WorkerStash,
     ) -> QueueProducer:

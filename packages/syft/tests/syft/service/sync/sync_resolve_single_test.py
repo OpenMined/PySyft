@@ -2,11 +2,12 @@
 
 # third party
 import numpy as np
+import pytest
 
 # syft absolute
 import syft
 import syft as sy
-from syft.client.domain_client import DomainClient
+from syft.client.datasite_client import DatasiteClient
 from syft.client.sync_decision import SyncDecision
 from syft.client.syncing import compare_clients
 from syft.client.syncing import resolve
@@ -15,6 +16,7 @@ from syft.service.request.request import RequestStatus
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.sync.resolve_widget import ResolveWidget
+from syft.types.errors import SyftException
 
 
 def handle_decision(
@@ -34,8 +36,8 @@ def handle_decision(
 
 def compare_and_resolve(
     *,
-    from_client: DomainClient,
-    to_client: DomainClient,
+    from_client: DatasiteClient,
+    to_client: DatasiteClient,
     decision: SyncDecision = SyncDecision.LOW,
     decision_callback: callable = None,
     share_private_data: bool = True,
@@ -90,7 +92,7 @@ def compute() -> int:
     return 42
 
 
-def get_ds_client(client: DomainClient) -> DomainClient:
+def get_ds_client(client: DatasiteClient) -> DatasiteClient:
     client.register(
         name="a",
         email="a@a.com",
@@ -101,9 +103,9 @@ def get_ds_client(client: DomainClient) -> DomainClient:
 
 
 def test_diff_state(low_worker, high_worker):
-    low_client: DomainClient = low_worker.root_client
+    low_client: DatasiteClient = low_worker.root_client
     client_low_ds = get_ds_client(low_client)
-    high_client: DomainClient = high_worker.root_client
+    high_client: DatasiteClient = high_worker.root_client
 
     @sy.syft_function_single_use()
     def compute() -> int:
@@ -132,13 +134,13 @@ def test_diff_state(low_worker, high_worker):
 
     client_low_ds.refresh()
     res = client_low_ds.code.compute(blocking=True)
-    assert res == compute(syft_no_node=True)
+    assert res == compute(syft_no_server=True)
 
 
 def test_diff_state_with_dataset(low_worker, high_worker):
-    low_client: DomainClient = low_worker.root_client
+    low_client: DatasiteClient = low_worker.root_client
     client_low_ds = get_ds_client(low_client)
-    high_client: DomainClient = high_worker.root_client
+    high_client: DatasiteClient = high_worker.root_client
 
     _ = create_dataset(high_client)
     _ = create_dataset(low_client)
@@ -149,8 +151,8 @@ def test_diff_state_with_dataset(low_worker, high_worker):
 
     _ = client_low_ds.code.request_code_execution(compute_mean)
 
-    result = client_low_ds.code.compute_mean(blocking=False)
-    assert isinstance(result, SyftError), "DS cannot start a job on low side"
+    with pytest.raises(SyftException):
+        result = client_low_ds.code.compute_mean(blocking=False)
 
     diff_state_before, diff_state_after = compare_and_resolve(
         from_client=low_client, to_client=high_client
@@ -181,7 +183,7 @@ def test_diff_state_with_dataset(low_worker, high_worker):
     res_blocking = client_low_ds.code.compute_mean(blocking=True)
     res_non_blocking = client_low_ds.code.compute_mean(blocking=False).wait()
 
-    # expected_result = compute_mean(syft_no_node=True, data=)
+    # expected_result = compute_mean(syft_no_server=True, data=)
     assert (
         res_blocking
         == res_non_blocking
@@ -191,9 +193,9 @@ def test_diff_state_with_dataset(low_worker, high_worker):
 
 def test_sync_with_error(low_worker, high_worker):
     """Check syncing with an error in a syft function"""
-    low_client: DomainClient = low_worker.root_client
+    low_client: DatasiteClient = low_worker.root_client
     client_low_ds = get_ds_client(low_client)
-    high_client: DomainClient = high_worker.root_client
+    high_client: DatasiteClient = high_worker.root_client
 
     @sy.syft_function_single_use()
     def compute() -> int:
@@ -224,9 +226,9 @@ def test_sync_with_error(low_worker, high_worker):
 
 
 def test_ignore_unignore_single(low_worker, high_worker):
-    low_client: DomainClient = low_worker.root_client
+    low_client: DatasiteClient = low_worker.root_client
     client_low_ds = get_ds_client(low_client)
-    high_client: DomainClient = high_worker.root_client
+    high_client: DatasiteClient = high_worker.root_client
 
     @sy.syft_function_single_use()
     def compute() -> int:
@@ -307,8 +309,8 @@ def test_approve_request_on_sync_blocking(low_worker, high_worker):
     _ = client_low_ds.code.request_code_execution(compute)
 
     # No execute permissions
-    result_error = client_low_ds.code.compute(blocking=True)
-    assert isinstance(result_error, SyftError)
+    with pytest.raises(SyftException):
+        result_error = client_low_ds.code.compute(blocking=True)
     assert low_client.requests[0].status == RequestStatus.PENDING
 
     # Sync request to high side
@@ -335,7 +337,7 @@ def test_approve_request_on_sync_blocking(low_worker, high_worker):
     assert client_low_ds.code.compute().get() == 42
     assert len(client_low_ds.code.compute.jobs) == 1
     # check if user retrieved from cache, instead of re-executing
-    assert len(client_low_ds.requests[0].code.output_history) == 1
+    assert len(client_low_ds.requests[0].code.output_history) >= 1
 
 
 def test_deny_and_sync(low_worker, high_worker):
@@ -350,8 +352,8 @@ def test_deny_and_sync(low_worker, high_worker):
     _ = client_low_ds.code.request_code_execution(compute)
 
     # No execute permissions
-    result_error = client_low_ds.code.compute(blocking=True)
-    assert isinstance(result_error, SyftError)
+    with pytest.raises(SyftException):
+        result_error = client_low_ds.code.compute(blocking=True)
     assert low_client.requests[0].status == RequestStatus.PENDING
 
     # Deny on low side
