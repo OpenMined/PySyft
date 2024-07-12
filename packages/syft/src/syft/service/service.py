@@ -88,7 +88,7 @@ class AbstractService:
         if not isinstance(obj, NewErr | NewOk):
             obj = NewOk(obj)
 
-    return obj
+        return obj
 
     def get_all(*arg: Any, **kwargs: Any) -> Any:
         pass
