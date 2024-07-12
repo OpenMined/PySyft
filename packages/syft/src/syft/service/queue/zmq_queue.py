@@ -378,21 +378,30 @@ class ZMQProducer(QueueProducer):
                         worker_pool = item.worker_pool.resolve_with_context(
                             self.auth_context
                         )
-                        worker_pool = worker_pool.ok()
-                        service_name = worker_pool.name
-                        service: Service | None = self.services.get(service_name)
 
-                        # Skip adding message if corresponding service/pool
-                        # is not registered.
-                        if service is None:
-                            continue
+                        # relative
+                        from ..worker.worker_pool import WorkerPool
 
-                        # append request message to the corresponding service
-                        # This list is processed in dispatch method.
+                        worker_pool = cast(WorkerPool, worker_pool.ok())
 
-                        # TODO: Logic to evaluate the CAN RUN Condition
-                        service.requests.append(msg_bytes)
-                        item.status = Status.PROCESSING
+                        if not worker_pool.to_be_deleted:
+                            service_name = worker_pool.name
+                            service: Service | None = self.services.get(service_name)
+
+                            # Skip adding message if corresponding service/pool
+                            # is not registered.
+                            if service is None:
+                                continue
+
+                            # append request message to the corresponding service
+                            # This list is processed in dispatch method.
+
+                            # TODO: Logic to evaluate the CAN RUN Condition
+                            service.requests.append(msg_bytes)
+                            item.status = Status.PROCESSING
+                        else:
+                            item.status = Status.INTERRUPTED
+
                         res = self.queue_stash.update(item.syft_client_verify_key, item)
                         if res.is_err():
                             logger.error(
