@@ -20,6 +20,7 @@ from time import sleep
 import traceback
 from typing import Any
 from typing import cast
+import time
 
 # third party
 from nacl.signing import SigningKey
@@ -356,7 +357,9 @@ class Node(AbstractNode):
         background_tasks: bool = False,
         payment_required: bool = False,
         node_payment_handle: str | None = None,
-        payment_api: str | None = None
+        payment_api: str | None = None,
+        compute_price_module_path: str | None = None,
+        compute_price_func_name: str | None = None
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -381,11 +384,24 @@ class Node(AbstractNode):
                 raise ValueError("Payment handle is required.")
             if self.payment_api is None or self.payment_api == "":
                 raise ValueError("Payment API is required.")
+            if compute_price_module_path is None or compute_price_module_path == "":
+                raise ValueError("Compute-price module path is required.")
+            if compute_price_func_name is None or compute_price_func_name == "":
+                raise ValueError("Compute-price function name is required.")
+
+            compute_price_module_dir, compute_price_module_file = os.path.split(compute_price_module_path)
+            sys.path.append(compute_price_module_dir)
+            compute_price_module_name, _ = os.path.splitext(compute_price_module_file)
+            from importlib import import_module
+            compute_price_module = import_module(compute_price_module_name)
+            self.compute_price = getattr(compute_price_module, compute_price_func_name)
+
             print(
                 f'\n'
                 f'This node charges for services.\n'
                 f'Payment handle: {self.node_payment_handle}\n'
                 f'Payment API: {self.payment_api}\n'
+                f'Compute-price function: {self.compute_price}\n'
             )
 
         if isinstance(node_type, str):
@@ -696,7 +712,9 @@ class Node(AbstractNode):
         background_tasks: bool = False,
         payment_required: bool = False,
         node_payment_handle: str | None = None,
-        payment_api: str | None = None
+        payment_api: str | None = None,
+        compute_price_module_path: str | None = None,
+        compute_price_func_name: str | None = None
     ) -> Node:
         uid = UID.with_seed(name)
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
@@ -728,7 +746,9 @@ class Node(AbstractNode):
             background_tasks=background_tasks,
             payment_required=payment_required,
             node_payment_handle=node_payment_handle,
-            payment_api=payment_api
+            payment_api=payment_api,
+            compute_price_module_path=compute_price_module_path,
+            compute_price_func_name=compute_price_func_name
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
@@ -1228,28 +1248,6 @@ class Node(AbstractNode):
             if not api_call.is_valid:
                 return SyftError(message="Your message signature is invalid")
 
-        credentials: SyftVerifyKey = api_call.credentials
-        path = api_call.message.path
-
-        if self.name.startswith("ephemeral_node_"):
-            print(
-                f'Not charging for API call {path} to node {self.name} '
-                'because this node is an ephemeral node running on the client machine'
-            )
-        elif path == 'user.update' or path == 'user.get_current_user':
-            print(
-                f'Not charging for API call {path} to node {self.name} '
-                f'because this call may be made before the payment auth token is stored on the node'
-            )
-        else:
-            payment_auth_token = self.get_payment_auth_token_for_credentials(credentials=credentials)
-            if payment_auth_token == '':
-                return SyftError(message=(
-                    "Cannot pay for call as Payment Auth Token has not been set."
-                    "Please set Payment Auth Token using 'client.me.set_payment_auth_token' API call."
-                ))
-            print(f"Ready to pay for API call {path} on node {self.name} with Payment Auth Token {payment_auth_token}")
-
         if api_call.message.node_uid != self.id and check_call_location:
             return self.forward_message(api_call=api_call)
 
@@ -1265,6 +1263,7 @@ class Node(AbstractNode):
         is_blocking = api_call.message.blocking
 
         if is_blocking or self.is_subprocess:
+            credentials: SyftVerifyKey = api_call.credentials
             api_call = api_call.message
 
             role = self.get_role_for_credentials(credentials=credentials)
@@ -1294,13 +1293,41 @@ class Node(AbstractNode):
             method = self.get_service_method(_private_api_path)
             try:
                 logger.info(f"API Call: {api_call}")
+                start_time = time.perf_counter()
                 result = method(context, *api_call.args, **api_call.kwargs)
+                end_time = time.perf_counter()
+                execution_time = end_time - start_time
             except PySyftException as e:
                 return e.handle()
             except Exception:
                 result = SyftError(
                     message=f"Exception calling {api_call.path}. {traceback.format_exc()}"
                 )
+
+            if self.payment_required:
+                if self.name.startswith("ephemeral_node_"):
+                    print(
+                        f'Not charging for API call {api_call.path} to node {self.name} '
+                        'because this node is an ephemeral node running on the client machine'
+                    )
+                elif api_call.path == 'user.update' or api_call.path == 'user.get_current_user':
+                    print(
+                        f'Not charging for API call {api_call.path} to node {self.name} '
+                        f'because this call may be made before the payment auth token is stored on the node'
+                    )
+                else:
+                    price = self.compute_price(execution_time, role, method, api_call.path)
+
+                    payment_auth_token = self.get_payment_auth_token_for_credentials(credentials=credentials)
+                    if payment_auth_token == '':
+                        return SyftError(message=(
+                            "Cannot pay for call as Payment Auth Token has not been set."
+                            "Please set Payment Auth Token using 'client.me.set_payment_auth_token' API call."
+                        ))
+
+                    print(f"User with Payment Auth Token {payment_auth_token} pays an amount {price} to node {self.name} with payment handle {self.node_payment_handle} for API call {api_call.path}")
+                    # TODO: check if payment goes through, and, if not, then refuse to process RPC, by raising an error
+
         else:
             return self.add_api_call_to_queue(api_call)
         return result

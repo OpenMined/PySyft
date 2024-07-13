@@ -57,6 +57,8 @@ class AppSettings(BaseSettings):
     payment_required: bool = False
     node_payment_handle: str | None = None
     payment_api: str | None = None
+    compute_price_module_path: str | None = None
+    compute_price_func_name: str | None = None
 
     model_config = SettingsConfigDict(env_prefix="SYFT_", env_parse_none_str="None")
 
@@ -183,7 +185,9 @@ def serve_node(
     debug: bool = False,
     payment_required: bool = False,
     node_payment_handle: str | None = None,
-    payment_api: str | None = None
+    payment_api: str | None = None,
+    compute_price_module_path: str | None = None,
+    compute_price_func_name: str | None = None
 ) -> tuple[Callable, Callable]:
     starting_uvicorn_event = multiprocessing.Event()
 
@@ -213,6 +217,8 @@ def serve_node(
             "payment_required": payment_required,
             "node_payment_handle": node_payment_handle,
             "payment_api": payment_api,
+            "compute_price_module_path": compute_price_module_path,
+            "compute_price_func_name": compute_price_func_name,
             "starting_uvicorn_event": starting_uvicorn_event,
         },
     )

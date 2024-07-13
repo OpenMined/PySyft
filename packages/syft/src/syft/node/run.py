@@ -90,6 +90,20 @@ def run() -> NodeHandle | None:
         default="",
         dest="payment_api",
     )
+    parser.add_argument(
+        "--compute-price-module-path",
+        help="compute price module path",
+        type=str,
+        default="",
+        dest="compute_price_module_path",
+    )
+    parser.add_argument(
+        "--compute-price-func-name",
+        help="compute price function name",
+        type=str,
+        default="",
+        dest="compute_price_func_name",
+    )
 
     args = parser.parse_args()
     if args.command != "launch":
@@ -102,6 +116,8 @@ def run() -> NodeHandle | None:
     args.payment_required = str_to_bool(args.payment_required)
     args.node_payment_handle = str(args.node_payment_handle)
     args.payment_api = str(args.payment_api)
+    args.compute_price_module_path = str(args.compute_price_module_path)
+    args.compute_price_func_name = str(args.compute_price_func_name)
 
     node = Orchestra.launch(
         name=args.name,
@@ -115,7 +131,9 @@ def run() -> NodeHandle | None:
         tail=args.tail,
         payment_required=args.payment_required,
         node_payment_handle=args.node_payment_handle,
-        payment_api=args.payment_api
+        payment_api=args.payment_api,
+        compute_price_module_path=args.compute_price_module_path,
+        compute_price_func_name=args.compute_price_func_name
     )
     if not args.tail:
         return node
