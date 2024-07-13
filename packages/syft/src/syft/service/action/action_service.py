@@ -264,7 +264,7 @@ class ActionService(AbstractService):
         uid: UID,
         twin_mode: TwinMode = TwinMode.PRIVATE,
         resolve_nested: bool = True,
-    ) -> ActionObject:
+    ) -> ActionObject | TwinObject:
         """Get an object from the action store"""
         return self._get(
             context, uid, twin_mode, resolve_nested=resolve_nested
@@ -278,7 +278,7 @@ class ActionService(AbstractService):
         twin_mode: TwinMode = TwinMode.PRIVATE,
         has_permission: bool = False,
         resolve_nested: bool = True,
-    ) -> ActionObject:
+    ) -> ActionObject | TwinObject:
         """Get an object from the action store"""
         obj: TwinObject | ActionObject = self.store.get(
             uid=uid, credentials=context.credentials, has_permission=has_permission

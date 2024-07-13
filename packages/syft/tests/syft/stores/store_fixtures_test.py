@@ -85,7 +85,7 @@ def document_store_with_admin(
 
     user_stash.set(
         credentials=verify_key,
-        user=admin_user,
+        obj=admin_user,
         add_permissions=[
             ActionObjectPermission(
                 uid=admin_user.id, permission=ActionPermission.ALL_READ

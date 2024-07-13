@@ -22,7 +22,6 @@ from ...util.telemetry import instrument
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
-from ..action.action_service import ActionService
 from ..context import AuthedServiceContext
 from ..output.output_service import ExecutionOutput
 from ..policy.policy import InputPolicyValidEnum
@@ -33,7 +32,6 @@ from ..request.request import SubmitRequest
 from ..request.request import SyncedUserCodeStatusChange
 from ..request.request import UserCodeStatusChange
 from ..request.request_service import RequestService
-from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
@@ -175,7 +173,7 @@ class UserCodeService(AbstractService):
     )
     def delete(
         self, context: AuthedServiceContext, uid: UID
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         """Delete User Code"""
         self.stash.delete_by_uid(context.credentials, uid).unwrap()
         return SyftSuccess(message=f"User Code {uid} deleted", value=uid)
@@ -220,14 +218,9 @@ class UserCodeService(AbstractService):
             pool_name=user_code.worker_pool_name,
         )
 
-        if isinstance(pool_result, SyftError):
-            raise SyftException(public_message=pool_result.message)
-
         # Create a code history
         code_history_service = context.server.get_service("codehistoryservice")
-        result = code_history_service.submit_version(context=context, code=user_code)
-        if isinstance(result, SyftError):
-            raise SyftException(public_message=result.message)
+        code_history_service.submit_version(context=context, code=user_code)
 
         return user_code
 
@@ -245,8 +238,6 @@ class UserCodeService(AbstractService):
         # FIX: Change requestservice result type
         existing_requests = get_by_usercode_id(context, user_code.id)
 
-        if isinstance(existing_requests, SyftError):
-            raise SyftException(public_message=existing_requests.message)
         if len(existing_requests) > 0:
             raise SyftException(
                 public_message=(
@@ -285,7 +276,6 @@ class UserCodeService(AbstractService):
         method = context.server.get_service_method(RequestService.submit)
         result = method(context=context, request=request, reason=reason)
 
-        # The Request service already returns either a SyftSuccess or SyftError
         return result
 
     @as_result(SyftException, NotFoundException, StashException)

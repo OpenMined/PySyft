@@ -1,12 +1,14 @@
 # stdlib
 
 # stdlib
-from typing import TypeVar
+from typing import Literal, TypeVar
 
 # third party
 from result import Err
 from result import Ok
 from result import Result
+from syft.types.errors import SyftException
+from syft.types.result import as_result
 
 # relative
 from ...serde.serializable import serializable
@@ -185,19 +187,20 @@ class NotifierSettings(SyftObject):
             password=password,
         )
 
+    @as_result(SyftException)
     def send_notifications(
         self,
         context: AuthedServiceContext,
         notification: Notification,
-    ) -> Result[Ok, Err]:
-        notifier_objs: list = self.select_notifiers(notification)
+    ) -> int:
+        notifier_objs: list[BaseNotifier] = self.select_notifiers(notification)
 
         for notifier in notifier_objs:
-            result = notifier.send(context, notification)
+            result = notifier.send(target=context, notification=notification)
             if result.err():
-                return result
+                raise SyftException(public_message=result.message)
 
-        return Ok("Notification sent successfully!")
+        return len(notifier_objs)
 
     def select_notifiers(self, notification: Notification) -> list[BaseNotifier]:
         """

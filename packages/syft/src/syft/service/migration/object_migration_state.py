@@ -5,9 +5,8 @@ import sys
 from typing import Any
 
 # third party
-from result import Result
-from syft.store.document_store_errors import StashException
-from syft.types.result import as_result
+from result import Err, Ok, Result
+from syft.store.document_store_errors import NotFoundException
 from typing_extensions import Self
 import yaml
 
@@ -75,7 +74,6 @@ class SyftMigrationStateStash(NewBaseStash):
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
 
-    @as_result(StashException)
     def set(
         self,
         credentials: SyftVerifyKey,
@@ -84,21 +82,33 @@ class SyftMigrationStateStash(NewBaseStash):
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> Result[SyftObjectMigrationState, str]:
-        obj = self.check_type(migration_state, self.object_type).unwrap()
-        return super().set(
+        res = self.check_type(migration_state, self.object_type)
+
+        if res.is_err():
+            return Err(res.err().public_message)
+
+        res = super().set(
             credentials=credentials,
-            obj=obj,
+            obj=res.ok(),
             add_permissions=add_permissions,
             add_storage_permission=add_storage_permission,
             ignore_duplicates=ignore_duplicates,
-        ).unwrap()
+        )
 
-    @as_result(StashException)
+        if res.is_err():
+            return Err(res.err().public_message)
+        return Ok(res.ok())
+
     def get_by_name(
         self, canonical_name: str, credentials: SyftVerifyKey
-    ) -> Result[SyftObjectMigrationState, str]:
+    ) -> Result[SyftObjectMigrationState | None, str]:
         qks = KlassNamePartitionKey.with_obj(canonical_name)
-        return self.query_one(credentials=credentials, qks=qks).unwrap()
+        res = self.query_one(credentials=credentials, qks=qks)
+        if res.is_err():
+            if isinstance(res.err(), NotFoundException):
+                return Ok(None)
+            return Err(res.err().public_message)
+        return Ok(res.ok())
 
 
 @serializable()

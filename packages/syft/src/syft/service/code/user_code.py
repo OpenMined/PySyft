@@ -756,7 +756,7 @@ class UserCode(SyncableSyftObject):
             job_id=job_id,
             output_policy_id=self.output_policy_id,
             input_ids=input_ids,
-        ).unwrap()
+        )
 
     @property
     def byte_code(self) -> PyCodeObject | None:
@@ -1357,14 +1357,10 @@ def syft_function(
             msg = "Failed to create syft function, encountered validation errors:\n"
             for error in errors:
                 msg += f"\t{error['msg']}\n"
-            err = SyftError(message=msg)
-            display(err)
-            return err
+            raise SyftException(public_message=msg)
 
         except SyftException as se:
-            err = SyftError(message=f"Error when parsing the code: {se}")
-            display(err)
-            return err
+            raise SyftException(public_message=f"Error when parsing the code: {se}")
 
         if share_results_with_owners and res.output_policy_init_kwargs is not None:
             res.output_policy_init_kwargs["output_readers"] = (
@@ -1404,11 +1400,8 @@ def parse_user_code(
     function_input_kwargs: list[str],
 ) -> str:
     # parse the code, check for syntax errors and if there are global variables
-    try:
-        tree: ast.Module = parse_code(raw_code=raw_code)
-        check_for_global_vars(code_tree=tree)
-    except SyftException as e:
-        raise SyftException(f"{e}")
+    tree: ast.Module = parse_code(raw_code=raw_code)
+    check_for_global_vars(code_tree=tree)
 
     f: ast.stmt = tree.body[0]
     f.decorator_list = []

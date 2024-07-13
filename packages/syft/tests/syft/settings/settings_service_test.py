@@ -286,7 +286,8 @@ def test_settings_allow_guest_registration(
                 name="Harley",
             )
 
-        assert exc.value.public_message == "You have no permission to register"
+        expected_err_msg = "You have no permission to create an account. Please contact the Datasite owner."
+        assert exc.value.public_message == expected_err_msg
         assert any(user.email == email1 for user in root_datasite_client.users)
 
     # only after the root client enable other users to signup, they can
@@ -382,8 +383,9 @@ def test_settings_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker)
                 password_verify="password",
             )
 
+        error_msg = "You have no permission to create an account. Please contact the Datasite owner."
         assert exc.type is SyftException 
-        assert exc.value.public_message == "You have no permission to register"
+        assert exc.value.public_message == error_msg
 
         users_created_count = sum(
             [u.email in emails_added for u in root_client.users.get_all()]

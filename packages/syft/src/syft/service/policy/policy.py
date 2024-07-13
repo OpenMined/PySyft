@@ -624,7 +624,7 @@ def retrieve_from_db(
         server=context.server, credentials=context.server.verify_key
     )
 
-    if context.server.server_type == ServerType.DATASITE:
+    if context.server.server_type != ServerType.DATASITE:
         raise SyftException(
             public_message=f"Invalid server type for code submission: {context.server.server_type}"
         )

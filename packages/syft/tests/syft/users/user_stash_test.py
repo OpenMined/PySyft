@@ -217,7 +217,7 @@ def test_userstash_update(
     for field_name, value in update_kwargs:
         setattr(user, field_name, value)
 
-    result = user_stash.update(root_datasite_client.credentials.verify_key, user=user)
+    result = user_stash.update(root_datasite_client.credentials.verify_key, obj=user)
 
     assert result.is_ok()
     updated_user = result.ok()

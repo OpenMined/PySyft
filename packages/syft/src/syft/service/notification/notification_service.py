@@ -52,14 +52,14 @@ class NotificationService(AbstractService):
             )
         ]
 
-        result = self.stash.set(
+        self.stash.set(
             context.credentials, new_notification, add_permissions=permissions
         ).unwrap()
 
         notifier_service = context.server.get_service("notifierservice")
-
         notifier_service.dispatch_notification(context, new_notification).unwrap()
-        return result
+
+        return new_notification
 
     @service_method(path="notifications.reply", name="reply", roles=GUEST_ROLE_LEVEL)
     def reply(

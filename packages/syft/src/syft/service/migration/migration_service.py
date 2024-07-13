@@ -544,12 +544,9 @@ class MigrationService(AbstractService):
         )
         result_dict: dict[type[SyftObject], list[SyftObject]] = defaultdict(list)
         action_store = context.server.action_store
-        action_store_objects_result = action_store._all(
+        action_store_objects = action_store._all(
             context.credentials, has_permission=True
         )
-        if action_store_objects_result.is_err():
-            return action_store_objects_result
-        action_store_objects = action_store_objects_result.ok()
 
         for obj in action_store_objects:
             if get_all or type(obj) in action_object_pending_migration:
@@ -622,6 +619,7 @@ class MigrationService(AbstractService):
         path="migration.apply_migration_data",
         name="apply_migration_data",
         roles=ADMIN_ROLE_LEVEL,
+        unwrap_on_success=False
     )
     def apply_migration_data(
         self,

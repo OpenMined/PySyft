@@ -307,8 +307,6 @@ class UserService(AbstractService):
             credentials=context.credentials, obj=user, has_permission=True
         ).unwrap()
 
-        print("updated user:", user)
-
         if user.role == ServiceRole.ADMIN:
             settings_stash = SettingsStash(store=self.store)
             settings = settings_stash.get_all(context.credentials).unwrap()

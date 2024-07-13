@@ -2,17 +2,16 @@
 
 # third party
 from result import Result
+from result import Err
+from result import Ok
 
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import DocumentStore
 from ...store.document_store import NewBaseStash
+from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
-from ...store.document_store_errors import NotFoundException
-from ...store.document_store_errors import StashException
-from ...types.result import as_result
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftMigrationRegistry
 from ...types.syft_object import SyftObject
@@ -58,7 +57,6 @@ class SyftMigrationStateStash(NewBaseStash):
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
 
-    @as_result(StashException)
     def set(
         self,
         credentials: SyftVerifyKey,
@@ -67,20 +65,29 @@ class SyftMigrationStateStash(NewBaseStash):
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> Result[SyftObjectMigrationState, str]:
-        res = self.check_type(migration_state, self.object_type).unwrap()
-        return super().set(
+        res = self.check_type(migration_state, self.object_type)
+        # we dont use and_then logic here as it is hard because of the order of the arguments
+        if res.is_err():
+            return Err(res.err().public_message)
+        res = super().set(
             credentials=credentials,
-            obj=res,
+            obj=res.ok(),
             add_permissions=add_permissions,
             add_storage_permission=add_storage_permission,
             ignore_duplicates=ignore_duplicates,
-        ).unwrap()
+        )
 
-    @as_result(StashException, NotFoundException)
+        if res.is_err():
+            return Err(res.err().public_message)
+
+        return Ok(res.ok())
+
     def get_by_name(
         self, canonical_name: str, credentials: SyftVerifyKey
     ) -> Result[SyftObjectMigrationState, str]:
         qks = KlassNamePartitionKey.with_obj(canonical_name)
-        return self.query_one(credentials=credentials, qks=qks).unwrap(
-            public_message=f"Migration State with canonical name {canonical_name} not found"
-        )
+        res = self.query_one(credentials=credentials, qks=qks)
+        if res.is_err():
+            return Err(res.err().public_message)
+
+        return Ok(res.ok())

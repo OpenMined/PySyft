@@ -285,13 +285,10 @@ class NotifierService(AbstractService):
         )
 
         # If notifier is active
-        if notifier.active:
-            # TODO: rewrite with unwrap
-            resp = notifier.send_notifications(
+        if notifier and notifier.active:
+            notifier.send_notifications(
                 context=context, notification=notification
-            )
-            if resp.is_err():
-                raise SyftException(message=resp.err())
+            ).unwrap()
 
         # If notifier isn't active, return None
-        return SyftSuccess(message="Notifications dispatched successfully")
+        return SyftSuccess(message="Notification dispatched successfully")

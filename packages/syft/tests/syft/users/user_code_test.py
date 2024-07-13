@@ -388,8 +388,8 @@ def test_mock_no_arguments(worker) -> None:
     ds_client.api.services.code.request_code_execution(compute_sum)
 
     # not approved, no mock execution
-    with pytest.raises(Exception):
-        result = ds_client.api.services.code.compute_sum()
+    with pytest.raises(SyftException):
+        ds_client.api.services.code.compute_sum()
 
     # not approved, mock execution
     users[-1].allow_mock_execution()
@@ -421,17 +421,17 @@ def test_submit_invalid_name(worker) -> None:
     res = client.code.submit(valid_name)
     assert isinstance(res, SyftSuccess)
 
-    @sy.syft_function_single_use()
-    def get_all():
-        pass
+    # reserved name
+    with pytest.raises(SyftException):
+        @sy.syft_function_single_use()
+        def get_all():
+            pass
 
-    assert isinstance(get_all, SyftError)
-
-    @sy.syft_function_single_use()
-    def _():
-        pass
-
-    assert isinstance(_, SyftError)
+    # no anonymous
+    with pytest.raises(SyftException):
+        @sy.syft_function_single_use()
+        def _():
+            pass
 
     # overwrite valid function name before submit, fail on serde
     @sy.syft_function_single_use()
@@ -439,25 +439,29 @@ def test_submit_invalid_name(worker) -> None:
         pass
 
     valid_name_2.func_name = "get_all"
+
     with pytest.raises(ValidationError):
         client.code.submit(valid_name_2)
 
 
 def test_submit_code_with_global_var(guest_client: DatasiteClient) -> None:
-    @sy.syft_function(
-        input_policy=sy.ExactMatch(), output_policy=sy.SingleExecutionExactOutput()
-    )
-    def mock_syft_func_with_global():
-        global x
-        return x
+    with pytest.raises(SyftException) as exc:
+        @sy.syft_function(
+            input_policy=sy.ExactMatch(), output_policy=sy.SingleExecutionExactOutput()
+        )
+        def mock_syft_func_with_global():
+            global x
+            return x
 
+    assert "Your code contains (a) global variable(s)" in exc.value.public_message
 
-    with pytest.raises(Exception):
+    with pytest.raises(SyftException) as exc:
         @sy.syft_function_single_use()
         def mock_syft_func_single_use_with_global():
             global x
             return x
 
+    assert "Your code contains (a) global variable(s)" in exc.value.public_message
 
 def test_request_existing_usercodesubmit(worker) -> None:
     root_datasite_client = worker.root_client

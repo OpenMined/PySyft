@@ -258,7 +258,7 @@ class BlobStorageService(AbstractService):
         obj: CreateBlobStorageEntry,
         uploaded_by: SyftVerifyKey,
     ) -> BlobDepositType | SyftError:
-        return self._allocate(context, obj, uploaded_by)
+        return self._allocate(context, obj, uploaded_by).unwrap()
 
     @service_method(
         path="blob_storage.write_to_disk",

@@ -1698,14 +1698,13 @@ def create_default_worker_pool(server: Server) -> SyftError | None:
     image_stash = server.get_service(SyftWorkerImageService).stash
     default_pool_name = server.settings.default_worker_pool
 
-    # TODO: MERGE: Check if raising here is sufficient
-    default_worker_pool = server.get_default_worker_pool().unwrap(public_message="Failed to get default worker pool")
-    # try:
-    #     default_worker_pool = server.get_default_worker_pool().unwrap(
-    #         public_message="Failed to get default worker pool"
-    #     )
-    # except SyftException:
-    #     default_worker_pool = None
+    try:
+        default_worker_pool = server.get_default_worker_pool().unwrap(
+            public_message="Failed to get default worker pool"
+        )
+    except SyftException:
+        default_worker_pool = None
+
     default_worker_tag = get_default_worker_tag_by_env(server.dev_mode)
     default_worker_pool_pod_annotations = get_default_worker_pool_pod_annotations()
     default_worker_pool_pod_labels = get_default_worker_pool_pod_labels()
