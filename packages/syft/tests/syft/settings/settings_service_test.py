@@ -16,7 +16,6 @@ from syft.abstract_server import ServerSideType
 from syft.server.credentials import SyftSigningKey
 from syft.server.credentials import SyftVerifyKey
 from syft.service.context import AuthedServiceContext
-from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.settings.settings import ServerSettings
 from syft.service.settings.settings import ServerSettingsUpdate
@@ -384,7 +383,7 @@ def test_settings_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker)
             )
 
         error_msg = "You have no permission to create an account. Please contact the Datasite owner."
-        assert exc.type is SyftException 
+        assert exc.type is SyftException
         assert exc.value.public_message == error_msg
 
         users_created_count = sum(

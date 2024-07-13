@@ -352,7 +352,9 @@ class MongoStorePartition(StorePartition):
 
         prev_obj = prev_obj_status.ok()
         if len(prev_obj) == 0:
-            return Err(f"Failed to update missing values for query key: {qk} for type {type(obj)}")
+            return Err(
+                f"Failed to update missing values for query key: {qk} for type {type(obj)}"
+            )
 
         prev_obj = prev_obj[0]
         if has_permission or self.has_permission(
@@ -700,7 +702,9 @@ class MongoStorePartition(StorePartition):
 
         return Ok(set(storage_permissions["server_uids"]))
 
-    def get_all_storage_permissions(self) -> Result[dict[UID, Set[UID]], str]:  # noqa: UP006
+    def get_all_storage_permissions(
+        self,
+    ) -> Result[dict[UID, Set[UID]], str]:  # noqa: UP006
         # Returns a dictionary of all storage permissions {object_uid: {*server_uids}}
         storage_permissions_or_err = self.storage_permissions
         if storage_permissions_or_err.is_err():

@@ -201,7 +201,9 @@ class NetworkService(AbstractService):
         """
 
         # Step 1: Validate the Route
-        self_server_peer = self_server_route.validate_with_context(context=context).unwrap()
+        self_server_peer = self_server_route.validate_with_context(
+            context=context
+        ).unwrap()
 
         if reverse_tunnel and not reverse_tunnel_enabled():
             raise SyftException(
@@ -416,7 +418,7 @@ class NetworkService(AbstractService):
     @service_method(
         path="network.get_all_peers", name="get_all_peers", roles=GUEST_ROLE_LEVEL
     )
-    def get_all_peers( self, context: AuthedServiceContext) -> list[ServerPeer]:
+    def get_all_peers(self, context: AuthedServiceContext) -> list[ServerPeer]:
         """Get all Peers"""
 
         result = self.stash.get_all(
@@ -463,7 +465,7 @@ class NetworkService(AbstractService):
             credentials=context.server.verify_key,
             peer_update=peer_update,
         ).unwrap()
-        
+
         self.set_reverse_tunnel_config(context=context, remote_server_peer=peer)
         return SyftSuccess(
             message=f"Peer '{peer.name}' information successfully updated."
@@ -730,7 +732,7 @@ class NetworkService(AbstractService):
             self.stash.update(
                 credentials=context.server.verify_key, peer_update=peer_update
             ).unwrap()
-           
+
         return SyftSuccess(message=return_message)
 
     @service_method(

@@ -67,7 +67,9 @@ class RequestService(AbstractService):
 
         link = LinkedObject.with_context(request, context=context)
 
-        admin_verify_key = context.server.get_service_method(UserService.admin_verify_key)
+        admin_verify_key = context.server.get_service_method(
+            UserService.admin_verify_key
+        )
         root_verify_key = admin_verify_key()
 
         if send_message:
@@ -117,7 +119,9 @@ class RequestService(AbstractService):
         get_user_by_verify_key = context.server.get_service_method(
             UserService.get_by_verify_key
         )
-        get_message = context.server.get_service_method(NotificationService.filter_by_obj)
+        get_message = context.server.get_service_method(
+            NotificationService.filter_by_obj
+        )
 
         requests: list[RequestInfo] = []
         for req in result:

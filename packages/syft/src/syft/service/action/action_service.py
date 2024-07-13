@@ -11,9 +11,9 @@ from result import Result
 
 # relative
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
-from ...server.credentials import SyftVerifyKey
 from ...types.datetime import DateTime
 from ...types.errors import SyftException
 from ...types.result import as_result
@@ -198,9 +198,7 @@ class ActionService(AbstractService):
             # if mock is saved to blob store, then add READ permission
             if action_object.mock_obj.syft_action_saved_to_blob_store:
                 blob_id = action_object.mock_obj.syft_blob_storage_entry_id
-                permission = ActionObjectPermission(
-                    blob_id, ActionPermission.ALL_READ
-                )
+                permission = ActionObjectPermission(blob_id, ActionPermission.ALL_READ)
                 blob_storage_service: AbstractService = context.server.get_service(
                     BlobStorageService
                 )

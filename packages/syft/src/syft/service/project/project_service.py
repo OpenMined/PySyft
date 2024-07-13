@@ -62,7 +62,9 @@ class ProjectService(AbstractService):
             raise SyftException(public_message=error_msg)
 
     @as_result(StashException)
-    def project_exists(self, context: AuthedServiceContext, project: ProjectSubmit) -> bool:
+    def project_exists(
+        self, context: AuthedServiceContext, project: ProjectSubmit
+    ) -> bool:
         credentials = context.server.verify_key
         try:
             self.stash.get_by_uid(credentials=credentials, uid=project.id).unwrap()
@@ -96,7 +98,9 @@ class ProjectService(AbstractService):
     )
     def can_create_project(self, context: AuthedServiceContext) -> bool:
         user_service: UserService = context.server.get_service("userservice")
-        role = user_service.get_role_for_credentials(credentials=context.credentials).unwrap()
+        role = user_service.get_role_for_credentials(
+            credentials=context.credentials
+        ).unwrap()
 
         # FIX: Shouldn't it be role >= DATA_SCIENTIST?
         if role == ServiceRole.DATA_SCIENTIST:
@@ -192,10 +196,14 @@ class ProjectService(AbstractService):
         ).unwrap()
 
         # FIX: MERGE: Rename function below
-        self.validate_project_leader(context, project).unwrap(public_message="Project Events should be passed to leader by broadcast endpoint")
+        self.validate_project_leader(context, project).unwrap(
+            public_message="Project Events should be passed to leader by broadcast endpoint"
+        )
 
         if not self.is_project_leader(context, project):
-            raise SyfyException(public_message="Only the leader of the project can add events")
+            raise SyfyException(
+                public_message="Only the leader of the project can add events"
+            )
 
         project.events.append(project_event)
         project.event_id_hashmap[project_event.id] = project_event
@@ -228,7 +236,9 @@ class ProjectService(AbstractService):
             context.server.verify_key, uid=project_event.project_id
         ).unwrap()
 
-        self.validate_project_leader(context, project).unwrap(public_message="Only the leader of the project can broadcast events")
+        self.validate_project_leader(context, project).unwrap(
+            public_message="Only the leader of the project can broadcast events"
+        )
         self.validate_user_permission_for_project(context, project)
         self.validate_project_event_seq(project_event, project).unwrap()
 

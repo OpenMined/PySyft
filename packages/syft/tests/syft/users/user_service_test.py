@@ -14,7 +14,7 @@ from syft.server.worker import Worker
 from syft.service.context import AuthedServiceContext
 from syft.service.context import ServerServiceContext
 from syft.service.context import UnauthedServiceContext
-from syft.service.response import SyftError, SyftSuccess
+from syft.service.response import SyftSuccess
 from syft.service.user import errors as user_errors
 from syft.service.user.user import User
 from syft.service.user.user import UserCreate
@@ -682,7 +682,10 @@ def test_userservice_register_set_fail(
             user_service.register(server_context, guest_create_user)
 
         assert exc.type is StashException
-        assert exc.value.public_message == f"Failed to create user {guest_create_user.email}"
+        assert (
+            exc.value.public_message
+            == f"Failed to create user {guest_create_user.email}"
+        )
 
 
 def test_userservice_exchange_credentials(

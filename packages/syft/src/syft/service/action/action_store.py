@@ -16,7 +16,8 @@ from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import ObjectCRUDPermissionException
 from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
-from ...types.result import Ok, as_result
+from ...types.result import Ok
+from ...types.result import as_result
 from ...types.syft_object import SyftObject
 from ...types.twin_object import TwinObject
 from ...types.uid import LineageID
@@ -366,7 +367,6 @@ class KeyValueActionStore(ActionStore):
         # this checks permissions
         res = [self.get(uid, credentials, has_permission) for uid in self.data.keys()]
         return [x.ok() for x in res if x.is_ok()]
-
 
     @as_result(ObjectCRUDPermissionException)
     def migrate_data(self, to_klass: SyftObject, credentials: SyftVerifyKey) -> bool:

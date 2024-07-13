@@ -922,7 +922,7 @@ class NewBaseUIDStoreStash(NewBaseStash):
             )
 
         return result.ok()
-        
+
     @as_result(StashException)
     def set(
         self,

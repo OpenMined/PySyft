@@ -3,7 +3,6 @@ import numpy as np
 import pytest
 
 # syft absolute
-from syft.service.action.action_object import ActionObject
 from syft.service.action.plan import planify
 from syft.types.errors import SyftException
 from syft.types.twin_object import TwinObject

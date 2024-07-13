@@ -619,7 +619,7 @@ class MigrationService(AbstractService):
         path="migration.apply_migration_data",
         name="apply_migration_data",
         roles=ADMIN_ROLE_LEVEL,
-        unwrap_on_success=False
+        unwrap_on_success=False,
     )
     def apply_migration_data(
         self,

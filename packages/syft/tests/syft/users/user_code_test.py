@@ -18,9 +18,9 @@ from syft.service.request.request import UserCodeStatusChange
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.user.user import User
-from syft.types.errors import SyftException
 from syft.service.user.user import UserUpdate
 from syft.service.user.user_roles import ServiceRole
+from syft.types.errors import SyftException
 
 # relative
 from .user_test import ds_client as ds_client_fixture
@@ -423,12 +423,14 @@ def test_submit_invalid_name(worker) -> None:
 
     # reserved name
     with pytest.raises(SyftException):
+
         @sy.syft_function_single_use()
         def get_all():
             pass
 
     # no anonymous
     with pytest.raises(SyftException):
+
         @sy.syft_function_single_use()
         def _():
             pass
@@ -446,6 +448,7 @@ def test_submit_invalid_name(worker) -> None:
 
 def test_submit_code_with_global_var(guest_client: DatasiteClient) -> None:
     with pytest.raises(SyftException) as exc:
+
         @sy.syft_function(
             input_policy=sy.ExactMatch(), output_policy=sy.SingleExecutionExactOutput()
         )
@@ -456,12 +459,14 @@ def test_submit_code_with_global_var(guest_client: DatasiteClient) -> None:
     assert "Your code contains (a) global variable(s)" in exc.value.public_message
 
     with pytest.raises(SyftException) as exc:
+
         @sy.syft_function_single_use()
         def mock_syft_func_single_use_with_global():
             global x
             return x
 
     assert "Your code contains (a) global variable(s)" in exc.value.public_message
+
 
 def test_request_existing_usercodesubmit(worker) -> None:
     root_datasite_client = worker.root_client

@@ -3,11 +3,8 @@ from typing import TypeVar
 from typing import cast
 
 # third party
-from IPython.display import display_html
 
 # relative
-from ...server.credentials import SyftSigningKey
-from ...server.credentials import SyftVerifyKey
 from ...abstract_server import ServerType
 from ...serde.serializable import serializable
 from ...server.credentials import SyftSigningKey
@@ -393,7 +390,9 @@ class UserService(AbstractService):
         )
 
         if not can_user_register:
-            raise SyftException(public_message="You have no permission to create an account. Please contact the Datasite owner.")
+            raise SyftException(
+                public_message="You have no permission to create an account. Please contact the Datasite owner."
+            )
 
         user = new_user.to(User)
 
@@ -404,7 +403,9 @@ class UserService(AbstractService):
         if user_exists:
             raise SyftException(public_message=f"User {user.email} already exists")
 
-        user = self._add_user(credentials=user.verify_key, user=user).unwrap(public_message=f"Failed to create user {user.email}")
+        user = self._add_user(credentials=user.verify_key, user=user).unwrap(
+            public_message=f"Failed to create user {user.email}"
+        )
         success_message = f"User '{user.name}' successfully registered!"
 
         # Notification Step

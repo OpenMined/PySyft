@@ -1,18 +1,18 @@
 # stdlib
 
 # stdlib
-from typing import Literal, TypeVar
+from typing import TypeVar
 
 # third party
 from result import Err
 from result import Ok
 from result import Result
-from syft.types.errors import SyftException
-from syft.types.result import as_result
 
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
+from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ..context import AuthedServiceContext

@@ -123,7 +123,9 @@ class JobService(AbstractService):
         worker_settings = WorkerSettings.from_server(context.server)
 
         # TODO, fix return type of get_worker_pool_ref_by_name
-        worker_pool_ref = context.server.get_worker_pool_ref_by_name(context.credentials)
+        worker_pool_ref = context.server.get_worker_pool_ref_by_name(
+            context.credentials
+        )
 
         if isinstance(worker_pool_ref, SyftError):
             return worker_pool_ref
@@ -140,7 +142,9 @@ class JobService(AbstractService):
             worker_pool=worker_pool_ref,
         )
 
-        context.server.queue_stash.set_placeholder(context.credentials, queue_item).unwrap()
+        context.server.queue_stash.set_placeholder(
+            context.credentials, queue_item
+        ).unwrap()
 
         context.server.job_stash.set(context.credentials, job).unwrap()
 

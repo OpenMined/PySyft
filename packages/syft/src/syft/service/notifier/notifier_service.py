@@ -1,6 +1,5 @@
 # stdlib
 import logging
-import traceback
 
 # third party
 from pydantic import EmailStr

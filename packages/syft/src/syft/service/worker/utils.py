@@ -22,9 +22,9 @@ from ...custom_worker.config import PrebuiltWorkerConfig
 from ...custom_worker.k8s import KubeUtils
 from ...custom_worker.k8s import PodStatus
 from ...custom_worker.runner_k8s import KubernetesRunner
+from ...server.credentials import SyftVerifyKey
 from ...types.errors import SyftException
 from ...types.result import as_result
-from ...server.credentials import SyftVerifyKey
 from ...types.uid import UID
 from ...util.util import get_queue_address
 from ..response import SyftError
@@ -590,7 +590,9 @@ def create_default_image(
             created_by=credentials,
             image_identifier=SyftWorkerImageIdentifier.from_str(tag),
         )
-        return image_stash.set(credentials, _new_image).unwrap(public_message="Failed to save image stash")
+        return image_stash.set(credentials, _new_image).unwrap(
+            public_message="Failed to save image stash"
+        )
     return result.unwrap()
 
 

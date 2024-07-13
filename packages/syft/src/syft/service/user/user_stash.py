@@ -52,7 +52,9 @@ class UserStash(NewBaseUIDStoreStash):
         try:
             return self.query_one(credentials=credentials, qks=qks).unwrap()
         except NotFoundException as exc:
-            raise NotFoundException.from_exception(exc, public_message=f"User {uid} not found")
+            raise NotFoundException.from_exception(
+                exc, public_message=f"User {uid} not found"
+            )
 
     @as_result(StashException, NotFoundException)
     def get_by_email(self, credentials: SyftVerifyKey, email: str) -> User:
@@ -61,16 +63,16 @@ class UserStash(NewBaseUIDStoreStash):
         try:
             return self.query_one(credentials=credentials, qks=qks).unwrap()
         except NotFoundException as exc:
-            raise NotFoundException.from_exception(exc, public_message=f"User {email} not found")
+            raise NotFoundException.from_exception(
+                exc, public_message=f"User {email} not found"
+            )
 
     @as_result(StashException)
     def email_exists(self, email: str) -> bool:
         # TODO: Delete commment below, only for remembering a remark to discuss
         # In this function, stash
         try:
-            self.get_by_email(
-                credentials=self.admin_verify_key(), email=email
-            ).unwrap()
+            self.get_by_email(credentials=self.admin_verify_key(), email=email).unwrap()
             return True
         except NotFoundException:
             return False
@@ -85,7 +87,6 @@ class UserStash(NewBaseUIDStoreStash):
         except NotFoundException as exc:
             private_msg = f"User with role {role} not found"
             raise NotFoundException.from_exception(exc, private_message=private_msg)
-
 
     @as_result(StashException, NotFoundException)
     def get_by_signing_key(

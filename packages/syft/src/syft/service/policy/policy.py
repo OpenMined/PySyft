@@ -87,6 +87,7 @@ class OutputPolicyValidEnum(Enum):
     INVALID = "invalid"
     NOT_APPROVED = "not_approved"
 
+
 DEFAULT_USER_POLICY_VERSION = 1
 
 PolicyUserVerifyKeyPartitionKey = PartitionKey(
@@ -611,7 +612,7 @@ def retrieve_from_db(
 
     if TYPE_CHECKING:
         # relative
-        from ..action.action_service import ActionService
+        pass
 
     action_service = context.server.get_service("actionservice")
     code_inputs = {}

@@ -17,8 +17,8 @@ from ...client.client import PythonConnection
 from ...client.client import ServerConnection
 from ...client.client import SyftClient
 from ...serde.serializable import serializable
-from ...types.errors import SyftException
 from ...server.worker_settings import WorkerSettings
+from ...types.errors import SyftException
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject

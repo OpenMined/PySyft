@@ -44,7 +44,7 @@ class SyftWorkerImageService(AbstractService):
         path="worker_image.submit",
         name="submit",
         roles=DATA_OWNER_ROLE_LEVEL,
-        unwrap_on_success=False
+        unwrap_on_success=False,
     )
     def submit(
         self, context: AuthedServiceContext, worker_config: WorkerConfig
@@ -76,7 +76,7 @@ class SyftWorkerImageService(AbstractService):
         path="worker_image.build",
         name="build",
         roles=DATA_OWNER_ROLE_LEVEL,
-        unwrap_on_success=False
+        unwrap_on_success=False,
     )
     def build(
         self,

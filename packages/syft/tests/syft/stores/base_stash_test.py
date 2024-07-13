@@ -8,7 +8,6 @@ from typing import TypeVar
 # third party
 from faker import Faker
 import pytest
-from syft.store.document_store_errors import NotFoundException, StashException
 from typing_extensions import ParamSpec
 
 # syft absolute
@@ -20,6 +19,8 @@ from syft.store.document_store import PartitionSettings
 from syft.store.document_store import QueryKey
 from syft.store.document_store import QueryKeys
 from syft.store.document_store import UIDPartitionKey
+from syft.store.document_store_errors import NotFoundException
+from syft.store.document_store_errors import StashException
 from syft.types.syft_object import SyftObject
 from syft.types.uid import UID
 
@@ -248,7 +249,9 @@ def test_basestash_get_by_uid(
     bad_uid = base_stash.get_by_uid(root_verify_key, random_uid)
     assert bad_uid.is_err()
     # FIX: partition should return Ok(None), but it's not consistent; thus we might get NotFoundException or StashException
-    assert isinstance(bad_uid.err(), StashException) or isinstance(bad_uid.err(), NotFoundException)
+    assert isinstance(bad_uid.err(), StashException) or isinstance(
+        bad_uid.err(), NotFoundException
+    )
 
 
 def test_basestash_delete_by_uid(
@@ -265,7 +268,9 @@ def test_basestash_delete_by_uid(
     result = base_stash.get_by_uid(root_verify_key, mock_object.id)
     assert result.is_err()
     # FIX: partition should return Ok(None), but it's not consistent; thus we might get NotFoundException or StashException
-    assert isinstance(result.err(), StashException) or isinstance(result.err(), NotFoundException)
+    assert isinstance(result.err(), StashException) or isinstance(
+        result.err(), NotFoundException
+    )
 
 
 def test_basestash_query_one(

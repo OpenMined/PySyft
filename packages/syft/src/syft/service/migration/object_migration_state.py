@@ -5,8 +5,9 @@ import sys
 from typing import Any
 
 # third party
-from result import Err, Ok, Result
-from syft.store.document_store_errors import NotFoundException
+from result import Err
+from result import Ok
+from result import Result
 from typing_extensions import Self
 import yaml
 
@@ -16,10 +17,11 @@ from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
 from ...server.credentials import SyftSigningKey
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import NewBaseStash
 from ...store.document_store import DocumentStore
+from ...store.document_store import NewBaseStash
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
+from ...store.document_store_errors import NotFoundException
 from ...types.blob_storage import BlobStorageEntry
 from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.syft_object import Context

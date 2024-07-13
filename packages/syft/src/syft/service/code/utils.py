@@ -6,7 +6,7 @@ import inspect
 from IPython import get_ipython
 
 # relative
-from syft.types.errors import SyftException
+from ...types.errors import SyftException
 from ..response import SyftWarning
 from .code_parse import GlobalsVisitor
 from .code_parse import LaunchJobVisitor

@@ -44,7 +44,9 @@ class SettingsService(AbstractService):
     @service_method(path="settings.get", name="get")
     def get(self, context: UnauthedServiceContext) -> ServerSettings:
         """Get Settings"""
-        all_settings = self.stash.get_all(context.server.signing_key.verify_key).unwrap()
+        all_settings = self.stash.get_all(
+            context.server.signing_key.verify_key
+        ).unwrap()
 
         if len(all_settings) == 0:
             raise NotFoundException(public_message="No settings found")
@@ -312,7 +314,9 @@ class SettingsService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> HTMLObject | MarkdownDescription:
-        all_settings = self.stash.get_all(context.server.signing_key.verify_key).unwrap()
+        all_settings = self.stash.get_all(
+            context.server.signing_key.verify_key
+        ).unwrap()
         user_service = context.server.get_service("userservice")
         role = user_service.get_role_for_credentials(context.credentials).unwrap()
 
@@ -326,7 +330,8 @@ class SettingsService(AbstractService):
             welcome_msg_class = type(settings.welcome_markdown)
             server_side_type = (
                 "Low Side"
-                if context.server.metadata.server_side_type == ServerSideType.LOW_SIDE.value
+                if context.server.metadata.server_side_type
+                == ServerSideType.LOW_SIDE.value
                 else "High Side"
             )
             commands = ""
@@ -358,4 +363,3 @@ class SettingsService(AbstractService):
             )
             return welcome_msg_class(text=result)
         raise SyftException(public_message="There's no welcome message")
-    

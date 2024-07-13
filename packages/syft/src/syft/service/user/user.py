@@ -14,9 +14,9 @@ from pydantic import field_validator
 # relative
 from ...client.api import APIRegistry
 from ...serde.serializable import serializable
-from ...types.errors import SyftException
 from ...server.credentials import SyftSigningKey
 from ...server.credentials import SyftVerifyKey
+from ...types.errors import SyftException
 from ...types.syft_metaclass import Empty
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
@@ -269,7 +269,7 @@ class UserView(SyftObject):
                 institution=institution,
                 website=website,
                 role=role,
-                mock_execution_permission=mock_execution_permission
+                mock_execution_permission=mock_execution_permission,
             )
         except ValidationError as exc:
             raise UserUpdateError.from_exception(exc, public_message=str(exc))

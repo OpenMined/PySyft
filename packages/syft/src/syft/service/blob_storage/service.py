@@ -3,7 +3,6 @@ from pathlib import Path
 
 # third party
 import requests
-from syft.types.result import as_result
 
 # relative
 from ...serde.serializable import serializable
@@ -21,6 +20,7 @@ from ...types.blob_storage import BlobStorageMetadata
 from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.blob_storage import SeaweedSecureFilePathLocation
 from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..response import SyftError
@@ -331,5 +331,6 @@ class BlobStorageService(AbstractService):
         ).unwrap()
 
         return file_unlinked_result
+
 
 TYPE_TO_SERVICE[BlobStorageEntry] = BlobStorageEntry

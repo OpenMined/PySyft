@@ -171,9 +171,7 @@ class UserCodeService(AbstractService):
         roles=ADMIN_ROLE_LEVEL,
         unwrap_on_success=False,
     )
-    def delete(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> SyftSuccess:
+    def delete(self, context: AuthedServiceContext, uid: UID) -> SyftSuccess:
         """Delete User Code"""
         self.stash.delete_by_uid(context.credentials, uid).unwrap()
         return SyftSuccess(message=f"User Code {uid} deleted", value=uid)

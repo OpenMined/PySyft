@@ -4,8 +4,8 @@
 
 # relative
 from ...serde.serializable import serializable
-from ...store.document_store import NewBaseUIDStoreStash
 from ...server.credentials import SyftVerifyKey
+from ...store.document_store import NewBaseUIDStoreStash
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys

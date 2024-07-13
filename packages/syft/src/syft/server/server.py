@@ -1577,16 +1577,16 @@ class Server(AbstractServer):
         if settings_exists:
             server_settings = settings_exists[0]
             if server_settings.__version__ != ServerSettings.__version__:
-                    context = Context()
-                    server_settings = server_settings.migrate_to(
-                        ServerSettings.__version__, context
-                    )
-                    settings_stash.delete_by_uid(
-                        self.signing_key.verify_key, server_settings.id
-                    ).unwrap()
-                    settings_stash.set(
-                        self.signing_key.verify_key, server_settings
-                    ).unwrap()
+                context = Context()
+                server_settings = server_settings.migrate_to(
+                    ServerSettings.__version__, context
+                )
+                settings_stash.delete_by_uid(
+                    self.signing_key.verify_key, server_settings.id
+                ).unwrap()
+                settings_stash.set(
+                    self.signing_key.verify_key, server_settings
+                ).unwrap()
             self.name = server_settings.name
             self.association_request_auto_approval = (
                 server_settings.association_request_auto_approval
@@ -1616,7 +1616,7 @@ class Server(AbstractServer):
                 credentials=self.signing_key.verify_key, obj=new_settings
             ).unwrap()
 
-    
+
 def create_admin_new(
     name: str,
     email: str,

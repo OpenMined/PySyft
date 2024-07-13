@@ -593,7 +593,7 @@ class APIService(AbstractService):
         # TODO: Add ability to specify which roles see which endpoints
         # for now skip auth
         return self.stash.get_all(context.server.verify_key).unwrap()
-        
+
     @as_result(StashException, NotFoundException)
     def get_code(
         self, context: AuthedServiceContext, endpoint_path: str

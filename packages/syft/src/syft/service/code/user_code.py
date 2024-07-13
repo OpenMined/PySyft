@@ -723,9 +723,10 @@ class UserCode(SyncableSyftObject):
     def get_output_history(
         self, context: AuthedServiceContext
     ) -> list[ExecutionOutput]:
-        output_service = cast(OutputService, context.server.get_service("outputservice"))
+        output_service = cast(
+            OutputService, context.server.get_service("outputservice")
+        )
         return output_service.get_by_user_code_id(context, self.id)
-
 
     @as_result(SyftException)
     def store_execution_output(

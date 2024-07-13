@@ -15,10 +15,10 @@ from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
+from ...types.errors import SyftException
 from ...types.result import as_result
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
-from ...types.errors import SyftException
 from .worker_image import SyftWorkerImage
 
 WorkerConfigPK = PartitionKey(key="config", type_=WorkerConfig)

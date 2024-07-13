@@ -161,8 +161,6 @@ class SyftException(Exception):
 
 
 # third party
-from IPython.display import HTML
-from IPython.display import display
 
 
 class raises:

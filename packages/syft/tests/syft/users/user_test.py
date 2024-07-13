@@ -154,7 +154,7 @@ def test_user_delete(do_client, guest_client, ds_client, worker, root_client):
     clients = [get_mock_client(root_client, role) for role in DS_ROLES]
     for c in clients:
         assert do_client.api.services.user.delete(c.user_id)
-    
+
     # but not higher or same roles
     clients = [
         get_mock_client(root_client, role)
@@ -285,6 +285,7 @@ def test_guest_user_update_to_root_email_failed(
         assert exc.type == SyftException
         assert f"User {default_root_email} already exists" in exc.value.public_message
 
+
 def test_user_view_set_password(worker: Worker, root_client: DatasiteClient) -> None:
     change_ok = root_client.me.set_password("123", confirm=False)
     assert type(change_ok) == SyftSuccess
@@ -366,7 +367,7 @@ def test_user_view_set_duplicated_email(
         guest_client.me.set_email(email)
 
     assert exc.type == SyftException
-    assert exc.value.public_message == error_msg 
+    assert exc.value.public_message == error_msg
 
     email = ds_client.me.email
     error_msg = f"User {email} already exists"

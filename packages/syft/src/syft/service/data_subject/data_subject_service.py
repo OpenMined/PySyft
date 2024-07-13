@@ -92,7 +92,7 @@ class DataSubjectService(AbstractService):
 
         return SyftSuccess(
             message=f"{len(member_relationships)+1} Data Subjects Registered",
-            value=member_relationships
+            value=member_relationships,
         )
 
     @service_method(path="data_subject.get_all", name="get_all")
@@ -118,9 +118,7 @@ class DataSubjectService(AbstractService):
         return members
 
     @service_method(path="data_subject.get_by_name", name="get_by_name")
-    def get_by_name(
-        self, context: AuthedServiceContext, name: str
-    ) -> DataSubject:
+    def get_by_name(self, context: AuthedServiceContext, name: str) -> DataSubject:
         """Get a Data Subject by its name."""
         return self.stash.get_by_name(context.credentials, name=name).unwrap()
 

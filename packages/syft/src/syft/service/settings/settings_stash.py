@@ -13,7 +13,6 @@ from ...store.document_store_errors import StashException
 from ...types.result import as_result
 from ...types.uid import UID
 from ...util.telemetry import instrument
-from ..action.action_permissions import ActionObjectPermission
 from .settings import ServerSettings
 
 NamePartitionKey = PartitionKey(key="name", type_=str)

@@ -40,7 +40,6 @@ from typing_extensions import Self
 from ..serde.recursive_primitives import recursive_serde_register_type
 from ..serde.serialize import _serialize as serialize
 from ..server.credentials import SyftVerifyKey
-from ..service.response import SyftError
 from ..util.autoreload import autoreload_enabled
 from ..util.markdown import as_markdown_python_code
 from ..util.notebook_ui.components.tabulator_template import build_tabulator_table
@@ -629,8 +628,10 @@ class SyftObject(SyftBaseObject, SyftMigrationRegistry):
     def _get_api(self) -> "SyftAPI":
         # relative
         from ..client.api import APIRegistry
-        return APIRegistry._api_for(self.syft_server_location, self.syft_client_verify_key)
 
+        return APIRegistry._api_for(
+            self.syft_server_location, self.syft_client_verify_key
+        )
 
     ## OVERRIDING pydantic.BaseModel.__getattr__
     ## return super().__getattribute__(item) -> return self.__getattribute__(item)
