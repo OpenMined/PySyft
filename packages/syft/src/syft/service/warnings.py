@@ -8,11 +8,11 @@ from rich.prompt import Confirm
 from typing_extensions import Self
 
 # relative
-from ..abstract_node import AbstractNode
-from ..abstract_node import NodeSideType
-from ..abstract_node import NodeType
-from ..node.credentials import SyftCredentials
+from ..abstract_server import AbstractServer
+from ..abstract_server import ServerSideType
+from ..abstract_server import ServerType
 from ..serde.serializable import serializable
+from ..server.credentials import SyftCredentials
 from ..types.base import SyftBaseModel
 from ..types.syft_object import Context
 from .user.user_roles import ServiceRole
@@ -21,7 +21,7 @@ from .user.user_roles import ServiceRole
 class WarningContext(
     Context,
 ):
-    node: AbstractNode | None = None
+    server: AbstractServer | None = None
     credentials: SyftCredentials | None = None
     role: ServiceRole
 
@@ -74,22 +74,22 @@ class CRUDWarning(APIEndpointWarning):
         message = None
         confirmation = self.confirmation
         if context is not None:
-            node = context.node
-            if node is not None:
-                node_side_type = cast(NodeSideType, node.node_side_type)
-                node_type = node.node_type
+            server = context.server
+            if server is not None:
+                server_side_type = cast(ServerSideType, server.server_side_type)
+                server_type = server.server_type
 
                 _msg = (
                     "which could host datasets with private information."
-                    if node_side_type.value == NodeSideType.HIGH_SIDE.value
+                    if server_side_type.value == ServerSideType.HIGH_SIDE.value
                     else "which only hosts mock or synthetic data."
                 )
-                if node_type is not None:
+                if server_type is not None:
                     message = (
                         "You're performing an operation on "
-                        f"{node_side_type.value} side {node_type.value}, {_msg}"
+                        f"{server_side_type.value} side {server_type.value}, {_msg}"
                     )
-                confirmation = node_side_type.value == NodeSideType.HIGH_SIDE.value
+                confirmation = server_side_type.value == ServerSideType.HIGH_SIDE.value
 
         return CRUDWarning(confirmation=confirmation, message=message)
 
@@ -102,20 +102,20 @@ class CRUDReminder(CRUDWarning):
         message = None
         confirmation = self.confirmation
         if context is not None:
-            node = context.node
-            if node is not None:
-                node_side_type = cast(NodeSideType, node.node_side_type)
-                node_type = node.node_type
+            server = context.server
+            if server is not None:
+                server_side_type = cast(ServerSideType, server.server_side_type)
+                server_type = server.server_type
 
                 _msg = (
                     "which could host datasets with private information."
-                    if node_side_type.value == NodeSideType.HIGH_SIDE.value
+                    if server_side_type.value == ServerSideType.HIGH_SIDE.value
                     else "which only hosts mock or synthetic data."
                 )
-                if node_type is not None:
+                if server_type is not None:
                     message = (
                         "You're performing an operation on "
-                        f"{node_side_type.value} side {node_type.value}, {_msg}"
+                        f"{server_side_type.value} side {server_type.value}, {_msg}"
                     )
 
         return CRUDReminder(confirmation=confirmation, message=message)
@@ -127,14 +127,14 @@ class LowSideCRUDWarning(APIEndpointWarning):
         confirmation = self.confirmation
         message = None
         if context is not None:
-            node = context.node
-            if node is not None:
-                node_side_type = cast(NodeSideType, node.node_side_type)
-                node_type = cast(NodeType, node.node_type)
-                if node_side_type.value == NodeSideType.LOW_SIDE.value:
+            server = context.server
+            if server is not None:
+                server_side_type = cast(ServerSideType, server.server_side_type)
+                server_type = cast(ServerType, server.server_type)
+                if server_side_type.value == ServerSideType.LOW_SIDE.value:
                     message = (
                         "You're performing an operation on "
-                        f"{node_side_type.value} side {node_type.value} "
+                        f"{server_side_type.value} side {server_type.value} "
                         "which only hosts mock or synthetic data."
                     )
 
@@ -147,14 +147,14 @@ class HighSideCRUDWarning(APIEndpointWarning):
         confirmation = self.confirmation
         message = None
         if context is not None:
-            node = context.node
-            if node is not None:
-                node_side_type = cast(NodeSideType, node.node_side_type)
-                node_type = cast(NodeType, node.node_type)
-                if node_side_type.value == NodeSideType.HIGH_SIDE.value:
+            server = context.server
+            if server is not None:
+                server_side_type = cast(ServerSideType, server.server_side_type)
+                server_type = cast(ServerType, server.server_type)
+                if server_side_type.value == ServerSideType.HIGH_SIDE.value:
                     message = (
                         "You're performing an operation on "
-                        f"{node_side_type.value} side {node_type.value} "
+                        f"{server_side_type.value} side {server_type.value} "
                         "which could host datasets with private information."
                     )
 

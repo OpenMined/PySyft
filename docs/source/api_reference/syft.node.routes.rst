@@ -1,7 +1,7 @@
-syft.node.routes
+syft.server.routes
 ================
 
-.. automodule:: syft.node.routes
+.. automodule:: syft.server.routes
 
    
    

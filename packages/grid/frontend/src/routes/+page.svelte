@@ -15,5 +15,5 @@
 </script>
 
 <main>
-  <title>PyGrid</title>
+  <title>Syft UI</title>
 </main>
