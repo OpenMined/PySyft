@@ -2,8 +2,6 @@
 from typing import TypeVar
 from typing import cast
 
-# third party
-
 # relative
 from ...abstract_server import ServerType
 from ...serde.serializable import serializable

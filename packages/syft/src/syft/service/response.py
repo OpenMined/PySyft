@@ -24,10 +24,10 @@ class SyftResponseMessage(SyftBaseModel):
     _bool: bool = True
     require_api_update: bool = False
 
-    def is_err(self):
+    def is_err(self) -> bool:
         return False
 
-    def is_ok(self):
+    def is_ok(self) -> bool:
         return True
 
     def __getattr__(self, name: str) -> Any:
@@ -100,10 +100,10 @@ class SyftError(SyftResponseMessage):
     def __bool__(self) -> bool:
         return False
 
-    def is_err(self):
+    def is_err(self) -> bool:
         return True
 
-    def is_ok(self):
+    def is_ok(self) -> bool:
         return False
 
     @classmethod
@@ -136,10 +136,10 @@ class SyftError(SyftResponseMessage):
 class SyftSuccess(SyftResponseMessage):
     value: Any | None = None
 
-    def is_err(self):
+    def is_err(self) -> bool:
         return False
 
-    def is_ok(self):
+    def is_ok(self) -> bool:
         return True
 
     @property

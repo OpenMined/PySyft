@@ -164,15 +164,15 @@ class SyftException(Exception):
 
 
 class raises:
-    def __init__(self, expected_exception, show=False):
+    def __init__(self, expected_exception, show=False):  # type: ignore
         self.expected_exception = expected_exception
         self.show = show
 
-    def __enter__(self):
+    def __enter__(self):  # type: ignore
         # Before block of code
         pass
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type, exc_value, traceback):  # type: ignore
         # After block of code
         if exc_type is None:
             raise AssertionError(
