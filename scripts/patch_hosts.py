@@ -60,29 +60,31 @@ class Hosts:
     def read(self) -> str:
         return self.path.read_text()
 
-    def get(self, domain: str) -> list[str]:
-        return re.findall(f"(.+)\s+{domain}", self.content)
+    def get(self, datasite: str) -> list[str]:
+        return re.findall(f"(.+)\s+{datasite}", self.content)
 
-    def add(self, ip: str, domain: str) -> None:
-        if self.get(domain):
+    def add(self, ip: str, datasite: str) -> None:
+        if self.get(datasite):
             return
 
-        self.content = self.content.rstrip() + f"\n{ip}\t{domain}"
+        self.content = self.content.rstrip() + f"\n{ip}\t{datasite}"
         self.__write()
 
-    def remove(self, domain: str) -> None:
-        if not self.get(domain):
+    def remove(self, datasite: str) -> None:
+        if not self.get(datasite):
             return
 
-        self.content = re.sub(f"(.+)\s+{domain}\n", "", self.content)
+        self.content = re.sub(f"(.+)\s+{datasite}\n", "", self.content)
         self.__write()
 
-    def update(self, ip: str, domain: str) -> None:
-        if not self.get(domain):
-            self.add(ip, domain)
+    def update(self, ip: str, datasite: str) -> None:
+        if not self.get(datasite):
+            self.add(ip, datasite)
 
         # inplace
-        self.content = re.sub(f"(.+)\s+{domain}\n", f"{ip}\t{domain}\n", self.content)
+        self.content = re.sub(
+            f"(.+)\s+{datasite}\n", f"{ip}\t{datasite}\n", self.content
+        )
         self.__write()
 
     def __write(self) -> None:
@@ -128,7 +130,7 @@ def main():
         nargs=2,
         action="append",
         default=[],
-        metavar=("IP", "DOMAIN"),
+        metavar=("IP", "DATASITE"),
         help="Add entry to hosts file",
     )
     parser.add_argument(
@@ -178,9 +180,9 @@ def main():
     print(">> Hosts file:", hosts.path)
 
     if len(args.add):
-        for ip, domain in args.add:
-            print(f">> Adding {ip} {domain}")
-            hosts.update(ip, domain)
+        for ip, datasite in args.add:
+            print(f">> Adding {ip} {datasite}")
+            hosts.update(ip, datasite)
 
     if args.add_k3d_registry:
         print(">> Adding k3d registry host entry")

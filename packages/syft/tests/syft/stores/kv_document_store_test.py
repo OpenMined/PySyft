@@ -22,7 +22,7 @@ def kv_store_partition(worker):
     store_config = MockStoreConfig()
     settings = PartitionSettings(name="test", object_type=MockObjectType)
     store = KeyValueStorePartition(
-        node_uid=worker.id,
+        server_uid=worker.id,
         root_verify_key=worker.root_client.credentials.verify_key,
         settings=settings,
         store_config=store_config,

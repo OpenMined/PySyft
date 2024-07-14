@@ -17,7 +17,7 @@ syft.client.registry
 
    .. autosummary::
    
-      DomainRegistry
+      DatasiteRegistry
       NetworkRegistry
    
    
