@@ -21,13 +21,6 @@ def run() -> ServerHandle | None:
         "--name", help="server name", type=str, default="syft-server", dest="name"
     )
     parser.add_argument(
-        "--server-type",
-        help="server type",
-        type=str,
-        default="python",
-        dest="server_type",
-    )
-    parser.add_argument(
         "--host",
         help="host for binding",
         type=str,
@@ -73,6 +66,41 @@ def run() -> ServerHandle | None:
         default="True",
         dest="tail",
     )
+    parser.add_argument(
+        "--payment-required",
+        help="payment required",
+        type=str,
+        default="False",
+        dest="payment_required",
+    )
+    parser.add_argument(
+        "--node-payment-handle",
+        help="node payment handle",
+        type=str,
+        default="",
+        dest="node_payment_handle",
+    )
+    parser.add_argument(
+        "--payment-api",
+        help="payment api",
+        type=str,
+        default="",
+        dest="payment_api",
+    )
+    parser.add_argument(
+        "--compute-price-module-path",
+        help="compute price module path",
+        type=str,
+        default="",
+        dest="compute_price_module_path",
+    )
+    parser.add_argument(
+        "--compute-price-func-name",
+        help="compute price function name",
+        type=str,
+        default="",
+        dest="compute_price_func_name",
+    )
 
     args = parser.parse_args()
     if args.command != "launch":
@@ -82,11 +110,14 @@ def run() -> ServerHandle | None:
     args.reset = str_to_bool(args.reset)
     args.local_db = str_to_bool(args.local_db)
     args.tail = str_to_bool(args.tail)
-    args.cmd = str_to_bool(args.cmd)
+    args.payment_required = str_to_bool(args.payment_required)
+    args.node_payment_handle = str(args.node_payment_handle)
+    args.payment_api = str(args.payment_api)
+    args.compute_price_module_path = str(args.compute_price_module_path)
+    args.compute_price_func_name = str(args.compute_price_func_name)
 
     server = Orchestra.launch(
         name=args.name,
-        server_type=args.server_type,
         host=args.host,
         port=args.port,
         dev_mode=args.dev_mode,
@@ -94,6 +125,11 @@ def run() -> ServerHandle | None:
         local_db=args.local_db,
         processes=args.processes,
         tail=args.tail,
+        payment_required=args.payment_required,
+        node_payment_handle=args.node_payment_handle,
+        payment_api=args.payment_api,
+        compute_price_module_path=args.compute_price_module_path,
+        compute_price_func_name=args.compute_price_func_name,
     )
     if not args.tail:
         return server

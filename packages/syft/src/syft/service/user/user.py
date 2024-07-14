@@ -268,11 +268,11 @@ class UserView(SyftObject):
     def set_payment_auth_token(self, payment_auth_token: str) -> SyftSuccess | SyftError:
         """Set a new payment auth token for the user."""
         api = APIRegistry.api_for(
-            node_uid=self.syft_node_location,
+            server_uid=self.syft_server_location,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None:
-            return SyftError(message=f"You must login to {self.node_uid}")
+            return SyftError(message=f"You must login to {self.server_uid}")
 
         user_update = UserUpdate(payment_auth_token=payment_auth_token)
         result = api.services.user.update(uid=self.id, user_update=user_update)
