@@ -391,8 +391,8 @@ class ActionService(AbstractService):
         output_policy = code_item.get_output_policy(context)
 
         # Unwrap nested ActionObjects
-        for _, arg in kwargs.items():
-            self.preprocess_action_arg(context, arg) if isinstance(arg, UID) else None
+        for _k, arg in kwargs.items():
+            self.flatten_action_arg(context, arg) if isinstance(arg, UID) else None
 
         if not override_execution_permission:
             if input_policy is None:
@@ -807,9 +807,7 @@ class ActionService(AbstractService):
             return True
         return False
 
-    def preprocess_action_arg(
-        self, context: AuthedServiceContext, arg: UID
-    ) -> UID | None:
+    def flatten_action_arg(self, context: AuthedServiceContext, arg: UID) -> UID | None:
         """ "If the argument is a collection (of collections) of ActionObjects,
         We want to flatten the collection and upload a new ActionObject that contains
         its values. E.g. [[ActionObject1, ActionObject2],[ActionObject3, ActionObject4]]
@@ -833,8 +831,9 @@ class ActionService(AbstractService):
                 syft_node_location=action_object.syft_node_location,
             )
             new_action_object._save_to_blob_storage()
-            res = self.action_service._set(
-                context=self.auth_context, action_object=new_action_object
+            res = self._set(
+                context=context,
+                action_object=new_action_object,
             )
 
         return None
