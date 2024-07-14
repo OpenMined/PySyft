@@ -293,10 +293,6 @@ class ZMQProducer(QueueProducer):
                                 action.args
                             ) or self.contains_unresolved_action_objects(action.kwargs):
                                 continue
-                            # for arg in action.args:
-                            #     self.preprocess_action_arg(arg)
-                            # for _, arg in action.kwargs.items():
-                            #     self.preprocess_action_arg(arg)
 
                         msg_bytes = serialize(item, to_bytes=True)
                         worker_pool = item.worker_pool.resolve_with_context(
