@@ -17,9 +17,9 @@ spec:
       targetPort: 80
     - name: queue
       protocol: TCP
-      port: {{ .Values.node.queuePort }}
-      targetPort: {{ .Values.node.queuePort }}
-    {{- if .Values.node.debuggerEnabled }}
+      port: {{ .Values.server.queuePort }}
+      targetPort: {{ .Values.server.queuePort }}
+    {{- if .Values.server.debuggerEnabled }}
     - name: debug
       port: 5678
       targetPort: 5678

@@ -152,12 +152,13 @@ class DataProtocol:
         return protocol_history
 
     def save_history(self, history: dict) -> None:
-        for file_path in protocol_release_dir().iterdir():
-            for version in self.read_json(file_path):
-                # Skip adding file if the version is not part of the history
-                if version not in history.keys():
-                    continue
-                history[version] = {"release_name": file_path.name}
+        if os.path.exists(protocol_release_dir()):
+            for file_path in protocol_release_dir().iterdir():
+                for version in self.read_json(file_path):
+                    # Skip adding file if the version is not part of the history
+                    if version not in history.keys():
+                        continue
+                    history[version] = {"release_name": file_path.name}
         self.file_path.write_text(json.dumps(history, indent=2) + "\n")
 
     @property

@@ -6,12 +6,12 @@ import type { RequestHandler } from "./$types"
 export const GET: RequestHandler = async ({ cookies, url }) => {
   try {
     const { page_size, page_index } = get_url_page_params(url)
-    const { signing_key, node_id } = unload_cookies(cookies)
+    const { signing_key, server_id } = unload_cookies(cookies)
 
     const dataset = await jsSyftCall({
       path: "dataset.get_all",
       payload: { page_size, page_index },
-      node_id,
+      server_id,
       signing_key,
     })
 

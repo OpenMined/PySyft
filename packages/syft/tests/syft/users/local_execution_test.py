@@ -13,7 +13,7 @@ from syft.client.api import APIRegistry
 
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
 def test_local_execution(worker):
-    root_domain_client = worker.root_client
+    root_datasite_client = worker.root_client
     dataset = sy.Dataset(
         name="local_test",
         asset_list=[
@@ -24,15 +24,15 @@ def test_local_execution(worker):
             )
         ],
     )
-    root_domain_client.upload_dataset(dataset)
-    asset = root_domain_client.datasets[0].assets[0]
+    root_datasite_client.upload_dataset(dataset)
+    asset = root_datasite_client.datasets[0].assets[0]
 
     APIRegistry.__api_registry__ = OrderedDict()
 
     APIRegistry.set_api_for(
-        node_uid=worker.id,
-        user_verify_key=root_domain_client.verify_key,
-        api=root_domain_client.api,
+        server_uid=worker.id,
+        user_verify_key=root_datasite_client.verify_key,
+        api=root_datasite_client.api,
     )
 
     @sy.syft_function(

@@ -14,7 +14,7 @@ syft.types.transforms
    .. autosummary::
    
       add_credentials_for_key
-      add_node_uid_for_key
+      add_server_uid_for_key
       convert_types
       drop
       generate_id

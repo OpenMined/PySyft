@@ -37,9 +37,9 @@ from typeguard import check_type
 from typing_extensions import Self
 
 # relative
-from ..node.credentials import SyftVerifyKey
 from ..serde.recursive_primitives import recursive_serde_register_type
 from ..serde.serialize import _serialize as serialize
+from ..server.credentials import SyftVerifyKey
 from ..service.response import SyftError
 from ..util.autoreload import autoreload_enabled
 from ..util.markdown import as_markdown_python_code
@@ -84,10 +84,10 @@ HIGHEST_SYFT_OBJECT_VERSION = max(supported_object_versions)
 LOWEST_SYFT_OBJECT_VERSION = min(supported_object_versions)
 
 
-# These attributes are dynamically added based on node/client
+# These attributes are dynamically added based on server/client
 # that is interaction with the SyftObject
 DYNAMIC_SYFT_ATTRIBUTES = [
-    "syft_node_location",
+    "syft_server_location",
     "syft_client_verify_key",
 ]
 
@@ -133,11 +133,11 @@ class SyftBaseObject(pydantic.BaseModel, SyftHashableObject):
     __canonical_name__: str
     __version__: int  # data is always versioned
 
-    syft_node_location: UID | None = Field(default=None, exclude=True)
+    syft_server_location: UID | None = Field(default=None, exclude=True)
     syft_client_verify_key: SyftVerifyKey | None = Field(default=None, exclude=True)
 
-    def _set_obj_location_(self, node_uid: UID, credentials: SyftVerifyKey) -> None:
-        self.syft_node_location = node_uid
+    def _set_obj_location_(self, server_uid: UID, credentials: SyftVerifyKey) -> None:
+        self.syft_server_location = server_uid
         self.syft_client_verify_key = credentials
 
 
@@ -210,7 +210,7 @@ class SyftMigrationRegistry:
             "canonical_name": {"version_from x version_to": <function transform_function>}
         }
         For example
-        {'NodeMetadata': {'1x2': <function transform_function>,
+        {'ServerMetadata': {'1x2': <function transform_function>,
                           '2x1': <function transform_function>}}
         """
         if klass_type_str not in cls.__migration_version_registry__:
@@ -300,7 +300,7 @@ print_type_cache: dict = defaultdict(list)
 
 
 base_attrs_sync_ignore = [
-    "syft_node_location",
+    "syft_server_location",
     "syft_client_verify_key",
 ]
 
@@ -629,9 +629,13 @@ class SyftObject(SyftBaseObject, SyftMigrationRegistry):
         # relative
         from ..client.api import APIRegistry
 
-        api = APIRegistry.api_for(self.syft_node_location, self.syft_client_verify_key)
+        api = APIRegistry.api_for(
+            self.syft_server_location, self.syft_client_verify_key
+        )
         if api is None:
-            return SyftError(f"Can't access the api. You must login to {self.node_uid}")
+            return SyftError(
+                f"Can't access the api. You must login to {self.server_uid}"
+            )
         return api
 
     ## OVERRIDING pydantic.BaseModel.__getattr__

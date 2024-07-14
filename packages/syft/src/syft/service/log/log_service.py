@@ -129,7 +129,7 @@ class LogService(AbstractService):
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def has_storage_permission(self, context: AuthedServiceContext, uid: UID) -> bool:
-        permission = StoragePermission(uid=uid, node_uid=context.node.id)
+        permission = StoragePermission(uid=uid, server_uid=context.server.id)
         result = self.stash.has_storage_permission(permission)
 
         return result

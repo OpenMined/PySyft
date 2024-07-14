@@ -20,14 +20,14 @@ from .action_object import ActionObjectV3
 from .action_object import BASE_PASSTHROUGH_ATTRS
 from .action_types import action_types
 
-# @serializable(attrs=["id", "node_uid", "parent_id"])
+# @serializable(attrs=["id", "server_uid", "parent_id"])
 # class NumpyArrayObjectPointer(ActionObjectPointer):
 #     _inflix_operations = ["__add__", "__sub__", "__eq__", "__mul__"]
 #     __canonical_name__ = "NumpyArrayObjectPointer"
 #     __version__ = SYFT_OBJECT_VERSION_2
 
-#     def get_from(self, domain_client) -> Any:
-#         return domain_client.api.services.action.get(self.id).syft_action_data
+#     def get_from(self, datasite_client) -> Any:
+#         return datasite_client.api.services.action.get(self.id).syft_action_data
 
 
 class NumpyArrayObjectPointer(ActionObjectPointer):

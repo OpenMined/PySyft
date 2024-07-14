@@ -13,7 +13,7 @@ from syft.service.user.user_roles import ServiceRole
 
 
 def test_api_cache_invalidation(worker):
-    root_domain_client = worker.root_client
+    root_datasite_client = worker.root_client
     dataset = sy.Dataset(
         name="test",
         asset_list=[
@@ -25,8 +25,8 @@ def test_api_cache_invalidation(worker):
             )
         ],
     )
-    root_domain_client.upload_dataset(dataset)
-    asset = root_domain_client.datasets[0].assets[0]
+    root_datasite_client.upload_dataset(dataset)
+    asset = root_datasite_client.datasets[0].assets[0]
 
     @sy.syft_function(
         input_policy=sy.ExactMatch(x=asset),
@@ -35,9 +35,9 @@ def test_api_cache_invalidation(worker):
     def my_func(x):
         return x + 1
 
-    assert root_domain_client.code.request_code_execution(my_func)
+    assert root_datasite_client.code.request_code_execution(my_func)
     # check that function is added to api without refreshing the api manually
-    assert isinstance(root_domain_client.code.my_func, Callable)
+    assert isinstance(root_datasite_client.code.my_func, Callable)
 
 
 def test_api_cache_invalidation_login(root_verify_key, worker):

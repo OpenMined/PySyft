@@ -7,7 +7,7 @@ const SYFT_MSG_URL = `${API_BASE_URL}/api_call`
 
 const FQN = {
   VERIFY_KEY: "nacl.signing.VerifyKey",
-  SYFT_VERIFY_KEY: "syft.node.credentials.SyftVerifyKey",
+  SYFT_VERIFY_KEY: "syft.server.credentials.SyftVerifyKey",
   UID: "syft.types.uid.UID",
   SYFT_API_CALL: "syft.client.api.SyftAPICall",
   SIGNED_SYFT_API_CALL: "syft.client.api.SignedSyftAPICall",
@@ -17,7 +17,7 @@ interface SyftAPICall {
   path: string
   payload: Record<string, any>
   signing_key: string | Uint8Array
-  node_id: string
+  server_id: string
 }
 
 const getKeyPair = (signing_key: string | Uint8Array) =>
@@ -28,12 +28,12 @@ const getKeyPair = (signing_key: string | Uint8Array) =>
 const getSignedMessage = ({
   path,
   payload,
-  node_id,
+  server_id,
   signing_key,
 }: Omit<SyftAPICall, "signing_key"> & { signing_key: Uint8Array }) => {
   const syftAPIPayload = {
     path,
-    node_uid: { value: node_id, fqn: FQN.UID },
+    server_uid: { value: server_id, fqn: FQN.UID },
     args: [],
     kwargs: new Map(Object.entries(payload)),
     fqn: FQN.SYFT_API_CALL,
@@ -87,13 +87,13 @@ export const jsSyftCall = async ({
   path,
   payload,
   signing_key,
-  node_id,
+  server_id,
 }: SyftAPICall): Promise<any> => {
   const key = getKeyPair(signing_key)
   const signedMessage = getSignedMessage({
     path,
     payload,
-    node_id,
+    server_id,
     signing_key: key,
   })
   return await send(signedMessage)
