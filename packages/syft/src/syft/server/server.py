@@ -335,7 +335,7 @@ class Server(AbstractServer):
         association_request_auto_approval: bool = False,
         background_tasks: bool = False,
         payment_required: bool = False,
-        node_payment_handle: str | None = None,
+        server_payment_handle: str | None = None,
         payment_api: str | None = None,
         compute_price_module_path: str | None = None,
         compute_price_func_name: str | None = None,
@@ -355,11 +355,11 @@ class Server(AbstractServer):
         self.client_cache: dict = {}
         self.peer_client_cache: dict = {}
         self.payment_required = payment_required
-        self.node_payment_handle = node_payment_handle
+        self.server_payment_handle = server_payment_handle
         self.payment_api = payment_api
 
         if self.payment_required:
-            if self.node_payment_handle is None or self.node_payment_handle == "": 
+            if self.server_payment_handle is None or self.server_payment_handle == "": 
                 raise ValueError("Payment handle is required.")
             if self.payment_api is None or self.payment_api == "":
                 raise ValueError("Payment API is required.")
@@ -377,8 +377,8 @@ class Server(AbstractServer):
 
             print(
                 f'\n'
-                f'This node charges for services.\n'
-                f'Payment handle: {self.node_payment_handle}\n'
+                f'This server charges for services.\n'
+                f'Payment handle: {self.server_payment_handle}\n'
                 f'Payment API: {self.payment_api}\n'
                 f'Compute-price function: {self.compute_price}\n'
             )
@@ -690,7 +690,7 @@ class Server(AbstractServer):
         association_request_auto_approval: bool = False,
         background_tasks: bool = False,
         payment_required: bool = False,
-        node_payment_handle: str | None = None,
+        server_payment_handle: str | None = None,
         payment_api: str | None = None,
         compute_price_module_path: str | None = None,
         compute_price_func_name: str | None = None
@@ -724,7 +724,7 @@ class Server(AbstractServer):
             association_request_auto_approval=association_request_auto_approval,
             background_tasks=background_tasks,
             payment_required=payment_required,
-            node_payment_handle=node_payment_handle,
+            server_payment_handle=server_payment_handle,
             payment_api=payment_api,
             compute_price_module_path=compute_price_module_path,
             compute_price_func_name=compute_price_func_name
@@ -1221,15 +1221,15 @@ class Server(AbstractServer):
                 )
 
             if self.payment_required:
-                if self.name.startswith("ephemeral_node_"):
+                if self.name.startswith("ephemeral_server_"):
                     print(
-                        f'Not charging for API call {api_call.path} to node {self.name} '
-                        'because this node is an ephemeral node running on the client machine'
+                        f'Not charging for API call {api_call.path} to server {self.name} '
+                        'because this server is an ephemeral server running on the client machine'
                     )
                 elif api_call.path == 'user.update' or api_call.path == 'user.get_current_user':
                     print(
-                        f'Not charging for API call {api_call.path} to node {self.name} '
-                        f'because this call may be made before the payment auth token is stored on the node'
+                        f'Not charging for API call {api_call.path} to server {self.name} '
+                        f'because this call may be made before the payment auth token is stored on the server'
                     )
                 else:
                     price = self.compute_price(execution_time, role, method, api_call.path)
@@ -1241,7 +1241,7 @@ class Server(AbstractServer):
                             "Please set Payment Auth Token using 'client.me.set_payment_auth_token' API call."
                         ))
 
-                    print(f"User with Payment Auth Token {payment_auth_token} pays an amount {price} to node {self.name} with payment handle {self.node_payment_handle} for API call {api_call.path}")
+                    print(f"User with Payment Auth Token {payment_auth_token} pays an amount {price} to server {self.name} with payment handle {self.server_payment_handle} for API call {api_call.path}")
                     # TODO: check if payment goes through, and, if not, then refuse to process RPC, by raising an error
 
         else:

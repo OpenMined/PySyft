@@ -176,7 +176,7 @@ def deploy_to_python(
     debug: bool = False,
     migrate: bool = False,
     payment_required: bool = False,
-    node_payment_handle: str | None = None,
+    server_payment_handle: str | None = None,
     payment_api: str | None = None,
     compute_price_module_path: str | None = None,
     compute_price_func_name: str | None = None
@@ -210,7 +210,7 @@ def deploy_to_python(
         "debug": debug,
         "migrate": migrate,
         "payment_required": payment_required,
-        "node_payment_handle": node_payment_handle,
+        "server_payment_handle": server_payment_handle,
         "payment_api": payment_api,
         "compute_price_module_path": compute_price_module_path,
         "compute_price_func_name": compute_price_func_name
@@ -311,7 +311,7 @@ class Orchestra:
         debug: bool = False,
         migrate: bool = False,
         payment_required: bool = False,
-        node_payment_handle: str | None = None,
+        server_payment_handle: str | None = None,
         payment_api: str | None = None,
         compute_price_module_path: str | None = None,
         compute_price_func_name: str | None = None
@@ -354,7 +354,7 @@ class Orchestra:
                 debug=debug,
                 migrate=migrate,
                 payment_required=payment_required,
-                node_payment_handle=node_payment_handle,
+                server_payment_handle=server_payment_handle,
                 payment_api=payment_api,
                 compute_price_module_path=compute_price_module_path,
                 compute_price_func_name=compute_price_func_name

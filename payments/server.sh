@@ -10,7 +10,7 @@ syft launch \
   --reset=True \
   --dev-mode=True \
   --payment-required=True \
-  --node-payment-handle=node-payment-handle \
+  --server-payment-handle=server-payment-handle \
   --payment-api=https://domain.tld/api/payments/ \
   --compute-price-module-path="$compute_price_module_path" \
   --compute-price-func-name=compute_price

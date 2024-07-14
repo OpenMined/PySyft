@@ -120,7 +120,7 @@ def data_scientist_requests_code_execution(domain_client):
     )
     print(new_project)
 
-    # on the node, parse the code, convert to byte-code, send a notification,
+    # on the server, parse the code, convert to byte-code, send a notification,
     # on the client, create the RemoteUserCodeFunction: jane_client.code.sum_trade_value_mil
     result = new_project.create_code_request(sum_trade_value_mil, data_scientist)
     print(result)
@@ -177,7 +177,7 @@ def data_scientist_downloads_result(domain_client):
 def main():
     sy.requires(">=0.8.6,<0.8.7")
 
-    # Log into the node with default root credentials
+    # Log into the server with default root credentials
     domain_client = sy.login(
         port=8080,
         email="info@openmined.org",

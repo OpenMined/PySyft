@@ -74,11 +74,11 @@ def run() -> ServerHandle | None:
         dest="payment_required",
     )
     parser.add_argument(
-        "--node-payment-handle",
-        help="node payment handle",
+        "--server-payment-handle",
+        help="server payment handle",
         type=str,
         default="",
-        dest="node_payment_handle",
+        dest="server_payment_handle",
     )
     parser.add_argument(
         "--payment-api",
@@ -111,7 +111,7 @@ def run() -> ServerHandle | None:
     args.local_db = str_to_bool(args.local_db)
     args.tail = str_to_bool(args.tail)
     args.payment_required = str_to_bool(args.payment_required)
-    args.node_payment_handle = str(args.node_payment_handle)
+    args.server_payment_handle = str(args.server_payment_handle)
     args.payment_api = str(args.payment_api)
     args.compute_price_module_path = str(args.compute_price_module_path)
     args.compute_price_func_name = str(args.compute_price_func_name)
@@ -126,7 +126,7 @@ def run() -> ServerHandle | None:
         processes=args.processes,
         tail=args.tail,
         payment_required=args.payment_required,
-        node_payment_handle=args.node_payment_handle,
+        server_payment_handle=args.server_payment_handle,
         payment_api=args.payment_api,
         compute_price_module_path=args.compute_price_module_path,
         compute_price_func_name=args.compute_price_func_name,
