@@ -1883,7 +1883,9 @@ def execute_byte_code(
 
         if code_item.nested_codes is not None:
             for service_func_name, (linked_obj, _) in code_item.nested_codes.items():
-                _globals[service_func_name] = linked_obj.resolve_with_context(context=context).unwrap()
+                _globals[service_func_name] = linked_obj.resolve_with_context(
+                    context=context
+                ).unwrap()
 
         _globals["print"] = print
         exec(code_item.parsed_code, _globals, _locals)  # nosec

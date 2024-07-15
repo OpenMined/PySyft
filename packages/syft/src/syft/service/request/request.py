@@ -1197,8 +1197,7 @@ class UserCodeStatusChange(Change):
         return self.linked_user_code.resolve
 
     def get_user_code(self, context: AuthedServiceContext) -> UserCode:
-        # TODO: Check if unwrap() will raise something somewhere
-        return self.linked_user_code.resolve_with_context(context).ok()
+        return self.linked_user_code.resolve_with_context(context).unwrap()
 
     @property
     def codes(self) -> list[UserCode]:
@@ -1305,7 +1304,7 @@ class UserCodeStatusChange(Change):
 
         if not valid:
             raise SyftException(public_message=valid.message)
-        
+
         self.linked_user_code.resolve_with_context(context).unwrap()
         user_code_status = self.linked_obj.resolve_with_context(context).unwrap()
 

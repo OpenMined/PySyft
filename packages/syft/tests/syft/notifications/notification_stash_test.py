@@ -20,7 +20,6 @@ from syft.service.notification.notifications import NotificationExpiryStatus
 from syft.service.notification.notifications import NotificationStatus
 from syft.store.document_store_errors import StashException
 from syft.types.datetime import DateTime
-from syft.types.errors import SyftException
 from syft.types.result import as_result
 from syft.types.uid import UID
 

@@ -8,7 +8,8 @@ from pydantic import EmailStr
 from ...abstract_server import AbstractServer
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
-from ...store.document_store_errors import NotFoundException, StashException
+from ...store.document_store_errors import NotFoundException
+from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
 from ...types.result import as_result
 from ..context import AuthedServiceContext
