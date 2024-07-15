@@ -641,7 +641,7 @@ class SyftWorkerPoolService(AbstractService):
     @service_method(
         path="worker_pool.delete",
         name="delete",
-        roles=DATA_SCIENTIST_ROLE_LEVEL,
+        roles=DATA_OWNER_ROLE_LEVEL,
     )
     def delete(
         self,
