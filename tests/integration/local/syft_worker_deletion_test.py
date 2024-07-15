@@ -88,6 +88,7 @@ def test_delete_idle_worker(server: ServerHandle, force: bool) -> None:
 
     start = time.time()
     while True:
+        assert not isinstance(r := client.worker.get_all(), SyftError), r.message
         if len(client.worker.get_all()) == 0:
             break
         if time.time() - start > 3:
