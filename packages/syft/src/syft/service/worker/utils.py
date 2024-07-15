@@ -1,5 +1,6 @@
 # stdlib
 import contextlib
+import logging
 import os
 from pathlib import Path
 import socket
@@ -13,7 +14,7 @@ from docker.models.containers import Container
 from kr8s.objects import Pod
 
 # relative
-from ...abstract_node import AbstractNode
+from ...abstract_server import AbstractServer
 from ...custom_worker.builder import CustomWorkerBuilder
 from ...custom_worker.builder_types import ImageBuildResult
 from ...custom_worker.builder_types import ImagePushResult
@@ -21,7 +22,7 @@ from ...custom_worker.config import PrebuiltWorkerConfig
 from ...custom_worker.k8s import KubeUtils
 from ...custom_worker.k8s import PodStatus
 from ...custom_worker.runner_k8s import KubernetesRunner
-from ...node.credentials import SyftVerifyKey
+from ...server.credentials import SyftVerifyKey
 from ...types.uid import UID
 from ...util.util import get_queue_address
 from ..response import SyftError
@@ -34,9 +35,11 @@ from .worker_pool import WorkerHealth
 from .worker_pool import WorkerOrchestrationType
 from .worker_pool import WorkerStatus
 
+logger = logging.getLogger(__name__)
+
 DEFAULT_WORKER_IMAGE_TAG = "openmined/default-worker-image-cpu:0.0.1"
 DEFAULT_WORKER_POOL_NAME = "default-pool"
-K8S_NODE_CREDS_NAME = "node-creds"
+K8S_SERVER_CREDS_NAME = "server-creds"
 
 
 def backend_container_name() -> str:
@@ -99,7 +102,7 @@ def extract_config_from_backend(
         mode = parts[2]
 
         if "/root/data/creds" in vol:
-            # we need this because otherwise we are using the same node private key
+            # we need this because otherwise we are using the same server private key
             # which will make account creation fail
             key = f"{key}-{worker_name}"
         elif bind not in valid_binds:
@@ -236,7 +239,7 @@ def run_container_using_docker(
 
 
 def run_workers_in_threads(
-    node: AbstractNode,
+    server: AbstractServer,
     pool_name: str,
     number: int,
     start_idx: int = 0,
@@ -253,17 +256,17 @@ def run_workers_in_threads(
             healthcheck=WorkerHealth.HEALTHY,
         )
         try:
-            port = node.queue_config.client_config.queue_port
+            port = server.queue_config.client_config.queue_port
             address = get_queue_address(port)
-            node.add_consumer_for_service(
+            server.add_consumer_for_service(
                 service_name=pool_name,
                 syft_worker_id=worker.id,
                 address=address,
             )
         except Exception as e:
-            print(
-                "Failed to start consumer for "
-                f"pool={pool_name} worker={worker_name}. Error: {e}"
+            logger.error(
+                f"Failed to start consumer for pool={pool_name} worker={worker_name}",
+                exc_info=e,
             )
             worker.status = WorkerStatus.STOPPED
             error = str(e)
@@ -296,9 +299,9 @@ def prepare_kubernetes_pool_env(
     if creds_path is not None and not creds_path.exists():
         raise ValueError("Credentials file does not exist")
 
-    # create a secret for the node credentials owned by the backend, not the pool.
-    node_secret = KubeUtils.create_secret(
-        secret_name=K8S_NODE_CREDS_NAME,
+    # create a secret for the server credentials owned by the backend, not the pool.
+    server_secret = KubeUtils.create_secret(
+        secret_name=K8S_SERVER_CREDS_NAME,
         type="Opaque",
         component=backend_pod_name,
         data={creds_path.name: creds_path.read_text()},
@@ -309,7 +312,7 @@ def prepare_kubernetes_pool_env(
     backend_env = runner.get_pod_env_vars(backend_pod_name) or []
     env_vars_: list = KubeUtils.patch_env_vars(backend_env, env_vars)
     mount_secrets = {
-        node_secret.metadata.name: {
+        server_secret.metadata.name: {
             "mountPath": str(creds_path),
             "subPath": creds_path.name,
         },
@@ -325,20 +328,17 @@ def create_kubernetes_pool(
     replicas: int,
     queue_port: int,
     debug: bool,
-    reg_username: str | None = None,
-    reg_password: str | None = None,
+    registry_username: str | None = None,
+    registry_password: str | None = None,
     reg_url: str | None = None,
+    pod_annotations: dict[str, str] | None = None,
+    pod_labels: dict[str, str] | None = None,
     **kwargs: Any,
 ) -> list[Pod] | SyftError:
     pool = None
 
     try:
-        print(
-            "Creating new pool "
-            f"name={pool_name} "
-            f"tag={tag} "
-            f"replicas={replicas}"
-        )
+        logger.info(f"Creating new pool name={pool_name} tag={tag} replicas={replicas}")
 
         env_vars, mount_secrets = prepare_kubernetes_pool_env(
             runner,
@@ -360,13 +360,20 @@ def create_kubernetes_pool(
             replicas=replicas,
             env_vars=env_vars,
             mount_secrets=mount_secrets,
-            reg_username=reg_username,
-            reg_password=reg_password,
+            registry_username=registry_username,
+            registry_password=registry_password,
             reg_url=reg_url,
+            pod_annotations=pod_annotations,
+            pod_labels=pod_labels,
         )
     except Exception as e:
         if pool:
-            pool.delete()
+            try:
+                pool.delete()  # this raises another exception if the pool never starts
+            except Exception as e2:
+                logger.error(
+                    f"Failed to delete pool {pool_name} after failed creation. {e2}"
+                )
         # stdlib
         import traceback
 
@@ -387,7 +394,7 @@ def scale_kubernetes_pool(
         return SyftError(message=f"Pool does not exist. name={pool_name}")
 
     try:
-        print(f"Scaling pool name={pool_name} to replicas={replicas}")
+        logger.info(f"Scaling pool name={pool_name} to replicas={replicas}")
         runner.scale_pool(pool_name=pool_name, replicas=replicas)
     except Exception as e:
         return SyftError(message=f"Failed to scale workers {e}")
@@ -402,9 +409,11 @@ def run_workers_in_kubernetes(
     queue_port: int,
     start_idx: int = 0,
     debug: bool = False,
-    reg_username: str | None = None,
-    reg_password: str | None = None,
+    registry_username: str | None = None,
+    registry_password: str | None = None,
     reg_url: str | None = None,
+    pod_annotations: dict[str, str] | None = None,
+    pod_labels: dict[str, str] | None = None,
     **kwargs: Any,
 ) -> list[ContainerSpawnStatus] | SyftError:
     spawn_status = []
@@ -419,9 +428,11 @@ def run_workers_in_kubernetes(
                 replicas=worker_count,
                 queue_port=queue_port,
                 debug=debug,
-                reg_username=reg_username,
-                reg_password=reg_password,
+                registry_username=registry_username,
+                registry_password=registry_password,
                 reg_url=reg_url,
+                pod_annotations=pod_annotations,
+                pod_labels=pod_labels,
             )
         else:
             return SyftError(
@@ -501,16 +512,18 @@ def run_containers(
     queue_port: int,
     dev_mode: bool = False,
     start_idx: int = 0,
-    reg_username: str | None = None,
-    reg_password: str | None = None,
+    registry_username: str | None = None,
+    registry_password: str | None = None,
     reg_url: str | None = None,
+    pod_annotations: dict[str, str] | None = None,
+    pod_labels: dict[str, str] | None = None,
 ) -> list[ContainerSpawnStatus] | SyftError:
     results = []
 
     if not worker_image.is_built:
         return SyftError(message="Image must be built before running it.")
 
-    print(f"Starting workers with start_idx={start_idx} count={number}")
+    logger.info(f"Starting workers with start_idx={start_idx} count={number}")
 
     if orchestration == WorkerOrchestrationType.DOCKER:
         with contextlib.closing(docker.from_env()) as client:
@@ -524,8 +537,8 @@ def run_containers(
                     pool_name=pool_name,
                     queue_port=queue_port,
                     debug=dev_mode,
-                    username=reg_username,
-                    password=reg_password,
+                    username=registry_username,
+                    password=registry_password,
                     registry_url=reg_url,
                 )
                 results.append(spawn_result)
@@ -537,9 +550,11 @@ def run_containers(
             queue_port=queue_port,
             debug=dev_mode,
             start_idx=start_idx,
-            reg_username=reg_username,
-            reg_password=reg_password,
+            registry_username=registry_username,
+            registry_password=registry_password,
             reg_url=reg_url,
+            pod_annotations=pod_annotations,
+            pod_labels=pod_labels,
         )
 
     return results
@@ -552,7 +567,7 @@ def create_default_image(
     in_kubernetes: bool = False,
 ) -> SyftError | SyftWorkerImage:
     if not in_kubernetes:
-        tag = f"openmined/grid-backend:{tag}"
+        tag = f"openmined/syft-backend:{tag}"
 
     worker_config = PrebuiltWorkerConfig(
         tag=tag,

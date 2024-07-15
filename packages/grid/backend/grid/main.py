@@ -1,7 +1,6 @@
 # stdlib
-
-# stdlib
 from contextlib import asynccontextmanager
+import logging
 from typing import Any
 
 # third party
@@ -12,11 +11,19 @@ from starlette.middleware.cors import CORSMiddleware
 # syft absolute
 from syft.protocol.data_protocol import stage_protocol_changes
 
-# grid absolute
+# server absolute
 from grid.api.router import api_router
 from grid.core.config import settings
-from grid.core.node import worker
-from grid.logger.handler import get_log_handler
+from grid.core.server import worker
+
+
+class EndpointFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        return record.getMessage().find("/api/v2/?probe=livenessProbe") == -1
+
+
+logger = logging.getLogger("uvicorn.error")
+logging.getLogger("uvicorn.access").addFilter(EndpointFilter())
 
 
 @asynccontextmanager
@@ -25,7 +32,7 @@ async def lifespan(app: FastAPI) -> Any:
         yield
     finally:
         worker.stop()
-        print("Worker Stop !!!")
+        logger.info("Worker Stop")
 
 
 app = FastAPI(
@@ -34,7 +41,6 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.add_event_handler("startup", get_log_handler().init_logger)
 
 # Set all CORS enabled origins
 if settings.BACKEND_CORS_ORIGINS:
@@ -47,13 +53,13 @@ if settings.BACKEND_CORS_ORIGINS:
     )
 
 app.include_router(api_router, prefix=settings.API_V2_STR)
-print("Included routes, app should now be reachable")
+logger.info("Included routes, app should now be reachable")
 
 
 if settings.DEV_MODE:
-    print("Staging protocol changes...")
+    logger.info("Staging protocol changes...")
     status = stage_protocol_changes()
-    print(status)
+    logger.info(f"Staging protocol result: {status}")
 
 
 # needed for Google Kubernetes Engine LoadBalancer Healthcheck

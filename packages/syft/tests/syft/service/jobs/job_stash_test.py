@@ -7,6 +7,7 @@ from datetime import timezone
 import pytest
 
 # syft absolute
+import syft as sy
 from syft.service.job.job_stash import Job
 from syft.service.job.job_stash import JobStatus
 from syft.types.uid import UID
@@ -31,7 +32,7 @@ from syft.types.uid import UID
 def test_eta_string(current_iter, n_iters, status, creation_time_delta, expected):
     job = Job(
         id=UID(),
-        node_uid=UID(),
+        server_uid=UID(),
         n_iters=n_iters,
         current_iter=current_iter,
         creation_time=(datetime.now(tz=timezone.utc) - creation_time_delta).isoformat(),
@@ -44,3 +45,16 @@ def test_eta_string(current_iter, n_iters, status, creation_time_delta, expected
         assert job.eta_string is not None
         assert isinstance(job.eta_string, str)
         assert expected in job.eta_string
+
+
+def test_job_no_consumer(worker):
+    client = worker.root_client
+    ds_client = worker.guest_client
+
+    @sy.syft_function_single_use()
+    def process_all(): ...
+
+    _ = ds_client.code.request_code_execution(process_all)
+    job = client.code.process_all(blocking=False)
+    res = job.wait()
+    assert not res, "Should return error when no consumers are available"

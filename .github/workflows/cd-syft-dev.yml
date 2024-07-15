@@ -77,14 +77,14 @@ jobs:
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
-      - name: Set Grid package version
-        id: grid
+      - name: Set Server package version
+        id: server
         shell: bash
         run: |
-          echo "GRID_VERSION=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
+          echo "SERVER_VERSION=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
 
       - name: Build and push `syft` image to registry
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./packages
           file: ./packages/grid/syft-client/syft.Dockerfile
@@ -92,53 +92,53 @@ jobs:
           tags: |
             ${{ secrets.ACR_SERVER }}/openmined/syft-client:dev
             ${{ secrets.ACR_SERVER }}/openmined/syft-client:dev-${{ github.sha }}
-            ${{ secrets.ACR_SERVER }}/openmined/syft-client:${{ steps.grid.outputs.GRID_VERSION }}
+            ${{ secrets.ACR_SERVER }}/openmined/syft-client:${{ steps.server.outputs.SERVER_VERSION }}
 
-      - name: Build and push `grid-backend` image to registry
-        uses: docker/build-push-action@v5
+      - name: Build and push `syft-backend` image to registry
+        uses: docker/build-push-action@v6
         with:
           context: ./packages
           file: ./packages/grid/backend/backend.dockerfile
           push: true
           target: backend
           tags: |
-            ${{ secrets.ACR_SERVER }}/openmined/grid-backend:dev
-            ${{ secrets.ACR_SERVER }}/openmined/grid-backend:dev-${{ github.sha }}
-            ${{ secrets.ACR_SERVER }}/openmined/grid-backend:${{ steps.grid.outputs.GRID_VERSION }}
+            ${{ secrets.ACR_SERVER }}/openmined/syft-backend:dev
+            ${{ secrets.ACR_SERVER }}/openmined/syft-backend:dev-${{ github.sha }}
+            ${{ secrets.ACR_SERVER }}/openmined/syft-backend:${{ steps.syft.outputs.SERVER_VERSION }}
 
-      - name: Build and push `grid-frontend` image to registry
-        uses: docker/build-push-action@v5
+      - name: Build and push `syft-frontend` image to registry
+        uses: docker/build-push-action@v6
         with:
           context: ./packages/grid/frontend
           file: ./packages/grid/frontend/frontend.dockerfile
           push: true
           tags: |
-            ${{ secrets.ACR_SERVER }}/openmined/grid-frontend:dev
-            ${{ secrets.ACR_SERVER }}/openmined/grid-frontend:dev-${{ github.sha }}
-            ${{ secrets.ACR_SERVER }}/openmined/grid-frontend:${{ steps.grid.outputs.GRID_VERSION }}
-          target: grid-ui-development
+            ${{ secrets.ACR_SERVER }}/openmined/syft-frontend:dev
+            ${{ secrets.ACR_SERVER }}/openmined/syft-frontend:dev-${{ github.sha }}
+            ${{ secrets.ACR_SERVER }}/openmined/syft-frontend:${{ steps.syft.outputs.SERVER_VERSION }}
+          target: syft-ui-development
 
-      - name: Build and push `grid-seaweedfs` image to registry
-        uses: docker/build-push-action@v5
+      - name: Build and push `syft-seaweedfs` image to registry
+        uses: docker/build-push-action@v6
         with:
           context: ./packages/grid/seaweedfs
           file: ./packages/grid/seaweedfs/seaweedfs.dockerfile
           push: true
           tags: |
-            ${{ secrets.ACR_SERVER }}/openmined/grid-seaweedfs:dev
-            ${{ secrets.ACR_SERVER }}/openmined/grid-seaweedfs:dev-${{ github.sha }}
-            ${{ secrets.ACR_SERVER }}/openmined/grid-seaweedfs:${{ steps.grid.outputs.GRID_VERSION }}
+            ${{ secrets.ACR_SERVER }}/openmined/syft-seaweedfs:dev
+            ${{ secrets.ACR_SERVER }}/openmined/syft-seaweedfs:dev-${{ github.sha }}
+            ${{ secrets.ACR_SERVER }}/openmined/syft-seaweedfs:${{ steps.syft.outputs.SERVER_VERSION }}
 
-      - name: Build and push `grid-enclave-attestation` image to registry
-        uses: docker/build-push-action@v5
+      - name: Build and push `syft-enclave-attestation` image to registry
+        uses: docker/build-push-action@v6
         with:
           context: ./packages/grid/enclave/attestation
           file: ./packages/grid/enclave/attestation/attestation.dockerfile
           push: true
           tags: |
-            ${{ secrets.ACR_SERVER }}/openmined/grid-enclave-attestation:dev
-            ${{ secrets.ACR_SERVER }}/openmined/grid-enclave-attestation:dev-${{ github.sha }}
-            ${{ secrets.ACR_SERVER }}/openmined/grid-enclave-attestation:${{ steps.grid.outputs.GRID_VERSION }}
+            ${{ secrets.ACR_SERVER }}/openmined/syft-enclave-attestation:dev
+            ${{ secrets.ACR_SERVER }}/openmined/syft-enclave-attestation:dev-${{ github.sha }}
+            ${{ secrets.ACR_SERVER }}/openmined/syft-enclave-attestation:${{ steps.syft.outputs.SERVER_VERSION }}
 
       - name: Build Helm Chart & Copy to infra
         if: github.ref == 'refs/heads/dev' || github.event.inputs.deploy-helm == 'true'

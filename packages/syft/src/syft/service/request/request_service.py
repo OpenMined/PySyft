@@ -24,6 +24,7 @@ from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user import UserView
+from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_service import UserService
@@ -70,7 +71,7 @@ class RequestService(AbstractService):
                 request = result.ok()
                 link = LinkedObject.with_context(request, context=context)
 
-                admin_verify_key = context.node.get_service_method(
+                admin_verify_key = context.server.get_service_method(
                     UserService.admin_verify_key
                 )
 
@@ -86,7 +87,7 @@ class RequestService(AbstractService):
                         notifier_types=[NOTIFIERS.EMAIL],
                         email_template=RequestEmailTemplate,
                     )
-                    method = context.node.get_service_method(NotificationService.send)
+                    method = context.server.get_service_method(NotificationService.send)
                     result = method(context=context, notification=message)
                     if isinstance(result, Notification):
                         return request
@@ -103,6 +104,17 @@ class RequestService(AbstractService):
         except Exception as e:
             print("Failed to submit Request", e)
             raise e
+
+    @service_method(
+        path="request.get_by_uid", name="get_by_uid", roles=DATA_SCIENTIST_ROLE_LEVEL
+    )
+    def get_by_uid(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Request | None | SyftError:
+        result = self.stash.get_by_uid(context.credentials, uid)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        return result.ok()
 
     @service_method(
         path="request.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL
@@ -128,8 +140,10 @@ class RequestService(AbstractService):
         if result.is_err():
             return SyftError(message=result.err())
 
-        method = context.node.get_service_method(UserService.get_by_verify_key)
-        get_message = context.node.get_service_method(NotificationService.filter_by_obj)
+        method = context.server.get_service_method(UserService.get_by_verify_key)
+        get_message = context.server.get_service_method(
+            NotificationService.filter_by_obj
+        )
 
         requests: list[RequestInfo] = []
         for req in result.ok():
@@ -205,17 +219,17 @@ class RequestService(AbstractService):
             context.extra_kwargs = kwargs
             result = request.apply(context=context)
 
-            filter_by_obj = context.node.get_service_method(
+            filter_by_obj = context.server.get_service_method(
                 NotificationService.filter_by_obj
             )
             request_notification = filter_by_obj(context=context, obj_uid=uid)
 
             link = LinkedObject.with_context(request, context=context)
-            if not request.status == RequestStatus.PENDING:
+            if not request.get_status(context) == RequestStatus.PENDING:
                 if request_notification is not None and not isinstance(
                     request_notification, SyftError
                 ):
-                    mark_as_read = context.node.get_service_method(
+                    mark_as_read = context.server.get_service_method(
                         NotificationService.mark_as_read
                     )
                     mark_as_read(context=context, uid=request_notification.id)
@@ -228,7 +242,7 @@ class RequestService(AbstractService):
                         notifier_types=[NOTIFIERS.EMAIL],
                         email_template=RequestUpdateEmailTemplate,
                     )
-                    send_notification = context.node.get_service_method(
+                    send_notification = context.server.get_service_method(
                         NotificationService.send
                     )
                     send_notification(context=context, notification=notification)
@@ -273,7 +287,7 @@ class RequestService(AbstractService):
             email_template=RequestUpdateEmailTemplate,
         )
 
-        send_notification = context.node.get_service_method(NotificationService.send)
+        send_notification = context.server.get_service_method(NotificationService.send)
         send_notification(context=context, notification=notification)
 
         return SyftSuccess(message=f"Request {uid} successfully denied !")
@@ -300,6 +314,36 @@ class RequestService(AbstractService):
         if result.is_err():
             return SyftError(message=str(result.err()))
         return SyftSuccess(message=f"Request with id {uid} deleted.")
+
+    @service_method(
+        path="request.set_tags",
+        name="set_tags",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def set_tags(
+        self,
+        context: AuthedServiceContext,
+        request: Request,
+        tags: list[str],
+    ) -> Request | SyftError:
+        request = self.stash.get_by_uid(context.credentials, request.id)
+        if request.is_err():
+            return SyftError(message=str(request.err()))
+        if request.ok() is None:
+            return SyftError(message="Request does not exist.")
+        request = request.ok()
+
+        request.tags = tags
+        return self.save(context, request)
+
+    @service_method(path="request.get_by_usercode_id", name="get_by_usercode_id")
+    def get_by_usercode_id(
+        self, context: AuthedServiceContext, usercode_id: UID
+    ) -> list[Request] | SyftError:
+        result = self.stash.get_by_usercode_id(context.credentials, usercode_id)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        return result.ok()
 
 
 TYPE_TO_SERVICE[Request] = RequestService

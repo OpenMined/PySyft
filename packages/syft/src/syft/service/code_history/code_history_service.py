@@ -1,13 +1,14 @@
 # stdlib
 
 # relative
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
 from ...store.document_store import DocumentStore
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..code.user_code import SubmitUserCode
 from ..code.user_code import UserCode
+from ..code.user_code_service import UserCodeService
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -15,6 +16,7 @@ from ..service import AbstractService
 from ..service import service_method
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
+from ..user.user_roles import ServiceRole
 from .code_history import CodeHistoriesDict
 from .code_history import CodeHistory
 from .code_history import CodeHistoryView
@@ -43,17 +45,12 @@ class CodeHistoryService(AbstractService):
         code: SubmitUserCode | UserCode,
         comment: str | None = None,
     ) -> SyftSuccess | SyftError:
-        user_code_service = context.node.get_service("usercodeservice")
+        user_code_service = context.server.get_service("usercodeservice")
         if isinstance(code, SubmitUserCode):
             result = user_code_service._submit(context=context, code=code)
             if result.is_err():
                 return SyftError(message=str(result.err()))
             code = result.ok()
-        elif isinstance(code, UserCode):  # type: ignore[unreachable]
-            result = user_code_service.get_by_uid(context=context, uid=code.id)
-            if isinstance(result, SyftError):
-                return result
-            code = result
 
         result = self.stash.get_by_service_func_name_and_verify_key(
             credentials=context.credentials,
@@ -69,7 +66,7 @@ class CodeHistoryService(AbstractService):
         if code_history is None:
             code_history = CodeHistory(
                 id=UID(),
-                node_uid=context.node.id,
+                server_uid=context.server.id,
                 user_verify_key=context.credentials,
                 service_func_name=code.service_func_name,
             )
@@ -120,23 +117,33 @@ class CodeHistoryService(AbstractService):
     def fetch_histories_for_user(
         self, context: AuthedServiceContext, user_verify_key: SyftVerifyKey
     ) -> CodeHistoriesDict | SyftError:
-        result = self.stash.get_by_verify_key(
-            credentials=context.credentials, user_verify_key=user_verify_key
-        )
+        if context.role in [ServiceRole.DATA_OWNER, ServiceRole.ADMIN]:
+            result = self.stash.get_by_verify_key(
+                credentials=context.server.verify_key, user_verify_key=user_verify_key
+            )
+        else:
+            result = self.stash.get_by_verify_key(
+                credentials=context.credentials, user_verify_key=user_verify_key
+            )
 
-        user_code_service = context.node.get_service("usercodeservice")
+        user_code_service: UserCodeService = context.server.get_service(
+            "usercodeservice"
+        )  # type: ignore
 
         def get_code(uid: UID) -> UserCode | SyftError:
-            return user_code_service.get_by_uid(context=context, uid=uid)
+            return user_code_service.stash.get_by_uid(
+                credentials=context.server.verify_key,
+                uid=uid,
+            ).ok()
 
         if result.is_ok():
             code_histories = result.ok()
             code_versions_dict = {}
 
             for code_history in code_histories:
-                user_code_list = []
-                for uid in code_history.user_code_history:
-                    user_code_list.append(get_code(uid))
+                user_code_list = [
+                    get_code(uid) for uid in code_history.user_code_history
+                ]
                 code_versions = CodeHistoryView(
                     user_code_history=user_code_list,
                     service_func_name=code_history.service_func_name,
@@ -167,7 +174,7 @@ class CodeHistoryService(AbstractService):
     def get_history_for_user(
         self, context: AuthedServiceContext, email: str
     ) -> CodeHistoriesDict | SyftError:
-        user_service = context.node.get_service("userservice")
+        user_service = context.server.get_service("userservice")
         result = user_service.stash.get_by_email(
             credentials=context.credentials, email=email
         )
@@ -186,18 +193,21 @@ class CodeHistoryService(AbstractService):
     def get_histories_group_by_user(
         self, context: AuthedServiceContext
     ) -> UsersCodeHistoriesDict | SyftError:
-        result = self.stash.get_all(credentials=context.credentials)
+        if context.role in [ServiceRole.DATA_OWNER, ServiceRole.ADMIN]:
+            result = self.stash.get_all(context.credentials, has_permission=True)
+        else:
+            result = self.stash.get_all(context.credentials)
         if result.is_err():
             return SyftError(message=result.err())
         code_histories: list[CodeHistory] = result.ok()
 
-        user_service = context.node.get_service("userservice")
+        user_service = context.server.get_service("userservice")
         result = user_service.stash.get_all(context.credentials)
         if result.is_err():
             return SyftError(message=result.err())
         users = result.ok()
 
-        user_code_histories = UsersCodeHistoriesDict(node_uid=context.node.id)
+        user_code_histories = UsersCodeHistoriesDict(server_uid=context.server.id)
 
         verify_key_2_user_email = {}
         for user in users:
@@ -223,7 +233,7 @@ class CodeHistoryService(AbstractService):
         user_email: str,
         user_id: UID,
     ) -> list[CodeHistory] | SyftError:
-        user_service = context.node.get_service("userservice")
+        user_service = context.server.get_service("userservice")
         user_verify_key = user_service.user_verify_key(user_email)
 
         if isinstance(user_verify_key, SyftError):

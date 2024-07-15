@@ -3,20 +3,20 @@ import sys
 
 # third party
 import pytest
-from result import Err
 
 # syft absolute
 import syft
 import syft as sy
-from syft.client.domain_client import DomainClient
+from syft.client.datasite_client import DatasiteClient
 from syft.client.syncing import compare_clients
 from syft.client.syncing import resolve
+from syft.service.action.action_object import ActionObject
 from syft.service.job.job_stash import JobStatus
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 
 
-def compare_and_resolve(*, from_client: DomainClient, to_client: DomainClient):
+def compare_and_resolve(*, from_client: DatasiteClient, to_client: DatasiteClient):
     diff_state_before = compare_clients(from_client, to_client)
     for obj_diff_batch in diff_state_before.batches:
         widget = resolve(obj_diff_batch)
@@ -35,7 +35,7 @@ def run_and_accept_result(client):
     return job_high
 
 
-def get_ds_client(client: DomainClient) -> DomainClient:
+def get_ds_client(client: DatasiteClient) -> DatasiteClient:
     client.register(
         name="a",
         email="a@a.com",
@@ -56,7 +56,7 @@ def private_function(context) -> str:
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
-@pytest.mark.local_node
+@pytest.mark.local_server
 def test_twin_api_integration(full_high_worker, full_low_worker):
     low_client = full_low_worker.login(
         email="info@openmined.org", password="changethis"
@@ -100,7 +100,7 @@ def test_twin_api_integration(full_high_worker, full_low_worker):
     )
 
     job_high = high_client.code.compute(query=high_client.api.services.testapi.query)
-    high_client.requests[0].accept_by_depositing_result(job_high)
+    high_client.requests[0].deposit_result(job_high)
     diff_before, diff_after = compare_and_resolve(
         from_client=high_client, to_client=low_client
     )
@@ -121,25 +121,56 @@ def test_twin_api_integration(full_high_worker, full_low_worker):
         private_res, SyftError
     ), "Should not be able to access private function on low side."
 
+    # verify updating twin api endpoint works
+
+    timeout_before = (
+        full_low_worker.python_server.get_service("apiservice")
+        .stash.get_all(
+            credentials=full_low_worker.client.credentials, has_permission=True
+        )
+        .ok()[0]
+        .endpoint_timeout
+    )
+    expected_timeout_after = timeout_before + 1
+
+    high_client.custom_api.update(
+        endpoint_path="testapi.query", endpoint_timeout=expected_timeout_after
+    )
+    widget = sy.sync(from_client=high_client, to_client=low_client)
+    result = widget[0].click_sync()
+    assert result, result
+
+    timeout_after = (
+        full_low_worker.python_server.get_service("apiservice")
+        .stash.get_all(
+            credentials=full_low_worker.client.credentials, has_permission=True
+        )
+        .ok()[0]
+        .endpoint_timeout
+    )
+    assert (
+        timeout_after == expected_timeout_after
+    ), "Timeout should be updated on low side."
+
 
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
-@pytest.mark.local_node
+@pytest.mark.local_server
 def test_function_error(full_low_worker) -> None:
-    root_domain_client = full_low_worker.login(
+    root_datasite_client = full_low_worker.login(
         email="info@openmined.org", password="changethis"
     )
-    root_domain_client.register(
+    root_datasite_client.register(
         name="data-scientist",
         email="test_user@openmined.org",
         password="0000",
         password_verify="0000",
     )
-    ds_client = root_domain_client.login(
+    ds_client = root_datasite_client.login(
         email="test_user@openmined.org",
         password="0000",
     )
 
-    users = root_domain_client.users.get_all()
+    users = root_datasite_client.users.get_all()
 
     @sy.syft_function_single_use()
     def compute_sum():
@@ -149,9 +180,11 @@ def test_function_error(full_low_worker) -> None:
 
     users[-1].allow_mock_execution()
     result = ds_client.api.services.code.compute_sum(blocking=True)
-    assert isinstance(result.get(), Err)
+    assert isinstance(result, ActionObject)
+    assert isinstance(result.get(), SyftError)
 
     job_info = ds_client.api.services.code.compute_sum(blocking=False)
     result = job_info.wait(timeout=10)
-    assert isinstance(result.get(), Err)
+    assert isinstance(result, ActionObject)
+    assert isinstance(result.get(), SyftError)
     assert job_info.status == JobStatus.ERRORED

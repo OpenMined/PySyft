@@ -197,6 +197,13 @@ def recursive_serde_register(
         for alias in alias_fqn:
             TYPE_BANK[alias] = serde_attributes
 
+            # TODO Refactor alias, required for typing.Any in python 3.12,
+            alias_canonical_name = alias
+            alias_version = 1
+            SyftObjectRegistry.register_cls(
+                alias_canonical_name, alias_version, serde_attributes
+            )
+
 
 def chunk_bytes(
     field_obj: Any,
@@ -366,9 +373,9 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
             except Exception:  # nosec
                 if "syft.user" in proto.fullyQualifiedName:
                     # relative
-                    from ..node.node import CODE_RELOADER
+                    from ..server.server import CODE_RELOADER
 
-                    for _, load_user_code in CODE_RELOADER.items():
+                    for load_user_code in CODE_RELOADER.values():
                         load_user_code()
                 try:
                     class_type = getattr(sys.modules[".".join(module_parts)], klass)

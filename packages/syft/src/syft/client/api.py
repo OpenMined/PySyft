@@ -17,15 +17,17 @@ from typing import get_origin
 
 # third party
 from nacl.exceptions import BadSignatureError
+from pydantic import BaseModel
+from pydantic import ConfigDict
 from pydantic import EmailStr
+from pydantic import TypeAdapter
 from result import OkErr
 from result import Result
+from typeguard import TypeCheckError
 from typeguard import check_type
 
 # relative
-from ..abstract_node import AbstractNode
-from ..node.credentials import SyftSigningKey
-from ..node.credentials import SyftVerifyKey
+from ..abstract_server import AbstractServer
 from ..protocol.data_protocol import PROTOCOL_TYPE
 from ..protocol.data_protocol import get_data_protocol
 from ..protocol.data_protocol import migrate_args_and_kwargs
@@ -36,8 +38,11 @@ from ..serde.serialize import _serialize
 from ..serde.signature import Signature
 from ..serde.signature import signature_remove_context
 from ..serde.signature import signature_remove_self
+from ..server.credentials import SyftSigningKey
+from ..server.credentials import SyftVerifyKey
 from ..service.context import AuthedServiceContext
 from ..service.context import ChangeContext
+from ..service.metadata.server_metadata import ServerMetadataJSON
 from ..service.response import SyftAttributeError
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
@@ -50,6 +55,7 @@ from ..types.cache_object import CachedSyftObject
 from ..types.identity import Identity
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
+from ..types.syft_object import SYFT_OBJECT_VERSION_3
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftMigrationRegistry
 from ..types.syft_object import SyftObject
@@ -57,14 +63,14 @@ from ..types.uid import LineageID
 from ..types.uid import UID
 from ..util.autoreload import autoreload_enabled
 from ..util.markdown import as_markdown_python_code
-from ..util.table import list_dict_repr_html
+from ..util.notebook_ui.components.tabulator_template import build_tabulator_table
 from ..util.telemetry import instrument
 from ..util.util import prompt_warning_message
-from .connection import NodeConnection
+from .connection import ServerConnection
 
 if TYPE_CHECKING:
     # relative
-    from ..node import Node
+    from ..server import Server
     from ..service.job.job_stash import Job
 
 
@@ -83,29 +89,39 @@ IPYNB_BACKGROUND_METHODS = {
 IPYNB_BACKGROUND_PREFIXES = ["_ipy", "_repr", "__ipython", "__pydantic"]
 
 
+def _has_config_dict(t: Any) -> bool:
+    return (
+        # Use this instead of `issubclass`` to be compatible with python 3.10
+        # `inspect.isclass(t) and issubclass(t, BaseModel)`` wouldn't work with
+        # generics, e.g. `set[sy.UID]`, in python 3.10
+        (hasattr(t, "__mro__") and BaseModel in t.__mro__)
+        or hasattr(t, "__pydantic_config__")
+    )
+
+
 class APIRegistry:
     __api_registry__: dict[tuple, SyftAPI] = OrderedDict()
 
     @classmethod
     def set_api_for(
         cls,
-        node_uid: UID | str,
+        server_uid: UID | str,
         user_verify_key: SyftVerifyKey | str,
         api: SyftAPI,
     ) -> None:
-        if isinstance(node_uid, str):
-            node_uid = UID.from_string(node_uid)
+        if isinstance(server_uid, str):
+            server_uid = UID.from_string(server_uid)
 
         if isinstance(user_verify_key, str):
             user_verify_key = SyftVerifyKey.from_string(user_verify_key)
 
-        key = (node_uid, user_verify_key)
+        key = (server_uid, user_verify_key)
 
         cls.__api_registry__[key] = api
 
     @classmethod
-    def api_for(cls, node_uid: UID, user_verify_key: SyftVerifyKey) -> SyftAPI | None:
-        key = (node_uid, user_verify_key)
+    def api_for(cls, server_uid: UID, user_verify_key: SyftVerifyKey) -> SyftAPI | None:
+        key = (server_uid, user_verify_key)
         return cls.__api_registry__.get(key, None)
 
     @classmethod
@@ -113,9 +129,9 @@ class APIRegistry:
         return list(cls.__api_registry__.values())
 
     @classmethod
-    def get_by_recent_node_uid(cls, node_uid: UID) -> SyftAPI | None:
+    def get_by_recent_server_uid(cls, server_uid: UID) -> SyftAPI | None:
         for key, api in reversed(cls.__api_registry__.items()):
-            if key[0] == node_uid:
+            if key[0] == server_uid:
                 return api
         return None
 
@@ -196,7 +212,7 @@ class SyftAPICall(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_2
 
     # fields
-    node_uid: UID
+    server_uid: UID
     path: str
     args: list
     kwargs: dict[str, Any]
@@ -210,6 +226,9 @@ class SyftAPICall(SyftObject):
             serialized_message=signed_message.message,
             signature=signed_message.signature,
         )
+
+    def __repr__(self) -> str:
+        return f"SyftAPICall(path={self.path}, args={self.args}, kwargs={self.kwargs}, blocking={self.blocking})"
 
 
 @instrument
@@ -237,13 +256,14 @@ class RemoteFunction(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_2
     __repr_attrs__ = [
         "id",
-        "node_uid",
+        "server_uid",
         "signature",
         "path",
     ]
 
-    node_uid: UID
+    server_uid: UID
     signature: Signature
+    refresh_api_callback: Callable | None = None
     path: str
     make_call: Callable
     pre_kwargs: dict[str, Any] | None = None
@@ -294,7 +314,7 @@ class RemoteFunction(SyftObject):
         _valid_kwargs["communication_protocol"] = self.communication_protocol
 
         api_call = SyftAPICall(
-            node_uid=self.node_uid,
+            server_uid=self.server_uid,
             path=path,
             args=list(_valid_args),
             kwargs=_valid_kwargs,
@@ -305,6 +325,13 @@ class RemoteFunction(SyftObject):
         if not allowed:
             return
         result = self.make_call(api_call=api_call, cache_result=cache_result)
+
+        # TODO: annotate this on the service method decorator
+        API_CALLS_THAT_REQUIRE_REFRESH = ["settings.enable_eager_execution"]
+
+        if path in API_CALLS_THAT_REQUIRE_REFRESH:
+            if self.refresh_api_callback is not None:
+                self.refresh_api_callback()
 
         result, _ = migrate_args_and_kwargs(
             [result], kwargs={}, to_latest_protocol=True
@@ -359,7 +386,7 @@ class RemoteFunction(SyftObject):
         if self.custom_function and self.pre_kwargs is not None:
             custom_path = self.pre_kwargs.get("path", "")
             api_call = SyftAPICall(
-                node_uid=self.node_uid,
+                server_uid=self.server_uid,
                 path="api.view",
                 args=[custom_path],
                 kwargs={},
@@ -374,7 +401,7 @@ class RemoteFunction(SyftObject):
         if self.custom_function and self.pre_kwargs is not None:
             custom_path = self.pre_kwargs.get("path", "")
             api_call = SyftAPICall(
-                node_uid=self.node_uid,
+                server_uid=self.server_uid,
                 path="api.view",
                 args=[custom_path],
                 kwargs={},
@@ -443,7 +470,7 @@ class RemoteUserCodeFunction(RemoteFunction):
 
         args, kwargs = convert_to_pointers(
             api=self.api,
-            node_uid=self.node_uid,
+            server_uid=self.server_uid,
             args=args,
             kwargs=kwargs,
         )
@@ -466,7 +493,7 @@ class RemoteUserCodeFunction(RemoteFunction):
         if self.user_code_id is None:
             return SyftError(message="Could not find user_code_id")
         api_call = SyftAPICall(
-            node_uid=self.node_uid,
+            server_uid=self.server_uid,
             path="job.get_by_user_code_id",
             args=[self.user_code_id],
             kwargs={},
@@ -477,7 +504,7 @@ class RemoteUserCodeFunction(RemoteFunction):
 
 def generate_remote_function(
     api: SyftAPI,
-    node_uid: UID,
+    server_uid: UID,
     signature: Signature,
     path: str,
     make_call: Callable,
@@ -494,7 +521,7 @@ def generate_remote_function(
     if path == "code.call" and pre_kwargs is not None and "uid" in pre_kwargs:
         remote_function = RemoteUserCodeFunction(
             api=api,
-            node_uid=node_uid,
+            server_uid=server_uid,
             signature=signature,
             path=path,
             make_call=make_call,
@@ -506,7 +533,8 @@ def generate_remote_function(
     else:
         custom_function = bool(path == "api.call_in_jobs")
         remote_function = RemoteFunction(
-            node_uid=node_uid,
+            server_uid=server_uid,
+            refresh_api_callback=api.refresh_api_callback,
             signature=signature,
             path=path,
             make_call=make_call,
@@ -521,7 +549,7 @@ def generate_remote_function(
 
 def generate_remote_lib_function(
     api: SyftAPI,
-    node_uid: UID,
+    server_uid: UID,
     signature: Signature,
     path: str,
     module_path: str,
@@ -542,11 +570,11 @@ def generate_remote_lib_function(
 
         if trace_result is not None:
             wrapper_make_call = trace_result.client.api.make_call  # type: ignore
-            wrapper_node_uid = trace_result.client.api.node_uid  # type: ignore
+            wrapper_server_uid = trace_result.client.api.server_uid  # type: ignore
         else:
             # somehow this is necessary to prevent shadowing problems
             wrapper_make_call = make_call
-            wrapper_node_uid = node_uid
+            wrapper_server_uid = server_uid
         blocking = True
         if "blocking" in kwargs:
             blocking = bool(kwargs["blocking"])
@@ -567,7 +595,7 @@ def generate_remote_lib_function(
         from ..service.action.action_object import convert_to_pointers
 
         action_args, action_kwargs = convert_to_pointers(
-            api, wrapper_node_uid, _valid_args, _valid_kwargs
+            api, wrapper_server_uid, _valid_args, _valid_kwargs
         )
 
         # e.g. numpy.array -> numpy, array
@@ -588,7 +616,7 @@ def generate_remote_lib_function(
             trace_result.result += [action]
 
         api_call = SyftAPICall(
-            node_uid=wrapper_node_uid,
+            server_uid=wrapper_server_uid,
             path=path,
             args=service_args,
             kwargs={},
@@ -706,9 +734,9 @@ class APIModule:
                     APISubModulesView(submodule=submodule_name, endpoints=child_paths)
                 )
 
-            return list_dict_repr_html(views)
-            # return NotImplementedError
+            return build_tabulator_table(views)
 
+        # should never happen?
         results = self.get_all()
         return results._repr_html_()
 
@@ -729,7 +757,7 @@ def debox_signed_syftapicall_response(
 
 def downgrade_signature(signature: Signature, object_versions: dict) -> Signature:
     migrated_parameters = []
-    for _, parameter in signature.parameters.items():
+    for parameter in signature.parameters.values():
         annotation = unwrap_and_migrate_annotation(
             parameter.annotation, object_versions
         )
@@ -805,25 +833,24 @@ def result_needs_api_update(api_call_result: Any) -> bool:
     return False
 
 
-@instrument
 @serializable(
     attrs=[
         "endpoints",
-        "node_uid",
-        "node_name",
+        "server_uid",
+        "server_name",
         "lib_endpoints",
         "communication_protocol",
     ]
 )
-class SyftAPI(SyftObject):
+class SyftAPIV2(SyftObject):
     # version
     __canonical_name__ = "SyftAPI"
     __version__ = SYFT_OBJECT_VERSION_2
 
     # fields
-    connection: NodeConnection | None = None
-    node_uid: UID | None = None
-    node_name: str | None = None
+    connection: ServerConnection | None = None
+    server_uid: UID | None = None
+    server_name: str | None = None
     endpoints: dict[str, APIEndpoint]
     lib_endpoints: dict[str, LibEndpoint] | None = None
     api_module: APIModule | None = None
@@ -833,6 +860,40 @@ class SyftAPI(SyftObject):
     refresh_api_callback: Callable | None = None
     __user_role: ServiceRole = ServiceRole.NONE
     communication_protocol: PROTOCOL_TYPE
+
+    # informs getattr does not have nasty side effects
+    __syft_allow_autocomplete__ = ["services"]
+
+
+@instrument
+@serializable(
+    attrs=[
+        "endpoints",
+        "server_uid",
+        "server_name",
+        "lib_endpoints",
+        "communication_protocol",
+    ]
+)
+class SyftAPI(SyftObject):
+    # version
+    __canonical_name__ = "SyftAPI"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    # fields
+    connection: ServerConnection | None = None
+    server_uid: UID | None = None
+    server_name: str | None = None
+    endpoints: dict[str, APIEndpoint]
+    lib_endpoints: dict[str, LibEndpoint] | None = None
+    api_module: APIModule | None = None
+    libs: APIModule | None = None
+    signing_key: SyftSigningKey | None = None
+    # serde / storage rules
+    refresh_api_callback: Callable | None = None
+    __user_role: ServiceRole = ServiceRole.NONE
+    communication_protocol: PROTOCOL_TYPE
+    metadata: ServerMetadataJSON | None = None
 
     # informs getattr does not have nasty side effects
     __syft_allow_autocomplete__ = ["services"]
@@ -857,7 +918,7 @@ class SyftAPI(SyftObject):
 
     @staticmethod
     def for_user(
-        node: AbstractNode,
+        server: AbstractServer,
         communication_protocol: PROTOCOL_TYPE,
         user_verify_key: SyftVerifyKey | None = None,
     ) -> SyftAPI:
@@ -869,23 +930,23 @@ class SyftAPI(SyftObject):
 
         # find user role by verify_key
         # TODO: we should probably not allow empty verify keys but instead make user always register
-        role = node.get_role_for_credentials(user_verify_key)
+        role = server.get_role_for_credentials(user_verify_key)
         _user_service_config_registry = UserServiceConfigRegistry.from_role(role)
         _user_lib_config_registry = UserLibConfigRegistry.from_user(user_verify_key)
         endpoints: dict[str, APIEndpoint] = {}
         lib_endpoints: dict[str, LibEndpoint] = {}
         warning_context = WarningContext(
-            node=node, role=role, credentials=user_verify_key
+            server=server, role=role, credentials=user_verify_key
         )
 
         # If server uses a higher protocol version than client, then
         # signatures needs to be downgraded.
-        if node.current_protocol == "dev" and communication_protocol != "dev":
+        if server.current_protocol == "dev" and communication_protocol != "dev":
             # We assume dev is the highest staged protocol
             signature_needs_downgrade = True
         else:
-            signature_needs_downgrade = node.current_protocol != "dev" and int(
-                node.current_protocol
+            signature_needs_downgrade = server.current_protocol != "dev" and int(
+                server.current_protocol
             ) > int(communication_protocol)
         data_protocol = get_data_protocol()
 
@@ -902,7 +963,7 @@ class SyftAPI(SyftObject):
                 service_warning = service_config.warning
                 if service_warning:
                     service_warning = service_warning.message_from(warning_context)
-                    service_warning.enabled = node.enable_warnings
+                    service_warning.enabled = server.enable_warnings
 
                 signature = (
                     downgrade_signature(
@@ -941,8 +1002,10 @@ class SyftAPI(SyftObject):
             lib_endpoints[path] = endpoint
 
         # 🟡 TODO 35: fix root context
-        context = AuthedServiceContext(node=node, credentials=user_verify_key)
-        method = node.get_method_with_context(UserCodeService.get_all_for_user, context)
+        context = AuthedServiceContext(server=server, credentials=user_verify_key)
+        method = server.get_method_with_context(
+            UserCodeService.get_all_for_user, context
+        )
         code_items = method()
 
         for code_item in code_items:
@@ -961,7 +1024,7 @@ class SyftAPI(SyftObject):
             endpoints[unique_path] = endpoint
 
         # get admin defined custom api endpoints
-        method = node.get_method_with_context(APIService.get_endpoints, context)
+        method = server.get_method_with_context(APIService.get_endpoints, context)
         custom_endpoints = method()
         for custom_endpoint in custom_endpoints:
             pre_kwargs = {"path": custom_endpoint.path}
@@ -981,8 +1044,8 @@ class SyftAPI(SyftObject):
             endpoints[path] = endpoint
 
         return SyftAPI(
-            node_name=node.name,
-            node_uid=node.id,
+            server_name=server.name,
+            server_uid=server.id,
             endpoints=endpoints,
             lib_endpoints=lib_endpoints,
             __user_role=role,
@@ -1005,8 +1068,11 @@ class SyftAPI(SyftObject):
         if isinstance(result, CachedSyftObject):
             if result.error_msg is not None:
                 if cache_result:
+                    msg = "Loading results from cache."
+                    if result.error_msg:
+                        msg = f"{result.error_msg}. {msg}"
                     prompt_warning_message(
-                        message=f"{result.error_msg}. Loading results from cache."
+                        message=msg,
                     )
                 else:
                     result = SyftError(message=result.error_msg)
@@ -1057,7 +1123,7 @@ class SyftAPI(SyftObject):
             endpoints: dict[str, LibEndpoint], communication_protocol: PROTOCOL_TYPE
         ) -> APIModule:
             api_module = APIModule(path="", refresh_callback=self.refresh_api_callback)
-            for _, v in endpoints.items():
+            for v in endpoints.values():
                 signature = v.signature
                 if not v.has_self:
                     signature = signature_remove_self(signature)
@@ -1065,7 +1131,7 @@ class SyftAPI(SyftObject):
                 if isinstance(v, APIEndpoint):
                     endpoint_function = generate_remote_function(
                         self,
-                        self.node_uid,
+                        self.server_uid,
                         signature,
                         v.service_path,
                         self.make_call,
@@ -1076,7 +1142,7 @@ class SyftAPI(SyftObject):
                 elif isinstance(v, LibEndpoint):
                     endpoint_function = generate_remote_lib_function(
                         self,
-                        self.node_uid,
+                        self.server_uid,
                         signature,
                         v.service_path,
                         v.module_path,
@@ -1126,7 +1192,9 @@ class SyftAPI(SyftObject):
                 if hasattr(module_or_func, "_modules"):
                     for func_name in module_or_func._modules:
                         func = getattr(module_or_func, func_name)
-                        sig = func.__ipython_inspector_signature_override__
+                        sig = getattr(
+                            func, "__ipython_inspector_signature_override__", ""
+                        )
                         _repr_str += f"{module_path_str}.{func_name}{sig}\n\n"
         return _repr_str
 
@@ -1204,58 +1272,59 @@ try:
         Inspector._getdef_bak = Inspector._getdef
         Inspector._getdef = types.MethodType(monkey_patch_getdef, Inspector)
 except Exception:
-    # print("Failed to monkeypatch IPython Signature Override")
     pass  # nosec
 
 
 @serializable()
-class NodeIdentity(Identity):
-    node_name: str
+class ServerIdentity(Identity):
+    server_name: str
 
     @staticmethod
-    def from_api(api: SyftAPI) -> NodeIdentity:
-        # stores the name root verify key of the domain node
+    def from_api(api: SyftAPI) -> ServerIdentity:
+        # stores the name root verify key of the datasite server
         if api.connection is None:
-            raise ValueError("{api}'s connection is None. Can't get the node identity")
-        node_metadata = api.connection.get_node_metadata(api.signing_key)
-        return NodeIdentity(
-            node_name=node_metadata.name,
-            node_id=api.node_uid,
-            verify_key=SyftVerifyKey.from_string(node_metadata.verify_key),
+            raise ValueError(
+                "{api}'s connection is None. Can't get the server identity"
+            )
+        server_metadata = api.connection.get_server_metadata(api.signing_key)
+        return ServerIdentity(
+            server_name=server_metadata.name,
+            server_id=api.server_uid,
+            verify_key=SyftVerifyKey.from_string(server_metadata.verify_key),
         )
 
     @classmethod
-    def from_change_context(cls, context: ChangeContext) -> NodeIdentity:
-        if context.node is None:
-            raise ValueError(f"{context}'s node is None")
+    def from_change_context(cls, context: ChangeContext) -> ServerIdentity:
+        if context.server is None:
+            raise ValueError(f"{context}'s server is None")
         return cls(
-            node_name=context.node.name,
-            node_id=context.node.id,
-            verify_key=context.node.signing_key.verify_key,
+            server_name=context.server.name,
+            server_id=context.server.id,
+            verify_key=context.server.signing_key.verify_key,
         )
 
     @classmethod
-    def from_node(cls, node: Node) -> NodeIdentity:
+    def from_server(cls, server: Server) -> ServerIdentity:
         return cls(
-            node_name=node.name,
-            node_id=node.id,
-            verify_key=node.signing_key.verify_key,
+            server_name=server.name,
+            server_id=server.id,
+            verify_key=server.signing_key.verify_key,
         )
 
     def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, NodeIdentity):
+        if not isinstance(other, ServerIdentity):
             return False
         return (
-            self.node_name == other.node_name
+            self.server_name == other.server_name
             and self.verify_key == other.verify_key
-            and self.node_id == other.node_id
+            and self.server_id == other.server_id
         )
 
     def __hash__(self) -> int:
-        return hash((self.node_name, self.verify_key))
+        return hash((self.server_name, self.verify_key))
 
     def __repr__(self) -> str:
-        return f"NodeIdentity <name={self.node_name}, id={self.node_id.short()}, 🔑={str(self.verify_key)[0:8]}>"
+        return f"ServerIdentity <name={self.server_name}, id={self.server_id.short()}, 🔑={str(self.verify_key)[0:8]}>"
 
 
 def validate_callable_args_and_kwargs(
@@ -1277,30 +1346,25 @@ def validate_callable_args_and_kwargs(
                 t = index_syft_by_module_name(param.annotation)
             else:
                 t = param.annotation
-            msg = None
-            try:
-                if t is not inspect.Parameter.empty:
-                    if isinstance(t, _GenericAlias) and type(None) in t.__args__:
-                        success = False
-                        for v in t.__args__:
-                            if issubclass(v, EmailStr):
-                                v = str
-                            try:
-                                check_type(value, v)  # raises Exception
-                                success = True
-                                break  # only need one to match
-                            except Exception:  # nosec
-                                pass
-                        if not success:
-                            raise TypeError()
-                    else:
-                        check_type(value, t)  # raises Exception
-            except TypeError:
-                _type_str = getattr(t, "__name__", str(t))
-                msg = f"`{key}` must be of type `{_type_str}` not `{type(value).__name__}`"
 
-            if msg:
-                return SyftError(message=msg)
+            if t is not inspect.Parameter.empty:
+                try:
+                    config_kw = (
+                        {"config": ConfigDict(arbitrary_types_allowed=True)}
+                        if not _has_config_dict(t)
+                        else {}
+                    )
+
+                    # TypeAdapter only accepts `config` arg if `t` does not
+                    # already contain a ConfigDict
+                    # i.e model_config in BaseModel and __pydantic_config__ in
+                    # other types.
+                    TypeAdapter(t, **config_kw).validate_python(value)
+                except Exception:
+                    _type_str = getattr(t, "__name__", str(t))
+                    return SyftError(
+                        message=f"`{key}` must be of type `{_type_str}` not `{type(value).__name__}`"
+                    )
 
             _valid_kwargs[key] = value
 
@@ -1326,7 +1390,7 @@ def validate_callable_args_and_kwargs(
                             break  # only need one to match
                     else:
                         check_type(arg, t)  # raises Exception
-            except TypeError:
+            except TypeCheckError:
                 t_arg = type(arg)
                 if (
                     autoreload_enabled()
@@ -1337,7 +1401,7 @@ def validate_callable_args_and_kwargs(
                     pass
                 else:
                     _type_str = getattr(t, "__name__", str(t))
-                    msg = f"Arg: {arg} must be {_type_str} not {type(arg).__name__}"
+                    msg = f"Arg is `{arg}`. \nIt must be of type `{_type_str}`, not `{type(arg).__name__}`"
 
             if msg:
                 return SyftError(message=msg)

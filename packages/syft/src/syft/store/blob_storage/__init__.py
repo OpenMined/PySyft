@@ -44,6 +44,7 @@ Read/retrieve SyftObject from blob storage
 from collections.abc import Callable
 from collections.abc import Generator
 from io import BytesIO
+import logging
 from typing import Any
 
 # third party
@@ -63,7 +64,7 @@ from ...types.blob_storage import BlobStorageEntry
 from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.blob_storage import DEFAULT_CHUNK_SIZE
 from ...types.blob_storage import SecureFilePathLocation
-from ...types.grid_url import GridURL
+from ...types.server_url import ServerURL
 from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
@@ -73,6 +74,8 @@ from ...types.syft_object import SyftObject
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
 from ...types.uid import UID
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_TIMEOUT = 10
 MAX_RETRIES = 20
@@ -116,16 +119,16 @@ class SyftObjectRetrieval(BlobRetrieval):
 
 
 def syft_iter_content(
-    blob_url: str | GridURL,
+    blob_url: str | ServerURL,
     chunk_size: int,
     max_retries: int = MAX_RETRIES,
     timeout: int = DEFAULT_TIMEOUT,
 ) -> Generator:
-    """custom iter content with smart retries (start from last byte read)"""
+    """Custom iter content with smart retries (start from last byte read)"""
     current_byte = 0
     for attempt in range(max_retries):
+        headers = {"Range": f"bytes={current_byte}-"}
         try:
-            headers = {"Range": f"bytes={current_byte}-"}
             with requests.get(
                 str(blob_url), stream=True, headers=headers, timeout=(timeout, timeout)
             ) as response:
@@ -135,15 +138,14 @@ def syft_iter_content(
                 ):
                     current_byte += len(chunk)
                     yield chunk
-                return
-
+            return  # If successful, exit the function
         except requests.exceptions.RequestException as e:
             if attempt < max_retries:
-                print(
+                logger.debug(
                     f"Attempt {attempt}/{max_retries} failed: {e} at byte {current_byte}. Retrying..."
                 )
             else:
-                print(f"Max retries reached. Failed with error: {e}")
+                logger.error(f"Max retries reached - {e}")
                 raise
 
 
@@ -152,7 +154,7 @@ class BlobRetrievalByURLV4(BlobRetrieval):
     __canonical_name__ = "BlobRetrievalByURL"
     __version__ = SYFT_OBJECT_VERSION_4
 
-    url: GridURL | str
+    url: ServerURL | str
 
 
 @serializable()
@@ -160,15 +162,15 @@ class BlobRetrievalByURL(BlobRetrieval):
     __canonical_name__ = "BlobRetrievalByURL"
     __version__ = SYFT_OBJECT_VERSION_5
 
-    url: GridURL | str
-    proxy_node_uid: UID | None = None
+    url: ServerURL | str
+    proxy_server_uid: UID | None = None
 
     def read(self) -> SyftObject | SyftError:
         if self.type_ is BlobFileType:
             return BlobFile(
                 file_name=self.file_name,
                 syft_client_verify_key=self.syft_client_verify_key,
-                syft_node_location=self.syft_node_location,
+                syft_server_location=self.syft_server_location,
                 syft_blob_storage_entry_id=self.syft_blob_storage_entry_id,
                 file_size=self.file_size,
             )
@@ -186,25 +188,28 @@ class BlobRetrievalByURL(BlobRetrieval):
         from ...client.api import APIRegistry
 
         api = APIRegistry.api_for(
-            node_uid=self.syft_node_location,
+            server_uid=self.syft_server_location,
             user_verify_key=self.syft_client_verify_key,
         )
 
-        if api and api.connection and isinstance(self.url, GridURL):
-            if self.proxy_node_uid is None:
+        if api and api.connection and isinstance(self.url, ServerURL):
+            if self.proxy_server_uid is None:
                 blob_url = api.connection.to_blob_route(
                     self.url.url_path, host=self.url.host_or_ip
                 )
             else:
                 blob_url = api.connection.stream_via(
-                    self.proxy_node_uid, self.url.url_path
+                    self.proxy_server_uid, self.url.url_path
                 )
                 stream = True
         else:
             blob_url = self.url
 
         try:
-            if (is_blob_file := issubclass(self.type_, BlobFileType)) and stream:
+            is_blob_file = self.type_ is not None and issubclass(
+                self.type_, BlobFileType
+            )
+            if is_blob_file and stream:
                 return syft_iter_content(blob_url, chunk_size)
 
             response = requests.get(str(blob_url), stream=stream)  # nosec
@@ -270,13 +275,14 @@ class BlobStorageClient(SyftBaseModel):
 class BlobStorageConfig(SyftBaseModel):
     client_type: type[BlobStorageClient]
     client_config: BlobStorageClientConfig
+    min_blob_size: int = 0  # in MB
 
 
 @migrate(BlobRetrievalByURLV4, BlobRetrievalByURL)
 def upgrade_blob_retrieval_by_url() -> list[Callable]:
-    return [make_set_default("proxy_node_uid", None)]
+    return [make_set_default("proxy_server_uid", None)]
 
 
 @migrate(BlobRetrievalByURL, BlobRetrievalByURLV4)
 def downgrade_blob_retrieval_by_url() -> list[Callable]:
-    return [drop(["proxy_node_uid"])]
+    return [drop(["proxy_server_uid"])]

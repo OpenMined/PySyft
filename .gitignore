@@ -6,7 +6,8 @@
 .idea/
 .mypy_cache
 .python-version
-.vscode/
+.vscode/*
+!.vscode/launch.json
 .tox/*
 .creds
 build
@@ -76,3 +77,6 @@ notebooks/helm/scenario_data.jsonl
 # tox syft.build.helm generated file
 out.*
 .git-blame-ignore-revs
+
+# migration data
+packages/grid/helm/examples/dev/migration.yaml

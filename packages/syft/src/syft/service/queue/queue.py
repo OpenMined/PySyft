@@ -1,22 +1,21 @@
 # stdlib
+import logging
 from multiprocessing import Process
 import threading
 from threading import Thread
 import time
 from typing import Any
-from typing import cast
 
 # third party
-from loguru import logger
 import psutil
 from result import Err
 from result import Ok
 
 # relative
-from ...node.credentials import SyftVerifyKey
-from ...node.worker_settings import WorkerSettings
 from ...serde.deserialize import _deserialize as deserialize
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
+from ...server.worker_settings import WorkerSettings
 from ...service.context import AuthedServiceContext
 from ...store.document_store import BaseStash
 from ...types.datetime import DateTime
@@ -34,12 +33,14 @@ from .base_queue import QueueProducer
 from .queue_stash import QueueItem
 from .queue_stash import Status
 
+logger = logging.getLogger(__name__)
+
 
 class MonitorThread(threading.Thread):
     def __init__(
         self,
         queue_item: QueueItem,
-        worker: Any,  # should be of type Worker(Node), but get circular import error
+        worker: Any,  # should be of type Worker(Server), but get circular import error
         credentials: SyftVerifyKey,
         interval: int = 5,
     ) -> None:
@@ -159,21 +160,20 @@ def handle_message_multiprocessing(
     queue_config.client_config.n_consumers = 0
 
     # relative
-    from ...node.node import Node
+    from ...server.server import Server
 
-    worker = Node(
+    worker = Server(
         id=worker_settings.id,
         name=worker_settings.name,
         signing_key=worker_settings.signing_key,
         document_store_config=worker_settings.document_store_config,
         action_store_config=worker_settings.action_store_config,
         blob_storage_config=worker_settings.blob_store_config,
+        server_side_type=worker_settings.server_side_type,
         queue_config=queue_config,
         is_subprocess=True,
         migrate=False,
     )
-
-    job_item = worker.job_stash.get_by_uid(credentials, queue_item.job_id).ok()
 
     # Set monitor thread for this job.
     monitor_thread = MonitorThread(queue_item, worker, credentials)
@@ -184,11 +184,10 @@ def handle_message_multiprocessing(
 
     try:
         call_method = getattr(worker.get_service(queue_item.service), queue_item.method)
-
         role = worker.get_role_for_credentials(credentials=credentials)
 
         context = AuthedServiceContext(
-            node=worker,
+            server=worker,
             credentials=credentials,
             role=role,
             job_id=queue_item.job_id,
@@ -196,16 +195,15 @@ def handle_message_multiprocessing(
         )
 
         # relative
-        from ...node.node import AuthNodeContextRegistry
+        from ...server.server import AuthServerContextRegistry
 
-        AuthNodeContextRegistry.set_node_context(
-            node_uid=worker.id,
+        AuthServerContextRegistry.set_server_context(
+            server_uid=worker.id,
             context=context,
             user_verify_key=credentials,
         )
 
         result: Any = call_method(context, *queue_item.args, **queue_item.kwargs)
-
         status = Status.COMPLETED
         job_status = JobStatus.COMPLETED
 
@@ -222,27 +220,21 @@ def handle_message_multiprocessing(
 
         else:
             raise Exception(f"Unknown result type: {type(result)}")
-    except Exception as e:  # nosec
+    except Exception as e:
         status = Status.ERRORED
         job_status = JobStatus.ERRORED
-        # stdlib
-
-        raise e
-        # result = SyftError(
-        #     message=f"Failed with exception: {e}, {traceback.format_exc()}"
-        # )
-        # print("HAD AN ERROR WHILE HANDLING MESSAGE", result.message)
+        logger.error("Unhandled error in handle_message_multiprocessing", exc_info=e)
 
     queue_item.result = result
     queue_item.resolved = True
     queue_item.status = status
 
     # get new job item to get latest iter status
-    job_item = worker.job_stash.get_by_uid(credentials, job_item.id).ok()
+    job_item = worker.job_stash.get_by_uid(credentials, queue_item.job_id).ok()
+    if job_item is None:
+        raise Exception(f"Job {queue_item.job_id} not found!")
 
-    # if result.is_ok():
-
-    job_item.node_uid = worker.id
+    job_item.server_uid = worker.id
     job_item.result = result
     job_item.resolved = True
     job_item.status = job_status
@@ -261,7 +253,7 @@ class APICallMessageHandler(AbstractMessageHandler):
     @staticmethod
     def handle_message(message: bytes, syft_worker_id: UID) -> None:
         # relative
-        from ...node.node import Node
+        from ...server.server import Server
 
         queue_item = deserialize(message, from_bytes=True)
         worker_settings = queue_item.worker_settings
@@ -270,13 +262,14 @@ class APICallMessageHandler(AbstractMessageHandler):
         queue_config.client_config.create_producer = False
         queue_config.client_config.n_consumers = 0
 
-        worker = Node(
+        worker = Server(
             id=worker_settings.id,
             name=worker_settings.name,
             signing_key=worker_settings.signing_key,
             document_store_config=worker_settings.document_store_config,
             action_store_config=worker_settings.action_store_config,
             blob_storage_config=worker_settings.blob_store_config,
+            server_side_type=worker_settings.server_side_type,
             queue_config=queue_config,
             is_subprocess=True,
             migrate=False,
@@ -294,10 +287,10 @@ class APICallMessageHandler(AbstractMessageHandler):
         job_item: Job = res.ok()
 
         queue_item.status = Status.PROCESSING
-        queue_item.node_uid = worker.id
+        queue_item.server_uid = worker.id
 
         job_item.status = JobStatus.PROCESSING
-        job_item.node_uid = cast(UID, worker.id)
+        job_item.server_uid = worker.id  # type: ignore[assignment]
         job_item.updated_at = DateTime.now()
 
         if syft_worker_id is not None:
@@ -311,6 +304,12 @@ class APICallMessageHandler(AbstractMessageHandler):
         if isinstance(job_result, SyftError):
             raise Exception(f"{job_result.err()}")
 
+        logger.info(
+            f"Handling queue item: id={queue_item.id}, method={queue_item.method} "
+            f"args={queue_item.args}, kwargs={queue_item.kwargs} "
+            f"service={queue_item.service}, as_thread={queue_config.thread_workers}"
+        )
+
         if queue_config.thread_workers:
             thread = Thread(
                 target=handle_message_multiprocessing,
@@ -321,7 +320,6 @@ class APICallMessageHandler(AbstractMessageHandler):
         else:
             # if psutil.pid_exists(job_item.job_pid):
             #     psutil.Process(job_item.job_pid).terminate()
-
             process = Process(
                 target=handle_message_multiprocessing,
                 args=(worker_settings, queue_item, credentials),

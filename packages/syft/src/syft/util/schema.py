@@ -8,6 +8,9 @@ from typing import Any
 # syft absolute
 import syft as sy
 
+# relative
+from .decorators import deprecated
+
 RELATIVE_PATH_TO_FRONTEND = "/../../../../grid/frontend/"
 SCHEMA_FOLDER = "schema"
 
@@ -54,19 +57,20 @@ DEFAULT_WELCOME_MSG = """
             }
         </style>
         <div class="syft-client syft-container">
-            <img src="$grid_symbol" alt="Logo"
+            <img src="$server_symbol" alt="Logo"
             style="width:48px;height:48px;padding:3px;">
-            <h2>Welcome to $domain_name</h2>
+            <h2>Welcome to $datasite_name</h2>
             <div class="syft-space">
-            <strong>URL:</strong> $node_url <br />
-            <strong>Node Type:</strong> $node_type <br />
-            <strong>Node Side Type:</strong>$node_side_type<br />
-            <strong>Syft Version:</strong> $node_version<br />
+            <strong>URL:</strong> $server_url <br />
+            <strong>Server Description:</strong> $description <br />
+            <strong>Server Type:</strong> $server_type <br />
+            <strong>Server Side Type:</strong>$server_side_type<br />
+            <strong>Syft Version:</strong> $server_version<br />
 
             </div>
             <div class='syft-alert-info syft-space'>
                 &#9432;&nbsp;
-                This domain is run by the library PySyft to learn more about how it works visit
+                This datasite is run by the library PySyft to learn more about how it works visit
                 <a href="https://github.com/OpenMined/PySyft">github.com/OpenMined/PySyft</a>.
             </div>
             <h4>Commands to Get Started</h4>
@@ -179,7 +183,7 @@ def process_type_bank(type_bank: dict[str, tuple[Any, ...]]) -> dict[str, dict]:
 def resolve_references(json_mappings: dict[str, dict]) -> dict[str, dict]:
     # track second pass generated types
     new_types = {}
-    for _, json_schema in json_mappings.items():
+    for json_schema in json_mappings.values():
         replace_types = {}
         for attribute, config in json_schema["properties"].items():
             if "type" in config:
@@ -209,6 +213,9 @@ def resolve_references(json_mappings: dict[str, dict]) -> dict[str, dict]:
     return json_mappings
 
 
+@deprecated(
+    reason="generate_json_schemas is outdated, #1603 for more info",
+)
 def generate_json_schemas(output_path: str | None = None) -> None:
     # TODO: should we also replace this with the SyftObjectRegistry?
     json_mappings = process_type_bank(sy.serde.recursive.TYPE_BANK)

@@ -1,13 +1,15 @@
 # stdlib
 from collections import defaultdict
+import logging
 from typing import Any
 
 # third party
+from result import Err
 from result import Ok
 from result import Result
 
 # relative
-from ...client.api import NodeIdentity
+from ...client.api import ServerIdentity
 from ...serde.serializable import serializable
 from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
@@ -22,10 +24,10 @@ from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..action.action_permissions import StoragePermission
 from ..api.api import TwinAPIEndpoint
+from ..api.api_service import APIService
 from ..code.user_code import UserCodeStatusCollection
 from ..context import AuthedServiceContext
 from ..job.job_stash import Job
-from ..output.output_service import ExecutionOutput
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -35,12 +37,14 @@ from ..user.user_roles import ADMIN_ROLE_LEVEL
 from .sync_stash import SyncStash
 from .sync_state import SyncState
 
+logger = logging.getLogger(__name__)
+
 
 def get_store(context: AuthedServiceContext, item: SyncableSyftObject) -> Any:
     if isinstance(item, ActionObject):
-        service = context.node.get_service("actionservice")  # type: ignore
+        service = context.server.get_service("actionservice")  # type: ignore
         return service.store  # type: ignore
-    service = context.node.get_service(TYPE_TO_SERVICE[type(item)])  # type: ignore
+    service = context.server.get_service(TYPE_TO_SERVICE[type(item)])  # type: ignore
     return service.stash.partition
 
 
@@ -60,21 +64,24 @@ class SyncService(AbstractService):
         action_object: ActionObject,
         new_permissions: list[ActionObjectPermission],
     ) -> None:
-        blob_id = action_object.syft_blob_storage_entry_id
-
-        store_to = context.node.get_service("actionservice").store  # type: ignore
-        store_to_blob = context.node.get_service("blobstorageservice").stash.partition  # type: ignore
-
+        store_to = context.server.get_service("actionservice").store  # type: ignore
         for permission in new_permissions:
             if permission.permission == ActionPermission.READ:
                 store_to.add_permission(permission)
 
-                permission_blob = ActionObjectPermission(
-                    uid=blob_id,
-                    permission=permission.permission,
-                    credentials=permission.credentials,
-                )
-                store_to_blob.add_permission(permission_blob)
+        blob_id = action_object.syft_blob_storage_entry_id
+        if blob_id:
+            store_to_blob = context.server.get_service(
+                "blobstorageservice"
+            ).stash.partition  # type: ignore
+            for permission in new_permissions:
+                if permission.permission == ActionPermission.READ:
+                    permission_blob = ActionObjectPermission(
+                        uid=blob_id,
+                        permission=permission.permission,
+                        credentials=permission.credentials,
+                    )
+                    store_to_blob.add_permission(permission_blob)
 
     def set_obj_ids(self, context: AuthedServiceContext, x: Any) -> None:
         if hasattr(x, "__dict__") and isinstance(x, SyftObject):
@@ -87,10 +94,10 @@ class SyncService(AbstractService):
                         self.set_obj_ids(context, v)
                 else:
                     self.set_obj_ids(context, val)
-            x.syft_node_location = context.node.id  # type: ignore
+            x.syft_server_location = context.server.id  # type: ignore
             x.syft_client_verify_key = context.credentials
-            if hasattr(x, "node_uid"):
-                x.node_uid = context.node.id  # type: ignore
+            if hasattr(x, "server_uid"):
+                x.server_uid = context.server.id  # type: ignore
 
     def transform_item(
         self,
@@ -98,10 +105,10 @@ class SyncService(AbstractService):
         item: SyncableSyftObject,
     ) -> SyftObject:
         if isinstance(item, UserCodeStatusCollection):
-            identity = NodeIdentity.from_node(context.node)
+            identity = ServerIdentity.from_server(context.server)
             res = {}
             for key in item.status_dict.keys():
-                # todo, check if they are actually only two nodes
+                # todo, check if they are actually only two servers
                 res[identity] = item.status_dict[key]
             item.status_dict = res
 
@@ -111,7 +118,7 @@ class SyncService(AbstractService):
     def get_stash_for_item(
         self, context: AuthedServiceContext, item: SyftObject
     ) -> BaseStash:
-        services = list(context.node.service_path_map.values())  # type: ignore
+        services = list(context.server.service_path_map.values())  # type: ignore
 
         all_stashes = {}
         for serv in services:
@@ -155,11 +162,11 @@ class SyncService(AbstractService):
         if isinstance(item, TwinAPIEndpoint):
             # we need the side effect of set function
             # to create an action object
-            res = context.node.get_service("apiservice").set(
-                context=context, endpoint=item
-            )
+            apiservice: APIService = context.server.get_service("apiservice")  # type: ignore
+
+            res = apiservice.set(context=context, endpoint=item)
             if isinstance(res, SyftError):
-                return res
+                return Err(res.message)
             else:
                 return Ok(item)
 
@@ -257,52 +264,105 @@ class SyncService(AbstractService):
             if store is not None:
                 # TODO fix error handling
                 uid = item.id.id
-                permissions[uid] = store._get_permissions_for_uid(uid).ok()
-                storage_permissions[uid] = store._get_storage_permissions_for_uid(
-                    uid
-                ).ok()
+                item_permissions = store._get_permissions_for_uid(uid)
+                if not item_permissions.is_err():
+                    permissions[uid] = item_permissions.ok()
+
+                # TODO fix error handling for storage permissions
+                item_storage_permissions = store._get_storage_permissions_for_uid(uid)
+                if not item_storage_permissions.is_err():
+                    storage_permissions[uid] = item_storage_permissions.ok()
         return permissions, storage_permissions
+
+    def _get_all_items_for_jobs(
+        self,
+        context: AuthedServiceContext,
+    ) -> Result[tuple[list[SyncableSyftObject], dict[UID, str]], str]:
+        """
+        Returns all Jobs, along with their Logs, ExecutionOutputs and ActionObjects
+        """
+        items_for_jobs = []
+        errors = {}
+
+        job_service = context.server.get_service("jobservice")
+        jobs = job_service.get_all(context)
+        if isinstance(jobs, SyftError):
+            return Err(jobs.message)
+
+        for job in jobs:
+            job_items_result = self._get_job_batch(context, job)
+            if job_items_result.is_err():
+                logger.info(
+                    f"Job {job.id} could not be added to SyncState: {job_items_result.err()}"
+                )
+                errors[job.id] = job_items_result.err()
+                continue
+            items_for_jobs.extend(job_items_result.ok())
+
+        return Ok((items_for_jobs, errors))
+
+    def _get_job_batch(
+        self, context: AuthedServiceContext, job: Job
+    ) -> Result[list[SyncableSyftObject], str]:
+        job_batch = [job]
+
+        log_service = context.server.get_service("logservice")
+        log = log_service.get(context, job.log_id)
+        if isinstance(log, SyftError):
+            return Err(log.message)
+        job_batch.append(log)
+
+        output_service = context.server.get_service("outputservice")
+        output = output_service.get_by_job_id(context, job.id)
+        if isinstance(output, SyftError):
+            return Err(output.message)
+
+        if output is not None:
+            job_batch.append(output)
+            job_result_ids = set(output.output_id_list)
+        else:
+            job_result_ids = set()
+
+        if isinstance(job.result, ActionObject):
+            job_result_ids.add(job.result.id.id)
+
+        action_service = context.server.get_service("actionservice")
+        for result_id in job_result_ids:
+            action_object = action_service.get(context, result_id)
+            if action_object.is_err():
+                return action_object
+            job_batch.append(action_object.ok())
+
+        return Ok(job_batch)
 
     def get_all_syncable_items(
         self, context: AuthedServiceContext
-    ) -> Result[list[SyncableSyftObject], str]:
-        all_items = []
+    ) -> Result[tuple[list[SyncableSyftObject], dict[UID, str]], str]:
+        all_items: list[SyncableSyftObject] = []
 
+        # NOTE Jobs are handled separately
         services_to_sync = [
             "requestservice",
             "usercodeservice",
-            "jobservice",
-            "logservice",
-            "outputservice",
             "usercodestatusservice",
             "apiservice",
         ]
 
         for service_name in services_to_sync:
-            service = context.node.get_service(service_name)
+            service = context.server.get_service(service_name)
             items = service.get_all(context)
             if isinstance(items, SyftError):
-                return items
+                return Err(items.message)
             all_items.extend(items)
 
-        action_object_ids = set()
-        for obj in all_items:
-            if isinstance(obj, ExecutionOutput):
-                action_object_ids |= set(obj.output_id_list)
-            elif isinstance(obj, Job) and obj.result is not None:
-                if isinstance(obj.result, ActionObject):
-                    obj.result = obj.result.as_empty()
-                    action_object_ids.add(obj.result.id)
+        # Gather jobs, logs, outputs and action objects
+        items_for_jobs = self._get_all_items_for_jobs(context)
+        if items_for_jobs.is_err():
+            return items_for_jobs
+        items_for_jobs, errors = items_for_jobs.ok()
+        all_items.extend(items_for_jobs)
 
-        for uid in action_object_ids:
-            action_object = context.node.get_service("actionservice").get(
-                context, uid, resolve_nested=False
-            )  # type: ignore
-            if action_object.is_err():
-                return action_object
-            all_items.append(action_object.ok())
-
-        return Ok(all_items)
+        return Ok((all_items, errors))
 
     def build_current_state(
         self,
@@ -321,8 +381,8 @@ class SyncService(AbstractService):
         objects_res = self.get_all_syncable_items(context)
         if objects_res.is_err():
             return objects_res
-        else:
-            objects = objects_res.ok()
+
+        objects, errors = objects_res.ok()
         permissions, storage_permissions = self.get_permissions(context, objects)
 
         previous_state = self.stash.get_latest(context=context)
@@ -334,7 +394,7 @@ class SyncService(AbstractService):
             previous_state_link = LinkedObject.from_obj(
                 obj=previous_state,
                 service_type=SyncService,
-                node_uid=context.node.id,  # type: ignore
+                server_uid=context.server.id,  # type: ignore
             )
             previous_ignored_batches = previous_state.ignored_batches
         else:
@@ -357,14 +417,15 @@ class SyncService(AbstractService):
             object_sync_dates[obj.id.id] = DateTime.now()
 
         new_state = SyncState(
-            node_uid=context.node.id,  # type: ignore
-            node_name=context.node.name,  # type: ignore
-            node_side_type=context.node.node_side_type,  # type: ignore
+            server_uid=context.server.id,  # type: ignore
+            server_name=context.server.name,  # type: ignore
+            server_side_type=context.server.server_side_type,  # type: ignore
             previous_state_link=previous_state_link,
             permissions=permissions,
             storage_permissions=storage_permissions,
             ignored_batches=ignored_batches,
             object_sync_dates=object_sync_dates,
+            errors=errors,
         )
 
         new_state.add_objects(objects, context)

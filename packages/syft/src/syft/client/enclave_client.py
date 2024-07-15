@@ -2,20 +2,17 @@
 from __future__ import annotations
 
 # stdlib
-from typing import Any
 from typing import TYPE_CHECKING
 
 # relative
-from ..abstract_node import NodeSideType
-from ..client.api import APIRegistry
+from ..abstract_server import ServerSideType
 from ..serde.serializable import serializable
-from ..service.metadata.node_metadata import NodeMetadataJSON
-from ..service.network.routes import NodeRouteType
+from ..service.metadata.server_metadata import ServerMetadataJSON
+from ..service.network.routes import ServerRouteType
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..types.syft_object import SYFT_OBJECT_VERSION_3
 from ..types.syft_object import SyftObject
-from ..types.uid import UID
 from ..util.assets import load_png_base64
 from ..util.notebook_ui.styles import FONT_CSS
 from .api import APIModule
@@ -26,8 +23,7 @@ from .protocol import SyftProtocol
 
 if TYPE_CHECKING:
     # relative
-    from ..orchestra import NodeHandle
-    from ..service.code.user_code import SubmitUserCode
+    from ..orchestra import ServerHandle
 
 
 @serializable()
@@ -35,7 +31,7 @@ class EnclaveMetadata(SyftObject):
     __canonical_name__ = "EnclaveMetadata"
     __version__ = SYFT_OBJECT_VERSION_3
 
-    route: NodeRouteType
+    route: ServerRouteType
 
 
 @serializable()
@@ -68,7 +64,7 @@ class EnclaveClient(SyftClient):
         via_client: SyftClient | None = None,
         url: str | None = None,
         port: int | None = None,
-        handle: NodeHandle | None = None,  # noqa: F821
+        handle: ServerHandle | None = None,  # noqa: F821
         email: str | None = None,
         password: str | None = None,
         protocol: str | SyftProtocol = SyftProtocol.HTTP,
@@ -89,14 +85,14 @@ class EnclaveClient(SyftClient):
             if isinstance(client, SyftError):
                 return client
 
-        self.metadata: NodeMetadataJSON = self.metadata
+        self.metadata: ServerMetadataJSON = self.metadata
         res = self.exchange_route(client, protocol=protocol)
 
         if isinstance(res, SyftSuccess):
             if self.metadata:
                 return SyftSuccess(
                     message=(
-                        f"Connected {self.metadata.node_type} "
+                        f"Connected {self.metadata.server_type} "
                         f"'{self.metadata.name}' to gateway '{client.name}'. "
                         f"{res.message}"
                     )
@@ -108,54 +104,6 @@ class EnclaveClient(SyftClient):
 
     def get_enclave_metadata(self) -> EnclaveMetadata:
         return EnclaveMetadata(route=self.connection.route)
-
-    def request_code_execution(self, code: SubmitUserCode) -> Any | SyftError:
-        # relative
-        from ..service.code.user_code_service import SubmitUserCode
-
-        if not isinstance(code, SubmitUserCode):
-            raise Exception(
-                f"The input code should be of type: {SubmitUserCode} got:{type(code)}"
-            )
-        if code.input_policy_init_kwargs is None:
-            raise ValueError(f"code {code}'s input_policy_init_kwargs is None")
-
-        enclave_metadata = self.get_enclave_metadata()
-
-        code_id = UID()
-        code.id = code_id
-        code.enclave_metadata = enclave_metadata
-
-        apis = []
-        for k, v in code.input_policy_init_kwargs.items():
-            # We would need the verify key of the data scientist to be able to index the correct client
-            # Since we do not want the data scientist to pass in the clients to the enclave client
-            # from a UX perspecitve.
-            # we will use the recent node id to find the correct client
-            # assuming that it is the correct client
-            # Warning: This could lead to inconsistent results, when we have multiple clients
-            # in the same node pointing to the same node.
-            # One way, by which we could solve this in the long term,
-            # by forcing the user to pass only assets to the sy.ExactMatch,
-            # by which we could extract the verify key of the data scientist
-            # as each object comes with a verify key and node_uid
-            # the asset object would contain the verify key of the data scientist.
-            api = APIRegistry.get_by_recent_node_uid(k.node_id)
-            if api is None:
-                raise ValueError(f"could not find client for input {v}")
-            else:
-                apis += [api]
-
-        for api in apis:
-            res = api.services.code.request_code_execution(code=code)
-            if isinstance(res, SyftError):
-                return res
-
-        # we are using the real method here, see the .code property getter
-        _ = self.code
-        res = self._request_code_execution(code=code)
-
-        return res
 
     def _repr_html_(self) -> str:
         commands = """
@@ -169,19 +117,21 @@ class EnclaveClient(SyftClient):
         </ul>
         """
 
-        small_grid_symbol_logo = load_png_base64("small-grid-symbol-logo.png")
+        small_server_symbol_logo = load_png_base64("small-syft-symbol-logo.png")
 
         url = getattr(self.connection, "url", None)
-        node_details = f"<strong>URL:</strong> {url}<br />" if url else ""
+        server_details = f"<strong>URL:</strong> {url}<br />" if url else ""
         if self.metadata:
-            node_details += f"<strong>Node Type:</strong> {self.metadata.node_type.capitalize()}<br />"
-            node_side_type = (
+            server_details += f"<strong>Server Type:</strong> {self.metadata.server_type.capitalize()}<br />"
+            server_side_type = (
                 "Low Side"
-                if self.metadata.node_side_type == NodeSideType.LOW_SIDE.value
+                if self.metadata.server_side_type == ServerSideType.LOW_SIDE.value
                 else "High Side"
             )
-            node_details += f"<strong>Node Side Type:</strong> {node_side_type}<br />"
-            node_details += (
+            server_details += (
+                f"<strong>Server Side Type:</strong> {server_side_type}<br />"
+            )
+            server_details += (
                 f"<strong>Syft Version:</strong> {self.metadata.syft_version}<br />"
             )
 
@@ -210,15 +160,15 @@ class EnclaveClient(SyftClient):
             }}
         </style>
         <div class="syft-client syft-container">
-            <img src="{small_grid_symbol_logo}" alt="Logo"
+            <img src="{small_server_symbol_logo}" alt="Logo"
             style="width:48px;height:48px;padding:3px;">
             <h2>Welcome to {self.name}</h2>
             <div class="syft-space">
-                {node_details}
+                {server_details}
             </div>
             <div class='syft-alert-info syft-space'>
                 &#9432;&nbsp;
-                This node is run by the library PySyft to learn more about how it works visit
+                This server is run by the library PySyft to learn more about how it works visit
                 <a href="https://github.com/OpenMined/PySyft">github.com/OpenMined/PySyft</a>.
             </div>
             <h4>Commands to Get Started</h4>

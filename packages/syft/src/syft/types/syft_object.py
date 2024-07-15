@@ -7,9 +7,11 @@ from collections.abc import KeysView
 from collections.abc import Mapping
 from collections.abc import Sequence
 from collections.abc import Set
+from functools import cache
 from hashlib import sha256
 import inspect
 from inspect import Signature
+import logging
 import types
 from types import NoneType
 from types import UnionType
@@ -18,6 +20,7 @@ from typing import Any
 from typing import ClassVar
 from typing import Optional
 from typing import TYPE_CHECKING
+from typing import TypeVar
 from typing import Union
 from typing import get_args
 from typing import get_origin
@@ -34,9 +37,10 @@ from typeguard import check_type
 from typing_extensions import Self
 
 # relative
-from ..node.credentials import SyftVerifyKey
 from ..serde.recursive_primitives import recursive_serde_register_type
 from ..serde.serialize import _serialize as serialize
+from ..server.credentials import SyftVerifyKey
+from ..service.response import SyftError
 from ..util.autoreload import autoreload_enabled
 from ..util.markdown import as_markdown_python_code
 from ..util.notebook_ui.components.tabulator_template import build_tabulator_table
@@ -47,13 +51,17 @@ from .syft_metaclass import Empty
 from .syft_metaclass import PartialModelMetaclass
 from .uid import UID
 
+logger = logging.getLogger(__name__)
+
 if TYPE_CHECKING:
     # relative
+    from ..client.api import SyftAPI
     from ..service.sync.diff_state import AttrDiff
 
 IntStr = int | str
 AbstractSetIntStr = Set[IntStr]
 MappingIntStrAny = Mapping[IntStr, Any]
+T = TypeVar("T")
 
 
 SYFT_OBJECT_VERSION_1 = 1
@@ -76,10 +84,10 @@ HIGHEST_SYFT_OBJECT_VERSION = max(supported_object_versions)
 LOWEST_SYFT_OBJECT_VERSION = min(supported_object_versions)
 
 
-# These attributes are dynamically added based on node/client
+# These attributes are dynamically added based on server/client
 # that is interaction with the SyftObject
 DYNAMIC_SYFT_ATTRIBUTES = [
-    "syft_node_location",
+    "syft_server_location",
     "syft_client_verify_key",
 ]
 
@@ -125,11 +133,11 @@ class SyftBaseObject(pydantic.BaseModel, SyftHashableObject):
     __canonical_name__: str
     __version__: int  # data is always versioned
 
-    syft_node_location: UID | None = Field(default=None, exclude=True)
+    syft_server_location: UID | None = Field(default=None, exclude=True)
     syft_client_verify_key: SyftVerifyKey | None = Field(default=None, exclude=True)
 
-    def _set_obj_location_(self, node_uid: UID, credentials: SyftVerifyKey) -> None:
-        self.syft_node_location = node_uid
+    def _set_obj_location_(self, server_uid: UID, credentials: SyftVerifyKey) -> None:
+        self.syft_server_location = server_uid
         self.syft_client_verify_key = credentials
 
 
@@ -138,6 +146,11 @@ class Context(SyftBaseObject):
     __version__ = SYFT_OBJECT_VERSION_2
 
     pass
+
+
+@cache
+def cached_get_type_hints(cls: type) -> dict[str, Any]:
+    return typing.get_type_hints(cls)
 
 
 class SyftMigrationRegistry:
@@ -197,7 +210,7 @@ class SyftMigrationRegistry:
             "canonical_name": {"version_from x version_to": <function transform_function>}
         }
         For example
-        {'NodeMetadata': {'1x2': <function transform_function>,
+        {'ServerMetadata': {'1x2': <function transform_function>,
                           '2x1': <function transform_function>}}
         """
         if klass_type_str not in cls.__migration_version_registry__:
@@ -287,7 +300,7 @@ print_type_cache: dict = defaultdict(list)
 
 
 base_attrs_sync_ignore = [
-    "syft_node_location",
+    "syft_server_location",
     "syft_client_verify_key",
 ]
 
@@ -444,7 +457,7 @@ class SyftObject(SyftBaseObject, SyftMigrationRegistry):
         return self.__dict__.__getitem__(key)  # type: ignore
 
     # transform from one supported type to another
-    def to(self, projection: type, context: Context | None = None) -> Any:
+    def to(self, projection: type[T], context: Context | None = None) -> T:
         # relative
         from .syft_object_registry import SyftObjectRegistry
 
@@ -475,7 +488,7 @@ class SyftObject(SyftBaseObject, SyftMigrationRegistry):
             return
         # Validate and set private attributes
         # https://github.com/pydantic/pydantic/issues/2105
-        annotations = typing.get_type_hints(self.__class__)
+        annotations = cached_get_type_hints(self.__class__)
         for attr, decl in self.__private_attributes__.items():
             value = kwargs.get(attr, decl.get_default())
             var_annotation = annotations.get(attr)
@@ -511,8 +524,9 @@ class SyftObject(SyftBaseObject, SyftMigrationRegistry):
                     if isinstance(method, types.FunctionType):
                         type_ = method.__annotations__["return"]
                 except Exception as e:
-                    print(
-                        f"Failed to get attribute from key {key} type for {cls} storage. {e}"
+                    logger.error(
+                        f"Failed to get attribute from key {key} type for {cls} storage.",
+                        exc_info=e,
                     )
                     raise e
             # EmailStr seems to be lost every time the value is set even with a validator
@@ -580,6 +594,15 @@ class SyftObject(SyftBaseObject, SyftMigrationRegistry):
                 obj_attr = getattr(self, attr)
                 ext_obj_attr = getattr(ext_obj, attr)
 
+                if (obj_attr is None) ^ (ext_obj_attr is None):
+                    # If either attr is None, but not both, we have a diff
+                    # NOTE This clause is needed because attr.__eq__ is not implemented for None, and will eval to True
+                    diff_attr = AttrDiff(
+                        attr_name=attr,
+                        low_attr=obj_attr,
+                        high_attr=ext_obj_attr,
+                    )
+                    diff_attrs.append(diff_attr)
                 if isinstance(obj_attr, list) and isinstance(ext_obj_attr, list):
                     list_diff = ListDiff.from_lists(
                         attr_name=attr, low_list=obj_attr, high_list=ext_obj_attr
@@ -601,6 +624,19 @@ class SyftObject(SyftBaseObject, SyftMigrationRegistry):
                         )
                         diff_attrs.append(diff_attr)
         return diff_attrs
+
+    def _get_api(self) -> "SyftAPI | SyftError":
+        # relative
+        from ..client.api import APIRegistry
+
+        api = APIRegistry.api_for(
+            self.syft_server_location, self.syft_client_verify_key
+        )
+        if api is None:
+            return SyftError(
+                f"Can't access the api. You must login to {self.server_uid}"
+            )
+        return api
 
     ## OVERRIDING pydantic.BaseModel.__getattr__
     ## return super().__getattribute__(item) -> return self.__getattribute__(item)

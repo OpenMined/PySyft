@@ -19,7 +19,7 @@ class ServiceRoleCapability(Enum):
     CAN_MANAGE_INFRASTRUCTURE = 64
     CAN_UPLOAD_DATA = 128
     CAN_UPLOAD_LEGAL_DOCUMENT = 256
-    CAN_EDIT_DOMAIN_SETTINGS = 512
+    CAN_EDIT_DATASITE_SETTINGS = 512
 
 
 @serializable()
@@ -34,9 +34,7 @@ class ServiceRole(Enum):
     # @property
     @classmethod
     def roles_descending(cls) -> list[tuple[int, Self]]:
-        tuples = []
-        for x in cls:
-            tuples.append((x.value, x))
+        tuples = [(x.value, x) for x in cls]
         return sorted(tuples, reverse=True)
 
     @classmethod

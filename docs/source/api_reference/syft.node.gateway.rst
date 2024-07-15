@@ -1,7 +1,7 @@
-syft.node.gateway
+syft.server.gateway
 =================
 
-.. automodule:: syft.node.gateway
+.. automodule:: syft.server.gateway
 
    
    

@@ -9,7 +9,7 @@ from syft.util.notebook_ui.icons import Icon
 
 
 def test_load_assets():
-    png = load_png_base64("logo.png")
+    png = load_png_base64("small-syft-symbol-logo.png")
     assert isinstance(png, str)
 
     with pytest.raises(FileNotFoundError):

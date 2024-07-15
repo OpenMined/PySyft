@@ -5,7 +5,7 @@ import pytest
 # syft absolute
 import syft
 from syft.client.client import SyftClient
-from syft.node.worker import Worker
+from syft.server.worker import Worker
 from syft.service.action.action_object import ActionObject
 from syft.service.action.action_permissions import ActionPermission
 from syft.service.code.user_code import UserCode
@@ -45,7 +45,7 @@ def get_ds_client(faker: Faker, root_client: SyftClient, guest_client: SyftClien
 def test_object_mutation(worker: Worker):
     root_client = worker.root_client
     setting = root_client.api.services.settings.get()
-    linked_obj = LinkedObject.from_obj(setting, SettingsService, node_uid=worker.id)
+    linked_obj = LinkedObject.from_obj(setting, SettingsService, server_uid=worker.id)
     original_name = setting.organization
     new_name = "Test Organization"
 
@@ -57,7 +57,7 @@ def test_object_mutation(worker: Worker):
     )
 
     change_context = ChangeContext(
-        node=worker,
+        server=worker,
         approving_user_credentials=root_client.credentials.verify_key,
     )
 
@@ -80,14 +80,14 @@ def test_action_store_change(faker: Faker, worker: Worker):
     root_client = worker.root_client
     dummy_data = [1, 2, 3]
     data = ActionObject.from_obj(dummy_data)
-    action_obj = root_client.api.services.action.set(data)
+    action_obj = data.send(root_client)
 
     assert action_obj.get() == dummy_data
 
     ds_client = get_ds_client(faker, root_client, worker.guest_client)
 
     action_object_link = LinkedObject.from_obj(
-        action_obj, node_uid=action_obj.syft_node_uid
+        action_obj, server_uid=action_obj.syft_server_uid
     )
     permission_change = ActionStoreChange(
         linked_obj=action_object_link,
@@ -95,7 +95,7 @@ def test_action_store_change(faker: Faker, worker: Worker):
     )
 
     change_context = ChangeContext(
-        node=worker,
+        server=worker,
         approving_user_credentials=root_client.credentials.verify_key,
         requesting_user_credentials=ds_client.credentials.verify_key,
     )
@@ -120,7 +120,7 @@ def test_user_code_status_change(faker: Faker, worker: Worker):
     root_client = worker.root_client
     dummy_data = [1, 2, 3]
     data = ActionObject.from_obj(dummy_data)
-    action_obj = root_client.api.services.action.set(data)
+    action_obj = data.send(root_client)
 
     ds_client = get_ds_client(faker, root_client, worker.guest_client)
 
@@ -136,7 +136,7 @@ def test_user_code_status_change(faker: Faker, worker: Worker):
 
     user_code: UserCode = ds_client.code.get_all()[0]
 
-    linked_user_code = LinkedObject.from_obj(user_code, node_uid=worker.id)
+    linked_user_code = LinkedObject.from_obj(user_code, server_uid=worker.id)
 
     user_code_change = UserCodeStatusChange(
         value=UserCodeStatus.APPROVED,
@@ -145,7 +145,7 @@ def test_user_code_status_change(faker: Faker, worker: Worker):
     )
 
     change_context = ChangeContext(
-        node=worker,
+        server=worker,
         approving_user_credentials=root_client.credentials.verify_key,
         requesting_user_credentials=ds_client.credentials.verify_key,
     )
@@ -168,7 +168,7 @@ def test_code_accept_deny(faker: Faker, worker: Worker):
     root_client = worker.root_client
     dummy_data = [1, 2, 3]
     data = ActionObject.from_obj(dummy_data)
-    action_obj = root_client.api.services.action.set(data)
+    action_obj = data.send(root_client)
 
     ds_client = get_ds_client(faker, root_client, worker.guest_client)
 
@@ -183,13 +183,13 @@ def test_code_accept_deny(faker: Faker, worker: Worker):
     assert not isinstance(result, SyftError)
 
     request = root_client.requests.get_all()[0]
-    result = request.accept_by_depositing_result(result=10)
+    result = request.approve()
     assert isinstance(result, SyftSuccess)
 
     request = root_client.requests.get_all()[0]
     assert request.status == RequestStatus.APPROVED
     result = ds_client.code.simple_function(data=action_obj)
-    assert result.get() == 10
+    assert result.get() == sum(dummy_data)
 
     result = request.deny(reason="Function output needs differential privacy !!")
     assert isinstance(result, SyftSuccess)
@@ -202,4 +202,4 @@ def test_code_accept_deny(faker: Faker, worker: Worker):
 
     result = ds_client.code.simple_function(data=action_obj)
     assert isinstance(result, SyftError)
-    assert "Execution denied" in result.message
+    assert "DENIED" in result.message

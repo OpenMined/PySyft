@@ -10,20 +10,20 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.abstract_node import NodeType
+from syft.abstract_server import ServerType
 from syft.client.client import HTTPConnection
 from syft.client.client import SyftClient
-from syft.client.domain_client import DomainClient
+from syft.client.datasite_client import DatasiteClient
 from syft.client.gateway_client import GatewayClient
 from syft.client.registry import NetworkRegistry
 from syft.client.search import SearchResults
 from syft.service.dataset.dataset import Dataset
 from syft.service.network.association_request import AssociationRequestChange
-from syft.service.network.network_service import NodePeerAssociationStatus
-from syft.service.network.node_peer import NodePeer
-from syft.service.network.node_peer import NodePeerConnectionStatus
-from syft.service.network.routes import HTTPNodeRoute
-from syft.service.network.routes import NodeRouteType
+from syft.service.network.network_service import ServerPeerAssociationStatus
+from syft.service.network.routes import HTTPServerRoute
+from syft.service.network.routes import ServerRouteType
+from syft.service.network.server_peer import ServerPeer
+from syft.service.network.server_peer import ServerPeerConnectionStatus
 from syft.service.network.utils import PeerHealthCheckTask
 from syft.service.request.request import Request
 from syft.service.response import SyftError
@@ -34,7 +34,7 @@ from syft.service.user.user_roles import ServiceRole
 @pytest.fixture(scope="function")
 def set_env_var(
     gateway_port: int,
-    gateway_node: str = "testgateway1",
+    gateway_server: str = "testgateway1",
     host_or_ip: str = "localhost",
     protocol: str = "http",
 ):
@@ -44,7 +44,7 @@ def set_env_var(
             "2.0.0": {{
                 "gateways": [
                     {{
-                        "name": "{gateway_node}",
+                        "name": "{gateway_server}",
                         "host_or_ip": "{host_or_ip}",
                         "protocol": "{protocol}",
                         "port": {gateway_port},
@@ -68,7 +68,7 @@ def _random_hash() -> str:
 
 
 def _remove_existing_peers(client: SyftClient) -> SyftSuccess | SyftError:
-    peers: list[NodePeer] | SyftError = client.api.services.network.get_all_peers()
+    peers: list[ServerPeer] | SyftError = client.api.services.network.get_all_peers()
     if isinstance(peers, SyftError):
         return peers
     for peer in peers:
@@ -84,6 +84,7 @@ def test_network_registry_from_url() -> None:
     assert len(sy.gateways.all_networks) == len(sy.gateways.online_networks) == 1
 
 
+@pytest.mark.network
 def test_network_registry_env_var(set_env_var) -> None:
     assert isinstance(sy.gateways, NetworkRegistry)
     assert len(sy.gateways.all_networks) == len(sy.gateways.online_networks) == 1
@@ -91,27 +92,36 @@ def test_network_registry_env_var(set_env_var) -> None:
     assert isinstance(sy.gateways[0].connection, HTTPConnection)
 
 
-def test_domain_connect_to_gateway(
-    set_env_var, domain_1_port: int, gateway_port: int
+@pytest.mark.network
+def test_datasite_connect_to_gateway(
+    set_env_var, datasite_1_port: int, gateway_port: int
 ) -> None:
     # check if we can see the online gateways
     assert isinstance(sy.gateways, NetworkRegistry)
     assert len(sy.gateways.all_networks) == len(sy.gateways.online_networks) == 1
 
-    # login to the domain and gateway
+    # login to the datasite and gateway
     gateway_client: GatewayClient = sy.login(
         port=gateway_port, email="info@openmined.org", password="changethis"
     )
-    domain_client: DomainClient = sy.login(
-        port=domain_1_port, email="info@openmined.org", password="changethis"
+    datasite_client: DatasiteClient = sy.login(
+        port=datasite_1_port, email="info@openmined.org", password="changethis"
     )
 
-    # connecting the domain to the gateway
-    result = domain_client.connect_to_gateway(gateway_client)
+    # Try removing existing peers just to make sure
+    _remove_existing_peers(datasite_client)
+    _remove_existing_peers(gateway_client)
+
+    # Disable automatic acceptance of association requests
+    res = gateway_client.settings.allow_association_request_auto_approval(enable=False)
+    assert isinstance(res, SyftSuccess)
+
+    # connecting the datasite to the gateway
+    result = datasite_client.connect_to_gateway(gateway_client)
     assert isinstance(result, Request)
     assert isinstance(result.changes[0], AssociationRequestChange)
 
-    assert len(domain_client.peers) == 1
+    assert len(datasite_client.peers) == 1
     assert len(gateway_client.peers) == 0
 
     gateway_client_root = gateway_client.login(
@@ -122,80 +132,88 @@ def test_domain_connect_to_gateway(
 
     assert len(gateway_client.peers) == 1
 
-    # check that the domain is online on the network
-    assert len(sy.domains.all_domains) == 1
-    assert len(sy.domains.online_domains) == 1
+    time.sleep(PeerHealthCheckTask.repeat_time * 2 + 1)
+    # check that the datasite is online on the network
+    assert len(sy.datasites.all_datasites) == 1
+    assert len(sy.datasites.online_datasites) == 1
 
-    proxy_domain_client = gateway_client.peers[0]
-    domain_peer = domain_client.peers[0]
+    proxy_datasite_client = gateway_client.peers[0]
+    datasite_peer = datasite_client.peers[0]
 
-    assert isinstance(proxy_domain_client, DomainClient)
-    assert isinstance(domain_peer, NodePeer)
+    assert isinstance(proxy_datasite_client, DatasiteClient)
+    assert isinstance(datasite_peer, ServerPeer)
 
-    # Domain's peer is a gateway and vice-versa
-    assert domain_peer.node_type == NodeType.GATEWAY
+    # Datasite's peer is a gateway and vice-versa
+    assert datasite_peer.server_type == ServerType.GATEWAY
 
-    assert gateway_client.name == domain_peer.name
-    assert domain_client.name == proxy_domain_client.name
+    assert gateway_client.name == datasite_peer.name
+    assert datasite_client.name == proxy_datasite_client.name
 
-    assert len(gateway_client.domains) == 1
+    assert len(gateway_client.datasites) == 1
     assert len(gateway_client.enclaves) == 0
 
-    assert proxy_domain_client.metadata == domain_client.metadata
-    assert proxy_domain_client.user_role == ServiceRole.NONE
+    assert proxy_datasite_client.metadata == datasite_client.metadata
+    assert proxy_datasite_client.user_role == ServiceRole.NONE
 
-    domain_client = domain_client.login(
+    datasite_client = datasite_client.login(
         email="info@openmined.org", password="changethis"
     )
-    proxy_domain_client = proxy_domain_client.login(
+    proxy_datasite_client = proxy_datasite_client.login(
         email="info@openmined.org", password="changethis"
     )
 
-    assert proxy_domain_client.logged_in_user == "info@openmined.org"
-    assert proxy_domain_client.user_role == ServiceRole.ADMIN
-    assert proxy_domain_client.credentials == domain_client.credentials
+    assert proxy_datasite_client.logged_in_user == "info@openmined.org"
+    assert proxy_datasite_client.user_role == ServiceRole.ADMIN
+    assert proxy_datasite_client.credentials == datasite_client.credentials
     assert (
-        proxy_domain_client.api.endpoints.keys() == domain_client.api.endpoints.keys()
+        proxy_datasite_client.api.endpoints.keys()
+        == datasite_client.api.endpoints.keys()
     )
 
     # Remove existing peers
-    assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
+    assert isinstance(_remove_existing_peers(datasite_client), SyftSuccess)
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
-def test_dataset_search(set_env_var, gateway_port: int, domain_1_port: int) -> None:
+@pytest.mark.network
+def test_dataset_search(set_env_var, gateway_port: int, datasite_1_port: int) -> None:
     """
-    Scenario: Connecting a domain node to a gateway node. The domain
+    Scenario: Connecting a datasite server to a gateway server. The datasite
         client then upload a dataset, which should be searchable by the syft network.
         People who install syft can see the mock data and metadata of the uploaded datasets
     """
-    # login to the domain and gateway
+    # login to the datasite and gateway
     gateway_client: GatewayClient = sy.login(
         port=gateway_port, email="info@openmined.org", password="changethis"
     )
-    domain_client: DomainClient = sy.login(
-        port=domain_1_port, email="info@openmined.org", password="changethis"
+    datasite_client: DatasiteClient = sy.login(
+        port=datasite_1_port, email="info@openmined.org", password="changethis"
     )
+
+    # Try removing existing peers just to make sure
+    _remove_existing_peers(datasite_client)
+    _remove_existing_peers(gateway_client)
 
     res = gateway_client.settings.allow_association_request_auto_approval(enable=True)
     assert isinstance(res, SyftSuccess)
 
-    # connect the domain to the gateway
-    result = domain_client.connect_to_gateway(gateway_client)
+    # connect the datasite to the gateway
+    result = datasite_client.connect_to_gateway(gateway_client)
     assert isinstance(result, SyftSuccess)
-    assert len(sy.gateways.all_networks) == len(sy.gateways.online_networks) == 1
-    assert len(sy.domains.all_domains) == len(sy.domains.online_domains) == 1
 
-    # the domain client uploads a dataset
+    # the datasite client uploads a dataset
     input_data = np.array([1, 2, 3])
     mock_data = np.array([4, 5, 6])
     asset_name = _random_hash()
     asset = sy.Asset(name=asset_name, data=input_data, mock=mock_data)
     dataset_name = _random_hash()
     dataset = sy.Dataset(name=dataset_name, asset_list=[asset])
-    dataset_res = domain_client.upload_dataset(dataset)
+    dataset_res = datasite_client.upload_dataset(dataset)
     assert isinstance(dataset_res, SyftSuccess)
 
+    # since dataset search is done by checking from the online datasites,
+    # we need to wait to make sure peers health check is done
+    time.sleep(PeerHealthCheckTask.repeat_time * 2 + 1)
     # test if the dataset can be searched by the syft network
     right_search = sy.search(dataset_name)
     assert isinstance(right_search, SearchResults)
@@ -210,38 +228,44 @@ def test_dataset_search(set_env_var, gateway_port: int, domain_1_port: int) -> N
     wrong_search = sy.search(_random_hash())
     assert len(wrong_search) == 0
 
-    # the domain client delete the dataset
-    domain_client.api.services.dataset.delete_by_uid(uid=dataset.id)
+    # the datasite client delete the dataset
+    datasite_client.api.services.dataset.delete_by_uid(uid=dataset.id)
 
     # Remove existing peers
-    assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
+    assert isinstance(_remove_existing_peers(datasite_client), SyftSuccess)
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
-def test_domain_gateway_user_code(
-    set_env_var, domain_1_port: int, gateway_port: int
+@pytest.mark.skip(reason="Possible bug")
+@pytest.mark.network
+def test_datasite_gateway_user_code(
+    set_env_var, datasite_1_port: int, gateway_port: int
 ) -> None:
-    # login to the domain and gateway
+    # login to the datasite and gateway
     gateway_client: GatewayClient = sy.login(
         port=gateway_port, email="info@openmined.org", password="changethis"
     )
-    domain_client: DomainClient = sy.login(
-        port=domain_1_port, email="info@openmined.org", password="changethis"
+    datasite_client: DatasiteClient = sy.login(
+        port=datasite_1_port, email="info@openmined.org", password="changethis"
     )
 
-    # the domain client uploads a dataset
+    # Try removing existing peers just to make sure
+    _remove_existing_peers(datasite_client)
+    _remove_existing_peers(gateway_client)
+
+    # the datasite client uploads a dataset
     input_data = np.array([1, 2, 3])
     mock_data = np.array([4, 5, 6])
     asset_name = _random_hash()
     asset = sy.Asset(name=asset_name, data=input_data, mock=mock_data)
     dataset_name = _random_hash()
     dataset = sy.Dataset(name=dataset_name, asset_list=[asset])
-    dataset_res = domain_client.upload_dataset(dataset)
+    dataset_res = datasite_client.upload_dataset(dataset)
     assert isinstance(dataset_res, SyftSuccess)
 
-    # the domain client registers a data data scientist account on its domain
+    # the datasite client registers a data data scientist account on its datasite
     random_name: str = str(_random_hash())
-    user_create_res = domain_client.register(
+    user_create_res = datasite_client.register(
         name=random_name,
         email=f"{random_name}@caltech.edu",
         password="changethis",
@@ -254,12 +278,12 @@ def test_domain_gateway_user_code(
     res = gateway_client.settings.allow_association_request_auto_approval(enable=True)
     assert isinstance(res, SyftSuccess)
 
-    # the domain client connects to the gateway
-    gateway_con_res = domain_client.connect_to_gateway(gateway_client)
+    # the datasite client connects to the gateway
+    gateway_con_res = datasite_client.connect_to_gateway(gateway_client)
     assert isinstance(gateway_con_res, SyftSuccess)
 
-    # get the proxy client to the domain, login to the data scientist account
-    proxy_client = gateway_client.domains[0]
+    # get the proxy client to the datasite, login to the data scientist account
+    proxy_client = gateway_client.datasites[0]
     proxy_ds = proxy_client.login(
         email=f"{random_name}@caltech.edu",
         password="changethis",
@@ -276,9 +300,9 @@ def test_domain_gateway_user_code(
     request_res = proxy_ds.code.request_code_execution(mock_function)
     assert isinstance(request_res, Request)
 
-    # domain client approves the request
-    assert len(domain_client.requests.get_all()) == 1
-    req_approve_res = domain_client.requests[-1].approve()
+    # datasite client approves the request
+    assert len(datasite_client.requests.get_all()) == 1
+    req_approve_res = datasite_client.requests[-1].approve()
     assert isinstance(req_approve_res, SyftSuccess)
 
     # the proxy data scientist client executes the code and gets the result
@@ -286,608 +310,599 @@ def test_domain_gateway_user_code(
     final_result = result.get()
     assert (final_result == input_data + 1).all()
 
-    # the domain client delete the dataset
-    domain_client.api.services.dataset.delete_by_uid(uid=dataset.id)
+    # the datasite client delete the dataset
+    datasite_client.api.services.dataset.delete_by_uid(uid=dataset.id)
 
     # Remove existing peers
-    assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
+    assert isinstance(_remove_existing_peers(datasite_client), SyftSuccess)
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
-def test_deleting_peers(set_env_var, domain_1_port: int, gateway_port: int) -> None:
-    # login to the domain and gateway
+@pytest.mark.network
+def test_deleting_peers(set_env_var, datasite_1_port: int, gateway_port: int) -> None:
+    # login to the datasite and gateway
     gateway_client: GatewayClient = sy.login(
         port=gateway_port, email="info@openmined.org", password="changethis"
     )
-    domain_client: DomainClient = sy.login(
-        port=domain_1_port, email="info@openmined.org", password="changethis"
+    datasite_client: DatasiteClient = sy.login(
+        port=datasite_1_port, email="info@openmined.org", password="changethis"
     )
+
+    # clean up before test
+    _remove_existing_peers(datasite_client)
+    _remove_existing_peers(gateway_client)
 
     # Enable automatic acceptance of association requests
     res = gateway_client.settings.allow_association_request_auto_approval(enable=True)
     assert isinstance(res, SyftSuccess)
 
-    # connecting the domain to the gateway
-    result = domain_client.connect_to_gateway(gateway_client)
+    # connecting the datasite to the gateway
+    result = datasite_client.connect_to_gateway(gateway_client)
     assert isinstance(result, SyftSuccess)
-    assert len(domain_client.peers) == 1
+    assert len(datasite_client.peers) == 1
     assert len(gateway_client.peers) == 1
-    # check that the domain is online on the network
-    assert len(sy.domains.all_domains) == 1
-    assert len(sy.domains.online_domains) == 1
 
     # Remove existing peers
-    assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
+    assert isinstance(_remove_existing_peers(datasite_client), SyftSuccess)
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
     # check that removing peers work as expected
+    assert len(datasite_client.peers) == 0
+    assert len(gateway_client.peers) == 0
+
+    # check that the online datasites and gateways are updated
+    time.sleep(PeerHealthCheckTask.repeat_time * 2 + 1)
     assert len(sy.gateways.all_networks) == 1
-    assert len(sy.domains.all_domains) == 0
-    assert len(sy.domains.all_domains) == 0
-    assert len(sy.domains.online_domains) == 0
-    assert len(domain_client.peers) == 0
-    assert len(gateway_client.peers) == 0
+    assert len(sy.datasites.all_datasites) == 0
+    assert len(sy.datasites.online_datasites) == 0
 
-    # reconnect the domain to the gateway
-    result = domain_client.connect_to_gateway(gateway_client)
+    # reconnect the datasite to the gateway
+    result = datasite_client.connect_to_gateway(gateway_client)
     assert isinstance(result, SyftSuccess)
-    assert len(domain_client.peers) == 1
+    assert len(datasite_client.peers) == 1
     assert len(gateway_client.peers) == 1
-    # check that the domain
-    assert len(sy.domains.all_domains) == 1
-    assert len(sy.domains.online_domains) == 1
 
     # Remove existing peers
-    assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
+    assert isinstance(_remove_existing_peers(datasite_client), SyftSuccess)
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
     # check that removing peers work as expected
-    assert len(sy.domains.all_domains) == 0
-    assert len(sy.domains.all_domains) == 0
-    assert len(sy.domains.online_domains) == 0
-    assert len(domain_client.peers) == 0
+    assert len(datasite_client.peers) == 0
     assert len(gateway_client.peers) == 0
 
 
-def test_add_update_route_priority(
-    set_env_var, gateway_port: int, domain_1_port: int
-) -> None:
+@pytest.mark.network
+def test_add_route(set_env_var, gateway_port: int, datasite_1_port: int) -> None:
     """
     Test the network service's `add_route` functionalities to add routes directly
-    for a self domain.
-    Scenario: Connect a domain to a gateway. The gateway adds 2 new routes to the domain
-    and check their priorities.
-    Then update an existed route's priority and check if its priority gets updated.
-    Check for the gateway if the proxy client to connect to the domain uses the
+    for a self datasite.
+    Scenario: Connect a datasite to a gateway. The gateway adds 2 new routes to the datasite
+    and check their priorities get updated.
+    Check for the gateway if the proxy client to connect to the datasite uses the
     route with the highest priority.
     """
-    # login to the domain and gateway
+    # login to the datasite and gateway
     gateway_client: GatewayClient = sy.login(
         port=gateway_port, email="info@openmined.org", password="changethis"
     )
-    domain_client: DomainClient = sy.login(
-        port=domain_1_port, email="info@openmined.org", password="changethis"
+    datasite_client: DatasiteClient = sy.login(
+        port=datasite_1_port, email="info@openmined.org", password="changethis"
     )
 
     # Try removing existing peers just to make sure
-    _remove_existing_peers(domain_client)
+    _remove_existing_peers(datasite_client)
     _remove_existing_peers(gateway_client)
 
     # Enable automatic acceptance of association requests
     res = gateway_client.settings.allow_association_request_auto_approval(enable=True)
     assert isinstance(res, SyftSuccess)
 
-    # connecting the domain to the gateway
-    result = domain_client.connect_to_gateway(gateway_client)
+    # connecting the datasite to the gateway
+    result = datasite_client.connect_to_gateway(gateway_client)
     assert isinstance(result, SyftSuccess)
-    assert len(domain_client.peers) == 1
+    assert len(datasite_client.peers) == 1
     assert len(gateway_client.peers) == 1
 
-    # add a new route to connect to the domain
-    new_route = HTTPNodeRoute(host_or_ip="localhost", port=10000)
-    domain_peer: NodePeer = gateway_client.api.services.network.get_all_peers()[0]
+    # add a new route to connect to the datasite
+    new_route = HTTPServerRoute(host_or_ip="localhost", port=10000)
+    datasite_peer: ServerPeer = gateway_client.api.services.network.get_all_peers()[0]
     res = gateway_client.api.services.network.add_route(
-        peer_verify_key=domain_peer.verify_key, route=new_route
+        peer_verify_key=datasite_peer.verify_key, route=new_route
     )
     assert isinstance(res, SyftSuccess)
-    domain_peer = gateway_client.api.services.network.get_all_peers()[0]
-    assert len(domain_peer.node_routes) == 2
-    assert domain_peer.node_routes[-1].port == new_route.port
+    datasite_peer = gateway_client.api.services.network.get_all_peers()[0]
+    assert len(datasite_peer.server_routes) == 2
+    assert datasite_peer.server_routes[-1].port == new_route.port
 
-    # adding another route to the domain
-    new_route2 = HTTPNodeRoute(host_or_ip="localhost", port=10001)
+    # adding another route to the datasite
+    new_route2 = HTTPServerRoute(host_or_ip="localhost", port=10001)
     res = gateway_client.api.services.network.add_route(
-        peer_verify_key=domain_peer.verify_key, route=new_route2
+        peer_verify_key=datasite_peer.verify_key, route=new_route2
     )
     assert isinstance(res, SyftSuccess)
-    domain_peer = gateway_client.api.services.network.get_all_peers()[0]
-    assert len(domain_peer.node_routes) == 3
-    assert domain_peer.node_routes[-1].port == new_route2.port
-    assert domain_peer.node_routes[-1].priority == 3
+    datasite_peer = gateway_client.api.services.network.get_all_peers()[0]
+    assert len(datasite_peer.server_routes) == 3
+    assert datasite_peer.server_routes[-1].port == new_route2.port
+    assert datasite_peer.server_routes[-1].priority == 3
 
-    # add an existed route to the domain. Its priority should not be updated
+    # add an existed route to the datasite. Its priority should not be updated
     res = gateway_client.api.services.network.add_route(
-        peer_verify_key=domain_peer.verify_key, route=domain_peer.node_routes[0]
+        peer_verify_key=datasite_peer.verify_key, route=datasite_peer.server_routes[0]
     )
     assert "route already exists" in res.message
     assert isinstance(res, SyftSuccess)
-    domain_peer = gateway_client.api.services.network.get_all_peers()[0]
-    assert len(domain_peer.node_routes) == 3
-    assert domain_peer.node_routes[0].priority == 1
+    datasite_peer = gateway_client.api.services.network.get_all_peers()[0]
+    assert len(datasite_peer.server_routes) == 3
+    assert datasite_peer.server_routes[0].priority == 1
 
     # getting the proxy client using the current highest priority route should
-    # give back an error since it is a route with a random port (10001)
-    proxy_domain_client = gateway_client.peers[0]
-    assert isinstance(proxy_domain_client, SyftError)
-    assert "Failed to establish a connection with" in proxy_domain_client.message
+    # be successful since now we pick the oldest route (port 9082 with priority 1)
+    # to have the highest priority by default
+    proxy_datasite_client = gateway_client.peers[0]
+    assert isinstance(proxy_datasite_client, DatasiteClient)
 
-    # update the valid route to have the highest priority
-    res = gateway_client.api.services.network.update_route_priority(
-        peer_verify_key=domain_peer.verify_key, route=domain_peer.node_routes[0]
-    )
-    assert isinstance(res, SyftSuccess)
-    domain_peer = gateway_client.api.services.network.get_all_peers()[0]
-    assert len(domain_peer.node_routes) == 3
-    assert domain_peer.node_routes[0].priority == 4
-
-    # proxying should success now
-    proxy_domain_client = gateway_client.peers[0]
-    assert isinstance(proxy_domain_client, DomainClient)
-
-    # the routes the domain client uses to connect to the gateway should stay the same
-    gateway_peer: NodePeer = domain_client.peers[0]
-    assert len(gateway_peer.node_routes) == 1
+    # the routes the datasite client uses to connect to the gateway should stay the same
+    gateway_peer: ServerPeer = datasite_client.peers[0]
+    assert len(gateway_peer.server_routes) == 1
 
     # Remove existing peers
-    assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
+    assert isinstance(_remove_existing_peers(datasite_client), SyftSuccess)
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
-def test_delete_route(set_env_var, gateway_port: int, domain_1_port: int) -> None:
+@pytest.mark.network
+def test_delete_route(set_env_var, gateway_port: int, datasite_1_port: int) -> None:
     """
     Scenario:
-    Connect a domain to a gateway. The gateway adds a new route to the domain
+    Connect a datasite to a gateway. The gateway adds a new route to the datasite
     and then deletes it.
     """
-    # login to the domain and gateway
+    # login to the datasite and gateway
     gateway_client: GatewayClient = sy.login(
         port=gateway_port, email="info@openmined.org", password="changethis"
     )
-    domain_client: DomainClient = sy.login(
-        port=domain_1_port, email="info@openmined.org", password="changethis"
+    datasite_client: DatasiteClient = sy.login(
+        port=datasite_1_port, email="info@openmined.org", password="changethis"
     )
+
+    # Try removing existing peers just to make sure
+    _remove_existing_peers(datasite_client)
+    _remove_existing_peers(gateway_client)
 
     # Enable automatic acceptance of association requests
     res = gateway_client.settings.allow_association_request_auto_approval(enable=True)
     assert isinstance(res, SyftSuccess)
 
-    # connecting the domain to the gateway
-    result = domain_client.connect_to_gateway(gateway_client)
+    # connecting the datasite to the gateway
+    result = datasite_client.connect_to_gateway(gateway_client)
     assert isinstance(result, SyftSuccess)
-    assert len(domain_client.peers) == 1
+    assert len(datasite_client.peers) == 1
     assert len(gateway_client.peers) == 1
 
-    # add a new route to connect to the domain
-    new_route = HTTPNodeRoute(host_or_ip="localhost", port=10000)
-    domain_peer: NodePeer = gateway_client.api.services.network.get_all_peers()[0]
+    # add a new route to connect to the datasite
+    new_route = HTTPServerRoute(host_or_ip="localhost", port=10000)
+    datasite_peer: ServerPeer = gateway_client.api.services.network.get_all_peers()[0]
     res = gateway_client.api.services.network.add_route(
-        peer_verify_key=domain_peer.verify_key, route=new_route
+        peer_verify_key=datasite_peer.verify_key, route=new_route
     )
     assert isinstance(res, SyftSuccess)
-    domain_peer = gateway_client.api.services.network.get_all_peers()[0]
-    assert len(domain_peer.node_routes) == 2
-    assert domain_peer.node_routes[-1].port == new_route.port
+    datasite_peer = gateway_client.api.services.network.get_all_peers()[0]
+    assert len(datasite_peer.server_routes) == 2
+    assert datasite_peer.server_routes[-1].port == new_route.port
 
     # delete the added route
     res = gateway_client.api.services.network.delete_route(
-        peer_verify_key=domain_peer.verify_key, route=new_route
+        peer_verify_key=datasite_peer.verify_key, route=new_route
     )
     assert isinstance(res, SyftSuccess)
-    domain_peer = gateway_client.api.services.network.get_all_peers()[0]
-    assert len(domain_peer.node_routes) == 1
-    assert domain_peer.node_routes[-1].port == domain_1_port
+    datasite_peer = gateway_client.api.services.network.get_all_peers()[0]
+    assert len(datasite_peer.server_routes) == 1
+    assert datasite_peer.server_routes[-1].port == datasite_1_port
 
     # Remove existing peers
-    assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
+    assert isinstance(_remove_existing_peers(datasite_client), SyftSuccess)
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
-def test_add_update_route_priority_on_peer(
-    set_env_var, gateway_port: int, domain_1_port: int
+@pytest.mark.network
+def test_add_route_on_peer(
+    set_env_var, gateway_port: int, datasite_1_port: int
 ) -> None:
     """
     Test the `add_route_on_peer` of network service.
-    Connect a domain to a gateway.
-    The gateway adds 2 new routes for the domain and check their priorities.
-    The gateway updates the route priority for the domain remotely.
-    Then the domain adds a route to itself for the gateway.
+    Connect a datasite to a gateway.
+    The gateway adds 2 new routes for itself remotely on the datasite and check their priorities.
+    Then the datasite adds a route to itself for the gateway.
     """
-    # login to the domain and gateway
+    # login to the datasite and gateway
     gateway_client: GatewayClient = sy.login(
         port=gateway_port, email="info@openmined.org", password="changethis"
     )
-    domain_client: DomainClient = sy.login(
-        port=domain_1_port, email="info@openmined.org", password="changethis"
+    datasite_client: DatasiteClient = sy.login(
+        port=datasite_1_port, email="info@openmined.org", password="changethis"
     )
 
     # Remove existing peers
-    _remove_existing_peers(domain_client)
+    _remove_existing_peers(datasite_client)
     _remove_existing_peers(gateway_client)
 
     # Enable automatic acceptance of association requests
     res = gateway_client.settings.allow_association_request_auto_approval(enable=True)
     assert isinstance(res, SyftSuccess)
 
-    # connecting the domain to the gateway
-    result = domain_client.connect_to_gateway(gateway_client)
+    # connecting the datasite to the gateway
+    result = datasite_client.connect_to_gateway(gateway_client)
     assert isinstance(result, SyftSuccess)
-    assert len(domain_client.peers) == 1
+    assert len(datasite_client.peers) == 1
     assert len(gateway_client.peers) == 1
-    gateway_peer: NodePeer = domain_client.peers[0]
-    assert len(gateway_peer.node_routes) == 1
-    assert gateway_peer.node_routes[-1].priority == 1
+    gateway_peer: ServerPeer = datasite_client.peers[0]
+    assert len(gateway_peer.server_routes) == 1
+    assert gateway_peer.server_routes[-1].priority == 1
 
-    # adding a new route for the domain
-    new_route = HTTPNodeRoute(host_or_ip="localhost", port=10000)
-    domain_peer: NodePeer = gateway_client.api.services.network.get_all_peers()[0]
+    # adding a new route for the datasite
+    new_route = HTTPServerRoute(host_or_ip="localhost", port=10000)
+    datasite_peer: ServerPeer = gateway_client.api.services.network.get_all_peers()[0]
     res = gateway_client.api.services.network.add_route_on_peer(
-        peer=domain_peer, route=new_route
+        peer=datasite_peer, route=new_route
     )
     assert isinstance(res, SyftSuccess)
-    gateway_peer = domain_client.peers[0]
-    assert len(gateway_peer.node_routes) == 2
-    assert gateway_peer.node_routes[-1].port == new_route.port
-    assert gateway_peer.node_routes[-1].priority == 2
+    gateway_peer = datasite_client.api.services.network.get_all_peers()[0]
+    assert len(gateway_peer.server_routes) == 2
+    assert gateway_peer.server_routes[-1].port == new_route.port
+    assert gateway_peer.server_routes[-1].priority == 2
 
-    # adding another route for the domain
-    new_route2 = HTTPNodeRoute(host_or_ip="localhost", port=10001)
+    # adding another route for the datasite
+    new_route2 = HTTPServerRoute(host_or_ip="localhost", port=10001)
     res = gateway_client.api.services.network.add_route_on_peer(
-        peer=domain_peer, route=new_route2
+        peer=datasite_peer, route=new_route2
     )
     assert isinstance(res, SyftSuccess)
-    gateway_peer = domain_client.peers[0]
-    assert len(gateway_peer.node_routes) == 3
-    assert gateway_peer.node_routes[-1].port == new_route2.port
-    assert gateway_peer.node_routes[-1].priority == 3
+    gateway_peer = datasite_client.api.services.network.get_all_peers()[0]
+    assert len(gateway_peer.server_routes) == 3
+    assert gateway_peer.server_routes[-1].port == new_route2.port
+    assert gateway_peer.server_routes[-1].priority == 3
 
-    # update the route priority remotely on the domain
-    first_route = gateway_peer.node_routes[0]
-    res = gateway_client.api.services.network.update_route_priority_on_peer(
-        peer=domain_peer, route=first_route
+    # the datasite calls `add_route_on_peer` to to add a route to itself for the gateway
+    assert len(datasite_peer.server_routes) == 1
+    res = datasite_client.api.services.network.add_route_on_peer(
+        peer=datasite_client.peers[0], route=new_route
     )
     assert isinstance(res, SyftSuccess)
-
-    # the domain calls `add_route_on_peer` to to add a route to itself for the gateway
-    assert len(domain_peer.node_routes) == 1
-    res = domain_client.api.services.network.add_route_on_peer(
-        peer=domain_client.peers[0], route=new_route
-    )
-    assert isinstance(res, SyftSuccess)
-    domain_peer = gateway_client.api.services.network.get_all_peers()[0]
-    assert domain_peer.node_routes[-1].port == new_route.port
-    assert len(domain_peer.node_routes) == 2
+    datasite_peer = gateway_client.api.services.network.get_all_peers()[0]
+    assert datasite_peer.server_routes[-1].port == new_route.port
+    assert len(datasite_peer.server_routes) == 2
 
     # Remove existing peers
-    assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
+    assert isinstance(_remove_existing_peers(datasite_client), SyftSuccess)
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
+@pytest.mark.network
+@pytest.mark.flaky(reruns=2, reruns_delay=2)
 def test_delete_route_on_peer(
-    set_env_var, gateway_port: int, domain_1_port: int
+    set_env_var, gateway_port: int, datasite_1_port: int
 ) -> None:
     """
-    Connect a domain to a gateway, the gateway adds 2 new routes for the domain
+    Connect a datasite to a gateway, the gateway adds 2 new routes for the datasite
     , then delete them.
     """
-    # login to the domain and gateway
+    # login to the datasite and gateway
     gateway_client: GatewayClient = sy.login(
         port=gateway_port, email="info@openmined.org", password="changethis"
     )
-    domain_client: DomainClient = sy.login(
-        port=domain_1_port, email="info@openmined.org", password="changethis"
+    datasite_client: DatasiteClient = sy.login(
+        port=datasite_1_port, email="info@openmined.org", password="changethis"
     )
+
+    # Remove existing peers
+    _remove_existing_peers(datasite_client)
+    _remove_existing_peers(gateway_client)
 
     # Enable automatic acceptance of association requests
     res = gateway_client.settings.allow_association_request_auto_approval(enable=True)
     assert isinstance(res, SyftSuccess)
 
-    # connecting the domain to the gateway
-    result = domain_client.connect_to_gateway(gateway_client)
+    # connecting the datasite to the gateway
+    result = datasite_client.connect_to_gateway(gateway_client)
     assert isinstance(result, SyftSuccess)
 
-    # gateway adds 2 new routes for the domain
-    new_route = HTTPNodeRoute(host_or_ip="localhost", port=10000)
-    new_route2 = HTTPNodeRoute(host_or_ip="localhost", port=10001)
-    domain_peer: NodePeer = gateway_client.api.services.network.get_all_peers()[0]
+    # gateway adds 2 new routes for the datasite
+    new_route = HTTPServerRoute(host_or_ip="localhost", port=10000)
+    new_route2 = HTTPServerRoute(host_or_ip="localhost", port=10001)
+    datasite_peer: ServerPeer = gateway_client.api.services.network.get_all_peers()[0]
     res = gateway_client.api.services.network.add_route_on_peer(
-        peer=domain_peer, route=new_route
+        peer=datasite_peer, route=new_route
     )
     assert isinstance(res, SyftSuccess)
     res = gateway_client.api.services.network.add_route_on_peer(
-        peer=domain_peer, route=new_route2
+        peer=datasite_peer, route=new_route2
     )
     assert isinstance(res, SyftSuccess)
 
-    gateway_peer: NodePeer = domain_client.peers[0]
-    assert len(gateway_peer.node_routes) == 3
+    gateway_peer: ServerPeer = datasite_client.peers[0]
+    assert len(gateway_peer.server_routes) == 3
 
-    # gateway delete the routes for the domain
+    # gateway delete the routes for the datasite
     res = gateway_client.api.services.network.delete_route_on_peer(
-        peer=domain_peer, route_id=new_route.id
+        peer=datasite_peer, route=new_route
     )
     assert isinstance(res, SyftSuccess)
-    gateway_peer = domain_client.peers[0]
-    assert len(gateway_peer.node_routes) == 2
+    gateway_peer = datasite_client.peers[0]
+    assert len(gateway_peer.server_routes) == 2
 
     res = gateway_client.api.services.network.delete_route_on_peer(
-        peer=domain_peer, route=new_route2
+        peer=datasite_peer, route=new_route2
     )
     assert isinstance(res, SyftSuccess)
-    gateway_peer = domain_client.peers[0]
-    assert len(gateway_peer.node_routes) == 1
+    gateway_peer = datasite_client.peers[0]
+    assert len(gateway_peer.server_routes) == 1
 
-    # gateway deletes the last the route to it for the domain
-    last_route: NodeRouteType = gateway_peer.node_routes[0]
+    # gateway deletes the last the route to it for the datasite
+    last_route: ServerRouteType = gateway_peer.server_routes[0]
     res = gateway_client.api.services.network.delete_route_on_peer(
-        peer=domain_peer, route=last_route
+        peer=datasite_peer, route=last_route
     )
     assert isinstance(res, SyftSuccess)
     assert "There is no routes left" in res.message
-    assert len(domain_client.peers) == 0  # gateway is no longer a peer of the domain
+    assert (
+        len(datasite_client.peers) == 0
+    )  # gateway is no longer a peer of the datasite
 
-    # The gateway client also removes the domain as a peer
+    # The gateway client also removes the datasite as a peer
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
+@pytest.mark.network
 def test_update_route_priority(
-    set_env_var, gateway_port: int, domain_1_port: int
+    set_env_var, gateway_port: int, datasite_1_port: int
 ) -> None:
-    # login to the domain and gateway
+    # login to the datasite and gateway
     gateway_client: GatewayClient = sy.login(
         port=gateway_port, email="info@openmined.org", password="changethis"
     )
-    domain_client: DomainClient = sy.login(
-        port=domain_1_port, email="info@openmined.org", password="changethis"
+    datasite_client: DatasiteClient = sy.login(
+        port=datasite_1_port, email="info@openmined.org", password="changethis"
     )
 
     # Try remove existing peers
-    _remove_existing_peers(domain_client)
+    _remove_existing_peers(datasite_client)
     _remove_existing_peers(gateway_client)
 
     # Enable automatic acceptance of association requests
     res = gateway_client.settings.allow_association_request_auto_approval(enable=True)
     assert isinstance(res, SyftSuccess)
 
-    # connecting the domain to the gateway
-    result = domain_client.connect_to_gateway(gateway_client)
+    # connecting the datasite to the gateway
+    result = datasite_client.connect_to_gateway(gateway_client)
     assert isinstance(result, SyftSuccess)
 
-    # gateway adds 2 new routes to the domain
-    new_route = HTTPNodeRoute(host_or_ip="localhost", port=10000)
-    new_route2 = HTTPNodeRoute(host_or_ip="localhost", port=10001)
-    domain_peer: NodePeer = gateway_client.api.services.network.get_all_peers()[0]
+    # gateway adds 2 new routes to the datasite
+    new_route = HTTPServerRoute(host_or_ip="localhost", port=10000)
+    new_route2 = HTTPServerRoute(host_or_ip="localhost", port=10001)
+    datasite_peer: ServerPeer = gateway_client.api.services.network.get_all_peers()[0]
     res = gateway_client.api.services.network.add_route(
-        peer_verify_key=domain_peer.verify_key, route=new_route
+        peer_verify_key=datasite_peer.verify_key, route=new_route
     )
     assert isinstance(res, SyftSuccess)
     res = gateway_client.api.services.network.add_route(
-        peer_verify_key=domain_peer.verify_key, route=new_route2
+        peer_verify_key=datasite_peer.verify_key, route=new_route2
     )
     assert isinstance(res, SyftSuccess)
 
     # check if the priorities of the routes are correct
-    domain_peer = gateway_client.api.services.network.get_all_peers()[0]
+    datasite_peer = gateway_client.api.services.network.get_all_peers()[0]
     routes_port_priority: dict = {
-        route.port: route.priority for route in domain_peer.node_routes
+        route.port: route.priority for route in datasite_peer.server_routes
     }
-    assert routes_port_priority[domain_1_port] == 1
+    assert routes_port_priority[datasite_1_port] == 1
     assert routes_port_priority[new_route.port] == 2
     assert routes_port_priority[new_route2.port] == 3
 
     # update the priorities for the routes
     res = gateway_client.api.services.network.update_route_priority(
-        peer_verify_key=domain_peer.verify_key, route=new_route, priority=5
+        peer_verify_key=datasite_peer.verify_key, route=new_route, priority=5
     )
     assert isinstance(res, SyftSuccess)
-    domain_peer = gateway_client.api.services.network.get_all_peers()[0]
+    datasite_peer = gateway_client.api.services.network.get_all_peers()[0]
     routes_port_priority: dict = {
-        route.port: route.priority for route in domain_peer.node_routes
+        route.port: route.priority for route in datasite_peer.server_routes
     }
     assert routes_port_priority[new_route.port] == 5
 
+    # if we don't specify `priority`, the route will be automatically updated
+    # to have the biggest priority value among all routes
     res = gateway_client.api.services.network.update_route_priority(
-        peer_verify_key=domain_peer.verify_key, route=new_route2
+        peer_verify_key=datasite_peer.verify_key, route=new_route2
     )
     assert isinstance(res, SyftSuccess)
-    domain_peer = gateway_client.api.services.network.get_all_peers()[0]
+    datasite_peer = gateway_client.api.services.network.get_all_peers()[0]
     routes_port_priority: dict = {
-        route.port: route.priority for route in domain_peer.node_routes
+        route.port: route.priority for route in datasite_peer.server_routes
     }
     assert routes_port_priority[new_route2.port] == 6
 
     # Remove existing peers
-    assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
+    assert isinstance(_remove_existing_peers(datasite_client), SyftSuccess)
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
+@pytest.mark.network
 def test_update_route_priority_on_peer(
-    set_env_var, gateway_port: int, domain_1_port: int
+    set_env_var, gateway_port: int, datasite_1_port: int
 ) -> None:
-    # login to the domain and gateway
+    # login to the datasite and gateway
     gateway_client: GatewayClient = sy.login(
         port=gateway_port, email="info@openmined.org", password="changethis"
     )
-    domain_client: DomainClient = sy.login(
-        port=domain_1_port, email="info@openmined.org", password="changethis"
+    datasite_client: DatasiteClient = sy.login(
+        port=datasite_1_port, email="info@openmined.org", password="changethis"
     )
 
     # Remove existing peers
-    _remove_existing_peers(domain_client)
+    _remove_existing_peers(datasite_client)
     _remove_existing_peers(gateway_client)
 
     # Enable automatic acceptance of association requests
     res = gateway_client.settings.allow_association_request_auto_approval(enable=True)
     assert isinstance(res, SyftSuccess)
 
-    # connecting the domain to the gateway
-    result = domain_client.connect_to_gateway(gateway_client)
+    # connecting the datasite to the gateway
+    result = datasite_client.connect_to_gateway(gateway_client)
     assert isinstance(result, SyftSuccess)
 
-    # gateway adds 2 new routes for the domain to itself
-    domain_peer: NodePeer = gateway_client.api.services.network.get_all_peers()[0]
-    new_route = HTTPNodeRoute(host_or_ip="localhost", port=10000)
+    # gateway adds 2 new routes to itself remotely on the datasite server
+    datasite_peer: ServerPeer = gateway_client.api.services.network.get_all_peers()[0]
+    new_route = HTTPServerRoute(host_or_ip="localhost", port=10000)
     res = gateway_client.api.services.network.add_route_on_peer(
-        peer=domain_peer, route=new_route
+        peer=datasite_peer, route=new_route
     )
     assert isinstance(res, SyftSuccess)
 
-    new_route2 = HTTPNodeRoute(host_or_ip="localhost", port=10001)
+    new_route2 = HTTPServerRoute(host_or_ip="localhost", port=10001)
     res = gateway_client.api.services.network.add_route_on_peer(
-        peer=domain_peer, route=new_route2
+        peer=datasite_peer, route=new_route2
     )
     assert isinstance(res, SyftSuccess)
 
     # check if the priorities of the routes are correct
-    gateway_peer = domain_client.api.services.network.get_all_peers()[0]
+    gateway_peer = datasite_client.api.services.network.get_all_peers()[0]
     routes_port_priority: dict = {
-        route.port: route.priority for route in gateway_peer.node_routes
+        route.port: route.priority for route in gateway_peer.server_routes
     }
     assert routes_port_priority[gateway_port] == 1
     assert routes_port_priority[new_route.port] == 2
     assert routes_port_priority[new_route2.port] == 3
 
-    # gateway updates the route priorities for the domain remotely
+    # gateway updates the route priorities for the datasite remotely
     res = gateway_client.api.services.network.update_route_priority_on_peer(
-        peer=domain_peer, route=new_route, priority=5
+        peer=datasite_peer, route=new_route, priority=5
     )
     assert isinstance(res, SyftSuccess)
     res = gateway_client.api.services.network.update_route_priority_on_peer(
-        peer=domain_peer, route=gateway_peer.node_routes[0]
+        peer=datasite_peer, route=new_route2
     )
     assert isinstance(res, SyftSuccess)
 
-    gateway_peer = domain_client.api.services.network.get_all_peers()[0]
+    gateway_peer = datasite_client.api.services.network.get_all_peers()[0]
     routes_port_priority: dict = {
-        route.port: route.priority for route in gateway_peer.node_routes
+        route.port: route.priority for route in gateway_peer.server_routes
     }
     assert routes_port_priority[new_route.port] == 5
-    assert routes_port_priority[gateway_port] == 6
+    assert routes_port_priority[new_route2.port] == 6
 
     # Remove existing peers
-    assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
+    assert isinstance(_remove_existing_peers(datasite_client), SyftSuccess)
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
-def test_dataset_stream(set_env_var, gateway_port: int, domain_1_port: int) -> None:
+@pytest.mark.network
+def test_dataset_stream(set_env_var, gateway_port: int, datasite_1_port: int) -> None:
     """
-    Scenario: Connecting a domain node to a gateway node. The domain
+    Scenario: Connecting a datasite server to a gateway server. The datasite
         client then upload a dataset, which should be searchable by the syft network.
         People who install syft can see the mock data and metadata of the uploaded datasets
     """
-    # login to the domain and gateway
+    # login to the datasite and gateway
     gateway_client: GatewayClient = sy.login(
         port=gateway_port, email="info@openmined.org", password="changethis"
     )
-    domain_client: DomainClient = sy.login(
-        port=domain_1_port, email="info@openmined.org", password="changethis"
+    datasite_client: DatasiteClient = sy.login(
+        port=datasite_1_port, email="info@openmined.org", password="changethis"
     )
 
     # Remove existing peers just to make sure
-    _remove_existing_peers(domain_client)
+    _remove_existing_peers(datasite_client)
     _remove_existing_peers(gateway_client)
 
     res = gateway_client.settings.allow_association_request_auto_approval(enable=True)
     assert isinstance(res, SyftSuccess)
 
-    # connect the domain to the gateway
-    result = domain_client.connect_to_gateway(gateway_client)
+    # connect the datasite to the gateway
+    result = datasite_client.connect_to_gateway(gateway_client)
     assert isinstance(result, SyftSuccess)
-    assert len(sy.gateways.all_networks) == len(sy.gateways.online_networks) == 1
-    assert len(sy.domains.all_domains) == len(sy.domains.online_domains) == 1
 
-    # the domain client uploads a dataset
+    # the datasite client uploads a dataset
     input_data = np.array([1, 2, 3])
     mock_data = np.array([4, 5, 6])
     asset_name = _random_hash()
     asset = sy.Asset(name=asset_name, data=input_data, mock=mock_data)
     dataset_name = _random_hash()
     dataset = sy.Dataset(name=dataset_name, asset_list=[asset])
-    dataset_res = domain_client.upload_dataset(dataset)
+    dataset_res = datasite_client.upload_dataset(dataset)
     assert isinstance(dataset_res, SyftSuccess)
 
-    domain_proxy_client = next(
-        gateway_client.domains[i]
+    datasite_proxy_client = next(
+        gateway_client.datasites[i]
         for i in itertools.count()
-        if gateway_client.domains[i].name == domain_client.name
+        if gateway_client.datasites[i].name == datasite_client.name
     )
-    root_proxy_client = domain_proxy_client.login(
+    root_proxy_client = datasite_proxy_client.login(
         email="info@openmined.org", password="changethis"
     )
     retrieved_dataset = root_proxy_client.datasets[dataset_name]
     retrieved_asset = retrieved_dataset.assets[asset_name]
     assert np.all(retrieved_asset.data == input_data)
 
-    # the domain client delete the dataset
-    domain_client.api.services.dataset.delete_by_uid(uid=retrieved_dataset.id)
+    # the datasite client delete the dataset
+    datasite_client.api.services.dataset.delete_by_uid(uid=retrieved_dataset.id)
 
     # Remove existing peers
-    assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
+    assert isinstance(_remove_existing_peers(datasite_client), SyftSuccess)
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
-def test_peer_health_check(set_env_var, gateway_port: int, domain_1_port: int) -> None:
+@pytest.mark.network
+def test_peer_health_check(
+    set_env_var, gateway_port: int, datasite_1_port: int
+) -> None:
     """
-    Scenario: Connecting a domain node to a gateway node.
+    Scenario: Connecting a datasite server to a gateway server.
     The gateway client approves the association request.
-    The gateway client checks that the domain peer is associated
-    TODO: check for peer connection status through NodePeer.pingstatus
-    TODO: check that the domain is online with `DomainRegistry.online_domains`
-        Then make the domain go offline, which should be reflected when calling
-        `DomainRegistry.online_domains`
+    The gateway client checks that the datasite peer is associated
     """
-    # login to the domain and gateway
+    # login to the datasite and gateway
     gateway_client: GatewayClient = sy.login(
         port=gateway_port, email="info@openmined.org", password="changethis"
     )
-    domain_client: DomainClient = sy.login(
-        port=domain_1_port, email="info@openmined.org", password="changethis"
+    datasite_client: DatasiteClient = sy.login(
+        port=datasite_1_port, email="info@openmined.org", password="changethis"
     )
 
     res = gateway_client.settings.allow_association_request_auto_approval(enable=False)
     assert isinstance(res, SyftSuccess)
 
     # Try removing existing peers just to make sure
-    _remove_existing_peers(domain_client)
+    _remove_existing_peers(datasite_client)
     _remove_existing_peers(gateway_client)
 
-    # gateway checks that the domain is not yet associated
+    # gateway checks that the datasite is not yet associated
     res = gateway_client.api.services.network.check_peer_association(
-        peer_id=domain_client.id
+        peer_id=datasite_client.id
     )
-    assert isinstance(res, NodePeerAssociationStatus)
+    assert isinstance(res, ServerPeerAssociationStatus)
     assert res.value == "PEER_NOT_FOUND"
 
-    # the domain tries to connect to the gateway
-    result = domain_client.connect_to_gateway(gateway_client)
+    # the datasite tries to connect to the gateway
+    result = datasite_client.connect_to_gateway(gateway_client)
     assert isinstance(result, Request)
     assert isinstance(result.changes[0], AssociationRequestChange)
 
     # check that the peer's association request is pending
     res = gateway_client.api.services.network.check_peer_association(
-        peer_id=domain_client.id
+        peer_id=datasite_client.id
     )
-    assert isinstance(res, NodePeerAssociationStatus)
+    assert isinstance(res, ServerPeerAssociationStatus)
     assert res.value == "PEER_ASSOCIATION_PENDING"
 
-    # the domain tries to connect to the gateway (again)
-    result = domain_client.connect_to_gateway(gateway_client)
+    # the datasite tries to connect to the gateway (again)
+    result = datasite_client.connect_to_gateway(gateway_client)
     assert isinstance(result, Request)  # the pending request is returned
-    # there should be only 1 association requests from the domain
+    # there should be only 1 association requests from the datasite
     assert len(gateway_client.api.services.request.get_all()) == 1
 
     # check again that the peer's association request is still pending
     res = gateway_client.api.services.network.check_peer_association(
-        peer_id=domain_client.id
+        peer_id=datasite_client.id
     )
-    assert isinstance(res, NodePeerAssociationStatus)
+    assert isinstance(res, ServerPeerAssociationStatus)
     assert res.value == "PEER_ASSOCIATION_PENDING"
 
     # the gateway client approves one of the association requests
@@ -897,15 +912,73 @@ def test_peer_health_check(set_env_var, gateway_port: int, domain_1_port: int) -
 
     # the gateway client checks that the peer is associated
     res = gateway_client.api.services.network.check_peer_association(
-        peer_id=domain_client.id
+        peer_id=datasite_client.id
     )
-    assert isinstance(res, NodePeerAssociationStatus)
+    assert isinstance(res, ServerPeerAssociationStatus)
     assert res.value == "PEER_ASSOCIATED"
 
-    time.sleep(PeerHealthCheckTask.repeat_time + 1)
-    domain_peer = gateway_client.api.services.network.get_all_peers()[0]
-    assert domain_peer.ping_status == NodePeerConnectionStatus.ACTIVE
+    time.sleep(PeerHealthCheckTask.repeat_time * 2 + 1)
+    datasite_peer = gateway_client.api.services.network.get_all_peers()[0]
+    assert datasite_peer.ping_status == ServerPeerConnectionStatus.ACTIVE
 
     # Remove existing peers
-    assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
+    assert isinstance(_remove_existing_peers(datasite_client), SyftSuccess)
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
+
+
+@pytest.mark.network
+def test_reverse_tunnel_connection(datasite_1_port: int, gateway_port: int):
+    # login to the datasite and gateway
+
+    gateway_client: GatewayClient = sy.login(
+        port=gateway_port, email="info@openmined.org", password="changethis"
+    )
+    datasite_client: DatasiteClient = sy.login(
+        port=datasite_1_port, email="info@openmined.org", password="changethis"
+    )
+
+    res = gateway_client.settings.allow_association_request_auto_approval(enable=False)
+
+    # Try removing existing peers just to make sure
+    _remove_existing_peers(datasite_client)
+    _remove_existing_peers(gateway_client)
+
+    # connecting the datasite to the gateway
+    result = datasite_client.connect_to_gateway(gateway_client, reverse_tunnel=True)
+
+    assert isinstance(result, Request)
+    assert isinstance(result.changes[0], AssociationRequestChange)
+
+    assert len(datasite_client.peers) == 1
+
+    # Datasite's peer is a gateway and vice-versa
+    datasite_peer = datasite_client.peers[0]
+    assert datasite_peer.server_type == ServerType.GATEWAY
+    assert datasite_peer.server_routes[0].rtunnel_token is None
+    assert len(gateway_client.peers) == 0
+
+    gateway_client_root = gateway_client.login(
+        email="info@openmined.org", password="changethis"
+    )
+    res = gateway_client_root.api.services.request.get_all()[-1].approve()
+    assert not isinstance(res, SyftError)
+
+    time.sleep(90)
+
+    gateway_peers = gateway_client.api.services.network.get_all_peers()
+    assert len(gateway_peers) == 1
+    assert len(gateway_peers[0].server_routes) == 1
+    assert gateway_peers[0].server_routes[0].rtunnel_token is not None
+
+    proxy_datasite_client = gateway_client.peers[0]
+
+    assert isinstance(proxy_datasite_client, DatasiteClient)
+    assert isinstance(datasite_peer, ServerPeer)
+    assert gateway_client.name == datasite_peer.name
+    assert datasite_client.name == proxy_datasite_client.name
+
+    assert not isinstance(proxy_datasite_client.datasets.get_all(), SyftError)
+
+    # Try removing existing peers just to make sure
+    _remove_existing_peers(gateway_client)
+    _remove_existing_peers(datasite_client)

@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from collections.abc import Sequence
 import hashlib
+import logging
 from typing import Any
 import uuid
 from uuid import UUID as uuid_type
@@ -14,8 +15,8 @@ from typing_extensions import Self
 
 # relative
 from ..serde.serializable import serializable
-from ..util.logger import critical
-from ..util.logger import traceback_and_raise
+
+logger = logging.getLogger(__name__)
 
 
 @serializable(attrs=["value"])
@@ -23,7 +24,7 @@ class UID:
     """A unique ID for every Syft object.
 
     This object creates a unique ID for every object in the Syft
-    ecosystem. This ID is guaranteed to be unique for the node on
+    ecosystem. This ID is guaranteed to be unique for the server on
     which it is initialized and is very likely to be unique across
     the whole ecosystem (because it is long and randomly generated).
 
@@ -81,9 +82,8 @@ class UID:
         try:
             return UID(value=uuid.UUID(value))
         except ValueError as e:
-            critical(f"Unable to convert {value} to UUID. {e}")
-            traceback_and_raise(e)
-            raise
+            logger.critical(f"Unable to convert {value} to UUID. {e}")
+            raise e
 
     @staticmethod
     def with_seed(value: str) -> UID:

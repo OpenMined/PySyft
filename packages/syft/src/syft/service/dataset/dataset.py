@@ -2,12 +2,14 @@
 from collections.abc import Callable
 from datetime import datetime
 from enum import Enum
+import logging
 import textwrap
 from typing import Any
 
 # third party
 from IPython.display import display
 import itables
+import markdown
 import pandas as pd
 from pydantic import ConfigDict
 from pydantic import field_validator
@@ -22,10 +24,14 @@ from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
+from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
+from ...types.transforms import drop
 from ...types.transforms import generate_id
+from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.transforms import validate_url
 from ...types.uid import UID
@@ -38,6 +44,8 @@ from ...util.misc_objs import MarkdownDescription
 from ...util.notebook_ui.icons import Icon
 from ...util.notebook_ui.styles import FONT_CSS
 from ...util.notebook_ui.styles import ITABLES_CSS
+from ..action.action_data_empty import ActionDataEmpty
+from ..action.action_object import ActionObject
 from ..data_subject.data_subject import DataSubject
 from ..data_subject.data_subject import DataSubjectCreate
 from ..data_subject.data_subject_service import DataSubjectService
@@ -47,6 +55,7 @@ from ..response import SyftSuccess
 from ..response import SyftWarning
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
+logger = logging.getLogger(__name__)
 
 
 @serializable()
@@ -93,7 +102,7 @@ class Asset(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_2
 
     action_id: UID
-    node_uid: UID
+    server_uid: UID
     name: str
     description: MarkdownDescription | None = None
     contributors: set[Contributor] = set()
@@ -103,7 +112,10 @@ class Asset(SyftObject):
     created_at: DateTime = DateTime.now()
     uploader: Contributor | None = None
 
-    __repr_attrs__ = ["name", "shape"]
+    # _kwarg_name and _dataset_name are set by the UserCode.assets
+    _kwarg_name: str | None = None
+    _dataset_name: str | None = None
+    __syft_include_id_coll_repr__ = False
 
     def __init__(
         self,
@@ -176,6 +188,9 @@ class Asset(SyftObject):
             {mock_table_line}
             </div>"""
 
+    def __repr__(self) -> str:
+        return f"Asset(name='{self.name}', server_uid='{self.server_uid}', action_id='{self.action_id}')"
+
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         _repr_str = f"Asset: {self.name}\n"
         _repr_str += f"Pointer Id: {self.action_id}\n"
@@ -186,6 +201,30 @@ class Asset(SyftObject):
         for contributor in self.contributors:
             _repr_str += f"\t{contributor.name}: {contributor.email}\n"
         return as_markdown_python_code(_repr_str)
+
+    def _coll_repr_(self) -> dict[str, Any]:
+        base_dict = {
+            "Parameter": self._kwarg_name,
+            "Action ID": self.action_id,
+            "Asset Name": self.name,
+            "Dataset Name": self._dataset_name,
+            "Server UID": self.server_uid,
+        }
+
+        # _kwarg_name and _dataset_name are set by the UserCode.assets
+        # if they are None, we remove them from the dict
+        filtered_dict = {
+            key: value for key, value in base_dict.items() if value is not None
+        }
+        return filtered_dict
+
+    def _get_dict_for_user_code_repr(self) -> dict[str, Any]:
+        return {
+            "action_id": self.action_id.no_dash,
+            "source_asset": self.name,
+            "source_dataset": self._dataset_name,
+            "source_server": self.server_uid.no_dash,
+        }
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Asset):
@@ -208,7 +247,7 @@ class Asset(SyftObject):
         from ...client.api import APIRegistry
 
         api = APIRegistry.api_for(
-            node_uid=self.node_uid,
+            server_uid=self.server_uid,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is not None and api.services is not None:
@@ -220,11 +259,11 @@ class Asset(SyftObject):
         from ...client.api import APIRegistry
 
         api = APIRegistry.api_for(
-            node_uid=self.node_uid,
+            server_uid=self.server_uid,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None:
-            return SyftError(message=f"You must login to {self.node_uid}")
+            return SyftError(message=f"You must login to {self.server_uid}")
         result = api.services.action.get_mock(self.action_id)
         try:
             if isinstance(result, SyftObject):
@@ -250,7 +289,7 @@ class Asset(SyftObject):
         from ...client.api import APIRegistry
 
         api = APIRegistry.api_for(
-            node_uid=self.node_uid,
+            server_uid=self.server_uid,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None or api.services is None:
@@ -294,7 +333,7 @@ class CreateAsset(SyftObject):
     description: MarkdownDescription | None = None
     contributors: set[Contributor] = set()
     data_subjects: list[DataSubjectCreate] = []
-    node_uid: UID | None = None
+    server_uid: UID | None = None
     action_id: UID | None = None
     data: Any | None = None
     mock: Any | None = None
@@ -304,7 +343,7 @@ class CreateAsset(SyftObject):
     uploader: Contributor | None = None
 
     __repr_attrs__ = ["name"]
-    model_config = ConfigDict(validate_assignment=True)
+    model_config = ConfigDict(validate_assignment=True, extra="forbid")
 
     def __init__(self, description: str | None = None, **data: Any) -> None:
         if isinstance(description, str):
@@ -319,6 +358,17 @@ class CreateAsset(SyftObject):
             self.__dict__["mock_is_real"] = False
 
         return self
+
+    def contains_empty(self) -> bool:
+        if isinstance(self.mock, ActionObject) and isinstance(
+            self.mock.syft_action_data_cache, ActionDataEmpty
+        ):
+            return True
+        if isinstance(self.data, ActionObject) and isinstance(
+            self.data.syft_action_data_cache, ActionDataEmpty
+        ):
+            return True
+        return False
 
     def add_data_subject(self, data_subject: DataSubject) -> None:
         self.data_subjects.append(data_subject)
@@ -406,14 +456,14 @@ def get_shape_or_len(obj: Any) -> tuple[int, ...] | int | None:
 
 
 @serializable()
-class Dataset(SyftObject):
+class DatasetV2(SyftObject):
     # version
     __canonical_name__: str = "Dataset"
     __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
     name: str
-    node_uid: UID | None = None
+    server_uid: UID | None = None
     asset_list: list[Asset] = []
     contributors: set[Contributor] = set()
     citation: str | None = None
@@ -425,9 +475,50 @@ class Dataset(SyftObject):
     created_at: DateTime = DateTime.now()
     uploader: Contributor
 
-    __attr_searchable__ = ["name", "citation", "url", "description", "action_ids"]
+    __attr_searchable__ = [
+        "name",
+        "citation",
+        "url",
+        "description",
+        "action_ids",
+        "summary",
+    ]
     __attr_unique__ = ["name"]
     __repr_attrs__ = ["name", "url", "created_at"]
+    __table_sort_attr__ = "Created at"
+
+
+@serializable()
+class Dataset(SyftObject):
+    # version
+    __canonical_name__: str = "Dataset"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    id: UID
+    name: str
+    server_uid: UID | None = None
+    asset_list: list[Asset] = []
+    contributors: set[Contributor] = set()
+    citation: str | None = None
+    url: str | None = None
+    description: MarkdownDescription | None = None
+    updated_at: str | None = None
+    requests: int | None = 0
+    mb_size: float | None = None
+    created_at: DateTime = DateTime.now()
+    uploader: Contributor
+    summary: str | None = None
+
+    __attr_searchable__ = [
+        "name",
+        "citation",
+        "url",
+        "description",
+        "action_ids",
+        "summary",
+    ]
+    __attr_unique__ = ["name"]
+    __repr_attrs__ = ["name", "summary", "url", "created_at"]
     __table_sort_attr__ = "Created at"
 
     def __init__(
@@ -446,6 +537,7 @@ class Dataset(SyftObject):
     def _coll_repr_(self) -> dict[str, Any]:
         return {
             "Name": self.name,
+            "Summary": self.summary,
             "Assets": len(self.asset_list),
             "Size": f"{self.mb_size} (MB)",
             "Url": self.url,
@@ -456,12 +548,18 @@ class Dataset(SyftObject):
         uploaded_by_line = (
             (
                 "<p class='paragraph-sm'><strong>"
-                + f"<span class='pr-8'>Uploaded by:</span></strong>{self.uploader.name} ({self.uploader.email})</p>"
+                + f"<span class='pr-8'>Uploaded by: </span></strong>{self.uploader.name} ({self.uploader.email})</p>"
             )
             if self.uploader
             else ""
         )
-        description_text: str = self.description.text if self.description else ""
+        if self.description is not None and self.description.text:
+            description_info_message = f"""
+            <h2><strong><span class='pr-8'>Description</span></strong></h2>
+            {markdown.markdown(self.description.text, extensions=["extra"])}
+            """
+        else:
+            description_info_message = ""
         return f"""
             <style>
             {FONT_CSS}
@@ -472,22 +570,23 @@ class Dataset(SyftObject):
               {ITABLES_CSS}
             </style>
             <div class='syft-dataset'>
-            <h3>{self.name}</h3>
-            <p>{description_text}</p>
+            <h1>{self.name}</h1>
+            <h2><strong><span class='pr-8'>Summary</span></strong></h2>
+            {f"<p>{self.summary}</p>" if self.summary else ""}
+            {description_info_message}
+            <h2><strong><span class='pr-8'>Dataset Details</span></strong></h2>
             {uploaded_by_line}
             <p class='paragraph-sm'><strong><span class='pr-8'>Created on: </span></strong>{self.created_at}</p>
             <p class='paragraph-sm'><strong><span class='pr-8'>URL:
             </span></strong><a href='{self.url}'>{self.url}</a></p>
             <p class='paragraph-sm'><strong><span class='pr-8'>Contributors:</span></strong>
-            to see full details call <strong>dataset.contributors</strong></p>
+            To see full details call <strong>dataset.contributors</strong>.</p>
+            <h2><strong><span class='pr-8'>Assets</span></strong></h2>
             {self.assets._repr_html_()}
             """
 
     def action_ids(self) -> list[UID]:
-        data = []
-        for asset in self.asset_list:
-            if asset.action_id:
-                data.append(asset.action_id)
+        data = [asset.action_id for asset in self.asset_list if asset.action_id]
         return data
 
     @property
@@ -518,10 +617,10 @@ class Dataset(SyftObject):
         # relative
         from ...client.client import SyftClientSessionCache
 
-        client = SyftClientSessionCache.get_client_for_node_uid(self.node_uid)
+        client = SyftClientSessionCache.get_client_for_server_uid(self.server_uid)
         if client is None:
             return SyftError(
-                message=f"No clients for {self.node_uid} in memory. Please login with sy.login"
+                message=f"No clients for {self.server_uid} in memory. Please login with sy.login"
             )
         return client
 
@@ -563,7 +662,7 @@ class DatasetPageView(SyftObject):
 
 
 @serializable()
-class CreateDataset(Dataset):
+class CreateDatasetV2(DatasetV2):
     # version
     __canonical_name__ = "CreateDataset"
     __version__ = SYFT_OBJECT_VERSION_2
@@ -575,7 +674,21 @@ class CreateDataset(Dataset):
     created_at: DateTime | None = None  # type: ignore[assignment]
     uploader: Contributor | None = None  # type: ignore[assignment]
 
-    model_config = ConfigDict(validate_assignment=True)
+
+@serializable()
+class CreateDataset(Dataset):
+    # version
+    __canonical_name__ = "CreateDataset"
+    __version__ = SYFT_OBJECT_VERSION_3
+    asset_list: list[CreateAsset] = []
+
+    __repr_attrs__ = ["name", "summary", "url"]
+
+    id: UID | None = None  # type: ignore[assignment]
+    created_at: DateTime | None = None  # type: ignore[assignment]
+    uploader: Contributor | None = None  # type: ignore[assignment]
+
+    model_config = ConfigDict(validate_assignment=True, extra="forbid")
 
     def _check_asset_must_contain_mock(self) -> None:
         _check_asset_must_contain_mock(self.asset_list)
@@ -590,6 +703,9 @@ class CreateDataset(Dataset):
 
     def set_description(self, description: str) -> None:
         self.description = MarkdownDescription(text=description)
+
+    def set_summary(self, summary: str) -> None:
+        self.summary = summary
 
     def add_citation(self, citation: str) -> None:
         self.citation = citation
@@ -637,7 +753,7 @@ class CreateDataset(Dataset):
                 else:
                     self.asset_list[i] = asset
                     return SyftSuccess(
-                        f"Asset {asset.name} has been successfully replaced."
+                        message=f"Asset {asset.name} has been successfully replaced."
                     )
 
         self.asset_list.append(asset)
@@ -688,17 +804,28 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
         if private_obj is None and mock_obj is None:
             raise ValueError("No data and no action_id means this asset has no data")
 
+        asset = context.obj  # type: ignore
+        contains_empty = asset.contains_empty()  # type: ignore
         twin = TwinObject(
-            private_obj=private_obj,
-            mock_obj=mock_obj,
+            private_obj=asset.data,  # type: ignore
+            mock_obj=asset.mock,  # type: ignore
+            syft_server_location=asset.syft_server_location,  # type: ignore
+            syft_client_verify_key=asset.syft_client_verify_key,  # type: ignore
         )
-        if context.node is None:
+        res = twin._save_to_blob_storage(allow_empty=contains_empty)
+        if isinstance(res, SyftError):
+            raise ValueError(res.message)
+        if isinstance(res, SyftWarning):
+            logger.debug(res.message)
+        # TODO, upload to blob storage here
+        if context.server is None:
             raise ValueError(
-                "f{context}'s node is None, please log in. No trasformation happened"
+                "f{context}'s server is None, please log in. No trasformation happened"
             )
-        action_service = context.node.get_service("actionservice")
-        result = action_service.set(
-            context=context.to_node_context(), action_object=twin
+        action_service = context.server.get_service("actionservice")
+        result = action_service._set(
+            context=context.to_server_context(),
+            action_object=twin,
         )
         if result.is_err():
             raise RuntimeError(f"Failed to create and store twin. Error: {result}")
@@ -723,12 +850,12 @@ def infer_shape(context: TransformContext) -> TransformContext:
 def set_data_subjects(context: TransformContext) -> TransformContext | SyftError:
     if context.output is None:
         raise ValueError(f"{context}'s output is None. No transformation happened")
-    if context.node is None:
+    if context.server is None:
         return SyftError(
-            "f{context}'s node is None, please log in. No trasformation happened"
+            "f{context}'s server is None, please log in. No trasformation happened"
         )
     data_subjects = context.output["data_subjects"]
-    get_data_subject = context.node.get_service_method(DataSubjectService.get_by_name)
+    get_data_subject = context.server.get_service_method(DataSubjectService.get_by_name)
     resultant_data_subjects = []
     for data_subject in data_subjects:
         result = get_data_subject(context=context, name=data_subject.name)
@@ -747,10 +874,10 @@ def add_msg_creation_time(context: TransformContext) -> TransformContext:
     return context
 
 
-def add_default_node_uid(context: TransformContext) -> TransformContext:
+def add_default_server_uid(context: TransformContext) -> TransformContext:
     if context.output is not None:
-        if context.output["node_uid"] is None and context.node is not None:
-            context.output["node_uid"] = context.node.id
+        if context.output["server_uid"] is None and context.server is not None:
+            context.output["server_uid"] = context.server.id
     else:
         raise ValueError(f"{context}'s output is None. No transformation happened")
     return context
@@ -764,7 +891,7 @@ def createasset_to_asset() -> list[Callable]:
         infer_shape,
         create_and_store_twin,
         set_data_subjects,
-        add_default_node_uid,
+        add_default_server_uid,
     ]
 
 
@@ -800,6 +927,42 @@ def createdataset_to_dataset() -> list[Callable]:
         validate_url,
         convert_asset,
         add_current_date,
+    ]
+
+
+@migrate(DatasetV2, Dataset)
+def migrate_dataset_v2_to_v3() -> list[Callable]:
+    return [
+        make_set_default("summary", None),
+        drop("__repr_attrs__"),
+        make_set_default("__repr_attrs__", ["name", "summary", "url", "created_at"]),
+    ]
+
+
+@migrate(Dataset, DatasetV2)
+def migrate_dataset_v3_to_v2() -> list[Callable]:
+    return [
+        drop("summary"),
+        drop("__repr_attrs__"),
+        make_set_default("__repr_attrs__", ["name", "url", "created_at"]),
+    ]
+
+
+@migrate(CreateDatasetV2, CreateDataset)
+def migrate_create_dataset_v2_to_v3() -> list[Callable]:
+    return [
+        make_set_default("summary", None),
+        drop("__repr_attrs__"),
+        make_set_default("__repr_attrs__", ["name", "summary", "url"]),
+    ]
+
+
+@migrate(CreateDataset, CreateDatasetV2)
+def migrate_create_dataset_v3_to_v2() -> list[Callable]:
+    return [
+        drop("summary"),
+        drop("__repr_attrs__"),
+        make_set_default("__repr_attrs__", ["name", "url"]),
     ]
 
 

@@ -1,8 +1,3 @@
-# stdlib
-
-# third party
-from result import Ok
-
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
@@ -33,9 +28,14 @@ class LogService(AbstractService):
 
     @service_method(path="log.add", name="add", roles=DATA_SCIENTIST_ROLE_LEVEL)
     def add(
-        self, context: AuthedServiceContext, uid: UID, job_id: UID
+        self,
+        context: AuthedServiceContext,
+        uid: UID,
+        job_id: UID,
+        stdout: str = "",
+        stderr: str = "",
     ) -> SyftSuccess | SyftError:
-        new_log = SyftLog(id=uid, job_id=job_id)
+        new_log = SyftLog(id=uid, job_id=job_id, stdout=stdout, stderr=stderr)
         result = self.stash.set(context.credentials, new_log)
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -65,25 +65,29 @@ class LogService(AbstractService):
         return SyftSuccess(message="Log Append successful!")
 
     @service_method(path="log.get", name="get", roles=DATA_SCIENTIST_ROLE_LEVEL)
-    def get(self, context: AuthedServiceContext, uid: UID) -> SyftSuccess | SyftError:
+    def get(self, context: AuthedServiceContext, uid: UID) -> SyftLog | SyftError:
         result = self.stash.get_by_uid(context.credentials, uid)
 
         if result.is_err():
             return SyftError(message=str(result.err()))
 
-        return result
+        return result.ok()
 
     @service_method(
         path="log.get_stdout", name="get_stdout", roles=DATA_SCIENTIST_ROLE_LEVEL
     )
-    def get_stdout(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> SyftSuccess | SyftError:
-        result = self.stash.get_by_uid(context.credentials, uid)
-        if result.is_err():
-            return SyftError(message=str(result.err()))
+    def get_stdout(self, context: AuthedServiceContext, uid: UID) -> str | SyftError:
+        result = self.get(context, uid)
+        if isinstance(result, SyftError):
+            return result
+        return result.stdout
 
-        return Ok(result.ok().stdout)
+    @service_method(path="log.get_stderr", name="get_stderr", roles=ADMIN_ROLE_LEVEL)
+    def get_stderr(self, context: AuthedServiceContext, uid: UID) -> str | SyftError:
+        result = self.get(context, uid)
+        if isinstance(result, SyftError):
+            return result
+        return result.stderr
 
     @service_method(path="log.restart", name="restart", roles=DATA_SCIENTIST_ROLE_LEVEL)
     def restart(
@@ -101,16 +105,6 @@ class LogService(AbstractService):
         if result.is_err():
             return SyftError(message=str(result.err()))
         return SyftSuccess(message="Log Restart successful!")
-
-    @service_method(path="log.get_error", name="get_error", roles=ADMIN_ROLE_LEVEL)
-    def get_error(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> SyftSuccess | SyftError:
-        result = self.stash.get_by_uid(context.credentials, uid)
-        if result.is_err():
-            return SyftError(message=str(result.err()))
-
-        return Ok(result.ok().stderr)
 
     @service_method(path="log.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL)
     def get_all(self, context: AuthedServiceContext) -> SyftSuccess | SyftError:
@@ -135,7 +129,7 @@ class LogService(AbstractService):
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def has_storage_permission(self, context: AuthedServiceContext, uid: UID) -> bool:
-        permission = StoragePermission(uid=uid, node_uid=context.node.id)
+        permission = StoragePermission(uid=uid, server_uid=context.server.id)
         result = self.stash.has_storage_permission(permission)
 
         return result

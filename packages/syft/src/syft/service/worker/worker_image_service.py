@@ -82,7 +82,7 @@ class SyftWorkerImageService(AbstractService):
         image_uid: UID,
         tag: str,
         registry_uid: UID | None = None,
-        pull: bool = True,
+        pull_image: bool = True,
     ) -> SyftSuccess | SyftError:
         registry: SyftImageRegistry | None = None
 
@@ -99,7 +99,7 @@ class SyftWorkerImageService(AbstractService):
 
         if registry_uid:
             # get registry from image registry service
-            image_registry_service: AbstractService = context.node.get_service(
+            image_registry_service: AbstractService = context.server.get_service(
                 SyftImageRegistryService
             )
             registry_result = image_registry_service.get_by_id(context, registry_uid)
@@ -129,8 +129,8 @@ class SyftWorkerImageService(AbstractService):
         worker_image.image_identifier = image_identifier
         result = None
 
-        if not context.node.in_memory_workers:
-            build_result = image_build(worker_image, pull=pull)
+        if not context.server.in_memory_workers:
+            build_result = image_build(worker_image, pull=pull_image)
             if isinstance(build_result, SyftError):
                 return build_result
 
@@ -162,14 +162,14 @@ class SyftWorkerImageService(AbstractService):
     def push(
         self,
         context: AuthedServiceContext,
-        image: UID,
+        image_uid: UID,
         username: str | None = None,
         password: str | None = None,
     ) -> SyftSuccess | SyftError:
-        result = self.stash.get_by_uid(credentials=context.credentials, uid=image)
+        result = self.stash.get_by_uid(credentials=context.credentials, uid=image_uid)
         if result.is_err():
             return SyftError(
-                message=f"Failed to get Image ID: {image}. Error: {result.err()}"
+                message=f"Failed to get Image ID: {image_uid}. Error: {result.err()}"
             )
         worker_image: SyftWorkerImage = result.ok()
 
@@ -238,7 +238,7 @@ class SyftWorkerImageService(AbstractService):
             return SyftError(message=f"{res.err()}")
         image: SyftWorkerImage = res.ok()
 
-        if context.node.in_memory_workers:
+        if context.server.in_memory_workers:
             pass
         elif IN_KUBERNETES:
             # TODO: Implement image deletion in kubernetes

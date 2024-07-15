@@ -17,7 +17,7 @@ syft.client.connection
 
    .. autosummary::
    
-      NodeConnection
+      ServerConnection
    
    
 

@@ -1,18 +1,22 @@
 # =================================================================================
 # Syft on AKS Cluster
 #
-# Node side : high
+# Server side : high
 # Automount : NO
 # Ingress   : webapprouting.kubernetes.azure.com
 # Extras    : None
 # =================================================================================
 
-node:
+server:
   name: syft-azure
   side: high
   rootEmail: info@openmined.org
-  defaultWorkerPoolCount: 1
   resourcesPreset: 2xlarge
+
+  defaultWorkerPool:
+    count: 1
+    podLabels: null
+    podAnnotations: null
 
 ingress:
   # Make sure cluster is created with --enable-app-routing

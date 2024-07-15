@@ -13,8 +13,8 @@ from result import Result
 from typing_extensions import Self
 
 # relative
-from ..node.credentials import SyftVerifyKey
 from ..serde.serializable import serializable
+from ..server.credentials import SyftVerifyKey
 from ..service.action.action_permissions import ActionObjectEXECUTE
 from ..service.action.action_permissions import ActionObjectOWNER
 from ..service.action.action_permissions import ActionObjectPermission
@@ -117,7 +117,7 @@ class KeyValueStorePartition(StorePartition):
                 "permissions", self.settings, self.store_config, ddtype=set
             )
 
-            # uid -> set['<node_uid>']
+            # uid -> set['<server_uid>']
             self.storage_permissions: dict[UID, set[UID]] = (
                 self.store_config.backing_store(
                     "storage_permissions",
@@ -227,7 +227,7 @@ class KeyValueStorePartition(StorePartition):
                     self.add_storage_permission(
                         StoragePermission(
                             uid=uid,
-                            node_uid=self.node_uid,
+                            server_uid=self.server_uid,
                         )
                     )
 
@@ -271,10 +271,16 @@ class KeyValueStorePartition(StorePartition):
         if not isinstance(permission.permission, ActionPermission):
             raise Exception(f"ObjectPermission type: {permission.permission} not valid")
 
-        # TODO: fix for other admins
         if (
             permission.credentials
             and self.root_verify_key.verify == permission.credentials.verify
+        ):
+            return True
+
+        if (
+            permission.credentials
+            and self.has_admin_permissions is not None
+            and self.has_admin_permissions(permission.credentials)
         ):
             return True
 
@@ -313,7 +319,7 @@ class KeyValueStorePartition(StorePartition):
 
     def add_storage_permission(self, permission: StoragePermission) -> None:
         permissions = self.storage_permissions[permission.uid]
-        permissions.add(permission.node_uid)
+        permissions.add(permission.server_uid)
         self.storage_permissions[permission.uid] = permissions
 
     def add_storage_permissions(self, permissions: list[StoragePermission]) -> None:
@@ -322,15 +328,15 @@ class KeyValueStorePartition(StorePartition):
 
     def remove_storage_permission(self, permission: StoragePermission) -> None:
         permissions = self.storage_permissions[permission.uid]
-        permissions.remove(permission.node_uid)
+        permissions.remove(permission.server_uid)
         self.storage_permissions[permission.uid] = permissions
 
     def has_storage_permission(self, permission: StoragePermission | UID) -> bool:
         if isinstance(permission, UID):
-            permission = StoragePermission(uid=permission, node_uid=self.node_uid)
+            permission = StoragePermission(uid=permission, server_uid=self.server_uid)
 
         if permission.uid in self.storage_permissions:
-            return permission.node_uid in self.storage_permissions[permission.uid]
+            return permission.server_uid in self.storage_permissions[permission.uid]
         return False
 
     def _get_storage_permissions_for_uid(self, uid: UID) -> Result[set[UID], Err]:
@@ -489,11 +495,6 @@ class KeyValueStorePartition(StorePartition):
                 return Err(f"Failed to update obj {obj}, you have no permission")
 
         except Exception as e:
-            # third party
-            # stdlib
-            import traceback
-
-            print(traceback.format_exc())
             return Err(f"Failed to update obj {obj} with error: {e}")
 
     def _get_all_from_store(
@@ -698,10 +699,6 @@ class KeyValueStorePartition(StorePartition):
                 try:
                     migrated_value = value.migrate_to(to_klass.__version__, context)
                 except Exception:
-                    # stdlib
-                    import traceback
-
-                    print(traceback.format_exc())
                     return Err(
                         f"Failed to migrate data to {to_klass} for qk {to_klass.__version__}: {key}"
                     )

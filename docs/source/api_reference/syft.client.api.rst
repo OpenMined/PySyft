@@ -27,7 +27,7 @@ syft.client.api
       APIEndpoint
       APIModule
       APIRegistry
-      NodeView
+      ServerView
       SignedSyftAPICall
       SyftAPI
       SyftAPICall

@@ -1,7 +1,7 @@
 # syft absolute
-from syft.node.routes import make_routes
+from syft.server.routes import make_routes
 
-# grid absolute
-from grid.core.node import worker
+# server absolute
+from grid.core.server import worker
 
 router = make_routes(worker=worker)

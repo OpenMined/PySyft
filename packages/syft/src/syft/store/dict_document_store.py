@@ -8,8 +8,8 @@ from typing import Any
 from pydantic import Field
 
 # relative
-from ..node.credentials import SyftVerifyKey
 from ..serde.serializable import serializable
+from ..server.credentials import SyftVerifyKey
 from ..types import uid
 from .document_store import DocumentStore
 from .document_store import StoreConfig
@@ -67,20 +67,20 @@ class DictDocumentStore(DocumentStore):
 
     def __init__(
         self,
-        node_uid: uid,
+        server_uid: uid,
         root_verify_key: SyftVerifyKey | None,
         store_config: DictStoreConfig | None = None,
     ) -> None:
         if store_config is None:
             store_config = DictStoreConfig()
         super().__init__(
-            node_uid=node_uid,
+            server_uid=server_uid,
             root_verify_key=root_verify_key,
             store_config=store_config,
         )
 
     def reset(self) -> None:
-        for _, partition in self.partitions.items():
+        for partition in self.partitions.values():
             partition.prune()
 
 

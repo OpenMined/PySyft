@@ -7,7 +7,7 @@ and the specific request handler.
 # third party
 from fastapi import APIRouter
 
-# grid absolute
+# server absolute
 from grid.api.new.new import router as new_router
 
 api_router = APIRouter()

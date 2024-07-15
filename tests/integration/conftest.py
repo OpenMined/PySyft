@@ -8,8 +8,8 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.abstract_node import NodeSideType
-from syft.node.worker import Worker
+from syft.abstract_server import ServerSideType
+from syft.server.worker import Worker
 
 
 def pytest_configure(config: _pytest.config.Config) -> None:
@@ -18,7 +18,7 @@ def pytest_configure(config: _pytest.config.Config) -> None:
     config.addinivalue_line(
         "markers", "container_workload: container workload integration tests"
     )
-    config.addinivalue_line("markers", "local_node: local node integration tests")
+    config.addinivalue_line("markers", "local_server: local server integration tests")
 
 
 @pytest.fixture
@@ -27,12 +27,12 @@ def gateway_port() -> int:
 
 
 @pytest.fixture
-def domain_1_port() -> int:
+def datasite_1_port() -> int:
     return 9082
 
 
 @pytest.fixture
-def domain_2_port() -> int:
+def datasite_2_port() -> int:
     return 9083
 
 
@@ -43,8 +43,8 @@ def faker():
 
 @pytest.fixture(scope="function")
 def full_low_worker(n_consumers: int = 3, create_producer: bool = True) -> Worker:
-    _node = sy.orchestra.launch(
-        node_side_type=NodeSideType.LOW_SIDE,
+    _server = sy.orchestra.launch(
+        server_side_type=ServerSideType.LOW_SIDE,
         name=token_hex(8),
         # dev_mode=True,
         reset=True,
@@ -55,16 +55,16 @@ def full_low_worker(n_consumers: int = 3, create_producer: bool = True) -> Worke
         thread_workers=False,
     )
     # startup code here
-    yield _node
+    yield _server
     # # Cleanup code
-    _node.python_node.cleanup()
-    _node.land()
+    _server.python_server.cleanup()
+    _server.land()
 
 
 @pytest.fixture(scope="function")
 def full_high_worker(n_consumers: int = 3, create_producer: bool = True) -> Worker:
-    _node = sy.orchestra.launch(
-        node_side_type=NodeSideType.HIGH_SIDE,
+    _server = sy.orchestra.launch(
+        server_side_type=ServerSideType.HIGH_SIDE,
         name=token_hex(8),
         # dev_mode=True,
         reset=True,
@@ -75,7 +75,7 @@ def full_high_worker(n_consumers: int = 3, create_producer: bool = True) -> Work
         thread_workers=False,
     )
     # startup code here
-    yield _node
+    yield _server
     # Cleanup code
-    _node.python_node.cleanup()
-    _node.land()
+    _server.python_server.cleanup()
+    _server.land()

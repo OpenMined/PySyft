@@ -10,55 +10,57 @@ from typing import TYPE_CHECKING
 from typing_extensions import Self
 
 # relative
-from ...abstract_node import AbstractNode
+from ...abstract_server import AbstractServer
 from ...client.client import HTTPConnection
-from ...client.client import NodeConnection
 from ...client.client import PythonConnection
+from ...client.client import ServerConnection
 from ...client.client import SyftClient
-from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
+from ...server.worker_settings import WorkerSettings
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.uid import UID
 from ..context import AuthedServiceContext
-from ..context import NodeServiceContext
+from ..context import ServerServiceContext
 from ..response import SyftError
 
 if TYPE_CHECKING:
     # relative
-    from .node_peer import NodePeer
+    from .server_peer import ServerPeer
 
 
-class NodeRoute:
+class ServerRoute:
     def client_with_context(
-        self, context: NodeServiceContext
+        self, context: ServerServiceContext
     ) -> SyftClient | SyftError:
         """
         Convert the current route (self) to a connection (either HTTP, Veilid or Python)
         and create a SyftClient from the connection.
 
         Args:
-            context (NodeServiceContext): The NodeServiceContext containing the node information.
+            context (ServerServiceContext): The ServerServiceContext containing the server information.
 
         Returns:
             SyftClient | SyftError: Returns the created SyftClient, or SyftError
-                if the client type is not valid or if the context's node is None.
+                if the client type is not valid or if the context's server is None.
         """
         connection = route_to_connection(route=self, context=context)
         client_type = connection.get_client_type()
         if isinstance(client_type, SyftError):
             return client_type
-        return client_type(connection=connection, credentials=context.node.signing_key)
+        return client_type(
+            connection=connection, credentials=context.server.signing_key
+        )
 
     def validate_with_context(
         self, context: AuthedServiceContext
-    ) -> NodePeer | SyftError:
+    ) -> ServerPeer | SyftError:
         # relative
-        from .node_peer import NodePeer
+        from .server_peer import ServerPeer
 
-        # Step 1: Check if the given route is able to reach the given node
+        # Step 1: Check if the given route is able to reach the given server
         # As we allow the user to give custom routes, we need to check the reachability of the route
         self_client = self.client_with_context(context=context)
 
@@ -71,33 +73,35 @@ class NodeRoute:
 
         try:
             # Verifying if the challenge is valid
-            context.node.verify_key.verify_key.verify(
+            context.server.verify_key.verify_key.verify(
                 random_challenge, challenge_signature
             )
         except Exception:
             return SyftError(message="Signature Verification Failed in ping")
 
-        # Step 2: Create a Node Peer with the given route
-        self_node_peer: NodePeer = context.node.settings.to(NodePeer)
-        self_node_peer.node_routes.append(self)
+        # Step 2: Create a Server Peer with the given route
+        self_server_peer: ServerPeer = context.server.settings.to(ServerPeer)
+        self_server_peer.server_routes.append(self)
 
-        return self_node_peer
+        return self_server_peer
 
 
 @serializable()
-class HTTPNodeRoute(SyftObject, NodeRoute):
-    __canonical_name__ = "HTTPNodeRoute"
-    __version__ = SYFT_OBJECT_VERSION_2
+class HTTPServerRoute(SyftObject, ServerRoute):
+    __canonical_name__ = "HTTPServerRoute"
+    __version__ = SYFT_OBJECT_VERSION_3
 
+    id: UID | None = None  # type: ignore
     host_or_ip: str
     private: bool = False
     protocol: str = "http"
     port: int = 80
     proxy_target_uid: UID | None = None
     priority: int = 1
+    rtunnel_token: str | None = None
 
     def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, HTTPNodeRoute):
+        if not isinstance(other, HTTPServerRoute):
             return False
         return hash(self) == hash(other)
 
@@ -107,6 +111,7 @@ class HTTPNodeRoute(SyftObject, NodeRoute):
             + hash(self.port)
             + hash(self.protocol)
             + hash(self.proxy_target_uid)
+            + hash(self.rtunnel_token)
         )
 
     def __str__(self) -> str:
@@ -114,38 +119,39 @@ class HTTPNodeRoute(SyftObject, NodeRoute):
 
 
 @serializable()
-class PythonNodeRoute(SyftObject, NodeRoute):
-    __canonical_name__ = "PythonNodeRoute"
-    __version__ = SYFT_OBJECT_VERSION_2
+class PythonServerRoute(SyftObject, ServerRoute):
+    __canonical_name__ = "PythonServerRoute"
+    __version__ = SYFT_OBJECT_VERSION_3
 
+    id: UID | None = None  # type: ignore
     worker_settings: WorkerSettings
     proxy_target_uid: UID | None = None
     priority: int = 1
 
     @property
-    def node(self) -> AbstractNode | None:
+    def server(self) -> AbstractServer | None:
         # relative
-        from ...node.worker import Worker
+        from ...server.worker import Worker
 
-        node = Worker(
+        server = Worker(
             id=self.worker_settings.id,
             name=self.worker_settings.name,
-            node_type=self.worker_settings.node_type,
-            node_side_type=self.worker_settings.node_side_type,
+            server_type=self.worker_settings.server_type,
+            server_side_type=self.worker_settings.server_side_type,
             signing_key=self.worker_settings.signing_key,
             document_store_config=self.worker_settings.document_store_config,
             action_store_config=self.worker_settings.action_store_config,
             processes=1,
         )
-        return node
+        return server
 
     @classmethod
-    def with_node(cls, node: AbstractNode) -> Self:
-        worker_settings = WorkerSettings.from_node(node)
+    def with_server(cls, server: AbstractServer) -> Self:
+        worker_settings = WorkerSettings.from_server(server)
         return cls(id=worker_settings.id, worker_settings=worker_settings)
 
     def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, PythonNodeRoute):
+        if not isinstance(other, PythonServerRoute):
             return False
         return hash(self) == hash(other)
 
@@ -153,18 +159,18 @@ class PythonNodeRoute(SyftObject, NodeRoute):
         return (
             hash(self.worker_settings.id)
             + hash(self.worker_settings.name)
-            + hash(self.worker_settings.node_type)
-            + hash(self.worker_settings.node_side_type)
+            + hash(self.worker_settings.server_type)
+            + hash(self.worker_settings.server_side_type)
             + hash(self.worker_settings.signing_key)
         )
 
     def __str__(self) -> str:
-        return "PythonNodeRoute"
+        return "PythonServerRoute"
 
 
 @serializable()
-class VeilidNodeRoute(SyftObject, NodeRoute):
-    __canonical_name__ = "VeilidNodeRoute"
+class VeilidServerRoute(SyftObject, ServerRoute):
+    __canonical_name__ = "VeilidServerRoute"
     __version__ = SYFT_OBJECT_VERSION_1
 
     vld_key: str
@@ -172,7 +178,7 @@ class VeilidNodeRoute(SyftObject, NodeRoute):
     priority: int = 1
 
     def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, VeilidNodeRoute):
+        if not isinstance(other, VeilidServerRoute):
             return False
         return hash(self) == hash(other)
 
@@ -180,25 +186,25 @@ class VeilidNodeRoute(SyftObject, NodeRoute):
         return hash(self.vld_key) + hash(self.proxy_target_uid)
 
 
-NodeRouteTypeV1 = HTTPNodeRoute | PythonNodeRoute | VeilidNodeRoute
-NodeRouteType = HTTPNodeRoute | PythonNodeRoute
+ServerRouteTypeV1 = HTTPServerRoute | PythonServerRoute | VeilidServerRoute
+ServerRouteType = HTTPServerRoute | PythonServerRoute
 
 
 def route_to_connection(
-    route: NodeRoute, context: TransformContext | None = None
-) -> NodeConnection:
-    if isinstance(route, HTTPNodeRoute):
+    route: ServerRoute, context: TransformContext | None = None
+) -> ServerConnection:
+    if isinstance(route, HTTPServerRoute):
         return route.to(HTTPConnection, context=context)
-    elif isinstance(route, PythonNodeRoute):
+    elif isinstance(route, PythonServerRoute):
         return route.to(PythonConnection, context=context)
     else:
         raise ValueError(f"Route {route} is not supported.")
 
 
-def connection_to_route(connection: NodeConnection) -> NodeRoute:
+def connection_to_route(connection: ServerConnection) -> ServerRoute:
     if isinstance(connection, HTTPConnection):
-        return connection.to(HTTPNodeRoute)
+        return connection.to(HTTPServerRoute)
     elif isinstance(connection, PythonConnection):  # type: ignore[unreachable]
-        return connection.to(PythonNodeRoute)
+        return connection.to(PythonServerRoute)
     else:
         raise ValueError(f"Connection {connection} is not supported.")

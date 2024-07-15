@@ -3,6 +3,7 @@ from collections import defaultdict
 from collections.abc import Iterable
 from collections.abc import MutableMapping
 from collections.abc import MutableSequence
+from functools import cache
 import hashlib
 import json
 from operator import itemgetter
@@ -151,12 +152,13 @@ class DataProtocol:
         return protocol_history
 
     def save_history(self, history: dict) -> None:
-        for file_path in protocol_release_dir().iterdir():
-            for version in self.read_json(file_path):
-                # Skip adding file if the version is not part of the history
-                if version not in history.keys():
-                    continue
-                history[version] = {"release_name": file_path.name}
+        if os.path.exists(protocol_release_dir()):
+            for file_path in protocol_release_dir().iterdir():
+                for version in self.read_json(file_path):
+                    # Skip adding file if the version is not part of the history
+                    if version not in history.keys():
+                        continue
+                    history[version] = {"release_name": file_path.name}
         self.file_path.write_text(json.dumps(history, indent=2) + "\n")
 
     @property
@@ -189,7 +191,7 @@ class DataProtocol:
                         raise Exception(
                             f"Can't add {object_metadata} already in state {versions}"
                         )
-                    elif action == "remove" and (
+                    if action == "remove" and (
                         str(version) not in state_versions.keys()
                         and hash_str not in state_version_hashes
                     ):
@@ -493,7 +495,7 @@ with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
             # we assume its supported until we prove otherwise
             protocol_supported[v] = True
             # iterate through each object
-            for canonical_name, _ in version_data["object_versions"].items():
+            for canonical_name in version_data["object_versions"].keys():
                 if canonical_name not in self.state:
                     protocol_supported[v] = False
                     break
@@ -515,8 +517,16 @@ with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
 
 
 def get_data_protocol(raise_exception: bool = False) -> DataProtocol:
-    return DataProtocol(
+    return _get_data_protocol(
         filename=data_protocol_file_name(),
+        raise_exception=raise_exception,
+    )
+
+
+@cache
+def _get_data_protocol(filename: str, raise_exception: bool = False) -> DataProtocol:
+    return DataProtocol(
+        filename=filename,
         raise_exception=raise_exception,
     )
 

@@ -1,10 +1,8 @@
 # stdlib
+import logging
 import threading
 import time
 from typing import cast
-
-# third party
-from loguru import logger
 
 # relative
 from ...serde.serializable import serializable
@@ -12,9 +10,12 @@ from ...types.datetime import DateTime
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from .network_service import NetworkService
-from .network_service import NodePeerAssociationStatus
-from .node_peer import NodePeer
-from .node_peer import NodePeerConnectionStatus
+from .network_service import ServerPeerAssociationStatus
+from .server_peer import ServerPeer
+from .server_peer import ServerPeerConnectionStatus
+from .server_peer import ServerPeerUpdate
+
+logger = logging.getLogger(__name__)
 
 
 @serializable(without=["thread"])
@@ -39,59 +40,64 @@ class PeerHealthCheckTask:
             None
         """
 
-        network_service = cast(NetworkService, context.node.get_service(NetworkService))
+        network_service = cast(
+            NetworkService, context.server.get_service(NetworkService)
+        )
         network_stash = network_service.stash
 
-        result = network_stash.get_all(context.node.verify_key)
+        result = network_stash.get_all(context.server.verify_key)
 
         if result.is_err():
             logger.error(f"Failed to fetch peers from stash: {result.err()}")
             return SyftError(message=f"{result.err()}")
 
-        all_peers: list[NodePeer] = result.ok()
+        all_peers: list[ServerPeer] = result.ok()
 
         for peer in all_peers:
-            peer.pinged_timestamp = DateTime.now()
+            peer_update = ServerPeerUpdate(id=peer.id)
+            peer_update.pinged_timestamp = DateTime.now()
             try:
                 peer_client = peer.client_with_context(context=context)
                 if peer_client.is_err():
                     logger.error(
                         f"Failed to create client for peer: {peer}: {peer_client.err()}"
                     )
-                    peer.ping_status = NodePeerConnectionStatus.TIMEOUT
+                    peer_update.ping_status = ServerPeerConnectionStatus.TIMEOUT
                     peer_client = None
             except Exception as e:
-                logger.error(
-                    f"Failed to create client for peer: {peer} with exception {e}"
-                )
-                peer.ping_status = NodePeerConnectionStatus.TIMEOUT
+                logger.error(f"Failed to create client for peer: {peer}", exc_info=e)
+
+                peer_update.ping_status = ServerPeerConnectionStatus.TIMEOUT
                 peer_client = None
 
             if peer_client is not None:
                 peer_client = peer_client.ok()
                 peer_status = peer_client.api.services.network.check_peer_association(
-                    peer_id=context.node.id
+                    peer_id=context.server.id
                 )
-                peer.ping_status = (
-                    NodePeerConnectionStatus.ACTIVE
-                    if peer_status == NodePeerAssociationStatus.PEER_ASSOCIATED
-                    else NodePeerConnectionStatus.INACTIVE
+                peer_update.ping_status = (
+                    ServerPeerConnectionStatus.ACTIVE
+                    if peer_status == ServerPeerAssociationStatus.PEER_ASSOCIATED
+                    else ServerPeerConnectionStatus.INACTIVE
                 )
                 if isinstance(peer_status, SyftError):
-                    peer.ping_status_message = (
+                    peer_update.ping_status_message = (
                         f"Error `{peer_status.message}` when pinging peer '{peer.name}'"
                     )
                 else:
-                    peer.ping_status_message = f"Peer '{peer.name}''s ping status: {peer.ping_status.value.lower()}"
+                    peer_update.ping_status_message = (
+                        f"Peer '{peer.name}''s ping status: "
+                        f"{peer_update.ping_status.value.lower()}"
+                    )
 
             result = network_stash.update(
-                credentials=context.node.verify_key,
-                peer=peer,
+                credentials=context.server.verify_key,
+                peer_update=peer_update,
                 has_permission=True,
             )
 
             if result.is_err():
-                logger.info(f"Failed to update peer in stash: {result.err()}")
+                logger.error(f"Failed to update peer in stash: {result.err()}")
 
         return None
 

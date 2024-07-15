@@ -4,6 +4,7 @@ from __future__ import annotations
 # stdlib
 from collections import defaultdict
 from copy import deepcopy
+import logging
 from pathlib import Path
 import sqlite3
 import tempfile
@@ -32,6 +33,8 @@ from .kv_document_store import KeyValueStorePartition
 from .locks import LockingConfig
 from .locks import NoLockingConfig
 from .locks import SyftLock
+
+logger = logging.getLogger(__name__)
 
 # here we can create a single connection per cache_key
 # since pytest is concurrent processes, we need to isolate each connection
@@ -165,7 +168,12 @@ class SQLiteBackingStore(KeyValueBackingStore):
         if REF_COUNTS[cache_key(self.db_filename)] <= 0:
             # once you close it seems like other object references can't re-use the
             # same connection
+
             self.db.close()
+            db_key = cache_key(self.db_filename)
+            if db_key in SQLITE_CONNECTION_POOL_CUR:
+                # NOTE if we don't remove the cursor, the cursor cache_key can clash with a future thread id
+                del SQLITE_CONNECTION_POOL_CUR[db_key]
             del SQLITE_CONNECTION_POOL_DB[cache_key(self.db_filename)]
         else:
             # don't close yet because another SQLiteBackingStore is probably still open
@@ -266,7 +274,6 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
     def _get_all_keys(self) -> Any:
         select_sql = f"select uid from {self.table_name} order by sqltime"  # nosec
-        keys = []
 
         res = self._execute(select_sql)
         if res.is_err():
@@ -277,8 +284,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         if rows is None:
             return []
 
-        for row in rows:
-            keys.append(UID(row[0]))
+        keys = [UID(row[0]) for row in rows]
         return keys
 
     def _delete(self, key: UID) -> None:
@@ -351,9 +357,8 @@ class SQLiteBackingStore(KeyValueBackingStore):
     def __del__(self) -> None:
         try:
             self._close()
-        except BaseException:
-            print("Could not close connection")
-            pass
+        except Exception as e:
+            logger.error("Could not close connection", exc_info=e)
 
 
 @serializable()

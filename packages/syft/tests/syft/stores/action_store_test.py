@@ -6,7 +6,7 @@ from typing import Any
 import pytest
 
 # syft absolute
-from syft.node.credentials import SyftVerifyKey
+from syft.server.credentials import SyftVerifyKey
 from syft.service.action.action_store import ActionObjectEXECUTE
 from syft.service.action.action_store import ActionObjectOWNER
 from syft.service.action.action_store import ActionObjectREAD
@@ -14,6 +14,7 @@ from syft.service.action.action_store import ActionObjectWRITE
 from syft.types.uid import UID
 
 # relative
+from .store_constants_test import TEST_VERIFY_KEY_NEW_ADMIN
 from .store_constants_test import TEST_VERIFY_KEY_STRING_CLIENT
 from .store_constants_test import TEST_VERIFY_KEY_STRING_HACKER
 from .store_constants_test import TEST_VERIFY_KEY_STRING_ROOT
@@ -59,16 +60,19 @@ def test_action_store_test_permissions(store: Any, permission: Any):
     client_key = SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_CLIENT)
     root_key = SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_ROOT)
     hacker_key = SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_HACKER)
+    new_admin_key = TEST_VERIFY_KEY_NEW_ADMIN
 
     access = permission(uid=UID(), credentials=client_key)
     access_root = permission(uid=UID(), credentials=root_key)
     access_hacker = permission(uid=UID(), credentials=hacker_key)
+    access_new_admin = permission(uid=UID(), credentials=new_admin_key)
 
     # add permission
     store.add_permission(access)
 
     assert store.has_permission(access)
     assert store.has_permission(access_root)
+    assert store.has_permission(access_new_admin)
     assert not store.has_permission(access_hacker)
 
     # remove permission
@@ -76,6 +80,7 @@ def test_action_store_test_permissions(store: Any, permission: Any):
 
     assert not store.has_permission(access)
     assert store.has_permission(access_root)
+    assert store.has_permission(access_new_admin)
     assert not store.has_permission(access_hacker)
 
     # take ownership with new UID
@@ -85,6 +90,7 @@ def test_action_store_test_permissions(store: Any, permission: Any):
     store.take_ownership(client_uid2, client_key)
     assert store.has_permission(access)
     assert store.has_permission(access_root)
+    assert store.has_permission(access_new_admin)
     assert not store.has_permission(access_hacker)
 
     # delete UID as hacker
@@ -95,12 +101,14 @@ def test_action_store_test_permissions(store: Any, permission: Any):
 
     assert res.is_err()
     assert store.has_permission(access)
+    assert store.has_permission(access_new_admin)
     assert store.has_permission(access_hacker_ro)
 
     # delete UID as owner
     res = store.delete(client_uid2, client_key)
     assert res.is_ok()
     assert not store.has_permission(access)
+    assert store.has_permission(access_new_admin)
     assert not store.has_permission(access_hacker)
 
 

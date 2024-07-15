@@ -10,8 +10,8 @@ from result import Result
 
 # relative
 from ...client.api import APIRegistry
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
 from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
@@ -28,6 +28,7 @@ from ...types.transforms import make_set_default
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_object import ActionObject
+from ..action.action_permissions import ActionObjectREAD
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..service import AbstractService
@@ -119,7 +120,7 @@ class ExecutionOutput(SyncableSyftObject):
         output_ids: UID | list[UID] | dict[str, UID],
         user_code_id: UID,
         executing_user_verify_key: SyftVerifyKey,
-        node_uid: UID,
+        server_uid: UID,
         job_id: UID | None = None,
         output_policy_id: UID | None = None,
         input_ids: dict[str, UID] | None = None,
@@ -137,7 +138,7 @@ class ExecutionOutput(SyncableSyftObject):
             object_uid=user_code_id,
             object_type=UserCode,
             service_type=UserCodeService,
-            node_uid=node_uid,
+            server_uid=server_uid,
         )
 
         if job_id:
@@ -145,7 +146,7 @@ class ExecutionOutput(SyncableSyftObject):
                 object_uid=job_id,
                 object_type=Job,
                 service_type=JobService,
-                node_uid=node_uid,
+                server_uid=server_uid,
             )
         else:
             job_link = None
@@ -161,12 +162,12 @@ class ExecutionOutput(SyncableSyftObject):
     @property
     def outputs(self) -> list[ActionObject] | dict[str, ActionObject] | None:
         api = APIRegistry.api_for(
-            node_uid=self.syft_node_location,
+            server_uid=self.syft_server_location,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None:
             raise ValueError(
-                f"Can't access the api. Please log in to {self.syft_node_location}"
+                f"Can't access the api. Please log in to {self.syft_server_location}"
             )
         action_service = api.services.action
 
@@ -317,7 +318,7 @@ class OutputService(AbstractService):
             output_ids=output_ids,
             user_code_id=user_code_id,
             executing_user_verify_key=executing_user_verify_key,
-            node_uid=context.node.id,  # type: ignore
+            server_uid=context.server.id,  # type: ignore
             job_id=job_id,
             output_policy_id=output_policy_id,
             input_ids=input_ids,
@@ -335,12 +336,46 @@ class OutputService(AbstractService):
         self, context: AuthedServiceContext, user_code_id: UID
     ) -> list[ExecutionOutput] | SyftError:
         result = self.stash.get_by_user_code_id(
-            credentials=context.node.verify_key,  # type: ignore
+            credentials=context.server.verify_key,  # type: ignore
             user_code_id=user_code_id,
         )
         if result.is_ok():
             return result.ok()
         return SyftError(message=result.err())
+
+    @service_method(
+        path="output.has_output_read_permissions",
+        name="has_output_read_permissions",
+        roles=GUEST_ROLE_LEVEL,
+    )
+    def has_output_read_permissions(
+        self,
+        context: AuthedServiceContext,
+        user_code_id: UID,
+        user_verify_key: SyftVerifyKey,
+    ) -> bool | SyftError:
+        action_service = context.server.get_service("actionservice")
+        all_outputs = self.get_by_user_code_id(context, user_code_id)
+        if isinstance(all_outputs, SyftError):
+            return all_outputs
+        for output in all_outputs:
+            # TODO tech debt: unclear why code owner can see outputhistory without permissions.
+            # It is not a security issue (output history has no data) it is confusing for user
+            # if not self.stash.has_permission(
+            #     ActionObjectREAD(uid=output.id, credentials=user_verify_key)
+            # ):
+            #     continue
+
+            # Check if all output ActionObjects have permissions
+            result_ids = output.output_id_list
+            permissions = [
+                ActionObjectREAD(uid=_id.id, credentials=user_verify_key)
+                for _id in result_ids
+            ]
+            if action_service.store.has_permissions(permissions):
+                return True
+
+        return False
 
     @service_method(
         path="output.get_by_job_id",
@@ -351,7 +386,7 @@ class OutputService(AbstractService):
         self, context: AuthedServiceContext, user_code_id: UID
     ) -> ExecutionOutput | None | SyftError:
         result = self.stash.get_by_job_id(
-            credentials=context.node.verify_key,  # type: ignore
+            credentials=context.server.verify_key,  # type: ignore
             user_code_id=user_code_id,
         )
         if result.is_ok():
@@ -367,9 +402,22 @@ class OutputService(AbstractService):
         self, context: AuthedServiceContext, output_policy_id: UID
     ) -> list[ExecutionOutput] | SyftError:
         result = self.stash.get_by_output_policy_id(
-            credentials=context.node.verify_key,  # type: ignore
+            credentials=context.server.verify_key,  # type: ignore
             output_policy_id=output_policy_id,  # type: ignore
         )
+        if result.is_ok():
+            return result.ok()
+        return SyftError(message=result.err())
+
+    @service_method(
+        path="output.get",
+        name="get",
+        roles=GUEST_ROLE_LEVEL,
+    )
+    def get(
+        self, context: AuthedServiceContext, id: UID
+    ) -> ExecutionOutput | SyftError:
+        result = self.stash.get_by_uid(context.credentials, id)
         if result.is_ok():
             return result.ok()
         return SyftError(message=result.err())

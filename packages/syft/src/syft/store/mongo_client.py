@@ -117,9 +117,9 @@ class MongoStoreClientConfig(StoreClientConfig):
     # Testing and connection reuse
     client: Any = None
 
-    # this allows us to have one connection per `Node` object
+    # this allows us to have one connection per `Server` object
     # in the MongoClientCache
-    node_obj_python_id: int | None = None
+    server_obj_python_id: int | None = None
 
 
 class MongoClientCache:

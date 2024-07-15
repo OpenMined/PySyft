@@ -97,8 +97,8 @@ class DatasetService(AbstractService):
         if result.is_err():
             return SyftError(message=str(result.err()))
         return SyftSuccess(
-            message=f"Dataset uploaded to '{context.node.name}'. "
-            f"To see the datasets uploaded by a client on this node, use command `[your_client].datasets`"
+            message=f"Dataset uploaded to '{context.server.name}'. "
+            f"To see the datasets uploaded by a client on this server, use command `[your_client].datasets`"
         )
 
     @service_method(
@@ -121,8 +121,8 @@ class DatasetService(AbstractService):
         datasets = result.ok()
 
         for dataset in datasets:
-            if context.node is not None:
-                dataset.node_uid = context.node.id
+            if context.server is not None:
+                dataset.server_uid = context.server.id
 
         return _paginate_dataset_collection(
             datasets=datasets, page_size=page_size, page_index=page_index
@@ -158,8 +158,8 @@ class DatasetService(AbstractService):
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
             dataset = result.ok()
-            if context.node is not None:
-                dataset.node_uid = context.node.id
+            if context.server is not None:
+                dataset.server_uid = context.server.id
             return dataset
         return SyftError(message=result.err())
 
@@ -172,8 +172,8 @@ class DatasetService(AbstractService):
         if result.is_ok():
             datasets = result.ok()
             for dataset in datasets:
-                if context.node is not None:
-                    dataset.node_uid = context.node.id
+                if context.server is not None:
+                    dataset.server_uid = context.server.id
             return datasets
         return SyftError(message=result.err())
 
@@ -187,16 +187,14 @@ class DatasetService(AbstractService):
     ) -> list[Asset] | SyftError:
         """Get Assets by an Action ID"""
         datasets = self.get_by_action_id(context=context, uid=uid)
-        assets = []
-        if isinstance(datasets, list):
-            for dataset in datasets:
-                for asset in dataset.asset_list:
-                    if asset.action_id == uid:
-                        assets.append(asset)
-            return assets
-        elif isinstance(datasets, SyftError):
+        if isinstance(datasets, SyftError):
             return datasets
-        return []
+        return [
+            asset
+            for dataset in datasets
+            for asset in dataset.asset_list
+            if asset.action_id == uid
+        ]
 
     @service_method(
         path="dataset.delete_by_uid",
