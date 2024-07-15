@@ -6,15 +6,15 @@ from typing import cast
 # relative
 from ...client.api import APIRegistry
 from ...client.api import SyftAPI
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import add_credentials_for_key
-from ...types.transforms import add_node_uid_for_key
+from ...types.transforms import add_server_uid_for_key
 from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.uid import UID
@@ -57,7 +57,7 @@ class Notification(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_2
 
     subject: str
-    node_uid: UID
+    server_uid: UID
     from_user_verify_key: SyftVerifyKey
     to_user_verify_key: SyftVerifyKey
     created_at: DateTime
@@ -110,7 +110,7 @@ class Notification(SyftObject):
         api: SyftAPI = cast(
             SyftAPI,
             APIRegistry.api_for(
-                self.node_uid, user_verify_key=self.syft_client_verify_key
+                self.server_uid, user_verify_key=self.syft_client_verify_key
             ),
         )
         return api.services.notifications.mark_as_read(uid=self.id)
@@ -119,7 +119,7 @@ class Notification(SyftObject):
         api: SyftAPI = cast(
             SyftAPI,
             APIRegistry.api_for(
-                self.node_uid, user_verify_key=self.syft_client_verify_key
+                self.server_uid, user_verify_key=self.syft_client_verify_key
             ),
         )
         return api.services.notifications.mark_as_unread(uid=self.id)
@@ -162,5 +162,5 @@ def createnotification_to_notification() -> list[Callable]:
         generate_id,
         add_msg_creation_time,
         add_credentials_for_key("from_user_verify_key"),
-        add_node_uid_for_key("node_uid"),
+        add_server_uid_for_key("server_uid"),
     ]

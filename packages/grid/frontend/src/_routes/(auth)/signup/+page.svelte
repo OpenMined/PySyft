@@ -1,7 +1,7 @@
 <script lang="ts">
   import { enhance } from "$app/forms"
   import Button from "$lib/components/Button.svelte"
-  import DomainMetadataPanel from "$lib/components/authentication/DomainMetadataPanel.svelte"
+  import DatasiteMetadataPanel from "$lib/components/authentication/DatasiteMetadataPanel.svelte"
   import Input from "$lib/components/Input.svelte"
   import Modal from "$lib/components/Modal.svelte"
   import type { ActionData, PageData } from "./$types"
@@ -15,7 +15,7 @@
 <div
   class="flex flex-col xl:flex-row w-full h-full xl:justify-around items-center gap-12"
 >
-  <DomainMetadataPanel {metadata} />
+  <DatasiteMetadataPanel {metadata} />
   <form class="contents" method="POST" use:enhance>
     <Modal>
       <div

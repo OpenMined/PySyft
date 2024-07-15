@@ -2,12 +2,12 @@
 from typing import Any
 
 # relative
-from ..abstract_node import NodeSideType
-from ..abstract_node import NodeType
-from ..node.credentials import SyftSigningKey
+from ..abstract_server import ServerSideType
+from ..abstract_server import ServerType
 from ..serde.serializable import serializable
-from ..service.metadata.node_metadata import NodeMetadataJSON
-from ..service.network.node_peer import NodePeer
+from ..server.credentials import SyftSigningKey
+from ..service.metadata.server_metadata import ServerMetadataJSON
+from ..service.network.server_peer import ServerPeer
 from ..service.response import SyftError
 from ..service.response import SyftException
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
@@ -15,7 +15,7 @@ from ..types.syft_object import SyftObject
 from ..util.assets import load_png_base64
 from ..util.notebook_ui.styles import FONT_CSS
 from .client import SyftClient
-from .connection import NodeConnection
+from .connection import ServerConnection
 
 
 @serializable()
@@ -24,22 +24,22 @@ class GatewayClient(SyftClient):
 
     def proxy_to(self, peer: Any) -> SyftClient:
         # relative
-        from .domain_client import DomainClient
+        from .datasite_client import DatasiteClient
         from .enclave_client import EnclaveClient
 
-        connection: type[NodeConnection] = self.connection.with_proxy(peer.id)
-        metadata: NodeMetadataJSON | SyftError = connection.get_node_metadata(
+        connection: type[ServerConnection] = self.connection.with_proxy(peer.id)
+        metadata: ServerMetadataJSON | SyftError = connection.get_server_metadata(
             credentials=SyftSigningKey.generate()
         )
         if isinstance(metadata, SyftError):
             return metadata
-        if metadata.node_type == NodeType.DOMAIN.value:
-            client_type: type[SyftClient] = DomainClient
-        elif metadata.node_type == NodeType.ENCLAVE.value:
+        if metadata.server_type == ServerType.DATASITE.value:
+            client_type: type[SyftClient] = DatasiteClient
+        elif metadata.server_type == ServerType.ENCLAVE.value:
             client_type = EnclaveClient
         else:
             raise SyftException(
-                f"Unknown node type {metadata.node_type} to create proxy client"
+                f"Unknown server type {metadata.server_type} to create proxy client"
             )
 
         client = client_type(
@@ -59,30 +59,30 @@ class GatewayClient(SyftClient):
         if self.api.has_service("network"):
             peer = self.api.services.network.get_peer_by_name(name=name)
         if peer is None:
-            return SyftError(message=f"No domain with name {name}")
+            return SyftError(message=f"No datasite with name {name}")
         res = self.proxy_to(peer)
         if email and password:
             res = res.login(email=email, password=password, **kwargs)
         return res
 
     @property
-    def peers(self) -> list[NodePeer] | SyftError | None:
+    def peers(self) -> list[ServerPeer] | SyftError | None:
         return ProxyClient(routing_client=self)
 
     @property
-    def domains(self) -> list[NodePeer] | SyftError | None:
-        return ProxyClient(routing_client=self, node_type=NodeType.DOMAIN)
+    def datasites(self) -> list[ServerPeer] | SyftError | None:
+        return ProxyClient(routing_client=self, server_type=ServerType.DATASITE)
 
     @property
-    def enclaves(self) -> list[NodePeer] | SyftError | None:
-        return ProxyClient(routing_client=self, node_type=NodeType.ENCLAVE)
+    def enclaves(self) -> list[ServerPeer] | SyftError | None:
+        return ProxyClient(routing_client=self, server_type=ServerType.ENCLAVE)
 
     def _repr_html_(self) -> str:
         commands = """
         <li><span class='syft-code-block'>&lt;your_client&gt;
-        .domains</span> - list domains connected to this gateway</li>
+        .datasites</span> - list datasites connected to this gateway</li>
         <li><span class='syft-code-block'>&lt;your_client&gt;
-        .proxy_client_for</span> - get a connection to a listed domain</li>
+        .proxy_client_for</span> - get a connection to a listed datasite</li>
         <li><span class='syft-code-block'>&lt;your_client&gt;
         .login</span> - log into the gateway</li>
         """
@@ -93,19 +93,21 @@ class GatewayClient(SyftClient):
         </ul>
         """
 
-        small_grid_symbol_logo = load_png_base64("small-grid-symbol-logo.png")
+        small_server_symbol_logo = load_png_base64("small-syft-symbol-logo.png")
 
         url = getattr(self.connection, "url", None)
-        node_details = f"<strong>URL:</strong> {url}<br />" if url else ""
+        server_details = f"<strong>URL:</strong> {url}<br />" if url else ""
         if self.metadata:
-            node_details += f"<strong>Node Type:</strong> {self.metadata.node_type.capitalize()}<br />"
-            node_side_type = (
+            server_details += f"<strong>Server Type:</strong> {self.metadata.server_type.capitalize()}<br />"
+            server_side_type = (
                 "Low Side"
-                if self.metadata.node_side_type == NodeSideType.LOW_SIDE.value
+                if self.metadata.server_side_type == ServerSideType.LOW_SIDE.value
                 else "High Side"
             )
-            node_details += f"<strong>Node Side Type:</strong> {node_side_type}<br />"
-            node_details += (
+            server_details += (
+                f"<strong>Server Side Type:</strong> {server_side_type}<br />"
+            )
+            server_details += (
                 f"<strong>Syft Version:</strong> {self.metadata.syft_version}<br />"
             )
 
@@ -134,15 +136,15 @@ class GatewayClient(SyftClient):
             }}
         </style>
         <div class="syft-client syft-container">
-            <img src="{small_grid_symbol_logo}" alt="Logo"
+            <img src="{small_server_symbol_logo}" alt="Logo"
             style="width:48px;height:48px;padding:3px;">
             <h2>Welcome to {self.name}</h2>
             <div class="syft-space">
-                {node_details}
+                {server_details}
             </div>
             <div class='syft-alert-info syft-space'>
                 &#9432;&nbsp;
-                This node is run by the library PySyft to learn more about how it works visit
+                This server is run by the library PySyft to learn more about how it works visit
                 <a href="https://github.com/OpenMined/PySyft">github.com/OpenMined/PySyft</a>.
             </div>
             <h4>Commands to Get Started</h4>
@@ -156,34 +158,34 @@ class ProxyClient(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_2
 
     routing_client: GatewayClient
-    node_type: NodeType | None = None
+    server_type: ServerType | None = None
 
-    def retrieve_nodes(self) -> list[NodePeer]:
-        if self.node_type in [NodeType.DOMAIN, NodeType.ENCLAVE]:
+    def retrieve_servers(self) -> list[ServerPeer]:
+        if self.server_type in [ServerType.DATASITE, ServerType.ENCLAVE]:
             return self.routing_client.api.services.network.get_peers_by_type(
-                node_type=self.node_type
+                server_type=self.server_type
             )
-        elif self.node_type is None:
-            # if node type is None, return all nodes
+        elif self.server_type is None:
+            # if server type is None, return all servers
             return self.routing_client.api.services.network.get_all_peers()
         else:
             raise SyftException(
-                f"Unknown node type {self.node_type} to retrieve proxy client"
+                f"Unknown server type {self.server_type} to retrieve proxy client"
             )
 
     def _repr_html_(self) -> str:
-        return self.retrieve_nodes()._repr_html_()
+        return self.retrieve_servers()._repr_html_()
 
     def __len__(self) -> int:
-        return len(self.retrieve_nodes())
+        return len(self.retrieve_servers())
 
     def __getitem__(self, key: int | str) -> SyftClient:
         if not isinstance(key, int):
             raise SyftException(f"Key: {key} must be an integer")
 
-        nodes = self.retrieve_nodes()
+        servers = self.retrieve_servers()
 
-        if key >= len(nodes):
-            raise SyftException(f"Index {key} out of range for retrieved nodes")
+        if key >= len(servers):
+            raise SyftException(f"Index {key} out of range for retrieved servers")
 
-        return self.routing_client.proxy_to(nodes[key])
+        return self.routing_client.proxy_to(servers[key])

@@ -7,7 +7,7 @@
   import Progress from "$lib/components/Progress.svelte"
   import Input from "$lib/components/Input.svelte"
   import ButtonGhost from "$lib/components/ButtonGhost.svelte"
-  import NodeIcon from "$lib/components/icons/NodeIcon.svelte"
+  import ServerIcon from "$lib/components/icons/ServerIcon.svelte"
   import CheckIcon from "$lib/components/icons/CheckIcon.svelte"
 
   export let metadata
@@ -23,15 +23,15 @@
     website: "",
   }
 
-  let domainSettings = {
+  let datasiteSettings = {
     name: "",
     description: "",
     organization: "",
     on_board: false,
   }
 
-  let checkRequiredDomainFields = () => {
-    return domainSettings.name !== "" ? true : false
+  let checkRequiredDatasiteFields = () => {
+    return datasiteSettings.name !== "" ? true : false
   }
 
   let checkRequiredUserFields = () => {
@@ -49,7 +49,7 @@
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(domainSettings),
+        body: JSON.stringify(datasiteSettings),
       })
 
       await fetch(`/_syft_api/users/${userSettings.id}`, {
@@ -86,7 +86,7 @@
       website: "",
     }
 
-    domainSettings = {
+    datasiteSettings = {
       name: "",
       description: "",
       organization: "",
@@ -105,13 +105,13 @@
             <img
               width="264px"
               height="224px"
-              src="/assets/2023_welcome_to_pygrid.png"
-              alt="Welcome to PyGrid"
+              src="/assets/2023_welcome_to_syft_ui.png"
+              alt="Welcome to Syft UI"
             />
           </div>
           <div class="text-center space-y-2">
             <h3 class="text-2xl capitalize font-bold">
-              Welcome to PyGrid Admin!
+              Welcome to Syft UI!
             </h3>
             <p class="text-primary-500">Step 1 of 4</p>
           </div>
@@ -125,7 +125,7 @@
           <Progress max={4} value={1} />
         </div>
         <p class="text-gray-400 py-2">
-          Congratulations on logging into {metadata?.name ?? ""} node. This wizard
+          Congratulations on logging into {metadata?.name ?? ""} server. This wizard
           will help get you started in setting up your user account. You can skip
           this wizard by pressing “Cancel” below. You can edit any of your responses
           later by going to "Account Settings" indicated by your avatar in the top
@@ -148,10 +148,10 @@
           <div
             class="w-min h-min rounded-full bg-primary-500 text-gray-800 p-2"
           >
-            <NodeIcon class="w-6 h-6" />
+            <ServerIcon class="w-6 h-6" />
           </div>
           <div class="text-center space-y-2">
-            <h3 class="text-2xl capitalize font-bold">Domain Profile</h3>
+            <h3 class="text-2xl capitalize font-bold">Datasite Profile</h3>
             <p class="text-primary-500">Step 2 of 4</p>
           </div>
         </div>
@@ -182,28 +182,28 @@
           <Progress max={4} value={2} />
         </div>
         <p class="text-gray-400 py-2">
-          Let's begin by describing some basic information about this domain
-          node. This information will be shown to outside users to help them
-          find and understand what your domain offers.
+          Let's begin by describing some basic information about this datasite
+          server. This information will be shown to outside users to help them
+          find and understand what your datasite offers.
         </p>
         <Input
-          label="Domain Name"
-          id="domainName"
+          label="Datasite Name"
+          id="datasiteName"
           required
-          bind:value={domainSettings.name}
-          placeholder="ABC University Domain"
+          bind:value={datasiteSettings.name}
+          placeholder="ABC University Datasite"
         />
         <Input
           label="Organization"
-          id="domainOrganization"
-          bind:value={domainSettings.organization}
+          id="datasiteOrganization"
+          bind:value={datasiteSettings.organization}
           placeholder="ABC University"
         />
         <Input
           label="Description"
-          id="domainDescription"
-          bind:value={domainSettings.description}
-          placeholder="Describe your domain here ..."
+          id="datasiteDescription"
+          bind:value={datasiteSettings.description}
+          placeholder="Describe your datasite here ..."
         />
       </div>
     </Modal>
@@ -232,7 +232,7 @@
           <Progress max={3} value={2} />
         </div>
         <p class="text-gray-400 py-2">
-          Now that we have described our domain, let's update our password and
+          Now that we have described our datasite, let's update our password and
           describe some basic information about ourselves for our "User
           Profile". User profile information will be shown to teammates and
           collaborators when working on studies together.

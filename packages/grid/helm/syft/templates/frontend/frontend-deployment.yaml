@@ -30,7 +30,7 @@ spec:
       {{- end }}
       containers:
         - name: frontend-container
-          image: {{ .Values.global.registry }}/openmined/grid-frontend:{{ .Values.global.version }}
+          image: {{ .Values.global.registry }}/openmined/syft-frontend:{{ .Values.global.version }}
           imagePullPolicy: Always
           resources: {{ include "common.resources.set" (dict "resources" .Values.frontend.resources "preset" .Values.frontend.resourcesPreset) | nindent 12 }}
           {{- if .Values.frontend.env }}

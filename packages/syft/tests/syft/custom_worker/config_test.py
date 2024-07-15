@@ -166,7 +166,7 @@ def test_load_custom_worker_config(
 
 DOCKER_METHODS = ["from_str", "from_path"]
 DOCKER_CONFIG_OPENDP = f"""
-    FROM openmined/grid-backend:{sy.__version__}
+    FROM openmined/syft-backend:{sy.__version__}
     RUN pip install opendp
 """
 

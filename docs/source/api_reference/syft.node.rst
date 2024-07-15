@@ -1,7 +1,7 @@
-﻿syft.node
+﻿syft.server
 =========
 
-.. automodule:: syft.node
+.. automodule:: syft.server
 
    
    
@@ -27,13 +27,13 @@
    :toctree:
    :recursive:
 
-   syft.node.credentials
-   syft.node.domain
-   syft.node.gateway
-   syft.node.node
-   syft.node.routes
-   syft.node.run
-   syft.node.server
-   syft.node.worker
-   syft.node.worker_settings
+   syft.server.credentials
+   syft.server.datasite
+   syft.server.gateway
+   syft.server.server
+   syft.server.routes
+   syft.server.run
+   syft.server.server
+   syft.server.worker
+   syft.server.worker_settings
 

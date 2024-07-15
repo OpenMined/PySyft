@@ -19,8 +19,7 @@ from result import OkErr
 from typing_extensions import Self
 
 # relative
-from ..abstract_node import AbstractNode
-from ..node.credentials import SyftVerifyKey
+from ..abstract_server import AbstractServer
 from ..protocol.data_protocol import migrate_args_and_kwargs
 from ..serde.lib_permissions import CMPCRUDPermission
 from ..serde.lib_permissions import CMPPermission
@@ -32,6 +31,7 @@ from ..serde.serializable import serializable
 from ..serde.signature import Signature
 from ..serde.signature import signature_remove_context
 from ..serde.signature import signature_remove_self
+from ..server.credentials import SyftVerifyKey
 from ..store.document_store import DocumentStore
 from ..store.linked_obj import LinkedObject
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
@@ -57,8 +57,8 @@ SERVICE_TO_TYPES: defaultdict = defaultdict(set)
 
 
 class AbstractService:
-    node: AbstractNode
-    node_uid: UID
+    server: AbstractServer
+    server_uid: UID
     store_type: type = DocumentStore
 
     def resolve_link(
@@ -76,10 +76,10 @@ class AbstractService:
         obj = self.stash.get_by_uid(credentials, uid=linked_obj.object_uid)
         if isinstance(obj, OkErr) and obj.is_ok():
             obj = obj.ok()
-        if hasattr(obj, "node_uid"):
-            if context.node is None:
-                return SyftError(message=f"context {context}'s node is None")
-            obj.node_uid = context.node.id
+        if hasattr(obj, "server_uid"):
+            if context.server is None:
+                return SyftError(message=f"context {context}'s server is None")
+            obj.server_uid = context.server.id
         if not isinstance(obj, OkErr):
             obj = Ok(obj)
         return obj
@@ -380,7 +380,7 @@ def service_method(
             context = kwargs.get("context", None)
             context = args[0] if context is None else context
             attrs_to_attach = {
-                "syft_node_location": context.node.id,
+                "syft_server_location": context.server.id,
                 "syft_client_verify_key": context.credentials,
             }
             attach_attribute_to_syft_object(result=result, attr_dict=attrs_to_attach)
@@ -451,21 +451,21 @@ class SyftServiceRegistry:
 
 def from_api_or_context(
     func_or_path: str,
-    syft_node_location: UID | None = None,
+    syft_server_location: UID | None = None,
     syft_client_verify_key: SyftVerifyKey | None = None,
 ) -> APIModule | SyftError | partial | None:
     # relative
     from ..client.api import APIRegistry
-    from ..node.node import AuthNodeContextRegistry
+    from ..server.server import AuthServerContextRegistry
 
     if callable(func_or_path):
         func_or_path = func_or_path.__qualname__
 
-    if not (syft_node_location and syft_client_verify_key):
+    if not (syft_server_location and syft_client_verify_key):
         return None
 
     api = APIRegistry.api_for(
-        node_uid=syft_node_location,
+        server_uid=syft_server_location,
         user_verify_key=syft_client_verify_key,
     )
     if api is not None:
@@ -474,18 +474,18 @@ def from_api_or_context(
             service_method = getattr(service_method, path)
         return service_method
 
-    node_context = AuthNodeContextRegistry.auth_context_for_user(
-        node_uid=syft_node_location,
+    server_context = AuthServerContextRegistry.auth_context_for_user(
+        server_uid=syft_server_location,
         user_verify_key=syft_client_verify_key,
     )
-    if node_context is not None and node_context.node is not None:
+    if server_context is not None and server_context.server is not None:
         user_config_registry = UserServiceConfigRegistry.from_role(
-            node_context.role,
+            server_context.role,
         )
         if func_or_path not in user_config_registry:
             if ServiceConfigRegistry.path_exists(func_or_path):
                 return SyftError(
-                    message=f"As a `{node_context.role}` you have has no access to: {func_or_path}"
+                    message=f"As a `{server_context.role}` you have has no access to: {func_or_path}"
                 )
             else:
                 return SyftError(
@@ -493,10 +493,10 @@ def from_api_or_context(
                 )
 
         _private_api_path = user_config_registry.private_path_for(func_or_path)
-        service_method = node_context.node.get_service_method(
+        service_method = server_context.server.get_service_method(
             _private_api_path,
         )
-        return partial(service_method, node_context)
+        return partial(service_method, server_context)
     else:
         logger.error("Could not get method from api or context")
         return None

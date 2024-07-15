@@ -71,7 +71,7 @@ class RequestService(AbstractService):
                 request = result.ok()
                 link = LinkedObject.with_context(request, context=context)
 
-                admin_verify_key = context.node.get_service_method(
+                admin_verify_key = context.server.get_service_method(
                     UserService.admin_verify_key
                 )
 
@@ -87,7 +87,7 @@ class RequestService(AbstractService):
                         notifier_types=[NOTIFIERS.EMAIL],
                         email_template=RequestEmailTemplate,
                     )
-                    method = context.node.get_service_method(NotificationService.send)
+                    method = context.server.get_service_method(NotificationService.send)
                     result = method(context=context, notification=message)
                     if isinstance(result, Notification):
                         return request
@@ -140,8 +140,10 @@ class RequestService(AbstractService):
         if result.is_err():
             return SyftError(message=result.err())
 
-        method = context.node.get_service_method(UserService.get_by_verify_key)
-        get_message = context.node.get_service_method(NotificationService.filter_by_obj)
+        method = context.server.get_service_method(UserService.get_by_verify_key)
+        get_message = context.server.get_service_method(
+            NotificationService.filter_by_obj
+        )
 
         requests: list[RequestInfo] = []
         for req in result.ok():
@@ -217,7 +219,7 @@ class RequestService(AbstractService):
             context.extra_kwargs = kwargs
             result = request.apply(context=context)
 
-            filter_by_obj = context.node.get_service_method(
+            filter_by_obj = context.server.get_service_method(
                 NotificationService.filter_by_obj
             )
             request_notification = filter_by_obj(context=context, obj_uid=uid)
@@ -227,7 +229,7 @@ class RequestService(AbstractService):
                 if request_notification is not None and not isinstance(
                     request_notification, SyftError
                 ):
-                    mark_as_read = context.node.get_service_method(
+                    mark_as_read = context.server.get_service_method(
                         NotificationService.mark_as_read
                     )
                     mark_as_read(context=context, uid=request_notification.id)
@@ -240,7 +242,7 @@ class RequestService(AbstractService):
                         notifier_types=[NOTIFIERS.EMAIL],
                         email_template=RequestUpdateEmailTemplate,
                     )
-                    send_notification = context.node.get_service_method(
+                    send_notification = context.server.get_service_method(
                         NotificationService.send
                     )
                     send_notification(context=context, notification=notification)
@@ -285,7 +287,7 @@ class RequestService(AbstractService):
             email_template=RequestUpdateEmailTemplate,
         )
 
-        send_notification = context.node.get_service_method(NotificationService.send)
+        send_notification = context.server.get_service_method(NotificationService.send)
         send_notification(context=context, notification=notification)
 
         return SyftSuccess(message=f"Request {uid} successfully denied !")

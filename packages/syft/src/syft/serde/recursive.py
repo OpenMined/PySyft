@@ -348,7 +348,7 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
             except Exception:  # nosec
                 if "syft.user" in proto.fullyQualifiedName:
                     # relative
-                    from ..node.node import CODE_RELOADER
+                    from ..server.server import CODE_RELOADER
 
                     for load_user_code in CODE_RELOADER.values():
                         load_user_code()
