@@ -129,7 +129,7 @@ class DatasetService(AbstractService):
         for dataset in datasets:
             if context.server is not None:
                 dataset.node_uid = context.server.id
-            if dataset.marked_as_deleted:
+            if dataset.to_be_deleted:
                 datasets.remove(dataset)
 
         return _paginate_dataset_collection(
@@ -153,7 +153,7 @@ class DatasetService(AbstractService):
         filtered_results = [
             dataset
             for dataset_name, dataset in results.items()
-            if name in dataset_name and not dataset.marked_as_deleted
+            if name in dataset_name and not dataset.to_be_deleted
         ]
 
         return _paginate_dataset_collection(
@@ -167,7 +167,7 @@ class DatasetService(AbstractService):
         if result.is_err():
             return SyftError(message=result.err())
         dataset = result.ok()
-        if dataset.marked_as_deleted:
+        if dataset.to_be_deleted:
             return SyftError(message="Dataset not found.")
         if context.server is not None:
             dataset.node_uid = context.server.id
@@ -185,7 +185,7 @@ class DatasetService(AbstractService):
         for dataset in datasets:
             if context.server is not None:
                 dataset.node_uid = context.server.id
-            if dataset.marked_as_deleted:
+            if dataset.to_be_deleted:
                 datasets.remove(dataset)
         return datasets
 
@@ -202,7 +202,7 @@ class DatasetService(AbstractService):
         if isinstance(datasets, SyftError):
             return datasets
         for dataset in datasets:
-            if dataset.marked_as_deleted:
+            if dataset.to_be_deleted:
                 datasets.remove(dataset)
         return [
             asset
@@ -247,7 +247,7 @@ class DatasetService(AbstractService):
         # soft delete the dataset object from the store
         # result = self.stash.delete_by_uid(credentials=context.credentials, uid=uid)
         dataset_update = DatasetUpdate(
-            id=uid, name=f"{uid}-{dataset.name}", marked_as_deleted=True
+            id=uid, name=f"{uid}-{dataset.name}", to_be_deleted=True
         )
         result = self.stash.update(context.credentials, dataset_update)
         if result.is_err():

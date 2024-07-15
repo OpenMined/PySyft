@@ -508,7 +508,7 @@ class Dataset(SyftObject):
     created_at: DateTime = DateTime.now()
     uploader: Contributor
     summary: str | None = None
-    marked_as_deleted: bool = False
+    to_be_deleted: bool = False
 
     __attr_searchable__ = [
         "name",
@@ -698,11 +698,11 @@ class CreateDataset(Dataset):
         _check_asset_must_contain_mock(asset_list)
         return asset_list
 
-    @field_validator("marked_as_deleted")
+    @field_validator("to_be_deleted")
     @classmethod
-    def __marked_as_deleted_must_be_false(cls, v: bool) -> bool:
+    def __to_be_deleted_must_be_false(cls, v: bool) -> bool:
         if v is True:
-            raise ValueError("marked_as_deleted must be False")
+            raise ValueError("to_be_deleted must be False")
         return v
 
     def set_description(self, description: str) -> None:
@@ -931,7 +931,7 @@ def createdataset_to_dataset() -> list[Callable]:
         validate_url,
         convert_asset,
         add_current_date,
-        make_set_default("marked_as_deleted", False),  # explicitly set it to False
+        make_set_default("to_be_deleted", False),  # explicitly set it to False
     ]
 
 
@@ -941,7 +941,7 @@ def migrate_dataset_v2_to_v3() -> list[Callable]:
         make_set_default("summary", None),
         drop("__repr_attrs__"),
         make_set_default("__repr_attrs__", ["name", "summary", "url", "created_at"]),
-        make_set_default("marked_as_deleted", False),
+        make_set_default("to_be_deleted", False),
     ]
 
 
@@ -949,7 +949,7 @@ def migrate_dataset_v2_to_v3() -> list[Callable]:
 def migrate_dataset_v3_to_v2() -> list[Callable]:
     return [
         drop("summary"),
-        drop(["__repr_attrs__", "marked_as_deleted"]),
+        drop(["__repr_attrs__", "to_be_deleted"]),
         make_set_default("__repr_attrs__", ["name", "url", "created_at"]),
     ]
 
@@ -960,7 +960,7 @@ def migrate_create_dataset_v2_to_v3() -> list[Callable]:
         make_set_default("summary", None),
         drop("__repr_attrs__"),
         make_set_default("__repr_attrs__", ["name", "summary", "url"]),
-        make_set_default("marked_as_deleted", False),
+        make_set_default("to_be_deleted", False),
     ]
 
 
@@ -968,7 +968,7 @@ def migrate_create_dataset_v2_to_v3() -> list[Callable]:
 def migrate_create_dataset_v3_to_v2() -> list[Callable]:
     return [
         drop("summary"),
-        drop(["__repr_attrs__", "marked_as_deleted"]),
+        drop(["__repr_attrs__", "to_be_deleted"]),
         make_set_default("__repr_attrs__", ["name", "url"]),
     ]
 
@@ -978,4 +978,4 @@ class DatasetUpdate(PartialSyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     name: str
-    marked_as_deleted: bool
+    to_be_deleted: bool
