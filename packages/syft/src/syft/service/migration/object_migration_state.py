@@ -87,7 +87,7 @@ class SyftMigrationStateStash(NewBaseStash):
         res = self.check_type(migration_state, self.object_type)
 
         if res.is_err():
-            return Err(res.err().public_message)
+            return Err(res.err().public_message)  # type: ignore
 
         res = super().set(
             credentials=credentials,
@@ -98,7 +98,7 @@ class SyftMigrationStateStash(NewBaseStash):
         )
 
         if res.is_err():
-            return Err(res.err().public_message)
+            return Err(res.err().public_message)  # type: ignore
         return Ok(res.ok())
 
     def get_by_name(
@@ -109,7 +109,7 @@ class SyftMigrationStateStash(NewBaseStash):
         if res.is_err():
             if isinstance(res.err(), NotFoundException):
                 return Ok(None)
-            return Err(res.err().public_message)
+            return Err(res.err().public_message)  # type: ignore
         return Ok(res.ok())
 
 
@@ -217,8 +217,6 @@ class MigrationData(SyftObject):
 
     def download_blob(self, obj_id: str) -> Any | SyftError:
         api = self._get_api()
-        if isinstance(api, SyftError):
-            return api
 
         blob_retrieval = api.services.blob_storage.read(obj_id)
         if isinstance(blob_retrieval, SyftError):
@@ -234,8 +232,6 @@ class MigrationData(SyftObject):
 
     def migrate_and_upload_blob(self, obj: BlobStorageEntry) -> SyftSuccess | SyftError:
         api = self._get_api()
-        if isinstance(api, SyftError):
-            return api
 
         if obj.id not in self.blobs:
             return SyftError(f"Blob {obj.id} not found in migration data.")

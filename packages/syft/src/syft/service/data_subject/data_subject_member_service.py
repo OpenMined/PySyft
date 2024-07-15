@@ -1,9 +1,5 @@
 # stdlib
 
-# third party
-from result import Result
-from result import as_result
-
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
@@ -12,6 +8,7 @@ from ...store.document_store import NewBaseUIDStoreStash
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store_errors import StashException
+from ...types.result import as_result
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
 from ..response import SyftSuccess
@@ -38,14 +35,14 @@ class DataSubjectMemberStash(NewBaseUIDStoreStash):
     @as_result(StashException)
     def get_all_for_parent(
         self, credentials: SyftVerifyKey, name: str
-    ) -> Result[DataSubjectMemberRelationship | None, str]:
+    ) -> list[DataSubjectMemberRelationship]:
         qks = QueryKeys(qks=[ParentPartitionKey.with_obj(name)])
         return self.query_all(credentials=credentials, qks=qks).unwrap()
 
     @as_result(StashException)
     def get_all_for_child(
         self, credentials: SyftVerifyKey, name: str
-    ) -> Result[DataSubjectMemberRelationship | None, str]:
+    ) -> list[DataSubjectMemberRelationship]:
         qks = QueryKeys(qks=[ChildPartitionKey.with_obj(name)])
         return self.query_all(credentials=credentials, qks=qks).unwrap()
 
@@ -70,12 +67,11 @@ class DataSubjectMemberService(AbstractService):
 
     def get_relatives(
         self, context: AuthedServiceContext, data_subject_name: str
-    ) -> list[str]:
+    ) -> list[DataSubjectMemberRelationship]:
         """Get all Members for given data subject"""
-        result = self.stash.get_all_for_parent(
+        return self.stash.get_all_for_parent(
             context.credentials, name=data_subject_name
         ).unwrap()
-        return result
 
 
 TYPE_TO_SERVICE[DataSubjectMemberRelationship] = DataSubjectMemberService

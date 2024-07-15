@@ -7,7 +7,6 @@ from typing import Any
 from typing import TYPE_CHECKING
 
 # third party
-from result import as_result
 from typing_extensions import Self
 
 # relative
@@ -19,6 +18,7 @@ from ...client.client import SyftClient
 from ...serde.serializable import serializable
 from ...server.worker_settings import WorkerSettings
 from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
@@ -57,9 +57,7 @@ class ServerRoute:
         )
 
     @as_result(SyftException)
-    def validate_with_context(
-        self, context: AuthedServiceContext
-    ) -> ServerPeer | SyftError:
+    def validate_with_context(self, context: AuthedServiceContext) -> ServerPeer:
         # relative
         from .server_peer import ServerPeer
 

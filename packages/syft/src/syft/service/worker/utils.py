@@ -442,14 +442,15 @@ def run_workers_in_kubernetes(
                 message=f"image with uid {worker_image.id} does not have an image identifier"
             )
     else:
-        pool_pods = scale_kubernetes_pool(runner, pool_name, worker_count)
+        # TODO: see if this is resultify-able... looks like it.
+        try:
+            pool_pods = scale_kubernetes_pool(runner, pool_name, worker_count).unwrap()
+        except SyftException as exc:
+            return SyftError(message=exc.public_message)
 
         if isinstance(pool_pods, list) and len(pool_pods) > 0:
             # slice only those pods that we're interested in
             pool_pods = pool_pods[start_idx:]
-
-    if isinstance(pool_pods, SyftError):
-        return pool_pods
 
     # create worker object
     for pod in pool_pods:

@@ -5,7 +5,6 @@ from typing import cast
 
 # third party
 from pydantic import ValidationError
-from result import as_result
 
 # relative
 from ...serde.serializable import serializable
@@ -15,6 +14,7 @@ from ...store.document_store import DocumentStore
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_service import ActionService
@@ -94,7 +94,7 @@ class APIService(AbstractService):
             syft_client_verify_key=context.credentials,
         )
         action_service = context.server.get_service("actionservice")
-        res = action_service.set_result_to_store(
+        action_service.set_result_to_store(
             context=context,
             result_action_object=action_obj,
             has_result_read_permission=True,
@@ -534,7 +534,7 @@ class APIService(AbstractService):
     )
     def exists(self, context: AuthedServiceContext, uid: UID) -> SyftSuccess:
         """Check if an endpoint exists"""
-        endpoint = self.get_endpoint_by_uid(context, uid).unwrap()
+        self.get_endpoint_by_uid(context, uid).unwrap()
         return SyftSuccess(message="Endpoint exists")
 
     # ==== The methods below aren't meant to be called directly by the user, but

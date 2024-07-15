@@ -577,7 +577,7 @@ def test_userservice_register_user_exists(
         server_context = ServerServiceContext(server=mock_worker)
 
         with pytest.raises(SyftException) as exc:
-            res = user_service.register(server_context, guest_create_user)
+            user_service.register(server_context, guest_create_user)
 
         assert exc.type == SyftException
         assert exc.value.public_message == expected_error_msg

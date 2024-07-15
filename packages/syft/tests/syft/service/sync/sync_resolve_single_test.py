@@ -1,6 +1,4 @@
 # third party
-
-# third party
 import numpy as np
 import pytest
 
@@ -310,7 +308,7 @@ def test_approve_request_on_sync_blocking(low_worker, high_worker):
 
     # No execute permissions
     with pytest.raises(SyftException):
-        result_error = client_low_ds.code.compute(blocking=True)
+        client_low_ds.code.compute(blocking=True)
     assert low_client.requests[0].status == RequestStatus.PENDING
 
     # Sync request to high side
@@ -353,7 +351,8 @@ def test_deny_and_sync(low_worker, high_worker):
 
     # No execute permissions
     with pytest.raises(SyftException):
-        result_error = client_low_ds.code.compute(blocking=True)
+        client_low_ds.code.compute(blocking=True)
+
     assert low_client.requests[0].status == RequestStatus.PENDING
 
     # Deny on low side

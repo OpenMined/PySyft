@@ -83,8 +83,8 @@ class LogService(AbstractService):
         return SyftSuccess(message="Log Restart successful!")
 
     @service_method(path="log.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL)
-    def get_all(self, context: AuthedServiceContext) -> SyftSuccess:
-        return self.stash.get_all(context.credentials).unwrap()
+    def get_all(self, context: AuthedServiceContext) -> list[SyftLog]:
+        return self.stash.get_all(context.credentials).unwrap()  # type: ignore
 
     @service_method(path="log.delete", name="delete", roles=DATA_SCIENTIST_ROLE_LEVEL)
     def delete(self, context: AuthedServiceContext, uid: UID) -> SyftSuccess:

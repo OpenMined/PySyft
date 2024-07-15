@@ -280,15 +280,14 @@ class SyncService(AbstractService):
         jobs = job_service.get_all(context)
 
         for job in jobs:
-            job_items_result = self._get_job_batch(context, job)
-            if job_items_result.is_err():
+            try:
+                job_items = self._get_job_batch(context, job).unwrap()
+                items_for_jobs.extend(job_items)
+            except SyftException as exc:
                 logger.info(
-                    f"Job {job.id} could not be added to SyncState:"
-                    f" {type(job_items_result.err())}: {str(job_items_result.err())}"
+                    f"Job {job.id} could not be added to SyncState: {exc._private_message or exc.public_message}"
                 )
-                errors[job.id] = job_items_result.err()  # type: ignore
-            else:
-                items_for_jobs.extend(job_items_result.ok())  # type: ignore
+                errors[job.id] = str(exc)
 
         return (items_for_jobs, errors)
 

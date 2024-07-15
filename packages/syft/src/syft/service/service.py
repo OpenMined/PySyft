@@ -14,7 +14,6 @@ from typing import Any
 from typing import TYPE_CHECKING
 
 # third party
-from result import OkErr
 from typing_extensions import Self
 
 # relative
@@ -33,8 +32,7 @@ from ..serde.signature import signature_remove_self
 from ..server.credentials import SyftVerifyKey
 from ..store.document_store import DocumentStore
 from ..store.linked_obj import LinkedObject
-from ..types.result import Err as NewErr
-from ..types.result import Ok as NewOk
+from ..types.errors import SyftException
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SYFT_OBJECT_VERSION_3
 from ..types.syft_object import SyftObject
@@ -66,30 +64,27 @@ class AbstractService:
         self,
         context: AuthedServiceContext | ChangeContext | Any,
         linked_obj: LinkedObject,
-    ) -> Any | SyftError:
+    ) -> Any:
         if isinstance(context, AuthedServiceContext):
             credentials = context.credentials
         elif isinstance(context, ChangeContext):
             credentials = context.approving_user_credentials
         else:
-            return SyftError(message="wrong context passed")
+            raise SyftException(public_message="Wrong context passed")
 
-        obj = self.stash.get_by_uid(credentials, uid=linked_obj.object_uid)
-
-        if isinstance(obj, NewOk | NewErr) and obj.is_ok():
-            obj = obj.ok()
-        elif isinstance(obj, OkErr) and obj.is_ok():
-            obj = obj.ok()
+        # TODO: Add stash to AbstractService?
+        obj = self.stash.get_by_uid(credentials, uid=linked_obj.object_uid).unwrap()  # type: ignore
 
         if hasattr(obj, "server_uid"):
             if context.server is None:
-                return SyftError(message=f"context {context}'s server is None")
+                raise SyftException(
+                    public_message=f"The context '{context}' server is None"
+                )
             obj.server_uid = context.server.id
-        if not isinstance(obj, NewErr | NewOk):
-            obj = NewOk(obj)
 
         return obj
 
+    # TODO: Delete?
     def get_all(*arg: Any, **kwargs: Any) -> Any:
         pass
 

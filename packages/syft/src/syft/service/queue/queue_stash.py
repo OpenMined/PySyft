@@ -154,7 +154,7 @@ class QueueStash(NewBaseStash):
         return item
 
     @as_result(StashException)
-    def pop_on_complete(self, credentials: SyftVerifyKey, uid: UID) -> QueueItem | None:
+    def pop_on_complete(self, credentials: SyftVerifyKey, uid: UID) -> QueueItem:
         queue_item = self.get_by_uid(credentials=credentials, uid=uid).unwrap()
         if queue_item.status == Status.COMPLETED:
             self.delete_by_uid(credentials=credentials, uid=uid)
@@ -163,7 +163,8 @@ class QueueStash(NewBaseStash):
     @as_result(StashException)
     def delete_by_uid(self, credentials: SyftVerifyKey, uid: UID) -> UID:
         qk = UIDPartitionKey.with_obj(uid)
-        return super().delete(credentials=credentials, qk=qk).unwrap()
+        super().delete(credentials=credentials, qk=qk).unwrap()
+        return uid
 
     @as_result(StashException)
     def get_by_status(

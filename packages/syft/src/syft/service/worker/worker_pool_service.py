@@ -553,7 +553,10 @@ class SyftWorkerPoolService(AbstractService):
             )
         else:
             raise SyftException(
-                public_message=f"Invalid request object. Invalid image uid or config in the request changes. {request.changes}"
+                public_message=(
+                    f"Invalid request object: invalid image uid or config in the request changes: "
+                    f"{request.changes}"
+                )
             )
 
     @as_result(StashException, SyftException)

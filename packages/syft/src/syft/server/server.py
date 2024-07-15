@@ -44,6 +44,7 @@ from ..service.action.action_store import DictActionStore
 from ..service.action.action_store import MongoActionStore
 from ..service.action.action_store import SQLiteActionStore
 from ..service.blob_storage.service import BlobStorageService
+from ..service.code.user_code import UserCode
 from ..service.code.user_code_service import UserCodeService
 from ..service.code.user_code_stash import UserCodeStash
 from ..service.context import AuthedServiceContext
@@ -914,16 +915,20 @@ class Server(AbstractServer):
 
     @property
     def settings(self) -> ServerSettings:
-        settings_stash = SettingsStash(store=self.document_store)
         if self.signing_key is None:
             raise ValueError(f"{self} has no signing key")
-        settings = settings_stash.get_all(self.signing_key.verify_key)
-        if settings.is_err():
-            raise ValueError(
-                f"Cannot get server settings for '{self.name}'. Error: {settings.err()}"
-            )
-        if settings.is_ok() and len(settings.ok()) > 0:
-            settings = settings.ok()[0]
+
+        settings_stash = SettingsStash(store=self.document_store)
+        error_msg = f"Cannot get server settings for '{self.name}'"
+
+        all_settings = settings_stash.get_all(self.signing_key.verify_key).unwrap(
+            public_message=error_msg
+        )
+
+        if len(all_settings) == 0:
+            raise SyftException(public_message=error_msg)
+
+        settings = all_settings[0]
         self.update_self(settings)
         return settings
 
@@ -983,37 +988,27 @@ class Server(AbstractServer):
 
         return True
 
-    def await_future(
-        self, credentials: SyftVerifyKey, uid: UID
-    ) -> QueueItem | None | SyftError:
+    def await_future(self, credentials: SyftVerifyKey, uid: UID) -> QueueItem:
         # stdlib
 
         # relative
         from ..service.queue.queue import Status
 
         while True:
-            result = self.queue_stash.pop_on_complete(credentials, uid)
-            if not result.is_ok():
-                return result.err()
-            else:
-                res = result.ok()
-                if res.status == Status.COMPLETED:
-                    return res
+            result = self.queue_stash.pop_on_complete(credentials, uid).unwrap()
+            if result.status == Status.COMPLETED:
+                return result
             sleep(0.1)
 
     def resolve_future(
         self, credentials: SyftVerifyKey, uid: UID
     ) -> QueueItem | None | SyftError:
-        result = self.queue_stash.pop_on_complete(credentials, uid)
-
-        if result.is_ok():
-            queue_obj = result.ok()
-            queue_obj._set_obj_location_(
-                server_uid=self.id,
-                credentials=credentials,
-            )
-            return queue_obj
-        return result.err()
+        queue_obj = self.queue_stash.pop_on_complete(credentials, uid).unwrap()
+        queue_obj._set_obj_location_(
+            server_uid=self.id,
+            credentials=credentials,
+        )
+        return queue_obj
 
     def forward_message(
         self, api_call: SyftAPICall | SignedSyftAPICall
@@ -1288,15 +1283,17 @@ class Server(AbstractServer):
             )
 
             # If result is Ok, then user code object exists
-            if result.is_ok() and result.ok() is not None:
-                user_code = result.ok()
+            user_code: UserCode = result.ok()  # type: ignore[assignment]
+            if user_code is not None:
                 worker_pool_name = user_code.worker_pool_name
 
         worker_pool_ref = self.get_worker_pool_ref_by_name(
             credentials, worker_pool_name
         )
+
         if isinstance(worker_pool_ref, SyftError):
             raise SyftException(public_message=worker_pool_ref.message)
+
         queue_item = ActionQueueItem(
             id=task_uid,
             server_uid=self.id,

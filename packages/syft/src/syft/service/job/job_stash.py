@@ -13,7 +13,6 @@ from typing import Any
 from pydantic import Field
 from pydantic import model_validator
 from result import Err
-from result import Result
 from typing_extensions import Self
 
 # relative
@@ -882,13 +881,11 @@ class JobStash(NewBaseUIDStoreStash):
     ) -> Job:
         # raises
         self.check_type(item, self.object_type).unwrap()
-        res = super().update(credentials, item, add_permissions)
-
-        # todo, refactor partition level
-        if res.is_err():
-            raise StashException(public_message="Failed to update")
-        else:
-            return res.ok()
+        return (
+            super()
+            .update(credentials, item, add_permissions)
+            .unwrap(public_message="Failed to update")
+        )
 
     @as_result(StashException)
     def get_by_result_id(
@@ -911,19 +908,19 @@ class JobStash(NewBaseUIDStoreStash):
             return res[0]
 
     @as_result(StashException)
-    def get_by_parent_id(self, credentials: SyftVerifyKey, uid: UID) -> Job:
+    def get_by_parent_id(self, credentials: SyftVerifyKey, uid: UID) -> list[Job]:
         qks = QueryKeys(
             qks=[PartitionKey(key="parent_job_id", type_=UID).with_obj(uid)]
         )
         return self.query_all(credentials=credentials, qks=qks).unwrap()
 
     @as_result(StashException)
-    def delete_by_uid(self, credentials: SyftVerifyKey, uid: UID) -> bool:
+    def delete_by_uid(self, credentials: SyftVerifyKey, uid: UID) -> bool:  # type: ignore[override]
         qk = UIDPartitionKey.with_obj(uid)
         return super().delete(credentials=credentials, qk=qk).unwrap()
 
     @as_result(StashException)
-    def get_active(self, credentials: SyftVerifyKey) -> Result[SyftSuccess, str]:
+    def get_active(self, credentials: SyftVerifyKey) -> list[Job]:
         qks = QueryKeys(
             qks=[
                 PartitionKey(key="status", type_=JobStatus).with_obj(

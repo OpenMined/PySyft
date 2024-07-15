@@ -88,7 +88,8 @@ class SettingsService(AbstractService):
             association_request_auto_approval: Optional[bool]
 
         Returns:
-            SyftSuccess: Message indicating the success of the operation, with the update server settings as the value property.
+            SyftSuccess: Message indicating the success of the operation, with the
+                update server settings as the value property.
 
         Example:
         >>> server_client.update(name='foo', organization='bar', description='baz', signup_enabled=True)
@@ -232,9 +233,7 @@ class SettingsService(AbstractService):
     ) -> SyftSuccess:
         """Enable/Disable eager execution."""
         settings = ServerSettingsUpdate(eager_execution_enabled=enable)
-
-        result = self._update(context=context, settings=settings).unwrap()
-
+        self._update(context=context, settings=settings).unwrap()
         message = "enabled" if enable else "disabled"
         return SyftSuccess(message=f"Eager execution {message}", value=message)
 

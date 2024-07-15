@@ -11,6 +11,7 @@ from ...store.document_store import DocumentStore
 from ...store.document_store import NewBaseStash
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
+from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.result import as_result
 from ...types.uid import UID
@@ -37,12 +38,12 @@ class NotifierStash(NewBaseStash):
         return self.partition.root_verify_key
 
     # TODO: should this method behave like a singleton?
-    @as_result(StashException)
+    @as_result(StashException, NotFoundException)
     def get(self, credentials: SyftVerifyKey) -> NotifierSettings:
         """Get Settings"""
-        settings = self.get_all(credentials).unwrap()
+        settings: list[NotifierSettings] = self.get_all(credentials).unwrap()
         if len(settings) == 0:
-            return None
+            raise NotFoundException
         return settings[0]
 
     @as_result(StashException)

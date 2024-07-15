@@ -7,6 +7,7 @@ from typing import cast
 # relative
 from ...serde.serializable import serializable
 from ...types.datetime import DateTime
+from ...types.errors import SyftException
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from .network_service import NetworkService
@@ -45,13 +46,15 @@ class PeerHealthCheckTask:
         )
         network_stash = network_service.stash
 
-        result = network_stash.get_all(context.server.verify_key)
-
-        if result.is_err():
-            logger.error(f"Failed to fetch peers from stash: {result.err()}")
-            return SyftError(message=f"{result.err()}")
-
-        all_peers: list[ServerPeer] = result.ok()
+        try:
+            all_peers: list[ServerPeer] = network_stash.get_all(
+                context.server.verify_key
+            ).unwrap()  # type: ignore
+        except SyftException as exc:
+            msg = exc._private_message or exc.public_message
+            logger.error(f"Failed to fetch peers from stash: {msg}")
+            # TODO: raise SyftException?
+            return SyftError(message="Failed to fetch peers from stash")
 
         for peer in all_peers:
             peer_update = ServerPeerUpdate(id=peer.id)

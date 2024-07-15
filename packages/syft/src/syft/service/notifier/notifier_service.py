@@ -34,16 +34,16 @@ class NotifierService(AbstractService):
         self.stash = NotifierStash(store=store)
 
     @as_result(StashException)
-    def settings(  # Maybe just notifier.settings
+    def settings(
         self,
         context: AuthedServiceContext,
-    ) -> NotifierSettings | SyftError:
+    ) -> NotifierSettings:
         """Get Notifier Settings
 
         Args:
             context: The request context
         Returns:
-            Union[NotifierSettings, SyftError]: Notifier Settings or SyftError
+            NotifierSettings | None: The notifier settings, if it exists; None otherwise.
         """
         return self.stash.get(credentials=context.credentials).unwrap(
             public_message="Error getting notifier settings"
@@ -174,11 +174,12 @@ class NotifierService(AbstractService):
         Turn off email notifications service.
         PySyft notifications will still work.
         """
-
         notifier = self.stash.get(credentials=context.credentials).unwrap()
 
         notifier.active = False
+
         self.stash.update(credentials=context.credentials, settings=notifier).unwrap()
+
         return SyftSuccess(message="Notifications disabled succesfullly")
 
     @as_result(SyftException)
@@ -189,7 +190,6 @@ class NotifierService(AbstractService):
         Activate email notifications for the authenticated user.
         This will only work if the datasite owner has enabled notifications.
         """
-
         user_service = context.server.get_service("userservice")
         return user_service.enable_notifications(context, notifier_type=notifier_type)
 
@@ -231,7 +231,7 @@ class NotifierService(AbstractService):
         try:
             # Create a new NotifierStash since its a static method.
             notifier_stash = NotifierStash(store=server.document_store)
-            notifier_stash.get(server.signing_key.verify_key).unwrap()
+            notifier = notifier_stash.get(server.signing_key.verify_key).unwrap()
 
             # Get the notifier
             # If notifier doesn't exist, create a new one

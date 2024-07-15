@@ -444,7 +444,7 @@ class UserCode(SyncableSyftObject):
     ) -> UserCodeStatusCollection | SyftError:
         if context is None:
             # Clientside
-            api = self._get_api().unwrap()
+            api = self._get_api()
             server_identity = ServerIdentity.from_api(api)
 
             if self._has_output_read_permissions_cache is None:
@@ -768,7 +768,7 @@ class UserCode(SyncableSyftObject):
         if not self.input_policy:
             return []
 
-        api = self._get_api().unwrap()
+        api = self._get_api()
 
         # get all assets on the server
         datasets: list[Dataset] = api.services.dataset.get_all()
@@ -1002,7 +1002,7 @@ class UserCode(SyncableSyftObject):
         ip.set_next_input(warning_message + self.raw_code)
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        api = self._get_api().unwrap()
+        api = self._get_api()
 
         signature = self.signature
         signature = signature_remove_self(signature)

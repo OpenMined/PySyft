@@ -631,7 +631,7 @@ class SyftObject(SyftBaseObject, SyftMigrationRegistry):
 
         return APIRegistry._api_for(
             self.syft_server_location, self.syft_client_verify_key
-        )
+        ).unwrap()
 
     ## OVERRIDING pydantic.BaseModel.__getattr__
     ## return super().__getattribute__(item) -> return self.__getattribute__(item)

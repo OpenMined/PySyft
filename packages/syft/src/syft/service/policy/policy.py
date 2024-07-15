@@ -542,12 +542,12 @@ class MixedInputPolicy(InputPolicy):
         return matches.pop()
 
     @as_result(SyftException)
-    def filter_kwargs(
+    def filter_kwargs(  # type: ignore[override]
         self,
         kwargs: dict[str, UID],
         context: AuthedServiceContext,
         code_item_id: UID,
-    ) -> Result[dict[Any, Any], str]:
+    ) -> dict[Any, Any]:
         try:
             res = {}
             for _, rules in self.kwarg_rules.items():
@@ -573,7 +573,7 @@ class MixedInputPolicy(InputPolicy):
         return res
 
     @as_result(SyftException)
-    def _is_valid(
+    def _is_valid(  # type: ignore[override]
         self,
         context: AuthedServiceContext,
         usr_input_kwargs: dict,
@@ -816,7 +816,8 @@ class OutputPolicyExecuteCount(OutputPolicy):
         )
 
     def public_state(self) -> dict[str, int]:
-        return {"limit": self.limit, "count": self.count}
+        # TODO: this count is not great, fix it.
+        return {"limit": self.limit, "count": self.count().unwrap()}
 
 
 @serializable()

@@ -746,7 +746,10 @@ class CreateDataset(Dataset):
             if existing_asset.name == asset.name:
                 if not force_replace:
                     raise SyftException(
-                        public_message=f"Asset '{asset.name}' already exists in '{self.name}' Dataset.\nUse add_asset(asset, force_replace=True) to replace."
+                        public_message=(
+                            f"Asset '{asset.name}' already exists in '{self.name}' Dataset."
+                            "\nUse add_asset(asset, force_replace=True) to replace."
+                        )
                     )
                 else:
                     self.asset_list[i] = asset
