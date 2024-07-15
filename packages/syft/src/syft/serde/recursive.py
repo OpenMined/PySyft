@@ -2,6 +2,7 @@
 from collections.abc import Callable
 from enum import Enum
 from enum import EnumMeta
+import os
 import sys
 import tempfile
 import types
@@ -20,8 +21,8 @@ from ..util.util import index_syft_by_module_name
 from .capnp import get_capnp_schema
 from .util import compatible_with_large_file_writes_capnp
 
-TYPE_BANK = {}
-MISSING_CANONICAL_NAME = []
+TYPE_BANK = {}  # type: ignore
+SYFT_CLASSES_MISSING_CANONICAL_NAME = []
 
 recursive_scheme = get_capnp_schema("recursive_serde.capnp").RecursiveSerde
 
@@ -84,7 +85,7 @@ def has_canonical_name_version(
 ) -> bool:
     cls_canonical_name = getattr(cls, "__canonical_name__", None)
     cls_version = getattr(cls, "__version__", None)
-    return (cls_canonical_name or cannonical_name) and (cls_version or version)
+    return bool(cls_canonical_name or cannonical_name) and bool(cls_version or version)
 
 
 def validate_cannonical_name_version(
@@ -114,6 +115,27 @@ def validate_cannonical_name_version(
     return canonical_name, version  # type: ignore
 
 
+def skip_unregistered_class(
+    cls: type, canonical_name: str | None, version: str | None
+) -> bool:
+    """
+    Used to gather all classes that are missing canonical_name and version for development.
+
+    Returns True if the class should be skipped, False otherwise.
+    """
+
+    search_unregistered_classes = (
+        os.getenv("SYFT_SEARCH_UNREGISTERED_CLASSES", False) == "1"
+    )
+    if not search_unregistered_classes:
+        return False
+    if not has_canonical_name_version(cls, canonical_name, version):
+        if cls.__module__.startswith("syft."):
+            SYFT_CLASSES_MISSING_CANONICAL_NAME.append(cls)
+            return True
+    return False
+
+
 def recursive_serde_register(
     cls: object | type,
     serialize: Callable | None = None,
@@ -129,12 +151,10 @@ def recursive_serde_register(
     base_attrs = None
     attribute_list: set[str] = set()
 
-    alias_fqn = check_fqn_alias(cls)
     cls = type(cls) if not isinstance(cls, type) else cls
-    fqn = f"{cls.__module__}.{cls.__name__}"
+    # fqn = f"{cls.__module__}.{cls.__name__}"
 
-    if not has_canonical_name_version(cls, canonical_name, version):
-        MISSING_CANONICAL_NAME.append(cls)
+    if skip_unregistered_class(cls, canonical_name, version):
         return
 
     canonical_name, version = validate_cannonical_name_version(
@@ -203,20 +223,16 @@ def recursive_serde_register(
         version,
     )
 
-    TYPE_BANK[fqn] = serde_attributes
+    # TYPE_BANK[fqn] = serde_attributes
 
     SyftObjectRegistry.register_cls(canonical_name, version, serde_attributes)
 
+    alias_fqn = check_fqn_alias(cls)
     if isinstance(alias_fqn, tuple):
         for alias in alias_fqn:
-            TYPE_BANK[alias] = serde_attributes
-
-            # TODO Refactor alias, required for typing.Any in python 3.12,
-            alias_canonical_name = alias
-            alias_version = 1
-            SyftObjectRegistry.register_cls(
-                alias_canonical_name, alias_version, serde_attributes
-            )
+            # TYPE_BANK[alias] = serde_attributes
+            alias_canonical_name = canonical_name + alias.__name__
+            SyftObjectRegistry.register_cls(alias_canonical_name, 1, serde_attributes)
 
 
 def chunk_bytes(

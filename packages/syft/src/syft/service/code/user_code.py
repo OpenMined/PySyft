@@ -126,7 +126,7 @@ SubmitTimePartitionKey = PartitionKey(key="submit_time", type_=DateTime)
 PyCodeObject = Any
 
 
-@serializable()
+@serializable(canonical_name="UserCodeStatus", version=1)
 class UserCodeStatus(Enum):
     PENDING = "pending"
     DENIED = "denied"

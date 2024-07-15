@@ -46,7 +46,7 @@ from .user_stash import UserStash
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="UserService", version=1)
 class UserService(AbstractService):
     store: DocumentStore
     stash: UserStash

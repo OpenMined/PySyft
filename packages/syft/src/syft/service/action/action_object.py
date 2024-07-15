@@ -75,14 +75,14 @@ if TYPE_CHECKING:
 NoneType = type(None)
 
 
-@serializable()
+@serializable(canonical_name="TwinMode", version=1)
 class TwinMode(Enum):
     NONE = 0
     PRIVATE = 1
     MOCK = 2
 
 
-@serializable()
+@serializable(canonical_name="ActionType", version=1)
 class ActionType(Enum):
     GETATTRIBUTE = 1
     METHOD = 2

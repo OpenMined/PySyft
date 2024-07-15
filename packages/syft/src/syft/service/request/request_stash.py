@@ -24,7 +24,7 @@ OrderByRequestTimeStampPartitionKey = PartitionKey(key="request_time", type_=Dat
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="RequestStash", version=1)
 class RequestStash(BaseUIDStoreStash):
     object_type = Request
     settings: PartitionSettings = PartitionSettings(

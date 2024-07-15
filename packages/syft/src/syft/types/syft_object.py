@@ -33,12 +33,11 @@ from pydantic import Field
 from pydantic import model_validator
 from pydantic.fields import PydanticUndefined
 from result import OkErr
-from syft.serde.serializable import serializable
 from typeguard import check_type
 from typing_extensions import Self
 
 # relative
-from ..serde.recursive_primitives import recursive_serde_register_type
+from ..serde.serializable import serializable
 from ..serde.serialize import _serialize as serialize
 from ..server.credentials import SyftVerifyKey
 from ..service.response import SyftError

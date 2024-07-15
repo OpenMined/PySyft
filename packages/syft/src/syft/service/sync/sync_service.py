@@ -49,7 +49,7 @@ def get_store(context: AuthedServiceContext, item: SyncableSyftObject) -> Any:
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="SyncService", version=1)
 class SyncService(AbstractService):
     store: DocumentStore
     stash: SyncStash

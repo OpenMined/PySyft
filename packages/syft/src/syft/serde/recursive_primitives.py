@@ -378,6 +378,7 @@ for __path_type in (
         serialize=serialize_path,
         deserialize=functools.partial(deserialize_path, __path_type),
         canonical_name=f"pathlib_{__path_type.__name__}",
+        version=1,
     )
 
 

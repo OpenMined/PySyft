@@ -142,6 +142,7 @@ recursive_serde_register(
     serialize=lambda x: serialize(x.isoformat(), to_bytes=True),
     deserialize=lambda x: parser.parse(deserialize(x, from_bytes=True)).date(),
     canonical_name="datetime_date",
+    version=1,
 )
 
 recursive_serde_register(
@@ -149,6 +150,7 @@ recursive_serde_register(
     serialize=lambda x: serialize(x.value, to_bytes=True),
     deserialize=lambda x: Timestamp(deserialize(x, from_bytes=True)),
     canonical_name="pandas_timestamp",
+    version=1,
 )
 
 
@@ -177,6 +179,7 @@ recursive_serde_register(
     serialize=serialize_type,
     deserialize=deserialize_type,
     canonical_name="empty_type",
+    version=1,
 )
 
 

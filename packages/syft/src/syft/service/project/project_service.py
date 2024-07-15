@@ -28,7 +28,7 @@ from .project_stash import ProjectStash
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="ProjectService", version=1)
 class ProjectService(AbstractService):
     store: DocumentStore
     stash: ProjectStash
