@@ -822,18 +822,12 @@ class ActionService(AbstractService):
 
         if self.contains_nested_actionobjects(data):
             new_data = self.unwrap_nested_actionobjects(context, data)
-
-            new_action_object = ActionObject.from_obj(
-                new_data,
-                id=action_object.id,
-                syft_blob_storage_entry_id=action_object.syft_blob_storage_entry_id,
-                syft_client_verify_key=action_object.syft_client_verify_key,
-                syft_server_location=action_object.syft_server_location,
-            )
-            new_action_object._save_to_blob_storage()
+            # Update existing action object with the new flattened data
+            action_object.syft_action_data_cache = new_data
+            action_object._save_to_blob_storage()
             res = self._set(
                 context=context,
-                action_object=new_action_object,
+                action_object=action_object,
             )
 
         return None
