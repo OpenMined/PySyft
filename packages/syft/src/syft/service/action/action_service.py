@@ -890,7 +890,7 @@ class ActionService(AbstractService):
     ) -> SyftSuccess | SyftError:
         deleted_blob_ids = []
         blob_store_service = cast(
-            BlobStorageService, context.node.get_service(BlobStorageService)
+            BlobStorageService, context.server.get_service(BlobStorageService)
         )
 
         if isinstance(obj, ActionObject) and obj.syft_blob_storage_entry_id:

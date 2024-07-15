@@ -235,7 +235,7 @@ class DatasetService(AbstractService):
         return_msg = []
         for asset in dataset.asset_list:
             action_service = cast(
-                ActionService, context.node.get_service(ActionService)
+                ActionService, context.server.get_service(ActionService)
             )
             del_res: SyftSuccess | SyftError = action_service.delete(
                 context=context, uid=asset.action_id
