@@ -148,7 +148,6 @@ def partition_by_node(kwargs: dict[str, Any]) -> dict[NodeIdentity, dict[str, UI
     from ...client.api import RemoteFunction
     from ...types.twin_object import TwinObject
     from ..action.action_object import ActionObject
-    from ..model.model import Model
 
     # fetches the all the current api's connected
     api_list = APIRegistry.get_all_api()
@@ -163,8 +162,6 @@ def partition_by_node(kwargs: dict[str, Any]) -> dict[NodeIdentity, dict[str, UI
             uid = v.custom_function_actionobject_id()
         if isinstance(v, Asset):
             uid = v.action_id
-        if isinstance(v, Model):
-            uid = v.id
         if not isinstance(uid, UID):
             raise Exception(f"Input {k} must have a UID not {type(v)}")
 

@@ -14,7 +14,6 @@ from ..code.user_code import SubmitUserCode
 from ..code.user_code import UserCode
 from ..code.user_code import UserCodeStatus
 from ..context import AuthedServiceContext
-from ..model.model import ModelRef
 from ..service import AbstractService
 from ..service import service_method
 
@@ -95,12 +94,9 @@ class EnclaveService(AbstractService):
 
         pending_assets_for_uploading_domain = set(kwargs_for_uploading_domain.values())
         for action_object in action_objects:
-            if isinstance(action_object, ModelRef):
-                result = action_object.store_ref_objs_to_store(
-                    context=root_context, clear_ref_objs=True
-                )
-            else:
-                result = action_service.set(root_context, action_object)
+            result = action_service.set(
+                root_context, action_object, ignore_detached_objs=True
+            )
             if isinstance(result, SyftError):
                 # TODO 🟣 Rollback previously uploaded assets if any error occurs
                 return result

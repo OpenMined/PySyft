@@ -138,21 +138,6 @@ class ModelService(AbstractService):
         else:
             return SyftError(message=result.err())
 
-    @service_method(
-        path="model.get_by_uid",
-        name="get_by_uid",
-        roles=GUEST_ROLE_LEVEL,
-        warning=CRUDReminder(),
-    )
-    def get_by_uid(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> SyftSuccess | SyftError:
-        result = self.stash.get_by_uid(context.credentials, uid)
-        if result.is_ok():
-            return result.ok()
-        else:
-            return SyftError(message=result.err())
-
 
 TYPE_TO_SERVICE[Model] = ModelService
 SERVICE_TO_TYPES[ModelService].update({Model})
