@@ -702,7 +702,9 @@ class SyftWorkerPoolService(AbstractService):
                 logger.error(msg)
                 return SyftError(message=msg)
 
-        worker_service = cast(WorkerService, context.node.get_service("WorkerService"))
+        worker_service = cast(
+            WorkerService, context.server.get_service("WorkerService")
+        )
         worker_ids = (w.id for w in worker_pool.worker_list)
 
         worker_deletion = (
