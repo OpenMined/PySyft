@@ -28,9 +28,10 @@ class SMTPClient:
         self.port = port
 
     def send(self, sender: str, receiver: list[str], subject: str, body: str) -> None:
-        print(
-            "sending email", self.server, self.username, self.password, sender, receiver
-        )
+        # TODO remove the below comment after testing
+        # print(
+        #     "sending email", self.server, self.username, self.password, sender, receiver
+        # )
         try:
             if not (subject and body and receiver):
                 raise ValueError("Subject, body, and recipient email(s) are required")
