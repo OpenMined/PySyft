@@ -161,9 +161,7 @@ class DatasetService(AbstractService):
         )
 
     @service_method(path="dataset.get_by_id", name="get_by_id")
-    def get_by_id(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> SyftSuccess | SyftError:
+    def get_by_id(self, context: AuthedServiceContext, uid: UID) -> Dataset | SyftError:
         """Get a Dataset"""
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_err():
@@ -248,8 +246,10 @@ class DatasetService(AbstractService):
             return_msg.append(f"Asset with id '{asset.id}' successfully deleted.")
         # soft delete the dataset object from the store
         # result = self.stash.delete_by_uid(credentials=context.credentials, uid=uid)
-        datset_update = DatasetUpdate(id=uid, marked_as_deleted=True)
-        result = self.stash.update(context.credentials, datset_update)
+        dataset_update = DatasetUpdate(
+            id=uid, name=f"{uid}-{dataset.name}", marked_as_deleted=True
+        )
+        result = self.stash.update(context.credentials, dataset_update)
         if result.is_err():
             return SyftError(message=result.err())
         return_msg.append(f"Dataset with id '{uid}' successfully deleted.")

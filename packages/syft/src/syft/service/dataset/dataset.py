@@ -977,4 +977,5 @@ class DatasetUpdate(PartialSyftObject):
     __canonical_name__ = "DatasetUpdate"
     __version__ = SYFT_OBJECT_VERSION_1
 
+    name: str
     marked_as_deleted: bool
