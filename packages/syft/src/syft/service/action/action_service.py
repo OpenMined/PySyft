@@ -23,6 +23,7 @@ from ..context import AuthedServiceContext
 from ..policy.policy import OutputPolicy
 from ..policy.policy import retrieve_from_db
 from ..response import SyftError
+from ..response import SyftException
 from ..response import SyftSuccess
 from ..response import SyftWarning
 from ..service import AbstractService
@@ -445,7 +446,10 @@ class ActionService(AbstractService):
                 # no twins
                 # allow python types from inputpolicy
                 filtered_kwargs = filter_twin_kwargs(
-                    real_kwargs, twin_mode=TwinMode.NONE, allow_python_types=True
+                    real_kwargs,
+                    twin_mode=TwinMode.NONE,
+                    allow_python_types=True,
+                    context=context,
                 )
                 exec_result = execute_byte_code(code_item, filtered_kwargs, context)
                 if output_policy:
@@ -463,10 +467,16 @@ class ActionService(AbstractService):
                 else:
                     result_action_object = wrap_result(result_id, exec_result.result)
             else:
+                print("Entered with Twin Inputs")
+                print("Real kwargs", real_kwargs)
                 # twins
                 private_kwargs = filter_twin_kwargs(
-                    real_kwargs, twin_mode=TwinMode.PRIVATE, allow_python_types=True
+                    real_kwargs,
+                    twin_mode=TwinMode.PRIVATE,
+                    allow_python_types=True,
+                    context=context,
                 )
+                print("private kwargs", private_kwargs)
                 private_exec_result = execute_byte_code(
                     code_item, private_kwargs, context
                 )
@@ -483,8 +493,12 @@ class ActionService(AbstractService):
                 )
 
                 mock_kwargs = filter_twin_kwargs(
-                    real_kwargs, twin_mode=TwinMode.MOCK, allow_python_types=True
+                    real_kwargs,
+                    twin_mode=TwinMode.MOCK,
+                    allow_python_types=True,
+                    context=context,
                 )
+                print("mock kwargs", mock_kwargs)
                 # relative
                 from .action_data_empty import ActionDataEmpty
 
@@ -1079,8 +1093,14 @@ def filter_twin_args(args: list[Any], twin_mode: TwinMode) -> Any:
 
 
 def filter_twin_kwargs(
-    kwargs: dict, twin_mode: TwinMode, allow_python_types: bool = False
+    kwargs: dict,
+    twin_mode: TwinMode,
+    allow_python_types: bool = False,
+    context: AuthedServiceContext | None = None,
 ) -> Any:
+    # relative
+    from ..model.model import ModelRef
+
     filtered = {}
     for k, v in kwargs.items():
         if isinstance(v, TwinObject):
@@ -1094,7 +1114,17 @@ def filter_twin_kwargs(
                 )
         else:
             if isinstance(v, ActionObject):
-                filtered[k] = v.syft_action_data
+                print("Entered Action object", v, type(v))
+                if isinstance(v, ModelRef):
+                    if not context:
+                        raise SyftException("ModelRef requires context to be passed")
+                    print("got model ref", v, v.id)
+
+                    filtered[k] = v.load_model(context)
+                    print("Stored Values", filtered[k])
+                else:
+                    filtered[k] = v.syft_action_data
+                print("filtered", filtered[k])
             elif (
                 isinstance(v, str | int | float | dict | CustomEndpointActionObject)
                 and allow_python_types

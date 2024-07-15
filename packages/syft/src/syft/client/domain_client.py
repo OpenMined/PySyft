@@ -104,7 +104,22 @@ class DomainClient(SyftClient):
 
     def upload_model(self, model: CreateModel) -> SyftSuccess | SyftError:
         # relative
+        from ..service.model.model import ModelRef
         from ..types.twin_object import TwinObject
+
+        model_ref_action_ids = []
+
+        # Step 1. Upload Model Code to Action Store
+        model.code.syft_node_location = self.id
+        model.code.syft_client_verify_key = self.verify_key
+        model.code._save_to_blob_storage()
+        model_code_res = self.api.services.action.set(model.code)
+        if isinstance(model_code_res, SyftError):
+            return model_code_res
+        model.code_action_id = model_code_res.id
+        model_ref_action_ids.append(model_code_res.id)
+
+        # Step 2. Upload Model Assets to Action Store
 
         model_size: float = 0.0
         with tqdm(
@@ -140,15 +155,33 @@ class DomainClient(SyftClient):
                 asset.action_id = twin.id
                 asset.node_uid = self.id
                 model_size += get_mb_size(asset.data)
+                model_ref_action_ids.append(twin.id)
 
                 # Update the progress bar and set the dynamic description
                 pbar.set_description(f"Uploading: {asset.name}")
                 pbar.update(1)
 
+        # Step 3. Upload Model Ref to Action Store
+        # Model Ref is a reference to the model code and assets
+        # Stored as a list of ActionObject ids
+        # [model_code_id, asset1_id, asset2_id, ...]
+        model_ref = ModelRef(
+            id=model.id,
+            syft_action_data_cache=model_ref_action_ids,
+            syft_node_location=self.id,
+            syft_client_verify_key=self.verify_key,
+        )
+        model_ref._save_to_blob_storage()
+        model_ref_res = self.api.services.action.set(model_ref)
+        if isinstance(model_ref_res, SyftError):
+            return model_ref_res
+
         model.mb_size = model_size
         valid = model.check()
         if isinstance(valid, SyftError):
             return valid
+
+        # Step 4. Upload Model to Model Stash
         return self.api.services.model.add(model=model)
 
     def upload_dataset(self, dataset: CreateDataset) -> SyftSuccess | SyftError:

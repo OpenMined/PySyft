@@ -4,6 +4,7 @@ from datetime import datetime
 from enum import Enum
 from textwrap import dedent
 from typing import Any
+from typing import ClassVar
 
 # third party
 from IPython.display import display
@@ -13,6 +14,7 @@ from result import Ok
 from result import Result
 
 # relative
+from ...client.client import SyftClient
 from ...serde.serializable import serializable
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
@@ -26,11 +28,23 @@ from ...types.uid import UID
 from ...util.markdown import as_markdown_python_code
 from ..action.action_object import ActionDataEmpty
 from ..action.action_object import ActionObject
+from ..action.action_object import BASE_PASSTHROUGH_ATTRS
+from ..context import AuthedServiceContext
 from ..dataset.dataset import Contributor
 from ..dataset.dataset import MarkdownDescription
 from ..policy.policy import get_code_from_class
 from ..response import SyftError
 from ..response import SyftSuccess
+from ..response import SyftWarning
+
+
+def has_permission(data_result: Any) -> bool:
+    # TODO: implement in a better way
+    return not (
+        isinstance(data_result, str)
+        and data_result.startswith("Permission")
+        and data_result.endswith("denied")
+    )
 
 
 @serializable()
@@ -91,6 +105,27 @@ class ModelAsset(SyftObject):
             and self.created_at == other.created_at
         )
 
+    @property
+    def data(self) -> Any:
+        # relative
+        from ...client.api import APIRegistry
+
+        api = APIRegistry.api_for(
+            node_uid=self.node_uid,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None or api.services is None:
+            return None
+        res = api.services.action.get(self.action_id)
+        if has_permission(res):
+            return res.syft_action_data
+        else:
+            warning = SyftWarning(
+                message="You do not have permission to access private data."
+            )
+            display(warning)
+            return None
+
     # def __call__(self, *args, **kwargs) -> Any:
     #     endpoint = self.endpoint
     #     result = endpoint.__call__(*args, **kwargs)
@@ -115,6 +150,7 @@ def syft_model(
     def decorator(cls: Any) -> Callable:
         try:
             code = dedent(get_code_from_class(cls))
+            code = f"import syft as sy\n{code}"
             class_name = cls.__name__
             res = SubmitModelCode(code=code, class_name=class_name)
         except Exception as e:
@@ -131,15 +167,31 @@ def syft_model(
 
 
 @serializable()
-class SubmitModelCode(SyftObject):
+class SubmitModelCode(ActionObject):
     # version
     __canonical_name__ = "SubmitModelCode"
-    __version_ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_1
 
-    id: UID | None = None  # type: ignore[assignment]
+    syft_internal_type: type | None = None  # type: ignore
+    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS + [
+        "code",
+        "class_name",
+        "__call__",
+    ]
+
     code: str
     class_name: str
     # signature: inspect.Signature
+
+    def __call__(self, **kwargs: dict) -> Any:
+        # Load Class
+        exec(self.code)
+
+        # execute it
+        func_string = f"{self.class_name}(**kwargs)"
+        result = eval(func_string, None, locals())  # nosec
+
+        return result
 
     __repr_attrs__ = ["class_name", "code"]
 
@@ -222,7 +274,6 @@ class Model(SyftObject):
     __repr_attrs__ = ["name", "url", "created_at"]
 
     name: str
-    submit_model: SubmitModelCode
     asset_list: list[ModelAsset] = []
     contributors: set[Contributor] = set()
     citation: str | None = None
@@ -234,6 +285,7 @@ class Model(SyftObject):
     show_interface: bool = True
     example_text: str | None = None
     mb_size: float | None = None
+    code_action_id: UID | None = None
 
     def __init__(
         self,
@@ -247,6 +299,27 @@ class Model(SyftObject):
     @property
     def icon(self) -> str:
         return "no icon"
+
+    @property
+    def model_code(self) -> SubmitModelCode | None:
+        # relative
+        from ...client.api import APIRegistry
+
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None or api.services is None:
+            return None
+        res = api.services.action.get(self.code_action_id)
+        if has_permission(res):
+            return res
+        else:
+            warning = SyftWarning(
+                message="You do not have permission to access private data."
+            )
+            display(warning)
+            return None
 
     def _coll_repr_(self) -> dict[str, Any]:
         return {
@@ -358,7 +431,8 @@ class CreateModel(Model):
 
     __repr_attrs__ = ["name", "url"]
 
-    submit_model: SubmitModelCode
+    code: SubmitModelCode
+    code_action_id: UID | None = None
     asset_list: list[Any] = []
     created_at: DateTime | None = None  # type: ignore[assignment]
     model_config = ConfigDict(validate_assignment=True)
@@ -504,3 +578,98 @@ def createmodel_to_model() -> list[Callable]:
         convert_asset,
         add_current_date,
     ]
+
+
+@serializable()
+class ModelRef(ActionObject):
+    __canonical_name__ = "ModelRef"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    syft_internal_type: ClassVar[type] = list[UID]
+    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS + [
+        "ref_objs",
+        "load_model",
+        "load_data",
+        "store_ref_objs_to_store",
+    ]
+    ref_objs: list = []  # Contains the loaded data
+
+    # Schema:
+    # [model_code_id, asset1_id, asset2_id, ...]
+
+    def store_ref_objs_to_store(
+        self, context: AuthedServiceContext, clear_ref_objs: bool = False
+    ) -> SyftError | None:
+        admin_client = context.node.root_client
+
+        if not self.ref_objs:
+            return SyftError(message="No ref_objs to store in Model Ref")
+
+        for ref_obj in self.ref_objs:
+            # print("ref_obj", type(ref_obj))
+            #  print("ref obj", ref_obj.syft_action_data, type(ref_obj.syft_action_data))
+            print("ref obj blob id", ref_obj.syft_blob_storage_entry_id)
+            res = admin_client.services.action.set(ref_obj)
+            print("res", res)
+            ret_action_obj = admin_client.services.action.get(res.id)
+            print("ret_action_obj", ret_action_obj)
+            print(
+                "ret_action_obj.syft_action_data",
+                ret_action_obj.syft_action_data,
+                type(ret_action_obj.syft_action_data),
+            )
+            if isinstance(res, SyftError):
+                return res
+
+        if clear_ref_objs:
+            self.ref_objs = []
+
+        model_ref_res = admin_client.services.action.set(self)
+        if isinstance(model_ref_res, SyftError):
+            return model_ref_res
+
+        return None
+
+    def load_data(
+        self,
+        context: AuthedServiceContext,
+        wrap_ref_to_obj: bool = False,
+        unwrap_action_data: bool = True,
+        remote_client: SyftClient | None = None,
+    ) -> list:
+        admin_client = context.node.root_client
+
+        code_action_id = self.syft_action_data[0]
+        asset_action_ids = self.syft_action_data[1::]
+
+        model = admin_client.services.action.get(code_action_id)
+
+        asset_list = []
+        for asset_action_id in asset_action_ids:
+            res = admin_client.services.action.get(asset_action_id)
+            action_data = res.syft_action_data
+
+            # Save to blob storage of remote client if provided
+            if remote_client is not None:
+                res.syft_blob_storage_entry_id = None
+                blob_res = res._save_to_blob_storage(client=remote_client)
+                if isinstance(blob_res, SyftError):
+                    return blob_res
+
+            print("type(action_data)", type(action_data))
+            print("res", res)
+            asset_list.append(action_data if unwrap_action_data else res)
+
+        loaded_data = [model] + asset_list
+        if wrap_ref_to_obj:
+            self.ref_objs = loaded_data
+
+        return loaded_data
+
+    def load_model(self, context: AuthedServiceContext) -> SyftModelClass:
+        loaded_data = self.load_data(context)
+        model = loaded_data[0]
+        asset_list = loaded_data[1::]
+
+        loaded_model = model(assets=asset_list)
+        return loaded_model
