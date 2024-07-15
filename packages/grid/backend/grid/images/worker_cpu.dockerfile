@@ -2,11 +2,11 @@
 # Build as-is to create a base worker image
 # Build with args to create a custom worker image
 
-# NOTE: This dockerfile will be built inside a grid-backend container in PROD
+# NOTE: This dockerfile will be built inside a syft-backend container in PROD
 # Hence COPY will not work the same way in DEV vs. PROD
 
-ARG SYFT_VERSION_TAG="0.8.7-beta.13"
-FROM openmined/grid-backend:${SYFT_VERSION_TAG}
+ARG SYFT_VERSION_TAG="0.8.7-beta.14"
+FROM openmined/syft-backend:${SYFT_VERSION_TAG}
 
 # should match base image python version
 ARG PYTHON_VERSION="3.12"

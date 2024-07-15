@@ -7,12 +7,12 @@ on:
         description: "Syft version to test"
         required: true
         type: string
-      node_url:
-        description: "Node URL to use"
+      server_url:
+        description: "Server URL to use"
         required: true
         type: string
-      node_port:
-        description: "Node port"
+      server_port:
+        description: "Server port"
         required: true
         type: number
       exclude_notebooks:
@@ -26,12 +26,12 @@ on:
         description: "Syft version to test"
         required: true
         type: string
-      node_url:
-        description: "Node URL to use"
+      server_url:
+        description: "Server URL to use"
         required: true
         type: string
-      node_port:
-        description: "Node port"
+      server_port:
+        description: "Server port"
         required: true
         type: number
       exclude_notebooks:
@@ -81,8 +81,8 @@ jobs:
       - name: Run Notebook tests
         env:
           SYFT_VERSION: ${{ inputs.syft_version }}
-          NODE_URL: ${{ inputs.node_url }}
-          NODE_PORT: ${{ inputs.node_port }}
+          SERVER_URL: ${{ inputs.server_url }}
+          SERVER_PORT: ${{ inputs.server_port }}
           EXCLUDE_NOTEBOOKS: ${{ inputs.exclude_notebooks }}
         run: |
           tox -e e2e.test.notebook

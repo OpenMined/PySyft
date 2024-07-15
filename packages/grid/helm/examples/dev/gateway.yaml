@@ -1,0 +1,14 @@
+# Values for deploying a gateway with a reverse tunnel server
+# Patched on top of patch `base.yaml`
+
+server:
+  type: gateway
+
+# Proxy is required for the tunnel to work
+proxy:
+  enabled: true
+
+rtunnel:
+  enabled: true
+  mode: server
+  logLevel: debug

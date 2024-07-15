@@ -1,0 +1,80 @@
+{{- if .Values.rtunnel.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rathole
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app.kubernetes.io/component: rathole
+spec:
+  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      {{- include "common.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: rathole
+  serviceName: rathole
+  podManagementPolicy: OrderedReady
+  template:
+    metadata:
+      labels:
+        {{- include "common.labels" . | nindent 8 }}
+        app.kubernetes.io/component: rathole
+        {{- if .Values.rtunnel.podLabels }}
+        {{- toYaml .Values.rtunnel.podLabels | nindent 8 }}
+        {{- end }}
+      {{- if .Values.rtunnel.podAnnotations }}
+      annotations: {{- toYaml .Values.rtunnel.podAnnotations | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- if .Values.rtunnel.nodeSelector }}
+      nodeSelector: {{- .Values.rtunnel.nodeSelector | toYaml | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: rathole
+        image: {{ .Values.global.registry }}/openmined/syft-rathole:{{ .Values.global.version }}
+        imagePullPolicy: Always
+        resources: {{ include "common.resources.set" (dict "resources" .Values.rtunnel.resources "preset" .Values.rtunnel.resourcesPreset) | nindent 12 }}
+        env:
+            - name: LOG_LEVEL
+              value: {{ .Values.rtunnel.logLevel | quote }}
+            - name: MODE
+              value: {{ .Values.rtunnel.mode | quote }}
+            - name: RATHOLE_PORT
+              value: {{ .Values.rtunnel.port | quote }}
+            {{- if .Values.rtunnel.env }}
+            {{- toYaml .Values.rtunnel.env | nindent 12 }}
+            {{- end }}
+        ports:
+          - name: rathole-port
+            containerPort: 2333
+        startupProbe: null
+        livenessProbe: null
+        volumeMounts:
+          - name: mount-config
+            mountPath: /conf/
+            readOnly: false
+          - name: rathole-config
+            mountPath: /app/conf/
+            readOnly: false
+      terminationGracePeriodSeconds: 5
+      volumes:
+        - name: rathole-config
+          emptyDir: {}
+        - name: mount-config
+          configMap:
+            name: rathole-config
+  volumeClaimTemplates:
+  - metadata:
+      name: rathole-data
+      labels:
+        {{- include "common.volumeLabels" . | nindent 8 }}
+        app.kubernetes.io/component: rathole
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 10Mi
+{{- end }}

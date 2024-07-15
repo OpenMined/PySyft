@@ -22,20 +22,24 @@ from typing_extensions import Self
 # relative
 from ..client.api import SyftAPI
 from ..client.client import SyftClient
-from ..node.credentials import SyftVerifyKey
 from ..serde import serialize
 from ..serde.serializable import serializable
+from ..server.credentials import SyftVerifyKey
 from ..service.action.action_object import ActionObject
 from ..service.action.action_object import ActionObjectPointer
+from ..service.action.action_object import ActionObjectV3
 from ..service.action.action_object import BASE_PASSTHROUGH_ATTRS
 from ..service.action.action_types import action_types
 from ..service.response import SyftError
 from ..service.response import SyftException
 from ..service.service import from_api_or_context
-from ..types.grid_url import GridURL
+from ..types.server_url import ServerURL
+from ..types.transforms import drop
 from ..types.transforms import keep
+from ..types.transforms import make_set_default
 from ..types.transforms import transform
 from .datetime import DateTime
+from .syft_migration import migrate
 from .syft_object import SYFT_OBJECT_VERSION_2
 from .syft_object import SYFT_OBJECT_VERSION_3
 from .syft_object import SYFT_OBJECT_VERSION_4
@@ -73,7 +77,7 @@ class BlobFile(SyftObject):
     ) -> Any:
         # get blob retrieval object from api + syft_blob_storage_entry_id
         read_method = from_api_or_context(
-            "blob_storage.read", self.syft_node_location, self.syft_client_verify_key
+            "blob_storage.read", self.syft_server_location, self.syft_client_verify_key
         )
         if read_method is not None:
             blob_retrieval_object = read_method(self.syft_blob_storage_entry_id)
@@ -112,7 +116,7 @@ class BlobFile(SyftObject):
         return None
 
     def upload_to_blobstorage(self, client: SyftClient) -> SyftError | None:
-        self.syft_node_location = client.id
+        self.syft_server_location = client.id
         self.syft_client_verify_key = client.verify_key
         return self._upload_to_blobstorage_from_api(client.api)
 
@@ -192,9 +196,19 @@ class BlobFileObjectPointer(ActionObjectPointer):
 
 
 @serializable()
-class BlobFileObject(ActionObject):
+class BlobFileObjectV3(ActionObjectV3):
     __canonical_name__ = "BlobFileOBject"
     __version__ = SYFT_OBJECT_VERSION_2
+
+    syft_internal_type: ClassVar[type[Any]] = BlobFile
+    syft_pointer_type: ClassVar[type[ActionObjectPointer]] = BlobFileObjectPointer
+    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
+
+
+@serializable()
+class BlobFileObject(ActionObject):
+    __canonical_name__ = "BlobFileOBject"
+    __version__ = SYFT_OBJECT_VERSION_3
 
     syft_internal_type: ClassVar[type[Any]] = BlobFile
     syft_pointer_type: ClassVar[type[ActionObjectPointer]] = BlobFileObjectPointer
@@ -247,7 +261,7 @@ class SeaweedSecureFilePathLocation(SecureFilePathLocation):
             from ..store.blob_storage import BlobRetrievalByURL
 
             return BlobRetrievalByURL(
-                url=GridURL.from_url(url), file_name=Path(self.path).name, type_=type_
+                url=ServerURL.from_url(url), file_name=Path(self.path).name, type_=type_
             )
         except BotoClientError as e:
             raise SyftException(e)
@@ -327,6 +341,18 @@ class CreateBlobStorageEntry(SyftObject):
     extensions: list[str] = []
 
     @classmethod
+    def from_blob_storage_entry(cls, entry: BlobStorageEntry) -> Self:
+        # TODO extensions are not stored in the BlobStorageEntry,
+        # so a blob entry from path might get a different filename
+        # after uploading.
+        return cls(
+            id=entry.id,
+            type_=entry.type_,
+            mimetype=entry.mimetype,
+            file_size=entry.file_size,
+        )
+
+    @classmethod
     def from_obj(cls, obj: SyftObject, file_size: int | None = None) -> Self:
         if file_size is None:
             file_size = sys.getsizeof(serialize._serialize(obj=obj, to_bytes=True))
@@ -370,3 +396,13 @@ def storage_entry_to_metadata() -> list[Callable]:
 
 
 action_types[BlobFile] = BlobFileObject
+
+
+@migrate(BlobFileObjectV3, BlobFileObject)
+def upgrade_blobfile_object() -> list[Callable]:
+    return [make_set_default("syft_action_saved_to_blob_store", True)]
+
+
+@migrate(BlobFileObject, BlobFileObjectV3)
+def downgrade_blobfile_object() -> list[Callable]:
+    return [drop("syft_action_saved_to_blob_store")]

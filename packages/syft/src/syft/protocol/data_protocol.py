@@ -22,12 +22,12 @@ from result import Result
 
 # relative
 from .. import __version__
-from ..serde.recursive import TYPE_BANK
 from ..service.response import SyftError
 from ..service.response import SyftException
 from ..service.response import SyftSuccess
 from ..types.dicttuple import DictTuple
 from ..types.syft_object import SyftBaseObject
+from ..types.syft_object_registry import SyftObjectRegistry
 from ..util.util import get_dev_mode
 
 PROTOCOL_STATE_FILENAME = "protocol_version.json"
@@ -152,12 +152,13 @@ class DataProtocol:
         return protocol_history
 
     def save_history(self, history: dict) -> None:
-        for file_path in protocol_release_dir().iterdir():
-            for version in self.read_json(file_path):
-                # Skip adding file if the version is not part of the history
-                if version not in history.keys():
-                    continue
-                history[version] = {"release_name": file_path.name}
+        if os.path.exists(protocol_release_dir()):
+            for file_path in protocol_release_dir().iterdir():
+                for version in self.read_json(file_path):
+                    # Skip adding file if the version is not part of the history
+                    if version not in history.keys():
+                        continue
+                    history[version] = {"release_name": file_path.name}
         self.file_path.write_text(json.dumps(history, indent=2) + "\n")
 
     @property
@@ -190,7 +191,7 @@ class DataProtocol:
                         raise Exception(
                             f"Can't add {object_metadata} already in state {versions}"
                         )
-                    elif action == "remove" and (
+                    if action == "remove" and (
                         str(version) not in state_versions.keys()
                         and hash_str not in state_version_hashes
                     ):
@@ -209,22 +210,24 @@ class DataProtocol:
                 return state_dict
         return state_dict
 
+    @staticmethod
+    def obj_json(version: str | int, _hash: str, action: str = "add") -> dict:
+        return {
+            "version": int(version),
+            "hash": _hash,
+            "action": action,
+        }
+
     def diff_state(self, state: dict) -> tuple[dict, dict]:
         compare_dict: dict = defaultdict(dict)  # what versions are in the latest code
         object_diff: dict = defaultdict(dict)  # diff in latest code with saved json
-        for k in TYPE_BANK:
-            (
-                nonrecursive,
-                serialize,
-                deserialize,
-                attribute_list,
-                exclude_attrs_list,
-                serde_overrides,
-                hash_exclude_attrs,
-                cls,
-                attribute_types,
-                version,
-            ) = TYPE_BANK[k]
+        all_serde_propeties = [
+            serde_properties
+            for version_dict in SyftObjectRegistry.__object_serialization_registry__.values()
+            for serde_properties in version_dict.values()
+        ]
+        for serde_properties in all_serde_propeties:
+            cls, version = serde_properties[7], serde_properties[9]
             if issubclass(cls, SyftBaseObject):
                 canonical_name = cls.__canonical_name__
                 if canonical_name in IGNORE_TYPES or canonical_name.startswith(
@@ -239,10 +242,8 @@ class DataProtocol:
 
                 if canonical_name not in state:
                     # new object so its an add
-                    object_diff[canonical_name][str(version)] = {}
-                    object_diff[canonical_name][str(version)]["version"] = int(version)
-                    object_diff[canonical_name][str(version)]["hash"] = hash_str
-                    object_diff[canonical_name][str(version)]["action"] = "add"
+                    obj_to_add = self.obj_json(int(version), hash_str)
+                    object_diff[canonical_name][str(version)] = obj_to_add
                     continue
 
                 versions = state[canonical_name]
@@ -256,23 +257,15 @@ class DataProtocol:
                     is_protocol_dev = versions[str(version)][1] == "dev"
                     if is_protocol_dev:
                         # force overwrite existing object so its an add
-                        object_diff[canonical_name][str(version)] = {}
-                        object_diff[canonical_name][str(version)]["version"] = int(
-                            version
-                        )
-                        object_diff[canonical_name][str(version)]["hash"] = hash_str
-                        object_diff[canonical_name][str(version)]["action"] = "add"
+                        obj_to_add = self.obj_json(int(version), hash_str)
+                        object_diff[canonical_name][str(version)] = obj_to_add
                         continue
-
-                    error_msg = (
-                        f"{canonical_name} for class {cls.__name__} fqn {cls} "
-                        + f"version {version} hash has changed. "
-                        + f"{hash_str} not in {versions.values()}. "
-                        + "Is a unique __canonical_name__ for this subclass missing? "
-                        + "If the class has changed you will need to define a new class with the changes, "
-                        + "with same __canonical_name__ and bump the __version__ number."
-                        + f"{cls.model_fields}"
-                    )
+                    error_msg = f"""{canonical_name} for class {cls.__name__} fqn {cls}\
+version {version} hash has changed. {hash_str} not in {versions.values()}. \
+Is a unique __canonical_name__ for this subclass missing?
+If the class has changed you will need to define a new class with the changes, \
+with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
+"""
 
                     if get_dev_mode() or self.raise_exception:
                         raise Exception(error_msg)
@@ -281,10 +274,8 @@ class DataProtocol:
                         break
                 else:
                     # new object so its an add
-                    object_diff[canonical_name][str(version)] = {}
-                    object_diff[canonical_name][str(version)]["version"] = int(version)
-                    object_diff[canonical_name][str(version)]["hash"] = hash_str
-                    object_diff[canonical_name][str(version)]["action"] = "add"
+                    obj_to_add = self.obj_json(int(version), hash_str)
+                    object_diff[canonical_name][str(version)] = obj_to_add
                     continue
 
         # now check for remove actions
@@ -292,18 +283,14 @@ class DataProtocol:
             for version, (hash_str, _) in state[canonical_name].items():
                 if canonical_name not in compare_dict:
                     # missing so its a remove
-                    object_diff[canonical_name][str(version)] = {}
-                    object_diff[canonical_name][str(version)]["version"] = int(version)
-                    object_diff[canonical_name][str(version)]["hash"] = hash_str
-                    object_diff[canonical_name][str(version)]["action"] = "remove"
+                    obj_to_remove = self.obj_json(int(version), hash_str, "remove")
+                    object_diff[canonical_name][str(version)] = obj_to_remove
                     continue
                 versions = compare_dict[canonical_name]
                 if str(version) not in versions.keys():
                     # missing so its a remove
-                    object_diff[canonical_name][str(version)] = {}
-                    object_diff[canonical_name][str(version)]["version"] = int(version)
-                    object_diff[canonical_name][str(version)]["hash"] = hash_str
-                    object_diff[canonical_name][str(version)]["action"] = "remove"
+                    obj_to_remove = self.obj_json(int(version), hash_str, "remove")
+                    object_diff[canonical_name][str(version)] = obj_to_remove
                     continue
         return object_diff, compare_dict
 

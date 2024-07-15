@@ -1,7 +1,7 @@
 global:
   # Affects only backend, frontend, and seaweedfs containers
   registry: docker.io
-  version: 0.8.7-beta.13
+  version: 0.8.7-beta.14
 
   # Force default secret values for development. DO NOT SET THIS TO FALSE IN PRODUCTION
   randomizedSecrets: true
@@ -65,6 +65,8 @@ seaweedfs:
   # S3
   s3:
     rootUser: admin
+
+  minSizeBlobStorageMB: 16
 
   # Mount API
   mountApi:
@@ -134,6 +136,7 @@ proxy:
 
 registry:
   enabled: true
+
   # Extra environment vars
   env: null
 
@@ -153,11 +156,11 @@ registry:
 
 # =================================================================================
 
-node:
+server:
   # Syft settings
   name: null
   rootEmail: info@openmined.org
-  type: domain
+  type: datasite
   side: high
   defaultBucketName: null
   inMemoryWorkers: false
@@ -234,6 +237,29 @@ ingress:
   # ----------------------------------------
   class: null
   className: null
+
+# =================================================================================
+
+rtunnel:
+  enabled: false
+  logLevel: info
+
+  port: 2333
+  mode: client
+
+  # Extra environment vars
+  env: null
+
+  # Pod labels & annotations
+  podLabels: null
+  podAnnotations: null
+
+  # Node selector for pods
+  nodeSelector: null
+
+  # Pod Resource Limits
+  resourcesPreset: small
+  resources: null
 
 # =================================================================================
 

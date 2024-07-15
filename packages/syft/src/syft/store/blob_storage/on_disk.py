@@ -34,7 +34,7 @@ class OnDiskBlobDeposit(BlobDeposit):
 
         write_to_disk_method = from_api_or_context(
             func_or_path="blob_storage.write_to_disk",
-            syft_node_location=self.syft_node_location,
+            syft_server_location=self.syft_server_location,
             syft_client_verify_key=self.syft_client_verify_key,
         )
         if write_to_disk_method is None:

@@ -9,7 +9,7 @@
   <section class="flex gap-6 items-center w-min h-min">
     <img
       src="/assets/small-logo.png"
-      alt="PyGrid logo"
+      alt="Syft UI logo"
       class="h-10 object-contain"
     />
     {#if version}

@@ -16,9 +16,9 @@ from result import Result
 from typeguard import check_type
 
 # relative
-from ..node.credentials import SyftSigningKey
-from ..node.credentials import SyftVerifyKey
 from ..serde.serializable import serializable
+from ..server.credentials import SyftSigningKey
+from ..server.credentials import SyftVerifyKey
 from ..service.action.action_permissions import ActionObjectPermission
 from ..service.action.action_permissions import StoragePermission
 from ..service.context import AuthedServiceContext
@@ -208,7 +208,7 @@ class QueryKeys(SyftBaseModel):
     def from_obj(partition_keys: PartitionKeys, obj: SyftObject) -> QueryKeys:
         qks = []
         for partition_key in partition_keys.all:
-            pk_key = partition_key.key
+            pk_key = partition_key.key  # name of the attribute
             pk_type = partition_key.type_
             pk_value = getattr(obj, pk_key)
             # object has a method for getting these types
@@ -305,17 +305,19 @@ class StorePartition:
 
     def __init__(
         self,
-        node_uid: UID,
+        server_uid: UID,
         root_verify_key: SyftVerifyKey | None,
         settings: PartitionSettings,
         store_config: StoreConfig,
+        has_admin_permissions: Callable[[SyftVerifyKey], bool] | None = None,
     ) -> None:
         if root_verify_key is None:
             root_verify_key = SyftSigningKey.generate().verify_key
-        self.node_uid = node_uid
+        self.server_uid = server_uid
         self.root_verify_key = root_verify_key
         self.settings = settings
         self.store_config = store_config
+        self.has_admin_permissions = has_admin_permissions
         res = self.init_store()
         if res.is_err():
             raise RuntimeError(
@@ -488,6 +490,7 @@ class StorePartition:
         obj: SyftObject,
         has_permission: bool = False,
         overwrite: bool = False,
+        allow_missing_keys: bool = False,
     ) -> Result[SyftObject, str]:
         raise NotImplementedError
 
@@ -524,6 +527,9 @@ class StorePartition:
     def has_permission(self, permission: ActionObjectPermission) -> bool:
         raise NotImplementedError
 
+    def get_all_permissions(self) -> Result[dict[UID, set[str]], str]:
+        raise NotImplementedError
+
     def _get_permissions_for_uid(self, uid: UID) -> Result[set[str], str]:
         raise NotImplementedError
 
@@ -540,6 +546,9 @@ class StorePartition:
         raise NotImplementedError
 
     def _get_storage_permissions_for_uid(self, uid: UID) -> Result[set[UID], str]:
+        raise NotImplementedError
+
+    def get_all_storage_permissions(self) -> Result[dict[UID, set[UID]], str]:
         raise NotImplementedError
 
     def _migrate_data(
@@ -566,7 +575,7 @@ class DocumentStore:
 
     def __init__(
         self,
-        node_uid: UID,
+        server_uid: UID,
         root_verify_key: SyftVerifyKey | None,
         store_config: StoreConfig,
     ) -> None:
@@ -574,18 +583,54 @@ class DocumentStore:
             raise Exception("must have store config")
         self.partitions = {}
         self.store_config = store_config
-        self.node_uid = node_uid
+        self.server_uid = server_uid
         self.root_verify_key = root_verify_key
+
+    def __has_admin_permissions(
+        self, settings: PartitionSettings
+    ) -> Callable[[SyftVerifyKey], bool]:
+        # relative
+        from ..service.user.user import User
+        from ..service.user.user_roles import ServiceRole
+        from ..service.user.user_stash import UserStash
+
+        # leave out UserStash to avoid recursion
+        # TODO: pass the callback from BaseStash instead of DocumentStore
+        # so that this works with UserStash after the sqlite thread fix is merged
+        if settings.object_type is User:
+            return lambda credentials: False
+
+        user_stash = UserStash(store=self)
+
+        def has_admin_permissions(credentials: SyftVerifyKey) -> bool:
+            res = user_stash.get_by_verify_key(
+                credentials=credentials,
+                verify_key=credentials,
+            )
+
+            return (
+                res.is_ok()
+                and (user := res.ok()) is not None
+                and user.role in (ServiceRole.DATA_OWNER, ServiceRole.ADMIN)
+            )
+
+        return has_admin_permissions
 
     def partition(self, settings: PartitionSettings) -> StorePartition:
         if settings.name not in self.partitions:
             self.partitions[settings.name] = self.partition_type(
-                node_uid=self.node_uid,
+                server_uid=self.server_uid,
                 root_verify_key=self.root_verify_key,
                 settings=settings,
                 store_config=self.store_config,
+                has_admin_permissions=self.__has_admin_permissions(settings),
             )
         return self.partitions[settings.name]
+
+    def get_partition_object_types(self) -> list[type]:
+        return [
+            partition.settings.object_type for partition in self.partitions.values()
+        ]
 
 
 @instrument

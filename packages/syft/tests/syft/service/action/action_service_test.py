@@ -10,15 +10,17 @@ from syft.service.context import AuthedServiceContext
 
 
 def get_auth_ctx(worker):
-    return AuthedServiceContext(node=worker, credentials=worker.signing_key.verify_key)
+    return AuthedServiceContext(
+        server=worker, credentials=worker.signing_key.verify_key
+    )
 
 
 def test_action_service_sanity(worker):
     service = worker.get_service("actionservice")
-    root_domain_client = worker.root_client
+    root_datasite_client = worker.root_client
 
     obj = ActionObject.from_obj("abc")
-    pointer = obj.send(root_domain_client)
+    pointer = obj.send(root_datasite_client)
 
     assert len(service.store.data) == 1
     res = pointer.capitalize()

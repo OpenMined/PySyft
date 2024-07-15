@@ -5,9 +5,9 @@ from typing import Any
 from typing_extensions import Self
 
 # relative
-from ..abstract_node import AbstractNode
-from ..node.credentials import SyftVerifyKey
-from ..node.credentials import UserLoginCredentials
+from ..abstract_server import AbstractServer
+from ..server.credentials import SyftVerifyKey
+from ..server.credentials import UserLoginCredentials
 from ..types.syft_object import Context
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftBaseObject
@@ -18,15 +18,15 @@ from .user.user_roles import ServiceRole
 from .user.user_roles import ServiceRoleCapability
 
 
-class NodeServiceContext(Context, SyftObject):
-    __canonical_name__ = "NodeServiceContext"
+class ServerServiceContext(Context, SyftObject):
+    __canonical_name__ = "ServerServiceContext"
     __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID | None = None  # type: ignore[assignment]
-    node: AbstractNode
+    server: AbstractServer
 
 
-class AuthedServiceContext(NodeServiceContext):
+class AuthedServiceContext(ServerServiceContext):
     __canonical_name__ = "AuthedServiceContext"
     __version__ = SYFT_OBJECT_VERSION_2
 
@@ -39,17 +39,21 @@ class AuthedServiceContext(NodeServiceContext):
 
     @property
     def dev_mode(self) -> Any:
-        return self.node.dev_mode  # type: ignore
+        return self.server.dev_mode  # type: ignore
 
     def capabilities(self) -> list[ServiceRoleCapability]:
         return ROLE_TO_CAPABILITIES.get(self.role, [])
 
     def with_credentials(self, credentials: SyftVerifyKey, role: ServiceRole) -> Self:
-        return AuthedServiceContext(credentials=credentials, role=role, node=self.node)
+        return AuthedServiceContext(
+            credentials=credentials, role=role, server=self.server
+        )
 
     def as_root_context(self) -> Self:
         return AuthedServiceContext(
-            credentials=self.node.verify_key, role=ServiceRole.ADMIN, node=self.node
+            credentials=self.server.verify_key,
+            role=ServiceRole.ADMIN,
+            server=self.server,
         )
 
     @property
@@ -58,19 +62,19 @@ class AuthedServiceContext(NodeServiceContext):
         # but we can't import Job since it's a circular import
         if self.job_id is None:
             return None
-        res = self.node.job_stash.get_by_uid(self.credentials, self.job_id)
+        res = self.server.job_stash.get_by_uid(self.credentials, self.job_id)
         if res.is_err():
             return None
         else:
             return res.ok()
 
 
-class UnauthedServiceContext(NodeServiceContext):
+class UnauthedServiceContext(ServerServiceContext):
     __canonical_name__ = "UnauthedServiceContext"
     __version__ = SYFT_OBJECT_VERSION_2
 
     login_credentials: UserLoginCredentials
-    node: AbstractNode
+    server: AbstractServer
     role: ServiceRole = ServiceRole.NONE
 
 
@@ -78,7 +82,7 @@ class ChangeContext(SyftBaseObject):
     __canonical_name__ = "ChangeContext"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    node: AbstractNode
+    server: AbstractServer
     approving_user_credentials: SyftVerifyKey | None = None
     requesting_user_credentials: SyftVerifyKey | None = None
     extra_kwargs: dict = {}
@@ -86,14 +90,14 @@ class ChangeContext(SyftBaseObject):
     @classmethod
     def from_service(cls, context: AuthedServiceContext) -> Self:
         return cls(
-            node=context.node,
+            server=context.server,
             approving_user_credentials=context.credentials,
             extra_kwargs=context.extra_kwargs,
         )
 
     def to_service_ctx(self) -> AuthedServiceContext:
         return AuthedServiceContext(
-            node=self.node,
+            server=self.server,
             credentials=self.approving_user_credentials,
             extra_kwargs=self.extra_kwargs,
         )
