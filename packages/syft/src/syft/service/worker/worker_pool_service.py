@@ -5,6 +5,7 @@ from typing import cast
 
 # third party
 import pydantic
+from result import Ok
 from result import OkErr
 
 # relative
@@ -705,7 +706,13 @@ class SyftWorkerPoolService(AbstractService):
         worker_service = cast(
             WorkerService, context.server.get_service("WorkerService")
         )
-        worker_ids = (w.id for w in worker_pool.worker_list)
+
+        workers = (
+            worker.resolve_with_context(context=context)
+            for worker in worker_pool.worker_list
+        )
+        workers = (w.ok() if isinstance(w, Ok) else w for w in workers)
+        worker_ids = (w.id for w in workers)
 
         worker_deletion = (
             (
@@ -720,7 +727,7 @@ class SyftWorkerPoolService(AbstractService):
         )
         worker_deletion_fails = cast(
             list[tuple[UID, SyftError]],
-            [(id_, res) for id_, res in worker_deletion if isinstance(SyftError, res)],
+            [(id_, res) for id_, res in worker_deletion if isinstance(res, SyftError)],
         )
         if len(worker_deletion_fails) > 0:
             failed_worker_ids = (id_ for id_, _ in worker_deletion_fails)
@@ -732,7 +739,7 @@ class SyftWorkerPoolService(AbstractService):
             logger.error(msg)
             return SyftError(message=msg)
 
-        res = self.stash.delete_by_uid(uid)
+        res = self.stash.delete_by_uid(credentials=context.credentials, uid=uid)
         if isinstance(res, SyftError):
             return res
 
