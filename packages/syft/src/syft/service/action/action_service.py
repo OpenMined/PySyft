@@ -861,7 +861,7 @@ class ActionService(AbstractService):
 
     @service_method(path="action.delete", name="delete", roles=ADMIN_ROLE_LEVEL)
     def delete(
-        self, context: AuthedServiceContext, uid: UID, soft_delete: bool = True
+        self, context: AuthedServiceContext, uid: UID, soft_delete: bool = False
     ) -> SyftSuccess | SyftError:
         get_res = self.store.get(uid=uid, credentials=context.credentials)
         if get_res.is_err():
@@ -902,6 +902,7 @@ class ActionService(AbstractService):
             if isinstance(blob_del_res, SyftError):
                 return SyftError(message=blob_del_res.message)
             deleted_blob_ids.append(obj.syft_blob_storage_entry_id)
+
         if isinstance(obj, TwinObject):
             if obj.private.syft_blob_storage_entry_id:
                 blob_del_res = blob_store_service.delete(
@@ -910,6 +911,7 @@ class ActionService(AbstractService):
                 if isinstance(blob_del_res, SyftError):
                     return SyftError(message=blob_del_res.message)
                 deleted_blob_ids.append(obj.private.syft_blob_storage_entry_id)
+
             if obj.mock.syft_blob_storage_entry_id:
                 blob_del_res = blob_store_service.delete(
                     context=context, uid=obj.mock.syft_blob_storage_entry_id
@@ -926,13 +928,14 @@ class ActionService(AbstractService):
         self,
         context: AuthedServiceContext,
         uid: UID,
-        soft_delete: bool = True,
+        soft_delete: bool = False,
     ) -> SyftSuccess | SyftError:
         if soft_delete:
             get_res = self.store.get(uid=uid, credentials=context.credentials)
             if get_res.is_err():
                 return SyftError(message=get_res.err())
             obj: ActionObject | TwinObject = get_res.ok()
+
             if isinstance(obj, TwinObject):
                 res = self._soft_delete_action_obj(
                     context=context, action_obj=obj.private
@@ -942,8 +945,9 @@ class ActionService(AbstractService):
                 res = self._soft_delete_action_obj(context=context, action_obj=obj.mock)
                 if res.is_err():
                     return SyftError(message=res.err())
-            else:  # ActionObject
-                res = self._soft_delete_action_obj(context, obj)
+
+            if isinstance(obj, ActionObject):
+                res = self._soft_delete_action_obj(context=context, action_obj=obj)
                 if res.is_err():
                     return SyftError(message=res.err())
         else:
@@ -956,11 +960,16 @@ class ActionService(AbstractService):
     def _soft_delete_action_obj(
         self, context: AuthedServiceContext, action_obj: ActionObject
     ) -> Result[ActionObject, str]:
+        """
+        Delete the provided action object and create an empty one with the same UID
+        """
         uid: UID = action_obj.id
         del_res = self.store.delete(credentials=context.credentials, uid=uid)
         if del_res.is_err():
             return del_res
+
         none_action_obj = ActionObject.from_obj(syft_action_data=None, id=uid)
+        none_action_obj.syft_action_saved_to_blob_store = False
         set_result = self._set(
             context=context,
             action_object=none_action_obj,

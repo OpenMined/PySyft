@@ -561,6 +561,8 @@ class Dataset(SyftObject):
             """
         else:
             description_info_message = ""
+        if self.to_be_deleted:
+            return "This dataset has been marked for deletion. The underlying data may be not available."
         return f"""
             <style>
             {FONT_CSS}

@@ -167,8 +167,7 @@ class DatasetService(AbstractService):
         if result.is_err():
             return SyftError(message=result.err())
         dataset = result.ok()
-        if dataset.to_be_deleted:
-            return SyftError(message="Dataset not found.")
+
         if context.server is not None:
             dataset.server_uid = context.server.id
         return dataset
@@ -182,11 +181,11 @@ class DatasetService(AbstractService):
         if result.is_err():
             return SyftError(message=result.err())
         datasets = result.ok()
+
         for dataset in datasets:
             if context.server is not None:
                 dataset.server_uid = context.server.id
-            if dataset.to_be_deleted:
-                datasets.remove(dataset)
+
         return datasets
 
     @service_method(
@@ -218,7 +217,7 @@ class DatasetService(AbstractService):
         warning=HighSideCRUDWarning(confirmation=True),
     )
     def delete(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID, delete_assets: bool = True
     ) -> SyftSuccess | SyftError:
         """
         Soft delete: keep the dataset object, only remove the blob store entries
@@ -231,34 +230,36 @@ class DatasetService(AbstractService):
         dataset = self.get_by_id(context=context, uid=uid)
         if isinstance(dataset, SyftError):
             return dataset
-        # delete the dataset's assets
+
         return_msg = []
-        for asset in dataset.asset_list:
-            msg = (
-                f"ActionObject {asset.action_id} "
-                f"linked with Assset {asset.id} "
-                f"in Dataset {uid}"
-            )
+        if delete_assets:
+            # delete the dataset's assets
+            for asset in dataset.asset_list:
+                msg = (
+                    f"ActionObject {asset.action_id} "
+                    f"linked with Assset {asset.id} "
+                    f"in Dataset {uid}"
+                )
 
-            action_service = cast(
-                ActionService, context.server.get_service(ActionService)
-            )
-            del_res: SyftSuccess | SyftError = action_service.delete(
-                context=context, uid=asset.action_id
-            )
+                action_service = cast(
+                    ActionService, context.server.get_service(ActionService)
+                )
+                del_res: SyftSuccess | SyftError = action_service.delete(
+                    context=context, uid=asset.action_id, soft_delete=True
+                )
 
-            if isinstance(del_res, SyftError):
-                del_msg = f"Failed to delete {msg}: {del_res.message}"
-                logger.error(del_msg)
-                return del_res
+                if isinstance(del_res, SyftError):
+                    del_msg = f"Failed to delete {msg}: {del_res.message}"
+                    logger.error(del_msg)
+                    return del_res
 
-            logger.info(f"Successfully deleted {msg}: {del_res.message}")
+                logger.info(f"Successfully deleted {msg}: {del_res.message}")
 
-            return_msg.append(f"Asset with id '{asset.id}' successfully deleted.")
+                return_msg.append(f"Asset with id '{asset.id}' successfully deleted.")
+
         # soft delete the dataset object from the store
-        # result = self.stash.delete_by_uid(credentials=context.credentials, uid=uid)
         dataset_update = DatasetUpdate(
-            id=uid, name=f"{uid}-{dataset.name}", to_be_deleted=True
+            id=uid, name=f"_deleted_{dataset.name}_{uid}", to_be_deleted=True
         )
         result = self.stash.update(context.credentials, dataset_update)
         if result.is_err():
