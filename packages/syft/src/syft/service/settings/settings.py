@@ -110,23 +110,27 @@ class ServerSettings(SyftObject):
     welcome_markdown: HTMLObject | MarkdownDescription = HTMLObject(
         text=DEFAULT_WELCOME_MSG
     )
+    notifications_enabled: str = "Disabled"
 
     def _repr_html_(self) -> Any:
-        preferences = self._get_api().services.notifications.user_settings()
-        notifications = []
-        if preferences.email:
-            notifications.append("email")
-        if preferences.sms:
-            notifications.append("sms")
-        if preferences.slack:
-            notifications.append("slack")
-        if preferences.app:
-            notifications.append("app")
-
-        if notifications:
-            notifications_enabled = f"True via {', '.join(notifications)}"
+        if not self._get_api().services.notifications.settings().active:
+            self.notifications_enabled = "Disabled"
         else:
-            notifications_enabled = "False"
+            preferences = self._get_api().services.notifications.user_settings()
+            notifications = []
+            if preferences.email:
+                notifications.append("email")
+            if preferences.sms:
+                notifications.append("sms")
+            if preferences.slack:
+                notifications.append("slack")
+            if preferences.app:
+                notifications.append("app")
+
+            if notifications:
+                self.notifications_enabled = f"Enabled via {', '.join(notifications)}"
+            else:
+                self.notifications_enabled = "Disabled"
 
         return f"""
             <style>
@@ -140,7 +144,7 @@ class ServerSettings(SyftObject):
                 <p><strong>Description: </strong>{self.description}</p>
                 <p><strong>Deployed on: </strong>{self.deployed_on}</p>
                 <p><strong>Signup enabled: </strong>{self.signup_enabled}</p>
-                <p><strong>Notifications enabled: </strong>{notifications_enabled}</p>
+                <p><strong>Notifications enabled: </strong>{self.notifications_enabled}</p>
                 <p><strong>Admin email: </strong>{self.admin_email}</p>
             </div>
 
