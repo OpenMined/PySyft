@@ -646,12 +646,19 @@ class SyftWorkerPoolService(AbstractService):
     def delete(
         self,
         context: AuthedServiceContext,
-        uid: UID,
+        pool_id: UID | None = None,
+        pool_name: str | None = None,
     ) -> SyftSuccess | SyftError:
-        worker_pool = self._get_worker_pool(context, pool_id=uid)
+        worker_pool = self._get_worker_pool(
+            context, pool_id=pool_id, pool_name=pool_name
+        )
 
         if isinstance(worker_pool, SyftError):
-            return worker_pool
+            return SyftError(
+                message=f"Failed to delete WorkerPool: {worker_pool.message}"
+            )
+
+        uid = worker_pool.id
 
         # relative
         from ..queue.queue_service import QueueService
