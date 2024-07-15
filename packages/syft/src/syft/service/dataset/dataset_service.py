@@ -103,8 +103,8 @@ class DatasetService(AbstractService):
         if result.is_err():
             return SyftError(message=str(result.err()))
         return SyftSuccess(
-            message=f"Dataset uploaded to '{context.node.name}'. "
-            f"To see the datasets uploaded by a client on this node, use command `[your_client].datasets`"
+            message=f"Dataset uploaded to '{context.server.name}'. "
+            f"To see the datasets uploaded by a client on this server, use command `[your_client].datasets`"
         )
 
     @service_method(
@@ -127,8 +127,8 @@ class DatasetService(AbstractService):
         datasets = result.ok()
 
         for dataset in datasets:
-            if context.node is not None:
-                dataset.node_uid = context.node.id
+            if context.server is not None:
+                dataset.node_uid = context.server.id
             if dataset.marked_as_deleted:
                 datasets.remove(dataset)
 
@@ -171,8 +171,8 @@ class DatasetService(AbstractService):
         dataset = result.ok()
         if dataset.marked_as_deleted:
             return SyftError(message="Dataset not found.")
-        if context.node is not None:
-            dataset.node_uid = context.node.id
+        if context.server is not None:
+            dataset.node_uid = context.server.id
         return dataset
 
     @service_method(path="dataset.get_by_action_id", name="get_by_action_id")
@@ -185,8 +185,8 @@ class DatasetService(AbstractService):
             return SyftError(message=result.err())
         datasets = result.ok()
         for dataset in datasets:
-            if context.node is not None:
-                dataset.node_uid = context.node.id
+            if context.server is not None:
+                dataset.node_uid = context.server.id
             if dataset.marked_as_deleted:
                 datasets.remove(dataset)
         return datasets

@@ -6,8 +6,8 @@ from result import Ok
 from result import Result
 
 # relative
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
 from ...service.response import SyftError
 from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore

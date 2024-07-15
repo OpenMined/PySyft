@@ -37,7 +37,7 @@ from ...types.blob_storage import BlobStorageEntry
 from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.blob_storage import SeaweedSecureFilePathLocation
 from ...types.blob_storage import SecureFilePathLocation
-from ...types.grid_url import GridURL
+from ...types.server_url import ServerURL
 from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.uid import UID
 from ...util.constants import DEFAULT_TIMEOUT
@@ -55,16 +55,16 @@ class SeaweedFSBlobDeposit(BlobDeposit):
     __canonical_name__ = "SeaweedFSBlobDeposit"
     __version__ = SYFT_OBJECT_VERSION_4
 
-    urls: list[GridURL]
+    urls: list[ServerURL]
     size: int
-    proxy_node_uid: UID | None = None
+    proxy_server_uid: UID | None = None
 
     def write(self, data: BytesIO) -> SyftSuccess | SyftError:
         # relative
         from ...client.api import APIRegistry
 
         api = APIRegistry.api_for(
-            node_uid=self.syft_node_location,
+            server_uid=self.syft_server_location,
             user_verify_key=self.syft_client_verify_key,
         )
 
@@ -92,13 +92,13 @@ class SeaweedFSBlobDeposit(BlobDeposit):
                     start=1,
                 ):
                     if api is not None and api.connection is not None:
-                        if self.proxy_node_uid is None:
+                        if self.proxy_server_uid is None:
                             blob_url = api.connection.to_blob_route(
                                 url.url_path, host=url.host_or_ip
                             )
                         else:
                             blob_url = api.connection.stream_via(
-                                self.proxy_node_uid, url.url_path
+                                self.proxy_server_uid, url.url_path
                             )
                     else:
                         blob_url = url
@@ -164,7 +164,7 @@ class SeaweedFSBlobDeposit(BlobDeposit):
 
         mark_write_complete_method = from_api_or_context(
             func_or_path="blob_storage.mark_write_complete",
-            syft_node_location=self.syft_node_location,
+            syft_server_location=self.syft_server_location,
             syft_client_verify_key=self.syft_client_verify_key,
         )
         if mark_write_complete_method is None:
@@ -187,8 +187,8 @@ class SeaweedFSClientConfig(BlobStorageClientConfig):
 
     @property
     def endpoint_url(self) -> str:
-        grid_url = GridURL(host_or_ip=self.host, port=self.port)
-        return grid_url.url
+        server_url = ServerURL(host_or_ip=self.host, port=self.port)
+        return server_url.url
 
     @property
     def mount_url(self) -> str:
@@ -280,7 +280,7 @@ class SeaweedFSConnection(BlobStorageConnection):
         total_parts = math.ceil(obj.file_size / DEFAULT_FILE_PART_SIZE)
 
         urls = [
-            GridURL.from_url(
+            ServerURL.from_url(
                 self.client.generate_presigned_url(
                     ClientMethod="upload_part",
                     Params={
