@@ -5,7 +5,6 @@ from typing import cast
 
 # third party
 import pydantic
-from result import Ok
 from result import OkErr
 
 # relative
@@ -711,8 +710,17 @@ class SyftWorkerPoolService(AbstractService):
             worker.resolve_with_context(context=context)
             for worker in worker_pool.worker_list
         )
-        workers = (w.ok() if isinstance(w, Ok) else w for w in workers)
-        worker_ids = (w.id for w in workers)
+
+        worker_ids = []
+        for worker in workers:
+            if worker.is_err():
+                msg = (
+                    f"Failed to resolve a SyftWorker "
+                    f"while deleting WorkerPool {uid}: {worker.err()}"
+                )
+                logger.error(msg=msg)
+                return SyftError(message=msg)
+            worker_ids.append(worker.ok().id)
 
         worker_deletion = (
             (
