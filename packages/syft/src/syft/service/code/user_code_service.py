@@ -109,11 +109,11 @@ class UserCodeService(AbstractService):
             # if the validation fails, we should remove the user code status
             # and code version to prevent dangling status
             root_context = AuthedServiceContext(
-                credentials=context.node.verify_key, node=context.node
+                credentials=context.server.verify_key, server=context.server
             )
 
             if code.status_link is not None:
-                _ = context.node.get_service("usercodestatusservice").remove(
+                _ = context.server.get_service("usercodestatusservice").remove(
                     root_context, code.status_link.object_uid
                 )
             return result
@@ -189,7 +189,7 @@ class UserCodeService(AbstractService):
         ):
             return Err("outputs can only be distributed to input owners")
 
-        worker_pool_service = context.node.get_service("SyftWorkerPoolService")
+        worker_pool_service = context.server.get_service("SyftWorkerPoolService")
         pool_result = worker_pool_service._get_worker_pool(
             context,
             pool_name=user_code.worker_pool_name,
@@ -199,7 +199,7 @@ class UserCodeService(AbstractService):
             return Err(pool_result.message)
 
         # Create a code history
-        code_history_service = context.node.get_service("codehistoryservice")
+        code_history_service = context.server.get_service("codehistoryservice")
         result = code_history_service.submit_version(context=context, code=user_code)
         if isinstance(result, SyftError):
             return Err(result.message)
@@ -213,7 +213,7 @@ class UserCodeService(AbstractService):
         reason: str | None = "",
     ) -> Request | SyftError:
         # Cannot make multiple requests for the same code
-        get_by_usercode_id = context.node.get_service_method(
+        get_by_usercode_id = context.server.get_service_method(
             RequestService.get_by_usercode_id
         )
         existing_requests = get_by_usercode_id(context, user_code.id)
@@ -234,7 +234,7 @@ class UserCodeService(AbstractService):
                 ]
             )
 
-        code_link = LinkedObject.from_obj(user_code, node_uid=context.node.id)
+        code_link = LinkedObject.from_obj(user_code, server_uid=context.server.id)
 
         # Requests made on low side are synced, and have their status computed instead of set manually.
         if user_code.is_l0_deployment:
@@ -252,7 +252,7 @@ class UserCodeService(AbstractService):
         changes = [status_change]
 
         request = SubmitRequest(changes=changes)
-        method = context.node.get_service_method(RequestService.submit)
+        method = context.server.get_service_method(RequestService.submit)
         result = method(context=context, request=request, reason=reason)
 
         # The Request service already returns either a SyftSuccess or SyftError
@@ -275,7 +275,7 @@ class UserCodeService(AbstractService):
                 return user_code_or_err
             user_code = user_code_or_err.ok()
             if user_code is None:
-                return Err("UserCode not found on this node.")
+                return Err("UserCode not found on this server.")
             return Ok(user_code)
         else:  # code: SubmitUserCode
             # Submit new UserCode, or get existing UserCode with the same code hash
@@ -324,9 +324,13 @@ class UserCodeService(AbstractService):
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
             user_code = result.ok()
-            if user_code and user_code.input_policy_state and context.node is not None:
+            if (
+                user_code
+                and user_code.input_policy_state
+                and context.server is not None
+            ):
                 # TODO replace with LinkedObject Context
-                user_code.node_uid = context.node.id
+                user_code.server_uid = context.server.id
             return user_code
         return SyftError(message=result.err())
 
@@ -389,7 +393,7 @@ class UserCodeService(AbstractService):
         if context.role == ServiceRole.ADMIN:
             return True
 
-        user_service = context.node.get_service("userservice")
+        user_service = context.server.get_service("userservice")
         current_user = user_service.get_current_user(context=context)
         return current_user.mock_execution_permission
 
@@ -398,7 +402,7 @@ class UserCodeService(AbstractService):
     ) -> dict[str, Any] | SyftError:
         """Return only the kwargs that are owned by the user"""
 
-        action_service = context.node.get_service("actionservice")
+        action_service = context.server.get_service("actionservice")
 
         mock_kwargs = {}
         for k, v in kwargs.items():
@@ -433,8 +437,8 @@ class UserCodeService(AbstractService):
             return False
         code = code.ok()
 
-        # Skip the domain and context kwargs, they are passed by the backend
-        code_kwargs = set(code.signature.parameters.keys()) - {"domain", "context"}
+        # Skip the datasite and context kwargs, they are passed by the backend
+        code_kwargs = set(code.signature.parameters.keys()) - {"datasite", "context"}
 
         passed_kwarg_keys = set(passed_kwargs.keys())
         return passed_kwarg_keys == code_kwargs
@@ -456,7 +460,7 @@ class UserCodeService(AbstractService):
     ) -> bool:
         """This is a temporary fix that is needed until every function is always just ran as job"""
         # relative
-        from ...node.node import get_default_worker_pool_name
+        from ...server.server import get_default_worker_pool_name
 
         has_custom_worker_pool = (
             user_code.worker_pool_name is not None
@@ -581,7 +585,7 @@ class UserCodeService(AbstractService):
                     "which is currently not supported. Run your function with `blocking=False` to run"
                     " as a job on your worker pool"
                 )
-            action_service: ActionService = context.node.get_service("actionservice")  # type: ignore
+            action_service: ActionService = context.server.get_service("actionservice")  # type: ignore
             result_action_object: Result[ActionObject | TwinObject, str] = (
                 action_service._user_code_execute(
                     context, code, kwarg2id, result_id=result_id
@@ -649,7 +653,7 @@ class UserCodeService(AbstractService):
         self, code_item: UserCode, context: AuthedServiceContext
     ) -> SyftSuccess | SyftError:
         if not (
-            context.credentials == context.node.verify_key
+            context.credentials == context.server.verify_key
             or context.credentials == code_item.user_verify_key
         ):
             return SyftError(
@@ -700,8 +704,8 @@ def resolve_outputs(
             return None
         outputs = []
         for output_id in output_ids:
-            if context.node is not None:
-                action_service = context.node.get_service("actionservice")
+            if context.server is not None:
+                action_service = context.server.get_service("actionservice")
                 result = action_service.get(
                     context, uid=output_id, twin_mode=TwinMode.PRIVATE
                 )

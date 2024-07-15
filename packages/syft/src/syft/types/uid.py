@@ -24,7 +24,7 @@ class UID:
     """A unique ID for every Syft object.
 
     This object creates a unique ID for every object in the Syft
-    ecosystem. This ID is guaranteed to be unique for the node on
+    ecosystem. This ID is guaranteed to be unique for the server on
     which it is initialized and is very likely to be unique across
     the whole ecosystem (because it is long and randomly generated).
 

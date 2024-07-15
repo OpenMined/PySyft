@@ -9,7 +9,7 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
     const page_index = parseInt(url.searchParams.get("page_index") || "0")
     const name = url.searchParams.get("name")
 
-    const { signing_key, node_id } = unload_cookies(cookies)
+    const { signing_key, server_id } = unload_cookies(cookies)
 
     const users = await jsSyftCall({
       path: "user.search",
@@ -21,7 +21,7 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
         page_index,
         page_size,
       },
-      node_id,
+      server_id,
       signing_key,
     })
 

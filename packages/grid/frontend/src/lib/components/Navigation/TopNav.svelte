@@ -13,7 +13,7 @@
     { href: "", icon: BellIcon, disabled: true },
   ]
 
-  $: domainInitials = getInitials(metadata.name)
+  $: datasiteInitials = getInitials(metadata.name)
   $: userInitials = getInitials(user.name)
 </script>
 
@@ -21,7 +21,7 @@
   class="w-full py-2 px-6 flex items-center justify-between tablet:justify-end shadow-topbar-1 tablet:shadow-none"
 >
   <div class="w-12 h-12 tablet:hidden">
-    <Avatar initials={domainInitials} blackBackground smallText />
+    <Avatar initials={datasiteInitials} blackBackground smallText />
   </div>
   <ul class="flex w-min items-center text-primary-500">
     {#each links as link}
