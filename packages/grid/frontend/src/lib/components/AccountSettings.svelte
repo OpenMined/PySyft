@@ -296,8 +296,8 @@
     </div>
     <h2>
       When you delete your user account all information relating to you will be deleted as well as
-      any permissions and requests. If you are the domain owner the domain node will be deleted as
-      well and will be closed to all users. To transfer ownership of a domain node before deleting
+      any permissions and requests. If you are the datasite owner the datasite server will be deleted as
+      well and will be closed to all users. To transfer ownership of a datasite server before deleting
       your account you can follow the instructions here.
     </h2>
     <div class="space-x-3" style="display:flex;justify-content:center">

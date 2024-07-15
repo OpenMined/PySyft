@@ -10,11 +10,11 @@ import yaml
 from ...custom_worker.k8s import KubeUtils
 from ...custom_worker.k8s import get_kr8s_client
 from ...types.uid import UID
-from .node_peer import NodePeer
 from .rathole import RatholeConfig
 from .rathole import get_rathole_port
 from .rathole_toml import RatholeClientToml
 from .rathole_toml import RatholeServerToml
+from .server_peer import ServerPeer
 
 RATHOLE_TOML_CONFIG_MAP = "rathole-config"
 RATHOLE_PROXY_CONFIG_MAP = "proxy-config-dynamic"
@@ -26,11 +26,11 @@ class RatholeConfigBuilder:
     def __init__(self) -> None:
         self.k8rs_client = get_kr8s_client()
 
-    def add_host_to_server(self, peer: NodePeer) -> None:
+    def add_host_to_server(self, peer: ServerPeer) -> None:
         """Add a host to the rathole server toml file.
 
         Args:
-            peer (NodePeer): The peer to be added to the rathole server.
+            peer (ServerPeer): The peer to be added to the rathole server.
 
         Returns:
             None

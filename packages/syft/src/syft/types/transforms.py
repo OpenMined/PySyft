@@ -7,11 +7,11 @@ from pydantic import EmailStr
 from typing_extensions import Self
 
 # relative
-from ..abstract_node import AbstractNode
-from ..node.credentials import SyftVerifyKey
+from ..abstract_server import AbstractServer
+from ..server.credentials import SyftVerifyKey
 from ..service.context import AuthedServiceContext
-from ..service.context import NodeServiceContext
-from .grid_url import GridURL
+from ..service.context import ServerServiceContext
+from .server_url import ServerURL
 from .syft_object import Context
 from .syft_object import SyftBaseObject
 from .syft_object_registry import SyftObjectRegistry
@@ -24,7 +24,7 @@ class NotNone:
 
 class TransformContext(Context):
     output: dict[str, Any] | None = None
-    node: AbstractNode | None = None
+    server: AbstractServer | None = None
     credentials: SyftVerifyKey | None = None
     obj: Any | None = None
 
@@ -40,15 +40,17 @@ class TransformContext(Context):
             return t_context
         if hasattr(context, "credentials"):
             t_context.credentials = context.credentials
-        if hasattr(context, "node"):
-            t_context.node = context.node
+        if hasattr(context, "server"):
+            t_context.server = context.server
         return t_context
 
-    def to_node_context(self) -> NodeServiceContext:
+    def to_server_context(self) -> ServerServiceContext:
         if self.credentials:
-            return AuthedServiceContext(node=self.node, credentials=self.credentials)
-        if self.node:
-            return NodeServiceContext(node=self.node)
+            return AuthedServiceContext(
+                server=self.server, credentials=self.credentials
+            )
+        if self.server:
+            return ServerServiceContext(server=self.server)
         return Context()
 
 
@@ -155,7 +157,7 @@ def generate_action_object_id(context: TransformContext) -> TransformContext:
 
 def validate_url(context: TransformContext) -> TransformContext:
     if context.output and context.output["url"] is not None:
-        context.output["url"] = GridURL.from_url(context.output["url"]).url_no_port
+        context.output["url"] = ServerURL.from_url(context.output["url"]).url_no_port
     return context
 
 
@@ -165,11 +167,11 @@ def validate_email(context: TransformContext) -> TransformContext:
     return context
 
 
-def str_url_to_grid_url(context: TransformContext) -> TransformContext:
+def str_url_to_server_url(context: TransformContext) -> TransformContext:
     if context.output:
         url = context.output.get("url", None)
         if url is not None and isinstance(url, str):
-            context.output["url"] = GridURL.from_url(str)
+            context.output["url"] = ServerURL.from_url(str)
     return context
 
 
@@ -182,13 +184,13 @@ def add_credentials_for_key(key: str) -> Callable:
     return add_credentials
 
 
-def add_node_uid_for_key(key: str) -> Callable:
-    def add_node_uid(context: TransformContext) -> TransformContext:
-        if context.output is not None and context.node is not None:
-            context.output[key] = context.node.id
+def add_server_uid_for_key(key: str) -> Callable:
+    def add_server_uid(context: TransformContext) -> TransformContext:
+        if context.output is not None and context.server is not None:
+            context.output[key] = context.server.id
         return context
 
-    return add_node_uid
+    return add_server_uid
 
 
 def generate_transform_wrapper(
@@ -196,7 +198,7 @@ def generate_transform_wrapper(
 ) -> Callable:
     def wrapper(
         self: klass_from,
-        context: TransformContext | NodeServiceContext | None = None,
+        context: TransformContext | ServerServiceContext | None = None,
     ) -> klass_to:
         t_context = TransformContext.from_context(obj=self, context=context)
         for transform in transforms:
