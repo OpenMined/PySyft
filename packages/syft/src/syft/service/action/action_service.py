@@ -960,20 +960,13 @@ class ActionService(AbstractService):
     def _soft_delete_action_obj(
         self, context: AuthedServiceContext, action_obj: ActionObject
     ) -> Result[ActionObject, str]:
-        """
-        Delete the provided action object and create an empty one with the same UID
-        """
-        uid: UID = action_obj.id
-        del_res = self.store.delete(credentials=context.credentials, uid=uid)
-        if del_res.is_err():
-            return del_res
-
-        none_action_obj = ActionObject.from_obj(syft_action_data=None, id=uid)
-        none_action_obj.syft_action_saved_to_blob_store = False
+        action_obj.syft_action_data_cache = None
+        res = action_obj._save_to_blob_storage()
+        if isinstance(res, SyftError):
+            return Err(res.message)
         set_result = self._set(
             context=context,
-            action_object=none_action_obj,
-            ignore_detached_objs=True,
+            action_object=action_obj,
         )
         return set_result
 
