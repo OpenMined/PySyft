@@ -708,7 +708,15 @@ class SyftWorkerPoolService(AbstractService):
         worker_ids = (w.id for w in worker_pool.worker_list)
 
         worker_deletion = (
-            (id_, worker_service.delete(id_, force=True)) for id_ in worker_ids
+            (
+                id_,
+                worker_service.delete(
+                    context=context,
+                    uid=id_,
+                    force=True,
+                ),
+            )
+            for id_ in worker_ids
         )
         worker_deletion_fails = cast(
             list[tuple[UID, SyftError]],
