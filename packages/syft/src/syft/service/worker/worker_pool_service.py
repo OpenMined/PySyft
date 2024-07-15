@@ -647,7 +647,6 @@ class SyftWorkerPoolService(AbstractService):
         self,
         context: AuthedServiceContext,
         uid: UID,
-        force: bool = False,
     ) -> SyftSuccess | SyftError:
         worker_pool = self._get_worker_pool(context, pool_id=uid)
 
@@ -700,7 +699,7 @@ class SyftWorkerPoolService(AbstractService):
         worker_ids = (w.id for w in worker_pool.worker_list)
 
         worker_deletion = (
-            (id_, worker_service.delete(id_, force=force)) for id_ in worker_ids
+            (id_, worker_service.delete(id_, force=True)) for id_ in worker_ids
         )
         worker_deletion_fails = cast(
             list[tuple[UID, SyftError]],
