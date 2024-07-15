@@ -722,30 +722,21 @@ class SyftWorkerPoolService(AbstractService):
                 return SyftError(message=msg)
             worker_ids.append(worker.ok().id)
 
-        worker_deletion = (
-            (
-                id_,
+        for id_ in worker_ids:
+            res = (
                 worker_service.delete(
                     context=context,
                     uid=id_,
                     force=True,
                 ),
             )
-            for id_ in worker_ids
-        )
-        worker_deletion_fails = cast(
-            list[tuple[UID, SyftError]],
-            [(id_, res) for id_, res in worker_deletion if isinstance(res, SyftError)],
-        )
-        if len(worker_deletion_fails) > 0:
-            failed_worker_ids = (id_ for id_, _ in worker_deletion_fails)
-            failure_messages = "\n".join(
-                f"{id_}: {res.message}" for id_, res in worker_deletion_fails
-            )
-
-            msg = f"Failed to delete worker(s) {', '.join(failed_worker_ids)}:\n{failure_messages}"
-            logger.error(msg)
-            return SyftError(message=msg)
+            if isinstance(res, SyftError):
+                msg = (
+                    f"Failed to delete SyftWorker {id_} "
+                    f"while deleting WorkerPool {uid}: {res.message}"
+                )
+                logger.error(msg=msg)
+                return SyftError(message=msg)
 
         res = self.stash.delete_by_uid(credentials=context.credentials, uid=uid)
         if isinstance(res, SyftError):
