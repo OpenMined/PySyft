@@ -129,7 +129,7 @@ class DatasetService(AbstractService):
 
         for dataset in datasets:
             if context.server is not None:
-                dataset.node_uid = context.server.id
+                dataset.server_uid = context.server.id
             if dataset.to_be_deleted:
                 datasets.remove(dataset)
 
@@ -171,7 +171,7 @@ class DatasetService(AbstractService):
         if dataset.to_be_deleted:
             return SyftError(message="Dataset not found.")
         if context.server is not None:
-            dataset.node_uid = context.server.id
+            dataset.server_uid = context.server.id
         return dataset
 
     @service_method(path="dataset.get_by_action_id", name="get_by_action_id")
@@ -185,7 +185,7 @@ class DatasetService(AbstractService):
         datasets = result.ok()
         for dataset in datasets:
             if context.server is not None:
-                dataset.node_uid = context.server.id
+                dataset.server_uid = context.server.id
             if dataset.to_be_deleted:
                 datasets.remove(dataset)
         return datasets
