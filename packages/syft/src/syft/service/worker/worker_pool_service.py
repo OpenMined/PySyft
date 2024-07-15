@@ -735,7 +735,7 @@ class SyftWorkerPoolService(AbstractService):
                 f"{id_}: {res.message}" for id_, res in worker_deletion_fails
             )
 
-            msg = f"Failed to delete worker(s) {", ".join(failed_worker_ids)}:\n{failure_messages}"
+            msg = f"Failed to delete worker(s) {', '.join(failed_worker_ids)}:\n{failure_messages}"
             logger.error(msg)
             return SyftError(message=msg)
 
