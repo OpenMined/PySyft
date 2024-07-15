@@ -1,6 +1,6 @@
 # stdlib
 import base64
-from enum import StrEnum
+from enum import Enum
 
 # third party
 from cryptography.x509 import load_der_x509_certificate
@@ -13,15 +13,21 @@ from result import Result
 from typing_extensions import Self
 
 
-class AttestationType(StrEnum):
+class AttestationType(str, Enum):
     # Define enum members with their corresponding JWKS URLs
-    CPU = ("CPU", "https://sharedeus2.eus2.attest.azure.net/certs")
-    GPU = ("GPU", "https://nras.attestation.nvidia.com/.well-known/jwks.json")
+    CPU = "CPU"
+    GPU = "GPU"
 
-    def __new__(cls, value: str, jwks_url: str) -> Self:
+    def __new__(cls, value: str) -> Self:
+        JWKS_URL_MAP = {
+            "CPU": "https://sharedeus2.eus2.attest.azure.net/certs",
+            "GPU": "https://nras.attestation.nvidia.com/.well-known/jwks.json",
+        }
+        if value not in JWKS_URL_MAP:
+            raise ValueError(f"JWKS URL not defined for token type: {value}")
         obj = str.__new__(cls, value)
         obj._value_ = value
-        obj.jwks_url = jwks_url
+        obj.jwks_url = JWKS_URL_MAP.get(value)
         return obj
 
 

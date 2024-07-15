@@ -266,15 +266,17 @@ def deploy_to_remote(
 
     # Preference order: Environment Variable > Argument > Default
     node_url = os.getenv("NODE_URL") or host or DEFAULT_URL
-    node_port = int(os.getenv("NODE_PORT") or port or DEFAULT_PORT)
+    node_port = os.getenv("NODE_PORT") or port or DEFAULT_PORT
+    if node_port == "auto":
+        raise ValueError("Cannot use auto port on remote node")
 
     return NodeHandle(
         node_type=node_type_enum,
         deployment_type=deployment_type_enum,
         name=name,
-        port=node_port,
-        url=node_url,
         node_side_type=node_side_type,
+        url=node_url,
+        port=int(node_port),
     )
 
 
