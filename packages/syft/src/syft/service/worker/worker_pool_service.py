@@ -654,6 +654,48 @@ class SyftWorkerPoolService(AbstractService):
         if isinstance(worker_pool, SyftError):
             return worker_pool
 
+        # relative
+        from ..queue.queue_service import QueueService
+        from ..queue.queue_stash import Status
+
+        queue_service = cast(QueueService, context.server.get_service(QueueService))
+        res = queue_service.stash._get_by_worker_pool(
+            credentials=context.credentials,
+            worker_pool=LinkedObject.from_obj(
+                obj=worker_pool,
+                service_type=self.__class__,
+                server_uid=context.server.id,
+            ),
+        )
+        if res.is_err() or (queue_items := res.ok()) is None:
+            return SyftError(
+                message=(
+                    f"Failed to delete WorkerPool {uid}: "
+                    f"Failed to retrieved linked QueueItem's: "
+                    f"{res.err() if res.is_err() else 'list[QueueItem] is None'}"
+                )
+            )
+
+        items_to_interrupt = (
+            item
+            for item in queue_items
+            if item.status in (Status.CREATED, Status.PROCESSING)
+        )
+
+        for item in items_to_interrupt:
+            item.status = Status.INTERRUPTED
+            res = queue_service.stash.update(
+                credentials=context.credentials,
+                obj=item,
+            )
+            if isinstance(res, SyftError):
+                msg = (
+                    f"Failed to set QueueItem {item.id} status to INTERRUPTED "
+                    f"while deleting WorkerPool {uid}: {res.message}"
+                )
+                logger.error(msg)
+                return SyftError(message=msg)
+
         worker_service = cast(WorkerService, context.node.get_service("WorkerService"))
         worker_ids = (w.id for w in worker_pool.worker_list)
 
@@ -669,9 +711,10 @@ class SyftWorkerPoolService(AbstractService):
             failure_messages = "\n".join(
                 f"{id_}: {res.message}" for id_, res in worker_deletion_fails
             )
-            return SyftError(
-                message=f"Failed to delete worker(s) {", ".join(failed_worker_ids)}:\n{failure_messages}"
-            )
+
+            msg = f"Failed to delete worker(s) {", ".join(failed_worker_ids)}:\n{failure_messages}"
+            logger.error(msg)
+            return SyftError(message=msg)
 
         res = self.stash.delete_by_uid(uid)
         if isinstance(res, SyftError):

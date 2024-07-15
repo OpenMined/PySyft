@@ -38,6 +38,7 @@ class Status(str, Enum):
 
 
 StatusPartitionKey = PartitionKey(key="status", type_=Status)
+_WorkerPoolPartitionKey = PartitionKey(key="worker_pool", type_=LinkedObject)
 
 
 @serializable()
@@ -45,7 +46,7 @@ class QueueItem(SyftObject):
     __canonical_name__ = "QueueItem"
     __version__ = SYFT_OBJECT_VERSION_4
 
-    __attr_searchable__ = ["status"]
+    __attr_searchable__ = ["status", "worker_pool"]
 
     id: UID
     server_uid: UID
@@ -175,4 +176,10 @@ class QueueStash(BaseStash):
     ) -> Result[list[QueueItem], str]:
         qks = QueryKeys(qks=StatusPartitionKey.with_obj(status))
 
+        return self.query_all(credentials=credentials, qks=qks)
+
+    def _get_by_worker_pool(
+        self, credentials: SyftVerifyKey, worker_pool: LinkedObject
+    ) -> Result[list[QueueItem], str]:
+        qks = QueryKeys(qks=_WorkerPoolPartitionKey.with_obj(worker_pool))
         return self.query_all(credentials=credentials, qks=qks)
