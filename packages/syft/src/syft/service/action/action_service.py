@@ -934,14 +934,16 @@ class ActionService(AbstractService):
                 return SyftError(message=get_res.err())
             obj: ActionObject | TwinObject = get_res.ok()
             if isinstance(obj, TwinObject):
-                res = self._soft_delete(context=context, action_obj=obj.private)
+                res = self._soft_delete_action_obj(
+                    context=context, action_obj=obj.private
+                )
                 if res.is_err():
                     return SyftError(message=res.err())
-                res = self._soft_delete(context=context, action_obj=obj.mock)
+                res = self._soft_delete_action_obj(context=context, action_obj=obj.mock)
                 if res.is_err():
                     return SyftError(message=res.err())
             else:  # ActionObject
-                res = self._soft_delete(context, obj)
+                res = self._soft_delete_action_obj(context, obj)
                 if res.is_err():
                     return SyftError(message=res.err())
         else:
@@ -951,19 +953,20 @@ class ActionService(AbstractService):
 
         return SyftSuccess(message=f"Action object with uid '{uid}' deleted.")
 
-    def _soft_delete(
+    def _soft_delete_action_obj(
         self, context: AuthedServiceContext, action_obj: ActionObject
     ) -> Result[ActionObject, str]:
-        action_obj.syft_blob_storage_entry_id = None
-        action_obj.syft_action_data_type = None
-        action_obj.syft_action_data_repr_ = None
-        action_obj.syft_action_data_str_ = None
-        action_obj.syft_action_data_server_id = None
-        action_obj.syft_action_data_cache = None
-        res = self.set(context=context, action_object=action_obj)
-        if isinstance(res, SyftError):
-            return Err(res.message)
-        return Ok(action_obj)
+        uid: UID = action_obj.id
+        del_res = self.store.delete(credentials=context.credentials, uid=uid)
+        if del_res.is_err():
+            return del_res
+        none_action_obj = ActionObject.from_obj(syft_action_data=None, id=uid)
+        set_result = self._set(
+            context=context,
+            action_object=none_action_obj,
+            ignore_detached_objs=True,
+        )
+        return set_result
 
 
 def resolve_action_args(

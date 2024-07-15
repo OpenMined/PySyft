@@ -10,7 +10,6 @@ from ...store.document_store import DocumentStore
 from ...types.dicttuple import DictTuple
 from ...types.uid import UID
 from ...util.telemetry import instrument
-from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..action.action_service import ActionService
@@ -252,19 +251,8 @@ class DatasetService(AbstractService):
                 del_msg = f"Failed to delete {msg}: {del_res.message}"
                 logger.error(del_msg)
                 return del_res
+
             logger.info(f"Successfully deleted {msg}: {del_res.message}")
-
-            res = action_service.set(
-                context=context,
-                action_object=ActionObject.from_obj(
-                    syft_action_data=None, id=asset.action_id
-                ),
-            )
-
-            if isinstance(res, SyftError):
-                set_msg = f"Failed to create a None {msg}: {res.message}"
-                logger.error(set_msg)
-            logger.info(f"Successfully created a None {msg}: {res.message}")
 
             return_msg.append(f"Asset with id '{asset.id}' successfully deleted.")
         # soft delete the dataset object from the store
