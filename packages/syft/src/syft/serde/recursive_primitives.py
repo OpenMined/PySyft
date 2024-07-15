@@ -27,7 +27,6 @@ from typing import cast
 import weakref
 
 # relative
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from .capnp import get_capnp_schema
 from .recursive import chunk_bytes
 from .recursive import combine_bytes
@@ -212,7 +211,7 @@ recursive_serde_register(
     serialize=lambda x: x.to_bytes((x.bit_length() + 7) // 8 + 1, "big", signed=True),
     deserialize=lambda x_bytes: int.from_bytes(x_bytes, "big", signed=True),
     canonical_name="int",
-    version=SYFT_OBJECT_VERSION_1,
+    version=1,
 )
 
 recursive_serde_register(
@@ -220,7 +219,7 @@ recursive_serde_register(
     serialize=lambda x: x.hex().encode(),
     deserialize=lambda x: float.fromhex(x.decode()),
     canonical_name="float",
-    version=SYFT_OBJECT_VERSION_1,
+    version=1,
 )
 
 recursive_serde_register(
@@ -228,7 +227,7 @@ recursive_serde_register(
     serialize=lambda x: x,
     deserialize=lambda x: x,
     canonical_name="bytes",
-    version=SYFT_OBJECT_VERSION_1,
+    version=1,
 )
 
 recursive_serde_register(
@@ -236,7 +235,7 @@ recursive_serde_register(
     serialize=lambda x: x.encode(),
     deserialize=lambda x: x.decode(),
     canonical_name="str",
-    version=SYFT_OBJECT_VERSION_1,
+    version=1,
 )
 
 recursive_serde_register(
@@ -244,7 +243,7 @@ recursive_serde_register(
     serialize=serialize_iterable,
     deserialize=functools.partial(deserialize_iterable, list),
     canonical_name="list",
-    version=SYFT_OBJECT_VERSION_1,
+    version=1,
 )
 
 recursive_serde_register(
@@ -252,7 +251,7 @@ recursive_serde_register(
     serialize=serialize_iterable,
     deserialize=functools.partial(deserialize_iterable, tuple),
     canonical_name="tuple",
-    version=SYFT_OBJECT_VERSION_1,
+    version=1,
 )
 
 recursive_serde_register(
@@ -260,7 +259,7 @@ recursive_serde_register(
     serialize=serialize_kv,
     deserialize=functools.partial(deserialize_kv, dict),
     canonical_name="dict",
-    version=SYFT_OBJECT_VERSION_1,
+    version=1,
 )
 
 recursive_serde_register(
@@ -268,7 +267,7 @@ recursive_serde_register(
     serialize=serialize_defaultdict,
     deserialize=deserialize_defaultdict,
     canonical_name="defaultdict",
-    version=SYFT_OBJECT_VERSION_1,
+    version=1,
 )
 
 recursive_serde_register(
@@ -276,7 +275,7 @@ recursive_serde_register(
     serialize=serialize_kv,
     deserialize=functools.partial(deserialize_kv, OrderedDict),
     canonical_name="OrderedDict",
-    version=SYFT_OBJECT_VERSION_1,
+    version=1,
 )
 
 recursive_serde_register(
@@ -284,7 +283,7 @@ recursive_serde_register(
     serialize=lambda _: b"1",
     deserialize=lambda _: None,
     canonical_name="NoneType",
-    version=SYFT_OBJECT_VERSION_1,
+    version=1,
 )
 
 recursive_serde_register(
@@ -292,7 +291,7 @@ recursive_serde_register(
     serialize=lambda x: b"1" if x else b"0",
     deserialize=lambda x: False if x == b"0" else True,
     canonical_name="bool",
-    version=SYFT_OBJECT_VERSION_1,
+    version=1,
 )
 
 recursive_serde_register(
@@ -300,7 +299,7 @@ recursive_serde_register(
     serialize=serialize_iterable,
     deserialize=functools.partial(deserialize_iterable, set),
     canonical_name="set",
-    version=SYFT_OBJECT_VERSION_1,
+    version=1,
 )
 
 recursive_serde_register(
@@ -308,7 +307,7 @@ recursive_serde_register(
     serialize=serialize_iterable,
     deserialize=functools.partial(deserialize_iterable, weakref.WeakSet),
     canonical_name="WeakSet",
-    version=SYFT_OBJECT_VERSION_1,
+    version=1,
 )
 
 recursive_serde_register(
@@ -316,7 +315,7 @@ recursive_serde_register(
     serialize=serialize_iterable,
     deserialize=functools.partial(deserialize_iterable, frozenset),
     canonical_name="frozenset",
-    version=SYFT_OBJECT_VERSION_1,
+    version=1,
 )
 
 recursive_serde_register(
@@ -324,7 +323,7 @@ recursive_serde_register(
     serialize=lambda x: serialize_iterable((x.real, x.imag)),
     deserialize=lambda x: complex(*deserialize_iterable(tuple, x)),
     canonical_name="complex",
-    version=SYFT_OBJECT_VERSION_1,
+    version=1,
 )
 
 recursive_serde_register(
@@ -332,7 +331,7 @@ recursive_serde_register(
     serialize=lambda x: serialize_iterable((x.start, x.stop, x.step)),
     deserialize=lambda x: range(*deserialize_iterable(tuple, x)),
     canonical_name="range",
-    version=SYFT_OBJECT_VERSION_1,
+    version=1,
 )
 
 recursive_serde_register(
@@ -340,7 +339,7 @@ recursive_serde_register(
     serialize=lambda x: serialize_iterable((x.start, x.stop, x.step)),
     deserialize=lambda x: slice(*deserialize_iterable(tuple, x)),
     canonical_name="slice",
-    version=SYFT_OBJECT_VERSION_1,
+    version=1,
 )
 
 recursive_serde_register(
@@ -348,7 +347,7 @@ recursive_serde_register(
     serialize=serialize_type,
     deserialize=deserialize_type,
     canonical_name="type",
-    version=SYFT_OBJECT_VERSION_1,
+    version=1,
 )
 
 recursive_serde_register(
@@ -356,7 +355,7 @@ recursive_serde_register(
     serialize=serialize_kv,
     deserialize=functools.partial(deserialize_kv, MappingProxyType),
     canonical_name="MappingProxyType",
-    version=SYFT_OBJECT_VERSION_1,
+    version=1,
 )
 
 recursive_serde_register(
@@ -364,7 +363,7 @@ recursive_serde_register(
     serialize=serialize_path,
     deserialize=functools.partial(deserialize_path, PurePath),
     canonical_name="PurePath",
-    version=SYFT_OBJECT_VERSION_1,
+    version=1,
 )
 
 for __path_type in (
@@ -476,7 +475,7 @@ recursive_serde_register(
     serialize=serialize_union_type,
     deserialize=deserialize_union_type,
     canonical_name="UnionType",
-    version=SYFT_OBJECT_VERSION_1,
+    version=1,
 )
 
 recursive_serde_register_type(_SpecialForm, canonical_name="_SpecialForm", version=1)

@@ -86,6 +86,7 @@ from .util.telemetry import instrument
 from .util.util import autocache
 from .util.util import get_root_data_path
 from .util.version_compare import make_requires
+from .serde.recursive import MISSING_CANONICAL_NAME
 
 requires = make_requires(LATEST_STABLE_SYFT, __version__)
 
@@ -147,3 +148,7 @@ def hello_baby() -> None:
 
 def search(name: str) -> SearchResults:
     return Search(_datasites()).search(name=name)
+
+
+if len(MISSING_CANONICAL_NAME):
+    print(f"{len(MISSING_CANONICAL_NAME)} classes found without canonical names")

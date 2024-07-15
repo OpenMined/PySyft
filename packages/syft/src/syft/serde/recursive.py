@@ -21,6 +21,7 @@ from .capnp import get_capnp_schema
 from .util import compatible_with_large_file_writes_capnp
 
 TYPE_BANK = {}
+MISSING_CANONICAL_NAME = []
 
 recursive_scheme = get_capnp_schema("recursive_serde.capnp").RecursiveSerde
 
@@ -78,12 +79,20 @@ def check_fqn_alias(cls: object | type) -> tuple | None:
     return None
 
 
-def validate_cannonical_name_version(
+def has_canonical_name_version(
     cls: type, cannonical_name: str | None, version: int | None
+) -> bool:
+    cls_canonical_name = getattr(cls, "__canonical_name__", None)
+    cls_version = getattr(cls, "__version__", None)
+    return (cls_canonical_name or cannonical_name) and (cls_version or version)
+
+
+def validate_cannonical_name_version(
+    cls: type, canonical_name: str | None, version: int | None
 ) -> tuple[str, int]:
     cls_canonical_name = getattr(cls, "__canonical_name__", None)
     cls_version = getattr(cls, "__version__", None)
-    if cls_canonical_name and cannonical_name:
+    if cls_canonical_name and canonical_name:
         raise ValueError(
             "Cannot specify both __canonical_name__ attribute and cannonical_name argument."
         )
@@ -91,7 +100,7 @@ def validate_cannonical_name_version(
         raise ValueError(
             "Cannot specify both __version__ attribute and version argument."
         )
-    if cls_canonical_name is None and cannonical_name is None:
+    if cls_canonical_name is None and canonical_name is None:
         raise ValueError(
             "Must specify either __canonical_name__ attribute or cannonical_name argument."
         )
@@ -100,9 +109,9 @@ def validate_cannonical_name_version(
             "Must specify either __version__ attribute or version argument."
         )
 
-    cannonical_name = cannonical_name or cls_canonical_name
+    canonical_name = canonical_name or cls_canonical_name
     version = version or cls_version
-    return cannonical_name, version  # type: ignore
+    return canonical_name, version  # type: ignore
 
 
 def recursive_serde_register(
@@ -123,6 +132,11 @@ def recursive_serde_register(
     alias_fqn = check_fqn_alias(cls)
     cls = type(cls) if not isinstance(cls, type) else cls
     fqn = f"{cls.__module__}.{cls.__name__}"
+
+    if not has_canonical_name_version(cls, canonical_name, version):
+        MISSING_CANONICAL_NAME.append(cls)
+        return
+
     canonical_name, version = validate_cannonical_name_version(
         cls, canonical_name, version
     )

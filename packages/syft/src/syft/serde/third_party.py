@@ -161,12 +161,14 @@ recursive_serde_register(
     serialize=serialize_type,
     deserialize=deserialize_type,
     canonical_name="dicttuple_meta",
+    version=1,
 )
 recursive_serde_register(
     DictTuple,
     serialize=_serialize_dicttuple,
     deserialize=functools.partial(deserialize_kv, DictTuple),
     canonical_name="dicttuple",
+    version=1,
 )
 
 

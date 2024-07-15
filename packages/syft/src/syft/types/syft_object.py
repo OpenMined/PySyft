@@ -33,6 +33,7 @@ from pydantic import Field
 from pydantic import model_validator
 from pydantic.fields import PydanticUndefined
 from result import OkErr
+from syft.serde.serializable import serializable
 from typeguard import check_type
 from typing_extensions import Self
 
@@ -722,6 +723,7 @@ class StorableObjectType:
 TupleGenerator = Generator[tuple[str, Any], None, None]
 
 
+@serializable()
 class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
     """Syft Object to which partial arguments can be provided."""
 
@@ -730,11 +732,6 @@ class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
 
     def __iter__(self) -> TupleGenerator:
         yield from ((k, v) for k, v in super().__iter__() if v is not Empty)
-
-
-recursive_serde_register_type(
-    PartialSyftObject, canonical_name="PartialSyftObject", version=1
-)
 
 
 def attach_attribute_to_syft_object(result: Any, attr_dict: dict[str, Any]) -> None:
