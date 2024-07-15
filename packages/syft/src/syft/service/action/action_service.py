@@ -828,7 +828,7 @@ class ActionService(AbstractService):
                 id=action_object.id,
                 syft_blob_storage_entry_id=action_object.syft_blob_storage_entry_id,
                 syft_client_verify_key=action_object.syft_client_verify_key,
-                syft_node_location=action_object.syft_node_location,
+                syft_server_location=action_object.syft_server_location,
             )
             new_action_object._save_to_blob_storage()
             res = self._set(
