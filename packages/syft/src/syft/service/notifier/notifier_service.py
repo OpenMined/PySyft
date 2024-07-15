@@ -8,7 +8,7 @@ from pydantic import EmailStr
 from ...abstract_server import AbstractServer
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
-from ...store.document_store_errors import StashException
+from ...store.document_store_errors import NotFoundException, StashException
 from ...types.errors import SyftException
 from ...types.result import as_result
 from ..context import AuthedServiceContext
@@ -276,15 +276,26 @@ class NotifierService(AbstractService):
     @as_result(SyftException)
     def dispatch_notification(
         self, context: AuthedServiceContext, notification: Notification
-    ) -> SyftSuccess:
+    ) -> SyftSuccess | SyftError:
         admin_key = context.server.get_service("userservice").admin_verify_key()
-        notifier = self.stash.get(admin_key).unwrap(
-            public_message="The mail service ran out of quota or some notifications failed to be delivered.\n"
-            + "Please check the health of the mailing server."
-        )
+
+        # Silently fail on notification not delivered
+        try:
+            notifier = self.stash.get(admin_key).unwrap(
+                public_message="The mail service ran out of quota or some notifications failed to be delivered.\n"
+                + "Please check the health of the mailing server."
+            )
+        except NotFoundException:
+            logger.debug("There is no notifier service to ship the notification")
+            return SyftError(message="No notifier service to ship the notification.")
+        except StashException as exc:
+            logger.error(f"Error getting notifier settings: {exc}")
+            return SyftError(
+                message="Failed to get notifier settings. Please check the logs."
+            )
 
         # If notifier is active
-        if notifier and notifier.active:
+        if notifier.active:
             notifier.send_notifications(
                 context=context, notification=notification
             ).unwrap()

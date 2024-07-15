@@ -1072,10 +1072,7 @@ class ObjectMutation(Change):
         if self.linked_obj is None:
             raise SyftException(public_message=f"{self}'s linked object is None")
 
-        obj = self.linked_obj.resolve_with_context(context)
-
-        if isinstance(obj, SyftError):
-            raise SyftException(public_message=obj.err())
+        obj = self.linked_obj.resolve_with_context(context).unwrap()
 
         if apply:
             obj = self.mutate(obj, value=self.value)
@@ -1147,14 +1144,10 @@ class EnumMutation(ObjectMutation):
             raise SyftException(public_message=valid.message)
         if self.linked_obj is None:
             raise SyftException(public_message=f"{self}'s linked object is None")
-        obj = self.linked_obj.resolve_with_context(context)
-        if obj.is_err():
-            raise SyftException(public_message=obj.err())
+        obj = self.linked_obj.resolve_with_context(context).unwrap()
 
-        obj = obj.ok()
         if apply:
             obj = self.mutate(obj=obj)
-
             self.linked_obj.update_with_context(context, obj)
         else:
             raise SyftException(public_message="undo not implemented")
@@ -1204,8 +1197,8 @@ class UserCodeStatusChange(Change):
         return self.linked_user_code.resolve
 
     def get_user_code(self, context: AuthedServiceContext) -> UserCode:
-        resolve = self.linked_user_code.resolve_with_context(context)
-        return resolve.ok()
+        # TODO: Check if unwrap() will raise something somewhere
+        return self.linked_user_code.resolve_with_context(context).ok()
 
     @property
     def codes(self) -> list[UserCode]:
@@ -1309,16 +1302,12 @@ class UserCodeStatusChange(Change):
     @as_result(SyftException)
     def _run(self, context: ChangeContext, apply: bool) -> SyftSuccess:
         valid = self.valid
+
         if not valid:
             raise SyftException(public_message=valid.message)
-        user_code = self.linked_user_code.resolve_with_context(context)
-        if user_code.is_err():
-            raise SyftException(public_message=user_code.err())
-        user_code = user_code.ok()
-        user_code_status = self.linked_obj.resolve_with_context(context)
-        if user_code_status.is_err():
-            raise SyftException(public_message=user_code_status.err())
-        user_code_status = user_code_status.unwrap()
+        
+        self.linked_user_code.resolve_with_context(context).unwrap()
+        user_code_status = self.linked_obj.resolve_with_context(context).unwrap()
 
         if apply:
             # Only mutate, does not write to stash

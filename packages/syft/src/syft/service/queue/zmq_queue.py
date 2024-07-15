@@ -378,10 +378,7 @@ class ZMQProducer(QueueProducer):
                                 self.preprocess_action_arg(arg)
 
                         msg_bytes = serialize(item, to_bytes=True)
-                        worker_pool = item.worker_pool.resolve_with_context(
-                            self.auth_context
-                        )
-                        worker_pool = worker_pool.ok()
+                        worker_pool = item.worker_pool.resolve_with_context(self.auth_context).unwrap()
                         service_name = worker_pool.name
                         service: Service | None = self.services.get(service_name)
 

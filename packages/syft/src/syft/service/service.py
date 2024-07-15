@@ -14,6 +14,7 @@ from typing import Any
 from typing import TYPE_CHECKING
 
 # third party
+from syft.types.result import as_result
 from typing_extensions import Self
 
 # relative
@@ -60,6 +61,7 @@ class AbstractService:
     server_uid: UID
     store_type: type = DocumentStore
 
+    @as_result(SyftException)
     def resolve_link(
         self,
         context: AuthedServiceContext | ChangeContext | Any,

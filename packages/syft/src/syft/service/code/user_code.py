@@ -517,13 +517,7 @@ class UserCode(SyncableSyftObject):
                 public_message="This UserCode does not have a status. Please contact the Admin."
             )
 
-        # FIX: status_link
-        status = self.status_link.resolve_with_context(context)
-
-        if status.is_err():
-            raise SyftException(public_message=status.err())
-
-        return status.ok()
+        return self.status_link.resolve_with_context(context).unwrap()
 
     @as_result(SyftException)
     def is_status_approved(self, context: AuthedServiceContext) -> bool:
@@ -1886,16 +1880,16 @@ def execute_byte_code(
         # We only need access to local kwargs
         _locals = {"kwargs": kwargs}
         _globals = {}
+
         if code_item.nested_codes is not None:
             for service_func_name, (linked_obj, _) in code_item.nested_codes.items():
-                code_obj = linked_obj.resolve_with_context(context=context)
-                if isinstance(code_obj, Err):
-                    raise Exception(code_obj.err())
-                _globals[service_func_name] = code_obj.ok()
+                _globals[service_func_name] = linked_obj.resolve_with_context(context=context).unwrap()
+
         _globals["print"] = print
         exec(code_item.parsed_code, _globals, _locals)  # nosec
 
         evil_string = f"{code_item.unique_func_name}(**kwargs)"
+
         try:
             result = eval(evil_string, _globals, _locals)  # nosec
             errored = False
