@@ -95,7 +95,7 @@ class EnclaveService(AbstractService):
 
         pending_assets_for_uploading_domain = set(kwargs_for_uploading_domain.values())
         for action_object in action_objects:
-            if isinstance(action_object, ModelRef):
+            if type(action_object) == ModelRef:
                 result = action_object.store_ref_objs_to_store(
                     context=root_context, clear_ref_objs=True
                 )

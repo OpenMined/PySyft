@@ -154,7 +154,6 @@ def syft_model(
             class_name = cls.__name__
             res = SubmitModelCode(code=code, class_name=class_name)
         except Exception as e:
-            print("e", e)
             raise e
 
         success_message = SyftSuccess(
@@ -606,18 +605,7 @@ class ModelRef(ActionObject):
             return SyftError(message="No ref_objs to store in Model Ref")
 
         for ref_obj in self.ref_objs:
-            # print("ref_obj", type(ref_obj))
-            #  print("ref obj", ref_obj.syft_action_data, type(ref_obj.syft_action_data))
-            print("ref obj blob id", ref_obj.syft_blob_storage_entry_id)
             res = admin_client.services.action.set(ref_obj)
-            print("res", res)
-            ret_action_obj = admin_client.services.action.get(res.id)
-            print("ret_action_obj", ret_action_obj)
-            print(
-                "ret_action_obj.syft_action_data",
-                ret_action_obj.syft_action_data,
-                type(ret_action_obj.syft_action_data),
-            )
             if isinstance(res, SyftError):
                 return res
 
@@ -655,9 +643,6 @@ class ModelRef(ActionObject):
                 blob_res = res._save_to_blob_storage(client=remote_client)
                 if isinstance(blob_res, SyftError):
                     return blob_res
-
-            print("type(action_data)", type(action_data))
-            print("res", res)
             asset_list.append(action_data if unwrap_action_data else res)
 
         loaded_data = [model] + asset_list

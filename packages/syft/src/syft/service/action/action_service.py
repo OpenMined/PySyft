@@ -467,8 +467,6 @@ class ActionService(AbstractService):
                 else:
                     result_action_object = wrap_result(result_id, exec_result.result)
             else:
-                print("Entered with Twin Inputs")
-                print("Real kwargs", real_kwargs)
                 # twins
                 private_kwargs = filter_twin_kwargs(
                     real_kwargs,
@@ -476,7 +474,6 @@ class ActionService(AbstractService):
                     allow_python_types=True,
                     context=context,
                 )
-                print("private kwargs", private_kwargs)
                 private_exec_result = execute_byte_code(
                     code_item, private_kwargs, context
                 )
@@ -498,7 +495,6 @@ class ActionService(AbstractService):
                     allow_python_types=True,
                     context=context,
                 )
-                print("mock kwargs", mock_kwargs)
                 # relative
                 from .action_data_empty import ActionDataEmpty
 
@@ -985,7 +981,6 @@ def execute_callable(
                 )
 
     except Exception as e:
-        print("what is this exception", e)
         return Err(e)
     return Ok(result_action_object)
 
@@ -1114,17 +1109,12 @@ def filter_twin_kwargs(
                 )
         else:
             if isinstance(v, ActionObject):
-                print("Entered Action object", v, type(v))
-                if isinstance(v, ModelRef):
+                if type(v) == ModelRef:
                     if not context:
                         raise SyftException("ModelRef requires context to be passed")
-                    print("got model ref", v, v.id)
-
                     filtered[k] = v.load_model(context)
-                    print("Stored Values", filtered[k])
                 else:
                     filtered[k] = v.syft_action_data
-                print("filtered", filtered[k])
             elif (
                 isinstance(v, str | int | float | dict | CustomEndpointActionObject)
                 and allow_python_types
