@@ -292,7 +292,7 @@ profiles:
       # use enclave-specific chart values
       - op: add
         path: deployments.syft.helm.valuesFiles
-        value: ./helm/examples/dev/enclav-gpu.yaml
+        value: ./helm/examples/dev/enclave-gpu.yaml
       # Port Re-Mapping
       - op: replace
         path: dev.mongo.ports[0].port
