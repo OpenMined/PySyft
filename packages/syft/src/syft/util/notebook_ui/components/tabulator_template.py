@@ -180,17 +180,13 @@ def build_tabulator_table(
     pagination: bool = True,
     header_sort: bool = True,
 ) -> str | None:
-    try:
-        table_data, table_metadata = prepare_table_data(obj)
-        if len(table_data) == 0:
-            return obj.__repr__()
-        uid = uid if uid is not None else secrets.token_hex(4)
-        return _render_tabulator_table(
-            uid, table_data, table_metadata, max_height, pagination, header_sort
-        )
-    except Exception as e:
-        logger.debug("error building table", exc_info=e)
-        return None
+    table_data, table_metadata = prepare_table_data(obj)
+    if len(table_data) == 0:
+        return obj.__repr__()
+    uid = uid if uid is not None else secrets.token_hex(4)
+    return _render_tabulator_table(
+        uid, table_data, table_metadata, max_height, pagination, header_sort
+    )
 
 
 def show_table(obj: Any) -> None:

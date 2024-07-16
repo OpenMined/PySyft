@@ -139,9 +139,8 @@ def _create_table_rows(
 
     col_lengths = {len(cols[col]) for col in cols.keys()}
     if len(col_lengths) != 1:
-        raise ValueError(
-            "Cannot create table for items with different number of fields."
-        )
+        logger.debug("Cannot create table for items with different number of fields.")
+        return []
 
     num_rows = col_lengths.pop()
     if add_index and TABLE_INDEX_KEY not in cols:
@@ -204,9 +203,10 @@ def prepare_table_data(
     if len(values) == 0:
         return [], {}
 
+    # check first value and obj itself to see if syft in mro. If not, don't create table
     first_value = values[0]
     if not _syft_in_mro(obj, first_value):
-        raise ValueError("Cannot create table for Non-syft objects.")
+        return [], {}
 
     extra_fields = getattr(first_value, "__repr_attrs__", [])
     is_homogenous = len({type(x) for x in values}) == 1
@@ -228,6 +228,10 @@ def prepare_table_data(
         extra_fields=extra_fields,
         add_index=add_index,
     )
+    # if empty result, collection objects have no table representation
+    if not table_data:
+        return [], {}
+
     table_data = _sort_table_rows(table_data, sort_key)
 
     table_metadata = {
