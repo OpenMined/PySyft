@@ -1,6 +1,6 @@
 # stdlib
-import string
 import secrets
+import string
 
 # relative
 from ...abstract_server import ServerType
