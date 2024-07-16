@@ -152,7 +152,6 @@ def recursive_serde_register(
     attribute_list: set[str] = set()
 
     cls = type(cls) if not isinstance(cls, type) else cls
-    # fqn = f"{cls.__module__}.{cls.__name__}"
 
     if skip_unregistered_class(cls, canonical_name, version):
         return
@@ -222,14 +221,11 @@ def recursive_serde_register(
         version,
     )
 
-    # TYPE_BANK[fqn] = serde_attributes
-
     SyftObjectRegistry.register_cls(canonical_name, version, serde_attributes)
 
     alias_fqn = check_fqn_alias(cls)
     if isinstance(alias_fqn, tuple):
         for alias in alias_fqn:
-            # TYPE_BANK[alias] = serde_attributes
             alias_canonical_name = canonical_name + f"_{alias}"
             SyftObjectRegistry.register_cls(alias_canonical_name, 1, serde_attributes)
 
