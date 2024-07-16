@@ -182,6 +182,7 @@ class DomainClient(SyftClient):
             return valid
 
         # Step 4. Upload Model to Model Stash
+        model.asset_list = []
         return self.api.services.model.add(model=model)
 
     def upload_dataset(self, dataset: CreateDataset) -> SyftSuccess | SyftError:
