@@ -175,6 +175,11 @@ def deploy_to_python(
     background_tasks: bool = False,
     debug: bool = False,
     migrate: bool = False,
+    payment_required: bool = False,
+    server_payment_handle: str | None = None,
+    payment_api: str | None = None,
+    compute_price_module_path: str | None = None,
+    compute_price_func_name: str | None = None
 ) -> ServerHandle:
     worker_classes = {
         ServerType.DATASITE: Datasite,
@@ -204,6 +209,11 @@ def deploy_to_python(
         "background_tasks": background_tasks,
         "debug": debug,
         "migrate": migrate,
+        "payment_required": payment_required,
+        "server_payment_handle": server_payment_handle,
+        "payment_api": payment_api,
+        "compute_price_module_path": compute_price_module_path,
+        "compute_price_func_name": compute_price_func_name
     }
 
     if port:
@@ -314,6 +324,11 @@ class Orchestra:
         background_tasks: bool = False,
         debug: bool = False,
         migrate: bool = False,
+        payment_required: bool = False,
+        server_payment_handle: str | None = None,
+        payment_api: str | None = None,
+        compute_price_module_path: str | None = None,
+        compute_price_func_name: str | None = None
     ) -> ServerHandle:
         if dev_mode is True:
             thread_workers = True
@@ -352,6 +367,11 @@ class Orchestra:
                 background_tasks=background_tasks,
                 debug=debug,
                 migrate=migrate,
+                payment_required=payment_required,
+                server_payment_handle=server_payment_handle,
+                payment_api=payment_api,
+                compute_price_module_path=compute_price_module_path,
+                compute_price_func_name=compute_price_func_name
             )
             display(
                 SyftInfo(

@@ -19,7 +19,7 @@ from ...server.credentials import SyftVerifyKey
 from ...types.syft_metaclass import Empty
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
+from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import drop
@@ -39,7 +39,7 @@ from .user_roles import ServiceRole
 class User(SyftObject):
     # version
     __canonical_name__ = "User"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_4
 
     id: UID | None = None  # type: ignore[assignment]
 
@@ -62,6 +62,7 @@ class User(SyftObject):
     created_at: str | None = None
     # TODO where do we put this flag?
     mock_execution_permission: bool = False
+    payment_auth_token: str | None = None
 
     # serde / storage rules
     __attr_searchable__ = ["name", "email", "verify_key", "role"]
@@ -116,7 +117,7 @@ def check_pwd(password: str, hashed_password: str) -> bool:
 @serializable()
 class UserUpdate(PartialSyftObject):
     __canonical_name__ = "UserUpdate"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_4
 
     @field_validator("role", mode="before")
     @classmethod
@@ -134,12 +135,13 @@ class UserUpdate(PartialSyftObject):
     institution: str
     website: str
     mock_execution_permission: bool
+    payment_auth_token: str
 
 
 @serializable()
 class UserCreate(SyftObject):
     __canonical_name__ = "UserCreate"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_4
 
     email: EmailStr
     name: str
@@ -151,6 +153,7 @@ class UserCreate(SyftObject):
     website: str | None = ""  # type: ignore[assignment]
     created_by: SyftSigningKey | None = None  # type: ignore[assignment]
     mock_execution_permission: bool = False
+    payment_auth_token: str | None = "" # type: ignore[assignment]
 
     __repr_attrs__ = ["name", "email"]
 
@@ -169,7 +172,7 @@ class UserSearch(PartialSyftObject):
 @serializable()
 class UserView(SyftObject):
     __canonical_name__ = "UserView"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_4
 
     notifications_enabled: dict[NOTIFIERS, bool] = {
         NOTIFIERS.EMAIL: True,
@@ -183,6 +186,7 @@ class UserView(SyftObject):
     institution: str | None = None
     website: str | None = None
     mock_execution_permission: bool
+    payment_auth_token: str | None = None
 
     __repr_attrs__ = [
         "name",
@@ -257,6 +261,28 @@ class UserView(SyftObject):
         return SyftSuccess(
             message=f"Successfully updated email for the user "
             f"'{self.name}' to '{self.email}'."
+        )
+
+    def set_payment_auth_token(self, payment_auth_token: str) -> SyftSuccess | SyftError:
+        """Set a new payment auth token for the user."""
+        api = APIRegistry.api_for(
+            server_uid=self.syft_server_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None:
+            return SyftError(message=f"You must login to {self.server_uid}")
+
+        user_update = UserUpdate(payment_auth_token=payment_auth_token)
+        result = api.services.user.update(uid=self.id, user_update=user_update)
+
+        if isinstance(result, SyftError):
+            return result
+
+        self.payment_auth_token = payment_auth_token
+
+        return SyftSuccess(
+            message=f"Successfully updated payment auth token for the user "
+            f"'{self.name}' to '{self.payment_auth_token}'."
         )
 
     def update(
@@ -338,6 +364,7 @@ def user_to_view_user() -> list[Callable]:
                 "institution",
                 "website",
                 "mock_execution_permission",
+                "payment_auth_token",
                 "notifications_enabled",
             ]
         )

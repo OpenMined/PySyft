@@ -18,6 +18,7 @@ from time import sleep
 import traceback
 from typing import Any
 from typing import cast
+import time 
 
 # third party
 from nacl.signing import SigningKey
@@ -333,6 +334,11 @@ class Server(AbstractServer):
         smtp_host: str | None = None,
         association_request_auto_approval: bool = False,
         background_tasks: bool = False,
+        payment_required: bool = False,
+        server_payment_handle: str | None = None,
+        payment_api: str | None = None,
+        compute_price_module_path: str | None = None,
+        compute_price_func_name: str | None = None,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -348,6 +354,34 @@ class Server(AbstractServer):
         self.server_side_type = ServerSideType(server_side_type)
         self.client_cache: dict = {}
         self.peer_client_cache: dict = {}
+        self.payment_required = payment_required
+        self.server_payment_handle = server_payment_handle
+        self.payment_api = payment_api
+
+        if self.payment_required:
+            if self.server_payment_handle is None or self.server_payment_handle == "": 
+                raise ValueError("Payment handle is required.")
+            if self.payment_api is None or self.payment_api == "":
+                raise ValueError("Payment API is required.")
+            if compute_price_module_path is None or compute_price_module_path == "":
+                raise ValueError("Compute-price module path is required.")
+            if compute_price_func_name is None or compute_price_func_name == "":
+                raise ValueError("Compute-price function name is required.")
+
+            compute_price_module_dir, compute_price_module_file = os.path.split(compute_price_module_path)
+            sys.path.append(compute_price_module_dir)
+            compute_price_module_name, _ = os.path.splitext(compute_price_module_file)
+            from importlib import import_module
+            compute_price_module = import_module(compute_price_module_name)
+            self.compute_price = getattr(compute_price_module, compute_price_func_name)
+
+            print(
+                f'\n'
+                f'This server charges for services.\n'
+                f'Payment handle: {self.server_payment_handle}\n'
+                f'Payment API: {self.payment_api}\n'
+                f'Compute-price function: {self.compute_price}\n'
+            )
 
         if isinstance(server_type, str):
             server_type = ServerType(server_type)
@@ -655,6 +689,11 @@ class Server(AbstractServer):
         in_memory_workers: bool = True,
         association_request_auto_approval: bool = False,
         background_tasks: bool = False,
+        payment_required: bool = False,
+        server_payment_handle: str | None = None,
+        payment_api: str | None = None,
+        compute_price_module_path: str | None = None,
+        compute_price_func_name: str | None = None
     ) -> Server:
         uid = get_named_server_uid(name)
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
@@ -684,6 +723,11 @@ class Server(AbstractServer):
             reset=reset,
             association_request_auto_approval=association_request_auto_approval,
             background_tasks=background_tasks,
+            payment_required=payment_required,
+            server_payment_handle=server_payment_handle,
+            payment_api=payment_api,
+            compute_price_module_path=compute_price_module_path,
+            compute_price_func_name=compute_price_func_name
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
@@ -1085,6 +1129,12 @@ class Server(AbstractServer):
         )
         return role
 
+    def get_payment_auth_token_for_credentials(self, credentials: SyftVerifyKey) -> str | None:
+        payment_auth_token = self.get_service("userservice").get_payment_auth_token_for_credentials(
+            credentials=credentials
+        )
+        return payment_auth_token
+
     def handle_api_call(
         self,
         api_call: SyftAPICall | SignedSyftAPICall,
@@ -1159,13 +1209,41 @@ class Server(AbstractServer):
             method = self.get_service_method(_private_api_path)
             try:
                 logger.info(f"API Call: {api_call}")
+                start_time = time.perf_counter()
                 result = method(context, *api_call.args, **api_call.kwargs)
+                end_time = time.perf_counter()
+                execution_time = end_time - start_time
             except PySyftException as e:
                 return e.handle()
             except Exception:
                 result = SyftError(
                     message=f"Exception calling {api_call.path}. {traceback.format_exc()}"
                 )
+
+            if self.payment_required:
+                if self.name.startswith("ephemeral_server_"):
+                    print(
+                        f'Not charging for API call {api_call.path} to server {self.name} '
+                        'because this server is an ephemeral server running on the client machine'
+                    )
+                elif api_call.path == 'user.update' or api_call.path == 'user.get_current_user':
+                    print(
+                        f'Not charging for API call {api_call.path} to server {self.name} '
+                        f'because this call may be made before the payment auth token is stored on the server'
+                    )
+                else:
+                    price = self.compute_price(execution_time, role, method, api_call.path)
+
+                    payment_auth_token = self.get_payment_auth_token_for_credentials(credentials=credentials)
+                    if payment_auth_token == '':
+                        return SyftError(message=(
+                            "Cannot pay for call as Payment Auth Token has not been set."
+                            "Please set Payment Auth Token using 'client.me.set_payment_auth_token' API call."
+                        ))
+
+                    print(f"User with Payment Auth Token {payment_auth_token} pays an amount {price} to server {self.name} with payment handle {self.server_payment_handle} for API call {api_call.path}")
+                    # TODO: check if payment goes through, and, if not, then refuse to process RPC, by raising an error
+
         else:
             return self.add_api_call_to_queue(api_call)
         return result

@@ -169,6 +169,23 @@ class UserService(AbstractService):
                 return user.role
         return ServiceRole.GUEST
 
+    def get_payment_auth_token_for_credentials(
+        self, credentials: SyftVerifyKey | SyftSigningKey
+    ) -> str | None | SyftError:
+        # they could be different
+        if isinstance(credentials, SyftVerifyKey):
+            result = self.stash.get_by_verify_key(
+                credentials=credentials, verify_key=credentials
+            )
+        else:
+            result = self.stash.get_by_signing_key(
+                credentials=credentials, signing_key=credentials
+            )
+        if result.is_ok():
+            user = result.ok()
+            if user:
+                return user.payment_auth_token
+
     @service_method(path="user.search", name="search", autosplat=["user_search"])
     def search(
         self,
