@@ -30,6 +30,9 @@ class AttestationType(str, Enum):
         obj.jwks_url = JWKS_URL_MAP.get(value)
         return obj
 
+    def __str__(self) -> str:
+        return self.value
+
 
 def verify_attestation_report(
     token: str, attestation_type: AttestationType = AttestationType.CPU

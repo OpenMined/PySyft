@@ -29,6 +29,7 @@ from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
+from ...service.attestation.attestation import AttestationReport
 from ...service.attestation.utils import AttestationType
 from ...service.attestation.utils import verify_attestation_report
 from ...service.metadata.node_metadata import NodeMetadata
@@ -528,8 +529,14 @@ class ProjectCode(ProjectEventAddObject):
                 )
         runtime_policy_init_kwargs = self.code.runtime_policy_init_kwargs or {}
         provider = cast(EnclaveInstance, runtime_policy_init_kwargs.get("provider"))
+        print("Performing remote attestation", flush=True)
+        machine_type = (
+            "AMD SEV-SNP CPU"
+            if attestation_type == AttestationType.CPU
+            else "NVIDIA H100 GPU"
+        )
         print(
-            f"Getting {attestation_type} attestation report from the Enclave {provider.name} at {provider.route}...",
+            f"⏳ Retrieving attestation token from {machine_type} Enclave at {provider.route}...",
             flush=True,
         )
         client = provider.get_guest_client()
@@ -539,7 +546,11 @@ class ProjectCode(ProjectEventAddObject):
             else client.api.services.attestation.get_gpu_attestation(raw_token=True)
         )
         print(
-            f"Got encrypted attestation report of {len(raw_jwt_report)} bytes. Verifying it...",
+            f"🔐 Got encrypted attestation report of {len(raw_jwt_report)} bytes",
+            flush=True,
+        )
+        print(
+            f"🔓 Decrypting attestation report using JWK certificates at {attestation_type.jwks_url}",
             flush=True,
         )
         report = verify_attestation_report(
@@ -549,20 +560,32 @@ class ProjectCode(ProjectEventAddObject):
             print(
                 f"❌ Attestation report verification failed. {report.err()}", flush=True
             )
+        report = report.ok()
+        print("🔍 Verifying attestation report...", flush=True)
+
+        attestation_report = AttestationReport(report)
+        summary = attestation_report.generate_summary()
+
+        print(summary, flush=True)
+
+        print("✅ Attestation report verified successfully.", flush=True)
+        if attestation_report.is_secure():
+            print("✅ Syft Enclave is currently Secure.", flush=True)
+        else:
+            print("❌ Syft Enclave is currently Insecure.", flush=True)
 
         output = widgets.Output()
 
         def display_report(_: widgets.Button) -> None:
             with output:
                 output.clear_output()
-                display(JSON(report.ok()))
+                display(JSON(report))
 
-        print("✅ Attestation report verified successfully.", flush=True)
         button = widgets.Button(description="View full report")
         button.on_click(display_report)
         display(button)
         display(output)
-        return report.ok() if return_report else None
+        return report if return_report else None
 
 
 def poll_creation_wizard() -> tuple[str, list[str]]:
