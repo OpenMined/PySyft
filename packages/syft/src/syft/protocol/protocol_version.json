@@ -1190,6 +1190,20 @@
           "hash": "ae07a6345762b8ebe9d2a100776e2405fd17516c9d224913a3358c96480ba889",
           "action": "add"
         }
+      },
+      "SyftObject": {
+        "2": {
+          "version": 2,
+          "hash": "26efd140219eb651d18467b0430b9dbde17c57670f050e300823075f6e44d3e5",
+          "action": "add"
+        }
+      },
+      "ProjectEvent": {
+        "2": {
+          "version": 2,
+          "hash": "cbe61714b816b769a856fe7b47c3001e6da716883b2845e03485e3e7b0a02b91",
+          "action": "add"
+        }
       }
     }
   }

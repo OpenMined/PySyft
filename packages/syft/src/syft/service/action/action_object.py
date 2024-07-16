@@ -235,6 +235,7 @@ class Action(SyftObject):
         )
 
 
+@serializable(canonical_name="ActionObjectPointer", version=1)
 class ActionObjectPointer:
     pass
 

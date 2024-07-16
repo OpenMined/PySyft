@@ -305,6 +305,7 @@ base_attrs_sync_ignore = [
 ]
 
 
+@serializable()
 class SyftObject(SyftBaseObject, SyftMigrationRegistry):
     __canonical_name__ = "SyftObject"
     __version__ = SYFT_OBJECT_VERSION_2

@@ -38,6 +38,14 @@ class SyftObjectRegistry:
         )
         return list(available_versions.keys())
 
+    
+    @classmethod
+    def get_identifier_for_type(cls, obj: Any) -> tuple[str, int]:
+        """
+        This is to create the string in nonrecursiveBlob
+        """
+        return cls.__type_to_canonical_name__[obj]
+
     @classmethod
     def get_canonical_name_version(cls, obj: Any) -> tuple[str, int]:
         """
@@ -53,7 +61,7 @@ class SyftObjectRegistry:
             get_canonical_name_version([1,2,3]) -> "list"
             get_canonical_name_version(list) -> "type"
             get_canonical_name_version(MyEnum.A) -> "MyEnum"
-            get_canonical_name_version(MyEnum) -> "EnumMeta"
+            get_canonical_name_version(MyEnum) -> "type"
 
         Args:
             obj: The object or type for which to get the canonical name.
@@ -62,8 +70,7 @@ class SyftObjectRegistry:
             The canonical name and version of the object or type.
         """
 
-        # NOTE the metaclass of the object is not needed during serde
-        # so we can safely ignore it
+        # for types we return "type"
         if isinstance(obj, type):
             return cls.__type_to_canonical_name__[type]
 

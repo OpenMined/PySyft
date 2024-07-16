@@ -65,6 +65,7 @@ def metadata_to_server_identity() -> list[Callable]:
     return [rename("id", "server_id"), rename("name", "server_name")]
 
 
+@serializable()
 class ProjectEvent(SyftObject):
     __canonical_name__ = "ProjectEvent"
     __version__ = SYFT_OBJECT_VERSION_2

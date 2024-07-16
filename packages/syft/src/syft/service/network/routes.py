@@ -31,6 +31,7 @@ if TYPE_CHECKING:
     from .server_peer import ServerPeer
 
 
+@serializable(canonical_name="ServerRoute", version=1)
 class ServerRoute:
     def client_with_context(
         self, context: ServerServiceContext

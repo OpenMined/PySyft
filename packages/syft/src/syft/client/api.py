@@ -1401,6 +1401,7 @@ def validate_callable_args_and_kwargs(
                     pass
                 else:
                     _type_str = getattr(t, "__name__", str(t))
+                    raise
                     msg = f"Arg is `{arg}`. \nIt must be of type `{_type_str}`, not `{type(arg).__name__}`"
 
             if msg:
