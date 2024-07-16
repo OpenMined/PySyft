@@ -21,5 +21,5 @@ Finally push the image to docker hub
 ### Step 2: Launch Enclave with GPU
 
 ```sh
-GPU_ENABLED=true tox -e dev.k8s.launch.enclave
+DEVSPACE_PROFILE=enclave-gpu tox -e dev.k8s.launch.enclave
 ```
