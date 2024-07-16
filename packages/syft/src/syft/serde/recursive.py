@@ -283,11 +283,7 @@ def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuild
     msg = recursive_scheme.new_message()
 
     # todo: rewrite and make sure every object has a canonical name and version
-    canonical_name = SyftObjectRegistry.get_canonical_name(self)
-    if is_type:
-        version = 1
-    else:
-        version = getattr(self, "__version__", 1)
+    canonical_name, version = SyftObjectRegistry.get_canonical_name_version(self)
 
     if not SyftObjectRegistry.has_serde_class("", canonical_name, version):
         # third party

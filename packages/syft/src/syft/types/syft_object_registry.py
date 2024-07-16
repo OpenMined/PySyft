@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 class SyftObjectRegistry:
     __object_transform_registry__: dict[str, Callable] = {}
     __object_serialization_registry__: dict[str, dict[int, tuple]] = {}
-    __type_to_canonical_name__: dict[type, str] = {}
+    __type_to_canonical_name__: dict[type, tuple[str, int]] = {}
 
     @classmethod
     def register_cls(
@@ -28,7 +28,7 @@ class SyftObjectRegistry:
             serde_attributes
         )
 
-        cls.__type_to_canonical_name__[serde_attributes[7]] = canonical_name
+        cls.__type_to_canonical_name__[serde_attributes[7]] = (canonical_name, version)
 
     @classmethod
     def get_versions(cls, canonical_name: str) -> list[int]:
@@ -39,7 +39,7 @@ class SyftObjectRegistry:
         return list(available_versions.keys())
 
     @classmethod
-    def get_canonical_name(cls, obj: Any) -> str:
+    def get_canonical_name_version(cls, obj: Any) -> tuple[str, int]:
         """
         Retrieves the canonical name for both objects and types.
 
@@ -50,16 +50,16 @@ class SyftObjectRegistry:
         If the object is not registered in the registry, a ValueError is raised.
 
         Examples:
-            get_canonical_name([1,2,3]) -> "list"
-            get_canonical_name(list) -> "type"
-            get_canonical_name(MyEnum.A) -> "MyEnum"
-            get_canonical_name(MyEnum) -> "EnumMeta"
+            get_canonical_name_version([1,2,3]) -> "list"
+            get_canonical_name_version(list) -> "type"
+            get_canonical_name_version(MyEnum.A) -> "MyEnum"
+            get_canonical_name_version(MyEnum) -> "EnumMeta"
 
         Args:
             obj: The object or type for which to get the canonical name.
 
         Returns:
-            The canonical name as a string.
+            The canonical name and version of the object or type.
         """
         obj_type = type(obj)
         if obj_type in cls.__type_to_canonical_name__:
