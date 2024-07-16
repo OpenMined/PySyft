@@ -21,7 +21,6 @@ from pydantic._internal._model_construction import ModelMetaclass
 from pymongo.collection import Collection
 from result import Err
 from result import Ok
-from result import Result
 
 # relative
 from ..types.dicttuple import DictTuple
@@ -62,9 +61,6 @@ recursive_serde_register(
 )
 recursive_serde_register(
     Err, serialize_attrs=["_value"], canonical_name="result_Err", version=1
-)
-recursive_serde_register(
-    Result, serialize_attrs=["_value"], canonical_name="result_Result", version=1
 )
 
 # exceptions
