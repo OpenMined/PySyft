@@ -1,4 +1,4 @@
-# Values for deploying an enclave
+# Values for deploying an cpu enclave
 # Patched on top of patch `base.yaml`
 
 node:

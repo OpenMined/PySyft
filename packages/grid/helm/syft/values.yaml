@@ -186,6 +186,9 @@ node:
     username: apikey
     password: password
 
+  # Runtime Class Name
+  runtimeClassName: null
+
   # Extra environment vars
   env: null
 
@@ -274,7 +277,7 @@ attestation:
   # Extra environment vars
   env: null
 
-  # Pod Resource Limits
+  # Container Resource Limits
   resourcesPreset: nano
   resources: null
 
