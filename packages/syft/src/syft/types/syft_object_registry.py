@@ -3,8 +3,6 @@ from collections.abc import Callable
 from typing import Any
 from typing import TYPE_CHECKING
 
-# relative
-
 SYFT_086_PROTOCOL_VERSION = "4"
 
 # third party
@@ -42,19 +40,30 @@ class SyftObjectRegistry:
 
     @classmethod
     def get_canonical_name(cls, obj: Any) -> str:
-        # if is_type:
-        #     # TODO: this is different for builtin types, make more generic
-        #     return "ModelMetaclass"
-        is_type = isinstance(obj, type)
-        if not is_type:
-            obj = type(obj)
+        """
+        Retrieves the canonical name for both objects and types.
 
-        res = getattr(obj, "__canonical_name__", None)
-        if res is not None and not is_type:
-            return res
-        elif obj in cls.__type_to_canonical_name__:
-            return cls.__type_to_canonical_name__[obj]
+        This function works for both objects and types, returning the canonical name
+        as a string. It handles various cases, including built-in types, instances of
+        classes, and enum members.
 
+        If the object is not registered in the registry, a ValueError is raised.
+
+        Examples:
+            get_canonical_name([1,2,3]) -> "list"
+            get_canonical_name(list) -> "type"
+            get_canonical_name(MyEnum.A) -> "MyEnum"
+            get_canonical_name(MyEnum) -> "EnumMeta"
+
+        Args:
+            obj: The object or type for which to get the canonical name.
+
+        Returns:
+            The canonical name as a string.
+        """
+        obj_type = type(obj)
+        if obj_type in cls.__type_to_canonical_name__:
+            return cls.__type_to_canonical_name__[obj_type]
         raise ValueError(f"Could not find canonical name for {obj}")
 
     @classmethod

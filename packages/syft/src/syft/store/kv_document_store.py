@@ -137,7 +137,6 @@ class KeyValueStorePartition(StorePartition):
                 if pk_key not in self.searchable_keys:
                     self.searchable_keys[pk_key] = defaultdict(list)
         except BaseException as e:
-            raise e
             return Err(str(e))
 
         return Ok(True)
