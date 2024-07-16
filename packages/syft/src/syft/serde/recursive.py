@@ -49,7 +49,7 @@ def get_types(cls: type, keys: list[str] | None = None) -> list[type] | None:
     return types
 
 
-def check_fqn_alias(cls: object | type) -> tuple | None:
+def check_fqn_alias(cls: object | type) -> tuple[str, ...] | None:
     """Currently, typing.Any has different metaclasses in different versions of Python 🤦‍♂️.
     For Python <=3.10
     Any is an instance of typing._SpecialForm
@@ -207,7 +207,6 @@ def recursive_serde_register(
     attributes = set(attribute_list) if attribute_list else None
     attribute_types = get_types(cls, attributes)
     serde_overrides = getattr(cls, "__serde_overrides__", {})
-    version = getattr(cls, "__version__", None)
 
     # without fqn duplicate class names overwrite
     serde_attributes = (
@@ -231,7 +230,7 @@ def recursive_serde_register(
     if isinstance(alias_fqn, tuple):
         for alias in alias_fqn:
             # TYPE_BANK[alias] = serde_attributes
-            alias_canonical_name = canonical_name + alias.__name__
+            alias_canonical_name = canonical_name + f"_{alias}"
             SyftObjectRegistry.register_cls(alias_canonical_name, 1, serde_attributes)
 
 
@@ -296,7 +295,9 @@ def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuild
 
     if not SyftObjectRegistry.has_serde_class("", canonical_name, version):
         # third party
-        raise Exception(f"{canonical_name} version {version} not in SyftObjectRegistry")
+        raise Exception(
+            f"obj2proto: {canonical_name} version {version} not in SyftObjectRegistry"
+        )
 
     msg.canonicalName = canonical_name
     msg.version = version
@@ -418,7 +419,9 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
     fqn = map_fqns_for_backward_compatibility(fqn)
     if not SyftObjectRegistry.has_serde_class(fqn, canonical_name, version):
         # third party
-        raise Exception(f"{canonical_name} version {version} not in SyftObjectRegistry")
+        raise Exception(
+            f"proto2obj: {canonical_name} version {version} not in SyftObjectRegistry"
+        )
 
     # TODO: 🐉 sort this out, basically sometimes the syft.user classes are not in the
     # module name space in sub-processes or threads even though they are loaded on start

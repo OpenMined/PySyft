@@ -4,7 +4,6 @@ from typing import Any
 from typing import TYPE_CHECKING
 
 # relative
-from ..util.util import get_fully_qualified_name
 
 SYFT_086_PROTOCOL_VERSION = "4"
 
@@ -19,6 +18,7 @@ if TYPE_CHECKING:
 class SyftObjectRegistry:
     __object_transform_registry__: dict[str, Callable] = {}
     __object_serialization_registry__: dict[str, dict[int, tuple]] = {}
+    __type_to_canonical_name__: dict[type, str] = {}
 
     @classmethod
     def register_cls(
@@ -29,6 +29,8 @@ class SyftObjectRegistry:
         cls.__object_serialization_registry__[canonical_name][version] = (
             serde_attributes
         )
+
+        cls.__type_to_canonical_name__[serde_attributes[7]] = canonical_name
 
     @classmethod
     def get_versions(cls, canonical_name: str) -> list[int]:
@@ -44,13 +46,16 @@ class SyftObjectRegistry:
         #     # TODO: this is different for builtin types, make more generic
         #     return "ModelMetaclass"
         is_type = isinstance(obj, type)
+        if not is_type:
+            obj = type(obj)
 
         res = getattr(obj, "__canonical_name__", None)
         if res is not None and not is_type:
             return res
-        else:
-            fqn = get_fully_qualified_name(obj)
-            return fqn
+        elif obj in cls.__type_to_canonical_name__:
+            return cls.__type_to_canonical_name__[obj]
+
+        raise ValueError(f"Could not find canonical name for {obj}")
 
     @classmethod
     def get_serde_properties(cls, canonical_name: str, version: int) -> tuple:
