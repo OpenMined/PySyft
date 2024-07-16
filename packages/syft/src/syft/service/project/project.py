@@ -852,6 +852,9 @@ def add_code_request_to_project(
     # Add Project UID to the code
     code.project_id = project.id
 
+    if not isinstance(clients, Iterable):
+        clients = [clients]
+
     # TODO: can we remove clients in code submission?
     if not all(isinstance(client, SyftClient) for client in clients):
         return SyftError(message=f"Clients should be of type SyftClient: {clients}")
