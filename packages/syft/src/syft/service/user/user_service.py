@@ -19,6 +19,7 @@ from ..context import AuthedServiceContext
 from ..context import ServerServiceContext
 from ..context import UnauthedServiceContext
 from ..notification.email_templates import OnBoardEmailTemplate
+from ..notification.email_templates import PasswordResetTemplate
 from ..notification.notification_service import CreateNotification
 from ..notification.notification_service import NotificationService
 from ..notifier.notifier_enums import NOTIFIERS
@@ -93,35 +94,72 @@ class UserService(AbstractService):
         self, context: AuthedServiceContext, email: str
     ) -> SyftSuccess | SyftError:
         result = self.stash.get_by_email(credentials=context.credentials, email=email)
-
+        # Isn't a valid email
         if result.is_err():
             return SyftSuccess(
                 message="If the email is valid, we sent a password request to the admin."
             )
 
-        user = result.ok()
+        # Email is valid
+        # Notifications disabled
+        # We should just sent a notification to the admin/user about password reset
+        # Notifications Enabled
+        # Instead of changing the password here, we would change it in email template generation.
         root_key = self.admin_verify_key()
         root_context = AuthedServiceContext(server=context.server, credentials=root_key)
-
+        user = result.ok()
         link = LinkedObject.with_context(user, context=root_context)
+        notifier_service = context.server.get_service("notifierservice")
+        # Notifier is active
+        notification_is_enabled = notifier_service.settings(context=root_context).active
+        # Email is enabled
+        email_is_enabled = notifier_service.settings(context=root_context).email_enabled
+        # User Preferences allow email notification
+        user_allow_email_notifications = user.notifications_enabled[NOTIFIERS.EMAIL]
 
+        # This checks if the user will safely receive the email reset.
+        not_receive_emails = (
+            not notification_is_enabled
+            or not email_is_enabled
+            or not user_allow_email_notifications
+        )
+
+        # If notifier service is not enabled.
+        if not_receive_emails:
+            message = CreateNotification(
+                subject="You requested password reset.",
+                from_user_verify_key=root_key,
+                to_user_verify_key=user.verify_key,
+                linked_obj=link,
+            )
+
+            method = context.server.get_service_method(NotificationService.send)
+            result = method(context=root_context, notification=message)
+
+            message = CreateNotification(
+                subject="User requested password reset.",
+                from_user_verify_key=user.verify_key,
+                to_user_verify_key=root_key,
+                linked_obj=link,
+            )
+
+            result = method(context=root_context, notification=message)
+            return SyftSuccess(
+                message="If the email is valid, we sent a password request to the admin."
+            )
+
+        # Email notification is Enabled
+        # Therefore, we can directly send a message to the user with its new password.
         message = CreateNotification(
-            subject="You requested password reset.",
+            subject="You requested a password reset.",
             from_user_verify_key=root_key,
             to_user_verify_key=user.verify_key,
             linked_obj=link,
+            notifier_types=[NOTIFIERS.EMAIL],
+            email_template=PasswordResetTemplate,
         )
 
         method = context.server.get_service_method(NotificationService.send)
-        result = method(context=root_context, notification=message)
-
-        message = CreateNotification(
-            subject=" User requested password reset.",
-            from_user_verify_key=user.verify_key,
-            to_user_verify_key=root_key,
-            linked_obj=link,
-        )
-
         result = method(context=root_context, notification=message)
         return SyftSuccess(
             message="If the email is valid, we sent a password request to the admin."

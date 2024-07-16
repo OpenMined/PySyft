@@ -1,10 +1,13 @@
 # stdlib
+import random
+import string
 from typing import TYPE_CHECKING
 from typing import cast
 
 # relative
 from ...store.linked_obj import LinkedObject
 from ..context import AuthedServiceContext
+from ..user.user import salt_and_hash_password
 
 if TYPE_CHECKING:
     # relative
@@ -19,6 +22,91 @@ class EmailTemplate:
     @staticmethod
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
         return ""
+
+
+class PasswordResetTemplate(EmailTemplate):
+    @staticmethod
+    def email_title(notification: "Notification", context: AuthedServiceContext) -> str:
+        return "Password Reset Requested"
+
+    @staticmethod
+    def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
+        user_service = context.server.get_service("userservice")
+
+        user = user_service.get_by_verify_key(notification.to_user_verify_key)
+        if not user:
+            raise Exception("User not found!")
+
+        password_length = 12
+        valid_characters = string.ascii_letters + string.digits
+        new_password = "".join(
+            random.choice(valid_characters) for i in range(password_length)
+        )
+        salt, hashed = salt_and_hash_password(new_password, password_length)
+        user.hashed_password = hashed
+        user.salt = salt
+
+        result = user_service.stash.update(
+            credentials=context.credentials, user=user, has_permission=True
+        )
+        if result.is_err():
+            raise Exception("Couldn't update the user password")
+
+        head = """<head>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    background-color: #f4f4f4;
+                    color: #333;
+                    margin: 0;
+                    padding: 0;
+                }
+                .container {
+                    max-width: 600px;
+                    margin: 50px auto;
+                    background-color: #ffffff;
+                    padding: 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                }
+                h1 {
+                    color: #333;
+                    text-align: center;
+                }
+                p {
+                    font-size: 16px;
+                    line-height: 1.5;
+                    text-align: center;
+                }
+                .button {
+                    display: block;
+                    width: 200px;
+                    margin: 30px auto;
+                    padding: 10px;
+                    background-color: #007BFF;
+                    color: #fff;
+                    text-align: center;
+                    text-decoration: none;
+                    border-radius: 4px;
+                }
+                .footer {
+                    text-align: center;
+                    font-size: 12px;
+                    color: #aaa;
+                    margin-top: 20px;
+                }
+            </style>
+        </head>"""
+        body = f"""<body>
+            <div class="container">
+                <h1>Password Reset</h1>
+                <p>Hello,</p>
+                <p>We received a request to reset your password. Your new temporary password is:</p>
+                <h1>{new_password}</h1>
+                <p>If you didn't request a password reset, please ignore this email.</p>
+            </div>
+        </body>"""
+        return f"""<html>{head} {body}</html>"""
 
 
 class OnBoardEmailTemplate(EmailTemplate):
