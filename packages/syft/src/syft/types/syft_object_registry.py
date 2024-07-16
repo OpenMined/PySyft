@@ -61,6 +61,12 @@ class SyftObjectRegistry:
         Returns:
             The canonical name and version of the object or type.
         """
+
+        # NOTE the metaclass of the object is not needed during serde
+        # so we can safely ignore it
+        if isinstance(obj, type):
+            return cls.__type_to_canonical_name__[type]
+
         obj_type = type(obj)
         if obj_type in cls.__type_to_canonical_name__:
             return cls.__type_to_canonical_name__[obj_type]
