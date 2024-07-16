@@ -88,7 +88,11 @@ def test_delete_idle_worker(server: ServerHandle, force: bool) -> None:
 
     start = time.time()
     while True:
-        if len(client.worker.get_all()) == 0:
+        all_workers = client.worker.get_all()
+        if isinstance(all_workers, SyftError):
+            print(all_workers)
+            continue
+        if len(all_workers) == 0:
             break
         if time.time() - start > 3:
             raise TimeoutError("Worker did not get removed from stash.")
