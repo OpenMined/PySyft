@@ -55,7 +55,7 @@ class UserService(AbstractService):
         self.store = store
         self.stash = UserStash(store=store)
 
-    @service_method(path="user.create", name="create")
+    @service_method(path="user.create", name="create", autosplat="user_create")
     def create(
         self, context: AuthedServiceContext, user_create: UserCreate
     ) -> UserView | SyftError:
@@ -265,6 +265,7 @@ class UserService(AbstractService):
         path="user.update",
         name="update",
         roles=GUEST_ROLE_LEVEL,
+        autosplat="user_update",
     )
     def update(
         self, context: AuthedServiceContext, uid: UID, user_update: UserUpdate

@@ -828,7 +828,9 @@ class ActionObject(SyncableSyftObject):
                     self.syft_action_data_type = type(self.syft_action_data)
                     return None
             else:
-                return SyftError("Could not reload cache, could not get read method")
+                return SyftError(
+                    message="Could not reload cache, could not get read method"
+                )
 
         return None
 
