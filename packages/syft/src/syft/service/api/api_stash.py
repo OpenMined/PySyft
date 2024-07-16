@@ -16,7 +16,7 @@ from .api import TwinAPIEndpoint
 MISSING_PATH_STRING = "Endpoint path: {path} does not exist."
 
 
-@serializable()
+@serializable(canonical_name="TwinAPIEndpointStash", version=1)
 class TwinAPIEndpointStash(BaseUIDStoreStash):
     object_type = TwinAPIEndpoint
     settings: PartitionSettings = PartitionSettings(

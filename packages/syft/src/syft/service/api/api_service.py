@@ -37,7 +37,7 @@ from .api_stash import TwinAPIEndpointStash
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="APIService", version=1)
 class APIService(AbstractService):
     store: DocumentStore
     stash: TwinAPIEndpointStash

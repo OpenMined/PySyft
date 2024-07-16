@@ -10,7 +10,7 @@ from ...types.base import SyftBaseModel
 from .image_registry import SyftImageRegistry
 
 
-@serializable()
+@serializable(canonical_name="SyftWorkerImageIdentifier", version=1)
 class SyftWorkerImageIdentifier(SyftBaseModel):
     """
     Class to identify syft worker images.

@@ -12,7 +12,10 @@ from syft.types.syft_object import SyftObject
 from syft.types.uid import UID
 
 
-@serializable()
+@serializable(
+    canonical_name="MockKeyValueBackingStore",
+    version=1,
+)
 class MockKeyValueBackingStore(dict, KeyValueBackingStore):
     def __init__(
         self,
