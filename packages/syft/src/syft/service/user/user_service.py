@@ -1,4 +1,6 @@
 # stdlib
+import random
+import string
 
 # relative
 from ...abstract_server import ServerType
@@ -83,6 +85,100 @@ class UserService(AbstractService):
             return SyftError(message=str(result.err()))
         user = result.ok()
         return user.to(UserView)
+
+    @service_method(
+        path="user.forgot_password", name="forgot_password", roles=GUEST_ROLE_LEVEL
+    )
+    def forgot_password(
+        self, context: AuthedServiceContext, email: str
+    ) -> SyftSuccess | SyftError:
+        result = self.stash.get_by_email(credentials=context.credentials, email=email)
+
+        if result.is_err():
+            return SyftSuccess(
+                message="If the email is valid, we sent a password request to the admin."
+            )
+
+        user = result.ok()
+        root_key = self.admin_verify_key()
+        root_context = AuthedServiceContext(server=context.server, credentials=root_key)
+
+        link = LinkedObject.with_context(user, context=root_context)
+
+        message = CreateNotification(
+            subject="You requested password reset.",
+            from_user_verify_key=root_key,
+            to_user_verify_key=user.verify_key,
+            linked_obj=link,
+        )
+
+        method = context.server.get_service_method(NotificationService.send)
+        result = method(context=root_context, notification=message)
+
+        message = CreateNotification(
+            subject=" User requested password reset.",
+            from_user_verify_key=user.verify_key,
+            to_user_verify_key=root_key,
+            linked_obj=link,
+        )
+
+        result = method(context=root_context, notification=message)
+        return SyftSuccess(
+            message="If the email is valid, we sent a password request to the admin."
+        )
+
+    @service_method(
+        path="user.reset_password", name="reset_password", roles=ADMIN_ROLE_LEVEL
+    )
+    def reset(self, context: AuthedServiceContext, uid: UID) -> SyftSuccess | SyftError:
+        """Get user for given uid"""
+        result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
+        if result.is_ok():
+            user = result.ok()
+            if user is None:
+                return SyftError(message=f"No user exists for given: {uid}")
+
+            password_length = 12
+            valid_characters = string.ascii_letters + string.digits
+            new_password = "".join(
+                random.choice(valid_characters) for i in range(password_length)
+            )
+            salt, hashed = salt_and_hash_password(new_password, password_length)
+            user.hashed_password = hashed
+            user.salt = salt
+            result = self.stash.update(
+                credentials=context.credentials, user=user, has_permission=True
+            )
+            if result.is_err():
+                return SyftError(
+                    message=(
+                        f"Failed to update user with UID: {uid}. Error: {str(result.err())}"
+                    )
+                )
+
+            # # Notification Setup
+            # root_key = self.admin_verify_key()
+            # root_context = AuthedServiceContext(server=context.server, credentials=root_key)
+            # link = None
+            # if new_user.created_by:
+            #     link = LinkedObject.with_context(user, context=root_context)
+            #
+            # message = CreateNotification(
+            #     subject=success_message,
+            #     from_user_verify_key=root_key,
+            #     to_user_verify_key=user.verify_key,
+            #     linked_obj=link,
+            #     notifier_types=[NOTIFIERS.EMAIL],
+            #     email_template=OnBoardEmailTemplate,
+            # )
+
+            # method = context.server.get_service_method(NotificationService.send)
+            # result = method(context=root_context, notification=message)
+
+            return SyftSuccess(
+                message=f"User password has been reset successfully!\n New User Password: {new_password}"
+            )
+        return SyftError(message=str(result.err()))
 
     @service_method(path="user.view", name="view", roles=DATA_SCIENTIST_ROLE_LEVEL)
     def view(
