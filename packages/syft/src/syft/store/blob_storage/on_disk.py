@@ -32,14 +32,28 @@ class OnDiskBlobDeposit(BlobDeposit):
         # relative
         from ...service.service import from_api_or_context
 
-        write_to_disk_method = from_api_or_context(
-            func_or_path="blob_storage.write_to_disk",
+        get_by_uid_method = from_api_or_context(
+            func_or_path="blob_storage.get_by_uid",
             syft_node_location=self.syft_node_location,
             syft_client_verify_key=self.syft_client_verify_key,
         )
-        if write_to_disk_method is None:
-            return SyftError(message="write_to_disk_method is None")
-        return write_to_disk_method(data=data.read(), uid=self.blob_storage_entry_id)
+        if get_by_uid_method is None:
+            return SyftError(message="get_by_uid_method is None")
+
+        obj = get_by_uid_method(uid=self.blob_storage_entry_id)
+        if isinstance(obj, SyftError):
+            return obj
+        if obj is None:
+            return SyftError(
+                message=f"No blob storage entry exists for uid: {self.blob_storage_entry_id}, "
+                "or you have no permissions to read it"
+            )
+
+        try:
+            Path(obj.location.path).write_bytes(data.read())
+            return SyftSuccess(message="File successfully saved.")
+        except Exception as e:
+            return SyftError(message=f"Failed to write object to disk: {e}")
 
 
 class OnDiskBlobStorageConnection(BlobStorageConnection):
