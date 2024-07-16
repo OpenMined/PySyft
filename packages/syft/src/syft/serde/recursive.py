@@ -125,7 +125,7 @@ def skip_unregistered_class(
     """
 
     search_unregistered_classes = (
-        os.getenv("SYFT_SEARCH_UNREGISTERED_CLASSES", False) == "1"
+        os.getenv("SYFT_SEARCH_MISSING_CANONICAL_NAME", False) == "true"
     )
     if not search_unregistered_classes:
         return False
