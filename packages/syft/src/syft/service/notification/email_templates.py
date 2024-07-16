@@ -1,5 +1,5 @@
 # stdlib
-import random
+import secrets
 import string
 from typing import TYPE_CHECKING
 from typing import cast
@@ -40,7 +40,7 @@ class PasswordResetTemplate(EmailTemplate):
         password_length = 12
         valid_characters = string.ascii_letters + string.digits
         new_password = "".join(
-            random.choice(valid_characters) for i in range(password_length)
+            secrets.choice(valid_characters) for i in range(password_length)
         )
         salt, hashed = salt_and_hash_password(new_password, password_length)
         user.hashed_password = hashed

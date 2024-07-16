@@ -1,6 +1,6 @@
 # stdlib
-import random
 import string
+import secrets
 
 # relative
 from ...abstract_server import ServerType
@@ -179,7 +179,7 @@ class UserService(AbstractService):
             password_length = 12
             valid_characters = string.ascii_letters + string.digits
             new_password = "".join(
-                random.choice(valid_characters) for i in range(password_length)
+                secrets.choice(valid_characters) for i in range(password_length)
             )
             salt, hashed = salt_and_hash_password(new_password, password_length)
             user.hashed_password = hashed
