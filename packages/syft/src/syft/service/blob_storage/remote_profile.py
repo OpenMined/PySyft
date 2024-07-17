@@ -24,7 +24,7 @@ class AzureRemoteProfile(RemoteProfile):
     container_name: str
 
 
-@serializable()
+@serializable(canonical_name="RemoteProfileStash", version=1)
 class RemoteProfileStash(BaseUIDStoreStash):
     object_type = RemoteProfile
     settings: PartitionSettings = PartitionSettings(

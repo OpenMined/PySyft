@@ -17,7 +17,7 @@ from ..types.base import SyftBaseModel
 SIGNING_KEY_FOR = "Corresponding Public Key"
 
 
-@serializable()
+@serializable(canonical_name="SyftVerifyKey", version=1)
 class SyftVerifyKey(SyftBaseModel):
     verify_key: VerifyKey
 
@@ -49,7 +49,7 @@ class SyftVerifyKey(SyftBaseModel):
         return hash(self.verify_key)
 
 
-@serializable()
+@serializable(canonical_name="SyftSigningKey", version=1)
 class SyftSigningKey(SyftBaseModel):
     signing_key: SigningKey
 
@@ -97,7 +97,7 @@ class SyftSigningKey(SyftBaseModel):
 SyftCredentials = SyftVerifyKey | SyftSigningKey
 
 
-@serializable()
+@serializable(canonical_name="UserLoginCredentials", version=1)
 class UserLoginCredentials(SyftBaseModel):
     email: str
     password: str

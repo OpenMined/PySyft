@@ -8,7 +8,11 @@ from syft.types.syft_object import SyftBaseObject
 from syft.types.syft_object import SyftHashableObject
 
 
-@serializable(attrs=["key", "value", "flag"])
+@serializable(
+    attrs=["key", "value", "flag"],
+    canonical_name="MockObject",
+    version=1,
+)
 class MockObject(SyftHashableObject):
     key: str
     value: str

@@ -996,3 +996,18 @@ def get_latest_tag(registry: str, repo: str) -> str | None:
     if len(tag_times) > 0:
         return tag_times[0][0]
     return None
+
+
+def get_nb_secrets(defaults: dict | None = None) -> dict:
+    if defaults is None:
+        defaults = {}
+
+    try:
+        filename = "./secrets.json"
+        with open(filename) as f:
+            loaded = json.loads(f.read())
+            defaults.update(loaded)
+    except Exception:
+        print(f"Unable to load {filename}")
+
+    return defaults

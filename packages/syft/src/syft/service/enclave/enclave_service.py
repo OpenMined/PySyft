@@ -6,7 +6,7 @@ from ...store.document_store import DocumentStore
 from ..service import AbstractService
 
 
-@serializable()
+@serializable(canonical_name="EnclaveService", version=1)
 class EnclaveService(AbstractService):
     store: DocumentStore
 

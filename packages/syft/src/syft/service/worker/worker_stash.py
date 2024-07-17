@@ -24,7 +24,7 @@ WorkerContainerNamePartitionKey = PartitionKey(key="container_name", type_=str)
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="WorkerStash", version=1)
 class WorkerStash(BaseUIDStoreStash):
     object_type = SyftWorker
     settings: PartitionSettings = PartitionSettings(

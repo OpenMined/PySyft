@@ -34,7 +34,7 @@ class Identity(SyftBaseModel):
         return cls(server_id=client.id, verify_key=client.credentials.verify_key)
 
 
-@serializable()
+@serializable(canonical_name="UserIdentity", version=1)
 class UserIdentity(Identity):
     """This class is used to identify the data scientist users of the server"""
 

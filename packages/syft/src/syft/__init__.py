@@ -1,4 +1,4 @@
-__version__ = "0.8.7-beta.13"
+__version__ = "0.8.7-beta.14"
 
 # stdlib
 from collections.abc import Callable
@@ -84,6 +84,7 @@ from .util.autoreload import enable_autoreload
 from .util.patch_ipython import patch_ipython
 from .util.telemetry import instrument
 from .util.util import autocache
+from .util.util import get_nb_secrets
 from .util.util import get_root_data_path
 from .util.version_compare import make_requires
 

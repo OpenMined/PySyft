@@ -6,7 +6,7 @@ from enum import auto
 from ...serde.serializable import serializable
 
 
-@serializable()
+@serializable(canonical_name="NOTIFIERS", version=1)
 class NOTIFIERS(Enum):
     EMAIL = auto()
     SMS = auto()

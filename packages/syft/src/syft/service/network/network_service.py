@@ -74,7 +74,7 @@ def reverse_tunnel_enabled() -> bool:
     return str_to_bool(get_env(REVERSE_TUNNEL_ENABLED, "false"))
 
 
-@serializable()
+@serializable(canonical_name="ServerPeerAssociationStatus", version=1)
 class ServerPeerAssociationStatus(Enum):
     PEER_ASSOCIATED = "PEER_ASSOCIATED"
     PEER_ASSOCIATION_PENDING = "PEER_ASSOCIATION_PENDING"
@@ -82,7 +82,7 @@ class ServerPeerAssociationStatus(Enum):
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="NetworkStash", version=1)
 class NetworkStash(BaseUIDStoreStash):
     object_type = ServerPeer
     settings: PartitionSettings = PartitionSettings(
@@ -157,7 +157,7 @@ class NetworkStash(BaseUIDStoreStash):
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="NetworkService", version=1)
 class NetworkService(AbstractService):
     store: DocumentStore
     stash: NetworkStash
