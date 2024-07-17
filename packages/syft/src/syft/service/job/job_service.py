@@ -45,7 +45,7 @@ def wait_until(
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="JobService", version=1)
 class JobService(AbstractService):
     store: DocumentStore
     stash: JobStash

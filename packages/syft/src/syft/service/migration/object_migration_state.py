@@ -62,7 +62,7 @@ class SyftObjectMigrationState(SyftObject):
 KlassNamePartitionKey = PartitionKey(key="canonical_name", type_=str)
 
 
-@serializable()
+@serializable(canonical_name="SyftMigrationStateStash", version=1)
 class SyftMigrationStateStash(BaseStash):
     object_type = SyftObjectMigrationState
     settings: PartitionSettings = PartitionSettings(

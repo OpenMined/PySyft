@@ -18,7 +18,7 @@ from .image_registry_stash import SyftImageRegistryStash
 __all__ = ["SyftImageRegistryService"]
 
 
-@serializable()
+@serializable(canonical_name="SyftImageRegistryService", version=1)
 class SyftImageRegistryService(AbstractService):
     store: DocumentStore
     stash: SyftImageRegistryStash

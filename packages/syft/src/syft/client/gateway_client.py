@@ -18,7 +18,7 @@ from .client import SyftClient
 from .connection import ServerConnection
 
 
-@serializable()
+@serializable(canonical_name="GatewayClient", version=1)
 class GatewayClient(SyftClient):
     # TODO: add widget repr for gateway client
 

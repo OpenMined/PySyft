@@ -34,7 +34,7 @@ class EnclaveMetadata(SyftObject):
     route: ServerRouteType
 
 
-@serializable()
+@serializable(canonical_name="EnclaveClient", version=1)
 class EnclaveClient(SyftClient):
     # TODO: add widget repr for enclave client
 

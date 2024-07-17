@@ -12,7 +12,7 @@ def get_rathole_port() -> int:
     return int(get_env("RATHOLE_PORT", "2333"))
 
 
-@serializable()
+@serializable(canonical_name="RatholeConfig", version=1)
 class RatholeConfig(SyftBaseModel):
     uuid: str
     secret_token: str
