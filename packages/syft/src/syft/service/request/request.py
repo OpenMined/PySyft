@@ -25,16 +25,12 @@ from ...serde.serialize import _serialize
 from ...server.credentials import SyftVerifyKey
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
-from ...types.syft_migration import migrate
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import add_server_uid_for_key
-from ...types.transforms import drop
 from ...types.transforms import generate_id
-from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.twin_object import TwinObject
 from ...types.uid import LineageID
@@ -84,7 +80,7 @@ class RequestStatus(Enum):
 @serializable()
 class Change(SyftObject):
     __canonical_name__ = "Change"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     linked_obj: LinkedObject | None = None
 
@@ -95,7 +91,7 @@ class Change(SyftObject):
 @serializable()
 class ChangeStatus(SyftObject):
     __canonical_name__ = "ChangeStatus"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID | None = None  # type: ignore[assignment]
     change_id: UID
@@ -109,7 +105,7 @@ class ChangeStatus(SyftObject):
 @serializable()
 class ActionStoreChange(Change):
     __canonical_name__ = "ActionStoreChange"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     linked_obj: LinkedObject
     apply_permission_type: ActionPermission
@@ -214,22 +210,9 @@ class ActionStoreChange(Change):
 
 
 @serializable()
-class CreateCustomImageChangeV2(Change):
-    __canonical_name__ = "CreateCustomImageChange"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    config: WorkerConfig
-    tag: str
-    registry_uid: UID | None = None
-    pull_image: bool = True
-
-    __repr_attrs__ = ["config", "tag"]
-
-
-@serializable()
 class CreateCustomImageChange(Change):
     __canonical_name__ = "CreateCustomImageChange"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     config: WorkerConfig
     tag: str | None = None
@@ -323,7 +306,7 @@ class CreateCustomImageChange(Change):
 @serializable()
 class CreateCustomWorkerPoolChange(Change):
     __canonical_name__ = "CreateCustomWorkerPoolChange"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     pool_name: str
     num_workers: int
@@ -391,63 +374,9 @@ class CreateCustomWorkerPoolChange(Change):
 
 
 @serializable()
-class CreateCustomWorkerPoolChangeV2(Change):
-    __canonical_name__ = "CreateCustomWorkerPoolChange"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    pool_name: str
-    num_workers: int
-    image_uid: UID | None = None
-    config: WorkerConfig | None = None
-
-    __repr_attrs__ = ["pool_name", "num_workers", "image_uid"]
-
-
-@serializable()
-class RequestV2(SyncableSyftObject):
-    __canonical_name__ = "Request"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    requesting_user_verify_key: SyftVerifyKey
-    requesting_user_name: str = ""
-    requesting_user_email: str | None = ""
-    requesting_user_institution: str | None = ""
-    approving_user_verify_key: SyftVerifyKey | None = None
-    request_time: DateTime
-    updated_at: DateTime | None = None
-    server_uid: UID
-    request_hash: str
-    changes: list[Change]
-    history: list[ChangeStatus] = []
-    __table_coll_widths__ = [
-        "min-content",
-        "auto",
-        "auto",
-        "auto",
-        "auto",
-        "auto",
-    ]
-
-    __attr_searchable__ = [
-        "requesting_user_verify_key",
-        "approving_user_verify_key",
-    ]
-    __attr_unique__ = ["request_hash"]
-    __repr_attrs__ = [
-        "request_time",
-        "updated_at",
-        "status",
-        "changes",
-        "requesting_user_verify_key",
-    ]
-    __exclude_sync_diff_attrs__ = ["server_uid", "changes", "history"]
-    __table_sort_attr__ = "Request time"
-
-
-@serializable()
 class Request(SyncableSyftObject):
     __canonical_name__ = "Request"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     requesting_user_verify_key: SyftVerifyKey
     requesting_user_name: str = ""
@@ -960,7 +889,7 @@ class Request(SyncableSyftObject):
 class RequestInfo(SyftObject):
     # version
     __canonical_name__ = "RequestInfo"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     user: UserView
     request: Request
@@ -971,7 +900,7 @@ class RequestInfo(SyftObject):
 class RequestInfoFilter(SyftObject):
     # version
     __canonical_name__ = "RequestInfoFilter"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     name: str | None = None
 
@@ -979,7 +908,7 @@ class RequestInfoFilter(SyftObject):
 @serializable()
 class SubmitRequest(SyftObject):
     __canonical_name__ = "SubmitRequest"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     changes: list[Change]
     requesting_user_verify_key: SyftVerifyKey | None = None
@@ -1057,7 +986,7 @@ def submit_request_to_request() -> list[Callable]:
 @serializable()
 class ObjectMutation(Change):
     __canonical_name__ = "ObjectMutation"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     linked_obj: LinkedObject | None = None
     attr_name: str
@@ -1128,7 +1057,7 @@ def type_for_field(object_type: type, attr_name: str) -> type | None:
 @serializable()
 class EnumMutation(ObjectMutation):
     __canonical_name__ = "EnumMutation"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     enum_type: type[Enum]
     value: Enum | None = None
@@ -1200,7 +1129,7 @@ class EnumMutation(ObjectMutation):
 @serializable()
 class UserCodeStatusChange(Change):
     __canonical_name__ = "UserCodeStatusChange"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     value: UserCodeStatus
     linked_obj: LinkedObject
@@ -1375,7 +1304,7 @@ class UserCodeStatusChange(Change):
 @serializable()
 class SyncedUserCodeStatusChange(UserCodeStatusChange):
     __canonical_name__ = "SyncedUserCodeStatusChange"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
     linked_obj: LinkedObject | None = None  # type: ignore
 
     @property
@@ -1403,17 +1332,3 @@ class SyncedUserCodeStatusChange(UserCodeStatusChange):
 
     def link(self) -> Any:  # type: ignore
         return self.code.status
-
-
-@migrate(RequestV2, Request)
-def migrate_request_v2_to_v3() -> list[Callable]:
-    return [
-        make_set_default("tags", []),
-    ]
-
-
-@migrate(Request, RequestV2)
-def migrate_usercode_v5_to_v4() -> list[Callable]:
-    return [
-        drop("tags"),
-    ]

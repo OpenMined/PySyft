@@ -1,5 +1,4 @@
 # stdlib
-from collections.abc import Callable
 from enum import Enum
 from typing import Any
 from typing import cast
@@ -14,13 +13,9 @@ from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
 from ...types.base import SyftBaseModel
 from ...types.datetime import DateTime
-from ...types.syft_migration import migrate
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.syft_object import short_uid
-from ...types.transforms import drop
-from ...types.transforms import make_set_default
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
@@ -52,38 +47,9 @@ class WorkerHealth(Enum):
 
 
 @serializable()
-class SyftWorkerV2(SyftObject):
-    __canonical_name__ = "SyftWorker"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    __attr_unique__ = ["name"]
-    __attr_searchable__ = ["name", "container_id"]
-    __repr_attrs__ = [
-        "name",
-        "container_id",
-        "image",
-        "status",
-        "healthcheck",
-        "worker_pool_name",
-        "created_at",
-    ]
-
-    id: UID
-    name: str
-    container_id: str | None = None
-    created_at: DateTime = DateTime.now()
-    healthcheck: WorkerHealth | None = None
-    status: WorkerStatus
-    image: SyftWorkerImage | None = None
-    worker_pool_name: str
-    consumer_state: ConsumerState = ConsumerState.DETACHED
-    job_id: UID | None = None
-
-
-@serializable()
 class SyftWorker(SyftObject):
     __canonical_name__ = "SyftWorker"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     __attr_unique__ = ["name"]
     __attr_searchable__ = ["name", "container_id", "to_be_deleted"]
@@ -178,7 +144,7 @@ class SyftWorker(SyftObject):
 @serializable()
 class WorkerPool(SyftObject):
     __canonical_name__ = "WorkerPool"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     __attr_unique__ = ["name"]
     __attr_searchable__ = ["name", "image_id"]
@@ -348,17 +314,3 @@ def _get_worker_container_status(
         container_status,
         SyftError(message=f"Unknown container status: {container_status}"),
     )
-
-
-@migrate(SyftWorkerV2, SyftWorker)
-def upgrade_syft_worker() -> list[Callable]:
-    return [
-        make_set_default("to_be_deleted", False),
-    ]
-
-
-@migrate(SyftWorker, SyftWorkerV2)
-def downgrade_syft_worker() -> list[Callable]:
-    return [
-        drop(["to_be_deleted"]),
-    ]
