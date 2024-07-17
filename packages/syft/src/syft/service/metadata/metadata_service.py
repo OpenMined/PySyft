@@ -12,7 +12,7 @@ from .server_metadata import ServerMetadata
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="MetadataService", version=1)
 class MetadataService(AbstractService):
     def __init__(self, store: DocumentStore) -> None:
         self.store = store

@@ -19,7 +19,7 @@ from ..serde.serializable import serializable
 logger = logging.getLogger(__name__)
 
 
-@serializable(attrs=["value"])
+@serializable(attrs=["value"], canonical_name="UID", version=1)
 class UID:
     """A unique ID for every Syft object.
 
@@ -211,7 +211,7 @@ class UID:
             )
 
 
-@serializable(attrs=["syft_history_hash"])
+@serializable(attrs=["syft_history_hash"], canonical_name="LineageID", version=1)
 class LineageID(UID):
     """Extended UID containing a history hash as well, which is used for comparisons."""
 

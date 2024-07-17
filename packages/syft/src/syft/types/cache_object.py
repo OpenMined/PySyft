@@ -6,7 +6,7 @@ from ..serde.serializable import serializable
 from .base import SyftBaseModel
 
 
-@serializable()
+@serializable(canonical_name="CachedSyftObject", version=1)
 class CachedSyftObject(SyftBaseModel):
     """This class is used to represent the cached result."""
 

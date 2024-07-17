@@ -146,7 +146,7 @@ class Worker(SyftBaseModel):
         )
 
 
-@serializable()
+@serializable(canonical_name="ZMQProducer", version=1)
 class ZMQProducer(QueueProducer):
     INTERNAL_SERVICE_PREFIX = b"mmi."
 
@@ -587,7 +587,7 @@ class ZMQProducer(QueueProducer):
         return not self.socket.closed
 
 
-@serializable(attrs=["_subscriber"])
+@serializable(attrs=["_subscriber"], canonical_name="ZMQConsumer", version=1)
 class ZMQConsumer(QueueConsumer):
     def __init__(
         self,
@@ -825,7 +825,7 @@ class ZMQClientConfig(SyftObject, QueueClientConfig):
     consumer_service: str | None = None
 
 
-@serializable(attrs=["host"])
+@serializable(attrs=["host"], canonical_name="ZMQClient", version=1)
 class ZMQClient(QueueClient):
     """ZMQ Client for creating producers and consumers."""
 
@@ -964,7 +964,7 @@ class ZMQClient(QueueClient):
         return SyftSuccess(message="Successfully purged all queues.")
 
 
-@serializable()
+@serializable(canonical_name="ZMQQueueConfig", version=1)
 class ZMQQueueConfig(QueueConfig):
     def __init__(
         self,

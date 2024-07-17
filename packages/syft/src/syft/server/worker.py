@@ -3,6 +3,6 @@ from ..serde.serializable import serializable
 from .server import Server
 
 
-@serializable()
+@serializable(canonical_name="Worker", version=1)
 class Worker(Server):
     pass

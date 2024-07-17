@@ -18,7 +18,6 @@ from syft.service.request.request import UserCodeStatusChange
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.user.user import User
-from syft.service.user.user import UserUpdate
 from syft.service.user.user_roles import ServiceRole
 
 # relative
@@ -68,9 +67,7 @@ def test_new_admin_can_list_user_code(
 
     admin = root_client.login(email=email, password=pw)
 
-    root_client.api.services.user.update(
-        admin.me.id, UserUpdate(role=ServiceRole.ADMIN)
-    )
+    root_client.api.services.user.update(uid=admin.me.id, role=ServiceRole.ADMIN)
 
     if delete_original_admin:
         res = root_client.api.services.user.delete(root_client.me.id)

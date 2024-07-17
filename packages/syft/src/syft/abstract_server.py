@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from .service.service import AbstractService
 
 
-@serializable()
+@serializable(canonical_name="ServerType", version=1)
 class ServerType(str, Enum):
     DATASITE = "datasite"
     NETWORK = "network"
@@ -24,7 +24,7 @@ class ServerType(str, Enum):
         return self.value
 
 
-@serializable()
+@serializable(canonical_name="ServerSideType", version=1)
 class ServerSideType(str, Enum):
     LOW_SIDE = "low"
     HIGH_SIDE = "high"

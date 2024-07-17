@@ -18,7 +18,7 @@ class EmptyType(type):
         return False
 
 
-@serializable()
+@serializable(canonical_name="Empty", version=1)
 @final
 class Empty(metaclass=EmptyType):
     pass
