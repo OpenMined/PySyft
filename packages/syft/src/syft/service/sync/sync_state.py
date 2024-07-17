@@ -115,24 +115,6 @@ def td_format(td_object: timedelta) -> str:
 
 
 @serializable()
-class SyncStateV2(SyftObject):
-    __canonical_name__ = "SyncState"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    server_uid: UID
-    server_name: str
-    server_side_type: ServerSideType
-    objects: dict[UID, SyncableSyftObject] = {}
-    dependencies: dict[UID, list[UID]] = {}
-    created_at: DateTime = Field(default_factory=DateTime.now)
-    previous_state_link: LinkedObject | None = None
-    permissions: dict[UID, set[str]] = {}
-    storage_permissions: dict[UID, set[UID]] = {}
-    ignored_batches: dict[UID, int] = {}
-    object_sync_dates: dict[UID, DateTime] = {}
-
-
-@serializable()
 class SyncState(SyftObject):
     __canonical_name__ = "SyncState"
     __version__ = SYFT_OBJECT_VERSION_1

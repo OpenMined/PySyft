@@ -38,7 +38,7 @@ from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.blob_storage import SeaweedSecureFilePathLocation
 from ...types.blob_storage import SecureFilePathLocation
 from ...types.server_url import ServerURL
-from ...types.syft_object import SYFT_OBJECT_VERSION_4
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.uid import UID
 from ...util.constants import DEFAULT_TIMEOUT
 

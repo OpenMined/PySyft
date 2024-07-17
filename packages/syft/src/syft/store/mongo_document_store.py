@@ -700,7 +700,9 @@ class MongoStorePartition(StorePartition):
 
         return Ok(set(storage_permissions["server_uids"]))
 
-    def get_all_storage_permissions(self) -> Result[dict[UID, Set[UID]], str]:  # noqa: UP006
+    def get_all_storage_permissions(
+        self,
+    ) -> Result[dict[UID, Set[UID]], str]:  # noqa: UP006
         # Returns a dictionary of all storage permissions {object_uid: {*server_uids}}
         storage_permissions_or_err = self.storage_permissions
         if storage_permissions_or_err.is_err():

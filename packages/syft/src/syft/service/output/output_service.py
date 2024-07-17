@@ -1,5 +1,4 @@
 # stdlib
-from collections.abc import Callable
 from typing import ClassVar
 
 # third party
@@ -19,12 +18,8 @@ from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
-from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syncable_object import SyncableSyftObject
-from ...types.transforms import drop
-from ...types.transforms import make_set_default
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_object import ActionObject
@@ -41,36 +36,6 @@ CreatedAtPartitionKey = PartitionKey(key="created_at", type_=DateTime)
 UserCodeIdPartitionKey = PartitionKey(key="user_code_id", type_=UID)
 JobIdPartitionKey = PartitionKey(key="job_id", type_=UID)
 OutputPolicyIdPartitionKey = PartitionKey(key="output_policy_id", type_=UID)
-
-
-@serializable()
-class ExecutionOutputV1(SyncableSyftObject):
-    __canonical_name__ = "ExecutionOutput"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    executing_user_verify_key: SyftVerifyKey
-    user_code_link: LinkedObject
-    output_ids: list[UID] | dict[str, UID] | None = None
-    job_link: LinkedObject | None = None
-    created_at: DateTime = DateTime.now()
-    input_ids: dict[str, UID] | None = None
-
-    # Required for __attr_searchable__, set by model_validator
-    user_code_id: UID
-
-    # Output policy is not a linked object because its saved on the usercode
-    output_policy_id: UID | None = None
-
-    __attr_searchable__: ClassVar[list[str]] = [
-        "user_code_id",
-        "created_at",
-        "output_policy_id",
-    ]
-    __repr_attrs__: ClassVar[list[str]] = [
-        "created_at",
-        "user_code_id",
-        "output_ids",
-    ]
 
 
 @serializable()
@@ -277,16 +242,6 @@ class OutputStash(BaseUIDStoreStash):
         return self.query_all(
             credentials=credentials, qks=qks, order_by=CreatedAtPartitionKey
         )
-
-
-@migrate(ExecutionOutputV1, ExecutionOutput)
-def upgrade_execution_output() -> list[Callable]:
-    return [make_set_default("job_id", None)]
-
-
-@migrate(ExecutionOutput, ExecutionOutputV1)
-def downgrade_execution_output() -> list[Callable]:
-    return [drop("job_id")]
 
 
 @instrument

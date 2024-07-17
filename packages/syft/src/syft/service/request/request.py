@@ -30,7 +30,6 @@ from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import add_server_uid_for_key
-from ...types.transforms import drop
 from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.twin_object import TwinObject
@@ -372,45 +371,6 @@ class CreateCustomWorkerPoolChange(Change):
         return (
             f"Create Worker Pool '{self.pool_name}' for Image with id {self.image_uid}"
         )
-@serializable()
-class RequestV2(SyncableSyftObject):
-    __canonical_name__ = "Request"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    requesting_user_verify_key: SyftVerifyKey
-    requesting_user_name: str = ""
-    requesting_user_email: str | None = ""
-    requesting_user_institution: str | None = ""
-    approving_user_verify_key: SyftVerifyKey | None = None
-    request_time: DateTime
-    updated_at: DateTime | None = None
-    server_uid: UID
-    request_hash: str
-    changes: list[Change]
-    history: list[ChangeStatus] = []
-    __table_coll_widths__ = [
-        "min-content",
-        "auto",
-        "auto",
-        "auto",
-        "auto",
-        "auto",
-    ]
-
-    __attr_searchable__ = [
-        "requesting_user_verify_key",
-        "approving_user_verify_key",
-    ]
-    __attr_unique__ = ["request_hash"]
-    __repr_attrs__ = [
-        "request_time",
-        "updated_at",
-        "status",
-        "changes",
-        "requesting_user_verify_key",
-    ]
-    __exclude_sync_diff_attrs__ = ["server_uid", "changes", "history"]
-    __table_sort_attr__ = "Request time"
 
 
 @serializable()

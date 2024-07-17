@@ -17,6 +17,7 @@ from ...util.table import prepare_table_data
 from ..code.user_code import UserCode
 from ..response import SyftError
 
+
 @serializable()
 class CodeHistory(SyftObject):
     # version

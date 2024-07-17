@@ -13,10 +13,8 @@ from pydantic import model_validator
 from ...abstract_server import ServerType
 from ...protocol.data_protocol import get_data_protocol
 from ...serde.serializable import serializable
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...server.credentials import SyftVerifyKey
-from ...types.syft_object import SYFT_OBJECT_VERSION_4
-from ...types.syft_object import SYFT_OBJECT_VERSION_5
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import StorableObjectType
 from ...types.syft_object import SyftObject
 from ...types.transforms import convert_types
@@ -47,7 +45,7 @@ def check_version(
 @serializable()
 class ServerMetadata(SyftObject):
     __canonical_name__ = "ServerMetadata"
-    __version__ = SYFT_OBJECT_VERSION_5
+    __version__ = SYFT_OBJECT_VERSION_1
 
     name: str
     id: UID
@@ -62,31 +60,6 @@ class ServerMetadata(SyftObject):
     show_warnings: bool
     eager_execution_enabled: bool
     min_size_blob_storage_mb: int
-
-    def check_version(self, client_version: str) -> bool:
-        return check_version(
-            client_version=client_version,
-            server_version=self.syft_version,
-            server_name=self.name,
-        )
-
-
-@serializable()
-class ServerMetadataV4(SyftObject):
-    __canonical_name__ = "ServerMetadata"
-    __version__ = SYFT_OBJECT_VERSION_4
-
-    name: str
-    id: UID
-    verify_key: SyftVerifyKey
-    highest_version: int
-    lowest_version: int
-    syft_version: str
-    server_type: ServerType = ServerType.DATASITE
-    organization: str = "OpenMined"
-    description: str = "Text"
-    server_side_type: str
-    show_warnings: bool
 
     def check_version(self, client_version: str) -> bool:
         return check_version(

@@ -1126,7 +1126,7 @@ class ServerDiffFilter:
 
 class ServerDiff(SyftObject):
     __canonical_name__ = "ServerDiff"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     low_server_uid: UID
     high_server_uid: UID

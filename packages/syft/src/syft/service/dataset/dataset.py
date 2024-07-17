@@ -25,14 +25,9 @@ from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_migration import migrate
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
-from ...types.transforms import drop
 from ...types.transforms import generate_id
-from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.transforms import validate_url
 from ...types.uid import UID
@@ -457,43 +452,10 @@ def get_shape_or_len(obj: Any) -> tuple[int, ...] | int | None:
 
 
 @serializable()
-class DatasetV2(SyftObject):
-    # version
-    __canonical_name__: str = "Dataset"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    id: UID
-    name: str
-    server_uid: UID | None = None
-    asset_list: list[Asset] = []
-    contributors: set[Contributor] = set()
-    citation: str | None = None
-    url: str | None = None
-    description: MarkdownDescription | None = None
-    updated_at: str | None = None
-    requests: int | None = 0
-    mb_size: float | None = None
-    created_at: DateTime = DateTime.now()
-    uploader: Contributor
-
-    __attr_searchable__ = [
-        "name",
-        "citation",
-        "url",
-        "description",
-        "action_ids",
-        "summary",
-    ]
-    __attr_unique__ = ["name"]
-    __repr_attrs__ = ["name", "url", "created_at"]
-    __table_sort_attr__ = "Created at"
-
-
-@serializable()
 class Dataset(SyftObject):
     # version
     __canonical_name__: str = "Dataset"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
     name: str
@@ -663,24 +625,10 @@ class DatasetPageView(SyftObject):
 
 
 @serializable()
-class CreateDatasetV2(DatasetV2):
-    # version
-    __canonical_name__ = "CreateDataset"
-    __version__ = SYFT_OBJECT_VERSION_1
-    asset_list: list[CreateAsset] = []
-
-    __repr_attrs__ = ["name", "url"]
-
-    id: UID | None = None  # type: ignore[assignment]
-    created_at: DateTime | None = None  # type: ignore[assignment]
-    uploader: Contributor | None = None  # type: ignore[assignment]
-
-
-@serializable()
 class CreateDataset(Dataset):
     # version
     __canonical_name__ = "CreateDataset"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
     asset_list: list[CreateAsset] = []
 
     __repr_attrs__ = ["name", "summary", "url"]
@@ -928,42 +876,6 @@ def createdataset_to_dataset() -> list[Callable]:
         validate_url,
         convert_asset,
         add_current_date,
-    ]
-
-
-@migrate(DatasetV2, Dataset)
-def migrate_dataset_v2_to_v3() -> list[Callable]:
-    return [
-        make_set_default("summary", None),
-        drop("__repr_attrs__"),
-        make_set_default("__repr_attrs__", ["name", "summary", "url", "created_at"]),
-    ]
-
-
-@migrate(Dataset, DatasetV2)
-def migrate_dataset_v3_to_v2() -> list[Callable]:
-    return [
-        drop("summary"),
-        drop("__repr_attrs__"),
-        make_set_default("__repr_attrs__", ["name", "url", "created_at"]),
-    ]
-
-
-@migrate(CreateDatasetV2, CreateDataset)
-def migrate_create_dataset_v2_to_v3() -> list[Callable]:
-    return [
-        make_set_default("summary", None),
-        drop("__repr_attrs__"),
-        make_set_default("__repr_attrs__", ["name", "summary", "url"]),
-    ]
-
-
-@migrate(CreateDataset, CreateDatasetV2)
-def migrate_create_dataset_v3_to_v2() -> list[Callable]:
-    return [
-        drop("summary"),
-        drop("__repr_attrs__"),
-        make_set_default("__repr_attrs__", ["name", "url"]),
     ]
 
 

@@ -39,7 +39,6 @@ from typeguard import check_type
 from typing_extensions import Self
 
 # relative
-from ..serde.recursive_primitives import recursive_serde_register_type
 from ..serde.serializable import serializable
 from ..serde.serialize import _serialize as serialize
 from ..server.credentials import SyftVerifyKey
@@ -52,6 +51,7 @@ from ..util.util import full_name_with_qualname
 from ..util.util import get_qualname_for
 from .syft_metaclass import Empty
 from .syft_metaclass import PartialModelMetaclass
+from .syft_object_registry import SyftObjectRegistry
 from .uid import UID
 
 logger = logging.getLogger(__name__)

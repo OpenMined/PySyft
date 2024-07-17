@@ -42,7 +42,6 @@ from ...abstract_server import ServerType
 from ...client.api import APIRegistry
 from ...client.api import ServerIdentity
 from ...client.api import generate_remote_function
-from ...client.enclave_client import EnclaveMetadata
 from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
@@ -58,9 +57,7 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.transforms import TransformContext
-from ...types.transforms import add_node_uid_for_key
 from ...types.transforms import add_server_uid_for_key
-from ...types.transforms import drop
 from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.uid import UID
@@ -273,38 +270,6 @@ class UserCodeStatusCollection(SyncableSyftObject):
 
     def get_sync_dependencies(self, context: AuthedServiceContext) -> list[UID]:
         return [self.user_code_link.object_uid]
-
-
-@serializable()
-class UserCodeV4(SyncableSyftObject):
-    # version
-    __canonical_name__ = "UserCode"
-    __version__ = SYFT_OBJECT_VERSION_4
-
-    id: UID
-    server_uid: UID | None = None
-    user_verify_key: SyftVerifyKey
-    raw_code: str
-    input_policy_type: type[InputPolicy] | UserPolicy
-    input_policy_init_kwargs: dict[Any, Any] | None = None
-    input_policy_state: bytes = b""
-    output_policy_type: type[OutputPolicy] | UserPolicy
-    output_policy_init_kwargs: dict[Any, Any] | None = None
-    output_policy_state: bytes = b""
-    parsed_code: str
-    service_func_name: str
-    unique_func_name: str
-    user_unique_func_name: str
-    code_hash: str
-    signature: inspect.Signature
-    status_link: LinkedObject
-    input_kwargs: list[str]
-    enclave_metadata: EnclaveMetadata | None = None
-    submit_time: DateTime | None = None
-    # tracks if the code calls datasite.something, variable is set during parsing
-    uses_datasite: bool = False
-    nested_codes: dict[str, tuple[LinkedObject, dict]] | None = {}
-    worker_pool_name: str | None = None
 
 
 @serializable()

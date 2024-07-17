@@ -23,7 +23,6 @@ from ...types.blob_storage import BlobStorageEntry
 from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.syft_object import Context
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftBaseObject
 from ...types.syft_object import SyftObject
 from ...types.syft_object_registry import SyftObjectRegistry
@@ -37,7 +36,7 @@ from ..response import SyftSuccess
 @serializable()
 class SyftObjectMigrationState(SyftObject):
     __canonical_name__ = "SyftObjectMigrationState"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     __attr_unique__ = ["canonical_name"]
 

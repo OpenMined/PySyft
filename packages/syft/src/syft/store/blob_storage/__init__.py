@@ -147,14 +147,6 @@ def syft_iter_content(
 
 
 @serializable()
-class BlobRetrievalByURLV4(BlobRetrieval):
-    __canonical_name__ = "BlobRetrievalByURL"
-    __version__ = SYFT_OBJECT_VERSION_4
-
-    url: ServerURL | str
-
-
-@serializable()
 class BlobRetrievalByURL(BlobRetrieval):
     __canonical_name__ = "BlobRetrievalByURL"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -273,13 +265,3 @@ class BlobStorageConfig(SyftBaseModel):
     client_type: type[BlobStorageClient]
     client_config: BlobStorageClientConfig
     min_blob_size: int = 0  # in MB
-
-
-@migrate(BlobRetrievalByURLV4, BlobRetrievalByURL)
-def upgrade_blob_retrieval_by_url() -> list[Callable]:
-    return [make_set_default("proxy_server_uid", None)]
-
-
-@migrate(BlobRetrievalByURL, BlobRetrievalByURLV4)
-def downgrade_blob_retrieval_by_url() -> list[Callable]:
-    return [drop(["proxy_server_uid"])]
