@@ -25,7 +25,7 @@ from ..response import SyftError
 from .worker_image import SyftWorkerImage
 
 
-@serializable()
+@serializable(canonical_name="WorkerStatus", version=1)
 class WorkerStatus(Enum):
     PENDING = "Pending"
     RUNNING = "Running"
@@ -33,14 +33,14 @@ class WorkerStatus(Enum):
     RESTARTED = "Restarted"
 
 
-@serializable()
+@serializable(canonical_name="ConsumerState", version=1)
 class ConsumerState(Enum):
     IDLE = "Idle"
     CONSUMING = "Consuming"
     DETACHED = "Detached"
 
 
-@serializable()
+@serializable(canonical_name="WorkerHealth", version=1)
 class WorkerHealth(Enum):
     HEALTHY = "✅"
     UNHEALTHY = "❌"
@@ -78,21 +78,21 @@ class SyftWorker(SyftObject):
     @property
     def logs(self) -> str | SyftError:
         api = APIRegistry.api_for(
-            node_uid=self.syft_node_location,
+            server_uid=self.syft_server_location,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None:
-            return SyftError(message=f"You must login to {self.node_uid}")
+            return SyftError(message=f"You must login to {self.server_uid}")
         return api.services.worker.logs(uid=self.id)
 
     def get_job_repr(self) -> str:
         if self.job_id is not None:
             api = APIRegistry.api_for(
-                node_uid=self.syft_node_location,
+                server_uid=self.syft_server_location,
                 user_verify_key=self.syft_client_verify_key,
             )
             if api is None:
-                return SyftError(message=f"You must login to {self.node_uid}")
+                return SyftError(message=f"You must login to {self.server_uid}")
             job = api.services.job.get(self.job_id)
             if job.action.user_code_id is not None:
                 func_name = api.services.code.get_by_id(
@@ -106,11 +106,11 @@ class SyftWorker(SyftObject):
 
     def refresh_status(self) -> SyftError | None:
         api = APIRegistry.api_for(
-            node_uid=self.syft_node_location,
+            server_uid=self.syft_server_location,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None:
-            return SyftError(message=f"You must login to {self.node_uid}")
+            return SyftError(message=f"You must login to {self.server_uid}")
 
         res = api.services.worker.status(uid=self.id)
         if isinstance(res, SyftError):
@@ -170,7 +170,7 @@ class WorkerPool(SyftObject):
         get the latest state of the image from the SyftWorkerImageStash
         """
         api = APIRegistry.api_for(
-            node_uid=self.syft_node_location,
+            server_uid=self.syft_server_location,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is not None and api.services is not None:
@@ -253,14 +253,14 @@ class WorkerPool(SyftObject):
         return resolved_workers
 
 
-@serializable()
+@serializable(canonical_name="WorkerOrchestrationType", version=1)
 class WorkerOrchestrationType(Enum):
     DOCKER = "docker"
     KUBERNETES = "k8s"
     PYTHON = "python"
 
 
-@serializable()
+@serializable(canonical_name="ContainerSpawnStatus", version=1)
 class ContainerSpawnStatus(SyftBaseModel):
     __repr_attrs__ = ["worker_name", "worker", "error"]
 

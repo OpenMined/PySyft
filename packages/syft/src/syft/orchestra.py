@@ -17,14 +17,14 @@ from typing import Any
 from IPython.display import display
 
 # relative
-from .abstract_node import NodeSideType
-from .abstract_node import NodeType
+from .abstract_server import ServerSideType
+from .abstract_server import ServerType
 from .client.client import login_as_guest as sy_login_as_guest
-from .node.domain import Domain
-from .node.enclave import Enclave
-from .node.gateway import Gateway
-from .node.server import serve_node
 from .protocol.data_protocol import stage_protocol_changes
+from .server.datasite import Datasite
+from .server.enclave import Enclave
+from .server.gateway import Gateway
+from .server.uvicorn import serve_server
 from .service.response import SyftError
 from .service.response import SyftInfo
 from .util.util import get_random_available_port
@@ -37,13 +37,13 @@ DEFAULT_URL = "http://localhost"
 ClientAlias = Any  # we don't want to import Client in case it changes
 
 
-def get_node_type(node_type: str | NodeType | None) -> NodeType | None:
-    if node_type is None:
-        node_type = os.environ.get("ORCHESTRA_NODE_TYPE", NodeType.DOMAIN)
+def get_server_type(server_type: str | ServerType | None) -> ServerType | None:
+    if server_type is None:
+        server_type = os.environ.get("ORCHESTRA_SERVER_TYPE", ServerType.DATASITE)
     try:
-        return NodeType(node_type)
+        return ServerType(server_type)
     except ValueError:
-        print(f"node_type: {node_type} is not a valid NodeType: {NodeType}")
+        print(f"server_type: {server_type} is not a valid ServerType: {ServerType}")
     return None
 
 
@@ -69,33 +69,33 @@ class DeploymentType(Enum):
     REMOTE = "remote"
 
 
-class NodeHandle:
+class ServerHandle:
     def __init__(
         self,
-        node_type: NodeType,
+        server_type: ServerType,
         deployment_type: DeploymentType,
-        node_side_type: NodeSideType,
+        server_side_type: ServerSideType,
         name: str,
         port: int | None = None,
         url: str | None = None,
-        python_node: Any | None = None,
+        python_server: Any | None = None,
         shutdown: Callable | None = None,
     ) -> None:
-        self.node_type = node_type
+        self.server_type = server_type
         self.name = name
         self.port = port
         self.url = url
-        self.python_node = python_node
+        self.python_server = python_server
         self.shutdown = shutdown
         self.deployment_type = deployment_type
-        self.node_side_type = node_side_type
+        self.server_side_type = server_side_type
 
     @property
     def client(self) -> Any:
         if self.port:
             return sy_login_as_guest(url=self.url, port=self.port)  # type: ignore
         elif self.deployment_type == DeploymentType.PYTHON:
-            return self.python_node.get_guest_client(verbose=False)  # type: ignore
+            return self.python_server.get_guest_client(verbose=False)  # type: ignore
         else:
             raise NotImplementedError(
                 f"client not implemented for the deployment type:{self.deployment_type}"
@@ -155,7 +155,7 @@ class NodeHandle:
 
 
 def deploy_to_python(
-    node_type_enum: NodeType,
+    server_type_enum: ServerType,
     deployment_type_enum: DeploymentType,
     port: int | str,
     name: str,
@@ -165,7 +165,7 @@ def deploy_to_python(
     dev_mode: bool,
     processes: int,
     local_db: bool,
-    node_side_type: NodeSideType,
+    server_side_type: ServerSideType,
     enable_warnings: bool,
     n_consumers: int,
     thread_workers: bool,
@@ -174,11 +174,12 @@ def deploy_to_python(
     association_request_auto_approval: bool = False,
     background_tasks: bool = False,
     debug: bool = False,
-) -> NodeHandle:
+    migrate: bool = False,
+) -> ServerHandle:
     worker_classes = {
-        NodeType.DOMAIN: Domain,
-        NodeType.GATEWAY: Gateway,
-        NodeType.ENCLAVE: Enclave,
+        ServerType.DATASITE: Datasite,
+        ServerType.GATEWAY: Gateway,
+        ServerType.ENCLAVE: Enclave,
     }
 
     if dev_mode:
@@ -193,8 +194,8 @@ def deploy_to_python(
         "processes": processes,
         "dev_mode": dev_mode,
         "tail": tail,
-        "node_type": node_type_enum,
-        "node_side_type": node_side_type,
+        "server_type": server_type_enum,
+        "server_side_type": server_side_type,
         "enable_warnings": enable_warnings,
         "queue_port": queue_port,
         "n_consumers": n_consumers,
@@ -202,80 +203,100 @@ def deploy_to_python(
         "association_request_auto_approval": association_request_auto_approval,
         "background_tasks": background_tasks,
         "debug": debug,
+        "migrate": migrate,
     }
 
     if port:
         kwargs["in_memory_workers"] = True
         if port == "auto":
             port = get_random_available_port()
-            kwargs["port"] = port
+        else:
+            try:
+                port = int(port)
+            except ValueError:
+                raise ValueError(
+                    f"port must be either 'auto' or a valid int not: {port}"
+                )
+        kwargs["port"] = port
 
-        sig = inspect.signature(serve_node)
+        sig = inspect.signature(serve_server)
         supported_kwargs = {k: v for k, v in kwargs.items() if k in sig.parameters}
 
-        start, stop = serve_node(**supported_kwargs)
+        start, stop = serve_server(**supported_kwargs)
         start()
-        return NodeHandle(
-            node_type=node_type_enum,
+        return ServerHandle(
+            server_type=server_type_enum,
             deployment_type=deployment_type_enum,
             name=name,
             port=port,
             url="http://localhost",
             shutdown=stop,
-            node_side_type=node_side_type,
+            server_side_type=server_side_type,
         )
     else:
         kwargs["local_db"] = local_db
         kwargs["thread_workers"] = thread_workers
-        if node_type_enum in worker_classes:
-            worker_class = worker_classes[node_type_enum]
+        if server_type_enum in worker_classes:
+            worker_class = worker_classes[server_type_enum]
             sig = inspect.signature(worker_class.named)
             supported_kwargs = {k: v for k, v in kwargs.items() if k in sig.parameters}
-            if "node_type" in sig.parameters.keys() and "migrate" in sig.parameters:
-                supported_kwargs["migrate"] = True
+            if "server_type" in sig.parameters.keys() and "migrate" in sig.parameters:
+                supported_kwargs["migrate"] = migrate
             worker = worker_class.named(**supported_kwargs)
         else:
-            raise NotImplementedError(f"node_type: {node_type_enum} is not supported")
+            raise NotImplementedError(
+                f"server_type: {server_type_enum} is not supported"
+            )
 
         def stop() -> None:
             worker.stop()
 
-        return NodeHandle(
-            node_type=node_type_enum,
+        return ServerHandle(
+            server_type=server_type_enum,
             deployment_type=deployment_type_enum,
             name=name,
-            python_node=worker,
-            node_side_type=node_side_type,
+            python_server=worker,
+            server_side_type=server_side_type,
             shutdown=stop,
         )
 
 
 def deploy_to_remote(
-    node_type_enum: NodeType,
+    server_type_enum: ServerType,
     deployment_type_enum: DeploymentType,
     name: str,
-    node_side_type: NodeSideType,
-) -> NodeHandle:
-    node_port = int(os.environ.get("NODE_PORT", f"{DEFAULT_PORT}"))
-    node_url = str(os.environ.get("NODE_URL", f"{DEFAULT_URL}"))
-    return NodeHandle(
-        node_type=node_type_enum,
+    server_side_type: ServerSideType,
+    host: str | None = None,
+    port: int | None = None,
+    migrate: bool = False,
+) -> ServerHandle:
+    if migrate:
+        raise ValueError("Cannot migrate via orchestra on remote server")
+
+    # Preference order: Environment Variable > Argument > Default
+    server_url = os.getenv("SERVER_URL") or host or DEFAULT_URL
+    server_port = os.getenv("SERVER_PORT") or port or DEFAULT_PORT
+    if server_port == "auto":
+        raise ValueError("Cannot use auto port on remote server")
+
+    return ServerHandle(
+        server_type=server_type_enum,
         deployment_type=deployment_type_enum,
         name=name,
-        port=node_port,
-        url=node_url,
-        node_side_type=node_side_type,
+        server_side_type=server_side_type,
+        url=server_url,
+        port=int(server_port),
     )
 
 
 class Orchestra:
     @staticmethod
     def launch(
-        # node information and deployment
+        # server information and deployment
         name: str | None = None,
-        node_type: str | NodeType | None = None,
+        server_type: str | ServerType | None = None,
         deploy_to: str | None = None,
-        node_side_type: str | None = None,
+        server_side_type: str | None = None,
         # worker related inputs
         port: int | str | None = None,
         processes: int = 1,  # temporary work around for jax in subprocess
@@ -292,16 +313,17 @@ class Orchestra:
         association_request_auto_approval: bool = False,
         background_tasks: bool = False,
         debug: bool = False,
-    ) -> NodeHandle:
+        migrate: bool = False,
+    ) -> ServerHandle:
         if dev_mode is True:
             thread_workers = True
         os.environ["DEV_MODE"] = str(dev_mode)
 
-        node_type_enum: NodeType | None = get_node_type(node_type=node_type)
-        node_side_type_enum = (
-            NodeSideType.HIGH_SIDE
-            if node_side_type is None
-            else NodeSideType(node_side_type)
+        server_type_enum: ServerType | None = get_server_type(server_type=server_type)
+        server_side_type_enum = (
+            ServerSideType.HIGH_SIDE
+            if server_side_type is None
+            else ServerSideType(server_side_type)
         )
 
         deployment_type_enum: DeploymentType | None = get_deployment_type(
@@ -309,8 +331,8 @@ class Orchestra:
         )
 
         if deployment_type_enum == DeploymentType.PYTHON:
-            node_handle = deploy_to_python(
-                node_type_enum=node_type_enum,
+            server_handle = deploy_to_python(
+                server_type_enum=server_type_enum,
                 deployment_type_enum=deployment_type_enum,
                 port=port,
                 name=name,
@@ -320,7 +342,7 @@ class Orchestra:
                 dev_mode=dev_mode,
                 processes=processes,
                 local_db=local_db,
-                node_side_type=node_side_type_enum,
+                server_side_type=server_side_type_enum,
                 enable_warnings=enable_warnings,
                 n_consumers=n_consumers,
                 thread_workers=thread_workers,
@@ -329,20 +351,24 @@ class Orchestra:
                 association_request_auto_approval=association_request_auto_approval,
                 background_tasks=background_tasks,
                 debug=debug,
+                migrate=migrate,
             )
             display(
                 SyftInfo(
-                    message=f"You have launched a development node at http://{host}:{node_handle.port}."
+                    message=f"You have launched a development server at http://{host}:{server_handle.port}."
                     + "It is intended only for local use."
                 )
             )
-            return node_handle
+            return server_handle
         elif deployment_type_enum == DeploymentType.REMOTE:
             return deploy_to_remote(
-                node_type_enum=node_type_enum,
+                server_type_enum=server_type_enum,
                 deployment_type_enum=deployment_type_enum,
                 name=name,
-                node_side_type=node_side_type_enum,
+                host=host,
+                port=port,
+                server_side_type=server_side_type_enum,
+                migrate=migrate,
             )
         raise NotImplementedError(
             f"deployment_type: {deployment_type_enum} is not supported"

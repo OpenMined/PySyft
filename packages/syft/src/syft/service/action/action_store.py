@@ -10,11 +10,12 @@ from result import Ok
 from result import Result
 
 # relative
-from ...node.credentials import SyftSigningKey
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftSigningKey
+from ...server.credentials import SyftVerifyKey
 from ...store.dict_document_store import DictStoreConfig
 from ...store.document_store import BasePartitionSettings
+from ...store.document_store import DocumentStore
 from ...store.document_store import StoreConfig
 from ...types.syft_object import SyftObject
 from ...types.twin_object import TwinObject
@@ -37,7 +38,7 @@ class ActionStore:
     pass
 
 
-@serializable()
+@serializable(canonical_name="KeyValueActionStore", version=1)
 class KeyValueActionStore(ActionStore):
     """Generic Key-Value Action store.
 
@@ -50,11 +51,12 @@ class KeyValueActionStore(ActionStore):
 
     def __init__(
         self,
-        node_uid: UID,
+        server_uid: UID,
         store_config: StoreConfig,
         root_verify_key: SyftVerifyKey | None = None,
+        document_store: DocumentStore | None = None,
     ) -> None:
-        self.node_uid = node_uid
+        self.server_uid = server_uid
         self.store_config = store_config
         self.settings = BasePartitionSettings(name="Action")
         self.data = self.store_config.backing_store(
@@ -70,6 +72,13 @@ class KeyValueActionStore(ActionStore):
         if root_verify_key is None:
             root_verify_key = SyftSigningKey.generate().verify_key
         self.root_verify_key = root_verify_key
+
+        self.__user_stash = None
+        if document_store is not None:
+            # relative
+            from ...service.user.user_stash import UserStash
+
+            self.__user_stash = UserStash(store=document_store)
 
     def get(
         self, uid: UID, credentials: SyftVerifyKey, has_permission: bool = False
@@ -108,7 +117,7 @@ class KeyValueActionStore(ActionStore):
         self,
         uid: UID,
         credentials: SyftVerifyKey,
-        node_uid: UID,
+        server_uid: UID,
     ) -> Result[SyftObject, str]:
         uid = uid.id  # We only need the UID from LineageID or UID
 
@@ -120,15 +129,15 @@ class KeyValueActionStore(ActionStore):
                 # if you have permission you can have private data
                 if self.has_permission(read_permission):
                     if isinstance(obj, TwinObject):
-                        return Ok(obj.private.syft_point_to(node_uid))
-                    return Ok(obj.syft_point_to(node_uid))
+                        return Ok(obj.private.syft_point_to(server_uid))
+                    return Ok(obj.syft_point_to(server_uid))
 
                 # if its a twin with a mock anyone can have this
                 if isinstance(obj, TwinObject):
-                    return Ok(obj.mock.syft_point_to(node_uid))
+                    return Ok(obj.mock.syft_point_to(server_uid))
 
                 # finally worst case you get ActionDataEmpty so you can still trace
-                return Ok(obj.as_empty().syft_point_to(node_uid))
+                return Ok(obj.as_empty().syft_point_to(server_uid))
 
             return Err("Permission denied")
         except Exception as e:
@@ -185,7 +194,7 @@ class KeyValueActionStore(ActionStore):
                 self.storage_permissions[uid] = set()
             if add_storage_permission:
                 self.add_storage_permission(
-                    StoragePermission(uid=uid, node_uid=self.node_uid)
+                    StoragePermission(uid=uid, server_uid=self.server_uid)
                 )
 
             return Ok(SyftSuccess(message=f"Set for ID: {uid}"))
@@ -234,6 +243,22 @@ class KeyValueActionStore(ActionStore):
         ):
             return True
 
+        if self.__user_stash is not None:
+            # relative
+            from ...service.user.user_roles import ServiceRole
+
+            res = self.__user_stash.get_by_verify_key(
+                credentials=permission.credentials,
+                verify_key=permission.credentials,
+            )
+
+            if (
+                res.is_ok()
+                and (user := res.ok()) is not None
+                and user.role in (ServiceRole.DATA_OWNER, ServiceRole.ADMIN)
+            ):
+                return True
+
         if (
             permission.uid in self.permissions
             and permission.permission_string in self.permissions[permission.uid]
@@ -274,9 +299,12 @@ class KeyValueActionStore(ActionStore):
             return Ok(self.permissions[uid])
         return Err(f"No permissions found for uid: {uid}")
 
+    def get_all_permissions(self) -> Result[dict[UID, set[str]], str]:
+        return Ok(dict(self.permissions.items()))
+
     def add_storage_permission(self, permission: StoragePermission) -> None:
         permissions = self.storage_permissions[permission.uid]
-        permissions.add(permission.node_uid)
+        permissions.add(permission.server_uid)
         self.storage_permissions[permission.uid] = permissions
 
     def add_storage_permissions(self, permissions: list[StoragePermission]) -> None:
@@ -285,21 +313,34 @@ class KeyValueActionStore(ActionStore):
 
     def remove_storage_permission(self, permission: StoragePermission) -> None:
         permissions = self.storage_permissions[permission.uid]
-        permissions.remove(permission.node_uid)
+        permissions.remove(permission.server_uid)
         self.storage_permissions[permission.uid] = permissions
 
     def has_storage_permission(self, permission: StoragePermission | UID) -> bool:
         if isinstance(permission, UID):
-            permission = StoragePermission(uid=permission, node_uid=self.node_uid)
+            permission = StoragePermission(uid=permission, server_uid=self.server_uid)
 
         if permission.uid in self.storage_permissions:
-            return permission.node_uid in self.storage_permissions[permission.uid]
+            return permission.server_uid in self.storage_permissions[permission.uid]
         return False
 
     def _get_storage_permissions_for_uid(self, uid: UID) -> Result[set[UID], str]:
         if uid in self.storage_permissions:
             return Ok(self.storage_permissions[uid])
         return Err(f"No storage permissions found for uid: {uid}")
+
+    def get_all_storage_permissions(self) -> Result[dict[UID, set[UID]], str]:
+        return Ok(dict(self.storage_permissions.items()))
+
+    def _all(
+        self,
+        credentials: SyftVerifyKey,
+        has_permission: bool | None = False,
+    ) -> Result[list[SyftObject], str]:
+        # this checks permissions
+        res = [self.get(uid, credentials, has_permission) for uid in self.data.keys()]
+        result = [x.ok() for x in res if x.is_ok()]
+        return Ok(result)
 
     def migrate_data(
         self, to_klass: SyftObject, credentials: SyftVerifyKey
@@ -314,7 +355,7 @@ class KeyValueActionStore(ActionStore):
                     migrated_value = value.migrate_to(to_klass.__version__)
                 except Exception as e:
                     return Err(
-                        f"Failed to migrate data to {to_klass} for qk: {key}. Exception: {e}"
+                        f"Failed to migrate data to {to_klass} {to_klass.__version__} for qk: {key}. Exception: {e}"
                     )
                 result = self.set(
                     uid=key,
@@ -330,7 +371,7 @@ class KeyValueActionStore(ActionStore):
         return Err("You don't have permissions to migrate data.")
 
 
-@serializable()
+@serializable(canonical_name="DictActionStore", version=1)
 class DictActionStore(KeyValueActionStore):
     """Dictionary-Based Key-Value Action store.
 
@@ -343,19 +384,21 @@ class DictActionStore(KeyValueActionStore):
 
     def __init__(
         self,
-        node_uid: UID,
+        server_uid: UID,
         store_config: StoreConfig | None = None,
         root_verify_key: SyftVerifyKey | None = None,
+        document_store: DocumentStore | None = None,
     ) -> None:
         store_config = store_config if store_config is not None else DictStoreConfig()
         super().__init__(
-            node_uid=node_uid,
+            server_uid=server_uid,
             store_config=store_config,
             root_verify_key=root_verify_key,
+            document_store=document_store,
         )
 
 
-@serializable()
+@serializable(canonical_name="SQLiteActionStore", version=1)
 class SQLiteActionStore(KeyValueActionStore):
     """SQLite-Based Key-Value Action store.
 
@@ -369,7 +412,7 @@ class SQLiteActionStore(KeyValueActionStore):
     pass
 
 
-@serializable()
+@serializable(canonical_name="MongoActionStore", version=1)
 class MongoActionStore(KeyValueActionStore):
     """Mongo-Based  Action store.
 

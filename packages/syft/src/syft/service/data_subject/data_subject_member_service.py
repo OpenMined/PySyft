@@ -4,8 +4,8 @@
 from result import Result
 
 # relative
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
 from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
@@ -23,7 +23,7 @@ from .data_subject_member import ParentPartitionKey
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="DataSubjectMemberStash", version=1)
 class DataSubjectMemberStash(BaseUIDStoreStash):
     object_type = DataSubjectMemberRelationship
     settings: PartitionSettings = PartitionSettings(
@@ -48,7 +48,7 @@ class DataSubjectMemberStash(BaseUIDStoreStash):
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="DataSubjectMemberService", version=1)
 class DataSubjectMemberService(AbstractService):
     store: DocumentStore
     stash: DataSubjectMemberStash

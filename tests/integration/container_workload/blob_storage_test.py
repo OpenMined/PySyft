@@ -14,21 +14,21 @@ import syft as sy
     reason="AZURE_BLOB_STORAGE_KEY is not set",
 )
 @pytest.mark.container_workload
-def test_mount_azure_blob_storage(domain_1_port):
-    domain_client = sy.login(
-        email="info@openmined.org", password="changethis", port=domain_1_port
+def test_mount_azure_blob_storage(datasite_1_port):
+    datasite_client = sy.login(
+        email="info@openmined.org", password="changethis", port=datasite_1_port
     )
 
     azure_storage_key = os.environ.get("AZURE_BLOB_STORAGE_KEY", None)
     assert azure_storage_key
 
-    domain_client.api.services.blob_storage.mount_azure(
+    datasite_client.api.services.blob_storage.mount_azure(
         account_name="citestingstorageaccount",
         container_name="citestingcontainer",
         account_key=azure_storage_key,
         bucket_name="helmazurebucket",
     )
-    blob_files = domain_client.api.services.blob_storage.get_files_from_bucket(
+    blob_files = datasite_client.api.services.blob_storage.get_files_from_bucket(
         bucket_name="helmazurebucket"
     )
     assert isinstance(blob_files, list), blob_files

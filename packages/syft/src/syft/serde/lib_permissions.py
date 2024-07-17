@@ -6,13 +6,13 @@ from ..types.uid import UID
 from .serializable import serializable
 
 
-@serializable()
+@serializable(canonical_name="CMPCRUDPermission", version=1)
 class CMPCRUDPermission(Enum):
     NONE_EXECUTE = 1
     ALL_EXECUTE = 2
 
 
-@serializable()
+@serializable(canonical_name="CMPPermission", version=1)
 class CMPPermission:
     @property
     def permissions_string(self) -> str:
@@ -22,7 +22,7 @@ class CMPPermission:
         return self.permission_string
 
 
-@serializable()
+@serializable(canonical_name="CMPUserPermission", version=1)
 class CMPUserPermission(CMPPermission):
     def __init__(self, user_id: UID, permission: CMPCRUDPermission):
         self.user_id = user_id
@@ -36,7 +36,7 @@ class CMPUserPermission(CMPPermission):
         return self.permission_string
 
 
-@serializable()
+@serializable(canonical_name="CMPCompoundPermission", version=1)
 class CMPCompoundPermission(CMPPermission):
     def __init__(self, permission: CMPCRUDPermission):
         self.permissions = permission

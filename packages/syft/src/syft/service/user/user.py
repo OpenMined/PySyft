@@ -13,9 +13,9 @@ from pydantic import field_validator
 
 # relative
 from ...client.api import APIRegistry
-from ...node.credentials import SyftSigningKey
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftSigningKey
+from ...server.credentials import SyftVerifyKey
 from ...types.syft_metaclass import Empty
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -207,15 +207,13 @@ class UserView(SyftObject):
 
     def _set_password(self, new_password: str) -> SyftError | SyftSuccess:
         api = APIRegistry.api_for(
-            node_uid=self.syft_node_location,
+            server_uid=self.syft_server_location,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None:
-            return SyftError(message=f"You must login to {self.node_uid}")
+            return SyftError(message=f"You must login to {self.server_uid}")
 
-        api.services.user.update(
-            uid=self.id, user_update=UserUpdate(password=new_password)
-        )
+        api.services.user.update(uid=self.id, password=new_password)
         return SyftSuccess(
             message=f"Successfully updated password for "
             f"user '{self.name}' with email '{self.email}'."
@@ -238,18 +236,18 @@ class UserView(SyftObject):
     def set_email(self, email: str) -> SyftSuccess | SyftError:
         # validate email address
         api = APIRegistry.api_for(
-            node_uid=self.syft_node_location,
+            server_uid=self.syft_server_location,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None:
-            return SyftError(message=f"You must login to {self.node_uid}")
+            return SyftError(message=f"You must login to {self.server_uid}")
 
         try:
             user_update = UserUpdate(email=email)
         except ValidationError:
             return SyftError(message="{email} is not a valid email address.")
 
-        result = api.services.user.update(uid=self.id, user_update=user_update)
+        result = api.services.user.update(uid=self.id, email=user_update.email)
 
         if isinstance(result, SyftError):
             return result
@@ -270,11 +268,11 @@ class UserView(SyftObject):
     ) -> SyftSuccess | SyftError:
         """Used to update name, institution, website of a user."""
         api = APIRegistry.api_for(
-            node_uid=self.syft_node_location,
+            server_uid=self.syft_server_location,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None:
-            return SyftError(message=f"You must login to {self.node_uid}")
+            return SyftError(message=f"You must login to {self.server_uid}")
         user_update = UserUpdate(
             name=name,
             institution=institution,
@@ -282,7 +280,7 @@ class UserView(SyftObject):
             role=role,
             mock_execution_permission=mock_execution_permission,
         )
-        result = api.services.user.update(uid=self.id, user_update=user_update)
+        result = api.services.user.update(uid=self.id, **user_update)
 
         if isinstance(result, SyftError):
             return result

@@ -8,8 +8,8 @@ from typing import Any
 from pydantic import Field
 
 # relative
-from ..node.credentials import SyftVerifyKey
 from ..serde.serializable import serializable
+from ..server.credentials import SyftVerifyKey
 from ..types import uid
 from .document_store import DocumentStore
 from .document_store import StoreConfig
@@ -19,7 +19,7 @@ from .locks import LockingConfig
 from .locks import ThreadingLockingConfig
 
 
-@serializable()
+@serializable(canonical_name="DictBackingStore", version=1)
 class DictBackingStore(dict, KeyValueBackingStore):  # type: ignore[misc]
     # TODO: fix the mypy issue
     """Dictionary-based Store core logic"""
@@ -38,7 +38,7 @@ class DictBackingStore(dict, KeyValueBackingStore):  # type: ignore[misc]
             raise e
 
 
-@serializable()
+@serializable(canonical_name="DictStorePartition", version=1)
 class DictStorePartition(KeyValueStorePartition):
     """Dictionary-based StorePartition
 
@@ -54,7 +54,7 @@ class DictStorePartition(KeyValueStorePartition):
 
 
 # the base document store is already a dict but we can change it later
-@serializable()
+@serializable(canonical_name="DictDocumentStore", version=1)
 class DictDocumentStore(DocumentStore):
     """Dictionary-based Document Store
 
@@ -67,14 +67,14 @@ class DictDocumentStore(DocumentStore):
 
     def __init__(
         self,
-        node_uid: uid,
+        server_uid: uid,
         root_verify_key: SyftVerifyKey | None,
         store_config: DictStoreConfig | None = None,
     ) -> None:
         if store_config is None:
             store_config = DictStoreConfig()
         super().__init__(
-            node_uid=node_uid,
+            server_uid=server_uid,
             root_verify_key=root_verify_key,
             store_config=store_config,
         )

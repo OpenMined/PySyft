@@ -4,8 +4,8 @@
 from result import Result
 
 # relative
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
 from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
@@ -14,7 +14,7 @@ from .policy import PolicyUserVerifyKeyPartitionKey
 from .policy import UserPolicy
 
 
-@serializable()
+@serializable(canonical_name="UserPolicyStash", version=1)
 class UserPolicyStash(BaseUIDStoreStash):
     object_type = UserPolicy
     settings: PartitionSettings = PartitionSettings(

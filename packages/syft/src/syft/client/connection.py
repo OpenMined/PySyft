@@ -7,8 +7,8 @@ from ..types.syft_object import SyftObject
 from ..types.uid import UID
 
 
-class NodeConnection(SyftObject):
-    __canonical_name__ = "NodeConnection"
+class ServerConnection(SyftObject):
+    __canonical_name__ = "ServerConnection"
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID | None = None  # type: ignore

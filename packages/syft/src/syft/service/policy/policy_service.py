@@ -15,7 +15,7 @@ from .policy import UserPolicy
 from .user_policy_stash import UserPolicyStash
 
 
-@serializable()
+@serializable(canonical_name="PolicyService", version=1)
 class PolicyService(AbstractService):
     store: DocumentStore
     stash: UserPolicyStash

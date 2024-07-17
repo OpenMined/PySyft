@@ -7,9 +7,9 @@ from result import Ok
 from result import Result
 
 # relative
-from ...node.credentials import SyftVerifyKey
-from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
+from ...server.worker_settings import WorkerSettings
 from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
@@ -26,7 +26,7 @@ from ..response import SyftError
 from ..response import SyftSuccess
 
 
-@serializable()
+@serializable(canonical_name="Status", version=1)
 class Status(str, Enum):
     CREATED = "created"
     PROCESSING = "processing"
@@ -46,7 +46,7 @@ class QueueItem(SyftObject):
     __attr_searchable__ = ["status"]
 
     id: UID
-    node_uid: UID
+    server_uid: UID
     result: Any | None = None
     resolved: bool = False
     status: Status = Status.CREATED
@@ -96,7 +96,7 @@ class APIEndpointQueueItem(QueueItem):
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="QueueStash", version=1)
 class QueueStash(BaseStash):
     object_type = QueueItem
     settings: PartitionSettings = PartitionSettings(

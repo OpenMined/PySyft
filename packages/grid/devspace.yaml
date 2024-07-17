@@ -22,13 +22,13 @@ pipelines:
       create_deployments --all
 
 vars:
-  DOCKER_IMAGE_BACKEND: openmined/grid-backend
-  DOCKER_IMAGE_FRONTEND: openmined/grid-frontend
-  DOCKER_IMAGE_SEAWEEDFS: openmined/grid-seaweedfs
-  DOCKER_IMAGE_RATHOLE: openmined/grid-rathole
-  DOCKER_IMAGE_ENCLAVE_ATTESTATION: openmined/grid-enclave-attestation
+  DOCKER_IMAGE_BACKEND: openmined/syft-backend
+  DOCKER_IMAGE_FRONTEND: openmined/syft-frontend
+  DOCKER_IMAGE_SEAWEEDFS: openmined/syft-seaweedfs
+  DOCKER_IMAGE_RATHOLE: openmined/syft-rathole
+  DOCKER_IMAGE_ENCLAVE_ATTESTATION: openmined/syft-enclave-attestation
   CONTAINER_REGISTRY: "docker.io"
-  VERSION: "0.8.7-beta.13"
+  VERSION: "0.8.7-beta.14"
   PLATFORM: $(uname -m | grep -q 'arm64' && echo "arm64" || echo "amd64")
 
 # This is a list of `images` that DevSpace can build for this project
@@ -48,7 +48,7 @@ images:
     buildKit:
       args: ["--platform", "linux/${PLATFORM}"]
     dockerfile: ./frontend/frontend.dockerfile
-    target: "grid-ui-production"
+    target: "syft-ui-production"
     context: ./frontend
     tags:
       - dev-${DEVSPACE_TIMESTAMP}
@@ -73,7 +73,7 @@ deployments:
         global:
           registry: ${CONTAINER_REGISTRY}
           version: dev-${DEVSPACE_TIMESTAMP}
-        node: {}
+        server: {}
       # anything that does not need templating should go in helm/examples/dev/base.yaml
       # or profile specific values files
       valuesFiles:
@@ -117,16 +117,23 @@ dev:
           localPort: 3480
 
 profiles:
-  - name: domain-low
-    description: "Deploy a low-side domain"
+  - name: datasite-low
+    description: "Deploy a low-side datasite"
     patches:
       - op: add
-        path: deployments.syft.helm.values.node
+        path: deployments.syft.helm.values.server
         value:
           side: low
 
-  - name: domain-tunnel
-    description: "Deploy a domain with tunneling enabled"
+  - name: migrated-datasite
+    description: "Deploy a migrated datasite"
+    patches:
+      - op: add
+        path: deployments.syft.helm.valuesFiles
+        value: ./helm/examples/dev/migration.yaml
+
+  - name: datasite-tunnel
+    description: "Deploy a datasite with tunneling enabled"
     patches:
       # enable rathole image
       - op: add
@@ -143,10 +150,10 @@ profiles:
       # use rathole client-specific chart values
       - op: add
         path: deployments.syft.helm.valuesFiles
-        value: ./helm/examples/dev/domain.tunnel.yaml
+        value: ./helm/examples/dev/datasite.tunnel.yaml
 
   - name: gateway
-    description: "Deploy a Gateway Node with tunnel enabled"
+    description: "Deploy a Gateway Server with tunnel enabled"
     patches:
       # enable rathole image
       - op: add
@@ -194,7 +201,7 @@ profiles:
         value: 2334:2333
 
   - name: gcp
-    description: "Deploy a high-side domain on GCP"
+    description: "Deploy a high-side datasite on GCP"
     patches:
       - op: replace
         path: deployments.syft.helm.valuesFiles
@@ -202,7 +209,7 @@ profiles:
           - ./helm/examples/gcp/gcp.high.yaml
 
   - name: gcp-low
-    description: "Deploy a low-side domain on GCP"
+    description: "Deploy a low-side datasite on GCP"
     patches:
       - op: replace
         path: deployments.syft.helm.valuesFiles
@@ -210,7 +217,7 @@ profiles:
           - ./helm/examples/gcp/gcp.low.yaml
 
   - name: azure
-    description: "Deploy a high-side domain on AKS"
+    description: "Deploy a high-side datasite on AKS"
     patches:
       - op: replace
         path: deployments.syft.helm.valuesFiles
@@ -218,7 +225,7 @@ profiles:
           - ./helm/examples/azure/azure.high.yaml
 
   - name: enclave
-    description: "Deploy an enclave node"
+    description: "Deploy an enclave server"
     patches:
       # enable image build for enclave-attestation
       - op: add

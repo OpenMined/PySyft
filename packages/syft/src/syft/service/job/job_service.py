@@ -6,8 +6,8 @@ from typing import Any
 from typing import cast
 
 # relative
-from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
+from ...server.worker_settings import WorkerSettings
 from ...store.document_store import DocumentStore
 from ...types.uid import UID
 from ...util.telemetry import instrument
@@ -45,7 +45,7 @@ def wait_until(
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="JobService", version=1)
 class JobService(AbstractService):
     store: DocumentStore
     stash: JobStash
@@ -67,10 +67,7 @@ class JobService(AbstractService):
             res = res.ok()
             return res
 
-    @service_method(
-        path="job.get_all",
-        name="get_all",
-    )
+    @service_method(path="job.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL)
     def get_all(self, context: AuthedServiceContext) -> list[Job] | SyftError:
         res = self.stash.get_all(context.credentials)
         if res.is_err():
@@ -149,16 +146,18 @@ class JobService(AbstractService):
         self.update(context=context, job=job)
 
         task_uid = UID()
-        worker_settings = WorkerSettings.from_node(context.node)
-        worker_pool_ref = context.node.get_worker_pool_ref_by_name(context.credentials)
+        worker_settings = WorkerSettings.from_server(context.server)
+        worker_pool_ref = context.server.get_worker_pool_ref_by_name(
+            context.credentials
+        )
         if isinstance(worker_pool_ref, SyftError):
             return worker_pool_ref
 
         queue_item = ActionQueueItem(
             id=task_uid,
-            node_uid=context.node.id,
+            server_uid=context.server.id,
             syft_client_verify_key=context.credentials,
-            syft_node_location=context.node.id,
+            syft_server_location=context.server.id,
             job_id=job.id,
             worker_settings=worker_settings,
             args=[],
@@ -166,10 +165,10 @@ class JobService(AbstractService):
             worker_pool=worker_pool_ref,
         )
 
-        context.node.queue_stash.set_placeholder(context.credentials, queue_item)
-        context.node.job_stash.set(context.credentials, job)
+        context.server.queue_stash.set_placeholder(context.credentials, queue_item)
+        context.server.job_stash.set(context.credentials, job)
 
-        log_service = context.node.get_service("logservice")
+        log_service = context.server.get_service("logservice")
         result = log_service.restart(context, job.log_id)
         if isinstance(result, SyftError):
             return result
@@ -291,7 +290,7 @@ class JobService(AbstractService):
     def add_read_permission_log_for_code_owner(
         self, context: AuthedServiceContext, log_id: UID, user_code: UserCode
     ) -> Any:
-        log_service = context.node.get_service("logservice")
+        log_service = context.server.get_service("logservice")
         log_service = cast(LogService, log_service)
         return log_service.stash.add_permission(
             ActionObjectPermission(
@@ -317,7 +316,7 @@ class JobService(AbstractService):
         is_resolved = status in [JobStatus.COMPLETED, JobStatus.ERRORED]
         job = Job(
             id=UID(),
-            node_uid=context.node.id,
+            server_uid=context.server.id,
             action=None,
             result=result,
             status=status,
@@ -327,7 +326,7 @@ class JobService(AbstractService):
             user_code_id=user_code_id,
             resolved=is_resolved,
         )
-        user_code_service = context.node.get_service("usercodeservice")
+        user_code_service = context.server.get_service("usercodeservice")
         user_code = user_code_service.get_by_uid(context=context, uid=user_code_id)
         if isinstance(user_code, SyftError):
             return user_code
@@ -335,7 +334,7 @@ class JobService(AbstractService):
         # The owner of the code should be able to read the job
         self.stash.set(context.credentials, job)
 
-        log_service = context.node.get_service("logservice")
+        log_service = context.server.get_service("logservice")
         res = log_service.add(
             context,
             job.log_id,

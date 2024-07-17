@@ -7,7 +7,7 @@ from result import Ok
 from result import Result
 
 # relative
-from ...abstract_node import NodeSideType
+from ...abstract_server import ServerSideType
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...util.assets import load_png_base64
@@ -28,12 +28,12 @@ from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_roles import ServiceRole
 from ..warnings import HighSideCRUDWarning
-from .settings import NodeSettings
-from .settings import NodeSettingsUpdate
+from .settings import ServerSettings
+from .settings import ServerSettingsUpdate
 from .settings_stash import SettingsStash
 
 
-@serializable()
+@serializable(canonical_name="SettingsService", version=1)
 class SettingsService(AbstractService):
     store: DocumentStore
     stash: SettingsStash
@@ -46,7 +46,7 @@ class SettingsService(AbstractService):
     def get(self, context: UnauthedServiceContext) -> Result[Ok, Err]:
         """Get Settings"""
 
-        result = self.stash.get_all(context.node.signing_key.verify_key)
+        result = self.stash.get_all(context.server.signing_key.verify_key)
         if result.is_ok():
             settings = result.ok()
             # check if the settings list is empty
@@ -59,9 +59,9 @@ class SettingsService(AbstractService):
 
     @service_method(path="settings.set", name="set")
     def set(
-        self, context: AuthedServiceContext, settings: NodeSettings
+        self, context: AuthedServiceContext, settings: ServerSettings
     ) -> Result[Ok, Err]:
-        """Set a new the Node Settings"""
+        """Set a new the Server Settings"""
         result = self.stash.set(context.credentials, settings)
         if result.is_ok():
             return result
@@ -70,7 +70,7 @@ class SettingsService(AbstractService):
 
     @service_method(path="settings.update", name="update", autosplat=["settings"])
     def update(
-        self, context: AuthedServiceContext, settings: NodeSettingsUpdate
+        self, context: AuthedServiceContext, settings: ServerSettingsUpdate
     ) -> Result[SyftSuccess, SyftError]:
         res = self._update(context, settings)
         if res.is_ok():
@@ -84,18 +84,18 @@ class SettingsService(AbstractService):
             return SyftError(message=res.err())
 
     def _update(
-        self, context: AuthedServiceContext, settings: NodeSettingsUpdate
+        self, context: AuthedServiceContext, settings: ServerSettingsUpdate
     ) -> Result[Ok, Err]:
         """
-        Update the Node Settings using the provided values.
+        Update the Server Settings using the provided values.
 
         Args:
             name: Optional[str]
-                Node name
+                Server name
             organization: Optional[str]
                 Organization name
             description: Optional[str]
-                Node description
+                Server description
             on_board: Optional[bool]
                 Show onboarding panel when a user logs in for the first time
             signup_enabled: Optional[bool]
@@ -108,7 +108,7 @@ class SettingsService(AbstractService):
             Result[SyftSuccess, SyftError]: A result indicating the success or failure of the update operation.
 
         Example:
-        >>> node_client.update(name='foo', organization='bar', description='baz', signup_enabled=True)
+        >>> server_client.update(name='foo', organization='bar', description='baz', signup_enabled=True)
         SyftSuccess: Settings updated successfully.
         """
         result = self.stash.get_all(context.credentials)
@@ -126,17 +126,17 @@ class SettingsService(AbstractService):
             return result
 
     @service_method(
-        path="settings.set_node_side_type_dangerous",
-        name="set_node_side_type_dangerous",
+        path="settings.set_server_side_type_dangerous",
+        name="set_server_side_type_dangerous",
         roles=ADMIN_ROLE_LEVEL,
     )
-    def set_node_side_type_dangerous(
-        self, context: AuthedServiceContext, node_side_type: str
+    def set_server_side_type_dangerous(
+        self, context: AuthedServiceContext, server_side_type: str
     ) -> Result[SyftSuccess, SyftError]:
-        side_type_options = [e.value for e in NodeSideType]
-        if node_side_type not in side_type_options:
+        side_type_options = [e.value for e in ServerSideType]
+        if server_side_type not in side_type_options:
             return SyftError(
-                message=f"Not a valid node_side_type, please use one of the options from: {side_type_options}"
+                message=f"Not a valid server_side_type, please use one of the options from: {side_type_options}"
             )
 
         result = self.stash.get_all(context.credentials)
@@ -144,7 +144,7 @@ class SettingsService(AbstractService):
             current_settings = result.ok()
             if len(current_settings) > 0:
                 new_settings = current_settings[0]
-                new_settings.node_side_type = node_side_type
+                new_settings.server_side_type = server_side_type
                 update_result = self.stash.update(context.credentials, new_settings)
                 if update_result.is_ok():
                     return SyftSuccess(
@@ -174,7 +174,7 @@ class SettingsService(AbstractService):
         email_server: str | None = None,
         email_port: str | None = None,
     ) -> SyftSuccess | SyftError:
-        notifier_service = context.node.get_service("notifierservice")
+        notifier_service = context.server.get_service("notifierservice")
         return notifier_service.turn_on(
             context=context,
             email_username=email_username,
@@ -193,7 +193,7 @@ class SettingsService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> SyftSuccess | SyftError:
-        notifier_service = context.node.get_service("notifierservice")
+        notifier_service = context.server.get_service("notifierservice")
         return notifier_service.turn_off(context=context)
 
     @service_method(
@@ -207,7 +207,7 @@ class SettingsService(AbstractService):
         """Enable/Disable Registration for Data Scientist or Guest Users."""
         flags.CAN_REGISTER = enable
 
-        settings = NodeSettingsUpdate(signup_enabled=enable)
+        settings = ServerSettingsUpdate(signup_enabled=enable)
         result = self._update(context=context, settings=settings)
 
         if isinstance(result, SyftError):
@@ -226,7 +226,7 @@ class SettingsService(AbstractService):
         self, context: AuthedServiceContext, enable: bool
     ) -> SyftSuccess | SyftError:
         """Enable/Disable eager execution."""
-        settings = NodeSettingsUpdate(eager_execution_enabled=enable)
+        settings = ServerSettingsUpdate(eager_execution_enabled=enable)
 
         result = self._update(context=context, settings=settings)
 
@@ -243,7 +243,7 @@ class SettingsService(AbstractService):
     def allow_association_request_auto_approval(
         self, context: AuthedServiceContext, enable: bool
     ) -> SyftSuccess | SyftError:
-        new_settings = NodeSettingsUpdate(association_request_auto_approval=enable)
+        new_settings = ServerSettingsUpdate(association_request_auto_approval=enable)
         result = self._update(context, settings=new_settings)
         if isinstance(result, SyftError):
             return result
@@ -297,7 +297,7 @@ class SettingsService(AbstractService):
         else:
             welcome_msg = HTMLObject(text=html)
 
-        new_settings = NodeSettingsUpdate(welcome_markdown=welcome_msg)
+        new_settings = ServerSettingsUpdate(welcome_markdown=welcome_msg)
         result = self._update(context=context, settings=new_settings)
         if isinstance(result, SyftError):
             return result
@@ -313,8 +313,8 @@ class SettingsService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> HTMLObject | MarkdownDescription | SyftError:
-        result = self.stash.get_all(context.node.signing_key.verify_key)
-        user_service = context.node.get_service("userservice")
+        result = self.stash.get_all(context.server.signing_key.verify_key)
+        user_service = context.server.get_service("userservice")
         role = user_service.get_role_for_credentials(context.credentials)
         if result.is_ok():
             settings = result.ok()
@@ -325,10 +325,10 @@ class SettingsService(AbstractService):
             if settings.welcome_markdown:
                 str_tmp = Template(settings.welcome_markdown.text)
                 welcome_msg_class = type(settings.welcome_markdown)
-                node_side_type = (
+                server_side_type = (
                     "Low Side"
-                    if context.node.metadata.node_side_type
-                    == NodeSideType.LOW_SIDE.value
+                    if context.server.metadata.server_side_type
+                    == ServerSideType.LOW_SIDE.value
                     else "High Side"
                 )
                 commands = ""
@@ -351,13 +351,13 @@ class SettingsService(AbstractService):
                 """
                 result = str_tmp.safe_substitute(
                     FONT_CSS=FONT_CSS,
-                    grid_symbol=load_png_base64("small-grid-symbol-logo.png"),
-                    domain_name=context.node.name,
-                    description=context.node.metadata.description,
-                    # node_url='http://testing:8080',
-                    node_type=context.node.metadata.node_type.capitalize(),
-                    node_side_type=node_side_type,
-                    node_version=context.node.metadata.syft_version,
+                    server_symbol=load_png_base64("small-syft-symbol-logo.png"),
+                    datasite_name=context.server.name,
+                    description=context.server.metadata.description,
+                    # server_url='http://testing:8080',
+                    server_type=context.server.metadata.server_type.capitalize(),
+                    server_side_type=server_side_type,
+                    server_version=context.server.metadata.syft_version,
                     command_list=command_list,
                 )
                 return welcome_msg_class(text=result)

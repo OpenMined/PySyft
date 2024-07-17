@@ -8,7 +8,7 @@ export const actions: Actions = {
   default: async ({ cookies, request }) => {
     try {
       const data = await request.formData()
-      const { email, password, node_id } = get_form_data_values(data)
+      const { email, password, server_id } = get_form_data_values(data)
 
       if (
         !email ||
@@ -16,14 +16,14 @@ export const actions: Actions = {
         typeof email !== "string" ||
         typeof password !== "string"
       ) {
-        throw new Error(`invalid form data: email:${email} node:${node_id}`)
+        throw new Error(`invalid form data: email:${email} server:${server_id}`)
       }
 
       const { signing_key, uid } = await login({ email, password })
 
       const cookie_user = {
         uid,
-        node_id,
+        server_id,
       }
 
       cookies.set(

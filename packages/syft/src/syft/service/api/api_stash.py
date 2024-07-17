@@ -6,8 +6,8 @@ from result import Ok
 from result import Result
 
 # relative
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
 from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
@@ -16,7 +16,7 @@ from .api import TwinAPIEndpoint
 MISSING_PATH_STRING = "Endpoint path: {path} does not exist."
 
 
-@serializable()
+@serializable(canonical_name="TwinAPIEndpointStash", version=1)
 class TwinAPIEndpointStash(BaseUIDStoreStash):
     object_type = TwinAPIEndpoint
     settings: PartitionSettings = PartitionSettings(

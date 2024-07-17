@@ -34,7 +34,7 @@ class OnDiskBlobDeposit(BlobDeposit):
 
         write_to_disk_method = from_api_or_context(
             func_or_path="blob_storage.write_to_disk",
-            syft_node_location=self.syft_node_location,
+            syft_server_location=self.syft_server_location,
             syft_client_verify_key=self.syft_client_verify_key,
         )
         if write_to_disk_method is None:
@@ -85,12 +85,12 @@ class OnDiskBlobStorageConnection(BlobStorageConnection):
             return SyftError(message=f"Failed to delete file: {e}")
 
 
-@serializable()
+@serializable(canonical_name="OnDiskBlobStorageClientConfig", version=1)
 class OnDiskBlobStorageClientConfig(BlobStorageClientConfig):
     base_directory: Path
 
 
-@serializable()
+@serializable(canonical_name="OnDiskBlobStorageClient", version=1)
 class OnDiskBlobStorageClient(BlobStorageClient):
     config: OnDiskBlobStorageClientConfig
 
@@ -102,7 +102,7 @@ class OnDiskBlobStorageClient(BlobStorageClient):
         return OnDiskBlobStorageConnection(self.config.base_directory)
 
 
-@serializable()
+@serializable(canonical_name="OnDiskBlobStorageConfig", version=1)
 class OnDiskBlobStorageConfig(BlobStorageConfig):
     client_type: type[BlobStorageClient] = OnDiskBlobStorageClient
     client_config: OnDiskBlobStorageClientConfig

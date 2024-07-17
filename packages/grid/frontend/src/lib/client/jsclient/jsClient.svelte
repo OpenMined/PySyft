@@ -25,7 +25,7 @@
       }
 
       this.userId = window.localStorage.getItem('id');
-      this.nodeId = window.localStorage.getItem('nodeId');
+      this.serverId = window.localStorage.getItem('serverId');
 
       return this;
     }
@@ -150,7 +150,7 @@
       // Create a new object called 'newMetadata' with updated fields and a new property called 'fqn' with a value.
       const updateMetadata = {
         ...newMetadata,
-        fqn: 'syft.service.metadata.node_metadata.NodeMetadataUpdate'
+        fqn: 'syft.service.metadata.server_metadata.ServerMetadataUpdate'
       };
 
       // Create a new object called 'reqFields' with one property: 'metadata',  which is set to 'updateMetadata'.
@@ -249,7 +249,7 @@
      * @throws {Error} An error is thrown if the message signature and public key don't match.
      */
     async send(args, kwargs, path) {
-      const signedCall = new APICall(this.nodeId, path, args, kwargs).sign(this.key, this.serde);
+      const signedCall = new APICall(this.serverId, path, args, kwargs).sign(this.key, this.serde);
 
       try {
         // Make a POST request to the server with the signed call.

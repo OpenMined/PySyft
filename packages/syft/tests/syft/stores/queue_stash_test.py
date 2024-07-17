@@ -28,12 +28,12 @@ def mock_queue_object():
     )
     linked_worker_pool = LinkedObject.from_obj(
         worker_pool_obj,
-        node_uid=UID(),
+        server_uid=UID(),
         service_type=SyftWorkerPoolService,
     )
     obj = QueueItem(
         id=UID(),
-        node_uid=UID(),
+        server_uid=UID(),
         method="dummy_method",
         service="dummy_service",
         args=[],
