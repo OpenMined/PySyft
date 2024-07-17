@@ -26,7 +26,7 @@ from ..service.action.action_permissions import ActionPermission
 from ..service.action.action_permissions import StoragePermission
 from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
-from ..types.syft_object import SYFT_OBJECT_VERSION_2
+from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import StorableObjectType
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
@@ -51,7 +51,7 @@ from .mongo_client import MongoStoreClientConfig
 @serializable()
 class MongoDict(SyftBaseObject):
     __canonical_name__ = "MongoDict"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     keys: list[Any]
     values: list[Any]
@@ -700,7 +700,9 @@ class MongoStorePartition(StorePartition):
 
         return Ok(set(storage_permissions["server_uids"]))
 
-    def get_all_storage_permissions(self) -> Result[dict[UID, Set[UID]], str]:  # noqa: UP006
+    def get_all_storage_permissions(
+        self,
+    ) -> Result[dict[UID, Set[UID]], str]:  # noqa: UP006
         # Returns a dictionary of all storage permissions {object_uid: {*server_uids}}
         storage_permissions_or_err = self.storage_permissions
         if storage_permissions_or_err.is_err():
