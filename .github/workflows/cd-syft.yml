@@ -137,7 +137,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install uv
           uv --version
-          python -m uv install tox tox-uv==1.9.1 bump2version==1.0.1
+          python -m uv pip install tox tox-uv==1.9.1 bump2version==1.0.1
 
       - name: Get Release tag
         id: get_release_tag
@@ -391,7 +391,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install uv
           uv --version
-          python -m uv install tox tox-uv==1.9.1 setuptools wheel twine bump2version PyYAML
+          python -m uv pip install tox tox-uv==1.9.1 setuptools wheel twine bump2version PyYAML
 
       - name: Bump the Version
         if: needs.merge-docker-images.outputs.release_tag == 'beta'
