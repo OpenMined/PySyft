@@ -477,7 +477,7 @@ jobs:
           python -m pip install uv
           uv --version
           python -m uv pip install tox tox-uv==1.9.1
-          
+
       - name: Get uv cache dir
         id: pip-cache
         if: steps.changes.outputs.syft == 'true'
