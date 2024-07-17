@@ -38,7 +38,6 @@ class SyftObjectRegistry:
         )
         return list(available_versions.keys())
 
-    
     @classmethod
     def get_identifier_for_type(cls, obj: Any) -> tuple[str, int]:
         """
