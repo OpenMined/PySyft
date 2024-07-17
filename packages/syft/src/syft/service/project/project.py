@@ -55,7 +55,7 @@ from ..response import SyftSuccess
 from ..user.user import UserView
 
 
-@serializable()
+@serializable(canonical_name="EventAlreadyAddedException", version=1)
 class EventAlreadyAddedException(SyftException):
     pass
 
@@ -601,7 +601,7 @@ class ConsensusModel:
     pass
 
 
-@serializable()
+@serializable(canonical_name="DemocraticConsensusModel", version=1)
 class DemocraticConsensusModel(ConsensusModel):
     threshold: float = 50
 

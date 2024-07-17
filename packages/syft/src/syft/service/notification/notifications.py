@@ -24,13 +24,13 @@ from ..notifier.notifier_enums import NOTIFIERS
 from .email_templates import EmailTemplate
 
 
-@serializable()
+@serializable(canonical_name="NotificationStatus", version=1)
 class NotificationStatus(Enum):
     UNREAD = 0
     READ = 1
 
 
-@serializable()
+@serializable(canonical_name="NotificationRequestStatus", version=1)
 class NotificationRequestStatus(Enum):
     NO_ACTION = 0
 

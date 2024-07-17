@@ -25,7 +25,7 @@ from .user_code import UserCodeStatusCollection
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="StatusStash", version=1)
 class StatusStash(BaseUIDStoreStash):
     object_type = UserCodeStatusCollection
     settings: PartitionSettings = PartitionSettings(
@@ -47,7 +47,7 @@ class StatusStash(BaseUIDStoreStash):
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="UserCodeStatusService", version=1)
 class UserCodeStatusService(AbstractService):
     store: DocumentStore
     stash: StatusStash

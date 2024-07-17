@@ -12,7 +12,6 @@ from syft.client.api import SyftAPICall
 from syft.server.worker import Worker
 from syft.service.action.action_object import Action
 from syft.service.response import SyftError
-from syft.service.user.user import UserUpdate
 from syft.service.user.user_roles import ServiceRole
 from syft.types.uid import LineageID
 
@@ -58,9 +57,7 @@ def test_new_admin_has_action_object_permission(
 
     admin = root_client.login(email=email, password=pw)
 
-    root_client.api.services.user.update(
-        admin.me.id, UserUpdate(role=ServiceRole.ADMIN)
-    )
+    root_client.api.services.user.update(uid=admin.me.id, role=ServiceRole.ADMIN)
 
     if delete_original_admin:
         res = root_client.api.services.user.delete(root_client.me.id)

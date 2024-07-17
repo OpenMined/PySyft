@@ -27,6 +27,7 @@ from syft.types.uid import UID
 @serializable()
 class MockObject(SyftObject):
     __canonical_name__ = "base_stash_mock_object_type"
+    __version__ = 1
     id: UID
     name: str
     desc: str

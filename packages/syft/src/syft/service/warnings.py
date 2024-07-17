@@ -26,7 +26,7 @@ class WarningContext(
     role: ServiceRole
 
 
-@serializable()
+@serializable(canonical_name="APIEndpointWarning", version=1)
 class APIEndpointWarning(SyftBaseModel):
     confirmation: bool = False
     message: str | None = None
@@ -68,7 +68,7 @@ class APIEndpointWarning(SyftBaseModel):
         return True
 
 
-@serializable()
+@serializable(canonical_name="CRUDWarning", version=1)
 class CRUDWarning(APIEndpointWarning):
     def message_from(self, context: WarningContext | None = None) -> Self:
         message = None
@@ -94,7 +94,7 @@ class CRUDWarning(APIEndpointWarning):
         return CRUDWarning(confirmation=confirmation, message=message)
 
 
-@serializable()
+@serializable(canonical_name="CRUDReminder", version=1)
 class CRUDReminder(CRUDWarning):
     confirmation: bool = False
 
@@ -121,7 +121,7 @@ class CRUDReminder(CRUDWarning):
         return CRUDReminder(confirmation=confirmation, message=message)
 
 
-@serializable()
+@serializable(canonical_name="LowSideCRUDWarning", version=1)
 class LowSideCRUDWarning(APIEndpointWarning):
     def message_from(self, context: WarningContext | None = None) -> Self:
         confirmation = self.confirmation
@@ -141,7 +141,7 @@ class LowSideCRUDWarning(APIEndpointWarning):
         return LowSideCRUDWarning(confirmation=confirmation, message=message)
 
 
-@serializable()
+@serializable(canonical_name="HighSideCRUDWarning", version=1)
 class HighSideCRUDWarning(APIEndpointWarning):
     def message_from(self, context: WarningContext | None = None) -> Self:
         confirmation = self.confirmation

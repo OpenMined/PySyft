@@ -3,9 +3,6 @@ from collections.abc import Callable
 from typing import Any
 from typing import TYPE_CHECKING
 
-# relative
-from ..util.util import get_fully_qualified_name
-
 SYFT_086_PROTOCOL_VERSION = "4"
 
 # third party
@@ -19,6 +16,7 @@ if TYPE_CHECKING:
 class SyftObjectRegistry:
     __object_transform_registry__: dict[str, Callable] = {}
     __object_serialization_registry__: dict[str, dict[int, tuple]] = {}
+    __type_to_canonical_name__: dict[type, tuple[str, int]] = {}
 
     @classmethod
     def register_cls(
@@ -30,6 +28,8 @@ class SyftObjectRegistry:
             serde_attributes
         )
 
+        cls.__type_to_canonical_name__[serde_attributes[7]] = (canonical_name, version)
+
     @classmethod
     def get_versions(cls, canonical_name: str) -> list[int]:
         available_versions: dict = cls.__object_serialization_registry__.get(
@@ -39,18 +39,38 @@ class SyftObjectRegistry:
         return list(available_versions.keys())
 
     @classmethod
-    def get_canonical_name(cls, obj: Any) -> str:
-        # if is_type:
-        #     # TODO: this is different for builtin types, make more generic
-        #     return "ModelMetaclass"
-        is_type = isinstance(obj, type)
+    def get_canonical_name_version(cls, obj: Any) -> tuple[str, int]:
+        """
+        Retrieves the canonical name for both objects and types.
 
-        res = getattr(obj, "__canonical_name__", None)
-        if res is not None and not is_type:
-            return res
-        else:
-            fqn = get_fully_qualified_name(obj)
-            return fqn
+        This function works for both objects and types, returning the canonical name
+        as a string. It handles various cases, including built-in types, instances of
+        classes, and enum members.
+
+        If the object is not registered in the registry, a ValueError is raised.
+
+        Examples:
+            get_canonical_name_version([1,2,3]) -> "list"
+            get_canonical_name_version(list) -> "type"
+            get_canonical_name_version(MyEnum.A) -> "MyEnum"
+            get_canonical_name_version(MyEnum) -> "EnumMeta"
+
+        Args:
+            obj: The object or type for which to get the canonical name.
+
+        Returns:
+            The canonical name and version of the object or type.
+        """
+
+        # NOTE the metaclass of the object is not needed during serde
+        # so we can safely ignore it
+        if isinstance(obj, type):
+            return cls.__type_to_canonical_name__[type]
+
+        obj_type = type(obj)
+        if obj_type in cls.__type_to_canonical_name__:
+            return cls.__type_to_canonical_name__[obj_type]
+        raise ValueError(f"Could not find canonical name for {obj}")
 
     @classmethod
     def get_serde_properties(cls, canonical_name: str, version: int) -> tuple:

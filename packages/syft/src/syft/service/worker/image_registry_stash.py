@@ -21,7 +21,7 @@ __all__ = ["SyftImageRegistryStash"]
 URLPartitionKey = PartitionKey(key="url", type_=str)
 
 
-@serializable()
+@serializable(canonical_name="SyftImageRegistryStash", version=1)
 class SyftImageRegistryStash(BaseUIDStoreStash):
     object_type = SyftImageRegistry
     settings: PartitionSettings = PartitionSettings(

@@ -20,7 +20,7 @@ ActionIDsPartitionKey = PartitionKey(key="action_ids", type_=list[UID])
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="SettingsStash", version=1)
 class SettingsStash(BaseUIDStoreStash):
     object_type = ServerSettings
     settings: PartitionSettings = PartitionSettings(
