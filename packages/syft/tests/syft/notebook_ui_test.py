@@ -4,8 +4,10 @@ from typing import Any
 # third party
 import numpy as np
 import pytest
+import torch
 
 # syft absolute
+from syft import UID
 from syft.service.action.action_object import ActionObject
 from syft.service.user.user import User
 from syft.util.table import TABLE_INDEX_KEY
@@ -24,6 +26,7 @@ def table_test_cases() -> list[tuple[list, str | None]]:
     ao_1 = ActionObject.from_obj(10.0)
     ao_2 = ActionObject.from_obj(20.0)
     np_ao = ActionObject.from_obj(np.array([10, 20]))
+    torch_ao = ActionObject.from_obj(torch.tensor([10, 20]))
     user_1 = User(email="x@y.z")
     user_2 = User(email="a@b.c")
 
@@ -41,7 +44,10 @@ def table_test_cases() -> list[tuple[list, str | None]]:
     )
     non_syft_obj_1 = ([1, ao_1, ao_2], is_obj_repr_displayed)
     non_syft_obj_2 = ([ao_1, ao_2, 1], is_obj_repr_displayed)
-
+    torch_type_obj = (
+        [type(torch_ao.syft_action_data), 1.0, UID()],
+        is_obj_repr_displayed,
+    )
     return [
         homogenous_ao,
         non_homogenous_same_repr,
@@ -51,6 +57,7 @@ def table_test_cases() -> list[tuple[list, str | None]]:
         non_homogenous_different_repr,
         non_syft_obj_1,
         non_syft_obj_2,
+        torch_type_obj,
     ]
 
 

@@ -18,7 +18,12 @@ logger = logging.getLogger(__name__)
 
 def _syft_in_mro(self: Any, item: Any) -> bool:
     if hasattr(type(item), "mro") and type(item) != type:
-        mro = type(item).mro()
+        # if unbound method, supply self
+        if hasattr(type(item).mro, "__self__"):
+            mro = type(item).mro()
+        else:
+            mro = type(item).mro(type(item))
+
     elif hasattr(item, "mro") and type(item) != type:
         mro = item.mro()
     else:
@@ -50,7 +55,7 @@ def _get_grid_template_columns(first_value: Any) -> tuple[str | None, str | None
 
 
 def _create_table_rows(
-    obj: Mapping | Iterable,
+    _self: Mapping | Iterable,
     is_homogenous: bool,
     extra_fields: list | None = None,
     add_index: bool = True,
@@ -61,7 +66,7 @@ def _create_table_rows(
     If valid table data cannot be created, an empty list is returned.
 
     Args:
-        obj (Mapping | Iterable): The input data as a Mapping or Iterable.
+        _self (Mapping | Iterable): The input data as a Mapping or Iterable.
         is_homogenous (bool): A boolean indicating whether the data is homogenous.
         extra_fields (list | None, optional): Additional fields to include in the table. Defaults to None.
         add_index (bool, optional): Whether to add an index column. Defaults to True.
@@ -76,9 +81,9 @@ def _create_table_rows(
 
     cols = defaultdict(list)
 
-    for item in iter(obj.items() if isinstance(obj, Mapping) else obj):
+    for item in iter(_self.items() if isinstance(_self, Mapping) else _self):
         # unpack dict
-        if isinstance(obj, Mapping):
+        if isinstance(_self, Mapping):
             key, item = item
             cols["key"].append(key)
 
@@ -248,7 +253,7 @@ def prepare_table_data(
         grid_template_cell_columns = None
 
     table_data = _create_table_rows(
-        obj=obj,
+        _self=obj,
         is_homogenous=is_homogenous,
         extra_fields=extra_fields,
         add_index=add_index,
