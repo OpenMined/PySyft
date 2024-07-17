@@ -1,7 +1,5 @@
 # stdlib
 
-# third party
-
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
@@ -16,7 +14,6 @@ from ...types.result import as_result
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from .dataset import Dataset
-from .dataset import DatasetUpdate
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
 ActionIDsPartitionKey = PartitionKey(key="action_ids", type_=list[UID])
@@ -37,16 +34,6 @@ class DatasetStash(NewBaseUIDStoreStash):
     def get_by_name(self, credentials: SyftVerifyKey, name: str) -> Dataset:
         qks = QueryKeys(qks=[NamePartitionKey.with_obj(name)])
         return self.query_one(credentials=credentials, qks=qks).unwrap()
-
-    @as_result(StashException, NotFoundException)
-    def update(
-        self,
-        credentials: SyftVerifyKey,
-        dataset_update: DatasetUpdate,
-        has_permission: bool = False,
-    ) -> Dataset:
-        res = self.check_type(dataset_update, DatasetUpdate).unwrap()
-        return super().update(credentials=credentials, obj=res).unwrap()
 
     @as_result(StashException)
     def search_action_ids(self, credentials: SyftVerifyKey, uid: UID) -> list[Dataset]:

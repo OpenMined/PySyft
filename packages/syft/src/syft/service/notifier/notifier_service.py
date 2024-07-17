@@ -8,6 +8,7 @@ from pydantic import EmailStr
 from ...abstract_server import AbstractServer
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
+from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
 from ...types.result import as_result
@@ -34,16 +35,16 @@ class NotifierService(AbstractService):
         self.stash = NotifierStash(store=store)
 
     @as_result(StashException)
-    def settings(  # Maybe just notifier.settings
+    def settings(
         self,
         context: AuthedServiceContext,
-    ) -> NotifierSettings | SyftError:
+    ) -> NotifierSettings:
         """Get Notifier Settings
 
         Args:
             context: The request context
         Returns:
-            Union[NotifierSettings, SyftError]: Notifier Settings or SyftError
+            NotifierSettings | None: The notifier settings, if it exists; None otherwise.
         """
         return self.stash.get(credentials=context.credentials).unwrap(
             public_message="Error getting notifier settings"
@@ -174,11 +175,12 @@ class NotifierService(AbstractService):
         Turn off email notifications service.
         PySyft notifications will still work.
         """
-
         notifier = self.stash.get(credentials=context.credentials).unwrap()
 
         notifier.active = False
+
         self.stash.update(credentials=context.credentials, settings=notifier).unwrap()
+
         return SyftSuccess(message="Notifications disabled succesfullly")
 
     @as_result(SyftException)
@@ -189,7 +191,6 @@ class NotifierService(AbstractService):
         Activate email notifications for the authenticated user.
         This will only work if the datasite owner has enabled notifications.
         """
-
         user_service = context.server.get_service("userservice")
         return user_service.enable_notifications(context, notifier_type=notifier_type)
 
@@ -231,7 +232,7 @@ class NotifierService(AbstractService):
         try:
             # Create a new NotifierStash since its a static method.
             notifier_stash = NotifierStash(store=server.document_store)
-            notifier_stash.get(server.signing_key.verify_key).unwrap()
+            notifier = notifier_stash.get(server.signing_key.verify_key).unwrap()
 
             # Get the notifier
             # If notifier doesn't exist, create a new one
@@ -276,15 +277,26 @@ class NotifierService(AbstractService):
     @as_result(SyftException)
     def dispatch_notification(
         self, context: AuthedServiceContext, notification: Notification
-    ) -> SyftSuccess:
+    ) -> SyftSuccess | SyftError:
         admin_key = context.server.get_service("userservice").admin_verify_key()
-        notifier = self.stash.get(admin_key).unwrap(
-            public_message="The mail service ran out of quota or some notifications failed to be delivered.\n"
-            + "Please check the health of the mailing server."
-        )
+
+        # Silently fail on notification not delivered
+        try:
+            notifier = self.stash.get(admin_key).unwrap(
+                public_message="The mail service ran out of quota or some notifications failed to be delivered.\n"
+                + "Please check the health of the mailing server."
+            )
+        except NotFoundException:
+            logger.debug("There is no notifier service to ship the notification")
+            return SyftError(message="No notifier service to ship the notification.")
+        except StashException as exc:
+            logger.error(f"Error getting notifier settings: {exc}")
+            return SyftError(
+                message="Failed to get notifier settings. Please check the logs."
+            )
 
         # If notifier is active
-        if notifier and notifier.active:
+        if notifier.active:
             notifier.send_notifications(
                 context=context, notification=notification
             ).unwrap()

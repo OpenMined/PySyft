@@ -1,7 +1,6 @@
 # stdlib
 
 # third party
-from result import Result
 
 # relative
 from ...custom_worker.config import DockerWorkerConfig
@@ -36,14 +35,14 @@ class SyftWorkerImageStash(NewBaseUIDStoreStash):
         super().__init__(store=store)
 
     @as_result(StashException, NotFoundException)
-    def set(
+    def set(  # type: ignore
         self,
         credentials: SyftVerifyKey,
         obj: SyftWorkerImage,
         add_permissions: list[ActionObjectPermission] | None = None,
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
-    ) -> Result[SyftWorkerImage, str]:
+    ) -> SyftWorkerImage:
         add_permissions = [] if add_permissions is None else add_permissions
 
         # By default syft images have all read permission

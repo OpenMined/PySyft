@@ -97,7 +97,7 @@ class ProjectService(AbstractService):
         roles=ONLY_DATA_SCIENTIST_ROLE_LEVEL,
     )
     def can_create_project(self, context: AuthedServiceContext) -> bool:
-        user_service: UserService = context.server.get_service("userservice")
+        user_service: UserService = context.server.get_service("userservice")  # type: ignore[assignment]
         role = user_service.get_role_for_credentials(
             credentials=context.credentials
         ).unwrap()
@@ -201,7 +201,7 @@ class ProjectService(AbstractService):
         )
 
         if not self.is_project_leader(context, project):
-            raise SyfyException(
+            raise SyftException(
                 public_message="Only the leader of the project can add events"
             )
 

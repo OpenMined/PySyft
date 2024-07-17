@@ -88,7 +88,7 @@ class SyftMigrationStateStash(NewBaseStash):
         res = self.check_type(migration_state, self.object_type)
 
         if res.is_err():
-            return Err(res.err().public_message)
+            return Err(res.err().public_message)  # type: ignore
 
         res = super().set(
             credentials=credentials,
@@ -99,7 +99,7 @@ class SyftMigrationStateStash(NewBaseStash):
         )
 
         if res.is_err():
-            return Err(res.err().public_message)
+            return Err(res.err().public_message)  # type: ignore
         return Ok(res.ok())
 
     def get_by_name(
@@ -110,7 +110,7 @@ class SyftMigrationStateStash(NewBaseStash):
         if res.is_err():
             if isinstance(res.err(), NotFoundException):
                 return Ok(None)
-            return Err(res.err().public_message)
+            return Err(res.err().public_message)  # type: ignore
         return Ok(res.ok())
 
 

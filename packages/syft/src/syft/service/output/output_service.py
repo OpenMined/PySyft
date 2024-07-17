@@ -4,7 +4,6 @@ from typing import ClassVar
 
 # third party
 from pydantic import model_validator
-from result import as_result
 
 # relative
 from ...client.api import APIRegistry
@@ -20,6 +19,7 @@ from ...store.document_store_errors import StashException
 from ...store.document_store_errors import TooManyItemsFoundException
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
+from ...types.result import as_result
 from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2

@@ -1017,7 +1017,8 @@ class ActionObject(SyncableSyftObject):
         if isinstance(res, SyftError):
             print(f"Error during action:\n{res}")
         if isinstance(res, SyftSuccess):
-            return res.value
+            return res.value  # type: ignore[return-value]
+        return res  # type: ignore[return-value]
 
     def request(self, client: SyftClient) -> Any | SyftError:
         # relative
@@ -1268,7 +1269,7 @@ class ActionObject(SyncableSyftObject):
         if isinstance(blob_storage_res, SyftError):
             return blob_storage_res
 
-        api = self._get_api().unwrap()
+        api = self._get_api()
 
         if isinstance(blob_storage_res, SyftWarning):
             logger.debug(blob_storage_res.message)

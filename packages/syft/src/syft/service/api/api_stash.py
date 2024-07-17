@@ -1,8 +1,5 @@
 # stdlib
 
-# third party
-from result import as_result
-
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
@@ -11,6 +8,7 @@ from ...store.document_store import NewBaseUIDStoreStash
 from ...store.document_store import PartitionSettings
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
+from ...types.result import as_result
 from .api import TwinAPIEndpoint
 
 MISSING_PATH_STRING = "Endpoint path: {path} does not exist."
@@ -38,7 +36,7 @@ class TwinAPIEndpointStash(NewBaseUIDStoreStash):
     @as_result(StashException)
     def path_exists(self, credentials: SyftVerifyKey, path: str) -> bool:
         try:
-            result = self.get_by_path(credentials=credentials, path=path).unwrap()
+            self.get_by_path(credentials=credentials, path=path).unwrap()
             return False
         except NotFoundException:
             return True

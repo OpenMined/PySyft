@@ -68,7 +68,7 @@ class SyftMigrationStateStash(NewBaseStash):
         res = self.check_type(migration_state, self.object_type)
         # we dont use and_then logic here as it is hard because of the order of the arguments
         if res.is_err():
-            return Err(res.err().public_message)
+            return Err(res.err().public_message)  # type: ignore
         res = super().set(
             credentials=credentials,
             obj=res.ok(),
@@ -78,7 +78,7 @@ class SyftMigrationStateStash(NewBaseStash):
         )
 
         if res.is_err():
-            return Err(res.err().public_message)
+            return Err(res.err().public_message)  # type: ignore
 
         return Ok(res.ok())
 
@@ -88,6 +88,6 @@ class SyftMigrationStateStash(NewBaseStash):
         qks = KlassNamePartitionKey.with_obj(canonical_name)
         res = self.query_one(credentials=credentials, qks=qks)
         if res.is_err():
-            return Err(res.err().public_message)
+            return Err(res.err().public_message)  # type: ignore
 
         return Ok(res.ok())

@@ -17,6 +17,7 @@ from ...server.worker_settings import WorkerSettings
 from ...service.context import AuthedServiceContext
 from ...store.document_store import NewBaseStash
 from ...types.datetime import DateTime
+from ...types.errors import SyftException
 from ...types.uid import UID
 from ..job.job_stash import Job
 from ..job.job_stash import JobStatus
@@ -203,7 +204,7 @@ def handle_message_multiprocessing(
         )
 
         call_method = getattr(worker.get_service(queue_item.service), queue_item.method)
-        result: Any = call_method(context, *queue_item.args, **queue_item.kwargs)
+        result = call_method(context, *queue_item.args, **queue_item.kwargs)
         status = Status.COMPLETED
         job_status = JobStatus.COMPLETED
 
@@ -271,11 +272,13 @@ class APICallMessageHandler(AbstractMessageHandler):
         worker.signing_key = worker_settings.signing_key
 
         credentials = queue_item.syft_client_verify_key
-        res = worker.job_stash.get_by_uid(credentials, queue_item.job_id)
-        if res.is_err():
-            logger.warning(res.err())
-            raise Exception(res.value)
-        job_item: Job = res.ok()
+        try:
+            job_item: Job = worker.job_stash.get_by_uid(
+                credentials, queue_item.job_id
+            ).unwrap()  # type: ignore
+        except SyftException as exc:
+            logger.warning(exc._private_message or exc.public_message)
+            raise
 
         queue_item.status = Status.PROCESSING
         queue_item.server_uid = worker.id

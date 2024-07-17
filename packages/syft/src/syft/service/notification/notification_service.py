@@ -11,7 +11,6 @@ from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectREAD
 from ..context import AuthedServiceContext
 from ..notifier.notifier import NotifierSettings
-from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
@@ -216,11 +215,12 @@ class NotificationService(AbstractService):
         service = context.server.get_service(linked_obj.service_type)
         return service.resolve_link(context=context, linked_obj=linked_obj).unwrap()
 
-    @service_method(path="notifications.clear", name="clear")
-    def clear(self, context: AuthedServiceContext) -> SyftError | SyftSuccess:
-        return self.stash.delete_all_for_verify_key(
+    @service_method(path="notifications.clear", name="clear", unwrap_on_success=False)
+    def clear(self, context: AuthedServiceContext) -> SyftSuccess:
+        self.stash.delete_all_for_verify_key(
             credentials=context.credentials, verify_key=context.credentials
         ).unwrap()
+        return SyftSuccess(message="Cleared all notifications")
 
     @as_result(SyftException)
     def filter_by_obj(

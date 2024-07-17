@@ -366,7 +366,7 @@ class KeyValueActionStore(ActionStore):
     ) -> list[SyftObject]:
         # this checks permissions
         res = [self.get(uid, credentials, has_permission) for uid in self.data.keys()]
-        return [x.ok() for x in res if x.is_ok()]
+        return [x.ok() for x in res if x.is_ok()]  # type: ignore
 
     @as_result(ObjectCRUDPermissionException)
     def migrate_data(self, to_klass: SyftObject, credentials: SyftVerifyKey) -> bool:

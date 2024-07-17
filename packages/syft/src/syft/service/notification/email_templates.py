@@ -111,14 +111,17 @@ class RequestEmailTemplate(EmailTemplate):
     @staticmethod
     def email_title(notification: "Notification", context: AuthedServiceContext) -> str:
         notification.linked_obj = cast(LinkedObject, notification.linked_obj)
-        request_obj = notification.linked_obj.resolve_with_context(context=context).ok()
-
+        request_obj = notification.linked_obj.resolve_with_context(
+            context=context
+        ).unwrap()
         return f"Datasite {context.server.name}: A New Request ({str(request_obj.id)[:4]}) has been received!"
 
     @staticmethod
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
         notification.linked_obj = cast(LinkedObject, notification.linked_obj)
-        request_obj = notification.linked_obj.resolve_with_context(context=context).ok()
+        request_obj = notification.linked_obj.resolve_with_context(
+            context=context
+        ).unwrap()
 
         head = """
         <head>
@@ -262,7 +265,9 @@ class RequestUpdateEmailTemplate(EmailTemplate):
     @staticmethod
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
         notification.linked_obj = cast(LinkedObject, notification.linked_obj)
-        request_obj = notification.linked_obj.resolve_with_context(context=context).ok()
+        request_obj = notification.linked_obj.resolve_with_context(
+            context=context
+        ).unwrap()
         badge_color = "red" if request_obj.status.name == "REJECTED" else "green"
         head = """
         <head>

@@ -2,7 +2,6 @@
 
 # third party
 from result import Result
-from result import as_result
 
 # relative
 from ...serde.serializable import serializable
@@ -13,6 +12,7 @@ from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
 from ...store.document_store_errors import StashException
+from ...types.result import as_result
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext

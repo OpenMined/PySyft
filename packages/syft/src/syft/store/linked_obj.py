@@ -12,6 +12,8 @@ from ..service.context import ChangeContext
 from ..service.context import ServerServiceContext
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
+from ..types.errors import SyftException
+from ..types.result import as_result
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
@@ -53,11 +55,14 @@ class LinkedObject(SyftObject):
         self._resolve_cache = resolve
         return resolve
 
+    @as_result(SyftException)
     def resolve_with_context(self, context: ServerServiceContext) -> Any:
         if context.server is None:
             raise ValueError(f"context {context}'s server is None")
-        return context.server.get_service(self.service_type).resolve_link(
-            context=context, linked_obj=self
+        return (
+            context.server.get_service(self.service_type)
+            .resolve_link(context=context, linked_obj=self)
+            .unwrap()
         )
 
     def update_with_context(

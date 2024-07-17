@@ -87,7 +87,7 @@ class WorkerService(AbstractService):
         self,
         context: AuthedServiceContext,
         uid: UID,
-    ) -> tuple[WorkerStatus, WorkerHealth] | SyftError:
+    ) -> tuple[WorkerStatus, WorkerHealth | None]:
         result = self.get(context=context, uid=uid)
         return result.status, result.healthcheck
 
@@ -96,13 +96,16 @@ class WorkerService(AbstractService):
         name="get",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
-    def get(self, context: AuthedServiceContext, uid: UID) -> SyftWorker | SyftError:
+    def get(self, context: AuthedServiceContext, uid: UID) -> SyftWorker:
         worker = self._get_worker(context=context, uid=uid).unwrap()
 
         if context.server is not None and context.server.in_memory_workers:
             return worker
         else:
-            return refresh_worker_status([worker], self.stash, context.credentials)[0]
+            workers = refresh_worker_status(
+                [worker], self.stash, context.credentials
+            ).unwrap()
+            return workers[0]
 
     @service_method(
         path="worker.logs",
@@ -145,7 +148,7 @@ class WorkerService(AbstractService):
 
         if force and worker.job_id is not None:
             job_service = cast(JobService, context.server.get_service(JobService))
-            res = job_service.kill(context=context, id=worker.job_id)
+            job_service.kill(context=context, id=worker.job_id)
 
         worker_pool_service = cast(
             SyftWorkerPoolService, context.server.get_service(SyftWorkerPoolService)
@@ -205,7 +208,7 @@ class WorkerService(AbstractService):
         uid: UID,
         force: bool = False,
     ) -> SyftSuccess:
-        worker = self._get_worker(context=context, uid=uid)
+        worker = self._get_worker(context=context, uid=uid).unwrap()
         worker.to_be_deleted = True
 
         self.stash.update(context.credentials, worker).unwrap()
@@ -216,9 +219,7 @@ class WorkerService(AbstractService):
         return self._delete(context, worker, force=True)
 
     @as_result(SyftException, StashException)
-    def _get_worker(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> SyftWorker | SyftError:
+    def _get_worker(self, context: AuthedServiceContext, uid: UID) -> SyftWorker:
         return self.stash.get_by_uid(credentials=context.credentials, uid=uid).unwrap()
 
 

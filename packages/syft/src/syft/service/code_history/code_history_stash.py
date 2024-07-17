@@ -1,8 +1,3 @@
-# stdlib
-
-# third party
-from result import as_result
-
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
@@ -12,6 +7,7 @@ from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store_errors import StashException
+from ...types.result import as_result
 from .code_history import CodeHistory
 
 NamePartitionKey = PartitionKey(key="service_func_name", type_=str)
@@ -53,7 +49,7 @@ class CodeHistoryStash(NewBaseUIDStoreStash):
     @as_result(StashException)
     def get_by_verify_key(
         self, credentials: SyftVerifyKey, user_verify_key: SyftVerifyKey
-    ) -> CodeHistory:
+    ) -> list[CodeHistory]:
         if isinstance(user_verify_key, str):
             user_verify_key = SyftVerifyKey.from_string(user_verify_key)
         qks = QueryKeys(qks=[VerifyKeyPartitionKey.with_obj(user_verify_key)])

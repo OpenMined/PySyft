@@ -5,9 +5,6 @@ from typing import Any
 
 # third party
 import numpy as np
-from result import Err
-from result import Ok
-from result import Result
 
 # relative
 from ...serde.serializable import serializable
@@ -147,7 +144,7 @@ class ActionService(AbstractService):
         has_result_read_permission: bool = False,
         add_storage_permission: bool = True,
         ignore_detached_objs: bool = False,
-    ) -> Result[ActionObject, str]:
+    ) -> ActionObject:
         if self.is_detached_obj(action_object, ignore_detached_objs):
             raise SyftException(
                 public_message="You uploaded an ActionObject that is not yet in the blob storage"
@@ -363,7 +360,7 @@ class ActionService(AbstractService):
         code_item: UserCode,
         kwargs: dict[str, Any],
         result_id: UID | None = None,
-    ) -> Result[ActionObjectPointer, Err]:
+    ) -> ActionObjectPointer:
         override_execution_permission = (
             context.has_execute_permissions or context.role == ServiceRole.ADMIN
         )
@@ -582,7 +579,7 @@ class ActionService(AbstractService):
         plan: Any,
         context: AuthedServiceContext,
         plan_kwargs: dict[str, ActionObject],
-    ) -> Result[ActionObject, str] | SyftError:
+    ) -> ActionObject:
         id2inpkey = {v.id: k for k, v in plan.inputs.items()}
 
         for plan_action in plan.actions:
@@ -639,7 +636,10 @@ class ActionService(AbstractService):
         )
         if not isinstance(args[0], ActionObject):
             raise SyftException(
-                public_message=f"Failed executing action {action} setattribute requires a non-twin string as first argument"
+                public_message=(
+                    f"Failed executing action {action} setattribute requires"
+                    " a non-twin string as first argument"
+                )
             )
         name = args[0].syft_action_data
         # dont do the whole filtering dance with the name
@@ -738,10 +738,9 @@ class ActionService(AbstractService):
             for k, v in action.kwargs.items():
                 # transform lineage ids into ids
                 kwarg_ids[k] = v.id
-            result_action_object = usercode_service._call(
+            return usercode_service._call(  # type: ignore[union-attr]
                 context, action.user_code_id, action.result_id, **kwarg_ids
-            )
-            return result_action_object.unwrap()
+            ).unwrap()
         elif action.action_type == ActionType.FUNCTION:
             result_action_object = self.call_function(context, action).unwrap()
         else:
@@ -778,11 +777,11 @@ class ActionService(AbstractService):
         has_result_read_permission = self.has_read_permission_for_action_result(
             context, action
         )
-        result_action_object._set_obj_location_(
+        result_action_object._set_obj_location_(  # type: ignore[union-attr]
             context.server.id,
             context.credentials,
         )
-        blob_store_result = result_action_object._save_to_blob_storage()
+        blob_store_result = result_action_object._save_to_blob_storage()  # type: ignore[union-attr]
         if isinstance(blob_store_result, SyftError):
             return blob_store_result
 
@@ -837,7 +836,7 @@ class ActionService(AbstractService):
 @as_result(SyftException)
 def resolve_action_args(
     action: Action, context: AuthedServiceContext, service: ActionService
-) -> tuple[Ok[dict], bool]:
+) -> tuple[list, bool]:
     has_twin_inputs = False
     args = []
     for arg_id in action.args:
@@ -853,7 +852,7 @@ def resolve_action_args(
 @as_result(SyftException)
 def resolve_action_kwargs(
     action: Action, context: AuthedServiceContext, service: ActionService
-) -> tuple[Ok[dict], bool]:
+) -> tuple[dict, bool]:
     has_twin_inputs = False
     kwargs = {}
     for key, arg_id in action.kwargs.items():
@@ -930,7 +929,7 @@ def execute_object(
     resolved_self: ActionObject,
     action: Action,
     twin_mode: TwinMode = TwinMode.NONE,
-) -> Result[Ok[TwinObject | ActionObject], Err[str]]:
+) -> TwinObject | ActionObject:
     unboxed_resolved_self = resolved_self.syft_action_data
     args, has_arg_twins = resolve_action_args(action, context, service).unwrap()
 

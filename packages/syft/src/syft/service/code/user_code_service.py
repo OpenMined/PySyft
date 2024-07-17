@@ -22,6 +22,7 @@ from ...util.telemetry import instrument
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
+from ..action.action_service import ActionService
 from ..context import AuthedServiceContext
 from ..output.output_service import ExecutionOutput
 from ..policy.policy import InputPolicyValidEnum
@@ -211,7 +212,7 @@ class UserCodeService(AbstractService):
             )
 
         worker_pool_service = context.server.get_service("SyftWorkerPoolService")
-        pool_result = worker_pool_service._get_worker_pool(
+        worker_pool_service._get_worker_pool(
             context,
             pool_name=user_code.worker_pool_name,
         )
@@ -297,7 +298,8 @@ class UserCodeService(AbstractService):
                 )
         else:  # code: SubmitUserCode
             # Submit new UserCode, or get existing UserCode with the same code hash
-            return self._submit(context, code, exists_ok=True)
+            # TODO: Why is this tagged as unreachable?
+            return self._submit(context, code, exists_ok=True)  # type: ignore[unreachable]
 
     @service_method(
         path="code.request_code_execution",
@@ -494,12 +496,11 @@ class UserCodeService(AbstractService):
         kwarg2id = map_kwargs_to_id(kwargs)
 
         input_policy = code.get_input_policy(context)
+        output_policy = code.get_output_policy(context)
 
         # Check output policy
         if not override_execution_permission:
             output_history = code.get_output_history(context=context).unwrap()
-
-            output_policy = code.get_output_policy(context)
 
             is_execution_allowed = self.is_execution_allowed(
                 code=code,
@@ -547,12 +548,13 @@ class UserCodeService(AbstractService):
                                     public_message=InputPolicyValidEnum.INVALID
                                 )
 
-                        result = resolve_outputs(
+                        outputs = resolve_outputs(
                             context=context,
                             output_ids=last_executed_output.output_ids,
                         ).unwrap()
 
-                        result = delist_if_single(result)
+                        if outputs:
+                            outputs = delist_if_single(outputs)
 
                         output_policy_message = ""
 
@@ -561,7 +563,7 @@ class UserCodeService(AbstractService):
                             # admin overrides policy checks.
                             output_policy_message = output_policy_is_valid.value
                         return CachedSyftObject(
-                            result=result,
+                            result=outputs,
                             error_msg=output_policy_message,
                         )
                     else:
@@ -577,14 +579,14 @@ class UserCodeService(AbstractService):
             )
 
         # FIX: actionservice unwrap
-        action_service = context.server.get_service("actionservice")
-        result_action_object: ActionObject | TwinObject = (
+        action_service: ActionService = context.server.get_service("actionservice")  # type: ignore[assignment]
+        result_action_object: ActionObject | TwinObject = (  # type: ignore[assignment]
             action_service._user_code_execute(
                 context, code, kwarg2id, result_id=result_id
             )
         ).unwrap()
 
-        result = action_service.set_result_to_store(
+        result: ActionObject | TwinObject = action_service.set_result_to_store(
             result_action_object, context, code.get_output_policy(context)
         ).unwrap()
 
@@ -616,8 +618,9 @@ class UserCodeService(AbstractService):
                 return result.private
             else:
                 return result.mock
-        elif result.is_mock:
-            return result
+        elif result.is_mock:  # type: ignore[unreachable]
+            return result  # type: ignore[return-value]
+        # TODO: Check this part after error handling PR
         elif result.syft_action_data_type is Err:
             # result contains the error but the request was handled correctly
             return result
@@ -670,7 +673,7 @@ class UserCodeService(AbstractService):
 def resolve_outputs(
     context: AuthedServiceContext,
     output_ids: list[UID],
-) -> list[ActionObject]:
+) -> list[ActionObject] | None:
     # relative
     from ...service.action.action_object import TwinMode
 

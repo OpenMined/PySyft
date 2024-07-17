@@ -8,7 +8,6 @@ from typing import Any
 
 # third party
 from pydantic import model_validator
-from result import Ok
 from result import Result
 from typing_extensions import Self
 
@@ -119,10 +118,10 @@ class ActionStoreChange(Change):
 
     @as_result(SyftException)
     def _run(self, context: ChangeContext, apply: bool) -> SyftSuccess:
-        # FIX: action_service unwrap?
         action_service: ActionService = context.server.get_service(ActionService)  # type: ignore[assignment]
-        # FIX: blob_storage_service unwrap?
-        blob_storage_service = context.server.get_service(BlobStorageService)
+        blob_storage_service: BlobStorageService = context.server.get_service(
+            BlobStorageService
+        )  # type: ignore[assignment]
         action_store = action_service.store
 
         # can we ever have a lineage ID in the store?
@@ -132,12 +131,7 @@ class ActionStoreChange(Change):
         action_obj = action_store.get(
             uid=obj_uid,
             credentials=context.approving_user_credentials,
-        )
-
-        if action_obj.is_err():
-            raise SyftException(public_message=f"{action_obj.err()}")
-
-        action_obj = action_obj.ok()
+        ).unwrap()
 
         owner_permission = ActionObjectPermission(
             uid=obj_uid,
@@ -151,15 +145,18 @@ class ActionStoreChange(Change):
                 if not isinstance(action_obj.id, LineageID)
                 else action_obj.id.id
             )
+
             requesting_permission_action_obj = ActionObjectPermission(
                 uid=id_action,
                 credentials=context.requesting_user_credentials,
                 permission=self.apply_permission_type,
             )
+
             if isinstance(action_obj, TwinObject):
                 uid_blob = action_obj.private.syft_blob_storage_entry_id
             else:
-                uid_blob = action_obj.syft_blob_storage_entry_id
+                uid_blob = action_obj.syft_blob_storage_entry_id  # type: ignore[unreachable]
+
             requesting_permission_blob_obj = (
                 ActionObjectPermission(
                     uid=uid_blob,
@@ -169,6 +166,7 @@ class ActionStoreChange(Change):
                 if uid_blob
                 else None
             )
+
             if apply:
                 logger.debug(
                     "ADDING PERMISSION", requesting_permission_action_obj, id_action
@@ -200,11 +198,13 @@ class ActionStoreChange(Change):
 
         return SyftSuccess(message=f"{type(self)} Success")
 
+    @as_result(SyftException)
     def apply(self, context: ChangeContext) -> SyftSuccess:
-        return self._run(context=context, apply=True)
+        return self._run(context=context, apply=True).unwrap()
 
+    @as_result(SyftException)
     def undo(self, context: ChangeContext) -> SyftSuccess:
-        return self._run(context=context, apply=False)
+        return self._run(context=context, apply=False).unwrap()
 
     def __repr_syft_nested__(self) -> str:
         return f"Apply <b>{self.apply_permission_type}</b> to \
@@ -298,11 +298,13 @@ class CreateCustomImageChange(Change):
 
         return SyftSuccess(message=build_success)
 
+    @as_result(SyftException)
     def apply(self, context: ChangeContext) -> SyftSuccess:
-        return self._run(context=context, apply=True)
+        return self._run(context=context, apply=True).unwrap()
 
+    @as_result(SyftException)
     def undo(self, context: ChangeContext) -> SyftSuccess:
-        return self._run(context=context, apply=False)
+        return self._run(context=context, apply=False).unwrap()
 
     def __repr_syft_nested__(self) -> str:
         return f"Create Image for Config: {self.config} with tag: {self.tag}"
@@ -363,11 +365,13 @@ class CreateCustomWorkerPoolChange(Change):
                 public_message=f"Request to create a worker pool with name {self.name} denied"
             )
 
+    @as_result(SyftException)
     def apply(self, context: ChangeContext) -> SyftSuccess:
-        return self._run(context=context, apply=True)
+        return self._run(context=context, apply=True).unwrap()
 
+    @as_result(SyftException)
     def undo(self, context: ChangeContext) -> SyftSuccess:
-        return self._run(context=context, apply=False)
+        return self._run(context=context, apply=False).unwrap()
 
     def __repr_syft_nested__(self) -> str:
         return (
@@ -652,7 +656,7 @@ class Request(SyncableSyftObject):
         approve_nested: bool = False,
         **kwargs: dict,
     ) -> Result[SyftSuccess, SyftError]:
-        api = self._get_api().unwrap()
+        api = self._get_api()
 
         if self.is_l0_deployment:
             return SyftError(
@@ -696,7 +700,7 @@ class Request(SyncableSyftObject):
         Args:
             reason (str): Reason for which the request has been denied.
         """
-        api = self._get_api().unwrap()
+        api = self._get_api()
 
         if self.is_l0_deployment:
             if self.status == RequestStatus.APPROVED:
@@ -799,7 +803,7 @@ class Request(SyncableSyftObject):
         self,
         result: Any,
     ) -> ActionObject | SyftError:
-        api = self._get_api().unwrap()
+        api = self._get_api()
 
         # Ensure result is an ActionObject
         if isinstance(result, ActionObject):
@@ -841,7 +845,7 @@ class Request(SyncableSyftObject):
         if isinstance(code, SyftError):
             return code
 
-        api = self._get_api().unwrap()
+        api = self._get_api()
 
         input_ids = {}
         input_policy = code.input_policy
@@ -879,7 +883,7 @@ class Request(SyncableSyftObject):
         """
 
         # TODO check if this is a low-side request. If not, SyftError
-        api = self._get_api().unwrap()
+        api = self._get_api()
 
         code = self.code
         if isinstance(code, SyftError):
@@ -1063,14 +1067,13 @@ class ObjectMutation(Change):
     def __repr_syft_nested__(self) -> str:
         return f"Mutate <b>{self.attr_name}</b> to <b>{self.value}</b>"
 
+    @as_result(SyftException)
     def _run(self, context: ChangeContext, apply: bool) -> SyftSuccess:
         if self.linked_obj is None:
             raise SyftException(public_message=f"{self}'s linked object is None")
 
-        obj = self.linked_obj.resolve_with_context(context)
-        if obj.is_err():
-            raise SyftException(public_message=obj.err())
-        obj = obj.ok()
+        obj = self.linked_obj.resolve_with_context(context).unwrap()
+
         if apply:
             obj = self.mutate(obj, value=self.value)
             self.linked_obj.update_with_context(context, obj)
@@ -1081,11 +1084,13 @@ class ObjectMutation(Change):
 
         return SyftSuccess(message=f"{type(self)} Success")
 
+    @as_result(SyftException)
     def apply(self, context: ChangeContext) -> SyftSuccess:
-        return self._run(context=context, apply=True)
+        return self._run(context=context, apply=True).unwrap()
 
+    @as_result(SyftException)
     def undo(self, context: ChangeContext) -> SyftSuccess:
-        return self._run(context=context, apply=False)
+        return self._run(context=context, apply=False).unwrap()
 
 
 def type_for_field(object_type: type, attr_name: str) -> type | None:
@@ -1139,25 +1144,23 @@ class EnumMutation(ObjectMutation):
             raise SyftException(public_message=valid.message)
         if self.linked_obj is None:
             raise SyftException(public_message=f"{self}'s linked object is None")
-        obj = self.linked_obj.resolve_with_context(context)
-        if obj.is_err():
-            raise SyftException(public_message=obj.err())
+        obj = self.linked_obj.resolve_with_context(context).unwrap()
 
-        obj = obj.ok()
         if apply:
             obj = self.mutate(obj=obj)
-
             self.linked_obj.update_with_context(context, obj)
         else:
             raise SyftException(public_message="undo not implemented")
 
         return SyftSuccess(message=f"{type(self)} Success")
 
+    @as_result(SyftException)
     def apply(self, context: ChangeContext) -> SyftSuccess:
-        return self._run(context=context, apply=True)
+        return self._run(context=context, apply=True).unwrap()
 
+    @as_result(SyftException)
     def undo(self, context: ChangeContext) -> SyftSuccess:
-        return self._run(context=context, apply=False)
+        return self._run(context=context, apply=False).unwrap()
 
     def __repr_syft_nested__(self) -> str:
         return f"Mutate <b>{self.enum_type}</b> to <b>{self.value}</b>"
@@ -1194,8 +1197,7 @@ class UserCodeStatusChange(Change):
         return self.linked_user_code.resolve
 
     def get_user_code(self, context: AuthedServiceContext) -> UserCode:
-        resolve = self.linked_user_code.resolve_with_context(context)
-        return resolve.ok()
+        return self.linked_user_code.resolve_with_context(context).unwrap()
 
     @property
     def codes(self) -> list[UserCode]:
@@ -1299,16 +1301,12 @@ class UserCodeStatusChange(Change):
     @as_result(SyftException)
     def _run(self, context: ChangeContext, apply: bool) -> SyftSuccess:
         valid = self.valid
+
         if not valid:
             raise SyftException(public_message=valid.message)
-        user_code = self.linked_user_code.resolve_with_context(context)
-        if user_code.is_err():
-            raise SyftException(public_message=user_code.err())
-        user_code = user_code.ok()
-        user_code_status = self.linked_obj.resolve_with_context(context)
-        if user_code_status.is_err():
-            raise SyftException(public_message=user_code_status.err())
-        user_code_status = user_code_status.unwrap()
+
+        self.linked_user_code.resolve_with_context(context).unwrap()
+        user_code_status = self.linked_obj.resolve_with_context(context).unwrap()
 
         if apply:
             # Only mutate, does not write to stash
@@ -1326,11 +1324,13 @@ class UserCodeStatusChange(Change):
             self.linked_obj.update_with_context(context, updated_status)
         return SyftSuccess(message=f"{type(self)} Success")
 
+    @as_result(SyftException)
     def apply(self, context: ChangeContext) -> SyftSuccess:
-        return self._run(context=context, apply=True)
+        return self._run(context=context, apply=True).unwrap()
 
+    @as_result(SyftException)
     def undo(self, context: ChangeContext) -> SyftSuccess:
-        return self._run(context=context, apply=False)
+        return self._run(context=context, apply=False).unwrap()
 
     @property
     def link(self) -> SyftObject | None:
@@ -1359,13 +1359,10 @@ class SyncedUserCodeStatusChange(UserCodeStatusChange):
             message="Synced UserCodes status is computed, and cannot be updated manually."
         )
 
-    def _run(
-        self, context: ChangeContext, apply: bool
-    ) -> Result[SyftSuccess, SyftError]:
-        return Ok(
-            SyftError(
-                message="Synced UserCodes status is computed, and cannot be updated manually."
-            )
+    @as_result(SyftException)
+    def _run(self, context: ChangeContext, apply: bool) -> SyftSuccess:
+        raise SyftException(
+            public_message="Synced UserCodes status is computed, and cannot be updated manually."
         )
 
     def link(self) -> Any:  # type: ignore

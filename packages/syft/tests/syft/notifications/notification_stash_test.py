@@ -281,7 +281,6 @@ def test_update_notification_status(root_verify_key, document_store) -> None:
     random_uid = UID()
     random_verify_key = SyftSigningKey.generate().verify_key
     test_stash = NotificationStash(store=document_store)
-    expected_error = f"No notification exists for id: {random_uid}"
 
     with pytest.raises(StashException) as exc:
         test_stash.update_notification_status(
@@ -307,12 +306,15 @@ def test_update_notification_status(root_verify_key, document_store) -> None:
     assert result.status == NotificationStatus.READ
 
     notification_expiry_status_auto = NotificationExpiryStatus(0)
-    with pytest.raises(AttributeError):
-        test_stash.pdate_notification_status(
+    with pytest.raises(StashException) as exc:
+        test_stash.update_notification_status(
             root_verify_key,
             uid=mock_notification.id,
             status=notification_expiry_status_auto,
-        )
+        ).unwrap()
+
+    assert exc.type is StashException
+    assert exc.value.public_message
 
 
 def test_update_notification_status_error_on_get_by_uid(
@@ -321,6 +323,7 @@ def test_update_notification_status_error_on_get_by_uid(
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
     test_stash = NotificationStash(store=document_store)
+    expected_error_msg = f"No notification exists for id: {random_verify_key}"
 
     @as_result(StashException)
     def mock_get_by_uid(root_verify_key: SyftVerifyKey, uid: UID) -> NoReturn:
@@ -342,10 +345,7 @@ def test_update_notification_status_error_on_get_by_uid(
         ).unwrap()
 
     assert exc.type is StashException
-    assert (
-        exc.value.public_message
-        == f"No notification exists for id: {random_verify_key}"
-    )
+    assert exc.value.public_message == expected_error_msg
 
 
 def test_delete_all_for_verify_key(root_verify_key, document_store) -> None:

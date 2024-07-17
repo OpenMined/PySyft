@@ -6,10 +6,6 @@ import secrets
 from typing import Any
 from typing import cast
 
-# third party
-from result import Result
-from result import as_result
-
 # relative
 from ...abstract_server import ServerType
 from ...client.client import HTTPConnection
@@ -27,6 +23,7 @@ from ...store.document_store import QueryKeys
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.server_url import ServerURL
 from ...types.transforms import TransformContext
 from ...types.transforms import keep
@@ -97,9 +94,7 @@ class NetworkStash(NewBaseUIDStoreStash):
         super().__init__(store=store)
 
     @as_result(StashException, NotFoundException)
-    def get_by_name(
-        self, credentials: SyftVerifyKey, name: str
-    ) -> Result[ServerPeer | None, str]:
+    def get_by_name(self, credentials: SyftVerifyKey, name: str) -> ServerPeer:
         qks = QueryKeys(qks=[NamePartitionKey.with_obj(name)])
         try:
             return self.query_one(credentials=credentials, qks=qks).unwrap()
@@ -114,14 +109,18 @@ class NetworkStash(NewBaseUIDStoreStash):
         credentials: SyftVerifyKey,
         peer_update: ServerPeerUpdate,
         has_permission: bool = False,
-    ) -> Result[ServerPeer, str]:
+    ) -> ServerPeer:
         self.check_type(peer_update, ServerPeerUpdate).unwrap()
-        return super().update(credentials, peer_update, has_permission=has_permission)
+        return (
+            super()
+            .update(credentials, peer_update, has_permission=has_permission)
+            .unwrap()
+        )
 
     @as_result(StashException)
     def create_or_update_peer(
         self, credentials: SyftVerifyKey, peer: ServerPeer
-    ) -> Result[ServerPeer, str]:
+    ) -> ServerPeer:
         """
         Update the selected peer and its route priorities if the peer already exists
         If the peer does not exist, simply adds it to the database.
@@ -131,30 +130,28 @@ class NetworkStash(NewBaseUIDStoreStash):
             peer (ServerPeer): The peer to be updated or added.
 
         Returns:
-            Result[ServerPeer, str]: The updated or added peer if the operation
-            was successful, or an error message if the operation failed.
+            ServerPeer: The updated or added peer if the operation was successful.
+                Raises an exception if the operation failed.
         """
         self.check_type(peer, ServerPeer).unwrap()
-        existing_peer: Result | ServerPeer = self.get_by_uid(
-            credentials=credentials, uid=peer.id
-        )
 
-        if existing_peer.is_err() and isinstance(
-            existing_peer.err(), NotFoundException
-        ):
-            return self.set(credentials, peer).unwrap()
-        else:
-            existing_peer = existing_peer.ok()
-            existing_peer.update_routes(peer.server_routes)
-            peer_update = ServerPeerUpdate(
-                id=peer.id, server_routes=existing_peer.server_routes
-            )
-            return self.update(credentials, peer_update)
+        try:
+            existing_peer: ServerPeer = self.get_by_uid(
+                credentials=credentials, uid=peer.id
+            ).unwrap()
+        except NotFoundException:
+            return self.set(credentials, obj=peer).unwrap()
+
+        existing_peer.update_routes(peer.server_routes)
+        peer_update = ServerPeerUpdate(
+            id=peer.id, server_routes=existing_peer.server_routes
+        )
+        return self.update(credentials, peer_update).unwrap()
 
     @as_result(StashException, NotFoundException)
     def get_by_verify_key(
         self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
-    ) -> Result[ServerPeer | None, SyftError]:
+    ) -> ServerPeer:
         qks = QueryKeys(qks=[VerifyKeyPartitionKey.with_obj(verify_key)])
         return self.query_one(credentials, qks).unwrap(
             private_message=f"ServerPeer with {verify_key} not found"
@@ -163,7 +160,7 @@ class NetworkStash(NewBaseUIDStoreStash):
     @as_result(StashException)
     def get_by_server_type(
         self, credentials: SyftVerifyKey, server_type: ServerType
-    ) -> Result[list[ServerPeer], SyftError]:
+    ) -> list[ServerPeer]:
         qks = QueryKeys(qks=[ServerTypePartitionKey.with_obj(server_type)])
         return self.query_all(
             credentials=credentials, qks=qks, order_by=OrderByNamePartitionKey
@@ -235,18 +232,19 @@ class NetworkService(AbstractService):
             updated_peer = ServerPeerUpdate(
                 id=self_server_peer.id, server_routes=self_server_peer.server_routes
             )
-            result = remote_client.api.services.network.update_peer(
-                peer_update=updated_peer
-            ).unwrap()
-            if isinstance(result, SyftError):
-                logger.error(
-                    f"Failed to update peer information on remote client. {result.message}"
+            try:
+                result = remote_client.api.services.network.update_peer(
+                    peer_update=updated_peer
                 )
-                return SyftError(
-                    message=f"Failed to add peer information on remote client : {remote_client.id}"
+            except Exception as e:
+                logger.error(f"Failed to update peer information on remote client. {e}")
+                raise SyftException.from_exception(
+                    e,
+                    public_message=f"Failed to add peer information on remote client : {remote_client.id}",
+                    private_message=f"Error: {e}",
                 )
 
-        # If  peer does not exist, ask the remote client to add this server
+        # If peer does not exist, ask the remote client to add this server
         # (represented by `self_server_peer`) as a peer
         if remote_self_server_peer is None:
             random_challenge = secrets.token_bytes(16)
@@ -265,11 +263,12 @@ class NetworkService(AbstractService):
             context.server.verify_key,
             remote_server_peer,
         )
+
         if result.is_err():
             logging.error(
                 f"Failed to save peer: {remote_server_peer}. Error: {result.err()}"
             )
-            return SyftError(message="Failed to update route information.")
+            result.unwrap()
 
         # Step 5: Save config to enable reverse tunneling
         if reverse_tunnel and reverse_tunnel_enabled():
@@ -324,7 +323,7 @@ class NetworkService(AbstractService):
 
             if existing_peer != peer:
                 msg.append("Peer information change detected.")
-                result = self.stash.create_or_update_peer(
+                self.stash.create_or_update_peer(
                     context.server.verify_key,
                     peer,
                 ).unwrap(
@@ -399,7 +398,7 @@ class NetworkService(AbstractService):
 
         # get the server peer for the given sender peer_id
         try:
-            peer = self.stash.get_by_uid(context.server.verify_key, peer_id).unwrap()
+            self.stash.get_by_uid(context.server.verify_key, peer_id).unwrap()
             return ServerPeerAssociationStatus.PEER_ASSOCIATED
         except NotFoundException:
             association_requests: list[Request] = (
@@ -420,8 +419,7 @@ class NetworkService(AbstractService):
     )
     def get_all_peers(self, context: AuthedServiceContext) -> list[ServerPeer]:
         """Get all Peers"""
-
-        result = self.stash.get_all(
+        return self.stash.get_all(
             credentials=context.server.verify_key,
             order_by=OrderByNamePartitionKey,
         ).unwrap()
@@ -444,7 +442,7 @@ class NetworkService(AbstractService):
     def get_peers_by_type(
         self, context: AuthedServiceContext, server_type: ServerType
     ) -> list[ServerPeer]:
-        self.stash.get_by_server_type(
+        return self.stash.get_by_server_type(
             credentials=context.server.verify_key,
             server_type=server_type,
         ).unwrap()
@@ -536,7 +534,11 @@ class NetworkService(AbstractService):
         # that it has been deleted from the network
         return SyftSuccess(message=f"Server Peer with id {uid} deleted.")
 
-    @service_method(path="network.add_route_on_peer", name="add_route_on_peer")
+    @service_method(
+        path="network.add_route_on_peer",
+        name="add_route_on_peer",
+        unwrap_on_success=False,
+    )
     def add_route_on_peer(
         self,
         context: AuthedServiceContext,
@@ -563,6 +565,10 @@ class NetworkService(AbstractService):
             peer_verify_key=context.credentials,
             route=route,
             called_by_peer=True,
+        )
+
+        return SyftSuccess(
+            message="Route information added to remote peer", value=result
         )
 
     @service_method(path="network.add_route", name="add_route", roles=GUEST_ROLE_LEVEL)
@@ -605,6 +611,7 @@ class NetworkService(AbstractService):
             )
 
         remote_server_peer.update_route(route=route)
+
         # update the peer in the store with the updated routes
         peer_update = ServerPeerUpdate(
             id=remote_server_peer.id, server_routes=remote_server_peer.server_routes
@@ -613,6 +620,7 @@ class NetworkService(AbstractService):
             credentials=context.server.verify_key,
             peer_update=peer_update,
         ).unwrap()
+
         return SyftSuccess(
             message=f"New route ({str(route)}) with id '{route.id}' "
             f"to peer {remote_server_peer.server_type.value} '{remote_server_peer.name}' "
@@ -705,7 +713,8 @@ class NetworkService(AbstractService):
                     f"'{remote_server_peer.server_routes[0].id}' was not deleted."
                 )
 
-        remote_server_peer.delete_route(route=route).unwrap()
+        if route is not None:
+            remote_server_peer.delete_route(route)
 
         return_message = (
             f"Route '{str(route)}' to peer "

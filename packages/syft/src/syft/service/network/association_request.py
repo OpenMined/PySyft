@@ -2,10 +2,6 @@
 import secrets
 from typing import cast
 
-# third party
-from result import Err
-from result import Result
-
 # relative
 from ...client.client import SyftClient
 from ...serde.serializable import serializable
@@ -34,7 +30,7 @@ class AssociationRequestChange(Change):
     @as_result(SyftException)
     def _run(
         self, context: ChangeContext, apply: bool
-    ) -> Result[tuple[bytes, ServerPeer], SyftError]:
+    ) -> SyftSuccess:  # tuple[bytes, ServerPeer]:
         """
         Executes the association request.
 
@@ -43,7 +39,8 @@ class AssociationRequestChange(Change):
             apply (bool): A flag indicating whether to apply the association request.
 
         Returns:
-            Result[tuple[bytes, ServerPeer], SyftError]: The result of the association request.
+            tuple[bytes, ServerPeer]: The result of the association request.
+                Raises on errors.
         """
         # relative
         from .network_service import NetworkService
@@ -99,7 +96,7 @@ class AssociationRequestChange(Change):
                 )
 
             if isinstance(remote_res, SyftError):
-                return Err(remote_res)
+                raise SyftException(public_message=remote_res.message)
 
             challenge_signature = remote_res
 
@@ -129,15 +126,17 @@ class AssociationRequestChange(Change):
             raise SyftException(public_message=self_server_peer)
 
         return SyftSuccess(
-            message=f"Routes successfully added for peer: {self.remote_peer.name}"
+            message=f"Routes successfully added for peer: {self.remote_peer.name}",
+            value=self,
         )
 
-    # TODO: Check if calls are expecting SyftError as return type
+    @as_result(SyftException)
     def apply(self, context: ChangeContext) -> SyftSuccess:
-        return self._run(context, apply=True)
+        return self._run(context, apply=True).unwrap()
 
+    @as_result(SyftException)
     def undo(self, context: ChangeContext) -> SyftSuccess:
-        return self._run(context, apply=False)
+        return self._run(context, apply=False).unwrap()
 
     def __repr_syft_nested__(self) -> str:
         return f"Request for connection from : {self.remote_peer.name}"
