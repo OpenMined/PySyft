@@ -701,8 +701,6 @@ class Server(AbstractServer):
 
         connection = PythonConnection(server=self)
         client_type = connection.get_client_type()
-        if isinstance(client_type, SyftError):
-            return client_type
         root_client = client_type(connection=connection, credentials=self.signing_key)
         if root_client.api.refresh_api_callback is not None:
             root_client.api.refresh_api_callback()
@@ -773,8 +771,6 @@ class Server(AbstractServer):
             logger.debug(message)
 
         client_type = connection.get_client_type()
-        if isinstance(client_type, SyftError):
-            return client_type
 
         guest_client = client_type(
             connection=connection, credentials=SyftSigningKey.generate()
@@ -1062,7 +1058,7 @@ class Server(AbstractServer):
                 result = client.connection.get_api(**message.kwargs)
             else:
                 signed_result = client.connection.make_call(api_call)
-                result = debox_signed_syftapicall_response(signed_result=signed_result)
+                result = debox_signed_syftapicall_response(signed_result=signed_result).unwrap()
 
                 # relative
                 from ..store.blob_storage import BlobRetrievalByURL

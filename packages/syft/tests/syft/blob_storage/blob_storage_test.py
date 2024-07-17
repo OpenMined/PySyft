@@ -51,7 +51,7 @@ def test_blob_storage_write():
     blob_data = CreateBlobStorageEntry.from_obj(data)
     blob_deposit = blob_storage.allocate(authed_context, blob_data)
     file_data = io.BytesIO(data)
-    written_data = blob_deposit.write(file_data)
+    written_data = blob_deposit.write(file_data).unwrap()
 
     assert isinstance(written_data, SyftSuccess)
 
@@ -70,7 +70,7 @@ def test_blob_storage_write_syft_object():
     blob_deposit = blob_storage.allocate(authed_context, blob_data)
     user = UserCreate(email="info@openmined.org", name="Jana Doe", password="password")
     file_data = io.BytesIO(sy.serialize(user, to_bytes=True))
-    written_data = blob_deposit.write(file_data)
+    written_data = blob_deposit.write(file_data).unwrap()
 
     assert isinstance(written_data, SyftSuccess)
     worker.cleanup()
@@ -87,7 +87,7 @@ def test_blob_storage_read():
     blob_data = CreateBlobStorageEntry.from_obj(data)
     blob_deposit = blob_storage.allocate(authed_context, blob_data)
     file_data = io.BytesIO(data)
-    blob_deposit.write(file_data)
+    blob_deposit.write(file_data).unwrap()
 
     syft_retrieved_data = blob_storage.read(
         authed_context, blob_deposit.blob_storage_entry_id
@@ -105,7 +105,7 @@ def test_blob_storage_delete(authed_context, blob_storage):
     assert isinstance(blob_deposit, BlobDeposit)
 
     file_data = io.BytesIO(data)
-    written_data = blob_deposit.write(file_data)
+    written_data = blob_deposit.write(file_data).unwrap()
     assert type(written_data) is SyftSuccess
 
     item = blob_storage.read(authed_context, blob_deposit.blob_storage_entry_id)

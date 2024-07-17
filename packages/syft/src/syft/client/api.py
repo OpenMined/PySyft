@@ -333,11 +333,9 @@ class RemoteFunction(SyftObject):
 
     def prepare_args_and_kwargs(
         self, args: list | tuple, kwargs: dict[str, Any]
-    ) -> SyftError | tuple[tuple, dict[str, Any]]:
+    ) -> tuple[tuple, dict[str, Any]]:
         # Validate and migrate args and kwargs
-        res = validate_callable_args_and_kwargs(args, kwargs, self.signature)
-        if isinstance(res, SyftError):
-            return res
+        res = validate_callable_args_and_kwargs(args, kwargs, self.signature).unwrap()
         args, kwargs = res
 
         args, kwargs = migrate_args_and_kwargs(
@@ -438,7 +436,8 @@ class RemoteFunction(SyftObject):
             message="This function doesn't support mock/private calls as it's not custom."
         )
 
-    def custom_function_actionobject_id(self) -> UID | SyftError:
+    @as_result(SyftException)
+    def custom_function_actionobject_id(self) -> UID:
         if self.custom_function and self.pre_kwargs is not None:
             custom_path = self.pre_kwargs.get("path", "")
             api_call = SyftAPICall(
@@ -448,10 +447,8 @@ class RemoteFunction(SyftObject):
                 kwargs={},
             )
             endpoint = self.make_call(api_call=api_call)
-            if isinstance(endpoint, SyftError):
-                return endpoint
             return endpoint.action_object_id
-        return SyftError(message="This function is not a custom function")
+        raise SyftException(public_message="This function is not a custom function")
 
     def _repr_markdown_(self, wrap_as_python: bool = False, indent: int = 0) -> str:
         if self.custom_function and self.pre_kwargs is not None:
@@ -504,14 +501,12 @@ class RemoteUserCodeFunction(RemoteFunction):
 
     def prepare_args_and_kwargs(
         self, args: list | tuple, kwargs: dict[str, Any]
-    ) -> SyftError | tuple[tuple, dict[str, Any]]:
+    ) -> tuple[tuple, dict[str, Any]]:
         # relative
         from ..service.action.action_object import convert_to_pointers
 
         # Validate and migrate args and kwargs
-        res = validate_callable_args_and_kwargs(args, kwargs, self.signature)
-        if isinstance(res, SyftError):
-            return res
+        res = validate_callable_args_and_kwargs(args, kwargs, self.signature).unwrap()
         args, kwargs = res
 
         # Check remote function type to avoid function/method serialization
@@ -522,7 +517,7 @@ class RemoteUserCodeFunction(RemoteFunction):
 
         for k, v in kwargs.items():
             if isinstance(v, RemoteFunction) and v.custom_function:
-                kwargs[k] = v.custom_function_actionobject_id()
+                kwargs[k] = v.custom_function_actionobject_id().unwrap()
 
         args, kwargs = convert_to_pointers(
             api=self.api,
@@ -622,7 +617,7 @@ def generate_remote_lib_function(
             f"Signature {signature} can't have 'blocking' kwarg because its reserved"
         )
 
-    def wrapper(*args: Any, **kwargs: Any) -> SyftError | Any:
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
         # relative
         from ..service.action.action_object import TraceResultRegistry
 
@@ -640,10 +635,8 @@ def generate_remote_lib_function(
             blocking = bool(kwargs["blocking"])
             del kwargs["blocking"]
 
-        res = validate_callable_args_and_kwargs(args, kwargs, signature)
+        res = validate_callable_args_and_kwargs(args, kwargs, signature).unwrap()
 
-        if isinstance(res, SyftError):
-            return res
         _valid_args, _valid_kwargs = res
 
         if pre_kwargs:
@@ -1391,18 +1384,18 @@ class ServerIdentity(Identity):
     def __repr__(self) -> str:
         return f"ServerIdentity <name={self.server_name}, id={self.server_id.short()}, 🔑={str(self.verify_key)[0:8]}>"
 
-
+@as_result(SyftException)
 def validate_callable_args_and_kwargs(
     args: list, kwargs: dict, signature: Signature
-) -> tuple[list, dict] | SyftError:
+) -> tuple[list, dict]:
     _valid_kwargs = {}
     if "kwargs" in signature.parameters:
         _valid_kwargs = kwargs
     else:
         for key, value in kwargs.items():
             if key not in signature.parameters:
-                return SyftError(
-                    message=f"""Invalid parameter: `{key}`. Valid Parameters: {list(signature.parameters)}"""
+                raise SyftException(
+                    public_message=f"""Invalid parameter: `{key}`. Valid Parameters: {list(signature.parameters)}"""
                 )
             param = signature.parameters[key]
             if isinstance(param.annotation, str):
@@ -1427,8 +1420,8 @@ def validate_callable_args_and_kwargs(
                     TypeAdapter(t, **config_kw).validate_python(value)
                 except Exception:
                     _type_str = getattr(t, "__name__", str(t))
-                    return SyftError(
-                        message=f"`{key}` must be of type `{_type_str}` not `{type(value).__name__}`"
+                    raise SyftException(
+                        public_message=f"`{key}` must be of type `{_type_str}` not `{type(value).__name__}`"
                     )
 
             _valid_kwargs[key] = value
@@ -1469,7 +1462,7 @@ def validate_callable_args_and_kwargs(
                     msg = f"Arg is `{arg}`. \nIt must be of type `{_type_str}`, not `{type(arg).__name__}`"
 
             if msg:
-                return SyftError(message=msg)
+                raise SyftException(public_message=msg)
 
             _valid_args.append(arg)
 

@@ -4,6 +4,8 @@ from pathlib import Path
 from typing import Any
 
 # third party
+from result import as_result
+from syft.types.errors import SyftException
 from typing_extensions import Self
 
 # relative
@@ -28,7 +30,8 @@ class OnDiskBlobDeposit(BlobDeposit):
     __canonical_name__ = "OnDiskBlobDeposit"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    def write(self, data: BytesIO) -> SyftSuccess | SyftError:
+    @as_result(SyftException)
+    def write(self, data: BytesIO) -> SyftSuccess:
         # relative
         from ...service.service import from_api_or_context
 
@@ -38,7 +41,7 @@ class OnDiskBlobDeposit(BlobDeposit):
             syft_client_verify_key=self.syft_client_verify_key,
         )
         if write_to_disk_method is None:
-            return SyftError(message="write_to_disk_method is None")
+            raise SyftException(public_message="write_to_disk_method is None")
         return write_to_disk_method(data=data.read(), uid=self.blob_storage_entry_id)
 
 

@@ -23,7 +23,7 @@ from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import field_validator
 from pydantic import model_validator
-from result import Err
+from result import Err, as_result
 from result import Ok
 from result import Result
 from typing_extensions import Self
@@ -787,12 +787,10 @@ class ActionObject(SyncableSyftObject):
     @property
     def syft_action_data(self) -> Any:
         if self.syft_blob_storage_entry_id and self.syft_created_at:
-            res = self.reload_cache()
-            if isinstance(res, SyftError):
-                print(res)
+            self.reload_cache()
         return self.syft_action_data_cache
 
-    def reload_cache(self) -> SyftError | None:
+    def reload_cache(self) -> None:
         # If ActionDataEmpty then try to fetch it from store.
         if isinstance(self.syft_action_data_cache, ActionDataEmpty):
             blob_storage_read_method = from_api_or_context(
@@ -804,18 +802,10 @@ class ActionObject(SyncableSyftObject):
             if blob_storage_read_method is not None:
                 blob_retrieval_object = blob_storage_read_method(
                     uid=self.syft_blob_storage_entry_id
-                )
-                if isinstance(blob_retrieval_object, SyftError):
-                    logger.error(
-                        f"Could not fetch actionobject data: {blob_retrieval_object}"
-                    )
-                    return blob_retrieval_object
+                ).unwrap(f"Could not fetch actionobject data.")
                 # relative
                 from ...store.blob_storage import BlobRetrieval
-
-                if isinstance(blob_retrieval_object, SyftError):
-                    return blob_retrieval_object
-                elif isinstance(blob_retrieval_object, BlobRetrieval):
+                if isinstance(blob_retrieval_object, BlobRetrieval):
                     # TODO: This change is temporary to for gateway to be compatible with the new blob storage
                     self.syft_action_data_cache = blob_retrieval_object.read()
                     self.syft_action_data_type = type(self.syft_action_data)
@@ -828,11 +818,11 @@ class ActionObject(SyncableSyftObject):
                     self.syft_action_data_type = type(self.syft_action_data)
                     return None
             else:
-                return SyftError("Could not reload cache, could not get read method")
+                raise SyftException(public_meesage="Could not reload cache, could not get read method")
 
         return None
 
-    def _save_to_blob_storage_(self, data: Any) -> SyftError | SyftWarning | None:
+    def _save_to_blob_storage_(self, data: Any) -> SyftWarning | None:
         # relative
         from ...types.blob_storage import BlobFile
         from ...types.blob_storage import CreateBlobStorageEntry
@@ -874,13 +864,7 @@ class ActionObject(SyncableSyftObject):
                 )
                 if allocate_method is not None:
                     blob_deposit_object = allocate_method(storage_entry)
-                    if isinstance(blob_deposit_object, SyftError):
-                        return blob_deposit_object
-
-                    result = blob_deposit_object.write(BytesIO(serialized))
-                    if isinstance(result, SyftError):
-                        return result
-
+                    blob_deposit_object.write(BytesIO(serialized)).unwrap()
                     self.syft_blob_storage_entry_id = (
                         blob_deposit_object.blob_storage_entry_id
                     )
@@ -899,20 +883,19 @@ class ActionObject(SyncableSyftObject):
 
         return None
 
+    @as_result(SyftException)
     def _save_to_blob_storage(
         self, allow_empty: bool = False
-    ) -> SyftError | SyftSuccess | SyftWarning:
+    ) -> SyftSuccess | SyftWarning:
         data = self.syft_action_data
-        # if isinstance(data, SyftError):
-        #     return data
 
         if isinstance(data, ActionDataEmpty):
-            return SyftError(
+            raise SyftException(
                 message=f"cannot store empty object {self.id} to the blob storage"
             )
 
         result = self._save_to_blob_storage_(data)
-        if isinstance(result, SyftError | SyftWarning):
+        if isinstance(result, SyftWarning):
             return result
         if not TraceResultRegistry.current_thread_is_tracing():
             self._clear_cache()

@@ -8,6 +8,7 @@ from typing import Any
 from result import Err
 from result import Ok
 from result import Result
+from syft.types.errors import SyftException
 from typing_extensions import Self
 import yaml
 
@@ -175,17 +176,17 @@ class MigrationData(SyftObject):
         return migration_config
 
     @classmethod
-    def from_file(self, path: str | Path) -> Self | SyftError:
+    def from_file(self, path: str | Path) -> Self:
         path = Path(path)
         if not path.exists():
-            return SyftError(f"File {str(path)} does not exist.")
+            raise SyftException(f"File {str(path)} does not exist.")
 
         with open(path, "rb") as f:
             res: MigrationData = _deserialize(f.read(), from_bytes=True)
 
         return res
 
-    def save(self, path: str | Path, yaml_path: str | Path) -> SyftSuccess | SyftError:
+    def save(self, path: str | Path, yaml_path: str | Path) -> SyftSuccess:
         if not self.includes_blobs:
             proceed = prompt_warning_message(
                 "You are saving migration data without blob storage data. "
@@ -194,7 +195,7 @@ class MigrationData(SyftObject):
                 confirm=True,
             )
             if not proceed:
-                return SyftError(message="Migration data not saved.")
+                raise SyftException(message="Migration data not saved.")
 
         path = Path(path)
         with open(path, "wb") as f:
@@ -207,20 +208,15 @@ class MigrationData(SyftObject):
 
         return SyftSuccess(message=f"Migration data saved to {str(path)}.")
 
-    def download_blobs(self) -> None | SyftError:
+    def download_blobs(self) -> None:
         for obj in self.blob_storage_objects:
             blob = self.download_blob(obj.id)
-            if isinstance(blob, SyftError):
-                return blob
             self.blobs[obj.id] = blob
         return None
 
-    def download_blob(self, obj_id: str) -> Any | SyftError:
+    def download_blob(self, obj_id: str) -> Any:
         api = self._get_api()
-
         blob_retrieval = api.services.blob_storage.read(obj_id)
-        if isinstance(blob_retrieval, SyftError):
-            return blob_retrieval
         return blob_retrieval.read()
 
     def migrate_and_upload_blobs(self) -> SyftSuccess | SyftError:
@@ -230,11 +226,11 @@ class MigrationData(SyftObject):
                 return upload_result
         return SyftSuccess(message="All blobs uploaded successfully.")
 
-    def migrate_and_upload_blob(self, obj: BlobStorageEntry) -> SyftSuccess | SyftError:
+    def migrate_and_upload_blob(self, obj: BlobStorageEntry) -> SyftSuccess:
         api = self._get_api()
 
         if obj.id not in self.blobs:
-            return SyftError(f"Blob {obj.id} not found in migration data.")
+            raise SyftException(public_message=f"Blob {obj.id} not found in migration data.")
         data = self.blobs[obj.id]
 
         migrated_obj = obj.migrate_to(BlobStorageEntry.__version__, Context())
@@ -248,7 +244,7 @@ class MigrationData(SyftObject):
 
         if isinstance(blob_deposit_object, SyftError):
             return blob_deposit_object
-        return blob_deposit_object.write(BytesIO(serialized))
+        return blob_deposit_object.write(BytesIO(serialized)).unwrap()
 
     def copy_without_blobs(self) -> "MigrationData":
         # Create a shallow copy of the MigrationData instance, removing blob-related data

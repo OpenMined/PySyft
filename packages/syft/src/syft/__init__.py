@@ -88,6 +88,7 @@ from .util.telemetry import instrument
 from .util.util import autocache
 from .util.util import get_root_data_path
 from .util.version_compare import make_requires
+from .types.result import as_result
 
 requires = make_requires(LATEST_STABLE_SYFT, __version__)
 

@@ -14,6 +14,8 @@ from botocore.client import ClientError as BotoClientError
 from botocore.client import Config
 from botocore.exceptions import ConnectionError
 import requests
+from result import as_result
+from syft.types.errors import SyftException
 from tenacity import retry
 from tenacity import retry_if_exception_type
 from tenacity import stop_after_delay
@@ -59,7 +61,8 @@ class SeaweedFSBlobDeposit(BlobDeposit):
     size: int
     proxy_server_uid: UID | None = None
 
-    def write(self, data: BytesIO) -> SyftSuccess | SyftError:
+    @as_result(SyftException)
+    def write(self, data: BytesIO) -> SyftSuccess:
         # relative
         from ...client.api import APIRegistry
 
@@ -159,8 +162,7 @@ class SeaweedFSBlobDeposit(BlobDeposit):
                     etags.append({"ETag": etag, "PartNumber": part_no})
 
         except requests.RequestException as e:
-            logger.error(f"Failed to upload file to SeaweedFS - {e}")
-            return SyftError(message=str(e))
+            raise SyftException(public_message=f"Failed to upload file to SeaweedFS - {e}")
 
         mark_write_complete_method = from_api_or_context(
             func_or_path="blob_storage.mark_write_complete",
@@ -168,7 +170,7 @@ class SeaweedFSBlobDeposit(BlobDeposit):
             syft_client_verify_key=self.syft_client_verify_key,
         )
         if mark_write_complete_method is None:
-            return SyftError(message="mark_write_complete_method is None")
+            raise SyftException(public_message="mark_write_complete_method is None")
         return mark_write_complete_method(
             etags=etags, uid=self.blob_storage_entry_id, no_lines=no_lines
         )

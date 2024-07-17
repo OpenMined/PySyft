@@ -114,7 +114,7 @@ class SyftObjectRetrieval(BlobRetrieval):
         else:
             return res
 
-    def read(self, _deserialize: bool = True) -> SyftObject | SyftError:
+    def read(self, _deserialize: bool = True) -> SyftObject:
         return self._read_data(_deserialize=_deserialize)
 
 
