@@ -113,24 +113,32 @@ class ServerSettings(SyftObject):
     notifications_enabled: str = "Disabled"
 
     def _repr_html_(self) -> Any:
-        if not self._get_api().services.notifications.settings().active:
-            self.notifications_enabled = "Disabled"
-        else:
-            preferences = self._get_api().services.notifications.user_settings()
-            notifications = []
-            if preferences.email:
-                notifications.append("email")
-            if preferences.sms:
-                notifications.append("sms")
-            if preferences.slack:
-                notifications.append("slack")
-            if preferences.app:
-                notifications.append("app")
+        # .api.services.notifications.settings() is how the server itself would dispatch notifications.
+        # .api.services.notifications.user_settings() sets if a specific user wants or not to receive notifications.
+        # Class NotifierSettings holds both pieces of info.
+        # Users will get notification x where x in {email, slack, sms, app} if three things are set to True:
+        # 1) .....settings().active
+        # 2) .....settings().x_enabled
+        # 3) .....user_settings().x
 
+        preferences = self._get_api().services.notifications.settings()
+        notifications = []
+        if preferences.email_enabled:
+            notifications.append("email")
+        if preferences.sms_enabled:
+            notifications.append("sms")
+        if preferences.slack_enabled:
+            notifications.append("slack")
+        if preferences.app_enabled:
+            notifications.append("app")
+
+        if preferences.active:
             if notifications:
                 self.notifications_enabled = f"Enabled via {', '.join(notifications)}"
             else:
-                self.notifications_enabled = "Disabled"
+                self.notifications_enabled = "Enabled without any communication method"
+        else:
+            self.notifications_enabled = "Disabled"
 
         return f"""
             <style>
