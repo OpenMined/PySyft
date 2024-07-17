@@ -1,5 +1,4 @@
 # stdlib
-from collections.abc import Callable
 from typing import Any
 from typing import ClassVar
 
@@ -9,32 +8,16 @@ from pandas import Series
 
 # relative
 from ...serde.serializable import serializable
-from ...types.syft_migration import migrate
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
-from ...types.syft_object import SYFT_OBJECT_VERSION_4
-from ...types.transforms import drop
-from ...types.transforms import make_set_default
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from .action_object import ActionObject
-from .action_object import ActionObjectV3
 from .action_object import BASE_PASSTHROUGH_ATTRS
 from .action_types import action_types
 
 
 @serializable()
-class PandasDataFrameObjectV3(ActionObjectV3):
-    __canonical_name__ = "PandasDataframeObject"
-    __version__ = SYFT_OBJECT_VERSION_3
-
-    syft_internal_type: ClassVar[type] = DataFrame
-    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
-    # this is added for instance checks for dataframes
-    # syft_dont_wrap_attrs = ["shape"]
-
-
-@serializable()
 class PandasDataFrameObject(ActionObject):
     __canonical_name__ = "PandasDataframeObject"
-    __version__ = SYFT_OBJECT_VERSION_4
+    __version__ = SYFT_OBJECT_VERSION_1
 
     syft_internal_type: ClassVar[type] = DataFrame
     syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
@@ -63,18 +46,9 @@ class PandasDataFrameObject(ActionObject):
 
 
 @serializable()
-class PandasSeriesObjectV3(ActionObjectV3):
-    __canonical_name__ = "PandasSeriesObject"
-    __version__ = SYFT_OBJECT_VERSION_3
-
-    syft_internal_type = Series
-    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
-
-
-@serializable()
 class PandasSeriesObject(ActionObject):
     __canonical_name__ = "PandasSeriesObject"
-    __version__ = SYFT_OBJECT_VERSION_4
+    __version__ = SYFT_OBJECT_VERSION_1
 
     syft_internal_type = Series
     syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
@@ -99,23 +73,3 @@ class PandasSeriesObject(ActionObject):
 
 action_types[DataFrame] = PandasDataFrameObject
 action_types[Series] = PandasSeriesObject
-
-
-@migrate(PandasSeriesObjectV3, PandasSeriesObject)
-def upgrade_pandasseries_object() -> list[Callable]:
-    return [make_set_default("syft_action_saved_to_blob_store", True)]
-
-
-@migrate(PandasSeriesObject, PandasSeriesObjectV3)
-def downgrade_pandasseries_object() -> list[Callable]:
-    return [drop("syft_action_saved_to_blob_store")]
-
-
-@migrate(PandasDataFrameObjectV3, PandasDataFrameObject)
-def upgrade_pandasdataframe_object() -> list[Callable]:
-    return [make_set_default("syft_action_saved_to_blob_store", True)]
-
-
-@migrate(PandasDataFrameObject, PandasDataFrameObjectV3)
-def downgrade_pandasdataframe_object() -> list[Callable]:
-    return [drop("syft_action_saved_to_blob_store")]

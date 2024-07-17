@@ -1,1179 +1,640 @@
 {
   "dev": {
     "object_versions": {
+      "BaseDateTime": {
+        "1": {
+          "version": 1,
+          "hash": "614db484b1950be729902b1861bd3a7b33899176507c61cef11dc0d44611cfd3",
+          "action": "add"
+        }
+      },
       "PartialSyftObject": {
-        "2": {
-          "version": 2,
-          "hash": "a32dc097345cffb073caa322281fd8de5f89f0072e9244d093a8bf32ce260642",
+        "1": {
+          "version": 1,
+          "hash": "19a995fcc2833f4fab24584fd99b71a80c2ef1f13c06f83af79e4482846b1656",
           "action": "add"
         }
       },
       "ServerMetadata": {
-        "4": {
-          "version": 4,
-          "hash": "e5e0c2d926bf1fea0696126c9cd2ea5308c198f9412de1732a509082cb738e35",
-          "action": "add"
-        },
-        "5": {
-          "version": 5,
-          "hash": "13bfe668b20779b2ab04227dc6b92d545b9ea83baaf0002cad5bcc450f34d246",
+        "1": {
+          "version": 1,
+          "hash": "1691c7667eca86b20c4189e90ce4e643dd41fd3682cdb69c6308878f2a6f135c",
           "action": "add"
         }
       },
       "StoreConfig": {
-        "2": {
-          "version": 2,
-          "hash": "af833ac27e16cd3dd93061e4870847df37e480893d867966a0ae8dcca57b9abb",
+        "1": {
+          "version": 1,
+          "hash": "a9997fce6a8a0ed2884c58b8eb9382f8554bdd18fff61f8bf0451945bcff12c7",
           "action": "add"
         }
       },
       "MongoDict": {
-        "2": {
-          "version": 2,
-          "hash": "2ab3c12b81326108badd66307d4c4fefb1d60e76d5be2c67e70bb607b4992e93",
+        "1": {
+          "version": 1,
+          "hash": "57e36f57eed75e62b29e2bac1295035a9bf2c0e3c56719dac24cb6cc685be00b",
           "action": "add"
         }
       },
       "MongoStoreConfig": {
-        "2": {
-          "version": 2,
-          "hash": "89f75ccf2d640d2dc47aa68bdbd766e4b83433a98653ade174724a631f47fd4d",
+        "1": {
+          "version": 1,
+          "hash": "53342b27d34165b7e2699f8e7ad70d13d125875e6a75e8fa18f5796428f41036",
           "action": "add"
         }
       },
       "LinkedObject": {
-        "2": {
-          "version": 2,
-          "hash": "d9c00f99c5385cbcdd11173dfd30b532ddcbc4e8c37f6121a01061cf71b91b5e",
+        "1": {
+          "version": 1,
+          "hash": "d80f5ac7f51a9383be1a3cb334d56ae50e49733ed3199f3b6b5d6febd9de410b",
           "action": "add"
         }
       },
       "BaseConfig": {
-        "2": {
-          "version": 2,
-          "hash": "09bb3e3ba91f6c2604d4a057a7be48afa8fb4720b683ac4019569323900acdc9",
+        "1": {
+          "version": 1,
+          "hash": "10bd7566041d0f0a3aa295367785fdcc2c5bbf0ded984ac9230754f37496a6a7",
           "action": "add"
         }
       },
       "ServiceConfig": {
-        "2": {
-          "version": 2,
-          "hash": "df15d8e09dedcbee2e07292ad71a8fd42cf0d52ac4ffdaaa27ef87b7f2629a8a",
+        "1": {
+          "version": 1,
+          "hash": "28af8a296f5ff63de50438277eaa1f4380682e6aca9f2ca28320d7a444825e88",
           "action": "add"
         }
       },
       "LibConfig": {
-        "2": {
-          "version": 2,
-          "hash": "6453cb794e0a89c8a0f4529d2f81e4f04b141a0d313760c38f41f2dd42258941",
+        "1": {
+          "version": 1,
+          "hash": "ee8f0e3f6aae81948d72e30226645e8eb5d312a6770411a1edca748168c467c0",
           "action": "add"
         }
       },
       "APIEndpoint": {
-        "2": {
-          "version": 2,
-          "hash": "695974643dbc32a1a653218a9b2fedfdd341bdd687584cf80035bb51e7ed9be1",
+        "1": {
+          "version": 1,
+          "hash": "cfa6f314481a5bf3c448c33bf2312a9c33cbcf03cdc96864ad9a108f62b09346",
           "action": "add"
         }
       },
       "LibEndpoint": {
-        "2": {
-          "version": 2,
-          "hash": "acc9924f09471081899ed21d2d4da3e4ed307edd5e703ee0041a41827e26ccde",
+        "1": {
+          "version": 1,
+          "hash": "a585c83a33a019d363ae5a0c6d4197193654307c19a4829dfbf8a8cfd2c1842a",
           "action": "add"
         }
       },
       "SignedSyftAPICall": {
-        "2": {
-          "version": 2,
-          "hash": "4dfc0709ab211d55250d2be8f6ec60be1f9517d98a73c98d2a360d92e49822ff",
+        "1": {
+          "version": 1,
+          "hash": "2f959455f7130f4e59360b8aa58f19785b76eaa0f8a5a9188a6cbf32b31311ca",
           "action": "add"
         }
       },
       "SyftAPICall": {
-        "2": {
-          "version": 2,
-          "hash": "b457a48a7f0ddc67525d91faf660667adcb80f7a478999a35396a2e4bc22c562",
+        "1": {
+          "version": 1,
+          "hash": "59e89e7b9ea30deaed64d1ffd9bc0769b999d3082b305428432c1f5be36c6343",
           "action": "add"
         }
       },
       "SyftAPIData": {
-        "2": {
-          "version": 2,
-          "hash": "46b073b98cfb3a4a0f5dc6c55885278f263bc208d3704821849568e246101aa8",
+        "1": {
+          "version": 1,
+          "hash": "820b279c581cafd9bb5009702d4e3db22ec3a3156676426304b9038dad260a24",
           "action": "add"
         }
       },
       "SyftAPI": {
-        "2": {
-          "version": 2,
-          "hash": "03ec5999de8f43ce83da079d836aec737d1142ec11265c0f3ca89da3139fad36",
-          "action": "add"
-        },
-        "3": {
-          "version": 3,
-          "hash": "b82f04c734e7cc3a14bf5cf88173e2ed41a09ddd332b0b4a79747c333ca8db1e",
+        "1": {
+          "version": 1,
+          "hash": "cc13ab058ee36748c14b0d4bd9b9e894c7566fff09cfa4170b3eece520169f15",
           "action": "add"
         }
       },
       "User": {
-        "3": {
-          "version": 3,
-          "hash": "cdd25c47e32ac79e177bd26b8d3231847f4722247543954fc967686159ac17a2",
+        "1": {
+          "version": 1,
+          "hash": "2df4b68182c558dba5485a8a6867acf2a5c341b249ad67373a504098aa8c4343",
           "action": "add"
         }
       },
       "UserUpdate": {
-        "3": {
-          "version": 3,
-          "hash": "01c3a470b326229bc892bea96b425c059edfde3bca57b0af83491a4fecbd0402",
+        "1": {
+          "version": 1,
+          "hash": "1bf6707c69b809c804fb939c7c37d787c2f6889508a4bec37d24221af2eb777a",
           "action": "add"
         }
       },
       "UserCreate": {
-        "3": {
-          "version": 3,
-          "hash": "cb2d9872cba80c960c748b232547556fa69901c108d84ab46f177cb47f0dd3fc",
+        "1": {
+          "version": 1,
+          "hash": "49d6087e2309ba59987f3126e286e74b3a66492a08ad82fa507ea17d52ce78e3",
           "action": "add"
         }
       },
       "UserSearch": {
-        "2": {
-          "version": 2,
-          "hash": "c2676b012142f68ae64a11f3807e35430a046f51b7cac6682aa453c0345a9a32",
+        "1": {
+          "version": 1,
+          "hash": "9ac946338cca68d00d1696a57943442f062628ec3daf53077d0bdd3f72cd9fa0",
           "action": "add"
         }
       },
       "UserView": {
-        "3": {
-          "version": 3,
-          "hash": "a07bebf2362391b915fb2554e61c98e35cb4f945ba8c3c3299dd059dc6f0e137",
+        "1": {
+          "version": 1,
+          "hash": "0b52d758e31d5889c9cd88afb467aae4a74e34a5276924e07012243c34d300fe",
           "action": "add"
         }
       },
       "UserViewPage": {
-        "2": {
-          "version": 2,
-          "hash": "9ccdbff62daac91fc9951a62c7d54d35418035a0ad4fd979bd1f7262c2cdabc9",
+        "1": {
+          "version": 1,
+          "hash": "1cd6528d02ec180f080d5c35f0da760d8a59af9da7baaa9c17c1c7cedcc858fa",
           "action": "add"
         }
       },
       "UserPrivateKey": {
-        "2": {
-          "version": 2,
-          "hash": "3e7a37177e86a5a0c54a6e6cc87eb2c3a266e5e65cb8dd33f6b0c3fccc7b584d",
+        "1": {
+          "version": 1,
+          "hash": "4817d8147aba94373f320dcd90e65f097cf6e5a2ef353aa8520e23128d522b5d",
           "action": "add"
         }
       },
       "DateTime": {
-        "2": {
-          "version": 2,
-          "hash": "298922f94fc06eb8ce080cd19bc124929943729ea83bf15b463b37fe959141cb",
+        "1": {
+          "version": 1,
+          "hash": "394abb554114ead4d63c36e3fe83ac018dead4b21a8465174009577c46d54c58",
           "action": "add"
         }
       },
       "ReplyNotification": {
-        "2": {
-          "version": 2,
-          "hash": "0420ed6a014e3a16bcf063208cfdc393a02f4ec0ddbd0635dc15308b5deafc92",
+        "1": {
+          "version": 1,
+          "hash": "84102dfc59d711b03c2f3d3a6ecaca000b6835f1bbdd9af801057f7aacb5f1d0",
           "action": "add"
         }
       },
       "Notification": {
-        "2": {
-          "version": 2,
-          "hash": "38defc169bf225474e0b8037aedf66dee78f5e0aef3af75ab24d1e8f5d55f23a",
+        "1": {
+          "version": 1,
+          "hash": "af4cb232bff390c431e399975f048b34da7e940ace8b23b940a3b398c91c5326",
           "action": "add"
         }
       },
       "CreateNotification": {
-        "2": {
-          "version": 2,
-          "hash": "079523cd89527b90003bef1ab4f985e374550bfb1f7921f8906702a9f6938205",
+        "1": {
+          "version": 1,
+          "hash": "7e426c946b7d5db6f9427960ec16042f3018091d835ca5966f3568c324a2ab53",
           "action": "add"
         }
       },
       "NotificationPreferences": {
         "1": {
           "version": 1,
-          "hash": "499e02b45defab561decaef6bdcf0ec1a6bbda834bd7d25a465982159b8c2909",
+          "hash": "a42f06b367e7c6cbabcbf3cfcc84d1ca0873e457d972ebd060e87c9d6185f62b",
           "action": "add"
         }
       },
       "NotifierSettings": {
         "1": {
           "version": 1,
-          "hash": "8edcbf73f2098f6a20d393f09c5805493da5346e8f7070f841c36ac7b777edb1",
+          "hash": "65c8ab814d35fac32f68d3000756692592cc59940f30e3af3dcdfa2328755b9d",
           "action": "add"
         }
       },
       "SyftImageRegistry": {
-        "2": {
-          "version": 2,
-          "hash": "2495c6836c6f0ba991637766657ccd04e992d367102d336a04c608d95cbf9895",
+        "1": {
+          "version": 1,
+          "hash": "67e18903e41cba1afe136adf29d404b63ec04fea6e928abb2533ec4fa52b246b",
           "action": "add"
         }
       },
       "SyftWorkerImage": {
-        "2": {
-          "version": 2,
-          "hash": "dcd40e107f930c0efcd525694e89eedea1546fdc31d44373fce7e9d4ac2bbc2e",
+        "1": {
+          "version": 1,
+          "hash": "44da7badfbe573d5403d3ab78c077f17dbefc560b81fdf927b671815be047441",
           "action": "add"
         }
       },
       "SyftWorker": {
-        "2": {
-          "version": 2,
-          "hash": "6dbf5487cfb6fceea8a57d1cbb1320107f4a4116fb0269f151082e15f9d150b5",
-          "action": "add"
-        },
-        "3": {
-          "version": 3,
-          "hash": "905b97e80b2a9d509a5d37ae248ed6ddc1e028e851330c836ee5ce26444fac88",
+        "1": {
+          "version": 1,
+          "hash": "9d897f6039eabe48dfa8e8d5c5cdcb283b0375b4c64571b457777eaaf3fb1920",
           "action": "add"
         }
       },
       "WorkerPool": {
-        "2": {
-          "version": 2,
-          "hash": "d2205590c821af416ba8f13f3e2b834fa3bb561f08dca060eb2bd86f7eca89e2",
+        "1": {
+          "version": 1,
+          "hash": "16efc5dd2596ae744fd611c8f46af9eaec1bd5729eb20e85e9fd2f31df402564",
           "action": "add"
         }
       },
       "MarkdownDescription": {
-        "2": {
-          "version": 2,
-          "hash": "d8f5ec42e69d55eabe044a417bfbf6d57b867eadcc975377e1fc8a499a9f90f3",
+        "1": {
+          "version": 1,
+          "hash": "31a73f8824cad1636a55d14b6a1074cdb071d0d4e16e86baaa3d4f63a7e80134",
           "action": "add"
         }
       },
       "HTMLObject": {
         "1": {
           "version": 1,
-          "hash": "4127056b8f9f904f2dcb225de2952ad7b57c4b2874ac76800afa234c826d6702",
+          "hash": "97f2e93f5ceaa88015047186f66a17ff13df2a6b7925b41331f9e19d5a515a9f",
           "action": "add"
         }
       },
       "ServerSettingsUpdate": {
-        "4": {
-          "version": 4,
-          "hash": "09b96c7c25e9261144ffe3409ac47e943abe5cf433759f68c03a321d21d69c1b",
-          "action": "add"
-        },
-        "5": {
-          "version": 5,
-          "hash": "81a9e2930fe91f7744a5a495f73eb9f7c04145ebe1848257ea52b537fed4b3d7",
+        "1": {
+          "version": 1,
+          "hash": "1e4260ad879ae80728c3ffae2cd1d48759abd51f9d0960d4b25855cdbb4c506b",
           "action": "add"
         }
       },
       "ServerSettings": {
-        "3": {
-          "version": 3,
-          "hash": "6b2240b92099684b0e431d27c0be2a22daad234b890c95eb607f0cc9e73c9f0d",
-          "action": "add"
-        },
-        "5": {
-          "version": 5,
-          "hash": "522690efe97c50dff81936640e95207861406e480d7e1d87587e558dbd7a506c",
-          "action": "add"
-        },
-        "6": {
-          "version": 6,
-          "hash": "be6d6402a5ccf0b93847ebcde75f4ea357f3b45003a1a7c01426e9e34ea3b5e1",
+        "1": {
+          "version": 1,
+          "hash": "5a1e7470cbeaaae5b80ac9beecb743734f7e4e42d429a09ea8defa569a5ddff1",
           "action": "add"
         }
       },
       "HTTPConnection": {
-        "3": {
-          "version": 3,
-          "hash": "2e567111a679e9f01b84eafc96d5e14e52b12fea991957e547f2edcbc0ede34c",
+        "1": {
+          "version": 1,
+          "hash": "bf10f81646c71069c76292b1237b4a3de1e507264392c5c591d067636ce6fb46",
           "action": "add"
         }
       },
       "PythonConnection": {
-        "3": {
-          "version": 3,
-          "hash": "854a2ffc94e21fdcc4878ddc16f60bef8e7bf8ddc72dec63c9cb182ad7e4bbb7",
+        "1": {
+          "version": 1,
+          "hash": "28010778b5e3463ff6960a0e2224818de00bc7b5e6f892192e02e399ccbe18b5",
           "action": "add"
         }
       },
       "ActionDataEmpty": {
-        "2": {
-          "version": 2,
-          "hash": "76445c74c9636f33524ed1ec60796caabfda2dcf85a950387ee9526b2659efe4",
+        "1": {
+          "version": 1,
+          "hash": "e0e4a5cf18d05b6b747addc048515c6f2a5f35f0766ebaee96d898cb971e1c5b",
           "action": "add"
         }
       },
       "ObjectNotReady": {
-        "2": {
-          "version": 2,
-          "hash": "09e8e20e1f96189b96ddda19d1cffafed98dfa8fd80b286ea91b814c7aa0aa5b",
+        "1": {
+          "version": 1,
+          "hash": "8cf471e205cd0893d6aae5f0227d14db7df1c9698da08a3ab991f59132d17fe9",
           "action": "add"
         }
       },
       "ActionDataLink": {
-        "2": {
-          "version": 2,
-          "hash": "45f82b2a0124f7adadc515c40f71551a37ea4b04fdc2caa220e39988e8d83675",
+        "1": {
+          "version": 1,
+          "hash": "3469478343439e411b761c270eec63eb3d533e459ad72d0965158c3a6cdf3b9a",
           "action": "add"
         }
       },
       "Action": {
-        "3": {
-          "version": 3,
-          "hash": "9baeef92e1199d9686ad27bcaf55ad0621233560dd70377fc964ccc4ab21bcb4",
+        "1": {
+          "version": 1,
+          "hash": "021826d7c6f69bd0283d025d40661f3ffbeba8810ca94de01344f6afbdae62cd",
           "action": "add"
         }
       },
       "ActionObject": {
-        "3": {
-          "version": 3,
-          "hash": "e13cca90723c27b17529295e1050ba4736aa42e548511f922ab4d10a78e9c558",
-          "action": "add"
-        },
-        "4": {
-          "version": 4,
-          "hash": "da069dc83b2c583d5624f86541ed95d9c8a85774a1fb64e37fdd87e490e06300",
+        "1": {
+          "version": 1,
+          "hash": "0a5f4bc343cb114a251f06686ecdbb59d74bfb3d29a098b176699deb35a1e683",
           "action": "add"
         }
       },
       "AnyActionObject": {
-        "3": {
-          "version": 3,
-          "hash": "8b6a450bbc40f381cb3404ea6ff86024651debcdebe785db0819ab1ffd6535b0",
-          "action": "add"
-        },
-        "4": {
-          "version": 4,
-          "hash": "a944e6db84aa6cda0d4cb278cc836df1ce64882896a9d3da798148e1e9bb5c42",
-          "action": "add"
-        }
-      },
-      "BlobFile": {
-        "4": {
-          "version": 4,
-          "hash": "6d59e20f3a9bf16cf199deddb0d246b100d5ab616a4811e96b682df58546b869",
-          "action": "add"
-        }
-      },
-      "BlobFileOBject": {
-        "2": {
-          "version": 2,
-          "hash": "af3c2e435c20258b94377716fb6babb0bfb8ea684c88a93aff968f95fb1497f6",
-          "action": "add"
-        },
-        "3": {
-          "version": 3,
-          "hash": "417f4eb6f978a273c3b7cad93fc80caab122bebdf21923520dbfcadcc5160baf",
-          "action": "add"
-        }
-      },
-      "SecureFilePathLocation": {
-        "2": {
-          "version": 2,
-          "hash": "1680c4c2f81f3e93fe126c5888288577b32e76546f16be3ffe5c3fdcce1aac3f",
-          "action": "add"
-        }
-      },
-      "SeaweedSecureFilePathLocation": {
-        "3": {
-          "version": 3,
-          "hash": "0d34e64267f3c870a5ce5307802a23fcfbb796cf48b979c2d1d4c0ef772f8131",
-          "action": "add"
-        }
-      },
-      "AzureSecureFilePathLocation": {
-        "2": {
-          "version": 2,
-          "hash": "a97c52808be5afceaea7f9b3ac6c00d4256d7f9a8c7f2200acf8f82451018319",
-          "action": "add"
-        }
-      },
-      "BlobStorageEntry": {
-        "3": {
-          "version": 3,
-          "hash": "6ff74feabd8a58ae0e1881c03f3ffbb70c95944bef507f8c5b1493bfb6594ea5",
-          "action": "add"
-        }
-      },
-      "BlobStorageMetadata": {
-        "3": {
-          "version": 3,
-          "hash": "738daa84b6824841254ba7a651a433dd0ff1c44961ed142920786cbc60329ffa",
-          "action": "add"
-        }
-      },
-      "CreateBlobStorageEntry": {
-        "2": {
-          "version": 2,
-          "hash": "9c0069727e5b845a004717dc28abcf1486f5581cba4ec0526fdb3553d40ecd7a",
-          "action": "add"
-        }
-      },
-      "BlobRetrieval": {
-        "3": {
-          "version": 3,
-          "hash": "3b7be2fa9b5821c03808ae2dd244feb04817f5b1f1f821cd861f111fdc8692f9",
-          "action": "add"
-        }
-      },
-      "SyftObjectRetrieval": {
-        "4": {
-          "version": 4,
-          "hash": "4d6a3175fd8753919ceed4d7b19a6a25baa47013da8f9d2e4eae3afd2c72f246",
-          "action": "add"
-        }
-      },
-      "BlobRetrievalByURL": {
-        "4": {
-          "version": 4,
-          "hash": "6a77259a8c83f85e83e89cee4c7ea7b1d57ccac4f70ecfb86b6c5db21c62ee79",
-          "action": "add"
-        },
-        "5": {
-          "version": 5,
-          "hash": "e9c5e16f14e5bd45209f44ebf6c758a8c4a315b2d335a33bc529606506037890",
-          "action": "add"
-        }
-      },
-      "BlobDeposit": {
-        "2": {
-          "version": 2,
-          "hash": "cf27595f05e3f60c825ef3b547ab72f04cc983688b12ef9233785b05b5a24551",
-          "action": "add"
-        }
-      },
-      "WorkerSettings": {
-        "3": {
-          "version": 3,
-          "hash": "982d68aca23fdecd9d8986f6ac95a2812ddac784c5a30655367df5356c9778f1",
-          "action": "add"
-        }
-      },
-      "HTTPServerRoute": {
-        "3": {
-          "version": 3,
-          "hash": "530fec14b476cf67afeef8667fd5397a2bca51744869e41828f4328bed647f72",
-          "action": "add"
-        }
-      },
-      "PythonServerRoute": {
-        "3": {
-          "version": 3,
-          "hash": "f9f52b5764f2a5c3bd2b628f793e2ab9d0e5163f0bf4a469d4b3ee804ee27eeb",
-          "action": "add"
-        }
-      },
-      "VeilidServerRoute": {
         "1": {
           "version": 1,
-          "hash": "0924cb1d76957bdc7f39ccb54e2944ce07bc83c0bf37ccf5f89d7328c0088eeb",
-          "action": "add"
-        }
-      },
-      "EnclaveMetadata": {
-        "3": {
-          "version": 3,
-          "hash": "94998d8fad3c2ca1f371a08641873e24504065bfe785548aba72dfaf9687c409",
+          "hash": "b3c44c7788c59c03fa1baeec656c2ca6e633f4cbd4b23ff7ece6ee94c38449f0",
           "action": "add"
         }
       },
       "CustomEndpointActionObject": {
         "1": {
           "version": 1,
-          "hash": "aba8c35a83b81f602ae19393e9bd1813ca1d191d055272499c63543961089b86",
+          "hash": "c7addbaf2777707f3e91e5c1e092343476cd22efc4ec8617f39ccf76e61a5a14",
           "action": "add"
         }
       },
       "DataSubject": {
-        "2": {
-          "version": 2,
-          "hash": "24329941dbb93f9382527b9b2e70da58369aefa65ae6934a4f55725487259515",
+        "1": {
+          "version": 1,
+          "hash": "582cdf9e82b5d6915b7f09f7c0d5f08328b11a2ce9b0198e5083f1672c2e2bf5",
           "action": "add"
         }
       },
       "DataSubjectCreate": {
-        "2": {
-          "version": 2,
-          "hash": "1584dc6cbd2df80118d46aa9cf4788c96be420ce3a1d3ff041664fb265626871",
+        "1": {
+          "version": 1,
+          "hash": "5a8423c2690d55f425bfeecc87cd4a797a75d88ebb5fbda754d4f269b62d2ceb",
           "action": "add"
         }
       },
       "DataSubjectMemberRelationship": {
-        "2": {
-          "version": 2,
-          "hash": "26876c004bb080c06af331965466e66d454ccb6b6a03d12aec0d44032302412b",
+        "1": {
+          "version": 1,
+          "hash": "0810483ea76ea10c8f286c6035dc0b2085291f345183be50c179f3a05a577110",
           "action": "add"
         }
       },
       "Contributor": {
-        "2": {
-          "version": 2,
-          "hash": "281a88bcfd8840b3f92780d31075bfa369b2ff0e5d4044ebbc269bebca451b47",
+        "1": {
+          "version": 1,
+          "hash": "30c32bd44098f00e0b15496be441763b6e50af8b12d3d2bef33aca6287193876",
           "action": "add"
         }
       },
       "Asset": {
-        "2": {
-          "version": 2,
-          "hash": "84f33e07c0a4a627808ada7ae092b9e11305a2a6a9d4f264f62ed906a834663d",
+        "1": {
+          "version": 1,
+          "hash": "000abc78719611c106295cf12b1690b7e5411dc1bb9db9d4afd22956da90d1f4",
           "action": "add"
         }
       },
       "CreateAsset": {
-        "2": {
-          "version": 2,
-          "hash": "0fbe735bdf6acd91f5589369188c02d25d014b7112afbcde8b04d52aca2abb65",
+        "1": {
+          "version": 1,
+          "hash": "357d52576cb12b24fb3980342bb49a562b065c0e4419e87d34176340628c7309",
           "action": "add"
         }
       },
       "Dataset": {
-        "2": {
-          "version": 2,
-          "hash": "e9df341cf5128d9ce09fb137e6413745842818675c9dfbbf824e521cb0196dd0",
-          "action": "add"
-        },
-        "3": {
-          "version": 3,
-          "hash": "acc25456a60ccef861de65eea1feef612ef9fa1ed6e986b466450c4adf73906b",
+        "1": {
+          "version": 1,
+          "hash": "3be049e4f3d423699ba5d7c2d1f60b2b11c0c6691b505e1c6100a743a7398665",
           "action": "add"
         }
       },
       "DatasetPageView": {
-        "2": {
-          "version": 2,
-          "hash": "0e336a3afd446aa58fc6ec6950691baa36b76a0649b9da31bbecb4db1b0587cf",
+        "1": {
+          "version": 1,
+          "hash": "aa0dd69637281b80d5523b4409a2c7e89db114c9fe79c858063c6dadff8977d1",
           "action": "add"
         }
       },
       "CreateDataset": {
-        "2": {
-          "version": 2,
-          "hash": "3e4983b35c6513a64198cf5346aec23017192045aad562e85deb7e212be78784",
-          "action": "add"
-        },
-        "3": {
-          "version": 3,
-          "hash": "7ecb8d62a8c12e385ff45ed700106bb1463926237fbdde3e84a83f38419d54de",
+        "1": {
+          "version": 1,
+          "hash": "3f9cdbf797ca0ed7b1c95ffb50cb696b1127ac8b80438dbb517561c5992a6ba9",
           "action": "add"
         }
       },
       "SyftLog": {
-        "3": {
-          "version": 3,
-          "hash": "c2ee3f4c34dc7af3af533865dc07384403fb757e7959272c9d6d08110623a216",
-          "action": "add"
-        },
-        "4": {
-          "version": 4,
-          "hash": "3b90dcb66359a1d03345291b47dcb8b5c166b1e0344dbe84d9c1f3a8e57f99eb",
+        "1": {
+          "version": 1,
+          "hash": "1bcd71e5bf3f0db3bba0996f33b6b2bde3489b9c71f11e6b30c3495c76a8f53f",
           "action": "add"
         }
       },
       "JobItem": {
-        "4": {
-          "version": 4,
-          "hash": "3e2eaae1b2c367b5bc52cbc4eb3390b1f5a6a6f8cae69523bbfc8e071c314bf8",
-          "action": "add"
-        },
-        "6": {
-          "version": 6,
-          "hash": "b633f770c9c47a849b75fe6b93c573c94eadab23c689aa812a8671cec9543650",
+        "1": {
+          "version": 1,
+          "hash": "0b32277b7d3b9bdc14a2a51cc9005f8254e7f7b6ec059ddcccbcd681a807afb6",
           "action": "add"
         }
       },
       "ExecutionOutput": {
         "1": {
           "version": 1,
-          "hash": "c6cb71d6ae689e71c31685c29a7ecd44d1c0c5b31fd19991b535cb597db7b44a",
-          "action": "add"
-        },
-        "2": {
-          "version": 2,
-          "hash": "1b045334d8049f3970e655da11f3f62bc8a9f78e562fd75ed517c97fc95bb1c3",
+          "hash": "e36c71685edf5276a3427cb6749550486d3a177c1dcf73dd337ab2a73c0ce6b5",
           "action": "add"
         }
       },
       "TwinObject": {
-        "2": {
-          "version": 2,
-          "hash": "c1f81d875b96cec303af7d869e5a70f7b619f0f4849ad6a8987e75cf6e2f4538",
+        "1": {
+          "version": 1,
+          "hash": "4f31243fb348dbb083579afd6f638d75af010cb53d19bfba59b74afff41ccbbb",
           "action": "add"
         }
       },
       "PolicyRule": {
         "1": {
           "version": 1,
-          "hash": "b92557f8bd715caadb4eba68793f167493d36f29972006c2bd59b0ec8e829ba7",
+          "hash": "44d1ca1db97be46f66558aa1a729ff31bf8e113c6a913b11aedf9d6b6ad5b7b5",
           "action": "add"
         }
       },
       "CreatePolicyRule": {
         "1": {
           "version": 1,
-          "hash": "2962b14b70451ea8e13746ebadff62d927f62111d3d5610787ecb3b9cefcc897",
+          "hash": "342bb723526d445151a0435f57d251f4c1219f8ae7cca3e8e9fce52e2ee1b8b1",
           "action": "add"
         }
       },
       "CreatePolicyRuleConstant": {
         "1": {
           "version": 1,
-          "hash": "3807c5bf87bd1a58ecae8a97083e636f0471d4604121fb1f61182bd7dbbc1c47",
+          "hash": "78b54832cb0468a87013bc36bc11d4759874ca1b5065a1b711f1e5ef5d94c2df",
           "action": "add"
         }
       },
       "Matches": {
         "1": {
           "version": 1,
-          "hash": "20dd67c0d60cd0047267dc83a767568d90fc418e84a05186eaba6f6a0279c50b",
+          "hash": "dd6d91ddb2ec5eaf60be2b0899ecfdb9a15f7904aa39d2f4d9bb2d7b793040e6",
           "action": "add"
         }
       },
       "PreFill": {
         "1": {
           "version": 1,
-          "hash": "557185e0437884ea9da718b449d0c6b38bc6c107e29d5f36ab6e34b8509a884d",
+          "hash": "c7aefb11dc4c4569dcd1e6988371047a32a8be1b32ad46d12adba419a19769ad",
           "action": "add"
         }
       },
       "UserOwned": {
         "1": {
           "version": 1,
-          "hash": "50de8777b4027f394d910f5304d3d27c48cc58abdd9882c0e1cddc10b69f85c5",
+          "hash": "c8738dc3d8c2a5ef461b85a0467c3dff53dab16b54a4d12b44b1477906aef51d",
           "action": "add"
         }
       },
       "MixedInputPolicy": {
         "1": {
           "version": 1,
-          "hash": "b4d6b42c04a8b64a1ec065e700af67347c44a180cdfdb8f4e9b3bc030cf3bfe4",
+          "hash": "37bb12d950518d9579c8ec7c4cc22ac731ea82caf8c1370dd0b0a82b46462dde",
           "action": "add"
         }
       },
       "ExactMatch": {
-        "2": {
-          "version": 2,
-          "hash": "7fcc80c7ec005a0e1484b9d44fe9892ad886fda82044a9a96b0c33fbffc63d4f",
+        "1": {
+          "version": 1,
+          "hash": "5eb37edbf5e451d942e599247f3eaed923c1fe9d91eefdba02bf06503f6cc08d",
           "action": "add"
         }
       },
       "OutputHistory": {
-        "2": {
-          "version": 2,
-          "hash": "e9844cc602cb57168e3062263961ad5d22a1e93a5bb3765ee364637813c9daca",
+        "1": {
+          "version": 1,
+          "hash": "9366db79d131f8c65e5a4ff12c90e2aa0c11e302debe06e46eeb93b26e2aaf61",
           "action": "add"
         }
       },
       "OutputPolicyExecuteCount": {
-        "2": {
-          "version": 2,
-          "hash": "82a309e0616864a3505600a88fcfb772c2d5f781e286a285953e495f93a2b3e2",
+        "1": {
+          "version": 1,
+          "hash": "2a77e5ed5c7b0391147562651ad4061e20b11745c191fbc34cb549da37ba72dd",
           "action": "add"
         }
       },
       "OutputPolicyExecuteOnce": {
-        "2": {
-          "version": 2,
-          "hash": "0b0baa12dd349997fb67887005c5c76f559d02d1a5570700af31d17a39016e72",
+        "1": {
+          "version": 1,
+          "hash": "5589c00d127d9eb1f5ccf3a16def8219737784d57bb3bf9be5cb6d83325ef436",
           "action": "add"
         }
       },
       "EmptyInputPolicy": {
-        "2": {
-          "version": 2,
-          "hash": "f1724dfc2f8f1f33db2a9c9f0a18bed8c763539592e8cbadd586df7af90b66fe",
+        "1": {
+          "version": 1,
+          "hash": "7ef81cfd223be0064600e1503f8b04bafc16385e27730e9319466e68a077c68b",
           "action": "add"
         }
       },
       "UserPolicy": {
-        "2": {
-          "version": 2,
-          "hash": "4b2396d083ad1200f66f83610a16c98fcf2fe9cbe918dfe1f2a893d3b700b6eb",
+        "1": {
+          "version": 1,
+          "hash": "74373bb71a334f4dcf77623ae10ff5b1c7e5b3006f65f2051ffb1e01f422f982",
           "action": "add"
         }
       },
       "SubmitUserPolicy": {
-        "2": {
-          "version": 2,
-          "hash": "91594efc92f7d6115c148930f02f90a06728fb8e1ed567c2c03cdae1967b62e3",
+        "1": {
+          "version": 1,
+          "hash": "ec4e808eb39613bcdbbbf9ffb3267612084a9d99880a2f3bee3ef32d46329c02",
           "action": "add"
         }
       },
       "UserCodeStatusCollection": {
         "1": {
           "version": 1,
-          "hash": "96bea86ece8bd4cb2948deba4fbdc1aa95a54b6f5ef03dbf8c805f1b3cc36db1",
+          "hash": "735ecf2d4abb1e7d19b2e751d880f32b01ce267ba10e417ef1b440be3d94d8f1",
           "action": "add"
         }
       },
       "UserCode": {
-        "4": {
-          "version": 4,
-          "hash": "60ee9415e8692ad6c0fe9e5e65961d3b7e4247fbc765abcd871f612f546155f9",
-          "action": "add"
-        },
-        "5": {
-          "version": 5,
-          "hash": "c3845ff8d7e006525f208dc19f93e0f0757a15b63b3e3664fabfa789dbe5fd2e",
+        "1": {
+          "version": 1,
+          "hash": "3bcd14413b9c4fbde7c5612c2ed713518340280b5cff89cf2aaaf1c77c4037a8",
           "action": "add"
         }
       },
       "SubmitUserCode": {
-        "4": {
-          "version": 4,
-          "hash": "330b62d200c304e12b47e5b288fe7f419dcdb22f0aad2e31aa978a0a5993dbcb",
-          "action": "add"
-        },
-        "5": {
-          "version": 5,
-          "hash": "ca0d501801f3aac1ad53f1e7844520dc7733c64f3fa012abb9fd95940c170d6e",
+        "1": {
+          "version": 1,
+          "hash": "d2bb8cfe12f070b4adafded78ce01900c5409bd83f055f94b1e285745ef65a76",
           "action": "add"
         }
       },
       "UserCodeExecutionResult": {
-        "2": {
-          "version": 2,
-          "hash": "72aed37d1b165f36aeeba41e13c9ac570b17b35ced11a53b70d289e95d5d0c5e",
+        "1": {
+          "version": 1,
+          "hash": "1f4cbc62caac4dd193f427306405dc7a099ae744bea5830cf57149ce71c1e589",
           "action": "add"
         }
       },
       "UserCodeExecutionOutput": {
         "1": {
           "version": 1,
-          "hash": "d180eb86a0baa95c0df100beda459586793af07259e21c1a559bcf961661cffd",
+          "hash": "c1d53300a39dbbb437d7d5a1257bd175a067b1065f4099a0938fac7540035258",
           "action": "add"
         }
       },
       "CodeHistory": {
-        "2": {
-          "version": 2,
-          "hash": "7740375395772ee76a693b592f8ca72b954b75478d9b77eb38a2efbd0e3f53cb",
-          "action": "add"
-        },
-        "3": {
-          "version": 3,
-          "hash": "7bede78c55f99d0e0294b0555ab2bace37f78fc5f58f423bba485b88ae190dc3",
+        "1": {
+          "version": 1,
+          "hash": "e3ef5346f108257828f364d22b12d9311812c9cf843200afef5dc4d9302f9b21",
           "action": "add"
         }
       },
       "CodeHistoryView": {
-        "2": {
-          "version": 2,
-          "hash": "c289d9a50f718966d7edb647025c1bcfb71b38e11f4d0d2a18d24c6a7b6d9bbf",
+        "1": {
+          "version": 1,
+          "hash": "8b8b97d334b51d1ce0a9efab722411ff25caa3f12be319105954497e0a306eb2",
           "action": "add"
         }
       },
       "CodeHistoriesDict": {
-        "2": {
-          "version": 2,
-          "hash": "25f10dd11e5d360760b253ca76a38a1399cbbb6a209dad884bebff563acf0d58",
+        "1": {
+          "version": 1,
+          "hash": "01d7dcd4b21525a06e4484d8699a4a34a5c84f1f6026ec55e32eb30412742601",
           "action": "add"
         }
       },
       "UsersCodeHistoriesDict": {
-        "2": {
-          "version": 2,
-          "hash": "5c5840b39300d5540c8dbeab673dc925e8187d8589f36a84063af822437ebe88",
-          "action": "add"
-        }
-      },
-      "OnDiskBlobDeposit": {
-        "2": {
-          "version": 2,
-          "hash": "83d6ec5c1c0c67627ad117b287201a75d9d91eb043921992bc761cf08b9526f0",
-          "action": "add"
-        }
-      },
-      "RemoteConfig": {
-        "2": {
-          "version": 2,
-          "hash": "9ec87d036c109dd408ed2ab8042a735f0150358799c4acc8af582148605373fc",
-          "action": "add"
-        }
-      },
-      "AzureRemoteConfig": {
-        "2": {
-          "version": 2,
-          "hash": "4f5f6f4d0b52788c2ae484c5da6346f1c8b25ae064d865da69e6dffb32275852",
-          "action": "add"
-        }
-      },
-      "SeaweedFSBlobDeposit": {
-        "4": {
-          "version": 4,
-          "hash": "d5c268e0ccbb00149319679b95eb43134ae80ae43814d7f991732530c79399a1",
-          "action": "add"
-        }
-      },
-      "DictStoreConfig": {
-        "2": {
-          "version": 2,
-          "hash": "4f7084ac3353fb7c16b010b654150096c08de108fbdaf6e8837654aa38a32466",
-          "action": "add"
-        }
-      },
-      "NumpyArrayObject": {
-        "3": {
-          "version": 3,
-          "hash": "9e43f7bea261b729e7f6fa523ed050ba148fc1caf973ac996f9501af61b6ae8a",
-          "action": "add"
-        },
-        "4": {
-          "version": 4,
-          "hash": "939a577d5929ac8a9c421b1d07acba1c33db63143e6614d533624e4548bf614b",
-          "action": "add"
-        }
-      },
-      "NumpyScalarObject": {
-        "3": {
-          "version": 3,
-          "hash": "5f6698e55cfb7105e279e9c28a3c30e759db143d2aa673abef448b78a2a39f69",
-          "action": "add"
-        },
-        "4": {
-          "version": 4,
-          "hash": "5a4e86b712a242037958a3af68d2ab276dc7438db9b9551797323f051ca1a98a",
-          "action": "add"
-        }
-      },
-      "NumpyBoolObject": {
-        "3": {
-          "version": 3,
-          "hash": "3c8db86e9ea1b6c1ee457610b05831c242fb0d375fcc8176bb64f9ae08a5eb00",
-          "action": "add"
-        },
-        "4": {
-          "version": 4,
-          "hash": "b783d03c5d1fe9c4c8d346e2902c1e4ac7faac563c145ee4388c9c2c960963e2",
-          "action": "add"
-        }
-      },
-      "PandasDataframeObject": {
-        "3": {
-          "version": 3,
-          "hash": "a130e7c5f88b4dbbef3030dd5b6b4bf7db3b4f60585f68b920bc250cee46022e",
-          "action": "add"
-        },
-        "4": {
-          "version": 4,
-          "hash": "8b9a0b2c6652c60381c818d327d109404c735e62ad4e827fcd9042ec86325422",
-          "action": "add"
-        }
-      },
-      "PandasSeriesObject": {
-        "3": {
-          "version": 3,
-          "hash": "c36e22ffea7633813ac0d53fd2075de0606abe240acd72d206830c424f62bbc8",
-          "action": "add"
-        },
-        "4": {
-          "version": 4,
-          "hash": "3286a2085b84d6499c97df36a78eca1a0d701e265a43f733cdf5e20ac78ab32d",
-          "action": "add"
-        }
-      },
-      "Change": {
-        "2": {
-          "version": 2,
-          "hash": "26073bb329dd19c65714ed0e2eb5a53aa4454adc02d7f1a22d6f4890149babcf",
-          "action": "add"
-        }
-      },
-      "ChangeStatus": {
-        "2": {
-          "version": 2,
-          "hash": "260b340ed0b44c82a17e0d5662914a0cbf5ca02e62e36be2cc5e0dba0fc7ef01",
-          "action": "add"
-        }
-      },
-      "ActionStoreChange": {
-        "2": {
-          "version": 2,
-          "hash": "98ae17d2677c72d5820ea6824a4f5fa1a5441fa4064d0fef9f6597056dfbcfcd",
-          "action": "add"
-        }
-      },
-      "CreateCustomImageChange": {
-        "2": {
-          "version": 2,
-          "hash": "4b4c9312ab44c7b7c1c68ba9548da80e2454f6b8ea99f7652e546c635fd7f37b",
-          "action": "add"
-        },
-        "3": {
-          "version": 3,
-          "hash": "c6c74ecacd2be69c6d494e25c6ccc5df92f28a26273316424aa9daf0936d00d6",
-          "action": "add"
-        }
-      },
-      "CreateCustomWorkerPoolChange": {
-        "2": {
-          "version": 2,
-          "hash": "cafeea65a74c11caf6dae2ebe47175d6d0947e35ca7b832240513eaab3fd63d8",
-          "action": "add"
-        },
-        "3": {
-          "version": 3,
-          "hash": "3a96efb85ffaba05479c16963de853e7d4a77bd36db5341dbcb9426fb28fee7e",
-          "action": "add"
-        }
-      },
-      "Request": {
-        "2": {
-          "version": 2,
-          "hash": "fad2e98b71d28b0039a631af4714858c495559ccbc93ccc2b1beed463f6d9452",
-          "action": "add"
-        },
-        "3": {
-          "version": 3,
-          "hash": "25602e25c595d36f3755a8e8e16fc94ce9e832af36e8670f88406a0b180fcc51",
-          "action": "add"
-        }
-      },
-      "RequestInfo": {
-        "2": {
-          "version": 2,
-          "hash": "65d41c5f3bc80202993c2167d42c030217956bd7932b92179f20016f47ab00b1",
-          "action": "add"
-        }
-      },
-      "RequestInfoFilter": {
-        "2": {
-          "version": 2,
-          "hash": "dea1b2af70f35864698027ca79eac4e1a23f03eb2faa26109259353a92afa960",
-          "action": "add"
-        }
-      },
-      "SubmitRequest": {
-        "2": {
-          "version": 2,
-          "hash": "76819df6cbf6288428a1fe523e88f53fdd6e7399ba8196140b96bcd891e67517",
-          "action": "add"
-        }
-      },
-      "ObjectMutation": {
-        "2": {
-          "version": 2,
-          "hash": "215cd56d33a58c8f5f725ad5ff32f62aa0b11330328ea952dc4df040983babbd",
-          "action": "add"
-        }
-      },
-      "EnumMutation": {
-        "2": {
-          "version": 2,
-          "hash": "9c3b684b8a0c165eee84a58fb0955b85c3f8c34d7bd34a31dd07a7e24ef82be2",
-          "action": "add"
-        }
-      },
-      "UserCodeStatusChange": {
-        "3": {
-          "version": 3,
-          "hash": "f9243a74da84b4e5a8ea63bc73a027e385e8e0e90658cac161d9c35bbfbb981d",
-          "action": "add"
-        }
-      },
-      "SyncedUserCodeStatusChange": {
-        "3": {
-          "version": 3,
-          "hash": "133db7a12c8b883d8c7ce73a7c5b79e93400c7baeacbe9a32bd42c8188ed5252",
-          "action": "add"
-        }
-      },
-      "TwinAPIContextView": {
         "1": {
           "version": 1,
-          "hash": "1a2836ba7832013912a649c4d73ed85ef5e3323af8f75f7d1bc9e7db4c483a60",
+          "hash": "4ed8b83973258ea19a1f91feb2590ff73b801be86f4296cc3db48f6929ff784c",
           "action": "add"
         }
       },
-      "CustomAPIView": {
+      "BlobFile": {
         "1": {
           "version": 1,
-          "hash": "4defa7437482a8499ffeb84705f74dd24ca44e03379040d7324c8f2eaeb9fe82",
+          "hash": "d99239100f1cb0b73c69b2ad7cab01a06909cc3a4976ba2b3b67cf6fe5e2f516",
           "action": "add"
         }
       },
-      "CustomApiEndpoint": {
+      "BlobFileOBject": {
         "1": {
           "version": 1,
-          "hash": "1651e640f1b9fb3e39d86336ce7bbcd6539fb44344382d02342474b2f01e2464",
+          "hash": "6c40dab2c8d2220d4fff7cc653d76cc026a856db7e2b5713b6341e255adc7ea2",
           "action": "add"
         }
       },
-      "PrivateAPIEndpoint": {
+      "SecureFilePathLocation": {
         "1": {
           "version": 1,
-          "hash": "c703dfc895ad585d15b2b79b7641555dbacaad80016842dc1c10fa46297a2691",
+          "hash": "ea5978b98d7773d221665b450454c9130c103a5c850669a0acd620607cd614b7",
           "action": "add"
         }
       },
-      "PublicAPIEndpoint": {
+      "SeaweedSecureFilePathLocation": {
         "1": {
           "version": 1,
-          "hash": "3586329beedf63913954d811d46bda3fcf8f1f25669f27b0c35e624a4cdf1370",
+          "hash": "3fc9bfc8c1b1cf660c9747e8c1fe3eb2220e78d4e3b5d6b5c5f29a07a77ebf3e",
           "action": "add"
         }
       },
-      "UpdateTwinAPIEndpoint": {
+      "AzureSecureFilePathLocation": {
         "1": {
           "version": 1,
-          "hash": "92aeddf7a8cb90a542c600c0daeca0c236888cadcc5274ec81ea99516fe3199b",
+          "hash": "090a9e962eeb655586ee966c5651d8996363969818a38f9a486fd64d33047e05",
           "action": "add"
         }
       },
-      "CreateTwinAPIEndpoint": {
+      "BlobStorageEntry": {
         "1": {
           "version": 1,
-          "hash": "5efa208b4003c5e6580a567dd1677bb298e9a08c3c5c8e4291e3c68b9a5865f2",
+          "hash": "afdc6a1d8a24b1ee1ed9d3e79f5bac64b4f0d9d36800f07f10be0b896470345f",
           "action": "add"
         }
       },
-      "TwinAPIEndpoint": {
+      "BlobStorageMetadata": {
         "1": {
           "version": 1,
-          "hash": "ca4925c40e21464f49ecb0b9c2067328a7fa95242be91ca02f705b7b2230fa6e",
+          "hash": "9d4b61ac4ea1910c2f7c767a50a6a52544a24663548f069e79bd906f11b538e4",
           "action": "add"
         }
       },
-      "SyncState": {
-        "2": {
-          "version": 2,
-          "hash": "22b70f9e51f667204ab4653cef18363831d50175e8962b62ac830b1f11ee1857",
-          "action": "add"
-        },
-        "3": {
-          "version": 3,
-          "hash": "a06fb5e7826b4a33bc738280b661a2384fd4d4757551945b9302d01a1abaff85",
-          "action": "add"
-        }
-      },
-      "ServerPeer": {
-        "2": {
-          "version": 2,
-          "hash": "daf8c5226dfa253ad13719aed78625c9d982b17a8927ffb818ab7cb56c255153",
-          "action": "add"
-        },
-        "3": {
-          "version": 3,
-          "hash": "eee060523d89db3abc29fd6e6997f9a8210d221923f768e4a672521e8fb1fb31",
-          "action": "add"
-        }
-      },
-      "ServerPeerUpdate": {
+      "CreateBlobStorageEntry": {
         "1": {
           "version": 1,
-          "hash": "38a171ff362dd1da6d2eb34d51aea753496b2860d6b25adc595e6241ca5bf63c",
-          "action": "add"
-        }
-      },
-      "AssociationRequestChange": {
-        "1": {
-          "version": 1,
-          "hash": "2102685cc30aec0d5a2b1f62f38b475745dc129599fce6c57e2bb92d13f1179d",
-          "action": "add"
-        }
-      },
-      "QueueItem": {
-        "4": {
-          "version": 4,
-          "hash": "aa04c1a0807164b9307a18d250e09eaf27f74efef61bec9392cd386eb43aa5e6",
-          "action": "add"
-        }
-      },
-      "ActionQueueItem": {
-        "3": {
-          "version": 3,
-          "hash": "df2399704de2c69a8a10524133bdb062bee6c48ad18b713d7d7f23fab1819bf7",
-          "action": "add"
-        }
-      },
-      "APIEndpointQueueItem": {
-        "1": {
-          "version": 1,
-          "hash": "d94c0bc1efc18f0217b7342ac49a3ddd4d26df9ffa678a706e84643f7cd3df00",
+          "hash": "ffc3cbfeade67d074dc5bf7d655a1eb8c83630076028a72b3cc4548f3b413e14",
           "action": "add"
         }
       },
       "SyftObjectMigrationState": {
-        "2": {
-          "version": 2,
-          "hash": "51f416fbce4ff408903b96aafa924fc3adde33b19172122b06acd04a1651c7ab",
-          "action": "add"
-        }
-      },
-      "ProjectThreadMessage": {
-        "2": {
-          "version": 2,
-          "hash": "506b292e24486632a2e7d816c48a3051b23527c8a3a35f726ffd7249222b15bb",
-          "action": "add"
-        }
-      },
-      "ProjectMessage": {
-        "2": {
-          "version": 2,
-          "hash": "1fabc4acc439749ba2f62f1cf01b56c91a31d59d908bfe206822f88552d3ce71",
-          "action": "add"
-        }
-      },
-      "ProjectRequestResponse": {
-        "2": {
-          "version": 2,
-          "hash": "7b08ce278d58b8ee96d7bc594079c808ec06fd148f14aedc638aba4075d05a1e",
-          "action": "add"
-        }
-      },
-      "ProjectRequest": {
-        "2": {
-          "version": 2,
-          "hash": "ceb9fc7a258dc1574ced311051466f2686f29b1bd65828810f2c87d2022c8533",
-          "action": "add"
-        }
-      },
-      "AnswerProjectPoll": {
-        "2": {
-          "version": 2,
-          "hash": "b9bd5e61af04a96b93fd9f2e2d8548f8defc391258014c4fbbe4dc80f47c9705",
-          "action": "add"
-        }
-      },
-      "ProjectPoll": {
-        "2": {
-          "version": 2,
-          "hash": "0dcad5d725714cd023f6d7d40139bb6657a9f39a027ee67442b970c43006623a",
-          "action": "add"
-        }
-      },
-      "Project": {
-        "2": {
-          "version": 2,
-          "hash": "2088e56054a45f13600d63cb44f00674dfa43e79e63639c912c0e58302526e3c",
-          "action": "add"
-        }
-      },
-      "ProjectSubmit": {
-        "2": {
-          "version": 2,
-          "hash": "5341778735a00699b085a0d99afca630cbff8d25aa0f2205a09f74e93263c5e0",
-          "action": "add"
-        }
-      },
-      "ZMQClientConfig": {
-        "4": {
-          "version": 4,
-          "hash": "f54c62694a0b058ebf41d48b783b70423894a0609f50bc3d347b7b135d142674",
-          "action": "add"
-        }
-      },
-      "SQLiteStoreConfig": {
-        "2": {
-          "version": 2,
-          "hash": "b6d391bd7884886daef88b08734cf41b4d278b474c22cfc3574b9e7ec140c9e3",
-          "action": "add"
-        }
-      },
-      "Plan": {
-        "2": {
-          "version": 2,
-          "hash": "eec308b8fd9437fc74a65f0cf70dff586130b35866d1e1512de49d45e7896981",
+        "1": {
+          "version": 1,
+          "hash": "ee83315828551f18904bab18e0cac48896493620561215b04cc448e6ce5834af",
           "action": "add"
         }
       },
@@ -1187,7 +648,406 @@
       "MigrationData": {
         "1": {
           "version": 1,
-          "hash": "ae07a6345762b8ebe9d2a100776e2405fd17516c9d224913a3358c96480ba889",
+          "hash": "cb96b8c8413609e1224341d1b0dd1efb08387c0ff7b0ff65eba36c0b104c9ed1",
+          "action": "add"
+        }
+      },
+      "BlobRetrieval": {
+        "1": {
+          "version": 1,
+          "hash": "c422c74b89a9349742acaa848566fe18bfef1a83333458b858c074baed37a859",
+          "action": "add"
+        }
+      },
+      "SyftObjectRetrieval": {
+        "1": {
+          "version": 1,
+          "hash": "b2b62447445adc4cd0b77ab59d6fa56624dd316fb50281e570daad07556b6db2",
+          "action": "add"
+        }
+      },
+      "BlobRetrievalByURL": {
+        "1": {
+          "version": 1,
+          "hash": "4db0e3b7a6334d3835356d8393866711e243e360af25a95f3cc4066f032404b5",
+          "action": "add"
+        }
+      },
+      "BlobDeposit": {
+        "1": {
+          "version": 1,
+          "hash": "6eb5cc57dc763126bfc6ec5a2b79d02e77eadf9d9efb1888a5c366b7799c1c24",
+          "action": "add"
+        }
+      },
+      "OnDiskBlobDeposit": {
+        "1": {
+          "version": 1,
+          "hash": "817bf1bee4a35bfa1cd25d6779a10d8d180b1b3f1e837952f81f48b9411d1970",
+          "action": "add"
+        }
+      },
+      "RemoteConfig": {
+        "1": {
+          "version": 1,
+          "hash": "179d067099a178d748c6d9a0477e8de7c3b55577439669eca7150258f2409567",
+          "action": "add"
+        }
+      },
+      "AzureRemoteConfig": {
+        "1": {
+          "version": 1,
+          "hash": "a143811fec0da5fd881e927643ef667c91c78a2c90519cf88da7da20738bd187",
+          "action": "add"
+        }
+      },
+      "SeaweedFSBlobDeposit": {
+        "1": {
+          "version": 1,
+          "hash": "febeb2a2ce81aa2c512e4c6b611b582984042aafa0541403d4584662273a166c",
+          "action": "add"
+        }
+      },
+      "DictStoreConfig": {
+        "1": {
+          "version": 1,
+          "hash": "2e1365c5535fa51c22eef79f67dd6444789bc829c27881367e3050e06e2ffbfe",
+          "action": "add"
+        }
+      },
+      "NumpyArrayObject": {
+        "1": {
+          "version": 1,
+          "hash": "05dd2917b7692b3daf4e7ad083a46fa7ec7a2be8faac8d4a654809189c986443",
+          "action": "add"
+        }
+      },
+      "NumpyScalarObject": {
+        "1": {
+          "version": 1,
+          "hash": "8753e5c78270a5cacbf0439447724772f4765351a4a8b58b0a5c416a6b2c8b6e",
+          "action": "add"
+        }
+      },
+      "NumpyBoolObject": {
+        "1": {
+          "version": 1,
+          "hash": "331c44f8fa3d0a077f1aaad7313bae2c43b386d04def7b8bedae9fdf7690134d",
+          "action": "add"
+        }
+      },
+      "PandasDataframeObject": {
+        "1": {
+          "version": 1,
+          "hash": "5e8018364cea31d5f185a901da4ab89846b02153ee7d041ee8a6d305ece31f90",
+          "action": "add"
+        }
+      },
+      "PandasSeriesObject": {
+        "1": {
+          "version": 1,
+          "hash": "b8bd482bf16fc7177e9778292cd42f8835b6ced2ce8dc88908b4b8e6d7c7528f",
+          "action": "add"
+        }
+      },
+      "Change": {
+        "1": {
+          "version": 1,
+          "hash": "75fb9a5cd4e76b189ebe130a421d3921a0c251947a48bbb92a2ef1c315dc3c16",
+          "action": "add"
+        }
+      },
+      "ChangeStatus": {
+        "1": {
+          "version": 1,
+          "hash": "c914a6f7637b555a51b71e8e197e591f7a2e28121e29b5dd586f87e0383d179d",
+          "action": "add"
+        }
+      },
+      "ActionStoreChange": {
+        "1": {
+          "version": 1,
+          "hash": "1a803bb08924b49f3114fd46e0e132f819d4d56be5e03a27e9fe90947ca26e85",
+          "action": "add"
+        }
+      },
+      "CreateCustomImageChange": {
+        "1": {
+          "version": 1,
+          "hash": "c3dbea3f49979fdcc517c0d13cd02739ca2fe86b370c42496a224f142ae31562",
+          "action": "add"
+        }
+      },
+      "CreateCustomWorkerPoolChange": {
+        "1": {
+          "version": 1,
+          "hash": "0355793dd58b364dcb84fff29714b6a26446bead3ba95c6d75e3200008e580f4",
+          "action": "add"
+        }
+      },
+      "Request": {
+        "1": {
+          "version": 1,
+          "hash": "1d69f5f0074114f99aa29c5ee77cb20b9151e5b50e77b026f11c3632a12efadf",
+          "action": "add"
+        }
+      },
+      "RequestInfo": {
+        "1": {
+          "version": 1,
+          "hash": "779562547744ebed64548f8021647292604fdf4256bf79685dfa14a1e56cc27b",
+          "action": "add"
+        }
+      },
+      "RequestInfoFilter": {
+        "1": {
+          "version": 1,
+          "hash": "bb881a003032f4676321218d7cd09580f4d64fccaa1cf9e118fdcd5c73c3d3a8",
+          "action": "add"
+        }
+      },
+      "SubmitRequest": {
+        "1": {
+          "version": 1,
+          "hash": "6c38b6ffd0a6f7442746e68b9ace7b21cb1dca7d2031929db5f9a302a280403f",
+          "action": "add"
+        }
+      },
+      "ObjectMutation": {
+        "1": {
+          "version": 1,
+          "hash": "ce88096760ce9334599c8194ec97b0a1470651ad680d9d21b8826a0df0af2a36",
+          "action": "add"
+        }
+      },
+      "EnumMutation": {
+        "1": {
+          "version": 1,
+          "hash": "5173fda73df17a344eb663b7692cca48bd46bf1773455439836b852cd165448c",
+          "action": "add"
+        }
+      },
+      "UserCodeStatusChange": {
+        "1": {
+          "version": 1,
+          "hash": "89aaf7f1368c782e3a1b9e79988877f6eaa05ab84365f7d321b757fde7fe86e7",
+          "action": "add"
+        }
+      },
+      "SyncedUserCodeStatusChange": {
+        "1": {
+          "version": 1,
+          "hash": "d9ad2d341eb645bd50d06330cd30fd4c266f93e37b9f5391d58b78365fc440e6",
+          "action": "add"
+        }
+      },
+      "TwinAPIContextView": {
+        "1": {
+          "version": 1,
+          "hash": "e099eef32cb3a8a806cbdc54cc7fca96bed3d60344bd571163ec049db407938b",
+          "action": "add"
+        }
+      },
+      "CustomAPIView": {
+        "1": {
+          "version": 1,
+          "hash": "769e96bebd05736ab860591670fb6da19406239b0104ddc71bd092a134335146",
+          "action": "add"
+        }
+      },
+      "CustomApiEndpoint": {
+        "1": {
+          "version": 1,
+          "hash": "ec4a217585336d1b59c93c18570443a63f4fbb24d2c088fbacf80bcf389d23e8",
+          "action": "add"
+        }
+      },
+      "PrivateAPIEndpoint": {
+        "1": {
+          "version": 1,
+          "hash": "6d7d143432c2811c520ab6dade005ba40173b590e5c676be04f5921b970ef938",
+          "action": "add"
+        }
+      },
+      "PublicAPIEndpoint": {
+        "1": {
+          "version": 1,
+          "hash": "3bf51fc33aa8feb1abc9d0ef792e8889da31a57050430e0bd8e17f2065ff8734",
+          "action": "add"
+        }
+      },
+      "UpdateTwinAPIEndpoint": {
+        "1": {
+          "version": 1,
+          "hash": "851e59412716e73c7f70a696619e0b375ce136b43f6fe2ea784747091caba5d8",
+          "action": "add"
+        }
+      },
+      "CreateTwinAPIEndpoint": {
+        "1": {
+          "version": 1,
+          "hash": "3d0b84dae95ebcc6647b5aabe54e65b3c6bf957665fde57d8037806a4aac13be",
+          "action": "add"
+        }
+      },
+      "TwinAPIEndpoint": {
+        "1": {
+          "version": 1,
+          "hash": "d1947b8f9c80d6c9b443e5a9f0758afa8849a5f12b9a511feefd7e4f82c374f4",
+          "action": "add"
+        }
+      },
+      "SyncState": {
+        "1": {
+          "version": 1,
+          "hash": "9a3f0bb973858b55bc766c9770c4d9abcc817898f797d94a89938650c0c67868",
+          "action": "add"
+        }
+      },
+      "WorkerSettings": {
+        "1": {
+          "version": 1,
+          "hash": "b8ddbe75a95b0312a64b5f25e0fc415aeac5c391975d02b515db8c848482f737",
+          "action": "add"
+        }
+      },
+      "HTTPServerRoute": {
+        "1": {
+          "version": 1,
+          "hash": "938245604a9c7e50001299afff5b669b2548364e356fed22a22780497831bf81",
+          "action": "add"
+        }
+      },
+      "PythonServerRoute": {
+        "1": {
+          "version": 1,
+          "hash": "a068d8f942d55ecb6d45af88a27c6ebf208584275bf589cbc308df3f774ab9a9",
+          "action": "add"
+        }
+      },
+      "VeilidServerRoute": {
+        "1": {
+          "version": 1,
+          "hash": "e676bc165601d2ede69707a4b6168ed4674f3f98887026d098a2dd4da4dfd097",
+          "action": "add"
+        }
+      },
+      "ServerPeer": {
+        "1": {
+          "version": 1,
+          "hash": "0d5f252018e324ea0d2dcb5c2ad8bd15707220565fce4f14de7f63a8f9e4391b",
+          "action": "add"
+        }
+      },
+      "ServerPeerUpdate": {
+        "1": {
+          "version": 1,
+          "hash": "0b854b57db7a18118c1fd8f31495b2ba4eeb9fbe4f24c631ff112418a94570d3",
+          "action": "add"
+        }
+      },
+      "AssociationRequestChange": {
+        "1": {
+          "version": 1,
+          "hash": "0134ac0002879c85fc9ddb06bed6306a8905c8434b0a40d3a96ce24a7bd4da90",
+          "action": "add"
+        }
+      },
+      "QueueItem": {
+        "1": {
+          "version": 1,
+          "hash": "1db212c46b6c56ccc5579cfe2141b693f0cd9286e2ede71210393e8455379bf1",
+          "action": "add"
+        }
+      },
+      "ActionQueueItem": {
+        "1": {
+          "version": 1,
+          "hash": "396d579dfc2e2b36b9fbed2f204bffcca1bea7ee2db7175045dd3328ebf08718",
+          "action": "add"
+        }
+      },
+      "APIEndpointQueueItem": {
+        "1": {
+          "version": 1,
+          "hash": "f04b3990a8d29c116d301e70df54d58f188895307a411dc13a666ff764ffd8dd",
+          "action": "add"
+        }
+      },
+      "ZMQClientConfig": {
+        "1": {
+          "version": 1,
+          "hash": "36ee8f75067d5144f0ed062cdc79466caae16b7a128231d89b6b430174843bde",
+          "action": "add"
+        }
+      },
+      "SQLiteStoreConfig": {
+        "1": {
+          "version": 1,
+          "hash": "ad062a5f863ae84683867d2a6a5e1d4420c010a64b88bc7b392106e33d71ac03",
+          "action": "add"
+        }
+      },
+      "ProjectThreadMessage": {
+        "1": {
+          "version": 1,
+          "hash": "99256d7592577d1e37df94a06eabc0a287f2d79e144c51fd719315e278edb46d",
+          "action": "add"
+        }
+      },
+      "ProjectMessage": {
+        "1": {
+          "version": 1,
+          "hash": "b5004b6354f71b19c81dd5f4b20bf446e0b959f5608a22707e96b944dd8175b0",
+          "action": "add"
+        }
+      },
+      "ProjectRequestResponse": {
+        "1": {
+          "version": 1,
+          "hash": "52162a8a779a4a301d8755691bf4cf994c86b9f650f9e8c8a923b44e635b1bc0",
+          "action": "add"
+        }
+      },
+      "ProjectRequest": {
+        "1": {
+          "version": 1,
+          "hash": "dc684135d5a5a48e5fc7988598c1e6e0de76cf1c5995f1c283fcf63d0eb4d24f",
+          "action": "add"
+        }
+      },
+      "AnswerProjectPoll": {
+        "1": {
+          "version": 1,
+          "hash": "c83d83a5ba6cc034d5061df200b3f1d029aa770b1e13dbef959bb1790323dc6e",
+          "action": "add"
+        }
+      },
+      "ProjectPoll": {
+        "1": {
+          "version": 1,
+          "hash": "ecf69b3b324e0bee9c82295796d44c4e8f796496cdc9db6d4302c2f160566466",
+          "action": "add"
+        }
+      },
+      "Project": {
+        "1": {
+          "version": 1,
+          "hash": "de86a1163ddbcd1cc3cc2b1b5dfcb85a8ad9f9d4bbc759c2b1f92a0d0a2ff184",
+          "action": "add"
+        }
+      },
+      "ProjectSubmit": {
+        "1": {
+          "version": 1,
+          "hash": "7555ba11ee5a814dcd9c45647300020f7359efc1081559940990cbd745936cac",
+          "action": "add"
+        }
+      },
+      "Plan": {
+        "1": {
+          "version": 1,
+          "hash": "ed05cb87aec832098fc464ac36cd6bceaab705463d0d2fa1b2d8e1ccc510018c",
           "action": "add"
         }
       }

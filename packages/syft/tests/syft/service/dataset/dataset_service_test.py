@@ -276,13 +276,9 @@ def different_data_types(
 
 def test_upload_dataset_with_assets_of_different_data_types(
     worker: Worker,
-    different_data_types: int
-    | str
-    | dict
-    | set
-    | np.ndarray
-    | pd.DataFrame
-    | torch.Tensor,
+    different_data_types: (
+        int | str | dict | set | np.ndarray | pd.DataFrame | torch.Tensor
+    ),
 ) -> None:
     asset = sy.Asset(
         name=random_hash(),
