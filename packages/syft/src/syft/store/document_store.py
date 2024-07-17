@@ -377,6 +377,8 @@ class StorePartition:
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> Result[SyftObject, str]:
+        if obj.created_date is None:
+            obj.created_date = BaseDateTime.now()
         return self._thread_safe_cbk(
             self._set,
             credentials=credentials,
@@ -693,8 +695,6 @@ class BaseStash:
         # we dont use and_then logic here as it is hard because of the order of the arguments
         if res.is_err():
             return res
-        if obj.created_date is None:
-            obj.created_date = BaseDateTime.now()
         res = self.partition.set(
             credentials=credentials,
             obj=obj,
@@ -744,6 +744,9 @@ class BaseStash:
         **kwargs: dict[str, Any],
     ) -> Result[list[BaseStash.object_type], str]:
         order_by = kwargs.pop("order_by", None)
+        created_date = kwargs.pop("created_date", None)
+        deleted_date = kwargs.pop("deleted_date", None)
+        updated_date = kwargs.pop("updated_date", None)
         qks = QueryKeys.from_dict(kwargs)
         return self.query_all(credentials=credentials, qks=qks, order_by=order_by)
 
