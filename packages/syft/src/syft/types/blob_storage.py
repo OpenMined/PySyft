@@ -187,10 +187,12 @@ class BlobFile(SyftObject):
         return {"file_name": self.file_name}
 
 
+@serializable(canonical_name="BlobFileType", version=1)
 class BlobFileType(type):
     pass
 
 
+@serializable(canonical_name="BlobFileObjectPointer", version=1)
 class BlobFileObjectPointer(ActionObjectPointer):
     pass
 
