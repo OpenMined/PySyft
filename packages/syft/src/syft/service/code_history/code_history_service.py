@@ -25,7 +25,7 @@ from .code_history_stash import CodeHistoryStash
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="CodeHistoryService", version=1)
 class CodeHistoryService(AbstractService):
     store: DocumentStore
     stash: CodeHistoryStash

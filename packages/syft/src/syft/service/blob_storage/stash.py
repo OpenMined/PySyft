@@ -6,7 +6,7 @@ from ...store.document_store import PartitionSettings
 from ...types.blob_storage import BlobStorageEntry
 
 
-@serializable()
+@serializable(canonical_name="BlobStorageStash", version=1)
 class BlobStorageStash(BaseUIDStoreStash):
     object_type = BlobStorageEntry
     settings: PartitionSettings = PartitionSettings(

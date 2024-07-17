@@ -25,7 +25,7 @@ from .data_subject_member_service import DataSubjectMemberService
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="DataSubjectStash", version=1)
 class DataSubjectStash(BaseUIDStoreStash):
     object_type = DataSubject
     settings: PartitionSettings = PartitionSettings(
@@ -55,7 +55,7 @@ class DataSubjectStash(BaseUIDStoreStash):
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="DataSubjectService", version=1)
 class DataSubjectService(AbstractService):
     store: DocumentStore
     stash: DataSubjectStash

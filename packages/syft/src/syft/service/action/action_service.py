@@ -53,7 +53,7 @@ from .pandas import PandasSeriesObject  # noqa: F401
 logger = logging.getLogger(__name__)
 
 
-@serializable()
+@serializable(canonical_name="ActionService", version=1)
 class ActionService(AbstractService):
     store_type = ActionStore
 

@@ -12,11 +12,18 @@ from .deserialize import _deserialize
 from .recursive import recursive_serde_register
 from .serialize import _serialize
 
-recursive_serde_register(_ParameterKind)
+recursive_serde_register(
+    _ParameterKind,
+    canonical_name="inspect_ParameterKind",
+    version=1,
+)
 
 
 recursive_serde_register(
-    Parameter, serialize_attrs=["_annotation", "_name", "_kind", "_default"]
+    Parameter,
+    serialize_attrs=["_annotation", "_name", "_kind", "_default"],
+    canonical_name="inspect_Parameter",
+    version=1,
 )
 
 
@@ -42,9 +49,6 @@ recursive_serde_register(
 #     return Parameter(**obj_dict)
 
 
-# recursive_serde_register(Parameter, serialize_parameter, deserialize_parameter)
-
-
 def serialize_signature(obj: Signature) -> bytes:
     parameters = list(dict(obj.parameters).values())
     return_annotation = obj.return_annotation
@@ -57,7 +61,13 @@ def deserialize_signature(blob: bytes) -> Signature:
     return Signature(**obj_dict)
 
 
-recursive_serde_register(Signature, serialize_signature, deserialize_signature)
+recursive_serde_register(
+    Signature,
+    serialize_signature,
+    deserialize_signature,
+    canonical_name="inspect_Signature",
+    version=1,
+)
 
 
 def signature_remove_self(signature: Signature) -> Signature:

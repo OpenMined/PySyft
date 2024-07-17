@@ -35,7 +35,7 @@ from .stash import BlobStorageStash
 BlobDepositType = OnDiskBlobDeposit | SeaweedFSBlobDeposit
 
 
-@serializable()
+@serializable(canonical_name="BlobStorageService", version=1)
 class BlobStorageService(AbstractService):
     store: DocumentStore
     stash: BlobStorageStash

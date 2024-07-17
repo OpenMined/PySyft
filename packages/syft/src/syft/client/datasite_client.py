@@ -90,7 +90,7 @@ def add_default_uploader(
     return obj
 
 
-@serializable()
+@serializable(canonical_name="DatasiteClient", version=1)
 class DatasiteClient(SyftClient):
     def __repr__(self) -> str:
         return f"<DatasiteClient: {self.name}>"

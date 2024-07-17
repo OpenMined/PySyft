@@ -225,7 +225,7 @@ class ExecutionOutput(SyncableSyftObject):
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="OutputStash", version=1)
 class OutputStash(BaseUIDStoreStash):
     object_type = ExecutionOutput
     settings: PartitionSettings = PartitionSettings(
@@ -290,7 +290,7 @@ def downgrade_execution_output() -> list[Callable]:
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="OutputService", version=1)
 class OutputService(AbstractService):
     store: DocumentStore
     stash: OutputStash
