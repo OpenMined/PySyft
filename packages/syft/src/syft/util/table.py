@@ -22,7 +22,7 @@ def _syft_in_mro(self: Any, item: Any) -> bool:
         if hasattr(type(item).mro, "__self__"):
             mro = type(item).mro()
         else:
-            mro = type(item).mro(type(item))
+            mro = type(item).mro(type(item))  # type: ignore
 
     elif hasattr(item, "mro") and type(item) != type:
         mro = item.mro()
