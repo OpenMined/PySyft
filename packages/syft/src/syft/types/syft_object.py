@@ -607,6 +607,7 @@ class SyftObject(SyftObjectVersioned):
         attrs_to_check = self.__dict__.keys()
 
         obj_exclude_attrs = getattr(self, "__exclude_sync_diff_attrs__", [])
+        obj_exclude_attrs.extend(["created_date", "updated_date", "deleted_date"])
         for attr in attrs_to_check:
             if attr not in base_attrs_sync_ignore and attr not in obj_exclude_attrs:
                 obj_attr = getattr(self, attr)
@@ -633,6 +634,7 @@ class SyftObject(SyftObjectVersioned):
         attrs_to_check = self.__dict__.keys()
 
         obj_exclude_attrs = getattr(self, "__exclude_sync_diff_attrs__", [])
+        obj_exclude_attrs.extend(["created_date", "updated_date", "deleted_date"])
         for attr in attrs_to_check:
             if attr not in base_attrs_sync_ignore and attr not in obj_exclude_attrs:
                 obj_attr = getattr(self, attr)

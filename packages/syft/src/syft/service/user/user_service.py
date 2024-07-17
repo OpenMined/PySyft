@@ -178,7 +178,9 @@ class UserService(AbstractService):
         page_index: int | None = 0,
     ) -> UserViewPage | None | list[UserView] | SyftError:
         kwargs = user_search.to_dict(exclude_empty=True)
-
+        kwargs.pop("created_date")
+        kwargs.pop("updated_date")
+        kwargs.pop("deleted_date")
         if len(kwargs) == 0:
             valid_search_params = list(UserSearch.__fields__.keys())
             return SyftError(
