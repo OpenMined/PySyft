@@ -148,7 +148,7 @@ class Worker(SyftBaseModel):
         )
 
 
-@serializable()
+@serializable(canonical_name="ZMQProducer", version=1)
 class ZMQProducer(QueueProducer):
     INTERNAL_SERVICE_PREFIX = b"mmi."
 
@@ -259,81 +259,6 @@ class ZMQProducer(QueueProducer):
                     return True
         return value
 
-    def unwrap_nested_actionobjects(self, data: Any) -> Any:
-        """recursively unwraps nested action objects"""
-
-        if isinstance(data, list):
-            return [self.unwrap_nested_actionobjects(obj) for obj in data]
-        if isinstance(data, dict):
-            return {
-                key: self.unwrap_nested_actionobjects(obj) for key, obj in data.items()
-            }
-        if isinstance(data, ActionObject):
-            res = self.action_service.get(self.auth_context, data.id)
-            res = res.ok() if res.is_ok() else res.err()
-            if not isinstance(res, ActionObject):
-                return SyftError(message=f"{res}")
-            else:
-                nested_res = res.syft_action_data
-                if isinstance(nested_res, ActionObject):
-                    raise ValueError(
-                        "More than double nesting of ActionObjects is currently not supported"
-                    )
-                return nested_res
-        return data
-
-    def contains_nested_actionobjects(self, data: Any) -> bool:
-        """
-        returns if this is a list/set/dict that contains ActionObjects
-        """
-
-        def unwrap_collection(col: set | dict | list) -> [Any]:  # type: ignore
-            return_values = []
-            if isinstance(col, dict):
-                values = list(col.values()) + list(col.keys())
-            else:
-                values = list(col)
-            for v in values:
-                if isinstance(v, list | dict | set):
-                    return_values += unwrap_collection(v)
-                else:
-                    return_values.append(v)
-            return return_values
-
-        if isinstance(data, list | dict | set):
-            values = unwrap_collection(data)
-            has_action_object = any(isinstance(x, ActionObject) for x in values)
-            return has_action_object
-        elif isinstance(data, ActionObject):
-            return True
-        return False
-
-    def preprocess_action_arg(self, arg: UID) -> UID | None:
-        """ "If the argument is a collection (of collections) of ActionObjects,
-        We want to flatten the collection and upload a new ActionObject that contains
-        its values. E.g. [[ActionObject1, ActionObject2],[ActionObject3, ActionObject4]]
-        -> [[value1, value2],[value3, value4]]
-        """
-        action_object = self.action_service.get(context=self.auth_context, uid=arg)
-        data = action_object.syft_action_data
-        if self.contains_nested_actionobjects(data):
-            new_data = self.unwrap_nested_actionobjects(data)
-
-            new_action_object = ActionObject.from_obj(
-                new_data,
-                id=action_object.id,
-                syft_blob_storage_entry_id=action_object.syft_blob_storage_entry_id,
-                syft_server_location=action_object.syft_server_location,
-                syft_client_verify_key=action_object.syft_client_verify_key,
-            )
-
-            new_action_object._save_to_blob_storage()
-
-            self.action_service._set(
-                context=self.auth_context, action_object=new_action_object
-            ).unwrap()
-        return None
-
     def read_items(self) -> None:
         while True:
             if self._stop.is_set():
@@ -371,11 +296,6 @@ class ZMQProducer(QueueProducer):
                                 ).unwrap()
                             ):
                                 continue
-
-                            for arg in action.args:
-                                self.preprocess_action_arg(arg)
-                            for _, arg in action.kwargs.items():
-                                self.preprocess_action_arg(arg)
 
                         msg_bytes = serialize(item, to_bytes=True)
                         worker_pool = item.worker_pool.resolve_with_context(
@@ -670,7 +590,7 @@ class ZMQProducer(QueueProducer):
         return not self.socket.closed
 
 
-@serializable(attrs=["_subscriber"])
+@serializable(attrs=["_subscriber"], canonical_name="ZMQConsumer", version=1)
 class ZMQConsumer(QueueConsumer):
     def __init__(
         self,
@@ -908,7 +828,7 @@ class ZMQClientConfig(SyftObject, QueueClientConfig):
     consumer_service: str | None = None
 
 
-@serializable(attrs=["host"])
+@serializable(attrs=["host"], canonical_name="ZMQClient", version=1)
 class ZMQClient(QueueClient):
     """ZMQ Client for creating producers and consumers."""
 
@@ -1047,7 +967,7 @@ class ZMQClient(QueueClient):
         return SyftSuccess(message="Successfully purged all queues.")
 
 
-@serializable()
+@serializable(canonical_name="ZMQQueueConfig", version=1)
 class ZMQQueueConfig(QueueConfig):
     def __init__(
         self,

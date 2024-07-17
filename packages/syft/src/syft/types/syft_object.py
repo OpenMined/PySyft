@@ -37,7 +37,7 @@ from typeguard import check_type
 from typing_extensions import Self
 
 # relative
-from ..serde.recursive_primitives import recursive_serde_register_type
+from ..serde.serializable import serializable
 from ..serde.serialize import _serialize as serialize
 from ..server.credentials import SyftVerifyKey
 from ..util.autoreload import autoreload_enabled
@@ -717,6 +717,7 @@ class StorableObjectType:
 TupleGenerator = Generator[tuple[str, Any], None, None]
 
 
+@serializable()
 class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
     """Syft Object to which partial arguments can be provided."""
 
@@ -725,9 +726,6 @@ class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
 
     def __iter__(self) -> TupleGenerator:
         yield from ((k, v) for k, v in super().__iter__() if v is not Empty)
-
-
-recursive_serde_register_type(PartialSyftObject)
 
 
 def attach_attribute_to_syft_object(result: Any, attr_dict: dict[str, Any]) -> None:

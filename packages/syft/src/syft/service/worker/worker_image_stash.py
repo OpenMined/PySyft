@@ -23,7 +23,7 @@ from .worker_image import SyftWorkerImage
 WorkerConfigPK = PartitionKey(key="config", type_=WorkerConfig)
 
 
-@serializable()
+@serializable(canonical_name="SyftWorkerImageStash", version=1)
 class SyftWorkerImageStash(NewBaseUIDStoreStash):
     object_type = SyftWorkerImage
     settings: PartitionSettings = PartitionSettings(

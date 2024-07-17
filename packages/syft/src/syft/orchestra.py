@@ -210,7 +210,14 @@ def deploy_to_python(
         kwargs["in_memory_workers"] = True
         if port == "auto":
             port = get_random_available_port()
-            kwargs["port"] = port
+        else:
+            try:
+                port = int(port)
+            except ValueError:
+                raise ValueError(
+                    f"port must be either 'auto' or a valid int not: {port}"
+                )
+        kwargs["port"] = port
 
         sig = inspect.signature(serve_server)
         supported_kwargs = {k: v for k, v in kwargs.items() if k in sig.parameters}

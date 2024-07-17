@@ -27,7 +27,7 @@ from ..response import SyftError
 from ..response import SyftException
 
 
-@serializable()
+@serializable(canonical_name="Status", version=1)
 class Status(str, Enum):
     CREATED = "created"
     PROCESSING = "processing"
@@ -97,7 +97,7 @@ class APIEndpointQueueItem(QueueItem):
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="QueueStash", version=1)
 class QueueStash(NewBaseStash):
     object_type = QueueItem
     settings: PartitionSettings = PartitionSettings(

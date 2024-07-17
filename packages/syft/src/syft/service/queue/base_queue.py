@@ -12,12 +12,12 @@ from ..response import SyftSuccess
 from ..worker.worker_stash import WorkerStash
 
 
-@serializable()
+@serializable(canonical_name="QueueClientConfig", version=1)
 class QueueClientConfig:
     pass
 
 
-@serializable()
+@serializable(canonical_name="AbstractMessageHandler", version=1)
 class AbstractMessageHandler:
     queue_name: ClassVar[str]
 
@@ -26,7 +26,11 @@ class AbstractMessageHandler:
         raise NotImplementedError
 
 
-@serializable(attrs=["message_handler", "queue_name", "address"])
+@serializable(
+    attrs=["message_handler", "queue_name", "address"],
+    canonical_name="QueueConsumer",
+    version=1,
+)
 class QueueConsumer:
     message_handler: AbstractMessageHandler
     queue_name: str
@@ -42,7 +46,7 @@ class QueueConsumer:
         raise NotImplementedError
 
 
-@serializable()
+@serializable(canonical_name="QueueProducer", version=1)
 class QueueProducer:
     queue_name: str
 
@@ -61,13 +65,13 @@ class QueueProducer:
         raise NotImplementedError
 
 
-@serializable()
+@serializable(canonical_name="QueueClient", version=1)
 class QueueClient:
     def __init__(self, config: QueueClientConfig) -> None:
         raise NotImplementedError
 
 
-@serializable()
+@serializable(canonical_name="QueueConfig", version=1)
 class QueueConfig:
     """Base Queue configuration"""
 
@@ -75,7 +79,7 @@ class QueueConfig:
     client_config: QueueClientConfig
 
 
-@serializable()
+@serializable(canonical_name="BaseQueueManager", version=1)
 class BaseQueueManager:
     config: QueueConfig
 

@@ -14,7 +14,7 @@ NamePartitionKey = PartitionKey(key="service_func_name", type_=str)
 VerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
 
 
-@serializable()
+@serializable(canonical_name="CodeHistoryStash", version=1)
 class CodeHistoryStash(NewBaseUIDStoreStash):
     object_type = CodeHistory
     settings: PartitionSettings = PartitionSettings(

@@ -32,7 +32,7 @@ from ..response import SyftError
 from .worker_image import SyftWorkerImage
 
 
-@serializable()
+@serializable(canonical_name="WorkerStatus", version=1)
 class WorkerStatus(Enum):
     PENDING = "Pending"
     RUNNING = "Running"
@@ -40,14 +40,14 @@ class WorkerStatus(Enum):
     RESTARTED = "Restarted"
 
 
-@serializable()
+@serializable(canonical_name="ConsumerState", version=1)
 class ConsumerState(Enum):
     IDLE = "Idle"
     CONSUMING = "Consuming"
     DETACHED = "Detached"
 
 
-@serializable()
+@serializable(canonical_name="WorkerHealth", version=1)
 class WorkerHealth(Enum):
     HEALTHY = "✅"
     UNHEALTHY = "❌"
@@ -289,14 +289,14 @@ class WorkerPool(SyftObject):
         return resolved_workers
 
 
-@serializable()
+@serializable(canonical_name="WorkerOrchestrationType", version=1)
 class WorkerOrchestrationType(Enum):
     DOCKER = "docker"
     KUBERNETES = "k8s"
     PYTHON = "python"
 
 
-@serializable()
+@serializable(canonical_name="ContainerSpawnStatus", version=1)
 class ContainerSpawnStatus(SyftBaseModel):
     __repr_attrs__ = ["worker_name", "worker", "error"]
 

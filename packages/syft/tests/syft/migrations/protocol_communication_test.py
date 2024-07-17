@@ -75,7 +75,10 @@ def setup_migration_transforms(mock_klass_v1, mock_klass_v2):
 
 
 def get_stash_klass(syft_object: type[SyftBaseObject]):
-    @serializable()
+    @serializable(
+        canonical_name="SyftMockObjectStash",
+        version=1,
+    )
     class SyftMockObjectStash(NewBaseStash):
         object_type = syft_object
         settings: PartitionSettings = PartitionSettings(
@@ -92,7 +95,10 @@ def get_stash_klass(syft_object: type[SyftBaseObject]):
 def setup_service_method(syft_object):
     stash_klass: NewBaseStash = get_stash_klass(syft_object=syft_object)
 
-    @serializable()
+    @serializable(
+        canonical_name="SyftMockObjectService",
+        version=1,
+    )
     class SyftMockObjectService(AbstractService):
         store: DocumentStore
         stash: stash_klass  # type: ignore

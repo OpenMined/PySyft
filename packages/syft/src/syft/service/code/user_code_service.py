@@ -65,7 +65,7 @@ class IsExecutionAllowedEnum(str, Enum):
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="UserCodeService", version=1)
 class UserCodeService(AbstractService):
     store: DocumentStore
     stash: UserCodeStash

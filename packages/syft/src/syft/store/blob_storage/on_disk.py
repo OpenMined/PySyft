@@ -88,12 +88,12 @@ class OnDiskBlobStorageConnection(BlobStorageConnection):
             return SyftError(message=f"Failed to delete file: {e}")
 
 
-@serializable()
+@serializable(canonical_name="OnDiskBlobStorageClientConfig", version=1)
 class OnDiskBlobStorageClientConfig(BlobStorageClientConfig):
     base_directory: Path
 
 
-@serializable()
+@serializable(canonical_name="OnDiskBlobStorageClient", version=1)
 class OnDiskBlobStorageClient(BlobStorageClient):
     config: OnDiskBlobStorageClientConfig
 
@@ -105,7 +105,7 @@ class OnDiskBlobStorageClient(BlobStorageClient):
         return OnDiskBlobStorageConnection(self.config.base_directory)
 
 
-@serializable()
+@serializable(canonical_name="OnDiskBlobStorageConfig", version=1)
 class OnDiskBlobStorageConfig(BlobStorageConfig):
     client_type: type[BlobStorageClient] = OnDiskBlobStorageClient
     client_config: OnDiskBlobStorageClientConfig

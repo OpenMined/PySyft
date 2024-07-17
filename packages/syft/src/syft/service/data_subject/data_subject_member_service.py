@@ -21,7 +21,7 @@ from .data_subject_member import ParentPartitionKey
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="DataSubjectMemberStash", version=1)
 class DataSubjectMemberStash(NewBaseUIDStoreStash):
     object_type = DataSubjectMemberRelationship
     settings: PartitionSettings = PartitionSettings(
@@ -48,7 +48,7 @@ class DataSubjectMemberStash(NewBaseUIDStoreStash):
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="DataSubjectMemberService", version=1)
 class DataSubjectMemberService(AbstractService):
     store: DocumentStore
     stash: DataSubjectMemberStash

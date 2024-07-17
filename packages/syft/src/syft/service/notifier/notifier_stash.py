@@ -24,7 +24,7 @@ ActionIDsPartitionKey = PartitionKey(key="action_ids", type_=list[UID])
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="NotifierStash", version=1)
 class NotifierStash(NewBaseStash):
     object_type = NotifierSettings
     settings: PartitionSettings = PartitionSettings(

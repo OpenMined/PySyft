@@ -8,7 +8,7 @@ from .log import SyftLog
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="LogStash", version=1)
 class LogStash(NewBaseUIDStoreStash):
     object_type = SyftLog
     settings: PartitionSettings = PartitionSettings(

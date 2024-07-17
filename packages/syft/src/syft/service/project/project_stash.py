@@ -24,7 +24,7 @@ NamePartitionKey = PartitionKey(key="name", type_=str)
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="ProjectStash", version=1)
 class ProjectStash(NewBaseUIDStoreStash):
     object_type = Project
     settings: PartitionSettings = PartitionSettings(

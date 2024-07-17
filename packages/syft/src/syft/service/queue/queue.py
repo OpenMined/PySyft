@@ -83,7 +83,7 @@ class MonitorThread(threading.Thread):
             logger.warning(f"Failed to terminate job {job.id}: {e}")
 
 
-@serializable()
+@serializable(canonical_name="QueueManager", version=1)
 class QueueManager(BaseQueueManager):
     config: QueueConfig
 
@@ -238,7 +238,7 @@ def handle_message_multiprocessing(
     monitor_thread.stop()
 
 
-@serializable()
+@serializable(canonical_name="APICallMessageHandler", version=1)
 class APICallMessageHandler(AbstractMessageHandler):
     queue_name = "api_call"
 

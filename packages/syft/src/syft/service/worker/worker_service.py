@@ -40,7 +40,7 @@ from .worker_stash import WorkerStash
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="WorkerService", version=1)
 class WorkerService(AbstractService):
     store: DocumentStore
     stash: WorkerStash

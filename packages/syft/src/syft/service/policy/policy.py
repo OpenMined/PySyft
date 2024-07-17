@@ -164,7 +164,7 @@ class Policy(SyftObject):
         raise NotImplementedError
 
 
-@serializable()
+@serializable(canonical_name="UserPolicyStatus", version=1)
 class UserPolicyStatus(Enum):
     SUBMITTED = "submitted"
     DENIED = "denied"
@@ -462,7 +462,7 @@ class MixedInputPolicy(InputPolicy):
                     kwarg_rules_current_server[kw] = Matches(
                         kw=kw, val=user_code_arg2id(arg)
                     )
-                elif arg in [str, float, int, bool, dict, list, set, tuple]:
+                elif arg in [str, float, int, bool, dict, list, set, tuple]:  # type: ignore[unreachable]
                     kwarg_rules_current_server[kw] = UserOwned(kw=kw, type=arg)
                 elif isinstance(arg, CreatePolicyRule):
                     kwarg_rules_current_server[kw] = arg.to_policy_rule(kw)
@@ -831,7 +831,7 @@ class OutputPolicyExecuteOnce(OutputPolicyExecuteCount):
 SingleExecutionExactOutput = OutputPolicyExecuteOnce
 
 
-@serializable()
+@serializable(canonical_name="CustomPolicy", version=1)
 class CustomPolicy(type):
     # capture the init_kwargs transparently
     def __call__(cls, *args: Any, **kwargs: Any) -> None:
@@ -840,10 +840,10 @@ class CustomPolicy(type):
         return obj
 
 
-recursive_serde_register_type(CustomPolicy)
+recursive_serde_register_type(CustomPolicy, canonical_name="CustomPolicy", version=1)
 
 
-@serializable()
+@serializable(canonical_name="CustomOutputPolicy", version=1)
 class CustomOutputPolicy(metaclass=CustomPolicy):
     def apply_to_output(
         self,

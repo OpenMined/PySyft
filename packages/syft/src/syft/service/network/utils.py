@@ -19,7 +19,7 @@ from .server_peer import ServerPeerUpdate
 logger = logging.getLogger(__name__)
 
 
-@serializable(without=["thread"])
+@serializable(without=["thread"], canonical_name="PeerHealthCheckTask", version=1)
 class PeerHealthCheckTask:
     repeat_time = 10  # in seconds
 

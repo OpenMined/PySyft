@@ -176,7 +176,7 @@ class SeaweedFSBlobDeposit(BlobDeposit):
         )
 
 
-@serializable()
+@serializable(canonical_name="SeaweedFSClientConfig", version=1)
 class SeaweedFSClientConfig(BlobStorageClientConfig):
     host: str
     port: int
@@ -199,7 +199,7 @@ class SeaweedFSClientConfig(BlobStorageClientConfig):
         return f"http://{self.host}:{self.mount_port}/configure_azure"
 
 
-@serializable()
+@serializable(canonical_name="SeaweedFSClient", version=1)
 class SeaweedFSClient(BlobStorageClient):
     config: SeaweedFSClientConfig
 
@@ -218,7 +218,7 @@ class SeaweedFSClient(BlobStorageClient):
         )
 
 
-@serializable()
+@serializable(canonical_name="SeaweedFSConnection", version=1)
 class SeaweedFSConnection(BlobStorageConnection):
     client: S3BaseClient
     default_bucket_name: str
@@ -327,7 +327,7 @@ class SeaweedFSConnection(BlobStorageConnection):
             return SyftError(message=str(e))
 
 
-@serializable()
+@serializable(canonical_name="SeaweedFSConfig", version=1)
 class SeaweedFSConfig(BlobStorageConfig):
     client_type: type[BlobStorageClient] = SeaweedFSClient
     client_config: SeaweedFSClientConfig

@@ -342,7 +342,7 @@ class RemoteFunction(SyftObject):
             to_protocol=self.communication_protocol, args=args, kwargs=kwargs
         )
 
-        return args, kwargs
+        return tuple(args), kwargs
 
     def function_call(
         self, path: str, *args: Any, cache_result: bool = True, **kwargs: Any
@@ -530,7 +530,7 @@ class RemoteUserCodeFunction(RemoteFunction):
             to_protocol=self.communication_protocol, args=args, kwargs=kwargs
         )
 
-        return args, kwargs
+        return tuple(args), kwargs
 
     @property
     def user_code_id(self) -> UID | None:
@@ -698,7 +698,7 @@ class APISubModulesView(SyftObject):
         return {"submodule": self.submodule, "endpoints": "\n".join(self.endpoints)}
 
 
-@serializable()
+@serializable(canonical_name="APIModule", version=1)
 class APIModule:
     _modules: list[str]
     path: str
@@ -1333,7 +1333,7 @@ except Exception:
     pass  # nosec
 
 
-@serializable()
+@serializable(canonical_name="ServerIdentity", version=1)
 class ServerIdentity(Identity):
     server_name: str
 

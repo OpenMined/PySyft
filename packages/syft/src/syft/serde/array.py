@@ -3,6 +3,7 @@ import numpy as np
 from numpy import frombuffer
 
 # relative
+from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from .arrow import numpy_deserialize
 from .arrow import numpy_serialize
 from .recursive import recursive_serde_register
@@ -34,11 +35,17 @@ DTYPE_REFACTOR = {
 }
 
 recursive_serde_register(
-    np.ndarray, serialize=numpy_serialize, deserialize=numpy_deserialize
+    np.ndarray,
+    serialize=numpy_serialize,
+    deserialize=numpy_deserialize,
+    canonical_name="numpy_ndarray",
+    version=SYFT_OBJECT_VERSION_1,
 )
 
 recursive_serde_register(
     np._globals._NoValueType,
+    canonical_name="numpy_no_value",
+    version=SYFT_OBJECT_VERSION_1,
 )
 #  serialize=numpy_serialize, deserialize=numpy_deserialize
 
@@ -47,84 +54,112 @@ recursive_serde_register(
     np.bool_,
     serialize=lambda x: x.tobytes(),
     deserialize=lambda buffer: frombuffer(buffer, dtype=np.bool_)[0],
+    canonical_name="numpy_bool",
+    version=SYFT_OBJECT_VERSION_1,
 )
 
 recursive_serde_register(
     np.int8,
     serialize=lambda x: x.tobytes(),
     deserialize=lambda buffer: frombuffer(buffer, dtype=np.int8)[0],
+    canonical_name="numpy_int8",
+    version=SYFT_OBJECT_VERSION_1,
 )
 
 recursive_serde_register(
     np.int16,
     serialize=lambda x: x.tobytes(),
     deserialize=lambda buffer: frombuffer(buffer, dtype=np.int16)[0],
+    canonical_name="numpy_int16",
+    version=SYFT_OBJECT_VERSION_1,
 )
 
 recursive_serde_register(
     np.int32,
     serialize=lambda x: x.tobytes(),
     deserialize=lambda buffer: frombuffer(buffer, dtype=np.int32)[0],
+    canonical_name="numpy_int32",
+    version=SYFT_OBJECT_VERSION_1,
 )
 
 recursive_serde_register(
     np.int64,
     serialize=lambda x: x.tobytes(),
     deserialize=lambda buffer: frombuffer(buffer, dtype=np.int64)[0],
+    canonical_name="numpy_int64",
+    version=SYFT_OBJECT_VERSION_1,
 )
 
 recursive_serde_register(
     np.uint8,
     serialize=lambda x: x.tobytes(),
     deserialize=lambda buffer: frombuffer(buffer, dtype=np.uint8)[0],
+    canonical_name="numpy_uint8",
+    version=SYFT_OBJECT_VERSION_1,
 )
 
 recursive_serde_register(
     np.uint16,
     serialize=lambda x: x.tobytes(),
     deserialize=lambda buffer: frombuffer(buffer, dtype=np.uint16)[0],
+    canonical_name="numpy_uint16",
+    version=SYFT_OBJECT_VERSION_1,
 )
 
 recursive_serde_register(
     np.uint32,
     serialize=lambda x: x.tobytes(),
     deserialize=lambda buffer: frombuffer(buffer, dtype=np.uint32)[0],
+    canonical_name="numpy_uint32",
+    version=SYFT_OBJECT_VERSION_1,
 )
 
 recursive_serde_register(
     np.uint64,
     serialize=lambda x: x.tobytes(),
     deserialize=lambda buffer: frombuffer(buffer, dtype=np.uint64)[0],
+    canonical_name="numpy_uint64",
+    version=SYFT_OBJECT_VERSION_1,
 )
 
 recursive_serde_register(
     np.single,
     serialize=lambda x: x.tobytes(),
     deserialize=lambda buffer: frombuffer(buffer, dtype=np.single)[0],
+    canonical_name="numpy_single",
+    version=SYFT_OBJECT_VERSION_1,
 )
 
 recursive_serde_register(
     np.double,
     serialize=lambda x: x.tobytes(),
     deserialize=lambda buffer: frombuffer(buffer, dtype=np.double)[0],
+    canonical_name="numpy_double",
+    version=SYFT_OBJECT_VERSION_1,
 )
 
 recursive_serde_register(
     np.float16,
     serialize=lambda x: x.tobytes(),
     deserialize=lambda buffer: frombuffer(buffer, dtype=np.float16)[0],
+    canonical_name="numpy_float16",
+    version=SYFT_OBJECT_VERSION_1,
 )
 
 recursive_serde_register(
     np.float32,
     serialize=lambda x: x.tobytes(),
     deserialize=lambda buffer: frombuffer(buffer, dtype=np.float32)[0],
+    canonical_name="numpy_float32",
+    version=SYFT_OBJECT_VERSION_1,
 )
 
 recursive_serde_register(
     np.float64,
     serialize=lambda x: x.tobytes(),
     deserialize=lambda buffer: frombuffer(buffer, dtype=np.float64)[0],
+    canonical_name="numpy_float64",
+    version=SYFT_OBJECT_VERSION_1,
 )
 
 # TODO: There is an incorrect mapping in looping,which makes it not work.
