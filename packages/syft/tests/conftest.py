@@ -162,6 +162,34 @@ def low_worker() -> Worker:
     del worker
 
 
+@pytest.fixture(scope="function")
+def high_worker_with_consumers() -> Worker:
+    worker = sy.Worker.named(
+        name=token_hex(8),
+        server_type="datasite",
+        server_side_type=ServerSideType.HIGH_SIDE,
+        create_producer=True,
+        n_consumers=3,
+    )
+    yield worker
+    worker.cleanup()
+    del worker
+
+
+@pytest.fixture(scope="function")
+def low_worker_with_consumers() -> Worker:
+    worker = sy.Worker.named(
+        name=token_hex(8),
+        server_type="datasite",
+        server_side_type=ServerSideType.LOW_SIDE,
+        create_producer=True,
+        n_consumers=3,
+    )
+    yield worker
+    worker.cleanup()
+    del worker
+
+
 @pytest.fixture
 def root_datasite_client(worker) -> DatasiteClient:
     yield worker.root_client

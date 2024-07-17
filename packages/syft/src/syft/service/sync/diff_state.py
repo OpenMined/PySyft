@@ -450,6 +450,12 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         else:
             raise ValueError("Cannot get object from a diff that is not new")
 
+    def set_obj(self, obj: SyftObject) -> None:
+        if self.low_obj is not None:
+            self.low_obj = obj
+        else:
+            self.high_obj = obj
+
     def _coll_repr_(self) -> dict[str, Any]:
         low_state = f"{self.status}\n{self.diff_side_str('low')}"
         high_state = f"{self.status}\n{self.diff_side_str('high')}"

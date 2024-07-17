@@ -11,6 +11,7 @@ from syft.client.sync_decision import SyncDecision
 from syft.client.syncing import compare_clients
 from syft.client.syncing import resolve
 from syft.service.job.job_stash import Job
+from syft.service.request.request import Request
 from syft.service.request.request import RequestStatus
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
@@ -42,9 +43,7 @@ def compare_and_resolve(
 ):
     diff_state_before = compare_clients(from_client, to_client)
     for obj_diff_batch in diff_state_before.active_batches:
-        widget = resolve(
-            obj_diff_batch,
-        )
+        widget = resolve(obj_diff_batch)
         if decision_callback:
             decision = decision_callback(obj_diff_batch)
         if share_private_data:
@@ -383,3 +382,53 @@ def test_deny_and_sync(low_worker, high_worker):
     assert diff_after.is_same
 
     assert low_client.requests[0].status == RequestStatus.REJECTED
+
+
+def test_sync_jobs_no_private_data_results(
+    high_worker_with_consumers, low_worker_with_consumers
+) -> None:
+    low_client: DatasiteClient = low_worker_with_consumers.root_client
+    client_low_ds: DatasiteClient = get_ds_client(low_client)
+    high_client: DatasiteClient = high_worker_with_consumers.root_client
+
+    _ = create_dataset(high_client)
+
+    @sy.syft_function_single_use()
+    def inspect_data(data) -> int:
+        return data
+
+    res = client_low_ds.code.request_code_execution(inspect_data)
+    assert isinstance(res, Request)
+
+    result = client_low_ds.code.inspect_data(blocking=False)
+    assert isinstance(result, SyftError), "DS cannot start a job on low side"
+    assert len(high_client.code.get_all()) == 0
+
+    diff_state_before, diff_state_after = compare_and_resolve(
+        from_client=low_client, to_client=high_client, share_private_data=False
+    )
+
+    assert not diff_state_before.is_same
+    assert diff_state_after.is_same
+    assert len(high_client.code.get_all()) == 1
+
+    data_high = high_client.datasets[0].assets[0]
+    job = high_client.code.inspect_data(data=data_high, blocking=False)
+    assert isinstance(job, Job)
+    assert len(low_client.jobs.get_all()) == 0
+    assert len(client_low_ds.jobs.get_all()) == 0
+    job.wait()
+
+    # import time; time.sleep(4)
+    # sync the job to low side
+    diff_state_before, diff_state_after = compare_and_resolve(
+        from_client=high_client, to_client=low_client, share_private_data=False
+    )
+
+    assert len(low_client.jobs.get_all()) == 1
+    assert len(client_low_ds.jobs.get_all()) == 1
+
+    res = low_client.jobs[0].wait()
+    assert res.result is None
+    res = client_low_ds.jobs[0].wait()
+    assert res.result is None

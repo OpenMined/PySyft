@@ -3,10 +3,12 @@
 # stdlib
 from collections.abc import Collection
 import logging
+from typing import cast
 
 # relative
 from ..abstract_server import ServerSideType
 from ..server.credentials import SyftVerifyKey
+from ..service.job.job_stash import Job
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.sync.diff_state import ObjectDiffBatch
@@ -193,6 +195,14 @@ def handle_sync_batch(
         )
         share_private_data_for_diff = share_private_data[diff.object_id]
         mockify_for_diff = mockify[diff.object_id]
+        if diff.object_type == "Job":
+            job = cast(Job, diff.get_obj())
+            if (
+                UID(job.result.id) not in share_private_data
+                or share_private_data[UID(job.result.id)] is False
+            ):
+                job.result = None
+                diff.set_obj(obj=job)
         instruction = SyncInstruction.from_batch_decision(
             diff=diff,
             share_private_data=share_private_data_for_diff,

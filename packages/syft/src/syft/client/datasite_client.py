@@ -189,6 +189,7 @@ class DatasiteClient(SyftClient):
         return state
 
     def apply_state(self, resolved_state: ResolvedSyncState) -> SyftSuccess | SyftError:
+        # import pdb; pdb.set_trace()
         if len(resolved_state.delete_objs):
             raise NotImplementedError("TODO implement delete")
         items = resolved_state.create_objs + resolved_state.update_objs
