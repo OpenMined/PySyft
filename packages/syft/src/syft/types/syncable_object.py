@@ -32,5 +32,5 @@ class SyncableSyftObject(SyftObject):
 
     def get_sync_dependencies(
         self, context: AuthedServiceContext
-    ) -> list[UID] | SyftError:
+    ) -> list[UID]:
         return []

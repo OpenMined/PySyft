@@ -25,6 +25,7 @@ from requests import Response
 from requests import Session
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry  # type: ignore[import-untyped]
+from syft.types.result import as_result
 from typing_extensions import Self
 
 # relative
@@ -59,7 +60,7 @@ from ..util.telemetry import instrument
 from ..util.util import prompt_warning_message
 from ..util.util import thread_ident
 from ..util.util import verify_tls
-from .api import APIModule
+from .api import APIModule, post_process_result
 from .api import APIRegistry
 from .api import SignedSyftAPICall
 from .api import SyftAPI
@@ -94,7 +95,7 @@ def forward_message_to_proxy(
     credentials: SyftSigningKey | None = None,
     args: list | None = None,
     kwargs: dict | None = None,
-) -> Any | SyftError:
+) -> Any:
     kwargs = {} if kwargs is None else kwargs
     args = [] if args is None else args
     call = SyftAPICall(
@@ -111,9 +112,10 @@ def forward_message_to_proxy(
 
     signed_message: SignedSyftAPICall = call.sign(credentials=credentials)
     signed_result = make_call(signed_message)
-    response = debox_signed_syftapicall_response(signed_result)
+    response = debox_signed_syftapicall_response(signed_result).unwrap()
+    result = post_process_result("action.execute", response, unwrap_on_success=True)
 
-    return response
+    return result
 
 
 API_PATH = "/api/v2"
@@ -328,7 +330,7 @@ class HTTPConnection(ServerConnection):
 
     def get_server_metadata(
         self, credentials: SyftSigningKey
-    ) -> ServerMetadataJSON | SyftError:
+    ) -> ServerMetadataJSON:
         if self.proxy_target_uid:
             response = forward_message_to_proxy(
                 make_call=self.make_call,
@@ -407,7 +409,7 @@ class HTTPConnection(ServerConnection):
             response = _deserialize(response, from_bytes=True)
         return response
 
-    def make_call(self, signed_call: SignedSyftAPICall) -> Any | SyftError:
+    def make_call(self, signed_call: SignedSyftAPICall) -> Any:
         msg_bytes: bytes = _serialize(obj=signed_call, to_bytes=True)
 
         if self.rtunnel_token:
@@ -441,7 +443,7 @@ class HTTPConnection(ServerConnection):
     def __hash__(self) -> int:
         return hash(self.proxy_target_uid) + hash(self.url)
 
-    def get_client_type(self) -> type[SyftClient] | SyftError:
+    def get_client_type(self) -> type[SyftClient]:
         # TODO: Rasswanth, should remove passing in credentials
         # when metadata are proxy forwarded in the server routes
         # in the gateway fixes PR
@@ -458,7 +460,7 @@ class HTTPConnection(ServerConnection):
         elif metadata.server_type == ServerType.ENCLAVE.value:
             return EnclaveClient
         else:
-            return SyftError(message=f"Unknown server type {metadata.server_type}")
+            raise SyftException(public_message=f"Unknown server type {metadata.server_type}")
 
 
 @serializable()
@@ -474,7 +476,7 @@ class PythonConnection(ServerConnection):
 
     def get_server_metadata(
         self, credentials: SyftSigningKey
-    ) -> ServerMetadataJSON | SyftError:
+    ) -> ServerMetadataJSON:
         if self.proxy_target_uid:
             response = forward_message_to_proxy(
                 make_call=self.make_call,
@@ -575,7 +577,7 @@ class PythonConnection(ServerConnection):
             response = method(context=service_context, new_user=new_user)
         return response
 
-    def make_call(self, signed_call: SignedSyftAPICall) -> Any | SyftError:
+    def make_call(self, signed_call: SignedSyftAPICall) -> Any:
         return self.server.handle_api_call(signed_call)
 
     def __repr__(self) -> str:
@@ -584,7 +586,7 @@ class PythonConnection(ServerConnection):
     def __str__(self) -> str:
         return f"{type(self).__name__}"
 
-    def get_client_type(self) -> type[SyftClient] | SyftError:
+    def get_client_type(self) -> type[SyftClient]:
         # relative
         from .datasite_client import DatasiteClient
         from .enclave_client import EnclaveClient
@@ -598,7 +600,7 @@ class PythonConnection(ServerConnection):
         elif metadata.server_type == ServerType.ENCLAVE.value:
             return EnclaveClient
         else:
-            return SyftError(message=f"Unknown server type {metadata.server_type}")
+            raise SyftException(message=f"Unknown server type {metadata.server_type}")
 
 
 @instrument
@@ -650,12 +652,12 @@ class SyftClient:
             self.metadata.supported_protocols
         )
 
-    def set_headers(self, headers: dict[str, str]) -> None | SyftError:
+    def set_headers(self, headers: dict[str, str]) -> None:
         if isinstance(self.connection, HTTPConnection):
             self.connection.set_headers(headers)
             return None
-        return SyftError(  # type: ignore
-            message="Incompatible connection type."
+        raise SyftException(  # type: ignore
+            public_message="Incompatible connection type."
             + f"Expected HTTPConnection, got {type(self.connection)}"
         )
 
@@ -769,7 +771,7 @@ class SyftClient:
         client: Self,
         protocol: SyftProtocol = SyftProtocol.HTTP,
         reverse_tunnel: bool = False,
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         # relative
         from ..service.network.routes import connection_to_route
 
@@ -777,7 +779,7 @@ class SyftClient:
             self_server_route = connection_to_route(self.connection)
             remote_server_route = connection_to_route(client.connection)
             if client.metadata is None:
-                return SyftError(message=f"client {client}'s metadata is None!")
+                raise SyftError(public_message=f"client {client}'s metadata is None!")
 
             return self.api.services.network.exchange_credentials_with(
                 self_server_route=self_server_route,
@@ -855,6 +857,7 @@ class SyftClient:
 
         return _guest_client
 
+    # is this used??
     def login_as(self, email: str) -> Self:
         user_private_key = self.api.services.user.key_for_email(email=email)
         if not isinstance(user_private_key, UserPrivateKey):
@@ -887,11 +890,9 @@ class SyftClient:
         if register:
             self.register(
                 email=email, password=password, password_verify=password, **kwargs
-            )
+            ).unwrap()
 
-        user_private_key = self.connection.login(email=email, password=password)
-        if isinstance(user_private_key, SyftError):
-            return user_private_key
+        user_private_key = self.connection.login(email=email, password=password).unwrap()
 
         signing_key = None if user_private_key is None else user_private_key.signing_key
 
@@ -957,7 +958,8 @@ class SyftClient:
 
         user_code_items = self.code.get_all_for_user()
         load_approved_policy_code(user_code_items=user_code_items, context=None)
-
+    
+    @as_result(SyftException)
     def register(
         self,
         name: str,
@@ -966,7 +968,7 @@ class SyftClient:
         password_verify: str | None = None,
         institution: str | None = None,
         website: str | None = None,
-    ) -> SyftError | SyftSigningKey | None:
+    ) -> SyftSigningKey | None:
         if not email:
             email = input("Email: ")
         if not password:
@@ -974,7 +976,7 @@ class SyftClient:
         if not password_verify:
             password_verify = getpass("Confirm Password: ")
         if password != password_verify:
-            return SyftError(message="Passwords do not match")
+            raise SyftException(public_message="Passwords do not match")
 
         try:
             new_user = UserCreate(
@@ -989,7 +991,7 @@ class SyftClient:
                 ),
             )
         except Exception as e:
-            return SyftError(message=str(e))
+            raise SyftException(public_message=str(e))
 
         if (
             self.metadata
@@ -1079,10 +1081,6 @@ def connect(
         connection = HTTPConnection(url=url)
 
     client_type = connection.get_client_type()
-
-    if isinstance(client_type, SyftError):
-        return client_type
-
     return client_type(connection=connection)
 
 
@@ -1095,7 +1093,7 @@ def register(
     password: str,
     institution: str | None = None,
     website: str | None = None,
-) -> SyftError | SyftSigningKey | None:
+) -> SyftSigningKey | None:
     guest_client = connect(url=url, port=port)
     return guest_client.register(
         name=name,
@@ -1103,7 +1101,7 @@ def register(
         password=password,
         institution=institution,
         website=website,
-    )
+    ).unwrap()
 
 
 @instrument
@@ -1120,9 +1118,6 @@ def login_as_guest(
         server=server,
         port=port,
     )
-
-    if isinstance(_client, SyftError):
-        return _client
 
     if verbose and _client.metadata is not None:
         print(
@@ -1149,9 +1144,6 @@ def login(
         server=server,
         port=port,
     )
-
-    if isinstance(_client, SyftError):
-        return _client
 
     connection = _client.connection
 

@@ -65,15 +65,10 @@ class MigrationService(AbstractService):
     @service_method(path="migration", name="get_state")
     def get_state(
         self, context: AuthedServiceContext, canonical_name: str
-    ) -> bool | SyftError:
-        result = self.stash.get_by_name(
+    ) -> bool:
+        return self.stash.get_by_name(
             canonical_name=canonical_name, credentials=context.credentials
-        )
-
-        if result.is_err():
-            return SyftError(message=f"{result.err()}")
-
-        return result.ok()
+        ).unwrap()
 
     @service_method(path="migration", name="register_migration_state")
     def register_migration_state(
@@ -81,16 +76,11 @@ class MigrationService(AbstractService):
         context: AuthedServiceContext,
         current_version: int,
         canonical_name: str,
-    ) -> SyftObjectMigrationState | SyftError:
+    ) -> SyftObjectMigrationState:
         obj = SyftObjectMigrationState(
             current_version=current_version, canonical_name=canonical_name
         )
-        result = self.stash.set(migration_state=obj, credentials=context.credentials)
-
-        if result.is_err():
-            return SyftError(message=f"{result.err()}")
-
-        return result.ok()
+        return self.stash.set(migration_state=obj, credentials=context.credentials).unwrap()
 
     def _find_klasses_pending_for_migration(
         self, context: AuthedServiceContext, object_types: list[type[SyftObject]]

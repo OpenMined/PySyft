@@ -189,7 +189,7 @@ def partition_by_server(kwargs: dict[str, Any]) -> dict[ServerIdentity, dict[str
         if isinstance(v, TwinObject):
             uid = v.id
         if isinstance(v, RemoteFunction):
-            uid = v.custom_function_actionobject_id()
+            uid = v.custom_function_actionobject_id().unwrap()
         if isinstance(v, Asset):
             uid = v.action_id
         if not isinstance(uid, UID):
@@ -263,7 +263,7 @@ class CreatePolicyRuleConstant(CreatePolicyRule):
     @classmethod
     def idify_endpoints(cls, value: str) -> str:
         if isinstance(value, RemoteFunction):
-            return value.custom_function_actionobject_id()
+            return value.custom_function_actionobject_id().unwrap()
         return value
 
     def to_policy_rule(self, kw: Any) -> PolicyRule:
@@ -356,7 +356,7 @@ def user_code_arg2id(arg: Any) -> UID:
     elif isinstance(arg, RemoteFunction):
         # TODO: Beach Fix
         # why do we need another call to the server to get the UID?
-        uid = arg.custom_function_actionobject_id()
+        uid = arg.custom_function_actionobject_id().unwrap()
     else:
         uid = arg
     return uid
@@ -1036,12 +1036,27 @@ def process_class_code(raw_code: str, class_name: str) -> str:
         args=[],
         keywords=[],
     )
+    
+    as_result_name = ast.Name(id="sy.as_result", ctx=ast.Load())
+    syft_exception_name = ast.Name(id="sy.SyftException", ctx=ast.Load())
+    as_result_decorator = ast.Call(
+        func=as_result_name,
+        args=[syft_exception_name],
+        keywords=[],
+    )
 
     new_class = tree.body[0]
     # TODO add this manually
     for stmt in new_class.body:
-        if isinstance(stmt, ast.FunctionDef) and stmt.name == "__init__":
-            stmt.name = "__user_init__"
+        if isinstance(stmt, ast.FunctionDef):
+            if stmt.name == "__init__":
+                stmt.name = "__user_init__"
+            if stmt.name == "_is_valid":
+                stmt.decorator_list.append(as_result_decorator)
+            if stmt.name == "filter_kwargs":
+                stmt.decorator_list.append(as_result_decorator)
+            if stmt.name == "transform_kwargs":
+                stmt.decorator_list.append(as_result_decorator) 
 
     # change the module that the code will reference
     # this is required for the @serializable to mount it in the right path for serde

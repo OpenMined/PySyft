@@ -700,8 +700,6 @@ class Server(AbstractServer):
 
         connection = PythonConnection(server=self)
         client_type = connection.get_client_type()
-        if isinstance(client_type, SyftError):
-            return client_type
         root_client = client_type(connection=connection, credentials=self.signing_key)
         if root_client.api.refresh_api_callback is not None:
             root_client.api.refresh_api_callback()
@@ -772,8 +770,6 @@ class Server(AbstractServer):
             logger.debug(message)
 
         client_type = connection.get_client_type()
-        if isinstance(client_type, SyftError):
-            return client_type
 
         guest_client = client_type(
             connection=connection, credentials=SyftSigningKey.generate()
@@ -917,13 +913,9 @@ class Server(AbstractServer):
         settings_stash = SettingsStash(store=self.document_store)
         if self.signing_key is None:
             raise ValueError(f"{self} has no signing key")
-        settings = settings_stash.get_all(self.signing_key.verify_key)
-        if settings.is_err():
-            raise ValueError(
-                f"Cannot get server settings for '{self.name}'. Error: {settings.err()}"
-            )
-        if settings.is_ok() and len(settings.ok()) > 0:
-            settings = settings.ok()[0]
+        settings = settings_stash.get_all(self.signing_key.verify_key).unwrap(public_message=f"Cannot get server settings for '{self.name}'.")
+        if len(settings) > 0:
+            settings = settings[0]
         self.update_self(settings)
         return settings
 
@@ -1067,7 +1059,7 @@ class Server(AbstractServer):
                 result = client.connection.get_api(**message.kwargs)
             else:
                 signed_result = client.connection.make_call(api_call)
-                result = debox_signed_syftapicall_response(signed_result=signed_result)
+                result = debox_signed_syftapicall_response(signed_result=signed_result).unwrap()
 
                 # relative
                 from ..store.blob_storage import BlobRetrievalByURL

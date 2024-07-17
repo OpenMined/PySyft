@@ -297,7 +297,7 @@ class DatasiteClient(SyftClient):
         password: str | None = None,
         protocol: str | SyftProtocol = SyftProtocol.HTTP,
         reverse_tunnel: bool = False,
-    ) -> SyftSuccess | SyftError | None:
+    ) -> SyftSuccess | None:
         if isinstance(protocol, str):
             protocol = SyftProtocol(protocol)
 
@@ -311,8 +311,6 @@ class DatasiteClient(SyftClient):
                 if email is None
                 else login(url=url, port=port, email=email, password=password)
             )
-            if isinstance(client, SyftError):
-                return client
 
         res = self.exchange_route(
             client,
@@ -437,11 +435,8 @@ class DatasiteClient(SyftClient):
             return SyftError(
                 message="Root verify key in migration data does not match this client's verify key"
             )
-
-        res = migration_data.migrate_and_upload_blobs()
-        if isinstance(res, SyftError):
-            return res
-
+            
+        migration_data.migrate_and_upload_blobs()
         migration_data_without_blobs = migration_data.copy_without_blobs()
         return self.api.services.migration.apply_migration_data(
             migration_data_without_blobs

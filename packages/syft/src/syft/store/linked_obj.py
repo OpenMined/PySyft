@@ -2,6 +2,7 @@
 from typing import Any
 
 # third party
+from syft.types.errors import SyftException
 from typing_extensions import Self
 
 # relative
@@ -61,20 +62,20 @@ class LinkedObject(SyftObject):
 
     def update_with_context(
         self, context: ServerServiceContext | ChangeContext | Any, obj: Any
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         if isinstance(context, AuthedServiceContext):
             credentials = context.credentials
         elif isinstance(context, ChangeContext):
             credentials = context.approving_user_credentials
         else:
-            return SyftError(message="wrong context passed")
+            raise SyftException(public_message="wrong context passed")
         if context.server is None:
-            return SyftError(message=f"context {context}'s server is None")
+            raise SyftException(public_message=f"context {context}'s server is None")
         service = context.server.get_service(self.service_type)
         if hasattr(service, "stash"):
             result = service.stash.update(credentials, obj)
         else:
-            return SyftError(message=f"service {service} does not have a stash")
+            raise SyftException(public_message=f"service {service} does not have a stash")
         return result
 
     @classmethod
