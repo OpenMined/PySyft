@@ -744,9 +744,9 @@ class BaseStash:
         **kwargs: dict[str, Any],
     ) -> Result[list[BaseStash.object_type], str]:
         order_by = kwargs.pop("order_by", None)
-        created_date = kwargs.pop("created_date", None)
-        deleted_date = kwargs.pop("deleted_date", None)
-        updated_date = kwargs.pop("updated_date", None)
+        _ = kwargs.pop("created_date", None)
+        _ = kwargs.pop("deleted_date", None)
+        _ = kwargs.pop("updated_date", None)
         qks = QueryKeys.from_dict(kwargs)
         return self.query_all(credentials=credentials, qks=qks, order_by=order_by)
 
