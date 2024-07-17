@@ -190,11 +190,11 @@ def build_tabulator_table(
     max_height: int | None = None,
     pagination: bool = True,
     header_sort: bool = True,
-) -> str:
+) -> str | None:
     """
     Builds a Tabulator table from the given object if possible.
 
-    If the object cannot be represented as a table, the original object representation is returned instead.
+    If the object cannot be represented as a table, returns None.
 
     Args:
         obj (Any): The object to build the table from.
@@ -204,12 +204,12 @@ def build_tabulator_table(
         header_sort (bool, optional): Whether to enable header sorting. Defaults to True.
 
     Returns:
-        str: The HTML representation of the Tabulator table or the original object representation.
+        str | None: The HTML representation of the Tabulator table or None
 
     """
     table_data, table_metadata = prepare_table_data(obj)
     if len(table_data) == 0:
-        return obj.__repr__()
+        return None
 
     return build_tabulator_table_with_data(
         table_data, table_metadata, uid, max_height, pagination, header_sort

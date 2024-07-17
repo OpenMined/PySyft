@@ -18,8 +18,8 @@ def is_table_displayed(obj_to_check: Any) -> bool:
     return "Tabulator" in obj_to_check._repr_html_()
 
 
-def is_obj_repr_displayed(obj_to_check: Any) -> bool:
-    return obj_to_check._repr_html_() == obj_to_check.__repr__()
+def no_html_repr_displayed(obj_to_check: Any) -> bool:
+    return obj_to_check._repr_html_() is None
 
 
 def table_test_cases() -> list[tuple[list, str | None]]:
@@ -34,19 +34,19 @@ def table_test_cases() -> list[tuple[list, str | None]]:
     homogenous_ao = ([ao_1, ao_2], is_table_displayed)
     non_homogenous_same_repr = ([ao_1, ao_2, np_ao], is_table_displayed)
     homogenous_user = ([user_1, user_2], is_table_displayed)
-    empty_list = ([], is_obj_repr_displayed)
-    non_syft_objs = ([1, 2.0, 3, 4], is_obj_repr_displayed)
+    empty_list = ([], no_html_repr_displayed)
+    non_syft_objs = ([1, 2.0, 3, 4], no_html_repr_displayed)
 
     # Doesn't make table
     non_homogenous_different_repr = (
         [ao_1, ao_2, user_1, user_2],
-        is_obj_repr_displayed,
+        no_html_repr_displayed,
     )
-    non_syft_obj_1 = ([1, ao_1, ao_2], is_obj_repr_displayed)
-    non_syft_obj_2 = ([ao_1, ao_2, 1], is_obj_repr_displayed)
+    non_syft_obj_1 = ([1, ao_1, ao_2], no_html_repr_displayed)
+    non_syft_obj_2 = ([ao_1, ao_2, 1], no_html_repr_displayed)
     torch_type_obj = (
         [type(torch_ao.syft_action_data), 1.0, UID()],
-        is_obj_repr_displayed,
+        no_html_repr_displayed,
     )
     return [
         homogenous_ao,
