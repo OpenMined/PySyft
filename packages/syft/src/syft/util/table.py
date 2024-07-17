@@ -50,19 +50,35 @@ def _get_grid_template_columns(first_value: Any) -> tuple[str | None, str | None
 
 
 def _create_table_rows(
-    _self: Mapping | Iterable,
+    obj: Mapping | Iterable,
     is_homogenous: bool,
     extra_fields: list | None = None,
     add_index: bool = True,
 ) -> list[dict[str, Any]]:
+    """
+    Creates row data for a table based on input object obj.
+
+    If valid table data cannot be created, an empty list is returned.
+
+    Args:
+        obj (Mapping | Iterable): The input data as a Mapping or Iterable.
+        is_homogenous (bool): A boolean indicating whether the data is homogenous.
+        extra_fields (list | None, optional): Additional fields to include in the table. Defaults to None.
+        add_index (bool, optional): Whether to add an index column. Defaults to True.
+
+    Returns:
+        list[dict[str, Any]]: A list of dictionaries where each dictionary represents a row in the table.
+
+    """
+
     if extra_fields is None:
         extra_fields = []
 
     cols = defaultdict(list)
 
-    for item in iter(_self.items() if isinstance(_self, Mapping) else _self):
+    for item in iter(obj.items() if isinstance(obj, Mapping) else obj):
         # unpack dict
-        if isinstance(_self, Mapping):
+        if isinstance(obj, Mapping):
             key, item = item
             cols["key"].append(key)
 
@@ -193,10 +209,19 @@ def prepare_table_data(
     add_index: bool = True,
 ) -> tuple[list[dict], dict]:
     """
-    Returns table_data, table_metadata
+    Creates table data and metadata for a given object.
 
-    table_data is a list of dictionaries where each dictionary represents a row in the table.
-    table_metadata is a dictionary containing metadata about the table such as name, icon, etc.
+    If a tabular representation cannot be created, an empty list and empty dict are returned instead.
+
+    Args:
+        obj (Any): The input object for which table data is prepared.
+        add_index (bool, optional): Whether to add an index column to the table. Defaults to True.
+
+    Returns:
+        tuple: A tuple (table_data, table_metadata) where table_data is a list of dictionaries
+        where each dictionary represents a row in the table and table_metadata is a dictionary
+        containing metadata about the table such as name, icon, etc.
+
     """
 
     values = _get_values_for_table_repr(obj)
@@ -223,7 +248,7 @@ def prepare_table_data(
         grid_template_cell_columns = None
 
     table_data = _create_table_rows(
-        _self=obj,
+        obj=obj,
         is_homogenous=is_homogenous,
         extra_fields=extra_fields,
         add_index=add_index,
