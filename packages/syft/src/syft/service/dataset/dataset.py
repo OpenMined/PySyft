@@ -20,14 +20,17 @@ from result import Result
 from typing_extensions import Self
 
 # relative
+from ...client.api import APIRegistry
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
+from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import generate_id
+from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.transforms import validate_url
 from ...types.uid import UID
@@ -239,9 +242,6 @@ class Asset(SyftObject):
 
     @property
     def pointer(self) -> Any:
-        # relative
-        from ...client.api import APIRegistry
-
         api = APIRegistry.api_for(
             server_uid=self.server_uid,
             user_verify_key=self.syft_client_verify_key,
@@ -251,9 +251,6 @@ class Asset(SyftObject):
 
     @property
     def mock(self) -> SyftError | Any:
-        # relative
-        from ...client.api import APIRegistry
-
         api = APIRegistry.api_for(
             server_uid=self.server_uid,
             user_verify_key=self.syft_client_verify_key,
@@ -261,6 +258,8 @@ class Asset(SyftObject):
         if api is None:
             return SyftError(message=f"You must login to {self.server_uid}")
         result = api.services.action.get_mock(self.action_id)
+        if isinstance(result, SyftError):
+            return result
         try:
             if isinstance(result, SyftObject):
                 return result.syft_action_data
@@ -282,7 +281,6 @@ class Asset(SyftObject):
     @property
     def data(self) -> Any:
         # relative
-        from ...client.api import APIRegistry
 
         api = APIRegistry.api_for(
             server_uid=self.server_uid,
@@ -291,6 +289,8 @@ class Asset(SyftObject):
         if api is None or api.services is None:
             return None
         res = api.services.action.get(self.action_id)
+        if isinstance(res, str):
+            return SyftError(message=f"Could not access private data. {str(res)}")
         if self.has_permission(res):
             return res.syft_action_data
         else:
@@ -471,6 +471,7 @@ class Dataset(SyftObject):
     created_at: DateTime = DateTime.now()
     uploader: Contributor
     summary: str | None = None
+    to_be_deleted: bool = False
 
     __attr_searchable__ = [
         "name",
@@ -523,6 +524,8 @@ class Dataset(SyftObject):
             """
         else:
             description_info_message = ""
+        if self.to_be_deleted:
+            return "This dataset has been marked for deletion. The underlying data may be not available."
         return f"""
             <style>
             {FONT_CSS}
@@ -549,8 +552,7 @@ class Dataset(SyftObject):
             """
 
     def action_ids(self) -> list[UID]:
-        data = [asset.action_id for asset in self.asset_list if asset.action_id]
-        return data
+        return [asset.action_id for asset in self.asset_list if asset.action_id]
 
     @property
     def assets(self) -> DictTuple[str, Asset]:
@@ -639,9 +641,6 @@ class CreateDataset(Dataset):
 
     model_config = ConfigDict(validate_assignment=True, extra="forbid")
 
-    def _check_asset_must_contain_mock(self) -> None:
-        _check_asset_must_contain_mock(self.asset_list)
-
     @field_validator("asset_list")
     @classmethod
     def __assets_must_contain_mock(
@@ -649,6 +648,13 @@ class CreateDataset(Dataset):
     ) -> list[CreateAsset]:
         _check_asset_must_contain_mock(asset_list)
         return asset_list
+
+    @field_validator("to_be_deleted")
+    @classmethod
+    def __to_be_deleted_must_be_false(cls, v: bool) -> bool:
+        if v is True:
+            raise ValueError("to_be_deleted must be False")
+        return v
 
     def set_description(self, description: str) -> None:
         self.description = MarkdownDescription(text=description)
@@ -876,8 +882,13 @@ def createdataset_to_dataset() -> list[Callable]:
         validate_url,
         convert_asset,
         add_current_date,
+        make_set_default("to_be_deleted", False),  # explicitly set it to False
     ]
 
 
-class DatasetUpdate:
-    pass
+class DatasetUpdate(PartialSyftObject):
+    __canonical_name__ = "DatasetUpdate"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    name: str
+    to_be_deleted: bool
