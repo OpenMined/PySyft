@@ -80,7 +80,15 @@ class SyftObjectRegistry:
 
     @classmethod
     def get_serde_properties(cls, canonical_name: str, version: int) -> tuple:
-        return cls.__object_serialization_registry__[canonical_name][version]
+        try:
+            return cls.__object_serialization_registry__[canonical_name][version]
+        except Exception:
+            # This is a hack for python 3.10 in which Any is not a type
+            # if the server uses py>3.10 and the client 3.10 this goes wrong
+            if canonical_name == "Any_typing._SpecialForm":
+                return cls.__object_serialization_registry__["Any"][version]
+            else:
+                raise
 
     @classmethod
     def get_serde_class(cls, canonical_name: str, version: int) -> type["SyftObject"]:
