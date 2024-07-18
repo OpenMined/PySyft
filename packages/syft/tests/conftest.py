@@ -10,10 +10,12 @@ from unittest import mock
 
 # third party
 from faker import Faker
+import numpy as np
 import pytest
 
 # syft absolute
 import syft as sy
+from syft import Dataset
 from syft.abstract_server import ServerSideType
 from syft.client.datasite_client import DatasiteClient
 from syft.protocol.data_protocol import get_data_protocol
@@ -249,6 +251,39 @@ def patched_user(monkeypatch):
         "syft.service.user.user.check_pwd",
         cached_check_pwd,
     )
+
+
+@pytest.fixture
+def small_dataset() -> Dataset:
+    dataset = Dataset(
+        name="small_dataset",
+        asset_list=[
+            sy.Asset(
+                name="small_dataset",
+                data=np.array([1, 2, 3]),
+                mock=np.array([1, 1, 1]),
+            )
+        ],
+    )
+    yield dataset
+
+
+@pytest.fixture
+def big_dataset() -> Dataset:
+    num_elements = 20 * 1024 * 1024
+    data_big = np.random.randint(0, 100, size=num_elements)
+    mock_big = np.random.randint(0, 100, size=num_elements)
+    dataset = Dataset(
+        name="big_dataset",
+        asset_list=[
+            sy.Asset(
+                name="big_dataset",
+                data=data_big,
+                mock=mock_big,
+            )
+        ],
+    )
+    yield dataset
 
 
 __all__ = [
