@@ -8,7 +8,7 @@ from ...server.credentials import SyftVerifyKey
 from ...types.uid import UID
 
 
-@serializable()
+@serializable(canonical_name="ActionPermission", version=1)
 class ActionPermission(Enum):
     OWNER = 1
     READ = 2
@@ -26,7 +26,7 @@ COMPOUND_ACTION_PERMISSION = {
 }
 
 
-@serializable()
+@serializable(canonical_name="ActionObjectPermission", version=1)
 class ActionObjectPermission:
     def __init__(
         self,
@@ -108,7 +108,7 @@ class ActionObjectEXECUTE(ActionObjectPermission):
         self.permission = ActionPermission.EXECUTE
 
 
-@serializable()
+@serializable(canonical_name="StoragePermission", version=1)
 class StoragePermission:
     def __init__(self, uid: UID, server_uid: UID):
         self.uid = uid

@@ -50,7 +50,7 @@ from .user_code_stash import UserCodeStash
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="UserCodeService", version=1)
 class UserCodeService(AbstractService):
     store: DocumentStore
     stash: UserCodeStash
@@ -379,7 +379,7 @@ class UserCodeService(AbstractService):
         elif not (has_code_permission := self.has_code_permission(code, context)):
             return has_code_permission
         elif not code.is_output_policy_approved(context):
-            return SyftError("Output policy not approved", code)
+            return SyftError(message=f"Output policy not approved. {code}")
 
         policy_is_valid = output_policy is not None and output_policy._is_valid(context)
         if not policy_is_valid:

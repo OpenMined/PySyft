@@ -25,7 +25,7 @@ from syft.store.document_store import BaseStash
 from syft.store.document_store import DocumentStore
 from syft.store.document_store import PartitionSettings
 from syft.types.syft_migration import migrate
-from syft.types.syft_object import SYFT_OBJECT_VERSION_2
+from syft.types.syft_object import SYFT_OBJECT_VERSION_1
 from syft.types.syft_object import SyftBaseObject
 from syft.types.syft_object import SyftObject
 from syft.types.transforms import convert_types
@@ -40,7 +40,7 @@ def get_klass_version_1():
     @serializable()
     class SyftMockObjectTestV1(SyftObject):
         __canonical_name__ = "SyftMockObjectTest"
-        __version__ = SYFT_OBJECT_VERSION_2
+        __version__ = SYFT_OBJECT_VERSION_1
 
         id: UID
         name: str
@@ -53,7 +53,7 @@ def get_klass_version_2():
     @serializable()
     class SyftMockObjectTestV2(SyftObject):
         __canonical_name__ = "SyftMockObjectTest"
-        __version__ = SYFT_OBJECT_VERSION_2
+        __version__ = SYFT_OBJECT_VERSION_1
 
         id: UID
         full_name: str
@@ -75,7 +75,10 @@ def setup_migration_transforms(mock_klass_v1, mock_klass_v2):
 
 
 def get_stash_klass(syft_object: type[SyftBaseObject]):
-    @serializable()
+    @serializable(
+        canonical_name="SyftMockObjectStash",
+        version=1,
+    )
     class SyftMockObjectStash(BaseStash):
         object_type = syft_object
         settings: PartitionSettings = PartitionSettings(
@@ -92,7 +95,10 @@ def get_stash_klass(syft_object: type[SyftBaseObject]):
 def setup_service_method(syft_object):
     stash_klass: BaseStash = get_stash_klass(syft_object=syft_object)
 
-    @serializable()
+    @serializable(
+        canonical_name="SyftMockObjectService",
+        version=1,
+    )
     class SyftMockObjectService(AbstractService):
         store: DocumentStore
         stash: stash_klass

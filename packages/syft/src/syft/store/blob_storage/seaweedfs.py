@@ -38,7 +38,7 @@ from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.blob_storage import SeaweedSecureFilePathLocation
 from ...types.blob_storage import SecureFilePathLocation
 from ...types.server_url import ServerURL
-from ...types.syft_object import SYFT_OBJECT_VERSION_4
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.uid import UID
 from ...util.constants import DEFAULT_TIMEOUT
 
@@ -53,7 +53,7 @@ DEFAULT_UPLOAD_CHUNK_SIZE = 1024 * 800  # 800KB
 @serializable()
 class SeaweedFSBlobDeposit(BlobDeposit):
     __canonical_name__ = "SeaweedFSBlobDeposit"
-    __version__ = SYFT_OBJECT_VERSION_4
+    __version__ = SYFT_OBJECT_VERSION_1
 
     urls: list[ServerURL]
     size: int
@@ -174,7 +174,7 @@ class SeaweedFSBlobDeposit(BlobDeposit):
         )
 
 
-@serializable()
+@serializable(canonical_name="SeaweedFSClientConfig", version=1)
 class SeaweedFSClientConfig(BlobStorageClientConfig):
     host: str
     port: int
@@ -197,7 +197,7 @@ class SeaweedFSClientConfig(BlobStorageClientConfig):
         return f"http://{self.host}:{self.mount_port}/configure_azure"
 
 
-@serializable()
+@serializable(canonical_name="SeaweedFSClient", version=1)
 class SeaweedFSClient(BlobStorageClient):
     config: SeaweedFSClientConfig
 
@@ -216,7 +216,7 @@ class SeaweedFSClient(BlobStorageClient):
         )
 
 
-@serializable()
+@serializable(canonical_name="SeaweedFSConnection", version=1)
 class SeaweedFSConnection(BlobStorageConnection):
     client: S3BaseClient
     default_bucket_name: str
@@ -325,7 +325,7 @@ class SeaweedFSConnection(BlobStorageConnection):
             return SyftError(message=str(e))
 
 
-@serializable()
+@serializable(canonical_name="SeaweedFSConfig", version=1)
 class SeaweedFSConfig(BlobStorageConfig):
     client_type: type[BlobStorageClient] = SeaweedFSClient
     client_config: SeaweedFSClientConfig

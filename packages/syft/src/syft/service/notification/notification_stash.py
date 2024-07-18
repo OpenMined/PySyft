@@ -33,7 +33,7 @@ LinkedObjectPartitionKey = PartitionKey(key="linked_obj", type_=LinkedObject)
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="NotificationStash", version=1)
 class NotificationStash(BaseUIDStoreStash):
     object_type = Notification
     settings: PartitionSettings = PartitionSettings(

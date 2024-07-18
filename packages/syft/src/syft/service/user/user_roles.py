@@ -22,7 +22,7 @@ class ServiceRoleCapability(Enum):
     CAN_EDIT_DATASITE_SETTINGS = 512
 
 
-@serializable()
+@serializable(canonical_name="ServiceRole", version=1)
 class ServiceRole(Enum):
     NONE = 0
     GUEST = 1

@@ -10,7 +10,7 @@ from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import add_credentials_for_key
@@ -24,13 +24,13 @@ from ..notifier.notifier_enums import NOTIFIERS
 from .email_templates import EmailTemplate
 
 
-@serializable()
+@serializable(canonical_name="NotificationStatus", version=1)
 class NotificationStatus(Enum):
     UNREAD = 0
     READ = 1
 
 
-@serializable()
+@serializable(canonical_name="NotificationRequestStatus", version=1)
 class NotificationRequestStatus(Enum):
     NO_ACTION = 0
 
@@ -43,7 +43,7 @@ class NotificationExpiryStatus(Enum):
 @serializable()
 class ReplyNotification(SyftObject):
     __canonical_name__ = "ReplyNotification"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     text: str
     target_msg: UID
@@ -54,7 +54,7 @@ class ReplyNotification(SyftObject):
 @serializable()
 class Notification(SyftObject):
     __canonical_name__ = "Notification"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     subject: str
     server_uid: UID
@@ -138,7 +138,7 @@ class Notification(SyftObject):
 @serializable()
 class CreateNotification(SyftObject):
     __canonical_name__ = "CreateNotification"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     subject: str
     from_user_verify_key: SyftVerifyKey | None = None  # type: ignore[assignment]

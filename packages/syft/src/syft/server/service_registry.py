@@ -46,7 +46,7 @@ if TYPE_CHECKING:
     from .server import Server
 
 
-@serializable()
+@serializable(canonical_name="ServiceRegistry", version=1)
 @dataclass
 class ServiceRegistry:
     action: ActionService
