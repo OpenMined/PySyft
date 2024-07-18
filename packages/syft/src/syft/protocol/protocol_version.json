@@ -1052,16 +1052,23 @@
         }
       },
       "SyftObject": {
-        "2": {
-          "version": 2,
-          "hash": "26efd140219eb651d18467b0430b9dbde17c57670f050e300823075f6e44d3e5",
+        "1": {
+          "version": 1,
+          "hash": "bb70d874355988908d3a92a3941d6613a6995a4850be3b6a0147f4d387724406",
           "action": "add"
         }
       },
       "ProjectEvent": {
-        "2": {
-          "version": 2,
-          "hash": "cbe61714b816b769a856fe7b47c3001e6da716883b2845e03485e3e7b0a02b91",
+        "1": {
+          "version": 1,
+          "hash": "dc0486c52daebd5e98c2b3b03ffd9a9a14bc3d86d8dc0c23e41ebf6c31fe2ffb",
+          "action": "add"
+        }
+      },
+      "SyftObjectVersioned": {
+        "1": {
+          "version": 1,
+          "hash": "7c842dcdbb57e2528ffa690ea18c19fff3c8a591811d40cad2b19be3100e2ff4",
           "action": "add"
         }
       }

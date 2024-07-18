@@ -346,6 +346,7 @@ class BaseDateTime(SyftObjectVersioned):
         return self.utc_timestamp < other.utc_timestamp
 
 
+@serializable()
 class SyftObject(SyftObjectVersioned):
     __canonical_name__ = "SyftObject"
     __version__ = SYFT_OBJECT_VERSION_1
