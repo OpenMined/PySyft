@@ -209,7 +209,10 @@ def build_tabulator_table(
     """
     table_data, table_metadata = prepare_table_data(obj)
     if len(table_data) == 0:
-        return None
+        if hasattr(obj, "__len__") and len(obj) == 0:
+            return obj.__repr__()
+        else:
+            return None
 
     return build_tabulator_table_with_data(
         table_data, table_metadata, uid, max_height, pagination, header_sort

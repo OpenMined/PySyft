@@ -14,12 +14,16 @@ from syft.util.table import TABLE_INDEX_KEY
 from syft.util.table import prepare_table_data
 
 
-def is_table_displayed(obj_to_check: Any) -> bool:
+def table_displayed(obj_to_check: Any) -> bool:
     return "Tabulator" in obj_to_check._repr_html_()
 
 
 def no_html_repr_displayed(obj_to_check: Any) -> bool:
     return obj_to_check._repr_html_() is None
+
+
+def obj_repr_displayed(obj_to_check: Any) -> bool:
+    return obj_to_check._repr_html_() == obj_to_check.__repr__()
 
 
 def table_test_cases() -> list[tuple[list, str | None]]:
@@ -31,10 +35,10 @@ def table_test_cases() -> list[tuple[list, str | None]]:
     user_2 = User(email="a@b.c")
 
     # Makes table
-    homogenous_ao = ([ao_1, ao_2], is_table_displayed)
-    non_homogenous_same_repr = ([ao_1, ao_2, np_ao], is_table_displayed)
-    homogenous_user = ([user_1, user_2], is_table_displayed)
-    empty_list = ([], no_html_repr_displayed)
+    homogenous_ao = ([ao_1, ao_2], table_displayed)
+    non_homogenous_same_repr = ([ao_1, ao_2, np_ao], table_displayed)
+    homogenous_user = ([user_1, user_2], table_displayed)
+    empty_list = ([], obj_repr_displayed)
     non_syft_objs = ([1, 2.0, 3, 4], no_html_repr_displayed)
 
     # Doesn't make table
