@@ -104,6 +104,8 @@ class KeyValueActionStore(ActionStore):
                 )
             return syft_object
         except Exception as e:
+            import pdb
+            pdb.set_trace()
             raise NotFoundException.from_exception(
                 e, public_message=f"Object {uid} not found"
             )

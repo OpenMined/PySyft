@@ -149,8 +149,10 @@ def test_diff_state_with_dataset(low_worker, high_worker):
 
     _ = client_low_ds.code.request_code_execution(compute_mean)
 
-    with pytest.raises(SyftException):
-        result = client_low_ds.code.compute_mean(blocking=False)
+    with pytest.raises(SyftException) as exc:
+        client_low_ds.code.compute_mean(blocking=False)
+
+    assert exc.value.public_message == "Please wait for the admin to allow the execution of this code"
 
     diff_state_before, diff_state_after = compare_and_resolve(
         from_client=low_client, to_client=high_client
@@ -219,8 +221,12 @@ def test_sync_with_error(low_worker, high_worker):
     assert diff_state_after.is_same
 
     client_low_ds.refresh()
-    res = client_low_ds.code.compute(blocking=True)
-    assert isinstance(res.get(), SyftError)
+
+    with pytest.raises(SyftException) as exc:
+        client_low_ds.code.compute(blocking=True)
+
+    assert exc.type is SyftException
+    assert "Policy is no longer valid" in exc.value.public_message 
 
 
 def test_ignore_unignore_single(low_worker, high_worker):
@@ -307,8 +313,11 @@ def test_approve_request_on_sync_blocking(low_worker, high_worker):
     _ = client_low_ds.code.request_code_execution(compute)
 
     # No execute permissions
-    with pytest.raises(SyftException):
+    with pytest.raises(SyftException) as exc:
         client_low_ds.code.compute(blocking=True)
+
+    assert not exc.value.public_message
+
     assert low_client.requests[0].status == RequestStatus.PENDING
 
     # Sync request to high side

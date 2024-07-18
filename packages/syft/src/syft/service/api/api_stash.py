@@ -37,9 +37,9 @@ class TwinAPIEndpointStash(NewBaseUIDStoreStash):
     def path_exists(self, credentials: SyftVerifyKey, path: str) -> bool:
         try:
             self.get_by_path(credentials=credentials, path=path).unwrap()
-            return False
-        except NotFoundException:
             return True
+        except NotFoundException:
+            return False
 
     @as_result(StashException)
     def upsert(

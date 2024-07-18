@@ -14,7 +14,7 @@ from botocore.client import ClientError as BotoClientError
 from botocore.client import Config
 from botocore.exceptions import ConnectionError
 import requests
-from result import as_result
+from syft.types.result import as_result
 from syft.types.errors import SyftException
 from tenacity import retry
 from tenacity import retry_if_exception_type

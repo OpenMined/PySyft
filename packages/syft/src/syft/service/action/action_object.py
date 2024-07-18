@@ -23,10 +23,12 @@ from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import field_validator
 from pydantic import model_validator
-from result import Err, as_result
+from result import Err
 from result import Ok
 from result import Result
 from typing_extensions import Self
+
+from syft.types.result import as_result
 
 # relative
 from ...client.api import APIRegistry
@@ -56,7 +58,7 @@ from ...types.uid import LineageID
 from ...types.uid import UID
 from ...util.util import prompt_warning_message
 from ..context import AuthedServiceContext
-from ..response import SyftException
+from ...types.errors import SyftException
 from ..service import from_api_or_context
 from .action_data_empty import ActionDataEmpty
 from .action_data_empty import ActionDataLink
@@ -526,11 +528,13 @@ def convert_to_pointers(
                 syft_server_location=api.server_uid,
             )
             arg.syft_server_uid = server_uid
-            r = arg._save_to_blob_storage()
-            if isinstance(r, SyftError):
-                print(r.message)
-            if isinstance(r, SyftWarning):
-                logger.debug(r.message)
+            try:
+                r = arg._save_to_blob_storage().unwrap()
+                if isinstance(r, SyftWarning):
+                    logger.debug(r.message)
+            except Exception as exc:
+                print(exc)
+
             arg = api.services.action.set(arg)
         return arg
 
@@ -844,9 +848,10 @@ class ActionObject(SyncableSyftObject):
                     data, get_metadata()
                 ):
                     self.syft_action_saved_to_blob_store = False
-                    return SyftWarning(
-                        message=f"The action object {self.id} was not saved to "
-                        f"the blob store but to memory cache since it is small."
+                    return SyftWarning(message=(
+                            f"The action object {self.id} was not saved to"
+                            f" the blob store but to memory cache since it is small."
+                        )
                     )
                 serialized = serialize(data, to_bytes=True)
                 size = sys.getsizeof(serialized)
@@ -891,7 +896,7 @@ class ActionObject(SyncableSyftObject):
 
         if isinstance(data, ActionDataEmpty):
             raise SyftException(
-                message=f"cannot store empty object {self.id} to the blob storage"
+                public_message=f"cannot store empty object {self.id} to the blob storage"
             )
 
         result = self._save_to_blob_storage_(data)
@@ -994,7 +999,7 @@ class ActionObject(SyncableSyftObject):
             ActionObjectPointer
         """
         if self.syft_server_uid is None:
-            raise SyftException("Pointers can't execute without a server_uid.")
+            raise SyftException(public_message="Pointers can't execute without a server_uid.")
 
         # relative
         from ...client.api import APIRegistry
@@ -1265,9 +1270,7 @@ class ActionObject(SyncableSyftObject):
     ) -> Self | SyftError:
         self._set_obj_location_(server_uid, verify_key)
 
-        blob_storage_res = self._save_to_blob_storage()
-        if isinstance(blob_storage_res, SyftError):
-            return blob_storage_res
+        blob_storage_res = self._save_to_blob_storage().unwrap()
 
         api = self._get_api()
 

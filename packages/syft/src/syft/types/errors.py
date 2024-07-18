@@ -96,7 +96,7 @@ class SyftException(Exception):
         import traceback
 
         if context.role.value >= ServiceRole.DATA_OWNER.value or overwrite_permission:
-            return traceback.format_exc()
+            return "".join(traceback.format_exception(self))
         return None
 
     @classmethod

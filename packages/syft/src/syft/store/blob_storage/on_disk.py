@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any
 
 # third party
-from result import as_result
+from syft.types.result import as_result
 from syft.types.errors import SyftException
 from typing_extensions import Self
 

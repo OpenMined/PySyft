@@ -9,6 +9,8 @@ from typing import ClassVar
 # third party
 from pydantic import field_validator
 from pydantic import model_validator
+from syft.types.errors import SyftException
+from syft.types.result import as_result
 from typing_extensions import Self
 
 # relative
@@ -87,6 +89,7 @@ class TwinObject(SyftObject):
         mock.id = twin_id
         return mock
 
+    @as_result(SyftException)
     def _save_to_blob_storage(
         self, allow_empty: bool = False
     ) -> SyftSuccess | SyftWarning:
@@ -99,13 +102,12 @@ class TwinObject(SyftObject):
             self.syft_server_location,
             self.syft_client_verify_key,
         )
-        mock_store_res = self.mock_obj._save_to_blob_storage(allow_empty=allow_empty).unwrap()
-        print(f"private_obj<{self.private_obj.id}>: {self.private_obj}")
-        return self.private_obj._save_to_blob_storage(allow_empty=allow_empty)
+        self.mock_obj._save_to_blob_storage(allow_empty=allow_empty).unwrap()
+        return self.private_obj._save_to_blob_storage(allow_empty=allow_empty).unwrap()
 
     def send(self, client: SyftClient, add_storage_permission: bool = True) -> Any:
         self._set_obj_location_(client.id, client.verify_key)
-        blob_store_result = self._save_to_blob_storage()
+        blob_store_result = self._save_to_blob_storage().unwrap()
         if isinstance(blob_store_result, SyftWarning):
             logger.debug(blob_store_result.message)
         res = client.api.services.action.set(

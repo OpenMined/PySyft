@@ -22,8 +22,6 @@ from RestrictedPython import compile_restricted
 from pydantic import field_validator
 from pydantic import model_validator
 import requests
-from result import Ok
-from result import Result
 
 # relative
 from ...abstract_server import ServerType
@@ -295,18 +293,15 @@ class Constant(PolicyRule):
     def is_met(self, context: AuthedServiceContext, *args: Any, **kwargs: Any) -> bool:
         return True
 
+    @as_result(SyftException)
     def transform_kwarg(
         self, context: AuthedServiceContext, val: Any
-    ) -> Result[Any, str]:
+    ) -> Any:
         if isinstance(self.val, UID):
             if issubclass(self.klass, CustomEndpointActionObject):
-                res = context.server.get_service("actionservice").get(context, self.val)
-                if res.is_err():
-                    return res
-                else:
-                    obj = res.ok()
-                    return Ok(obj.syft_action_data)
-        return Ok(self.val)
+                obj = context.server.get_service("actionservice").get(context, self.val)
+                return obj.syft_action_data
+        return self.val
 
 
 @serializable()
@@ -481,12 +476,7 @@ class MixedInputPolicy(InputPolicy):
         for _, rules in self.kwarg_rules.items():
             for kw, rule in rules.items():
                 if hasattr(rule, "transform_kwarg"):
-                    res_val = rule.transform_kwarg(context, kwargs.get(kw, None))
-                    # TODO: new style resultify transform_kwarg
-                    if res_val.is_err():
-                        raise SyftException(public_message=res_val.value)
-                    else:
-                        kwargs[kw] = res_val.ok()
+                    kwargs[kw] = rule.transform_kwarg(context, kwargs.get(kw, None)).unwrap()
         return kwargs
 
     def find_server_identity(
@@ -579,11 +569,14 @@ class MixedInputPolicy(InputPolicy):
         usr_input_kwargs: dict,
         code_item_id: UID,
     ) -> bool:
+        print("MixedInputPolicy _is_valid")
         filtered_input_kwargs = self.filter_kwargs(
             kwargs=usr_input_kwargs,
             context=context,
             code_item_id=code_item_id,
         ).unwrap()
+
+        print(f"filtered_input_kwargs: {type(filtered_input_kwargs)}")
 
         expected_input_kwargs = set()
         for _inp_kwargs in self.inputs.values():
@@ -692,6 +685,7 @@ class ExactMatch(InputPolicy):
         context: AuthedServiceContext,
         code_item_id: UID,
     ) -> dict[Any, Any]:
+        print("filter_kwargs for ExactMatch")
         allowed_inputs = allowed_ids_only(
             allowed_inputs=self.inputs, kwargs=kwargs, context=context
         ).unwrap()
@@ -798,6 +792,7 @@ class OutputPolicyExecuteCount(OutputPolicy):
 
     @as_result(SyftException)
     def _is_valid(self, context: AuthedServiceContext) -> SyftSuccess:
+        print("called _is_valid")
         output_service = context.server.get_service("outputservice")
         output_history = output_service.get_by_output_policy_id(
             context, self.id
@@ -805,14 +800,16 @@ class OutputPolicyExecuteCount(OutputPolicy):
 
         execution_count = len(output_history)
 
-        if execution_count >= self.limit:
-            raise SyftException(
-                public_message=f"Policy is no longer valid. count: {execution_count} >= limit: {self.limit}"
+        print(f"execution_count: {execution_count}, limit: {self.limit}")
+
+        if execution_count < self.limit:
+            return SyftSuccess(
+                message=f"Policy is still valid. count: {execution_count} < limit: {self.limit}",
+                value=True,
             )
 
-        return SyftSuccess(
-            message=f"Policy is still valid. count: {execution_count} < limit: {self.limit}",
-            value=True,
+        raise SyftException(
+            public_message=f"Policy is no longer valid. count: {execution_count} >= limit: {self.limit}"
         )
 
     def public_state(self) -> dict[str, int]:

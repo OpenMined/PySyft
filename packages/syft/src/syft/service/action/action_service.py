@@ -76,9 +76,7 @@ class ActionService(AbstractService):
             syft_server_location=context.server.id,
             syft_client_verify_key=context.credentials,
         )
-        blob_store_result = np_obj._save_to_blob_storage()
-        if isinstance(blob_store_result, SyftError):
-            return blob_store_result
+        blob_store_result = np_obj._save_to_blob_storage().unwrap()
         if isinstance(blob_store_result, SyftWarning):
             logger.debug(blob_store_result.message)
 
@@ -196,10 +194,9 @@ class ActionService(AbstractService):
             if action_object.mock_obj.syft_action_saved_to_blob_store:
                 blob_id = action_object.mock_obj.syft_blob_storage_entry_id
                 permission = ActionObjectPermission(blob_id, ActionPermission.ALL_READ)
-                blob_storage_service: AbstractService = context.server.get_service(
-                    BlobStorageService
-                )
-                blob_storage_service.stash.add_permission(permission).unwrap()
+                blob_storage_service: BlobStorageService = context.server.get_service( BlobStorageService)
+                # add_permission is not resultified.
+                blob_storage_service.stash.add_permission(permission)
 
             if has_result_read_permission:
                 action_object = action_object.private
@@ -290,11 +287,11 @@ class ActionService(AbstractService):
 
         # Resolve graph links
         if (
-            not isinstance(obj, TwinObject)  # type: ignore[unreachable]
+            not isinstance(obj, TwinObject)
             and resolve_nested
             and obj.is_link
         ):
-            if not self.is_resolved(  # type: ignore[unreachable]
+            if not self.is_resolved(
                 context, obj.syft_action_data.action_object_id.id
             ).unwrap():
                 raise SyftException(public_message="This object is not resolved yet.")
@@ -371,12 +368,12 @@ class ActionService(AbstractService):
         output_policy = code_item.get_output_policy(context)
 
         # Unwrap nested ActionObjects
-        for _k, arg in kwargs.items():
+        for _, arg in kwargs.items():
             self.flatten_action_arg(context, arg) if isinstance(arg, UID) else None
 
         if not override_execution_permission:
             if input_policy is None:
-                if not code_item.is_output_policy_approved(context):
+                if not code_item.is_output_policy_approved(context).unwrap():
                     raise SyftException(
                         public_message="Execution denied: Your code is waiting for approval"
                     )
@@ -389,6 +386,7 @@ class ActionService(AbstractService):
                 kwargs=kwargs, context=context, code_item_id=code_item.id
             ).unwrap()
 
+            print(f"filtered_kwargs #1: {filtered_kwargs}")
             # validate input policy, raises if not valid
             input_policy._is_valid(
                 context=context,
@@ -405,7 +403,6 @@ class ActionService(AbstractService):
             ).unwrap()
 
         # update input policy to track any input state
-
         has_twin_inputs = False
 
         real_kwargs = {}
@@ -486,6 +483,9 @@ class ActionService(AbstractService):
                     mock_obj=result_action_object_mock,
                 )
         except Exception as e:
+            print('\n\n\nkakakkaak\n\n\n\n', str(e))
+            import traceback
+            traceback.format_exc()
             # third party
             raise SyftException.from_exception(
                 exc=e, public_message="_user_code_execute failed"
@@ -528,12 +528,8 @@ class ActionService(AbstractService):
             context.server.id,
             context.credentials,
         )
-        blob_store_result: SyftResponseMessage = (
-            result_action_object._save_to_blob_storage()
-        )
+        blob_store_result = result_action_object._save_to_blob_storage().unwrap()
 
-        if blob_store_result.is_err():
-            raise SyftException(public_message=blob_store_result.message)
         if isinstance(blob_store_result, SyftWarning):
             logger.debug(blob_store_result.message)
 
@@ -758,7 +754,6 @@ class ActionService(AbstractService):
         """
         returns if this is a list/set/dict that contains ActionObjects
         """
-
         def unwrap_collection(col: set | dict | list) -> [Any]:  # type: ignore
             return_values = []
             if isinstance(col, dict):
@@ -793,7 +788,7 @@ class ActionService(AbstractService):
             new_data = self.unwrap_nested_actionobjects(context, data)
             # Update existing action object with the new flattened data
             action_object.syft_action_data_cache = new_data
-            action_object._save_to_blob_storage()
+            action_object._save_to_blob_storage().unwrap()
             self._set(
                 context=context,
                 action_object=action_object,
@@ -858,9 +853,7 @@ class ActionService(AbstractService):
             context.server.id,
             context.credentials,
         )
-        blob_store_result = result_action_object._save_to_blob_storage()  # type: ignore[union-attr]
-        if isinstance(blob_store_result, SyftError):
-            return blob_store_result
+        blob_store_result = result_action_object._save_to_blob_storage().unwrap()  # type: ignore[union-attr]
 
         # pass permission information to the action store as extra kwargs
         context.extra_kwargs = {
@@ -1013,10 +1006,15 @@ def execute_object(
     kwargs, has_kwargs_twins = resolve_action_kwargs(action, context, service).unwrap()
     has_twin_inputs = has_arg_twins or has_kwargs_twins
 
+    print("fucking hellllllll")
+    print(f"kwargs: {kwargs}")
+    print(f"has_twin_inputs: {has_twin_inputs}")
+
     # 🔵 TODO 10: Get proper code From old RunClassMethodAction to ensure the function
     # is not bound to the original object or mutated
     target_method = getattr(unboxed_resolved_self, action.op, None)
     result = None
+
     if not target_method:
         raise SyftException(public_message="could not find target method")
     if twin_mode == TwinMode.NONE and not has_twin_inputs:
@@ -1094,6 +1092,7 @@ def filter_twin_kwargs(
 ) -> Any:
     filtered = {}
     for k, v in kwargs.items():
+        print(f'type: {type(v)}, {v}')
         if isinstance(v, TwinObject):
             if twin_mode == TwinMode.PRIVATE:
                 filtered[k] = v.private.syft_action_data
@@ -1112,7 +1111,6 @@ def filter_twin_kwargs(
             ):
                 filtered[k] = v
             else:
-                # third party
                 raise SyftException(
                     public_message=f"unexepected value {v} passed to filtered twin kwargs"
                 )
