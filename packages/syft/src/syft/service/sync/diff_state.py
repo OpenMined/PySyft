@@ -31,7 +31,6 @@ from ...client.sync_decision import SyncDirection
 from ...server.credentials import SyftVerifyKey
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.syft_object import short_uid
 from ...types.syncable_object import SyncableSyftObject
@@ -74,7 +73,7 @@ sketchy_tab = "‎ " * 4
 class AttrDiff(SyftObject):
     # version
     __canonical_name__ = "AttrDiff"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
     attr_name: str
     low_attr: Any = None
     high_attr: Any = None
@@ -102,7 +101,7 @@ class AttrDiff(SyftObject):
 class ListDiff(AttrDiff):
     # version
     __canonical_name__ = "ListDiff"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
     diff_ids: list[int] = []
     new_low_ids: list[int] = []
     new_high_ids: list[int] = []
@@ -182,7 +181,7 @@ def recursive_attr_repr(value_attr: list | dict | bytes, num_tabs: int = 0) -> s
 class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
     # version
     __canonical_name__ = "ObjectDiff"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
     low_obj: SyncableSyftObject | None = None
     high_obj: SyncableSyftObject | None = None
     low_server_uid: UID
@@ -541,7 +540,7 @@ def _wrap_text(text: str, width: int, indent: int = 4) -> str:
 
 class ObjectDiffBatch(SyftObject):
     __canonical_name__ = "DiffHierarchy"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
     LINE_LENGTH: ClassVar[int] = 100
     INDENT: ClassVar[int] = 4
     ORDER: ClassVar[dict] = {"low": 0, "high": 1}
@@ -1127,7 +1126,7 @@ class ServerDiffFilter:
 
 class ServerDiff(SyftObject):
     __canonical_name__ = "ServerDiff"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     low_server_uid: UID
     high_server_uid: UID
@@ -1528,7 +1527,7 @@ It will be available for review again."""
 
 class SyncInstruction(SyftObject):
     __canonical_name__ = "SyncDecision"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     diff: ObjectDiff
     decision: SyncDecision | None
@@ -1602,7 +1601,7 @@ class SyncInstruction(SyftObject):
 
 class ResolvedSyncState(SyftObject):
     __canonical_name__ = "SyncUpdate"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     server_uid: UID
     create_objs: list[SyncableSyftObject] = []

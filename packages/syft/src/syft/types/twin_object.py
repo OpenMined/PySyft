@@ -20,7 +20,7 @@ from ..service.action.action_types import action_types
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.response import SyftWarning
-from ..types.syft_object import SYFT_OBJECT_VERSION_2
+from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftObject
 from .uid import UID
 
@@ -39,7 +39,7 @@ def to_action_object(obj: Any) -> ActionObject:
 @serializable()
 class TwinObject(SyftObject):
     __canonical_name__ = "TwinObject"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     __attr_searchable__: ClassVar[list[str]] = []
 
