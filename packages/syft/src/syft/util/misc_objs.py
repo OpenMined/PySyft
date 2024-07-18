@@ -5,7 +5,6 @@ from IPython.display import display
 # relative
 from ..serde.serializable import serializable
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
-from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftObject
 
 
@@ -13,7 +12,7 @@ from ..types.syft_object import SyftObject
 class MarkdownDescription(SyftObject):
     # version
     __canonical_name__ = "MarkdownDescription"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     text: str
 

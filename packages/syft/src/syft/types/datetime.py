@@ -10,7 +10,7 @@ from typing_extensions import Self
 
 # relative
 from ..serde.serializable import serializable
-from .syft_object import SYFT_OBJECT_VERSION_2
+from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftObject
 from .uid import UID
 
@@ -26,7 +26,7 @@ def str_is_datetime(str_: str) -> bool:
 @total_ordering
 class DateTime(SyftObject):
     __canonical_name__ = "DateTime"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID | None = None  # type: ignore
     utc_timestamp: float

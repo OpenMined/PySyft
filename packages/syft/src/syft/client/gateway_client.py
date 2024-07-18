@@ -10,7 +10,7 @@ from ..service.metadata.server_metadata import ServerMetadataJSON
 from ..service.network.server_peer import ServerPeer
 from ..service.response import SyftError
 from ..service.response import SyftException
-from ..types.syft_object import SYFT_OBJECT_VERSION_2
+from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftObject
 from ..util.assets import load_png_base64
 from ..util.notebook_ui.styles import FONT_CSS
@@ -155,7 +155,7 @@ class GatewayClient(SyftClient):
 
 class ProxyClient(SyftObject):
     __canonical_name__ = "ProxyClient"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     routing_client: GatewayClient
     server_type: ServerType | None = None
