@@ -216,7 +216,7 @@ class UserView(SyftObject):
         ).unwrap()
 
         client.services.user.update(
-            uid=self.id, user_update=UserUpdate(password=new_password)
+            uid=self.id, **UserUpdate(password=new_password)
         )
 
         return SyftSuccess(
@@ -250,7 +250,7 @@ class UserView(SyftObject):
         ).unwrap()
 
         # TODO: Shouldn't this trigger an update on self?
-        result = client.services.user.update(uid=self.id, user_update=user_update)
+        result = client.services.user.update(uid=self.id, email=user_update.email)
 
         return SyftSuccess(message=f"Email updated to '{result.email}'.")
 
@@ -279,7 +279,7 @@ class UserView(SyftObject):
             user_verify_key=self.syft_client_verify_key,
         ).unwrap()
 
-        result = api.services.user.update(uid=self.id, user_update=user_update)
+        result = api.services.user.update(uid=self.id, **user_update)
 
         for attr, val in result.to_dict(exclude_empty=True).items():
             setattr(self, attr, val)

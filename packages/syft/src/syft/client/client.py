@@ -892,8 +892,10 @@ class SyftClient:
                 email=email, password=password, password_verify=password, **kwargs
             ).unwrap()
 
-        user_private_key = self.connection.login(email=email, password=password).unwrap()
-
+        user_private_key = self.connection.login(email=email, password=password)
+        if isinstance(user_private_key, SyftError):
+            raise SyftException(public_message=user_private_key.message)
+        
         signing_key = None if user_private_key is None else user_private_key.signing_key
 
         client = self.__class__(
@@ -959,7 +961,6 @@ class SyftClient:
         user_code_items = self.code.get_all_for_user()
         load_approved_policy_code(user_code_items=user_code_items, context=None)
     
-    @as_result(SyftException)
     def register(
         self,
         name: str,

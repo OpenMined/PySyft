@@ -80,7 +80,7 @@ class MigrationService(AbstractService):
         obj = SyftObjectMigrationState(
             current_version=current_version, canonical_name=canonical_name
         )
-        return self.stash.set(migration_state=obj, credentials=context.credentials).unwrap()
+        return self.stash.set(migration_state=obj, credentials=context.credentials)
 
     def _find_klasses_pending_for_migration(
         self, context: AuthedServiceContext, object_types: list[type[SyftObject]]

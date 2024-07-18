@@ -802,7 +802,7 @@ class ActionObject(SyncableSyftObject):
             if blob_storage_read_method is not None:
                 blob_retrieval_object = blob_storage_read_method(
                     uid=self.syft_blob_storage_entry_id
-                ).unwrap(f"Could not fetch actionobject data.")
+                ).unwrap(public_message=f"Could not fetch actionobject data.")
                 # relative
                 from ...store.blob_storage import BlobRetrieval
                 if isinstance(blob_retrieval_object, BlobRetrieval):

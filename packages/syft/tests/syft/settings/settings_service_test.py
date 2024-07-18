@@ -326,7 +326,7 @@ def test_settings_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker)
             password_verify="password",
         )
 
-        result = root_client.users.create(user_create=user_create)
+        result = root_client.users.create(**user_create)
         assert type(result) == UserView
 
         guest_client = root_client.guest()

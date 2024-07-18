@@ -276,6 +276,7 @@ def test_user_code_mock_execution(worker) -> None:
             )
         ],
     )
+
     root_datasite_client.upload_dataset(dataset)
 
     # DS requests code execution
@@ -351,7 +352,7 @@ def test_mock_multiple_arguments(worker) -> None:
 
     # Mixed execution fails on input policy
     with pytest.raises(SyftException):
-        result = ds_client.api.services.code.compute_sum(data1=1, data2=data)
+        ds_client.api.services.code.compute_sum(data1=1, data2=data)
 
     # Real execution succeeds
     result = ds_client.api.services.code.compute_sum(data1=data, data2=data)

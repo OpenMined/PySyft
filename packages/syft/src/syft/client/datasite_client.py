@@ -105,6 +105,7 @@ class DatasiteClient(SyftClient):
 
         user = self.users.get_current_user()
         dataset = add_default_uploader(user, dataset)
+
         for i in range(len(dataset.asset_list)):
             asset = dataset.asset_list[i]
             dataset.asset_list[i] = add_default_uploader(user, asset)
@@ -141,16 +142,15 @@ class DatasiteClient(SyftClient):
                         syft_server_location=self.id,
                         syft_client_verify_key=self.verify_key,
                     )
-                    res = twin._save_to_blob_storage(allow_empty=contains_empty)
-                    if isinstance(res, SyftError):
-                        return res
+
+                    res = twin._save_to_blob_storage(allow_empty=contains_empty).unwrap()
+                    
+                    if isinstance(res, SyftWarning):
+                        logger.debug(res.message)
                 except Exception as e:
                     tqdm.write(f"Failed to create twin for {asset.name}. {e}")
                     return SyftError(message=f"Failed to create twin. {e}")
 
-                print(f"{res}")
-                if isinstance(res, SyftWarning):
-                    logger.debug(res.message)
                 try:
                     self.api.services.action.set(
                         twin, ignore_detached_objs=contains_empty

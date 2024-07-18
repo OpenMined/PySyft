@@ -1780,13 +1780,12 @@ class SecureContext:
                 ptr = action_service.set_result_to_store(
                     value, context, has_result_read_permissions=False
                 ).unwrap()
-                ptr = ptr.ok()
                 kw2id[k] = ptr.id
             try:
                 # TODO: check permissions here
                 action = Action.syft_function_action_from_kwargs_and_id(kw2id, func.id)
 
-                job = server.add_action_to_queue(
+                return server.add_action_to_queue(
                     action=action,
                     credentials=context.credentials,
                     parent_job_id=context.job_id,
@@ -1795,8 +1794,6 @@ class SecureContext:
                 )
                 # # set api in global scope to enable using .get(), .wait())
                 # set_api_registry()
-
-                return job
             except Exception as e:
                 print(f"ERROR {e}")
                 raise ValueError(f"error while launching job:\n{e}")

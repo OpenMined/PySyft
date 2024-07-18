@@ -14,7 +14,7 @@ from syft.server.server import get_default_root_email
 from syft.server.worker import Worker
 from syft.service.context import AuthedServiceContext
 from syft.service.response import SyftError
-from syft.service.user.user import ServiceRole
+from syft.service.user.user import ServiceRole, UserUpdate
 from syft.service.user.user import UserCreate
 from syft.service.user.user import UserView
 from syft.types.errors import SyftException
@@ -245,9 +245,10 @@ def test_user_update(root_client):
     for executing_client in executing_clients:
         for target_client in target_clients:
             if executing_client.role != ServiceRole.ADMIN:
-                assert not executing_client.api.services.user.update(
-                    uid=target_client.user_id, name="abc"
-                )
+                with pytest.raises(SyftException) as exc:
+                    assert not executing_client.api.services.user.update(
+                        uid=target_client.user_id, name="abc"
+                    )
             else:
                 assert executing_client.api.services.user.update(
                     uid=target_client.user_id, name="abc"
@@ -267,12 +268,12 @@ def test_guest_user_update_to_root_email_failed(
 ) -> None:
     default_root_email: str = get_default_root_email()
     user_update_to_root_email = UserUpdate(email=default_root_email)
+
     for client in [root_client, do_client, guest_client, ds_client]:
-        res = client.api.services.user.update(
-            uid=client.me.id, user_update=user_update_to_root_email
-        )
-        assert isinstance(res, SyftError)
-        assert res.message == "User already exists"
+        with pytest.raises(SyftException) as exc:
+            client.api.services.user.update(
+                uid=client.me.id, **user_update_to_root_email
+            )
 
         assert exc.type == SyftException
         assert f"User {default_root_email} already exists" in exc.value.public_message
@@ -286,10 +287,11 @@ def test_user_view_set_password(worker: Worker, root_client: DatasiteClient) -> 
     email = root_client.me.email
 
     # log in again with the wrong password
-    # FIX: This should raise...
-    res = worker.root_client.login(email=email, password="1234")
-    assert type(res) == SyftError
-    assert res.message == "Invalid credentials."
+    with pytest.raises(SyftException) as exc:
+        worker.root_client.login(email=email, password="1234")
+
+    assert exc.type == SyftException
+    assert exc.value.public_message == "Invalid credentials."
 
     # log in again with the right password
     root_client_b = worker.root_client.login(email=email, password="123")
@@ -393,8 +395,8 @@ def test_user_view_update_name_institution_website(
 
 def test_user_view_set_role(worker: Worker, guest_client: DatasiteClient) -> None:
     admin_client = get_mock_client(worker.root_client, ServiceRole.ADMIN)
-
     assert admin_client.me.role == ServiceRole.ADMIN
+
     admin_client.register(
         name="Sheldon Cooper",
         email="sheldon@caltech.edu",
@@ -463,6 +465,7 @@ def test_user_view_set_role_admin(faker: Faker) -> None:
         institution="Caltech",
         website="https://www.caltech.edu/",
     )
+
     assert len(datasite_client.users.get_all()) == 3
 
     datasite_client.users[1].update(role="admin")

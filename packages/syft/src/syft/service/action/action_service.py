@@ -786,11 +786,7 @@ class ActionService(AbstractService):
         its values. E.g. [[ActionObject1, ActionObject2],[ActionObject3, ActionObject4]]
         -> [[value1, value2],[value3, value4]]
         """
-        res = self.get(context=context, uid=arg)
-        if res.is_err():
-            return arg
-
-        action_object = res.ok()
+        action_object = self.get(context=context, uid=arg)
         data = action_object.syft_action_data
 
         if self.contains_nested_actionobjects(data):
@@ -798,7 +794,7 @@ class ActionService(AbstractService):
             # Update existing action object with the new flattened data
             action_object.syft_action_data_cache = new_data
             action_object._save_to_blob_storage()
-            res = self._set(
+            self._set(
                 context=context,
                 action_object=action_object,
             )
