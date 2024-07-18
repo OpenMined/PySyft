@@ -446,6 +446,8 @@ def recursive_serde_register_type(
     canonical_name: str | None = None,
     version: int | None = None,
 ) -> None:
+    # former case is for instance for _GerericAlias itself or UnionGenericAlias
+    # Latter case is true for for instance List[str], which is currently not used
     if (isinstance(t, type) and issubclass(t, _GenericAlias)) or issubclass(
         type(t), _GenericAlias
     ):
@@ -500,6 +502,14 @@ def deserialize_typevar(type_blob: bytes) -> type:
     return TypeVar(name=name)  # type: ignore
 
 
+def serialize_any(serialized_type: TypeVar) -> bytes:
+    return b""
+
+
+def deserialize_any(type_blob: bytes) -> type:  # type: ignore
+    return Any  # type: ignore
+
+
 recursive_serde_register(
     UnionType,
     serialize=serialize_union_type,
@@ -524,6 +534,13 @@ recursive_serde_register(
     deserialize=deserialize_typevar,
     version=1,
 )
+recursive_serde_register(
+    Any,
+    canonical_name="Any",
+    serialize=serialize_any,
+    deserialize=deserialize_any,
+    version=1,
+)
 
 recursive_serde_register_type(
     _UnionGenericAlias,
@@ -544,7 +561,7 @@ recursive_serde_register_type(
 )
 recursive_serde_register_type(GenericAlias, canonical_name="GenericAlias", version=1)
 
-recursive_serde_register_type(Any, canonical_name="Any", version=1)
+# recursive_serde_register_type(Any, canonical_name="Any", version=1)
 recursive_serde_register_type(EnumMeta, canonical_name="EnumMeta", version=1)
 
 recursive_serde_register_type(ABCMeta, canonical_name="ABCMeta", version=1)
