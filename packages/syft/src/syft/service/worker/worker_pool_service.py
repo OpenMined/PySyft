@@ -706,37 +706,51 @@ class SyftWorkerPoolService(AbstractService):
             WorkerService, context.server.get_service("WorkerService")
         )
 
-        workers = (
-            worker.resolve_with_context(context=context)
-            for worker in worker_pool.worker_list
-        )
-
-        worker_ids = []
-        for worker in workers:
-            if worker.is_err():
-                msg = (
-                    f"Failed to resolve a SyftWorker "
-                    f"while deleting WorkerPool {uid}: {worker.err()}"
-                )
-                logger.error(msg=msg)
-                return SyftError(message=msg)
-            worker_ids.append(worker.ok().id)
-
-        for id_ in worker_ids:
-            res = (
-                worker_service.delete(
-                    context=context,
-                    uid=id_,
-                    force=True,
-                ),
+        if IN_KUBERNETES:
+            res = self.scale(
+                context=context,
+                number=0,
+                pool_id=uid,
             )
             if isinstance(res, SyftError):
-                msg = (
-                    f"Failed to delete SyftWorker {id_} "
-                    f"while deleting WorkerPool {uid}: {res.message}"
+                return SyftError(
+                    message=(
+                        f"Failed to delete WorkerPool {uid}: "
+                        f"Failed to scale down workers: {res.message}"
+                    )
                 )
-                logger.error(msg=msg)
-                return SyftError(message=msg)
+        else:
+            workers = (
+                worker.resolve_with_context(context=context)
+                for worker in worker_pool.worker_list
+            )
+
+            worker_ids = []
+            for worker in workers:
+                if worker.is_err():
+                    msg = (
+                        f"Failed to resolve a SyftWorker "
+                        f"while deleting WorkerPool {uid}: {worker.err()}"
+                    )
+                    logger.error(msg=msg)
+                    return SyftError(message=msg)
+                worker_ids.append(worker.ok().id)
+
+            for id_ in worker_ids:
+                res = (
+                    worker_service.delete(
+                        context=context,
+                        uid=id_,
+                        force=True,
+                    ),
+                )
+                if isinstance(res, SyftError):
+                    msg = (
+                        f"Failed to delete SyftWorker {id_} "
+                        f"while deleting WorkerPool {uid}: {res.message}"
+                    )
+                    logger.error(msg=msg)
+                    return SyftError(message=msg)
 
         res = self.stash.delete_by_uid(credentials=context.credentials, uid=uid)
         if isinstance(res, SyftError):
