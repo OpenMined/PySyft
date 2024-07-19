@@ -23,7 +23,7 @@ $ pip install -U syft[data_science]
 ```python
 # from Jupyter / Python
 import syft as sy
-sy.requires(">=0.8.6,<0.8.7")
+sy.requires(">=0.8.7,<0.8.8")
 server = sy.orchestra.launch(
     name="my-datasite",
     port=8080,
@@ -146,11 +146,12 @@ helm install ... --set ingress.class="gce"
 # Versions
 
 `0.9.0` - Coming soon...  
-`0.8.7` (Beta) - `dev` branch 👈🏽 <a href="https://github.com/OpenMined/PySyft/tree/dev/notebooks/api/0.8">API</a> - Coming soon...  
-`0.8.6` (Stable) - <a href="https://github.com/OpenMined/PySyft/tree/0.8.6/notebooks/api/0.8">API</a>
+`0.8.8` (Beta) - `dev` branch 👈🏽 <a href="https://github.com/OpenMined/PySyft/tree/dev/notebooks/api/0.8">API</a> - Coming soon...  
+`0.8.7` (Stable) - <a href="https://github.com/OpenMined/PySyft/tree/0.8.7/notebooks/api/0.8">API</a>
 
 Deprecated:
 
+- `0.8.6` - <a href="https://github.com/OpenMined/PySyft/tree/0.8.6/notebooks/api/0.8">API</a>
 - `0.8.5-post.2` - <a href="https://github.com/OpenMined/PySyft/tree/0.8.5-post.2/notebooks/api/0.8">API</a>
 - `0.8.4` - <a href="https://github.com/OpenMined/PySyft/tree/0.8.4/notebooks/api/0.8">API</a>
 - `0.8.3` - <a href="https://github.com/OpenMined/PySyft/tree/0.8.3/notebooks/api/0.8">API</a>
