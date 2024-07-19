@@ -12,7 +12,6 @@ from inspect import Parameter
 from inspect import Signature
 from io import StringIO
 import sys
-import types
 from typing import Any
 from typing import ClassVar
 
@@ -1134,15 +1133,15 @@ def submit_policy_code_to_user_code() -> list[Callable]:
 
 
 def register_policy_class(klass: type, unique_name: str) -> None:
-    nonrecursive=False
+    nonrecursive = False
     _serialize = None
-    _deserialize=None
-    attributes = [x for x in klass.model_fields.keys()]
-    exclude_attrs=[]
-    serde_overrides = {}
-    hash_exclude_attrs = []
+    _deserialize = None
+    attributes = list(klass.model_fields.keys())
+    exclude_attrs: list = []
+    serde_overrides: dict = {}
+    hash_exclude_attrs: list = []
     cls = klass
-    attribute_types = []
+    attribute_types: list = []
     version = 1
 
     serde_attributes = (
@@ -1158,7 +1157,9 @@ def register_policy_class(klass: type, unique_name: str) -> None:
         version,
     )
 
-    SyftObjectRegistry.register_cls(canonical_name=unique_name, version=version, serde_attributes=serde_attributes)
+    SyftObjectRegistry.register_cls(
+        canonical_name=unique_name, version=version, serde_attributes=serde_attributes
+    )
 
 
 def execute_policy_code(user_policy: UserPolicy) -> Any:
@@ -1181,7 +1182,7 @@ def execute_policy_code(user_policy: UserPolicy) -> Any:
         except Exception:
             exec(user_policy.byte_code)  # nosec
             policy_class = eval(user_policy.unique_name)  # nosec
-        
+
         register_policy_class(policy_class, user_policy.unique_name)
 
         sys.stdout = stdout_
