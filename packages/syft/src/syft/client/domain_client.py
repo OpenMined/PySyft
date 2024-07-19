@@ -157,6 +157,10 @@ class DomainClient(SyftClient):
                 model_size += get_mb_size(asset.data)
                 model_ref_action_ids.append(twin.id)
 
+                # Clear the Data and Mock , as they are uploaded as twin object
+                asset.data = None
+                asset.mock = None
+
                 # Update the progress bar and set the dynamic description
                 pbar.set_description(f"Uploading: {asset.name}")
                 pbar.update(1)
@@ -182,7 +186,6 @@ class DomainClient(SyftClient):
             return valid
 
         # Step 4. Upload Model to Model Stash
-        model.asset_list = []
         return self.api.services.model.add(model=model)
 
     def upload_dataset(self, dataset: CreateDataset) -> SyftSuccess | SyftError:
