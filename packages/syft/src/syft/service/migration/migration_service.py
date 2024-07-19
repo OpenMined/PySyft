@@ -437,19 +437,19 @@ class MigrationService(AbstractService):
             canonical_name = klass.__canonical_name__
             # Migrate data for objects in document store
             print(f"Migrating data for: {canonical_name} table.")
-            for object in objects:
-                try:
-                    migrated_value = object.migrate_to(klass.__version__, context)
+            try:
+                for obj in objects:
+                    migrated_value = obj.migrate_to(klass.__version__, context)
                     migrated_objects.append(migrated_value)
-                except Exception:
-                    # stdlib
-                    import traceback
-
-                    print(traceback.format_exc())
-                    return Err(
-                        f"Failed to migrate data to {klass} for qk {klass.__version__}: {object.id}"
-                    )
+            except Exception as e:
+                # stdlib
+                import traceback
+                print(traceback.format_exc())
+                return Err(
+                    f"Failed to migrate data to {klass} for qk {klass.__version__}: {obj.id}"
+                )
         return Ok(migrated_objects)
+
 
     @service_method(
         path="migration.migrate_data",
