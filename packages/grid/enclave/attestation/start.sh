@@ -5,7 +5,7 @@ export PATH="/root/.local/bin:${PATH}"
 APP_MODULE=server.attestation_main:app
 APP_LOG_LEVEL=${APP_LOG_LEVEL:-info}
 UVICORN_LOG_LEVEL=${UVICORN_LOG_LEVEL:-info}
-NODE_IPV6=${NODE_IPV6:-"False"}
+SERVER_IPV6=${SERVER_IPV6:-"False"}
 HOST=${HOST:-0.0.0.0}
 PORT=${PORT:-4455}
 RELOAD=""
@@ -16,7 +16,7 @@ then
     RELOAD="--reload"
 fi
 
-if [[ ${NODE_IPV6} == "True" ]];
+if [[ ${SERVER_IPV6} == "True" ]];
 then
     HOST=${HOST:-"::"}
 fi
