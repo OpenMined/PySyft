@@ -3,8 +3,7 @@
 struct RecursiveSerde {
     fieldsName @0 :List(Text);
     fieldsData @1 :List(List(Data));
-    fullyQualifiedName @2 :Text;
-    nonrecursiveBlob @3 :List(Data);
-    canonicalName @4 :Text;
-    version @5 :Int32;
+    nonrecursiveBlob @2 :List(Data);
+    canonicalName @3 :Text;
+    version @4 :Int32;
 }

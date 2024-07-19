@@ -32,7 +32,6 @@ from ..protocol.data_protocol import PROTOCOL_TYPE
 from ..protocol.data_protocol import get_data_protocol
 from ..protocol.data_protocol import migrate_args_and_kwargs
 from ..serde.deserialize import _deserialize
-from ..serde.recursive import index_syft_by_module_name
 from ..serde.serializable import serializable
 from ..serde.serialize import _serialize
 from ..serde.signature import Signature
@@ -63,6 +62,7 @@ from ..util.autoreload import autoreload_enabled
 from ..util.markdown import as_markdown_python_code
 from ..util.notebook_ui.components.tabulator_template import build_tabulator_table
 from ..util.telemetry import instrument
+from ..util.util import index_syft_by_module_name
 from ..util.util import prompt_warning_message
 from .connection import ServerConnection
 

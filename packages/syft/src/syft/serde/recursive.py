@@ -3,7 +3,6 @@ from collections.abc import Callable
 from enum import Enum
 from enum import EnumMeta
 import os
-import sys
 import tempfile
 import types
 from typing import Any
@@ -17,7 +16,6 @@ import syft as sy
 
 # relative
 from ..types.syft_object_registry import SyftObjectRegistry
-from ..util.util import index_syft_by_module_name
 from .capnp import get_capnp_schema
 from .util import compatible_with_large_file_writes_capnp
 
@@ -285,7 +283,7 @@ def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuild
     # todo: rewrite and make sure every object has a canonical name and version
     canonical_name, version = SyftObjectRegistry.get_canonical_name_version(self)
 
-    if not SyftObjectRegistry.has_serde_class("", canonical_name, version):
+    if not SyftObjectRegistry.has_serde_class(canonical_name, version):
         # third party
         raise Exception(
             f"obj2proto: {canonical_name} version {version} not in SyftObjectRegistry"
@@ -382,34 +380,12 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
     # relative
     from .deserialize import _deserialize
 
-    # clean this mess, Tudor
-    module_parts = proto.fullyQualifiedName.split(".")
-    klass = module_parts.pop()
     class_type: type | Any = type(None)
-
-    if klass != "NoneType":
-        try:
-            class_type = index_syft_by_module_name(proto.fullyQualifiedName)  # type: ignore[assignment,unused-ignore]
-        except Exception:  # nosec
-            try:
-                class_type = getattr(sys.modules[".".join(module_parts)], klass)
-            except Exception:  # nosec
-                if "syft.user" in proto.fullyQualifiedName:
-                    # relative
-                    from ..server.server import CODE_RELOADER
-
-                    for load_user_code in CODE_RELOADER.values():
-                        load_user_code()
-                try:
-                    class_type = getattr(sys.modules[".".join(module_parts)], klass)
-                except Exception:  # nosec
-                    pass
 
     canonical_name = proto.canonicalName
     version = getattr(proto, "version", -1)
-    fqn = getattr(proto, "fullyQualifiedName", "")
-    fqn = map_fqns_for_backward_compatibility(fqn)
-    if not SyftObjectRegistry.has_serde_class(fqn, canonical_name, version):
+
+    if not SyftObjectRegistry.has_serde_class(canonical_name, version):
         # third party
         raise Exception(
             f"proto2obj: {canonical_name} version {version} not in SyftObjectRegistry"
@@ -431,13 +407,9 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
         cls,
         _,
         version,
-    ) = SyftObjectRegistry.get_serde_properties_bw_compatible(
-        fqn, canonical_name, version
-    )
+    ) = SyftObjectRegistry.get_serde_properties(canonical_name, version)
 
-    if class_type == type(None) or fqn != "":
-        # yes this looks stupid but it works and the opposite breaks
-        class_type = cls
+    class_type = cls
 
     if nonrecursive:
         if deserialize is None:
@@ -468,14 +440,15 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
         # if we skip the __new__ flow of BaseModel we get the error
         # AttributeError: object has no attribute '__fields_set__'
 
-        if "syft.user" in proto.fullyQualifiedName:
-            # weird issues with pydantic and ForwardRef on user classes being inited
-            # with custom state args / kwargs
-            obj = class_type()
-            for attr_name, attr_value in kwargs.items():
-                setattr(obj, attr_name, attr_value)
-        else:
-            obj = class_type(**kwargs)
+        # if "syft.user" in proto.fullyQualifiedName:
+        #     # weird issues with pydantic and ForwardRef on user classes being inited
+        #     # with custom state args / kwargs
+        #     obj = class_type()
+        #     for attr_name, attr_value in kwargs.items():
+        #         setattr(obj, attr_name, attr_value)
+        # else:
+        #     obj = class_type(**kwargs)
+        obj = class_type(**kwargs)
 
     else:
         obj = class_type.__new__(class_type)  # type: ignore
