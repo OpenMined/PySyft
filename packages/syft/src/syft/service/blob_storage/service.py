@@ -352,30 +352,36 @@ class BlobStorageService(AbstractService):
     def delete(
         self, context: AuthedServiceContext, uid: UID
     ) -> SyftSuccess | SyftError:
-        result = self.stash.get_by_uid(context.credentials, uid=uid)
-        if result.is_ok():
-            obj = result.ok()
+        get_res = self.stash.get_by_uid(context.credentials, uid=uid)
+        if get_res.is_err():
+            return SyftError(message=get_res.err())
 
-            if obj is None:
-                return SyftError(
-                    message=f"No blob storage entry exists for uid: {uid}, or you have no permissions to read it"
-                )
-
-            try:
-                with context.server.blob_storage_client.connect() as conn:
-                    file_unlinked_result = conn.delete(obj.location)
-            except Exception as e:
-                return SyftError(message=f"Failed to delete file: {e}")
-
-            if isinstance(file_unlinked_result, SyftError):
-                return file_unlinked_result
-            blob_storage_entry_deleted = self.stash.delete(
-                context.credentials, UIDPartitionKey.with_obj(uid), has_permission=True
+        obj = get_res.ok()
+        if obj is None:
+            return SyftError(
+                message=f"No blob storage entry exists for uid: {uid}, "
+                f"or you have no permissions to read it"
             )
-            if blob_storage_entry_deleted.is_ok():
-                return file_unlinked_result
 
-        return SyftError(message=result.err())
+        try:
+            with context.server.blob_storage_client.connect() as conn:
+                file_unlinked_result = conn.delete(obj.location)
+                if isinstance(file_unlinked_result, SyftError):
+                    return file_unlinked_result
+        except Exception as e:
+            return SyftError(
+                message=f"Failed to delete blob file with id '{uid}'. Error: {e}"
+            )
+
+        blob_entry_delete_res = self.stash.delete(
+            context.credentials, UIDPartitionKey.with_obj(uid), has_permission=True
+        )
+        if blob_entry_delete_res.is_err():
+            return SyftError(message=blob_entry_delete_res.err())
+
+        return SyftSuccess(
+            message=f"Blob storage entry with id '{uid}' deleted successfully."
+        )
 
 
 TYPE_TO_SERVICE[BlobStorageEntry] = BlobStorageEntry

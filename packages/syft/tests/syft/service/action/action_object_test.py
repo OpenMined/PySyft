@@ -23,6 +23,9 @@ from syft.service.action.action_object import make_action_side_effect
 from syft.service.action.action_object import propagate_server_uid
 from syft.service.action.action_object import send_action_side_effect
 from syft.service.action.action_types import action_type_for_type
+from syft.service.response import SyftError
+from syft.service.response import SyftSuccess
+from syft.store.blob_storage import SyftObjectRetrieval
 from syft.types.uid import LineageID
 from syft.types.uid import UID
 
@@ -1023,3 +1026,35 @@ def test_actionobject_syft_getattr_pandas(worker):
 
     obj.columns = ["a", "b", "c"]
     assert (obj.columns == ["a", "b", "c"]).all()
+
+
+def test_actionobject_delete(worker):
+    """
+    Test deleting action objects and their corresponding blob storage entries
+    """
+    root_client = worker.root_client
+
+    # small object with no blob store entry
+    data_small = np.random.randint(0, 100, size=3)
+    action_obj = ActionObject.from_obj(data_small)
+    action_obj.send(root_client)
+    assert action_obj.syft_blob_storage_entry_id is None
+    del_res = root_client.api.services.action.delete(uid=action_obj.id)
+    assert isinstance(del_res, SyftSuccess)
+
+    # big object with blob store entry
+    num_elements = 25 * 1024 * 1024
+    data_big = np.random.randint(0, 100, size=num_elements)  # 4 bytes per int32
+    action_obj_2 = ActionObject.from_obj(data_big)
+    action_obj_2.send(root_client)
+    assert isinstance(action_obj_2.syft_blob_storage_entry_id, UID)
+    read_res = root_client.api.services.blob_storage.read(
+        action_obj_2.syft_blob_storage_entry_id
+    )
+    assert isinstance(read_res, SyftObjectRetrieval)
+    del_res = root_client.api.services.action.delete(uid=action_obj_2.id)
+    assert isinstance(del_res, SyftSuccess)
+    read_res = root_client.api.services.blob_storage.read(
+        action_obj_2.syft_blob_storage_entry_id
+    )
+    assert isinstance(read_res, SyftError)

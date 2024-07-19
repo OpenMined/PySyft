@@ -2,6 +2,7 @@
 import importlib
 import logging
 from typing import Any
+from typing import cast
 
 # third party
 import numpy as np
@@ -289,10 +290,6 @@ class ActionService(AbstractService):
         resolve_nested: bool = True,
     ) -> Result[ActionObject, str]:
         """Get an object from the action store"""
-        # stdlib
-
-        # relative
-
         result = self.store.get(
             uid=uid, credentials=context.credentials, has_permission=has_permission
         )
@@ -945,12 +942,114 @@ class ActionService(AbstractService):
 
     @service_method(path="action.delete", name="delete", roles=ADMIN_ROLE_LEVEL)
     def delete(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID, soft_delete: bool = False
     ) -> SyftSuccess | SyftError:
-        res = self.store.delete(context.credentials, uid)
-        if res.is_err():
-            return SyftError(message=res.err())
-        return SyftSuccess(message="Great Success!")
+        get_res = self.store.get(uid=uid, credentials=context.credentials)
+        if get_res.is_err():
+            return SyftError(message=get_res.err())
+        obj: ActionObject | TwinObject = get_res.ok()
+        return_msg = []
+
+        # delete any associated blob storage entry object to the action object
+        blob_del_res = self._delete_blob_storage_entry(context=context, obj=obj)
+        if isinstance(blob_del_res, SyftError):
+            return SyftError(message=blob_del_res.message)
+        return_msg.append(blob_del_res.message)
+
+        # delete the action object from the action store
+        store_del_res = self._delete_from_action_store(
+            context=context, uid=obj.id, soft_delete=soft_delete
+        )
+        if isinstance(store_del_res, SyftError):
+            return SyftError(message=store_del_res.message)
+        return_msg.append(store_del_res.message)
+
+        return SyftSuccess(message="\n".join(return_msg))
+
+    def _delete_blob_storage_entry(
+        self,
+        context: AuthedServiceContext,
+        obj: TwinObject | ActionObject,
+    ) -> SyftSuccess | SyftError:
+        deleted_blob_ids = []
+        blob_store_service = cast(
+            BlobStorageService, context.server.get_service(BlobStorageService)
+        )
+
+        if isinstance(obj, ActionObject) and obj.syft_blob_storage_entry_id:
+            blob_del_res = blob_store_service.delete(
+                context=context, uid=obj.syft_blob_storage_entry_id
+            )
+            if isinstance(blob_del_res, SyftError):
+                return SyftError(message=blob_del_res.message)
+            deleted_blob_ids.append(obj.syft_blob_storage_entry_id)
+
+        if isinstance(obj, TwinObject):
+            if obj.private.syft_blob_storage_entry_id:
+                blob_del_res = blob_store_service.delete(
+                    context=context, uid=obj.private.syft_blob_storage_entry_id
+                )
+                if isinstance(blob_del_res, SyftError):
+                    return SyftError(message=blob_del_res.message)
+                deleted_blob_ids.append(obj.private.syft_blob_storage_entry_id)
+
+            if obj.mock.syft_blob_storage_entry_id:
+                blob_del_res = blob_store_service.delete(
+                    context=context, uid=obj.mock.syft_blob_storage_entry_id
+                )
+                if isinstance(blob_del_res, SyftError):
+                    return SyftError(message=blob_del_res.message)
+                deleted_blob_ids.append(obj.mock.syft_blob_storage_entry_id)
+
+        message = f"Deleted blob storage entries: {', '.join(str(blob_id) for blob_id in deleted_blob_ids)}"
+
+        return SyftSuccess(message=message)
+
+    def _delete_from_action_store(
+        self,
+        context: AuthedServiceContext,
+        uid: UID,
+        soft_delete: bool = False,
+    ) -> SyftSuccess | SyftError:
+        if soft_delete:
+            get_res = self.store.get(uid=uid, credentials=context.credentials)
+            if get_res.is_err():
+                return SyftError(message=get_res.err())
+            obj: ActionObject | TwinObject = get_res.ok()
+
+            if isinstance(obj, TwinObject):
+                res = self._soft_delete_action_obj(
+                    context=context, action_obj=obj.private
+                )
+                if res.is_err():
+                    return SyftError(message=res.err())
+                res = self._soft_delete_action_obj(context=context, action_obj=obj.mock)
+                if res.is_err():
+                    return SyftError(message=res.err())
+
+            if isinstance(obj, ActionObject):
+                res = self._soft_delete_action_obj(context=context, action_obj=obj)
+                if res.is_err():
+                    return SyftError(message=res.err())
+        else:
+            res = self.store.delete(credentials=context.credentials, uid=uid)
+            if res.is_err():
+                return SyftError(message=res.err())
+
+        return SyftSuccess(message=f"Action object with uid '{uid}' deleted.")
+
+    def _soft_delete_action_obj(
+        self, context: AuthedServiceContext, action_obj: ActionObject
+    ) -> Result[ActionObject, str]:
+        action_obj.syft_action_data_cache = None
+        res = action_obj._save_to_blob_storage()
+        if isinstance(res, SyftError):
+            return Err(res.message)
+        set_result = self._set(
+            context=context,
+            action_object=action_obj,
+        )
+        return set_result
 
 
 def resolve_action_args(
