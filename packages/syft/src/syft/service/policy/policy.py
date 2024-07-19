@@ -1133,20 +1133,6 @@ def submit_policy_code_to_user_code() -> list[Callable]:
     ]
 
 
-# def add_class_to_user_module(klass: type, unique_name: str) -> type:
-#     klass.__module__ = "syft.user"
-#     klass.__name__ = unique_name
-#     # syft absolute
-#     import syft as sy
-
-#     if not hasattr(sy, "user"):
-#         user_module = types.ModuleType("user")
-#         sys.modules["syft"].user = user_module
-#     user_module = sy.user
-#     setattr(user_module, unique_name, klass)
-#     sys.modules["syft"].user = user_module
-#     return klass
-
 def register_policy_class(klass: type, unique_name: str) -> None:
     nonrecursive=False
     _serialize = None

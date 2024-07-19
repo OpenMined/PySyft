@@ -385,13 +385,8 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
     canonical_name = proto.canonicalName
     version = getattr(proto, "version", -1)
 
-    # if "RepeatedCallPolicy" in canonical_name:
-    #     import ipdb
-    #     ipdb.set_trace()
 
     if not SyftObjectRegistry.has_serde_class(canonical_name, version):
-        # import ipdb
-        # ipdb.set_trace()
         from ..server.server import CODE_RELOADER
 
         for load_user_code in CODE_RELOADER.values():
