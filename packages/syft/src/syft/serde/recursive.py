@@ -385,11 +385,22 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
     canonical_name = proto.canonicalName
     version = getattr(proto, "version", -1)
 
+    # if "RepeatedCallPolicy" in canonical_name:
+    #     import ipdb
+    #     ipdb.set_trace()
+
     if not SyftObjectRegistry.has_serde_class(canonical_name, version):
+        # import ipdb
+        # ipdb.set_trace()
+        from ..server.server import CODE_RELOADER
+
+        for load_user_code in CODE_RELOADER.values():
+            load_user_code()
         # third party
-        raise Exception(
-            f"proto2obj: {canonical_name} version {version} not in SyftObjectRegistry"
-        )
+        if not SyftObjectRegistry.has_serde_class(canonical_name, version):
+            raise Exception(
+                f"proto2obj: {canonical_name} version {version} not in SyftObjectRegistry"
+            )
 
     # TODO: 🐉 sort this out, basically sometimes the syft.user classes are not in the
     # module name space in sub-processes or threads even though they are loaded on start
@@ -433,6 +444,7 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
 
     if hasattr(class_type, "serde_constructor"):
         return class_type.serde_constructor(kwargs)
+
 
     if issubclass(class_type, Enum) and "value" in kwargs:
         obj = class_type.__new__(class_type, kwargs["value"])
