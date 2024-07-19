@@ -222,7 +222,7 @@ def test_dataset_search(set_env_var, gateway_port: int, datasite_1_port: int) ->
     assert isinstance(dataset, Dataset)
     assert len(dataset.assets) == 1
     assert isinstance(dataset.assets[0].mock, np.ndarray)
-    assert isinstance(dataset.assets[0].data, SyftError)
+    assert dataset.assets[0].data is None
 
     # search a wrong dataset should return an empty list
     wrong_search = sy.search(_random_hash())
