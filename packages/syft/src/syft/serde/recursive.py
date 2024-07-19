@@ -385,8 +385,8 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
     canonical_name = proto.canonicalName
     version = getattr(proto, "version", -1)
 
-
     if not SyftObjectRegistry.has_serde_class(canonical_name, version):
+        # relative
         from ..server.server import CODE_RELOADER
 
         for load_user_code in CODE_RELOADER.values():
@@ -439,7 +439,6 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
 
     if hasattr(class_type, "serde_constructor"):
         return class_type.serde_constructor(kwargs)
-
 
     if issubclass(class_type, Enum) and "value" in kwargs:
         obj = class_type.__new__(class_type, kwargs["value"])
