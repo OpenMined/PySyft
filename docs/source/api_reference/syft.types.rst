@@ -29,7 +29,7 @@
 
    syft.types.base
    syft.types.datetime
-   syft.types.grid_url
+   syft.types.server_url
    syft.types.syft_metaclass
    syft.types.syft_object
    syft.types.transforms

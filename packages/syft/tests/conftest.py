@@ -10,16 +10,18 @@ from unittest import mock
 
 # third party
 from faker import Faker
+import numpy as np
 import pytest
 
 # syft absolute
 import syft as sy
-from syft.abstract_node import NodeSideType
-from syft.client.domain_client import DomainClient
-from syft.node.worker import Worker
+from syft import Dataset
+from syft.abstract_server import ServerSideType
+from syft.client.datasite_client import DatasiteClient
 from syft.protocol.data_protocol import get_data_protocol
 from syft.protocol.data_protocol import protocol_release_dir
 from syft.protocol.data_protocol import stage_protocol_changes
+from syft.server.worker import Worker
 from syft.service.user import user
 
 # relative
@@ -113,10 +115,11 @@ def stage_protocol(protocol_file: Path):
         dp.save_history(dp.protocol_history)
 
         # Cleanup release dir, remove unused released files
-        for _file_path in protocol_release_dir().iterdir():
-            for version in dp.read_json(_file_path):
-                if version not in dp.protocol_history.keys():
-                    _file_path.unlink()
+        if os.path.exists(protocol_release_dir()):
+            for _file_path in protocol_release_dir().iterdir():
+                for version in dp.read_json(_file_path):
+                    if version not in dp.protocol_history.keys():
+                        _file_path.unlink()
 
 
 @pytest.fixture()
@@ -134,7 +137,7 @@ def worker() -> Worker:
 
 @pytest.fixture(scope="function")
 def second_worker() -> Worker:
-    # Used in node syncing tests
+    # Used in server syncing tests
     worker = sy.Worker.named(name=token_hex(8))
     yield worker
     worker.cleanup()
@@ -143,7 +146,9 @@ def second_worker() -> Worker:
 
 @pytest.fixture(scope="function")
 def high_worker() -> Worker:
-    worker = sy.Worker.named(name=token_hex(8), node_side_type=NodeSideType.HIGH_SIDE)
+    worker = sy.Worker.named(
+        name=token_hex(8), server_side_type=ServerSideType.HIGH_SIDE
+    )
     yield worker
     worker.cleanup()
     del worker
@@ -151,14 +156,16 @@ def high_worker() -> Worker:
 
 @pytest.fixture(scope="function")
 def low_worker() -> Worker:
-    worker = sy.Worker.named(name=token_hex(8), node_side_type=NodeSideType.LOW_SIDE)
+    worker = sy.Worker.named(
+        name=token_hex(8), server_side_type=ServerSideType.LOW_SIDE
+    )
     yield worker
     worker.cleanup()
     del worker
 
 
 @pytest.fixture()
-def root_domain_client(worker) -> DomainClient:
+def root_datasite_client(worker) -> DatasiteClient:
     return worker.root_client
 
 
@@ -168,7 +175,7 @@ def root_verify_key(worker):
 
 
 @pytest.fixture()
-def guest_client(worker) -> DomainClient:
+def guest_client(worker) -> DatasiteClient:
     return worker.guest_client
 
 
@@ -178,8 +185,8 @@ def guest_verify_key(worker):
 
 
 @pytest.fixture()
-def guest_domain_client(root_domain_client) -> DomainClient:
-    return root_domain_client.guest()
+def guest_datasite_client(root_datasite_client) -> DatasiteClient:
+    return root_datasite_client.guest()
 
 
 @pytest.fixture()
@@ -244,6 +251,39 @@ def patched_user(monkeypatch):
         "syft.service.user.user.check_pwd",
         cached_check_pwd,
     )
+
+
+@pytest.fixture
+def small_dataset() -> Dataset:
+    dataset = Dataset(
+        name="small_dataset",
+        asset_list=[
+            sy.Asset(
+                name="small_dataset",
+                data=np.array([1, 2, 3]),
+                mock=np.array([1, 1, 1]),
+            )
+        ],
+    )
+    yield dataset
+
+
+@pytest.fixture
+def big_dataset() -> Dataset:
+    num_elements = 20 * 1024 * 1024
+    data_big = np.random.randint(0, 100, size=num_elements)
+    mock_big = np.random.randint(0, 100, size=num_elements)
+    dataset = Dataset(
+        name="big_dataset",
+        asset_list=[
+            sy.Asset(
+                name="big_dataset",
+                data=data_big,
+                mock=mock_big,
+            )
+        ],
+    )
+    yield dataset
 
 
 __all__ = [

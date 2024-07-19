@@ -2,10 +2,10 @@
 import pytest
 
 # syft absolute
-from syft.node.credentials import UserLoginCredentials
-from syft.node.worker import Worker
+from syft.server.credentials import UserLoginCredentials
+from syft.server.worker import Worker
 from syft.service.context import AuthedServiceContext
-from syft.service.context import NodeServiceContext
+from syft.service.context import ServerServiceContext
 from syft.service.context import UnauthedServiceContext
 from syft.service.user.user import User
 from syft.service.user.user import UserCreate
@@ -118,12 +118,12 @@ def user_service(document_store: DocumentStore):
 
 @pytest.fixture()
 def authed_context(admin_user: User, worker: Worker) -> AuthedServiceContext:
-    return AuthedServiceContext(credentials=admin_user.verify_key, node=worker)
+    return AuthedServiceContext(credentials=admin_user.verify_key, server=worker)
 
 
 @pytest.fixture()
-def node_context(worker: Worker) -> NodeServiceContext:
-    return NodeServiceContext(node=worker)
+def server_context(worker: Worker) -> ServerServiceContext:
+    return ServerServiceContext(server=worker)
 
 
 @pytest.fixture()
@@ -133,4 +133,4 @@ def unauthed_context(
     login_credentials = UserLoginCredentials(
         email=guest_create_user.email, password=guest_create_user.password
     )
-    return UnauthedServiceContext(login_credentials=login_credentials, node=worker)
+    return UnauthedServiceContext(login_credentials=login_credentials, server=worker)

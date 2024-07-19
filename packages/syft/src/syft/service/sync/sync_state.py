@@ -1,5 +1,4 @@
 # stdlib
-from collections.abc import Callable
 from datetime import timedelta
 from typing import Any
 from typing import Optional
@@ -8,18 +7,13 @@ from typing import Optional
 from pydantic import Field
 
 # relative
-from ...abstract_node import NodeSideType
+from ...abstract_server import ServerSideType
 from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
-from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
-from ...types.transforms import drop
-from ...types.transforms import make_set_default
 from ...types.uid import LineageID
 from ...types.uid import UID
 from ...util import options
@@ -121,31 +115,13 @@ def td_format(td_object: timedelta) -> str:
 
 
 @serializable()
-class SyncStateV2(SyftObject):
-    __canonical_name__ = "SyncState"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    node_uid: UID
-    node_name: str
-    node_side_type: NodeSideType
-    objects: dict[UID, SyncableSyftObject] = {}
-    dependencies: dict[UID, list[UID]] = {}
-    created_at: DateTime = Field(default_factory=DateTime.now)
-    previous_state_link: LinkedObject | None = None
-    permissions: dict[UID, set[str]] = {}
-    storage_permissions: dict[UID, set[UID]] = {}
-    ignored_batches: dict[UID, int] = {}
-    object_sync_dates: dict[UID, DateTime] = {}
-
-
-@serializable()
 class SyncState(SyftObject):
     __canonical_name__ = "SyncState"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
-    node_uid: UID
-    node_name: str
-    node_side_type: NodeSideType
+    server_uid: UID
+    server_name: str
+    server_side_type: ServerSideType
     objects: dict[UID, SyncableSyftObject] = {}
     dependencies: dict[UID, list[UID]] = {}
     created_at: DateTime = Field(default_factory=DateTime.now)
@@ -156,7 +132,7 @@ class SyncState(SyftObject):
     object_sync_dates: dict[UID, DateTime] = {}
     errors: dict[UID, str] = {}
 
-    # NOTE importing NodeDiff annotation with TYPE_CHECKING does not work here,
+    # NOTE importing ServerDiff annotation with TYPE_CHECKING does not work here,
     # since typing.get_type_hints does not check for TYPE_CHECKING-imported types
     _previous_state_diff: Any = None
 
@@ -164,19 +140,19 @@ class SyncState(SyftObject):
 
     def _set_previous_state_diff(self) -> None:
         # relative
-        from .diff_state import NodeDiff
+        from .diff_state import ServerDiff
 
-        # Re-use NodeDiff to compare to previous state
+        # Re-use ServerDiff to compare to previous state
         # Low = previous state, high = current state
         # NOTE No previous sync state means everything is new
         previous_state = self.previous_state or SyncState(
-            node_uid=self.node_uid,
-            node_name=self.node_name,
-            node_side_type=self.node_side_type,
+            server_uid=self.server_uid,
+            server_name=self.server_name,
+            server_side_type=self.server_side_type,
             syft_client_verify_key=self.syft_client_verify_key,
         )
-        self._previous_state_diff = NodeDiff.from_sync_state(
-            previous_state, self, _include_node_status=False, direction=None
+        self._previous_state_diff = ServerDiff.from_sync_state(
+            previous_state, self, _include_server_status=False, direction=None
         )
 
     def get_previous_state_diff(self) -> Any:
@@ -242,7 +218,7 @@ class SyncState(SyftObject):
         if previous_diff is None:
             raise ValueError("No previous state to compare to")
         for batch in previous_diff.batches:
-            # NOTE we re-use NodeDiff to compare to previous state,
+            # NOTE we re-use ServerDiff to compare to previous state,
             # low_obj is previous state, high_obj is current state
             diff = batch.root_diff
 
@@ -270,7 +246,7 @@ class SyncState(SyftObject):
         prop_template = (
             "<p class='paragraph'><strong><span class='pr-8'>{}: </span></strong>{}</p>"
         )
-        name_html = prop_template.format("name", self.node_name)
+        name_html = prop_template.format("name", self.server_name)
         if self.previous_state_link is not None:
             previous_state = self.previous_state_link.resolve
             delta = timedelta(
@@ -300,13 +276,3 @@ class SyncState(SyftObject):
         </div>
 """
         return repr + self.rows._repr_html_()
-
-
-@migrate(SyncStateV2, SyncState)
-def upgrade_syncstate_v2_to_v3() -> list[Callable]:
-    return [make_set_default("errors", {})]
-
-
-@migrate(SyncState, SyncStateV2)
-def downgrade_syncstate_v3_to_v2() -> list[Callable]:
-    return [drop("errors")]

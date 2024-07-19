@@ -9,7 +9,7 @@ import uuid
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 
-# we want to bootstrap nodes with persistent uids and keys and allow a variety of ways
+# we want to bootstrap servers with persistent uids and keys and allow a variety of ways
 # to resolve these at startup
 
 # first we check the environment variables
@@ -27,8 +27,8 @@ def get_env(key: str, default: str = "") -> str | None:
 
 
 CREDENTIALS_PATH = str(get_env("CREDENTIALS_PATH", "credentials.json"))
-NODE_PRIVATE_KEY = "NODE_PRIVATE_KEY"
-NODE_UID = "NODE_UID"
+SERVER_PRIVATE_KEY = "SERVER_PRIVATE_KEY"
+SERVER_UID = "SERVER_UID"
 
 
 def get_credentials_file() -> dict[str, str]:
@@ -64,7 +64,7 @@ def save_credential(key: str, value: str) -> str:
     return value
 
 
-def generate_node_uid() -> str:
+def generate_server_uid() -> str:
     return str(uuid.uuid4())
 
 
@@ -77,11 +77,11 @@ def generate_private_key() -> str:
 
 
 def get_private_key_env() -> str | None:
-    return get_env(NODE_PRIVATE_KEY)
+    return get_env(SERVER_PRIVATE_KEY)
 
 
-def get_node_uid_env() -> str | None:
-    return get_env(NODE_UID)
+def get_server_uid_env() -> str | None:
+    return get_env(SERVER_UID)
 
 
 def validate_private_key(private_key: str | bytes) -> str:
@@ -95,17 +95,17 @@ def validate_private_key(private_key: str | bytes) -> str:
             return str_key
     except Exception:
         pass
-    raise Exception(f"{NODE_PRIVATE_KEY} is invalid")
+    raise Exception(f"{SERVER_PRIVATE_KEY} is invalid")
 
 
-def validate_uid(node_uid: str) -> str:
+def validate_uid(server_uid: str) -> str:
     try:
-        uid = uuid.UUID(node_uid)
-        if node_uid == uid.hex or node_uid == str(uid):
+        uid = uuid.UUID(server_uid)
+        if server_uid == uid.hex or server_uid == str(uid):
             return str(uid)
     except Exception:
         pass
-    raise Exception(f"{NODE_UID} is invalid")
+    raise Exception(f"{SERVER_UID} is invalid")
 
 
 def get_credential(
@@ -140,11 +140,13 @@ def get_credential(
 
 
 def get_private_key() -> str:
-    return get_credential(NODE_PRIVATE_KEY, validate_private_key, generate_private_key)
+    return get_credential(
+        SERVER_PRIVATE_KEY, validate_private_key, generate_private_key
+    )
 
 
-def get_node_uid() -> str:
-    return get_credential(NODE_UID, validate_uid, generate_node_uid)
+def get_server_uid() -> str:
+    return get_credential(SERVER_UID, validate_uid, generate_server_uid)
 
 
 def delete_credential_file() -> None:
@@ -168,15 +170,15 @@ if __name__ == "__main__":
         if args.private_key:
             print(get_private_key())
         elif args.uid:
-            print(get_node_uid())
+            print(get_server_uid())
     elif args.file:
         delete_credential_file()
         get_private_key()
-        get_node_uid()
+        get_server_uid()
         print(f"Generated credentials file at '{CREDENTIALS_PATH}'")
     elif args.debug:
         print("Credentials File", get_credentials_file())
-        print(NODE_PRIVATE_KEY, "=", get_private_key_env())
-        print(NODE_UID, "=", get_node_uid_env())
+        print(SERVER_PRIVATE_KEY, "=", get_private_key_env())
+        print(SERVER_UID, "=", get_server_uid_env())
     else:
         parser.print_help()

@@ -12,10 +12,10 @@ from result import Err
 from result import Ok
 
 # relative
-from ...node.credentials import SyftVerifyKey
-from ...node.worker_settings import WorkerSettings
 from ...serde.deserialize import _deserialize as deserialize
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
+from ...server.worker_settings import WorkerSettings
 from ...service.context import AuthedServiceContext
 from ...store.document_store import BaseStash
 from ...types.datetime import DateTime
@@ -40,7 +40,7 @@ class MonitorThread(threading.Thread):
     def __init__(
         self,
         queue_item: QueueItem,
-        worker: Any,  # should be of type Worker(Node), but get circular import error
+        worker: Any,  # should be of type Worker(Server), but get circular import error
         credentials: SyftVerifyKey,
         interval: int = 5,
     ) -> None:
@@ -84,7 +84,7 @@ class MonitorThread(threading.Thread):
             logger.warning(f"Failed to terminate job {job.id}: {e}")
 
 
-@serializable()
+@serializable(canonical_name="QueueManager", version=1)
 class QueueManager(BaseQueueManager):
     config: QueueConfig
 
@@ -160,16 +160,16 @@ def handle_message_multiprocessing(
     queue_config.client_config.n_consumers = 0
 
     # relative
-    from ...node.node import Node
+    from ...server.server import Server
 
-    worker = Node(
+    worker = Server(
         id=worker_settings.id,
         name=worker_settings.name,
         signing_key=worker_settings.signing_key,
         document_store_config=worker_settings.document_store_config,
         action_store_config=worker_settings.action_store_config,
         blob_storage_config=worker_settings.blob_store_config,
-        node_side_type=worker_settings.node_side_type,
+        server_side_type=worker_settings.server_side_type,
         queue_config=queue_config,
         is_subprocess=True,
         migrate=False,
@@ -187,7 +187,7 @@ def handle_message_multiprocessing(
         role = worker.get_role_for_credentials(credentials=credentials)
 
         context = AuthedServiceContext(
-            node=worker,
+            server=worker,
             credentials=credentials,
             role=role,
             job_id=queue_item.job_id,
@@ -195,10 +195,10 @@ def handle_message_multiprocessing(
         )
 
         # relative
-        from ...node.node import AuthNodeContextRegistry
+        from ...server.server import AuthServerContextRegistry
 
-        AuthNodeContextRegistry.set_node_context(
-            node_uid=worker.id,
+        AuthServerContextRegistry.set_server_context(
+            server_uid=worker.id,
             context=context,
             user_verify_key=credentials,
         )
@@ -234,7 +234,7 @@ def handle_message_multiprocessing(
     if job_item is None:
         raise Exception(f"Job {queue_item.job_id} not found!")
 
-    job_item.node_uid = worker.id
+    job_item.server_uid = worker.id
     job_item.result = result
     job_item.resolved = True
     job_item.status = job_status
@@ -246,14 +246,14 @@ def handle_message_multiprocessing(
     monitor_thread.stop()
 
 
-@serializable()
+@serializable(canonical_name="APICallMessageHandler", version=1)
 class APICallMessageHandler(AbstractMessageHandler):
     queue_name = "api_call"
 
     @staticmethod
     def handle_message(message: bytes, syft_worker_id: UID) -> None:
         # relative
-        from ...node.node import Node
+        from ...server.server import Server
 
         queue_item = deserialize(message, from_bytes=True)
         worker_settings = queue_item.worker_settings
@@ -262,14 +262,14 @@ class APICallMessageHandler(AbstractMessageHandler):
         queue_config.client_config.create_producer = False
         queue_config.client_config.n_consumers = 0
 
-        worker = Node(
+        worker = Server(
             id=worker_settings.id,
             name=worker_settings.name,
             signing_key=worker_settings.signing_key,
             document_store_config=worker_settings.document_store_config,
             action_store_config=worker_settings.action_store_config,
             blob_storage_config=worker_settings.blob_store_config,
-            node_side_type=worker_settings.node_side_type,
+            server_side_type=worker_settings.server_side_type,
             queue_config=queue_config,
             is_subprocess=True,
             migrate=False,
@@ -287,10 +287,10 @@ class APICallMessageHandler(AbstractMessageHandler):
         job_item: Job = res.ok()
 
         queue_item.status = Status.PROCESSING
-        queue_item.node_uid = worker.id
+        queue_item.server_uid = worker.id
 
         job_item.status = JobStatus.PROCESSING
-        job_item.node_uid = worker.id  # type: ignore[assignment]
+        job_item.server_uid = worker.id  # type: ignore[assignment]
         job_item.updated_at = DateTime.now()
 
         if syft_worker_id is not None:

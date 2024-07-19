@@ -13,10 +13,10 @@ from result import Result
 from typing_extensions import Self
 
 # relative
-from ..node.credentials import SyftVerifyKey
 from ..serde.deserialize import _deserialize
 from ..serde.serializable import serializable
 from ..serde.serialize import _serialize
+from ..server.credentials import SyftVerifyKey
 from ..service.action.action_permissions import ActionObjectEXECUTE
 from ..service.action.action_permissions import ActionObjectOWNER
 from ..service.action.action_permissions import ActionObjectPermission
@@ -26,7 +26,7 @@ from ..service.action.action_permissions import ActionPermission
 from ..service.action.action_permissions import StoragePermission
 from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
-from ..types.syft_object import SYFT_OBJECT_VERSION_2
+from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import StorableObjectType
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
@@ -51,7 +51,7 @@ from .mongo_client import MongoStoreClientConfig
 @serializable()
 class MongoDict(SyftBaseObject):
     __canonical_name__ = "MongoDict"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     keys: list[Any]
     values: list[Any]
@@ -118,7 +118,7 @@ def from_mongo(
     return _deserialize(storage_obj["__blob__"], from_bytes=True)
 
 
-@serializable(attrs=["storage_type"])
+@serializable(attrs=["storage_type"], canonical_name="MongoStorePartition", version=1)
 class MongoStorePartition(StorePartition):
     """Mongo StorePartition
 
@@ -315,7 +315,7 @@ class MongoStorePartition(StorePartition):
                 self.add_storage_permission(
                     StoragePermission(
                         uid=obj.id,
-                        node_uid=self.node_uid,
+                        server_uid=self.server_uid,
                     )
                 )
 
@@ -623,16 +623,16 @@ class MongoStorePartition(StorePartition):
             storage_permissions_collection.insert_one(
                 {
                     "_id": storage_permission.uid,
-                    "node_uids": {storage_permission.node_uid},
+                    "server_uids": {storage_permission.server_uid},
                 }
             )
         else:
             # update the permissions with the new permission string
-            node_uids: set = storage_permissions["node_uids"]
-            node_uids.add(storage_permission.node_uid)
+            server_uids: set = storage_permissions["server_uids"]
+            server_uids.add(storage_permission.server_uid)
             storage_permissions_collection.update_one(
                 {"_id": storage_permission.uid},
-                {"$set": {"node_uids": node_uids}},
+                {"$set": {"server_uids": server_uids}},
             )
 
     def add_storage_permissions(self, permissions: list[StoragePermission]) -> None:
@@ -651,10 +651,10 @@ class MongoStorePartition(StorePartition):
             {"_id": permission.uid}
         )
 
-        if storage_permissions is None or "node_uids" not in storage_permissions:
+        if storage_permissions is None or "server_uids" not in storage_permissions:
             return False
 
-        return permission.node_uid in storage_permissions["node_uids"]
+        return permission.server_uid in storage_permissions["server_uids"]
 
     def remove_storage_permission(
         self, storage_permission: StoragePermission
@@ -671,16 +671,16 @@ class MongoStorePartition(StorePartition):
             return Err(
                 f"storage permission with UID {storage_permission.uid} not found!"
             )
-        node_uids: set = storage_permissions["node_uids"]
-        if storage_permission.node_uid in node_uids:
-            node_uids.remove(storage_permission.node_uid)
+        server_uids: set = storage_permissions["server_uids"]
+        if storage_permission.server_uid in server_uids:
+            server_uids.remove(storage_permission.server_uid)
             storage_permissions_collection.update_one(
                 {"_id": storage_permission.uid},
-                {"$set": {"node_uids": node_uids}},
+                {"$set": {"server_uids": server_uids}},
             )
         else:
             return Err(
-                f"the node_uid {storage_permission.node_uid} does not exist in the storage permission!"
+                f"the server_uid {storage_permission.server_uid} does not exist in the storage permission!"
             )
 
     def _get_storage_permissions_for_uid(self, uid: UID) -> Result[Set[UID], str]:  # noqa: UP006
@@ -698,10 +698,12 @@ class MongoStorePartition(StorePartition):
         if storage_permissions is None:
             return Err(f"Storage permissions for object with UID {uid} not found!")
 
-        return Ok(set(storage_permissions["node_uids"]))
+        return Ok(set(storage_permissions["server_uids"]))
 
-    def get_all_storage_permissions(self) -> Result[dict[UID, Set[UID]], str]:  # noqa: UP006
-        # Returns a dictionary of all storage permissions {object_uid: {*node_uids}}
+    def get_all_storage_permissions(
+        self,
+    ) -> Result[dict[UID, Set[UID]], str]:  # noqa: UP006
+        # Returns a dictionary of all storage permissions {object_uid: {*server_uids}}
         storage_permissions_or_err = self.storage_permissions
         if storage_permissions_or_err.is_err():
             return storage_permissions_or_err
@@ -713,7 +715,7 @@ class MongoStorePartition(StorePartition):
         storage_permissions_dict = {}
         for storage_permission in storage_permissions:
             storage_permissions_dict[storage_permission["_id"]] = storage_permission[
-                "node_uids"
+                "server_uids"
             ]
 
         return Ok(storage_permissions_dict)
@@ -806,7 +808,7 @@ class MongoStorePartition(StorePartition):
         return Err("You don't have permissions to migrate data.")
 
 
-@serializable()
+@serializable(canonical_name="MongoDocumentStore", version=1)
 class MongoDocumentStore(DocumentStore):
     """Mongo Document Store
 
@@ -818,7 +820,11 @@ class MongoDocumentStore(DocumentStore):
     partition_type = MongoStorePartition
 
 
-@serializable(attrs=["index_name", "settings", "store_config"])
+@serializable(
+    attrs=["index_name", "settings", "store_config"],
+    canonical_name="MongoBackingStore",
+    version=1,
+)
 class MongoBackingStore(KeyValueBackingStore):
     """
     Core logic for the MongoDB key-value store

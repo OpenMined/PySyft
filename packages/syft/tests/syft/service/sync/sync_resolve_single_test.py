@@ -6,10 +6,11 @@ import numpy as np
 # syft absolute
 import syft
 import syft as sy
-from syft.client.domain_client import DomainClient
+from syft.client.datasite_client import DatasiteClient
 from syft.client.sync_decision import SyncDecision
 from syft.client.syncing import compare_clients
 from syft.client.syncing import resolve
+from syft.server.worker import Worker
 from syft.service.job.job_stash import Job
 from syft.service.request.request import RequestStatus
 from syft.service.response import SyftError
@@ -34,8 +35,8 @@ def handle_decision(
 
 def compare_and_resolve(
     *,
-    from_client: DomainClient,
-    to_client: DomainClient,
+    from_client: DatasiteClient,
+    to_client: DatasiteClient,
     decision: SyncDecision = SyncDecision.LOW,
     decision_callback: callable = None,
     share_private_data: bool = True,
@@ -90,7 +91,7 @@ def compute() -> int:
     return 42
 
 
-def get_ds_client(client: DomainClient) -> DomainClient:
+def get_ds_client(client: DatasiteClient) -> DatasiteClient:
     client.register(
         name="a",
         email="a@a.com",
@@ -101,9 +102,9 @@ def get_ds_client(client: DomainClient) -> DomainClient:
 
 
 def test_diff_state(low_worker, high_worker):
-    low_client: DomainClient = low_worker.root_client
+    low_client: DatasiteClient = low_worker.root_client
     client_low_ds = get_ds_client(low_client)
-    high_client: DomainClient = high_worker.root_client
+    high_client: DatasiteClient = high_worker.root_client
 
     @sy.syft_function_single_use()
     def compute() -> int:
@@ -132,16 +133,15 @@ def test_diff_state(low_worker, high_worker):
 
     client_low_ds.refresh()
     res = client_low_ds.code.compute(blocking=True)
-    assert res == compute(syft_no_node=True)
+    assert res == compute(syft_no_server=True)
 
 
-def test_diff_state_with_dataset(low_worker, high_worker):
-    low_client: DomainClient = low_worker.root_client
+def test_diff_state_with_dataset(low_worker: Worker, high_worker: Worker):
+    low_client: DatasiteClient = low_worker.root_client
     client_low_ds = get_ds_client(low_client)
-    high_client: DomainClient = high_worker.root_client
+    high_client: DatasiteClient = high_worker.root_client
 
     _ = create_dataset(high_client)
-    _ = create_dataset(low_client)
 
     @sy.syft_function_single_use()
     def compute_mean(data) -> int:
@@ -150,7 +150,9 @@ def test_diff_state_with_dataset(low_worker, high_worker):
     _ = client_low_ds.code.request_code_execution(compute_mean)
 
     result = client_low_ds.code.compute_mean(blocking=False)
-    assert isinstance(result, SyftError), "DS cannot start a job on low side"
+    assert isinstance(
+        result, SyftError
+    ), "DS cannot start a job on low side since the data was not passed as an argument"
 
     diff_state_before, diff_state_after = compare_and_resolve(
         from_client=low_client, to_client=high_client
@@ -162,8 +164,14 @@ def test_diff_state_with_dataset(low_worker, high_worker):
 
     # run_and_deposit_result(high_client)
     data_high = high_client.datasets[0].assets[0]
-    result = high_client.code.compute_mean(data=data_high, blocking=True)
-    high_client.requests[0].deposit_result(result)
+    mean_result = high_client.code.compute_mean(data=data_high, blocking=True)
+    high_client.requests[0].deposit_result(mean_result)
+
+    # the high side client delete the dataset after depositing the result
+    dataset_del_res = high_client.api.services.dataset.delete(
+        uid=high_client.datasets[0].id
+    )
+    assert isinstance(dataset_del_res, SyftSuccess)
 
     diff_state_before, diff_state_after = compare_and_resolve(
         from_client=high_client, to_client=low_client
@@ -181,19 +189,15 @@ def test_diff_state_with_dataset(low_worker, high_worker):
     res_blocking = client_low_ds.code.compute_mean(blocking=True)
     res_non_blocking = client_low_ds.code.compute_mean(blocking=False).wait()
 
-    # expected_result = compute_mean(syft_no_node=True, data=)
-    assert (
-        res_blocking
-        == res_non_blocking
-        == high_client.datasets[0].assets[0].data.mean()
-    )
+    # expected_result = compute_mean(syft_no_server=True, data=)
+    assert res_blocking == res_non_blocking == mean_result
 
 
 def test_sync_with_error(low_worker, high_worker):
     """Check syncing with an error in a syft function"""
-    low_client: DomainClient = low_worker.root_client
+    low_client: DatasiteClient = low_worker.root_client
     client_low_ds = get_ds_client(low_client)
-    high_client: DomainClient = high_worker.root_client
+    high_client: DatasiteClient = high_worker.root_client
 
     @sy.syft_function_single_use()
     def compute() -> int:
@@ -224,9 +228,9 @@ def test_sync_with_error(low_worker, high_worker):
 
 
 def test_ignore_unignore_single(low_worker, high_worker):
-    low_client: DomainClient = low_worker.root_client
+    low_client: DatasiteClient = low_worker.root_client
     client_low_ds = get_ds_client(low_client)
-    high_client: DomainClient = high_worker.root_client
+    high_client: DatasiteClient = high_worker.root_client
 
     @sy.syft_function_single_use()
     def compute() -> int:

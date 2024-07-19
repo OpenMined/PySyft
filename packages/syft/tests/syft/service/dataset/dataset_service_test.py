@@ -12,15 +12,16 @@ import torch
 
 # syft absolute
 import syft as sy
-from syft.node.worker import Worker
+from syft.server.worker import Worker
 from syft.service.action.action_object import ActionObject
+from syft.service.action.action_object import TwinMode
+from syft.service.blob_storage.util import can_upload_to_blob_storage
 from syft.service.dataset.dataset import CreateAsset as Asset
 from syft.service.dataset.dataset import CreateDataset as Dataset
 from syft.service.dataset.dataset import _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE
 from syft.service.response import SyftError
 from syft.service.response import SyftException
 from syft.service.response import SyftSuccess
-from syft.types.twin_object import TwinMode
 
 
 def random_hash() -> str:
@@ -197,11 +198,11 @@ def test_guest_client_get_empty_mock_as_private_pointer(
     asset = Asset(**asset_with_empty_mock)
     dataset = Dataset(name=random_hash(), asset_list=[asset])
 
-    root_domain_client = worker.root_client
-    root_domain_client.upload_dataset(dataset)
+    root_datasite_client = worker.root_client
+    root_datasite_client.upload_dataset(dataset)
 
-    guest_domain_client = root_domain_client.guest()
-    guest_datasets = guest_domain_client.api.services.dataset.get_all()
+    guest_datasite_client = root_datasite_client.guest()
+    guest_datasets = guest_datasite_client.api.services.dataset.get_all()
     guest_dataset = guest_datasets[0]
 
     mock = guest_dataset.assets[0].pointer
@@ -211,16 +212,16 @@ def test_guest_client_get_empty_mock_as_private_pointer(
     assert mock.syft_twin_type is TwinMode.MOCK
 
 
-def test_domain_client_cannot_upload_dataset_with_non_mock(worker: Worker) -> None:
+def test_datasite_client_cannot_upload_dataset_with_non_mock(worker: Worker) -> None:
     assets = [Asset(**make_asset_with_mock()) for _ in range(10)]
     dataset = Dataset(name=random_hash(), asset_list=assets)
 
     dataset.asset_list[0].mock = None
 
-    root_domain_client = worker.root_client
+    root_datasite_client = worker.root_client
 
     with pytest.raises(ValueError) as excinfo:
-        root_domain_client.upload_dataset(dataset)
+        root_datasite_client.upload_dataset(dataset)
 
     assert _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE in str(excinfo.value)
 
@@ -276,13 +277,9 @@ def different_data_types(
 
 def test_upload_dataset_with_assets_of_different_data_types(
     worker: Worker,
-    different_data_types: int
-    | str
-    | dict
-    | set
-    | np.ndarray
-    | pd.DataFrame
-    | torch.Tensor,
+    different_data_types: (
+        int | str | dict | set | np.ndarray | pd.DataFrame | torch.Tensor
+    ),
 ) -> None:
     asset = sy.Asset(
         name=random_hash(),
@@ -291,13 +288,86 @@ def test_upload_dataset_with_assets_of_different_data_types(
     )
     dataset = Dataset(name=random_hash())
     dataset.add_asset(asset)
-    root_domain_client = worker.root_client
-    res = root_domain_client.upload_dataset(dataset)
+    root_datasite_client = worker.root_client
+    res = root_datasite_client.upload_dataset(dataset)
     assert isinstance(res, SyftSuccess)
-    assert len(root_domain_client.api.services.dataset.get_all()) == 1
-    assert type(root_domain_client.datasets[0].assets[0].data) is type(
+    assert len(root_datasite_client.api.services.dataset.get_all()) == 1
+    assert type(root_datasite_client.datasets[0].assets[0].data) == type(
         different_data_types
     )
-    assert type(root_domain_client.datasets[0].assets[0].mock) is type(
+    assert type(root_datasite_client.datasets[0].assets[0].mock) == type(
         different_data_types
     )
+
+
+def test_delete_small_datasets(worker: Worker, small_dataset: Dataset) -> None:
+    root_client = worker.root_client
+    assert not can_upload_to_blob_storage(small_dataset, root_client.metadata)
+    upload_res = root_client.upload_dataset(small_dataset)
+    assert isinstance(upload_res, SyftSuccess)
+
+    dataset = root_client.api.services.dataset.get_all()[0]
+    asset = dataset.asset_list[0]
+    assert isinstance(asset.data, np.ndarray)
+    assert isinstance(asset.mock, np.ndarray)
+
+    # delete the dataset without deleting its assets
+    del_res = root_client.api.services.dataset.delete(
+        uid=dataset.id, delete_assets=False
+    )
+    assert isinstance(del_res, SyftSuccess)
+    assert isinstance(asset.data, np.ndarray)
+    assert isinstance(asset.mock, np.ndarray)
+    assert len(root_client.api.services.dataset.get_all()) == 0
+    # we can still get back the deleted dataset by uid
+    deleted_dataset = root_client.api.services.dataset.get_by_id(uid=dataset.id)
+    assert deleted_dataset.name == f"_deleted_{dataset.name}_{dataset.id}"
+    assert deleted_dataset.to_be_deleted
+
+    # delete the dataset and its assets
+    del_res = root_client.api.services.dataset.delete(
+        uid=dataset.id, delete_assets=True
+    )
+    assert isinstance(del_res, SyftSuccess)
+    assert asset.data is None
+    assert isinstance(asset.mock, SyftError)
+    assert len(root_client.api.services.dataset.get_all()) == 0
+
+
+def test_delete_big_datasets(worker: Worker, big_dataset: Dataset) -> None:
+    root_client = worker.root_client
+    assert can_upload_to_blob_storage(big_dataset, root_client.metadata)
+    upload_res = root_client.upload_dataset(big_dataset)
+    assert isinstance(upload_res, SyftSuccess)
+
+    dataset = root_client.api.services.dataset.get_all()[0]
+    asset = dataset.asset_list[0]
+    assert isinstance(asset.data, np.ndarray)
+    assert isinstance(asset.mock, np.ndarray)
+    # test that the data is saved in the blob storage
+    assert len(root_client.api.services.blob_storage.get_all()) == 2
+
+    # delete the dataset without deleting its assets
+    del_res = root_client.api.services.dataset.delete(
+        uid=dataset.id, delete_assets=False
+    )
+    assert isinstance(del_res, SyftSuccess)
+    assert isinstance(asset.data, np.ndarray)
+    assert isinstance(asset.mock, np.ndarray)
+    assert len(root_client.api.services.dataset.get_all()) == 0
+    # we can still get back the deleted dataset by uid
+    deleted_dataset = root_client.api.services.dataset.get_by_id(uid=dataset.id)
+    assert deleted_dataset.name == f"_deleted_{dataset.name}_{dataset.id}"
+    assert deleted_dataset.to_be_deleted
+    # the dataset's blob entries are still there
+    assert len(root_client.api.services.blob_storage.get_all()) == 2
+
+    # delete the dataset
+    del_res = root_client.api.services.dataset.delete(
+        uid=dataset.id, delete_assets=True
+    )
+    assert isinstance(del_res, SyftSuccess)
+    assert asset.data is None
+    assert isinstance(asset.mock, SyftError)
+    assert len(root_client.api.services.blob_storage.get_all()) == 0
+    assert len(root_client.api.services.dataset.get_all()) == 0

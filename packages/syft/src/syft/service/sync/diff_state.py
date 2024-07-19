@@ -28,10 +28,9 @@ from ...client.api import APIRegistry
 from ...client.client import SyftClient
 from ...client.sync_decision import SyncDecision
 from ...client.sync_decision import SyncDirection
-from ...node.credentials import SyftVerifyKey
+from ...server.credentials import SyftVerifyKey
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.syft_object import short_uid
 from ...types.syncable_object import SyncableSyftObject
@@ -74,7 +73,7 @@ sketchy_tab = "‎ " * 4
 class AttrDiff(SyftObject):
     # version
     __canonical_name__ = "AttrDiff"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
     attr_name: str
     low_attr: Any = None
     high_attr: Any = None
@@ -102,7 +101,7 @@ class AttrDiff(SyftObject):
 class ListDiff(AttrDiff):
     # version
     __canonical_name__ = "ListDiff"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
     diff_ids: list[int] = []
     new_low_ids: list[int] = []
     new_high_ids: list[int] = []
@@ -182,11 +181,11 @@ def recursive_attr_repr(value_attr: list | dict | bytes, num_tabs: int = 0) -> s
 class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
     # version
     __canonical_name__ = "ObjectDiff"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
     low_obj: SyncableSyftObject | None = None
     high_obj: SyncableSyftObject | None = None
-    low_node_uid: UID
-    high_node_uid: UID
+    low_server_uid: UID
+    high_server_uid: UID
     low_permissions: list[str] = []
     high_permissions: list[str] = []
     low_storage_permissions: set[UID] = set()
@@ -215,19 +214,19 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
             obj = self.low_obj
             other_obj = self.high_obj
             permissions = self.low_storage_permissions
-            node_uid = self.low_node_uid
+            server_uid = self.low_server_uid
         elif side == "high":
             obj = self.high_obj
             other_obj = self.low_obj
             permissions = self.high_storage_permissions
-            node_uid = self.high_node_uid
+            server_uid = self.high_server_uid
         else:
             raise ValueError("Invalid side")
 
         if obj is None or other_obj is None:
             return False
 
-        return node_uid not in permissions
+        return server_uid not in permissions
 
     @classmethod
     def from_objects(
@@ -240,8 +239,8 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         high_permissions: set[str],
         low_storage_permissions: set[UID],
         high_storage_permissions: set[UID],
-        low_node_uid: UID,
-        high_node_uid: UID,
+        low_server_uid: UID,
+        high_server_uid: UID,
         last_sync_date_low: DateTime | None = None,
         last_sync_date_high: DateTime | None = None,
     ) -> "ObjectDiff":
@@ -255,8 +254,8 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
             low_status=low_status,
             high_status=high_status,
             obj_type=obj_type,
-            low_node_uid=low_node_uid,
-            high_node_uid=high_node_uid,
+            low_server_uid=low_server_uid,
+            high_server_uid=high_server_uid,
             low_permissions=low_permissions,
             high_permissions=high_permissions,
             low_storage_permissions=low_storage_permissions,
@@ -541,15 +540,15 @@ def _wrap_text(text: str, width: int, indent: int = 4) -> str:
 
 class ObjectDiffBatch(SyftObject):
     __canonical_name__ = "DiffHierarchy"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
     LINE_LENGTH: ClassVar[int] = 100
     INDENT: ClassVar[int] = 4
     ORDER: ClassVar[dict] = {"low": 0, "high": 1}
 
     __syft_include_id_coll_repr__ = False
 
-    low_node_uid: UID
-    high_node_uid: UID
+    low_server_uid: UID
+    high_server_uid: UID
     user_verify_key_low: SyftVerifyKey
     user_verify_key_high: SyftVerifyKey
 
@@ -586,15 +585,15 @@ class ObjectDiffBatch(SyftObject):
 
         while len(unvisited):
             # Do we update this in the terminal case
-            new_nodes = []
-            for node in unvisited:
-                if node in global_roots:
-                    roots.append(node)
+            new_servers = []
+            for server in unvisited:
+                if server in global_roots:
+                    roots.append(server)
                 else:
-                    new_nodes += deps.get(node, [])
+                    new_servers += deps.get(server, [])
 
-            new_nodes = [n for n in new_nodes if n not in result]
-            unvisited = new_nodes
+            new_servers = [n for n in new_servers if n not in result]
+            unvisited = new_servers
             result += unvisited
 
         if include_roots:
@@ -606,22 +605,22 @@ class ObjectDiffBatch(SyftObject):
         return [self.global_diffs[r] for r in set(result)]
 
     @property
-    def target_node_uid(self) -> UID:
+    def target_server_uid(self) -> UID:
         if self.sync_direction is None:
             raise ValueError("no direction specified")
         if self.sync_direction == SyncDirection.LOW_TO_HIGH:
-            return self.high_node_uid
+            return self.high_server_uid
         else:
-            return self.low_node_uid
+            return self.low_server_uid
 
     @property
-    def source_node_uid(self) -> UID:
+    def source_server_uid(self) -> UID:
         if self.sync_direction is None:
             raise ValueError("no direction specified")
         if self.sync_direction == SyncDirection.LOW_TO_HIGH:
-            return self.low_node_uid
+            return self.low_server_uid
         else:
-            return self.high_node_uid
+            return self.high_server_uid
 
     @property
     def target_verify_key(self) -> SyftVerifyKey:
@@ -643,18 +642,18 @@ class ObjectDiffBatch(SyftObject):
 
     @property
     def source_client(self) -> SyftClient:
-        return self.build(self.source_node_uid, self.source_verify_key)
+        return self.build(self.source_server_uid, self.source_verify_key)
 
     @property
     def target_client(self) -> SyftClient:
-        return self.build(self.target_node_uid, self.target_verify_key)
+        return self.build(self.target_server_uid, self.target_verify_key)
 
-    def build(self, node_uid: UID, syft_client_verify_key: SyftVerifyKey):  # type: ignore
+    def build(self, server_uid: UID, syft_client_verify_key: SyftVerifyKey):  # type: ignore
         # relative
-        from ...client.domain_client import DomainClient
+        from ...client.datasite_client import DatasiteClient
 
-        api = APIRegistry.api_for(node_uid, syft_client_verify_key)
-        client = DomainClient(
+        api = APIRegistry.api_for(server_uid, syft_client_verify_key)
+        client = DatasiteClient(
             api=api,
             connection=api.connection,  # type: ignore
             credentials=api.signing_key,  # type: ignore
@@ -749,11 +748,13 @@ class ObjectDiffBatch(SyftObject):
         self,
     ) -> tuple["ResolvedSyncState", "ResolvedSyncState"]:
         """
-        Returns new ResolvedSyncState objects for the source and target nodes
+        Returns new ResolvedSyncState objects for the source and target servers
         """
-        resolved_state_low = ResolvedSyncState(node_uid=self.low_node_uid, alias="low")
+        resolved_state_low = ResolvedSyncState(
+            server_uid=self.low_server_uid, alias="low"
+        )
         resolved_state_high = ResolvedSyncState(
-            node_uid=self.high_node_uid, alias="high"
+            server_uid=self.high_server_uid, alias="high"
         )
 
         # Return source, target
@@ -770,8 +771,8 @@ class ObjectDiffBatch(SyftObject):
         obj_dependents: dict[UID, list[UID]],
         obj_uid_to_diff: dict[UID, ObjectDiff],
         root_ids: list[UID],
-        low_node_uid: UID,
-        high_node_uid: UID,
+        low_server_uid: UID,
+        high_server_uid: UID,
         user_verify_key_low: SyftVerifyKey,
         user_verify_key_high: SyftVerifyKey,
         sync_direction: SyncDirection,
@@ -820,8 +821,8 @@ class ObjectDiffBatch(SyftObject):
             dependencies=obj_dependencies,
             dependents=obj_dependents,
             root_diff=obj_uid_to_diff[root_uid],
-            low_node_uid=low_node_uid,
-            high_node_uid=high_node_uid,
+            low_server_uid=low_server_uid,
+            high_server_uid=high_server_uid,
             user_verify_key_low=user_verify_key_low,
             user_verify_key_high=user_verify_key_high,
             sync_direction=sync_direction,
@@ -932,15 +933,15 @@ class ObjectDiffBatch(SyftObject):
         return ""  # Turns off the _repr_markdown_ of SyftObject
 
     def _get_visual_hierarchy(
-        self, node: ObjectDiff, visited: set[UID] | None = None
+        self, server: ObjectDiff, visited: set[UID] | None = None
     ) -> dict[ObjectDiff, dict]:
         visited = visited if visited is not None else set()
-        visited.add(node.object_id)
+        visited.add(server.object_id)
 
         _, child_types_map = self.visual_hierarchy
-        child_types = child_types_map.get(node.obj_type, [])
-        dep_ids = self.dependencies.get(node.object_id, []) + self.dependents.get(
-            node.object_id, []
+        child_types = child_types_map.get(server.obj_type, [])
+        dep_ids = self.dependencies.get(server.object_id, []) + self.dependents.get(
+            server.object_id, []
         )
 
         result = {}
@@ -1025,8 +1026,8 @@ class ObjectDiffBatch(SyftObject):
     def hierarchy_str(self, side: str) -> str:
         def _hierarchy_str_recursive(tree: dict, level: int) -> str:
             result = ""
-            for node, children in tree.items():
-                result += self._get_obj_str(node, level, side)
+            for server, children in tree.items():
+                result += self._get_obj_str(server, level, side)
                 result += _hierarchy_str_recursive(children, level + 1)
             return result
 
@@ -1089,9 +1090,9 @@ class FilterProperty(enum.Enum):
 
 
 @dataclass
-class NodeDiffFilter:
+class ServerDiffFilter:
     """
-    Filter to apply to a NodeDiff object to determine if it should be included in a batch.
+    Filter to apply to a ServerDiff object to determine if it should be included in a batch.
 
     Checks for `property op value` , where
         property: FilterProperty - property to filter on
@@ -1123,12 +1124,12 @@ class NodeDiffFilter:
             return False
 
 
-class NodeDiff(SyftObject):
-    __canonical_name__ = "NodeDiff"
-    __version__ = SYFT_OBJECT_VERSION_2
+class ServerDiff(SyftObject):
+    __canonical_name__ = "ServerDiff"
+    __version__ = SYFT_OBJECT_VERSION_1
 
-    low_node_uid: UID
-    high_node_uid: UID
+    low_server_uid: UID
+    high_server_uid: UID
     user_verify_key_low: SyftVerifyKey
     user_verify_key_high: SyftVerifyKey
     obj_uid_to_diff: dict[UID, ObjectDiff] = {}
@@ -1138,7 +1139,7 @@ class NodeDiff(SyftObject):
     low_state: SyncState
     high_state: SyncState
     direction: SyncDirection | None
-    filters: list[NodeDiffFilter] = []
+    filters: list[ServerDiffFilter] = []
 
     include_ignored: bool = False
 
@@ -1182,7 +1183,7 @@ class NodeDiff(SyftObject):
 
     @classmethod
     def from_sync_state(
-        cls: type["NodeDiff"],
+        cls: type["ServerDiff"],
         low_state: SyncState,
         high_state: SyncState,
         direction: SyncDirection,
@@ -1191,8 +1192,8 @@ class NodeDiff(SyftObject):
         filter_by_email: str | None = None,
         include_types: Collection[type | str] | None = None,
         exclude_types: Collection[type | str] | None = None,
-        _include_node_status: bool = False,
-    ) -> "NodeDiff":
+        _include_server_status: bool = False,
+    ) -> "ServerDiff":
         obj_uid_to_diff = {}
         for obj_id in set(low_state.objects.keys()) | set(high_state.objects.keys()):
             low_obj = low_state.objects.get(obj_id, None)
@@ -1207,7 +1208,7 @@ class NodeDiff(SyftObject):
             last_sync_date_low = low_state.object_sync_dates.get(obj_id, None)
             last_sync_date_high = high_state.object_sync_dates.get(obj_id, None)
 
-            if _include_node_status:
+            if _include_server_status:
                 low_status = low_state.get_status(obj_id)
                 high_status = high_state.get_status(obj_id)
             else:
@@ -1223,16 +1224,16 @@ class NodeDiff(SyftObject):
                 high_permissions=high_permissions,
                 low_storage_permissions=low_storage_permissions,
                 high_storage_permissions=high_storage_permissions,
-                low_node_uid=low_state.node_uid,
-                high_node_uid=high_state.node_uid,
+                low_server_uid=low_state.server_uid,
+                high_server_uid=high_state.server_uid,
                 last_sync_date_low=last_sync_date_low,
                 last_sync_date_high=last_sync_date_high,
             )
             obj_uid_to_diff[diff.object_id] = diff
 
-        # TODO move static methods to NodeDiff __init__
-        obj_dependencies = NodeDiff.dependencies_from_states(low_state, high_state)
-        all_batches = NodeDiff._create_batches(
+        # TODO move static methods to ServerDiff __init__
+        obj_dependencies = ServerDiff.dependencies_from_states(low_state, high_state)
+        all_batches = ServerDiff._create_batches(
             low_state,
             high_state,
             obj_dependencies,
@@ -1242,11 +1243,11 @@ class NodeDiff(SyftObject):
 
         # TODO: Check if high and low ignored batches are the same else error
         previously_ignored_batches = low_state.ignored_batches
-        NodeDiff.apply_previous_ignore_state(all_batches, previously_ignored_batches)
+        ServerDiff.apply_previous_ignore_state(all_batches, previously_ignored_batches)
 
         res = cls(
-            low_node_uid=low_state.node_uid,
-            high_node_uid=high_state.node_uid,
+            low_server_uid=low_state.server_uid,
+            high_server_uid=high_state.server_uid,
             user_verify_key_low=low_state.syft_client_verify_key,
             user_verify_key_high=high_state.syft_client_verify_key,
             obj_uid_to_diff=obj_uid_to_diff,
@@ -1342,11 +1343,11 @@ It will be available for review again."""
     def _repr_html_(self) -> Any:
         n = len(self.batches)
         if self.direction == SyncDirection.LOW_TO_HIGH:
-            name1 = "Public Node"
-            name2 = "Private Node"
+            name1 = "Low-side Server"
+            name2 = "High-side Server"
         else:
-            name1 = "Private Node"
-            name2 = "Public Node"
+            name1 = "High-side Server"
+            name2 = "Low-side Server"
         repr_html = f"""
         <p style="margin-bottom:16px;"></p>
         <div class="diff-state-intro">Comparing sync states</div>
@@ -1434,20 +1435,20 @@ It will be available for review again."""
                 obj_dependents,
                 obj_uid_to_diff,
                 root_ids,
-                low_sync_state.node_uid,
-                high_sync_state.node_uid,
+                low_sync_state.server_uid,
+                high_sync_state.server_uid,
                 low_sync_state.syft_client_verify_key,
                 high_sync_state.syft_client_verify_key,
                 sync_direction=direction,
             )
             batches.append(batch)
 
-        # TODO ref back to NodeDiff would clean up a lot of logic,
-        # No need to save NodeDiff state on every batch
+        # TODO ref back to ServerDiff would clean up a lot of logic,
+        # No need to save ServerDiff state on every batch
         for batch in batches:
             batch.global_batches = batches
 
-        hierarchies_sorted = NodeDiff._sort_batches(batches)
+        hierarchies_sorted = ServerDiff._sort_batches(batches)
         return hierarchies_sorted
 
     @property
@@ -1455,10 +1456,10 @@ It will be available for review again."""
         return all(object_diff.status == "SAME" for object_diff in self.diffs)
 
     def _apply_filters(
-        self, filters: list[NodeDiffFilter], inplace: bool = True
+        self, filters: list[ServerDiffFilter], inplace: bool = True
     ) -> Self:
         """
-        Apply filters to the NodeDiff object and return a new NodeDiff object
+        Apply filters to the ServerDiff object and return a new ServerDiff object
         """
         batches = self.all_batches
         for filter in filters:
@@ -1469,9 +1470,9 @@ It will be available for review again."""
             self.batches = batches
             return self
         else:
-            return NodeDiff(
-                low_node_uid=self.low_node_uid,
-                high_node_uid=self.high_node_uid,
+            return ServerDiff(
+                low_server_uid=self.low_server_uid,
+                high_server_uid=self.high_server_uid,
                 user_verify_key_low=self.user_verify_key_low,
                 user_verify_key_high=self.user_verify_key_high,
                 obj_uid_to_diff=self.obj_uid_to_diff,
@@ -1496,29 +1497,29 @@ It will be available for review again."""
         new_filters = []
         if user_email is not None:
             new_filters.append(
-                NodeDiffFilter(FilterProperty.USER, user_email, operator.eq)
+                ServerDiffFilter(FilterProperty.USER, user_email, operator.eq)
             )
         if not include_ignored:
             new_filters.append(
-                NodeDiffFilter(FilterProperty.IGNORED, True, operator.ne)
+                ServerDiffFilter(FilterProperty.IGNORED, True, operator.ne)
             )
         if not include_same:
             new_filters.append(
-                NodeDiffFilter(FilterProperty.STATUS, "SAME", operator.ne)
+                ServerDiffFilter(FilterProperty.STATUS, "SAME", operator.ne)
             )
         if include_types is not None:
             include_types_ = {
                 t.__name__ if isinstance(t, type) else t for t in include_types
             }
             new_filters.append(
-                NodeDiffFilter(FilterProperty.TYPE, include_types_, operator.contains)
+                ServerDiffFilter(FilterProperty.TYPE, include_types_, operator.contains)
             )
         if exclude_types:
             for exclude_type in exclude_types:
                 if isinstance(exclude_type, type):
                     exclude_type = exclude_type.__name__
                 new_filters.append(
-                    NodeDiffFilter(FilterProperty.TYPE, exclude_type, operator.ne)
+                    ServerDiffFilter(FilterProperty.TYPE, exclude_type, operator.ne)
                 )
 
         return self._apply_filters(new_filters, inplace=inplace)
@@ -1526,7 +1527,7 @@ It will be available for review again."""
 
 class SyncInstruction(SyftObject):
     __canonical_name__ = "SyncDecision"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     diff: ObjectDiff
     decision: SyncDecision | None
@@ -1579,11 +1580,13 @@ class SyncInstruction(SyftObject):
             # TODO: apply storage permissions on both ends
             if not mockify:
                 new_storage_permissions.append(
-                    StoragePermission(uid=diff.object_id, node_uid=diff.low_node_uid)
+                    StoragePermission(
+                        uid=diff.object_id, server_uid=diff.low_server_uid
+                    )
                 )
         elif sync_direction == SyncDirection.LOW_TO_HIGH:
             new_storage_permissions.append(
-                StoragePermission(uid=diff.object_id, node_uid=diff.high_node_uid)
+                StoragePermission(uid=diff.object_id, server_uid=diff.high_server_uid)
             )
 
         return cls(
@@ -1598,9 +1601,9 @@ class SyncInstruction(SyftObject):
 
 class ResolvedSyncState(SyftObject):
     __canonical_name__ = "SyncUpdate"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
-    node_uid: UID
+    server_uid: UID
     create_objs: list[SyncableSyftObject] = []
     update_objs: list[SyncableSyftObject] = []
     delete_objs: list[SyftObject] = []
@@ -1612,12 +1615,12 @@ class ResolvedSyncState(SyftObject):
 
     @classmethod
     def from_client(cls, client: SyftClient) -> "ResolvedSyncState":
-        alias: str = client.metadata.node_side_type  # type: ignore
+        alias: str = client.metadata.server_side_type  # type: ignore
         if alias not in ["low", "high"]:
             raise ValueError(
                 "can only create resolved sync state for high, low side deployments"
             )
-        return cls(node_uid=client.id, alias=alias)
+        return cls(server_uid=client.id, alias=alias)
 
     def add_ignored(self, batch: ObjectDiffBatch) -> None:
         self.ignored_batches[batch.root_id] = hash(batch)

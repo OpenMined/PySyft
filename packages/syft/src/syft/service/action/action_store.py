@@ -10,9 +10,9 @@ from result import Ok
 from result import Result
 
 # relative
-from ...node.credentials import SyftSigningKey
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftSigningKey
+from ...server.credentials import SyftVerifyKey
 from ...store.dict_document_store import DictStoreConfig
 from ...store.document_store import BasePartitionSettings
 from ...store.document_store import DocumentStore
@@ -38,7 +38,7 @@ class ActionStore:
     pass
 
 
-@serializable()
+@serializable(canonical_name="KeyValueActionStore", version=1)
 class KeyValueActionStore(ActionStore):
     """Generic Key-Value Action store.
 
@@ -51,12 +51,12 @@ class KeyValueActionStore(ActionStore):
 
     def __init__(
         self,
-        node_uid: UID,
+        server_uid: UID,
         store_config: StoreConfig,
         root_verify_key: SyftVerifyKey | None = None,
         document_store: DocumentStore | None = None,
     ) -> None:
-        self.node_uid = node_uid
+        self.server_uid = server_uid
         self.store_config = store_config
         self.settings = BasePartitionSettings(name="Action")
         self.data = self.store_config.backing_store(
@@ -117,7 +117,7 @@ class KeyValueActionStore(ActionStore):
         self,
         uid: UID,
         credentials: SyftVerifyKey,
-        node_uid: UID,
+        server_uid: UID,
     ) -> Result[SyftObject, str]:
         uid = uid.id  # We only need the UID from LineageID or UID
 
@@ -129,15 +129,15 @@ class KeyValueActionStore(ActionStore):
                 # if you have permission you can have private data
                 if self.has_permission(read_permission):
                     if isinstance(obj, TwinObject):
-                        return Ok(obj.private.syft_point_to(node_uid))
-                    return Ok(obj.syft_point_to(node_uid))
+                        return Ok(obj.private.syft_point_to(server_uid))
+                    return Ok(obj.syft_point_to(server_uid))
 
                 # if its a twin with a mock anyone can have this
                 if isinstance(obj, TwinObject):
-                    return Ok(obj.mock.syft_point_to(node_uid))
+                    return Ok(obj.mock.syft_point_to(server_uid))
 
                 # finally worst case you get ActionDataEmpty so you can still trace
-                return Ok(obj.as_empty().syft_point_to(node_uid))
+                return Ok(obj.as_empty().syft_point_to(server_uid))
 
             return Err("Permission denied")
         except Exception as e:
@@ -194,7 +194,7 @@ class KeyValueActionStore(ActionStore):
                 self.storage_permissions[uid] = set()
             if add_storage_permission:
                 self.add_storage_permission(
-                    StoragePermission(uid=uid, node_uid=self.node_uid)
+                    StoragePermission(uid=uid, server_uid=self.server_uid)
                 )
 
             return Ok(SyftSuccess(message=f"Set for ID: {uid}"))
@@ -304,7 +304,7 @@ class KeyValueActionStore(ActionStore):
 
     def add_storage_permission(self, permission: StoragePermission) -> None:
         permissions = self.storage_permissions[permission.uid]
-        permissions.add(permission.node_uid)
+        permissions.add(permission.server_uid)
         self.storage_permissions[permission.uid] = permissions
 
     def add_storage_permissions(self, permissions: list[StoragePermission]) -> None:
@@ -313,15 +313,15 @@ class KeyValueActionStore(ActionStore):
 
     def remove_storage_permission(self, permission: StoragePermission) -> None:
         permissions = self.storage_permissions[permission.uid]
-        permissions.remove(permission.node_uid)
+        permissions.remove(permission.server_uid)
         self.storage_permissions[permission.uid] = permissions
 
     def has_storage_permission(self, permission: StoragePermission | UID) -> bool:
         if isinstance(permission, UID):
-            permission = StoragePermission(uid=permission, node_uid=self.node_uid)
+            permission = StoragePermission(uid=permission, server_uid=self.server_uid)
 
         if permission.uid in self.storage_permissions:
-            return permission.node_uid in self.storage_permissions[permission.uid]
+            return permission.server_uid in self.storage_permissions[permission.uid]
         return False
 
     def _get_storage_permissions_for_uid(self, uid: UID) -> Result[set[UID], str]:
@@ -371,7 +371,7 @@ class KeyValueActionStore(ActionStore):
         return Err("You don't have permissions to migrate data.")
 
 
-@serializable()
+@serializable(canonical_name="DictActionStore", version=1)
 class DictActionStore(KeyValueActionStore):
     """Dictionary-Based Key-Value Action store.
 
@@ -384,21 +384,21 @@ class DictActionStore(KeyValueActionStore):
 
     def __init__(
         self,
-        node_uid: UID,
+        server_uid: UID,
         store_config: StoreConfig | None = None,
         root_verify_key: SyftVerifyKey | None = None,
         document_store: DocumentStore | None = None,
     ) -> None:
         store_config = store_config if store_config is not None else DictStoreConfig()
         super().__init__(
-            node_uid=node_uid,
+            server_uid=server_uid,
             store_config=store_config,
             root_verify_key=root_verify_key,
             document_store=document_store,
         )
 
 
-@serializable()
+@serializable(canonical_name="SQLiteActionStore", version=1)
 class SQLiteActionStore(KeyValueActionStore):
     """SQLite-Based Key-Value Action store.
 
@@ -412,7 +412,7 @@ class SQLiteActionStore(KeyValueActionStore):
     pass
 
 
-@serializable()
+@serializable(canonical_name="MongoActionStore", version=1)
 class MongoActionStore(KeyValueActionStore):
     """Mongo-Based  Action store.
 

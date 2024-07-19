@@ -3,12 +3,16 @@ from uuid import uuid4
 
 # syft absolute
 from syft.serde.serializable import serializable
-from syft.types.syft_object import SYFT_OBJECT_VERSION_2
+from syft.types.syft_object import SYFT_OBJECT_VERSION_1
 from syft.types.syft_object import SyftBaseObject
 from syft.types.syft_object import SyftHashableObject
 
 
-@serializable(attrs=["key", "value", "flag"])
+@serializable(
+    attrs=["key", "value", "flag"],
+    canonical_name="MockObject",
+    version=1,
+)
 class MockObject(SyftHashableObject):
     key: str
     value: str
@@ -26,7 +30,7 @@ class MockObject(SyftHashableObject):
 @serializable(attrs=["id", "data"])
 class MockWrapper(SyftBaseObject, SyftHashableObject):
     __canonical_name__ = "MockWrapper"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: str
     data: MockObject | None

@@ -10,7 +10,7 @@ import uuid
 import pytest
 
 # syft absolute
-from syft.node.credentials import SyftVerifyKey
+from syft.server.credentials import SyftVerifyKey
 from syft.service.action.action_permissions import ActionObjectPermission
 from syft.service.action.action_permissions import ActionPermission
 from syft.service.action.action_store import DictActionStore
@@ -63,9 +63,11 @@ def str_to_locking_config(conf: str) -> LockingConfig:
 
 
 def document_store_with_admin(
-    node_uid: UID, verify_key: SyftVerifyKey
+    server_uid: UID, verify_key: SyftVerifyKey
 ) -> DocumentStore:
-    document_store = DictDocumentStore(node_uid=node_uid, root_verify_key=verify_key)
+    document_store = DictDocumentStore(
+        server_uid=server_uid, root_verify_key=verify_key
+    )
 
     password = uuid.uuid4().hex
 
@@ -214,11 +216,11 @@ def sqlite_action_store(sqlite_workspace: tuple[Path, str], request):
 
     ver_key = SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_ROOT)
 
-    node_uid = UID()
-    document_store = document_store_with_admin(node_uid, ver_key)
+    server_uid = UID()
+    document_store = document_store_with_admin(server_uid, ver_key)
 
     return SQLiteActionStore(
-        node_uid=node_uid,
+        server_uid=server_uid,
         store_config=store_config,
         root_verify_key=ver_key,
         document_store=document_store,
@@ -325,10 +327,10 @@ def mongo_action_store(mongo_client, request):
         client_config=mongo_config, db_name=mongo_db_name, locking_config=locking_config
     )
     ver_key = SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_ROOT)
-    node_uid = UID()
-    document_store = document_store_with_admin(node_uid, ver_key)
+    server_uid = UID()
+    document_store = document_store_with_admin(server_uid, ver_key)
     mongo_action_store = MongoActionStore(
-        node_uid=node_uid,
+        server_uid=server_uid,
         store_config=store_config,
         root_verify_key=ver_key,
         document_store=document_store,
@@ -365,11 +367,11 @@ def dict_action_store(request):
 
     store_config = DictStoreConfig(locking_config=locking_config)
     ver_key = SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_ROOT)
-    node_uid = UID()
-    document_store = document_store_with_admin(node_uid, ver_key)
+    server_uid = UID()
+    document_store = document_store_with_admin(server_uid, ver_key)
 
     return DictActionStore(
-        node_uid=node_uid,
+        server_uid=server_uid,
         store_config=store_config,
         root_verify_key=ver_key,
         document_store=document_store,

@@ -1,7 +1,7 @@
-syft.node.run
+syft.server.run
 =============
 
-.. automodule:: syft.node.run
+.. automodule:: syft.server.run
 
    
    
