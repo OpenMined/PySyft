@@ -66,8 +66,7 @@ class NotifierService(AbstractService):
         )
 
     def set_notifier_active_to_true(
-        self, 
-        context: AuthedServiceContext
+        self, context: AuthedServiceContext
     ) -> SyftSuccess | SyftError:
         result = self.stash.get(credentials=context.credentials)
         if result.is_err():
@@ -79,10 +78,9 @@ class NotifierService(AbstractService):
         if result.is_err():
             return SyftError(message=result.err())
         return SyftSuccess(message="notifier.active set to true.")
-        
+
     def set_notifier_active_to_false(
-        self,
-        context: AuthedServiceContext
+        self, context: AuthedServiceContext
     ) -> SyftSuccess:
         result = self.stash.get(credentials=context.credentials)
         if result.is_err():
