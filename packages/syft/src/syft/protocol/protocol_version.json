@@ -1,10 +1,24 @@
 {
   "dev": {
     "object_versions": {
+      "SyftObjectVersioned": {
+        "1": {
+          "version": 1,
+          "hash": "7c842dcdbb57e2528ffa690ea18c19fff3c8a591811d40cad2b19be3100e2ff4",
+          "action": "add"
+        }
+      },
       "BaseDateTime": {
         "1": {
           "version": 1,
           "hash": "614db484b1950be729902b1861bd3a7b33899176507c61cef11dc0d44611cfd3",
+          "action": "add"
+        }
+      },
+      "SyftObject": {
+        "1": {
+          "version": 1,
+          "hash": "bb70d874355988908d3a92a3941d6613a6995a4850be3b6a0147f4d387724406",
           "action": "add"
         }
       },
@@ -988,6 +1002,13 @@
           "action": "add"
         }
       },
+      "ProjectEvent": {
+        "1": {
+          "version": 1,
+          "hash": "dc0486c52daebd5e98c2b3b03ffd9a9a14bc3d86d8dc0c23e41ebf6c31fe2ffb",
+          "action": "add"
+        }
+      },
       "ProjectThreadMessage": {
         "1": {
           "version": 1,
@@ -1048,27 +1069,6 @@
         "1": {
           "version": 1,
           "hash": "ed05cb87aec832098fc464ac36cd6bceaab705463d0d2fa1b2d8e1ccc510018c",
-          "action": "add"
-        }
-      },
-      "SyftObject": {
-        "1": {
-          "version": 1,
-          "hash": "bb70d874355988908d3a92a3941d6613a6995a4850be3b6a0147f4d387724406",
-          "action": "add"
-        }
-      },
-      "ProjectEvent": {
-        "1": {
-          "version": 1,
-          "hash": "dc0486c52daebd5e98c2b3b03ffd9a9a14bc3d86d8dc0c23e41ebf6c31fe2ffb",
-          "action": "add"
-        }
-      },
-      "SyftObjectVersioned": {
-        "1": {
-          "version": 1,
-          "hash": "7c842dcdbb57e2528ffa690ea18c19fff3c8a591811d40cad2b19be3100e2ff4",
           "action": "add"
         }
       }

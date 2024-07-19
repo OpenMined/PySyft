@@ -96,74 +96,12 @@ class SyftObjectRegistry:
         return serde_properties[7]
 
     @classmethod
-    def get_serde_properties_bw_compatible(
-        cls, fqn: str, canonical_name: str, version: int
-    ) -> tuple:
+    def has_serde_class(cls, canonical_name: str | None, version: int) -> bool:
         # relative
-        from ..serde.recursive import TYPE_BANK
-
-        if canonical_name != "" and canonical_name is not None:
-            return cls.get_serde_properties(canonical_name, version)
-        else:
-            # this is for backward compatibility with 0.8.6
-            try:
-                # relative
-                from ..protocol.data_protocol import get_data_protocol
-
-                serde_props = TYPE_BANK[fqn]
-                klass = serde_props[7]
-                is_syftobject = hasattr(klass, "__canonical_name__")
-                if is_syftobject:
-                    canonical_name = klass.__canonical_name__
-                    dp = get_data_protocol()
-                    try:
-                        version_mutations = dp.protocol_history[
-                            SYFT_086_PROTOCOL_VERSION
-                        ]["object_versions"][canonical_name]
-                    except Exception:
-                        print(f"could not find {canonical_name} in protocol history")
-                        raise
-
-                    version_086 = max(
-                        [
-                            int(k)
-                            for k, v in version_mutations.items()
-                            if v["action"] == "add"
-                        ]
-                    )
-                    try:
-                        res = cls.get_serde_properties(canonical_name, version_086)
-
-                    except Exception:
-                        print(
-                            f"could not find {canonical_name} {version_086} in ObjectRegistry"
-                        )
-                        raise
-                    return res
-                else:
-                    # TODO, add refactoring for non syftobject versions
-                    canonical_name = fqn
-                    version = 1
-                    return cls.get_serde_properties(canonical_name, version)
-            except Exception as e:
-                print(e)
-                raise
-
-    @classmethod
-    def has_serde_class(
-        cls, fqn: str, canonical_name: str | None, version: int
-    ) -> bool:
-        # relative
-        from ..serde.recursive import TYPE_BANK
-
-        if canonical_name != "" and canonical_name is not None:
-            return (
-                canonical_name in cls.__object_serialization_registry__
-                and version in cls.__object_serialization_registry__[canonical_name]
-            )
-        else:
-            # this is for backward compatibility with 0.8.6
-            return fqn in TYPE_BANK
+        return (
+            canonical_name in cls.__object_serialization_registry__
+            and version in cls.__object_serialization_registry__[canonical_name]
+        )
 
     @classmethod
     def add_transform(
