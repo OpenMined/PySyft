@@ -106,7 +106,7 @@ dev:
         env:
           - name: RELEASE
             value: development
-          - name: NODE_IPV6
+          - name: SERVER_IPV6
             value: "False"
           - name: DEV_MODE
             value: "True"
