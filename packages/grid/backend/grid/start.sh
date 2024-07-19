@@ -34,7 +34,7 @@ export SERVER_TYPE=$SERVER_TYPE
 echo "SERVER_UID=$SERVER_UID"
 echo "SERVER_TYPE=$SERVER_TYPE"
 
-if [[ ${NODE_IPV6} == "True" ]];
+if [[ ${SERVER_IPV6} == "True" ]];
 then
     HOST=${HOST:-"::"}
 fi
