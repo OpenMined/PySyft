@@ -13,7 +13,6 @@ import syft as sy
     or os.environ["AZURE_BLOB_STORAGE_KEY"] == "",
     reason="AZURE_BLOB_STORAGE_KEY is not set",
 )
-
 @pytest.mark.container_workload()
 def test_mount_azure_blob_storage(datasite_1_port):
     datasite_client = sy.login(
