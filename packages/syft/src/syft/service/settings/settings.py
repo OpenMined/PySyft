@@ -35,6 +35,7 @@ class ServerSettingsUpdate(PartialSyftObject):
     association_request_auto_approval: bool
     welcome_markdown: HTMLObject | MarkdownDescription
     eager_execution_enabled: bool = False
+    notifications_enabled: bool = False
 
 
 @serializable()
@@ -68,7 +69,7 @@ class ServerSettings(SyftObject):
     welcome_markdown: HTMLObject | MarkdownDescription = HTMLObject(
         text=DEFAULT_WELCOME_MSG
     )
-    notifications_enabled: str = "Disabled"
+    notifications_enabled: bool
 
     def _repr_html_(self) -> Any:
         # .api.services.notifications.settings() is how the server itself would dispatch notifications.
@@ -90,13 +91,14 @@ class ServerSettings(SyftObject):
         if preferences.app_enabled:
             notifications.append("app")
 
-        if preferences.active:
+        self.notifications_enabled = preferences.active
+        if self.notifications_enabled:
             if notifications:
-                self.notifications_enabled = f"Enabled via {', '.join(notifications)}"
+                notification_print_str = f"Enabled via {', '.join(notifications)}"
             else:
-                self.notifications_enabled = "Enabled without any communication method"
+                notification_print_str = "Enabled without any communication method"
         else:
-            self.notifications_enabled = "Disabled"
+            notification_print_str = "Disabled"
 
         return f"""
             <style>
@@ -110,7 +112,7 @@ class ServerSettings(SyftObject):
                 <p><strong>Description: </strong>{self.description}</p>
                 <p><strong>Deployed on: </strong>{self.deployed_on}</p>
                 <p><strong>Signup enabled: </strong>{self.signup_enabled}</p>
-                <p><strong>Notifications enabled: </strong>{self.notifications_enabled}</p>
+                <p><strong>Notifications enabled: </strong>{notification_print_str}</p>
                 <p><strong>Admin email: </strong>{self.admin_email}</p>
             </div>
 
