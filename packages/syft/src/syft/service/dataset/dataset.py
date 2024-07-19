@@ -292,7 +292,7 @@ class Asset(SyftObject):
         if self.has_permission(res):
             return res.syft_action_data
         else:
-            warning = SyftWarning(
+            warning = SyftError(
                 message="You do not have permission to access private data."
             )
             display(warning)
