@@ -289,12 +289,10 @@ class Asset(SyftObject):
         if api is None or api.services is None:
             return None
         res = api.services.action.get(self.action_id)
-        if isinstance(res, str):
-            return SyftError(message=f"Could not access private data. {str(res)}")
         if self.has_permission(res):
             return res.syft_action_data
         else:
-            warning = SyftWarning(
+            warning = SyftError(
                 message="You do not have permission to access private data."
             )
             display(warning)
