@@ -5,6 +5,7 @@ from enum import Enum
 from textwrap import dedent
 from typing import Any
 from typing import ClassVar
+from typing import cast
 
 # third party
 from IPython.display import display
@@ -634,16 +635,26 @@ class ModelRef(ActionObject):
 
         asset_list = []
         for asset_action_id in asset_action_ids:
-            res = admin_client.services.action.get(asset_action_id)
-            action_data = res.syft_action_data
+            action_object = admin_client.services.action.get(asset_action_id)
+            action_data = action_object.syft_action_data
 
             # Save to blob storage of remote client if provided
             if remote_client is not None:
-                res.syft_blob_storage_entry_id = None
-                blob_res = res._save_to_blob_storage(client=remote_client)
+                action_object.syft_blob_storage_entry_id = None
+                blob_res = action_object._save_to_blob_storage(client=remote_client)
+                # For smaller data, we do not store in blob storage
+                # so for the cases, where we store in blob storage
+                # we need to clear the cache , to avoid sending the data again
+                # stdlib
+
+                action_object.syft_blob_storage_entry_id = cast(
+                    UID | None, action_object.syft_blob_storage_entry_id
+                )
+                if action_object.syft_blob_storage_entry_id:
+                    action_object._clear_cache()
                 if isinstance(blob_res, SyftError):
                     return blob_res
-            asset_list.append(action_data if unwrap_action_data else res)
+            asset_list.append(action_data if unwrap_action_data else action_object)
 
         loaded_data = [model] + asset_list
         if wrap_ref_to_obj:
