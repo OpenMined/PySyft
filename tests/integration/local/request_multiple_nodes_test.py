@@ -10,10 +10,10 @@ import syft as sy
 
 
 @pytest.fixture(scope="function")
-def node_1():
-    node = sy.orchestra.launch(
+def server_1():
+    server = sy.orchestra.launch(
         name=token_hex(8),
-        node_side_type="low",
+        server_side_type="low",
         dev_mode=False,
         reset=True,
         local_db=True,
@@ -21,16 +21,16 @@ def node_1():
         n_consumers=1,
         queue_port=None,
     )
-    yield node
-    node.python_node.cleanup()
-    node.land()
+    yield server
+    server.python_server.cleanup()
+    server.land()
 
 
 @pytest.fixture(scope="function")
-def node_2():
-    node = sy.orchestra.launch(
+def server_2():
+    server = sy.orchestra.launch(
         name=token_hex(8),
-        node_side_type="high",
+        server_side_type="high",
         dev_mode=False,
         reset=True,
         local_db=True,
@@ -38,27 +38,27 @@ def node_2():
         n_consumers=1,
         queue_port=None,
     )
-    yield node
-    node.python_node.cleanup()
-    node.land()
+    yield server
+    server.python_server.cleanup()
+    server.land()
 
 
 @pytest.fixture(scope="function")
-def client_do_1(node_1):
-    return node_1.login(email="info@openmined.org", password="changethis")
+def client_do_1(server_1):
+    return server_1.login(email="info@openmined.org", password="changethis")
 
 
 @pytest.fixture(scope="function")
-def client_do_2(node_2):
-    return node_2.login(email="info@openmined.org", password="changethis")
+def client_do_2(server_2):
+    return server_2.login(email="info@openmined.org", password="changethis")
 
 
 @pytest.fixture(scope="function")
-def client_ds_1(node_1, client_do_1):
+def client_ds_1(server_1, client_do_1):
     client_do_1.register(
         name="test_user", email="test@us.er", password="1234", password_verify="1234"
     )
-    return node_1.login(email="test@us.er", password="1234")
+    return server_1.login(email="test@us.er", password="1234")
 
 
 @pytest.fixture(scope="function")

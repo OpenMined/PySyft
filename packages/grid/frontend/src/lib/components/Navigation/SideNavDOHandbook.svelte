@@ -27,7 +27,7 @@
       <p class="text-sm text-gray-50 font-bold">Data Owner handbook</p>
       <p class="text-sm text-gray-200">
         Check out the data owner handbook to learn more tips & tricks about how to manage your
-        domain node.
+        datasite server.
       </p>
     </div>
   </div>

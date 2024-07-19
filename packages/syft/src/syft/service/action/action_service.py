@@ -1,6 +1,8 @@
 # stdlib
 import importlib
+import logging
 from typing import Any
+from typing import cast
 
 # third party
 import numpy as np
@@ -9,8 +11,8 @@ from result import Ok
 from result import Result
 
 # relative
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
 from ...types.datetime import DateTime
 from ...types.syft_object import SyftObject
 from ...types.twin_object import TwinObject
@@ -23,6 +25,7 @@ from ..policy.policy import OutputPolicy
 from ..policy.policy import retrieve_from_db
 from ..response import SyftError
 from ..response import SyftSuccess
+from ..response import SyftWarning
 from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
@@ -47,9 +50,13 @@ from .numpy import NumpyArrayObject
 from .pandas import PandasDataFrameObject  # noqa: F401
 from .pandas import PandasSeriesObject  # noqa: F401
 
+logger = logging.getLogger(__name__)
 
-@serializable()
+
+@serializable(canonical_name="ActionService", version=1)
 class ActionService(AbstractService):
+    store_type = ActionStore
+
     def __init__(self, store: ActionStore) -> None:
         self.store = store
 
@@ -57,18 +64,20 @@ class ActionService(AbstractService):
     def np_array(self, context: AuthedServiceContext, data: Any) -> Any:
         if not isinstance(data, np.ndarray):
             data = np.array(data)
-        # cast here since we are sure that AuthedServiceContext has a node
+        # cast here since we are sure that AuthedServiceContext has a server
 
         np_obj = NumpyArrayObject(
             dtype=data.dtype,
             shape=data.shape,
             syft_action_data_cache=data,
-            syft_node_location=context.node.id,
+            syft_server_location=context.server.id,
             syft_client_verify_key=context.credentials,
         )
         blob_store_result = np_obj._save_to_blob_storage()
         if isinstance(blob_store_result, SyftError):
             return blob_store_result
+        if isinstance(blob_store_result, SyftWarning):
+            logger.debug(blob_store_result.message)
 
         np_pointer = self._set(context, np_obj)
         return np_pointer
@@ -102,17 +111,28 @@ class ActionService(AbstractService):
         action_object: ActionObject | TwinObject,
         ignore_detached_obj: bool = False,
     ) -> bool:
+        """
+        A detached object is an object that is not yet saved to the blob storage.
+        """
         if (
             isinstance(action_object, TwinObject)
             and (
-                action_object.mock_obj.syft_blob_storage_entry_id is None
-                or action_object.private_obj.syft_blob_storage_entry_id is None
+                (
+                    action_object.mock_obj.syft_action_saved_to_blob_store
+                    and action_object.mock_obj.syft_blob_storage_entry_id is None
+                )
+                or (
+                    action_object.private_obj.syft_action_saved_to_blob_store
+                    and action_object.private_obj.syft_blob_storage_entry_id is None
+                )
             )
             and not ignore_detached_obj
         ):
             return True
         if isinstance(action_object, ActionObject) and (
-            action_object.syft_blob_storage_entry_id is None and not ignore_detached_obj
+            action_object.syft_action_saved_to_blob_store
+            and action_object.syft_blob_storage_entry_id is None
+            and not ignore_detached_obj
         ):
             return True
         return False
@@ -124,25 +144,36 @@ class ActionService(AbstractService):
         has_result_read_permission: bool = False,
         add_storage_permission: bool = True,
         ignore_detached_objs: bool = False,
-        skip_clear_cache: bool = False,
     ) -> Result[ActionObject, str]:
         if self.is_detached_obj(action_object, ignore_detached_objs):
             return Err(
-                "you uploaded an ActionObject that is not yet in the blob storage"
+                "You uploaded an ActionObject that is not yet in the blob storage"
             )
         """Save an object to the action store"""
         # 🟡 TODO 9: Create some kind of type checking / protocol for SyftSerializable
 
         if isinstance(action_object, ActionObject):
             action_object.syft_created_at = DateTime.now()
-            if not skip_clear_cache:
+            (
                 action_object._clear_cache()
-        else:
+                if action_object.syft_action_saved_to_blob_store
+                else None
+            )
+        else:  # TwinObject
             action_object.private_obj.syft_created_at = DateTime.now()  # type: ignore[unreachable]
             action_object.mock_obj.syft_created_at = DateTime.now()
-            if not skip_clear_cache:
+
+            # Clear cache if data is saved to blob storage
+            (
                 action_object.private_obj._clear_cache()
+                if action_object.private_obj.syft_action_saved_to_blob_store
+                else None
+            )
+            (
                 action_object.mock_obj._clear_cache()
+                if action_object.mock_obj.syft_action_saved_to_blob_store
+                else None
+            )
 
         # If either context or argument is True, has_result_read_permission is True
         has_result_read_permission = (
@@ -160,18 +191,22 @@ class ActionService(AbstractService):
         if result.is_ok():
             if isinstance(action_object, TwinObject):
                 # give read permission to the mock
-                blob_id = action_object.mock_obj.syft_blob_storage_entry_id
-                permission = ActionObjectPermission(blob_id, ActionPermission.ALL_READ)
-                blob_storage_service: AbstractService = context.node.get_service(
-                    BlobStorageService
-                )
-                blob_storage_service.stash.add_permission(permission)
+                # if mock is saved to blob store, then add READ permission
+                if action_object.mock_obj.syft_action_saved_to_blob_store:
+                    blob_id = action_object.mock_obj.syft_blob_storage_entry_id
+                    permission = ActionObjectPermission(
+                        blob_id, ActionPermission.ALL_READ
+                    )
+                    blob_storage_service: AbstractService = context.server.get_service(
+                        BlobStorageService
+                    )
+                    blob_storage_service.stash.add_permission(permission)
                 if has_result_read_permission:
                     action_object = action_object.private
                 else:
                     action_object = action_object.mock
 
-            action_object.syft_point_to(context.node.id)
+            action_object.syft_point_to(context.server.id)
             return Ok(action_object)
         return result.err()
 
@@ -255,17 +290,13 @@ class ActionService(AbstractService):
         resolve_nested: bool = True,
     ) -> Result[ActionObject, str]:
         """Get an object from the action store"""
-        # stdlib
-
-        # relative
-
         result = self.store.get(
             uid=uid, credentials=context.credentials, has_permission=has_permission
         )
-        if result.is_ok() and context.node is not None:
+        if result.is_ok() and context.server is not None:
             obj: TwinObject | ActionObject = result.ok()
             obj._set_obj_location_(
-                context.node.id,
+                context.server.id,
                 context.credentials,
             )
             # Resolve graph links
@@ -285,13 +316,13 @@ class ActionService(AbstractService):
             if isinstance(obj, TwinObject):
                 if twin_mode == TwinMode.PRIVATE:
                     obj = obj.private
-                    obj.syft_point_to(context.node.id)
+                    obj.syft_point_to(context.server.id)
                 elif twin_mode == TwinMode.MOCK:
                     obj = obj.mock
-                    obj.syft_point_to(context.node.id)
+                    obj.syft_point_to(context.server.id)
                 else:
-                    obj.mock.syft_point_to(context.node.id)
-                    obj.private.syft_point_to(context.node.id)
+                    obj.mock.syft_point_to(context.server.id)
+                    obj.private.syft_point_to(context.server.id)
             return Ok(obj)
         else:
             return result
@@ -305,12 +336,12 @@ class ActionService(AbstractService):
         """Get a pointer from the action store"""
 
         result = self.store.get_pointer(
-            uid=uid, credentials=context.credentials, node_uid=context.node.id
+            uid=uid, credentials=context.credentials, server_uid=context.server.id
         )
         if result.is_ok():
             obj = result.ok()
             obj._set_obj_location_(
-                context.node.id,
+                context.server.id,
                 context.credentials,
             )
             return Ok(obj)
@@ -334,6 +365,11 @@ class ActionService(AbstractService):
     def has_storage_permission(self, context: AuthedServiceContext, uid: UID) -> bool:
         return self.store.has_storage_permission(uid)
 
+    def has_read_permission(self, context: AuthedServiceContext, uid: UID) -> bool:
+        return self.store.has_permissions(
+            [ActionObjectREAD(uid=uid, credentials=context.credentials)]
+        )
+
     # not a public service endpoint
     def _user_code_execute(
         self,
@@ -345,11 +381,15 @@ class ActionService(AbstractService):
         override_execution_permission = (
             context.has_execute_permissions or context.role == ServiceRole.ADMIN
         )
-        if context.node:
-            user_code_service = context.node.get_service("usercodeservice")
+        if context.server:
+            user_code_service = context.server.get_service("usercodeservice")
 
         input_policy = code_item.get_input_policy(context)
         output_policy = code_item.get_output_policy(context)
+
+        # Unwrap nested ActionObjects
+        for _k, arg in kwargs.items():
+            self.flatten_action_arg(context, arg) if isinstance(arg, UID) else None
 
         if not override_execution_permission:
             if input_policy is None:
@@ -498,12 +538,14 @@ class ActionService(AbstractService):
         read_permission = ActionPermission.READ
 
         result_action_object._set_obj_location_(
-            context.node.id,
+            context.server.id,
             context.credentials,
         )
         blob_store_result = result_action_object._save_to_blob_storage()
         if isinstance(blob_store_result, SyftError):
             return Err(blob_store_result.message)
+        if isinstance(blob_store_result, SyftWarning):
+            logger.debug(blob_store_result.message)
 
         # IMPORTANT: DO THIS ONLY AFTER ._save_to_blob_storage
         if isinstance(result_action_object, TwinObject):
@@ -516,13 +558,15 @@ class ActionService(AbstractService):
 
         # Since this just meta data about the result, they always have access to it.
         set_result = self._set(
-            context, result_action_object, has_result_read_permission=True
+            context,
+            result_action_object,
+            has_result_read_permission=True,
         )
 
         if set_result.is_err():
             return set_result
 
-        blob_storage_service: AbstractService = context.node.get_service(
+        blob_storage_service: AbstractService = context.server.get_service(
             BlobStorageService
         )
 
@@ -540,8 +584,9 @@ class ActionService(AbstractService):
             store_permissions = [store_permission(x) for x in output_readers]
             self.store.add_permissions(store_permissions)
 
-            blob_permissions = [blob_permission(x) for x in output_readers]
-            blob_storage_service.stash.add_permissions(blob_permissions)
+            if result_blob_id is not None:
+                blob_permissions = [blob_permission(x) for x in output_readers]
+                blob_storage_service.stash.add_permissions(blob_permissions)
 
         return set_result
 
@@ -707,6 +752,83 @@ class ActionService(AbstractService):
         else:
             return execute_object(self, context, resolved_self, action)  # type:ignore[unreachable]
 
+    def unwrap_nested_actionobjects(
+        self, context: AuthedServiceContext, data: Any
+    ) -> Any:
+        """recursively unwraps nested action objects"""
+
+        if isinstance(data, list):
+            return [self.unwrap_nested_actionobjects(context, obj) for obj in data]
+        if isinstance(data, dict):
+            return {
+                key: self.unwrap_nested_actionobjects(context, obj)
+                for key, obj in data.items()
+            }
+        if isinstance(data, ActionObject):
+            res = self.get(context=context, uid=data.id)
+            res = res.ok() if res.is_ok() else res.err()
+            if not isinstance(res, ActionObject):
+                return SyftError(message=f"{res}")
+            else:
+                nested_res = res.syft_action_data
+                if isinstance(nested_res, ActionObject):
+                    raise ValueError(
+                        "More than double nesting of ActionObjects is currently not supported"
+                    )
+                return nested_res
+        return data
+
+    def contains_nested_actionobjects(self, data: Any) -> bool:
+        """
+        returns if this is a list/set/dict that contains ActionObjects
+        """
+
+        def unwrap_collection(col: set | dict | list) -> [Any]:  # type: ignore
+            return_values = []
+            if isinstance(col, dict):
+                values = list(col.values()) + list(col.keys())
+            else:
+                values = list(col)
+            for v in values:
+                if isinstance(v, list | dict | set):
+                    return_values += unwrap_collection(v)
+                else:
+                    return_values.append(v)
+            return return_values
+
+        if isinstance(data, list | dict | set):
+            values = unwrap_collection(data)
+            has_action_object = any(isinstance(x, ActionObject) for x in values)
+            return has_action_object
+        elif isinstance(data, ActionObject):
+            return True
+        return False
+
+    def flatten_action_arg(self, context: AuthedServiceContext, arg: UID) -> UID | None:
+        """ "If the argument is a collection (of collections) of ActionObjects,
+        We want to flatten the collection and upload a new ActionObject that contains
+        its values. E.g. [[ActionObject1, ActionObject2],[ActionObject3, ActionObject4]]
+        -> [[value1, value2],[value3, value4]]
+        """
+        res = self.get(context=context, uid=arg)
+        if res.is_err():
+            return arg
+
+        action_object = res.ok()
+        data = action_object.syft_action_data
+
+        if self.contains_nested_actionobjects(data):
+            new_data = self.unwrap_nested_actionobjects(context, data)
+            # Update existing action object with the new flattened data
+            action_object.syft_action_data_cache = new_data
+            action_object._save_to_blob_storage()
+            res = self._set(
+                context=context,
+                action_object=action_object,
+            )
+
+        return None
+
     @service_method(path="action.execute", name="execute", roles=GUEST_ROLE_LEVEL)
     def execute(
         self, context: AuthedServiceContext, action: Action
@@ -718,7 +840,7 @@ class ActionService(AbstractService):
         if action.action_type == ActionType.CREATEOBJECT:
             result_action_object = Ok(action.create_object)
         elif action.action_type == ActionType.SYFTFUNCTION:
-            usercode_service = context.node.get_service("usercodeservice")
+            usercode_service = context.server.get_service("usercodeservice")
             kwarg_ids = {}
             for k, v in action.kwargs.items():
                 # transform lineage ids into ids
@@ -772,10 +894,9 @@ class ActionService(AbstractService):
         )
 
         result_action_object._set_obj_location_(
-            context.node.id,
+            context.server.id,
             context.credentials,
         )
-
         blob_store_result = result_action_object._save_to_blob_storage()
         if isinstance(blob_store_result, SyftError):
             return blob_store_result
@@ -784,8 +905,12 @@ class ActionService(AbstractService):
         context.extra_kwargs = {
             "has_result_read_permission": has_result_read_permission
         }
-
-        set_result = self._set(context, result_action_object)
+        if isinstance(blob_store_result, SyftWarning):
+            logger.debug(blob_store_result.message)
+        set_result = self._set(
+            context,
+            result_action_object,
+        )
         if set_result.is_err():
             return Err(
                 f"Failed executing action {action}, set result is an error: {set_result.err()}"
@@ -817,12 +942,114 @@ class ActionService(AbstractService):
 
     @service_method(path="action.delete", name="delete", roles=ADMIN_ROLE_LEVEL)
     def delete(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID, soft_delete: bool = False
     ) -> SyftSuccess | SyftError:
-        res = self.store.delete(context.credentials, uid)
-        if res.is_err():
-            return SyftError(message=res.err())
-        return SyftSuccess(message="Great Success!")
+        get_res = self.store.get(uid=uid, credentials=context.credentials)
+        if get_res.is_err():
+            return SyftError(message=get_res.err())
+        obj: ActionObject | TwinObject = get_res.ok()
+        return_msg = []
+
+        # delete any associated blob storage entry object to the action object
+        blob_del_res = self._delete_blob_storage_entry(context=context, obj=obj)
+        if isinstance(blob_del_res, SyftError):
+            return SyftError(message=blob_del_res.message)
+        return_msg.append(blob_del_res.message)
+
+        # delete the action object from the action store
+        store_del_res = self._delete_from_action_store(
+            context=context, uid=obj.id, soft_delete=soft_delete
+        )
+        if isinstance(store_del_res, SyftError):
+            return SyftError(message=store_del_res.message)
+        return_msg.append(store_del_res.message)
+
+        return SyftSuccess(message="\n".join(return_msg))
+
+    def _delete_blob_storage_entry(
+        self,
+        context: AuthedServiceContext,
+        obj: TwinObject | ActionObject,
+    ) -> SyftSuccess | SyftError:
+        deleted_blob_ids = []
+        blob_store_service = cast(
+            BlobStorageService, context.server.get_service(BlobStorageService)
+        )
+
+        if isinstance(obj, ActionObject) and obj.syft_blob_storage_entry_id:
+            blob_del_res = blob_store_service.delete(
+                context=context, uid=obj.syft_blob_storage_entry_id
+            )
+            if isinstance(blob_del_res, SyftError):
+                return SyftError(message=blob_del_res.message)
+            deleted_blob_ids.append(obj.syft_blob_storage_entry_id)
+
+        if isinstance(obj, TwinObject):
+            if obj.private.syft_blob_storage_entry_id:
+                blob_del_res = blob_store_service.delete(
+                    context=context, uid=obj.private.syft_blob_storage_entry_id
+                )
+                if isinstance(blob_del_res, SyftError):
+                    return SyftError(message=blob_del_res.message)
+                deleted_blob_ids.append(obj.private.syft_blob_storage_entry_id)
+
+            if obj.mock.syft_blob_storage_entry_id:
+                blob_del_res = blob_store_service.delete(
+                    context=context, uid=obj.mock.syft_blob_storage_entry_id
+                )
+                if isinstance(blob_del_res, SyftError):
+                    return SyftError(message=blob_del_res.message)
+                deleted_blob_ids.append(obj.mock.syft_blob_storage_entry_id)
+
+        message = f"Deleted blob storage entries: {', '.join(str(blob_id) for blob_id in deleted_blob_ids)}"
+
+        return SyftSuccess(message=message)
+
+    def _delete_from_action_store(
+        self,
+        context: AuthedServiceContext,
+        uid: UID,
+        soft_delete: bool = False,
+    ) -> SyftSuccess | SyftError:
+        if soft_delete:
+            get_res = self.store.get(uid=uid, credentials=context.credentials)
+            if get_res.is_err():
+                return SyftError(message=get_res.err())
+            obj: ActionObject | TwinObject = get_res.ok()
+
+            if isinstance(obj, TwinObject):
+                res = self._soft_delete_action_obj(
+                    context=context, action_obj=obj.private
+                )
+                if res.is_err():
+                    return SyftError(message=res.err())
+                res = self._soft_delete_action_obj(context=context, action_obj=obj.mock)
+                if res.is_err():
+                    return SyftError(message=res.err())
+
+            if isinstance(obj, ActionObject):
+                res = self._soft_delete_action_obj(context=context, action_obj=obj)
+                if res.is_err():
+                    return SyftError(message=res.err())
+        else:
+            res = self.store.delete(credentials=context.credentials, uid=uid)
+            if res.is_err():
+                return SyftError(message=res.err())
+
+        return SyftSuccess(message=f"Action object with uid '{uid}' deleted.")
+
+    def _soft_delete_action_obj(
+        self, context: AuthedServiceContext, action_obj: ActionObject
+    ) -> Result[ActionObject, str]:
+        action_obj.syft_action_data_cache = None
+        res = action_obj._save_to_blob_storage()
+        if isinstance(res, SyftError):
+            return Err(res.message)
+        set_result = self._set(
+            context=context,
+            action_object=action_obj,
+        )
+        return set_result
 
 
 def resolve_action_args(

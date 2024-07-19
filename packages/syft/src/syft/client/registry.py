@@ -13,11 +13,11 @@ import pandas as pd
 import requests
 
 # relative
-from ..service.metadata.node_metadata import NodeMetadataJSON
-from ..service.network.node_peer import NodePeer
-from ..service.network.node_peer import NodePeerConnectionStatus
+from ..service.metadata.server_metadata import ServerMetadataJSON
+from ..service.network.server_peer import ServerPeer
+from ..service.network.server_peer import ServerPeerConnectionStatus
 from ..service.response import SyftException
-from ..types.grid_url import GridURL
+from ..types.server_url import ServerURL
 from ..util.constants import DEFAULT_TIMEOUT
 from .client import SyftClient as Client
 
@@ -77,7 +77,7 @@ class NetworkRegistry:
             url = "http://" + network["host_or_ip"] + ":" + str(network["port"]) + "/"
             try:
                 res = requests.get(url, timeout=DEFAULT_TIMEOUT)  # nosec
-                online = "This is a PyGrid Network node." in res.text
+                online = "This is a Syft Gateway server." in res.text
             except Exception:
                 online = False
 
@@ -165,8 +165,8 @@ class NetworkRegistry:
             port = int(network["port"])
             protocol = network["protocol"]
             host_or_ip = network["host_or_ip"]
-            grid_url = GridURL(port=port, protocol=protocol, host_or_ip=host_or_ip)
-            client = connect(url=str(grid_url))
+            server_url = ServerURL(port=port, protocol=protocol, host_or_ip=host_or_ip)
+            client = connect(url=str(server_url))
             return client.guest()
         except Exception as e:
             raise SyftException(f"Failed to login with: {network}. {e}")
@@ -182,27 +182,27 @@ class NetworkRegistry:
         raise KeyError(f"Invalid key: {key} for {on}")
 
 
-class DomainRegistry:
+class DatasiteRegistry:
     def __init__(self) -> None:
         self.all_networks: list[dict] = []
-        self.all_domains: dict[str, NodePeer] = {}
+        self.all_datasites: dict[str, ServerPeer] = {}
         try:
             network_json = NetworkRegistry.load_network_registry_json()
             self.all_networks = _get_all_networks(
                 network_json=network_json, version="2.0.0"
             )
-            self._get_all_domains()
+            self._get_all_datasites()
         except Exception as e:
             logger.warning(
                 f"Failed to get Network Registry, go checkout: {NETWORK_REGISTRY_REPO}. {e}"
             )
 
-    def _get_all_domains(self) -> None:
+    def _get_all_datasites(self) -> None:
         for network in self.all_networks:
             network_client = NetworkRegistry.create_client(network)
-            domains: list[NodePeer] = network_client.domains.retrieve_nodes()
-            for domain in domains:
-                self.all_domains[str(domain.id)] = domain
+            datasites: list[ServerPeer] = network_client.datasites.retrieve_servers()
+            for datasite in datasites:
+                self.all_datasites[str(datasite.id)] = datasite
 
     @property
     def online_networks(self) -> list[dict]:
@@ -212,7 +212,7 @@ class DomainRegistry:
             url = "http://" + network["host_or_ip"] + ":" + str(network["port"]) + "/"
             try:
                 res = requests.get(url, timeout=DEFAULT_TIMEOUT)
-                online = "This is a PyGrid Network node." in res.text
+                online = "This is a Syft Gateway server." in res.text
             except Exception:
                 online = False
 
@@ -254,10 +254,10 @@ class DomainRegistry:
         return [network for network in _online_networks if network is not None]
 
     @property
-    def online_domains(self) -> list[tuple[NodePeer, NodeMetadataJSON | None]]:
+    def online_datasites(self) -> list[tuple[ServerPeer, ServerMetadataJSON | None]]:
         networks = self.online_networks
 
-        _all_online_domains = []
+        _all_online_datasites = []
         for network in networks:
             try:
                 network_client = NetworkRegistry.create_client(network)
@@ -265,46 +265,48 @@ class DomainRegistry:
                 logger.error(f"Error in creating network client {e}")
                 continue
 
-            domains: list[NodePeer] = network_client.domains.retrieve_nodes()
-            for domain in domains:
-                self.all_domains[str(domain.id)] = domain
+            datasites: list[ServerPeer] = network_client.datasites.retrieve_servers()
+            for datasite in datasites:
+                self.all_datasites[str(datasite.id)] = datasite
 
-            _all_online_domains += [
-                (domain, domain.guest_client.metadata)
-                for domain in domains
-                if domain.ping_status == NodePeerConnectionStatus.ACTIVE
+            _all_online_datasites += [
+                (datasite, datasite.guest_client.metadata)
+                for datasite in datasites
+                if datasite.ping_status == ServerPeerConnectionStatus.ACTIVE
             ]
 
-        return [domain for domain in _all_online_domains if domain is not None]
+        return [datasite for datasite in _all_online_datasites if datasite is not None]
 
     def __make_dict__(self) -> list[dict[str, Any]]:
-        on = self.online_domains
-        domains: list[dict[str, Any]] = []
-        for domain, metadata in on:
-            domain_dict: dict[str, Any] = {}
-            domain_dict["name"] = domain.name
+        on = self.online_datasites
+        datasites: list[dict[str, Any]] = []
+        for datasite, metadata in on:
+            datasite_dict: dict[str, Any] = {}
+            datasite_dict["name"] = datasite.name
             if metadata is not None:
-                domain_dict["organization"] = metadata.organization
-                domain_dict["version"] = metadata.syft_version
+                datasite_dict["organization"] = metadata.organization
+                datasite_dict["version"] = metadata.syft_version
             route = None
-            if len(domain.node_routes) > 0:
-                route = domain.pick_highest_priority_route()
-            domain_dict["host_or_ip"] = route.host_or_ip if route else "-"
-            domain_dict["protocol"] = route.protocol if route else "-"
-            domain_dict["port"] = route.port if route else "-"
-            domain_dict["id"] = domain.id
-            domains.append(domain_dict)
+            if len(datasite.server_routes) > 0:
+                route = datasite.pick_highest_priority_route()
+            datasite_dict["host_or_ip"] = route.host_or_ip if route else "-"
+            datasite_dict["protocol"] = route.protocol if route else "-"
+            datasite_dict["port"] = route.port if route else "-"
+            datasite_dict["id"] = datasite.id
+            datasites.append(datasite_dict)
 
-        return domains
+        return datasites
 
     def _repr_html_(self) -> str:
         on: list[dict[str, Any]] = self.__make_dict__()
         if len(on) == 0:
-            return "(no domains online - try syft.domains.all_domains to see offline domains)"
+            return "(no datasites online - try syft.datasites.all_datasites to see offline datasites)"
         df = pd.DataFrame(on)
         total_df = pd.DataFrame(
             [
-                [f"{len(on)} / {len(self.all_domains)} (online domains / all domains)"]
+                [
+                    f"{len(on)} / {len(self.all_datasites)} (online datasites / all datasites)"
+                ]
                 + [""] * (len(df.columns) - 1)
             ],
             columns=df.columns,
@@ -316,11 +318,13 @@ class DomainRegistry:
     def __repr__(self) -> str:
         on: list[dict[str, Any]] = self.__make_dict__()
         if len(on) == 0:
-            return "(no domains online - try syft.domains.all_domains to see offline domains)"
+            return "(no datasites online - try syft.datasites.all_datasites to see offline datasites)"
         df = pd.DataFrame(on)
         total_df = pd.DataFrame(
             [
-                [f"{len(on)} / {len(self.all_domains)} (online domains / all domains)"]
+                [
+                    f"{len(on)} / {len(self.all_datasites)} (online datasites / all datasites)"
+                ]
                 + [""] * (len(df.columns) - 1)
             ],
             columns=df.columns,
@@ -329,7 +333,7 @@ class DomainRegistry:
         df = pd.concat([df, total_df])
         return df._repr_html_()  # type: ignore
 
-    def create_client(self, peer: NodePeer) -> Client:
+    def create_client(self, peer: ServerPeer) -> Client:
         try:
             return peer.guest_client
         except Exception as e:
@@ -337,13 +341,13 @@ class DomainRegistry:
 
     def __getitem__(self, key: str | int) -> Client:
         if isinstance(key, int):
-            return self.create_client(self.online_domains[key][0])
+            return self.create_client(self.online_datasites[key][0])
         else:
-            on = self.online_domains
+            on = self.online_datasites
             count = 0
-            for domain, _ in on:
-                if domain.name == key:
-                    return self.create_client(self.online_domains[count][0])
+            for datasite, _ in on:
+                if datasite.name == key:
+                    return self.create_client(self.online_datasites[count][0])
                 count += 1
         raise KeyError(f"Invalid key: {key} for {on}")
 
@@ -374,7 +378,7 @@ class EnclaveRegistry:
             url = "http://" + enclave["host_or_ip"] + ":" + str(enclave["port"]) + "/"
             try:
                 res = requests.get(url, timeout=DEFAULT_TIMEOUT)  # nosec
-                online = "OpenMined Enclave Node Running" in res.text
+                online = "OpenMined Enclave Server Running" in res.text
             except Exception:
                 online = False
 
@@ -427,8 +431,8 @@ class EnclaveRegistry:
             port = int(enclave["port"])
             protocol = enclave["protocol"]
             host_or_ip = enclave["host_or_ip"]
-            grid_url = GridURL(port=port, protocol=protocol, host_or_ip=host_or_ip)
-            client = connect(url=str(grid_url))
+            server_url = ServerURL(port=port, protocol=protocol, host_or_ip=host_or_ip)
+            client = connect(url=str(server_url))
             return client.guest()
         except Exception as e:
             raise SyftException(f"Failed to login with: {enclave}. {e}")

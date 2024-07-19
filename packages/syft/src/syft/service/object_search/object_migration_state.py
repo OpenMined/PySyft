@@ -4,13 +4,13 @@
 from result import Result
 
 # relative
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
 from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftMigrationRegistry
 from ...types.syft_object import SyftObject
 from ..action.action_permissions import ActionObjectPermission
@@ -19,7 +19,7 @@ from ..action.action_permissions import ActionObjectPermission
 @serializable()
 class SyftObjectMigrationState(SyftObject):
     __canonical_name__ = "SyftObjectMigrationState"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     __attr_unique__ = ["canonical_name"]
 

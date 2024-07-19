@@ -83,7 +83,7 @@ def _patch_ipython_sanitization() -> None:
                 template = "\n".join(matching_table + matching_jobs)
                 sanitized_str = escaped_template.sub("", html_str)
                 sanitized_str = escaped_js_css.sub("", sanitized_str)
-                sanitized_str = jobs_pattern.sub("", html_str)
+                sanitized_str = jobs_pattern.sub("", sanitized_str)
                 sanitized_str = sanitize_html(sanitized_str)
                 return f"{css_reinsert} {sanitized_str} {template}"
         return None

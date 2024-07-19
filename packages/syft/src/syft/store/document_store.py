@@ -16,15 +16,16 @@ from result import Result
 from typeguard import check_type
 
 # relative
-from ..node.credentials import SyftSigningKey
-from ..node.credentials import SyftVerifyKey
 from ..serde.serializable import serializable
+from ..server.credentials import SyftSigningKey
+from ..server.credentials import SyftVerifyKey
 from ..service.action.action_permissions import ActionObjectPermission
 from ..service.action.action_permissions import StoragePermission
 from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
 from ..types.base import SyftBaseModel
-from ..types.syft_object import SYFT_OBJECT_VERSION_2
+from ..types.syft_object import BaseDateTime
+from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
@@ -34,7 +35,7 @@ from .locks import NoLockingConfig
 from .locks import SyftLock
 
 
-@serializable()
+@serializable(canonical_name="BasePartitionSettings", version=1)
 class BasePartitionSettings(SyftBaseModel):
     """Basic Partition Settings
 
@@ -62,7 +63,7 @@ class StoreClientConfig(BaseModel):
     pass
 
 
-@serializable()
+@serializable(canonical_name="PartitionKey", version=1)
 class PartitionKey(BaseModel):
     key: str
     type_: type | object
@@ -100,7 +101,7 @@ class PartitionKey(BaseModel):
         return is_generic_alias(self.type_) and self.type_.__origin__ == list
 
 
-@serializable()
+@serializable(canonical_name="PartitionKeys", version=1)
 class PartitionKeys(BaseModel):
     pks: PartitionKey | tuple[PartitionKey, ...] | list[PartitionKey]
 
@@ -126,7 +127,7 @@ class PartitionKeys(BaseModel):
         return PartitionKeys(pks=pks)
 
 
-@serializable()
+@serializable(canonical_name="QueryKey", version=1)
 class QueryKey(PartitionKey):
     value: Any = None
 
@@ -183,7 +184,7 @@ class QueryKey(PartitionKey):
         return {key: self.value}
 
 
-@serializable()
+@serializable(canonical_name="PartitionKeysWithUID", version=1)
 class PartitionKeysWithUID(PartitionKeys):
     uid_pk: PartitionKey
 
@@ -195,7 +196,7 @@ class PartitionKeysWithUID(PartitionKeys):
         return all_keys
 
 
-@serializable()
+@serializable(canonical_name="QueryKeys", version=1)
 class QueryKeys(SyftBaseModel):
     qks: QueryKey | tuple[QueryKey, ...] | list[QueryKey]
 
@@ -208,7 +209,7 @@ class QueryKeys(SyftBaseModel):
     def from_obj(partition_keys: PartitionKeys, obj: SyftObject) -> QueryKeys:
         qks = []
         for partition_key in partition_keys.all:
-            pk_key = partition_key.key
+            pk_key = partition_key.key  # name of the attribute
             pk_type = partition_key.type_
             pk_value = getattr(obj, pk_key)
             # object has a method for getting these types
@@ -276,7 +277,7 @@ class QueryKeys(SyftBaseModel):
 UIDPartitionKey = PartitionKey(key="id", type_=UID)
 
 
-@serializable()
+@serializable(canonical_name="PartitionSettings", version=1)
 class PartitionSettings(BasePartitionSettings):
     object_type: type
     store_key: PartitionKey = UIDPartitionKey
@@ -292,7 +293,11 @@ class PartitionSettings(BasePartitionSettings):
 
 
 @instrument
-@serializable(attrs=["settings", "store_config", "unique_cks", "searchable_cks"])
+@serializable(
+    attrs=["settings", "store_config", "unique_cks", "searchable_cks"],
+    canonical_name="StorePartition",
+    version=1,
+)
 class StorePartition:
     """Base StorePartition
 
@@ -305,17 +310,19 @@ class StorePartition:
 
     def __init__(
         self,
-        node_uid: UID,
+        server_uid: UID,
         root_verify_key: SyftVerifyKey | None,
         settings: PartitionSettings,
         store_config: StoreConfig,
+        has_admin_permissions: Callable[[SyftVerifyKey], bool] | None = None,
     ) -> None:
         if root_verify_key is None:
             root_verify_key = SyftSigningKey.generate().verify_key
-        self.node_uid = node_uid
+        self.server_uid = server_uid
         self.root_verify_key = root_verify_key
         self.settings = settings
         self.store_config = store_config
+        self.has_admin_permissions = has_admin_permissions
         res = self.init_store()
         if res.is_err():
             raise RuntimeError(
@@ -370,6 +377,8 @@ class StorePartition:
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> Result[SyftObject, str]:
+        if obj.created_date is None:
+            obj.created_date = BaseDateTime.now()
         return self._thread_safe_cbk(
             self._set,
             credentials=credentials,
@@ -488,6 +497,7 @@ class StorePartition:
         obj: SyftObject,
         has_permission: bool = False,
         overwrite: bool = False,
+        allow_missing_keys: bool = False,
     ) -> Result[SyftObject, str]:
         raise NotImplementedError
 
@@ -524,6 +534,9 @@ class StorePartition:
     def has_permission(self, permission: ActionObjectPermission) -> bool:
         raise NotImplementedError
 
+    def get_all_permissions(self) -> Result[dict[UID, set[str]], str]:
+        raise NotImplementedError
+
     def _get_permissions_for_uid(self, uid: UID) -> Result[set[str], str]:
         raise NotImplementedError
 
@@ -542,6 +555,9 @@ class StorePartition:
     def _get_storage_permissions_for_uid(self, uid: UID) -> Result[set[UID], str]:
         raise NotImplementedError
 
+    def get_all_storage_permissions(self) -> Result[dict[UID, set[UID]], str]:
+        raise NotImplementedError
+
     def _migrate_data(
         self,
         to_klass: SyftObject,
@@ -552,7 +568,7 @@ class StorePartition:
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="DocumentStore", version=1)
 class DocumentStore:
     """Base Document Store
 
@@ -566,7 +582,7 @@ class DocumentStore:
 
     def __init__(
         self,
-        node_uid: UID,
+        server_uid: UID,
         root_verify_key: SyftVerifyKey | None,
         store_config: StoreConfig,
     ) -> None:
@@ -574,18 +590,54 @@ class DocumentStore:
             raise Exception("must have store config")
         self.partitions = {}
         self.store_config = store_config
-        self.node_uid = node_uid
+        self.server_uid = server_uid
         self.root_verify_key = root_verify_key
+
+    def __has_admin_permissions(
+        self, settings: PartitionSettings
+    ) -> Callable[[SyftVerifyKey], bool]:
+        # relative
+        from ..service.user.user import User
+        from ..service.user.user_roles import ServiceRole
+        from ..service.user.user_stash import UserStash
+
+        # leave out UserStash to avoid recursion
+        # TODO: pass the callback from BaseStash instead of DocumentStore
+        # so that this works with UserStash after the sqlite thread fix is merged
+        if settings.object_type is User:
+            return lambda credentials: False
+
+        user_stash = UserStash(store=self)
+
+        def has_admin_permissions(credentials: SyftVerifyKey) -> bool:
+            res = user_stash.get_by_verify_key(
+                credentials=credentials,
+                verify_key=credentials,
+            )
+
+            return (
+                res.is_ok()
+                and (user := res.ok()) is not None
+                and user.role in (ServiceRole.DATA_OWNER, ServiceRole.ADMIN)
+            )
+
+        return has_admin_permissions
 
     def partition(self, settings: PartitionSettings) -> StorePartition:
         if settings.name not in self.partitions:
             self.partitions[settings.name] = self.partition_type(
-                node_uid=self.node_uid,
+                server_uid=self.server_uid,
                 root_verify_key=self.root_verify_key,
                 settings=settings,
                 store_config=self.store_config,
+                has_admin_permissions=self.__has_admin_permissions(settings),
             )
         return self.partitions[settings.name]
+
+    def get_partition_object_types(self) -> list[type]:
+        return [
+            partition.settings.object_type for partition in self.partitions.values()
+        ]
 
 
 @instrument
@@ -639,6 +691,10 @@ class BaseStash:
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> Result[BaseStash.object_type, str]:
+        res = self.check_type(obj, self.object_type)
+        # we dont use and_then logic here as it is hard because of the order of the arguments
+        if res.is_err():
+            return res
         res = self.partition.set(
             credentials=credentials,
             obj=obj,
@@ -688,6 +744,9 @@ class BaseStash:
         **kwargs: dict[str, Any],
     ) -> Result[list[BaseStash.object_type], str]:
         order_by = kwargs.pop("order_by", None)
+        _ = kwargs.pop("created_date", None)
+        _ = kwargs.pop("deleted_date", None)
+        _ = kwargs.pop("updated_date", None)
         qks = QueryKeys.from_dict(kwargs)
         return self.query_all(credentials=credentials, qks=qks, order_by=order_by)
 
@@ -745,27 +804,25 @@ class BaseStash:
         obj: BaseStash.object_type,
         has_permission: bool = False,
     ) -> Result[BaseStash.object_type, str]:
+        obj.updated_date = BaseDateTime.now()
         qk = self.partition.store_query_key(obj)
         res = self.partition.update(
             credentials=credentials, qk=qk, obj=obj, has_permission=has_permission
         )
         return res
 
-
-@instrument
-class BaseUIDStoreStash(BaseStash):
     def delete_by_uid(
         self, credentials: SyftVerifyKey, uid: UID
     ) -> Result[SyftSuccess, str]:
         qk = UIDPartitionKey.with_obj(uid)
-        result = super().delete(credentials=credentials, qk=qk)
+        result = self.delete(credentials=credentials, qk=qk)
         if result.is_ok():
             return Ok(SyftSuccess(message=f"ID: {uid} deleted"))
         return result
 
     def get_by_uid(
         self, credentials: SyftVerifyKey, uid: UID
-    ) -> Result[BaseUIDStoreStash.object_type | None, str]:
+    ) -> Result[BaseStash.object_type | None, str]:
         res = self.partition.get(credentials=credentials, uid=uid)
 
         # NOTE Return Ok(None) when no results are found for backwards compatibility
@@ -773,25 +830,10 @@ class BaseUIDStoreStash(BaseStash):
             return Ok(None)
         return res
 
-    def set(
-        self,
-        credentials: SyftVerifyKey,
-        obj: BaseUIDStoreStash.object_type,
-        add_permissions: list[ActionObjectPermission] | None = None,
-        add_storage_permission: bool = True,
-        ignore_duplicates: bool = False,
-    ) -> Result[BaseUIDStoreStash.object_type, str]:
-        res = self.check_type(obj, self.object_type)
-        # we dont use and_then logic here as it is hard because of the order of the arguments
-        if res.is_err():
-            return res
-        return super().set(
-            credentials=credentials,
-            obj=res.ok(),
-            ignore_duplicates=ignore_duplicates,
-            add_permissions=add_permissions,
-            add_storage_permission=add_storage_permission,
-        )
+
+@instrument
+class BaseUIDStoreStash(BaseStash):
+    pass
 
 
 @serializable()
@@ -811,7 +853,7 @@ class StoreConfig(SyftBaseObject):
     """
 
     __canonical_name__ = "StoreConfig"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     store_type: type[DocumentStore]
     client_config: StoreClientConfig | None = None

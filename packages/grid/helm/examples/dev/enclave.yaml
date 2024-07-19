@@ -1,0 +1,8 @@
+# Values for deploying an enclave
+# Patched on top of patch `base.yaml`
+
+server:
+  type: enclave
+
+attestation:
+  enabled: true

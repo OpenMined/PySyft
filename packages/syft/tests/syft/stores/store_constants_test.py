@@ -1,3 +1,6 @@
+# syft absolute
+from syft.server.credentials import SyftSigningKey
+
 TEST_VERIFY_KEY_STRING_ROOT = (
     "08e5bcddfd55cdff0f7f6a62d63a43585734c6e7a17b2ffb3f3efe322c3cecc5"
 )
@@ -7,3 +10,6 @@ TEST_VERIFY_KEY_STRING_CLIENT = (
 TEST_VERIFY_KEY_STRING_HACKER = (
     "8f4412396d3418d17c08a8f46592621a5d57e0daf1c93e2134c30f50d666801d"
 )
+
+TEST_SIGNING_KEY_NEW_ADMIN = SyftSigningKey.generate()
+TEST_VERIFY_KEY_NEW_ADMIN = TEST_SIGNING_KEY_NEW_ADMIN.verify_key

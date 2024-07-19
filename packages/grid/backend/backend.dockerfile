@@ -60,7 +60,7 @@ WORKDIR /root/app/
 # Copy pre-built syft dependencies
 COPY --from=syft_deps /root/app/.venv .venv
 
-# copy grid
+# copy server
 COPY grid/backend/grid ./grid/
 
 # copy syft
@@ -73,9 +73,9 @@ ENV \
     VIRTUAL_ENV="/root/app/.venv" \
     # Syft
     APPDIR="/root/app" \
-    NODE_NAME="default_node_name" \
-    NODE_TYPE="domain" \
-    NODE_IPV6="False" \
+    SERVER_NAME="default_server_name" \
+    SERVER_TYPE="datasite" \
+    SERVER_IPV6="False" \
     SERVICE_NAME="backend" \
     RELEASE="production" \
     DEV_MODE="False" \

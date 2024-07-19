@@ -25,6 +25,7 @@ from pathlib import Path
 import platform
 import random
 import re
+import secrets
 from secrets import randbelow
 import socket
 import sys
@@ -41,6 +42,9 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import nh3
 import requests
+
+# relative
+from ..serde.serialize import _serialize as serialize
 
 logger = logging.getLogger(__name__)
 
@@ -91,6 +95,10 @@ def get_name_for(klass: type) -> str:
 
 def get_mb_size(data: Any) -> float:
     return sys.getsizeof(data) / (1024 * 1024)
+
+
+def get_mb_serialized_size(data: Any) -> float:
+    return sys.getsizeof(serialize(data, to_bytes=True)) / (1024 * 1024)
 
 
 def extract_name(klass: type) -> str:
@@ -474,7 +482,7 @@ def prompt_warning_message(message: str, confirm: bool = False) -> bool:
         if response == "y":
             return True
         elif response == "n":
-            display("Aborted !!")
+            print("Aborted.")
             return False
         else:
             print("Invalid response. Please enter Y or N.")
@@ -918,6 +926,10 @@ def get_dev_mode() -> bool:
     return str_to_bool(os.getenv("DEV_MODE", "False"))
 
 
+def generate_token() -> str:
+    return secrets.token_hex(64)
+
+
 def sanitize_html(html: str) -> str:
     policy = {
         "tags": ["svg", "strong", "rect", "path", "circle"],
@@ -984,3 +996,18 @@ def get_latest_tag(registry: str, repo: str) -> str | None:
     if len(tag_times) > 0:
         return tag_times[0][0]
     return None
+
+
+def get_nb_secrets(defaults: dict | None = None) -> dict:
+    if defaults is None:
+        defaults = {}
+
+    try:
+        filename = "./secrets.json"
+        with open(filename) as f:
+            loaded = json.loads(f.read())
+            defaults.update(loaded)
+    except Exception:
+        print(f"Unable to load {filename}")
+
+    return defaults
