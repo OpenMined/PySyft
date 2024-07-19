@@ -275,4 +275,4 @@ def test_zmq_client_serde():
 
     deser = syft.deserialize(bytes_data, from_bytes=True)
 
-    assert type(deser) == type(client)
+    assert type(deser) is type(client)
