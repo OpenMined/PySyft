@@ -71,7 +71,7 @@ class PartitionKey(BaseModel):
 
     def __eq__(self, other: Any) -> bool:
         return (
-            type(other) == type(self)
+            type(other) is type(self)
             and self.key == other.key
             and self.type_ == other.type_
         )
@@ -134,7 +134,7 @@ class QueryKey(PartitionKey):
 
     def __eq__(self, other: Any) -> bool:
         return (
-            type(other) == type(self)
+            type(other) is type(self)
             and self.key == other.key
             and self.type_ == other.type_
             and self.value == other.value
