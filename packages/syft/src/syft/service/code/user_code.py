@@ -143,8 +143,8 @@ class UserCodeStatusCollection(SyncableSyftObject):
         from ...service.sync.diff_state import AttrDiff
 
         diff_attrs = []
-        status = list(self.status_dict.values())[0]
-        ext_status = list(ext_obj.status_dict.values())[0]
+        status = next(iter(self.status_dict.values()))
+        ext_status = next(iter(ext_obj.status_dict.values()))
 
         if status != ext_status:
             diff_attr = AttrDiff(
