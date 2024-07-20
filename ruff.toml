@@ -26,6 +26,7 @@ select = [
     # "PD"    # panda-vet
     # "PERF"  # perflint
     "PIE",  # flake8-pie
+    # "PL",   # pylint
     "PTH",  # flake8-use-pathlib
     "RET",  # flake8-return
     "SIM",  # flake8-simplify
