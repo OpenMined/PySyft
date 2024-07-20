@@ -21,6 +21,11 @@ ignore = [
     "B904",  # check for raise statements in exception handlers that lack a from clause
     "B905",  # zip() without an explicit strict= parameter
     "E721",  # must be removed before merge
+    "RUF003",  # must be removed before merge
+    "RUF005",  # must be removed before merge
+    "RUF012",  # must be removed before merge
+    "RUF013",  # must be removed before merge
+    "RUF015",  # must be removed before merge
 ]
 
 [lint.per-file-ignores]
