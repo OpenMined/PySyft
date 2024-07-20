@@ -241,7 +241,7 @@ def handle_ignore_batch(
     tgt_client = obj_diff_batch.target_client
     src_resolved_state, tgt_resolved_state = obj_diff_batch.create_new_resolved_states()
 
-    for batch in [obj_diff_batch] + other_ignore_batches:
+    for batch in [obj_diff_batch, *other_ignore_batches]:
         src_resolved_state.add_ignored(batch)
         tgt_resolved_state.add_ignored(batch)
 
