@@ -16,7 +16,7 @@ build_packages = [
     "pyinstaller==5.13.0",
 ]
 
-dev_packages = ["pytest"] + build_packages
+dev_packages = ["pytest", *build_packages]
 
 setup(
     name="syftcli",
