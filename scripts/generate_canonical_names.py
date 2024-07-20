@@ -10,8 +10,8 @@ os.environ["SYFT_SEARCH_MISSING_CANONICAL_NAME"] = "true"
 # NOTE import has to happen after setting the environment variable
 
 # relative
-from ..serde.recursive import SYFT_CLASSES_MISSING_CANONICAL_NAME  # noqa: E402
-from ..types.syft_object_registry import SyftObjectRegistry  # noqa: E402
+from ..serde.recursive import SYFT_CLASSES_MISSING_CANONICAL_NAME
+from ..types.syft_object_registry import SyftObjectRegistry
 
 
 class DecoratorFinder(ast.NodeVisitor):
