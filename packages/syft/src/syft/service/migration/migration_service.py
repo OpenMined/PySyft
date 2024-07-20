@@ -441,15 +441,15 @@ class MigrationService(AbstractService):
                 for obj in objects:
                     migrated_value = obj.migrate_to(klass.__version__, context)
                     migrated_objects.append(migrated_value)
-            except Exception as e:
+            except Exception:
                 # stdlib
                 import traceback
+
                 print(traceback.format_exc())
                 return Err(
                     f"Failed to migrate data to {klass} for qk {klass.__version__}: {obj.id}"
                 )
         return Ok(migrated_objects)
-
 
     @service_method(
         path="migration.migrate_data",
