@@ -10,12 +10,34 @@ extend-exclude = ["*.gypi"]
 # https://beta.ruff.rs/docs/configuration/#using-rufftoml
 [lint]
 select = [
+    "A",    # flake8-builtins
+    "B",    # flake8-bugbear
+    "C90",  # mccabe
+    "COM",  # flake8-commas
+    "D",    # pydocstyle
     "E",    # pycodestyle
     "F",    # pyflake
     "B",    # flake8-bugbear
     "C4",   # flake8-comprehensions
-    "PERF", # perflint
-    "UP",   # pyupgrade
+    "D",    # pydocstyle
+    "E",    # pycodestyle errors
+    "EM",   # flake8-errmsg
+    "F",    # Pyflakes
+    "FIX",  # flake8-fixme
+    "G",    # flake8-logging-format   
+    "N",    # pep8-naming
+    # "NPY"   # Numpy
+    # "PD"    # panda-vet
+    # "PERF"  # perflint
+    "PIE",  # flake8-pie
+    "PTH",  # flake8-use-pathlib
+    "RET",  # flake8-return
+    "SIM",  # falke8-simplify
+    "TCH",  # flake8-type-checking
+    "TD",   # flake8-todo
+    "TID",  # flake8-tidy-imports
+    # "UP",   # pyupgrade
+    "W",    # pycodestyle warnings
 ]
 ignore = [
     "B904",  # check for raise statements in exception handlers that lack a from clause
