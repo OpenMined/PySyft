@@ -440,7 +440,7 @@ class RemoteFunction(SyftObject):
 class RemoteUserCodeFunction(RemoteFunction):
     __canonical_name__ = "RemoteUserFunction"
     __version__ = SYFT_OBJECT_VERSION_1
-    __repr_attrs__ = RemoteFunction.__repr_attrs__ + ["user_code_id"]
+    __repr_attrs__ = [*RemoteFunction.__repr_attrs__, "user_code_id"]
 
     api: SyftAPI
 
