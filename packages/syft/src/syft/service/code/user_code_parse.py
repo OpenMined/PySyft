@@ -37,7 +37,7 @@ def make_ast_func(
 ) -> ast.FunctionDef:
     args = make_ast_args(input_kwargs)
     r = make_return(output_arg)
-    new_body = body + [r]
+    new_body = [*body, r]
     f = ast.FunctionDef(
         name=name, args=args, body=new_body, decorator_list=[], lineno=0
     )
