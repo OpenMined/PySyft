@@ -45,7 +45,7 @@ def get_mock_client(root_client, role) -> DatasiteClient:
         name=name, email=mail, password=password, password_verify=password
     )
     assert user
-    user_id = [u for u in get_users(worker) if u.email == mail][0].id
+    user_id = next(u for u in get_users(worker) if u.email == mail).id
     assert worker.root_client.api.services.user.update(uid=user_id, role=role)
     client = client.login(email=mail, password=password)
     client._fetch_api(client.credentials)
