@@ -19,7 +19,6 @@ select = [
     # "E",    # pycodestyle errors
     "EM",   # flake8-errmsg
     # "F",    # Pyflakes
-    "FIX",  # flake8-fixme
     "G",    # flake8-logging-format   
     # "N",    # pep8-naming
     # "NPY"   # Numpy
