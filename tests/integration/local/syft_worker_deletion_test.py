@@ -101,8 +101,9 @@ def test_delete_idle_worker(
     assert not isinstance(res, SyftError)
 
     if force:
+        workers = client.worker.get_all()
         assert (
-            len(workers := client.worker.get_all()) == len(original_workers) - 1
+            len(workers) == len(original_workers) - 1
             and all(w.id != worker_to_delete.id for w in workers)
         ), f"{workers.message=} {server_args=} {[(w.id, w.name) for w in original_workers]}"
         return
