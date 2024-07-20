@@ -364,7 +364,7 @@ class UserCode(SyncableSyftObject):
             return super().__setattr__(key, value)
 
     def _coll_repr_(self) -> dict[str, Any]:
-        status = [status for status, _ in self.status.status_dict.values()][0].value
+        status = next(status for status, _ in self.status.status_dict.values()).value
         if status == UserCodeStatus.PENDING.value:
             badge_color = "badge-purple"
         elif status == UserCodeStatus.APPROVED.value:
