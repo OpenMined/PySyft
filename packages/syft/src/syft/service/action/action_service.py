@@ -388,7 +388,7 @@ class ActionService(AbstractService):
         output_policy = code_item.get_output_policy(context)
 
         # Unwrap nested ActionObjects
-        for _k, arg in kwargs.values():
+        for arg in kwargs.values():
             self.flatten_action_arg(context, arg) if isinstance(arg, UID) else None
 
         if not override_execution_permission:
@@ -398,10 +398,10 @@ class ActionService(AbstractService):
                 return Err(f"No input policy defined for user code: {code_item.id}")
 
             # Filter input kwargs based on policy
-            filtered_kwargs = input_policy.filter_kwargs(
+            filteredwargs = input_policy.filterwargs(
                 kwargs=kwargs, context=context, code_item_id=code_item.id
             )
-            if filtered_kwargs.is_err():
+            if filteredwargs.is_err():
                 return filtered_kwargs
             filtered_kwargs = filtered_kwargs.ok()
 
