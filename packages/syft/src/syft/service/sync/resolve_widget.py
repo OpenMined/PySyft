@@ -202,7 +202,7 @@ class MainObjectDiffWidget:
             result = VBox([widgets.HTML(warning), result])
 
         if self.with_box:
-            result._dom_classes = result._dom_classes + ("diff-container",)
+            result._dom_classes = (*result._dom_classes, "diff-container")
 
         return result
 
