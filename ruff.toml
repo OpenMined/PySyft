@@ -29,7 +29,7 @@ select = [
     # "PL",   # pylint
     "PTH",  # flake8-use-pathlib
     "RET",  # flake8-return
-    "RUF",
+    # "RUF",
     "SIM",  # flake8-simplify
     "TCH",  # flake8-type-checking
     "TD",   # flake8-todo
