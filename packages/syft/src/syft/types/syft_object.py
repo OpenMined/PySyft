@@ -447,7 +447,7 @@ class SyftObject(SyftObjectVersioned):
             fields = list(getattr(self, "__fields__", {}).keys())  # type: ignore[unreachable]
 
         if "id" not in fields:
-            fields = ["id"] + fields
+            fields = ["id", *fields]
 
         dynam_attrs = set(DYNAMIC_SYFT_ATTRIBUTES)
         fields = [x for x in fields if x not in dynam_attrs]
