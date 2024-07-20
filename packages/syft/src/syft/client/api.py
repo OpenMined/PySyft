@@ -867,7 +867,7 @@ class SyftAPI(SyftObject):
     def __dir__(self) -> list[str]:
         modules = getattr(self.api_module, "_modules", [])
         return ["services", *modules]
-        
+
     def __syft_dir__(self) -> list[str]:
         modules = getattr(self.api_module, "_modules", [])
         return ["services", *modules]
