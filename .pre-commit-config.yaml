@@ -101,7 +101,7 @@ repos:
         always_run: true
         files: ^packages/syftcli
         args: [
-            "--gnore-missing-imports",
+            "--ignore-missing-imports",
             "--scripts-are-modules",
             "--disallow-incomplete-defs",
             "--no-implicit-optional",
