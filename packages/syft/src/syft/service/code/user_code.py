@@ -1382,7 +1382,7 @@ def parse_user_code(
     )
 
     return_stmt = ast.Return(value=ast.Name(id="result"))
-    new_body = tree.body + [call_stmt, return_stmt]
+    new_body = [*tree.body, call_stmt, return_stmt]
 
     wrapper_function = ast.FunctionDef(
         name=func_name,
