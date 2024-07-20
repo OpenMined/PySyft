@@ -93,7 +93,7 @@ repos:
       - id: ruff-format
         types_or: [python, pyi, jupyter]
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
+  - repo: https://github.com/python/mypy
     rev: v1.11.0
     hooks:
       - id: mypy
@@ -118,7 +118,7 @@ repos:
             "--config-file=tox.ini",
           ]
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
+  - repo: https://github.com/python/mypy
     rev: v1.11.0
     hooks:
       - id: mypy
@@ -143,7 +143,7 @@ repos:
             "--config-file=tox.ini",
           ]
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
+  - repo: https://github.com/python/mypy
     rev: v1.11.0
     hooks:
       - id: mypy
