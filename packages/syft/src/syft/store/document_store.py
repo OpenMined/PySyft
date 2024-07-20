@@ -117,7 +117,7 @@ class PartitionKeys(BaseModel):
         return QueryKeys.from_tuple(partition_keys=self, args=args)
 
     def add(self, pk: PartitionKey) -> PartitionKeys:
-        return PartitionKeys(pks=list(self.all) + [pk])
+        return PartitionKeys(pks=[*list(self.all), pk])
 
     @staticmethod
     def from_dict(cks_dict: dict[str, type]) -> PartitionKeys:
