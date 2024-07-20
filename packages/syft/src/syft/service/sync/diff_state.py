@@ -1428,7 +1428,7 @@ It will be available for review again."""
         obj_dependents = {}
         for parent, children in obj_dependencies.items():
             for child in children:
-                obj_dependents[child] = obj_dependencies.get(child, []) + [parent]
+                obj_dependents[child] = [*obj_dependencies.get(child, []), parent]
 
         for root_uid in root_ids:
             batch = ObjectDiffBatch.from_dependencies(
