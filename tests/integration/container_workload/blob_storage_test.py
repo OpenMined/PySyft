@@ -33,5 +33,5 @@ def test_mount_azure_blob_storage(datasite_1_port):
     )
     assert isinstance(blob_files, list), blob_files
     assert len(blob_files) > 0
-    document = [f for f in blob_files if "testfile.txt" in f.file_name][0]
+    document = next(f for f in blob_files if "testfile.txt" in f.file_name)
     assert document.read() == b"abc\n"
