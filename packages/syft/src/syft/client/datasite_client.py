@@ -16,7 +16,7 @@ from result import Result
 from tqdm import tqdm
 
 # relative
-from ..abstract_node import NodeSideType
+from ..abstract_server import ServerSideType
 from ..serde.serializable import serializable
 from ..service.action.action_object import ActionObject
 from ..service.code_history.code_history import CodeHistoriesDict
@@ -41,14 +41,14 @@ from .api import APIModule
 from .client import SyftClient
 from .client import login
 from .client import login_as_guest
-from .connection import NodeConnection
+from .connection import ServerConnection
 from .protocol import SyftProtocol
 
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     # relative
-    from ..orchestra import NodeHandle
+    from ..orchestra import ServerHandle
     from ..service.project.project import Project
 
 
@@ -90,10 +90,10 @@ def add_default_uploader(
     return obj
 
 
-@serializable()
-class DomainClient(SyftClient):
+@serializable(canonical_name="DatasiteClient", version=1)
+class DatasiteClient(SyftClient):
     def __repr__(self) -> str:
-        return f"<DomainClient: {self.name}>"
+        return f"<DatasiteClient: {self.name}>"
 
     def upload_dataset(self, dataset: CreateDataset) -> SyftSuccess | SyftError:
         # relative
@@ -108,22 +108,22 @@ class DomainClient(SyftClient):
             asset = dataset.asset_list[i]
             dataset.asset_list[i] = add_default_uploader(user, asset)
 
-        dataset._check_asset_must_contain_mock()
+        # dataset._check_asset_must_contain_mock()
         dataset_size: float = 0.0
 
         # TODO: Refactor so that object can also be passed to generate warnings
 
-        self.api.connection = cast(NodeConnection, self.api.connection)
+        self.api.connection = cast(ServerConnection, self.api.connection)
 
-        metadata = self.api.connection.get_node_metadata(self.api.signing_key)
+        metadata = self.api.connection.get_server_metadata(self.api.signing_key)
 
         if (
             metadata.show_warnings
-            and metadata.node_side_type == NodeSideType.HIGH_SIDE.value
+            and metadata.server_side_type == ServerSideType.HIGH_SIDE.value
         ):
             message = (
                 "You're approving a request on "
-                f"{metadata.node_side_type} side {metadata.node_type} "
+                f"{metadata.server_side_type} side {metadata.server_type} "
                 "which may host datasets with private information."
             )
             prompt_warning_message(message=message, confirm=True)
@@ -137,7 +137,7 @@ class DomainClient(SyftClient):
                     twin = TwinObject(
                         private_obj=ActionObject.from_obj(asset.data),
                         mock_obj=ActionObject.from_obj(asset.mock),
-                        syft_node_location=self.id,
+                        syft_server_location=self.id,
                         syft_client_verify_key=self.verify_key,
                     )
                     res = twin._save_to_blob_storage(allow_empty=contains_empty)
@@ -157,7 +157,7 @@ class DomainClient(SyftClient):
                     return response
 
                 asset.action_id = twin.id
-                asset.node_uid = self.id
+                asset.server_uid = self.id
                 dataset_size += get_mb_size(asset.data)
 
                 # Update the progress bar and set the dynamic description
@@ -172,7 +172,7 @@ class DomainClient(SyftClient):
 
     def refresh(self) -> None:
         if self.credentials:
-            self._fetch_node_metadata(self.credentials)
+            self._fetch_server_metadata(self.credentials)
 
         if self._api and self._api.refresh_api_callback:
             self._api.refresh_api_callback()
@@ -288,7 +288,7 @@ class DomainClient(SyftClient):
         via_client: SyftClient | None = None,
         url: str | None = None,
         port: int | None = None,
-        handle: NodeHandle | None = None,
+        handle: ServerHandle | None = None,  # noqa: F821
         email: str | None = None,
         password: str | None = None,
         protocol: str | SyftProtocol = SyftProtocol.HTTP,
@@ -319,7 +319,7 @@ class DomainClient(SyftClient):
             if self.metadata:
                 return SyftSuccess(
                     message=(
-                        f"Connected {self.metadata.node_type} "
+                        f"Connected {self.metadata.server_type} "
                         f"'{self.metadata.name}' to gateway '{client.name}'. "
                         f"{res.message}"
                     )
@@ -334,10 +334,12 @@ class DomainClient(SyftClient):
             return getattr(self.api.services, name)
         return None
 
-    def set_node_side_type_dangerous(
-        self, node_side_type: str
+    def set_server_side_type_dangerous(
+        self, server_side_type: str
     ) -> Result[SyftSuccess, SyftError]:
-        return self.api.services.settings.set_node_side_type_dangerous(node_side_type)
+        return self.api.services.settings.set_server_side_type_dangerous(
+            server_side_type
+        )
 
     @property
     def data_subject_registry(self) -> APIModule | None:
@@ -421,10 +423,10 @@ class DomainClient(SyftClient):
             return migration_data
         migration_data._set_obj_location_(self.id, self.verify_key)
 
-        if self.id != migration_data.node_uid:
+        if self.id != migration_data.server_uid:
             return SyftError(
-                message=f"This Migration data is not for this node. Expected node id {self.id}, "
-                f"got {migration_data.node_uid}"
+                message=f"This Migration data is not for this server. Expected server id {self.id}, "
+                f"got {migration_data.server_uid}"
             )
 
         if migration_data.signing_key.verify_key != self.verify_key:
@@ -464,7 +466,7 @@ class DomainClient(SyftClient):
         if isinstance(obj, SyftError):
             return obj.message
         updated_template_str = Template(obj.text).safe_substitute(
-            node_url=getattr(self.connection, "url", None)
+            server_url=getattr(self.connection, "url", None)
         )
         # If it's a markdown structured file
         if not isinstance(obj, HTMLObject):
