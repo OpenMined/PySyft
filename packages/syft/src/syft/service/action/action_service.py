@@ -398,10 +398,10 @@ class ActionService(AbstractService):
                 return Err(f"No input policy defined for user code: {code_item.id}")
 
             # Filter input kwargs based on policy
-            filteredwargs = input_policy.filterwargs(
+            filtered_kwargs = input_policy.filter_kwargs(
                 kwargs=kwargs, context=context, code_item_id=code_item.id
             )
-            if filteredwargs.is_err():
+            if filtered_kwargs.is_err():
                 return filtered_kwargs
             filtered_kwargs = filtered_kwargs.ok()
 
