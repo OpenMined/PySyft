@@ -32,7 +32,6 @@ select = [
     # "RUF",
     "SIM",  # flake8-simplify
     "TCH",  # flake8-type-checking
-    "TD",   # flake8-todo
     "TID",  # flake8-tidy-imports
     # "UP",   # pyupgrade
     # "W",    # pycodestyle warnings
