@@ -656,9 +656,9 @@ class NetworkService(AbstractService):
         if result.is_err():
             return SyftError(message=str(result.err()))
         return SyftSuccess(
-            message=f"New route ({str(route)}) with id '{route.id}' "
+            message=f"New route ({route!s}) with id '{route.id}' "
             f"to peer {remote_server_peer.server_type.value} '{remote_server_peer.name}' "
-            f"was added for {str(context.server.server_type)} '{context.server.name}'"
+            f"was added for {context.server.server_type!s} '{context.server.name}'"
         )
 
     @service_method(path="network.delete_route_on_peer", name="delete_route_on_peer")
@@ -746,7 +746,7 @@ class NetworkService(AbstractService):
                 f"There is only one route left to peer "
                 f"{remote_server_peer.server_type.value} '{remote_server_peer.name}'. "
                 f"Removing this route will remove the peer for "
-                f"{str(context.server.server_type)} '{context.server.name}'."
+                f"{context.server.server_type!s} '{context.server.name}'."
             )
             response: bool = prompt_warning_message(
                 message=warning_message,
@@ -761,9 +761,9 @@ class NetworkService(AbstractService):
 
         result = remote_server_peer.delete_route(route=route)
         return_message = (
-            f"Route '{str(route)}' to peer "
+            f"Route '{route!s}' to peer "
             f"{remote_server_peer.server_type.value} '{remote_server_peer.name}' "
-            f"was deleted for {str(context.server.server_type)} '{context.server.name}'."
+            f"was deleted for {context.server.server_type!s} '{context.server.name}'."
         )
         if isinstance(result, SyftError):
             return result
@@ -779,7 +779,7 @@ class NetworkService(AbstractService):
             return_message += (
                 f" There is no routes left to connect to peer "
                 f"{remote_server_peer.server_type.value} '{remote_server_peer.name}', so it is deleted for "
-                f"{str(context.server.server_type)} '{context.server.name}'."
+                f"{context.server.server_type!s} '{context.server.name}'."
             )
         else:
             # update the peer with the route removed
