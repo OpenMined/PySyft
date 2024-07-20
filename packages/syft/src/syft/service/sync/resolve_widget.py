@@ -398,7 +398,7 @@ class CollapsableObjectDiffWidget:
             checkboxes.append(sync_checkbox)
 
         accordion_header = HBox(
-            [title_html] + checkboxes,
+            [title_html, *checkboxes],
             layout=Layout(width="100%", justify_content="space-between"),
         )
 
