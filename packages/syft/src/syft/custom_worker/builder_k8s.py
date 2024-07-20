@@ -259,9 +259,9 @@ class KubernetesBuilder(BuilderBase):
                                         # other kaniko conf
                                         "--log-format=text",
                                         "--verbosity=info",
-                                    ]
-                                    + kaniko_extra_args
-                                    + build_args_list,
+                                        *kaniko_extra_args,
+                                        *build_args_list,
+                                    ],
                                     "volumeMounts": [
                                         {
                                             "name": "build-input",
