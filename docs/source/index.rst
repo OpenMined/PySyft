@@ -75,7 +75,7 @@ use and development of PySyft!
 
    syft.client
    syft.external
-   syft.node
+   syft.server
    syft.serde
    syft.service
    syft.store

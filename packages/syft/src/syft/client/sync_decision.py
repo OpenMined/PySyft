@@ -5,7 +5,7 @@ from enum import Enum
 from ..serde.serializable import serializable
 
 
-@serializable()
+@serializable(canonical_name="SyncDirection", version=1)
 class SyncDirection(str, Enum):
     LOW_TO_HIGH = "low_to_high"
     HIGH_TO_LOW = "high_to_low"

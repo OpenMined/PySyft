@@ -19,6 +19,8 @@ def serializable(
     without: list[str] | None = None,
     inherit: bool | None = True,
     inheritable: bool | None = True,
+    canonical_name: str | None = None,
+    version: int | None = None,
 ) -> Callable[[T], T]:
     """
     Recursively serialize attributes of the class.
@@ -52,6 +54,8 @@ def serializable(
             exclude_attrs=without,
             inherit_attrs=inherit,
             inheritable_attrs=inheritable,
+            canonical_name=canonical_name,
+            version=version,
         )
         return cls
 

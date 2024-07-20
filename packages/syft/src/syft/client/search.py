@@ -6,12 +6,12 @@ from IPython.display import display
 
 # relative
 from ..service.dataset.dataset import Dataset
-from ..service.metadata.node_metadata import NodeMetadataJSON
-from ..service.network.network_service import NodePeer
+from ..service.metadata.server_metadata import ServerMetadataJSON
+from ..service.network.network_service import ServerPeer
 from ..service.response import SyftWarning
 from ..types.uid import UID
 from .client import SyftClient
-from .registry import DomainRegistry
+from .registry import DatasiteRegistry
 
 
 class SearchResults:
@@ -58,23 +58,23 @@ class SearchResults:
 
 
 class Search:
-    def __init__(self, domains: DomainRegistry) -> None:
-        self.domains: list[tuple[NodePeer, NodeMetadataJSON | None]] = (
-            domains.online_domains
+    def __init__(self, datasites: DatasiteRegistry) -> None:
+        self.datasites: list[tuple[ServerPeer, ServerMetadataJSON | None]] = (
+            datasites.online_datasites
         )
 
     @staticmethod
-    def __search_one_node(
-        peer_tuple: tuple[NodePeer, NodeMetadataJSON], name: str
+    def __search_one_server(
+        peer_tuple: tuple[ServerPeer, ServerMetadataJSON], name: str
     ) -> tuple[SyftClient | None, list[Dataset]]:
         try:
-            peer, node_metadata = peer_tuple
+            peer, server_metadata = peer_tuple
             client = peer.guest_client
             results = client.api.services.dataset.search(name=name)
             return (client, results)
         except Exception as e:
             warning = SyftWarning(
-                message=f"Got exception {e} at node {node_metadata.name}"
+                message=f"Got exception {e} at server {server_metadata.name}"
             )
             display(warning)
             return (None, [])
@@ -82,12 +82,12 @@ class Search:
     def __search(self, name: str) -> list[tuple[SyftClient, list[Dataset]]]:
         with ThreadPoolExecutor(max_workers=20) as executor:
             # results: list[tuple[SyftClient | None, list[Dataset]]] = [
-            #     self.__search_one_node(peer_tuple, name) for peer_tuple in self.domains
+            #     self.__search_one_server(peer_tuple, name) for peer_tuple in self.datasites
             # ]
             results: list[tuple[SyftClient | None, list[Dataset]]] = list(
                 executor.map(
-                    lambda peer_tuple: self.__search_one_node(peer_tuple, name),
-                    self.domains,
+                    lambda peer_tuple: self.__search_one_server(peer_tuple, name),
+                    self.datasites,
                 )
             )
         # filter out SyftError

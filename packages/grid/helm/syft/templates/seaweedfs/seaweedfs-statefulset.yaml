@@ -1,4 +1,4 @@
-{{- if ne .Values.node.type "gateway"}}
+{{- if ne .Values.server.type "gateway"}}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -34,7 +34,7 @@ spec:
       serviceAccountName: seaweedfs-service-account
       containers:
         - name: seaweedfs-container
-          image: {{ .Values.global.registry }}/openmined/grid-seaweedfs:{{ .Values.global.version }}
+          image: {{ .Values.global.registry }}/openmined/syft-seaweedfs:{{ .Values.global.version }}
           imagePullPolicy: Always
           resources: {{ include "common.resources.set" (dict "resources" .Values.seaweedfs.resources "preset" .Values.seaweedfs.resourcesPreset) | nindent 12 }}
           env:

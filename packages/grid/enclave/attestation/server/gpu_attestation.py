@@ -23,10 +23,10 @@ def extract_token(captured_value: str) -> str:
 
 def attest_gpu() -> tuple[str, str]:
     # Fetch report from Nvidia Attestation SDK
-    client = attestation.Attestation("Attestation Node")
+    client = attestation.Attestation("Attestation Server")
 
     # TODO: Add the ability to generate nonce later.
-    logger.info("[RemoteGPUTest] node name : {}", client.get_name())
+    logger.info("[RemoteGPUTest] server name : {}", client.get_name())
 
     client.add_verifier(
         attestation.Devices.GPU, attestation.Environment.REMOTE, NRAS_URL, ""

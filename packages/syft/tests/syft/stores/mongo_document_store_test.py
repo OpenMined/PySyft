@@ -7,7 +7,7 @@ import pytest
 from result import Err
 
 # syft absolute
-from syft.node.credentials import SyftVerifyKey
+from syft.server.credentials import SyftVerifyKey
 from syft.service.action.action_permissions import ActionObjectPermission
 from syft.service.action.action_permissions import ActionPermission
 from syft.service.action.action_permissions import StoragePermission
@@ -709,7 +709,7 @@ def test_mongo_store_partition_add_remove_storage_permission(
 
     storage_permission = StoragePermission(
         uid=obj.id,
-        node_uid=UID(),
+        server_uid=UID(),
     )
     assert not mongo_store_partition.has_storage_permission(storage_permission)
     mongo_store_partition.add_storage_permission(storage_permission)
@@ -720,14 +720,14 @@ def test_mongo_store_partition_add_remove_storage_permission(
     obj2 = MockSyftObject(data=1)
     mongo_store_partition.set(root_verify_key, obj2, add_storage_permission=False)
     storage_permission3 = StoragePermission(
-        uid=obj2.id, node_uid=mongo_store_partition.node_uid
+        uid=obj2.id, server_uid=mongo_store_partition.server_uid
     )
     assert not mongo_store_partition.has_storage_permission(storage_permission3)
 
     obj3 = MockSyftObject(data=1)
     mongo_store_partition.set(root_verify_key, obj3, add_storage_permission=True)
     storage_permission4 = StoragePermission(
-        uid=obj3.id, node_uid=mongo_store_partition.node_uid
+        uid=obj3.id, server_uid=mongo_store_partition.server_uid
     )
     assert mongo_store_partition.has_storage_permission(storage_permission4)
 

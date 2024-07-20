@@ -17,7 +17,7 @@ def test_project_creation(worker):
         password_verify="bazinga",
     )
 
-    ds_client = sy.login(node=worker, email="sheldon@caltech.edu", password="bazinga")
+    ds_client = sy.login(server=worker, email="sheldon@caltech.edu", password="bazinga")
 
     new_project = sy.Project(
         name="My Cool Project", description="My Cool Description", members=[ds_client]
@@ -70,9 +70,13 @@ def test_exception_different_email(worker):
         password_verify="penny",
     )
 
-    ds_sheldon = sy.login(node=worker, email="sheldon@caltech.edu", password="bazinga")
+    ds_sheldon = sy.login(
+        server=worker, email="sheldon@caltech.edu", password="bazinga"
+    )
 
-    ds_leonard = sy.login(node=worker, email="leonard@princeton.edu", password="penny")
+    ds_leonard = sy.login(
+        server=worker, email="leonard@princeton.edu", password="penny"
+    )
 
     with pytest.raises(ValidationError):
         sy.Project(

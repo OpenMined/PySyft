@@ -2,10 +2,10 @@
   import { enhance } from "$app/forms"
   import Button from "$lib/components/Button.svelte"
   import Modal from "$lib/components/Modal.svelte"
-  import DomainMetadataPanel from "$lib/components/authentication/DomainMetadataPanel.svelte"
+  import DatasiteMetadataPanel from "$lib/components/authentication/DatasiteMetadataPanel.svelte"
   import Input from "$lib/components/Input.svelte"
-  import DomainOnlineIndicator from "$lib/components/DomainOnlineIndicator.svelte"
-  import type { DomainOnlineStatus } from "../../../types/domain/onlineIndicator"
+  import DatasiteOnlineIndicator from "$lib/components/DatasiteOnlineIndicator.svelte"
+  import type { DatasiteOnlineStatus } from "../../../types/datasite/onlineIndicator"
   import type { PageData, ActionData } from "./$types"
 
   export let data: PageData
@@ -13,13 +13,13 @@
 
   const { metadata } = data
 
-  let status: DomainOnlineStatus = "online"
+  let status: DatasiteOnlineStatus = "online"
 </script>
 
 <div
   class="flex flex-col xl:flex-row w-full h-full xl:justify-around items-center gap-12"
 >
-  <DomainMetadataPanel {metadata} />
+  <DatasiteMetadataPanel {metadata} />
   <form method="POST" class="contents" use:enhance>
     <section class="w-full max-w-[681px]">
       <Modal>
@@ -38,16 +38,16 @@
             </p>
           {/if}
           <div class="flex justify-center items-center gap-2">
-            <DomainOnlineIndicator />
+            <DatasiteOnlineIndicator />
             <p class="text-600">
               {#if status === "pending"}
                 Checking connection
               {:else}
-                Domain {status}
+                Datasite {status}
               {/if}
             </p>
           </div>
-          <input hidden name="node_id" value={metadata?.node_id} />
+          <input hidden name="server_id" value={metadata?.server_id} />
           <Input
             label="Email"
             type="email"
