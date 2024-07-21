@@ -46,7 +46,7 @@ from .user_stash import UserStash
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="UserService", version=1)
 class UserService(AbstractService):
     store: DocumentStore
     stash: UserStash
@@ -178,7 +178,9 @@ class UserService(AbstractService):
         page_index: int | None = 0,
     ) -> UserViewPage | None | list[UserView] | SyftError:
         kwargs = user_search.to_dict(exclude_empty=True)
-
+        kwargs.pop("created_date")
+        kwargs.pop("updated_date")
+        kwargs.pop("deleted_date")
         if len(kwargs) == 0:
             valid_search_params = list(UserSearch.__fields__.keys())
             return SyftError(
@@ -321,9 +323,8 @@ class UserService(AbstractService):
         edits_non_role_attrs = any(
             getattr(user_update, attr) is not Empty
             for attr in user_update.to_dict()
-            if attr != "role"
+            if attr not in ["role", "created_date", "updated_date", "deleted_date"]
         )
-
         if (
             edits_non_role_attrs
             and user.verify_key != context.credentials

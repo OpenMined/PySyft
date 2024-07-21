@@ -18,7 +18,6 @@ from ...client.client import SyftClient
 from ...serde.serializable import serializable
 from ...server.worker_settings import WorkerSettings
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.uid import UID
@@ -31,6 +30,7 @@ if TYPE_CHECKING:
     from .server_peer import ServerPeer
 
 
+@serializable(canonical_name="ServerRoute", version=1)
 class ServerRoute:
     def client_with_context(
         self, context: ServerServiceContext
@@ -89,7 +89,7 @@ class ServerRoute:
 @serializable()
 class HTTPServerRoute(SyftObject, ServerRoute):
     __canonical_name__ = "HTTPServerRoute"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID | None = None  # type: ignore
     host_or_ip: str
@@ -121,7 +121,7 @@ class HTTPServerRoute(SyftObject, ServerRoute):
 @serializable()
 class PythonServerRoute(SyftObject, ServerRoute):
     __canonical_name__ = "PythonServerRoute"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID | None = None  # type: ignore
     worker_settings: WorkerSettings

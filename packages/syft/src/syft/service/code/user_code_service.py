@@ -50,7 +50,7 @@ from .user_code_stash import UserCodeStash
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="UserCodeService", version=1)
 class UserCodeService(AbstractService):
     store: DocumentStore
     stash: UserCodeStash

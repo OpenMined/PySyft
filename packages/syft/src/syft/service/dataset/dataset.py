@@ -20,16 +20,15 @@ from result import Result
 from typing_extensions import Self
 
 # relative
+from ...client.api import APIRegistry
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
-from ...types.syft_migration import migrate
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
+from ...types.syft_object import PartialSyftObject
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
-from ...types.transforms import drop
 from ...types.transforms import generate_id
 from ...types.transforms import make_set_default
 from ...types.transforms import transform
@@ -61,7 +60,7 @@ logger = logging.getLogger(__name__)
 @serializable()
 class Contributor(SyftObject):
     __canonical_name__ = "Contributor"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     name: str
     role: str | None = None
@@ -99,7 +98,7 @@ class Contributor(SyftObject):
 class Asset(SyftObject):
     # version
     __canonical_name__ = "Asset"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     action_id: UID
     server_uid: UID
@@ -243,9 +242,6 @@ class Asset(SyftObject):
 
     @property
     def pointer(self) -> Any:
-        # relative
-        from ...client.api import APIRegistry
-
         api = APIRegistry.api_for(
             server_uid=self.server_uid,
             user_verify_key=self.syft_client_verify_key,
@@ -255,9 +251,6 @@ class Asset(SyftObject):
 
     @property
     def mock(self) -> SyftError | Any:
-        # relative
-        from ...client.api import APIRegistry
-
         api = APIRegistry.api_for(
             server_uid=self.server_uid,
             user_verify_key=self.syft_client_verify_key,
@@ -265,6 +258,8 @@ class Asset(SyftObject):
         if api is None:
             return SyftError(message=f"You must login to {self.server_uid}")
         result = api.services.action.get_mock(self.action_id)
+        if isinstance(result, SyftError):
+            return result
         try:
             if isinstance(result, SyftObject):
                 return result.syft_action_data
@@ -286,7 +281,6 @@ class Asset(SyftObject):
     @property
     def data(self) -> Any:
         # relative
-        from ...client.api import APIRegistry
 
         api = APIRegistry.api_for(
             server_uid=self.server_uid,
@@ -298,7 +292,7 @@ class Asset(SyftObject):
         if self.has_permission(res):
             return res.syft_action_data
         else:
-            warning = SyftWarning(
+            warning = SyftError(
                 message="You do not have permission to access private data."
             )
             display(warning)
@@ -326,7 +320,7 @@ def check_mock(data: Any, mock: Any) -> bool:
 class CreateAsset(SyftObject):
     # version
     __canonical_name__ = "CreateAsset"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID | None = None  # type:ignore[assignment]
     name: str
@@ -456,43 +450,10 @@ def get_shape_or_len(obj: Any) -> tuple[int, ...] | int | None:
 
 
 @serializable()
-class DatasetV2(SyftObject):
-    # version
-    __canonical_name__: str = "Dataset"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    id: UID
-    name: str
-    server_uid: UID | None = None
-    asset_list: list[Asset] = []
-    contributors: set[Contributor] = set()
-    citation: str | None = None
-    url: str | None = None
-    description: MarkdownDescription | None = None
-    updated_at: str | None = None
-    requests: int | None = 0
-    mb_size: float | None = None
-    created_at: DateTime = DateTime.now()
-    uploader: Contributor
-
-    __attr_searchable__ = [
-        "name",
-        "citation",
-        "url",
-        "description",
-        "action_ids",
-        "summary",
-    ]
-    __attr_unique__ = ["name"]
-    __repr_attrs__ = ["name", "url", "created_at"]
-    __table_sort_attr__ = "Created at"
-
-
-@serializable()
 class Dataset(SyftObject):
     # version
     __canonical_name__: str = "Dataset"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
     name: str
@@ -508,6 +469,7 @@ class Dataset(SyftObject):
     created_at: DateTime = DateTime.now()
     uploader: Contributor
     summary: str | None = None
+    to_be_deleted: bool = False
 
     __attr_searchable__ = [
         "name",
@@ -560,6 +522,8 @@ class Dataset(SyftObject):
             """
         else:
             description_info_message = ""
+        if self.to_be_deleted:
+            return "This dataset has been marked for deletion. The underlying data may be not available."
         return f"""
             <style>
             {FONT_CSS}
@@ -586,8 +550,7 @@ class Dataset(SyftObject):
             """
 
     def action_ids(self) -> list[UID]:
-        data = [asset.action_id for asset in self.asset_list if asset.action_id]
-        return data
+        return [asset.action_id for asset in self.asset_list if asset.action_id]
 
     @property
     def assets(self) -> DictTuple[str, Asset]:
@@ -655,31 +618,17 @@ def _check_asset_must_contain_mock(asset_list: list[CreateAsset]) -> None:
 class DatasetPageView(SyftObject):
     # version
     __canonical_name__ = "DatasetPageView"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     datasets: DictTuple
     total: int
 
 
 @serializable()
-class CreateDatasetV2(DatasetV2):
-    # version
-    __canonical_name__ = "CreateDataset"
-    __version__ = SYFT_OBJECT_VERSION_2
-    asset_list: list[CreateAsset] = []
-
-    __repr_attrs__ = ["name", "url"]
-
-    id: UID | None = None  # type: ignore[assignment]
-    created_at: DateTime | None = None  # type: ignore[assignment]
-    uploader: Contributor | None = None  # type: ignore[assignment]
-
-
-@serializable()
 class CreateDataset(Dataset):
     # version
     __canonical_name__ = "CreateDataset"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
     asset_list: list[CreateAsset] = []
 
     __repr_attrs__ = ["name", "summary", "url"]
@@ -690,9 +639,6 @@ class CreateDataset(Dataset):
 
     model_config = ConfigDict(validate_assignment=True, extra="forbid")
 
-    def _check_asset_must_contain_mock(self) -> None:
-        _check_asset_must_contain_mock(self.asset_list)
-
     @field_validator("asset_list")
     @classmethod
     def __assets_must_contain_mock(
@@ -700,6 +646,13 @@ class CreateDataset(Dataset):
     ) -> list[CreateAsset]:
         _check_asset_must_contain_mock(asset_list)
         return asset_list
+
+    @field_validator("to_be_deleted")
+    @classmethod
+    def __to_be_deleted_must_be_false(cls, v: bool) -> bool:
+        if v is True:
+            raise ValueError("to_be_deleted must be False")
+        return v
 
     def set_description(self, description: str) -> None:
         self.description = MarkdownDescription(text=description)
@@ -927,44 +880,13 @@ def createdataset_to_dataset() -> list[Callable]:
         validate_url,
         convert_asset,
         add_current_date,
+        make_set_default("to_be_deleted", False),  # explicitly set it to False
     ]
 
 
-@migrate(DatasetV2, Dataset)
-def migrate_dataset_v2_to_v3() -> list[Callable]:
-    return [
-        make_set_default("summary", None),
-        drop("__repr_attrs__"),
-        make_set_default("__repr_attrs__", ["name", "summary", "url", "created_at"]),
-    ]
+class DatasetUpdate(PartialSyftObject):
+    __canonical_name__ = "DatasetUpdate"
+    __version__ = SYFT_OBJECT_VERSION_1
 
-
-@migrate(Dataset, DatasetV2)
-def migrate_dataset_v3_to_v2() -> list[Callable]:
-    return [
-        drop("summary"),
-        drop("__repr_attrs__"),
-        make_set_default("__repr_attrs__", ["name", "url", "created_at"]),
-    ]
-
-
-@migrate(CreateDatasetV2, CreateDataset)
-def migrate_create_dataset_v2_to_v3() -> list[Callable]:
-    return [
-        make_set_default("summary", None),
-        drop("__repr_attrs__"),
-        make_set_default("__repr_attrs__", ["name", "summary", "url"]),
-    ]
-
-
-@migrate(CreateDataset, CreateDatasetV2)
-def migrate_create_dataset_v3_to_v2() -> list[Callable]:
-    return [
-        drop("summary"),
-        drop("__repr_attrs__"),
-        make_set_default("__repr_attrs__", ["name", "url"]),
-    ]
-
-
-class DatasetUpdate:
-    pass
+    name: str
+    to_be_deleted: bool

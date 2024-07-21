@@ -28,7 +28,7 @@ from ...server.credentials import SyftVerifyKey
 from ...service.action.action_object import ActionObject
 from ...service.context import AuthedServiceContext
 from ...types.base import SyftBaseModel
-from ...types.syft_object import SYFT_OBJECT_VERSION_4
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ...util.util import get_queue_address
@@ -146,7 +146,7 @@ class Worker(SyftBaseModel):
         )
 
 
-@serializable()
+@serializable(canonical_name="ZMQProducer", version=1)
 class ZMQProducer(QueueProducer):
     INTERNAL_SERVICE_PREFIX = b"mmi."
 
@@ -587,7 +587,7 @@ class ZMQProducer(QueueProducer):
         return not self.socket.closed
 
 
-@serializable(attrs=["_subscriber"])
+@serializable(attrs=["_subscriber"], canonical_name="ZMQConsumer", version=1)
 class ZMQConsumer(QueueConsumer):
     def __init__(
         self,
@@ -813,7 +813,7 @@ class ZMQConsumer(QueueConsumer):
 @serializable()
 class ZMQClientConfig(SyftObject, QueueClientConfig):
     __canonical_name__ = "ZMQClientConfig"
-    __version__ = SYFT_OBJECT_VERSION_4
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID | None = None  # type: ignore[assignment]
     hostname: str = "127.0.0.1"
@@ -825,7 +825,7 @@ class ZMQClientConfig(SyftObject, QueueClientConfig):
     consumer_service: str | None = None
 
 
-@serializable(attrs=["host"])
+@serializable(attrs=["host"], canonical_name="ZMQClient", version=1)
 class ZMQClient(QueueClient):
     """ZMQ Client for creating producers and consumers."""
 
@@ -964,7 +964,7 @@ class ZMQClient(QueueClient):
         return SyftSuccess(message="Successfully purged all queues.")
 
 
-@serializable()
+@serializable(canonical_name="ZMQQueueConfig", version=1)
 class ZMQQueueConfig(QueueConfig):
     def __init__(
         self,

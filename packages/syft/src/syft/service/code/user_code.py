@@ -42,7 +42,6 @@ from ...abstract_server import ServerType
 from ...client.api import APIRegistry
 from ...client.api import ServerIdentity
 from ...client.api import generate_remote_function
-from ...client.enclave_client import EnclaveMetadata
 from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
@@ -53,19 +52,13 @@ from ...store.document_store import PartitionKey
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
-from ...types.syft_migration import migrate
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_4
-from ...types.syft_object import SYFT_OBJECT_VERSION_5
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import add_server_uid_for_key
-from ...types.transforms import drop
 from ...types.transforms import generate_id
-from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.uid import UID
 from ...util import options
@@ -126,7 +119,7 @@ SubmitTimePartitionKey = PartitionKey(key="submit_time", type_=DateTime)
 PyCodeObject = Any
 
 
-@serializable()
+@serializable(canonical_name="UserCodeStatus", version=1)
 class UserCodeStatus(Enum):
     PENDING = "pending"
     DENIED = "denied"
@@ -280,42 +273,10 @@ class UserCodeStatusCollection(SyncableSyftObject):
 
 
 @serializable()
-class UserCodeV4(SyncableSyftObject):
-    # version
-    __canonical_name__ = "UserCode"
-    __version__ = SYFT_OBJECT_VERSION_4
-
-    id: UID
-    server_uid: UID | None = None
-    user_verify_key: SyftVerifyKey
-    raw_code: str
-    input_policy_type: type[InputPolicy] | UserPolicy
-    input_policy_init_kwargs: dict[Any, Any] | None = None
-    input_policy_state: bytes = b""
-    output_policy_type: type[OutputPolicy] | UserPolicy
-    output_policy_init_kwargs: dict[Any, Any] | None = None
-    output_policy_state: bytes = b""
-    parsed_code: str
-    service_func_name: str
-    unique_func_name: str
-    user_unique_func_name: str
-    code_hash: str
-    signature: inspect.Signature
-    status_link: LinkedObject
-    input_kwargs: list[str]
-    enclave_metadata: EnclaveMetadata | None = None
-    submit_time: DateTime | None = None
-    # tracks if the code calls datasite.something, variable is set during parsing
-    uses_datasite: bool = False
-    nested_codes: dict[str, tuple[LinkedObject, dict]] | None = {}
-    worker_pool_name: str | None = None
-
-
-@serializable()
 class UserCode(SyncableSyftObject):
     # version
     __canonical_name__ = "UserCode"
-    __version__ = SYFT_OBJECT_VERSION_5
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
     server_uid: UID | None = None
@@ -1046,30 +1007,10 @@ class UserCodeUpdate(PartialSyftObject):
 
 
 @serializable(without=["local_function"])
-class SubmitUserCodeV4(SyftObject):
-    # version
-    __canonical_name__ = "SubmitUserCode"
-    __version__ = SYFT_OBJECT_VERSION_4
-
-    id: UID | None = None  # type: ignore[assignment]
-    code: str
-    func_name: str
-    signature: inspect.Signature
-    input_policy_type: SubmitUserPolicy | UID | type[InputPolicy]
-    input_policy_init_kwargs: dict[Any, Any] | None = {}
-    output_policy_type: SubmitUserPolicy | UID | type[OutputPolicy]
-    output_policy_init_kwargs: dict[Any, Any] | None = {}
-    local_function: Callable | None = None
-    input_kwargs: list[str]
-    enclave_metadata: EnclaveMetadata | None = None
-    worker_pool_name: str | None = None
-
-
-@serializable(without=["local_function"])
 class SubmitUserCode(SyftObject):
     # version
     __canonical_name__ = "SubmitUserCode"
-    __version__ = SYFT_OBJECT_VERSION_5
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID | None = None  # type: ignore[assignment]
     code: str
@@ -1712,7 +1653,7 @@ def submit_user_code_to_user_code() -> list[Callable]:
 class UserCodeExecutionResult(SyftObject):
     # version
     __canonical_name__ = "UserCodeExecutionResult"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
     user_code_id: UID
@@ -2027,34 +1968,3 @@ def load_approved_policy_code(
                     load_policy_code(user_code.output_policy_type)
     except Exception as e:
         raise Exception(f"Failed to load code: {user_code}: {e}")
-
-
-@migrate(UserCodeV4, UserCode)
-def migrate_usercode_v4_to_v5() -> list[Callable]:
-    return [
-        make_set_default("origin_server_side_type", ServerSideType.HIGH_SIDE),
-        make_set_default("l0_deny_reason", None),
-        drop("enclave_metadata"),
-    ]
-
-
-@migrate(UserCode, UserCodeV4)
-def migrate_usercode_v5_to_v4() -> list[Callable]:
-    return [
-        drop(["origin_server_side_type", "l0_deny_reason"]),
-        make_set_default("enclave_metadata", None),
-    ]
-
-
-@migrate(SubmitUserCodeV4, SubmitUserCode)
-def upgrade_submitusercode() -> list[Callable]:
-    return [
-        drop("enclave_metadata"),
-    ]
-
-
-@migrate(SubmitUserCode, SubmitUserCodeV4)
-def downgrade_submitusercode() -> list[Callable]:
-    return [
-        make_set_default("enclave_metadata", None),
-    ]

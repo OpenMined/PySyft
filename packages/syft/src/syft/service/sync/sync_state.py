@@ -1,5 +1,4 @@
 # stdlib
-from collections.abc import Callable
 from datetime import timedelta
 from typing import Any
 from typing import Optional
@@ -12,14 +11,9 @@ from ...abstract_server import ServerSideType
 from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
-from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
-from ...types.transforms import drop
-from ...types.transforms import make_set_default
 from ...types.uid import LineageID
 from ...types.uid import UID
 from ...util import options
@@ -121,27 +115,9 @@ def td_format(td_object: timedelta) -> str:
 
 
 @serializable()
-class SyncStateV2(SyftObject):
-    __canonical_name__ = "SyncState"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    server_uid: UID
-    server_name: str
-    server_side_type: ServerSideType
-    objects: dict[UID, SyncableSyftObject] = {}
-    dependencies: dict[UID, list[UID]] = {}
-    created_at: DateTime = Field(default_factory=DateTime.now)
-    previous_state_link: LinkedObject | None = None
-    permissions: dict[UID, set[str]] = {}
-    storage_permissions: dict[UID, set[UID]] = {}
-    ignored_batches: dict[UID, int] = {}
-    object_sync_dates: dict[UID, DateTime] = {}
-
-
-@serializable()
 class SyncState(SyftObject):
     __canonical_name__ = "SyncState"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     server_uid: UID
     server_name: str
@@ -300,13 +276,3 @@ class SyncState(SyftObject):
         </div>
 """
         return repr + self.rows._repr_html_()
-
-
-@migrate(SyncStateV2, SyncState)
-def upgrade_syncstate_v2_to_v3() -> list[Callable]:
-    return [make_set_default("errors", {})]
-
-
-@migrate(SyncState, SyncStateV2)
-def downgrade_syncstate_v3_to_v2() -> list[Callable]:
-    return [drop("errors")]

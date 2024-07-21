@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 THREAD_FILE_LOCKS: dict[int, dict[str, int]] = defaultdict(dict)
 
 
-@serializable()
+@serializable(canonical_name="LockingConfig", version=1)
 class LockingConfig(BaseModel):
     """
     Locking config
@@ -41,7 +41,7 @@ class LockingConfig(BaseModel):
     retry_interval: float = 0.1
 
 
-@serializable()
+@serializable(canonical_name="NoLockingConfig", version=1)
 class NoLockingConfig(LockingConfig):
     """
     No-locking policy
@@ -50,7 +50,7 @@ class NoLockingConfig(LockingConfig):
     pass
 
 
-@serializable()
+@serializable(canonical_name="ThreadingLockingConfig", version=1)
 class ThreadingLockingConfig(LockingConfig):
     """
     Threading-based locking policy
