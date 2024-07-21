@@ -1,5 +1,21 @@
 {
   "1": {
     "release_name": "0.8.7.json"
+  },
+  "dev": {
+    "object_versions": {
+      "User": {
+        "1": {
+          "version": 1,
+          "hash": "2df4b68182c558dba5485a8a6867acf2a5c341b249ad67373a504098aa8c4343",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "af6fb5b2e1606e97838f4a60f0536ad95db606d455e94acbd1977df866608a2c",
+          "action": "add"
+        }
+      }
+    }
   }
 }

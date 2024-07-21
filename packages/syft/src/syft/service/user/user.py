@@ -1,6 +1,8 @@
 # stdlib
 from collections.abc import Callable
+from datetime import datetime
 from getpass import getpass
+import re
 from typing import Any
 
 # third party
@@ -19,6 +21,7 @@ from ...server.credentials import SyftVerifyKey
 from ...types.syft_metaclass import Empty
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import drop
@@ -38,7 +41,7 @@ from .user_roles import ServiceRole
 class User(SyftObject):
     # version
     __canonical_name__ = "User"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID | None = None  # type: ignore[assignment]
 
@@ -61,15 +64,23 @@ class User(SyftObject):
     created_at: str | None = None
     # TODO where do we put this flag?
     mock_execution_permission: bool = False
-
+    reset_token: str | None = None
+    reset_token_date: datetime | None = None
     # serde / storage rules
-    __attr_searchable__ = ["name", "email", "verify_key", "role"]
+    __attr_searchable__ = ["name", "email", "verify_key", "role", "reset_token"]
     __attr_unique__ = ["email", "signing_key", "verify_key"]
     __repr_attrs__ = ["name", "email"]
 
 
 def default_role(role: ServiceRole) -> Callable:
     return make_set_default(key="role", value=role)
+
+
+def validate_password(password: str) -> bool:
+    # Define the regex pattern for the password
+    pattern = re.compile(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$")
+
+    return bool(pattern.match(password))
 
 
 def hash_password(context: TransformContext) -> TransformContext:

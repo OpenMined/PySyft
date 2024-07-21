@@ -1,6 +1,5 @@
 # stdlib
-import secrets
-import string
+from datetime import datetime
 from typing import TYPE_CHECKING
 from typing import cast
 
@@ -8,7 +7,6 @@ from typing import cast
 from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
 from ..context import AuthedServiceContext
-from ..user.user import salt_and_hash_password
 
 if TYPE_CHECKING:
     # relative
@@ -24,6 +22,7 @@ class EmailTemplate:
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
         return ""
 
+
 @serializable(canonical_name="PasswordResetTemplate", version=1)
 class PasswordResetTemplate(EmailTemplate):
     @staticmethod
@@ -38,14 +37,8 @@ class PasswordResetTemplate(EmailTemplate):
         if not user:
             raise Exception("User not found!")
 
-        password_length = 12
-        valid_characters = string.ascii_letters + string.digits
-        new_password = "".join(
-            secrets.choice(valid_characters) for i in range(password_length)
-        )
-        salt, hashed = salt_and_hash_password(new_password, password_length)
-        user.hashed_password = hashed
-        user.salt = salt
+        user.reset_token = user_service.generate_new_password_reset_token()
+        user.reset_token_date = datetime.now()
 
         result = user_service.stash.update(
             credentials=context.credentials, user=user, has_permission=True
@@ -102,8 +95,8 @@ class PasswordResetTemplate(EmailTemplate):
             <div class="container">
                 <h1>Password Reset</h1>
                 <p>Hello,</p>
-                <p>We received a request to reset your password. Your new temporary password is:</p>
-                <h1>{new_password}</h1>
+                <p>We received a request to reset your password. Your new temporary token is:</p>
+                <h1>{user.reset_token}</h1>
                 <p>If you didn't request a password reset, please ignore this email.</p>
             </div>
         </body>"""
