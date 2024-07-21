@@ -308,7 +308,8 @@ base_attrs_sync_ignore = [
 ]
 
 
-class SyftObjectVersioned(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
+@serializable()
+class SyftObjectVersioned(SyftBaseObject, SyftMigrationRegistry):
     __canonical_name__ = "SyftObjectVersioned"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -345,6 +346,7 @@ class BaseDateTime(SyftObjectVersioned):
         return self.utc_timestamp < other.utc_timestamp
 
 
+@serializable()
 class SyftObject(SyftObjectVersioned):
     __canonical_name__ = "SyftObject"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -503,7 +505,6 @@ class SyftObject(SyftObjectVersioned):
     # transform from one supported type to another
     def to(self, projection: type[T], context: Context | None = None) -> T:
         # relative
-        from .syft_object_registry import SyftObjectRegistry
 
         # 🟡 TODO 19: Could we do an mro style inheritence conversion? Risky?
         transform = SyftObjectRegistry.get_transform(type(self), projection)
@@ -756,7 +757,6 @@ class StorableObjectType:
     def to(self, projection: type, context: Context | None = None) -> Any:
         # 🟡 TODO 19: Could we do an mro style inheritence conversion? Risky?
         # relative
-        from .syft_object_registry import SyftObjectRegistry
 
         transform = SyftObjectRegistry.get_transform(type(self), projection)
         return transform(self, context)

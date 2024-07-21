@@ -162,6 +162,14 @@ recursive_serde_register(
     version=SYFT_OBJECT_VERSION_1,
 )
 
+recursive_serde_register(
+    np.number,
+    serialize=lambda x: x.tobytes(),
+    deserialize=lambda buffer: frombuffer(buffer, dtype=np.number)[0],
+    canonical_name="numpy_number",
+    version=SYFT_OBJECT_VERSION_1,
+)
+
 # TODO: There is an incorrect mapping in looping,which makes it not work.
 # numpy_scalar_types = [
 #     np.bool_,
