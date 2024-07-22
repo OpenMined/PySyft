@@ -43,8 +43,6 @@ if os_name() == "macOS":
     multiprocessing.set_start_method("spawn", True)
 
 WAIT_TIME_SECONDS = 20
-# PYINSTRUMENT_ENABLED = os.getenv("PYINSTRUMENT_ENABLED", "False").lower() == "true"
-PYINSTRUMENT_ENABLED = True
 
 
 class AppSettings(BaseSettings):
@@ -138,23 +136,25 @@ def _register_profiler(app: FastAPI, settings: AppSettings) -> None:
     async def profile_request(
         request: Request, call_next: Callable[[Request], Response]
     ) -> Response:
-        with Profiler(interval=0.001, async_mode="enabled") as profiler:
+        with Profiler(
+            interval=settings.profile_interval, async_mode="enabled"
+        ) as profiler:
             response = await call_next(request)
 
+        # Profile File Name - Domain Name - Timestamp - URL Path
         timestamp = datetime.now().strftime("%d-%m-%Y-%H:%M:%S")
-        profiler_output_html = profiler.output_html()
         profiles_dir.mkdir(parents=True, exist_ok=True)
         url_path = request.url.path.replace("/api/v2", "").replace("/", "-")
         profile_output_path = (
             profiles_dir / f"{settings.name}-{timestamp}{url_path}.html"
         )
 
-        with open(profile_output_path, "w") as f:
-            f.write(profiler_output_html)
+        # Write the profile to a HTML file
+        profiler.write_html(profile_output_path)
 
-            print(
-                f"Request to {request.url.path} took {profiler.last_session.duration:.2f} seconds"
-            )
+        print(
+            f"Request to {request.url.path} took {profiler.last_session.duration:.2f} seconds"
+        )
 
         return response
 
