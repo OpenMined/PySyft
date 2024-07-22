@@ -586,7 +586,7 @@ def test_actionobject_syft_get_attr_context():
 )
 def test_actionobject_syft_execute_hooks(worker, testcase):
     client = worker.root_client
-    assert client.settings.enable_eager_execution(enable=True)
+    # assert client.settings.enable_eager_execution(enable=True) # NOTE: Disabled until we bring back eager execution
 
     orig_obj, op, args, kwargs, expected = testcase
 
