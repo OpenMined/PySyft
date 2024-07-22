@@ -157,6 +157,10 @@ class DomainClient(SyftClient):
                 model_size += get_mb_size(asset.data)
                 model_ref_action_ids.append(twin.id)
 
+                # Clear the Data and Mock , as they are uploaded as twin object
+                asset.data = None
+                asset.mock = None
+
                 # Update the progress bar and set the dynamic description
                 pbar.set_description(f"Uploading: {asset.name}")
                 pbar.update(1)
