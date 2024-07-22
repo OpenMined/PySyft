@@ -1,6 +1,4 @@
 # stdlib
-
-# stdlib
 from typing import TypeVar
 
 # third party
@@ -12,6 +10,7 @@ from result import Result
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ..context import AuthedServiceContext
 from ..notification.notifications import Notification
@@ -126,7 +125,7 @@ class NotificationPreferences(SyftObject):
 @serializable()
 class NotifierSettings(SyftObject):
     __canonical_name__ = "NotifierSettings"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
     __repr_attrs__ = [
         "active",
         "email_enabled",
@@ -153,6 +152,8 @@ class NotifierSettings(SyftObject):
     email_port: int | None = 587
     email_username: str | None = ""
     email_password: str | None = ""
+
+    email_rate_limit: dict[str, dict[SyftVerifyKey, list]] = {}
 
     @property
     def email_enabled(self) -> bool:

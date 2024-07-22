@@ -15,6 +15,18 @@
           "hash": "af6fb5b2e1606e97838f4a60f0536ad95db606d455e94acbd1977df866608a2c",
           "action": "add"
         }
+      },
+      "NotifierSettings": {
+        "1": {
+          "version": 1,
+          "hash": "65c8ab814d35fac32f68d3000756692592cc59940f30e3af3dcdfa2328755b9d",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "2c934f54389e431347561a5340cba1709c92c4cc27de197347a01e4662a48ae5",
+          "action": "add"
+        }
       }
     }
   }

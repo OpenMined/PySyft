@@ -120,6 +120,7 @@ class UserService(AbstractService):
         root_context = AuthedServiceContext(server=context.server, credentials=root_key)
         link = LinkedObject.with_context(user, context=root_context)
         notifier_service = context.server.get_service("notifierservice")
+
         # Notifier is active
         notification_is_enabled = notifier_service.settings(context=root_context).active
         # Email is enabled
@@ -154,6 +155,9 @@ class UserService(AbstractService):
             )
 
             result = method(context=root_context, notification=message)
+            if isinstance(result, SyftError):
+                return result
+
             return SyftSuccess(
                 message="If the email is valid, we sent a password reset \
                 token to your email or a password request to the admin."
@@ -172,6 +176,9 @@ class UserService(AbstractService):
 
         method = context.server.get_service_method(NotificationService.send)
         result = method(context=root_context, notification=message)
+        if isinstance(result, SyftError):
+            return result
+
         return SyftSuccess(
             message="If the email is valid, we sent a password request to the admin."
         )

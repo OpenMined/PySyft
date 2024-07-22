@@ -1,4 +1,5 @@
 # stdlib
+from datetime import datetime
 import logging
 import traceback
 
@@ -295,7 +296,43 @@ class NotifierService(AbstractService):
 
         notifier = notifier.ok()
         # If notifier is active
-        if notifier.active:
+        if notifier.active and notification.email_template is not None:
+            if notifier.email_rate_limit.get(
+                notification.email_template.__name__, None
+            ):
+                user_activity = notifier.email_rate_limit[
+                    notification.email_template.__name__
+                ].get(notification.to_user_verify_key, None)
+                if user_activity is None:
+                    notifier.email_rate_limit[notification.email_template.__name__][
+                        notification.to_user_verify_key, None
+                    ] = [datetime.now(), 1]
+                else:
+                    current_state = notifier.email_rate_limit[
+                        notification.email_template.__name__
+                    ][notification.to_user_verify_key]
+                    date_refresh = abs(datetime.now() - current_state[0]).days > 1
+                    still_in_limit = current_state[1] < 3
+                    if date_refresh:
+                        current_state[1] = 1  # Email count
+                        current_state[0] = datetime.now()  # Last time email was sent
+                    if not date_refresh and still_in_limit:
+                        current_state[1] += 1  # Email count
+                        current_state[0] = datetime.now()  # Last time email was sent
+                    else:
+                        return SyftError(
+                            message="Couldn't send the email. You have surpassed the" 
+                            + " email threshold limit. Please try again later."
+                        )
+            else:
+                notifier.email_rate_limit[notification.email_template.__name__] = {
+                    notification.to_user_verify_key: [datetime.now(), 1]
+                }
+
+            result = self.stash.update(credentials=admin_key, settings=notifier)
+            if result.is_err():
+                return SyftError(message="Couldn't update the notifier.")
+
             resp = notifier.send_notifications(
                 context=context, notification=notification
             )
