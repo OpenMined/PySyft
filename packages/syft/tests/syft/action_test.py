@@ -19,12 +19,10 @@ from syft.types.uid import LineageID
 from ..utils.custom_markers import currently_fail_on_python_3_12
 
 
+@pytest.mark.skip(reason="Disabled until we bring back eager execution")
 def test_actionobject_method(worker):
     root_datasite_client = worker.root_client
-
-    # NOTE: Disabled until we bring back eager execution
-    # assert root_datasite_client.settings.enable_eager_execution(enable=True)
-
+    assert root_datasite_client.settings.enable_eager_execution(enable=True)
     action_store = worker.get_service("actionservice").store
     obj = ActionObject.from_obj("abc")
     pointer = obj.send(root_datasite_client)

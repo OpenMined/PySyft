@@ -1,5 +1,6 @@
 # third party
 import numpy as np
+import pytest
 
 # syft absolute
 from syft.service.action.action_object import ActionObject
@@ -10,11 +11,11 @@ from syft.types.twin_object import TwinObject
 from ..utils.custom_markers import currently_fail_on_python_3_12
 
 
+@pytest.mark.skip(reason="Disabled until we bring back eager execution")
 def test_eager_permissions(worker, guest_client):
     root_datasite_client = worker.root_client
 
-    # NOTE: Disabled until we bring back eager execution
-    # assert root_datasite_client.settings.enable_eager_execution(enable=True)
+    assert root_datasite_client.settings.enable_eager_execution(enable=True)
 
     guest_client = worker.guest_client
 
@@ -39,11 +40,11 @@ def test_eager_permissions(worker, guest_client):
     assert all(res_root == [3, 3, 3, 3, 3, 3])
 
 
+@pytest.mark.skip(reason="Disabled until we bring back eager execution")
 def test_plan(worker):
     root_datasite_client = worker.root_client
 
-    # NOTE: Disabled until we bring back eager execution
-    # assert root_datasite_client.settings.enable_eager_execution(enable=True)
+    assert root_datasite_client.settings.enable_eager_execution(enable=True)
 
     guest_client = worker.guest_client
 
@@ -90,8 +91,7 @@ def test_plan(worker):
 def test_plan_with_function_call(worker, guest_client):
     root_datasite_client = worker.root_client
 
-    # NOTE: Disabled until we bring back eager execution
-    # assert root_datasite_client.settings.enable_eager_execution(enable=True)
+    assert root_datasite_client.settings.enable_eager_execution(enable=True)
 
     guest_client = worker.guest_client
 
@@ -114,11 +114,11 @@ def test_plan_with_function_call(worker, guest_client):
     assert root_datasite_client.api.services.action.get(res_ptr.id) == 18
 
 
+@pytest.mark.skip(reason="Disabled until we bring back eager execution")
 def test_plan_with_object_instantiation(worker, guest_client):
     root_datasite_client = worker.root_client
 
-    # NOTE: Disabled until we bring back eager execution
-    # assert root_datasite_client.settings.enable_eager_execution(enable=True)
+    assert root_datasite_client.settings.enable_eager_execution(enable=True)
 
     guest_client = worker.guest_client
 
@@ -143,11 +143,11 @@ def test_plan_with_object_instantiation(worker, guest_client):
     )
 
 
+@pytest.mark.skip(reason="Disabled until we bring back eager execution")
 def test_setattribute(worker, guest_client):
     root_datasite_client = worker.root_client
 
-    # NOTE: Disabled until we bring back eager execution
-    # assert root_datasite_client.settings.enable_eager_execution(enable=True)
+    assert root_datasite_client.settings.enable_eager_execution(enable=True)
 
     guest_client = worker.guest_client
 
@@ -185,12 +185,10 @@ def test_setattribute(worker, guest_client):
     assert not (obj_pointer.syft_action_data == private_data).all()
 
 
+@pytest.mark.skip(reason="Disabled until we bring back eager execution")
 def test_getattribute(worker, guest_client):
     root_datasite_client = worker.root_client
-
-    # NOTE: Disabled until we bring back eager execution
-    # assert root_datasite_client.settings.enable_eager_execution(enable=True)
-
+    assert root_datasite_client.settings.enable_eager_execution(enable=True)
     guest_client = worker.guest_client
 
     obj = TwinObject(
@@ -207,10 +205,10 @@ def test_getattribute(worker, guest_client):
     assert root_datasite_client.api.services.action.get(size_pointer.id) == 6
 
 
+@pytest.mark.skip(reason="Disabled until we bring back eager execution")
 def test_eager_method(worker, guest_client):
     root_datasite_client = worker.root_client
-    # NOTE: Disabled until we bring back eager execution
-    # assert root_datasite_client.settings.enable_eager_execution(enable=True)
+    assert root_datasite_client.settings.enable_eager_execution(enable=True)
     guest_client = worker.guest_client
 
     obj = TwinObject(
@@ -231,10 +229,10 @@ def test_eager_method(worker, guest_client):
     )
 
 
+@pytest.mark.skip(reason="Disabled until we bring back eager execution")
 def test_eager_dunder_method(worker, guest_client):
     root_datasite_client = worker.root_client
-    # NOTE: Disabled until we bring back eager execution
-    # assert root_datasite_client.settings.enable_eager_execution(enable=True)
+    assert root_datasite_client.settings.enable_eager_execution(enable=True)
     guest_client = worker.guest_client
 
     obj = TwinObject(
