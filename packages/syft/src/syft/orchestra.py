@@ -115,9 +115,9 @@ class ServerHandle:
             password = getpass.getpass("Password: ")
 
         if self.port:
-            return sy_login(email=email, password=password, url=self.url, port=self.port)  # type: ignore
-        elif self.deployment_type == DeploymentType.PYTHON:
-            return self.python_server.sy_login(email=email, password=password, verbose=False)  # type: ignore
+            return sy_login(
+                email=email, password=password, url=self.url, port=self.port
+            )  # type: ignore
         else:
             raise NotImplementedError(
                 f"client not implemented for the deployment type:{self.deployment_type}"
