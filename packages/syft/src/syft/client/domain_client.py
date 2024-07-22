@@ -165,6 +165,7 @@ class DomainClient(SyftClient):
         # Model Ref is a reference to the model code and assets
         # Stored as a list of ActionObject ids
         # [model_code_id, asset1_id, asset2_id, ...]
+        # TODO: Move ModelRef to be created at the server side
         model_ref = ModelRef(
             id=model.id,
             syft_action_data_cache=model_ref_action_ids,

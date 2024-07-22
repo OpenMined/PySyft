@@ -153,7 +153,7 @@ def syft_model(
             code = dedent(get_code_from_class(cls))
             code = f"import syft as sy\n{code}"
             class_name = cls.__name__
-            res = SubmitModelCode(code=code, class_name=class_name)
+            res = SubmitModelCode(syft_action_data_cache=code, class_name=class_name)
         except Exception as e:
             raise e
 
@@ -172,16 +172,18 @@ class SubmitModelCode(ActionObject):
     __canonical_name__ = "SubmitModelCode"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    syft_internal_type: type | None = None  # type: ignore
+    syft_internal_type: ClassVar[type] = str
     syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS + [
         "code",
         "class_name",
         "__call__",
     ]
 
-    code: str
     class_name: str
-    # signature: inspect.Signature
+
+    @property
+    def code(self) -> str:
+        return self.syft_action_data
 
     def __call__(self, **kwargs: dict) -> Any:
         # Load Class
@@ -588,6 +590,25 @@ def add_current_date(context: TransformContext) -> TransformContext:
     return context
 
 
+# def add_model_hash(context: TransformContext) -> TransformContext:
+#     # relative
+#     from ..action.action_service import ActionService
+
+#     self_id = context.output["id"]
+#     if self_id is not None:
+#         action_service = context.node.get_service(ActionService)
+#         # Q: Why is service returning an result object [Ok, Err]?
+#         model_ref_action_obj = action_service.get(context=context, uid=self_id)
+
+#         if model_ref_action_obj.is_err():
+#             return SyftError(f"[Model]Failed to get action object with id {model_ref_action_obj.err()}")
+#         context.output["hash"] = model_ref_action_obj.ok().hash()
+#     else:
+#         raise ValueError("Model  must have an valid ID")
+
+#     return context
+
+
 @transform(CreateModel, Model)
 def createmodel_to_model() -> list[Callable]:
     return [
@@ -596,6 +617,7 @@ def createmodel_to_model() -> list[Callable]:
         validate_url,
         convert_asset,
         add_current_date,
+        # add_model_hash,
     ]
 
 
