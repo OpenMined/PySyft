@@ -82,6 +82,9 @@ class NotifierService(AbstractService):
     def set_notifier_active_to_false(
         self, context: AuthedServiceContext
     ) -> SyftSuccess:
+        """
+        Essentially a duplicate of turn_off method.
+        """
         result = self.stash.get(credentials=context.credentials)
         if result.is_err():
             return SyftError(message=result.err())
