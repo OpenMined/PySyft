@@ -62,7 +62,7 @@ class AppSettings(BaseSettings):
 
     # Profiling inputs
     profile: bool = False
-    profile_interval: float = 0.0001
+    profile_interval: float = 0.001
     profile_dir: str | None = None
 
     model_config = SettingsConfigDict(env_prefix="SYFT_", env_parse_none_str="None")
@@ -263,7 +263,7 @@ def serve_node(
     debug: bool = False,
     # Profiling inputs
     profile: bool = False,
-    profile_interval: float = 0.0001,
+    profile_interval: float = 0.001,
     profile_dir: str | None = None,
 ) -> tuple[Callable, Callable]:
     starting_uvicorn_event = multiprocessing.Event()

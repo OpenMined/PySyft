@@ -176,7 +176,7 @@ def deploy_to_python(
     debug: bool = False,
     migrate: bool = False,
     profile: bool = False,
-    profile_interval: float = 0.0001,
+    profile_interval: float = 0.001,
     profile_dir: str | None = None,
 ) -> NodeHandle:
     worker_classes = {
@@ -313,7 +313,7 @@ class Orchestra:
         migrate: bool = False,
         # Profiling Related Input for in-memory fastapi server
         profile: bool = False,
-        profile_interval: float = 0.0001,
+        profile_interval: float = 0.001,
         profile_dir: str | None = None,
     ) -> NodeHandle:
         if dev_mode is True:
