@@ -356,7 +356,7 @@ class Orchestra:
             display(
                 SyftInfo(
                     message=f"You have launched a development server at http://{host}:{server_handle.port}."
-                    + "It is intended only for local use."
+                    + " It is intended only for local use."
                 )
             )
             return server_handle

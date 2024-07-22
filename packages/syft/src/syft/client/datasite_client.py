@@ -33,6 +33,7 @@ from ..service.sync.sync_state import SyncState
 from ..service.user.roles import Roles
 from ..service.user.user import UserView
 from ..types.blob_storage import BlobFile
+from ..types.twin_object import TwinObject
 from ..types.uid import UID
 from ..util.misc_objs import HTMLObject
 from ..util.util import get_mb_size
@@ -95,10 +96,17 @@ class DatasiteClient(SyftClient):
     def __repr__(self) -> str:
         return f"<DatasiteClient: {self.name}>"
 
-    def upload_dataset(self, dataset: CreateDataset) -> SyftSuccess | SyftError:
-        # relative
-        from ..types.twin_object import TwinObject
+    def upload_dataset(
+        self, dataset: CreateDataset, force_replace: bool = False
+    ) -> SyftSuccess | SyftError:
+        if not force_replace:
+            return self._upload_dataset(dataset)
 
+        # force_replace: check if dataset exists
+        # if exists, delete it, then upload the new dataset
+        return SyftError("Not yet implemented!")
+
+    def _upload_dataset(self, dataset: CreateDataset) -> SyftSuccess | SyftError:
         if self.users is None:
             return SyftError(f"can't get user service for {self}")
 

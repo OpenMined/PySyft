@@ -370,7 +370,7 @@ class KeyValueStorePartition(StorePartition):
         for qk in uqks:
             pk_key, pk_value = qk.key, qk.value
             ck_col = self.unique_keys[pk_key]
-            ck_col.pop(store_key.value, None)
+            ck_col.pop(pk_value, None)
             self.unique_keys[pk_key] = ck_col
 
         sqks = searchable_query_keys.all
