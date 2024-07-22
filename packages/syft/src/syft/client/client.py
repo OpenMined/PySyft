@@ -1107,7 +1107,7 @@ def login_as_guest(
     port: int | None = None,
     # PythonConnection
     server: AbstractServer | None = None,
-    verbose: bool = False,
+    verbose: bool = True,
 ) -> SyftClient:
     _client = connect(
         url=url,

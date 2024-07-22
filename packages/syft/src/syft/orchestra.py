@@ -19,6 +19,7 @@ from IPython.display import display
 # relative
 from .abstract_server import ServerSideType
 from .abstract_server import ServerType
+from .client.client import login as sy_login
 from .client.client import login_as_guest as sy_login_as_guest
 from .protocol.data_protocol import stage_protocol_changes
 from .server.datasite import Datasite
@@ -113,7 +114,7 @@ class ServerHandle:
         if not password:
             password = getpass.getpass("Password: ")
 
-        return self.client.login(email=email, password=password, **kwargs)
+        return sy_login(email=email, password=password, **kwargs)
 
     def register(
         self,
