@@ -1,5 +1,6 @@
 # stdlib
 from collections.abc import Callable
+from datetime import datetime
 import multiprocessing
 import multiprocessing.synchronize
 import os
@@ -14,6 +15,8 @@ from typing import Any
 # third party
 from fastapi import APIRouter
 from fastapi import FastAPI
+from fastapi import Request
+from fastapi import Response
 from pydantic_settings import BaseSettings
 from pydantic_settings import SettingsConfigDict
 import requests
@@ -40,6 +43,8 @@ if os_name() == "macOS":
     multiprocessing.set_start_method("spawn", True)
 
 WAIT_TIME_SECONDS = 20
+# PYINSTRUMENT_ENABLED = os.getenv("PYINSTRUMENT_ENABLED", "False").lower() == "true"
+PYINSTRUMENT_ENABLED = True
 
 
 class AppSettings(BaseSettings):
@@ -57,6 +62,11 @@ class AppSettings(BaseSettings):
     association_request_auto_approval: bool = False
     background_tasks: bool = False
 
+    # Profiling inputs
+    profile: bool = False
+    profile_interval: float = 0.0001
+    profile_dir: str | None = None
+
     model_config = SettingsConfigDict(env_prefix="SYFT_", env_parse_none_str="None")
 
 
@@ -72,21 +82,39 @@ def app_factory() -> FastAPI:
         raise NotImplementedError(f"node_type: {settings.node_type} is not supported")
     worker_class = worker_classes[settings.node_type]
 
-    kwargs = settings.model_dump()
+    worker_kwargs = settings.model_dump()
+    # Remove Profiling inputs
+    worker_kwargs.pop("profile")
+    worker_kwargs.pop("profile_interval")
+    worker_kwargs.pop("profile_dir")
     if settings.dev_mode:
         print(
             f"WARN: private key is based on node name: {settings.name} in dev_mode. "
             "Don't run this in production."
         )
-        worker = worker_class.named(**kwargs)
+        worker = worker_class.named(**worker_kwargs)
     else:
-        worker = worker_class(**kwargs)
+        worker = worker_class(**worker_kwargs)
 
     app = FastAPI(title=settings.name)
     router = make_routes(worker=worker)
     api_router = APIRouter()
     api_router.include_router(router)
     app.include_router(api_router, prefix="/api/v2")
+
+    # Register middlewares
+    _register_middlewares(app, settings)
+
+    return app
+
+
+def _register_middlewares(app: FastAPI, settings: AppSettings) -> None:
+    _register_cors_middleware(app)
+    if settings.profile:
+        _register_profiler(app, settings)
+
+
+def _register_cors_middleware(app: FastAPI) -> None:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
@@ -94,7 +122,53 @@ def app_factory() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    return app
+
+
+def _register_profiler(app: FastAPI, settings: AppSettings) -> None:
+    # third party
+    from pyinstrument import Profiler
+
+    profiles_dir = (
+        Path.cwd() / "profiles"
+        if settings.profile_dir is None
+        else Path(settings.profile_dir) / "profiles"
+    )
+
+    @app.middleware("http")
+    async def profile_request(
+        request: Request, call_next: Callable[[Request], Response]
+    ) -> Response:
+        with Profiler(interval=0.001, async_mode="enabled") as profiler:
+            response = await call_next(request)
+
+        timestamp = datetime.now().strftime("%d-%m-%Y-%H:%M:%S")
+        profiler_output_html = profiler.output_html()
+        profiles_dir.mkdir(parents=True, exist_ok=True)
+        url_path = request.url.path.replace("/api/v2", "").replace("/", "-")
+        profile_output_path = (
+            profiles_dir / f"{settings.name}-{timestamp}{url_path}.html"
+        )
+
+        with open(profile_output_path, "w") as f:
+            f.write(profiler_output_html)
+
+            print(
+                f"Request to {request.url.path} took {profiler.last_session.duration:.2f} seconds"
+            )
+
+        return response
+
+
+def _load_pyinstrument_jupyter_extension() -> None:
+    try:
+        # third party
+        from IPython import get_ipython
+
+        ipython = get_ipython()  # noqa: F821
+        ipython.run_line_magic("load_ext", "pyinstrument")
+        print("Pyinstrument Jupyter extension loaded")
+    except Exception as e:
+        print(f"Error loading pyinstrument jupyter extension: {e}")
 
 
 def attach_debugger() -> None:
@@ -187,12 +261,20 @@ def serve_node(
     association_request_auto_approval: bool = False,
     background_tasks: bool = False,
     debug: bool = False,
+    # Profiling inputs
+    profile: bool = False,
+    profile_interval: float = 0.0001,
+    profile_dir: str | None = None,
 ) -> tuple[Callable, Callable]:
     starting_uvicorn_event = multiprocessing.Event()
 
     # Enable IPython autoreload if dev_mode is enabled.
     if dev_mode:
         enable_autoreload()
+
+    # Load the Pyinstrument Jupyter extension if profile is enabled.
+    if profile:
+        _load_pyinstrument_jupyter_extension()
 
     server_process = multiprocessing.Process(
         target=run_uvicorn,
@@ -214,6 +296,9 @@ def serve_node(
             "background_tasks": background_tasks,
             "debug": debug,
             "starting_uvicorn_event": starting_uvicorn_event,
+            "profile": profile,
+            "profile_interval": profile_interval,
+            "profile_dir": profile_dir,
         },
     )
 
