@@ -1198,8 +1198,8 @@ class ProjectSubmit(SyftObject):
         self.users = [UserIdentity.from_client(client) for client in self.clients]
 
         # Assign logged in user name as project creator
-        if isinstance(self.clients[0].me, UserView):
-            self.username = self.clients[0].me.name
+        if isinstance(self.clients[0].account, UserView):
+            self.username = self.clients[0].account.name
         else:
             self.username = ""
 
