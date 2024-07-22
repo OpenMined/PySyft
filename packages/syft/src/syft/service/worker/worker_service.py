@@ -174,14 +174,14 @@ class WorkerService(AbstractService):
 
         if result.is_err():
             return SyftError(
-                f"Failed to retrieved WorkerPool {worker_pool_name} "
+                message=f"Failed to retrieved WorkerPool {worker_pool_name} "
                 f"associated with SyftWorker {uid}"
             )
 
         worker_pool = result.ok()
         if worker_pool is None:
             return SyftError(
-                f"Failed to retrieved WorkerPool {worker_pool_name} "
+                message=f"Failed to retrieved WorkerPool {worker_pool_name} "
                 f"associated with SyftWorker {uid}"
             )
 

@@ -173,7 +173,7 @@ class DockerWorkerConfig(WorkerConfig):
             with contextlib.closing(docker.from_env()) as client:
                 if not client.ping():
                     return SyftError(
-                        "Cannot reach docker server. Please check if docker is running."
+                        message="Cannot reach docker server. Please check if docker is running."
                     )
 
                 kwargs["fileobj"] = io.BytesIO(self.dockerfile.encode("utf-8"))

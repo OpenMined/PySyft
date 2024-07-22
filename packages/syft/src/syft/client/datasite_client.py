@@ -104,11 +104,11 @@ class DatasiteClient(SyftClient):
 
         # force_replace: check if dataset exists
         # if exists, delete it, then upload the new dataset
-        return SyftError("Not yet implemented!")
+        return SyftError(message="Not yet implemented!")
 
     def _upload_dataset(self, dataset: CreateDataset) -> SyftSuccess | SyftError:
         if self.users is None:
-            return SyftError(f"can't get user service for {self}")
+            return SyftError(message=f"can't get user service for {self}")
 
         user = self.users.get_current_user()
         dataset = add_default_uploader(user, dataset)

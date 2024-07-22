@@ -78,7 +78,7 @@ def compare_states(
         direction = SyncDirection.HIGH_TO_LOW
     else:
         return SyftError(
-            "Invalid server side types: can only compare a high and low server"
+            message="Invalid server side types: can only compare a high and low server"
         )
 
     if hide_usercode:

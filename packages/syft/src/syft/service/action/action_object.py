@@ -1012,7 +1012,7 @@ class ActionObject(SyncableSyftObject):
             linked_obj=action_object_link, apply_permission_type=ActionPermission.READ
         )
         if client.credentials is None:
-            return SyftError(f"{client} has no signing key")
+            return SyftError(message=f"{client} has no signing key")
         submit_request = SubmitRequest(
             changes=[permission_change],
             requesting_user_verify_key=client.credentials.verify_key,
