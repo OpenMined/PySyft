@@ -1,4 +1,5 @@
 # stdlib
+from collections.abc import Callable
 import logging
 from typing import Any
 
@@ -8,13 +9,13 @@ from ...abstract_server import ServerType
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...service.worker.utils import DEFAULT_WORKER_POOL_NAME
+from ...types.syft_migration import migrate
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
+from ...types.transforms import drop
 from ...types.uid import UID
-from ...util import drop
-from ...util import migrate
 from ...util import options
 from ...util.colors import SURFACE
 from ...util.misc_objs import HTMLObject
@@ -172,21 +173,21 @@ class ServerSettings(SyftObject):
 
 
 @migrate(ServerSettingsV1, ServerSettings)
-def migrate_server_settings_v1_to_v2() -> list[callable]:
+def migrate_server_settings_v1_to_v2() -> list[Callable]:
     return []
 
 
 @migrate(ServerSettings, ServerSettingsV1)
-def migrate_server_settings_v2_to_v1() -> list[callable]:
+def migrate_server_settings_v2_to_v1() -> list[Callable]:
     # Use drop function on "notifications_enabled" attrubute
-    return drop(["notifications_enabled"])
+    return [drop(["notifications_enabled"])]
 
 
 @migrate(ServerSettingsUpdateV1, ServerSettingsUpdate)
-def migrate_server_settings_update_v1_to_v2() -> list[callable]:
+def migrate_server_settings_update_v1_to_v2() -> list[Callable]:
     return []
 
 
 @migrate(ServerSettingsUpdate, ServerSettingsUpdateV1)
-def migrate_server_settings_update_v2_to_v1() -> list[callable]:
-    return drop(["notifications_enabled"])
+def migrate_server_settings_update_v2_to_v1() -> list[Callable]:
+    return [drop(["notifications_enabled"])]
