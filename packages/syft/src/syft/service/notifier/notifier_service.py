@@ -321,7 +321,7 @@ class NotifierService(AbstractService):
                         current_state[0] = datetime.now()  # Last time email was sent
                     else:
                         return SyftError(
-                            message="Couldn't send the email. You have surpassed the" 
+                            message="Couldn't send the email. You have surpassed the"
                             + " email threshold limit. Please try again later."
                         )
             else:
