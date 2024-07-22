@@ -42,7 +42,6 @@ from ...abstract_server import ServerType
 from ...client.api import APIRegistry
 from ...client.api import ServerIdentity
 from ...client.api import generate_remote_function
-from ...client.enclave_client import EnclaveMetadata
 from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
@@ -53,19 +52,13 @@ from ...store.document_store import PartitionKey
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
-from ...types.syft_migration import migrate
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_4
-from ...types.syft_object import SYFT_OBJECT_VERSION_5
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import add_server_uid_for_key
-from ...types.transforms import drop
 from ...types.transforms import generate_id
-from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.uid import UID
 from ...util import options
@@ -126,7 +119,7 @@ SubmitTimePartitionKey = PartitionKey(key="submit_time", type_=DateTime)
 PyCodeObject = Any
 
 
-@serializable()
+@serializable(canonical_name="UserCodeStatus", version=1)
 class UserCodeStatus(Enum):
     PENDING = "pending"
     DENIED = "denied"
@@ -280,42 +273,10 @@ class UserCodeStatusCollection(SyncableSyftObject):
 
 
 @serializable()
-class UserCodeV4(SyncableSyftObject):
-    # version
-    __canonical_name__ = "UserCode"
-    __version__ = SYFT_OBJECT_VERSION_4
-
-    id: UID
-    server_uid: UID | None = None
-    user_verify_key: SyftVerifyKey
-    raw_code: str
-    input_policy_type: type[InputPolicy] | UserPolicy
-    input_policy_init_kwargs: dict[Any, Any] | None = None
-    input_policy_state: bytes = b""
-    output_policy_type: type[OutputPolicy] | UserPolicy
-    output_policy_init_kwargs: dict[Any, Any] | None = None
-    output_policy_state: bytes = b""
-    parsed_code: str
-    service_func_name: str
-    unique_func_name: str
-    user_unique_func_name: str
-    code_hash: str
-    signature: inspect.Signature
-    status_link: LinkedObject
-    input_kwargs: list[str]
-    enclave_metadata: EnclaveMetadata | None = None
-    submit_time: DateTime | None = None
-    # tracks if the code calls datasite.something, variable is set during parsing
-    uses_datasite: bool = False
-    nested_codes: dict[str, tuple[LinkedObject, dict]] | None = {}
-    worker_pool_name: str | None = None
-
-
-@serializable()
 class UserCode(SyncableSyftObject):
     # version
     __canonical_name__ = "UserCode"
-    __version__ = SYFT_OBJECT_VERSION_5
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
     server_uid: UID | None = None
@@ -758,8 +719,8 @@ class UserCode(SyncableSyftObject):
 
     @property
     def assets(self) -> DictTuple[str, Asset] | SyftError:
-        if not self.input_policy:
-            return []
+        if not self.input_policy_init_kwargs:
+            return DictTuple({})
 
         api = self._get_api()
         if isinstance(api, SyftError):
@@ -778,7 +739,7 @@ class UserCode(SyncableSyftObject):
 
         # get a flat dict of all inputs
         all_inputs = {}
-        inputs = self.input_policy.inputs or {}
+        inputs = self.input_policy_init_kwargs or {}
         for vals in inputs.values():
             all_inputs.update(vals)
 
@@ -786,22 +747,47 @@ class UserCode(SyncableSyftObject):
         used_assets: list[Asset] = []
         for kwarg_name, action_id in all_inputs.items():
             asset = all_assets.get(action_id, None)
-            asset._kwarg_name = kwarg_name
-            used_assets.append(asset)
+            if asset:
+                asset._kwarg_name = kwarg_name
+                used_assets.append(asset)
 
         asset_dict = {asset._kwarg_name: asset for asset in used_assets}
         return DictTuple(asset_dict)
 
     @property
-    def _asset_json(self) -> str | SyftError:
-        if isinstance(self.assets, SyftError):
-            return self.assets
-        asset_dict = {
-            argument: asset._get_dict_for_user_code_repr()
-            for argument, asset in self.assets.items()
+    def action_objects(self) -> dict:
+        if not self.input_policy_init_kwargs:
+            return {}
+
+        all_inputs = {}
+        for vals in self.input_policy_init_kwargs.values():
+            all_inputs.update(vals)
+
+        # filter out the assets
+        action_objects = {
+            arg_name: str(uid)
+            for arg_name, uid in all_inputs.items()
+            if arg_name not in self.assets.keys()
         }
-        asset_str = json.dumps(asset_dict, indent=2)
-        return asset_str
+
+        return action_objects
+
+    @property
+    def inputs(self) -> dict:
+        inputs = {}
+        if self.action_objects:
+            inputs["action_objects"] = self.action_objects
+        if self.assets:
+            inputs["assets"] = {
+                argument: asset._get_dict_for_user_code_repr()
+                for argument, asset in self.assets.items()
+            }
+        return inputs
+
+    @property
+    def _inputs_json(self) -> str | SyftError:
+        input_str = json.dumps(self.inputs, indent=2)
+        return input_str
 
     def get_sync_dependencies(
         self, context: AuthedServiceContext
@@ -862,7 +848,7 @@ class UserCode(SyncableSyftObject):
                 # return the results
                 return result
             except Exception as e:
-                return SyftError(f"Failed to execute 'run'. Error: {e}")
+                return SyftError(message=f"Failed to execute 'run'. Error: {e}")
 
         return wrapper
 
@@ -890,8 +876,8 @@ class UserCode(SyncableSyftObject):
         constants_str = "\n\t".join([f"{x.kw}: {x.val}" for x in constants])
 
         # indent all lines except the first one
-        asset_str = "\n".join(
-            [f"    {line}" for line in self._asset_json.split("\n")]
+        inputs_str = "\n".join(
+            [f"    {line}" for line in self._inputs_json.split("\n")]
         ).lstrip()
 
         md = f"""class UserCode
@@ -901,7 +887,7 @@ class UserCode(SyncableSyftObject):
     status: list = {self.code_status}
     {constants_str}
     {shared_with_line}
-    assets: dict = {asset_str}
+    inputs: dict = {inputs_str}
     code:
 
 {self.raw_code}
@@ -944,10 +930,6 @@ class UserCode(SyncableSyftObject):
         constants = [x for x in args if isinstance(x, Constant)]
         constants_str = "\n&emsp;".join([f"{x.kw}: {x.val}" for x in constants])
         # indent all lines except the first one
-        asset_str = "<br>".join(
-            [f"&emsp;&emsp;{line}" for line in self._asset_json.split("\n")]
-        ).lstrip()
-
         repr_str = f"""
     <style>
     {FONT_CSS}
@@ -963,7 +945,7 @@ class UserCode(SyncableSyftObject):
     <p>{tabs}<strong>status:</strong> list = {self.code_status}</p>
     {tabs}{constants_str}
     {tabs}{shared_with_line}
-    <p>{tabs}<strong>assets:</strong> dict = {asset_str}</p>
+    <p>{tabs}<strong>inputs:</strong> dict = <pre>{self._inputs_json}</pre></p>
     <p>{tabs}<strong>code:</strong></p>
     </div>
     """
@@ -1025,30 +1007,10 @@ class UserCodeUpdate(PartialSyftObject):
 
 
 @serializable(without=["local_function"])
-class SubmitUserCodeV4(SyftObject):
-    # version
-    __canonical_name__ = "SubmitUserCode"
-    __version__ = SYFT_OBJECT_VERSION_4
-
-    id: UID | None = None  # type: ignore[assignment]
-    code: str
-    func_name: str
-    signature: inspect.Signature
-    input_policy_type: SubmitUserPolicy | UID | type[InputPolicy]
-    input_policy_init_kwargs: dict[Any, Any] | None = {}
-    output_policy_type: SubmitUserPolicy | UID | type[OutputPolicy]
-    output_policy_init_kwargs: dict[Any, Any] | None = {}
-    local_function: Callable | None = None
-    input_kwargs: list[str]
-    enclave_metadata: EnclaveMetadata | None = None
-    worker_pool_name: str | None = None
-
-
-@serializable(without=["local_function"])
 class SubmitUserCode(SyftObject):
     # version
     __canonical_name__ = "SubmitUserCode"
-    __version__ = SYFT_OBJECT_VERSION_5
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID | None = None  # type: ignore[assignment]
     code: str
@@ -1691,7 +1653,7 @@ def submit_user_code_to_user_code() -> list[Callable]:
 class UserCodeExecutionResult(SyftObject):
     # version
     __canonical_name__ = "UserCodeExecutionResult"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
     user_code_id: UID
@@ -2006,34 +1968,3 @@ def load_approved_policy_code(
                     load_policy_code(user_code.output_policy_type)
     except Exception as e:
         raise Exception(f"Failed to load code: {user_code}: {e}")
-
-
-@migrate(UserCodeV4, UserCode)
-def migrate_usercode_v4_to_v5() -> list[Callable]:
-    return [
-        make_set_default("origin_server_side_type", ServerSideType.HIGH_SIDE),
-        make_set_default("l0_deny_reason", None),
-        drop("enclave_metadata"),
-    ]
-
-
-@migrate(UserCode, UserCodeV4)
-def migrate_usercode_v5_to_v4() -> list[Callable]:
-    return [
-        drop(["origin_server_side_type", "l0_deny_reason"]),
-        make_set_default("enclave_metadata", None),
-    ]
-
-
-@migrate(SubmitUserCodeV4, SubmitUserCode)
-def upgrade_submitusercode() -> list[Callable]:
-    return [
-        drop("enclave_metadata"),
-    ]
-
-
-@migrate(SubmitUserCode, SubmitUserCodeV4)
-def downgrade_submitusercode() -> list[Callable]:
-    return [
-        make_set_default("enclave_metadata", None),
-    ]

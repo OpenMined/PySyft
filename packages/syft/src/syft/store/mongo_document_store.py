@@ -26,7 +26,7 @@ from ..service.action.action_permissions import ActionPermission
 from ..service.action.action_permissions import StoragePermission
 from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
-from ..types.syft_object import SYFT_OBJECT_VERSION_2
+from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import StorableObjectType
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
@@ -51,7 +51,7 @@ from .mongo_client import MongoStoreClientConfig
 @serializable()
 class MongoDict(SyftBaseObject):
     __canonical_name__ = "MongoDict"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     keys: list[Any]
     values: list[Any]
@@ -118,7 +118,7 @@ def from_mongo(
     return _deserialize(storage_obj["__blob__"], from_bytes=True)
 
 
-@serializable(attrs=["storage_type"])
+@serializable(attrs=["storage_type"], canonical_name="MongoStorePartition", version=1)
 class MongoStorePartition(StorePartition):
     """Mongo StorePartition
 
@@ -700,7 +700,9 @@ class MongoStorePartition(StorePartition):
 
         return Ok(set(storage_permissions["server_uids"]))
 
-    def get_all_storage_permissions(self) -> Result[dict[UID, Set[UID]], str]:  # noqa: UP006
+    def get_all_storage_permissions(
+        self,
+    ) -> Result[dict[UID, Set[UID]], str]:  # noqa: UP006
         # Returns a dictionary of all storage permissions {object_uid: {*server_uids}}
         storage_permissions_or_err = self.storage_permissions
         if storage_permissions_or_err.is_err():
@@ -806,7 +808,7 @@ class MongoStorePartition(StorePartition):
         return Err("You don't have permissions to migrate data.")
 
 
-@serializable()
+@serializable(canonical_name="MongoDocumentStore", version=1)
 class MongoDocumentStore(DocumentStore):
     """Mongo Document Store
 
@@ -818,7 +820,11 @@ class MongoDocumentStore(DocumentStore):
     partition_type = MongoStorePartition
 
 
-@serializable(attrs=["index_name", "settings", "store_config"])
+@serializable(
+    attrs=["index_name", "settings", "store_config"],
+    canonical_name="MongoBackingStore",
+    version=1,
+)
 class MongoBackingStore(KeyValueBackingStore):
     """
     Core logic for the MongoDB key-value store

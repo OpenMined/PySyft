@@ -26,7 +26,7 @@ from .notifications import ReplyNotification
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="NotificationService", version=1)
 class NotificationService(AbstractService):
     store: DocumentStore
     stash: NotificationStash

@@ -50,7 +50,7 @@ from .worker_stash import WorkerStash
 logger = logging.getLogger(__name__)
 
 
-@serializable()
+@serializable(canonical_name="SyftWorkerPoolService", version=1)
 class SyftWorkerPoolService(AbstractService):
     store: DocumentStore
     stash: SyftWorkerPoolStash

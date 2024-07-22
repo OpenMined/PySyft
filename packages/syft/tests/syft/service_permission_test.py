@@ -19,7 +19,7 @@ def guest_mock_user(root_verify_key, user_stash, guest_user):
 
 def test_call_service_syftapi_with_permission(worker, guest_mock_user, update_user):
     user_id = guest_mock_user.id
-    res = worker.root_client.api.services.user.update(user_id, update_user)
+    res = worker.root_client.api.services.user.update(uid=user_id, **update_user)
     assert res
 
 
@@ -35,8 +35,8 @@ def test_directly_call_service_with_permission(worker, guest_mock_user, update_u
     api_call = SyftAPICall(
         server_uid=root_datasite_client.id,
         path="user.update",
-        args=[user_id, update_user],
-        kwargs={},
+        args=[],
+        kwargs={"uid": user_id, **update_user},
     )
     signed_call = api_call.sign(root_datasite_client.api.signing_key)
     signed_result = root_datasite_client.api.connection.make_call(signed_call)

@@ -19,7 +19,7 @@ from .locks import LockingConfig
 from .locks import ThreadingLockingConfig
 
 
-@serializable()
+@serializable(canonical_name="DictBackingStore", version=1)
 class DictBackingStore(dict, KeyValueBackingStore):  # type: ignore[misc]
     # TODO: fix the mypy issue
     """Dictionary-based Store core logic"""
@@ -38,7 +38,7 @@ class DictBackingStore(dict, KeyValueBackingStore):  # type: ignore[misc]
             raise e
 
 
-@serializable()
+@serializable(canonical_name="DictStorePartition", version=1)
 class DictStorePartition(KeyValueStorePartition):
     """Dictionary-based StorePartition
 
@@ -54,7 +54,7 @@ class DictStorePartition(KeyValueStorePartition):
 
 
 # the base document store is already a dict but we can change it later
-@serializable()
+@serializable(canonical_name="DictDocumentStore", version=1)
 class DictDocumentStore(DocumentStore):
     """Dictionary-based Document Store
 

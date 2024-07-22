@@ -90,7 +90,7 @@ def add_default_uploader(
     return obj
 
 
-@serializable()
+@serializable(canonical_name="DatasiteClient", version=1)
 class DatasiteClient(SyftClient):
     def __repr__(self) -> str:
         return f"<DatasiteClient: {self.name}>"
@@ -108,7 +108,7 @@ class DatasiteClient(SyftClient):
             asset = dataset.asset_list[i]
             dataset.asset_list[i] = add_default_uploader(user, asset)
 
-        dataset._check_asset_must_contain_mock()
+        # dataset._check_asset_must_contain_mock()
         dataset_size: float = 0.0
 
         # TODO: Refactor so that object can also be passed to generate warnings

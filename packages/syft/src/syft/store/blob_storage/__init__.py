@@ -66,10 +66,7 @@ from ...types.blob_storage import DEFAULT_CHUNK_SIZE
 from ...types.blob_storage import SecureFilePathLocation
 from ...types.server_url import ServerURL
 from ...types.syft_migration import migrate
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
-from ...types.syft_object import SYFT_OBJECT_VERSION_4
-from ...types.syft_object import SYFT_OBJECT_VERSION_5
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
@@ -84,7 +81,7 @@ MAX_RETRIES = 20
 @serializable()
 class BlobRetrieval(SyftObject):
     __canonical_name__ = "BlobRetrieval"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     type_: type | None = None
     file_name: str
@@ -95,7 +92,7 @@ class BlobRetrieval(SyftObject):
 @serializable()
 class SyftObjectRetrieval(BlobRetrieval):
     __canonical_name__ = "SyftObjectRetrieval"
-    __version__ = SYFT_OBJECT_VERSION_4
+    __version__ = SYFT_OBJECT_VERSION_1
 
     syft_object: bytes
 
@@ -150,17 +147,9 @@ def syft_iter_content(
 
 
 @serializable()
-class BlobRetrievalByURLV4(BlobRetrieval):
-    __canonical_name__ = "BlobRetrievalByURL"
-    __version__ = SYFT_OBJECT_VERSION_4
-
-    url: ServerURL | str
-
-
-@serializable()
 class BlobRetrievalByURL(BlobRetrieval):
     __canonical_name__ = "BlobRetrievalByURL"
-    __version__ = SYFT_OBJECT_VERSION_5
+    __version__ = SYFT_OBJECT_VERSION_1
 
     url: ServerURL | str
     proxy_server_uid: UID | None = None
@@ -228,7 +217,7 @@ class BlobRetrievalByURL(BlobRetrieval):
 @serializable()
 class BlobDeposit(SyftObject):
     __canonical_name__ = "BlobDeposit"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     blob_storage_entry_id: UID
 
@@ -236,7 +225,7 @@ class BlobDeposit(SyftObject):
         raise NotImplementedError
 
 
-@serializable()
+@serializable(canonical_name="BlobStorageClientConfig", version=1)
 class BlobStorageClientConfig(BaseModel):
     pass
 
@@ -263,7 +252,7 @@ class BlobStorageConnection:
         raise NotImplementedError
 
 
-@serializable()
+@serializable(canonical_name="BlobStorageClient", version=1)
 class BlobStorageClient(SyftBaseModel):
     config: BlobStorageClientConfig
 
@@ -271,18 +260,8 @@ class BlobStorageClient(SyftBaseModel):
         raise NotImplementedError
 
 
-@serializable()
+@serializable(canonical_name="BlobStorageConfig", version=1)
 class BlobStorageConfig(SyftBaseModel):
     client_type: type[BlobStorageClient]
     client_config: BlobStorageClientConfig
     min_blob_size: int = 0  # in MB
-
-
-@migrate(BlobRetrievalByURLV4, BlobRetrievalByURL)
-def upgrade_blob_retrieval_by_url() -> list[Callable]:
-    return [make_set_default("proxy_server_uid", None)]
-
-
-@migrate(BlobRetrievalByURL, BlobRetrievalByURLV4)
-def downgrade_blob_retrieval_by_url() -> list[Callable]:
-    return [drop(["proxy_server_uid"])]

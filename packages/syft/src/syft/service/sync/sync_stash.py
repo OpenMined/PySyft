@@ -21,7 +21,7 @@ OrderByDatePartitionKey = PartitionKey(key="created_at", type_=DateTime)
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="SyncStash", version=1)
 class SyncStash(BaseUIDStoreStash):
     object_type = SyncState
     settings: PartitionSettings = PartitionSettings(

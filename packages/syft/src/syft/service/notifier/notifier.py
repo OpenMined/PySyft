@@ -31,6 +31,7 @@ class BaseNotifier:
 TBaseNotifier = TypeVar("TBaseNotifier", bound=BaseNotifier)
 
 
+@serializable(canonical_name="EmailNotifier", version=1)
 class EmailNotifier(BaseNotifier):
     smtp_client: SMTPClient
     sender = ""

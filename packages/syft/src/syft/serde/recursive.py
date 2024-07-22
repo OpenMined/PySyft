@@ -2,7 +2,7 @@
 from collections.abc import Callable
 from enum import Enum
 from enum import EnumMeta
-import sys
+import os
 import tempfile
 import types
 from typing import Any
@@ -16,11 +16,11 @@ import syft as sy
 
 # relative
 from ..types.syft_object_registry import SyftObjectRegistry
-from ..util.util import index_syft_by_module_name
 from .capnp import get_capnp_schema
 from .util import compatible_with_large_file_writes_capnp
 
-TYPE_BANK = {}
+TYPE_BANK = {}  # type: ignore
+SYFT_CLASSES_MISSING_CANONICAL_NAME = []
 
 recursive_scheme = get_capnp_schema("recursive_serde.capnp").RecursiveSerde
 
@@ -47,7 +47,7 @@ def get_types(cls: type, keys: list[str] | None = None) -> list[type] | None:
     return types
 
 
-def check_fqn_alias(cls: object | type) -> tuple | None:
+def check_fqn_alias(cls: object | type) -> tuple[str, ...] | None:
     """Currently, typing.Any has different metaclasses in different versions of Python 🤦‍♂️.
     For Python <=3.10
     Any is an instance of typing._SpecialForm
@@ -78,6 +78,62 @@ def check_fqn_alias(cls: object | type) -> tuple | None:
     return None
 
 
+def has_canonical_name_version(
+    cls: type, cannonical_name: str | None, version: int | None
+) -> bool:
+    cls_canonical_name = getattr(cls, "__canonical_name__", None)
+    cls_version = getattr(cls, "__version__", None)
+    return bool(cls_canonical_name or cannonical_name) and bool(cls_version or version)
+
+
+def validate_cannonical_name_version(
+    cls: type, canonical_name: str | None, version: int | None
+) -> tuple[str, int]:
+    cls_canonical_name = getattr(cls, "__canonical_name__", None)
+    cls_version = getattr(cls, "__version__", None)
+    if cls_canonical_name and canonical_name:
+        raise ValueError(
+            "Cannot specify both __canonical_name__ attribute and cannonical_name argument."
+        )
+    if cls_version and version:
+        raise ValueError(
+            "Cannot specify both __version__ attribute and version argument."
+        )
+    if cls_canonical_name is None and canonical_name is None:
+        raise ValueError(
+            "Must specify either __canonical_name__ attribute or cannonical_name argument."
+        )
+    if cls_version is None and version is None:
+        raise ValueError(
+            "Must specify either __version__ attribute or version argument."
+        )
+
+    canonical_name = canonical_name or cls_canonical_name
+    version = version or cls_version
+    return canonical_name, version  # type: ignore
+
+
+def skip_unregistered_class(
+    cls: type, canonical_name: str | None, version: str | None
+) -> bool:
+    """
+    Used to gather all classes that are missing canonical_name and version for development.
+
+    Returns True if the class should be skipped, False otherwise.
+    """
+
+    search_unregistered_classes = (
+        os.getenv("SYFT_SEARCH_MISSING_CANONICAL_NAME", False) == "true"
+    )
+    if not search_unregistered_classes:
+        return False
+    if not has_canonical_name_version(cls, canonical_name, version):
+        if cls.__module__.startswith("syft."):
+            SYFT_CLASSES_MISSING_CANONICAL_NAME.append(cls)
+            return True
+    return False
+
+
 def recursive_serde_register(
     cls: object | type,
     serialize: Callable | None = None,
@@ -86,14 +142,21 @@ def recursive_serde_register(
     exclude_attrs: list | None = None,
     inherit_attrs: bool | None = True,
     inheritable_attrs: bool | None = True,
+    canonical_name: str | None = None,
+    version: int | None = None,
 ) -> None:
     pydantic_fields = None
     base_attrs = None
     attribute_list: set[str] = set()
 
-    alias_fqn = check_fqn_alias(cls)
     cls = type(cls) if not isinstance(cls, type) else cls
-    fqn = f"{cls.__module__}.{cls.__name__}"
+
+    if skip_unregistered_class(cls, canonical_name, version):
+        return
+
+    canonical_name, version = validate_cannonical_name_version(
+        cls, canonical_name, version
+    )
 
     nonrecursive = bool(serialize and deserialize)
     _serialize = serialize if nonrecursive else rs_object2proto
@@ -141,7 +204,6 @@ def recursive_serde_register(
     attributes = set(attribute_list) if attribute_list else None
     attribute_types = get_types(cls, attributes)
     serde_overrides = getattr(cls, "__serde_overrides__", {})
-    version = getattr(cls, "__version__", None)
 
     # without fqn duplicate class names overwrite
     serde_attributes = (
@@ -157,27 +219,13 @@ def recursive_serde_register(
         version,
     )
 
-    TYPE_BANK[fqn] = serde_attributes
-    if hasattr(cls, "__canonical_name__"):
-        canonical_name = cls.__canonical_name__
-        version = cls.__version__
-    else:
-        # TODO: refactor
-        canonical_name = fqn
-        version = 1
-
     SyftObjectRegistry.register_cls(canonical_name, version, serde_attributes)
 
+    alias_fqn = check_fqn_alias(cls)
     if isinstance(alias_fqn, tuple):
         for alias in alias_fqn:
-            TYPE_BANK[alias] = serde_attributes
-
-            # TODO Refactor alias, required for typing.Any in python 3.12,
-            alias_canonical_name = alias
-            alias_version = 1
-            SyftObjectRegistry.register_cls(
-                alias_canonical_name, alias_version, serde_attributes
-            )
+            alias_canonical_name = canonical_name + f"_{alias}"
+            SyftObjectRegistry.register_cls(alias_canonical_name, 1, serde_attributes)
 
 
 def chunk_bytes(
@@ -233,15 +281,13 @@ def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuild
     msg = recursive_scheme.new_message()
 
     # todo: rewrite and make sure every object has a canonical name and version
-    canonical_name = SyftObjectRegistry.get_canonical_name(self)
-    if is_type:
-        version = 1
-    else:
-        version = getattr(self, "__version__", 1)
+    canonical_name, version = SyftObjectRegistry.get_canonical_name_version(self)
 
-    if not SyftObjectRegistry.has_serde_class("", canonical_name, version):
+    if not SyftObjectRegistry.has_serde_class(canonical_name, version):
         # third party
-        raise Exception(f"{canonical_name} version {version} not in SyftObjectRegistry")
+        raise Exception(
+            f"obj2proto: {canonical_name} version {version} not in SyftObjectRegistry"
+        )
 
     msg.canonicalName = canonical_name
     msg.version = version
@@ -334,36 +380,16 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
     # relative
     from .deserialize import _deserialize
 
-    # clean this mess, Tudor
-    module_parts = proto.fullyQualifiedName.split(".")
-    klass = module_parts.pop()
     class_type: type | Any = type(None)
-
-    if klass != "NoneType":
-        try:
-            class_type = index_syft_by_module_name(proto.fullyQualifiedName)  # type: ignore[assignment,unused-ignore]
-        except Exception:  # nosec
-            try:
-                class_type = getattr(sys.modules[".".join(module_parts)], klass)
-            except Exception:  # nosec
-                if "syft.user" in proto.fullyQualifiedName:
-                    # relative
-                    from ..server.server import CODE_RELOADER
-
-                    for load_user_code in CODE_RELOADER.values():
-                        load_user_code()
-                try:
-                    class_type = getattr(sys.modules[".".join(module_parts)], klass)
-                except Exception:  # nosec
-                    pass
 
     canonical_name = proto.canonicalName
     version = getattr(proto, "version", -1)
-    fqn = getattr(proto, "fullyQualifiedName", "")
-    fqn = map_fqns_for_backward_compatibility(fqn)
-    if not SyftObjectRegistry.has_serde_class(fqn, canonical_name, version):
+
+    if not SyftObjectRegistry.has_serde_class(canonical_name, version):
         # third party
-        raise Exception(f"{canonical_name} version {version} not in SyftObjectRegistry")
+        raise Exception(
+            f"proto2obj: {canonical_name} version {version} not in SyftObjectRegistry"
+        )
 
     # TODO: 🐉 sort this out, basically sometimes the syft.user classes are not in the
     # module name space in sub-processes or threads even though they are loaded on start
@@ -381,13 +407,9 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
         cls,
         _,
         version,
-    ) = SyftObjectRegistry.get_serde_properties_bw_compatible(
-        fqn, canonical_name, version
-    )
+    ) = SyftObjectRegistry.get_serde_properties(canonical_name, version)
 
-    if class_type == type(None) or fqn != "":
-        # yes this looks stupid but it works and the opposite breaks
-        class_type = cls
+    class_type = cls
 
     if nonrecursive:
         if deserialize is None:
@@ -418,14 +440,15 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
         # if we skip the __new__ flow of BaseModel we get the error
         # AttributeError: object has no attribute '__fields_set__'
 
-        if "syft.user" in proto.fullyQualifiedName:
-            # weird issues with pydantic and ForwardRef on user classes being inited
-            # with custom state args / kwargs
-            obj = class_type()
-            for attr_name, attr_value in kwargs.items():
-                setattr(obj, attr_name, attr_value)
-        else:
-            obj = class_type(**kwargs)
+        # if "syft.user" in proto.fullyQualifiedName:
+        #     # weird issues with pydantic and ForwardRef on user classes being inited
+        #     # with custom state args / kwargs
+        #     obj = class_type()
+        #     for attr_name, attr_value in kwargs.items():
+        #         setattr(obj, attr_name, attr_value)
+        # else:
+        #     obj = class_type(**kwargs)
+        obj = class_type(**kwargs)
 
     else:
         obj = class_type.__new__(class_type)  # type: ignore

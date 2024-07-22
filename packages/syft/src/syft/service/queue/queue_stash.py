@@ -18,8 +18,6 @@ from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
 from ...store.linked_obj import LinkedObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
-from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
@@ -28,7 +26,7 @@ from ..response import SyftError
 from ..response import SyftSuccess
 
 
-@serializable()
+@serializable(canonical_name="Status", version=1)
 class Status(str, Enum):
     CREATED = "created"
     PROCESSING = "processing"
@@ -44,7 +42,7 @@ _WorkerPoolPartitionKey = PartitionKey(key="worker_pool", type_=LinkedObject)
 @serializable()
 class QueueItem(SyftObject):
     __canonical_name__ = "QueueItem"
-    __version__ = SYFT_OBJECT_VERSION_4
+    __version__ = SYFT_OBJECT_VERSION_1
 
     __attr_searchable__ = ["status", "worker_pool"]
 
@@ -83,7 +81,7 @@ class QueueItem(SyftObject):
 @serializable()
 class ActionQueueItem(QueueItem):
     __canonical_name__ = "ActionQueueItem"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     method: str = "execute"
     service: str = "actionservice"
@@ -99,7 +97,7 @@ class APIEndpointQueueItem(QueueItem):
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="QueueStash", version=1)
 class QueueStash(BaseStash):
     object_type = QueueItem
     settings: PartitionSettings = PartitionSettings(
