@@ -108,6 +108,7 @@ DOCKER_RUN_CMD="docker run --rm -d \
     -e SERVER_SIDE_TYPE=\"$SERVER_SIDE_TYPE\" \
     -e SERVER_TYPE=\"$SERVER_TYPE\" \
     -e PORT=\"$PORT\" \
+    -e SINGLE_CONTAINER_MODE=true \
     -p \"$PORT:$PORT\""
 
 # Add optional environment variables if provided
