@@ -17,8 +17,6 @@ from fastapi import APIRouter
 from fastapi import FastAPI
 from fastapi import Request
 from fastapi import Response
-from pydantic_settings import BaseSettings
-from pydantic_settings import SettingsConfigDict
 import requests
 from starlette.middleware.cors import CORSMiddleware
 import uvicorn
@@ -34,6 +32,7 @@ from .enclave import Enclave
 from .gateway import Gateway
 from .node import NodeType
 from .routes import make_routes
+from .server_settings import ServerSettings
 from .utils import get_named_node_uid
 from .utils import remove_temp_dir_for_node
 
@@ -45,31 +44,8 @@ if os_name() == "macOS":
 WAIT_TIME_SECONDS = 20
 
 
-class AppSettings(BaseSettings):
-    name: str
-    node_type: NodeType = NodeType.DOMAIN
-    node_side_type: NodeSideType = NodeSideType.HIGH_SIDE
-    processes: int = 1
-    reset: bool = False
-    dev_mode: bool = False
-    enable_warnings: bool = False
-    in_memory_workers: bool = True
-    queue_port: int | None = None
-    create_producer: bool = False
-    n_consumers: int = 0
-    association_request_auto_approval: bool = False
-    background_tasks: bool = False
-
-    # Profiling inputs
-    profile: bool = False
-    profile_interval: float = 0.001
-    profile_dir: str | None = None
-
-    model_config = SettingsConfigDict(env_prefix="SYFT_", env_parse_none_str="None")
-
-
 def app_factory() -> FastAPI:
-    settings = AppSettings()
+    settings = ServerSettings()
 
     worker_classes = {
         NodeType.DOMAIN: Domain,
@@ -95,7 +71,7 @@ def app_factory() -> FastAPI:
         worker = worker_class(**worker_kwargs)
 
     app = FastAPI(title=settings.name)
-    router = make_routes(worker=worker)
+    router = make_routes(worker=worker, settings=settings)
     api_router = APIRouter()
     api_router.include_router(router)
     app.include_router(api_router, prefix="/api/v2")
@@ -106,10 +82,20 @@ def app_factory() -> FastAPI:
     return app
 
 
-def _register_middlewares(app: FastAPI, settings: AppSettings) -> None:
+def _register_middlewares(app: FastAPI, settings: ServerSettings) -> None:
     _register_cors_middleware(app)
-    if settings.profile:
-        _register_profiler(app, settings)
+
+    # As currently sync routes are not supported in pyinstrument
+    # we are not registering the profiler middleware for sync routes
+    # as currently most of our routes are sync routes in syft (routes.py)
+    # ex: syft_new_api, syft_new_api_call, login, register
+    # we should either convert these routes to async or
+    # wait until pyinstrument supports sync routes
+    # The reason we cannot our sync routes to async is because
+    # we have blocking IO operations, like the requests library, like if one route calls to
+    # itself, it will block the event loop and the server will hang
+    # if settings.profile:
+    #     _register_profiler(app, settings)
 
 
 def _register_cors_middleware(app: FastAPI) -> None:
@@ -122,7 +108,7 @@ def _register_cors_middleware(app: FastAPI) -> None:
     )
 
 
-def _register_profiler(app: FastAPI, settings: AppSettings) -> None:
+def _register_profiler(app: FastAPI, settings: ServerSettings) -> None:
     # third party
     from pyinstrument import Profiler
 
@@ -216,7 +202,7 @@ def run_uvicorn(
         attach_debugger()
 
     # Set up all kwargs as environment variables so that they can be accessed in the app_factory function.
-    env_prefix = AppSettings.model_config.get("env_prefix", "")
+    env_prefix = ServerSettings.model_config.get("env_prefix", "")
     for key, value in kwargs.items():
         key_with_prefix = f"{env_prefix}{key.upper()}"
         os.environ[key_with_prefix] = str(value)
@@ -275,6 +261,8 @@ def serve_node(
     # Load the Pyinstrument Jupyter extension if profile is enabled.
     if profile:
         _load_pyinstrument_jupyter_extension()
+        if profile_dir is None:
+            profile_dir = str(Path.cwd())
 
     server_process = multiprocessing.Process(
         target=run_uvicorn,
