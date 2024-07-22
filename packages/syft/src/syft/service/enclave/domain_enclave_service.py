@@ -1,6 +1,7 @@
 # stdlib
 import itertools
 from typing import Any
+from typing import cast
 
 # relative
 from ...serde.serializable import serializable
@@ -13,6 +14,7 @@ from ...service.user.user_roles import ADMIN_ROLE_LEVEL
 from ...service.user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ...store.document_store import DocumentStore
 from ...types.uid import UID
+from ..action.action_object import ActionObject
 from ..code.user_code import UserCode
 from ..context import AuthedServiceContext
 from ..model.model import ModelRef
@@ -145,7 +147,7 @@ class DomainEnclaveService(AbstractService):
             if node_identity.node_id == context.node.id
         ]
         asset_action_ids = tuple(itertools.chain.from_iterable(asset_action_ids_nested))
-        action_objects = [
+        action_objects: list[ActionObject] = [
             context.node.get_service("actionservice")
             .get(context=root_context, uid=action_id)
             .ok()
@@ -184,6 +186,15 @@ class DomainEnclaveService(AbstractService):
             _ = action_object.syft_action_data
             action_object.syft_blob_storage_entry_id = None
             blob_res = action_object._save_to_blob_storage(client=enclave_client)
+
+            action_object.syft_blob_storage_entry_id = cast(
+                UID | None, action_object.syft_blob_storage_entry_id
+            )
+            # For smaller data, we do not store in blob storage
+            # so for the cases, where we store in blob storage
+            # we need to clear the cache , to avoid sending the data again
+            if action_object.syft_blob_storage_entry_id:
+                action_object._clear_cache()
             if isinstance(blob_res, SyftError):
                 return blob_res
 

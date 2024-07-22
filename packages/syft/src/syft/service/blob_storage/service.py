@@ -166,7 +166,9 @@ class BlobStorageService(AbstractService):
 
         return blob_files
 
-    @service_method(path="blob_storage.get_by_uid", name="get_by_uid")
+    @service_method(
+        path="blob_storage.get_by_uid", name="get_by_uid", roles=GUEST_ROLE_LEVEL
+    )
     def get_blob_storage_entry_by_uid(
         self, context: AuthedServiceContext, uid: UID
     ) -> BlobStorageEntry | SyftError:
