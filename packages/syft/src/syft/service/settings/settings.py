@@ -10,8 +10,11 @@ from ...server.credentials import SyftVerifyKey
 from ...service.worker.utils import DEFAULT_WORKER_POOL_NAME
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
+from ...util import drop
+from ...util import migrate
 from ...util import options
 from ...util.colors import SURFACE
 from ...util.misc_objs import HTMLObject
@@ -22,9 +25,25 @@ logger = logging.getLogger(__name__)
 
 
 @serializable()
-class ServerSettingsUpdate(PartialSyftObject):
+class ServerSettingsUpdateV1(PartialSyftObject):
     __canonical_name__ = "ServerSettingsUpdate"
     __version__ = SYFT_OBJECT_VERSION_1
+    id: UID
+    name: str
+    organization: str
+    description: str
+    on_board: bool
+    signup_enabled: bool
+    admin_email: str
+    association_request_auto_approval: bool
+    welcome_markdown: HTMLObject | MarkdownDescription
+    eager_execution_enabled: bool = False
+
+
+@serializable()
+class ServerSettingsUpdate(PartialSyftObject):
+    __canonical_name__ = "ServerSettingsUpdate"
+    __version__ = SYFT_OBJECT_VERSION_2
     id: UID
     name: str
     organization: str
@@ -39,9 +58,42 @@ class ServerSettingsUpdate(PartialSyftObject):
 
 
 @serializable()
-class ServerSettings(SyftObject):
+class ServerSettingsV1(SyftObject):
     __canonical_name__ = "ServerSettings"
     __version__ = SYFT_OBJECT_VERSION_1
+    __repr_attrs__ = [
+        "name",
+        "organization",
+        "description",
+        "deployed_on",
+        "signup_enabled",
+        "admin_email",
+    ]
+
+    id: UID
+    name: str = "Server"
+    deployed_on: str
+    organization: str = "OpenMined"
+    verify_key: SyftVerifyKey
+    on_board: bool = True
+    description: str = "This is the default description for a Datasite Server."
+    server_type: ServerType = ServerType.DATASITE
+    signup_enabled: bool
+    admin_email: str
+    server_side_type: ServerSideType = ServerSideType.HIGH_SIDE
+    show_warnings: bool
+    association_request_auto_approval: bool
+    eager_execution_enabled: bool = False
+    default_worker_pool: str = DEFAULT_WORKER_POOL_NAME
+    welcome_markdown: HTMLObject | MarkdownDescription = HTMLObject(
+        text=DEFAULT_WELCOME_MSG
+    )
+
+
+@serializable()
+class ServerSettings(SyftObject):
+    __canonical_name__ = "ServerSettings"
+    __version__ = SYFT_OBJECT_VERSION_2
     __repr_attrs__ = [
         "name",
         "organization",
@@ -117,3 +169,24 @@ class ServerSettings(SyftObject):
             </div>
 
             """
+
+
+@migrate(ServerSettingsV1, ServerSettings)
+def migrate_server_settings_v1_to_v2() -> list[callable]:
+    return []
+
+
+@migrate(ServerSettings, ServerSettingsV1)
+def migrate_server_settings_v2_to_v1() -> list[callable]:
+    # Use drop function on "notifications_enabled" attrubute
+    return drop(["notifications_enabled"])
+
+
+@migrate(ServerSettingsUpdateV1, ServerSettingsUpdate)
+def migrate_server_settings_update_v1_to_v2() -> list[callable]:
+    return []
+
+
+@migrate(ServerSettingsUpdate, ServerSettingsUpdateV1)
+def migrate_server_settings_update_v2_to_v1() -> list[callable]:
+    return drop(["notifications_enabled"])
