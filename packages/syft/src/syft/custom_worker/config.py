@@ -79,6 +79,7 @@ class CustomBuildConfig(SyftBaseModel):
         return sep.join(self.custom_cmds)
 
 
+@serializable(canonical_name="WorkerConfig", version=1)
 class WorkerConfig(SyftBaseModel):
     pass
 
