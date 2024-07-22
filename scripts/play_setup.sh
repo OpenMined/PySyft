@@ -120,7 +120,7 @@ if [[ -n "$DEFAULT_ROOT_PASSWORD" ]]; then
 fi
 
 # Add the Docker image
-DOCKER_RUN_CMD="$DOCKER_RUN_CMD \"openmined/syft-backend:$VERSION\""
+DOCKER_RUN_CMD="$DOCKER_RUN_CMD \"openmined/grid-backend:$VERSION\""
 
 # Execute the Docker run command
 eval $DOCKER_RUN_CMD
