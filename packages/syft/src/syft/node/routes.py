@@ -120,7 +120,7 @@ def make_routes(worker: Worker) -> APIRouter:
         status_code=200,
         response_class=JSONResponse,
     )
-    async def root() -> dict[str, str]:
+    def root() -> dict[str, str]:
         """
         Currently, all service backends must satisfy either of the following requirements to
         pass the HTTP health checks sent to it from the GCE loadbalancer: 1. Respond with a
@@ -131,11 +131,11 @@ def make_routes(worker: Worker) -> APIRouter:
 
     # provide information about the node in JSON
     @router.get("/metadata", response_class=JSONResponse)
-    async def syft_metadata() -> JSONResponse:
+    def syft_metadata() -> JSONResponse:
         return worker.metadata.to(NodeMetadataJSON)
 
     @router.get("/metadata_capnp")
-    async def syft_metadata_capnp() -> Response:
+    def syft_metadata_capnp() -> Response:
         result = worker.metadata
         return Response(
             serialize(result, to_bytes=True),
@@ -154,7 +154,7 @@ def make_routes(worker: Worker) -> APIRouter:
 
     # get the SyftAPI object
     @router.get("/api")
-    async def syft_new_api(
+    def syft_new_api(
         request: Request, verify_key: str, communication_protocol: PROTOCOL_TYPE
     ) -> Response:
         user_verify_key: SyftVerifyKey = SyftVerifyKey.from_string(verify_key)
@@ -178,7 +178,7 @@ def make_routes(worker: Worker) -> APIRouter:
 
     # make a request to the SyftAPI
     @router.post("/api_call")
-    async def syft_new_api_call(
+    def syft_new_api_call(
         request: Request, data: Annotated[bytes, Depends(get_body)]
     ) -> Response:
         if TRACE_MODE:
@@ -241,7 +241,7 @@ def make_routes(worker: Worker) -> APIRouter:
 
     # exchange email and password for a SyftSigningKey
     @router.post("/login", name="login", status_code=200)
-    async def login(
+    def login(
         request: Request,
         email: Annotated[str, Body(example="info@openmined.org")],
         password: Annotated[str, Body(example="changethis")],
@@ -257,7 +257,7 @@ def make_routes(worker: Worker) -> APIRouter:
             return handle_login(email, password, worker)
 
     @router.post("/register", name="register", status_code=200)
-    async def register(
+    def register(
         request: Request, data: Annotated[bytes, Depends(get_body)]
     ) -> Response:
         if TRACE_MODE:
