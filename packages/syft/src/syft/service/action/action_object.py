@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from collections.abc import Iterable
 from enum import Enum
+import hashlib
 import inspect
 from io import BytesIO
 import logging
@@ -661,6 +662,7 @@ BASE_PASSTHROUGH_ATTRS: list[str] = [
     "__table_coll_widths__",
     "_clear_cache",
     "_set_reprs",
+    "hash",
 ]
 
 
@@ -2235,6 +2237,13 @@ class ActionObject(SyncableSyftObject):
 
     def __rrshift__(self, other: Any) -> Any:
         return self._syft_output_action_object(self.__rrshift__(other))
+
+    # Custom Hash Function for ActionObject
+    # hash([id, syft_action_data])
+    def hash(self) -> str:
+        hash_items = [self.id, self.syft_action_data]
+        hash_bytes = serialize(hash_items, to_bytes=True)
+        return hashlib.sha256(hash_bytes).hexdigest()
 
 
 @serializable()

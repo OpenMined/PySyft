@@ -71,6 +71,7 @@ class ModelAsset(SyftObject):
     action_id: UID
     node_uid: UID
     created_at: DateTime = DateTime.now()
+    hash: str
 
     __repr_attrs__ = ["name", "endpoint_path"]
 
@@ -84,7 +85,7 @@ class ModelAsset(SyftObject):
         super().__init__(**kwargs, description=description)
 
     def _repr_html_(self) -> Any:
-        return "todo a table"
+        return f"Asset Hash: {self.hash}"
 
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         _repr_str = f"Asset: {self.name}\n"
@@ -533,9 +534,28 @@ def add_default_node_uid(context: TransformContext) -> TransformContext:
     return context
 
 
+def add_asset_hash(context: TransformContext) -> TransformContext:
+    # relative
+    from ..action.action_service import ActionService
+
+    action_id = context.output["action_id"]
+    if action_id is not None:
+        action_service = context.node.get_service(ActionService)
+        # Q: Why is service returning an result object [Ok, Err]?
+        action_obj = action_service.get(context=context, uid=action_id)
+
+        if action_obj.is_err():
+            return SyftError(f"Failed to get action object with id {action_obj.err()}")
+        context.output["hash"] = action_obj.ok().hash()
+    else:
+        raise ValueError("Model Asset must have an action_id to generate a hash")
+
+    return context
+
+
 @transform(CreateModelAsset, ModelAsset)
 def createmodelasset_to_asset() -> list[Callable]:
-    return [generate_id, add_msg_creation_time, add_default_node_uid]
+    return [generate_id, add_msg_creation_time, add_default_node_uid, add_asset_hash]
 
 
 def convert_asset(context: TransformContext) -> TransformContext:

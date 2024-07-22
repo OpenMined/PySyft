@@ -329,7 +329,7 @@
       "ModelAsset": {
         "1": {
           "version": 1,
-          "hash": "c57f4c6d6932a7813f7d4c7358b8a680edb855da55fbf1054521cc92eae1e560",
+          "hash": "1a4a0529ab555bcf0a1fe8ba72e06d95fb450be976a8a1356b029d959972b482",
           "action": "add"
         }
       },
@@ -600,6 +600,13 @@
         "1": {
           "version": 1,
           "hash": "536b32f5449292fe55b46fb1c079795edf8bfceed8be95545a916488b09f5359",
+          "action": "add"
+        }
+      },
+      "Asset": {
+        "3": {
+          "version": 3,
+          "hash": "743389ad01c6c875fd23b6a0adeacd55bcf2cb8fdf81d9005c4ea4f65794c9c1",
           "action": "add"
         }
       }

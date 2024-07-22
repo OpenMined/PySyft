@@ -99,7 +99,7 @@ class Contributor(SyftObject):
 class Asset(SyftObject):
     # version
     __canonical_name__ = "Asset"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     action_id: UID
     node_uid: UID
@@ -111,6 +111,7 @@ class Asset(SyftObject):
     shape: tuple | None = None
     created_at: DateTime = DateTime.now()
     uploader: Contributor | None = None
+    hash: str
 
     # _kwarg_name and _dataset_name are set by the UserCode.assets
     _kwarg_name: str | None = None
@@ -180,6 +181,7 @@ class Asset(SyftObject):
             <p>{self.description}</p>
             <p><strong>Asset ID: </strong>{self.id}</p>
             <p><strong>Action Object ID: </strong>{self.action_id}</p>
+            <p><strong>Asset Hash (Private): </strong>{self.hash}</p>
             {uploaded_by_line}
             <p><strong>Created on: </strong>{self.created_at}</p>
             <p><strong>Data:</strong></p>
@@ -303,6 +305,29 @@ class Asset(SyftObject):
             )
             display(warning)
             return None
+
+
+@serializable()
+class AssetV2(SyftObject):
+    # version
+    __canonical_name__ = "Asset"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    action_id: UID
+    node_uid: UID
+    name: str
+    description: MarkdownDescription | None = None
+    contributors: set[Contributor] = set()
+    data_subjects: list[DataSubject] = []
+    mock_is_real: bool = False
+    shape: tuple | None = None
+    created_at: DateTime = DateTime.now()
+    uploader: Contributor | None = None
+
+    # _kwarg_name and _dataset_name are set by the UserCode.assets
+    _kwarg_name: str | None = None
+    _dataset_name: str | None = None
+    __syft_include_id_coll_repr__ = False
 
 
 def _is_action_data_empty(obj: Any) -> bool:
@@ -883,6 +908,25 @@ def add_default_node_uid(context: TransformContext) -> TransformContext:
     return context
 
 
+def add_asset_hash(context: TransformContext) -> TransformContext:
+    # relative
+    from ..action.action_service import ActionService
+
+    action_id = context.output["action_id"]
+    if action_id is not None:
+        action_service = context.node.get_service(ActionService)
+        # Q: Why is service returning an result object [Ok, Err]?
+        action_obj = action_service.get(context=context, uid=action_id)
+
+        if action_obj.is_err():
+            return SyftError(f"Failed to get action object with id {action_obj.err()}")
+        context.output["hash"] = action_obj.ok().hash()
+    else:
+        raise ValueError("Asset must have an action_id to generate a hash")
+
+    return context
+
+
 @transform(CreateAsset, Asset)
 def createasset_to_asset() -> list[Callable]:
     return [
@@ -892,6 +936,7 @@ def createasset_to_asset() -> list[Callable]:
         create_and_store_twin,
         set_data_subjects,
         add_default_node_uid,
+        add_asset_hash,
     ]
 
 
