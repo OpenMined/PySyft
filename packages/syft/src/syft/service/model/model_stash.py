@@ -2,8 +2,8 @@
 from result import Result
 
 # relative
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
 from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
@@ -16,7 +16,7 @@ NamePartitionKey = PartitionKey(key="name", type_=str)
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="ModelStash", version=1)
 class ModelStash(BaseUIDStoreStash):
     object_type = Model
     settings: PartitionSettings = PartitionSettings(

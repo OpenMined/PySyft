@@ -62,7 +62,7 @@ def _paginate_model_collection(
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="ModelService", version=1)
 class ModelService(AbstractService):
     store: DocumentStore
     stash: ModelStash
@@ -96,8 +96,8 @@ class ModelService(AbstractService):
         if result.is_err():
             return SyftError(message=str(result.err()))
         return SyftSuccess(
-            message=f"Model uploaded to '{context.node.name}'. "
-            f"To see the models uploaded by a client on this node, use command `[your_client].models`"
+            message=f"Model uploaded to '{context.server.name}'. "
+            f"To see the models uploaded by a client on this server, use command `[your_client].models`"
         )
 
     @service_method(

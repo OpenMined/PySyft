@@ -11,10 +11,10 @@ from starlette.middleware.cors import CORSMiddleware
 # syft absolute
 from syft.protocol.data_protocol import stage_protocol_changes
 
-# grid absolute
+# server absolute
 from grid.api.router import api_router
 from grid.core.config import settings
-from grid.core.node import worker
+from grid.core.server import worker
 
 
 class EndpointFilter(logging.Filter):

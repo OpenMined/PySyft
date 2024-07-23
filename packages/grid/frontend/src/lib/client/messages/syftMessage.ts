@@ -30,14 +30,14 @@ export class SignedAPICall {
 }
 
 export class APICall {
-  node_uid: UUID
+  server_uid: UUID
   path: string
   args: object
   kwargs: object
   blocking: boolean
 
   constructor(id, path, args, kwargs, blocking = true) {
-    this.node_uid = new UUID(id)
+    this.server_uid = new UUID(id)
     this.path = path
     this.args = args
     if (kwargs) {

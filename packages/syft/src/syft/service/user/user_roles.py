@@ -19,10 +19,10 @@ class ServiceRoleCapability(Enum):
     CAN_MANAGE_INFRASTRUCTURE = 64
     CAN_UPLOAD_DATA = 128
     CAN_UPLOAD_LEGAL_DOCUMENT = 256
-    CAN_EDIT_DOMAIN_SETTINGS = 512
+    CAN_EDIT_DATASITE_SETTINGS = 512
 
 
-@serializable()
+@serializable(canonical_name="ServiceRole", version=1)
 class ServiceRole(Enum):
     NONE = 0
     GUEST = 1

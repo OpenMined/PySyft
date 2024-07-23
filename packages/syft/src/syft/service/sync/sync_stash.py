@@ -21,7 +21,7 @@ OrderByDatePartitionKey = PartitionKey(key="created_at", type_=DateTime)
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="SyncStash", version=1)
 class SyncStash(BaseUIDStoreStash):
     object_type = SyncState
     settings: PartitionSettings = PartitionSettings(
@@ -39,7 +39,7 @@ class SyncStash(BaseUIDStoreStash):
         self, context: AuthedServiceContext
     ) -> Result[SyncState | None, str]:
         all_states = self.get_all(
-            credentials=context.node.verify_key,  # type: ignore
+            credentials=context.server.verify_key,  # type: ignore
             order_by=OrderByDatePartitionKey,
         )
 

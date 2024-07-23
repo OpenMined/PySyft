@@ -11,25 +11,37 @@ from result import Result
 from ...client.client import SyftClient
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ..context import ChangeContext
 from ..request.request import Change
 from ..response import SyftError
 from ..response import SyftSuccess
-from .node_peer import NodePeer
+from .routes import ServerRoute
+from .server_peer import ServerPeer
+
+
+@serializable()
+class AssociationRequestChangeV1(Change):
+    __canonical_name__ = "AssociationRequestChange"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    self_server_route: ServerRoute
+    remote_peer: ServerPeer
+    challenge: bytes
 
 
 @serializable()
 class AssociationRequestChange(Change):
     __canonical_name__ = "AssociationRequestChange"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
-    remote_peer: NodePeer
+    remote_peer: ServerPeer
 
-    __repr_attrs__ = ["self_node_route", "remote_peer"]
+    __repr_attrs__ = ["remote_peer"]
 
     def _run(
         self, context: ChangeContext, apply: bool
-    ) -> Result[tuple[bytes, NodePeer], SyftError]:
+    ) -> Result[tuple[bytes, ServerPeer], SyftError]:
         """
         Executes the association request.
 
@@ -38,7 +50,7 @@ class AssociationRequestChange(Change):
             apply (bool): A flag indicating whether to apply the association request.
 
         Returns:
-            Result[tuple[bytes, NodePeer], SyftError]: The result of the association request.
+            Result[tuple[bytes, ServerPeer], SyftError]: The result of the association request.
         """
         # relative
         from .network_service import NetworkService
@@ -52,7 +64,7 @@ class AssociationRequestChange(Change):
         # Get the network service
         service_ctx = context.to_service_ctx()
         network_service = cast(
-            NetworkService, service_ctx.node.get_service(NetworkService)
+            NetworkService, service_ctx.server.get_service(NetworkService)
         )
         network_stash = network_service.stash
 
@@ -67,7 +79,7 @@ class AssociationRequestChange(Change):
         if add_rtunnel_route:
             network_service.set_reverse_tunnel_config(
                 context=context,
-                remote_node_peer=self.remote_peer,
+                remote_server_peer=self.remote_peer,
             )
         else:
             # Pinging the remote peer to verify the connection
@@ -103,7 +115,7 @@ class AssociationRequestChange(Change):
 
         # Adding the remote peer to the network stash
         result = network_stash.create_or_update_peer(
-            service_ctx.node.verify_key, self.remote_peer
+            service_ctx.server.verify_key, self.remote_peer
         )
 
         if result.is_err():

@@ -5,8 +5,8 @@ from result import Ok
 from result import Result
 
 # relative
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
 from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
@@ -21,7 +21,7 @@ __all__ = ["SyftImageRegistryStash"]
 URLPartitionKey = PartitionKey(key="url", type_=str)
 
 
-@serializable()
+@serializable(canonical_name="SyftImageRegistryStash", version=1)
 class SyftImageRegistryStash(BaseUIDStoreStash):
     object_type = SyftImageRegistry
     settings: PartitionSettings = PartitionSettings(

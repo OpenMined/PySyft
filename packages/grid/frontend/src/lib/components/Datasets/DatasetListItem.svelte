@@ -3,7 +3,7 @@
   import TableIcon from '$lib/components/icons/TableIcon.svelte';
   import Tooltip from '$lib/components/Tooltip.svelte';
   import TooltipText from '../TooltipText.svelte';
-  import type { Dataset } from '../../../types/domain/dataset';
+  import type { Dataset } from '../../../types/datasite/dataset';
 
   export let dataset: Dataset;
 </script>

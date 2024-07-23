@@ -17,7 +17,7 @@ import syft as sy
         "metadata_json",
     ],
 )
-def test_node_settings_serde(obj: Any, request: FixtureRequest) -> None:
+def test_server_settings_serde(obj: Any, request: FixtureRequest) -> None:
     requested_obj = request.getfixturevalue(obj)
     ser_data = sy.serialize(requested_obj, to_bytes=True)
     assert isinstance(ser_data, bytes)

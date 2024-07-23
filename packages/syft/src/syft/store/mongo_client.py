@@ -19,7 +19,7 @@ from .document_store import StoreConfig
 from .mongo_codecs import SYFT_CODEC_OPTIONS
 
 
-@serializable()
+@serializable(canonical_name="MongoStoreClientConfig", version=1)
 class MongoStoreClientConfig(StoreClientConfig):
     """
     Paramaters:
@@ -117,9 +117,9 @@ class MongoStoreClientConfig(StoreClientConfig):
     # Testing and connection reuse
     client: Any = None
 
-    # this allows us to have one connection per `Node` object
+    # this allows us to have one connection per `Server` object
     # in the MongoClientCache
-    node_obj_python_id: int | None = None
+    server_obj_python_id: int | None = None
 
 
 class MongoClientCache:

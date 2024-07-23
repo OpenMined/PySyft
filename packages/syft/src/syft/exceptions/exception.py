@@ -4,7 +4,7 @@
 from typing_extensions import Self
 
 # relative
-from ..service.context import NodeServiceContext
+from ..service.context import ServerServiceContext
 from ..service.response import SyftError
 from ..service.user.user_roles import ServiceRole
 
@@ -17,7 +17,7 @@ class PySyftException(Exception):
         self.message = message
         self.roles = roles if roles else [ServiceRole.ADMIN]
 
-    def raise_with_context(self, context: NodeServiceContext) -> Self:
+    def raise_with_context(self, context: ServerServiceContext) -> Self:
         self.context = context
         return self
 

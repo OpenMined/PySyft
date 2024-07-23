@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getUserRole } from '$lib/utils';
-  import type { UserListView } from '../../../types/domain/users';
+  import type { UserListView } from '../../../types/datasite/users';
   import Avatar from '../Avatar.svelte';
   import Badge from '../Badge.svelte';
 
