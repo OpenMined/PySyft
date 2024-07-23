@@ -8,7 +8,7 @@ from pydantic import field_validator
 from result import Result
 
 # relative
-from ...node.credentials import SyftVerifyKey
+from ...server.credentials import SyftVerifyKey
 from ...types.base import SyftBaseModel
 from ...types.uid import UID
 from ..worker.worker_pool import SyftWorker
