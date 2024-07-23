@@ -384,13 +384,22 @@ def test_reupload_dataset(worker: Worker, small_dataset: Dataset) -> None:
     # delete the dataset
     del_res = root_client.api.services.dataset.delete(dataset.id)
     assert isinstance(del_res, SyftSuccess)
+    assert len(root_client.api.services.dataset.get_all()) == 0
     search_res = root_client.api.services.dataset.search(dataset.name)
     assert len(search_res) == 0
 
     # reupload a dataset with the same name should be successful
     reupload_res = root_client.upload_dataset(small_dataset)
     assert isinstance(reupload_res, SyftSuccess)
+    assert len(root_client.api.services.dataset.get_all()) == 1
     search_res = root_client.api.services.dataset.search(dataset.name)
     assert len(search_res) == 1
     assert all(small_dataset.assets[0].data == search_res[0].assets[0].data)
     assert all(small_dataset.assets[0].mock == search_res[0].assets[0].mock)
+
+    # upload with force_replace
+    force_replace_upload_res = root_client.upload_dataset(
+        small_dataset, force_replace=True
+    )
+    assert isinstance(force_replace_upload_res, SyftSuccess)
+    assert len(root_client.api.services.dataset.get_all()) == 1

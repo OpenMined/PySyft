@@ -522,9 +522,7 @@ class Dataset(SyftObject):
             """
         else:
             description_info_message = ""
-        if self.to_be_deleted:
-            return "This dataset has been marked for deletion. The underlying data may be not available."
-        return f"""
+        repr_html = f"""
             <style>
             {FONT_CSS}
             .syft-dataset {{color: {SURFACE[options.color_theme]};}}
@@ -545,9 +543,20 @@ class Dataset(SyftObject):
             </span></strong><a href='{self.url}'>{self.url}</a></p>
             <p class='paragraph-sm'><strong><span class='pr-8'>Contributors:</span></strong>
             To see full details call <strong>dataset.contributors</strong>.</p>
-            <h2><strong><span class='pr-8'>Assets</span></strong></h2>
-            {self.assets._repr_html_()}
-            """
+
+        """
+        if self.to_be_deleted:
+            repr_html += (
+                "<h2><strong><span class='pr-8'>"
+                "This dataset has been marked for deletion. The underlying data may be not available"
+                "</span></strong></h2>"
+            )
+        else:
+            repr_html += f"""
+                        <h4><strong><span class='pr-8'>Assets</span></strong></h4>
+                        {self.assets._repr_html_()}
+                    """
+        return repr_html
 
     def action_ids(self) -> list[UID]:
         return [asset.action_id for asset in self.asset_list if asset.action_id]

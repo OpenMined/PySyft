@@ -99,12 +99,23 @@ class DatasiteClient(SyftClient):
     def upload_dataset(
         self, dataset: CreateDataset, force_replace: bool = False
     ) -> SyftSuccess | SyftError:
-        if not force_replace:
+        search_res = self.api.services.dataset.search(dataset.name)
+        if isinstance(search_res, SyftError):
+            return search_res
+        dataset_exists: bool = len(search_res) > 0
+        if not dataset_exists:
             return self._upload_dataset(dataset)
-
-        # force_replace: check if dataset exists
-        # if exists, delete it, then upload the new dataset
-        return SyftError(message="Not yet implemented!")
+        else:
+            if not force_replace:
+                return SyftError(
+                    message=f"Dataset with name the '{dataset.name}' already exists. "
+                    "Please use `force_replace=True` to overwrite."
+                )
+            else:
+                del_res = self.api.services.dataset.delete(search_res[0].id)
+                if isinstance(del_res, SyftError):
+                    return del_res
+                return self._upload_dataset(dataset)
 
     def _upload_dataset(self, dataset: CreateDataset) -> SyftSuccess | SyftError:
         if self.users is None:

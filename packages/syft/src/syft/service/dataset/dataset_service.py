@@ -118,6 +118,7 @@ class DatasetService(AbstractService):
         context: AuthedServiceContext,
         page_size: int | None = 0,
         page_index: int | None = 0,
+        include_deleted: bool = False,
     ) -> DatasetPageView | DictTuple[str, Dataset] | SyftError:
         """Get a Dataset"""
         result = self.stash.get_all(context.credentials)
@@ -125,12 +126,12 @@ class DatasetService(AbstractService):
             return SyftError(message=result.err())
 
         datasets = result.ok()
-
         for dataset in datasets:
             if context.server is not None:
                 dataset.server_uid = context.server.id
-            if dataset.to_be_deleted:
-                datasets.remove(dataset)
+
+        if not include_deleted:
+            datasets = [dataset for dataset in datasets if not dataset.to_be_deleted]
 
         return _paginate_dataset_collection(
             datasets=datasets, page_size=page_size, page_index=page_index
@@ -167,7 +168,8 @@ class DatasetService(AbstractService):
         if result.is_err():
             return SyftError(message=result.err())
         dataset = result.ok()
-
+        if dataset is None:
+            return SyftError(message=f"Dataset with UID {uid} not found.")
         if context.server is not None:
             dataset.server_uid = context.server.id
         return dataset
