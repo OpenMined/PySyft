@@ -115,14 +115,14 @@ class ServerHandle:
             password = getpass.getpass("Password: ")
 
         if self.port:
-            return sy_login(
-                email=email, password=password, url=self.url, port=self.port
-            )  # type: ignore
+            return sy_login(url=self.url, port=self.port)  # type: ignore
+        elif self.deployment_type == DeploymentType.PYTHON:
+            guest_client = self.python_server.guest_client(verbose=False)  # type: ignore
+            return guest_client.login(email=email, password=password, **kwargs)  # type: ignore
         else:
             raise NotImplementedError(
                 f"client not implemented for the deployment type:{self.deployment_type}"
             )
-        # return sy_login(email=email, password=password, **kwargs)
 
     def register(
         self,
