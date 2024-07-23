@@ -1,5 +1,4 @@
 # stdlib
-from collections.abc import Callable
 from typing import ClassVar
 
 # third party
@@ -10,8 +9,8 @@ from result import Result
 
 # relative
 from ...client.api import APIRegistry
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
 from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
@@ -19,12 +18,8 @@ from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
-from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syncable_object import SyncableSyftObject
-from ...types.transforms import drop
-from ...types.transforms import make_set_default
 from ...types.uid import UID
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectREAD
@@ -43,39 +38,9 @@ OutputPolicyIdPartitionKey = PartitionKey(key="output_policy_id", type_=UID)
 
 
 @serializable()
-class ExecutionOutputV1(SyncableSyftObject):
-    __canonical_name__ = "ExecutionOutput"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    executing_user_verify_key: SyftVerifyKey
-    user_code_link: LinkedObject
-    output_ids: list[UID] | dict[str, UID] | None = None
-    job_link: LinkedObject | None = None
-    created_at: DateTime = DateTime.now()
-    input_ids: dict[str, UID] | None = None
-
-    # Required for __attr_searchable__, set by model_validator
-    user_code_id: UID
-
-    # Output policy is not a linked object because its saved on the usercode
-    output_policy_id: UID | None = None
-
-    __attr_searchable__: ClassVar[list[str]] = [
-        "user_code_id",
-        "created_at",
-        "output_policy_id",
-    ]
-    __repr_attrs__: ClassVar[list[str]] = [
-        "created_at",
-        "user_code_id",
-        "output_ids",
-    ]
-
-
-@serializable()
 class ExecutionOutput(SyncableSyftObject):
     __canonical_name__ = "ExecutionOutput"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     executing_user_verify_key: SyftVerifyKey
     user_code_link: LinkedObject
@@ -119,7 +84,7 @@ class ExecutionOutput(SyncableSyftObject):
         output_ids: UID | list[UID] | dict[str, UID],
         user_code_id: UID,
         executing_user_verify_key: SyftVerifyKey,
-        node_uid: UID,
+        server_uid: UID,
         job_id: UID | None = None,
         output_policy_id: UID | None = None,
         input_ids: dict[str, UID] | None = None,
@@ -137,7 +102,7 @@ class ExecutionOutput(SyncableSyftObject):
             object_uid=user_code_id,
             object_type=UserCode,
             service_type=UserCodeService,
-            node_uid=node_uid,
+            server_uid=server_uid,
         )
 
         if job_id:
@@ -145,7 +110,7 @@ class ExecutionOutput(SyncableSyftObject):
                 object_uid=job_id,
                 object_type=Job,
                 service_type=JobService,
-                node_uid=node_uid,
+                server_uid=server_uid,
             )
         else:
             job_link = None
@@ -161,12 +126,12 @@ class ExecutionOutput(SyncableSyftObject):
     @property
     def outputs(self) -> list[ActionObject] | dict[str, ActionObject] | None:
         api = APIRegistry.api_for(
-            node_uid=self.syft_node_location,
+            server_uid=self.syft_server_location,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None:
             raise ValueError(
-                f"Can't access the api. Please log in to {self.syft_node_location}"
+                f"Can't access the api. Please log in to {self.syft_server_location}"
             )
         action_service = api.services.action
 
@@ -223,7 +188,7 @@ class ExecutionOutput(SyncableSyftObject):
         return res
 
 
-@serializable()
+@serializable(canonical_name="OutputStash", version=1)
 class OutputStash(BaseUIDStoreStash):
     object_type = ExecutionOutput
     settings: PartitionSettings = PartitionSettings(
@@ -277,17 +242,7 @@ class OutputStash(BaseUIDStoreStash):
         )
 
 
-@migrate(ExecutionOutputV1, ExecutionOutput)
-def upgrade_execution_output() -> list[Callable]:
-    return [make_set_default("job_id", None)]
-
-
-@migrate(ExecutionOutput, ExecutionOutputV1)
-def downgrade_execution_output() -> list[Callable]:
-    return [drop("job_id")]
-
-
-@serializable()
+@serializable(canonical_name="OutputService", version=1)
 class OutputService(AbstractService):
     store: DocumentStore
     stash: OutputStash
@@ -315,7 +270,7 @@ class OutputService(AbstractService):
             output_ids=output_ids,
             user_code_id=user_code_id,
             executing_user_verify_key=executing_user_verify_key,
-            node_uid=context.node.id,  # type: ignore
+            server_uid=context.server.id,  # type: ignore
             job_id=job_id,
             output_policy_id=output_policy_id,
             input_ids=input_ids,
@@ -333,7 +288,7 @@ class OutputService(AbstractService):
         self, context: AuthedServiceContext, user_code_id: UID
     ) -> list[ExecutionOutput] | SyftError:
         result = self.stash.get_by_user_code_id(
-            credentials=context.node.verify_key,  # type: ignore
+            credentials=context.server.verify_key,  # type: ignore
             user_code_id=user_code_id,
         )
         if result.is_ok():
@@ -351,7 +306,7 @@ class OutputService(AbstractService):
         user_code_id: UID,
         user_verify_key: SyftVerifyKey,
     ) -> bool | SyftError:
-        action_service = context.node.get_service("actionservice")
+        action_service = context.server.get_service("actionservice")
         all_outputs = self.get_by_user_code_id(context, user_code_id)
         if isinstance(all_outputs, SyftError):
             return all_outputs
@@ -383,7 +338,7 @@ class OutputService(AbstractService):
         self, context: AuthedServiceContext, user_code_id: UID
     ) -> ExecutionOutput | None | SyftError:
         result = self.stash.get_by_job_id(
-            credentials=context.node.verify_key,  # type: ignore
+            credentials=context.server.verify_key,  # type: ignore
             user_code_id=user_code_id,
         )
         if result.is_ok():
@@ -399,7 +354,7 @@ class OutputService(AbstractService):
         self, context: AuthedServiceContext, output_policy_id: UID
     ) -> list[ExecutionOutput] | SyftError:
         result = self.stash.get_by_output_policy_id(
-            credentials=context.node.verify_key,  # type: ignore
+            credentials=context.server.verify_key,  # type: ignore
             output_policy_id=output_policy_id,  # type: ignore
         )
         if result.is_ok():

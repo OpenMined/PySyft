@@ -15,7 +15,7 @@ Subpackages
    syft.capnp
    syft.client
    syft.external
-   syft.node
+   syft.server
    syft.serde
    syft.service
    syft.store
@@ -25,10 +25,10 @@ Subpackages
 Submodules
 ----------
 
-syft.abstract\_node module
+syft.abstract\_server module
 --------------------------
 
-.. automodule:: syft.abstract_node
+.. automodule:: syft.abstract_server
    :members:
    :undoc-members:
    :show-inheritance:

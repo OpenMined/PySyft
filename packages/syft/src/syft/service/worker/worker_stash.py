@@ -6,8 +6,8 @@ from result import Ok
 from result import Result
 
 # relative
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
 from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
@@ -22,7 +22,7 @@ from .worker_pool import SyftWorker
 WorkerContainerNamePartitionKey = PartitionKey(key="container_name", type_=str)
 
 
-@serializable()
+@serializable(canonical_name="WorkerStash", version=1)
 class WorkerStash(BaseUIDStoreStash):
     object_type = SyftWorker
     settings: PartitionSettings = PartitionSettings(

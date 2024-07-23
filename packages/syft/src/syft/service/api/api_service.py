@@ -35,7 +35,7 @@ from .api import UpdateTwinAPIEndpoint
 from .api_stash import TwinAPIEndpointStash
 
 
-@serializable()
+@serializable(canonical_name="APIService", version=1)
 class APIService(AbstractService):
     store: DocumentStore
     stash: TwinAPIEndpointStash
@@ -88,10 +88,10 @@ class APIService(AbstractService):
         action_obj = ActionObject.from_obj(
             id=new_endpoint.action_object_id,
             syft_action_data=CustomEndpointActionObject(endpoint_id=result.id),
-            syft_node_location=context.node.id,
+            syft_server_location=context.server.id,
             syft_client_verify_key=context.credentials,
         )
-        action_service = context.node.get_service("actionservice")
+        action_service = context.server.get_service("actionservice")
         res = action_service.set_result_to_store(
             context=context,
             result_action_object=action_obj,
@@ -220,7 +220,7 @@ class APIService(AbstractService):
         self, context: AuthedServiceContext, path: str
     ) -> TwinAPIEndpointView | SyftError:
         """Retrieves an specific API endpoint."""
-        result = self.stash.get_by_path(context.node.verify_key, path)
+        result = self.stash.get_by_path(context.server.verify_key, path)
         if result.is_err():
             return SyftError(message=result.err())
         api_endpoint = result.ok()
@@ -236,7 +236,7 @@ class APIService(AbstractService):
         self, context: AuthedServiceContext, api_path: str
     ) -> TwinAPIEndpoint | SyftError:
         """Retrieves an specific API endpoint."""
-        result = self.stash.get_by_path(context.node.verify_key, api_path)
+        result = self.stash.get_by_path(context.server.verify_key, api_path)
         if result.is_err():
             return SyftError(message=result.err())
         api_endpoint = result.ok()
@@ -261,7 +261,7 @@ class APIService(AbstractService):
         if both:
             private = True
             mock = True
-        result = self.stash.get_by_path(context.node.verify_key, api_path)
+        result = self.stash.get_by_path(context.server.verify_key, api_path)
         if result.is_err():
             return SyftError(message=result.err())
         api_endpoint = result.ok()
@@ -294,7 +294,7 @@ class APIService(AbstractService):
         if both:
             private = True
             mock = True
-        result = self.stash.get_by_path(context.node.verify_key, api_path)
+        result = self.stash.get_by_path(context.server.verify_key, api_path)
         if result.is_err():
             return SyftError(message=result.err())
         api_endpoint = result.ok()
@@ -319,7 +319,7 @@ class APIService(AbstractService):
         context: AuthedServiceContext,
     ) -> list[TwinAPIEndpointView] | SyftError:
         """Retrieves a list of available API endpoints view available to the user."""
-        admin_key = context.node.get_service("userservice").admin_verify_key()
+        admin_key = context.server.get_service("userservice").admin_verify_key()
         result = self.stash.get_all(admin_key)
         if result.is_err():
             return SyftError(message=result.err())
@@ -390,7 +390,7 @@ class APIService(AbstractService):
         if isinstance(custom_endpoint, SyftError):
             return custom_endpoint
 
-        result = context.node.add_api_endpoint_execution_to_queue(
+        result = context.server.add_api_endpoint_execution_to_queue(
             context.credentials,
             method,
             path,
@@ -405,7 +405,7 @@ class APIService(AbstractService):
 
         # So result is a Job object
         job = result
-        job_service = context.node.get_service("jobservice")
+        job_service = context.server.get_service("jobservice")
         job_id = job.id
         # Question: For a small moment, when job status is updated, it doesn't return the job during the .get() as if
         # it's not in the stash. Then afterwards if appears again. Is this a bug?
@@ -507,7 +507,7 @@ class APIService(AbstractService):
             return Ok(exec_result)
 
         action_obj = ActionObject.from_obj(exec_result)
-        action_service = cast(ActionService, context.node.get_service(ActionService))
+        action_service = cast(ActionService, context.server.get_service(ActionService))
         try:
             result = action_service.set_result_to_store(
                 context=context,
@@ -547,7 +547,7 @@ class APIService(AbstractService):
             return Ok(exec_result)
 
         action_obj = ActionObject.from_obj(exec_result)
-        action_service = cast(ActionService, context.node.get_service(ActionService))
+        action_service = cast(ActionService, context.server.get_service(ActionService))
         try:
             result = action_service.set_result_to_store(
                 context=context,
@@ -591,7 +591,7 @@ class APIService(AbstractService):
 
         action_obj = ActionObject.from_obj(exec_result)
 
-        action_service = cast(ActionService, context.node.get_service(ActionService))
+        action_service = cast(ActionService, context.server.get_service(ActionService))
         try:
             result = action_service.set_result_to_store(
                 context=context, result_action_object=action_obj
@@ -624,7 +624,8 @@ class APIService(AbstractService):
             else endpoint
         )
 
-    # ==== The methods below aren't meant to be called directly by the user, but rather by the node server context. ===
+    # ==== The methods below aren't meant to be called directly by the user, but
+    # rather by the server context. ===
     # Therefore, they are not decorated with @service_method
     def execute_server_side_endpoint_by_id(
         self,
@@ -671,7 +672,7 @@ class APIService(AbstractService):
     def get_endpoint_by_uid(
         self, context: AuthedServiceContext, uid: UID
     ) -> TwinAPIEndpoint | SyftError:
-        admin_key = context.node.get_service("userservice").admin_verify_key()
+        admin_key = context.server.get_service("userservice").admin_verify_key()
         result = self.stash.get_by_uid(admin_key, uid)
         if result.is_err():
             return SyftError(message=result.err())
@@ -682,7 +683,7 @@ class APIService(AbstractService):
     ) -> list[TwinAPIEndpoint] | SyftError:
         # TODO: Add ability to specify which roles see which endpoints
         # for now skip auth
-        results = self.stash.get_all(context.node.verify_key)
+        results = self.stash.get_all(context.server.verify_key)
         if results.is_ok():
             return results.ok()
         return SyftError(messages="Unable to get CustomAPIEndpoint")
@@ -690,7 +691,7 @@ class APIService(AbstractService):
     def get_code(
         self, context: AuthedServiceContext, endpoint_path: str
     ) -> TwinAPIEndpoint | SyftError:
-        result = self.stash.get_by_path(context.node.verify_key, path=endpoint_path)
+        result = self.stash.get_by_path(context.server.verify_key, path=endpoint_path)
         if result.is_err():
             return SyftError(
                 message=f"CustomAPIEndpoint: {endpoint_path} does not exist"

@@ -28,7 +28,7 @@ from .zmq_common import ZMQ_SOCKET_LOCK
 logger = logging.getLogger(__name__)
 
 
-@serializable(attrs=["_subscriber"])
+@serializable(attrs=["_subscriber"], canonical_name="ZMQConsumer", version=1)
 class ZMQConsumer(QueueConsumer):
     def __init__(
         self,

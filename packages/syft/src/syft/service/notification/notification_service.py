@@ -24,7 +24,7 @@ from .notifications import NotificationStatus
 from .notifications import ReplyNotification
 
 
-@serializable()
+@serializable(canonical_name="NotificationService", version=1)
 class NotificationService(AbstractService):
     store: DocumentStore
     stash: NotificationStash
@@ -51,7 +51,7 @@ class NotificationService(AbstractService):
             context.credentials, new_notification, add_permissions=permissions
         )
 
-        notifier_service = context.node.get_service("notifierservice")
+        notifier_service = context.server.get_service("notifierservice")
 
         res = notifier_service.dispatch_notification(context, new_notification)
         if isinstance(res, SyftError):
@@ -94,7 +94,7 @@ class NotificationService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> NotifierSettings | SyftError:
-        notifier_service = context.node.get_service("notifierservice")
+        notifier_service = context.server.get_service("notifierservice")
         return notifier_service.user_settings(context)
 
     @service_method(
@@ -106,7 +106,7 @@ class NotificationService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> NotifierSettings | SyftError:
-        notifier_service = context.node.get_service("notifierservice")
+        notifier_service = context.server.get_service("notifierservice")
         result = notifier_service.settings(context)
         return result
 
@@ -119,7 +119,7 @@ class NotificationService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> Notification | SyftError:
-        notifier_service = context.node.get_service("notifierservice")
+        notifier_service = context.server.get_service("notifierservice")
         result = notifier_service.activate(context)
         return result
 
@@ -132,7 +132,7 @@ class NotificationService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> Notification | SyftError:
-        notifier_service = context.node.get_service("notifierservice")
+        notifier_service = context.server.get_service("notifierservice")
         result = notifier_service.deactivate(context)
         return result
 
@@ -244,7 +244,7 @@ class NotificationService(AbstractService):
     def resolve_object(
         self, context: AuthedServiceContext, linked_obj: LinkedObject
     ) -> Notification | SyftError:
-        service = context.node.get_service(linked_obj.service_type)
+        service = context.server.get_service(linked_obj.service_type)
         result = service.resolve_link(context=context, linked_obj=linked_obj)
         if result.is_err():
             return SyftError(message=str(result.err()))

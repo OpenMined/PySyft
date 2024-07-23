@@ -19,7 +19,7 @@
   let current_user = data.current_user
 
   let tabs = [
-    { label: "Domain", id: "tab1" },
+    { label: "Datasite", id: "tab1" },
     // { label: 'Connection', id: 'tab2' }
     // { label: 'Permissions', id: 'tab3' },
   ]
@@ -27,7 +27,7 @@
   let currentTab = tabs[0].id
 
   $: profileInformation = [
-    { label: "Domain name", id: "domain_name", value: metadata?.name },
+    { label: "Datasite name", id: "datasite_name", value: metadata?.name },
     {
       label: "Organization",
       id: "organization",
@@ -44,7 +44,7 @@
 
   const handleUpdate = async () => {
     let newMetadata = {
-      name: openModal === "domain_name" ? name : null,
+      name: openModal === "datasite_name" ? name : null,
       organization: openModal === "organization" ? organization : null,
       description: openModal === "description" ? description : null,
     }
@@ -69,7 +69,7 @@
 
   $: current_user = data.current_user
   $: metadata = data.metadata
-  $: domainInitials = getInitials(metadata?.name)
+  $: datasiteInitials = getInitials(metadata?.name)
   $: userInitials = getInitials(current_user?.name)
 </script>
 
@@ -82,7 +82,7 @@
       Loading...
     {:else}
       <span class="block w-32 h-32 p-4">
-        <Avatar blackBackground initials={domainInitials} />
+        <Avatar blackBackground initials={datasiteInitials} />
       </span>
       <div class="w-full divide-y divide-gray-200">
         <div class="w-full flex flex-col py-4 gap-3">
@@ -121,7 +121,7 @@
             <div class="flex flex-col gap-1 pt-2 pb-4 w-full">
               <div class="flex gap-1 flex-wrap items-center">
                 <h4 class="text-gray-400 all-caps text-sm">ID#:</h4>
-                <Badge variant="gray">{metadata.node_id}</Badge>
+                <Badge variant="gray">{metadata.server_id}</Badge>
               </div>
               <div class="flex gap-1 items-center">
                 <h4 class="text-gray-400 all-caps text-sm">Deployed on:</h4>
@@ -141,11 +141,11 @@
               <Badge variant="gray"><span class="capitalize">Turned off</span></Badge>
             </span>
             <p>
-              When remote execution is turned on for the domain, it means that you are allowing
+              When remote execution is turned on for the datasite, it means that you are allowing
               PySyft to execute code submitted by users as is against the real private data instead
               of the mock data when a request is approved. If this is a third-party user please
               review the function and policy code carefully before approving this request. You can
-              turn off "Remote Execution" for your domain by going to your "Domain Settings" or
+              turn off "Remote Execution" for your datasite by going to your "Datasite Settings" or
               clicking the link below.
             </p>
             <span>
@@ -167,8 +167,8 @@
       </button>
     </div>
     <div slot="body">
-      {#if openModal === "domain_name"}
-        <Input label="Domain name" required bind:value={name} id="name" />
+      {#if openModal === "datasite_name"}
+        <Input label="Datasite name" required bind:value={name} id="name" />
       {:else if openModal === "organization"}
         <Input
           label="Organization"

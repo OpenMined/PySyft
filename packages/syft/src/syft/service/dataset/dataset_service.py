@@ -1,6 +1,8 @@
 # stdlib
 from collections.abc import Collection
 from collections.abc import Sequence
+import logging
+from typing import cast
 
 # relative
 from ...serde.serializable import serializable
@@ -9,6 +11,7 @@ from ...types.dicttuple import DictTuple
 from ...types.uid import UID
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
+from ..action.action_service import ActionService
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -25,7 +28,10 @@ from .dataset import Asset
 from .dataset import CreateDataset
 from .dataset import Dataset
 from .dataset import DatasetPageView
+from .dataset import DatasetUpdate
 from .dataset_stash import DatasetStash
+
+logger = logging.getLogger(__name__)
 
 
 def _paginate_collection(
@@ -64,7 +70,7 @@ def _paginate_dataset_collection(
     )
 
 
-@serializable()
+@serializable(canonical_name="DatasetService", version=1)
 class DatasetService(AbstractService):
     store: DocumentStore
     stash: DatasetStash
@@ -95,8 +101,8 @@ class DatasetService(AbstractService):
         if result.is_err():
             return SyftError(message=str(result.err()))
         return SyftSuccess(
-            message=f"Dataset uploaded to '{context.node.name}'. "
-            f"To see the datasets uploaded by a client on this node, use command `[your_client].datasets`"
+            message=f"Dataset uploaded to '{context.server.name}'. "
+            f"To see the datasets uploaded by a client on this server, use command `[your_client].datasets`"
         )
 
     @service_method(
@@ -119,8 +125,10 @@ class DatasetService(AbstractService):
         datasets = result.ok()
 
         for dataset in datasets:
-            if context.node is not None:
-                dataset.node_uid = context.node.id
+            if context.server is not None:
+                dataset.server_uid = context.server.id
+            if dataset.to_be_deleted:
+                datasets.remove(dataset)
 
         return _paginate_dataset_collection(
             datasets=datasets, page_size=page_size, page_index=page_index
@@ -141,7 +149,9 @@ class DatasetService(AbstractService):
             return results
 
         filtered_results = [
-            dataset for dataset_name, dataset in results.items() if name in dataset_name
+            dataset
+            for dataset_name, dataset in results.items()
+            if name in dataset_name and not dataset.to_be_deleted
         ]
 
         return _paginate_dataset_collection(
@@ -149,17 +159,16 @@ class DatasetService(AbstractService):
         )
 
     @service_method(path="dataset.get_by_id", name="get_by_id")
-    def get_by_id(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> SyftSuccess | SyftError:
+    def get_by_id(self, context: AuthedServiceContext, uid: UID) -> Dataset | SyftError:
         """Get a Dataset"""
         result = self.stash.get_by_uid(context.credentials, uid=uid)
-        if result.is_ok():
-            dataset = result.ok()
-            if context.node is not None:
-                dataset.node_uid = context.node.id
-            return dataset
-        return SyftError(message=result.err())
+        if result.is_err():
+            return SyftError(message=result.err())
+        dataset = result.ok()
+
+        if context.server is not None:
+            dataset.server_uid = context.server.id
+        return dataset
 
     @service_method(path="dataset.get_by_action_id", name="get_by_action_id")
     def get_by_action_id(
@@ -167,13 +176,15 @@ class DatasetService(AbstractService):
     ) -> list[Dataset] | SyftError:
         """Get Datasets by an Action ID"""
         result = self.stash.search_action_ids(context.credentials, uid=uid)
-        if result.is_ok():
-            datasets = result.ok()
-            for dataset in datasets:
-                if context.node is not None:
-                    dataset.node_uid = context.node.id
-            return datasets
-        return SyftError(message=result.err())
+        if result.is_err():
+            return SyftError(message=result.err())
+        datasets = result.ok()
+
+        for dataset in datasets:
+            if context.server is not None:
+                dataset.server_uid = context.server.id
+
+        return datasets
 
     @service_method(
         path="dataset.get_assets_by_action_id",
@@ -187,6 +198,9 @@ class DatasetService(AbstractService):
         datasets = self.get_by_action_id(context=context, uid=uid)
         if isinstance(datasets, SyftError):
             return datasets
+        for dataset in datasets:
+            if dataset.to_be_deleted:
+                datasets.remove(dataset)
         return [
             asset
             for dataset in datasets
@@ -195,19 +209,61 @@ class DatasetService(AbstractService):
         ]
 
     @service_method(
-        path="dataset.delete_by_uid",
-        name="delete_by_uid",
+        path="dataset.delete",
+        name="delete",
         roles=DATA_OWNER_ROLE_LEVEL,
         warning=HighSideCRUDWarning(confirmation=True),
     )
-    def delete_dataset(
-        self, context: AuthedServiceContext, uid: UID
+    def delete(
+        self, context: AuthedServiceContext, uid: UID, delete_assets: bool = True
     ) -> SyftSuccess | SyftError:
-        result = self.stash.delete_by_uid(context.credentials, uid)
-        if result.is_ok():
-            return result.ok()
-        else:
+        """
+        Soft delete: keep the dataset object, only remove the blob store entries
+        After soft deleting a dataset, the user will not be able to
+        see it using the `datasets.get_all` endpoint.
+        Delete unique `dataset.name` key and leave UID, just rename it in case the
+        user upload a new dataset with the same name.
+        """
+        # check if the dataset exists
+        dataset = self.get_by_id(context=context, uid=uid)
+        if isinstance(dataset, SyftError):
+            return dataset
+
+        return_msg = []
+        if delete_assets:
+            # delete the dataset's assets
+            for asset in dataset.asset_list:
+                msg = (
+                    f"ActionObject {asset.action_id} "
+                    f"linked with Assset {asset.id} "
+                    f"in Dataset {uid}"
+                )
+
+                action_service = cast(
+                    ActionService, context.server.get_service(ActionService)
+                )
+                del_res: SyftSuccess | SyftError = action_service.delete(
+                    context=context, uid=asset.action_id, soft_delete=True
+                )
+
+                if isinstance(del_res, SyftError):
+                    del_msg = f"Failed to delete {msg}: {del_res.message}"
+                    logger.error(del_msg)
+                    return del_res
+
+                logger.info(f"Successfully deleted {msg}: {del_res.message}")
+
+                return_msg.append(f"Asset with id '{asset.id}' successfully deleted.")
+
+        # soft delete the dataset object from the store
+        dataset_update = DatasetUpdate(
+            id=uid, name=f"_deleted_{dataset.name}_{uid}", to_be_deleted=True
+        )
+        result = self.stash.update(context.credentials, dataset_update)
+        if result.is_err():
             return SyftError(message=result.err())
+        return_msg.append(f"Dataset with id '{uid}' successfully deleted.")
+        return SyftSuccess(message="\n".join(return_msg))
 
 
 TYPE_TO_SERVICE[Dataset] = DatasetService

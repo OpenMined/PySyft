@@ -5,9 +5,9 @@ from result import Ok
 from result import Result
 
 # relative
-from ...node.credentials import SyftSigningKey
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftSigningKey
+from ...server.credentials import SyftVerifyKey
 from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
@@ -27,7 +27,7 @@ SigningKeyPartitionKey = PartitionKey(key="signing_key", type_=SyftSigningKey)
 VerifyKeyPartitionKey = PartitionKey(key="verify_key", type_=SyftVerifyKey)
 
 
-@serializable()
+@serializable(canonical_name="UserStash", version=1)
 class UserStash(BaseStash):
     object_type = User
     settings: PartitionSettings = PartitionSettings(

@@ -4,8 +4,8 @@
 from result import Result
 
 # relative
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
 from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
@@ -23,7 +23,7 @@ from .data_subject import NamePartitionKey
 from .data_subject_member_service import DataSubjectMemberService
 
 
-@serializable()
+@serializable(canonical_name="DataSubjectStash", version=1)
 class DataSubjectStash(BaseUIDStoreStash):
     object_type = DataSubject
     settings: PartitionSettings = PartitionSettings(
@@ -52,7 +52,7 @@ class DataSubjectStash(BaseUIDStoreStash):
         return super().update(credentials=credentials, obj=res.ok())
 
 
-@serializable()
+@serializable(canonical_name="DataSubjectService", version=1)
 class DataSubjectService(AbstractService):
     store: DocumentStore
     stash: DataSubjectStash
@@ -67,7 +67,7 @@ class DataSubjectService(AbstractService):
     ) -> SyftSuccess | SyftError:
         """Register a data subject."""
 
-        member_relationship_add = context.node.get_service_method(
+        member_relationship_add = context.server.get_service_method(
             DataSubjectMemberService.add
         )
 
@@ -111,7 +111,7 @@ class DataSubjectService(AbstractService):
     def get_members(
         self, context: AuthedServiceContext, data_subject_name: str
     ) -> list[DataSubject] | SyftError:
-        get_relatives = context.node.get_service_method(
+        get_relatives = context.server.get_service_method(
             DataSubjectMemberService.get_relatives
         )
 

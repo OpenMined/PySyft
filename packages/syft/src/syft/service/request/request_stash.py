@@ -5,8 +5,8 @@ from result import Ok
 from result import Result
 
 # relative
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
 from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
@@ -22,7 +22,7 @@ RequestingUserVerifyKeyPartitionKey = PartitionKey(
 OrderByRequestTimeStampPartitionKey = PartitionKey(key="request_time", type_=DateTime)
 
 
-@serializable()
+@serializable(canonical_name="RequestStash", version=1)
 class RequestStash(BaseUIDStoreStash):
     object_type = Request
     settings: PartitionSettings = PartitionSettings(

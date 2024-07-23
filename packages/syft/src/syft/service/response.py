@@ -73,7 +73,7 @@ class SyftResponseMessage(SyftBaseModel):
         )
 
 
-@serializable()
+@serializable(canonical_name="SyftError", version=1)
 class SyftError(SyftResponseMessage):
     _bool: bool = False
 
@@ -88,14 +88,14 @@ class SyftError(SyftResponseMessage):
         return False
 
 
-@serializable()
+@serializable(canonical_name="SyftSuccess", version=1)
 class SyftSuccess(SyftResponseMessage):
     @property
     def _repr_html_class_(self) -> str:
         return "alert-success"
 
 
-@serializable()
+@serializable(canonical_name="SyftNotReady", version=1)
 class SyftNotReady(SyftResponseMessage):
     _bool: bool = False
 
@@ -104,14 +104,14 @@ class SyftNotReady(SyftResponseMessage):
         return "alert-info"
 
 
-@serializable()
+@serializable(canonical_name="SyftWarning", version=1)
 class SyftWarning(SyftResponseMessage):
     @property
     def _repr_html_class_(self) -> str:
         return "alert-warning"
 
 
-@serializable()
+@serializable(canonical_name="SyftInfo", version=1)
 class SyftInfo(SyftResponseMessage):
     _bool: bool = False
 
@@ -120,7 +120,7 @@ class SyftInfo(SyftResponseMessage):
         return "alert-info"
 
 
-@serializable()
+@serializable(canonical_name="SyftException", version=1)
 class SyftException(Exception):
     traceback: bool = False
     traceback_limit: int = 10
@@ -172,6 +172,6 @@ except Exception:
     pass  # nosec
 
 
-@serializable()
+@serializable(canonical_name="SyftAttributeError", version=1)
 class SyftAttributeError(AttributeError, SyftException):
     pass

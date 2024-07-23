@@ -6,7 +6,7 @@ from ...store.document_store import PartitionSettings
 from .log import SyftLog
 
 
-@serializable()
+@serializable(canonical_name="LogStash", version=1)
 class LogStash(BaseUIDStoreStash):
     object_type = SyftLog
     settings: PartitionSettings = PartitionSettings(

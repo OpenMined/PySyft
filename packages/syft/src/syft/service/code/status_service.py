@@ -4,8 +4,8 @@
 from result import Result
 
 # relative
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
 from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
@@ -23,7 +23,7 @@ from ..user.user_roles import GUEST_ROLE_LEVEL
 from .user_code import UserCodeStatusCollection
 
 
-@serializable()
+@serializable(canonical_name="StatusStash", version=1)
 class StatusStash(BaseUIDStoreStash):
     object_type = UserCodeStatusCollection
     settings: PartitionSettings = PartitionSettings(
@@ -44,7 +44,7 @@ class StatusStash(BaseUIDStoreStash):
         return self.query_one(credentials=credentials, qks=qks)
 
 
-@serializable()
+@serializable(canonical_name="UserCodeStatusService", version=1)
 class UserCodeStatusService(AbstractService):
     store: DocumentStore
     stash: StatusStash

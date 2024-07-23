@@ -1,7 +1,7 @@
 # =================================================================================
 # Syft on GKE Cluster
 #
-# Node side : low
+# Server side : low
 # Automount : YES. 1 GCS bucket mounted to seaweedfs
 # Ingress   : gce
 # Extras:
@@ -9,8 +9,8 @@
 #  - Secret for seaweedfs mount
 # =================================================================================
 
-node:
-  # Basic Node Config
+server:
+  # Basic Server Config
   name: syft-gcp
   side: low
 

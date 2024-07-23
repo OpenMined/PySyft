@@ -33,7 +33,7 @@ spec:
       {{- end }}
       containers:
       - name: rathole
-        image: {{ .Values.global.registry }}/openmined/grid-rathole:{{ .Values.global.version }}
+        image: {{ .Values.global.registry }}/openmined/syft-rathole:{{ .Values.global.version }}
         imagePullPolicy: Always
         resources: {{ include "common.resources.set" (dict "resources" .Values.rtunnel.resources "preset" .Values.rtunnel.resourcesPreset) | nindent 12 }}
         env:

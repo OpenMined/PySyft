@@ -7,7 +7,7 @@ APP_MODULE=grid.main:app
 LOG_LEVEL=${LOG_LEVEL:-info}
 HOST=${HOST:-0.0.0.0}
 PORT=${PORT:-80}
-NODE_TYPE=${NODE_TYPE:-domain}
+SERVER_TYPE=${SERVER_TYPE:-datasite}
 APPDIR=${APPDIR:-$HOME/app}
 RELOAD=""
 ROOT_PROC=""
@@ -43,11 +43,11 @@ then
 fi
 
 export CREDENTIALS_PATH=${CREDENTIALS_PATH:-$HOME/data/creds/credentials.json}
-export NODE_PRIVATE_KEY=$(python $APPDIR/grid/bootstrap.py --private_key)
-export NODE_UID=$(python $APPDIR/grid/bootstrap.py --uid)
-export NODE_TYPE=$NODE_TYPE
+export SERVER_PRIVATE_KEY=$(python $APPDIR/grid/bootstrap.py --private_key)
+export SERVER_UID=$(python $APPDIR/grid/bootstrap.py --uid)
+export SERVER_TYPE=$SERVER_TYPE
 
-echo "NODE_UID=$NODE_UID"
-echo "NODE_TYPE=$NODE_TYPE"
+echo "SERVER_UID=$SERVER_UID"
+echo "SERVER_TYPE=$SERVER_TYPE"
 
 exec $ROOT_PROC uvicorn $RELOAD --host $HOST --port $PORT --log-config=$APPDIR/grid/logging.yaml "$APP_MODULE"

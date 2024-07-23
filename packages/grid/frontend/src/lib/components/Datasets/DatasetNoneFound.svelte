@@ -1,7 +1,7 @@
 <div class="pt-10 pb-20 gap-2">
   <h2>No Datasets Uploaded</h2>
   <p>
-    To begin adding datasets to this domain node please click the "+" button and follow
+    To begin adding datasets to this datasite server please click the "+" button and follow
     instructions.
   </p>
 </div>

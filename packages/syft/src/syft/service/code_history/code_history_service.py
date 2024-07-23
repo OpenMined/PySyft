@@ -1,8 +1,8 @@
 # stdlib
 
 # relative
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
 from ...store.document_store import DocumentStore
 from ...types.uid import UID
 from ..code.user_code import SubmitUserCode
@@ -23,7 +23,7 @@ from .code_history import UsersCodeHistoriesDict
 from .code_history_stash import CodeHistoryStash
 
 
-@serializable()
+@serializable(canonical_name="CodeHistoryService", version=1)
 class CodeHistoryService(AbstractService):
     store: DocumentStore
     stash: CodeHistoryStash
@@ -43,7 +43,7 @@ class CodeHistoryService(AbstractService):
         code: SubmitUserCode | UserCode,
         comment: str | None = None,
     ) -> SyftSuccess | SyftError:
-        user_code_service = context.node.get_service("usercodeservice")
+        user_code_service = context.server.get_service("usercodeservice")
         if isinstance(code, SubmitUserCode):
             result = user_code_service._submit(context=context, code=code)
             if result.is_err():
@@ -64,7 +64,7 @@ class CodeHistoryService(AbstractService):
         if code_history is None:
             code_history = CodeHistory(
                 id=UID(),
-                node_uid=context.node.id,
+                server_uid=context.server.id,
                 user_verify_key=context.credentials,
                 service_func_name=code.service_func_name,
             )
@@ -117,18 +117,20 @@ class CodeHistoryService(AbstractService):
     ) -> CodeHistoriesDict | SyftError:
         if context.role in [ServiceRole.DATA_OWNER, ServiceRole.ADMIN]:
             result = self.stash.get_by_verify_key(
-                credentials=context.node.verify_key, user_verify_key=user_verify_key
+                credentials=context.server.verify_key, user_verify_key=user_verify_key
             )
         else:
             result = self.stash.get_by_verify_key(
                 credentials=context.credentials, user_verify_key=user_verify_key
             )
 
-        user_code_service: UserCodeService = context.node.get_service("usercodeservice")  # type: ignore
+        user_code_service: UserCodeService = context.server.get_service(
+            "usercodeservice"
+        )  # type: ignore
 
         def get_code(uid: UID) -> UserCode | SyftError:
             return user_code_service.stash.get_by_uid(
-                credentials=context.node.verify_key,
+                credentials=context.server.verify_key,
                 uid=uid,
             ).ok()
 
@@ -170,7 +172,7 @@ class CodeHistoryService(AbstractService):
     def get_history_for_user(
         self, context: AuthedServiceContext, email: str
     ) -> CodeHistoriesDict | SyftError:
-        user_service = context.node.get_service("userservice")
+        user_service = context.server.get_service("userservice")
         result = user_service.stash.get_by_email(
             credentials=context.credentials, email=email
         )
@@ -197,13 +199,13 @@ class CodeHistoryService(AbstractService):
             return SyftError(message=result.err())
         code_histories: list[CodeHistory] = result.ok()
 
-        user_service = context.node.get_service("userservice")
+        user_service = context.server.get_service("userservice")
         result = user_service.stash.get_all(context.credentials)
         if result.is_err():
             return SyftError(message=result.err())
         users = result.ok()
 
-        user_code_histories = UsersCodeHistoriesDict(node_uid=context.node.id)
+        user_code_histories = UsersCodeHistoriesDict(server_uid=context.server.id)
 
         verify_key_2_user_email = {}
         for user in users:
@@ -229,7 +231,7 @@ class CodeHistoryService(AbstractService):
         user_email: str,
         user_id: UID,
     ) -> list[CodeHistory] | SyftError:
-        user_service = context.node.get_service("userservice")
+        user_service = context.server.get_service("userservice")
         user_verify_key = user_service.user_verify_key(user_email)
 
         if isinstance(user_verify_key, SyftError):
