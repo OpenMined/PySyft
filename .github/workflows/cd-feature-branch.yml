@@ -10,6 +10,11 @@ on:
         required: true
         type: string
 
+      release_branch:
+        description: "Branch to Release from"
+        required: true
+        type: string
+
       release_id:
         description: "A Unique Identifier for the Release, which would be appended as version+release_id, Can contain only [A-Z][a-z][0-9][.]"
         required: true
@@ -43,6 +48,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.release_branch }}
 
       # actions/setup-python doesn't yet support ARM
       - name: Setup Python on x64
@@ -287,6 +294,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.SYFT_BOT_COMMIT_TOKEN }}
+          ref: ${{ github.event.inputs.release_branch }}
 
       # free 10GB of space
       - name: Remove unnecessary files
