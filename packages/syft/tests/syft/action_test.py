@@ -19,6 +19,7 @@ from syft.types.uid import LineageID
 from ..utils.custom_markers import currently_fail_on_python_3_12
 
 
+@pytest.mark.skip(reason="Disabled until we bring back eager execution")
 def test_actionobject_method(worker):
     root_datasite_client = worker.root_client
     assert root_datasite_client.settings.enable_eager_execution(enable=True)

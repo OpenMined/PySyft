@@ -584,6 +584,7 @@ def test_actionobject_syft_get_attr_context():
         (complex(1, 2), "conjugate", [], {}, complex(1, -2)),
     ],
 )
+@pytest.mark.skip(reason="Disabled until we bring back eager execution")
 def test_actionobject_syft_execute_hooks(worker, testcase):
     client = worker.root_client
     assert client.settings.enable_eager_execution(enable=True)
