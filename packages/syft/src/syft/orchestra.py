@@ -117,7 +117,7 @@ class ServerHandle:
         if self.port:
             return sy_login(url=self.url, port=self.port)  # type: ignore
         elif self.deployment_type == DeploymentType.PYTHON:
-            guest_client = self.python_server.guest_client(verbose=False)  # type: ignore
+            guest_client = self.python_server.get_guest_client(verbose=False)  # type: ignore
             return guest_client.login(email=email, password=password, **kwargs)  # type: ignore
         else:
             raise NotImplementedError(

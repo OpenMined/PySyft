@@ -750,8 +750,8 @@ class Server(AbstractServer):
         return migration_service.migrate_data(context, document_store_object_types)
 
     @property
-    def guest_client(self, verbose: bool = True) -> SyftClient:
-        return self.get_guest_client(verbose=verbose)
+    def guest_client(self) -> SyftClient:
+        return self.get_guest_client()
 
     @property
     def current_protocol(self) -> str | int:
