@@ -1,7 +1,6 @@
-# update_commit.py
 # stdlib
 import os
-import subprocess
+import subprocess  # nosec
 import sys
 
 
@@ -9,7 +8,8 @@ def get_commit_hash() -> str:
     cwd = os.path.dirname(os.path.abspath(__file__))
     try:
         output = subprocess.check_output(
-            "git rev-parse --short HEAD".split(" "), cwd=cwd
+            "git rev-parse --short HEAD".split(" "),
+            cwd=cwd,  # nosec
         )
         return output.strip().decode("ascii")
     except subprocess.CalledProcessError as e:
@@ -26,8 +26,8 @@ def update_commit_variable(file_path: str, commit_hash: str) -> None:
         with open(file_path, "w") as file:
             updated = False
             for line in lines:
-                if "__commit__=" in line:
-                    file.write(f'__commit__="{commit_hash}"\n')
+                if "__commit__ = " in line:
+                    file.write(f'__commit__ = "{commit_hash}"\n')
                     updated = True
                 else:
                     file.write(line)
