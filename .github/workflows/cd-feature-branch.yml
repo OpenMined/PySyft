@@ -107,7 +107,7 @@ jobs:
 
       - name: Update Commit Hash in Syft
         run: |
-          python packages/syft/src/syft/update_commit.py packages/syft/src/syft/commit.py
+          python packages/syft/src/syft/util/update_commit.py packages/syft/src/syft/util/commit.py
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -320,7 +320,7 @@ jobs:
 
       - name: Update Commit Hash in Syft
         run: |
-          python packages/syft/src/syft/update_commit.py packages/syft/src/syft/commit.py
+          python packages/syft/src/syft/util/update_commit.py packages/syft/src/syft/util/commit.py
 
       - name: Build Helm Chart
         shell: bash

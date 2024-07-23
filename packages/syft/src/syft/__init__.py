@@ -26,7 +26,6 @@ from .client.syncing import compare_states
 from .client.syncing import sync
 from .client.user_settings import UserSettings
 from .client.user_settings import settings
-from .commit import __commit__
 from .custom_worker.config import DockerWorkerConfig
 from .custom_worker.config import PrebuiltWorkerConfig
 from .orchestra import Orchestra as orchestra
@@ -82,6 +81,7 @@ from .util import filterwarnings
 from .util import options
 from .util.autoreload import disable_autoreload
 from .util.autoreload import enable_autoreload
+from .util.commit import __commit__
 from .util.patch_ipython import patch_ipython
 from .util.telemetry import instrument
 from .util.util import autocache
