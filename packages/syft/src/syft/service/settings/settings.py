@@ -15,6 +15,7 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.transforms import drop
+from ...types.transforms import make_set_default
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
@@ -185,7 +186,7 @@ def migrate_server_settings_v2_to_v1() -> list[Callable]:
 
 @migrate(ServerSettingsUpdateV1, ServerSettingsUpdate)
 def migrate_server_settings_update_v1_to_v2() -> list[Callable]:
-    return []
+    return [make_set_default("notifications_enabled", False)]
 
 
 @migrate(ServerSettingsUpdate, ServerSettingsUpdateV1)

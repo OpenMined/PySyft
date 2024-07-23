@@ -15,9 +15,9 @@ from syft.abstract_server import ServerSideType
 from syft.server.credentials import SyftSigningKey
 from syft.server.credentials import SyftVerifyKey
 from syft.service.context import AuthedServiceContext
+from syft.service.notifier.notifier_stash import NotifierStash
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
-from syft.service.notifier.notifier_stash import NotifierStash
 from syft.service.settings.settings import ServerSettings
 from syft.service.settings.settings import ServerSettingsUpdate
 from syft.service.settings.settings_service import SettingsService
@@ -151,7 +151,7 @@ def test_settingsservice_update_success(
         return Ok(mock_stash_get_all_output)
 
     monkeypatch.setattr(settings_service.stash, "get_all", mock_stash_get_all)
-    
+
     # Mock the get_service method to return a mocked notifier_service with the notifier_stash
     class MockNotifierService:
         def __init__(self, stash):
@@ -233,7 +233,7 @@ def test_settingsservice_update_fail(
         return Err(mock_update_error_message)
 
     monkeypatch.setattr(settings_service.stash, "update", mock_stash_update_error)
-    
+
     # Mock the get_service method to return a mocked notifier_service with the notifier_stash
     class MockNotifierService:
         def __init__(self, stash):
