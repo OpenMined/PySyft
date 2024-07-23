@@ -26,6 +26,7 @@ from .client.syncing import compare_states
 from .client.syncing import sync
 from .client.user_settings import UserSettings
 from .client.user_settings import settings
+from .commit import __commit__
 from .custom_worker.config import DockerWorkerConfig
 from .custom_worker.config import PrebuiltWorkerConfig
 from .orchestra import Orchestra as orchestra
