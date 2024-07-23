@@ -24,3 +24,6 @@ jobs:
 
       - name: Print the actual commit SHA
         run: echo "The actual commit SHA is ${{ env.ACTUAL_SHA }}"
+
+      - name: Print Github SHA
+        run: echo "The actual commit SHA is ${{ github.sha }}"
