@@ -12,8 +12,8 @@ on:
         default: "false"
         type: choice
         options:
-          - false
-          - true
+          - "false"
+          - "true"
 
       release_platform:
         description: "Release Platform"
