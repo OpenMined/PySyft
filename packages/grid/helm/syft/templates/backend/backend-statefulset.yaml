@@ -140,7 +140,7 @@ spec:
             - name: MIN_SIZE_BLOB_STORAGE_MB
               value: {{ .Values.seaweedfs.minSizeBlobStorageMB | quote }}
             # Tracing
-            {{- if .Values.node.tracing }}
+            {{- if .Values.server.tracing }}
             - name: TRACING
               value: "True"
             {{- end }}
