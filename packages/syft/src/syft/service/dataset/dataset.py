@@ -2,6 +2,7 @@
 from collections.abc import Callable
 from datetime import datetime
 from enum import Enum
+from functools import cached_property
 import logging
 import textwrap
 from typing import Any
@@ -249,7 +250,7 @@ class Asset(SyftObject):
         if api is not None and api.services is not None:
             return api.services.action.get_pointer(self.action_id)
 
-    @property
+    @cached_property
     def mock(self) -> SyftError | Any:
         api = APIRegistry.api_for(
             server_uid=self.server_uid,
@@ -278,7 +279,7 @@ class Asset(SyftObject):
             and data_result.endswith("denied")
         )
 
-    @property
+    @cached_property
     def data(self) -> Any:
         # relative
 
