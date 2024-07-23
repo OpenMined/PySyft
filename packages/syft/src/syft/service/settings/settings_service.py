@@ -20,6 +20,7 @@ from ...util.schema import DS_COMMANDS
 from ...util.schema import GUEST_COMMANDS
 from ..context import AuthedServiceContext
 from ..context import UnauthedServiceContext
+from ..notifier.notifier_enums import EMAIL_TYPES
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -236,6 +237,13 @@ class SettingsService(AbstractService):
 
         message = "enabled" if enable else "disabled"
         return SyftSuccess(message=f"Eager execution {message}")
+
+    @service_method(path="settings.set_email_rate_limit", name="set_email_rate_limit")
+    def set_email_rate_limit(
+        self, context: AuthedServiceContext, email_type: EMAIL_TYPES, daily_limit: int
+    ) -> SyftSuccess | SyftError:
+        notifier_service = context.server.get_service("notifierservice")
+        return notifier_service.set_email_rate_limit(context, email_type, daily_limit)
 
     @service_method(
         path="settings.allow_association_request_auto_approval",

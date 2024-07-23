@@ -24,7 +24,14 @@
         },
         "2": {
           "version": 2,
-          "hash": "2c934f54389e431347561a5340cba1709c92c4cc27de197347a01e4662a48ae5",
+          "hash": "be8b52597fc628d1b7cd22b776ee81416e1adbb04a45188778eb0e32ed1416b4",
+          "action": "add"
+        }
+      },
+      "UserNotificationActivity": {
+        "1": {
+          "version": 1,
+          "hash": "437e9fed52cab4fec48a22450898f82eba05206f66b66d2b53f22192b7f33274",
           "action": "add"
         }
       }

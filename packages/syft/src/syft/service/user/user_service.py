@@ -202,6 +202,12 @@ class UserService(AbstractService):
         if user is None:
             return SyftError(message=f"No user exists for given: {uid}")
 
+        user_role = self.get_role_for_credentials(user.verify_key)
+        if user_role == ServiceRole.ADMIN:
+            return SyftError(
+                message="You can't request password reset for an Admin user."
+            )
+
         user.reset_token = self.generate_new_password_reset_token()
         user.reset_token_date = datetime.now()
 

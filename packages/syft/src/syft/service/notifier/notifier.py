@@ -1,4 +1,5 @@
 # stdlib
+from datetime import datetime
 from typing import TypeVar
 
 # third party
@@ -28,6 +29,14 @@ class BaseNotifier:
 
 
 TBaseNotifier = TypeVar("TBaseNotifier", bound=BaseNotifier)
+
+
+@serializable()
+class UserNotificationActivity(SyftObject):
+    __canonical_name__ = "UserNotificationActivity"
+    __version__ = SYFT_OBJECT_VERSION_1
+    count: int = 1
+    date: datetime | None = None
 
 
 @serializable(canonical_name="EmailNotifier", version=1)
@@ -153,7 +162,8 @@ class NotifierSettings(SyftObject):
     email_username: str | None = ""
     email_password: str | None = ""
 
-    email_rate_limit: dict[str, dict[SyftVerifyKey, list]] = {}
+    email_activity: dict[str, dict[SyftVerifyKey, UserNotificationActivity]] = {}
+    email_rate_limit: dict[str, int] = {}
 
     @property
     def email_enabled(self) -> bool:
