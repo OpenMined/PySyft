@@ -36,7 +36,7 @@ class UserNotificationActivity(SyftObject):
     __canonical_name__ = "UserNotificationActivity"
     __version__ = SYFT_OBJECT_VERSION_1
     count: int = 1
-    date: datetime | None = None
+    date: datetime = datetime.now()
 
 
 @serializable(canonical_name="EmailNotifier", version=1)
