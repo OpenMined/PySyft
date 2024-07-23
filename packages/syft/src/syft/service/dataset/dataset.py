@@ -2,7 +2,6 @@
 from collections.abc import Callable
 from datetime import datetime
 from enum import Enum
-from functools import cached_property
 import logging
 import textwrap
 from typing import Any
@@ -250,7 +249,7 @@ class Asset(SyftObject):
         if api is not None and api.services is not None:
             return api.services.action.get_pointer(self.action_id)
 
-    @cached_property
+    @property
     def mock(self) -> SyftError | Any:
         api = APIRegistry.api_for(
             server_uid=self.server_uid,
@@ -279,7 +278,7 @@ class Asset(SyftObject):
             and data_result.endswith("denied")
         )
 
-    @cached_property
+    @property
     def data(self) -> Any:
         # relative
 
@@ -296,7 +295,7 @@ class Asset(SyftObject):
             warning = SyftError(
                 message="You do not have permission to access private data."
             )
-            display(warning)
+            display(warning, clear=True)
             return None
 
 
