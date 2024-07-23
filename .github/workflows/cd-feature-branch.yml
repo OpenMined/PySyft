@@ -105,7 +105,7 @@ jobs:
             echo "release_platform=linux/arm64" >> $GITHUB_OUTPUT
             echo "short_release_platform=arm64" >> $GITHUB_OUTPUT
           fi
-          echo "server_version=${{ github.event.inputs.release_version }}+${{ github.event.inputs.release_id }}.$(git rev-parse --short ${{ github.sha }})" >> $GITHUB_OUTPUT
+          echo "server_version=${{ github.event.inputs.release_version }}+${{ github.event.inputs.release_id }}.$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
           echo "short_server_version=${{ github.event.inputs.release_version }}" >> $GITHUB_OUTPUT
 
       - name: Bump to Final Release version
