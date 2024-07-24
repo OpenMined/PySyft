@@ -162,15 +162,26 @@ def build_tabulator_table_with_data(
     max_height: int | None = None,
     pagination: bool = True,
     header_sort: bool = True,
-) -> str | None:
-    try:
-        uid = uid if uid is not None else secrets.token_hex(4)
-        return _render_tabulator_table(
-            uid, table_data, table_metadata, max_height, pagination, header_sort
-        )
-    except Exception as e:
-        logger.debug("Error building table: %s", e)
-        return None
+) -> str:
+    """
+    Builds a Tabulator table for the provided data and metadata.
+
+    Args:
+        table_data (list[dict]): The data to populate the table.
+        table_metadata (dict): The metadata for the table.
+        uid (str, optional): The unique identifier for the table. Defaults to None.
+        max_height (int, optional): The maximum height of the table. Defaults to None.
+        pagination (bool, optional): Whether to enable pagination. Defaults to True.
+        header_sort (bool, optional): Whether to enable header sorting. Defaults to True.
+
+    Returns:
+        str: The HTML representation of the Tabulator table.
+
+    """
+    uid = uid if uid is not None else secrets.token_hex(4)
+    return _render_tabulator_table(
+        uid, table_data, table_metadata, max_height, pagination, header_sort
+    )
 
 
 def build_tabulator_table(
@@ -180,17 +191,32 @@ def build_tabulator_table(
     pagination: bool = True,
     header_sort: bool = True,
 ) -> str | None:
-    try:
-        table_data, table_metadata = prepare_table_data(obj)
-        if len(table_data) == 0:
+    """
+    Builds a Tabulator table from the given object if possible.
+
+    If the object cannot be represented as a table, returns None.
+
+    Args:
+        obj (Any): The object to build the table from.
+        uid (str, optional): The unique identifier for the table. Defaults to None.
+        max_height (int, optional): The maximum height of the table. Defaults to None.
+        pagination (bool, optional): Whether to enable pagination. Defaults to True.
+        header_sort (bool, optional): Whether to enable header sorting. Defaults to True.
+
+    Returns:
+        str | None: The HTML representation of the Tabulator table or None
+
+    """
+    table_data, table_metadata = prepare_table_data(obj)
+    if len(table_data) == 0:
+        if hasattr(obj, "__len__") and len(obj) == 0:
             return obj.__repr__()
-        uid = uid if uid is not None else secrets.token_hex(4)
-        return _render_tabulator_table(
-            uid, table_data, table_metadata, max_height, pagination, header_sort
-        )
-    except Exception as e:
-        logger.debug("error building table", exc_info=e)
-        return None
+        else:
+            return None
+
+    return build_tabulator_table_with_data(
+        table_data, table_metadata, uid, max_height, pagination, header_sort
+    )
 
 
 def show_table(obj: Any) -> None:
