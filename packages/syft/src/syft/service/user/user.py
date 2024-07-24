@@ -19,8 +19,7 @@ from ...server.credentials import SyftVerifyKey
 from ...types.errors import SyftException
 from ...types.syft_metaclass import Empty
 from ...types.syft_object import PartialSyftObject
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import drop
@@ -41,7 +40,7 @@ from .user_roles import ServiceRole
 class User(SyftObject):
     # version
     __canonical_name__ = "User"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID | None = None  # type: ignore[assignment]
 
@@ -118,7 +117,7 @@ def check_pwd(password: str, hashed_password: str) -> bool:
 @serializable()
 class UserUpdate(PartialSyftObject):
     __canonical_name__ = "UserUpdate"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     @field_validator("role", mode="before")
     @classmethod
@@ -141,7 +140,7 @@ class UserUpdate(PartialSyftObject):
 @serializable()
 class UserCreate(SyftObject):
     __canonical_name__ = "UserCreate"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     email: EmailStr
     name: str
@@ -160,7 +159,7 @@ class UserCreate(SyftObject):
 @serializable()
 class UserSearch(PartialSyftObject):
     __canonical_name__ = "UserSearch"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
     email: EmailStr
@@ -171,7 +170,7 @@ class UserSearch(PartialSyftObject):
 @serializable()
 class UserView(SyftObject):
     __canonical_name__ = "UserView"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     notifications_enabled: dict[NOTIFIERS, bool] = {
         NOTIFIERS.EMAIL: True,
@@ -290,7 +289,7 @@ class UserView(SyftObject):
 @serializable()
 class UserViewPage(SyftObject):
     __canonical_name__ = "UserViewPage"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     users: list[UserView]
     total: int
@@ -339,7 +338,7 @@ def user_to_view_user() -> list[Callable]:
 @serializable()
 class UserPrivateKey(SyftObject):
     __canonical_name__ = "UserPrivateKey"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     email: str
     signing_key: SyftSigningKey

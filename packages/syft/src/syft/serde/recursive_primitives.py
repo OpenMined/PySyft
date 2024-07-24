@@ -8,12 +8,14 @@ from collections.abc import Mapping
 from enum import Enum
 from enum import EnumMeta
 import functools
+import inspect
 import pathlib
 from pathlib import PurePath
 import sys
 import tempfile
 from types import MappingProxyType
 from types import UnionType
+import typing
 from typing import Any
 from typing import GenericAlias
 from typing import Optional
@@ -27,6 +29,7 @@ from typing import cast
 import weakref
 
 # relative
+from ..types.syft_object_registry import SyftObjectRegistry
 from .capnp import get_capnp_schema
 from .recursive import chunk_bytes
 from .recursive import combine_bytes
@@ -169,22 +172,31 @@ def deserialize_enum(enum_type: type, enum_buf: bytes) -> Enum:
     return enum_type(enum_value)
 
 
-def serialize_type(serialized_type: type) -> bytes:
+def serialize_type(_type_to_serialize: type) -> bytes:
     # relative
-    from ..util.util import full_name_with_qualname
+    type_to_serialize = typing.get_origin(_type_to_serialize) or _type_to_serialize
+    canonical_name, version = SyftObjectRegistry.get_identifier_for_type(
+        type_to_serialize
+    )
+    return f"{canonical_name}:{version}".encode()
 
-    fqn = full_name_with_qualname(klass=serialized_type)
-    module_parts = fqn.split(".")
-    return ".".join(module_parts).encode()
+    # from ..util.util import full_name_with_qualname
+
+    # fqn = full_name_with_qualname(klass=serialized_type)
+    # module_parts = fqn.split(".")
+    # return ".".join(module_parts).encode()
 
 
 def deserialize_type(type_blob: bytes) -> type:
     deserialized_type = type_blob.decode()
-    module_parts = deserialized_type.split(".")
-    klass = module_parts.pop()
-    klass = "None" if klass == "NoneType" else klass
-    exception_type = getattr(sys.modules[".".join(module_parts)], klass)
-    return exception_type
+    canonical_name, version = deserialized_type.split(":", 1)
+    return SyftObjectRegistry.get_serde_class(canonical_name, int(version))
+
+    # module_parts = deserialized_type.split(".")
+    # klass = module_parts.pop()
+    # klass = "None" if klass == "NoneType" else klass
+    # exception_type = getattr(sys.modules[".".join(module_parts)], klass)
+    # return exception_type
 
 
 TPath = TypeVar("TPath", bound=PurePath)
@@ -434,6 +446,8 @@ def recursive_serde_register_type(
     canonical_name: str | None = None,
     version: int | None = None,
 ) -> None:
+    # former case is for instance for _GerericAlias itself or UnionGenericAlias
+    # Latter case is true for for instance List[str], which is currently not used
     if (isinstance(t, type) and issubclass(t, _GenericAlias)) or issubclass(
         type(t), _GenericAlias
     ):
@@ -471,6 +485,31 @@ def deserialize_union_type(type_blob: bytes) -> type:
     return functools.reduce(lambda x, y: x | y, args)
 
 
+def serialize_union(serialized_type: UnionType) -> bytes:
+    return b""
+
+
+def deserialize_union(type_blob: bytes) -> type:  # type: ignore
+    return Union  # type: ignore
+
+
+def serialize_typevar(serialized_type: TypeVar) -> bytes:
+    return f"{serialized_type.__name__}".encode()
+
+
+def deserialize_typevar(type_blob: bytes) -> type:
+    name = type_blob.decode()
+    return TypeVar(name=name)  # type: ignore
+
+
+def serialize_any(serialized_type: TypeVar) -> bytes:
+    return b""
+
+
+def deserialize_any(type_blob: bytes) -> type:  # type: ignore
+    return Any  # type: ignore
+
+
 recursive_serde_register(
     UnionType,
     serialize=serialize_union_type,
@@ -481,8 +520,27 @@ recursive_serde_register(
 
 recursive_serde_register_type(_SpecialForm, canonical_name="_SpecialForm", version=1)
 recursive_serde_register_type(_GenericAlias, canonical_name="_GenericAlias", version=1)
-recursive_serde_register_type(Union, canonical_name="Union", version=1)
-recursive_serde_register_type(TypeVar, canonical_name="TypeVar", version=1)
+recursive_serde_register(
+    Union,
+    canonical_name="Union",
+    serialize=serialize_union,
+    deserialize=deserialize_union,
+    version=1,
+)
+recursive_serde_register(
+    TypeVar,
+    canonical_name="TypeVar",
+    serialize=serialize_typevar,
+    deserialize=deserialize_typevar,
+    version=1,
+)
+recursive_serde_register(
+    Any,
+    canonical_name="Any",
+    serialize=serialize_any,
+    deserialize=deserialize_any,
+    version=1,
+)
 
 recursive_serde_register_type(
     _UnionGenericAlias,
@@ -503,7 +561,9 @@ recursive_serde_register_type(
 )
 recursive_serde_register_type(GenericAlias, canonical_name="GenericAlias", version=1)
 
-recursive_serde_register_type(Any, canonical_name="Any", version=1)
+# recursive_serde_register_type(Any, canonical_name="Any", version=1)
 recursive_serde_register_type(EnumMeta, canonical_name="EnumMeta", version=1)
 
 recursive_serde_register_type(ABCMeta, canonical_name="ABCMeta", version=1)
+
+recursive_serde_register_type(inspect._empty, canonical_name="inspect_empty", version=1)

@@ -1,5 +1,6 @@
 # stdlib
 from collections.abc import Callable
+import logging
 import multiprocessing
 import multiprocessing.synchronize
 import os
@@ -121,7 +122,8 @@ def run_uvicorn(
     starting_uvicorn_event: multiprocessing.synchronize.Event,
     **kwargs: Any,
 ) -> None:
-    should_reset = kwargs.get("dev_mode") and kwargs.get("reset")
+    dev_mode = kwargs.get("dev_mode")
+    should_reset = dev_mode and kwargs.get("reset")
 
     if should_reset:
         print("Found `reset=True` in the launch configuration. Resetting the server...")
@@ -138,6 +140,12 @@ def run_uvicorn(
                 time.sleep(1)
         except Exception:  # nosec
             print(f"Failed to kill python process on port: {port}")
+
+    log_level = "critical"
+    if dev_mode:
+        log_level = "info"
+        logging.getLogger("uvicorn").setLevel(logging.CRITICAL)
+        logging.getLogger("uvicorn.access").setLevel(logging.CRITICAL)
 
     if kwargs.get("debug"):
         attach_debugger()
@@ -165,8 +173,9 @@ def run_uvicorn(
         host=host,
         port=port,
         factory=True,
-        # reload=kwargs.get("dev_mode"),
-        # reload_dirs=[Path(__file__).parent.parent] if kwargs.get("dev_mode") else None,
+        reload=dev_mode,
+        reload_dirs=[Path(__file__).parent.parent] if dev_mode else None,
+        log_level=log_level,
     )
 
 

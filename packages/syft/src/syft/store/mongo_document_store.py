@@ -26,6 +26,7 @@ from ..service.response import SyftSuccess
 from ..types.errors import SyftException
 from ..types.result import as_result
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
+from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import StorableObjectType
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
@@ -50,7 +51,7 @@ from .mongo_client import MongoStoreClientConfig
 @serializable()
 class MongoDict(SyftBaseObject):
     __canonical_name__ = "MongoDict"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     keys: list[Any]
     values: list[Any]

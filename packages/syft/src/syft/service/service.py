@@ -36,6 +36,8 @@ from ..types.errors import SyftException
 from ..types.result import as_result
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SYFT_OBJECT_VERSION_3
+from ..types.syft_object import SYFT_OBJECT_VERSION_1
+from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
 from ..types.syft_object import attach_attribute_to_syft_object
 from ..types.uid import UID
@@ -93,7 +95,7 @@ class AbstractService:
 @serializable()
 class BaseConfig(SyftObject):
     __canonical_name__ = "BaseConfig"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     public_path: str
     private_path: str

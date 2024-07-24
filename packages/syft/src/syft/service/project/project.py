@@ -29,7 +29,7 @@ from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.identity import Identity
 from ...types.identity import UserIdentity
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.syft_object import short_qual_name
 from ...types.transforms import TransformContext
@@ -64,9 +64,10 @@ def metadata_to_server_identity() -> list[Callable]:
     return [rename("id", "server_id"), rename("name", "server_name")]
 
 
+@serializable()
 class ProjectEvent(SyftObject):
     __canonical_name__ = "ProjectEvent"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     __hash_exclude_attrs__ = ["event_hash", "signature"]
 
@@ -208,12 +209,12 @@ class ProjectEvent(SyftObject):
 
 class ProjectEventAddObject(ProjectEvent):
     __canonical_name__ = "ProjectEventAddObject"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
 
 class ProjectEventAddLink(ProjectEvent):
     __canonical_name__ = "ProjectEventAddLink"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
 
 # Project Sub Event are the events which tend to describe the main events
@@ -227,7 +228,7 @@ class ProjectEventAddLink(ProjectEvent):
 # such that only allowed events could be the sub type of the main event
 class ProjectSubEvent(ProjectEvent):
     __canonical_name__ = "ProjectSubEvent"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     parent_event_id: UID
 
@@ -235,7 +236,7 @@ class ProjectSubEvent(ProjectEvent):
 @serializable()
 class ProjectThreadMessage(ProjectSubEvent):
     __canonical_name__ = "ProjectThreadMessage"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     message: str
 
@@ -243,7 +244,7 @@ class ProjectThreadMessage(ProjectSubEvent):
 @serializable()
 class ProjectMessage(ProjectEventAddObject):
     __canonical_name__ = "ProjectMessage"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     message: str
     allowed_sub_types: list[type] = [ProjectThreadMessage]
@@ -255,7 +256,7 @@ class ProjectMessage(ProjectEventAddObject):
 @serializable()
 class ProjectRequestResponse(ProjectSubEvent):
     __canonical_name__ = "ProjectRequestResponse"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     response: bool
 
@@ -263,7 +264,7 @@ class ProjectRequestResponse(ProjectSubEvent):
 @serializable()
 class ProjectRequest(ProjectEventAddObject):
     __canonical_name__ = "ProjectRequest"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     linked_request: LinkedObject
     allowed_sub_types: list[type] = [ProjectRequestResponse]
@@ -532,7 +533,7 @@ this wizard is going to guide you through the process of answering the poll."""
 @serializable()
 class AnswerProjectPoll(ProjectSubEvent):
     __canonical_name__ = "AnswerProjectPoll"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     answer: int
 
@@ -540,7 +541,7 @@ class AnswerProjectPoll(ProjectSubEvent):
 @serializable()
 class ProjectMultipleChoicePoll(ProjectEventAddObject):
     __canonical_name__ = "ProjectPoll"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     question: str
     choices: list[str]
@@ -650,7 +651,7 @@ def add_code_request_to_project(
 @serializable()
 class Project(SyftObject):
     __canonical_name__ = "Project"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     __repr_attrs__ = ["name", "description", "created_by"]
     __attr_unique__ = ["name"]
@@ -1107,7 +1108,7 @@ class Project(SyftObject):
 @serializable(without=["bootstrap_events", "clients"])
 class ProjectSubmit(SyftObject):
     __canonical_name__ = "ProjectSubmit"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     __hash_exclude_attrs__ = [
         "start_hash",
@@ -1163,8 +1164,8 @@ class ProjectSubmit(SyftObject):
         self.users = [UserIdentity.from_client(client) for client in self.clients]
 
         # Assign logged in user name as project creator
-        if isinstance(self.clients[0].me, UserView):
-            self.username = self.clients[0].me.name
+        if isinstance(self.clients[0].account, UserView):
+            self.username = self.clients[0].account.name
         else:
             self.username = ""
 

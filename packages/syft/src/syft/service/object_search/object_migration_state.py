@@ -12,6 +12,7 @@ from ...store.document_store import PartitionSettings
 from ...types.errors import SyftException
 from ...types.result import as_result
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftMigrationRegistry
 from ...types.syft_object import SyftObject
 from ..action.action_permissions import ActionObjectPermission
@@ -20,7 +21,7 @@ from ..action.action_permissions import ActionObjectPermission
 @serializable()
 class SyftObjectMigrationState(SyftObject):
     __canonical_name__ = "SyftObjectMigrationState"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     __attr_unique__ = ["canonical_name"]
 

@@ -385,8 +385,16 @@ class KeyValueStorePartition(StorePartition):
         for qk in sqks:
             pk_key, pk_value = qk.key, qk.value
             ck_col = self.searchable_keys[pk_key]
-            if pk_value in ck_col and (store_key.value in ck_col[pk_value]):
-                ck_col[pk_value].remove(store_key.value)
+            if isinstance(pk_value, list):
+                for pk_value_item in pk_value:
+                    pk_value_str = str(pk_value_item)
+                    if pk_value_str in ck_col and (
+                        store_key.value in ck_col[pk_value_str]
+                    ):
+                        ck_col[pk_value_str].remove(store_key.value)
+            else:
+                if pk_value in ck_col and (store_key.value in ck_col[pk_value]):
+                    ck_col[pk_value].remove(store_key.value)
             self.searchable_keys[pk_key] = ck_col
 
     @as_result(SyftException)
@@ -567,9 +575,13 @@ class KeyValueStorePartition(StorePartition):
     @as_result(SyftException)
     def _delete_search_keys_for(self, obj: SyftObject) -> SyftSuccess:
         for _search_ck in self.searchable_cks:
-            qk = _search_ck.with_obj(obj)
-            search_keys = self.searchable_keys[qk.key]
-            search_keys.pop(qk.value, None)
+            qk: QueryKey = _search_ck.with_obj(obj)
+            search_keys: defaultdict = self.searchable_keys[qk.key]
+            if isinstance(qk.value, list):
+                for qk_value in qk.value:
+                    search_keys.pop(qk_value, None)
+            else:
+                search_keys.pop(qk.value, None)
             self.searchable_keys[qk.key] = search_keys
         return SyftSuccess(message="Deleted")
 

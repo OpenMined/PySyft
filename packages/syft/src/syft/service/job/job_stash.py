@@ -1,5 +1,4 @@
 # stdlib
-from collections.abc import Callable
 from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
@@ -39,10 +38,9 @@ from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SYFT_OBJECT_VERSION_6
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
-from ...types.transforms import drop
-from ...types.transforms import make_set_default
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
@@ -85,32 +83,6 @@ def center_content(text: Any) -> str:
     return center_div
 
 
-@serializable()
-class JobV4(SyncableSyftObject):
-    __canonical_name__ = "JobItem"
-    __version__ = SYFT_OBJECT_VERSION_4
-
-    id: UID
-    server_uid: UID
-    result: Any | None = None
-    resolved: bool = False
-    status: JobStatus = JobStatus.CREATED
-    log_id: UID | None = None
-    parent_job_id: UID | None = None
-    n_iters: int | None = 0
-    current_iter: int | None = None
-    creation_time: str | None = None
-    action: Action | None = None
-    job_pid: int | None = None
-    job_worker_id: UID | None = None
-    updated_at: DateTime | None = None
-    user_code_id: UID | None = None
-
-    __attr_searchable__ = ["parent_job_id", "job_worker_id", "status", "user_code_id"]
-    __repr_attrs__ = ["id", "result", "resolved", "progress", "creation_time"]
-    __exclude_sync_diff_attrs__ = ["action"]
-
-
 @serializable(canonical_name="JobType", version=1)
 class JobType(str, Enum):
     JOB = "job"
@@ -123,7 +95,7 @@ class JobType(str, Enum):
 @serializable()
 class Job(SyncableSyftObject):
     __canonical_name__ = "JobItem"
-    __version__ = SYFT_OBJECT_VERSION_6
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
     server_uid: UID
@@ -755,19 +727,9 @@ class Job(SyncableSyftObject):
         return dependencies
 
 
-@migrate(Job, JobV4)
-def upgrade_job() -> list[Callable]:
-    return [make_set_default("requested_by", UID())]
-
-
-@migrate(JobV4, Job)
-def downgrade_job() -> list[Callable]:
-    return [drop("requested_by")]
-
-
 class JobInfo(SyftObject):
     __canonical_name__ = "JobInfo"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     __repr_attrs__ = [
         "resolved",

@@ -53,7 +53,7 @@ from ..service.user.user_service import UserService
 from ..types.errors import SyftException
 from ..types.result import as_result
 from ..types.server_url import ServerURL
-from ..types.syft_object import SYFT_OBJECT_VERSION_3
+from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.uid import UID
 from ..util.telemetry import instrument
 from ..util.util import prompt_warning_message
@@ -137,7 +137,7 @@ class Routes(Enum):
 @serializable(attrs=["proxy_target_uid", "url", "rtunnel_token"])
 class HTTPConnection(ServerConnection):
     __canonical_name__ = "HTTPConnection"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     url: ServerURL
     proxy_target_uid: UID | None = None
@@ -466,7 +466,7 @@ class HTTPConnection(ServerConnection):
 @serializable()
 class PythonConnection(ServerConnection):
     __canonical_name__ = "PythonConnection"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     server: AbstractServer
     proxy_target_uid: UID | None = None
@@ -842,7 +842,7 @@ class SyftClient:
         return None
 
     @property
-    def me(self) -> UserView | None:
+    def account(self) -> UserView | None:
         if self.api.has_service("user"):
             return self.api.services.user.get_current_user()
         return None
@@ -922,7 +922,7 @@ class SyftClient:
             if password == get_default_root_password():
                 message = (
                     "You are using a default password. Please change the password "
-                    "using `[your_client].me.set_password([new_password])`."
+                    "using `[your_client].account.set_password([new_password])`."
                 )
                 prompt_warning_message(message)
 

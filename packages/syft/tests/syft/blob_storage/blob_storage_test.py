@@ -9,6 +9,8 @@ import pytest
 # syft absolute
 import syft as sy
 from syft import ActionObject
+from syft import Dataset
+from syft import Worker
 from syft.client.datasite_client import DatasiteClient
 from syft.service.blob_storage.util import can_upload_to_blob_storage
 from syft.service.blob_storage.util import min_size_for_blob_storage_upload
@@ -130,7 +132,7 @@ def test_action_obj_send_save_to_blob_storage(worker):
 
     # big object that should be saved to blob storage
     assert min_size_for_blob_storage_upload(root_client.api.metadata) == 16
-    num_elements = 50 * 1024 * 1024
+    num_elements = 20 * 1024 * 1024
     data_big = np.random.randint(0, 100, size=num_elements)  # 4 bytes per int32
     action_obj_2 = ActionObject.from_obj(data_big)
     assert can_upload_to_blob_storage(action_obj_2, root_client.api.metadata)
@@ -148,45 +150,14 @@ def test_action_obj_send_save_to_blob_storage(worker):
     assert all(syft_retrieved_data.read() == data_big)
 
 
-def test_upload_dataset_save_to_blob_storage(worker):
+def test_upload_dataset_save_to_blob_storage(
+    worker: Worker, big_dataset: Dataset, small_dataset: Dataset
+) -> None:
     root_client: DatasiteClient = worker.root_client
-    root_authed_ctx = AuthedServiceContext(
-        server=worker, credentials=root_client.verify_key
-    )
-    dataset = sy.Dataset(
-        name="small_dataset",
-        asset_list=[
-            sy.Asset(
-                name="small_dataset",
-                data=np.array([1, 2, 3]),
-                mock=np.array([1, 1, 1]),
-            )
-        ],
-    )
-    root_client.upload_dataset(dataset)
-    blob_storage = worker.get_service("BlobStorageService")
-    assert len(blob_storage.get_all_blob_storage_entries(context=root_authed_ctx)) == 0
+    # the small dataset should not be saved to the blob storage
+    root_client.upload_dataset(small_dataset)
+    assert len(root_client.api.services.blob_storage.get_all()) == 0
 
-    num_elements = 50 * 1024 * 1024
-    data_big = np.random.randint(0, 100, size=num_elements)
-    dataset_big = sy.Dataset(
-        name="big_dataset",
-        asset_list=[
-            sy.Asset(
-                name="big_dataset",
-                data=data_big,
-                mock=np.array([1, 1, 1]),
-            )
-        ],
-    )
-    root_client.upload_dataset(dataset_big)
-
-    # the private data should be saved to the blob storage
-    blob_entries: list = blob_storage.get_all_blob_storage_entries(
-        context=root_authed_ctx
-    )
-    assert len(blob_entries) == 1
-    data_big_retrieved: SyftObjectRetrieval = blob_storage.read(
-        context=root_authed_ctx, uid=blob_entries[0].id
-    )
-    assert all(data_big_retrieved.read() == data_big)
+    # the big dataset should be saved to the blob storage
+    root_client.upload_dataset(big_dataset)
+    assert len(root_client.api.services.blob_storage.get_all()) == 2

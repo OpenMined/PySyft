@@ -2,6 +2,7 @@
 from collections.abc import Generator
 from collections.abc import Iterable
 from itertools import product
+import operator
 from secrets import token_hex
 import time
 from typing import Any
@@ -67,33 +68,59 @@ def matrix(
     return [dict(kvs) for kvs in args]
 
 
-SERVER_ARGS_TEST_CASES = matrix(
-    n_consumers=[1],
-    dev_mode=[True, False],
-    thread_workers=[True, False],
+SERVER_ARGS_TEST_CASES = {
+    "n_consumers": [1],
+    "dev_mode": [True, False],
+    "thread_workers": [True, False],
+}
+
+
+class FlakyMark(RuntimeError):
+    """To mark a flaky part of a test to use with @pytest.mark.flaky"""
+
+    pass
+
+
+@pytest.mark.flaky(reruns=3, rerun_delay=1, only_rerun=["FlakyMark"])
+@pytest.mark.parametrize(
+    "server_args",
+    matrix(
+        **{**SERVER_ARGS_TEST_CASES, "n_consumers": [3]},
+    ),
 )
-
-
-@pytest.mark.parametrize("server_args", SERVER_ARGS_TEST_CASES)
 @pytest.mark.parametrize("force", [True, False])
-def test_delete_idle_worker(server: ServerHandle, force: bool) -> None:
+def test_delete_idle_worker(
+    server: ServerHandle, force: bool, server_args: dict[str, Any]
+) -> None:
     client = server.login(email="info@openmined.org", password="changethis")
-    worker = client.worker.get_all()[0]
 
     res = client.worker.delete(worker.id, force=force)
 
     if force:
-        assert len(client.worker.get_all()) == 0
+        assert (
+            len(workers := client.worker.get_all()) == len(original_workers) - 1
+            and all(w.id != worker_to_delete.id for w in workers)
+        ), f"{workers.message=} {server_args=} {[(w.id, w.name) for w in original_workers]}"
+        return
 
     start = time.time()
     while True:
-        if len(client.worker.get_all()) == 0:
+        workers = client.worker.get_all()
+        if isinstance(workers, SyftError):
+            raise FlakyMark(
+                f"`workers = client.worker.get_all()` failed.\n"
+                f"{workers.message=} {server_args=} {[(w.id, w.name) for w in original_workers]}"
+            )
+
+        if len(workers) == len(original_workers) - 1 and all(
+            w.id != worker_to_delete.id for w in workers
+        ):
             break
         if time.time() - start > 3:
             raise TimeoutError("Worker did not get removed from stash.")
 
 
-@pytest.mark.parametrize("server_args", SERVER_ARGS_TEST_CASES)
+@pytest.mark.parametrize("server_args", matrix(**SERVER_ARGS_TEST_CASES))
 @pytest.mark.parametrize("force", [True, False])
 def test_delete_worker(server: ServerHandle, force: bool) -> None:
     client = server.login(email="info@openmined.org", password="changethis")

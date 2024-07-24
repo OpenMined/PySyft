@@ -17,8 +17,6 @@ from ...store.document_store_errors import StashException
 from ...store.linked_obj import LinkedObject
 from ...types.result import as_result
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
-from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
@@ -41,7 +39,7 @@ StatusPartitionKey = PartitionKey(key="status", type_=Status)
 @serializable()
 class QueueItem(SyftObject):
     __canonical_name__ = "QueueItem"
-    __version__ = SYFT_OBJECT_VERSION_4
+    __version__ = SYFT_OBJECT_VERSION_1
 
     __attr_searchable__ = ["status"]
 
@@ -80,7 +78,7 @@ class QueueItem(SyftObject):
 @serializable()
 class ActionQueueItem(QueueItem):
     __canonical_name__ = "ActionQueueItem"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     method: str = "execute"
     service: str = "actionservice"

@@ -28,6 +28,8 @@ from ..types.base import SyftBaseModel
 from ..types.errors import SyftException
 from ..types.result import as_result
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
+from ..types.syft_object import BaseDateTime
+from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
@@ -390,7 +392,9 @@ class StorePartition:
         add_permissions: list[ActionObjectPermission] | None = None,
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
-    ) -> SyftObject:
+    ) -> Result[SyftObject, str]:
+        if obj.created_date is None:
+            obj.created_date = BaseDateTime.now()
         return self._thread_safe_cbk(
             self._set,
             credentials=credentials,
@@ -679,7 +683,7 @@ class StoreConfig(SyftBaseObject):
     """
 
     __canonical_name__ = "StoreConfig"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     store_type: type[DocumentStore]
     client_config: StoreClientConfig | None = None

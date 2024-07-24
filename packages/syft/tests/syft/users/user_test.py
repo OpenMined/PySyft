@@ -285,7 +285,7 @@ def test_user_view_set_password(worker: Worker, root_client: DatasiteClient) -> 
 
     # log in again with the right password
     root_client_b = worker.root_client.login(email=email, password="123")
-    assert root_client_b.me == root_client.me
+    assert root_client_b.account == root_client.account
 
 
 @pytest.mark.parametrize(
@@ -315,7 +315,7 @@ def test_user_view_set_email_success(
     valid_email_root: str,
     valid_email_ds: str,
 ) -> None:
-    result = root_client.me.set_email(valid_email_root)
+    result = root_client.account.set_email(valid_email_root)
     assert isinstance(result, SyftSuccess)
 
     result2 = ds_client.me.set_email(valid_email_ds)
@@ -399,7 +399,7 @@ def test_user_view_set_role(worker: Worker, guest_client: DatasiteClient) -> Non
     sheldon = admin_client.users[-1]
     assert (
         sheldon.syft_client_verify_key
-        == admin_client.me.syft_client_verify_key
+        == admin_client.account.syft_client_verify_key
         == admin_client.verify_key
     )
     assert sheldon.role == ServiceRole.DATA_SCIENTIST
@@ -414,7 +414,7 @@ def test_user_view_set_role(worker: Worker, guest_client: DatasiteClient) -> Non
     # be able to change his role, even if he is a data owner now
     ds_client = guest_client.login(email="sheldon@caltech.edu", password="changethis")
     assert (
-        ds_client.me.syft_client_verify_key
+        ds_client.account.syft_client_verify_key
         == ds_client.verify_key
         != admin_client.verify_key
     )
@@ -460,12 +460,12 @@ def test_user_view_set_role_admin(faker: Faker) -> None:
 
     datasite_client.users[1].update(role="admin")
     ds_client = server.login(email="sheldon@caltech.edu", password="changethis")
-    assert ds_client.me.role == ServiceRole.ADMIN
+    assert ds_client.account.role == ServiceRole.ADMIN
     assert len(ds_client.users.get_all()) == len(datasite_client.users.get_all())
 
     datasite_client.users[2].update(role="admin")
     ds_client_2 = server.login(email="sheldon2@caltech.edu", password="changethis")
-    assert ds_client_2.me.role == ServiceRole.ADMIN
+    assert ds_client_2.account.role == ServiceRole.ADMIN
     assert len(ds_client_2.users.get_all()) == len(datasite_client.users.get_all())
 
     server.python_server.cleanup()

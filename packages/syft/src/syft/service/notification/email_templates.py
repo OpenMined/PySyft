@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 from typing import cast
 
 # relative
+from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
 from ..context import AuthedServiceContext
 
@@ -21,6 +22,7 @@ class EmailTemplate:
         return ""
 
 
+@serializable(canonical_name="OnboardEmailTemplate", version=1)
 class OnBoardEmailTemplate(EmailTemplate):
     @staticmethod
     def email_title(notification: "Notification", context: AuthedServiceContext) -> str:
@@ -107,6 +109,7 @@ class OnBoardEmailTemplate(EmailTemplate):
         return f"""<html>{head} {body}</html>"""
 
 
+@serializable(canonical_name="RequestEmailTemplate", version=1)
 class RequestEmailTemplate(EmailTemplate):
     @staticmethod
     def email_title(notification: "Notification", context: AuthedServiceContext) -> str:
@@ -257,6 +260,7 @@ class RequestEmailTemplate(EmailTemplate):
         return f"""<html>{head} {body}</html>"""
 
 
+@serializable(canonical_name="RequestUpdateEmailTemplate", version=1)
 class RequestUpdateEmailTemplate(EmailTemplate):
     @staticmethod
     def email_title(notification: "Notification", context: AuthedServiceContext) -> str:

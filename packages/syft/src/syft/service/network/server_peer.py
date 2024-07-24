@@ -16,8 +16,6 @@ from ...types.result import as_result
 from ...types.syft_migration import migrate
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.uid import UID
@@ -27,7 +25,6 @@ from .routes import HTTPServerRoute
 from .routes import PythonServerRoute
 from .routes import ServerRoute
 from .routes import ServerRouteType
-from .routes import ServerRouteTypeV1
 from .routes import VeilidServerRoute
 from .routes import connection_to_route
 from .routes import route_to_connection
@@ -43,28 +40,10 @@ class ServerPeerConnectionStatus(Enum):
 
 
 @serializable()
-class ServerPeerV2(SyftObject):
-    # version
-    __canonical_name__ = "ServerPeer"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    __attr_searchable__ = ["name", "server_type"]
-    __attr_unique__ = ["verify_key"]
-    __repr_attrs__ = ["name", "server_type", "admin_email"]
-
-    id: UID | None = None  # type: ignore[assignment]
-    name: str
-    verify_key: SyftVerifyKey
-    server_routes: list[ServerRouteTypeV1] = []
-    server_type: ServerType
-    admin_email: str
-
-
-@serializable()
 class ServerPeer(SyftObject):
     # version
     __canonical_name__ = "ServerPeer"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     __attr_searchable__ = ["name", "server_type"]
     __attr_unique__ = ["verify_key"]
@@ -330,13 +309,3 @@ def drop_veilid_route() -> Callable:
         return context
 
     return _drop_veilid_route
-
-
-@migrate(ServerPeerV2, ServerPeer)
-def upgrade_server_peer() -> list[Callable]:
-    return [drop_veilid_route()]
-
-
-@migrate(ServerPeerV2, ServerPeer)
-def downgrade_server_peer() -> list[Callable]:
-    return []

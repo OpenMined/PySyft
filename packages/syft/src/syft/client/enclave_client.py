@@ -10,7 +10,7 @@ from ..serde.serializable import serializable
 from ..service.metadata.server_metadata import ServerMetadataJSON
 from ..service.network.routes import ServerRouteType
 from ..service.response import SyftSuccess
-from ..types.syft_object import SYFT_OBJECT_VERSION_3
+from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftObject
 from ..util.assets import load_png_base64
 from ..util.notebook_ui.styles import FONT_CSS
@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 @serializable()
 class EnclaveMetadata(SyftObject):
     __canonical_name__ = "EnclaveMetadata"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     route: ServerRouteType
 

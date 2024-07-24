@@ -22,12 +22,13 @@ from ...types.blob_storage import SecureFilePathLocation
 from ...types.errors import SyftException
 from ...types.result import as_result
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 
 
 @serializable()
 class OnDiskBlobDeposit(BlobDeposit):
     __canonical_name__ = "OnDiskBlobDeposit"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     @as_result(SyftException)
     def write(self, data: BytesIO) -> SyftSuccess:

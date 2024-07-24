@@ -212,13 +212,13 @@ class SettingsService(AbstractService):
             message=f"Registration feature successfully {message}", value=message
         )
 
-    @service_method(
-        path="settings.enable_eager_execution",
-        name="enable_eager_execution",
-        roles=ADMIN_ROLE_LEVEL,
-        warning=HighSideCRUDWarning(confirmation=True),
-        unwrap_on_success=False,
-    )
+    # NOTE: This service is disabled until we bring back Eager Execution
+    # @service_method(
+    #     path="settings.enable_eager_execution",
+    #     name="enable_eager_execution",
+    #     roles=ADMIN_ROLE_LEVEL,
+    #     warning=HighSideCRUDWarning(confirmation=True),
+    # )
     def enable_eager_execution(
         self, context: AuthedServiceContext, enable: bool
     ) -> SyftSuccess:

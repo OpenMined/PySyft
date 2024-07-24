@@ -9,7 +9,7 @@ from ..abstract_server import AbstractServer
 from ..server.credentials import SyftVerifyKey
 from ..server.credentials import UserLoginCredentials
 from ..types.syft_object import Context
-from ..types.syft_object import SYFT_OBJECT_VERSION_2
+from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
@@ -20,7 +20,7 @@ from .user.user_roles import ServiceRoleCapability
 
 class ServerServiceContext(Context, SyftObject):
     __canonical_name__ = "ServerServiceContext"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID | None = None  # type: ignore[assignment]
     server: AbstractServer
@@ -28,7 +28,7 @@ class ServerServiceContext(Context, SyftObject):
 
 class AuthedServiceContext(ServerServiceContext):
     __canonical_name__ = "AuthedServiceContext"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     credentials: SyftVerifyKey
     role: ServiceRole = ServiceRole.NONE
@@ -69,7 +69,7 @@ class AuthedServiceContext(ServerServiceContext):
 
 class UnauthedServiceContext(ServerServiceContext):
     __canonical_name__ = "UnauthedServiceContext"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     login_credentials: UserLoginCredentials
     server: AbstractServer
@@ -78,7 +78,7 @@ class UnauthedServiceContext(ServerServiceContext):
 
 class ChangeContext(SyftBaseObject):
     __canonical_name__ = "ChangeContext"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     server: AbstractServer
     approving_user_credentials: SyftVerifyKey | None = None

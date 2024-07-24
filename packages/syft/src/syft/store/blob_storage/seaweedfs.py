@@ -39,7 +39,7 @@ from ...types.blob_storage import SecureFilePathLocation
 from ...types.errors import SyftException
 from ...types.result import as_result
 from ...types.server_url import ServerURL
-from ...types.syft_object import SYFT_OBJECT_VERSION_4
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.uid import UID
 from ...util.constants import DEFAULT_TIMEOUT
 
@@ -54,7 +54,7 @@ DEFAULT_UPLOAD_CHUNK_SIZE = 1024 * 800  # 800KB
 @serializable()
 class SeaweedFSBlobDeposit(BlobDeposit):
     __canonical_name__ = "SeaweedFSBlobDeposit"
-    __version__ = SYFT_OBJECT_VERSION_4
+    __version__ = SYFT_OBJECT_VERSION_1
 
     urls: list[ServerURL]
     size: int

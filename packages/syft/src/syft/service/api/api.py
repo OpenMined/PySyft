@@ -49,7 +49,7 @@ class HelperFunctionSet:
 
 
 class TwinAPIAuthedContext(AuthedServiceContext):
-    __canonical_name__ = "AuthedServiceContext"
+    __canonical_name__ = "TwinAPIAuthedContext"
     __version__ = SYFT_OBJECT_VERSION_1
 
     user: UserView | None = None
