@@ -109,7 +109,7 @@ class ProjectService(AbstractService):
             elif project.leader_server_route is not None:
                 # for the leader server, as it does not have route information to itself
                 # we rely on the data scientist to provide the route
-                # the route is then validated by the leader                
+                # the route is then validated by the leader
                 leader_server_peer = project.leader_server_route.validate_with_context(
                     context=context
                 )
