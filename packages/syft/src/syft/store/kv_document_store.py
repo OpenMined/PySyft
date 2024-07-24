@@ -384,9 +384,8 @@ class KeyValueStorePartition(StorePartition):
                         store_key.value in ck_col[pk_value_str]
                     ):
                         ck_col[pk_value_str].remove(store_key.value)
-            else:
-                if pk_value in ck_col and (store_key.value in ck_col[pk_value]):
-                    ck_col[pk_value].remove(store_key.value)
+            elif pk_value in ck_col and (store_key.value in ck_col[pk_value]):
+                ck_col[pk_value].remove(store_key.value)
             self.searchable_keys[pk_key] = ck_col
 
     def _find_index_or_search_keys(
