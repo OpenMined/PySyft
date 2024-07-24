@@ -899,3 +899,10 @@ class DatasetUpdate(PartialSyftObject):
 
     name: str
     to_be_deleted: bool
+    asset_list: list[Asset]
+    contributors: set[Contributor]
+    citation: str
+    url: str
+    description: MarkdownDescription
+    uploader: Contributor
+    summary: str

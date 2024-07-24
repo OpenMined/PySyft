@@ -109,7 +109,7 @@ class DatasiteClient(SyftClient):
             if not force_replace:
                 return SyftError(
                     message=f"Dataset with name the '{dataset.name}' already exists. "
-                    "Please use `force_replace=True` to overwrite."
+                    "Please use `upload_dataset(dataset, force_replace=True)` to overwrite."
                 )
             else:
                 del_res = self.api.services.dataset.delete(search_res[0].id)

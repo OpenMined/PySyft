@@ -269,6 +269,16 @@ class DatasetService(AbstractService):
         return_msg.append(f"Dataset with id '{uid}' successfully deleted.")
         return SyftSuccess(message="\n".join(return_msg))
 
+    @service_method(
+        path="dataset.update",
+        name="update",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
+    def update(
+        self, context: AuthedServiceContext, uid: UID, dataset_update: DatasetUpdate
+    ) -> SyftSuccess | SyftError:
+        pass
+
 
 TYPE_TO_SERVICE[Dataset] = DatasetService
 SERVICE_TO_TYPES[DatasetService].update({Dataset})
