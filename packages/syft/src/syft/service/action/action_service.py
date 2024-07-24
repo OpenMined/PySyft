@@ -958,39 +958,24 @@ class ActionService(AbstractService):
         soft_delete: bool = False,
     ) -> SyftSuccess | SyftError:
         if soft_delete:
-            get_res = self.store.get(uid=uid, credentials=context.credentials)
-            if get_res.is_err():
-                return SyftError(message=get_res.err())
-            obj: ActionObject | TwinObject = get_res.ok()
-
+            obj: ActionObject | TwinObject = self.store.get(uid=uid, credentials=context.credentials).unwrap()
             if isinstance(obj, TwinObject):
-                res = self._soft_delete_action_obj(
+                self._soft_delete_action_obj(
                     context=context, action_obj=obj.private
-                )
-                if res.is_err():
-                    return SyftError(message=res.err())
-                res = self._soft_delete_action_obj(context=context, action_obj=obj.mock)
-                if res.is_err():
-                    return SyftError(message=res.err())
-
+                ).unwrap()
+                self._soft_delete_action_obj(context=context, action_obj=obj.mock).unwrap()
             if isinstance(obj, ActionObject):
-                res = self._soft_delete_action_obj(context=context, action_obj=obj)
-                if res.is_err():
-                    return SyftError(message=res.err())
+                self._soft_delete_action_obj(context=context, action_obj=obj).unwrap()
         else:
-            res = self.store.delete(credentials=context.credentials, uid=uid)
-            if res.is_err():
-                return SyftError(message=res.err())
-
+            self.store.delete(credentials=context.credentials, uid=uid).unwrap()
         return SyftSuccess(message=f"Action object with uid '{uid}' deleted.")
 
+    @as_result(SyftException)
     def _soft_delete_action_obj(
         self, context: AuthedServiceContext, action_obj: ActionObject
-    ) -> Result[ActionObject, str]:
+    ) -> ActionObject:
         action_obj.syft_action_data_cache = None
-        res = action_obj._save_to_blob_storage()
-        if isinstance(res, SyftError):
-            return Err(res.message)
+        action_obj._save_to_blob_storage().unwrap()
         set_result = self._set(
             context=context,
             action_object=action_obj,

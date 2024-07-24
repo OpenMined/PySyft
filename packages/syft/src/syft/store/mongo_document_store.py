@@ -153,7 +153,7 @@ class MongoStorePartition(StorePartition):
     #       * Do not call the public thread-safe methods here(with locking).
     # These methods are called from the public thread-safe API, and will hang the process.
 
-    @as_result()
+    @as_result(SyftException)
     def _create_update_index(self) -> bool:
         """Create or update mongo database indexes"""
         collection: MongoCollection = self.collection

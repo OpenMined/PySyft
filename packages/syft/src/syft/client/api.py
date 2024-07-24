@@ -177,17 +177,6 @@ class APIEndpoint(SyftObject):
     pre_kwargs: dict[str, Any] | None = None
     warning: APIEndpointWarning | None = None
 
-
-@migrate(APIEndpointV1, APIEndpoint)
-def upgrade_apiconfig() -> list[Callable]:
-    return [make_set_default("unwrap_on_success", False)]
-
-
-@migrate(APIEndpoint, APIEndpointV1)
-def downgrade_apiconfig() -> list[Callable]:
-    return [drop(["unwrap_on_success"])]
-
-
 @serializable()
 class LibEndpoint(SyftBaseObject):
     __canonical_name__ = "LibEndpoint"
