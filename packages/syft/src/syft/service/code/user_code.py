@@ -31,6 +31,7 @@ from IPython.display import Markdown
 from IPython.display import display
 from pydantic import ValidationError
 from pydantic import field_validator
+from pydantic import model_validator
 from result import Err
 from result import Ok
 from result import Result
@@ -349,6 +350,7 @@ class UserCode(SyncableSyftObject):
     l0_deny_reason: str | None = None
     _has_output_read_permissions_cache: bool | None = None
     project_id: UID | None = None
+    input_id2hash: dict[UID, str] | None = None
 
     __table_coll_widths__ = [
         "min-content",
@@ -1092,6 +1094,7 @@ class SubmitUserCode(SyftObject):
     input_kwargs: list[str]
     worker_pool_name: str | None = None
     project_id: UID | None = None
+    input_id2hash: dict[UID, str] | None = None
 
     __repr_attrs__ = ["func_name", "code"]
 
@@ -1108,6 +1111,20 @@ class SubmitUserCode(SyftObject):
     def add_output_policy_ids(cls, values: Any) -> Any:
         if isinstance(values, dict) and "id" not in values:
             values["id"] = UID()
+        return values
+
+    @model_validator(mode="before")
+    @classmethod
+    def initialize_input_hash(cls, values: dict) -> dict:
+        if "input_policy_init_kwargs" in values and "input_id2hash" not in values:
+            input_id2hash = {}
+            for server_identity, obj_dict in values["input_policy_init_kwargs"].items():
+                api = APIRegistry.get_by_recent_server_uid(
+                    server_uid=server_identity.server_id,
+                )
+                for obj_id in obj_dict.values():
+                    input_id2hash[obj_id] = api.services.action.get_hash(obj_id)
+            values["input_id2hash"] = input_id2hash
         return values
 
     @property

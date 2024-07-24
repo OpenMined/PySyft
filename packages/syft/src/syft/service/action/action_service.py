@@ -963,7 +963,11 @@ class ActionService(AbstractService):
         self, context: AuthedServiceContext, obj_id: UID
     ) -> Result[SyftSuccess, SyftError]:
         """Returns the hash of the given object id in the Action Store"""
-        action_obj = self.get(context, obj_id)
+        # TODO: This is a minor fix, which allows any user
+        # to get the hash of any object in the Action Store
+        # will be fixed in the future, with new permissions system
+        root_context = context.as_root_context()
+        action_obj = self.get(root_context, obj_id)
         if action_obj.is_err():
             return SyftError(message=action_obj.err())
         return action_obj.ok().hash(context=context)
