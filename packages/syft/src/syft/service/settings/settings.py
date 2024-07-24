@@ -175,7 +175,7 @@ class ServerSettings(SyftObject):
 
 @migrate(ServerSettingsV1, ServerSettings)
 def migrate_server_settings_v1_to_v2() -> list[Callable]:
-    return []
+    return [make_set_default("notifications_enabled", False)]
 
 
 @migrate(ServerSettings, ServerSettingsV1)

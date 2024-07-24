@@ -830,7 +830,7 @@ class SyftClient:
         return None
 
     @property
-    def me(self) -> UserView | SyftError | None:
+    def account(self) -> UserView | SyftError | None:
         if self.api.has_service("user"):
             return self.api.services.user.get_current_user()
         return None
@@ -909,7 +909,7 @@ class SyftClient:
             if password == get_default_root_password():
                 message = (
                     "You are using a default password. Please change the password "
-                    "using `[your_client].me.set_password([new_password])`."
+                    "using `[your_client].account.set_password([new_password])`."
                 )
                 prompt_warning_message(message)
 
