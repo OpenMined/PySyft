@@ -4,8 +4,8 @@
 from result import Result
 
 # relative
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
 from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
@@ -20,7 +20,7 @@ PoolNamePartitionKey = PartitionKey(key="name", type_=str)
 PoolImageIDPartitionKey = PartitionKey(key="image_id", type_=UID)
 
 
-@serializable()
+@serializable(canonical_name="SyftWorkerPoolStash", version=1)
 class SyftWorkerPoolStash(BaseUIDStoreStash):
     object_type = WorkerPool
     settings: PartitionSettings = PartitionSettings(

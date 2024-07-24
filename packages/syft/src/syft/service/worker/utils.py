@@ -14,7 +14,7 @@ from docker.models.containers import Container
 from kr8s.objects import Pod
 
 # relative
-from ...abstract_node import AbstractNode
+from ...abstract_server import AbstractServer
 from ...custom_worker.builder import CustomWorkerBuilder
 from ...custom_worker.builder_types import ImageBuildResult
 from ...custom_worker.builder_types import ImagePushResult
@@ -22,7 +22,7 @@ from ...custom_worker.config import PrebuiltWorkerConfig
 from ...custom_worker.k8s import KubeUtils
 from ...custom_worker.k8s import PodStatus
 from ...custom_worker.runner_k8s import KubernetesRunner
-from ...node.credentials import SyftVerifyKey
+from ...server.credentials import SyftVerifyKey
 from ...types.uid import UID
 from ...util.util import get_queue_address
 from ..response import SyftError
@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_WORKER_IMAGE_TAG = "openmined/default-worker-image-cpu:0.0.1"
 DEFAULT_WORKER_POOL_NAME = "default-pool"
-K8S_NODE_CREDS_NAME = "node-creds"
+K8S_SERVER_CREDS_NAME = "server-creds"
 
 
 def backend_container_name() -> str:
@@ -102,7 +102,7 @@ def extract_config_from_backend(
         mode = parts[2]
 
         if "/root/data/creds" in vol:
-            # we need this because otherwise we are using the same node private key
+            # we need this because otherwise we are using the same server private key
             # which will make account creation fail
             key = f"{key}-{worker_name}"
         elif bind not in valid_binds:
@@ -239,7 +239,7 @@ def run_container_using_docker(
 
 
 def run_workers_in_threads(
-    node: AbstractNode,
+    server: AbstractServer,
     pool_name: str,
     number: int,
     start_idx: int = 0,
@@ -256,9 +256,9 @@ def run_workers_in_threads(
             healthcheck=WorkerHealth.HEALTHY,
         )
         try:
-            port = node.queue_config.client_config.queue_port
+            port = server.queue_config.client_config.queue_port
             address = get_queue_address(port)
-            node.add_consumer_for_service(
+            server.add_consumer_for_service(
                 service_name=pool_name,
                 syft_worker_id=worker.id,
                 address=address,
@@ -299,9 +299,9 @@ def prepare_kubernetes_pool_env(
     if creds_path is not None and not creds_path.exists():
         raise ValueError("Credentials file does not exist")
 
-    # create a secret for the node credentials owned by the backend, not the pool.
-    node_secret = KubeUtils.create_secret(
-        secret_name=K8S_NODE_CREDS_NAME,
+    # create a secret for the server credentials owned by the backend, not the pool.
+    server_secret = KubeUtils.create_secret(
+        secret_name=K8S_SERVER_CREDS_NAME,
         type="Opaque",
         component=backend_pod_name,
         data={creds_path.name: creds_path.read_text()},
@@ -312,7 +312,7 @@ def prepare_kubernetes_pool_env(
     backend_env = runner.get_pod_env_vars(backend_pod_name) or []
     env_vars_: list = KubeUtils.patch_env_vars(backend_env, env_vars)
     mount_secrets = {
-        node_secret.metadata.name: {
+        server_secret.metadata.name: {
             "mountPath": str(creds_path),
             "subPath": creds_path.name,
         },
@@ -567,7 +567,7 @@ def create_default_image(
     in_kubernetes: bool = False,
 ) -> SyftError | SyftWorkerImage:
     if not in_kubernetes:
-        tag = f"openmined/grid-backend:{tag}"
+        tag = f"openmined/syft-backend:{tag}"
 
     worker_config = PrebuiltWorkerConfig(
         tag=tag,

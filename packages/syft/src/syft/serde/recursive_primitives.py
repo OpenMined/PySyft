@@ -8,12 +8,14 @@ from collections.abc import Mapping
 from enum import Enum
 from enum import EnumMeta
 import functools
+import inspect
 import pathlib
 from pathlib import PurePath
 import sys
 import tempfile
 from types import MappingProxyType
 from types import UnionType
+import typing
 from typing import Any
 from typing import GenericAlias
 from typing import Optional
@@ -27,6 +29,7 @@ from typing import cast
 import weakref
 
 # relative
+from ..types.syft_object_registry import SyftObjectRegistry
 from .capnp import get_capnp_schema
 from .recursive import chunk_bytes
 from .recursive import combine_bytes
@@ -169,22 +172,31 @@ def deserialize_enum(enum_type: type, enum_buf: bytes) -> Enum:
     return enum_type(enum_value)
 
 
-def serialize_type(serialized_type: type) -> bytes:
+def serialize_type(_type_to_serialize: type) -> bytes:
     # relative
-    from ..util.util import full_name_with_qualname
+    type_to_serialize = typing.get_origin(_type_to_serialize) or _type_to_serialize
+    canonical_name, version = SyftObjectRegistry.get_identifier_for_type(
+        type_to_serialize
+    )
+    return f"{canonical_name}:{version}".encode()
 
-    fqn = full_name_with_qualname(klass=serialized_type)
-    module_parts = fqn.split(".")
-    return ".".join(module_parts).encode()
+    # from ..util.util import full_name_with_qualname
+
+    # fqn = full_name_with_qualname(klass=serialized_type)
+    # module_parts = fqn.split(".")
+    # return ".".join(module_parts).encode()
 
 
 def deserialize_type(type_blob: bytes) -> type:
     deserialized_type = type_blob.decode()
-    module_parts = deserialized_type.split(".")
-    klass = module_parts.pop()
-    klass = "None" if klass == "NoneType" else klass
-    exception_type = getattr(sys.modules[".".join(module_parts)], klass)
-    return exception_type
+    canonical_name, version = deserialized_type.split(":", 1)
+    return SyftObjectRegistry.get_serde_class(canonical_name, int(version))
+
+    # module_parts = deserialized_type.split(".")
+    # klass = module_parts.pop()
+    # klass = "None" if klass == "NoneType" else klass
+    # exception_type = getattr(sys.modules[".".join(module_parts)], klass)
+    # return exception_type
 
 
 TPath = TypeVar("TPath", bound=PurePath)
@@ -210,111 +222,163 @@ recursive_serde_register(
     int,
     serialize=lambda x: x.to_bytes((x.bit_length() + 7) // 8 + 1, "big", signed=True),
     deserialize=lambda x_bytes: int.from_bytes(x_bytes, "big", signed=True),
+    canonical_name="int",
+    version=1,
 )
 
 recursive_serde_register(
     float,
     serialize=lambda x: x.hex().encode(),
     deserialize=lambda x: float.fromhex(x.decode()),
+    canonical_name="float",
+    version=1,
 )
 
-recursive_serde_register(bytes, serialize=lambda x: x, deserialize=lambda x: x)
+recursive_serde_register(
+    bytes,
+    serialize=lambda x: x,
+    deserialize=lambda x: x,
+    canonical_name="bytes",
+    version=1,
+)
 
 recursive_serde_register(
-    str, serialize=lambda x: x.encode(), deserialize=lambda x: x.decode()
+    str,
+    serialize=lambda x: x.encode(),
+    deserialize=lambda x: x.decode(),
+    canonical_name="str",
+    version=1,
 )
 
 recursive_serde_register(
     list,
     serialize=serialize_iterable,
     deserialize=functools.partial(deserialize_iterable, list),
+    canonical_name="list",
+    version=1,
 )
 
 recursive_serde_register(
     tuple,
     serialize=serialize_iterable,
     deserialize=functools.partial(deserialize_iterable, tuple),
+    canonical_name="tuple",
+    version=1,
 )
 
 recursive_serde_register(
-    dict, serialize=serialize_kv, deserialize=functools.partial(deserialize_kv, dict)
+    dict,
+    serialize=serialize_kv,
+    deserialize=functools.partial(deserialize_kv, dict),
+    canonical_name="dict",
+    version=1,
 )
 
 recursive_serde_register(
     defaultdict,
     serialize=serialize_defaultdict,
     deserialize=deserialize_defaultdict,
+    canonical_name="defaultdict",
+    version=1,
 )
 
 recursive_serde_register(
     OrderedDict,
     serialize=serialize_kv,
     deserialize=functools.partial(deserialize_kv, OrderedDict),
+    canonical_name="OrderedDict",
+    version=1,
 )
 
 recursive_serde_register(
-    type(None), serialize=lambda _: b"1", deserialize=lambda _: None
+    type(None),
+    serialize=lambda _: b"1",
+    deserialize=lambda _: None,
+    canonical_name="NoneType",
+    version=1,
 )
 
 recursive_serde_register(
     bool,
     serialize=lambda x: b"1" if x else b"0",
     deserialize=lambda x: False if x == b"0" else True,
+    canonical_name="bool",
+    version=1,
 )
 
 recursive_serde_register(
     set,
     serialize=serialize_iterable,
     deserialize=functools.partial(deserialize_iterable, set),
+    canonical_name="set",
+    version=1,
 )
 
 recursive_serde_register(
     weakref.WeakSet,
     serialize=serialize_iterable,
     deserialize=functools.partial(deserialize_iterable, weakref.WeakSet),
+    canonical_name="WeakSet",
+    version=1,
 )
 
 recursive_serde_register(
     frozenset,
     serialize=serialize_iterable,
     deserialize=functools.partial(deserialize_iterable, frozenset),
+    canonical_name="frozenset",
+    version=1,
 )
 
 recursive_serde_register(
     complex,
     serialize=lambda x: serialize_iterable((x.real, x.imag)),
     deserialize=lambda x: complex(*deserialize_iterable(tuple, x)),
+    canonical_name="complex",
+    version=1,
 )
 
 recursive_serde_register(
     range,
     serialize=lambda x: serialize_iterable((x.start, x.stop, x.step)),
     deserialize=lambda x: range(*deserialize_iterable(tuple, x)),
-)
-
-
-recursive_serde_register(
-    slice,
-    serialize=lambda x: serialize_iterable((x.start, x.stop, x.step)),
-    deserialize=lambda x: slice(*deserialize_iterable(tuple, x)),
+    canonical_name="range",
+    version=1,
 )
 
 recursive_serde_register(
     slice,
     serialize=lambda x: serialize_iterable((x.start, x.stop, x.step)),
     deserialize=lambda x: slice(*deserialize_iterable(tuple, x)),
+    canonical_name="slice",
+    version=1,
 )
 
-recursive_serde_register(type, serialize=serialize_type, deserialize=deserialize_type)
+recursive_serde_register(
+    type,
+    serialize=serialize_type,
+    deserialize=deserialize_type,
+    canonical_name="type",
+    version=1,
+)
+
 recursive_serde_register(
     MappingProxyType,
     serialize=serialize_kv,
     deserialize=functools.partial(deserialize_kv, MappingProxyType),
+    canonical_name="MappingProxyType",
+    version=1,
 )
 
+recursive_serde_register(
+    PurePath,
+    serialize=serialize_path,
+    deserialize=functools.partial(deserialize_path, PurePath),
+    canonical_name="PurePath",
+    version=1,
+)
 
 for __path_type in (
-    PurePath,
     pathlib.PurePosixPath,
     pathlib.PureWindowsPath,
     pathlib.Path,
@@ -325,6 +389,8 @@ for __path_type in (
         __path_type,
         serialize=serialize_path,
         deserialize=functools.partial(deserialize_path, __path_type),
+        canonical_name=f"pathlib_{__path_type.__name__}",
+        version=1,
     )
 
 
@@ -374,7 +440,14 @@ def deserialize_generic_alias(type_blob: bytes) -> type:
 
 
 # 🟡 TODO 5: add tests and all typing options for signatures
-def recursive_serde_register_type(t: type, serialize_attrs: list | None = None) -> None:
+def recursive_serde_register_type(
+    t: type,
+    serialize_attrs: list | None = None,
+    canonical_name: str | None = None,
+    version: int | None = None,
+) -> None:
+    # former case is for instance for _GerericAlias itself or UnionGenericAlias
+    # Latter case is true for for instance List[str], which is currently not used
     if (isinstance(t, type) and issubclass(t, _GenericAlias)) or issubclass(
         type(t), _GenericAlias
     ):
@@ -383,6 +456,8 @@ def recursive_serde_register_type(t: type, serialize_attrs: list | None = None) 
             serialize=serialize_generic_alias,
             deserialize=deserialize_generic_alias,
             serialize_attrs=serialize_attrs,
+            canonical_name=canonical_name,
+            version=version,
         )
     else:
         recursive_serde_register(
@@ -390,6 +465,8 @@ def recursive_serde_register_type(t: type, serialize_attrs: list | None = None) 
             serialize=serialize_type,
             deserialize=deserialize_type,
             serialize_attrs=serialize_attrs,
+            canonical_name=canonical_name,
+            version=version,
         )
 
 
@@ -408,16 +485,62 @@ def deserialize_union_type(type_blob: bytes) -> type:
     return functools.reduce(lambda x, y: x | y, args)
 
 
+def serialize_union(serialized_type: UnionType) -> bytes:
+    return b""
+
+
+def deserialize_union(type_blob: bytes) -> type:  # type: ignore
+    return Union  # type: ignore
+
+
+def serialize_typevar(serialized_type: TypeVar) -> bytes:
+    return f"{serialized_type.__name__}".encode()
+
+
+def deserialize_typevar(type_blob: bytes) -> type:
+    name = type_blob.decode()
+    return TypeVar(name=name)  # type: ignore
+
+
+def serialize_any(serialized_type: TypeVar) -> bytes:
+    return b""
+
+
+def deserialize_any(type_blob: bytes) -> type:  # type: ignore
+    return Any  # type: ignore
+
+
 recursive_serde_register(
     UnionType,
     serialize=serialize_union_type,
     deserialize=deserialize_union_type,
+    canonical_name="UnionType",
+    version=1,
 )
 
-recursive_serde_register_type(_SpecialForm)
-recursive_serde_register_type(_GenericAlias)
-recursive_serde_register_type(Union)
-recursive_serde_register_type(TypeVar)
+recursive_serde_register_type(_SpecialForm, canonical_name="_SpecialForm", version=1)
+recursive_serde_register_type(_GenericAlias, canonical_name="_GenericAlias", version=1)
+recursive_serde_register(
+    Union,
+    canonical_name="Union",
+    serialize=serialize_union,
+    deserialize=deserialize_union,
+    version=1,
+)
+recursive_serde_register(
+    TypeVar,
+    canonical_name="TypeVar",
+    serialize=serialize_typevar,
+    deserialize=deserialize_typevar,
+    version=1,
+)
+recursive_serde_register(
+    Any,
+    canonical_name="Any",
+    serialize=serialize_any,
+    deserialize=deserialize_any,
+    version=1,
+)
 
 recursive_serde_register_type(
     _UnionGenericAlias,
@@ -430,11 +553,17 @@ recursive_serde_register_type(
         "__module__",
         "__origin__",
     ],
+    canonical_name="_UnionGenericAlias",
+    version=1,
 )
-recursive_serde_register_type(_SpecialGenericAlias)
-recursive_serde_register_type(GenericAlias)
+recursive_serde_register_type(
+    _SpecialGenericAlias, canonical_name="_SpecialGenericAlias", version=1
+)
+recursive_serde_register_type(GenericAlias, canonical_name="GenericAlias", version=1)
 
-recursive_serde_register_type(Any)
-recursive_serde_register_type(EnumMeta)
+# recursive_serde_register_type(Any, canonical_name="Any", version=1)
+recursive_serde_register_type(EnumMeta, canonical_name="EnumMeta", version=1)
 
-recursive_serde_register_type(ABCMeta)
+recursive_serde_register_type(ABCMeta, canonical_name="ABCMeta", version=1)
+
+recursive_serde_register_type(inspect._empty, canonical_name="inspect_empty", version=1)

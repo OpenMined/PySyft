@@ -3,7 +3,7 @@ import pytest
 
 # syft absolute
 from syft.__init__ import __version__
-from syft.service.metadata.node_metadata import check_version
+from syft.service.metadata.server_metadata import check_version
 
 
 def test_check_base_version_success() -> None:

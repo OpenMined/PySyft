@@ -1,5 +1,5 @@
 # syft absolute
-from syft.node.credentials import SyftSigningKey
+from syft.server.credentials import SyftSigningKey
 
 TEST_VERIFY_KEY_STRING_ROOT = (
     "08e5bcddfd55cdff0f7f6a62d63a43585734c6e7a17b2ffb3f3efe322c3cecc5"

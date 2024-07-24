@@ -1,11 +1,13 @@
 # stdlib
 
 # third party
+from result import Err
+from result import Ok
 from result import Result
 
 # relative
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
 from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
@@ -21,7 +23,7 @@ ActionIDsPartitionKey = PartitionKey(key="action_ids", type_=list[UID])
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="DatasetStash", version=1)
 class DatasetStash(BaseUIDStoreStash):
     object_type = Dataset
     settings: PartitionSettings = PartitionSettings(
@@ -54,3 +56,18 @@ class DatasetStash(BaseUIDStoreStash):
     ) -> Result[list[Dataset], str]:
         qks = QueryKeys(qks=[ActionIDsPartitionKey.with_obj(uid)])
         return self.query_all(credentials=credentials, qks=qks)
+
+    def get_all(
+        self,
+        credentials: SyftVerifyKey,
+        order_by: PartitionKey | None = None,
+        has_permission: bool = False,
+    ) -> Ok[list] | Err[str]:
+        result = super().get_all(credentials, order_by, has_permission)
+
+        if result.is_err():
+            return result
+        filtered_datasets = [
+            dataset for dataset in result.ok_value if not dataset.to_be_deleted
+        ]
+        return Ok(filtered_datasets)

@@ -3,7 +3,7 @@
 set -e
 
 HELM_REPO="openmined/syft"
-DOMAIN_NAME="test-domain"
+DATASITE_NAME="test-datasite"
 KUBE_NAMESPACE="syft"
 KUBE_CONTEXT=${KUBE_CONTEXT:-"k3d-syft-dev"}
 
@@ -39,14 +39,14 @@ helm repo add openmined https://openmined.github.io/PySyft/helm
 helm repo update openmined
 
 echo Installing syft...
-helm install $DOMAIN_NAME $INSTALL_SOURCE $INSTALL_ARGS --namespace $KUBE_NAMESPACE --create-namespace
+helm install $DATASITE_NAME $INSTALL_SOURCE $INSTALL_ARGS --namespace $KUBE_NAMESPACE --create-namespace
 helm ls -A
 
 WAIT_TIME=5 bash ./scripts/wait_for.sh service backend --namespace $KUBE_NAMESPACE
 WAIT_TIME=5 bash ./scripts/wait_for.sh pod default-pool-0 --namespace $KUBE_NAMESPACE
 
 echo Upgrading syft...
-helm upgrade $DOMAIN_NAME $UPGRADE_SOURCE $UPGRADE_ARGS --namespace $KUBE_NAMESPACE
+helm upgrade $DATASITE_NAME $UPGRADE_SOURCE $UPGRADE_ARGS --namespace $KUBE_NAMESPACE
 helm ls -A
 
 echo "Post-upgrade sleep" && sleep 5

@@ -1,0 +1,2 @@
+[lint]
+ignore = ["E501"]

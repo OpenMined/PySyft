@@ -1,4 +1,4 @@
-import type { UserView } from "../../../../types/domain/users"
+import type { UserView } from "../../../../types/datasite/users"
 import type { PageServerLoad } from "./$types"
 
 export const load: PageServerLoad = async ({ params, fetch, depends }) => {

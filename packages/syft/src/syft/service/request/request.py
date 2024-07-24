@@ -14,27 +14,23 @@ from result import Result
 from typing_extensions import Self
 
 # relative
-from ...abstract_node import NodeSideType
+from ...abstract_server import ServerSideType
 from ...client.api import APIRegistry
 from ...client.client import SyftClient
 from ...custom_worker.config import DockerWorkerConfig
 from ...custom_worker.config import WorkerConfig
 from ...custom_worker.k8s import IN_KUBERNETES
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
+from ...server.credentials import SyftVerifyKey
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
-from ...types.syft_migration import migrate
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.transforms import TransformContext
-from ...types.transforms import add_node_uid_for_key
-from ...types.transforms import drop
+from ...types.transforms import add_server_uid_for_key
 from ...types.transforms import generate_id
-from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.twin_object import TwinObject
 from ...types.uid import LineageID
@@ -65,7 +61,7 @@ from ..user.user import UserView
 logger = logging.getLogger(__name__)
 
 
-@serializable()
+@serializable(canonical_name="RequestStatus", version=1)
 class RequestStatus(Enum):
     PENDING = 0
     REJECTED = 1
@@ -84,7 +80,7 @@ class RequestStatus(Enum):
 @serializable()
 class Change(SyftObject):
     __canonical_name__ = "Change"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     linked_obj: LinkedObject | None = None
 
@@ -95,7 +91,7 @@ class Change(SyftObject):
 @serializable()
 class ChangeStatus(SyftObject):
     __canonical_name__ = "ChangeStatus"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID | None = None  # type: ignore[assignment]
     change_id: UID
@@ -109,7 +105,7 @@ class ChangeStatus(SyftObject):
 @serializable()
 class ActionStoreChange(Change):
     __canonical_name__ = "ActionStoreChange"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     linked_obj: LinkedObject
     apply_permission_type: ActionPermission
@@ -120,8 +116,8 @@ class ActionStoreChange(Change):
         self, context: ChangeContext, apply: bool
     ) -> Result[SyftSuccess, SyftError]:
         try:
-            action_service: ActionService = context.node.get_service(ActionService)  # type: ignore[assignment]
-            blob_storage_service = context.node.get_service(BlobStorageService)
+            action_service: ActionService = context.server.get_service(ActionService)  # type: ignore[assignment]
+            blob_storage_service = context.server.get_service(BlobStorageService)
             action_store = action_service.store
 
             # can we ever have a lineage ID in the store?
@@ -216,22 +212,9 @@ class ActionStoreChange(Change):
 
 
 @serializable()
-class CreateCustomImageChangeV2(Change):
-    __canonical_name__ = "CreateCustomImageChange"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    config: WorkerConfig
-    tag: str
-    registry_uid: UID | None = None
-    pull_image: bool = True
-
-    __repr_attrs__ = ["config", "tag"]
-
-
-@serializable()
 class CreateCustomImageChange(Change):
     __canonical_name__ = "CreateCustomImageChange"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     config: WorkerConfig
     tag: str | None = None
@@ -250,7 +233,7 @@ class CreateCustomImageChange(Change):
         self, context: ChangeContext, apply: bool
     ) -> Result[SyftSuccess, SyftError]:
         try:
-            worker_image_service = context.node.get_service("SyftWorkerImageService")
+            worker_image_service = context.server.get_service("SyftWorkerImageService")
 
             service_context = context.to_service_ctx()
             result = worker_image_service.submit(
@@ -325,7 +308,7 @@ class CreateCustomImageChange(Change):
 @serializable()
 class CreateCustomWorkerPoolChange(Change):
     __canonical_name__ = "CreateCustomWorkerPoolChange"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     pool_name: str
     num_workers: int
@@ -347,7 +330,7 @@ class CreateCustomWorkerPoolChange(Change):
         # SyftError or SyftSuccess
         if apply:
             # get the worker pool service and try to launch a pool
-            worker_pool_service = context.node.get_service("SyftWorkerPoolService")
+            worker_pool_service = context.server.get_service("SyftWorkerPoolService")
             service_context: AuthedServiceContext = context.to_service_ctx()
 
             if self.config is not None:
@@ -393,63 +376,9 @@ class CreateCustomWorkerPoolChange(Change):
 
 
 @serializable()
-class CreateCustomWorkerPoolChangeV2(Change):
-    __canonical_name__ = "CreateCustomWorkerPoolChange"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    pool_name: str
-    num_workers: int
-    image_uid: UID | None = None
-    config: WorkerConfig | None = None
-
-    __repr_attrs__ = ["pool_name", "num_workers", "image_uid"]
-
-
-@serializable()
-class RequestV2(SyncableSyftObject):
-    __canonical_name__ = "Request"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    requesting_user_verify_key: SyftVerifyKey
-    requesting_user_name: str = ""
-    requesting_user_email: str | None = ""
-    requesting_user_institution: str | None = ""
-    approving_user_verify_key: SyftVerifyKey | None = None
-    request_time: DateTime
-    updated_at: DateTime | None = None
-    node_uid: UID
-    request_hash: str
-    changes: list[Change]
-    history: list[ChangeStatus] = []
-    __table_coll_widths__ = [
-        "min-content",
-        "auto",
-        "auto",
-        "auto",
-        "auto",
-        "auto",
-    ]
-
-    __attr_searchable__ = [
-        "requesting_user_verify_key",
-        "approving_user_verify_key",
-    ]
-    __attr_unique__ = ["request_hash"]
-    __repr_attrs__ = [
-        "request_time",
-        "updated_at",
-        "status",
-        "changes",
-        "requesting_user_verify_key",
-    ]
-    __exclude_sync_diff_attrs__ = ["node_uid", "changes", "history"]
-    __table_sort_attr__ = "Request time"
-
-
-@serializable()
 class Request(SyncableSyftObject):
     __canonical_name__ = "Request"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     requesting_user_verify_key: SyftVerifyKey
     requesting_user_name: str = ""
@@ -458,7 +387,7 @@ class Request(SyncableSyftObject):
     approving_user_verify_key: SyftVerifyKey | None = None
     request_time: DateTime
     updated_at: DateTime | None = None
-    node_uid: UID
+    server_uid: UID
     request_hash: str
     changes: list[Change]
     history: list[ChangeStatus] = []
@@ -485,7 +414,7 @@ class Request(SyncableSyftObject):
         "changes",
         "requesting_user_verify_key",
     ]
-    __exclude_sync_diff_attrs__ = ["node_uid", "changes", "history"]
+    __exclude_sync_diff_attrs__ = ["server_uid", "changes", "history"]
     __table_sort_attr__ = "Request time"
 
     def _repr_html_(self) -> Any:
@@ -506,7 +435,7 @@ class Request(SyncableSyftObject):
             str_changes_.append(str_change)
         str_changes = "\n".join(str_changes_)
         api = APIRegistry.api_for(
-            self.node_uid,
+            self.server_uid,
             self.syft_client_verify_key,
         )
         shared_with_line = ""
@@ -520,12 +449,14 @@ class Request(SyncableSyftObject):
                 f"outputs are <strong>shared</strong> with the owners of {owners_string} once computed"
             )
 
-        node_info = ""
+        server_info = ""
         if api is not None:
             metadata = api.services.metadata.get_metadata()
-            node_name = api.node_name.capitalize() if api.node_name is not None else ""
-            node_type = metadata.node_type.value.capitalize()
-            node_info = f"<p><strong>Requested on: </strong> {node_name} of type <strong>{node_type}</strong></p>"
+            server_name = (
+                api.server_name.capitalize() if api.server_name is not None else ""
+            )
+            server_type = metadata.server_type.value.capitalize()
+            server_info = f"<p><strong>Requested on: </strong> {server_name} of type <strong>{server_type}</strong></p>"
 
         email_str = (
             f"({self.requesting_user_email})" if self.requesting_user_email else ""
@@ -547,7 +478,7 @@ class Request(SyncableSyftObject):
                 {updated_at_line}
                 {shared_with_line}
                 <p><strong>Status: </strong>{self.status}</p>
-                {node_info}
+                {server_info}
                 <p><strong>Requested by:</strong> {self.requesting_user_name} {email_str} {institution_str}</p>
                 <p><strong>Changes: </strong> {str_changes}</p>
             </div>
@@ -677,7 +608,7 @@ class Request(SyncableSyftObject):
             )
         # TODO: Refactor so that object can also be passed to generate warnings
         if api.connection:
-            metadata = api.connection.get_node_metadata(api.signing_key)
+            metadata = api.connection.get_server_metadata(api.signing_key)
         else:
             metadata = None
         message = None
@@ -689,10 +620,10 @@ class Request(SyncableSyftObject):
                 message="Multiple codes detected, please use approve_nested=True"
             )
 
-        if metadata and metadata.node_side_type == NodeSideType.HIGH_SIDE.value:
+        if metadata and metadata.server_side_type == ServerSideType.HIGH_SIDE.value:
             message = (
                 "You're approving a request on "
-                f"{metadata.node_side_type} side {metadata.node_type} "
+                f"{metadata.server_side_type} side {metadata.server_type} "
                 "which may host datasets with private information."
             )
         if message and metadata and metadata.show_warnings and not disable_warnings:
@@ -700,7 +631,7 @@ class Request(SyncableSyftObject):
         msg = (
             "Approving request ",
             f"on change {self.code.service_func_name} " if is_code_request else "",
-            f"for domain {api.node_name}",
+            f"for datasite {api.server_name}",
         )
 
         print("".join(msg))
@@ -747,7 +678,7 @@ class Request(SyncableSyftObject):
                 message="This request is a low-side request. Please sync your results to approve."
             )
 
-        print(f"Approving request for domain {client.name}")
+        print(f"Approving request for datasite {client.name}")
         return client.api.services.request.apply(self.id)
 
     def apply(self, context: AuthedServiceContext) -> Result[SyftSuccess, SyftError]:
@@ -810,7 +741,7 @@ class Request(SyncableSyftObject):
         # relative
         from .request_service import RequestService
 
-        save_method = context.node.get_service_method(RequestService.save)
+        save_method = context.server.get_service_method(RequestService.save)
         return save_method(context=context, request=self)
 
     def _create_action_object_for_deposited_result(
@@ -833,19 +764,19 @@ class Request(SyncableSyftObject):
             action_object = ActionObject.from_obj(
                 result,
                 syft_client_verify_key=self.syft_client_verify_key,
-                syft_node_location=self.syft_node_location,
+                syft_server_location=self.syft_server_location,
             )
 
-        # Ensure ActionObject exists on this node
-        action_object_is_from_this_node = isinstance(
+        # Ensure ActionObject exists on this server
+        action_object_is_from_this_server = isinstance(
             api.services.action.exists(action_object.id.id), SyftSuccess
         )
         if (
             action_object.syft_blob_storage_entry_id is None
-            or not action_object_is_from_this_node
+            or not action_object_is_from_this_server
         ):
             action_object.reload_cache()
-            result = action_object._send(self.node_uid, self.syft_client_verify_key)
+            result = action_object._send(self.server_uid, self.syft_client_verify_key)
             if isinstance(result, SyftError):
                 return result
 
@@ -884,7 +815,7 @@ class Request(SyncableSyftObject):
         """
         Adds a result to this Request:
         - Create an ActionObject from the result (if not already an ActionObject)
-        - Ensure ActionObject exists on this node
+        - Ensure ActionObject exists on this server
         - Create Job with new result and logs
         - Update the output history
 
@@ -960,7 +891,7 @@ class Request(SyncableSyftObject):
 class RequestInfo(SyftObject):
     # version
     __canonical_name__ = "RequestInfo"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     user: UserView
     request: Request
@@ -971,7 +902,7 @@ class RequestInfo(SyftObject):
 class RequestInfoFilter(SyftObject):
     # version
     __canonical_name__ = "RequestInfoFilter"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     name: str | None = None
 
@@ -979,7 +910,7 @@ class RequestInfoFilter(SyftObject):
 @serializable()
 class SubmitRequest(SyftObject):
     __canonical_name__ = "SubmitRequest"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     changes: list[Change]
     requesting_user_verify_key: SyftVerifyKey | None = None
@@ -1012,8 +943,8 @@ def add_request_time(context: TransformContext) -> TransformContext:
 
 
 def check_requesting_user_verify_key(context: TransformContext) -> TransformContext:
-    if context.output and context.node and context.obj:
-        if context.obj.requesting_user_verify_key and context.node.is_root(
+    if context.output and context.server and context.obj:
+        if context.obj.requesting_user_verify_key and context.server.is_root(
             context.credentials
         ):
             context.output["requesting_user_verify_key"] = (
@@ -1026,10 +957,10 @@ def check_requesting_user_verify_key(context: TransformContext) -> TransformCont
 
 
 def add_requesting_user_info(context: TransformContext) -> TransformContext:
-    if context.output is not None and context.node is not None:
+    if context.output is not None and context.server is not None:
         try:
             user_key = context.output["requesting_user_verify_key"]
-            user_service = context.node.get_service("UserService")
+            user_service = context.server.get_service("UserService")
             user = user_service.get_by_verify_key(user_key)
             context.output["requesting_user_name"] = user.name
             context.output["requesting_user_email"] = user.email
@@ -1046,7 +977,7 @@ def add_requesting_user_info(context: TransformContext) -> TransformContext:
 def submit_request_to_request() -> list[Callable]:
     return [
         generate_id,
-        add_node_uid_for_key("node_uid"),
+        add_server_uid_for_key("server_uid"),
         add_request_time,
         check_requesting_user_verify_key,
         add_requesting_user_info,
@@ -1057,7 +988,7 @@ def submit_request_to_request() -> list[Callable]:
 @serializable()
 class ObjectMutation(Change):
     __canonical_name__ = "ObjectMutation"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     linked_obj: LinkedObject | None = None
     attr_name: str
@@ -1128,7 +1059,7 @@ def type_for_field(object_type: type, attr_name: str) -> type | None:
 @serializable()
 class EnumMutation(ObjectMutation):
     __canonical_name__ = "EnumMutation"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     enum_type: type[Enum]
     value: Enum | None = None
@@ -1200,7 +1131,7 @@ class EnumMutation(ObjectMutation):
 @serializable()
 class UserCodeStatusChange(Change):
     __canonical_name__ = "UserCodeStatusChange"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     value: UserCodeStatus
     linked_obj: LinkedObject
@@ -1227,25 +1158,25 @@ class UserCodeStatusChange(Change):
 
     @property
     def codes(self) -> list[UserCode]:
-        def recursive_code(node: Any) -> list:
+        def recursive_code(server: Any) -> list:
             codes = []
-            for obj, new_node in node.values():
+            for obj, new_server in server.values():
                 codes.append(obj.resolve)
-                codes.extend(recursive_code(new_node))
+                codes.extend(recursive_code(new_server))
             return codes
 
         codes = [self.code]
         codes.extend(recursive_code(self.code.nested_codes))
         return codes
 
-    def nested_repr(self, node: Any | None = None, level: int = 0) -> str:
+    def nested_repr(self, server: Any | None = None, level: int = 0) -> str:
         msg = ""
-        if node is None:
-            node = self.code.nested_codes
+        if server is None:
+            server = self.code.nested_codes
 
-        for service_func_name, (_, new_node) in node.items():  # type: ignore
+        for service_func_name, (_, new_server) in server.items():  # type: ignore
             msg = "├──" + "──" * level + f"{service_func_name}<br>"
-            msg += self.nested_repr(node=new_node, level=level + 1)
+            msg += self.nested_repr(server=new_server, level=level + 1)
         return msg
 
     def __repr_syft_nested__(self) -> str:
@@ -1310,18 +1241,18 @@ class UserCodeStatusChange(Change):
         if not undo:
             res = status.mutate(
                 value=(self.value, reason),
-                node_name=context.node.name,
-                node_id=context.node.id,
-                verify_key=context.node.signing_key.verify_key,
+                server_name=context.server.name,
+                server_id=context.server.id,
+                verify_key=context.server.signing_key.verify_key,
             )
             if isinstance(res, SyftError):
                 return res
         else:
             res = status.mutate(
                 value=(UserCodeStatus.DENIED, reason),
-                node_name=context.node.name,
-                node_id=context.node.id,
-                verify_key=context.node.signing_key.verify_key,
+                server_name=context.server.name,
+                server_id=context.server.id,
+                verify_key=context.server.signing_key.verify_key,
             )
         return res
 
@@ -1376,7 +1307,7 @@ class UserCodeStatusChange(Change):
 @serializable()
 class SyncedUserCodeStatusChange(UserCodeStatusChange):
     __canonical_name__ = "SyncedUserCodeStatusChange"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
     linked_obj: LinkedObject | None = None  # type: ignore
 
     @property
@@ -1404,17 +1335,3 @@ class SyncedUserCodeStatusChange(UserCodeStatusChange):
 
     def link(self) -> Any:  # type: ignore
         return self.code.status
-
-
-@migrate(RequestV2, Request)
-def migrate_request_v2_to_v3() -> list[Callable]:
-    return [
-        make_set_default("tags", []),
-    ]
-
-
-@migrate(Request, RequestV2)
-def migrate_usercode_v5_to_v4() -> list[Callable]:
-    return [
-        drop("tags"),
-    ]

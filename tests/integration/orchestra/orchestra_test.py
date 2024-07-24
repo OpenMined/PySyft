@@ -7,38 +7,38 @@ import requests
 
 # syft absolute
 import syft as sy
-from syft.node.node import Node
+from syft.server.server import Server
 
 
-@pytest.mark.parametrize("node_type", ["domain", "gateway", "enclave"])
-def test_orchestra_python_local(node_type):
+@pytest.mark.parametrize("server_type", ["datasite", "gateway", "enclave"])
+def test_orchestra_python_local(server_type):
     name = token_hex(8)
-    node = sy.orchestra.launch(name=name, node_type=node_type, local_db=False)
+    server = sy.orchestra.launch(name=name, server_type=server_type, local_db=False)
 
     try:
-        assert isinstance(node.python_node, Node)
-        assert node.python_node.name == name
-        assert node.python_node.node_type == node_type
-        assert node.python_node.metadata.node_type == node_type
+        assert isinstance(server.python_server, Server)
+        assert server.python_server.name == name
+        assert server.python_server.server_type == server_type
+        assert server.python_server.metadata.server_type == server_type
     finally:
-        node.python_node.cleanup()
-        node.land()
+        server.python_server.cleanup()
+        server.land()
 
 
-@pytest.mark.parametrize("node_type", ["domain", "gateway", "enclave"])
-def test_orchestra_python_server(node_type):
+@pytest.mark.parametrize("server_type", ["datasite", "gateway", "enclave"])
+def test_orchestra_python_server(server_type):
     name = token_hex(8)
-    node = sy.orchestra.launch(
+    server = sy.orchestra.launch(
         name=name,
         port="auto",
-        node_type=node_type,
+        server_type=server_type,
         local_db=False,
     )
 
     try:
-        metadata = requests.get(f"http://localhost:{node.port}/api/v2/metadata")
+        metadata = requests.get(f"http://localhost:{server.port}/api/v2/metadata")
         assert metadata.status_code == 200
         assert metadata.json()["name"] == name
-        assert metadata.json()["node_type"] == node_type
+        assert metadata.json()["server_type"] == server_type
     finally:
-        node.land()
+        server.land()

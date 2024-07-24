@@ -8,10 +8,10 @@ from typing_extensions import Self
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
-from ...types.transforms import add_node_uid_for_key
+from ...types.transforms import add_server_uid_for_key
 from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.uid import UID
@@ -25,9 +25,9 @@ NamePartitionKey = PartitionKey(key="name", type_=str)
 class DataSubject(SyftObject):
     # version
     __canonical_name__ = "DataSubject"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
-    node_uid: UID
+    server_uid: UID
     name: str
     description: str | None = None
     aliases: list[str] = []
@@ -37,9 +37,9 @@ class DataSubject(SyftObject):
         # relative
         from ...client.api import APIRegistry
 
-        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
+        api = APIRegistry.api_for(self.server_uid, self.syft_client_verify_key)
         if api is None:
-            return SyftError(message=f"You must login to {self.node_uid}")
+            return SyftError(message=f"You must login to {self.server_uid}")
         members = api.services.data_subject.members_for(self.name)
         return members
 
@@ -71,7 +71,7 @@ class DataSubject(SyftObject):
 class DataSubjectCreate(SyftObject):
     # version
     __canonical_name__ = "DataSubjectCreate"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID | None = None  # type: ignore[assignment]
     name: str
@@ -131,4 +131,4 @@ def remove_members_list(context: TransformContext) -> TransformContext:
 
 @transform(DataSubjectCreate, DataSubject)
 def create_data_subject_to_data_subject() -> list[Callable]:
-    return [generate_id, remove_members_list, add_node_uid_for_key("node_uid")]
+    return [generate_id, remove_members_list, add_server_uid_for_key("server_uid")]
