@@ -69,6 +69,16 @@ class RequestService(AbstractService):
             )
             if result.is_ok():
                 request = result.ok()
+
+                # Apply Post Create Hooks to the request
+                for change in request.changes:
+                    create_hook_res = change.post_create_hook(
+                        context=context, request=request
+                    )
+                    if isinstance(create_hook_res, SyftError):
+                        return create_hook_res
+
+                # Creating Notification
                 link = LinkedObject.with_context(request, context=context)
 
                 admin_verify_key = context.server.get_service_method(
@@ -76,6 +86,7 @@ class RequestService(AbstractService):
                 )
 
                 root_verify_key = admin_verify_key()
+
                 if send_message:
                     subject_msg = f"Result to request {str(request.id)[:4]}...{str(request.id)[-3:]}\
                         has been successfully deposited."
@@ -89,12 +100,17 @@ class RequestService(AbstractService):
                     )
                     method = context.server.get_service_method(NotificationService.send)
                     result = method(context=context, notification=message)
+
+                    # do we override the return here?
                     if isinstance(result, Notification):
                         return request
                     else:
-                        return SyftError(
-                            message=f"Failed to send notification: {result.err()}"
-                        )
+                        if isinstance(result, SyftError):
+                            return result
+                        else:
+                            return SyftError(
+                                message=f"Failed to send notification: {str(result)}"
+                            )
 
                 return request
 

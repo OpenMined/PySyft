@@ -710,6 +710,12 @@ class SyftClient:
             raise ValueError("SigningKey not set on client")
         return self.credentials.verify_key
 
+    @property
+    def root_verify_key(self) -> SyftVerifyKey:
+        if self.metadata is None:
+            raise ValueError("Metadata not set on client")
+        return SyftVerifyKey.from_string(self.metadata.verify_key)
+
     @classmethod
     def from_url(cls, url: str | ServerURL) -> Self:
         return cls(connection=HTTPConnection(url=ServerURL.from_url(url)))

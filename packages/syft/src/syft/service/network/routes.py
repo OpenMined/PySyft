@@ -66,7 +66,9 @@ class ServerRoute:
 
         # generating a random challenge
         random_challenge = secrets.token_bytes(16)
-        challenge_signature = self_client.api.services.network.ping(random_challenge)
+        challenge_signature = self_client.api.services.network.challenge_nonce(
+            random_challenge
+        )
 
         if isinstance(challenge_signature, SyftError):
             return challenge_signature

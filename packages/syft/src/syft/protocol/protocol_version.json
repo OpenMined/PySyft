@@ -1,5 +1,135 @@
 {
   "1": {
     "release_name": "0.8.7.json"
+  },
+  "dev": {
+    "object_versions": {
+      "EnclaveMetadata": {
+        "1": {
+          "version": 1,
+          "hash": "8d2dfafa01ec909c080a790cf15a8fc78e00382d3bfe6207098ceb25a60b9c53",
+          "action": "add"
+        }
+      },
+      "EnclaveInstance": {
+        "1": {
+          "version": 1,
+          "hash": "f923fd76e25b851901d44bc9f75a311ecacce00e789777de9e94833e61fe98e8",
+          "action": "add"
+        }
+      },
+      "RunOnEnclave": {
+        "1": {
+          "version": 1,
+          "hash": "661ffff19beb43978bd2d264da9b510cbb33b6547db4f6739f0bdf678cbd0b9d",
+          "action": "add"
+        }
+      },
+      "UserCode": {
+        "2": {
+          "version": 2,
+          "hash": "2a928e5a6104df764161e1dc72866a89f06a78b24eac7f3703fd21e9405a8d3d",
+          "action": "add"
+        }
+      },
+      "SubmitUserCode": {
+        "2": {
+          "version": 2,
+          "hash": "7ff1f35fc81bc5240b8e1a6e2d265882877f999d947139b1fdac3e498d02aba9",
+          "action": "add"
+        }
+      },
+      "ModelPageView": {
+        "1": {
+          "version": 1,
+          "hash": "806eaa772a78b833137cb1abc9d80c5e064bbcd21314a1c202ee756837a8121d",
+          "action": "add"
+        }
+      },
+      "ModelAsset": {
+        "1": {
+          "version": 1,
+          "hash": "65177fc501311e783c1bddc33962112ff985b8c7b947db2e5959c924c08d9ed1",
+          "action": "add"
+        }
+      },
+      "SubmitModelCode": {
+        "1": {
+          "version": 1,
+          "hash": "074e079e777e2b38bd98893ecc2102ac97151f6d16c01a183dc2230e56fcd96b",
+          "action": "add"
+        }
+      },
+      "CreateModelAsset": {
+        "1": {
+          "version": 1,
+          "hash": "180154b131e098338f7d85a40358eae077d899969f77b6cd177b67834a1d5464",
+          "action": "add"
+        }
+      },
+      "Model": {
+        "1": {
+          "version": 1,
+          "hash": "551387bbd6ddf926b70b87d4b4f419df35e28e72978c98786ed94e0483f3818f",
+          "action": "add"
+        }
+      },
+      "CreateModel": {
+        "1": {
+          "version": 1,
+          "hash": "1381a04badf88098978932edce67ef9a11e88a8271e7a3c3618eff18588028ec",
+          "action": "add"
+        }
+      },
+      "ModelRef": {
+        "1": {
+          "version": 1,
+          "hash": "a723e56ca42b735eac9e6ca32aa4e4c423fcfd96578a0e66df3331a5c8969747",
+          "action": "add"
+        }
+      },
+      "AssociationRequestChange": {
+        "2": {
+          "version": 2,
+          "hash": "5f73ea150e3b08c28b2d9e7e7d8b7a00eb73f69f80e9c7760589d44729300d4b",
+          "action": "add"
+        }
+      },
+      "ProjectRequestResponse": {
+        "2": {
+          "version": 2,
+          "hash": "e26a7080b198c7f0d936c6a7fcfe776c706d381698812509984def628c3eb5fc",
+          "action": "add"
+        }
+      },
+      "ProjectRequest": {
+        "2": {
+          "version": 2,
+          "hash": "477118d553747d2e201bcbe055798983c2e410c7dec589ddc635525a28e2f37d",
+          "action": "add"
+        }
+      },
+      "ProjectCode": {
+        "1": {
+          "version": 1,
+          "hash": "7254fc3c1574c8148ccb258e995c2826c6f35e210406e2d4c55f4e17832c05fe",
+          "action": "add"
+        }
+      },
+      "SyftFile": {
+        "1": {
+          "version": 1,
+          "hash": "016119165ba4868f03364e79192e7e8face085ff1998a1920423fd5822ca5443",
+          "action": "add"
+        }
+      },
+      "SyftFolder": {
+        "1": {
+          "version": 1,
+          "hash": "26bb701dcf2012589b476ba83a67d4405baf12da9628ac490bcd23e343e60645",
+          "action": "add"
+        }
+      }
+    }
   }
 }

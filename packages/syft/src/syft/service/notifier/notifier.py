@@ -100,9 +100,9 @@ class EmailNotifier(BaseNotifier):
                 sender=self.sender, receiver=receiver_email, subject=subject, body=body
             )
             return Ok("Email sent successfully!")
-        except Exception:
+        except Exception as e:
             return Err(
-                "Some notifications failed to be delivered. Please check the health of the mailing server."
+                f"Some notifications failed to be delivered. Please check the health of the mailing server. {e}"
             )
 
 

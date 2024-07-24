@@ -58,15 +58,21 @@ from .service.data_subject import DataSubjectCreate as DataSubject
 from .service.dataset.dataset import Contributor
 from .service.dataset.dataset import CreateAsset as Asset
 from .service.dataset.dataset import CreateDataset as Dataset
+from .service.model.model import CreateModel as Model
+from .service.model.model import CreateModelAsset as ModelAsset
+from .service.model.model import SyftModelClass
+from .service.model.model import syft_model
 from .service.notification.notifications import NotificationStatus
 from .service.policy.policy import CreatePolicyRuleConstant as Constant
 from .service.policy.policy import CustomInputPolicy
 from .service.policy.policy import CustomOutputPolicy
 from .service.policy.policy import ExactMatch
 from .service.policy.policy import MixedInputPolicy
+from .service.policy.policy import RunOnEnclave  # noqa: F401
 from .service.policy.policy import SingleExecutionExactOutput
 from .service.policy.policy import UserInputPolicy
 from .service.policy.policy import UserOutputPolicy
+from .service.project.distributed_project import DistributedProject  # noqa: F401
 from .service.project.project import ProjectSubmit as Project
 from .service.request.request import SubmitRequest as Request
 from .service.response import SyftError
@@ -75,6 +81,7 @@ from .service.response import SyftSuccess
 from .service.user.roles import Roles as roles
 from .service.user.user_service import UserService
 from .stable_version import LATEST_STABLE_SYFT
+from .types.file import SyftFolder
 from .types.twin_object import TwinObject
 from .types.uid import UID
 from .util import filterwarnings

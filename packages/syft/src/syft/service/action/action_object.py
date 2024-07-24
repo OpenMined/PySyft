@@ -795,7 +795,9 @@ class ActionObject(SyncableSyftObject):
 
         return None
 
-    def _save_to_blob_storage_(self, data: Any) -> SyftError | SyftWarning | None:
+    def _save_to_blob_storage_(
+        self, data: Any, client: SyftClient | None
+    ) -> SyftError | SyftWarning | None:
         # relative
         from ...types.blob_storage import BlobFile
         from ...types.blob_storage import CreateBlobStorageEntry
@@ -803,16 +805,25 @@ class ActionObject(SyncableSyftObject):
         if not isinstance(data, ActionDataEmpty):
             if isinstance(data, BlobFile):
                 if not data.uploaded:
-                    api = APIRegistry.api_for(
-                        self.syft_server_location, self.syft_client_verify_key
+                    api = (
+                        APIRegistry.api_for(
+                            self.syft_server_location, self.syft_client_verify_key
+                        )
+                        if client is None
+                        else client.api
                     )
                     data._upload_to_blobstorage_from_api(api)
             else:
-                get_metadata = from_api_or_context(
-                    func_or_path="metadata.get_metadata",
-                    syft_server_location=self.syft_server_location,
-                    syft_client_verify_key=self.syft_client_verify_key,
+                get_metadata = (
+                    from_api_or_context(
+                        func_or_path="metadata.get_metadata",
+                        syft_server_location=self.syft_server_location,
+                        syft_client_verify_key=self.syft_client_verify_key,
+                    )
+                    if client is None
+                    else client.api.services.metadata.get_metadata
                 )
+
                 if get_metadata is not None and not can_upload_to_blob_storage(
                     data, get_metadata()
                 ):
@@ -824,16 +835,20 @@ class ActionObject(SyncableSyftObject):
                 serialized = serialize(data, to_bytes=True)
                 size = sys.getsizeof(serialized)
                 storage_entry = CreateBlobStorageEntry.from_obj(data, file_size=size)
-
+                print("storage entry id", storage_entry.id)
                 if not TraceResultRegistry.current_thread_is_tracing():
                     self.syft_action_data_cache = self.as_empty_data()
                 if self.syft_blob_storage_entry_id is not None:
                     # TODO: check if it already exists
                     storage_entry.id = self.syft_blob_storage_entry_id
-                allocate_method = from_api_or_context(
-                    func_or_path="blob_storage.allocate",
-                    syft_server_location=self.syft_server_location,
-                    syft_client_verify_key=self.syft_client_verify_key,
+                allocate_method = (
+                    from_api_or_context(
+                        func_or_path="blob_storage.allocate",
+                        syft_server_location=self.syft_server_location,
+                        syft_client_verify_key=self.syft_client_verify_key,
+                    )
+                    if client is None
+                    else client.api.services.blob_storage.allocate
                 )
                 if allocate_method is not None:
                     blob_deposit_object = allocate_method(storage_entry)
@@ -863,7 +878,7 @@ class ActionObject(SyncableSyftObject):
         return None
 
     def _save_to_blob_storage(
-        self, allow_empty: bool = False
+        self, allow_empty: bool = False, client: SyftClient | None = None
     ) -> SyftError | SyftSuccess | SyftWarning:
         data = self.syft_action_data
         if isinstance(data, SyftError):
@@ -875,7 +890,7 @@ class ActionObject(SyncableSyftObject):
             )
 
         try:
-            result = self._save_to_blob_storage_(data)
+            result = self._save_to_blob_storage_(data, client=client)
             if isinstance(result, SyftError | SyftWarning):
                 return result
             if not TraceResultRegistry.current_thread_is_tracing():

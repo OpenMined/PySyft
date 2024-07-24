@@ -186,6 +186,9 @@ def deploy_to_python(
     background_tasks: bool = False,
     debug: bool = False,
     migrate: bool = False,
+    profile: bool = False,
+    profile_interval: float = 0.001,
+    profile_dir: str | None = None,
 ) -> ServerHandle:
     worker_classes = {
         ServerType.DATASITE: Datasite,
@@ -215,6 +218,9 @@ def deploy_to_python(
         "background_tasks": background_tasks,
         "debug": debug,
         "migrate": migrate,
+        "profile": profile,
+        "profile_interval": profile_interval,
+        "profile_dir": profile_dir,
     }
 
     if port:
@@ -325,6 +331,10 @@ class Orchestra:
         background_tasks: bool = False,
         debug: bool = False,
         migrate: bool = False,
+        # Profiling Related Input for in-memory fastapi server
+        profile: bool = False,
+        profile_interval: float = 0.001,
+        profile_dir: str | None = None,
     ) -> ServerHandle:
         if dev_mode is True:
             thread_workers = True
@@ -363,6 +373,9 @@ class Orchestra:
                 background_tasks=background_tasks,
                 debug=debug,
                 migrate=migrate,
+                profile=profile,
+                profile_interval=profile_interval,
+                profile_dir=profile_dir,
             )
             display(
                 SyftInfo(

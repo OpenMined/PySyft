@@ -28,26 +28,34 @@ class SMTPClient:
         self.port = port
 
     def send(self, sender: str, receiver: list[str], subject: str, body: str) -> None:
-        if not (subject and body and receiver):
-            raise ValueError("Subject, body, and recipient email(s) are required")
+        # TODO remove the below comment after testing
+        # print(
+        #     "sending email", self.server, self.username, self.password, sender, receiver
+        # )
+        try:
+            if not (subject and body and receiver):
+                raise ValueError("Subject, body, and recipient email(s) are required")
 
-        msg = MIMEMultipart("alternative")
-        msg["From"] = sender
-        msg["To"] = ", ".join(receiver)
-        msg["Subject"] = subject
-        msg.attach(MIMEText(body, "html"))
+            msg = MIMEMultipart("alternative")
+            msg["From"] = sender
+            msg["To"] = ", ".join(receiver)
+            msg["Subject"] = subject
+            msg.attach(MIMEText(body, "html"))
 
-        with smtplib.SMTP(
-            self.server, self.port, timeout=self.SOCKET_TIMEOUT
-        ) as server:
-            server.ehlo()
-            if server.has_extn("STARTTLS"):
-                server.starttls()
+            with smtplib.SMTP(
+                self.server, self.port, timeout=self.SOCKET_TIMEOUT
+            ) as server:
                 server.ehlo()
-            server.login(self.username, self.password)
-            text = msg.as_string()
-            server.sendmail(sender, ", ".join(receiver), text)
-        # TODO: Add error handling
+                if server.has_extn("STARTTLS"):
+                    server.starttls()
+                    server.ehlo()
+                server.login(self.username, self.password)
+                text = msg.as_string()
+                server.sendmail(sender, ", ".join(receiver), text)
+            # TODO: Add error handling
+        except Exception as e:
+            print("Got exception sending mail", e)
+            raise e
 
     @classmethod
     def check_credentials(

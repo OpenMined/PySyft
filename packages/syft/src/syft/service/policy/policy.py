@@ -33,6 +33,7 @@ from ...client.api import ServerIdentity
 from ...serde.recursive_primitives import recursive_serde_register_type
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
+from ...service.enclave.enclave import EnclaveInstance
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -146,6 +147,7 @@ def partition_by_server(kwargs: dict[str, Any]) -> dict[ServerIdentity, dict[str
     from ...client.api import ServerIdentity
     from ...types.twin_object import TwinObject
     from ..action.action_object import ActionObject
+    from ..model.model import Model
 
     # fetches the all the current api's connected
     api_list = APIRegistry.get_all_api()
@@ -160,6 +162,8 @@ def partition_by_server(kwargs: dict[str, Any]) -> dict[ServerIdentity, dict[str
             uid = v.custom_function_actionobject_id()
         if isinstance(v, Asset):
             uid = v.action_id
+        if isinstance(v, Model):
+            uid = v.id
         if not isinstance(uid, UID):
             raise Exception(f"Input {k} must have a UID not {type(v)}")
 
@@ -574,32 +578,33 @@ def retrieve_from_db(
     # relative
     from ...service.action.action_object import TwinMode
 
+    if context.server.server_type not in {ServerType.DATASITE, ServerType.ENCLAVE}:
+        raise Exception(
+            f"Invalid Server Type for Code Submission:{context.server.server_type}"
+        )
     action_service = context.server.get_service("actionservice")
-    code_inputs = {}
+    code_inputs: dict = {}
 
     # When we are retrieving the code from the database, we need to use the server's
     # verify key as the credentials. This is because when we approve the code, we
     # we allow the private data to be used only for this specific code.
     # but we are not modifying the permissions of the private data
+    root_context = context.as_root_context()
 
-    root_context = AuthedServiceContext(
-        server=context.server, credentials=context.server.verify_key
-    )
-    if context.server.server_type == ServerType.DATASITE:
-        for var_name, arg_id in allowed_inputs.items():
-            kwarg_value = action_service._get(
-                context=root_context,
-                uid=arg_id,
-                twin_mode=TwinMode.NONE,
-                has_permission=True,
-            )
-            if kwarg_value.is_err():
-                return Err(kwarg_value.err())
-            code_inputs[var_name] = kwarg_value.ok()
-    else:
-        raise Exception(
-            f"Invalid Server Type for Code Submission:{context.server.server_type}"
+    action_service = context.server.get_service("actionservice")
+    code_inputs = {}
+
+    for var_name, arg_id in allowed_inputs.items():
+        kwarg_value = action_service._get(
+            context=root_context,
+            uid=arg_id,
+            twin_mode=TwinMode.NONE,
+            has_permission=True,
         )
+        if kwarg_value.is_err():
+            return Err(kwarg_value.err())
+        code_inputs[var_name] = kwarg_value.ok()
+
     return Ok(code_inputs)
 
 
@@ -799,6 +804,28 @@ class OutputPolicyExecuteOnce(OutputPolicyExecuteCount):
 
 
 SingleExecutionExactOutput = OutputPolicyExecuteOnce
+
+
+class RuntimePolicy(Policy):
+    __canonical_name__ = "RuntimePolicy"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+
+class EmptyRuntimePolicy(RuntimePolicy):
+    __canonical_name__ = "EmptyRuntimePolicy"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+
+@serializable()
+class RunOnEnclave(RuntimePolicy):
+    __canonical_name__ = "RunOnEnclave"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    provider: EnclaveInstance
+
+    def is_valid(self, *args: list, **kwargs: dict) -> SyftSuccess | SyftError:  # type: ignore
+        # TODO verify validitity of the enclave instance
+        return SyftSuccess(message="Policy is valid.")
 
 
 @serializable(canonical_name="CustomPolicy", version=1)

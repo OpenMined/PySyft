@@ -19,11 +19,13 @@ from ..service.code_history.code_history_service import CodeHistoryService
 from ..service.data_subject.data_subject_member_service import DataSubjectMemberService
 from ..service.data_subject.data_subject_service import DataSubjectService
 from ..service.dataset.dataset_service import DatasetService
+from ..service.enclave.datasite_enclave_service import DatasiteEnclaveService
 from ..service.enclave.enclave_service import EnclaveService
 from ..service.job.job_service import JobService
 from ..service.log.log_service import LogService
 from ..service.metadata.metadata_service import MetadataService
 from ..service.migration.migration_service import MigrationService
+from ..service.model.model_service import ModelService
 from ..service.network.network_service import NetworkService
 from ..service.notification.notification_service import NotificationService
 from ..service.notifier.notifier_service import NotifierService
@@ -51,7 +53,6 @@ if TYPE_CHECKING:
 class ServiceRegistry:
     action: ActionService
     user: UserService
-    attestation: AttestationService
     worker: WorkerService
     settings: SettingsService
     dataset: DatasetService
@@ -68,7 +69,6 @@ class ServiceRegistry:
     notification: NotificationService
     data_subject_member: DataSubjectMemberService
     project: ProjectService
-    enclave: EnclaveService
     code_history: CodeHistoryService
     metadata: MetadataService
     blob_storage: BlobStorageService
@@ -79,6 +79,12 @@ class ServiceRegistry:
     sync: SyncService
     output: OutputService
     user_code_status: UserCodeStatusService
+    model: ModelService
+
+    # Encalve services
+    enclave: EnclaveService
+    datasite_enclave: DatasiteEnclaveService
+    attestation: AttestationService
 
     services: list[AbstractService] = field(default_factory=list, init=False)
     service_path_map: dict[str, AbstractService] = field(

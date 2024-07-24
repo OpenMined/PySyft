@@ -87,6 +87,24 @@ class Change(SyftObject):
     def change_object_is_type(self, type_: type) -> bool:
         return self.linked_obj is not None and type_ == self.linked_obj.object_type
 
+    # TODO: remove Any in argument by moving changes to a different file,
+    # this is done as changes and request have a catch 22 situation in order of the code.
+    # Runs a post hook after the change is created, applied, or undone
+    def post_create_hook(
+        self, context: ChangeContext, request: Any
+    ) -> SyftSuccess | SyftError | None:
+        pass
+
+    def post_apply_hook(
+        self, context: ChangeContext, request: Any
+    ) -> SyftSuccess | SyftError | None:
+        pass
+
+    def post_undo_hook(
+        self, context: ChangeContext, request: Any
+    ) -> SyftSuccess | SyftError | None:
+        pass
+
 
 @serializable()
 class ChangeStatus(SyftObject):
@@ -694,6 +712,11 @@ class Request(SyncableSyftObject):
                 self.save(context=context)
                 return result
 
+            # Apply Post Apply Hook
+            apply_hook_res = change.post_apply_hook(context=context, request=self)
+            if isinstance(apply_hook_res, SyftError):
+                return apply_hook_res
+
             # If no error, then change successfully applied.
             change_status.applied = True
             self.history.append(change_status)
@@ -722,6 +745,11 @@ class Request(SyncableSyftObject):
                 self.history.append(change_status)
                 self.save(context=context)
                 return result
+
+            # Apply Post Apply Hook
+            undo_hook_res = change.post_undo_hook(context=context, request=self)
+            if isinstance(undo_hook_res, SyftError):
+                return undo_hook_res
 
             # If no error, then change successfully undone.
             change_status.applied = False
@@ -1298,6 +1326,82 @@ class UserCodeStatusChange(Change):
     def link(self) -> SyftObject | None:
         if self.linked_obj:
             return self.linked_obj.resolve
+        return None
+
+    def post_create_hook(
+        self, context: ChangeContext, request: Request
+    ) -> SyftSuccess | SyftError | None:
+        # relative
+        from ..project.project import Project
+        from ..project.project_service import ProjectService
+
+        code = self.get_user_code(context)
+
+        # Perform Post Create Hook only when the code is part of a project
+        if isinstance(code.project_id, UID):
+            project_service = context.server.get_service(ProjectService)
+
+            root_context = context.as_root_context()
+            project_obj: Project = project_service.get_by_uid(
+                root_context, uid=code.project_id
+            )
+            if isinstance(project_obj, SyftError):
+                return project_obj
+
+            req_res = project_obj.add_request(request, code_id=code.id)
+            return req_res
+        return None
+
+    def post_apply_hook(
+        self, context: ChangeContext, request: Request
+    ) -> SyftSuccess | SyftError | None:
+        # relative
+        from ..project.project import Project
+        from ..project.project_service import ProjectService
+
+        code = self.get_user_code(context)
+
+        # Perform Post Apply Hook only when the code is part of a project
+        if isinstance(code.project_id, UID):
+            project_service = context.server.get_service(ProjectService)
+
+            root_context = context.as_root_context()
+            project_obj: Project = project_service.get_by_uid(
+                root_context, uid=code.project_id
+            )
+            if isinstance(project_obj, SyftError):
+                return project_obj
+
+            req_res = project_obj.add_request_response(
+                request_id=request.id, response=RequestStatus.APPROVED
+            )
+            return req_res
+        return None
+
+    def post_undo_hook(
+        self, context: ChangeContext, request: Request
+    ) -> SyftSuccess | SyftError | None:
+        # relative
+        from ..project.project import Project
+        from ..project.project_service import ProjectService
+
+        code = self.get_user_code(context)
+
+        # Perform Post Apply Hook only when the code is part of a project
+        if isinstance(code.project_id, UID):
+            project_service = context.server.get_service(ProjectService)
+
+            root_context = context.as_root_context()
+            project_obj: Project = project_service.get_by_uid(
+                root_context, uid=code.project_id
+            )
+            if isinstance(project_obj, SyftError):
+                return project_obj
+
+            req_res = project_obj.add_request_response(
+                request_id=request.id, response=RequestStatus.REJECTED
+            )
+            return req_res
         return None
 
 

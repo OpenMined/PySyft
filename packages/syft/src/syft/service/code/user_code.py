@@ -54,11 +54,14 @@ from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import add_server_uid_for_key
 from ...types.transforms import generate_id
+from ...types.transforms import keep
+from ...types.transforms import rename
 from ...types.transforms import transform
 from ...types.uid import UID
 from ...util import options
@@ -80,10 +83,12 @@ from ..output.output_service import OutputService
 from ..policy.policy import Constant
 from ..policy.policy import CustomInputPolicy
 from ..policy.policy import CustomOutputPolicy
+from ..policy.policy import EmptyRuntimePolicy
 from ..policy.policy import EmpyInputPolicy
 from ..policy.policy import ExactMatch
 from ..policy.policy import InputPolicy
 from ..policy.policy import OutputPolicy
+from ..policy.policy import RuntimePolicy
 from ..policy.policy import SingleExecutionExactOutput
 from ..policy.policy import SubmitUserPolicy
 from ..policy.policy import UserPolicy
@@ -273,7 +278,7 @@ class UserCodeStatusCollection(SyncableSyftObject):
 
 
 @serializable()
-class UserCode(SyncableSyftObject):
+class UserCodeV1(SyncableSyftObject):
     # version
     __canonical_name__ = "UserCode"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -305,6 +310,45 @@ class UserCode(SyncableSyftObject):
     origin_server_side_type: ServerSideType
     l0_deny_reason: str | None = None
     _has_output_read_permissions_cache: bool | None = None
+
+
+@serializable()
+class UserCode(SyncableSyftObject):
+    # version
+    __canonical_name__ = "UserCode"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    id: UID
+    server_uid: UID | None = None
+    user_verify_key: SyftVerifyKey
+    raw_code: str
+    input_policy_type: type[InputPolicy] | UserPolicy
+    input_policy_init_kwargs: dict[Any, Any] | None = None
+    input_policy_state: bytes = b""
+    output_policy_type: type[OutputPolicy] | UserPolicy
+    output_policy_init_kwargs: dict[Any, Any] | None = None
+    output_policy_state: bytes = b""
+    runtime_policy_type: type[RuntimePolicy] | UserPolicy
+    runtime_policy_init_kwargs: dict[Any, Any] | None = None
+    runtime_policy_state: bytes = b""
+    parsed_code: str
+    service_func_name: str
+    unique_func_name: str
+    user_unique_func_name: str
+    code_hash: str
+    signature: inspect.Signature
+    status_link: LinkedObject | None = None
+    input_kwargs: list[str]
+    submit_time: DateTime | None = None
+    # tracks if the code calls datasite.something, variable is set during parsing
+    uses_datasite: bool = False
+
+    nested_codes: dict[str, tuple[LinkedObject, dict]] | None = {}
+    worker_pool_name: str | None = None
+    origin_server_side_type: ServerSideType
+    l0_deny_reason: str | None = None
+    _has_output_read_permissions_cache: bool | None = None
+    project_id: UID | None = None
 
     __table_coll_widths__ = [
         "min-content",
@@ -341,6 +385,9 @@ class UserCode(SyncableSyftObject):
         "output_policy_type",
         "output_policy_init_kwargs",
         "output_policy_state",
+        "runtime_policy_type",
+        "runtime_policy_init_kwargs",
+        "runtime_policy_state",
     ]
 
     @field_validator("service_func_name", mode="after")
@@ -1007,7 +1054,7 @@ class UserCodeUpdate(PartialSyftObject):
 
 
 @serializable(without=["local_function"])
-class SubmitUserCode(SyftObject):
+class SubmitUserCodeV1(SyftObject):
     # version
     __canonical_name__ = "SubmitUserCode"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -1023,6 +1070,28 @@ class SubmitUserCode(SyftObject):
     local_function: Callable | None = None
     input_kwargs: list[str]
     worker_pool_name: str | None = None
+
+
+@serializable(without=["local_function"])
+class SubmitUserCode(SyftObject):
+    # version
+    __canonical_name__ = "SubmitUserCode"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    id: UID | None = None  # type: ignore[assignment]
+    code: str
+    func_name: str
+    signature: inspect.Signature
+    input_policy_type: SubmitUserPolicy | UID | type[InputPolicy]
+    input_policy_init_kwargs: dict[Any, Any] | None = {}
+    output_policy_type: SubmitUserPolicy | UID | type[OutputPolicy]
+    output_policy_init_kwargs: dict[Any, Any] | None = {}
+    runtime_policy_type: SubmitUserPolicy | UID | type[RuntimePolicy]
+    runtime_policy_init_kwargs: dict[Any, Any] | None = {}
+    local_function: Callable | None = None
+    input_kwargs: list[str]
+    worker_pool_name: str | None = None
+    project_id: UID | None = None
 
     __repr_attrs__ = ["func_name", "code"]
 
@@ -1188,6 +1257,12 @@ class SubmitUserCode(SyftObject):
             return [x.verify_key for x in self.input_policy_init_kwargs.keys()]
         return None
 
+    @property
+    def input_owner_server_uids(self) -> list[UID] | None:
+        if self.input_policy_init_kwargs is not None:
+            return [x.server_id for x in self.input_policy_init_kwargs.keys()]
+        return None
+
 
 def get_code_hash(code: str, user_verify_key: SyftVerifyKey) -> str:
     full_str = f"{code}{user_verify_key}"
@@ -1255,10 +1330,12 @@ def replace_func_name(src: str, new_func_name: str) -> str:
 def syft_function(
     input_policy: InputPolicy | UID | None = None,
     output_policy: OutputPolicy | UID | None = None,
+    runtime_policy: RuntimePolicy | UID | None = None,
     share_results_with_owners: bool = False,
     worker_pool_name: str | None = None,
     name: str | None = None,
 ) -> Callable:
+    # Input policy
     if input_policy is None:
         input_policy = EmpyInputPolicy()
 
@@ -1270,6 +1347,7 @@ def syft_function(
         input_policy_type = type(input_policy)
         init_input_kwargs = getattr(input_policy, "init_kwargs", {})
 
+    # Output policy
     if output_policy is None:
         output_policy = SingleExecutionExactOutput()
 
@@ -1277,6 +1355,11 @@ def syft_function(
         output_policy_type = SubmitUserPolicy.from_obj(output_policy)
     else:
         output_policy_type = type(output_policy)
+
+    # Runtime policy
+    if runtime_policy is None:
+        runtime_policy = EmptyRuntimePolicy()
+    runtime_policy_type = type(runtime_policy)
 
     def decorator(f: Any) -> SubmitUserCode | SyftError:
         try:
@@ -1305,6 +1388,8 @@ def syft_function(
                 input_policy_init_kwargs=init_input_kwargs,
                 output_policy_type=output_policy_type,
                 output_policy_init_kwargs=getattr(output_policy, "init_kwargs", {}),
+                runtime_policy_type=runtime_policy_type,
+                runtime_policy_init_kwargs=getattr(runtime_policy, "init_kwargs", {}),
                 local_function=f,
                 input_kwargs=input_kwargs,
                 worker_pool_name=worker_pool_name,
@@ -1547,6 +1632,14 @@ def check_output_policy(context: TransformContext) -> TransformContext:
     return context
 
 
+def check_runtime_policy(context: TransformContext) -> TransformContext:
+    if context.output is not None:
+        policy = context.output["runtime_policy_type"]
+        policy = check_policy(policy=policy, context=context)
+        context.output["runtime_policy_type"] = policy
+    return context
+
+
 def create_code_status(context: TransformContext) -> TransformContext:
     # relative
     from .user_code_service import UserCodeService
@@ -1638,6 +1731,7 @@ def submit_user_code_to_user_code() -> list[Callable]:
         generate_unique_func_name,
         check_input_policy,
         check_output_policy,
+        check_runtime_policy,
         new_check_code,
         locate_launch_jobs,
         add_credentials_for_key("user_verify_key"),
@@ -1646,6 +1740,30 @@ def submit_user_code_to_user_code() -> list[Callable]:
         add_submit_time,
         set_default_pool_if_empty,
         set_origin_server_side_type,
+    ]
+
+
+@transform(UserCode, SubmitUserCode)
+def user_code_to_submit_user_code() -> list[Callable]:
+    return [
+        rename("raw_code", "code"),
+        rename("service_func_name", "func_name"),
+        keep(
+            [
+                "id",
+                "code",
+                "func_name",
+                "signature",
+                "input_policy_type",
+                "input_policy_init_kwargs",
+                "output_policy_type",
+                "output_policy_init_kwargs",
+                "runtime_policy_type",
+                "runtime_policy_init_kwargs",
+                "input_kwargs",
+                "worker_pool_name",
+            ]
+        ),
     ]
 
 

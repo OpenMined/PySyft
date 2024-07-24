@@ -11,6 +11,7 @@ from result import Result
 from ...client.client import SyftClient
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ..context import ChangeContext
 from ..request.request import Change
 from ..response import SyftError
@@ -20,7 +21,7 @@ from .server_peer import ServerPeer
 
 
 @serializable()
-class AssociationRequestChange(Change):
+class AssociationRequestChangeV1(Change):
     __canonical_name__ = "AssociationRequestChange"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -28,7 +29,15 @@ class AssociationRequestChange(Change):
     remote_peer: ServerPeer
     challenge: bytes
 
-    __repr_attrs__ = ["self_server_route", "remote_peer"]
+
+@serializable()
+class AssociationRequestChange(Change):
+    __canonical_name__ = "AssociationRequestChange"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    remote_peer: ServerPeer
+
+    __repr_attrs__ = ["remote_peer"]
 
     def _run(
         self, context: ChangeContext, apply: bool
@@ -85,7 +94,7 @@ class AssociationRequestChange(Change):
                     )
                 remote_client = remote_client.ok()
                 random_challenge = secrets.token_bytes(16)
-                remote_res = remote_client.api.services.network.ping(
+                remote_res = remote_client.api.services.network.challenge_nonce(
                     challenge=random_challenge
                 )
             except Exception as e:
@@ -111,15 +120,6 @@ class AssociationRequestChange(Change):
 
         if result.is_err():
             return Err(SyftError(message=str(result.err())))
-
-        # this way they can match up who we are with who they think we are
-        # Sending a signed messages for the peer to verify
-        self_server_peer = self.self_server_route.validate_with_context(
-            context=service_ctx
-        )
-
-        if isinstance(self_server_peer, SyftError):
-            return Err(self_server_peer)
 
         return Ok(
             SyftSuccess(
