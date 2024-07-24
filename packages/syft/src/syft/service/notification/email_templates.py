@@ -37,7 +37,9 @@ class PasswordResetTemplate(EmailTemplate):
         if not user:
             raise Exception("User not found!")
 
-        user.reset_token = user_service.generate_new_password_reset_token()
+        user.reset_token = user_service.generate_new_password_reset_token(
+            context.server.settings.pwd_token_config
+        )
         user.reset_token_date = datetime.now()
 
         result = user_service.stash.update(

@@ -2,6 +2,11 @@
 import logging
 from typing import Any
 
+# third party
+from pydantic import field_validator
+from pydantic import model_validator
+from typing_extensions import Self
+
 # relative
 from ...abstract_server import ServerSideType
 from ...abstract_server import ServerType
@@ -10,6 +15,7 @@ from ...server.credentials import SyftVerifyKey
 from ...service.worker.utils import DEFAULT_WORKER_POOL_NAME
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ...util import options
@@ -22,7 +28,32 @@ logger = logging.getLogger(__name__)
 
 
 @serializable()
-class ServerSettingsUpdate(PartialSyftObject):
+class PwdTokenResetConfig(SyftObject):
+    __canonical_name__ = "PwdTokenResetConfig"
+    __version__ = SYFT_OBJECT_VERSION_1
+    ascii: bool = True
+    numbers: bool = True
+    token_len: int = 12
+
+    @model_validator(mode="after")
+    def validate_char_types(self) -> Self:
+        if not self.ascii and not self.numbers:
+            raise ValueError(
+                "Invalid config, at least one of the ascii/number options must be true."
+            )
+
+        return self
+
+    @field_validator("token_len")
+    @classmethod
+    def check_token_len(cls, value: int) -> int:
+        if value < 4:
+            raise ValueError("Token length must be greater than 4.")
+        return value
+
+
+@serializable()
+class ServerSettingsUpdateV1(PartialSyftObject):
     __canonical_name__ = "ServerSettingsUpdate"
     __version__ = SYFT_OBJECT_VERSION_1
     id: UID
@@ -38,9 +69,26 @@ class ServerSettingsUpdate(PartialSyftObject):
 
 
 @serializable()
+class ServerSettingsUpdate(PartialSyftObject):
+    __canonical_name__ = "ServerSettingsUpdate"
+    __version__ = SYFT_OBJECT_VERSION_2
+    id: UID
+    name: str
+    organization: str
+    description: str
+    on_board: bool
+    signup_enabled: bool
+    admin_email: str
+    association_request_auto_approval: bool
+    welcome_markdown: HTMLObject | MarkdownDescription
+    eager_execution_enabled: bool = False
+    pwd_token_config: PwdTokenResetConfig
+
+
+@serializable()
 class ServerSettings(SyftObject):
     __canonical_name__ = "ServerSettings"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
     __repr_attrs__ = [
         "name",
         "organization",
@@ -65,6 +113,7 @@ class ServerSettings(SyftObject):
     association_request_auto_approval: bool
     eager_execution_enabled: bool = False
     default_worker_pool: str = DEFAULT_WORKER_POOL_NAME
+    pwd_token_config: PwdTokenResetConfig = PwdTokenResetConfig()
     welcome_markdown: HTMLObject | MarkdownDescription = HTMLObject(
         text=DEFAULT_WELCOME_MSG
     )

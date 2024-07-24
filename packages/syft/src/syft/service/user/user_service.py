@@ -31,6 +31,7 @@ from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
+from ..settings.settings import PwdTokenResetConfig
 from ..settings.settings_stash import SettingsStash
 from .user import User
 from .user import UserCreate
@@ -120,11 +121,11 @@ class UserService(AbstractService):
         root_context = AuthedServiceContext(server=context.server, credentials=root_key)
         link = LinkedObject.with_context(user, context=root_context)
         notifier_service = context.server.get_service("notifierservice")
-
         # Notifier is active
-        notification_is_enabled = notifier_service.settings(context=root_context).active
+        notifier = notifier_service.settings(context=root_context)
+        notification_is_enabled = notifier.active
         # Email is enabled
-        email_is_enabled = notifier_service.settings(context=root_context).email_enabled
+        email_is_enabled = notifier.email_enabled
         # User Preferences allow email notification
         user_allow_email_notifications = user.notifications_enabled[NOTIFIERS.EMAIL]
 
@@ -208,7 +209,9 @@ class UserService(AbstractService):
                 message="You can't request password reset for an Admin user."
             )
 
-        user.reset_token = self.generate_new_password_reset_token()
+        user.reset_token = self.generate_new_password_reset_token(
+            context.server.settings.pwd_token_config
+        )
         user.reset_token_date = datetime.now()
 
         result = self.stash.update(
@@ -276,12 +279,20 @@ class UserService(AbstractService):
             )
         return SyftSuccess(message="User Password updated successfully!")
 
-    def generate_new_password_reset_token(self) -> str:
-        token_len = 12
-        valid_characters = string.ascii_letters + string.digits
+    def generate_new_password_reset_token(
+        self, token_config: PwdTokenResetConfig
+    ) -> str:
+        valid_characters = ""
+        if token_config.ascii:
+            valid_characters += string.ascii_letters
+
+        if token_config.numbers:
+            valid_characters += string.digits
+
+        # valid_characters = string.ascii_letters + string.digits
 
         generated_token = "".join(
-            secrets.choice(valid_characters) for _ in range(token_len)
+            secrets.choice(valid_characters) for _ in range(token_config.token_len)
         )
 
         return generated_token
