@@ -2,21 +2,20 @@
 from collections.abc import Callable
 from datetime import datetime
 from enum import Enum
+from functools import partial
 import hashlib
 from textwrap import dedent
 from typing import Any
 from typing import ClassVar
 from typing import cast
-from functools import partial
 
 # third party
 from IPython.display import display
 from pydantic import ConfigDict
-from result import Err, OkErr
+from result import Err
 from result import Ok
+from result import OkErr
 from result import Result
-
-from ..action.action_service import ActionService
 
 # relative
 from ...client.client import SyftClient
@@ -35,6 +34,7 @@ from ...util.markdown import as_markdown_python_code
 from ..action.action_object import ActionDataEmpty
 from ..action.action_object import ActionObject
 from ..action.action_object import BASE_PASSTHROUGH_ATTRS
+from ..action.action_service import ActionService
 from ..context import AuthedServiceContext
 from ..dataset.dataset import Contributor
 from ..dataset.dataset import MarkdownDescription
@@ -729,12 +729,13 @@ class ModelRef(ActionObject):
                 "Either context or client should be provided to ModelRef.load_data()"
             )
 
-        if context:
-            action_service_get = partial(context.server.get_service_method(ActionService.get), context)
+        if context is not None:
+            action_service_get = partial(
+                context.server.get_service_method(ActionService.get), context
+            )
 
         else:
-            action_service_get = self_client.api.services.action.get
-
+            action_service_get = self_client.api.services.action.get  # type: ignore
 
         code_action_id = self.syft_action_data[0]
         asset_action_ids = self.syft_action_data[1::]
@@ -751,7 +752,9 @@ class ModelRef(ActionObject):
             action_object = action_service_get(asset_action_id)
             if isinstance(action_object, OkErr):
                 if action_object.is_err():
-                    return SyftError(message=f"Failed to load asset:{action_object.err()}")
+                    return SyftError(
+                        message=f"Failed to load asset:{action_object.err()}"
+                    )
                 action_object = action_object.ok()
             action_data = action_object.syft_action_data
 
