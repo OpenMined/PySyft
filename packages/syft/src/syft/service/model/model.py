@@ -70,9 +70,9 @@ class ModelAsset(SyftObject):
     description: MarkdownDescription | None = None
     contributors: set[Contributor] = set()
     action_id: UID
-    node_uid: UID
+    server_uid: UID
     created_at: DateTime = DateTime.now()
-    hash: str
+    asset_hash: str
 
     __repr_attrs__ = ["name", "endpoint_path"]
 
@@ -86,7 +86,7 @@ class ModelAsset(SyftObject):
         super().__init__(**kwargs, description=description)
 
     def _repr_html_(self) -> Any:
-        return f"Asset Hash: {self.hash}"
+        return f"Asset Hash: {self.asset_hash}"
 
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         _repr_str = f"Asset: {self.name}\n"
@@ -113,7 +113,7 @@ class ModelAsset(SyftObject):
         from ...client.api import APIRegistry
 
         api = APIRegistry.api_for(
-            node_uid=self.node_uid,
+            server_uid=self.server_uid,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None or api.services is None:
@@ -134,7 +134,7 @@ class ModelAsset(SyftObject):
     #     return result
 
 
-@serializable()
+@serializable(canonical_name="SyftModelClass", version=1)
 class SyftModelClass:
     def __init__(self, assets: list[ModelAsset]) -> None:
         self.__user_init__(assets)
@@ -208,7 +208,7 @@ class CreateModelAsset(SyftObject):
     __repr_attrs__ = ["name", "description", "contributors", "data", "created_at"]
 
     name: str
-    node_uid: UID | None = None
+    server_uid: UID | None = None
     description: MarkdownDescription | None = None
     contributors: set[Contributor] = set()
     data: Any | None = None  # SyftFolder will go here!
@@ -309,7 +309,7 @@ class Model(SyftObject):
         from ...client.api import APIRegistry
 
         api = APIRegistry.api_for(
-            node_uid=self.syft_node_location,
+            server_uid=self.syft_server_location,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None or api.services is None:
@@ -528,10 +528,10 @@ def add_msg_creation_time(context: TransformContext) -> TransformContext:
     return context
 
 
-def add_default_node_uid(context: TransformContext) -> TransformContext:
+def add_default_server_uid(context: TransformContext) -> TransformContext:
     if context.output is not None:
-        if context.output["node_uid"] is None and context.node is not None:
-            context.output["node_uid"] = context.node.id
+        if context.output["server_uid"] is None and context.server is not None:
+            context.output["server_uid"] = context.server.id
     else:
         raise ValueError(f"{context}'s output is None. No transformation happened")
     return context
@@ -541,6 +541,9 @@ def add_asset_hash(context: TransformContext) -> TransformContext:
     # relative
     from ..action.action_service import ActionService
 
+    if context.output is None:
+        return context
+
     action_id = context.output["action_id"]
     if action_id is not None:
         action_service = context.node.get_service(ActionService)
@@ -549,7 +552,7 @@ def add_asset_hash(context: TransformContext) -> TransformContext:
 
         if action_obj.is_err():
             return SyftError(f"Failed to get action object with id {action_obj.err()}")
-        context.output["hash"] = action_obj.ok().hash()
+        context.output["asset_hash"] = action_obj.ok().hash()
     else:
         raise ValueError("Model Asset must have an action_id to generate a hash")
 
@@ -558,7 +561,7 @@ def add_asset_hash(context: TransformContext) -> TransformContext:
 
 @transform(CreateModelAsset, ModelAsset)
 def createmodelasset_to_asset() -> list[Callable]:
-    return [generate_id, add_msg_creation_time, add_default_node_uid, add_asset_hash]
+    return [generate_id, add_msg_creation_time, add_default_server_uid, add_asset_hash]
 
 
 def convert_asset(context: TransformContext) -> TransformContext:
@@ -642,7 +645,7 @@ class ModelRef(ActionObject):
     def store_ref_objs_to_store(
         self, context: AuthedServiceContext, clear_ref_objs: bool = False
     ) -> SyftError | None:
-        admin_client = context.node.root_client
+        admin_client = context.server.root_client
 
         if not self.ref_objs:
             return SyftError(message="No ref_objs to store in Model Ref")
@@ -668,7 +671,7 @@ class ModelRef(ActionObject):
         unwrap_action_data: bool = True,
         remote_client: SyftClient | None = None,
     ) -> list:
-        admin_client = context.node.root_client
+        admin_client = context.server.root_client
 
         code_action_id = self.syft_action_data[0]
         asset_action_ids = self.syft_action_data[1::]

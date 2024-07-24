@@ -8,12 +8,12 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
     const page_size = parseInt(url.searchParams.get("page_size") || "10")
     const page_index = parseInt(url.searchParams.get("page_index") || "0")
 
-    const { signing_key, node_id } = unload_cookies(cookies)
+    const { signing_key, server_id } = unload_cookies(cookies)
 
     const users = await jsSyftCall({
       path: "user.get_all",
       payload: { page_size, page_index },
-      node_id,
+      server_id,
       signing_key,
     })
 
@@ -26,7 +26,7 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
 
 export const POST: RequestHandler = async ({ cookies, request }) => {
   try {
-    const { signing_key, node_id } = unload_cookies(cookies)
+    const { signing_key, server_id } = unload_cookies(cookies)
 
     const new_user = await request.json()
 
@@ -35,7 +35,7 @@ export const POST: RequestHandler = async ({ cookies, request }) => {
       payload: {
         user_create: { ...new_user, fqn: "syft.service.user.user.UserCreate" },
       },
-      node_id,
+      server_id,
       signing_key,
     })
 

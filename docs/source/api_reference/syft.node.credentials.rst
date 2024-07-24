@@ -1,7 +1,7 @@
-syft.node.credentials
+syft.server.credentials
 =====================
 
-.. automodule:: syft.node.credentials
+.. automodule:: syft.server.credentials
 
    
    

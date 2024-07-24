@@ -11,8 +11,8 @@ from docker.models.containers import Container
 from ...custom_worker.k8s import IN_KUBERNETES
 from ...custom_worker.k8s import PodStatus
 from ...custom_worker.runner_k8s import KubernetesRunner
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
 from ...store.document_store import DocumentStore
 from ...store.document_store import SyftSuccess
 from ...types.uid import UID
@@ -37,7 +37,7 @@ from .worker_stash import WorkerStash
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="WorkerService", version=1)
 class WorkerService(AbstractService):
     store: DocumentStore
     stash: WorkerStash
@@ -56,7 +56,7 @@ class WorkerService(AbstractService):
     ) -> list[ContainerSpawnStatus] | SyftError:
         """Add a Container Image."""
 
-        worker_pool_service = context.node.get_service("SyftWorkerPoolService")
+        worker_pool_service = context.server.get_service("SyftWorkerPoolService")
         return worker_pool_service.add_workers(
             context, number=n, pool_name=DEFAULT_WORKER_POOL_NAME
         )
@@ -73,7 +73,7 @@ class WorkerService(AbstractService):
 
         workers: list[SyftWorker] = result.ok()
 
-        if context.node is not None and context.node.in_memory_workers:
+        if context.server is not None and context.server.in_memory_workers:
             return workers
         else:
             # If container workers, check their statuses
@@ -106,7 +106,7 @@ class WorkerService(AbstractService):
         if isinstance(worker, SyftError):
             return worker
 
-        if context.node is not None and context.node.in_memory_workers:
+        if context.server is not None and context.server.in_memory_workers:
             return worker
         else:
             return refresh_worker_status([worker], self.stash, context.credentials)[0]
@@ -126,7 +126,7 @@ class WorkerService(AbstractService):
         if isinstance(worker, SyftError):
             return worker
 
-        if context.node is not None and context.node.in_memory_workers:
+        if context.server is not None and context.server.in_memory_workers:
             logs = b"Logs not implemented for In Memory Workers"
         elif IN_KUBERNETES:
             runner = KubernetesRunner()
@@ -157,7 +157,7 @@ class WorkerService(AbstractService):
         from .worker_pool_service import SyftWorkerPoolService
 
         if force and worker.job_id is not None:
-            job_service = cast(JobService, context.node.get_service(JobService))
+            job_service = cast(JobService, context.server.get_service(JobService))
             res = job_service.kill(context=context, id=worker.job_id)
             if isinstance(res, SyftError):
                 return SyftError(
@@ -165,7 +165,7 @@ class WorkerService(AbstractService):
                 )
 
         worker_pool_service = cast(
-            SyftWorkerPoolService, context.node.get_service(SyftWorkerPoolService)
+            SyftWorkerPoolService, context.server.get_service(SyftWorkerPoolService)
         )
         worker_pool_stash = worker_pool_service.stash
         result = worker_pool_stash.get_by_name(
@@ -196,7 +196,7 @@ class WorkerService(AbstractService):
                     f"Removing and re-creating worker id={worker.id}"
                 )
             )
-        elif not context.node.in_memory_workers:
+        elif not context.server.in_memory_workers:
             # delete the worker using docker client sdk
             with contextlib.closing(docker.from_env()) as client:
                 docker_container = _get_worker_container(client, worker)
@@ -208,7 +208,7 @@ class WorkerService(AbstractService):
                     return stopped
         else:
             # kill the in memory worker thread
-            context.node.remove_consumer_with_id(syft_worker_id=worker.id)
+            context.server.remove_consumer_with_id(syft_worker_id=worker.id)
 
         # remove the worker from the pool
         try:

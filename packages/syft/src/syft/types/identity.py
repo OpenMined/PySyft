@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING
 from typing_extensions import Self
 
 # relative
-from ..node.credentials import SyftVerifyKey
 from ..serde.serializable import serializable
+from ..server.credentials import SyftVerifyKey
 from .base import SyftBaseModel
 from .uid import UID
 
@@ -19,23 +19,23 @@ if TYPE_CHECKING:
 
 
 class Identity(SyftBaseModel):
-    node_id: UID
+    server_id: UID
     verify_key: SyftVerifyKey
 
     __repr_attrs__ = ["id", "verify_key"]
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__} <id={self.node_id.short()}, 🔑={str(self.verify_key)[0:8]}>"
+        return f"{self.__class__.__name__} <id={self.server_id.short()}, 🔑={str(self.verify_key)[0:8]}>"
 
     @classmethod
     def from_client(cls, client: SyftClient) -> Self:
         if not client.credentials:
             raise ValueError(f"{client} has no signing key!")
-        return cls(node_id=client.id, verify_key=client.credentials.verify_key)
+        return cls(server_id=client.id, verify_key=client.credentials.verify_key)
 
 
-@serializable()
+@serializable(canonical_name="UserIdentity", version=1)
 class UserIdentity(Identity):
-    """This class is used to identify the data scientist users of the node"""
+    """This class is used to identify the data scientist users of the server"""
 
     pass

@@ -19,7 +19,7 @@ syft.service.context
    
       AuthedServiceContext
       ChangeContext
-      NodeServiceContext
+      ServerServiceContext
       UnauthedServiceContext
    
    

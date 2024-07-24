@@ -79,11 +79,12 @@ class CustomBuildConfig(SyftBaseModel):
         return sep.join(self.custom_cmds)
 
 
+@serializable(canonical_name="WorkerConfig", version=1)
 class WorkerConfig(SyftBaseModel):
     pass
 
 
-@serializable()
+@serializable(canonical_name="CustomWorkerConfig", version=1)
 class CustomWorkerConfig(WorkerConfig):
     build: CustomBuildConfig
     version: str = "1"
@@ -107,7 +108,7 @@ class CustomWorkerConfig(WorkerConfig):
         return sha256(self.json(sort_keys=True).encode()).hexdigest()
 
 
-@serializable()
+@serializable(canonical_name="PrebuiltWorkerConfig", version=1)
 class PrebuiltWorkerConfig(WorkerConfig):
     # tag that is already built and pushed in some registry
     tag: str
@@ -126,7 +127,7 @@ class PrebuiltWorkerConfig(WorkerConfig):
         return hash(self.tag)
 
 
-@serializable()
+@serializable(canonical_name="DockerWorkerConfig", version=1)
 class DockerWorkerConfig(WorkerConfig):
     dockerfile: str
     file_name: str | None = None

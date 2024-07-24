@@ -9,8 +9,8 @@ from result import Ok
 from result import Result
 
 # relative
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ..context import AuthedServiceContext
@@ -31,6 +31,7 @@ class BaseNotifier:
 TBaseNotifier = TypeVar("TBaseNotifier", bound=BaseNotifier)
 
 
+@serializable(canonical_name="EmailNotifier", version=1)
 class EmailNotifier(BaseNotifier):
     smtp_client: SMTPClient
     sender = ""
@@ -70,7 +71,7 @@ class EmailNotifier(BaseNotifier):
         self, context: AuthedServiceContext, notification: Notification
     ) -> Result[Ok, Err]:
         try:
-            user_service = context.node.get_service("userservice")
+            user_service = context.server.get_service("userservice")
 
             receiver = user_service.get_by_verify_key(notification.to_user_verify_key)
 

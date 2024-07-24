@@ -6,8 +6,8 @@ from result import Ok
 from result import Result
 
 # relative
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
 from ...service.response import SyftError
 from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
@@ -23,7 +23,7 @@ ActionIDsPartitionKey = PartitionKey(key="action_ids", type_=list[UID])
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="NotifierStash", version=1)
 class NotifierStash(BaseStash):
     object_type = NotifierSettings
     settings: PartitionSettings = PartitionSettings(

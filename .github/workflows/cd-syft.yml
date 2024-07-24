@@ -12,8 +12,8 @@ on:
         default: "false"
         type: choice
         options:
-          - false
-          - true
+          - "false"
+          - "true"
 
       release_platform:
         description: "Release Platform"
@@ -90,7 +90,7 @@ jobs:
 
     outputs:
       release_tag: ${{ steps.get_release_tag.outputs.release_tag }}
-      grid_version: ${{ steps.release_metadata.outputs.grid_version }}
+      server_version: ${{ steps.release_metadata.outputs.server_version }}
 
     steps:
       - uses: actions/checkout@v4
@@ -166,7 +166,7 @@ jobs:
             echo "release_platform=linux/arm64" >> $GITHUB_OUTPUT
             echo "short_release_platform=arm64" >> $GITHUB_OUTPUT
           fi
-          echo "grid_version=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
+          echo "server_version=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
 
       # TODO: Optimize redundant bump protocol version checks
       - name: Check and Bump Protocol Version
@@ -185,79 +185,79 @@ jobs:
           username: ${{ secrets.DOCKER_LOGIN }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and push `grid-backend` image to DockerHub
-        id: grid-backend-build
+      - name: Build and push `syft-backend` image to DockerHub
+        id: syft-backend-build
         uses: docker/build-push-action@v6
         with:
           context: ./packages
           file: ./packages/grid/backend/backend.dockerfile
           platforms: ${{ steps.release_metadata.outputs.release_platform }}
           target: backend
-          outputs: type=image,name=openmined/grid-backend,push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=registry,ref=openmined/grid-backend:cache-${{ steps.release_metadata.outputs.short_release_platform }}
-          cache-to: type=registry,ref=openmined/grid-backend:cache-${{ steps.release_metadata.outputs.short_release_platform }},mode=max
+          outputs: type=image,name=openmined/syft-backend,push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=registry,ref=openmined/syft-backend:cache-${{ steps.release_metadata.outputs.short_release_platform }}
+          cache-to: type=registry,ref=openmined/syft-backend:cache-${{ steps.release_metadata.outputs.short_release_platform }},mode=max
 
-      - name: Export digest for grid-backend
+      - name: Export digest for syft-backend
         run: |
-          mkdir -p /tmp/digests/grid-backend
-          digest="${{ steps.grid-backend-build.outputs.digest }}"
-          touch "/tmp/digests/grid-backend/${digest#sha256:}"
+          mkdir -p /tmp/digests/syft-backend
+          digest="${{ steps.syft-backend-build.outputs.digest }}"
+          touch "/tmp/digests/syft-backend/${digest#sha256:}"
 
-      - name: Build and push `grid-frontend` image to DockerHub
-        id: grid-frontend-build
+      - name: Build and push `syft-frontend` image to DockerHub
+        id: syft-frontend-build
         uses: docker/build-push-action@v6
         with:
           context: ./packages/grid/frontend
           file: ./packages/grid/frontend/frontend.dockerfile
           platforms: ${{ steps.release_metadata.outputs.release_platform }}
-          outputs: type=image,name=openmined/grid-frontend,push-by-digest=true,name-canonical=true,push=true
-          target: grid-ui-development
-          cache-from: type=registry,ref=openmined/grid-frontend:cache-${{ steps.release_metadata.outputs.short_release_platform }}
-          cache-to: type=registry,ref=openmined/grid-frontend:cache-${{ steps.release_metadata.outputs.short_release_platform}},mode=max
+          outputs: type=image,name=openmined/syft-frontend,push-by-digest=true,name-canonical=true,push=true
+          target: syft-ui-development
+          cache-from: type=registry,ref=openmined/syft-frontend:cache-${{ steps.release_metadata.outputs.short_release_platform }}
+          cache-to: type=registry,ref=openmined/syft-frontend:cache-${{ steps.release_metadata.outputs.short_release_platform}},mode=max
 
-      - name: Export digest for grid-frontend
+      - name: Export digest for syft-frontend
         run: |
-          mkdir -p /tmp/digests/grid-frontend
-          digest="${{ steps.grid-frontend-build.outputs.digest }}"
-          touch "/tmp/digests/grid-frontend/${digest#sha256:}"
+          mkdir -p /tmp/digests/syft-frontend
+          digest="${{ steps.syft-frontend-build.outputs.digest }}"
+          touch "/tmp/digests/syft-frontend/${digest#sha256:}"
 
-      - name: Build and push `grid-seaweedfs` image to DockerHub
-        id: grid-seaweedfs-build
+      - name: Build and push `syft-seaweedfs` image to DockerHub
+        id: syft-seaweedfs-build
         uses: docker/build-push-action@v6
         with:
           context: ./packages/grid/seaweedfs
           file: ./packages/grid/seaweedfs/seaweedfs.dockerfile
           platforms: ${{ steps.release_metadata.outputs.release_platform }}
-          outputs: type=image,name=openmined/grid-seaweedfs,push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=registry,ref=openmined/grid-seaweedfs:cache-${{ steps.release_metadata.outputs.short_release_platform }}
-          cache-to: type=registry,ref=openmined/grid-seaweedfs:cache-${{ steps.release_metadata.outputs.short_release_platform}},mode=max
+          outputs: type=image,name=openmined/syft-seaweedfs,push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=registry,ref=openmined/syft-seaweedfs:cache-${{ steps.release_metadata.outputs.short_release_platform }}
+          cache-to: type=registry,ref=openmined/syft-seaweedfs:cache-${{ steps.release_metadata.outputs.short_release_platform}},mode=max
 
-      - name: Export digest for grid-seaweedfs
+      - name: Export digest for syft-seaweedfs
         run: |
-          mkdir -p /tmp/digests/grid-seaweedfs
-          digest="${{ steps.grid-seaweedfs-build.outputs.digest }}"
-          touch "/tmp/digests/grid-seaweedfs/${digest#sha256:}"
+          mkdir -p /tmp/digests/syft-seaweedfs
+          digest="${{ steps.syft-seaweedfs-build.outputs.digest }}"
+          touch "/tmp/digests/syft-seaweedfs/${digest#sha256:}"
 
-      # Some of the dependencies of grid-enclave-attestation are not available for arm64
-      # Hence, we are building grid-enclave-attestation only for x64 (see the `if` conditional)
-      - name: Build and push `grid-enclave-attestation` image to DockerHub
+      # Some of the dependencies of syft-enclave-attestation are not available for arm64
+      # Hence, we are building syft-enclave-attestation only for x64 (see the `if` conditional)
+      - name: Build and push `syft-enclave-attestation` image to DockerHub
         if: ${{ endsWith(matrix.runner, '-x64') }}
-        id: grid-enclave-attestation-build
+        id: syft-enclave-attestation-build
         uses: docker/build-push-action@v6
         with:
           context: ./packages/grid/enclave/attestation
           file: ./packages/grid/enclave/attestation/attestation.dockerfile
           platforms: ${{ steps.release_metadata.outputs.release_platform }}
-          outputs: type=image,name=openmined/grid-enclave-attestation,push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=registry,ref=openmined/grid-enclave-attestation:cache-${{ steps.release_metadata.outputs.short_release_platform }}
-          cache-to: type=registry,ref=openmined/grid-enclave-attestation:cache-${{ steps.release_metadata.outputs.short_release_platform}},mode=max
+          outputs: type=image,name=openmined/syft-enclave-attestation,push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=registry,ref=openmined/syft-enclave-attestation:cache-${{ steps.release_metadata.outputs.short_release_platform }}
+          cache-to: type=registry,ref=openmined/syft-enclave-attestation:cache-${{ steps.release_metadata.outputs.short_release_platform}},mode=max
 
-      - name: Export digest for grid-enclave-attestation
+      - name: Export digest for syft-enclave-attestation
         if: ${{ endsWith(matrix.runner, '-x64') }}
         run: |
-          mkdir -p /tmp/digests/grid-enclave-attestation
-          digest="${{ steps.grid-enclave-attestation-build.outputs.digest }}"
-          touch "/tmp/digests/grid-enclave-attestation/${digest#sha256:}"
+          mkdir -p /tmp/digests/syft-enclave-attestation
+          digest="${{ steps.syft-enclave-attestation-build.outputs.digest }}"
+          touch "/tmp/digests/syft-enclave-attestation/${digest#sha256:}"
 
       - name: Build and push `syft` image to registry
         id: syft-build
@@ -279,7 +279,7 @@ jobs:
       - name: Upload digests
         uses: actions/upload-artifact@v4
         with:
-          name: digests-${{ steps.release_metadata.outputs.grid_version }}-${{ steps.release_metadata.outputs.short_release_platform }}
+          name: digests-${{ steps.release_metadata.outputs.server_version }}-${{ steps.release_metadata.outputs.short_release_platform }}
           path: /tmp/digests/*
           if-no-files-found: error
           retention-days: 1
@@ -299,7 +299,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: /tmp/digests
-          pattern: digests-${{ needs.build-and-push-docker-images.outputs.grid_version }}-*
+          pattern: digests-${{ needs.build-and-push-docker-images.outputs.server_version }}-*
           merge-multiple: true
 
       - name: Set up Docker Buildx
@@ -311,43 +311,43 @@ jobs:
           username: ${{ secrets.DOCKER_LOGIN }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Create manifest list and push for grid-backend
-        working-directory: /tmp/digests/grid-backend
+      - name: Create manifest list and push for syft-backend
+        working-directory: /tmp/digests/syft-backend
         run: |
           docker buildx imagetools create  \
-            -t openmined/grid-backend:${{ needs.build-and-push-docker-images.outputs.grid_version }} \
-            -t openmined/grid-backend:${{ needs.build-and-push-docker-images.outputs.release_tag }} \
-            $(printf 'openmined/grid-backend@sha256:%s ' *)
+            -t openmined/syft-backend:${{ needs.build-and-push-docker-images.outputs.server_version }} \
+            -t openmined/syft-backend:${{ needs.build-and-push-docker-images.outputs.release_tag }} \
+            $(printf 'openmined/syft-backend@sha256:%s ' *)
 
-      - name: Create manifest list and push for grid-frontend
-        working-directory: /tmp/digests/grid-frontend
+      - name: Create manifest list and push for syft-frontend
+        working-directory: /tmp/digests/syft-frontend
         run: |
           docker buildx imagetools create  \
-            -t openmined/grid-frontend:${{ needs.build-and-push-docker-images.outputs.grid_version }} \
-            -t openmined/grid-frontend:${{ needs.build-and-push-docker-images.outputs.release_tag }} \
-            $(printf 'openmined/grid-frontend@sha256:%s ' *)
+            -t openmined/syft-frontend:${{ needs.build-and-push-docker-images.outputs.server_version }} \
+            -t openmined/syft-frontend:${{ needs.build-and-push-docker-images.outputs.release_tag }} \
+            $(printf 'openmined/syft-frontend@sha256:%s ' *)
 
-      - name: Create manifest list and push for grid-seaweedfs
-        working-directory: /tmp/digests/grid-seaweedfs
+      - name: Create manifest list and push for syft-seaweedfs
+        working-directory: /tmp/digests/syft-seaweedfs
         run: |
           docker buildx imagetools create  \
-            -t openmined/grid-seaweedfs:${{ needs.build-and-push-docker-images.outputs.grid_version }} \
-            -t openmined/grid-seaweedfs:${{ needs.build-and-push-docker-images.outputs.release_tag }} \
-            $(printf 'openmined/grid-seaweedfs@sha256:%s ' *)
+            -t openmined/syft-seaweedfs:${{ needs.build-and-push-docker-images.outputs.server_version }} \
+            -t openmined/syft-seaweedfs:${{ needs.build-and-push-docker-images.outputs.release_tag }} \
+            $(printf 'openmined/syft-seaweedfs@sha256:%s ' *)
 
-      - name: Create manifest list and push for grid-enclave-attestation
-        working-directory: /tmp/digests/grid-enclave-attestation
+      - name: Create manifest list and push for syft-enclave-attestation
+        working-directory: /tmp/digests/syft-enclave-attestation
         run: |
           docker buildx imagetools create  \
-            -t openmined/grid-enclave-attestation:${{ needs.build-and-push-docker-images.outputs.grid_version }} \
-            -t openmined/grid-enclave-attestation:${{ needs.build-and-push-docker-images.outputs.release_tag }} \
-            $(printf 'openmined/grid-enclave-attestation@sha256:%s ' *)
+            -t openmined/syft-enclave-attestation:${{ needs.build-and-push-docker-images.outputs.server_version }} \
+            -t openmined/syft-enclave-attestation:${{ needs.build-and-push-docker-images.outputs.release_tag }} \
+            $(printf 'openmined/syft-enclave-attestation@sha256:%s ' *)
 
       - name: Create manifest list and push for syft
         working-directory: /tmp/digests/syft
         run: |
           docker buildx imagetools create  \
-            -t openmined/syft-client:${{ needs.build-and-push-docker-images.outputs.grid_version }} \
+            -t openmined/syft-client:${{ needs.build-and-push-docker-images.outputs.server_version }} \
             -t openmined/syft-client:${{ needs.build-and-push-docker-images.outputs.release_tag }} \
             $(printf 'openmined/syft-client@sha256:%s ' *)
 

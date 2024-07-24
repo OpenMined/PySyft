@@ -14,6 +14,6 @@ export class SyftVerifyKey {
 
   constructor(verify_key: Uint8Array) {
     this.verify_key = new VerifyKey(verify_key)
-    this.fqn = "syft.node.credentials.SyftVerifyKey"
+    this.fqn = "syft.server.credentials.SyftVerifyKey"
   }
 }
