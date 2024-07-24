@@ -4,7 +4,8 @@ from pathlib import Path
 from typing import Any
 
 # third party
-from result import as_result
+from syft.types.result import as_result
+from syft.types.errors import SyftException
 from typing_extensions import Self
 
 # relative
@@ -85,12 +86,12 @@ class OnDiskBlobStorageConnection(BlobStorageConnection):
             raise SyftException(public_message=f"Failed to delete file: {e}")
 
 
-@serializable()
+@serializable(canonical_name="OnDiskBlobStorageClientConfig", version=1)
 class OnDiskBlobStorageClientConfig(BlobStorageClientConfig):
     base_directory: Path
 
 
-@serializable()
+@serializable(canonical_name="OnDiskBlobStorageClient", version=1)
 class OnDiskBlobStorageClient(BlobStorageClient):
     config: OnDiskBlobStorageClientConfig
 
@@ -102,7 +103,7 @@ class OnDiskBlobStorageClient(BlobStorageClient):
         return OnDiskBlobStorageConnection(self.config.base_directory)
 
 
-@serializable()
+@serializable(canonical_name="OnDiskBlobStorageConfig", version=1)
 class OnDiskBlobStorageConfig(BlobStorageConfig):
     client_type: type[BlobStorageClient] = OnDiskBlobStorageClient
     client_config: OnDiskBlobStorageClientConfig

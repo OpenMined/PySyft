@@ -37,7 +37,7 @@ class ActionStore:
     pass
 
 
-@serializable()
+@serializable(canonical_name="KeyValueActionStore", version=1)
 class KeyValueActionStore(ActionStore):
     """Generic Key-Value Action store.
 
@@ -103,6 +103,8 @@ class KeyValueActionStore(ActionStore):
                 )
             return syft_object
         except Exception as e:
+            import pdb
+            pdb.set_trace()
             raise NotFoundException.from_exception(
                 e, public_message=f"Object {uid} not found"
             )
@@ -398,7 +400,7 @@ class KeyValueActionStore(ActionStore):
         return True
 
 
-@serializable()
+@serializable(canonical_name="DictActionStore", version=1)
 class DictActionStore(KeyValueActionStore):
     """Dictionary-Based Key-Value Action store.
 
@@ -425,7 +427,7 @@ class DictActionStore(KeyValueActionStore):
         )
 
 
-@serializable()
+@serializable(canonical_name="SQLiteActionStore", version=1)
 class SQLiteActionStore(KeyValueActionStore):
     """SQLite-Based Key-Value Action store.
 
@@ -439,7 +441,7 @@ class SQLiteActionStore(KeyValueActionStore):
     pass
 
 
-@serializable()
+@serializable(canonical_name="MongoActionStore", version=1)
 class MongoActionStore(KeyValueActionStore):
     """Mongo-Based  Action store.
 

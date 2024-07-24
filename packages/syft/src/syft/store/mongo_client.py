@@ -18,7 +18,7 @@ from .document_store import StoreConfig
 from .mongo_codecs import SYFT_CODEC_OPTIONS
 
 
-@serializable()
+@serializable(canonical_name="MongoStoreClientConfig", version=1)
 class MongoStoreClientConfig(StoreClientConfig):
     """
     Paramaters:

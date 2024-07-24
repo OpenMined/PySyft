@@ -190,6 +190,7 @@ def test_code_accept_deny(faker: Faker, worker: Worker):
 
     request = root_client.requests.get_all()[0]
     assert request.status == RequestStatus.APPROVED
+
     result = ds_client.code.simple_function(data=action_obj)
     assert result.get() == sum(dummy_data)
 

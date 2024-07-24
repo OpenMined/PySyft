@@ -236,7 +236,7 @@ class BlobDeposit(SyftObject):
         raise NotImplementedError
 
 
-@serializable()
+@serializable(canonical_name="BlobStorageClientConfig", version=1)
 class BlobStorageClientConfig(BaseModel):
     pass
 
@@ -261,7 +261,7 @@ class BlobStorageConnection:
         raise NotImplementedError
 
 
-@serializable()
+@serializable(canonical_name="BlobStorageClient", version=1)
 class BlobStorageClient(SyftBaseModel):
     config: BlobStorageClientConfig
 
@@ -269,7 +269,7 @@ class BlobStorageClient(SyftBaseModel):
         raise NotImplementedError
 
 
-@serializable()
+@serializable(canonical_name="BlobStorageConfig", version=1)
 class BlobStorageConfig(SyftBaseModel):
     client_type: type[BlobStorageClient]
     client_config: BlobStorageClientConfig

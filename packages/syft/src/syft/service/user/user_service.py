@@ -75,7 +75,7 @@ def _paginate(
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="UserService", version=1)
 class UserService(AbstractService):
     store: DocumentStore
     stash: UserStash
@@ -103,7 +103,7 @@ class UserService(AbstractService):
         except NotFoundException:
             return False
 
-    @service_method(path="user.create", name="create")
+    @service_method(path="user.create", name="create", autosplat="user_create")
     def create(
         self, context: AuthedServiceContext, user_create: UserCreate
     ) -> UserView:
@@ -222,6 +222,7 @@ class UserService(AbstractService):
         path="user.update",
         name="update",
         roles=GUEST_ROLE_LEVEL,
+        autosplat="user_update",
     )
     def update(
         self, context: AuthedServiceContext, uid: UID, user_update: UserUpdate

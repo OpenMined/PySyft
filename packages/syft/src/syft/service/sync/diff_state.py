@@ -1344,11 +1344,11 @@ It will be available for review again."""
     def _repr_html_(self) -> Any:
         n = len(self.batches)
         if self.direction == SyncDirection.LOW_TO_HIGH:
-            name1 = "Public Server"
-            name2 = "Private Server"
+            name1 = "Low-side Server"
+            name2 = "High-side Server"
         else:
-            name1 = "Private Server"
-            name2 = "Public Server"
+            name1 = "High-side Server"
+            name2 = "Low-side Server"
         repr_html = f"""
         <p style="margin-bottom:16px;"></p>
         <div class="diff-state-intro">Comparing sync states</div>

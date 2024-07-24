@@ -603,7 +603,7 @@ class PythonConnection(ServerConnection):
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="SyftClient", version=1)
 class SyftClient:
     connection: ServerConnection
     metadata: ServerMetadataJSON | None

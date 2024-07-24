@@ -65,7 +65,7 @@ class IsExecutionAllowedEnum(str, Enum):
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="UserCodeService", version=1)
 class UserCodeService(AbstractService):
     store: DocumentStore
     stash: UserCodeStash
@@ -376,7 +376,7 @@ class UserCodeService(AbstractService):
         elif not code.is_output_policy_approved(context):
             return IsExecutionAllowedEnum.OUTPUT_POLICY_NOT_APPROVED
 
-        policy_is_valid = output_policy is not None and output_policy._is_valid(context)
+        policy_is_valid = output_policy is not None and output_policy._is_valid(context).unwrap()
         if not policy_is_valid:
             return IsExecutionAllowedEnum.INVALID_OUTPUT_POLICY
 
@@ -517,7 +517,7 @@ class UserCodeService(AbstractService):
                     raise SyftException(public_message=status.get_status_message())
 
                 output_policy_is_valid = (
-                    output_policy._is_valid(context)
+                    output_policy._is_valid(context).unwrap()
                     if output_policy
                     else OutputPolicyValidEnum.NOT_APPROVED
                 )
@@ -540,7 +540,7 @@ class UserCodeService(AbstractService):
                                 context,
                                 usr_input_kwargs=kwarg2id,
                                 code_item_id=code.id,
-                            )
+                            ).unwrap()
 
                             if inp_policy_validation is InputPolicyValidEnum.INVALID:
                                 raise SyftException(
@@ -578,17 +578,10 @@ class UserCodeService(AbstractService):
                 " as a job on your worker pool"
             )
 
-        # FIX: actionservice unwrap
-        action_service: ActionService = context.server.get_service("actionservice")  # type: ignore[assignment]
-        result_action_object: ActionObject | TwinObject = (  # type: ignore[assignment]
-            action_service._user_code_execute(
-                context, code, kwarg2id, result_id=result_id
-            )
-        ).unwrap()
+        action_service: ActionService = context.server.get_service("actionservice")
 
-        result: ActionObject | TwinObject = action_service.set_result_to_store(
-            result_action_object, context, code.get_output_policy(context)
-        ).unwrap()
+        action_obj: ActionObject | TwinObject = action_service._user_code_execute(context, code, kwarg2id, result_id).unwrap()
+        result = action_service.set_result_to_store(action_obj, context, code.get_output_policy(context)).unwrap()
 
         # Apply Output Policy to the results and update the OutputPolicyState
 

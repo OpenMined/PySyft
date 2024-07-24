@@ -161,7 +161,7 @@ class Policy(SyftObject):
         raise NotImplementedError
 
 
-@serializable()
+@serializable(canonical_name="UserPolicyStatus", version=1)
 class UserPolicyStatus(Enum):
     SUBMITTED = "submitted"
     DENIED = "denied"
@@ -449,7 +449,7 @@ class MixedInputPolicy(InputPolicy):
                     kwarg_rules_current_server[kw] = Matches(
                         kw=kw, val=user_code_arg2id(arg)
                     )
-                elif arg in [str, float, int, bool, dict, list, set, tuple]:
+                elif arg in [str, float, int, bool, dict, list, set, tuple]:  # type: ignore[unreachable]
                     kwarg_rules_current_server[kw] = UserOwned(kw=kw, type=arg)
                 elif isinstance(arg, CreatePolicyRule):
                     kwarg_rules_current_server[kw] = arg.to_policy_rule(kw)
@@ -563,11 +563,14 @@ class MixedInputPolicy(InputPolicy):
         usr_input_kwargs: dict,
         code_item_id: UID,
     ) -> bool:
+        print("MixedInputPolicy _is_valid")
         filtered_input_kwargs = self.filter_kwargs(
             kwargs=usr_input_kwargs,
             context=context,
             code_item_id=code_item_id,
         ).unwrap()
+
+        print(f"filtered_input_kwargs: {type(filtered_input_kwargs)}")
 
         expected_input_kwargs = set()
         for _inp_kwargs in self.inputs.values():
@@ -676,6 +679,7 @@ class ExactMatch(InputPolicy):
         context: AuthedServiceContext,
         code_item_id: UID,
     ) -> dict[Any, Any]:
+        print("filter_kwargs for ExactMatch")
         allowed_inputs = allowed_ids_only(
             allowed_inputs=self.inputs, kwargs=kwargs, context=context
         ).unwrap()
@@ -782,6 +786,7 @@ class OutputPolicyExecuteCount(OutputPolicy):
 
     @as_result(SyftException)
     def _is_valid(self, context: AuthedServiceContext) -> SyftSuccess:
+        print("called _is_valid")
         output_service = context.server.get_service("outputservice")
         output_history = output_service.get_by_output_policy_id(
             context, self.id
@@ -789,14 +794,16 @@ class OutputPolicyExecuteCount(OutputPolicy):
 
         execution_count = len(output_history)
 
-        if execution_count >= self.limit:
-            raise SyftException(
-                public_message=f"Policy is no longer valid. count: {execution_count} >= limit: {self.limit}"
+        print(f"execution_count: {execution_count}, limit: {self.limit}")
+
+        if execution_count < self.limit:
+            return SyftSuccess(
+                message=f"Policy is still valid. count: {execution_count} < limit: {self.limit}",
+                value=True,
             )
 
-        return SyftSuccess(
-            message=f"Policy is still valid. count: {execution_count} < limit: {self.limit}",
-            value=True,
+        raise SyftException(
+            public_message=f"Policy is no longer valid. count: {execution_count} >= limit: {self.limit}"
         )
 
     def public_state(self) -> dict[str, int]:
@@ -815,7 +822,7 @@ class OutputPolicyExecuteOnce(OutputPolicyExecuteCount):
 SingleExecutionExactOutput = OutputPolicyExecuteOnce
 
 
-@serializable()
+@serializable(canonical_name="CustomPolicy", version=1)
 class CustomPolicy(type):
     # capture the init_kwargs transparently
     def __call__(cls, *args: Any, **kwargs: Any) -> None:
@@ -824,10 +831,10 @@ class CustomPolicy(type):
         return obj
 
 
-recursive_serde_register_type(CustomPolicy)
+recursive_serde_register_type(CustomPolicy, canonical_name="CustomPolicy", version=1)
 
 
-@serializable()
+@serializable(canonical_name="CustomOutputPolicy", version=1)
 class CustomOutputPolicy(metaclass=CustomPolicy):
     def apply_to_output(
         self,

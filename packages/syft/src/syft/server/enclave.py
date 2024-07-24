@@ -4,7 +4,7 @@ from ..serde.serializable import serializable
 from .server import Server
 
 
-@serializable()
+@serializable(canonical_name="Enclave", version=1)
 class Enclave(Server):
     def post_init(self) -> None:
         self.server_type = ServerType.ENCLAVE

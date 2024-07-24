@@ -210,7 +210,14 @@ def deploy_to_python(
         kwargs["in_memory_workers"] = True
         if port == "auto":
             port = get_random_available_port()
-            kwargs["port"] = port
+        else:
+            try:
+                port = int(port)
+            except ValueError:
+                raise ValueError(
+                    f"port must be either 'auto' or a valid int not: {port}"
+                )
+        kwargs["port"] = port
 
         sig = inspect.signature(serve_server)
         supported_kwargs = {k: v for k, v in kwargs.items() if k in sig.parameters}
@@ -259,19 +266,26 @@ def deploy_to_remote(
     deployment_type_enum: DeploymentType,
     name: str,
     server_side_type: ServerSideType,
+    host: str | None = None,
+    port: int | None = None,
     migrate: bool = False,
 ) -> ServerHandle:
-    server_port = int(os.environ.get("SERVER_PORT", f"{DEFAULT_PORT}"))
-    server_url = str(os.environ.get("SERVER_URL", f"{DEFAULT_URL}"))
     if migrate:
         raise ValueError("Cannot migrate via orchestra on remote server")
+
+    # Preference order: Environment Variable > Argument > Default
+    server_url = os.getenv("SERVER_URL") or host or DEFAULT_URL
+    server_port = os.getenv("SERVER_PORT") or port or DEFAULT_PORT
+    if server_port == "auto":
+        raise ValueError("Cannot use auto port on remote server")
+
     return ServerHandle(
         server_type=server_type_enum,
         deployment_type=deployment_type_enum,
         name=name,
-        port=server_port,
-        url=server_url,
         server_side_type=server_side_type,
+        url=server_url,
+        port=int(server_port),
     )
 
 
@@ -351,6 +365,8 @@ class Orchestra:
                 server_type_enum=server_type_enum,
                 deployment_type_enum=deployment_type_enum,
                 name=name,
+                host=host,
+                port=port,
                 server_side_type=server_side_type_enum,
                 migrate=migrate,
             )

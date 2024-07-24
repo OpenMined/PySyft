@@ -16,7 +16,7 @@ from .log_stash import LogStash
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="LogService", version=1)
 class LogService(AbstractService):
     store: DocumentStore
     stash: LogStash

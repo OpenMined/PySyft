@@ -31,7 +31,7 @@ from .settings import ServerSettingsUpdate
 from .settings_stash import SettingsStash
 
 
-@serializable()
+@serializable(canonical_name="SettingsService", version=1)
 class SettingsService(AbstractService):
     store: DocumentStore
     stash: SettingsStash

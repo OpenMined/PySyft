@@ -89,7 +89,7 @@ def add_default_uploader(
     return obj
 
 
-@serializable()
+@serializable(canonical_name="DatasiteClient", version=1)
 class DatasiteClient(SyftClient):
     def __repr__(self) -> str:
         return f"<DatasiteClient: {self.name}>"
@@ -103,6 +103,7 @@ class DatasiteClient(SyftClient):
 
         user = self.users.get_current_user()
         dataset = add_default_uploader(user, dataset)
+
         for i in range(len(dataset.asset_list)):
             asset = dataset.asset_list[i]
             dataset.asset_list[i] = add_default_uploader(user, asset)

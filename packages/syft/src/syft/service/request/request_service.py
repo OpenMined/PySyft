@@ -34,7 +34,7 @@ from .request_stash import RequestStash
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="RequestService", version=1)
 class RequestService(AbstractService):
     store: DocumentStore
     stash: RequestStash

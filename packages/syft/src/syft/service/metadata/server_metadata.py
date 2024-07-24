@@ -95,7 +95,7 @@ class ServerMetadataV4(SyftObject):
         )
 
 
-@serializable()
+@serializable(canonical_name="ServerMetadataJSON", version=1)
 class ServerMetadataJSON(BaseModel, StorableObjectType):
     metadata_version: int
     name: str

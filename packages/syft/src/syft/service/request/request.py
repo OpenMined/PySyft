@@ -64,7 +64,7 @@ from ..user.user import UserView
 logger = logging.getLogger(__name__)
 
 
-@serializable()
+@serializable(canonical_name="RequestStatus", version=1)
 class RequestStatus(Enum):
     PENDING = 0
     REJECTED = 1

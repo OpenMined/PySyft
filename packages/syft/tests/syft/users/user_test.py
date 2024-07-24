@@ -14,9 +14,8 @@ from syft.server.server import get_default_root_email
 from syft.server.worker import Worker
 from syft.service.context import AuthedServiceContext
 from syft.service.response import SyftError
-from syft.service.user.user import ServiceRole
+from syft.service.user.user import ServiceRole, UserUpdate
 from syft.service.user.user import UserCreate
-from syft.service.user.user import UserUpdate
 from syft.service.user.user import UserView
 from syft.types.errors import SyftException
 
@@ -52,7 +51,7 @@ def get_mock_client(root_client, role) -> DatasiteClient:
 
     user_id = [u for u in get_users(worker) if u.email == mail][0].id
     assert worker.root_client.api.services.user.update(
-        user_id, UserUpdate(user_id=user_id, role=role)
+        uid=user_id, role=role
     )
 
     client = client.login(email=mail, password=password)
@@ -121,15 +120,11 @@ def test_user_create(worker, do_client, guest_client, ds_client, root_client):
         assert not manually_call_service(worker, client, "user.create")
 
     for client in [do_client, root_client]:
+        user_create = UserCreate(
+            email=Faker().email(), name="z", password="pw", password_verify="pw"
+        )
         res = manually_call_service(
-            worker,
-            client,
-            "user.create",
-            args=[
-                UserCreate(
-                    email=Faker().email(), name="z", password="pw", password_verify="pw"
-                )
-            ],
+            worker, client, "user.create", args=[], kwargs={**user_create}
         )
         assert isinstance(res, SyftSuccess)
         assert isinstance(res.value, UserView)
@@ -186,14 +181,14 @@ def test_user_update_roles(do_client, guest_client, ds_client, root_client, work
     clients = [get_mock_client(root_client, role) for role in DO_ROLES]
     for _c in clients:
         assert worker.root_client.api.services.user.update(
-            _c.user_id, UserUpdate(role=ServiceRole.ADMIN)
+            uid=_c.user_id, role=ServiceRole.ADMIN
         )
 
     # DOs can update the roles of lower roles
     clients = [get_mock_client(root_client, role) for role in DS_ROLES]
     for _c in clients:
         assert do_client.api.services.user.update(
-            _c.user_id, UserUpdate(role=ServiceRole.DATA_SCIENTIST)
+            uid=_c.user_id, role=ServiceRole.DATA_SCIENTIST
         )
 
     clients = [get_mock_client(root_client, role) for role in ADMIN_ROLES]
@@ -203,7 +198,7 @@ def test_user_update_roles(do_client, guest_client, ds_client, root_client, work
         for target_role in [ServiceRole.DATA_OWNER, ServiceRole.ADMIN]:
             with pytest.raises(SyftException) as exc:
                 do_client.api.services.user.update(
-                    _c.user_id, UserUpdate(role=target_role)
+                    uid=_c.user_id, role=target_role
                 )
             assert exc.type == SyftException
             assert exc.value.public_message
@@ -218,7 +213,7 @@ def test_user_update_roles(do_client, guest_client, ds_client, root_client, work
             if target_role < _c.role:
                 with pytest.raises(SyftException) as exc:
                     do_client.api.services.user.update(
-                        _c.user_id, UserUpdate(role=target_role)
+                        uid=_c.user_id, role=target_role
                     )
                 assert exc.type == SyftException
 
@@ -228,7 +223,7 @@ def test_user_update_roles(do_client, guest_client, ds_client, root_client, work
         for target_role in ADMIN_ROLES:
             with pytest.raises(SyftException) as exc:
                 ds_client.api.services.user.update(
-                    _c.user_id, UserUpdate(role=target_role)
+                    uid=_c.user_id, role=target_role
                 )
             assert exc.type == SyftException
 
@@ -238,7 +233,7 @@ def test_user_update_roles(do_client, guest_client, ds_client, root_client, work
         for target_role in ADMIN_ROLES:
             with pytest.raises(SyftException) as exc:
                 guest_client.api.services.user.update(
-                    _c.user_id, UserUpdate(role=target_role)
+                    uid=_c.user_id, role=target_role
                 )
             assert exc.type == SyftException
 
@@ -251,19 +246,17 @@ def test_user_update(root_client):
         for target_client in target_clients:
             if executing_client.role != ServiceRole.ADMIN:
                 with pytest.raises(SyftException) as exc:
-                    executing_client.api.services.user.update(
-                        target_client.user_id, UserUpdate(name="abc")
+                    assert not executing_client.api.services.user.update(
+                        uid=target_client.user_id, name="abc"
                     )
-                assert exc.type == SyftException
-                assert exc.value.public_message
             else:
                 assert executing_client.api.services.user.update(
-                    target_client.user_id, UserUpdate(name="abc")
+                    uid=target_client.user_id, name="abc"
                 )
 
         # you can update yourself
         assert executing_client.api.services.user.update(
-            executing_client.user_id, UserUpdate(name=Faker().name())
+            uid=executing_client.user_id, name=Faker().name()
         )
 
 
@@ -279,7 +272,7 @@ def test_guest_user_update_to_root_email_failed(
     for client in [root_client, do_client, guest_client, ds_client]:
         with pytest.raises(SyftException) as exc:
             client.api.services.user.update(
-                uid=client.me.id, user_update=user_update_to_root_email
+                uid=client.me.id, **user_update_to_root_email
             )
 
         assert exc.type == SyftException
@@ -294,10 +287,11 @@ def test_user_view_set_password(worker: Worker, root_client: DatasiteClient) -> 
     email = root_client.me.email
 
     # log in again with the wrong password
-    # FIX: This should raise...
-    res = worker.root_client.login(email=email, password="1234")
-    assert type(res) == SyftError
-    assert res.message == "Invalid credentials."
+    with pytest.raises(SyftException) as exc:
+        worker.root_client.login(email=email, password="1234")
+
+    assert exc.type == SyftException
+    assert exc.value.public_message == "Invalid credentials."
 
     # log in again with the right password
     root_client_b = worker.root_client.login(email=email, password="123")
@@ -401,8 +395,8 @@ def test_user_view_update_name_institution_website(
 
 def test_user_view_set_role(worker: Worker, guest_client: DatasiteClient) -> None:
     admin_client = get_mock_client(worker.root_client, ServiceRole.ADMIN)
-
     assert admin_client.me.role == ServiceRole.ADMIN
+
     admin_client.register(
         name="Sheldon Cooper",
         email="sheldon@caltech.edu",
@@ -471,6 +465,7 @@ def test_user_view_set_role_admin(faker: Faker) -> None:
         institution="Caltech",
         website="https://www.caltech.edu/",
     )
+
     assert len(datasite_client.users.get_all()) == 3
 
     datasite_client.users[1].update(role="admin")

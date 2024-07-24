@@ -143,7 +143,7 @@ class MainObjectDiffWidget:
     @property
     def warning_html(self) -> str:
         if isinstance(self.diff.non_empty_object, TwinAPIEndpoint):
-            message = "Only the public function of a TwinAPI will be synced to the public server."
+            message = "Only the public function of a TwinAPI will be synced to the low-side server."
             return Alert(message=message).to_html()
         elif self.show_share_warning:
             message = (

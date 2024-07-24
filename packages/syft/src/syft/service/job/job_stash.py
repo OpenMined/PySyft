@@ -60,7 +60,7 @@ from ..user.user import UserView
 from .html_template import job_repr_template
 
 
-@serializable()
+@serializable(canonical_name="JobStatus", version=1)
 class JobStatus(str, Enum):
     CREATED = "created"
     PROCESSING = "processing"
@@ -111,7 +111,7 @@ class JobV4(SyncableSyftObject):
     __exclude_sync_diff_attrs__ = ["action"]
 
 
-@serializable()
+@serializable(canonical_name="JobType", version=1)
 class JobType(str, Enum):
     JOB = "job"
     TWINAPIJOB = "twinapijob"
@@ -852,7 +852,7 @@ class JobInfo(SyftObject):
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="JobStash", version=1)
 class JobStash(NewBaseUIDStoreStash):
     object_type = Job
     settings: PartitionSettings = PartitionSettings(

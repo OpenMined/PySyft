@@ -22,7 +22,7 @@ PoolNamePartitionKey = PartitionKey(key="name", type_=str)
 PoolImageIDPartitionKey = PartitionKey(key="image_id", type_=UID)
 
 
-@serializable()
+@serializable(canonical_name="SyftWorkerPoolStash", version=1)
 class SyftWorkerPoolStash(NewBaseUIDStoreStash):
     object_type = WorkerPool
     settings: PartitionSettings = PartitionSettings(

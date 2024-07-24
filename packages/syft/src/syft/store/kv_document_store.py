@@ -33,7 +33,7 @@ from .document_store import QueryKeys
 from .document_store import StorePartition
 
 
-@serializable()
+@serializable(canonical_name="UniqueKeyCheck", version=1)
 class UniqueKeyCheck(Enum):
     EMPTY = 0
     MATCHES = 1

@@ -24,7 +24,7 @@ from .notifier_stash import NotifierStash
 logger = logging.getLogger(__name__)
 
 
-@serializable()
+@serializable(canonical_name="NotifierService", version=1)
 class NotifierService(AbstractService):
     store: DocumentStore
     stash: NotifierStash  # Which stash should we use?

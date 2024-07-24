@@ -14,7 +14,7 @@ from .queue_stash import QueueStash
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="QueueService", version=1)
 class QueueService(AbstractService):
     store: DocumentStore
     stash: QueueStash

@@ -14,7 +14,8 @@ from botocore.client import ClientError as BotoClientError
 from botocore.client import Config
 from botocore.exceptions import ConnectionError
 import requests
-from result import as_result
+from syft.types.result import as_result
+from syft.types.errors import SyftException
 from tenacity import retry
 from tenacity import retry_if_exception_type
 from tenacity import stop_after_delay
@@ -177,7 +178,7 @@ class SeaweedFSBlobDeposit(BlobDeposit):
         )
 
 
-@serializable()
+@serializable(canonical_name="SeaweedFSClientConfig", version=1)
 class SeaweedFSClientConfig(BlobStorageClientConfig):
     host: str
     port: int
@@ -200,7 +201,7 @@ class SeaweedFSClientConfig(BlobStorageClientConfig):
         return f"http://{self.host}:{self.mount_port}/configure_azure"
 
 
-@serializable()
+@serializable(canonical_name="SeaweedFSClient", version=1)
 class SeaweedFSClient(BlobStorageClient):
     config: SeaweedFSClientConfig
 
@@ -219,7 +220,7 @@ class SeaweedFSClient(BlobStorageClient):
         )
 
 
-@serializable()
+@serializable(canonical_name="SeaweedFSConnection", version=1)
 class SeaweedFSConnection(BlobStorageConnection):
     client: S3BaseClient
     default_bucket_name: str
@@ -326,7 +327,7 @@ class SeaweedFSConnection(BlobStorageConnection):
             raise SyftException(public_message=str(e))
 
 
-@serializable()
+@serializable(canonical_name="SeaweedFSConfig", version=1)
 class SeaweedFSConfig(BlobStorageConfig):
     client_type: type[BlobStorageClient] = SeaweedFSClient
     client_config: SeaweedFSClientConfig

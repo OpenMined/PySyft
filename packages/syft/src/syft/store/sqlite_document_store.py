@@ -72,7 +72,11 @@ def raise_exception(table_name: str, e: Exception) -> Exception:
         return e
 
 
-@serializable(attrs=["index_name", "settings", "store_config"])
+@serializable(
+    attrs=["index_name", "settings", "store_config"],
+    canonical_name="SQLiteBackingStore",
+    version=1,
+)
 class SQLiteBackingStore(KeyValueBackingStore):
     """Core Store logic for the SQLite stores.
 
@@ -344,7 +348,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
             logger.error("Could not close connection", exc_info=e)
 
 
-@serializable()
+@serializable(canonical_name="SQLiteStorePartition", version=1)
 class SQLiteStorePartition(KeyValueStorePartition):
     """SQLite StorePartition
 
@@ -379,7 +383,7 @@ class SQLiteStorePartition(KeyValueStorePartition):
 
 
 # the base document store is already a dict but we can change it later
-@serializable()
+@serializable(canonical_name="SQLiteDocumentStore", version=1)
 class SQLiteDocumentStore(DocumentStore):
     """SQLite Document Store
 
@@ -391,7 +395,7 @@ class SQLiteDocumentStore(DocumentStore):
     partition_type = SQLiteStorePartition
 
 
-@serializable()
+@serializable(canonical_name="SQLiteStoreClientConfig", version=1)
 class SQLiteStoreClientConfig(StoreClientConfig):
     """SQLite connection config
 

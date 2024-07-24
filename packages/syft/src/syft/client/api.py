@@ -94,9 +94,10 @@ IPYNB_BACKGROUND_PREFIXES = ["_ipy", "_repr", "__ipython", "__pydantic"]
 
 
 @exclude_from_traceback
-def post_process_result(path: str, result: Any, unwrap_on_success: bool = False) -> Any:
+def post_process_result(result: Any, unwrap_on_success: bool = False) -> Any:
     if isinstance(result, SyftError):
         raise SyftException(public_message=result.message, server_trace=result.tb)
+
     if unwrap_on_success:
         result = result.unwrap_value()
 
@@ -339,7 +340,7 @@ class RemoteFunction(SyftObject):
             to_protocol=self.communication_protocol, args=args, kwargs=kwargs
         )
 
-        return args, kwargs
+        return tuple(args), kwargs
 
     def function_call(
         self, path: str, *args: Any, cache_result: bool = True, **kwargs: Any
@@ -384,7 +385,7 @@ class RemoteFunction(SyftObject):
             [result], kwargs={}, to_latest_protocol=True
         )
         result = result[0]
-        return post_process_result(api_call.path, result, self.unwrap_on_success)
+        return post_process_result(result, self.unwrap_on_success)
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         return self.function_call(self.path, *args, **kwargs)
@@ -521,7 +522,7 @@ class RemoteUserCodeFunction(RemoteFunction):
             to_protocol=self.communication_protocol, args=args, kwargs=kwargs
         )
 
-        return args, kwargs
+        return tuple(args), kwargs
 
     @property
     def user_code_id(self) -> UID | None:
@@ -542,7 +543,7 @@ class RemoteUserCodeFunction(RemoteFunction):
             blocking=True,
         )
         result = self.make_call(api_call=api_call)
-        return post_process_result(api_call.path, result, self.unwrap_on_success)
+        return post_process_result(result, self.unwrap_on_success)
 
 
 def generate_remote_function(
@@ -668,7 +669,7 @@ def generate_remote_lib_function(
         )
 
         result = wrapper_make_call(api_call=api_call)
-        result = post_process_result("action.execute", result, unwrap_on_success=True)
+        result = post_process_result(result, unwrap_on_success=True)
 
         return result
 
@@ -689,7 +690,7 @@ class APISubModulesView(SyftObject):
         return {"submodule": self.submodule, "endpoints": "\n".join(self.endpoints)}
 
 
-@serializable()
+@serializable(canonical_name="APIModule", version=1)
 class APIModule:
     _modules: list[str]
     path: str
@@ -1320,7 +1321,7 @@ except Exception:
     pass  # nosec
 
 
-@serializable()
+@serializable(canonical_name="ServerIdentity", version=1)
 class ServerIdentity(Identity):
     server_name: str
 

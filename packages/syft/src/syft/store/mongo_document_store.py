@@ -117,7 +117,7 @@ def from_mongo(
     return _deserialize(storage_obj["__blob__"], from_bytes=True)
 
 
-@serializable(attrs=["storage_type"])
+@serializable(attrs=["storage_type"], canonical_name="MongoStorePartition", version=1)
 class MongoStorePartition(StorePartition):
     """Mongo StorePartition
 
@@ -722,7 +722,7 @@ class MongoStorePartition(StorePartition):
         )
 
 
-@serializable()
+@serializable(canonical_name="MongoDocumentStore", version=1)
 class MongoDocumentStore(DocumentStore):
     """Mongo Document Store
 
@@ -734,7 +734,11 @@ class MongoDocumentStore(DocumentStore):
     partition_type = MongoStorePartition
 
 
-@serializable(attrs=["index_name", "settings", "store_config"])
+@serializable(
+    attrs=["index_name", "settings", "store_config"],
+    canonical_name="MongoBackingStore",
+    version=1,
+)
 class MongoBackingStore(KeyValueBackingStore):
     """
     Core logic for the MongoDB key-value store

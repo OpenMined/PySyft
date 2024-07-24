@@ -27,7 +27,7 @@ from .object_migration_state import SyftMigrationStateStash
 from .object_migration_state import SyftObjectMigrationState
 
 
-@serializable()
+@serializable(canonical_name="MigrationService", version=1)
 class MigrationService(AbstractService):
     store: DocumentStore
     stash: SyftMigrationStateStash

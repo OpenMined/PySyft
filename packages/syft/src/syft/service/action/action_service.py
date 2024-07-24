@@ -54,7 +54,7 @@ from .pandas import PandasSeriesObject  # noqa: F401
 logger = logging.getLogger(__name__)
 
 
-@serializable()
+@serializable(canonical_name="ActionService", version=1)
 class ActionService(AbstractService):
     store_type = ActionStore
 
@@ -193,10 +193,9 @@ class ActionService(AbstractService):
             if action_object.mock_obj.syft_action_saved_to_blob_store:
                 blob_id = action_object.mock_obj.syft_blob_storage_entry_id
                 permission = ActionObjectPermission(blob_id, ActionPermission.ALL_READ)
-                blob_storage_service: AbstractService = context.server.get_service(
-                    BlobStorageService
-                )
-                blob_storage_service.stash.add_permission(permission).unwrap()
+                blob_storage_service: BlobStorageService = context.server.get_service( BlobStorageService)
+                # add_permission is not resultified.
+                blob_storage_service.stash.add_permission(permission)
 
             if has_result_read_permission:
                 action_object = action_object.private
@@ -287,11 +286,11 @@ class ActionService(AbstractService):
 
         # Resolve graph links
         if (
-            not isinstance(obj, TwinObject)  # type: ignore[unreachable]
+            not isinstance(obj, TwinObject)
             and resolve_nested
             and obj.is_link
         ):
-            if not self.is_resolved(  # type: ignore[unreachable]
+            if not self.is_resolved(
                 context, obj.syft_action_data.action_object_id.id
             ).unwrap():
                 raise SyftException(public_message="This object is not resolved yet.")
@@ -367,9 +366,13 @@ class ActionService(AbstractService):
         input_policy = code_item.get_input_policy(context)
         output_policy = code_item.get_output_policy(context)
 
+        # Unwrap nested ActionObjects
+        for _, arg in kwargs.items():
+            self.flatten_action_arg(context, arg) if isinstance(arg, UID) else None
+
         if not override_execution_permission:
             if input_policy is None:
-                if not code_item.is_output_policy_approved(context):
+                if not code_item.is_output_policy_approved(context).unwrap():
                     raise SyftException(
                         public_message="Execution denied: Your code is waiting for approval"
                     )
@@ -382,6 +385,7 @@ class ActionService(AbstractService):
                 kwargs=kwargs, context=context, code_item_id=code_item.id
             ).unwrap()
 
+            print(f"filtered_kwargs #1: {filtered_kwargs}")
             # validate input policy, raises if not valid
             input_policy._is_valid(
                 context=context,
@@ -398,7 +402,6 @@ class ActionService(AbstractService):
             ).unwrap()
 
         # update input policy to track any input state
-
         has_twin_inputs = False
 
         real_kwargs = {}
@@ -479,6 +482,9 @@ class ActionService(AbstractService):
                     mock_obj=result_action_object_mock,
                 )
         except Exception as e:
+            print('\n\n\nkakakkaak\n\n\n\n', str(e))
+            import traceback
+            traceback.format_exc()
             # third party
             raise SyftException.from_exception(
                 exc=e, public_message="_user_code_execute failed"
@@ -715,6 +721,78 @@ class ActionService(AbstractService):
         else:
             return execute_object(self, context, resolved_self, action).unwrap()  # type:ignore[unreachable]
 
+    def unwrap_nested_actionobjects(
+        self, context: AuthedServiceContext, data: Any
+    ) -> Any:
+        """recursively unwraps nested action objects"""
+
+        if isinstance(data, list):
+            return [self.unwrap_nested_actionobjects(context, obj) for obj in data]
+        if isinstance(data, dict):
+            return {
+                key: self.unwrap_nested_actionobjects(context, obj)
+                for key, obj in data.items()
+            }
+        if isinstance(data, ActionObject):
+            res = self.get(context=context, uid=data.id)
+            res = res.ok() if res.is_ok() else res.err()
+            if not isinstance(res, ActionObject):
+                return SyftError(message=f"{res}")
+            else:
+                nested_res = res.syft_action_data
+                if isinstance(nested_res, ActionObject):
+                    raise ValueError(
+                        "More than double nesting of ActionObjects is currently not supported"
+                    )
+                return nested_res
+        return data
+
+    def contains_nested_actionobjects(self, data: Any) -> bool:
+        """
+        returns if this is a list/set/dict that contains ActionObjects
+        """
+        def unwrap_collection(col: set | dict | list) -> [Any]:  # type: ignore
+            return_values = []
+            if isinstance(col, dict):
+                values = list(col.values()) + list(col.keys())
+            else:
+                values = list(col)
+            for v in values:
+                if isinstance(v, list | dict | set):
+                    return_values += unwrap_collection(v)
+                else:
+                    return_values.append(v)
+            return return_values
+
+        if isinstance(data, list | dict | set):
+            values = unwrap_collection(data)
+            has_action_object = any(isinstance(x, ActionObject) for x in values)
+            return has_action_object
+        elif isinstance(data, ActionObject):
+            return True
+        return False
+
+    def flatten_action_arg(self, context: AuthedServiceContext, arg: UID) -> UID | None:
+        """ "If the argument is a collection (of collections) of ActionObjects,
+        We want to flatten the collection and upload a new ActionObject that contains
+        its values. E.g. [[ActionObject1, ActionObject2],[ActionObject3, ActionObject4]]
+        -> [[value1, value2],[value3, value4]]
+        """
+        action_object = self.get(context=context, uid=arg)
+        data = action_object.syft_action_data
+
+        if self.contains_nested_actionobjects(data):
+            new_data = self.unwrap_nested_actionobjects(context, data)
+            # Update existing action object with the new flattened data
+            action_object.syft_action_data_cache = new_data
+            action_object._save_to_blob_storage().unwrap()
+            self._set(
+                context=context,
+                action_object=action_object,
+            )
+
+        return None
+
     @service_method(path="action.execute", name="execute", roles=GUEST_ROLE_LEVEL)
     def execute(self, context: AuthedServiceContext, action: Action) -> ActionObject:
         """Execute an operation on objects in the action store"""
@@ -920,10 +998,15 @@ def execute_object(
     kwargs, has_kwargs_twins = resolve_action_kwargs(action, context, service).unwrap()
     has_twin_inputs = has_arg_twins or has_kwargs_twins
 
+    print("fucking hellllllll")
+    print(f"kwargs: {kwargs}")
+    print(f"has_twin_inputs: {has_twin_inputs}")
+
     # 🔵 TODO 10: Get proper code From old RunClassMethodAction to ensure the function
     # is not bound to the original object or mutated
     target_method = getattr(unboxed_resolved_self, action.op, None)
     result = None
+
     if not target_method:
         raise SyftException(public_message="could not find target method")
     if twin_mode == TwinMode.NONE and not has_twin_inputs:
@@ -1001,6 +1084,7 @@ def filter_twin_kwargs(
 ) -> Any:
     filtered = {}
     for k, v in kwargs.items():
+        print(f'type: {type(v)}, {v}')
         if isinstance(v, TwinObject):
             if twin_mode == TwinMode.PRIVATE:
                 filtered[k] = v.private.syft_action_data
@@ -1019,7 +1103,6 @@ def filter_twin_kwargs(
             ):
                 filtered[k] = v
             else:
-                # third party
                 raise SyftException(
                     public_message=f"unexepected value {v} passed to filtered twin kwargs"
                 )

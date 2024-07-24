@@ -42,7 +42,7 @@ def wait_until(predicate: Callable[[], bool], timeout: int = 10) -> SyftSuccess:
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="JobService", version=1)
 class JobService(AbstractService):
     store: DocumentStore
     stash: JobStash

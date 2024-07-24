@@ -35,7 +35,7 @@ from .routes import route_to_connection
 logger = logging.getLogger(__name__)
 
 
-@serializable()
+@serializable(canonical_name="ServerPeerConnectionStatus", version=1)
 class ServerPeerConnectionStatus(Enum):
     ACTIVE = "ACTIVE"
     INACTIVE = "INACTIVE"

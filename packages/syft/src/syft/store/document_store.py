@@ -39,7 +39,7 @@ from .locks import NoLockingConfig
 from .locks import SyftLock
 
 
-@serializable()
+@serializable(canonical_name="BasePartitionSettings", version=1)
 class BasePartitionSettings(SyftBaseModel):
     """Basic Partition Settings
 
@@ -77,7 +77,7 @@ class StoreClientConfig(BaseModel):
     pass
 
 
-@serializable()
+@serializable(canonical_name="PartitionKey", version=1)
 class PartitionKey(BaseModel):
     key: str
     type_: type | object
@@ -115,7 +115,7 @@ class PartitionKey(BaseModel):
         return is_generic_alias(self.type_) and self.type_.__origin__ == list
 
 
-@serializable()
+@serializable(canonical_name="PartitionKeys", version=1)
 class PartitionKeys(BaseModel):
     pks: PartitionKey | tuple[PartitionKey, ...] | list[PartitionKey]
 
@@ -141,7 +141,7 @@ class PartitionKeys(BaseModel):
         return PartitionKeys(pks=pks)
 
 
-@serializable()
+@serializable(canonical_name="QueryKey", version=1)
 class QueryKey(PartitionKey):
     value: Any = None
 
@@ -198,7 +198,7 @@ class QueryKey(PartitionKey):
         return {key: self.value}
 
 
-@serializable()
+@serializable(canonical_name="PartitionKeysWithUID", version=1)
 class PartitionKeysWithUID(PartitionKeys):
     uid_pk: PartitionKey
 
@@ -210,7 +210,7 @@ class PartitionKeysWithUID(PartitionKeys):
         return all_keys
 
 
-@serializable()
+@serializable(canonical_name="QueryKeys", version=1)
 class QueryKeys(SyftBaseModel):
     qks: QueryKey | tuple[QueryKey, ...] | list[QueryKey]
 
@@ -291,7 +291,7 @@ class QueryKeys(SyftBaseModel):
 UIDPartitionKey = PartitionKey(key="id", type_=UID)
 
 
-@serializable()
+@serializable(canonical_name="PartitionSettings", version=1)
 class PartitionSettings(BasePartitionSettings):
     object_type: type
     store_key: PartitionKey = UIDPartitionKey
@@ -307,7 +307,11 @@ class PartitionSettings(BasePartitionSettings):
 
 
 @instrument
-@serializable(attrs=["settings", "store_config", "unique_cks", "searchable_cks"])
+@serializable(
+    attrs=["settings", "store_config", "unique_cks", "searchable_cks"],
+    canonical_name="StorePartition",
+    version=1,
+)
 class StorePartition:
     """Base StorePartition
 
@@ -586,7 +590,7 @@ class StorePartition:
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="DocumentStore", version=1)
 class DocumentStore:
     """Base Document Store
 

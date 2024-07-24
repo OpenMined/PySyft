@@ -19,7 +19,11 @@ from ..util.util import verify_tls
 logger = logging.getLogger(__name__)
 
 
-@serializable(attrs=["protocol", "host_or_ip", "port", "path", "query"])
+@serializable(
+    attrs=["protocol", "host_or_ip", "port", "path", "query"],
+    canonical_name="ServerURL",
+    version=1,
+)
 class ServerURL:
     @classmethod
     def from_url(cls, url: str | ServerURL) -> ServerURL:

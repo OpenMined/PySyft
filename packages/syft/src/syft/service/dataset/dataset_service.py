@@ -65,7 +65,7 @@ def _paginate_dataset_collection(
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="DatasetService", version=1)
 class DatasetService(AbstractService):
     store: DocumentStore
     stash: DatasetStash

@@ -806,7 +806,7 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
             syft_server_location=asset.syft_server_location,  # type: ignore
             syft_client_verify_key=asset.syft_client_verify_key,  # type: ignore
         )
-        res = twin._save_to_blob_storage(allow_empty=contains_empty)
+        res = twin._save_to_blob_storage(allow_empty=contains_empty).unwrap()
         if isinstance(res, SyftWarning):
             logger.debug(res.message)
         # TODO, upload to blob storage here

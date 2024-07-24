@@ -20,7 +20,7 @@ from .attestation_constants import ATTEST_CPU_ENDPOINT
 from .attestation_constants import ATTEST_GPU_ENDPOINT
 
 
-@serializable()
+@serializable(canonical_name="AttestationService", version=1)
 class AttestationService(AbstractService):
     """This service is responsible for getting all sorts of attestations for any client."""
 

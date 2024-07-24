@@ -51,7 +51,7 @@ def test_userservice_create_when_user_exists(
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
 
     with pytest.raises(SyftException):
-        user_service.create(authed_context, guest_create_user)
+        user_service.create(authed_context, **guest_create_user)
 
 
 def test_userservice_create_error_on_get_by_email(
@@ -67,7 +67,7 @@ def test_userservice_create_error_on_get_by_email(
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
 
     with pytest.raises(SyftException) as exc:
-        user_service.create(authed_context, guest_create_user)
+        user_service.create(authed_context, **guest_create_user)
 
     assert exc.value.public_message == f"User {guest_create_user.email} already exists"
 
@@ -99,7 +99,7 @@ def test_userservice_create_success(
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
     monkeypatch.setattr(user_service.stash, "set", mock_set)
 
-    response = user_service.create(authed_context, guest_create_user)
+    response = user_service.create(authed_context, **guest_create_user)
     assert isinstance(response, UserView)
     assert response.model_dump() == expected_output.model_dump()
 
@@ -127,7 +127,7 @@ def test_userservice_create_error_on_set(
     monkeypatch.setattr(user_service.stash, "set", mock_set)
 
     with pytest.raises(StashException) as exc:
-        user_service.create(authed_context, guest_create_user)
+        user_service.create(authed_context, **guest_create_user)
 
     assert exc.type == StashException
 
@@ -330,7 +330,7 @@ def test_userservice_update_get_by_uid_fails(
     monkeypatch.setattr(user_service.stash, "get_by_uid", mock_get_by_uid)
 
     with pytest.raises(NotFoundException) as exc:
-        user_service.update(authed_context, uid=random_uid, user_update=update_user)
+        user_service.update(authed_context, uid=random_uid, **update_user)
 
     assert exc.type == NotFoundException
     assert exc.value.public == expected_error_msg
@@ -352,7 +352,7 @@ def test_userservice_update_no_user_exists(
     monkeypatch.setattr(user_service.stash, "get_by_uid", mock_get_by_uid)
 
     with pytest.raises(NotFoundException) as exc:
-        user_service.update(authed_context, uid=random_uid, user_update=update_user)
+        user_service.update(authed_context, uid=random_uid, **update_user)
 
     assert exc.type == NotFoundException
     assert str(exc.value) == expected_error_msg
@@ -382,7 +382,7 @@ def test_userservice_update_success(
 
     authed_context.role = ServiceRole.ADMIN
     user = user_service.update(
-        authed_context, uid=guest_user.id, user_update=update_user
+        authed_context, uid=guest_user.id, **update_user
     )
 
     assert isinstance(user, UserView)
@@ -415,7 +415,7 @@ def test_userservice_update_fails(
     authed_context.role = ServiceRole.ADMIN
 
     with pytest.raises(StashException) as exc:
-        user_service.update(authed_context, uid=guest_user.id, user_update=update_user)
+        user_service.update(authed_context, uid=guest_user.id, **update_user)
 
     assert exc.type == StashException
     assert exc.value.public == StashException.public_message
