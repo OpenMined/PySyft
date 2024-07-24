@@ -7,13 +7,16 @@ from textwrap import dedent
 from typing import Any
 from typing import ClassVar
 from typing import cast
+from functools import partial
 
 # third party
 from IPython.display import display
 from pydantic import ConfigDict
-from result import Err
+from result import Err, OkErr
 from result import Ok
 from result import Result
+
+from ..action.action_service import ActionService
 
 # relative
 from ...client.client import SyftClient
@@ -726,16 +729,30 @@ class ModelRef(ActionObject):
                 "Either context or client should be provided to ModelRef.load_data()"
             )
 
-        client = context.server.root_client if context else self_client
+        if context:
+            action_service_get = partial(context.server.get_service_method(ActionService.get), context)
+
+        else:
+            action_service_get = self_client.api.services.action.get
+
 
         code_action_id = self.syft_action_data[0]
         asset_action_ids = self.syft_action_data[1::]
 
-        model = client.services.action.get(code_action_id)
+        model = action_service_get(code_action_id)
+
+        if isinstance(model, OkErr):
+            if model.is_err():
+                return SyftError(message=f"Failed to load model code:{model.err()}")
+            model = model.ok()
 
         asset_list = []
         for asset_action_id in asset_action_ids:
-            action_object = client.services.action.get(asset_action_id)
+            action_object = action_service_get(asset_action_id)
+            if isinstance(action_object, OkErr):
+                if action_object.is_err():
+                    return SyftError(message=f"Failed to load asset:{action_object.err()}")
+                action_object = action_object.ok()
             action_data = action_object.syft_action_data
 
             # Save to blob storage of remote client if provided

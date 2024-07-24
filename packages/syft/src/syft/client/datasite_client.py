@@ -145,6 +145,9 @@ class DatasiteClient(SyftClient):
 
                 if isinstance(res, SyftWarning):
                     logger.debug(res.message)
+                # Clear Cache before saving
+                twin.private_obj._clear_cache()
+                twin.mock_obj._clear_cache()
                 response = self.api.services.action.set(
                     twin, ignore_detached_objs=contains_empty
                 )
