@@ -45,9 +45,11 @@ from ...store.linked_obj import LinkedObject
 from ...types.base import SyftBaseModel
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftBaseObject
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
+from ...types.transforms import TransformContext
 from ...types.uid import LineageID
 from ...types.uid import UID
 from ...util.util import prompt_warning_message
@@ -664,6 +666,7 @@ BASE_PASSTHROUGH_ATTRS: list[str] = [
     "_clear_cache",
     "_set_reprs",
     "hash",
+    "syft_action_data_hash",
 ]
 
 
@@ -676,7 +679,7 @@ def truncate_str(string: str, length: int = 100) -> str:
 
 
 @serializable(without=["syft_pre_hooks__", "syft_post_hooks__"])
-class ActionObject(SyncableSyftObject):
+class ActionObjectV1(SyncableSyftObject):
     """Action object for remote execution."""
 
     __canonical_name__ = "ActionObject"
@@ -690,6 +693,47 @@ class ActionObject(SyncableSyftObject):
     syft_action_data_cache: Any | None = None
     syft_blob_storage_entry_id: UID | None = None
     syft_pointer_type: ClassVar[type[ActionObjectPointer]]
+
+    # Help with calculating history hash for code verification
+    syft_parent_hashes: int | list[int] | None = None
+    syft_parent_op: str | None = None
+    syft_parent_args: Any | None = None
+    syft_parent_kwargs: Any | None = None
+    syft_history_hash: int | None = None
+    syft_internal_type: ClassVar[type[Any]]
+    syft_server_uid: UID | None = None
+    syft_pre_hooks__: dict[str, list] = {}
+    syft_post_hooks__: dict[str, list] = {}
+    syft_twin_type: TwinMode = TwinMode.NONE
+    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
+    syft_action_data_type: type | None = None
+    syft_action_data_repr_: str | None = None
+    syft_action_data_str_: str | None = None
+    syft_has_bool_attr: bool | None = None
+    syft_resolve_data: bool | None = None
+    syft_created_at: DateTime | None = None
+    syft_resolved: bool = True
+    syft_action_data_server_id: UID | None = None
+    syft_action_saved_to_blob_store: bool = True
+    # syft_dont_wrap_attrs = ["shape"]
+
+
+@serializable(without=["syft_pre_hooks__", "syft_post_hooks__"])
+class ActionObject(SyncableSyftObject):
+    """Action object for remote execution."""
+
+    __canonical_name__ = "ActionObject"
+    __version__ = SYFT_OBJECT_VERSION_2
+    __private_sync_attr_mocks__: ClassVar[dict[str, Any]] = {
+        "syft_action_data_cache": None,
+        "syft_blob_storage_entry_id": None,
+    }
+
+    __attr_searchable__: list[str] = []  # type: ignore[misc]
+    syft_action_data_cache: Any | None = None
+    syft_blob_storage_entry_id: UID | None = None
+    syft_pointer_type: ClassVar[type[ActionObjectPointer]]
+    syft_action_data_hash: str | None = None
 
     # Help with calculating history hash for code verification
     syft_parent_hashes: int | list[int] | None = None
@@ -2212,10 +2256,37 @@ class ActionObject(SyncableSyftObject):
 
     # Custom Hash Function for ActionObject
     # hash([id, syft_action_data])
-    def hash(self) -> str:
+    def hash(
+        self,
+        recalculate: bool = False,
+        context: AuthedServiceContext | TransformContext | None = None,
+    ) -> str:
+        if not recalculate and self.syft_action_data_hash:
+            logging.info("Loading cached hash")
+            return self.syft_action_data_hash
+
         hash_items = [self.id, self.syft_action_data]
         hash_bytes = serialize(hash_items, to_bytes=True)
-        return hashlib.sha256(hash_bytes).hexdigest()
+        hash_str = hashlib.sha256(hash_bytes).hexdigest()
+        self.syft_action_data_hash = hash_str
+
+        return self.syft_action_data_hash
+
+
+@serializable()
+class AnyActionObjectV1(ActionObjectV1):
+    """
+    This is a catch-all class for all objects that are not
+    defined in the `action_types` dictionary.
+    """
+
+    __canonical_name__ = "AnyActionObject"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    syft_internal_type: ClassVar[type[Any]] = NoneType  # type: ignore
+    # syft_passthrough_attrs: List[str] = []
+    syft_dont_wrap_attrs: list[str] = ["__str__", "__repr__", "syft_action_data_str_"]
+    syft_action_data_str_: str = ""
 
 
 @serializable()
@@ -2226,7 +2297,7 @@ class AnyActionObject(ActionObject):
     """
 
     __canonical_name__ = "AnyActionObject"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     syft_internal_type: ClassVar[type[Any]] = NoneType  # type: ignore
     # syft_passthrough_attrs: List[str] = []

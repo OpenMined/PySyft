@@ -160,9 +160,17 @@ class ActionService(AbstractService):
                 if action_object.syft_action_saved_to_blob_store
                 else None
             )
+            # Always recalculate the hash when saving
+            # at the server side
+            # Some objects like Model Ref require context to hash
+            action_object.hash(recalculate=True, context=context)  # type: ignore
         else:  # TwinObject
             action_object.private_obj.syft_created_at = DateTime.now()  # type: ignore[unreachable]
             action_object.mock_obj.syft_created_at = DateTime.now()
+
+            # Compute Hash
+            action_object.private_obj.hash(recalculate=True, context=context)
+            action_object.mock_obj.hash(recalculate=True, context=context)
 
             # Clear cache if data is saved to blob storage
             (
@@ -949,6 +957,16 @@ class ActionService(AbstractService):
             return SyftSuccess(message=f"Object: {obj_id} exists")
         else:
             return SyftError(message=f"Object: {obj_id} does not exist")
+
+    @service_method(path="action.get_hash", name="get_hash", roles=GUEST_ROLE_LEVEL)
+    def get_hash(
+        self, context: AuthedServiceContext, obj_id: UID
+    ) -> Result[SyftSuccess, SyftError]:
+        """Returns the hash of the given object id in the Action Store"""
+        action_obj = self.get(context, obj_id)
+        if action_obj.is_err():
+            return SyftError(message=action_obj.err())
+        return action_obj.ok().hash(context=context)
 
     @service_method(path="action.delete", name="delete", roles=ADMIN_ROLE_LEVEL)
     def delete(

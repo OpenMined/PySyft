@@ -681,7 +681,10 @@ class ModelRef(ActionObject):
         return None
 
     def hash(
-        self, context: TransformContext | None = None, client: SyftClient | None = None
+        self,
+        recalculate: bool = False,
+        context: TransformContext | None = None,
+        client: SyftClient | None = None,
     ) -> str:
         if context is None and client is None:
             raise ValueError(
@@ -689,6 +692,9 @@ class ModelRef(ActionObject):
             )
         if context and context.server is None:
             raise ValueError("Context should have a server attached to it.")
+
+        if not recalculate and self.syft_action_data_hash:
+            return self.syft_action_data_hash
 
         if not self.ref_objs:
             if context:
@@ -700,7 +706,9 @@ class ModelRef(ActionObject):
 
         hash_items = [action_obj.hash() for action_obj in action_objs]
         hash_bytes = serialize(hash_items, to_bytes=True)
-        return hashlib.sha256(hash_bytes).hexdigest()
+        hash_str = hashlib.sha256(hash_bytes).hexdigest()
+        self.syft_action_data_hash = hash_str
+        return self.syft_action_data_hash
 
     def load_data(
         self,
