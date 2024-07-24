@@ -295,7 +295,7 @@ class Asset(SyftObject):
             warning = SyftError(
                 message="You do not have permission to access private data."
             )
-            display(warning)
+            display(warning, clear=True)
             return None
 
 

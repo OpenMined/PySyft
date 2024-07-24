@@ -240,21 +240,21 @@ def test_guest_user_update_to_root_email_failed(
     default_root_email: str = get_default_root_email()
     for client in [root_client, do_client, guest_client, ds_client]:
         res = client.api.services.user.update(
-            uid=client.me.id, email=default_root_email
+            uid=client.account.id, email=default_root_email
         )
         assert isinstance(res, SyftError)
         assert res.message == "User already exists"
 
 
 def test_user_view_set_password(worker: Worker, root_client: DatasiteClient) -> None:
-    root_client.me.set_password("123", confirm=False)
-    email = root_client.me.email
+    root_client.account.set_password("123", confirm=False)
+    email = root_client.account.email
     # log in again with the wrong password
     root_client_c = worker.root_client.login(email=email, password="1234")
     assert isinstance(root_client_c, SyftError)
     # log in again with the right password
     root_client_b = worker.root_client.login(email=email, password="123")
-    assert root_client_b.me == root_client.me
+    assert root_client_b.account == root_client.account
 
 
 @pytest.mark.parametrize(
@@ -264,7 +264,7 @@ def test_user_view_set_password(worker: Worker, root_client: DatasiteClient) -> 
 def test_user_view_set_invalid_email(
     root_client: DatasiteClient, invalid_email: str
 ) -> None:
-    result = root_client.me.set_email(invalid_email)
+    result = root_client.account.set_email(invalid_email)
     assert isinstance(result, SyftError)
 
 
@@ -281,9 +281,9 @@ def test_user_view_set_email_success(
     valid_email_root: str,
     valid_email_ds: str,
 ) -> None:
-    result = root_client.me.set_email(valid_email_root)
+    result = root_client.account.set_email(valid_email_root)
     assert isinstance(result, SyftSuccess)
-    result2 = ds_client.me.set_email(valid_email_ds)
+    result2 = ds_client.account.set_email(valid_email_ds)
     assert isinstance(result2, SyftSuccess)
 
 
@@ -291,11 +291,11 @@ def test_user_view_set_default_admin_email_failed(
     ds_client: DatasiteClient, guest_client: DatasiteClient
 ) -> None:
     default_root_email = get_default_root_email()
-    result = ds_client.me.set_email(default_root_email)
+    result = ds_client.account.set_email(default_root_email)
     assert isinstance(result, SyftError)
     assert result.message == "User already exists"
 
-    result_2 = guest_client.me.set_email(default_root_email)
+    result_2 = guest_client.account.set_email(default_root_email)
     assert isinstance(result_2, SyftError)
     assert result_2.message == "User already exists"
 
@@ -303,15 +303,15 @@ def test_user_view_set_default_admin_email_failed(
 def test_user_view_set_duplicated_email(
     root_client: DatasiteClient, ds_client: DatasiteClient, guest_client: DatasiteClient
 ) -> None:
-    result = ds_client.me.set_email(root_client.me.email)
-    result2 = guest_client.me.set_email(root_client.me.email)
+    result = ds_client.account.set_email(root_client.account.email)
+    result2 = guest_client.account.set_email(root_client.account.email)
 
     assert isinstance(result, SyftError)
     assert result.message == "User already exists"
     assert isinstance(result2, SyftError)
     assert result2.message == "User already exists"
 
-    result3 = guest_client.me.set_email(ds_client.me.email)
+    result3 = guest_client.account.set_email(ds_client.account.email)
     assert isinstance(result3, SyftError)
     assert result3.message == "User already exists"
 
@@ -321,27 +321,27 @@ def test_user_view_update_name_institution_website(
     ds_client: DatasiteClient,
     guest_client: DatasiteClient,
 ) -> None:
-    result = root_client.me.update(
+    result = root_client.account.update(
         name="syft", institution="OpenMined", website="https://syft.org"
     )
     assert isinstance(result, SyftSuccess)
-    assert root_client.me.name == "syft"
-    assert root_client.me.institution == "OpenMined"
-    assert root_client.me.website == "https://syft.org"
+    assert root_client.account.name == "syft"
+    assert root_client.account.institution == "OpenMined"
+    assert root_client.account.website == "https://syft.org"
 
-    result2 = ds_client.me.update(name="syft2", institution="OpenMined")
+    result2 = ds_client.account.update(name="syft2", institution="OpenMined")
     assert isinstance(result2, SyftSuccess)
-    assert ds_client.me.name == "syft2"
-    assert ds_client.me.institution == "OpenMined"
+    assert ds_client.account.name == "syft2"
+    assert ds_client.account.institution == "OpenMined"
 
-    result3 = guest_client.me.update(name="syft3")
+    result3 = guest_client.account.update(name="syft3")
     assert isinstance(result3, SyftSuccess)
-    assert guest_client.me.name == "syft3"
+    assert guest_client.account.name == "syft3"
 
 
 def test_user_view_set_role(worker: Worker, guest_client: DatasiteClient) -> None:
     admin_client = get_mock_client(worker.root_client, ServiceRole.ADMIN)
-    assert admin_client.me.role == ServiceRole.ADMIN
+    assert admin_client.account.role == ServiceRole.ADMIN
     admin_client.register(
         name="Sheldon Cooper",
         email="sheldon@caltech.edu",
@@ -353,7 +353,7 @@ def test_user_view_set_role(worker: Worker, guest_client: DatasiteClient) -> Non
     sheldon = admin_client.users[-1]
     assert (
         sheldon.syft_client_verify_key
-        == admin_client.me.syft_client_verify_key
+        == admin_client.account.syft_client_verify_key
         == admin_client.verify_key
     )
     assert sheldon.role == ServiceRole.DATA_SCIENTIST
@@ -365,21 +365,21 @@ def test_user_view_set_role(worker: Worker, guest_client: DatasiteClient) -> Non
     # be able to change his role, even if he is a data owner now
     ds_client = guest_client.login(email="sheldon@caltech.edu", password="changethis")
     assert (
-        ds_client.me.syft_client_verify_key
+        ds_client.account.syft_client_verify_key
         == ds_client.verify_key
         != admin_client.verify_key
     )
-    assert ds_client.me.role == sheldon.role
-    assert ds_client.me.role == ServiceRole.DATA_OWNER
-    assert isinstance(ds_client.me.update(role="guest"), SyftError)
-    assert isinstance(ds_client.me.update(role="data_scientist"), SyftError)
+    assert ds_client.account.role == sheldon.role
+    assert ds_client.account.role == ServiceRole.DATA_OWNER
+    assert isinstance(ds_client.account.update(role="guest"), SyftError)
+    assert isinstance(ds_client.account.update(role="data_scientist"), SyftError)
     # now we set sheldon's role to admin. Only now he can change his role
     sheldon.update(role="admin")
     assert sheldon.role == ServiceRole.ADMIN
     # QA: this is different than when running in the notebook
     assert len(ds_client.users.get_all()) == len(admin_client.users.get_all())
-    assert isinstance(ds_client.me.update(role="guest"), SyftSuccess)
-    assert isinstance(ds_client.me.update(role="admin"), SyftError)
+    assert isinstance(ds_client.account.update(role="guest"), SyftSuccess)
+    assert isinstance(ds_client.account.update(role="admin"), SyftError)
 
 
 def test_user_view_set_role_admin(faker: Faker) -> None:
@@ -405,12 +405,12 @@ def test_user_view_set_role_admin(faker: Faker) -> None:
 
     datasite_client.users[1].update(role="admin")
     ds_client = server.login(email="sheldon@caltech.edu", password="changethis")
-    assert ds_client.me.role == ServiceRole.ADMIN
+    assert ds_client.account.role == ServiceRole.ADMIN
     assert len(ds_client.users.get_all()) == len(datasite_client.users.get_all())
 
     datasite_client.users[2].update(role="admin")
     ds_client_2 = server.login(email="sheldon2@caltech.edu", password="changethis")
-    assert ds_client_2.me.role == ServiceRole.ADMIN
+    assert ds_client_2.account.role == ServiceRole.ADMIN
     assert len(ds_client_2.users.get_all()) == len(datasite_client.users.get_all())
 
     server.python_server.cleanup()
