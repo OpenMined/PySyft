@@ -868,6 +868,8 @@ def add_asset_hash(context: TransformContext) -> TransformContext:
 
     if context.output is None:
         return context
+    if context.server is None:
+        raise ValueError("Context should have a server attached to it.")
 
     action_id = context.output["action_id"]
     if action_id is not None:

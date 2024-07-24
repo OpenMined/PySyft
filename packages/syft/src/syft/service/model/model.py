@@ -2,6 +2,7 @@
 from collections.abc import Callable
 from datetime import datetime
 from enum import Enum
+import hashlib
 from textwrap import dedent
 from typing import Any
 from typing import ClassVar
@@ -17,6 +18,7 @@ from result import Result
 # relative
 from ...client.client import SyftClient
 from ...serde.serializable import serializable
+from ...serde.serialize import _serialize as serialize
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -289,6 +291,7 @@ class Model(SyftObject):
     example_text: str | None = None
     mb_size: float | None = None
     code_action_id: UID | None = None
+    model_hash: str | None = None
 
     def __init__(
         self,
@@ -333,8 +336,9 @@ class Model(SyftObject):
             "created at": str(self.created_at),
         }
 
-    # def _repr_html_(self) -> Any:
-    #     return "todo table"
+    def _repr_html_(self) -> Any:
+        # TODO: Improve Repr
+        return f"Model Hash: {self.model_hash}"
 
     @property
     def assets(self) -> DictTuple[str, ModelAsset]:
@@ -544,6 +548,9 @@ def add_asset_hash(context: TransformContext) -> TransformContext:
     if context.output is None:
         return context
 
+    if context.server is None:
+        raise ValueError("Context should have a server attached to it.")
+
     action_id = context.output["action_id"]
     if action_id is not None:
         action_service = context.server.get_service(ActionService)
@@ -595,23 +602,31 @@ def add_current_date(context: TransformContext) -> TransformContext:
     return context
 
 
-# def add_model_hash(context: TransformContext) -> TransformContext:
-#     # relative
-#     from ..action.action_service import ActionService
+def add_model_hash(context: TransformContext) -> TransformContext:
+    # relative
+    from ..action.action_service import ActionService
 
-#     self_id = context.output["id"]
-#     if self_id is not None:
-#         action_service = context.server.get_service(ActionService)
-#         # Q: Why is service returning an result object [Ok, Err]?
-#         model_ref_action_obj = action_service.get(context=context, uid=self_id)
+    if context.output is None:
+        return context
 
-#         if model_ref_action_obj.is_err():
-#             return SyftError(f"[Model]Failed to get action object with id {model_ref_action_obj.err()}")
-#         context.output["hash"] = model_ref_action_obj.ok().hash()
-#     else:
-#         raise ValueError("Model  must have an valid ID")
+    if context.server is None:
+        raise ValueError("Context should have a server attached to it.")
 
-#     return context
+    self_id = context.output["id"]
+    if self_id is not None:
+        action_service = context.server.get_service(ActionService)
+        # Q: Why is service returning an result object [Ok, Err]?
+        model_ref_action_obj = action_service.get(context=context, uid=self_id)
+
+        if model_ref_action_obj.is_err():
+            return SyftError(
+                f"[Model]Failed to get action object with id {model_ref_action_obj.err()}"
+            )
+        context.output["model_hash"] = model_ref_action_obj.ok().hash(context=context)
+    else:
+        raise ValueError("Model  must have an valid ID")
+
+    return context
 
 
 @transform(CreateModel, Model)
@@ -622,7 +637,7 @@ def createmodel_to_model() -> list[Callable]:
         validate_url,
         convert_asset,
         add_current_date,
-        # add_model_hash,
+        add_model_hash,
     ]
 
 
@@ -665,23 +680,51 @@ class ModelRef(ActionObject):
 
         return None
 
+    def hash(
+        self, context: TransformContext | None = None, client: SyftClient | None = None
+    ) -> str:
+        if context is None and client is None:
+            raise ValueError(
+                "Either context or client should be provided to ModelRef.hash()"
+            )
+        if context and context.server is None:
+            raise ValueError("Context should have a server attached to it.")
+
+        if not self.ref_objs:
+            if context:
+                action_objs = self.load_data(context)
+            else:
+                action_objs = self.load_data(self_client=client)
+        else:
+            action_objs = self.ref_objs
+
+        hash_items = [action_obj.hash() for action_obj in action_objs]
+        hash_bytes = serialize(hash_items, to_bytes=True)
+        return hashlib.sha256(hash_bytes).hexdigest()
+
     def load_data(
         self,
-        context: AuthedServiceContext,
+        context: AuthedServiceContext | None = None,
+        self_client: SyftClient | None = None,
         wrap_ref_to_obj: bool = False,
         unwrap_action_data: bool = True,
         remote_client: SyftClient | None = None,
     ) -> list:
-        admin_client = context.server.root_client
+        if context is None and self_client is None:
+            raise ValueError(
+                "Either context or client should be provided to ModelRef.load_data()"
+            )
+
+        client = context.server.root_client if context else self_client
 
         code_action_id = self.syft_action_data[0]
         asset_action_ids = self.syft_action_data[1::]
 
-        model = admin_client.services.action.get(code_action_id)
+        model = client.services.action.get(code_action_id)
 
         asset_list = []
         for asset_action_id in asset_action_ids:
-            action_object = admin_client.services.action.get(asset_action_id)
+            action_object = client.services.action.get(asset_action_id)
             action_data = action_object.syft_action_data
 
             # Save to blob storage of remote client if provided
