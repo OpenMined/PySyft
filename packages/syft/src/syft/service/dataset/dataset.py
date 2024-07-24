@@ -27,6 +27,7 @@ from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import generate_id
@@ -95,10 +96,33 @@ class Contributor(SyftObject):
 
 
 @serializable()
-class Asset(SyftObject):
+class AssetV1(SyftObject):
     # version
     __canonical_name__ = "Asset"
     __version__ = SYFT_OBJECT_VERSION_1
+
+    action_id: UID
+    server_uid: UID
+    name: str
+    description: MarkdownDescription | None = None
+    contributors: set[Contributor] = set()
+    data_subjects: list[DataSubject] = []
+    mock_is_real: bool = False
+    shape: tuple | None = None
+    created_at: DateTime = DateTime.now()
+    uploader: Contributor | None = None
+
+    # _kwarg_name and _dataset_name are set by the UserCode.assets
+    _kwarg_name: str | None = None
+    _dataset_name: str | None = None
+    __syft_include_id_coll_repr__ = False
+
+
+@serializable()
+class Asset(SyftObject):
+    # version
+    __canonical_name__ = "Asset"
+    __version__ = SYFT_OBJECT_VERSION_2
 
     action_id: UID
     server_uid: UID
