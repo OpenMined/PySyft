@@ -193,7 +193,9 @@ class ActionService(AbstractService):
             if action_object.mock_obj.syft_action_saved_to_blob_store:
                 blob_id = action_object.mock_obj.syft_blob_storage_entry_id
                 permission = ActionObjectPermission(blob_id, ActionPermission.ALL_READ)
-                blob_storage_service: BlobStorageService = context.server.get_service( BlobStorageService)
+                blob_storage_service: BlobStorageService = context.server.get_service(
+                    BlobStorageService
+                )
                 # add_permission is not resultified.
                 blob_storage_service.stash.add_permission(permission)
 
@@ -285,11 +287,7 @@ class ActionService(AbstractService):
         )
 
         # Resolve graph links
-        if (
-            not isinstance(obj, TwinObject)
-            and resolve_nested
-            and obj.is_link
-        ):
+        if not isinstance(obj, TwinObject) and resolve_nested and obj.is_link:
             if not self.is_resolved(
                 context, obj.syft_action_data.action_object_id.id
             ).unwrap():
@@ -482,8 +480,10 @@ class ActionService(AbstractService):
                     mock_obj=result_action_object_mock,
                 )
         except Exception as e:
-            print('\n\n\nkakakkaak\n\n\n\n', str(e))
+            print("\n\n\nkakakkaak\n\n\n\n", str(e))
+            # stdlib
             import traceback
+
             traceback.format_exc()
             # third party
             raise SyftException.from_exception(
@@ -751,6 +751,7 @@ class ActionService(AbstractService):
         """
         returns if this is a list/set/dict that contains ActionObjects
         """
+
         def unwrap_collection(col: set | dict | list) -> [Any]:  # type: ignore
             return_values = []
             if isinstance(col, dict):
@@ -1084,7 +1085,7 @@ def filter_twin_kwargs(
 ) -> Any:
     filtered = {}
     for k, v in kwargs.items():
-        print(f'type: {type(v)}, {v}')
+        print(f"type: {type(v)}, {v}")
         if isinstance(v, TwinObject):
             if twin_mode == TwinMode.PRIVATE:
                 filtered[k] = v.private.syft_action_data

@@ -122,12 +122,14 @@ SubmitTimePartitionKey = PartitionKey(key="submit_time", type_=DateTime)
 
 PyCodeObject = Any
 
+
 def compile_byte_code(parsed_code: str) -> PyCodeObject | None:
     try:
         return compile(parsed_code, "<string>", "exec")
     except Exception as e:
         print("WARNING: to compile byte code", e)
     return None
+
 
 @serializable(canonical_name="UserCodeStatus", version=1)
 class UserCodeStatus(Enum):
@@ -1520,8 +1522,6 @@ def locate_launch_jobs(context: TransformContext) -> TransformContext:
                 nested_codes[call] = (user_code_link, user_code.nested_codes)
         context.output["nested_codes"] = nested_codes
     return context
-
-
 
 
 def compile_code(context: TransformContext) -> TransformContext:

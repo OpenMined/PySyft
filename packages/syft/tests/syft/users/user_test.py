@@ -13,9 +13,9 @@ from syft.client.datasite_client import DatasiteClient
 from syft.server.server import get_default_root_email
 from syft.server.worker import Worker
 from syft.service.context import AuthedServiceContext
-from syft.service.response import SyftError
-from syft.service.user.user import ServiceRole, UserUpdate
+from syft.service.user.user import ServiceRole
 from syft.service.user.user import UserCreate
+from syft.service.user.user import UserUpdate
 from syft.service.user.user import UserView
 from syft.types.errors import SyftException
 
@@ -50,9 +50,7 @@ def get_mock_client(root_client, role) -> DatasiteClient:
     assert user
 
     user_id = [u for u in get_users(worker) if u.email == mail][0].id
-    assert worker.root_client.api.services.user.update(
-        uid=user_id, role=role
-    )
+    assert worker.root_client.api.services.user.update(uid=user_id, role=role)
 
     client = client.login(email=mail, password=password)
     client._fetch_api(client.credentials)
@@ -197,9 +195,7 @@ def test_user_update_roles(do_client, guest_client, ds_client, root_client, work
     for _c in clients:
         for target_role in [ServiceRole.DATA_OWNER, ServiceRole.ADMIN]:
             with pytest.raises(SyftException) as exc:
-                do_client.api.services.user.update(
-                    uid=_c.user_id, role=target_role
-                )
+                do_client.api.services.user.update(uid=_c.user_id, role=target_role)
             assert exc.type == SyftException
             assert exc.value.public_message
 
@@ -212,9 +208,7 @@ def test_user_update_roles(do_client, guest_client, ds_client, root_client, work
         for target_role in DO_ROLES:
             if target_role < _c.role:
                 with pytest.raises(SyftException) as exc:
-                    do_client.api.services.user.update(
-                        uid=_c.user_id, role=target_role
-                    )
+                    do_client.api.services.user.update(uid=_c.user_id, role=target_role)
                 assert exc.type == SyftException
 
     # DSs cannot update any roles
@@ -222,9 +216,7 @@ def test_user_update_roles(do_client, guest_client, ds_client, root_client, work
     for _c in clients:
         for target_role in ADMIN_ROLES:
             with pytest.raises(SyftException) as exc:
-                ds_client.api.services.user.update(
-                    uid=_c.user_id, role=target_role
-                )
+                ds_client.api.services.user.update(uid=_c.user_id, role=target_role)
             assert exc.type == SyftException
 
     # Guests cannot update any roles
@@ -232,9 +224,7 @@ def test_user_update_roles(do_client, guest_client, ds_client, root_client, work
     for _c in clients:
         for target_role in ADMIN_ROLES:
             with pytest.raises(SyftException) as exc:
-                guest_client.api.services.user.update(
-                    uid=_c.user_id, role=target_role
-                )
+                guest_client.api.services.user.update(uid=_c.user_id, role=target_role)
             assert exc.type == SyftException
 
 

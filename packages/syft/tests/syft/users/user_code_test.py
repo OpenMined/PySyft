@@ -298,8 +298,10 @@ def test_user_code_mock_execution(worker) -> None:
     # Mock execution fails, no permissions
     with pytest.raises(SyftException) as exc:
         result = ds_client.api.services.code.compute_mean(data=data.mock)
-    
-    assert "You do not have the permissions for mock execution" in exc.value.public_message 
+
+    assert (
+        "You do not have the permissions for mock execution" in exc.value.public_message
+    )
 
     # DO grants permissions
     users = root_datasite_client.users.get_all()
@@ -432,12 +434,14 @@ def test_submit_invalid_name(worker) -> None:
 
     # reserved name
     with pytest.raises(SyftException):
+
         @sy.syft_function_single_use()
         def get_all():
             pass
 
     # no anonymous
     with pytest.raises(SyftException):
+
         @sy.syft_function_single_use()
         def _():
             pass
@@ -466,6 +470,7 @@ def test_submit_code_with_global_var(guest_client: DatasiteClient) -> None:
     assert "Your code contains (a) global variable(s)" in exc.value.public_message
 
     with pytest.raises(SyftException) as exc:
+
         @sy.syft_function_single_use()
         def mock_syft_func_single_use_with_global():
             global x

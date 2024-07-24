@@ -9,8 +9,6 @@ from typing import ClassVar
 # third party
 from pydantic import field_validator
 from pydantic import model_validator
-from syft.types.errors import SyftException
-from syft.types.result import as_result
 from typing_extensions import Self
 
 # relative
@@ -22,6 +20,8 @@ from ..service.action.action_types import action_types
 from ..service.response import SyftSuccess
 from ..service.response import SyftWarning
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
+from .errors import SyftException
+from .result import as_result
 from .syft_object import SyftObject
 from .uid import UID
 

@@ -376,7 +376,9 @@ class UserCodeService(AbstractService):
         elif not code.is_output_policy_approved(context):
             return IsExecutionAllowedEnum.OUTPUT_POLICY_NOT_APPROVED
 
-        policy_is_valid = output_policy is not None and output_policy._is_valid(context).unwrap()
+        policy_is_valid = (
+            output_policy is not None and output_policy._is_valid(context).unwrap()
+        )
         if not policy_is_valid:
             return IsExecutionAllowedEnum.INVALID_OUTPUT_POLICY
 
@@ -580,8 +582,12 @@ class UserCodeService(AbstractService):
 
         action_service: ActionService = context.server.get_service("actionservice")
 
-        action_obj: ActionObject | TwinObject = action_service._user_code_execute(context, code, kwarg2id, result_id).unwrap()
-        result = action_service.set_result_to_store(action_obj, context, code.get_output_policy(context)).unwrap()
+        action_obj: ActionObject | TwinObject = action_service._user_code_execute(
+            context, code, kwarg2id, result_id
+        ).unwrap()
+        result = action_service.set_result_to_store(
+            action_obj, context, code.get_output_policy(context)
+        ).unwrap()
 
         # Apply Output Policy to the results and update the OutputPolicyState
 

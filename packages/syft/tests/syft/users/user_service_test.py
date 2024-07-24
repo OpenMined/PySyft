@@ -381,9 +381,7 @@ def test_userservice_update_success(
     monkeypatch.setattr(user_service.stash, "get_by_uid", mock_get_by_uid)
 
     authed_context.role = ServiceRole.ADMIN
-    user = user_service.update(
-        authed_context, uid=guest_user.id, **update_user
-    )
+    user = user_service.update(authed_context, uid=guest_user.id, **update_user)
 
     assert isinstance(user, UserView)
     assert user.email == update_user.email

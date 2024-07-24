@@ -214,9 +214,7 @@ class UserView(SyftObject):
             user_verify_key=self.syft_client_verify_key,
         ).unwrap()
 
-        client.services.user.update(
-            uid=self.id, **UserUpdate(password=new_password)
-        )
+        client.services.user.update(uid=self.id, **UserUpdate(password=new_password))
 
         return SyftSuccess(
             message=f"Successfully updated password for user '{self.email}'."

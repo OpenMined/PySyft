@@ -26,8 +26,6 @@ from result import Err
 from result import as_result
 from typing_extensions import Self
 
-from syft.types.result import as_result
-
 # relative
 from ...client.api import APIRegistry
 from ...client.api import SyftAPI
@@ -42,6 +40,8 @@ from ...service.response import SyftWarning
 from ...store.linked_obj import LinkedObject
 from ...types.base import SyftBaseModel
 from ...types.datetime import DateTime
+from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
@@ -55,7 +55,6 @@ from ...types.uid import LineageID
 from ...types.uid import UID
 from ...util.util import prompt_warning_message
 from ..context import AuthedServiceContext
-from ...types.errors import SyftException
 from ..service import from_api_or_context
 from .action_data_empty import ActionDataEmpty
 from .action_data_empty import ActionDataLink
@@ -797,7 +796,7 @@ class ActionObject(SyncableSyftObject):
             if blob_storage_read_method is not None:
                 blob_retrieval_object = blob_storage_read_method(
                     uid=self.syft_blob_storage_entry_id
-                ).unwrap(public_message=f"Could not fetch actionobject data.")
+                ).unwrap(public_message="Could not fetch actionobject data.")
                 # relative
                 from ...store.blob_storage import BlobRetrieval
 
@@ -842,7 +841,8 @@ class ActionObject(SyncableSyftObject):
                     data, get_metadata()
                 ):
                     self.syft_action_saved_to_blob_store = False
-                    return SyftWarning(message=(
+                    return SyftWarning(
+                        message=(
                             f"The action object {self.id} was not saved to"
                             f" the blob store but to memory cache since it is small."
                         )
@@ -993,7 +993,9 @@ class ActionObject(SyncableSyftObject):
             ActionObjectPointer
         """
         if self.syft_server_uid is None:
-            raise SyftException(public_message="Pointers can't execute without a server_uid.")
+            raise SyftException(
+                public_message="Pointers can't execute without a server_uid."
+            )
 
         # relative
         from ...client.api import APIRegistry

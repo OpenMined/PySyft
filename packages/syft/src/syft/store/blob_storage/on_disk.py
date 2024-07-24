@@ -4,8 +4,6 @@ from pathlib import Path
 from typing import Any
 
 # third party
-from syft.types.result import as_result
-from syft.types.errors import SyftException
 from typing_extensions import Self
 
 # relative
@@ -22,6 +20,7 @@ from ...types.blob_storage import BlobStorageEntry
 from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.blob_storage import SecureFilePathLocation
 from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 
 
