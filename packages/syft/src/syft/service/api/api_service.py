@@ -414,7 +414,7 @@ class APIService(AbstractService):
 
         start = time.time()
         # TODO: what can we do here?????
-        while (job is None or job.status in {JobStatus.PROCESSING, JobStatus.CREATED}:
+        while (job is None or job.status in {JobStatus.PROCESSING, JobStatus.CREATED}):
             job = job_service.get(context, job_id)
             time.sleep(0.1)
             if (time.time() - custom_endpoint.endpoint_timeout) > start:
