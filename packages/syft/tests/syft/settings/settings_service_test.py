@@ -238,6 +238,7 @@ def test_settings_allow_guest_registration(
         show_warnings=False,
         deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
         association_request_auto_approval=False,
+        notifications_enabled=False,
     )
 
     with mock.patch(

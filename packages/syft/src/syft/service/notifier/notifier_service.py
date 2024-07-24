@@ -73,6 +73,8 @@ class NotifierService(AbstractService):
             return SyftError(message=result.err())
 
         notifier = result.ok()
+        if notifier is None:
+            return SyftError(message="Notifier settings not found.")
         notifier.active = True
         result = self.stash.update(credentials=context.credentials, settings=notifier)
         if result.is_err():
@@ -87,6 +89,9 @@ class NotifierService(AbstractService):
             return SyftError(message=result.err())
 
         notifier = result.ok()
+        if notifier is None:
+            return SyftError(message="Notifier settings not found.")
+
         notifier.active = False
         result = self.stash.update(credentials=context.credentials, settings=notifier)
         if result.is_err():
