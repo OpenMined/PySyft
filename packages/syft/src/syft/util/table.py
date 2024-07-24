@@ -24,7 +24,7 @@ def _syft_in_mro(self: Any, item: Any) -> bool:
         else:
             mro = type(item).mro(type(item))  # type: ignore
 
-    elif hasattr(item, "mro") and type(item) != type:
+    elif hasattr(item, "mro") and type(item) is not type:
         mro = item.mro()
     else:
         mro = str(self)  # type: ignore
