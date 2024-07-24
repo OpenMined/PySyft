@@ -16,7 +16,6 @@ from ...types.dicttuple import DictTuple
 from ...types.errors import SyftException
 from ...types.uid import UID
 from ..context import AuthedServiceContext
-from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
@@ -237,9 +236,7 @@ class SyftWorkerImageService(AbstractService):
         name="get_by_uid",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
-    def get_by_uid(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> SyftWorkerImage | SyftError:
+    def get_by_uid(self, context: AuthedServiceContext, uid: UID) -> SyftWorkerImage:
         return self.stash.get_by_uid(credentials=context.credentials, uid=uid).unwrap()
 
     @service_method(

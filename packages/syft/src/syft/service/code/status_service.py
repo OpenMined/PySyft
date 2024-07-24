@@ -1,7 +1,6 @@
 # stdlib
 
 # third party
-from result import Result
 
 # relative
 from ...serde.serializable import serializable
@@ -43,7 +42,7 @@ class StatusStash(NewBaseUIDStoreStash):
     @as_result(StashException)
     def get_by_uid(
         self, credentials: SyftVerifyKey, uid: UID
-    ) -> Result[UserCodeStatusCollection, str]:
+    ) -> UserCodeStatusCollection:
         qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
         return self.query_one(credentials=credentials, qks=qks).unwrap()
 

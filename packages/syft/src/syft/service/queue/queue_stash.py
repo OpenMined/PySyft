@@ -23,7 +23,6 @@ from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
-from ..response import SyftError
 from ..response import SyftException
 
 
@@ -72,10 +71,10 @@ class QueueItem(SyftObject):
         return self.service_path == "Action" and self.method_name == "execute"
 
     @property
-    def action(self) -> Any | SyftError:
+    def action(self) -> Any:
         if self.is_action:
             return self.kwargs["action"]
-        return SyftError(message="QueueItem not an Action")
+        raise SyftException(public_message="QueueItem not an Action")
 
 
 @serializable()

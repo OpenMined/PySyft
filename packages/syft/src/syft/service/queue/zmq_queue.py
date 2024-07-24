@@ -14,7 +14,6 @@ from typing import cast
 
 # third party
 from pydantic import field_validator
-from result import Result
 import zmq
 from zmq import Frame
 from zmq import LINGER
@@ -34,7 +33,6 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ...util.util import get_queue_address
-from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..worker.worker_pool import ConsumerState
@@ -135,10 +133,13 @@ class Worker(SyftBaseModel):
     def reset_expiry(self) -> None:
         self.expiry_t.reset()
 
+    @as_result(SyftException)
     def _syft_worker(
         self, stash: WorkerStash, credentials: SyftVerifyKey
-    ) -> Result[SyftWorker | None, str]:
-        return stash.get_by_uid(credentials=credentials, uid=self.syft_worker_id)
+    ) -> SyftWorker | None:
+        return stash.get_by_uid(
+            credentials=credentials, uid=self.syft_worker_id
+        ).unwrap()
 
     def __str__(self) -> str:
         svc = self.service.name if self.service else None
@@ -269,17 +270,13 @@ class ZMQProducer(QueueProducer):
                 key: self.unwrap_nested_actionobjects(obj) for key, obj in data.items()
             }
         if isinstance(data, ActionObject):
-            res = self.action_service.get(self.auth_context, data.id)
-            res = res.ok() if res.is_ok() else res.err()
-            if not isinstance(res, ActionObject):
-                return SyftError(message=f"{res}")
-            else:
-                nested_res = res.syft_action_data
-                if isinstance(nested_res, ActionObject):
-                    raise ValueError(
-                        "More than double nesting of ActionObjects is currently not supported"
-                    )
-                return nested_res
+            action_object = self.action_service.get(self.auth_context, data.id)
+            nested_res = action_object.syft_action_data
+            if isinstance(nested_res, ActionObject):
+                raise ValueError(
+                    "More than double nesting of ActionObjects is currently not supported"
+                )
+            return nested_res
         return data
 
     def contains_nested_actionobjects(self, data: Any) -> bool:
@@ -327,7 +324,7 @@ class ZMQProducer(QueueProducer):
                 syft_client_verify_key=action_object.syft_client_verify_key,
             )
 
-            new_action_object._save_to_blob_storage()
+            new_action_object._save_to_blob_storage().unwrap()
 
             self.action_service._set(
                 context=self.auth_context, action_object=new_action_object
@@ -411,11 +408,7 @@ class ZMQProducer(QueueProducer):
 
                 print(e, traceback.format_exc(), file=sys.stderr)
                 item.status = Status.ERRORED
-                res = self.queue_stash.update(item.syft_client_verify_key, item)
-                if res.is_err():
-                    logger.error(
-                        f"Failed to update queue item={item} error={res.err()}"
-                    )
+                self.queue_stash.update(item.syft_client_verify_key, item).unwrap()
 
     def run(self) -> None:
         self.thread = threading.Thread(target=self._run)
@@ -482,16 +475,14 @@ class ZMQProducer(QueueProducer):
             if worker.is_ok() and worker.ok() is None:
                 return
 
-            res = self.worker_stash.update_consumer_state(
+            self.worker_stash.update_consumer_state(
                 credentials=self.worker_stash.partition.root_verify_key,
                 worker_uid=syft_worker_id,
                 consumer_state=consumer_state,
+            ).unwrap(
+                f"Failed to update consumer state for worker id={syft_worker_id} "
+                f"to state: {consumer_state}",
             )
-            if res.is_err():
-                logger.error(
-                    f"Failed to update consumer state for worker id={syft_worker_id} "
-                    f"to state: {consumer_state} error={res.err()}",
-                )
         except Exception as e:
             logger.error(
                 f"Failed to update consumer state for worker id: {syft_worker_id} to state {consumer_state}",
@@ -993,24 +984,24 @@ class ZMQClient(QueueClient):
         message: bytes,
         queue_name: str,
         worker: bytes | None = None,
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         producer = self.producers.get(queue_name)
         if producer is None:
-            return SyftError(
-                message=f"No producer attached for queue: {queue_name}. Please add a producer for it."
+            raise SyftException(
+                public_message=f"No producer attached for queue: {queue_name}. Please add a producer for it."
             )
         try:
             producer.send(message=message, worker=worker)
         except Exception as e:
             # stdlib
-            return SyftError(
-                message=f"Failed to send message to: {queue_name} with error: {e}"
+            raise SyftException(
+                public_message=f"Failed to send message to: {queue_name} with error: {e}"
             )
         return SyftSuccess(
             message=f"Successfully queued message to : {queue_name}",
         )
 
-    def close(self) -> SyftError | SyftSuccess:
+    def close(self) -> SyftSuccess:
         try:
             for consumers in self.consumers.values():
                 for consumer in consumers:
@@ -1022,13 +1013,15 @@ class ZMQClient(QueueClient):
                 producer.close()
                 # close existing connection.
         except Exception as e:
-            return SyftError(message=f"Failed to close connection: {e}")
+            raise SyftException(public_message=f"Failed to close connection: {e}")
 
         return SyftSuccess(message="All connections closed.")
 
-    def purge_queue(self, queue_name: str) -> SyftError | SyftSuccess:
+    def purge_queue(self, queue_name: str) -> SyftSuccess:
         if queue_name not in self.producers:
-            return SyftError(message=f"No producer running for : {queue_name}")
+            raise SyftException(
+                public_message=f"No producer running for : {queue_name}"
+            )
 
         producer = self.producers[queue_name]
 
@@ -1040,7 +1033,7 @@ class ZMQClient(QueueClient):
 
         return SyftSuccess(message=f"Queue: {queue_name} successfully purged")
 
-    def purge_all(self) -> SyftError | SyftSuccess:
+    def purge_all(self) -> SyftSuccess:
         for queue_name in self.producers:
             self.purge_queue(queue_name=queue_name)
 

@@ -16,7 +16,6 @@ from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import ObjectCRUDPermissionException
 from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
-from ...types.result import Ok
 from ...types.result import as_result
 from ...types.syft_object import SyftObject
 from ...types.twin_object import TwinObject
@@ -324,8 +323,9 @@ class KeyValueActionStore(ActionStore):
             public_message=f"No permissions found for uid: {uid}"
         )
 
-    def get_all_permissions(self) -> Ok[dict[UID, set[str]]]:
-        return Ok(dict(self.permissions.items()))
+    @as_result(SyftException)
+    def get_all_permissions(self) -> dict[UID, set[str]]:
+        return dict(self.permissions.items())
 
     def add_storage_permission(self, permission: StoragePermission) -> None:
         permissions = self.storage_permissions[permission.uid]
@@ -356,8 +356,9 @@ class KeyValueActionStore(ActionStore):
             return self.storage_permissions[uid]
         raise ObjectCRUDPermissionException(f"No storage permissions found for {uid}")
 
-    def get_all_storage_permissions(self) -> Ok[dict[UID, set[UID]]]:
-        return Ok(dict(self.storage_permissions.items()))
+    @as_result(SyftException)
+    def get_all_storage_permissions(self) -> dict[UID, set[UID]]:
+        return dict(self.storage_permissions.items())
 
     def _all(
         self,

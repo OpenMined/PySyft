@@ -21,7 +21,6 @@ from ...types.errors import SyftException
 from ...types.uid import UID
 from ..job.job_stash import Job
 from ..job.job_stash import JobStatus
-from ..response import SyftError
 from ..response import SyftSuccess
 from ..worker.worker_stash import WorkerStash
 from .base_queue import AbstractMessageHandler
@@ -59,7 +58,7 @@ class MonitorThread(threading.Thread):
         # Implement the monitoring logic here
         job = self.worker.job_stash.get_by_uid(
             self.credentials, self.queue_item.job_id
-        ).ok()
+        ).unwrap()
         if job and job.status == JobStatus.TERMINATING:
             self.terminate(job)
             for subjob in job.subjobs:
@@ -91,7 +90,7 @@ class QueueManager(BaseQueueManager):
         self.client_config = self.config.client_config
         self._client = self.config.client_type(self.client_config)
 
-    def close(self) -> SyftError | SyftSuccess:
+    def close(self) -> SyftSuccess:
         return self._client.close()
 
     def create_consumer(
@@ -130,7 +129,7 @@ class QueueManager(BaseQueueManager):
         self,
         message: bytes,
         queue_name: str,
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         return self._client.send_message(
             message=message,
             queue_name=queue_name,
@@ -290,13 +289,8 @@ class APICallMessageHandler(AbstractMessageHandler):
         if syft_worker_id is not None:
             job_item.job_worker_id = syft_worker_id
 
-        queue_result = worker.queue_stash.set_result(credentials, queue_item)
-        if isinstance(queue_result, SyftError):
-            raise Exception(f"{queue_result.err()}")
-
-        job_result = worker.job_stash.set_result(credentials, job_item)
-        if isinstance(job_result, SyftError):
-            raise Exception(f"{job_result.err()}")
+        worker.queue_stash.set_result(credentials, queue_item).unwrap()
+        worker.job_stash.set_result(credentials, job_item).unwrap()
 
         logger.info(
             f"Handling queue item: id={queue_item.id}, method={queue_item.method} "

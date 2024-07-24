@@ -30,6 +30,7 @@ from ...client.sync_decision import SyncDecision
 from ...client.sync_decision import SyncDirection
 from ...server.credentials import SyftVerifyKey
 from ...types.datetime import DateTime
+from ...types.errors import SyftException
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
@@ -56,7 +57,6 @@ from ..job.job_stash import JobType
 from ..log.log import SyftLog
 from ..output.output_service import ExecutionOutput
 from ..request.request import Request
-from ..response import SyftError
 from ..response import SyftSuccess
 from ..user.user import UserView
 from .sync_state import SyncState
@@ -460,7 +460,7 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
 
     def _repr_html_(self) -> str:
         if self.low_obj is None and self.high_obj is None:
-            return SyftError(message="Something broke")
+            raise SyftException(public_message="Something broke")
 
         base_str = f"""
         <style>
@@ -702,13 +702,13 @@ class ObjectDiffBatch(SyftObject):
         diffs = self.get_dependents(include_roots=False)
         return sum(hash(x) for x in diffs)
 
-    def ignore(self) -> SyftSuccess | SyftError:
+    def ignore(self) -> SyftSuccess:
         # relative
         from ...client.syncing import handle_ignore_batch
 
         return handle_ignore_batch(self, self.global_batches)
 
-    def unignore(self) -> SyftSuccess | SyftError:
+    def unignore(self) -> SyftSuccess:
         # relative
         from ...client.syncing import handle_unignore_batch
 
@@ -846,8 +846,8 @@ class ObjectDiffBatch(SyftObject):
         try:
             diffs = self.flatten_visual_hierarchy()
         except Exception as _:
-            return SyftError(
-                message=html.escape(
+            raise SyftException(
+                public_message=html.escape(
                     "Could not render batch, please use resolve(<batch>) instead."
                 )
             )._repr_html_()
@@ -924,8 +924,8 @@ class ObjectDiffBatch(SyftObject):
     {self.hierarchy_str('high')}
     """
         except Exception as _:
-            return SyftError(
-                message=html.escape(
+            raise SyftException(
+                public_message=html.escape(
                     "Could not render batch, please use resolve(<batch>) instead."
                 )
             )._repr_html_()
@@ -998,11 +998,11 @@ class ObjectDiffBatch(SyftObject):
             return user_code_diffs[0]
 
     @property
-    def user(self) -> UserView | SyftError:
+    def user(self) -> UserView:
         user_code_diff = self.user_code_diff
         if user_code_diff is not None and isinstance(user_code_diff.low_obj, UserCode):
             return user_code_diff.low_obj.user
-        return SyftError(message="No user found")
+        raise SyftException(public_message="No user found")
 
     def get_visual_hierarchy(self) -> dict[ObjectDiff, dict]:
         visual_root = self.visual_root

@@ -128,7 +128,6 @@ def test_datasite_connect_to_gateway(
         email="info@openmined.org", password="changethis"
     )
     res = gateway_client_root.api.services.request.get_all()[-1].approve()
-    assert not isinstance(res, SyftError)
 
     assert len(gateway_client.peers) == 1
 
@@ -907,7 +906,6 @@ def test_peer_health_check(
 
     # the gateway client approves one of the association requests
     res = gateway_client.api.services.request.get_all()[-1].approve()
-    assert not isinstance(res, SyftError)
     assert len(gateway_client.peers) == 1
 
     # the gateway client checks that the peer is associated
@@ -961,8 +959,6 @@ def test_reverse_tunnel_connection(datasite_1_port: int, gateway_port: int):
         email="info@openmined.org", password="changethis"
     )
     res = gateway_client_root.api.services.request.get_all()[-1].approve()
-    assert not isinstance(res, SyftError)
-
     time.sleep(90)
 
     gateway_peers = gateway_client.api.services.network.get_all_peers()

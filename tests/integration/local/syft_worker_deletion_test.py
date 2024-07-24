@@ -81,7 +81,6 @@ def test_delete_idle_worker(server: ServerHandle, force: bool) -> None:
     worker = client.worker.get_all()[0]
 
     res = client.worker.delete(worker.id, force=force)
-    assert not isinstance(res, SyftError)
 
     if force:
         assert len(client.worker.get_all()) == 0
@@ -124,7 +123,6 @@ def test_delete_worker(server: ServerHandle, force: bool) -> None:
             raise TimeoutError("Job did not get picked up by any worker.")
 
     res = client.worker.delete(syft_worker_id, force=force)
-    assert not isinstance(res, SyftError)
 
     if not force and len(client.worker.get_all()) > 0:
         assert client.worker.get(syft_worker_id).to_be_deleted

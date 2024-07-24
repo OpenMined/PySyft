@@ -7,7 +7,6 @@ from ...serde.serializable import serializable
 from ...service.context import AuthedServiceContext
 from ...store.document_store import NewBaseStash
 from ...types.uid import UID
-from ..response import SyftError
 from ..response import SyftSuccess
 from ..worker.worker_stash import WorkerStash
 
@@ -86,7 +85,7 @@ class BaseQueueManager:
     def post_init(self) -> None:
         pass
 
-    def close(self) -> SyftError | SyftSuccess:
+    def close(self) -> SyftSuccess:
         raise NotImplementedError
 
     def create_consumer(
@@ -108,7 +107,7 @@ class BaseQueueManager:
     ) -> QueueProducer:
         raise NotImplementedError
 
-    def send(self, message: bytes, queue_name: str) -> SyftSuccess | SyftError:
+    def send(self, message: bytes, queue_name: str) -> SyftSuccess:
         raise NotImplementedError
 
     @property

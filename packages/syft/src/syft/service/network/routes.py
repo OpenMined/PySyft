@@ -26,7 +26,6 @@ from ...types.transforms import TransformContext
 from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..context import ServerServiceContext
-from ..response import SyftError
 
 if TYPE_CHECKING:
     # relative
@@ -34,9 +33,7 @@ if TYPE_CHECKING:
 
 
 class ServerRoute:
-    def client_with_context(
-        self, context: ServerServiceContext
-    ) -> SyftClient | SyftError:
+    def client_with_context(self, context: ServerServiceContext) -> SyftClient:
         """
         Convert the current route (self) to a connection (either HTTP, Veilid or Python)
         and create a SyftClient from the connection.
@@ -45,13 +42,10 @@ class ServerRoute:
             context (ServerServiceContext): The ServerServiceContext containing the server information.
 
         Returns:
-            SyftClient | SyftError: Returns the created SyftClient, or SyftError
-                if the client type is not valid or if the context's server is None.
+            SyftClient: Returns the created SyftClient
         """
         connection = route_to_connection(route=self, context=context)
-        client_type = connection.get_client_type()
-        if isinstance(client_type, SyftError):
-            return client_type
+        client_type = connection.get_client_type().unwrap()
         return client_type(
             connection=connection, credentials=context.server.signing_key
         )

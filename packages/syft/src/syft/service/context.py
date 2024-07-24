@@ -62,11 +62,9 @@ class AuthedServiceContext(ServerServiceContext):
         # but we can't import Job since it's a circular import
         if self.job_id is None:
             return None
-        res = self.server.job_stash.get_by_uid(self.credentials, self.job_id)
-        if res.is_err():
-            return None
-        else:
-            return res.ok()
+        return self.server.job_stash.get_by_uid(
+            self.credentials, self.job_id
+        ).ok()  # if this fails, it will return None
 
 
 class UnauthedServiceContext(ServerServiceContext):

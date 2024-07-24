@@ -22,7 +22,6 @@ from ...util.notebook_ui.components.tabulator_template import (
 )
 from ...util.table import prepare_table_data
 from ..code.user_code import UserCode
-from ..response import SyftError
 
 
 @serializable()
@@ -92,15 +91,15 @@ class CodeHistoryView(SyftObject):
 
         return build_tabulator_table_with_data(rows, metadata)
 
-    def __getitem__(self, index: int | str) -> UserCode | SyftError:
+    def __getitem__(self, index: int | str) -> UserCode:
         if isinstance(index, str):
             raise TypeError(f"index {index} must be an integer, not a string")
         api = APIRegistry.api_for(
             self.syft_server_location, self.syft_client_verify_key
         )
         if api is None:
-            return SyftError(
-                message=f"Can't access the api. You must login to {self.server_uid}"
+            raise SyftException(
+                public_message=f"Can't access the api. You must login to {self.server_uid}"
             )
         if (
             api.user.get_current_user().role.value >= ServiceRole.DATA_OWNER.value
@@ -159,11 +158,11 @@ class UsersCodeHistoriesDict(SyftObject):
     def available_keys(self) -> str:
         return json.dumps(self.user_dict, sort_keys=True, indent=4)
 
-    def __getitem__(self, key: str | int) -> CodeHistoriesDict | SyftError:
+    def __getitem__(self, key: str | int) -> CodeHistoriesDict:
         api = APIRegistry.api_for(self.server_uid, self.syft_client_verify_key)
         if api is None:
-            return SyftError(
-                message=f"Can't access the api. You must login to {self.server_uid}"
+            raise SyftException(
+                public_message=f"Can't access the api. You must login to {self.server_uid}"
             )
         return api.services.code_history.get_history_for_user(key)
 

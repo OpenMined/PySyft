@@ -17,7 +17,6 @@ from ..serde.serializable import serializable
 from ..service.action.action_object import ActionObject
 from ..service.action.action_object import TwinMode
 from ..service.action.action_types import action_types
-from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.response import SyftWarning
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
@@ -99,9 +98,9 @@ class TwinObject(SyftObject):
             self.syft_server_location,
             self.syft_client_verify_key,
         )
-        mock_store_res = self.mock_obj._save_to_blob_storage(allow_empty=allow_empty).unwrap()
+        self.mock_obj._save_to_blob_storage(allow_empty=allow_empty).unwrap()
         print(f"private_obj<{self.private_obj.id}>: {self.private_obj}")
-        return self.private_obj._save_to_blob_storage(allow_empty=allow_empty)
+        return self.private_obj._save_to_blob_storage(allow_empty=allow_empty).unwrap()
 
     def send(self, client: SyftClient, add_storage_permission: bool = True) -> Any:
         self._set_obj_location_(client.id, client.verify_key)

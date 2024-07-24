@@ -14,7 +14,6 @@ from ..notification.notification_service import CreateNotification
 from ..notification.notification_service import NotificationService
 from ..notification.notifications import Notification
 from ..notifier.notifier_enums import NOTIFIERS
-from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
@@ -197,9 +196,7 @@ class RequestService(AbstractService):
         link = LinkedObject.with_context(request, context=context)
 
         if not request.get_status(context) == RequestStatus.PENDING:
-            if request_notification is not None and not isinstance(
-                request_notification, SyftError
-            ):
+            if request_notification is not None:
                 mark_as_read = context.server.get_service_method(
                     NotificationService.mark_as_read
                 )

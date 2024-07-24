@@ -27,7 +27,6 @@ from ...types.errors import SyftException
 from ...types.result import as_result
 from ...types.uid import UID
 from ...util.util import get_queue_address
-from ..response import SyftError
 from .image_identifier import SyftWorkerImageIdentifier
 from .worker_image import SyftWorkerImage
 from .worker_image_stash import SyftWorkerImageStash
@@ -323,6 +322,7 @@ def prepare_kubernetes_pool_env(
     return env_vars_, mount_secrets
 
 
+@as_result(SyftException)
 def create_kubernetes_pool(
     runner: KubernetesRunner,
     tag: str,
@@ -336,7 +336,7 @@ def create_kubernetes_pool(
     pod_annotations: dict[str, str] | None = None,
     pod_labels: dict[str, str] | None = None,
     **kwargs: Any,
-) -> list[Pod] | SyftError:
+) -> list[Pod]:
     pool = None
 
     try:
@@ -379,8 +379,8 @@ def create_kubernetes_pool(
         # stdlib
         import traceback
 
-        return SyftError(
-            message=f"Failed to start workers {e} {e.__class__} {e.args} {traceback.format_exc()}."
+        raise SyftException(
+            public_message=f"Failed to start workers {e} {e.__class__} {e.args} {traceback.format_exc()}."
         )
 
     return runner.get_pool_pods(pool_name=pool_name)
@@ -405,6 +405,7 @@ def scale_kubernetes_pool(
     return runner.get_pool_pods(pool_name=pool_name)
 
 
+@as_result(SyftException)
 def run_workers_in_kubernetes(
     worker_image: SyftWorkerImage,
     worker_count: int,
@@ -418,7 +419,7 @@ def run_workers_in_kubernetes(
     pod_annotations: dict[str, str] | None = None,
     pod_labels: dict[str, str] | None = None,
     **kwargs: Any,
-) -> list[ContainerSpawnStatus] | SyftError:
+) -> list[ContainerSpawnStatus]:
     spawn_status = []
     runner = KubernetesRunner()
 
@@ -436,17 +437,17 @@ def run_workers_in_kubernetes(
                 reg_url=reg_url,
                 pod_annotations=pod_annotations,
                 pod_labels=pod_labels,
-            )
+            ).unwrap()
         else:
-            return SyftError(
-                message=f"image with uid {worker_image.id} does not have an image identifier"
+            raise SyftException(
+                public_message=f"image with uid {worker_image.id} does not have an image identifier"
             )
     else:
         # TODO: see if this is resultify-able... looks like it.
         try:
             pool_pods = scale_kubernetes_pool(runner, pool_name, worker_count).unwrap()
         except SyftException as exc:
-            return SyftError(message=exc.public_message)
+            raise SyftException(public_message=exc.public_message)
 
         if isinstance(pool_pods, list) and len(pool_pods) > 0:
             # slice only those pods that we're interested in
@@ -560,7 +561,7 @@ def run_containers(
             reg_url=reg_url,
             pod_annotations=pod_annotations,
             pod_labels=pod_labels,
-        )
+        ).unwrap()
 
     return results
 
@@ -571,7 +572,7 @@ def create_default_image(
     image_stash: SyftWorkerImageStash,
     tag: str,
     in_kubernetes: bool = False,
-) -> SyftError | SyftWorkerImage:
+) -> SyftWorkerImage:
     if not in_kubernetes:
         tag = f"openmined/syft-backend:{tag}"
 

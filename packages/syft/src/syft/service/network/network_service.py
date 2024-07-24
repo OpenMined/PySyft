@@ -43,7 +43,6 @@ from ..request.request import Request
 from ..request.request import RequestStatus
 from ..request.request import SubmitRequest
 from ..request.request_service import RequestService
-from ..response import SyftError
 from ..response import SyftInfo
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -233,9 +232,7 @@ class NetworkService(AbstractService):
                 id=self_server_peer.id, server_routes=self_server_peer.server_routes
             )
             try:
-                result = remote_client.api.services.network.update_peer(
-                    peer_update=updated_peer
-                )
+                remote_client.api.services.network.update_peer(peer_update=updated_peer)
             except Exception as e:
                 logger.error(f"Failed to update peer information on remote client. {e}")
                 raise SyftException.from_exception(
@@ -259,17 +256,10 @@ class NetworkService(AbstractService):
             association_request_approved = not isinstance(remote_res, Request)
 
         # Step 4: Save the remote peer for later
-        result = self.stash.create_or_update_peer(
+        self.stash.create_or_update_peer(
             context.server.verify_key,
             remote_server_peer,
-        )
-
-        if result.is_err():
-            logging.error(
-                f"Failed to save peer: {remote_server_peer}. Error: {result.err()}"
-            )
-            result.unwrap()
-
+        ).unwrap(public_message=f"Failed to save peer: {remote_server_peer}.")
         # Step 5: Save config to enable reverse tunneling
         if reverse_tunnel and reverse_tunnel_enabled():
             self.set_reverse_tunnel_config(
@@ -456,7 +446,7 @@ class NetworkService(AbstractService):
         self,
         context: AuthedServiceContext,
         peer_update: ServerPeerUpdate,
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         # try setting all fields of ServerPeerUpdate according to ServerPeer
 
         peer = self.stash.update(
@@ -685,8 +675,8 @@ class NetworkService(AbstractService):
         """
         if called_by_peer and peer_verify_key != context.credentials:
             # verify if the peer is truly the one sending the request to delete the route to itself
-            return SyftError(
-                message=(
+            raise SyftException(
+                public_message=(
                     f"The {type(peer_verify_key).__name__}: "
                     f"{peer_verify_key} does not match the signature of the message"
                 )

@@ -23,7 +23,6 @@ from ..code.user_code import execute_byte_code
 from ..context import AuthedServiceContext
 from ..policy.policy import OutputPolicy
 from ..policy.policy import retrieve_from_db
-from ..response import SyftError
 from ..response import SyftResponseMessage
 from ..response import SyftSuccess
 from ..response import SyftWarning
@@ -76,9 +75,7 @@ class ActionService(AbstractService):
             syft_server_location=context.server.id,
             syft_client_verify_key=context.credentials,
         )
-        blob_store_result = np_obj._save_to_blob_storage()
-        if isinstance(blob_store_result, SyftError):
-            return blob_store_result
+        blob_store_result = np_obj._save_to_blob_storage().unwrap()
         if isinstance(blob_store_result, SyftWarning):
             logger.debug(blob_store_result.message)
 
@@ -525,11 +522,8 @@ class ActionService(AbstractService):
             context.credentials,
         )
         blob_store_result: SyftResponseMessage = (
-            result_action_object._save_to_blob_storage()
+            result_action_object._save_to_blob_storage().unwrap()
         )
-
-        if blob_store_result.is_err():
-            raise SyftException(public_message=blob_store_result.message)
         if isinstance(blob_store_result, SyftWarning):
             logger.debug(blob_store_result.message)
 
@@ -599,10 +593,7 @@ class ActionService(AbstractService):
                     plan_action.kwargs[k] = plan_kwargs[id2inpkey[arg]]
 
         for plan_action in plan.actions:
-            action_res = self.execute(context, plan_action)
-            if isinstance(action_res, SyftError):
-                raise SyftException(public_message=action_res.message)
-
+            self.execute(context, plan_action)
         result_id = plan.outputs[0].id
         return self._get(
             context, result_id, TwinMode.NONE, has_permission=True
@@ -781,10 +772,7 @@ class ActionService(AbstractService):
             context.server.id,
             context.credentials,
         )
-        blob_store_result = result_action_object._save_to_blob_storage()  # type: ignore[union-attr]
-        if isinstance(blob_store_result, SyftError):
-            return blob_store_result
-
+        blob_store_result = result_action_object._save_to_blob_storage().unwrap()
         # pass permission information to the action store as extra kwargs
         context.extra_kwargs = {
             "has_result_read_permission": has_result_read_permission
@@ -824,12 +812,8 @@ class ActionService(AbstractService):
         roles=ADMIN_ROLE_LEVEL,
         unwrap_on_success=False,
     )
-    def delete(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> SyftSuccess | SyftError:
-        res = self.store.delete(context.credentials, uid)
-        if res.is_err():
-            return SyftError(message=res.err())
+    def delete(self, context: AuthedServiceContext, uid: UID) -> SyftSuccess:
+        self.store.delete(context.credentials, uid).unwrap()
         return SyftSuccess(message="Great Success!")
 
 

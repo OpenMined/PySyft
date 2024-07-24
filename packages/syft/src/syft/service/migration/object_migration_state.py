@@ -5,10 +5,6 @@ import sys
 from typing import Any
 
 # third party
-from result import Err
-from result import Ok
-from result import Result
-from syft.types.errors import SyftException
 from typing_extensions import Self
 import yaml
 
@@ -25,6 +21,8 @@ from ...store.document_store import PartitionSettings
 from ...store.document_store_errors import NotFoundException
 from ...types.blob_storage import BlobStorageEntry
 from ...types.blob_storage import CreateBlobStorageEntry
+from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.syft_object import Context
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
@@ -34,7 +32,6 @@ from ...types.syft_object_registry import SyftObjectRegistry
 from ...types.uid import UID
 from ...util.util import prompt_warning_message
 from ..action.action_permissions import ActionObjectPermission
-from ..response import SyftError
 from ..response import SyftSuccess
 
 
@@ -77,6 +74,7 @@ class SyftMigrationStateStash(NewBaseStash):
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
 
+    @as_result(SyftException)
     def set(
         self,
         credentials: SyftVerifyKey,
@@ -84,34 +82,26 @@ class SyftMigrationStateStash(NewBaseStash):
         add_permissions: list[ActionObjectPermission] | None = None,
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
-    ) -> Result[SyftObjectMigrationState, str]:
-        res = self.check_type(migration_state, self.object_type)
-
-        if res.is_err():
-            return Err(res.err().public_message)  # type: ignore
-
-        res = super().set(
-            credentials=credentials,
-            obj=res.ok(),
-            add_permissions=add_permissions,
-            add_storage_permission=add_storage_permission,
-            ignore_duplicates=ignore_duplicates,
+    ) -> SyftObjectMigrationState:
+        obj = self.check_type(migration_state, self.object_type).unwrap()
+        return (
+            super()
+            .set(
+                credentials=credentials,
+                obj=obj,
+                add_permissions=add_permissions,
+                add_storage_permission=add_storage_permission,
+                ignore_duplicates=ignore_duplicates,
+            )
+            .unwrap()
         )
 
-        if res.is_err():
-            return Err(res.err().public_message)  # type: ignore
-        return Ok(res.ok())
-
+    @as_result(SyftException, NotFoundException)
     def get_by_name(
         self, canonical_name: str, credentials: SyftVerifyKey
-    ) -> Result[SyftObjectMigrationState | None, str]:
+    ) -> SyftObjectMigrationState:
         qks = KlassNamePartitionKey.with_obj(canonical_name)
-        res = self.query_one(credentials=credentials, qks=qks)
-        if res.is_err():
-            if isinstance(res.err(), NotFoundException):
-                return Ok(None)
-            return Err(res.err().public_message)  # type: ignore
-        return Ok(res.ok())
+        return self.query_one(credentials=credentials, qks=qks).unwrap()
 
 
 @serializable()
@@ -219,18 +209,18 @@ class MigrationData(SyftObject):
         blob_retrieval = api.services.blob_storage.read(obj_id)
         return blob_retrieval.read()
 
-    def migrate_and_upload_blobs(self) -> SyftSuccess | SyftError:
+    def migrate_and_upload_blobs(self) -> SyftSuccess:
         for obj in self.blob_storage_objects:
-            upload_result = self.migrate_and_upload_blob(obj)
-            if isinstance(upload_result, SyftError):
-                return upload_result
+            self.migrate_and_upload_blob(obj)
         return SyftSuccess(message="All blobs uploaded successfully.")
 
     def migrate_and_upload_blob(self, obj: BlobStorageEntry) -> SyftSuccess:
         api = self._get_api()
 
         if obj.id not in self.blobs:
-            raise SyftException(public_message=f"Blob {obj.id} not found in migration data.")
+            raise SyftException(
+                public_message=f"Blob {obj.id} not found in migration data."
+            )
         data = self.blobs[obj.id]
 
         migrated_obj = obj.migrate_to(BlobStorageEntry.__version__, Context())
@@ -241,9 +231,6 @@ class MigrationData(SyftObject):
         blob_deposit_object = api.services.blob_storage.allocate_for_user(
             blob_create, migrated_obj.uploaded_by
         )
-
-        if isinstance(blob_deposit_object, SyftError):
-            return blob_deposit_object
         return blob_deposit_object.write(BytesIO(serialized)).unwrap()
 
     def copy_without_blobs(self) -> "MigrationData":

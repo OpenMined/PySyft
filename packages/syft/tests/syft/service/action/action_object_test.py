@@ -205,10 +205,7 @@ def test_actionobject_hooks_make_action_side_effect(orig_obj_op: Any):
     obj = ActionObject.from_obj(orig_obj)
 
     context = PreHookContext(obj=obj, op_name=op)
-    result = make_action_side_effect(context)
-    assert result.is_ok()
-
-    context, args, kwargs = result.ok()
+    context, args, kwargs = make_action_side_effect(context).unwrap()
     assert context.action is not None
     assert isinstance(context.action, Action)
     assert context.action.full_path.endswith("." + op)
@@ -359,8 +356,9 @@ def test_actionobject_syft_execute_ok(worker, testcase):
     )
 
     context = PreHookContext(obj=obj_pointer, op_name=op, action_type=ActionType.METHOD)
-    result = make_action_side_effect(context, *args_pointers, **kwargs_pointers)
-    context, _, _ = result.ok()
+    context, _, _ = make_action_side_effect(
+        context, *args_pointers, **kwargs_pointers
+    ).unwrap()
 
     action_result = context.obj.syft_execute_action(context.action, sync=True)
     assert action_result == expected

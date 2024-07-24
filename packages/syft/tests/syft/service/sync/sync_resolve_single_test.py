@@ -17,9 +17,7 @@ from syft.service.sync.resolve_widget import ResolveWidget
 from syft.types.errors import SyftException
 
 
-def handle_decision(
-    widget: ResolveWidget, decision: SyncDecision
-) -> SyftSuccess | SyftError:
+def handle_decision(widget: ResolveWidget, decision: SyncDecision) -> SyftSuccess:
     if decision == SyncDecision.IGNORE:
         # ignore not yet implemented on the widget
         return widget.obj_diff_batch.ignore()

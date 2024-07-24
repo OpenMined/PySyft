@@ -14,7 +14,6 @@ from ...types.errors import SyftException
 from ...types.result import as_result
 from ..context import AuthedServiceContext
 from ..notification.notifications import Notification
-from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from .notifier import NotificationPreferences
@@ -81,7 +80,7 @@ class NotifierService(AbstractService):
             email_password (Optional[str]): Email email server password. Defaults to None.
             sender_email (Optional[str]): Email sender email. Defaults to None.
         Returns:
-            Union[SyftSuccess, SyftError]: A union type representing the success or error response.
+            SyftSuccess: success response.
 
         Raises:
             None
@@ -197,7 +196,7 @@ class NotifierService(AbstractService):
     @as_result(SyftException)
     def deactivate(
         self, context: AuthedServiceContext, notifier_type: NOTIFIERS = NOTIFIERS.EMAIL
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         """Deactivate email notifications for the authenticated user
         This will only work if the datasite owner has enabled notifications.
         """
@@ -227,7 +226,7 @@ class NotifierService(AbstractService):
         Raises:
             Exception: If something went wrong
         Returns:
-            Union: SyftSuccess or SyftError
+            SyftSuccess
         """
         try:
             # Create a new NotifierStash since its a static method.
@@ -277,7 +276,7 @@ class NotifierService(AbstractService):
     @as_result(SyftException)
     def dispatch_notification(
         self, context: AuthedServiceContext, notification: Notification
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         admin_key = context.server.get_service("userservice").admin_verify_key()
 
         # Silently fail on notification not delivered
@@ -288,11 +287,13 @@ class NotifierService(AbstractService):
             )
         except NotFoundException:
             logger.debug("There is no notifier service to ship the notification")
-            return SyftError(message="No notifier service to ship the notification.")
+            raise SyftException(
+                public_message="No notifier service to ship the notification."
+            )
         except StashException as exc:
             logger.error(f"Error getting notifier settings: {exc}")
-            return SyftError(
-                message="Failed to get notifier settings. Please check the logs."
+            raise SyftException(
+                public_message="Failed to get notifier settings. Please check the logs."
             )
 
         # If notifier is active

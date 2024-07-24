@@ -16,7 +16,6 @@ from syft.service.request.request import ObjectMutation
 from syft.service.request.request import RequestStatus
 from syft.service.request.request import UserCodeStatusChange
 from syft.service.request.request_service import RequestService
-from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.settings.settings_service import SettingsService
 from syft.service.user.user import UserPrivateKey
@@ -185,8 +184,6 @@ def test_code_accept_deny(faker: Faker, worker: Worker):
         return sum(data)
 
     result = ds_client.code.request_code_execution(simple_function)
-    assert not isinstance(result, SyftError)
-
     request = root_client.requests.get_all()[0]
     result = request.approve()
     assert isinstance(result, SyftSuccess)

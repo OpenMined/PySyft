@@ -18,11 +18,9 @@ import warnings
 # third party
 from packaging.version import parse
 from result import OkErr
-from result import Result
 
 # relative
 from .. import __version__
-from ..service.response import SyftError
 from ..service.response import SyftException
 from ..service.response import SyftSuccess
 from ..types.dicttuple import DictTuple
@@ -294,7 +292,7 @@ with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
                     continue
         return object_diff, compare_dict
 
-    def stage_protocol_changes(self) -> Result[SyftSuccess, SyftError]:
+    def stage_protocol_changes(self) -> SyftSuccess:
         change_count = 0
         current_history = self.protocol_history
         if "dev" not in current_history:
@@ -338,18 +336,18 @@ with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
         self.load_state()
         return SyftSuccess(message=f"{change_count} Protocol Updates Staged to dev")
 
-    def bump_protocol_version(self) -> Result[SyftSuccess, SyftError]:
+    def bump_protocol_version(self) -> SyftSuccess:
         if len(self.diff):
-            raise Exception(
-                "You can't bump the protocol version with unstaged changes."
+            raise SyftException(
+                public_message="You can't bump the protocol version with unstaged changes."
             )
 
         keys = self.protocol_history.keys()
         if "dev" not in keys:
             self.validate_release()
             print("You can't bump the protocol if there are no staged changes.")
-            return SyftError(
-                message="Failed to bump version as there are no staged changes."
+            raise SyftException(
+                public_message="Failed to bump version as there are no staged changes."
             )
 
         highest_protocol = 0
@@ -434,7 +432,7 @@ with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
         # Reload protocol
         self.read_history()
 
-    def revert_latest_protocol(self) -> Result[SyftSuccess, SyftError]:
+    def revert_latest_protocol(self) -> None:
         """Revert latest protocol changes to dev"""
 
         # Get current protocol history
@@ -448,7 +446,9 @@ with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
 
         # If current protocol is dev, skip revert
         if latest_protocol is None or latest_protocol == "dev":
-            return SyftError(message="Revert skipped !! Already running dev protocol.")
+            raise SyftException(
+                public_message="Revert skipped !! Already running dev protocol."
+            )
 
         # Read the current released protocol
         release_name = protocol_history[latest_protocol]["release_name"]
@@ -465,13 +465,13 @@ with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
         self.save_history(protocol_history)
         self.load_state()
 
-    def check_protocol(self) -> Result[SyftSuccess, SyftError]:
+    def check_protocol(self) -> SyftSuccess:
         if len(self.diff) != 0:
-            return SyftError(message="Protocol Changes Unstaged")
+            raise SyftException(public_message="Protocol Changes Unstaged")
         else:
             return SyftSuccess(message="Protocol Stable")
 
-    def check_or_stage_protocol(self) -> Result[SyftSuccess, SyftError]:
+    def check_or_stage_protocol(self) -> SyftSuccess:
         if not self.check_protocol():
             self.stage_protocol_changes()
         result = self.check_protocol()
@@ -531,17 +531,17 @@ def _get_data_protocol(filename: str, raise_exception: bool = False) -> DataProt
     )
 
 
-def stage_protocol_changes() -> Result[SyftSuccess, SyftError]:
+def stage_protocol_changes() -> SyftSuccess:
     data_protocol = get_data_protocol(raise_exception=True)
     return data_protocol.stage_protocol_changes()
 
 
-def bump_protocol_version() -> Result[SyftSuccess, SyftError]:
+def bump_protocol_version() -> SyftSuccess:
     data_protocol = get_data_protocol(raise_exception=True)
     return data_protocol.bump_protocol_version()
 
 
-def check_or_stage_protocol() -> Result[SyftSuccess, SyftError]:
+def check_or_stage_protocol() -> SyftSuccess:
     data_protocol = get_data_protocol()
     return data_protocol.check_or_stage_protocol()
 

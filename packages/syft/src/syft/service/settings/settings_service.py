@@ -19,7 +19,6 @@ from ...util.schema import DS_COMMANDS
 from ...util.schema import GUEST_COMMANDS
 from ..context import AuthedServiceContext
 from ..context import UnauthedServiceContext
-from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
@@ -170,16 +169,14 @@ class SettingsService(AbstractService):
     ) -> SyftSuccess:
         notifier_service = context.server.get_service("notifierservice")
         # FIX: NotificationService
-        res = notifier_service.turn_on(
+        notifier_service.turn_on(
             context=context,
             email_username=email_username,
             email_password=email_password,
             email_sender=email_sender,
             email_server=email_server,
             email_port=email_port,
-        )
-        if res.is_err():
-            raise SyftException(public_message="Failed to enable notifications")
+        ).unwrap(public_message="Failed to enable notifications")
         return SyftSuccess(message="Notifications enabled")
 
     @service_method(
@@ -210,12 +207,6 @@ class SettingsService(AbstractService):
 
         settings = ServerSettingsUpdate(signup_enabled=enable)
         result = self._update(context=context, settings=settings).unwrap()
-
-        if isinstance(result, SyftError):
-            raise SyftException(
-                public_message=f"Failed to update settings: {result.err()}"
-            )
-
         message = "enabled" if enable else "disabled"
         return SyftSuccess(
             message=f"Registration feature successfully {message}", value=message
@@ -243,12 +234,9 @@ class SettingsService(AbstractService):
     )
     def allow_association_request_auto_approval(
         self, context: AuthedServiceContext, enable: bool
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         new_settings = ServerSettingsUpdate(association_request_auto_approval=enable)
-        result = self._update(context, settings=new_settings)
-        if isinstance(result, SyftError):
-            return result
-
+        self._update(context, settings=new_settings).unwrap()
         message = "enabled" if enable else "disabled"
         return SyftSuccess(
             message="Association request auto-approval successfully " + message
@@ -263,7 +251,7 @@ class SettingsService(AbstractService):
         context: AuthedServiceContext,
         markdown: str = "",
         html: str = "",
-    ) -> MarkdownDescription | HTMLObject | SyftError:
+    ) -> MarkdownDescription | HTMLObject:
         if not markdown and not html or markdown and html:
             raise SyftException(
                 public_message="Invalid markdown/html fields. You must set one of them."

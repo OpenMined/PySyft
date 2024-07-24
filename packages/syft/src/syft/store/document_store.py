@@ -14,7 +14,6 @@ from pydantic import BaseModel
 from pydantic import Field
 from result import Err
 from result import Ok
-from result import Result
 from typeguard import check_type
 
 # relative
@@ -26,6 +25,7 @@ from ..service.action.action_permissions import StoragePermission
 from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
 from ..types.base import SyftBaseModel
+from ..types.errors import SyftException
 from ..types.result import as_result
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftBaseObject
@@ -333,23 +333,20 @@ class StorePartition:
         self.settings = settings
         self.store_config = store_config
         self.has_admin_permissions = has_admin_permissions
-        res = self.init_store()
-        if res.is_err():
-            raise RuntimeError(
-                f"Something went wrong initializing the store: {res.err()}"
-            )
-
+        res = self.init_store().unwrap(
+            public_message="Something went wrong initializing the store"
+        )
         store_config.locking_config.lock_name = f"StorePartition-{settings.name}"
         self.lock = SyftLock(store_config.locking_config)
 
-    def init_store(self) -> Result[Ok, Err]:
+    @as_result(SyftException)
+    def init_store(self) -> bool:
         try:
             self.unique_cks = self.settings.unique_keys.all
             self.searchable_cks = self.settings.searchable_keys.all
         except BaseException as e:
-            return Err(str(e))
-
-        return Ok(True)
+            raise SyftException.from_exception(e)
+        return True
 
     def matches_unique_cks(self, partition_key: PartitionKey) -> bool:
         return partition_key in self.unique_cks
@@ -364,21 +361,24 @@ class StorePartition:
         return QueryKeys(qks=[self.store_query_key(obj) for obj in objs])
 
     # Thread-safe methods
-    def _thread_safe_cbk(self, cbk: Callable, *args: Any, **kwargs: Any) -> Any | Err:
+    @as_result(SyftException)
+    def _thread_safe_cbk(self, cbk: Callable, *args: Any, **kwargs: Any) -> Any:
         locked = self.lock.acquire(blocking=True)
         if not locked:
-            return Err(
-                f"Failed to acquire lock for the operation {self.lock.lock_name} ({self.lock._lock})"
+            raise SyftException(
+                public_message=f"Failed to acquire lock for the operation {self.lock.lock_name} ({self.lock._lock})"
             )
 
         try:
-            result = cbk(*args, **kwargs)
+            result = cbk(*args, **kwargs).unwrap()
         except BaseException as e:
-            result = Err(str(e))
-        self.lock.release()
+            raise SyftException.from_exception(e)
+        finally:
+            self.lock.release()
 
         return result
 
+    @as_result(SyftException)
     def set(
         self,
         credentials: SyftVerifyKey,
@@ -386,7 +386,7 @@ class StorePartition:
         add_permissions: list[ActionObjectPermission] | None = None,
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
-    ) -> Result[SyftObject, str]:
+    ) -> SyftObject:
         return self._thread_safe_cbk(
             self._set,
             credentials=credentials,
@@ -394,94 +394,104 @@ class StorePartition:
             add_permissions=add_permissions,
             add_storage_permission=add_storage_permission,
             ignore_duplicates=ignore_duplicates,
-        )
+        ).unwrap()
 
+    @as_result(SyftException)
     def get(
         self,
         credentials: SyftVerifyKey,
         uid: UID,
-    ) -> Result[SyftObject, str]:
+    ) -> SyftObject:
         return self._thread_safe_cbk(
             self._get,
             uid=uid,
             credentials=credentials,
-        )
+        ).unwrap()
 
+    @as_result(SyftException)
     def find_index_or_search_keys(
         self,
         credentials: SyftVerifyKey,
         index_qks: QueryKeys,
         search_qks: QueryKeys,
         order_by: PartitionKey | None = None,
-    ) -> Result[list[SyftObject], str]:
+    ) -> list[SyftObject]:
         return self._thread_safe_cbk(
             self._find_index_or_search_keys,
             credentials,
             index_qks=index_qks,
             search_qks=search_qks,
             order_by=order_by,
-        )
+        ).unwrap()
 
+    @as_result(SyftException)
     def remove_keys(
         self,
         unique_query_keys: QueryKeys,
         searchable_query_keys: QueryKeys,
     ) -> None:
-        self._thread_safe_cbk(
+        return self._thread_safe_cbk(
             self._remove_keys,
             unique_query_keys=unique_query_keys,
             searchable_query_keys=searchable_query_keys,
-        )
+        ).unwrap()
 
+    @as_result(SyftException)
     def update(
         self,
         credentials: SyftVerifyKey,
         qk: QueryKey,
         obj: SyftObject,
         has_permission: bool = False,
-    ) -> Result[SyftObject, str]:
+    ) -> SyftObject:
         return self._thread_safe_cbk(
             self._update,
             credentials=credentials,
             qk=qk,
             obj=obj,
             has_permission=has_permission,
-        )
+        ).unwrap()
 
+    @as_result(SyftException)
     def get_all_from_store(
         self,
         credentials: SyftVerifyKey,
         qks: QueryKeys,
         order_by: PartitionKey | None = None,
-    ) -> Result[list[SyftObject], str]:
+    ) -> list[SyftObject]:
         return self._thread_safe_cbk(
             self._get_all_from_store, credentials, qks, order_by
-        )
+        ).unwrap()
 
+    @as_result(SyftException)
     def delete(
         self, credentials: SyftVerifyKey, qk: QueryKey, has_permission: bool = False
-    ) -> Result[SyftSuccess, Err]:
+    ) -> SyftSuccess:
         return self._thread_safe_cbk(
             self._delete, credentials, qk, has_permission=has_permission
-        )
+        ).unwrap()
 
+    @as_result(SyftException)
     def all(
         self,
         credentials: SyftVerifyKey,
         order_by: PartitionKey | None = None,
         has_permission: bool | None = False,
-    ) -> Result[list[NewBaseStash.object_type], str]:
-        return self._thread_safe_cbk(self._all, credentials, order_by, has_permission)
+    ) -> list[NewBaseStash.object_type]:
+        return self._thread_safe_cbk(
+            self._all, credentials, order_by, has_permission
+        ).unwrap()
 
+    @as_result(SyftException)
     def migrate_data(
         self,
         to_klass: SyftObject,
         context: AuthedServiceContext,
         has_permission: bool | None = False,
-    ) -> Result[bool, str]:
+    ) -> bool:
         return self._thread_safe_cbk(
             self._migrate_data, to_klass, context, has_permission
-        )
+        ).unwrap()
 
     # Potentially thread-unsafe methods.
     # CAUTION:
@@ -495,7 +505,7 @@ class StorePartition:
         add_permissions: list[ActionObjectPermission] | None = None,
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
-    ) -> Result[SyftObject, str]:
+    ) -> SyftObject:
         raise NotImplementedError
 
     def _update(
@@ -506,7 +516,7 @@ class StorePartition:
         has_permission: bool = False,
         overwrite: bool = False,
         allow_missing_keys: bool = False,
-    ) -> Result[SyftObject, str]:
+    ) -> SyftObject:
         raise NotImplementedError
 
     def _get_all_from_store(
@@ -514,12 +524,12 @@ class StorePartition:
         credentials: SyftVerifyKey,
         qks: QueryKeys,
         order_by: PartitionKey | None = None,
-    ) -> Result[list[SyftObject], str]:
+    ) -> list[SyftObject]:
         raise NotImplementedError
 
     def _delete(
         self, credentials: SyftVerifyKey, qk: QueryKey, has_permission: bool = False
-    ) -> Result[SyftSuccess, Err]:
+    ) -> SyftSuccess:
         raise NotImplementedError
 
     def _all(
@@ -527,7 +537,7 @@ class StorePartition:
         credentials: SyftVerifyKey,
         order_by: PartitionKey | None = None,
         has_permission: bool | None = False,
-    ) -> Result[list[NewBaseStash.object_type], str]:
+    ) -> list[NewBaseStash.object_type]:
         raise NotImplementedError
 
     def add_permission(self, permission: ActionObjectPermission) -> None:
@@ -542,10 +552,10 @@ class StorePartition:
     def has_permission(self, permission: ActionObjectPermission) -> bool:
         raise NotImplementedError
 
-    def get_all_permissions(self) -> Result[dict[UID, set[str]], str]:
+    def get_all_permissions(self) -> dict[UID, set[str]]:
         raise NotImplementedError
 
-    def _get_permissions_for_uid(self, uid: UID) -> Result[set[str], str]:
+    def _get_permissions_for_uid(self, uid: UID) -> set[str]:
         raise NotImplementedError
 
     def add_storage_permission(self, permission: StoragePermission) -> None:
@@ -560,10 +570,10 @@ class StorePartition:
     def has_storage_permission(self, permission: StoragePermission | UID) -> bool:
         raise NotImplementedError
 
-    def _get_storage_permissions_for_uid(self, uid: UID) -> Result[set[UID], str]:
+    def _get_storage_permissions_for_uid(self, uid: UID) -> set[UID]:
         raise NotImplementedError
 
-    def get_all_storage_permissions(self) -> Result[dict[UID, set[UID]], str]:
+    def get_all_storage_permissions(self) -> dict[UID, set[UID]]:
         raise NotImplementedError
 
     def _migrate_data(
@@ -571,7 +581,7 @@ class StorePartition:
         to_klass: SyftObject,
         context: AuthedServiceContext,
         has_permission: bool,
-    ) -> Result[bool, str]:
+    ) -> bool:
         raise NotImplementedError
 
 
@@ -911,17 +921,13 @@ class NewBaseUIDStoreStash(NewBaseStash):
         self, credentials: SyftVerifyKey, uid: UID
     ) -> NewBaseUIDStoreStash.object_type:
         # TODO: Could change to query_one, no?
-        result = self.partition.get(credentials=credentials, uid=uid)
-
-        if result.is_err():
-            raise StashException(result.err())
-
-        if result.ok() is None:
+        result = self.partition.get(credentials=credentials, uid=uid).unwrap()
+        if result is None:
             raise NotFoundException(
                 public_message=f"{self.object_type} with uid {uid} not found"
             )
 
-        return result.ok()
+        return result
 
     @as_result(StashException)
     def set(

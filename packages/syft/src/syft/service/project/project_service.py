@@ -140,19 +140,16 @@ class ProjectService(AbstractService):
             # FIX: networkservice stash to new BaseStash
             network_service = context.server.get_service("networkservice")
             network_service = cast(NetworkService, network_service)
-            peer = network_service.stash.get_by_verify_key(
+            peer_id = context.server.id.short() if context.server.id else ""
+            leader_server_peer = network_service.stash.get_by_verify_key(
                 credentials=context.server.verify_key,
                 verify_key=leader_server.verify_key,
-            )
-            if peer.is_err():
-                this_server_id = context.server.id.short() if context.server.id else ""
-                raise SyftException(
-                    public_message=(
-                        f"Leader Server(id={leader_server.id.short()}) is not a "
-                        f"peer of this Server(id={this_server_id})"
-                    )
+            ).unwrap(
+                public_message=(
+                    f"Leader Server(id={leader_server.id.short()}) is not a "
+                    f"peer of this Server(id={peer_id})"
                 )
-            leader_server_peer = peer.ok()
+            )
         else:
             # for the leader server, as it does not have route information to itself
             # we rely on the data scientist to provide the route
@@ -255,21 +252,14 @@ class ProjectService(AbstractService):
                 peer = network_service.stash.get_by_verify_key(
                     credentials=context.server.verify_key,
                     verify_key=member.verify_key,
+                ).unwrap(
+                    public_message=f"Leader server does not have peer {member.name}-{member.id.short()}"
+                    + ". Please exchange routes with the peer."
                 )
-
-                if peer.is_err():
-                    raise SyftException(
-                        public_message=f"Leader server does not have peer {member.name}-{member.id.short()}"
-                        + ". Please exchange routes with the peer."
-                    )
-                peer = peer.ok()
-                remote_client = peer.client_with_context(context=context)
-                if remote_client.is_err():
-                    raise SyftException(
-                        public_message=f"Failed to create remote client for peer: "
-                        f"{peer.id}. Error: {remote_client.err()}"
-                    )
-                remote_client = remote_client.ok()
+                remote_client = peer.client_with_context(context=context).unwrap(
+                    public_message=f"Failed to create remote client for peer: "
+                    f"{peer.id}. Error: {remote_client.err()}"
+                )
                 remote_client.api.services.project.add_event(project_event)
 
         updated_project = self.stash.update(context.server.verify_key, project).unwrap()

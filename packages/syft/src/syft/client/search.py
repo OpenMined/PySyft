@@ -90,7 +90,6 @@ class Search:
                     self.datasites,
                 )
             )
-        # filter out SyftError
         filtered = [(client, result) for client, result in results if client and result]
 
         return filtered

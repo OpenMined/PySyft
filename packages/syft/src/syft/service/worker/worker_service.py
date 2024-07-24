@@ -22,7 +22,6 @@ from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..service import AbstractService
 from ..service import AuthedServiceContext
-from ..service import SyftError
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
@@ -56,7 +55,7 @@ class WorkerService(AbstractService):
     )
     def start_workers(
         self, context: AuthedServiceContext, n: int = 1
-    ) -> list[ContainerSpawnStatus] | SyftError:
+    ) -> list[ContainerSpawnStatus]:
         """Add a Container Image."""
 
         worker_pool_service = context.server.get_service("SyftWorkerPoolService")
@@ -67,7 +66,7 @@ class WorkerService(AbstractService):
     @service_method(
         path="worker.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL
     )
-    def list(self, context: AuthedServiceContext) -> list[SyftWorker] | SyftError:
+    def list(self, context: AuthedServiceContext) -> list[SyftWorker]:
         """List all the workers."""
         workers = self.stash.get_all(context.credentials).unwrap()
 
@@ -117,7 +116,7 @@ class WorkerService(AbstractService):
         context: AuthedServiceContext,
         uid: UID,
         raw: bool = False,
-    ) -> bytes | str | SyftError:
+    ) -> bytes | str:
         worker = self._get_worker(context=context, uid=uid).unwrap()
 
         if context.server is not None and context.server.in_memory_workers:
@@ -139,7 +138,7 @@ class WorkerService(AbstractService):
 
     def _delete(
         self, context: AuthedServiceContext, worker: SyftWorker, force: bool = False
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         uid = worker.id
 
         # relative

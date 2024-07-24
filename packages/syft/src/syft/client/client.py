@@ -25,7 +25,6 @@ from requests import Response
 from requests import Session
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry  # type: ignore[import-untyped]
-from syft.types.result import as_result
 from typing_extensions import Self
 
 # relative
@@ -45,7 +44,6 @@ from ..server.credentials import UserLoginCredentials
 from ..service.context import ServerServiceContext
 from ..service.metadata.server_metadata import ServerMetadata
 from ..service.metadata.server_metadata import ServerMetadataJSON
-from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.user.user import UserCreate
 from ..service.user.user import UserPrivateKey
@@ -53,6 +51,7 @@ from ..service.user.user import UserView
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..types.errors import SyftException
+from ..types.result import as_result
 from ..types.server_url import ServerURL
 from ..types.syft_object import SYFT_OBJECT_VERSION_3
 from ..types.uid import UID
@@ -60,12 +59,13 @@ from ..util.telemetry import instrument
 from ..util.util import prompt_warning_message
 from ..util.util import thread_ident
 from ..util.util import verify_tls
-from .api import APIModule, post_process_result
+from .api import APIModule
 from .api import APIRegistry
 from .api import SignedSyftAPICall
 from .api import SyftAPI
 from .api import SyftAPICall
 from .api import debox_signed_syftapicall_response
+from .api import post_process_result
 from .connection import ServerConnection
 from .protocol import SyftProtocol
 
@@ -328,9 +328,7 @@ class HTTPConnection(ServerConnection):
         )
         return response
 
-    def get_server_metadata(
-        self, credentials: SyftSigningKey
-    ) -> ServerMetadataJSON:
+    def get_server_metadata(self, credentials: SyftSigningKey) -> ServerMetadataJSON:
         if self.proxy_target_uid:
             response = forward_message_to_proxy(
                 make_call=self.make_call,
@@ -460,7 +458,9 @@ class HTTPConnection(ServerConnection):
         elif metadata.server_type == ServerType.ENCLAVE.value:
             return EnclaveClient
         else:
-            raise SyftException(public_message=f"Unknown server type {metadata.server_type}")
+            raise SyftException(
+                public_message=f"Unknown server type {metadata.server_type}"
+            )
 
 
 @serializable()
@@ -474,9 +474,7 @@ class PythonConnection(ServerConnection):
     def with_proxy(self, proxy_target_uid: UID) -> Self:
         return PythonConnection(server=self.server, proxy_target_uid=proxy_target_uid)
 
-    def get_server_metadata(
-        self, credentials: SyftSigningKey
-    ) -> ServerMetadataJSON:
+    def get_server_metadata(self, credentials: SyftSigningKey) -> ServerMetadataJSON:
         if self.proxy_target_uid:
             response = forward_message_to_proxy(
                 make_call=self.make_call,
@@ -538,11 +536,11 @@ class PythonConnection(ServerConnection):
         )
         try:
             result = method()
-        except SyftException as exc:
-            result = SyftError.from_exception(context=context, exc=exc)
+        except SyftException:
+            raise
         except Exception:
-            result = SyftError(
-                message=f"Exception calling exchange credentials. {traceback.format_exc()}"
+            raise SyftException(
+                public_message=f"Exception calling exchange credentials. {traceback.format_exc()}"
             )
         return result
 
@@ -586,6 +584,7 @@ class PythonConnection(ServerConnection):
     def __str__(self) -> str:
         return f"{type(self).__name__}"
 
+    @as_result(SyftException)
     def get_client_type(self) -> type[SyftClient]:
         # relative
         from .datasite_client import DatasiteClient
@@ -779,7 +778,9 @@ class SyftClient:
             self_server_route = connection_to_route(self.connection)
             remote_server_route = connection_to_route(client.connection)
             if client.metadata is None:
-                raise SyftError(public_message=f"client {client}'s metadata is None!")
+                raise SyftException(
+                    public_message=f"client {client}'s metadata is None!"
+                )
 
             return self.api.services.network.exchange_credentials_with(
                 self_server_route=self_server_route,
@@ -835,13 +836,13 @@ class SyftClient:
         return None
 
     @property
-    def peers(self) -> list[ServerPeer] | SyftError | None:
+    def peers(self) -> list[ServerPeer] | None:
         if self.api.has_service("network"):
             return self.api.services.network.get_all_peers()
         return None
 
     @property
-    def me(self) -> UserView | SyftError | None:
+    def me(self) -> UserView | None:
         if self.api.has_service("user"):
             return self.api.services.user.get_current_user()
         return None
@@ -892,7 +893,9 @@ class SyftClient:
                 email=email, password=password, password_verify=password, **kwargs
             ).unwrap()
 
-        user_private_key = self.connection.login(email=email, password=password).unwrap()
+        user_private_key = self.connection.login(
+            email=email, password=password
+        ).unwrap()
 
         signing_key = None if user_private_key is None else user_private_key.signing_key
 
@@ -958,7 +961,7 @@ class SyftClient:
 
         user_code_items = self.code.get_all_for_user()
         load_approved_policy_code(user_code_items=user_code_items, context=None)
-    
+
     @as_result(SyftException)
     def register(
         self,
@@ -1080,7 +1083,7 @@ def connect(
             url.set_port(int(port))
         connection = HTTPConnection(url=url)
 
-    client_type = connection.get_client_type()
+    client_type = connection.get_client_type().unwrap()
     return client_type(connection=connection)
 
 

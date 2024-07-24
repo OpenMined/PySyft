@@ -20,6 +20,7 @@ from ipywidgets import VBox
 
 # relative
 from ...client.sync_decision import SyncDirection
+from ...types.errors import SyftException
 from ...types.uid import UID
 from ...util.notebook_ui.components.sync import Alert
 from ...util.notebook_ui.components.sync import CopyIDButton
@@ -33,13 +34,12 @@ from ...util.notebook_ui.styles import CSS_CODE
 from ..action.action_object import ActionObject
 from ..api.api import TwinAPIEndpoint
 from ..log.log import SyftLog
-from ..response import SyftError
 from ..response import SyftSuccess
 from .diff_state import ObjectDiff
 from .diff_state import ObjectDiffBatch
 
 # Standard div Jupyter Lab uses for notebook outputs
-# This is needed to use alert styles from SyftSuccess and SyftError
+# This is needed to use alert styles from SyftSuccess and SyftException
 NOTEBOOK_OUTPUT_DIV = """
 <div class="lm-Widget
             jp-RenderedHTMLCommon
@@ -434,7 +434,7 @@ class ResolveWidget:
         ] = {}
         self.on_sync_callback = on_sync_callback
         self.main_widget = self.build()
-        self.result_widget = VBox()  # Placeholder for SyftSuccess / SyftError
+        self.result_widget = VBox()  # Placeholder for SyftSuccess / SyftException
         self.widget = VBox(
             [self.build_css_widget(), self.main_widget, self.result_widget]
         )
@@ -451,11 +451,11 @@ class ResolveWidget:
         for widget in self.id2widget.values():
             widget.set_share_private_data()
 
-    def click_share_private_data(self, uid: UID | str) -> SyftError | SyftSuccess:
+    def click_share_private_data(self, uid: UID | str) -> SyftSuccess:
         if isinstance(uid, str):
             uid = UID(uid)
         if uid not in self.id2widget:
-            return SyftError(message="Object not found in this widget")
+            raise SyftException(public_message="Object not found in this widget")
 
         widget = self.id2widget[uid]
         widget.set_share_private_data()
@@ -469,13 +469,13 @@ class ResolveWidget:
     def get_mockify_state(self) -> dict[UID, bool]:
         return {uid: widget.mockify for uid, widget in self.id2widget.items()}
 
-    def click_sync(self, *args: list, **kwargs: dict) -> SyftSuccess | SyftError:
+    def click_sync(self, *args: list, **kwargs: dict) -> SyftSuccess:
         # relative
         from ...client.syncing import handle_sync_batch
 
         if self.is_synced:
-            return SyftError(
-                message="The changes in this widget have already been synced."
+            raise SyftException(
+                public_message="The changes in this widget have already been synced."
             )
 
         res = handle_sync_batch(
@@ -531,13 +531,13 @@ class ResolveWidget:
         )
         return obj_diff_widget
 
-    def set_widget_result_state(self, res: SyftSuccess | SyftError) -> None:
+    def set_widget_result_state(self, res: SyftSuccess) -> None:
         self.is_synced = True
         self.set_result_message(res)
         self.hide_main_widget()
         self.show_result_widget()
 
-    def set_result_message(self, result: SyftSuccess | SyftError) -> None:
+    def set_result_message(self, result: SyftSuccess) -> None:
         result_html = result._repr_html_()
         # Wrap in div to match Jupyter Lab output styling
         result_html = NOTEBOOK_OUTPUT_DIV.format(content=result_html)
@@ -792,7 +792,7 @@ class PaginatedResolveWidget:
     def build(self) -> widgets.VBox:
         return widgets.VBox([self.table_output, self.paginated_widget.build()])
 
-    def click_sync(self, index: int) -> SyftSuccess | SyftError:
+    def click_sync(self, index: int) -> SyftSuccess:
         return self.resolve_widgets[index].click_sync()
 
     def click_share_all_private_data(self, index: int) -> None:

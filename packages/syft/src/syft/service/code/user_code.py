@@ -31,9 +31,6 @@ from IPython.display import Markdown
 from IPython.display import display
 from pydantic import ValidationError
 from pydantic import field_validator
-from result import Err
-from result import Ok
-from result import Result
 from typing_extensions import Self
 
 # relative
@@ -251,13 +248,14 @@ class UserCodeStatusCollection(SyncableSyftObject):
                 f"Invalid Server Type for Code Submission:{context.server.server_type}"
             )
 
+    @as_result(SyftException)
     def mutate(
         self,
         value: tuple[UserCodeStatus, str],
         server_name: str,
         server_id: UID,
         verify_key: SyftVerifyKey,
-    ) -> SyftError | Self:
+    ) -> Self:
         server_identity = ServerIdentity(
             server_name=server_name, server_id=server_id, verify_key=verify_key
         )
@@ -267,8 +265,8 @@ class UserCodeStatusCollection(SyncableSyftObject):
             self.status_dict = status_dict
             return self
         else:
-            return SyftError(
-                message="Cannot Modify Status as the Datasite's data is not included in the request"
+            raise SyftException(
+                public_message="Cannot Modify Status as the Datasite's data is not included in the request"
             )
 
     def get_sync_dependencies(self, context: AuthedServiceContext) -> list[UID]:
@@ -381,9 +379,9 @@ class UserCode(SyncableSyftObject):
     @field_validator("service_func_name", mode="after")
     @classmethod
     def service_func_name_is_valid(cls, value: str) -> str:
-        res = is_valid_usercode_name(value)
-        if res.is_err():
-            raise ValueError(res.err_value)
+        _ = is_valid_usercode_name(
+            value
+        ).unwrap()  # this will throw an error if not valid
         return value
 
     def __setattr__(self, key: str, value: Any) -> None:
@@ -428,20 +426,20 @@ class UserCode(SyncableSyftObject):
         return self.origin_server_side_type == ServerSideType.HIGH_SIDE
 
     @property
-    def user(self) -> UserView | SyftError:
+    def user(self) -> UserView:
         api = APIRegistry.api_for(
             server_uid=self.syft_server_location,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None:
-            return SyftError(
-                message=f"Can't access Syft API. You must login to {self.syft_server_location}"
+            raise SyftException(
+                public_message=f"Can't access Syft API. You must login to {self.syft_server_location}"
             )
         return api.services.user.get_by_verify_key(self.user_verify_key)
 
     def _compute_status_l0(
         self, context: AuthedServiceContext | None = None
-    ) -> UserCodeStatusCollection | SyftError:
+    ) -> UserCodeStatusCollection:
         if context is None:
             # Clientside
             api = self._get_api()
@@ -461,9 +459,6 @@ class UserCode(SyncableSyftObject):
             is_approved = output_service.has_output_read_permissions(
                 context, self.id, self.user_verify_key
             )
-
-        if isinstance(is_approved, SyftError):
-            return is_approved
         is_denied = self.l0_deny_reason is not None
 
         if is_denied:
@@ -486,19 +481,19 @@ class UserCode(SyncableSyftObject):
         )
 
     @property
-    def status(self) -> UserCodeStatusCollection | SyftError:
+    def status(self) -> UserCodeStatusCollection:
         # Clientside only
 
         if self.is_l0_deployment:
             if self.status_link is not None:
-                return SyftError(
-                    message="Encountered a low side UserCode object with a status_link."
+                raise SyftException(
+                    public_message="Encountered a low side UserCode object with a status_link."
                 )
             return self._compute_status_l0()
 
         if self.status_link is None:
-            return SyftError(
-                message="This UserCode does not have a status. Please contact the Admin."
+            raise SyftException(
+                public_message="This UserCode does not have a status. Please contact the Admin."
             )
         res = self.status_link.resolve
         return res
@@ -703,13 +698,13 @@ class UserCode(SyncableSyftObject):
             raise Exception(f"You can't set {type(value)} as output_policy_state")
 
     @property
-    def output_history(self) -> list[ExecutionOutput] | SyftError:
+    def output_history(self) -> list[ExecutionOutput]:
         api = APIRegistry.api_for(
             self.syft_server_location, self.syft_client_verify_key
         )
         if api is None:
-            return SyftError(
-                message=f"Can't access the api. You must login to {self.syft_server_location}"
+            raise SyftException(
+                public_message=f"Can't access the api. You must login to {self.syft_server_location}"
             )
         return api.services.output.get_by_user_code_id(self.id)
 
@@ -758,7 +753,7 @@ class UserCode(SyncableSyftObject):
         return compile_byte_code(self.parsed_code)
 
     @property
-    def assets(self) -> DictTuple[str, Asset] | SyftError:
+    def assets(self) -> DictTuple[str, Asset]:
         if not self.input_policy:
             return []
 
@@ -766,9 +761,6 @@ class UserCode(SyncableSyftObject):
 
         # get all assets on the server
         datasets: list[Dataset] = api.services.dataset.get_all()
-        if isinstance(datasets, SyftError):
-            return datasets
-
         all_assets: dict[UID, Asset] = {}
         for dataset in datasets:
             for asset in dataset.asset_list:
@@ -792,9 +784,7 @@ class UserCode(SyncableSyftObject):
         return DictTuple(asset_dict)
 
     @property
-    def _asset_json(self) -> str | SyftError:
-        if isinstance(self.assets, SyftError):
-            return self.assets
+    def _asset_json(self) -> str:
         asset_dict = {
             argument: asset._get_dict_for_user_code_repr()
             for argument, asset in self.assets.items()
@@ -802,9 +792,7 @@ class UserCode(SyncableSyftObject):
         asset_str = json.dumps(asset_dict, indent=2)
         return asset_str
 
-    def get_sync_dependencies(
-        self, context: AuthedServiceContext
-    ) -> list[UID] | SyftError:
+    def get_sync_dependencies(self, context: AuthedServiceContext) -> list[UID]:
         dependencies = []
 
         if self.nested_codes is not None:
@@ -826,7 +814,7 @@ class UserCode(SyncableSyftObject):
         display(warning)
 
         # 🟡 TODO: re-use the same infrastructure as the execute_byte_code function
-        def wrapper(*args: Any, **kwargs: Any) -> Callable | SyftError:
+        def wrapper(*args: Any, **kwargs: Any) -> Callable:
             try:
                 filtered_kwargs = {}
                 on_private_data, on_mock_data = False, False
@@ -861,7 +849,9 @@ class UserCode(SyncableSyftObject):
                 # return the results
                 return result
             except Exception as e:
-                return SyftError(f"Failed to execute 'run'. Error: {e}")
+                raise SyftException(
+                    public_message=f"Failed to execute 'run'. Error: {e}"
+                )
 
         return wrapper
 
@@ -1064,9 +1054,9 @@ class SubmitUserCode(SyftObject):
     @field_validator("func_name", mode="after")
     @classmethod
     def func_name_is_valid(cls, value: str) -> str:
-        res = is_valid_usercode_name(value)
-        if res.is_err():
-            raise ValueError(res.err_value)
+        _ = is_valid_usercode_name(
+            value
+        ).unwrap()  # this will throw an error if not valid
         return value
 
     @field_validator("output_policy_init_kwargs", mode="after")
@@ -1160,8 +1150,8 @@ class SubmitUserCode(SyftObject):
             # )
             api = APIRegistry.get_by_recent_server_uid(server_uid=server_id.server_id)
             if api is None:
-                return SyftError(
-                    f"Can't access the api. You must login to {server_id.server_id}"
+                raise SyftException(
+                    public_message=f"Can't access the api. You must login to {server_id.server_id}"
                 )
             # Creating TwinObject from the ids of the kwargs
             # Maybe there are some corner cases where this is not enough
@@ -1189,9 +1179,7 @@ class SubmitUserCode(SyftObject):
                     syft_server_location=server_id.server_id,
                     syft_client_verify_key=server_id.verify_key,
                 )
-                res = new_obj.send(ep_client)
-                if isinstance(res, SyftError):
-                    return res
+                new_obj.send(ep_client)
 
         new_syft_func = deepcopy(self)
 
@@ -1231,22 +1219,27 @@ def get_code_hash(code: str, user_verify_key: SyftVerifyKey) -> str:
     return hashlib.sha256(full_str.encode()).hexdigest()
 
 
-def is_valid_usercode_name(func_name: str) -> Result[Any, str]:
+@as_result(SyftException)
+def is_valid_usercode_name(func_name: str) -> Any:
     if len(func_name) == 0:
-        return Err("Function name cannot be empty")
+        raise SyftException(public_message="Function name cannot be empty")
     if func_name == "_":
-        return Err("Cannot use anonymous function as syft function")
+        raise SyftException(
+            public_message="Cannot use anonymous function as syft function"
+        )
     if not str.isidentifier(func_name):
-        return Err("Function name must be a valid Python identifier")
+        raise SyftException(
+            public_message="Function name must be a valid Python identifier"
+        )
     if keyword.iskeyword(func_name):
-        return Err("Function name is a reserved python keyword")
+        raise SyftException(public_message="Function name is a reserved python keyword")
 
     service_method_path = f"code.{func_name}"
     if ServiceConfigRegistry.path_exists(service_method_path):
-        return Err(
-            f"Could not create syft function with name {func_name}: a service with the same name already exists"
+        raise SyftException(
+            public_message=f"Could not create syft function with name {func_name}: a service with the same name already exists"
         )
-    return Ok(None)
+    return True
 
 
 class ArgumentType(Enum):
@@ -1315,7 +1308,7 @@ def syft_function(
     else:
         output_policy_type = type(output_policy)
 
-    def decorator(f: Any) -> SubmitUserCode | SyftError:
+    def decorator(f: Any) -> SubmitUserCode:
         try:
             code = dedent(inspect.getsource(f))
 
@@ -1490,8 +1483,6 @@ def locate_launch_jobs(context: TransformContext) -> TransformContext:
             user_code_service = context.server.get_service("usercodeService")
             for call in nested_calls:
                 user_codes = user_code_service.get_by_service_name(context, call)
-                if isinstance(user_codes, SyftError):
-                    raise Exception(user_codes.message)
                 # TODO: Not great
                 user_code = user_codes[-1]
                 user_code_link = LinkedObject.from_obj(
@@ -1553,8 +1544,6 @@ def check_policy(policy: Any, context: TransformContext) -> TransformContext:
             policy = policy.to(UserPolicy, context=context)
         elif isinstance(policy, UID):
             policy = policy_service.get_policy_by_uid(context, policy)
-            if policy.is_ok():
-                policy = policy.ok()
     return policy
 
 
@@ -1624,14 +1613,12 @@ def create_code_status(context: TransformContext) -> TransformContext:
     # relative
     from .status_service import UserCodeStatusService
 
-    # TODO error handling in transform functions
-    if not isinstance(res, SyftError):
-        context.output["status_link"] = LinkedObject.from_uid(
-            res.id,
-            UserCodeStatusCollection,
-            service_type=UserCodeStatusService,
-            server_uid=context.server.id,
-        )
+    context.output["status_link"] = LinkedObject.from_uid(
+        res.id,
+        UserCodeStatusCollection,
+        service_type=UserCodeStatusService,
+        server_uid=context.server.id,
+    )
     return context
 
 
@@ -1759,7 +1746,6 @@ class SecureContext:
                 ptr = action_service.set_result_to_store(
                     value, context, has_result_read_permissions=False
                 ).unwrap()
-                ptr = ptr.ok()
                 kw2id[k] = ptr.id
             try:
                 # TODO: check permissions here

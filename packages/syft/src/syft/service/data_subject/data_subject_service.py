@@ -1,7 +1,6 @@
 # stdlib
 
 # third party
-from result import Result
 
 # relative
 from ...serde.serializable import serializable
@@ -47,7 +46,7 @@ class DataSubjectStash(NewBaseUIDStoreStash):
         credentials: SyftVerifyKey,
         data_subject: DataSubject,
         has_permission: bool = False,
-    ) -> Result[DataSubject, str]:
+    ) -> DataSubject:
         res = self.check_type(data_subject, DataSubject).unwrap()
         # we dont use and_then logic here as it is hard because of the order of the arguments
         return super().update(credentials=credentials, obj=res).unwrap()

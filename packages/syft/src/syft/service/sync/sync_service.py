@@ -25,7 +25,6 @@ from ..api.api_service import APIService
 from ..code.user_code import UserCodeStatusCollection
 from ..context import AuthedServiceContext
 from ..job.job_stash import Job
-from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import TYPE_TO_SERVICE
@@ -163,11 +162,7 @@ class SyncService(AbstractService):
             apiservice: APIService = context.server.get_service("apiservice")  # type: ignore
 
             res = apiservice.set(context=context, endpoint=item)
-            # TODO: resultify
-            if isinstance(res, SyftError):
-                raise SyftException(public_message=res.message)
-            else:
-                return item
+            return item
 
         if exists:
             res = stash.update(creds, item).unwrap()

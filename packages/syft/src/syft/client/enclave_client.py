@@ -9,7 +9,6 @@ from ..abstract_server import ServerSideType
 from ..serde.serializable import serializable
 from ..service.metadata.server_metadata import ServerMetadataJSON
 from ..service.network.routes import ServerRouteType
-from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..types.syft_object import SYFT_OBJECT_VERSION_3
 from ..types.syft_object import SyftObject
@@ -68,7 +67,7 @@ class EnclaveClient(SyftClient):
         email: str | None = None,
         password: str | None = None,
         protocol: str | SyftProtocol = SyftProtocol.HTTP,
-    ) -> SyftSuccess | SyftError | None:
+    ) -> SyftSuccess | None:
         if isinstance(protocol, str):
             protocol = SyftProtocol(protocol)
 
@@ -82,8 +81,6 @@ class EnclaveClient(SyftClient):
                 if email is None
                 else login(url=url, port=port, email=email, password=password)
             )
-            if isinstance(client, SyftError):
-                return client
 
         self.metadata: ServerMetadataJSON = self.metadata
         res = self.exchange_route(client, protocol=protocol)

@@ -8,7 +8,6 @@ from ..serde.serializable import serializable
 from ..server.credentials import SyftSigningKey
 from ..service.metadata.server_metadata import ServerMetadataJSON
 from ..service.network.server_peer import ServerPeer
-from ..service.response import SyftError
 from ..service.response import SyftException
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftObject
@@ -28,18 +27,16 @@ class GatewayClient(SyftClient):
         from .enclave_client import EnclaveClient
 
         connection: type[ServerConnection] = self.connection.with_proxy(peer.id)
-        metadata: ServerMetadataJSON | SyftError = connection.get_server_metadata(
+        metadata: ServerMetadataJSON = connection.get_server_metadata(
             credentials=SyftSigningKey.generate()
         )
-        if isinstance(metadata, SyftError):
-            return metadata
         if metadata.server_type == ServerType.DATASITE.value:
             client_type: type[SyftClient] = DatasiteClient
         elif metadata.server_type == ServerType.ENCLAVE.value:
             client_type = EnclaveClient
         else:
             raise SyftException(
-                f"Unknown server type {metadata.server_type} to create proxy client"
+                public_message=f"Unknown server type {metadata.server_type} to create proxy client"
             )
 
         client = client_type(
@@ -59,22 +56,22 @@ class GatewayClient(SyftClient):
         if self.api.has_service("network"):
             peer = self.api.services.network.get_peer_by_name(name=name)
         if peer is None:
-            return SyftError(message=f"No datasite with name {name}")
+            raise SyftException(public_message=f"No datasite with name {name}")
         res = self.proxy_to(peer)
         if email and password:
             res = res.login(email=email, password=password, **kwargs)
         return res
 
     @property
-    def peers(self) -> list[ServerPeer] | SyftError | None:
+    def peers(self) -> list[ServerPeer] | None:
         return ProxyClient(routing_client=self)
 
     @property
-    def datasites(self) -> list[ServerPeer] | SyftError | None:
+    def datasites(self) -> list[ServerPeer] | None:
         return ProxyClient(routing_client=self, server_type=ServerType.DATASITE)
 
     @property
-    def enclaves(self) -> list[ServerPeer] | SyftError | None:
+    def enclaves(self) -> list[ServerPeer] | None:
         return ProxyClient(routing_client=self, server_type=ServerType.ENCLAVE)
 
     def _repr_html_(self) -> str:

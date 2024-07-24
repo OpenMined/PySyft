@@ -28,7 +28,6 @@ from ...util import options
 from ...util.colors import SURFACE
 from ...util.notebook_ui.styles import FONT_CSS
 from ...util.notebook_ui.styles import ITABLES_CSS
-from ..response import SyftError
 from .worker_image import SyftWorkerImage
 
 
@@ -112,13 +111,13 @@ class SyftWorker(SyftObject):
     to_be_deleted: bool = False
 
     @property
-    def logs(self) -> str | SyftError:
+    def logs(self) -> str:
         api = APIRegistry.api_for(
             server_uid=self.syft_server_location,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None:
-            return SyftError(message=f"You must login to {self.server_uid}")
+            raise SyftException(public_message=f"You must login to {self.server_uid}")
         return api.services.worker.logs(uid=self.id)
 
     def get_job_repr(self) -> str:
@@ -128,7 +127,9 @@ class SyftWorker(SyftObject):
                 user_verify_key=self.syft_client_verify_key,
             )
             if api is None:
-                return SyftError(message=f"You must login to {self.server_uid}")
+                raise SyftException(
+                    public_message=f"You must login to {self.server_uid}"
+                )
             job = api.services.job.get(self.job_id)
             if job.action.user_code_id is not None:
                 func_name = api.services.code.get_by_id(
@@ -140,18 +141,15 @@ class SyftWorker(SyftObject):
         else:
             return ""
 
-    def refresh_status(self) -> SyftError | None:
+    def refresh_status(self) -> None:
         api = APIRegistry.api_for(
             server_uid=self.syft_server_location,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None:
-            return SyftError(message=f"You must login to {self.server_uid}")
+            raise SyftException(public_message=f"You must login to {self.server_uid}")
 
         res = api.services.worker.status(uid=self.id)
-        if isinstance(res, SyftError):
-            return res
-
         self.status, self.healthcheck = res
         return None
 
@@ -200,7 +198,7 @@ class WorkerPool(SyftObject):
     created_at: DateTime = DateTime.now()
 
     @property
-    def image(self) -> SyftWorkerImage | SyftError | None:
+    def image(self) -> SyftWorkerImage | None:
         """
         Get the pool's image using the worker_image service API. This way we
         get the latest state of the image from the SyftWorkerImageStash
@@ -215,7 +213,7 @@ class WorkerPool(SyftObject):
             return None
 
     @property
-    def running_workers(self) -> list[SyftWorker] | SyftError:
+    def running_workers(self) -> list[SyftWorker]:
         """Query the running workers using an API call to the server"""
         _running_workers = [
             worker for worker in self.workers if worker.status == WorkerStatus.RUNNING
@@ -224,7 +222,7 @@ class WorkerPool(SyftObject):
         return _running_workers
 
     @property
-    def healthy_workers(self) -> list[SyftWorker] | SyftError:
+    def healthy_workers(self) -> list[SyftWorker]:
         """
         Query the healthy workers using an API call to the server
         """
@@ -281,8 +279,11 @@ class WorkerPool(SyftObject):
     def workers(self) -> list[SyftWorker]:
         resolved_workers = []
         for worker in self.worker_list:
-            resolved_worker = worker.resolve
-            if isinstance(resolved_worker, SyftError) or resolved_worker is None:
+            try:
+                resolved_worker = worker.resolve
+            except SyftException:
+                resolved_worker = None
+            if resolved_worker is None:
                 continue
             resolved_worker.refresh_status()
             resolved_workers.append(resolved_worker)

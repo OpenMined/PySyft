@@ -25,7 +25,7 @@ from .server.datasite import Datasite
 from .server.enclave import Enclave
 from .server.gateway import Gateway
 from .server.uvicorn import serve_server
-from .service.response import SyftError
+from .service.response import SyftException
 from .service.response import SyftInfo
 from .util.util import get_random_available_port
 
@@ -131,7 +131,7 @@ class ServerHandle:
         if not password_verify:
             password_verify = getpass.getpass("Confirm Password: ")
         if password != password_verify:
-            return SyftError(message="Passwords do not match")
+            raise SyftException(public_message="Passwords do not match")
 
         client = self.client
         return client.register(

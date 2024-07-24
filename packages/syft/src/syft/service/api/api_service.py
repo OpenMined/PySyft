@@ -19,7 +19,6 @@ from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_service import ActionService
 from ..context import AuthedServiceContext
-from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import TYPE_TO_SERVICE
@@ -74,19 +73,13 @@ class APIService(AbstractService):
         if isinstance(endpoint, CreateTwinAPIEndpoint):
             endpoint_exists = self.stash.path_exists(
                 context.credentials, new_endpoint.path
-            )
-
-            if endpoint_exists.is_err():
-                raise SyftException(public_message=endpoint_exists.err())
-
-            if endpoint_exists.is_ok() and endpoint_exists.ok():
+            ).unwrap()
+            if endpoint_exists:
                 raise SyftException(
                     public_message="An API endpoint already exists at the given path."
                 )
 
         result = self.stash.upsert(context.credentials, endpoint=new_endpoint).unwrap()
-
-        result = result.ok()
         action_obj = ActionObject.from_obj(
             id=new_endpoint.action_object_id,
             syft_action_data=CustomEndpointActionObject(endpoint_id=result.id),
@@ -217,7 +210,7 @@ class APIService(AbstractService):
         private: bool = False,
         mock: bool = False,
         both: bool = False,
-    ) -> TwinAPIEndpoint | SyftError:
+    ) -> TwinAPIEndpoint:
         """Sets the state of a specific API endpoint."""
         if both:
             private = True
@@ -247,7 +240,7 @@ class APIService(AbstractService):
         private: bool = False,
         mock: bool = False,
         both: bool = False,
-    ) -> TwinAPIEndpoint | SyftError:
+    ) -> TwinAPIEndpoint:
         """Sets the settings of a specific API endpoint."""
         if both:
             private = True
@@ -272,7 +265,7 @@ class APIService(AbstractService):
     def api_endpoints(
         self,
         context: AuthedServiceContext,
-    ) -> list[TwinAPIEndpointView] | SyftError:
+    ) -> list[TwinAPIEndpointView]:
         """Retrieves a list of available API endpoints view available to the user."""
         admin_key = context.server.get_service("userservice").admin_verify_key()
         all_api_endpoints = self.stash.get_all(admin_key).unwrap()

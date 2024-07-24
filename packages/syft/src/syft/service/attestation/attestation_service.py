@@ -11,7 +11,6 @@ from ...types.errors import SyftException
 from ...types.result import as_result
 from ...util.util import str_to_bool
 from ..context import AuthedServiceContext
-from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
@@ -31,7 +30,7 @@ class AttestationService(AbstractService):
     @as_result(SyftException)
     def perform_request(
         self, method: Callable, endpoint: str, raw: bool = False
-    ) -> SyftSuccess | SyftError | str:
+    ) -> SyftSuccess | str:
         try:
             response = method(f"{ATTESTATION_SERVICE_URL}{endpoint}")
             response.raise_for_status()

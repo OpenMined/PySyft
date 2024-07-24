@@ -1,7 +1,6 @@
 # stdlib
 
 # third party
-from result import Result
 
 # relative
 from ...serde.serializable import serializable
@@ -39,15 +38,13 @@ class SyftImageRegistryStash(NewBaseUIDStoreStash):
         self,
         credentials: SyftVerifyKey,
         url: str,
-    ) -> Result[SyftImageRegistry | None, str]:
+    ) -> SyftImageRegistry | None:
         qks = QueryKeys(qks=[URLPartitionKey.with_obj(url)])
         return self.query_one(credentials=credentials, qks=qks).unwrap(
             public_message="Image Registry with url {url} not found"
         )
 
     @as_result(StashException)
-    def delete_by_url(
-        self, credentials: SyftVerifyKey, url: str
-    ) -> Result[SyftSuccess, str]:
+    def delete_by_url(self, credentials: SyftVerifyKey, url: str) -> SyftSuccess:
         qk = URLPartitionKey.with_obj(url)
         return super().delete(credentials=credentials, qk=qk).unwrap()

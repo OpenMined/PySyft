@@ -18,7 +18,6 @@ from ..code.user_code import UserCode
 from ..context import AuthedServiceContext
 from ..log.log_service import LogService
 from ..queue.queue_stash import ActionQueueItem
-from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import TYPE_TO_SERVICE
@@ -32,16 +31,14 @@ from .job_stash import JobStash
 from .job_stash import JobStatus
 
 
-def wait_until(
-    predicate: Callable[[], bool], timeout: int = 10
-) -> SyftSuccess | SyftError:
+def wait_until(predicate: Callable[[], bool], timeout: int = 10) -> SyftSuccess:
     start = time.time()
     code_string = inspect.getsource(predicate).strip()
     while time.time() - start < timeout:
         if predicate():
             return SyftSuccess(message=f"Predicate {code_string} is True")
         time.sleep(1)
-    return SyftError(message=f"Timeout reached for predicate {code_string}")
+    raise SyftException(public_message=f"Timeout reached for predicate {code_string}")
 
 
 @instrument
@@ -107,12 +104,12 @@ class JobService(AbstractService):
         job = self.stash.get_by_uid(context.credentials, uid=uid).unwrap()
 
         if job.parent_job_id is not None:
-            return SyftError(
-                message="Not possible to restart subjobs. Please restart the parent job."
+            raise SyftException(
+                public_message="Not possible to restart subjobs. Please restart the parent job."
             )
         if job.status == JobStatus.PROCESSING:
-            return SyftError(
-                message="Jobs in progress cannot be restarted. "
+            raise SyftException(
+                public_message="Jobs in progress cannot be restarted. "
                 "Please wait for completion or cancel the job via .cancel() to proceed."
             )
 
@@ -126,10 +123,6 @@ class JobService(AbstractService):
         worker_pool_ref = context.server.get_worker_pool_ref_by_name(
             context.credentials
         )
-
-        if isinstance(worker_pool_ref, SyftError):
-            return worker_pool_ref
-
         queue_item = ActionQueueItem(
             id=task_uid,
             server_uid=context.server.id,
@@ -162,7 +155,7 @@ class JobService(AbstractService):
         res = self.stash.update(context.credentials, obj=job).unwrap()
         return SyftSuccess(message="Job updated!", value=res)
 
-    def _kill(self, context: AuthedServiceContext, job: Job) -> SyftSuccess | SyftError:
+    def _kill(self, context: AuthedServiceContext, job: Job) -> SyftSuccess:
         # set job and subjobs status to TERMINATING
         # so that MonitorThread can kill them
         job.status = JobStatus.TERMINATING
@@ -174,12 +167,8 @@ class JobService(AbstractService):
         if subjobs is not None:
             for subjob in subjobs:
                 subjob.status = JobStatus.TERMINATING
-                res = self.stash.update(context.credentials, obj=subjob)
+                res = self.stash.update(context.credentials, obj=subjob).unwrap()
                 results.append(res)
-
-        errors = [res.err() for res in results if res.is_err()]
-        if errors:
-            return SyftError(message=f"Failed to kill job: {errors}")
 
         # wait for job and subjobs to be killed by MonitorThread
         wait_until(lambda: job.fetched_status == JobStatus.INTERRUPTED)

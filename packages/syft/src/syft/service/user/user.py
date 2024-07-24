@@ -31,7 +31,6 @@ from ...types.transforms import transform
 from ...types.transforms import validate_email
 from ...types.uid import UID
 from ..notifier.notifier_enums import NOTIFIERS
-from ..response import SyftError
 from ..response import SyftSuccess
 from .errors import UserPasswordMismatchError
 from .errors import UserUpdateError
@@ -286,7 +285,7 @@ class UserView(SyftObject):
 
         return SyftSuccess(message="User details successfully updated.")
 
-    def allow_mock_execution(self, allow: bool = True) -> SyftSuccess | SyftError:
+    def allow_mock_execution(self, allow: bool = True) -> SyftSuccess:
         return self.update(mock_execution_permission=allow)
 
 

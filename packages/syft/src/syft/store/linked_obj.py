@@ -2,7 +2,6 @@
 from typing import Any
 
 # third party
-from syft.types.errors import SyftException
 from typing_extensions import Self
 
 # relative
@@ -10,7 +9,6 @@ from ..serde.serializable import serializable
 from ..service.context import AuthedServiceContext
 from ..service.context import ChangeContext
 from ..service.context import ServerServiceContext
-from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..types.errors import SyftException
 from ..types.result import as_result
@@ -80,7 +78,9 @@ class LinkedObject(SyftObject):
         if hasattr(service, "stash"):
             result = service.stash.update(credentials, obj)
         else:
-            raise SyftException(public_message=f"service {service} does not have a stash")
+            raise SyftException(
+                public_message=f"service {service} does not have a stash"
+            )
         return result
 
     @classmethod

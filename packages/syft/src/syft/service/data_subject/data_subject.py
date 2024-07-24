@@ -8,6 +8,7 @@ from typing_extensions import Self
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
+from ...types.errors import SyftException
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
@@ -16,7 +17,6 @@ from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.uid import UID
 from ...util.markdown import as_markdown_python_code
-from ..response import SyftError
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
 
@@ -39,7 +39,7 @@ class DataSubject(SyftObject):
 
         api = APIRegistry.api_for(self.server_uid, self.syft_client_verify_key)
         if api is None:
-            return SyftError(message=f"You must login to {self.server_uid}")
+            raise SyftException(public_message=f"You must login to {self.server_uid}")
         members = api.services.data_subject.members_for(self.name)
         return members
 

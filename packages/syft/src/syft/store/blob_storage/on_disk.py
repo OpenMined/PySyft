@@ -5,7 +5,6 @@ from typing import Any
 
 # third party
 from result import as_result
-from syft.types.errors import SyftException
 from typing_extensions import Self
 
 # relative
@@ -17,11 +16,11 @@ from . import BlobStorageConfig
 from . import BlobStorageConnection
 from . import SyftObjectRetrieval
 from ...serde.serializable import serializable
-from ...service.response import SyftError
 from ...service.response import SyftSuccess
 from ...types.blob_storage import BlobStorageEntry
 from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.blob_storage import SecureFilePathLocation
+from ...types.errors import SyftException
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 
 
@@ -67,25 +66,23 @@ class OnDiskBlobStorageConnection(BlobStorageConnection):
             type_=type_,
         )
 
-    def allocate(
-        self, obj: CreateBlobStorageEntry
-    ) -> SecureFilePathLocation | SyftError:
+    def allocate(self, obj: CreateBlobStorageEntry) -> SecureFilePathLocation:
         try:
             return SecureFilePathLocation(
                 path=str((self._base_directory / obj.file_name).absolute())
             )
         except Exception as e:
-            return SyftError(message=f"Failed to allocate: {e}")
+            raise SyftException(public_message=f"Failed to allocate: {e}")
 
     def write(self, obj: BlobStorageEntry) -> BlobDeposit:
         return OnDiskBlobDeposit(blob_storage_entry_id=obj.id)
 
-    def delete(self, fp: SecureFilePathLocation) -> SyftSuccess | SyftError:
+    def delete(self, fp: SecureFilePathLocation) -> SyftSuccess:
         try:
             (self._base_directory / fp.path).unlink()
             return SyftSuccess(message="Successfully deleted file.")
         except FileNotFoundError as e:
-            return SyftError(message=f"Failed to delete file: {e}")
+            raise SyftException(public_message=f"Failed to delete file: {e}")
 
 
 @serializable()

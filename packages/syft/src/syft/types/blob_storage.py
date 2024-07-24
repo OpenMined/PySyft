@@ -30,7 +30,6 @@ from ..service.action.action_object import ActionObjectPointer
 from ..service.action.action_object import ActionObjectV3
 from ..service.action.action_object import BASE_PASSTHROUGH_ATTRS
 from ..service.action.action_types import action_types
-from ..service.response import SyftError
 from ..service.response import SyftException
 from ..service.service import from_api_or_context
 from ..types.server_url import ServerURL
@@ -109,7 +108,7 @@ class BlobFile(SyftObject):
 
         return None
 
-    def upload_to_blobstorage(self, client: SyftClient) -> SyftError | None:
+    def upload_to_blobstorage(self, client: SyftClient) -> None:
         self.syft_server_location = client.id
         self.syft_client_verify_key = client.verify_key
         return self._upload_to_blobstorage_from_api(client.api)

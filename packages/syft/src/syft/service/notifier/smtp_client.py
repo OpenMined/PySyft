@@ -3,10 +3,9 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
 
-# third party
-from result import Err
-from result import Ok
-from result import Result
+# relative
+from ...types.errors import SyftException
+from ...types.result import as_result
 
 
 class SMTPClient:
@@ -50,9 +49,10 @@ class SMTPClient:
         # TODO: Add error handling
 
     @classmethod
+    @as_result(SyftException)
     def check_credentials(
         cls, server: str, port: int, username: str, password: str
-    ) -> Result[Ok, Err]:
+    ) -> bool:
         """Check if the credentials are valid.
 
         Returns:
@@ -65,6 +65,6 @@ class SMTPClient:
                     smtp_server.starttls()
                     smtp_server.ehlo()
                 smtp_server.login(username, password)
-                return Ok("Credentials are valid.")
+                return True
         except Exception as e:
-            return Err(e)
+            raise SyftException(public_message=str(e))

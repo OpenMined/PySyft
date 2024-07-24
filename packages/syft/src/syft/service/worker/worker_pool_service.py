@@ -359,7 +359,7 @@ class SyftWorkerPoolService(AbstractService):
             pool_name (Optional[str], optional): Unique name of the pool. Defaults to None.
 
         Returns:
-            Union[List[ContainerSpawnStatus], SyftError]: List of spawned workers with their status and error if any.
+            List[ContainerSpawnStatus]: List of spawned workers with their status and error if any.
         """
 
         if number <= 0:

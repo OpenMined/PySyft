@@ -1,8 +1,6 @@
 # stdlib
 
 # third party
-from result import Err
-from result import Result
 
 # relative
 from ...serde.serializable import serializable
@@ -67,9 +65,9 @@ class NotifierStash(NewBaseStash):
         credentials: SyftVerifyKey,
         settings: NotifierSettings,
         has_permission: bool = False,
-    ) -> Result[NotifierSettings, Err]:
+    ) -> NotifierSettings:
         result = self.check_type(settings, self.object_type).unwrap()
         # we dont use and_then logic here as it is hard because of the order of the arguments
         return (
-            super().update(credentials=credentials, obj=result.ok()).unwrap()
+            super().update(credentials=credentials, obj=result).unwrap()
         )  # TODO check if result isInstance(Ok)

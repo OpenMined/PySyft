@@ -256,7 +256,7 @@ class Asset(SyftObject):
             return api.services.action.get_pointer(self.action_id)
 
     @property
-    def mock(self) -> SyftError | Any:
+    def mock(self) -> Any:
         # relative
         from ...client.api import APIRegistry
 
@@ -265,14 +265,14 @@ class Asset(SyftObject):
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None:
-            return SyftError(message=f"You must login to {self.server_uid}")
+            raise SyftException(public_message=f"You must login to {self.server_uid}")
         result = api.services.action.get_mock(self.action_id)
         try:
             if isinstance(result, SyftObject):
                 return result.syft_action_data
             return result
         except Exception as e:
-            return SyftError(message=f"Failed to get mock. {e}")
+            raise SyftException(public_message=f"Failed to get mock. {e}")
 
     def has_data_permission(self) -> bool:
         return self.data is not None
@@ -426,18 +426,11 @@ class CreateAsset(SyftObject):
     def set_shape(self, shape: tuple) -> None:
         self.shape = shape
 
-    def check(self) -> SyftSuccess | SyftError:
+    def check(self) -> SyftSuccess:
         if not check_mock(self.data, self.mock):
-            return SyftError(
-                message=f"set_obj type {type(self.data)} must match set_mock type {type(self.mock)}"
+            raise SyftException(
+                public_message=f"set_obj type {type(self.data)} must match set_mock type {type(self.mock)}"
             )
-        # if not _is_action_data_empty(self.mock):
-        #     data_shape = get_shape_or_len(self.data)
-        #     mock_shape = get_shape_or_len(self.mock)
-        #     if data_shape != mock_shape:
-        #         return SyftError(
-        #             message=f"set_obj shape {data_shape} must match set_mock shape {mock_shape}"
-        #         )
 
         return SyftSuccess(message="Dataset is Valid")
 
@@ -620,8 +613,8 @@ class Dataset(SyftObject):
 
         client = SyftClientSessionCache.get_client_for_server_uid(self.server_uid)
         if client is None:
-            return SyftError(
-                message=f"No clients for {self.server_uid} in memory. Please login with sy.login"
+            raise SyftException(
+                public_message=f"No clients for {self.server_uid} in memory. Please login with sy.login"
             )
         return client
 
@@ -814,8 +807,6 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
             syft_client_verify_key=asset.syft_client_verify_key,  # type: ignore
         )
         res = twin._save_to_blob_storage(allow_empty=contains_empty)
-        if isinstance(res, SyftError):
-            raise ValueError(res.message)
         if isinstance(res, SyftWarning):
             logger.debug(res.message)
         # TODO, upload to blob storage here
@@ -824,13 +815,10 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
                 "f{context}'s server is None, please log in. No trasformation happened"
             )
         action_service = context.server.get_service("actionservice")
-        result = action_service._set(
+        action_service._set(
             context=context.to_server_context(),
             action_object=twin,
-        )
-        if result.is_err():
-            raise RuntimeError(f"Failed to create and store twin. Error: {result}")
-
+        ).unwrap(public_message="Failed to create and store twin")
         context.output["action_id"] = twin.id
     else:
         private_obj = context.output.pop("data", None)
@@ -852,8 +840,8 @@ def set_data_subjects(context: TransformContext) -> TransformContext:
     if context.output is None:
         raise ValueError(f"{context}'s output is None. No transformation happened")
     if context.server is None:
-        return SyftError(
-            "f{context}'s server is None, please log in. No trasformation happened"
+        raise SyftException(
+            public_message="f{context}'s server is None, please log in. No trasformation happened"
         )
     data_subjects = context.output["data_subjects"]
     get_data_subject = context.server.get_service_method(DataSubjectService.get_by_name)

@@ -12,7 +12,6 @@ from typing import cast
 
 # third party
 import markdown
-from result import Result
 from tqdm import tqdm
 
 # relative
@@ -25,7 +24,6 @@ from ..service.dataset.dataset import Contributor
 from ..service.dataset.dataset import CreateAsset
 from ..service.dataset.dataset import CreateDataset
 from ..service.migration.object_migration_state import MigrationData
-from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.response import SyftWarning
 from ..service.sync.diff_state import ResolvedSyncState
@@ -96,12 +94,12 @@ class DatasiteClient(SyftClient):
     def __repr__(self) -> str:
         return f"<DatasiteClient: {self.name}>"
 
-    def upload_dataset(self, dataset: CreateDataset) -> SyftSuccess | SyftError:
+    def upload_dataset(self, dataset: CreateDataset) -> SyftSuccess:
         # relative
         from ..types.twin_object import TwinObject
 
         if self.users is None:
-            return SyftError(f"can't get user service for {self}")
+            raise SyftException(public_message=f"can't get user service for {self}")
 
         user = self.users.get_current_user()
         dataset = add_default_uploader(user, dataset)
@@ -142,13 +140,10 @@ class DatasiteClient(SyftClient):
                         syft_client_verify_key=self.verify_key,
                     )
                     res = twin._save_to_blob_storage(allow_empty=contains_empty)
-                    if isinstance(res, SyftError):
-                        return res
                 except Exception as e:
                     tqdm.write(f"Failed to create twin for {asset.name}. {e}")
-                    return SyftError(message=f"Failed to create twin. {e}")
+                    raise SyftException(public_message=f"Failed to create twin. {e}")
 
-                print(f"{res}")
                 if isinstance(res, SyftWarning):
                     logger.debug(res.message)
                 try:
@@ -168,10 +163,7 @@ class DatasiteClient(SyftClient):
                 pbar.update(1)
 
         dataset.mb_size = dataset_size
-        valid = dataset.check()
-        if isinstance(valid, SyftError):
-            return valid
-
+        dataset.check()
         return self.api.services.dataset.add(dataset=dataset)
 
     def refresh(self) -> None:
@@ -181,18 +173,15 @@ class DatasiteClient(SyftClient):
         if self._api and self._api.refresh_api_callback:
             self._api.refresh_api_callback()
 
-    def get_sync_state(self) -> SyncState | SyftError:
+    def get_sync_state(self) -> SyncState:
         state: SyncState = self.api.services.sync._get_state()
-        if isinstance(state, SyftError):
-            return state
-
         for uid, obj in state.objects.items():
             if isinstance(obj, ActionObject):
                 obj = obj.refresh_object(resolve_nested=False)
                 state.objects[uid] = obj
         return state
 
-    def apply_state(self, resolved_state: ResolvedSyncState) -> SyftSuccess | SyftError:
+    def apply_state(self, resolved_state: ResolvedSyncState) -> SyftSuccess:
         if len(resolved_state.delete_objs):
             raise NotImplementedError("TODO implement delete")
         items = resolved_state.create_objs + resolved_state.update_objs
@@ -214,9 +203,6 @@ class DatasiteClient(SyftClient):
             ignored_batches,
             unignored_batches=resolved_state.unignored_batches,
         )
-        if isinstance(res, SyftError):
-            return res
-
         self._fetch_api(self.credentials)
         return res
 
@@ -225,9 +211,9 @@ class DatasiteClient(SyftClient):
         file_list: BlobFile | list[BlobFile] | str | list[str] | Path | list[Path],
         allow_recursive: bool = False,
         show_files: bool = False,
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         if not file_list:
-            return SyftError(message="No files to upload")
+            raise SyftException(public_message="No files to upload")
 
         if not isinstance(file_list, list):
             file_list = [file_list]  # type: ignore[assignment]
@@ -258,7 +244,7 @@ class DatasiteClient(SyftClient):
                 expanded_file_list.append(path)
 
         if not expanded_file_list:
-            return SyftError(message="No files to upload were found")
+            raise SyftException(public_message="No files to upload were found")
 
         print(
             f"Uploading {len(expanded_file_list)} {'file' if len(expanded_file_list) == 1 else 'files'}:"
@@ -283,8 +269,8 @@ class DatasiteClient(SyftClient):
 
             return ActionObject.from_obj(result).send(self)
         except Exception as err:
-            return SyftError(
-                message=f"Failed to upload files: {err}.\n{traceback.format_exc()}"
+            raise SyftException(
+                public_message=f"Failed to upload files: {err}.\n{traceback.format_exc()}"
             )
 
     def connect_to_gateway(
@@ -336,9 +322,7 @@ class DatasiteClient(SyftClient):
             return getattr(self.api.services, name)
         return None
 
-    def set_server_side_type_dangerous(
-        self, server_side_type: str
-    ) -> Result[SyftSuccess, SyftError]:
+    def set_server_side_type_dangerous(self, server_side_type: str) -> SyftSuccess:
         return self.api.services.settings.set_server_side_type_dangerous(
             server_side_type
         )
@@ -407,35 +391,28 @@ class DatasiteClient(SyftClient):
     def migration(self) -> APIModule | None:
         return self._get_service_by_name_if_exists("migration")
 
-    def get_migration_data(
-        self, include_blobs: bool = True
-    ) -> MigrationData | SyftError:
+    def get_migration_data(self, include_blobs: bool = True) -> MigrationData:
         res = self.api.services.migration.get_migration_data()
-        if isinstance(res, SyftError):
-            return res
-
         if include_blobs:
             res.download_blobs()
 
         return res
 
-    def load_migration_data(self, path: str | Path) -> SyftSuccess | SyftError:
+    def load_migration_data(self, path: str | Path) -> SyftSuccess:
         migration_data = MigrationData.from_file(path)
-        if isinstance(migration_data, SyftError):
-            return migration_data
         migration_data._set_obj_location_(self.id, self.verify_key)
 
         if self.id != migration_data.server_uid:
-            return SyftError(
-                message=f"This Migration data is not for this server. Expected server id {self.id}, "
+            raise SyftException(
+                public_message=f"This Migration data is not for this server. Expected server id {self.id}, "
                 f"got {migration_data.server_uid}"
             )
 
         if migration_data.signing_key.verify_key != self.verify_key:
-            return SyftError(
-                message="Root verify key in migration data does not match this client's verify key"
+            raise SyftException(
+                public_message="Root verify key in migration data does not match this client's verify key"
             )
-            
+
         migration_data.migrate_and_upload_blobs()
         migration_data_without_blobs = migration_data.copy_without_blobs()
         return self.api.services.migration.apply_migration_data(
@@ -462,8 +439,6 @@ class DatasiteClient(SyftClient):
 
     def _repr_html_(self) -> str:
         obj = self.api.services.settings.welcome_show()
-        if isinstance(obj, SyftError):
-            return obj.message
         updated_template_str = Template(obj.text).safe_substitute(
             server_url=getattr(self.connection, "url", None)
         )

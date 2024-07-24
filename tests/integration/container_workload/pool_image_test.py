@@ -12,7 +12,6 @@ from syft.client.datasite_client import DatasiteClient
 from syft.custom_worker.config import DockerWorkerConfig
 from syft.custom_worker.config import PrebuiltWorkerConfig
 from syft.service.request.request import Request
-from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.worker.worker_image import SyftWorkerImage
 from syft.service.worker.worker_pool import SyftWorker
@@ -83,8 +82,6 @@ def test_image_build(datasite_1_port: int, external_registry_uid: UID) -> None:
 
     # Validate if we can get the worker image object from its config
     workerimage = datasite_client.api.services.worker_image.get_by_config(docker_config)
-    assert not isinstance(workerimage, sy.SyftError)
-
     # Build docker image
     docker_build_result = datasite_client.api.services.worker_image.build(
         image_uid=workerimage.id,
@@ -128,7 +125,6 @@ def test_pool_launch(
     worker_image = datasite_client.api.services.worker_image.get_by_config(
         worker_config
     )
-    assert not isinstance(worker_image, sy.SyftError)
     assert worker_image is not None
 
     if not worker_image.is_prebuilt:
@@ -168,8 +164,6 @@ def test_pool_launch(
         # assert "Failed to start workers" in str(worker_pool_res)
         pass
     else:
-        assert not isinstance(worker_pool_res, SyftError)
-
         assert all(worker.error is None for worker in worker_pool_res)
 
         worker_pool = datasite_client.worker_pools[worker_pool_name]
@@ -189,11 +183,9 @@ def test_pool_launch(
 
         # Check worker Logs
         logs = datasite_client.api.services.worker.logs(uid=first_worker.id)
-        assert not isinstance(logs, sy.SyftError)
 
         # Check for worker status
         status_res = datasite_client.api.services.worker.status(uid=first_worker.id)
-        assert not isinstance(status_res, sy.SyftError)
         assert isinstance(status_res, tuple)
 
         # Delete the pool's workers

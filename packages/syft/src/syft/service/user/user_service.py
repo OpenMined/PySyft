@@ -26,7 +26,6 @@ from ..notification.email_templates import OnBoardEmailTemplate
 from ..notification.notification_service import CreateNotification
 from ..notification.notification_service import NotificationService
 from ..notifier.notifier_enums import NOTIFIERS
-from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
@@ -144,9 +143,7 @@ class UserService(AbstractService):
         users = [user.to(UserView) for user in users]
         return _paginate(users, page_size, page_index)
 
-    def signing_key_for_verify_key(
-        self, verify_key: SyftVerifyKey
-    ) -> UserPrivateKey | SyftError:
+    def signing_key_for_verify_key(self, verify_key: SyftVerifyKey) -> UserPrivateKey:
         user = self.stash.get_by_verify_key(
             credentials=self.stash.admin_verify_key(), verify_key=verify_key
         ).unwrap()

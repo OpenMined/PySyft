@@ -14,9 +14,6 @@ from typing import cast
 from pydantic import ValidationError
 from pydantic import field_validator
 from pydantic import model_validator
-from result import Err
-from result import Ok
-from result import Result
 
 # relative
 from ...abstract_server import AbstractServer
@@ -428,7 +425,9 @@ class TwinAPIEndpoint(SyncableSyftObject):
             return True
         return False
 
-    def select_code(self, context: AuthedServiceContext) -> Result[Ok, Err]:
+    def select_code(
+        self, context: AuthedServiceContext
+    ) -> PrivateAPIEndpoint | PublicAPIEndpoint | None:
         """Select the code to execute based on the user's permissions and public code availability.
 
         Args:
@@ -437,8 +436,8 @@ class TwinAPIEndpoint(SyncableSyftObject):
             Result[Ok, Err]: The selected code to execute.
         """
         if self.has_permission(context) and self.private_function:
-            return Ok(self.private_function)
-        return Ok(self.mock_function)
+            return self.private_function
+        return self.mock_function
 
     def exec(self, context: AuthedServiceContext, *args: Any, **kwargs: Any) -> Any:
         """Execute the code based on the user's permissions and public code availability.
@@ -450,11 +449,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
         Returns:
             Any: The result of the executed code.
         """
-        result = self.select_code(context)
-        if result.is_err():
-            return SyftError(message=result.err())
-
-        selected_code = result.ok()
+        selected_code = self.select_code(context)
         return self.exec_code(selected_code, context, *args, **kwargs)
 
     def exec_mock_function(
@@ -464,7 +459,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
         if self.mock_function:
             return self.exec_code(self.mock_function, context, *args, **kwargs)
 
-        return SyftError(message="No public code available")
+        raise SyftException(public_message="No public code available")
 
     def exec_private_function(
         self, context: AuthedServiceContext, *args: Any, **kwargs: Any

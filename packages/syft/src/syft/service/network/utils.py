@@ -28,7 +28,7 @@ class PeerHealthCheckTask:
         self.started_time = None
         self._stop = False
 
-    def peer_route_heathcheck(self, context: AuthedServiceContext) -> SyftError | None:
+    def peer_route_heathcheck(self, context: AuthedServiceContext) -> None:
         """
         Perform a health check on the peers in the network stash.
         - If peer is accessible, ping the peer.
@@ -53,8 +53,7 @@ class PeerHealthCheckTask:
         except SyftException as exc:
             msg = exc._private_message or exc.public_message
             logger.error(f"Failed to fetch peers from stash: {msg}")
-            # TODO: raise SyftException?
-            return SyftError(message="Failed to fetch peers from stash")
+            raise SyftException(message="Failed to fetch peers from stash")
 
         for peer in all_peers:
             peer_update = ServerPeerUpdate(id=peer.id)

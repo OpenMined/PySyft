@@ -22,8 +22,6 @@ from RestrictedPython import compile_restricted
 from pydantic import field_validator
 from pydantic import model_validator
 import requests
-from result import Ok
-from result import Result
 
 # relative
 from ...abstract_server import ServerType
@@ -59,7 +57,6 @@ from ..context import AuthedServiceContext
 from ..context import ChangeContext
 from ..context import ServerServiceContext
 from ..dataset.dataset import Asset
-from ..response import SyftError
 from ..response import SyftSuccess
 
 # Use this for return type enums:
@@ -157,7 +154,7 @@ class Policy(SyftObject):
                 op_code += "\n"
         return op_code
 
-    def is_valid(self, *args: list, **kwargs: dict) -> SyftSuccess | SyftError:  # type: ignore
+    def is_valid(self, *args: list, **kwargs: dict) -> SyftSuccess:  # type: ignore
         return SyftSuccess(message="Policy is valid.")
 
     def public_state(self) -> Any:
@@ -295,18 +292,13 @@ class Constant(PolicyRule):
     def is_met(self, context: AuthedServiceContext, *args: Any, **kwargs: Any) -> bool:
         return True
 
-    def transform_kwarg(
-        self, context: AuthedServiceContext, val: Any
-    ) -> Result[Any, str]:
+    @as_result(SyftException)
+    def transform_kwarg(self, context: AuthedServiceContext, val: Any) -> Any:
         if isinstance(self.val, UID):
             if issubclass(self.klass, CustomEndpointActionObject):
-                res = context.server.get_service("actionservice").get(context, self.val)
-                if res.is_err():
-                    return res
-                else:
-                    obj = res.ok()
-                    return Ok(obj.syft_action_data)
-        return Ok(self.val)
+                obj = context.server.get_service("actionservice").get(context, self.val)
+                return obj.syft_action_data
+        return self.val
 
 
 @serializable()
@@ -370,16 +362,12 @@ def retrieve_item_from_db(id: UID, context: AuthedServiceContext) -> ActionObjec
     root_context = AuthedServiceContext(
         server=context.server, credentials=context.server.verify_key
     )
-    value = action_service._get(
+    return action_service._get(
         context=root_context,
         uid=id,
         twin_mode=TwinMode.NONE,
         has_permission=True,
-    )
-    if value.is_err():
-        return value
-    else:
-        return value.ok()
+    ).unwrap()
 
 
 class InputPolicy(Policy):
@@ -415,7 +403,7 @@ class InputPolicy(Policy):
     def inputs(self) -> dict[ServerIdentity, Any]:
         return self.init_kwargs
 
-    def _inputs_for_context(self, context: ChangeContext) -> dict | SyftError:
+    def _inputs_for_context(self, context: ChangeContext) -> dict:
         user_server_view = ServerIdentity.from_change_context(context)
         inputs = self.inputs[user_server_view]
         root_context = AuthedServiceContext(
@@ -424,10 +412,9 @@ class InputPolicy(Policy):
 
         action_service = context.server.get_service("actionservice")
         for var_name, uid in inputs.items():
-            action_object = action_service.get(uid=uid, context=root_context)
-            if action_object.is_err():
-                return SyftError(message=action_object.err())
-            action_object_value = action_object.ok()
+            action_object_value = action_service.get(
+                uid=uid, context=root_context
+            ).unwrap()
             # resolve syft action data from blob store
             if isinstance(action_object_value, TwinObject):
                 action_object_value.private_obj.syft_action_data  # noqa: B018
@@ -481,12 +468,9 @@ class MixedInputPolicy(InputPolicy):
         for _, rules in self.kwarg_rules.items():
             for kw, rule in rules.items():
                 if hasattr(rule, "transform_kwarg"):
-                    res_val = rule.transform_kwarg(context, kwargs.get(kw, None))
-                    # TODO: new style resultify transform_kwarg
-                    if res_val.is_err():
-                        raise SyftException(public_message=res_val.value)
-                    else:
-                        kwargs[kw] = res_val.ok()
+                    kwargs[kw] = rule.transform_kwarg(
+                        context, kwargs.get(kw, None)
+                    ).unwrap()
         return kwargs
 
     def find_server_identity(
@@ -1037,7 +1021,7 @@ def process_class_code(raw_code: str, class_name: str) -> str:
         args=[],
         keywords=[],
     )
-    
+
     as_result_name = ast.Name(id="sy.as_result", ctx=ast.Load())
     syft_exception_name = ast.Name(id="sy.SyftException", ctx=ast.Load())
     as_result_decorator = ast.Call(
@@ -1057,7 +1041,7 @@ def process_class_code(raw_code: str, class_name: str) -> str:
             if stmt.name == "filter_kwargs":
                 stmt.decorator_list.append(as_result_decorator)
             if stmt.name == "transform_kwargs":
-                stmt.decorator_list.append(as_result_decorator) 
+                stmt.decorator_list.append(as_result_decorator)
 
     # change the module that the code will reference
     # this is required for the @serializable to mount it in the right path for serde

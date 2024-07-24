@@ -41,7 +41,6 @@ from ..types.syft_object import attach_attribute_to_syft_object
 from ..types.uid import UID
 from .context import AuthedServiceContext
 from .context import ChangeContext
-from .response import SyftError
 from .user.user_roles import DATA_OWNER_ROLE_LEVEL
 from .user.user_roles import ServiceRole
 from .warnings import APIEndpointWarning
@@ -461,7 +460,7 @@ def from_api_or_context(
     func_or_path: str,
     syft_server_location: UID | None = None,
     syft_client_verify_key: SyftVerifyKey | None = None,
-) -> APIModule | SyftError | partial | None:
+) -> APIModule | partial | None:
     # relative
     from ..client.api import APIRegistry
     from ..server.server import AuthServerContextRegistry
@@ -492,12 +491,12 @@ def from_api_or_context(
         )
         if func_or_path not in user_config_registry:
             if ServiceConfigRegistry.path_exists(func_or_path):
-                return SyftError(
-                    message=f"As a `{server_context.role}` you have has no access to: {func_or_path}"
+                return SyftException(
+                    public_message=f"As a `{server_context.role}` you have has no access to: {func_or_path}"
                 )
             else:
-                return SyftError(
-                    message=f"API call not in registered services: {func_or_path}"
+                raise SyftException(
+                    public_message=f"API call not in registered services: {func_or_path}"
                 )
 
         _private_api_path = user_config_registry.private_path_for(func_or_path)

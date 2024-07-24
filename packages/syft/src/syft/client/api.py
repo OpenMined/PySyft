@@ -21,8 +21,6 @@ from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import EmailStr
 from pydantic import TypeAdapter
-from result import OkErr
-from result import Result
 from typeguard import TypeCheckError
 from typeguard import check_type
 
@@ -248,15 +246,14 @@ class SignedSyftAPICall(SyftObject):
         return self.cached_deseralized_message
 
     @property
-    def is_valid(self) -> Result[SyftSuccess, SyftError]:
+    def is_valid(self) -> bool:
         try:
             _ = self.credentials.verify_key.verify(
                 self.serialized_message, self.signature
             )
         except BadSignatureError:
-            return SyftError(message="BadSignatureError")
-
-        return SyftSuccess(message="Credentials are valid")
+            return False
+        return True
 
 
 @instrument
@@ -357,11 +354,7 @@ class RemoteFunction(SyftObject):
             blocking = bool(kwargs["blocking"])
             del kwargs["blocking"]
 
-        res = self.prepare_args_and_kwargs(args, kwargs)
-        if isinstance(res, SyftError):
-            return res
-
-        _valid_args, _valid_kwargs = res
+        _valid_args, _valid_kwargs = self.prepare_args_and_kwargs(args, kwargs)
         if self.pre_kwargs:
             _valid_kwargs.update(self.pre_kwargs)
 
@@ -412,8 +405,8 @@ class RemoteFunction(SyftObject):
                     return remote_func.function_call("api.get_public_context")
 
             return PrivateCustomAPIReference()
-        return SyftError(
-            message="This function doesn't support mock/private calls as it's not custom."
+        raise SyftException(
+            public_message="This function doesn't support mock/private calls as it's not custom."
         )
 
     @property
@@ -432,8 +425,8 @@ class RemoteFunction(SyftObject):
                     return remote_func.function_call("api.get_private_context")
 
             return PrivateCustomAPIReference()
-        return SyftError(
-            message="This function doesn't support mock/private calls as it's not custom."
+        raise SyftException(
+            public_message="This function doesn't support mock/private calls as it's not custom."
         )
 
     @as_result(SyftException)
@@ -459,9 +452,7 @@ class RemoteFunction(SyftObject):
                 args=[custom_path],
                 kwargs={},
             )
-            endpoint = self.make_call(api_call=api_call)
-            if isinstance(endpoint, SyftError):
-                return endpoint._repr_html_()
+            endpoint = self.make_call(api_call=api_call).unwrap()
 
             str_repr = "## API: " + custom_path + "\n"
             if endpoint.description is not None:
@@ -540,9 +531,9 @@ class RemoteUserCodeFunction(RemoteFunction):
             return None
 
     @property
-    def jobs(self) -> list[Job] | SyftError:
+    def jobs(self) -> list[Job]:
         if self.user_code_id is None:
-            return SyftError(message="Could not find user_code_id")
+            raise SyftException(public_message="Could not find user_code_id")
         api_call = SyftAPICall(
             server_uid=self.server_uid,
             path="job.get_by_user_code_id",
@@ -799,14 +790,16 @@ class APIModule:
         return NotImplementedError
 
 
+# TODO ERROR: what is this function return type???
+@as_result(SyftException)
 def debox_signed_syftapicall_response(
     signed_result: SignedSyftAPICall | Any,
-) -> Any | SyftError:
+) -> Any:
     if not isinstance(signed_result, SignedSyftAPICall):
-        return SyftError(message="The result is not signed")
+        raise SyftException(public_message="The result is not signed")
 
     if not signed_result.is_valid:
-        return SyftError(message="The result signature is invalid")
+        raise SyftException(public_message="The result signature is invalid")
     return signed_result.message.data
 
 
@@ -1112,14 +1105,14 @@ class SyftAPI(SyftObject):
     def user_role(self) -> ServiceRole:
         return self.__user_role
 
-    def make_call(self, api_call: SyftAPICall, cache_result: bool = True) -> Result:
+    def make_call(self, api_call: SyftAPICall, cache_result: bool = True) -> Any:
         signed_call = api_call.sign(credentials=self.signing_key)
         if self.connection is not None:
             signed_result = self.connection.make_call(signed_call)
         else:
-            return SyftError(message="API connection is None")
+            raise SyftException(public_message="API connection is None")
 
-        result = debox_signed_syftapicall_response(signed_result=signed_result)
+        result = debox_signed_syftapicall_response(signed_result=signed_result).unwrap()
 
         if isinstance(result, CachedSyftObject):
             if result.error_msg is not None:
@@ -1131,15 +1124,9 @@ class SyftAPI(SyftObject):
                         message=msg,
                     )
                 else:
-                    result = SyftError(message=result.error_msg)
+                    raise SyftException(public_message=result.error_msg)
             if cache_result:
                 result = result.result
-
-        if isinstance(result, OkErr):
-            if result.is_ok():
-                result = result.ok()
-            else:
-                result = result.err()
         # we update the api when we create objects that change it
         self.update_api(result)
         return result
@@ -1383,6 +1370,7 @@ class ServerIdentity(Identity):
 
     def __repr__(self) -> str:
         return f"ServerIdentity <name={self.server_name}, id={self.server_id.short()}, 🔑={str(self.verify_key)[0:8]}>"
+
 
 @as_result(SyftException)
 def validate_callable_args_and_kwargs(

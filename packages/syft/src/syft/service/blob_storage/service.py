@@ -23,7 +23,6 @@ from ...types.errors import SyftException
 from ...types.result import as_result
 from ...types.uid import UID
 from ..context import AuthedServiceContext
-from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import TYPE_TO_SERVICE
@@ -51,7 +50,7 @@ class BlobStorageService(AbstractService):
     @service_method(path="blob_storage.get_all", name="get_all")
     def get_all_blob_storage_entries(
         self, context: AuthedServiceContext
-    ) -> list[BlobStorageEntry] | SyftError:
+    ) -> list[BlobStorageEntry]:
         return self.stash.get_all(context.credentials).unwrap()
 
     @service_method(path="blob_storage.mount_azure", name="mount_azure")
@@ -200,7 +199,7 @@ class BlobStorageService(AbstractService):
         context: AuthedServiceContext,
         obj: CreateBlobStorageEntry,
         uploaded_by: SyftVerifyKey | None = None,
-    ) -> BlobDepositType | SyftError:
+    ) -> BlobDepositType:
         """
         Allocate a secure location for the blob storage entry.
 
@@ -214,16 +213,12 @@ class BlobStorageService(AbstractService):
                 Defaults to None.
 
         Returns:
-            BlobDepositType | SyftError: Blob deposit
+            BlobDepositType: Blob deposit
         """
         upload_credentials = uploaded_by or context.credentials
 
         with context.server.blob_storage_client.connect() as conn:
             secure_location = conn.allocate(obj)
-
-            if isinstance(secure_location, SyftError):
-                raise SyftException(private_message=secure_location.message)
-
             blob_storage_entry = BlobStorageEntry(
                 id=obj.id,
                 location=secure_location,
@@ -257,7 +252,7 @@ class BlobStorageService(AbstractService):
         context: AuthedServiceContext,
         obj: CreateBlobStorageEntry,
         uploaded_by: SyftVerifyKey,
-    ) -> BlobDepositType | SyftError:
+    ) -> BlobDepositType:
         return self._allocate(context, obj, uploaded_by).unwrap()
 
     @service_method(
@@ -322,10 +317,6 @@ class BlobStorageService(AbstractService):
                 file_unlinked_result = conn.delete(obj.location)
         except Exception as e:
             raise SyftException(public_message=f"Failed to delete file: {e}")
-
-        if isinstance(file_unlinked_result, SyftError):
-            raise SyftException(public_message="unable to delete linked file")
-
         self.stash.delete(
             context.credentials, UIDPartitionKey.with_obj(uid), has_permission=True
         ).unwrap()

@@ -10,7 +10,6 @@ from ...types.result import as_result
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ..context import ChangeContext
 from ..request.request import Change
-from ..response import SyftError
 from ..response import SyftSuccess
 from .routes import ServerRoute
 from .server_peer import ServerPeer
@@ -77,15 +76,9 @@ class AssociationRequestChange(Change):
                 # FIX: unwrap client_with_context?
                 remote_client: SyftClient = self.remote_peer.client_with_context(
                     context=service_ctx
+                ).unwrap(
+                    public_message=f"Failed to create remote client for peer: {self.remote_peer.id}."
                 )
-                if remote_client.is_err():
-                    raise SyftException(
-                        public_message=(
-                            f"Failed to create remote client for peer: {self.remote_peer.id}."
-                            f" Error: {remote_client.err()}"
-                        )
-                    )
-                remote_client = remote_client.ok()
                 random_challenge = secrets.token_bytes(16)
                 remote_res = remote_client.api.services.network.ping(
                     challenge=random_challenge
@@ -94,9 +87,6 @@ class AssociationRequestChange(Change):
                 raise SyftException(
                     public_message="Remote Peer cannot ping peer:" + str(e)
                 )
-
-            if isinstance(remote_res, SyftError):
-                raise SyftException(public_message=remote_res.message)
 
             challenge_signature = remote_res
 
@@ -109,22 +99,12 @@ class AssociationRequestChange(Change):
                 raise SyftException(public_message=str(e))
 
         # Adding the remote peer to the network stash
-        result = network_stash.create_or_update_peer(
+        network_stash.create_or_update_peer(
             service_ctx.server.verify_key, self.remote_peer
         )
-
-        if result.is_err():
-            raise SyftException(public_message=str(result.err()))
-
         # this way they can match up who we are with who they think we are
         # Sending a signed messages for the peer to verify
-        self_server_peer = self.self_server_route.validate_with_context(
-            context=service_ctx
-        )
-
-        if isinstance(self_server_peer, SyftError):
-            raise SyftException(public_message=self_server_peer)
-
+        self.self_server_route.validate_with_context(context=service_ctx)
         return SyftSuccess(
             message=f"Routes successfully added for peer: {self.remote_peer.name}",
             value=self,

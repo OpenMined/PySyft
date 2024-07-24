@@ -21,7 +21,6 @@ from typing import cast
 
 # third party
 from nacl.signing import SigningKey
-from result import Err
 from result import Result
 
 # relative
@@ -44,7 +43,6 @@ from ..service.action.action_store import DictActionStore
 from ..service.action.action_store import MongoActionStore
 from ..service.action.action_store import SQLiteActionStore
 from ..service.blob_storage.service import BlobStorageService
-from ..service.code.user_code import UserCode
 from ..service.code.user_code_service import UserCodeService
 from ..service.code.user_code_stash import UserCodeStash
 from ..service.context import AuthedServiceContext
@@ -490,7 +488,7 @@ class Server(AbstractServer):
             blob_storage_service = self.get_service(BlobStorageService)
             remote_profiles = blob_storage_service.remote_profile_stash.get_all(
                 credentials=self.signing_key.verify_key, has_permission=True
-            ).ok()
+            )
             for remote_profile in remote_profiles:
                 self.blob_store_config.client_config.remote_profiles[
                     remote_profile.profile_name
@@ -700,7 +698,7 @@ class Server(AbstractServer):
         from ..client.client import PythonConnection
 
         connection = PythonConnection(server=self)
-        client_type = connection.get_client_type()
+        client_type = connection.get_client_type().unwrap()
         root_client = client_type(connection=connection, credentials=self.signing_key)
         if root_client.api.refresh_api_callback is not None:
             root_client.api.refresh_api_callback()
@@ -770,7 +768,7 @@ class Server(AbstractServer):
                 message += f"side {self.server_type.value.capitalize()} > as GUEST"
             logger.debug(message)
 
-        client_type = connection.get_client_type()
+        client_type = connection.get_client_type().unwrap()
 
         guest_client = client_type(
             connection=connection, credentials=SyftSigningKey.generate()
@@ -996,9 +994,7 @@ class Server(AbstractServer):
                 return result
             sleep(0.1)
 
-    def resolve_future(
-        self, credentials: SyftVerifyKey, uid: UID
-    ) -> QueueItem | None | SyftError:
+    def resolve_future(self, credentials: SyftVerifyKey, uid: UID) -> QueueItem | None:
         queue_obj = self.queue_stash.pop_on_complete(credentials, uid).unwrap()
         queue_obj._set_obj_location_(
             server_uid=self.id,
@@ -1008,11 +1004,11 @@ class Server(AbstractServer):
 
     def forward_message(
         self, api_call: SyftAPICall | SignedSyftAPICall
-    ) -> Result | QueueItem | SyftObject | SyftError | Any:
+    ) -> Result | QueueItem | SyftObject | Any:
         server_uid = api_call.message.server_uid
         if "networkservice" not in self.service_path_map:
-            return SyftError(
-                message=(
+            raise SyftException(
+                public_message=(
                     "Server has no network service so we can't "
                     f"forward this message to {server_uid}"
                 )
@@ -1021,30 +1017,22 @@ class Server(AbstractServer):
         client = None
 
         network_service = self.get_service(NetworkService)
-        peer = network_service.stash.get_by_uid(self.verify_key, server_uid)
+        peer = network_service.stash.get_by_uid(self.verify_key, server_uid).unwrap()
 
-        if peer.is_ok() and peer.ok():
-            peer = peer.ok()
+        # Since we have several routes to a peer
+        # we need to cache the client for a given server_uid along with the route
+        peer_cache_key = hash(server_uid) + hash(peer.pick_highest_priority_route())
+        if peer_cache_key in self.peer_client_cache:
+            client = self.peer_client_cache[peer_cache_key]
+        else:
+            context = AuthedServiceContext(
+                server=self, credentials=api_call.credentials
+            )
 
-            # Since we have several routes to a peer
-            # we need to cache the client for a given server_uid along with the route
-            peer_cache_key = hash(server_uid) + hash(peer.pick_highest_priority_route())
-            if peer_cache_key in self.peer_client_cache:
-                client = self.peer_client_cache[peer_cache_key]
-            else:
-                context = AuthedServiceContext(
-                    server=self, credentials=api_call.credentials
-                )
-
-                client = peer.client_with_context(context=context)
-                if client.is_err():
-                    return SyftError(
-                        message=f"Failed to create remote client for peer: "
-                        f"{peer.id}. Error: {client.err()}"
-                    )
-                client = client.ok()
-
-                self.peer_client_cache[peer_cache_key] = client
+            client = peer.client_with_context(context=context).unwrap(
+                public_message=f"Failed to create remote client for peer: {peer.id}"
+            )
+            self.peer_client_cache[peer_cache_key] = client
 
         if client:
             message: SyftAPICall = api_call.message
@@ -1058,7 +1046,9 @@ class Server(AbstractServer):
                 result = client.connection.get_api(**message.kwargs)
             else:
                 signed_result = client.connection.make_call(api_call)
-                result = debox_signed_syftapicall_response(signed_result=signed_result).unwrap()
+                result = debox_signed_syftapicall_response(
+                    signed_result=signed_result
+                ).unwrap()
 
                 # relative
                 from ..store.blob_storage import BlobRetrievalByURL
@@ -1068,7 +1058,7 @@ class Server(AbstractServer):
 
             return result
 
-        return SyftError(message=(f"Server has no route to {server_uid}"))
+        raise SyftException(public_message=(f"Server has no route to {server_uid}"))
 
     def get_role_for_credentials(self, credentials: SyftVerifyKey) -> ServiceRole:
         return (
@@ -1082,7 +1072,7 @@ class Server(AbstractServer):
         api_call: SyftAPICall | SignedSyftAPICall,
         job_id: UID | None = None,
         check_call_location: bool = True,
-    ) -> Result[SignedSyftAPICall, Err]:
+    ) -> SignedSyftAPICall:
         # Get the result
         result = self.handle_api_call_with_unsigned_result(
             api_call, job_id=job_id, check_call_location=check_call_location
@@ -1099,12 +1089,12 @@ class Server(AbstractServer):
         check_call_location: bool = True,
     ) -> Result | QueueItem | SyftObject | SyftError:
         if self.required_signed_calls and isinstance(api_call, SyftAPICall):
-            return SyftError(
-                message=f"You sent a {type(api_call)}. This server requires SignedSyftAPICall."
+            raise SyftException(
+                public_message=f"You sent a {type(api_call)}. This server requires SignedSyftAPICall."
             )
         else:
             if not api_call.is_valid:
-                return SyftError(message="Your message signature is invalid")
+                raise SyftException(public_message="Your message signature is invalid")
 
         if api_call.message.server_uid != self.id and check_call_location:
             return self.forward_message(api_call=api_call)
@@ -1139,13 +1129,13 @@ class Server(AbstractServer):
 
             if api_call.path not in user_config_registry:
                 if ServiceConfigRegistry.path_exists(api_call.path):
-                    return SyftError(
-                        message=f"As a `{role}`, "
+                    raise SyftException(
+                        public_message=f"As a `{role}`, "
                         f"you have no access to: {api_call.path}"
                     )
                 else:
-                    return SyftError(
-                        message=f"API call not in registered services: {api_call.path}"
+                    raise SyftException(
+                        public_message=f"API call not in registered services: {api_call.path}"
                     )
 
             _private_api_path = user_config_registry.private_path_for(api_call.path)
@@ -1201,7 +1191,7 @@ class Server(AbstractServer):
         *args: Any,
         worker_pool: str | None = None,
         **kwargs: Any,
-    ) -> Job | SyftError:
+    ) -> Job:
         job_id = UID()
         task_uid = UID()
         worker_settings = WorkerSettings.from_server(server=self)
@@ -1241,7 +1231,7 @@ class Server(AbstractServer):
 
     def get_worker_pool_ref_by_name(
         self, credentials: SyftVerifyKey, worker_pool_name: str | None = None
-    ) -> LinkedObject | SyftError:
+    ) -> LinkedObject:
         # If worker pool id is not set, then use default worker pool
         # Else, get the worker pool for given uid
         if worker_pool_name is None:
@@ -1274,22 +1264,15 @@ class Server(AbstractServer):
 
         # Extract worker pool id from user code
         if action.user_code_id is not None:
-            result = self.user_code_stash.get_by_uid(
+            user_code = self.user_code_stash.get_by_uid(
                 credentials=credentials, uid=action.user_code_id
-            )
-
-            # If result is Ok, then user code object exists
-            user_code: UserCode = result.ok()  # type: ignore[assignment]
+            ).unwrap()
             if user_code is not None:
                 worker_pool_name = user_code.worker_pool_name
 
         worker_pool_ref = self.get_worker_pool_ref_by_name(
             credentials, worker_pool_name
         )
-
-        if isinstance(worker_pool_ref, SyftError):
-            raise SyftException(public_message=worker_pool_ref.message)
-
         queue_item = ActionQueueItem(
             id=task_uid,
             server_uid=self.id,
@@ -1390,17 +1373,14 @@ class Server(AbstractServer):
 
         return jobs
 
+    @as_result(SyftException)
     def _get_existing_user_code_jobs(
         self, context: AuthedServiceContext, user_code_id: UID
-    ) -> list[Job] | SyftError:
+    ) -> list[Job]:
         job_service = self.get_service("jobservice")
         jobs = job_service.get_by_user_code_id(
             context=context, user_code_id=user_code_id
         )
-
-        if isinstance(jobs, SyftError):
-            return jobs
-
         return self._sort_jobs(jobs)
 
     def _is_usercode_call_on_owned_kwargs(
@@ -1489,9 +1469,6 @@ class Server(AbstractServer):
         else:
             worker_settings = WorkerSettings.from_server(server=self)
             worker_pool_ref = self.get_worker_pool_ref_by_name(credentials=credentials)
-            if isinstance(worker_pool_ref, SyftError):
-                return worker_pool_ref
-
             queue_item = QueueItem(
                 id=UID(),
                 server_uid=self.id,
@@ -1685,7 +1662,7 @@ def get_default_worker_tag_by_env(dev_mode: bool = False) -> str | None:
         return __version__
 
 
-def create_default_worker_pool(server: Server) -> SyftError | None:
+def create_default_worker_pool(server: Server) -> None:
     credentials = server.verify_key
     pull_image = not server.dev_mode
     image_stash = server.get_service(SyftWorkerImageService).stash
