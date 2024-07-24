@@ -871,12 +871,13 @@ def add_asset_hash(context: TransformContext) -> TransformContext:
 
     action_id = context.output["action_id"]
     if action_id is not None:
-        action_service = context.node.get_service(ActionService)
+        action_service = context.server.get_service(ActionService)
         # Q: Why is service returning an result object [Ok, Err]?
         action_obj = action_service.get(context=context, uid=action_id)
 
         if action_obj.is_err():
             return SyftError(f"Failed to get action object with id {action_obj.err()}")
+        # NOTE: for a TwinObject, this hash of the private data
         context.output["asset_hash"] = action_obj.ok().hash()
     else:
         raise ValueError("Asset must have an action_id to generate a hash")
