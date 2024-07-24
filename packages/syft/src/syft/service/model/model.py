@@ -291,7 +291,7 @@ class Model(SyftObject):
     example_text: str | None = None
     mb_size: float | None = None
     code_action_id: UID | None = None
-    model_hash: str | None = None
+    syft_model_hash: str | None = None
 
     def __init__(
         self,
@@ -338,7 +338,7 @@ class Model(SyftObject):
 
     def _repr_html_(self) -> Any:
         # TODO: Improve Repr
-        return f"Model Hash: {self.model_hash}"
+        return f"Model Hash: {self.syft_model_hash}"
 
     @property
     def assets(self) -> DictTuple[str, ModelAsset]:
@@ -622,7 +622,9 @@ def add_model_hash(context: TransformContext) -> TransformContext:
             return SyftError(
                 f"[Model]Failed to get action object with id {model_ref_action_obj.err()}"
             )
-        context.output["model_hash"] = model_ref_action_obj.ok().hash(context=context)
+        context.output["syft_model_hash"] = model_ref_action_obj.ok().hash(
+            context=context
+        )
     else:
         raise ValueError("Model  must have an valid ID")
 
@@ -693,6 +695,7 @@ class ModelRef(ActionObject):
         if context and context.server is None:
             raise ValueError("Context should have a server attached to it.")
 
+        self.syft_action_data_hash: str | None
         if not recalculate and self.syft_action_data_hash:
             return self.syft_action_data_hash
 

@@ -70,14 +70,14 @@
       "Model": {
         "1": {
           "version": 1,
-          "hash": "307f055aabed4deb268e8d81bce25f962c0a8fc337e83091d9c46db4974e32ec",
+          "hash": "b32cfc037b89f28af88d6a363dcf8a9e9f05c4b8e0b2c5d4cc1b3da19c6f59d3",
           "action": "add"
         }
       },
       "CreateModel": {
         "1": {
           "version": 1,
-          "hash": "64e23ed618a00eddab1e8210e9b5f173b8b6dd5d2030ae87cd49eb69d2fd4377",
+          "hash": "c9e57e0189513e6668add50a5d0252c8d61f9b6051ddb9aec403ced660d534e8",
           "action": "add"
         }
       },
@@ -205,6 +205,13 @@
           "version": 2,
           "hash": "09d6867be6a50aef4aa7ad67a10ed52c23d863fe49d2294dff930e9a76f3e6ca",
           "action": "add"
+        }
+      },
+      "SyftObjectRetrieval": {
+        "1": {
+          "version": 1,
+          "hash": "b2b62447445adc4cd0b77ab59d6fa56624dd316fb50281e570daad07556b6db2",
+          "action": "remove"
         }
       }
     }
