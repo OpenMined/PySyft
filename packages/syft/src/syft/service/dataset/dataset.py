@@ -286,6 +286,13 @@ class Asset(SyftObject):
         )
 
     def _private_data(self) -> Result[Any, str]:
+        """
+        Retrieves the private data associated with this asset.
+
+        Returns:
+            Result[Any, str]: A Result object containing the private data if the user has permission (or None if no API is registered),
+            otherwise an Err object with the message "You do not have permission to access private data."
+        """
         api = APIRegistry.api_for(
             server_uid=self.server_uid,
             user_verify_key=self.syft_client_verify_key,
