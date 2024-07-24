@@ -290,7 +290,7 @@ class Asset(SyftObject):
         Retrieves the private data associated with this asset.
 
         Returns:
-            Result[Any, str]: A Result object containing the private data if the user has permission (or None if no API is registered),
+            Result[Any, str]: A Result object containing the private data if the user has permission
             otherwise an Err object with the message "You do not have permission to access private data."
         """
         api = APIRegistry.api_for(
