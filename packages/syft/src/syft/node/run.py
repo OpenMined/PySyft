@@ -2,26 +2,30 @@
 import argparse
 
 # relative
-from ..orchestra import NodeHandle
 from ..orchestra import Orchestra
+from ..orchestra import ServerHandle
 
 
 def str_to_bool(bool_str: str | None) -> bool:
     result = False
     bool_str = str(bool_str).lower()
-    if bool_str in ("true", "1"):
+    if bool_str == "true" or bool_str == "1":
         result = True
     return result
 
 
-def run() -> NodeHandle | None:
+def run() -> ServerHandle | None:
     parser = argparse.ArgumentParser()
     parser.add_argument("command", help="command: launch", type=str, default="none")
     parser.add_argument(
-        "--name", help="node name", type=str, default="syft-node", dest="name"
+        "--name", help="server name", type=str, default="syft-server", dest="name"
     )
     parser.add_argument(
-        "--node-type", help="node type", type=str, default="python", dest="node_type"
+        "--server-type",
+        help="server type",
+        type=str,
+        default="python",
+        dest="server_type",
     )
     parser.add_argument(
         "--host",
@@ -80,9 +84,9 @@ def run() -> NodeHandle | None:
     args.tail = str_to_bool(args.tail)
     args.cmd = str_to_bool(args.cmd)
 
-    node = Orchestra.launch(
+    server = Orchestra.launch(
         name=args.name,
-        node_type=args.node_type,
+        server_type=args.server_type,
         host=args.host,
         port=args.port,
         dev_mode=args.dev_mode,
@@ -92,5 +96,5 @@ def run() -> NodeHandle | None:
         tail=args.tail,
     )
     if not args.tail:
-        return node
+        return server
     return None
