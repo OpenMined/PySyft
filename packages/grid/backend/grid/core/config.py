@@ -138,7 +138,9 @@ class Settings(BaseSettings):
     )
     N_CONSUMERS: int = int(os.getenv("N_CONSUMERS", "1"))
     SQLITE_PATH: str = os.path.expandvars("$HOME/data/db/")
-    SINGLE_CONTAINER_MODE: bool = str_to_bool(os.getenv("SINGLE_CONTAINER_MODE", "False"))
+    SINGLE_CONTAINER_MODE: bool = str_to_bool(
+        os.getenv("SINGLE_CONTAINER_MODE", "False")
+    )
     CONSUMER_SERVICE_NAME: str | None = os.getenv("CONSUMER_SERVICE_NAME")
     INMEMORY_WORKERS: bool = str_to_bool(os.getenv("INMEMORY_WORKERS", "True"))
     SMTP_USERNAME: str = os.getenv("SMTP_USERNAME", "")
