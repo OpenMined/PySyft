@@ -1,5 +1,6 @@
 # stdlib
 from collections.abc import Callable
+from datetime import datetime
 import logging
 import multiprocessing
 import multiprocessing.synchronize
@@ -15,8 +16,8 @@ from typing import Any
 # third party
 from fastapi import APIRouter
 from fastapi import FastAPI
-from pydantic_settings import BaseSettings
-from pydantic_settings import SettingsConfigDict
+from fastapi import Request
+from fastapi import Response
 import requests
 from starlette.middleware.cors import CORSMiddleware
 import uvicorn
@@ -34,6 +35,7 @@ from .routes import make_routes
 from .server import ServerType
 from .utils import get_named_server_uid
 from .utils import remove_temp_dir_for_server
+from .uvicorn_settings import UvicornSettings
 
 if os_name() == "macOS":
     # needed on MacOS to prevent [__NSCFConstantString initialize] may have been in
@@ -43,26 +45,8 @@ if os_name() == "macOS":
 WAIT_TIME_SECONDS = 20
 
 
-class AppSettings(BaseSettings):
-    name: str
-    server_type: ServerType = ServerType.DATASITE
-    server_side_type: ServerSideType = ServerSideType.HIGH_SIDE
-    processes: int = 1
-    reset: bool = False
-    dev_mode: bool = False
-    enable_warnings: bool = False
-    in_memory_workers: bool = True
-    queue_port: int | None = None
-    create_producer: bool = False
-    n_consumers: int = 0
-    association_request_auto_approval: bool = False
-    background_tasks: bool = False
-
-    model_config = SettingsConfigDict(env_prefix="SYFT_", env_parse_none_str="None")
-
-
 def app_factory() -> FastAPI:
-    settings = AppSettings()
+    settings = UvicornSettings()
 
     worker_classes = {
         ServerType.DATASITE: Datasite,
@@ -75,21 +59,49 @@ def app_factory() -> FastAPI:
         )
     worker_class = worker_classes[settings.server_type]
 
-    kwargs = settings.model_dump()
+    worker_kwargs = settings.model_dump()
+    # Remove Profiling inputs
+    worker_kwargs.pop("profile")
+    worker_kwargs.pop("profile_interval")
+    worker_kwargs.pop("profile_dir")
     if settings.dev_mode:
         print(
             f"WARN: private key is based on server name: {settings.name} in dev_mode. "
             "Don't run this in production."
         )
-        worker = worker_class.named(**kwargs)
+        worker = worker_class.named(**worker_kwargs)
     else:
-        worker = worker_class(**kwargs)
+        worker = worker_class(**worker_kwargs)
 
     app = FastAPI(title=settings.name)
-    router = make_routes(worker=worker)
+    router = make_routes(worker=worker, settings=settings)
     api_router = APIRouter()
     api_router.include_router(router)
     app.include_router(api_router, prefix="/api/v2")
+
+    # Register middlewares
+    _register_middlewares(app, settings)
+
+    return app
+
+
+def _register_middlewares(app: FastAPI, settings: UvicornSettings) -> None:
+    _register_cors_middleware(app)
+
+    # As currently sync routes are not supported in pyinstrument
+    # we are not registering the profiler middleware for sync routes
+    # as currently most of our routes are sync routes in syft (routes.py)
+    # ex: syft_new_api, syft_new_api_call, login, register
+    # we should either convert these routes to async or
+    # wait until pyinstrument supports sync routes
+    # The reason we cannot our sync routes to async is because
+    # we have blocking IO operations, like the requests library, like if one route calls to
+    # itself, it will block the event loop and the server will hang
+    # if settings.profile:
+    #     _register_profiler(app, settings)
+
+
+def _register_cors_middleware(app: FastAPI) -> None:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
@@ -97,7 +109,55 @@ def app_factory() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    return app
+
+
+def _register_profiler(app: FastAPI, settings: UvicornSettings) -> None:
+    # third party
+    from pyinstrument import Profiler
+
+    profiles_dir = (
+        Path.cwd() / "profiles"
+        if settings.profile_dir is None
+        else Path(settings.profile_dir) / "profiles"
+    )
+
+    @app.middleware("http")
+    async def profile_request(
+        request: Request, call_next: Callable[[Request], Response]
+    ) -> Response:
+        with Profiler(
+            interval=settings.profile_interval, async_mode="enabled"
+        ) as profiler:
+            response = await call_next(request)
+
+        # Profile File Name - Datasite Name - Timestamp - URL Path
+        timestamp = datetime.now().strftime("%d-%m-%Y-%H:%M:%S")
+        profiles_dir.mkdir(parents=True, exist_ok=True)
+        url_path = request.url.path.replace("/api/v2", "").replace("/", "-")
+        profile_output_path = (
+            profiles_dir / f"{settings.name}-{timestamp}{url_path}.html"
+        )
+
+        # Write the profile to a HTML file
+        profiler.write_html(profile_output_path)
+
+        print(
+            f"Request to {request.url.path} took {profiler.last_session.duration:.2f} seconds"
+        )
+
+        return response
+
+
+def _load_pyinstrument_jupyter_extension() -> None:
+    try:
+        # third party
+        from IPython import get_ipython
+
+        ipython = get_ipython()  # noqa: F821
+        ipython.run_line_magic("load_ext", "pyinstrument")
+        print("Pyinstrument Jupyter extension loaded")
+    except Exception as e:
+        print(f"Error loading pyinstrument jupyter extension: {e}")
 
 
 def attach_debugger() -> None:
@@ -152,7 +212,7 @@ def run_uvicorn(
         attach_debugger()
 
     # Set up all kwargs as environment variables so that they can be accessed in the app_factory function.
-    env_prefix = AppSettings.model_config.get("env_prefix", "")
+    env_prefix = UvicornSettings.model_config.get("env_prefix", "")
     for key, value in kwargs.items():
         key_with_prefix = f"{env_prefix}{key.upper()}"
         os.environ[key_with_prefix] = str(value)
@@ -198,12 +258,23 @@ def serve_server(
     association_request_auto_approval: bool = False,
     background_tasks: bool = False,
     debug: bool = False,
+    # Profiling inputs
+    profile: bool = False,
+    profile_interval: float = 0.001,
+    profile_dir: str | None = None,
 ) -> tuple[Callable, Callable]:
     starting_uvicorn_event = multiprocessing.Event()
 
     # Enable IPython autoreload if dev_mode is enabled.
     if dev_mode:
         enable_autoreload()
+
+    # Load the Pyinstrument Jupyter extension if profile is enabled.
+    if profile:
+        _load_pyinstrument_jupyter_extension()
+        if profile_dir is None:
+            profile_dir = str(Path.cwd())
+            print("Profiling Output Directory: ", profile_dir)
 
     server_process = multiprocessing.Process(
         target=run_uvicorn,
@@ -225,6 +296,9 @@ def serve_server(
             "background_tasks": background_tasks,
             "debug": debug,
             "starting_uvicorn_event": starting_uvicorn_event,
+            "profile": profile,
+            "profile_interval": profile_interval,
+            "profile_dir": profile_dir,
         },
     )
 
