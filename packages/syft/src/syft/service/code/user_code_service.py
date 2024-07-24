@@ -653,8 +653,7 @@ class UserCodeService(AbstractService):
         self, code_item: UserCode, context: AuthedServiceContext
     ) -> SyftSuccess | SyftError:
         if not (
-            context.credentials == context.server.verify_key
-            or context.credentials == code_item.user_verify_key
+            context.credentials in {context.server.verify_key, code_item.user_verify_key}
         ):
             return SyftError(
                 message=f"Code Execution Permission: {context.credentials} denied"
