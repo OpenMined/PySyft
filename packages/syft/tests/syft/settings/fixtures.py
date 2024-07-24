@@ -41,6 +41,7 @@ def settings(worker, faker) -> ServerSettings:
         server_type=ServerType.DATASITE,
         association_request_auto_approval=False,
         default_worker_pool="default-pool",
+        notifications_enabled=False,
     )
 
 
