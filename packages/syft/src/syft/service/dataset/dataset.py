@@ -144,14 +144,21 @@ class Asset(SyftObject):
             else ""
         )
 
-        if isinstance(self.data, ActionObject):
-            data_table_line = itables.to_html_datatable(
-                df=self.data.syft_action_data, css=itables_css
-            )
-        elif isinstance(self.data, pd.DataFrame):
-            data_table_line = itables.to_html_datatable(df=self.data, css=itables_css)
+        private_data_res = self._private_data()
+        if private_data_res.is_err():
+            data_table_line = private_data_res.err_value
         else:
-            data_table_line = self.data
+            private_data_obj = private_data_res.ok_value
+            if isinstance(private_data_obj, ActionObject):
+                data_table_line = itables.to_html_datatable(
+                    df=self.data.syft_action_data, css=itables_css
+                )
+            elif isinstance(private_data_obj, pd.DataFrame):
+                data_table_line = itables.to_html_datatable(
+                    df=private_data_obj, css=itables_css
+                )
+            else:
+                data_table_line = private_data_res.ok_value
 
         if isinstance(self.mock, ActionObject):
             mock_table_line = itables.to_html_datatable(
@@ -176,7 +183,7 @@ class Asset(SyftObject):
 
             <div class="syft-asset">
             <h3>{self.name}</h3>
-            <p>{self.description}</p>
+            <p>{self.description or ""}</p>
             <p><strong>Asset ID: </strong>{self.id}</p>
             <p><strong>Action Object ID: </strong>{self.action_id}</p>
             {uploaded_by_line}
@@ -278,25 +285,29 @@ class Asset(SyftObject):
             and data_result.endswith("denied")
         )
 
-    @property
-    def data(self) -> Any:
-        # relative
-
+    def _private_data(self) -> Result[Any, str]:
         api = APIRegistry.api_for(
             server_uid=self.server_uid,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None or api.services is None:
-            return None
+            return Ok(None)
         res = api.services.action.get(self.action_id)
         if self.has_permission(res):
-            return res.syft_action_data
+            return Ok(res.syft_action_data)
         else:
-            warning = SyftError(
-                message="You do not have permission to access private data."
-            )
-            display(warning, clear=True)
+            return Err("You do not have permission to access private data.")
+
+    @property
+    def data(self) -> Any:
+        # relative
+        private_data_or_error = self._private_data()
+
+        if private_data_or_error.is_err():
+            display(SyftError(message=private_data_or_error.err_value), clear=True)
             return None
+        else:
+            return private_data_or_error.ok_value
 
 
 def _is_action_data_empty(obj: Any) -> bool:
