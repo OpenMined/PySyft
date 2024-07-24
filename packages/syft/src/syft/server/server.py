@@ -1110,9 +1110,8 @@ class Server(AbstractServer):
             return SyftError(
                 message=f"You sent a {type(api_call)}. This server requires SignedSyftAPICall."
             )
-        else:
-            if not api_call.is_valid:
-                return SyftError(message="Your message signature is invalid")
+        elif not api_call.is_valid:
+            return SyftError(message="Your message signature is invalid")
 
         if api_call.message.server_uid != self.id and check_call_location:
             return self.forward_message(api_call=api_call)
