@@ -819,10 +819,13 @@ class ActionObject(SyncableSyftObject):
                     return blob_retrieval_object
                 # relative
                 from ...store.blob_storage import BlobRetrieval
+                from ...store.blob_storage import SyftObjectRetrieval
 
                 if isinstance(blob_retrieval_object, SyftError):
                     return blob_retrieval_object
-                elif isinstance(blob_retrieval_object, BlobRetrieval):
+                elif isinstance(
+                    blob_retrieval_object, BlobRetrieval | SyftObjectRetrieval
+                ):
                     # TODO: This change is temporary to for gateway to be compatible with the new blob storage
                     self.syft_action_data_cache = blob_retrieval_object.read()
                     self.syft_action_data_type = type(self.syft_action_data)
