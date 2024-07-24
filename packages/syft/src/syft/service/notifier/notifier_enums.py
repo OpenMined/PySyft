@@ -8,7 +8,7 @@ from ...serde.serializable import serializable
 
 @serializable(canonical_name="EMAIL_TYPES", version=1)
 class EMAIL_TYPES(Enum):
-    PASSWORD_RESET_EMAIL = "PasswordResetTemplate"   # nosec
+    PASSWORD_RESET_EMAIL = "PasswordResetTemplate"  # nosec
     ONBOARD_EMAIL = "OnBoardEmailTemplate"
     REQUEST_EMAIL = "RequestEmailTemplate"
     REQUEST_UPDATE_EMAIL = "RequestUpdateEmailTemplate"
