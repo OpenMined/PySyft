@@ -34,7 +34,7 @@ from ..store.document_store import DocumentStore
 from ..store.linked_obj import LinkedObject
 from ..types.errors import SyftException
 from ..types.result import as_result
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
+from ..types.syft_object import SYFT_OBJECT_VERSION_1, SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SYFT_OBJECT_VERSION_3
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftBaseObject
@@ -93,9 +93,23 @@ class AbstractService:
 
 
 @serializable()
-class BaseConfig(SyftObject):
+class BaseConfigV1(SyftBaseObject):
     __canonical_name__ = "BaseConfig"
     __version__ = SYFT_OBJECT_VERSION_1
+
+    public_path: str
+    private_path: str
+    public_name: str
+    method_name: str
+    doc_string: str | None = None
+    signature: Signature | None = None
+    is_from_lib: bool = False
+    warning: APIEndpointWarning | None = None
+
+@serializable()
+class BaseConfig(SyftBaseObject):
+    __canonical_name__ = "BaseConfig"
+    __version__ = SYFT_OBJECT_VERSION_2
 
     public_path: str
     private_path: str
@@ -109,9 +123,14 @@ class BaseConfig(SyftObject):
 
 
 @serializable()
-class ServiceConfig(BaseConfig):
+class ServiceConfigV1(BaseConfigV1):
     __canonical_name__ = "ServiceConfig"
     __version__ = SYFT_OBJECT_VERSION_1
+
+@serializable()
+class ServiceConfig(BaseConfig):
+    __canonical_name__ = "ServiceConfig"
+    __version__ = SYFT_OBJECT_VERSION_2
 
     permissions: list
     roles: list[ServiceRole]
@@ -119,10 +138,16 @@ class ServiceConfig(BaseConfig):
     def has_permission(self, user_service_role: ServiceRole) -> bool:
         return user_service_role in self.roles
 
+@serializable()
+class LibConfigV1(BaseConfigV1):
+    __canonical_name__ = "LibConfig"
+    __version__ = SYFT_OBJECT_VERSION_1
+    permissions: set[CMPPermission]
 
 @serializable()
 class LibConfig(BaseConfig):
     __canonical_name__ = "LibConfig"
+    __version__ = SYFT_OBJECT_VERSION_2
     permissions: set[CMPPermission]
 
     def has_permission(self, credentials: SyftVerifyKey) -> bool:
