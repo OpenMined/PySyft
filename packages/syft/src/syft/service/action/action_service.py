@@ -154,16 +154,18 @@ class ActionService(AbstractService):
         # 🟡 TODO 9: Create some kind of type checking / protocol for SyftSerializable
 
         if isinstance(action_object, ActionObject):
+            # Always recalculate the hash when saving
+            # at the server side
+            # Some objects like Model Ref require context to hash
+            # NOTE: should be placed before clear cache
+            action_object.hash(recalculate=True, context=context)  # type: ignore
+
             action_object.syft_created_at = DateTime.now()
             (
                 action_object._clear_cache()
                 if action_object.syft_action_saved_to_blob_store
                 else None
             )
-            # Always recalculate the hash when saving
-            # at the server side
-            # Some objects like Model Ref require context to hash
-            action_object.hash(recalculate=True, context=context)  # type: ignore
         else:  # TwinObject
             action_object.private_obj.syft_created_at = DateTime.now()  # type: ignore[unreachable]
             action_object.mock_obj.syft_created_at = DateTime.now()

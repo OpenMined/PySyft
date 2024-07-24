@@ -107,6 +107,21 @@ class SyftObjectRetrieval:
     syft_blob_storage_entry_id: UID | None = None
     file_size: int | None = None
 
+    # init method to take in all class attributes
+    def __init__(
+        self,
+        syft_object: bytes,
+        file_name: str,
+        type_: type | None = None,
+        syft_blob_storage_entry_id: UID | None = None,
+        file_size: int | None = None,
+    ) -> None:
+        self.syft_object = syft_object
+        self.file_name = file_name
+        self.type_ = type_
+        self.syft_blob_storage_entry_id = syft_blob_storage_entry_id
+        self.file_size = file_size
+
     def _read_data(
         self, stream: bool = False, _deserialize: bool = True, **kwargs: Any
     ) -> Any:
