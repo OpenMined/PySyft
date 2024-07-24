@@ -69,7 +69,12 @@ class SettingsService(AbstractService):
         else:
             return SyftError(message=result.err())
 
-    @service_method(path="settings.update", name="update", autosplat=["settings"])
+    @service_method(
+        path="settings.update",
+        name="update",
+        autosplat=["settings"],
+        roles=ADMIN_ROLE_LEVEL,
+    )
     def update(
         self, context: AuthedServiceContext, settings: ServerSettingsUpdate
     ) -> Result[SyftSuccess, SyftError]:

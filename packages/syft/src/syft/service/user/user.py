@@ -38,6 +38,40 @@ from .user_roles import ServiceRole
 
 
 @serializable()
+class UserV1(SyftObject):
+    # version
+    __canonical_name__ = "User"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: UID | None = None  # type: ignore[assignment]
+
+    # fields
+    notifications_enabled: dict[NOTIFIERS, bool] = {
+        NOTIFIERS.EMAIL: True,
+        NOTIFIERS.SMS: False,
+        NOTIFIERS.SLACK: False,
+        NOTIFIERS.APP: False,
+    }
+    email: EmailStr | None = None
+    name: str | None = None
+    hashed_password: str | None = None
+    salt: str | None = None
+    signing_key: SyftSigningKey | None = None
+    verify_key: SyftVerifyKey | None = None
+    role: ServiceRole | None = None
+    institution: str | None = None
+    website: str | None = None
+    created_at: str | None = None
+    # TODO where do we put this flag?
+    mock_execution_permission: bool = False
+
+    # serde / storage rules
+    __attr_searchable__ = ["name", "email", "verify_key", "role"]
+    __attr_unique__ = ["email", "signing_key", "verify_key"]
+    __repr_attrs__ = ["name", "email"]
+
+
+@serializable()
 class User(SyftObject):
     # version
     __canonical_name__ = "User"

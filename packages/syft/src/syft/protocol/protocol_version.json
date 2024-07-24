@@ -4,15 +4,10 @@
   },
   "dev": {
     "object_versions": {
-      "User": {
+      "UserNotificationActivity": {
         "1": {
           "version": 1,
-          "hash": "2df4b68182c558dba5485a8a6867acf2a5c341b249ad67373a504098aa8c4343",
-          "action": "remove"
-        },
-        "2": {
-          "version": 2,
-          "hash": "af6fb5b2e1606e97838f4a60f0536ad95db606d455e94acbd1977df866608a2c",
+          "hash": "422fd01c6d9af38688a9982abd34e80794a1f6ddd444cca225d77f49189847a9",
           "action": "add"
         }
       },
@@ -28,10 +23,36 @@
           "action": "add"
         }
       },
-      "UserNotificationActivity": {
+      "PwdTokenResetConfig": {
         "1": {
           "version": 1,
-          "hash": "437e9fed52cab4fec48a22450898f82eba05206f66b66d2b53f22192b7f33274",
+          "hash": "88f1f450d5ef7b00acc179ed75f3d01ebb4f206ff47d0bb8f45a98f1ff42cba2",
+          "action": "add"
+        }
+      },
+      "ServerSettingsUpdate": {
+        "2": {
+          "version": 2,
+          "hash": "7ccd479b2ba7ef042de0dfe3c2110ac301f73e062a6cfa4ab2ec55d1ab93aaf0",
+          "action": "add"
+        }
+      },
+      "ServerSettings": {
+        "1": {
+          "version": 1,
+          "hash": "5a1e7470cbeaaae5b80ac9beecb743734f7e4e42d429a09ea8defa569a5ddff1",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "b68b9c62d3417029fcaab7f22f77fa9d0d339f38c8d64644af681af0a55f1ec5",
+          "action": "add"
+        }
+      },
+      "User": {
+        "2": {
+          "version": 2,
+          "hash": "af6fb5b2e1606e97838f4a60f0536ad95db606d455e94acbd1977df866608a2c",
           "action": "add"
         }
       }
