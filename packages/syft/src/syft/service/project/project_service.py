@@ -106,20 +106,17 @@ class ProjectService(AbstractService):
                         )
                     )
                 leader_server_peer = peer.ok()
-            else:
+            elif project.leader_server_route is not None:
                 # for the leader server, as it does not have route information to itself
                 # we rely on the data scientist to provide the route
-                # the route is then validated by the leader
-                if project.leader_server_route is not None:
-                    leader_server_peer = (
-                        project.leader_server_route.validate_with_context(
-                            context=context
-                        )
-                    )
-                else:
-                    return SyftError(
-                        message=f"project {project}'s leader_server_route is None"
-                    )
+                # the route is then validated by the leader                
+                leader_server_peer = project.leader_server_route.validate_with_context(
+                    context=context
+                )
+            else:
+                return SyftError(
+                    message=f"project {project}'s leader_server_route is None"
+                )
 
             project_obj.leader_server_peer = leader_server_peer
 
