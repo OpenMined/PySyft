@@ -55,8 +55,8 @@ class ServerSettingsUpdate(PartialSyftObject):
     admin_email: str
     association_request_auto_approval: bool
     welcome_markdown: HTMLObject | MarkdownDescription
-    eager_execution_enabled: bool = False
-    notifications_enabled: bool = False
+    eager_execution_enabled: bool
+    notifications_enabled: bool
 
 
 @serializable()
@@ -135,24 +135,27 @@ class ServerSettings(SyftObject):
         # 3) .....user_settings().x
 
         preferences = self._get_api().services.notifications.settings()
-        notifications = []
-        if preferences.email_enabled:
-            notifications.append("email")
-        if preferences.sms_enabled:
-            notifications.append("sms")
-        if preferences.slack_enabled:
-            notifications.append("slack")
-        if preferences.app_enabled:
-            notifications.append("app")
-
-        self.notifications_enabled = preferences.active
-        if self.notifications_enabled:
-            if notifications:
-                notification_print_str = f"Enabled via {', '.join(notifications)}"
-            else:
-                notification_print_str = "Enabled without any communication method"
+        if not preferences:
+            notification_print_str = "Create notification settings using enable_notifications from user_service"
         else:
-            notification_print_str = "Disabled"
+            notifications = []
+            if preferences.email_enabled:
+                notifications.append("email")
+            if preferences.sms_enabled:
+                notifications.append("sms")
+            if preferences.slack_enabled:
+                notifications.append("slack")
+            if preferences.app_enabled:
+                notifications.append("app")
+
+            # self.notifications_enabled = preferences.active
+            if preferences.active:
+                if notifications:
+                    notification_print_str = f"Enabled via {', '.join(notifications)}"
+                else:
+                    notification_print_str = "Enabled without any communication method"
+            else:
+                notification_print_str = "Disabled"
 
         return f"""
             <style>

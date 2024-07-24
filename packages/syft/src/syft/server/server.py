@@ -1585,7 +1585,7 @@ class Server(AbstractServer):
                     show_warnings=self.enable_warnings,
                     association_request_auto_approval=self.association_request_auto_approval,
                     default_worker_pool=get_default_worker_pool_name(),
-                    notifications_enabled=True,
+                    notifications_enabled=False,
                 )
                 result = settings_stash.set(
                     credentials=self.signing_key.verify_key, settings=new_settings

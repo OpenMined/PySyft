@@ -205,6 +205,12 @@ class NotifierService(AbstractService):
         result = self.stash.update(credentials=context.credentials, settings=notifier)
         if result.is_err():
             return SyftError(message=result.err())
+
+        settings_service = context.server.get_service("settingsservice")
+        result = settings_service.update(context, notifications_enabled=True)
+        if result.is_err():
+            logger.info(f"Failed to update Server Settings: {result.err()}")
+
         return SyftSuccess(message="Notifications enabled successfully.")
 
     def turn_off(
@@ -226,6 +232,12 @@ class NotifierService(AbstractService):
         result = self.stash.update(credentials=context.credentials, settings=notifier)
         if result.is_err():
             return SyftError(message=result.err())
+
+        settings_service = context.server.get_service("settingsservice")
+        result = settings_service.update(context, notifications_enabled=False)
+        if result.is_err():
+            logger.info(f"Failed to update Server Settings: {result.err()}")
+
         return SyftSuccess(message="Notifications disabled succesfullly")
 
     def activate(

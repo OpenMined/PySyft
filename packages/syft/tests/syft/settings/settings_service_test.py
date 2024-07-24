@@ -15,6 +15,7 @@ from syft.abstract_server import ServerSideType
 from syft.server.credentials import SyftSigningKey
 from syft.server.credentials import SyftVerifyKey
 from syft.service.context import AuthedServiceContext
+from syft.service.notifier.notifier import NotifierSettings
 from syft.service.notifier.notifier_stash import NotifierStash
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
@@ -160,6 +161,9 @@ def test_settingsservice_update_success(
         def set_notifier_active_to_false(self, context) -> SyftSuccess:
             return SyftSuccess(message="Notifier mocked to True")
 
+        def settings(self, context):
+            return NotifierSettings()
+
     mock_notifier_service = MockNotifierService(stash=notifier_stash)
 
     def mock_get_service(service_name: str):
@@ -241,6 +245,9 @@ def test_settingsservice_update_fail(
 
         def set_notifier_active_to_false(self, context) -> SyftSuccess:
             return SyftSuccess(message="Notifier mocked to False")
+
+        def settings(self, context):
+            return NotifierSettings()
 
     mock_notifier_service = MockNotifierService(stash=notifier_stash)
 
