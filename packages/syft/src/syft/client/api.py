@@ -1303,13 +1303,13 @@ def validate_callable_args_and_kwargs(
         for key, value in kwargs.items():
             if key not in signature.parameters:
                 # relative
-                from ..service.service import _filter_empty
+                from ..service.service import _format_signature
                 from ..service.service import _signature_error_message
 
                 return SyftError(
                     message=(
                         f"Invalid parameter: `{key}`. "
-                        f"{_signature_error_message(_filter_empty(signature))}"
+                        f"{_signature_error_message(_format_signature(signature))}"
                     )
                 )
             param = signature.parameters[key]
@@ -1375,12 +1375,12 @@ def validate_callable_args_and_kwargs(
                 else:
                     _type_str = getattr(t, "__name__", str(t))
                     # relative
-                    from ..service.service import _filter_empty
+                    from ..service.service import _format_signature
                     from ..service.service import _signature_error_message
 
                     msg = (
                         f"Arg is `{arg}`. \nIt must be of type `{_type_str}`, not `{type(arg).__name__}`"
-                        f"{_signature_error_message(_filter_empty(signature))}"
+                        f"{_signature_error_message(_format_signature(signature))}"
                     )
 
             if msg:

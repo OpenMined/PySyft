@@ -296,13 +296,16 @@ def _replace_empty_parameter(p: Parameter) -> Parameter:
     )
 
 
-def _filter_empty(s: inspect.Signature) -> inspect.Signature:
+def _format_signature(s: inspect.Signature) -> inspect.Signature:
     params = (
         (_replace_empty_parameter(p) if _check_empty_parameter(p) else p)
         for p in s.parameters.values()
     )
 
-    return inspect.Signature(parameters=params, return_annotation=s.return_annotation)
+    return inspect.Signature(
+        parameters=params,
+        return_annotation=inspect.Signature.empty,
+    )
 
 
 def _signature_error_message(s: inspect.Signature) -> str:
@@ -333,7 +336,7 @@ def reconstruct_args_kwargs(
         except ValidationError:
             raise TypeError(
                 f"Invalid argument(s) provided. "
-                f"{_signature_error_message(_filter_empty(expanded_signature))}"
+                f"{_signature_error_message(_format_signature(expanded_signature))}"
             )
 
     final_kwargs = {}
@@ -347,7 +350,7 @@ def reconstruct_args_kwargs(
         else:
             raise TypeError(
                 f"Missing argument {param_key}."
-                f"{_signature_error_message(_filter_empty(expanded_signature))}"
+                f"{_signature_error_message(_format_signature(expanded_signature))}"
             )
 
     if "context" in kwargs:
