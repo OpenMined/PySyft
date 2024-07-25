@@ -239,6 +239,23 @@ jobs:
           digest="${{ steps.syft-seaweedfs-build.outputs.digest }}"
           touch "/tmp/digests/syft-seaweedfs/${digest#sha256:}"
 
+      - name: Build and push `syft-rathole` image to Dockerhub
+        id: syft-rathole-build
+        uses: docker/build-push-action@v6
+        with:
+          context: ./packages/grid/rathole
+          file: ./packages/grid/rathole/rathole.dockerfile
+          platforms: ${{ steps.release_metadata.outputs.release_platform }}
+          outputs: type=image,name=openmined/syft-rathole,push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=registry,ref=openmined/syft-rathole:cache-${{ steps.release_metadata.outputs.short_release_platform }}
+          cache-to: type=registry,ref=openmined/syft-rathole:cache-${{ steps.release_metadata.outputs.short_release_platform}},mode=max
+
+      - name: Export digest for syft-rathole
+        run: |
+          mkdir -p /tmp/digests/syft-rathole
+          digest="${{ steps.syft-rathole-build.outputs.digest }}"
+          touch "/tmp/digests/syft-rathole/${digest#sha256:}"
+
       # Some of the dependencies of syft-enclave-attestation are not available for arm64
       # Hence, we are building syft-enclave-attestation only for x64 (see the `if` conditional)
       - name: Build and push `syft-enclave-attestation` image to DockerHub
@@ -335,6 +352,14 @@ jobs:
             -t openmined/syft-seaweedfs:${{ needs.build-and-push-docker-images.outputs.server_version }} \
             -t openmined/syft-seaweedfs:${{ needs.build-and-push-docker-images.outputs.release_tag }} \
             $(printf 'openmined/syft-seaweedfs@sha256:%s ' *)
+
+      - name: Create manifest list and push for syft-rathole
+        working-directory: /tmp/digests/syft-rathole
+        run: |
+          docker buildx imagetools create  \
+            -t openmined/syft-rathole:${{ needs.build-and-push-docker-images.outputs.server_version }} \
+            -t openmined/syft-rathole:${{ needs.build-and-push-docker-images.outputs.release_tag }} \
+            $(printf 'openmined/syft-rathole@sha256:%s ' *)
 
       - name: Create manifest list and push for syft-enclave-attestation
         working-directory: /tmp/digests/syft-enclave-attestation
