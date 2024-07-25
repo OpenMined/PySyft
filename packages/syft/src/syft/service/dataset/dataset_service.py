@@ -152,9 +152,7 @@ class DatasetService(AbstractService):
             return results
 
         filtered_results = [
-            dataset
-            for dataset_name, dataset in results.items()
-            if name in dataset_name and not dataset.to_be_deleted
+            dataset for dataset_name, dataset in results.items() if name in dataset_name
         ]
 
         return _paginate_dataset_collection(

@@ -25,6 +25,7 @@ from ..service.dataset.dataset import Contributor
 from ..service.dataset.dataset import CreateAsset
 from ..service.dataset.dataset import CreateDataset
 from ..service.dataset.dataset import Dataset
+from ..service.metadata.server_metadata import ServerMetadataJSON
 from ..service.migration.object_migration_state import MigrationData
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
@@ -133,17 +134,14 @@ class DatasiteClient(SyftClient):
             asset = dataset.asset_list[i]
             dataset.asset_list[i] = add_default_uploader(user, asset)
 
-        # dataset._check_asset_must_contain_mock()
-        dataset_size: float = 0.0
-
         # TODO: Refactor so that object can also be passed to generate warnings
-
         self.api.connection = cast(ServerConnection, self.api.connection)
-
-        metadata = self.api.connection.get_server_metadata(self.api.signing_key)
-
+        metadata: SyftError | ServerMetadataJSON = (
+            self.api.connection.get_server_metadata(self.api.signing_key)
+        )
         if (
-            metadata.show_warnings
+            not isinstance(metadata, SyftError)
+            and metadata.show_warnings
             and metadata.server_side_type == ServerSideType.HIGH_SIDE.value
         ):
             message = (
@@ -153,10 +151,25 @@ class DatasiteClient(SyftClient):
             )
             prompt_warning_message(message=message, confirm=True)
 
-        with tqdm(
-            total=len(dataset.asset_list), colour="green", desc="Uploading"
-        ) as pbar:
-            for asset in dataset.asset_list:
+        total_assets_size: float | SyftError = self._upload_assets(dataset.asset_list)
+        if isinstance(total_assets_size, SyftError):
+            return total_assets_size
+
+        # check if the types of the assets are valid
+        dataset.mb_size = total_assets_size
+        valid = dataset.check()
+        if isinstance(valid, SyftError):
+            return valid
+
+        # add the dataset object to the dataset store
+        return self.api.services.dataset.add(dataset=dataset)
+
+    def _upload_assets(self, assets: list[CreateAsset]) -> float | SyftError:
+        total_assets_size: float = 0.0
+
+        with tqdm(total=len(assets), colour="green", desc="Uploading") as pbar:
+            for asset in assets:
+                # create and save a twin object representing the asset to the blob store
                 try:
                     contains_empty: bool = asset.contains_empty()
                     twin = TwinObject(
@@ -171,9 +184,10 @@ class DatasiteClient(SyftClient):
                 except Exception as e:
                     tqdm.write(f"Failed to create twin for {asset.name}. {e}")
                     return SyftError(message=f"Failed to create twin. {e}")
-
                 if isinstance(res, SyftWarning):
                     logger.debug(res.message)
+
+                # save the twin object to the action store
                 response = self.api.services.action.set(
                     twin, ignore_detached_objs=contains_empty
                 )
@@ -183,17 +197,13 @@ class DatasiteClient(SyftClient):
 
                 asset.action_id = twin.id
                 asset.server_uid = self.id
-                dataset_size += get_mb_size(asset.data)
+                total_assets_size += get_mb_size(asset.data)
 
                 # Update the progress bar and set the dynamic description
                 pbar.set_description(f"Uploading: {asset.name}")
                 pbar.update(1)
 
-        dataset.mb_size = dataset_size
-        valid = dataset.check()
-        if isinstance(valid, SyftError):
-            return valid
-        return self.api.services.dataset.add(dataset=dataset)
+        return total_assets_size
 
     def refresh(self) -> None:
         if self.credentials:
