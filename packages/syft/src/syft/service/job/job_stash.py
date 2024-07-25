@@ -110,7 +110,13 @@ class Job(SyncableSyftObject):
     requested_by: UID | None = None
     job_type: JobType = JobType.JOB
 
-    __attr_searchable__ = ["parent_job_id", "job_worker_id", "status", "user_code_id"]
+    __attr_searchable__ = [
+        "parent_job_id",
+        "job_worker_id",
+        "status",
+        "user_code_id",
+        "result_id",
+    ]
     __repr_attrs__ = [
         "id",
         "result",
@@ -143,6 +149,12 @@ class Job(SyncableSyftObject):
                 )
 
         return self
+
+    @property
+    def result_id(self) -> UID | None:
+        if self.result is None:
+            return None
+        return self.result.id.id
 
     @property
     def action_display_name(self) -> str:
@@ -851,25 +863,22 @@ class JobStash(BaseUIDStoreStash):
     def get_by_result_id(
         self,
         credentials: SyftVerifyKey,
-        res_id: UID,
+        result_id: UID,
     ) -> Result[Job | None, str]:
-        res = self.get_all(credentials)
+        qks = QueryKeys(
+            qks=[PartitionKey(key="result_id", type_=UID).with_obj(result_id)]
+        )
+        res = self.query_all(credentials=credentials, qks=qks)
         if res.is_err():
             return res
+
+        res = res.ok()
+        if len(res) == 0:
+            return Ok(None)
+        elif len(res) > 1:
+            return Err("multiple Jobs found")
         else:
-            res = res.ok()
-            # beautiful query
-            res = [
-                x
-                for x in res
-                if isinstance(x.result, ActionObject) and x.result.id.id == res_id
-            ]
-            if len(res) == 0:
-                return Ok(None)
-            elif len(res) > 1:
-                return Err("multiple Jobs found")
-            else:
-                return Ok(res[0])
+            return Ok(res[0])
 
     def get_by_parent_id(
         self, credentials: SyftVerifyKey, uid: UID
