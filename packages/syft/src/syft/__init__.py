@@ -81,6 +81,7 @@ from .util import filterwarnings
 from .util import options
 from .util.autoreload import disable_autoreload
 from .util.autoreload import enable_autoreload
+from .util.commit import __commit__
 from .util.patch_ipython import patch_ipython
 from .util.telemetry import instrument
 from .util.util import autocache
