@@ -98,72 +98,6 @@ class DatasiteClient(SyftClient):
     def __repr__(self) -> str:
         return f"<DatasiteClient: {self.name}>"
 
-    def upload_dataset(
-        self, dataset: CreateDataset, force_replace: bool = False
-    ) -> SyftSuccess | SyftError:
-        search_res = self.api.services.dataset.search(dataset.name)
-        if isinstance(search_res, SyftError):
-            return search_res
-        dataset_exists: bool = len(search_res) > 0
-        if not dataset_exists:
-            return self._upload_dataset(dataset)
-        else:
-            existed_dataset: Dataset = search_res[0]
-            if not force_replace:
-                return SyftError(
-                    message=f"Dataset with name the '{dataset.name}' already exists. "
-                    "Please use `upload_dataset(dataset, force_replace=True)` to overwrite."
-                )
-            else:
-                replace_res = self.api.services.dataset.replace(
-                    uid=existed_dataset.id, dataset=dataset
-                )
-                if isinstance(replace_res, SyftError):
-                    return replace_res
-                return SyftSuccess(
-                    message=f"Dataset {dataset.name} has been successfully replaced."
-                )
-
-    def _upload_dataset(self, dataset: CreateDataset) -> SyftSuccess | SyftError:
-        if self.users is None:
-            return SyftError(message=f"can't get user service for {self}")
-
-        user = self.users.get_current_user()
-        dataset = add_default_uploader(user, dataset)
-        for i in range(len(dataset.asset_list)):
-            asset = dataset.asset_list[i]
-            dataset.asset_list[i] = add_default_uploader(user, asset)
-
-        # TODO: Refactor so that object can also be passed to generate warnings
-        self.api.connection = cast(ServerConnection, self.api.connection)
-        metadata: SyftError | ServerMetadataJSON = (
-            self.api.connection.get_server_metadata(self.api.signing_key)
-        )
-        if (
-            not isinstance(metadata, SyftError)
-            and metadata.show_warnings
-            and metadata.server_side_type == ServerSideType.HIGH_SIDE.value
-        ):
-            message = (
-                "You're approving a request on "
-                f"{metadata.server_side_type} side {metadata.server_type} "
-                "which may host datasets with private information."
-            )
-            prompt_warning_message(message=message, confirm=True)
-
-        total_assets_size: float | SyftError = self._upload_assets(dataset.asset_list)
-        if isinstance(total_assets_size, SyftError):
-            return total_assets_size
-
-        # check if the types of the assets are valid
-        dataset.mb_size = total_assets_size
-        valid = dataset.check()
-        if isinstance(valid, SyftError):
-            return valid
-
-        # add the dataset object to the dataset store
-        return self.api.services.dataset.add(dataset=dataset)
-
     def _upload_assets(self, assets: list[CreateAsset]) -> float | SyftError:
         total_assets_size: float = 0.0
 
@@ -204,6 +138,85 @@ class DatasiteClient(SyftClient):
                 pbar.update(1)
 
         return total_assets_size
+
+    def _upload_new_dataset(self, dataset: CreateDataset) -> SyftSuccess | SyftError:
+        # upload the assets
+        total_assets_size: float | SyftError = self._upload_assets(dataset.asset_list)
+        if isinstance(total_assets_size, SyftError):
+            return total_assets_size
+
+        # check if the types of the assets are valid
+        dataset.mb_size = total_assets_size
+        valid = dataset.check()
+        if isinstance(valid, SyftError):
+            return valid
+
+        # add the dataset object to the dataset store
+        return self.api.services.dataset.add(dataset=dataset)
+
+    def _replace_dataset(
+        self, existed_dataset: Dataset, dataset: CreateDataset
+    ) -> SyftSuccess | SyftError:
+        # upload the assets
+        total_assets_size: float | SyftError = self._upload_assets(dataset.asset_list)
+        if isinstance(total_assets_size, SyftError):
+            return total_assets_size
+
+        # check if the types of the assets are valid
+        dataset.mb_size = total_assets_size
+        valid = dataset.check()
+        if isinstance(valid, SyftError):
+            return valid
+
+        return self.api.services.dataset.replace(
+            existed_dataset_uid=existed_dataset.id, dataset=dataset
+        )
+
+    def upload_dataset(
+        self, dataset: CreateDataset, force_replace: bool = False
+    ) -> SyftSuccess | SyftError:
+        if self.users is None:
+            return SyftError(message=f"can't get user service for {self}")
+        user = self.users.get_current_user()
+
+        dataset = add_default_uploader(user, dataset)
+        for i in range(len(dataset.asset_list)):
+            asset = dataset.asset_list[i]
+            dataset.asset_list[i] = add_default_uploader(user, asset)
+
+        # TODO: Refactor so that object can also be passed to generate warnings
+        self.api.connection = cast(ServerConnection, self.api.connection)
+        metadata: SyftError | ServerMetadataJSON = (
+            self.api.connection.get_server_metadata(self.api.signing_key)
+        )
+        if (
+            not isinstance(metadata, SyftError)
+            and metadata.show_warnings
+            and metadata.server_side_type == ServerSideType.HIGH_SIDE.value
+        ):
+            message = (
+                "You're approving a request on "
+                f"{metadata.server_side_type} side {metadata.server_type} "
+                "which may host datasets with private information."
+            )
+            prompt_warning_message(message=message, confirm=True)
+
+        # check if the a dataset with the same name already exists
+        search_res = self.api.services.dataset.search(dataset.name)
+        if isinstance(search_res, SyftError):
+            return search_res
+        dataset_exists: bool = len(search_res) > 0
+
+        if not dataset_exists:
+            return self._upload_new_dataset(dataset)
+
+        existed_dataset: Dataset = search_res[0]
+        if not force_replace:
+            return SyftError(
+                message=f"Dataset with name the '{dataset.name}' already exists. "
+                "Please use `upload_dataset(dataset, force_replace=True)` to overwrite."
+            )
+        return self._replace_dataset(existed_dataset, dataset)
 
     def refresh(self) -> None:
         if self.credentials:

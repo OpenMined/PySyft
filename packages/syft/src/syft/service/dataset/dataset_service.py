@@ -273,10 +273,13 @@ class DatasetService(AbstractService):
         roles=DATA_OWNER_ROLE_LEVEL,
     )
     def replace(
-        self, context: AuthedServiceContext, uid: UID, dataset: CreateDataset
+        self,
+        context: AuthedServiceContext,
+        existed_dataset_uid: UID,
+        dataset: CreateDataset,
     ) -> SyftSuccess | SyftError:
         new_dataset: Dataset = dataset.to(Dataset, context=context)
-        new_dataset.id = uid
+        new_dataset.id = existed_dataset_uid
         dataset_update = DatasetUpdate()
         for name, value in new_dataset.to_dict().items():
             if name == "asset_list":
@@ -289,9 +292,12 @@ class DatasetService(AbstractService):
         result = self.stash.update(
             credentials=context.credentials, dataset_update=dataset_update
         )
+        # TODO: delete the existed dataset's asssets
         if result.is_err():
             return SyftError(message=result.err())
-        return SyftSuccess(message=f"Dataset with id '{uid}' successfully replaced.")
+        return SyftSuccess(
+            message=f"Dataset with id '{existed_dataset_uid}' successfully replaced."
+        )
 
 
 TYPE_TO_SERVICE[Dataset] = DatasetService
