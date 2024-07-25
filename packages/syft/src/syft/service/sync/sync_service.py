@@ -378,7 +378,14 @@ class SyncService(AbstractService):
         unignored_batches: set[UID] = (
             new_unignored_batches if new_unignored_batches is not None else set()
         )
-        objects_res = self.get_all_syncable_items(context)
+        if new_items:
+            # invalidate cache
+            self._all_syncable_items = None
+        else:
+            # first call caches the result
+            self._all_syncable_items = self.get_all_syncable_items(context)
+        objects_res = self._all_syncable_items
+
         if objects_res.is_err():
             return objects_res
 

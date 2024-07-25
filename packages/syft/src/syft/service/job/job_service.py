@@ -53,6 +53,7 @@ class JobService(AbstractService):
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
         self.stash = JobStash(store=store)
+        self.job_cache = {}
 
     @service_method(
         path="job.get",
@@ -112,9 +113,16 @@ class JobService(AbstractService):
     def get_by_result_id(
         self, context: AuthedServiceContext, result_id: UID
     ) -> Job | None | SyftError:
-        res = self.stash.get_by_result_id(context.credentials, result_id)
+        if result_id not in self.job_cache:
+            res = self.stash.get_by_result_id(context.credentials, result_id)
+        else:
+            return self.job_cache[result_id]
+
         if res.is_err():
             return SyftError(message=res.err())
+
+        if res.ok() is not None:
+            self.job_cache[result_id] = res.ok()
         return res.ok()
 
     @service_method(
