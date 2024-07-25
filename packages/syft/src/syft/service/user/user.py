@@ -13,15 +13,13 @@ from pydantic import EmailStr
 from pydantic import ValidationError
 from pydantic import field_validator
 
-# syft absolute
-from syft.types.syft_migration import migrate
-
 # relative
 from ...client.api import APIRegistry
 from ...serde.serializable import serializable
 from ...server.credentials import SyftSigningKey
 from ...server.credentials import SyftVerifyKey
 from ...types.syft_metaclass import Empty
+from ...types.syft_migration import migrate
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
