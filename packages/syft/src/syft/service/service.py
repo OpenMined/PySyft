@@ -311,7 +311,7 @@ def _format_signature(s: inspect.Signature) -> inspect.Signature:
 def _signature_error_message(s: inspect.Signature) -> str:
     return (
         f"Please provide the correct arguments to the method "
-        f"according to this signature {s}."
+        f"according to this signature\n{s}."
     )
 
 
