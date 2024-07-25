@@ -217,7 +217,7 @@ class NotifierService(AbstractService):
         settings_service = context.server.get_service("settingsservice")
         result = settings_service.update(context, notifications_enabled=True)
         if isinstance(result, SyftError):
-            logger.info(f"Failed to update Server Settings: {result.err()}")
+            logger.info(f"Failed to update Server Settings: {result.message}")
 
         return SyftSuccess(message="Notifications enabled successfully.")
 
@@ -243,8 +243,8 @@ class NotifierService(AbstractService):
 
         settings_service = context.server.get_service("settingsservice")
         result = settings_service.update(context, notifications_enabled=False)
-        if result.is_err():
-            logger.info(f"Failed to update Server Settings: {result.err()}")
+        if isinstance(result, SyftError):
+            logger.info(f"Failed to update Server Settings: {result.message}")
 
         return SyftSuccess(message="Notifications disabled succesfullly")
 
