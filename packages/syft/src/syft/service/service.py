@@ -42,6 +42,7 @@ from ..store.document_store import DocumentStore
 from ..store.linked_obj import LinkedObject
 from ..types.syft_metaclass import Empty
 from ..types.syft_metaclass import EmptyType
+from ..types.syft_object import EXCLUDED_FROM_SIGNATURE
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
@@ -378,7 +379,7 @@ def expand_signature(signature: Signature, autosplat: list[str]) -> Signature:
 
     # Reorder the parameter based on if they have default value or not
     new_params = sorted(
-        new_mapping.values(),
+        (v for k, v in new_mapping.items() if k not in EXCLUDED_FROM_SIGNATURE),
         key=lambda param: param.default is param.empty,
         reverse=True,
     )
