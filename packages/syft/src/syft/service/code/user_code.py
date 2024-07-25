@@ -1779,6 +1779,7 @@ def user_code_to_submit_user_code() -> list[Callable]:
                 "runtime_policy_init_kwargs",
                 "input_kwargs",
                 "worker_pool_name",
+                "input_id2hash",
             ]
         ),
     ]

@@ -175,13 +175,14 @@ class DatasiteEnclaveService(AbstractService):
             # If it is ModelRef, then load all the references
             # and wrap them to the Model Ref object
             if isinstance(action_object, ModelRef):
-                action_object.load_data(
+                model_ref_res = action_object.load_data(
                     context=context,
                     wrap_ref_to_obj=True,
                     unwrap_action_data=False,
                     remote_client=enclave_client,
                 )
-
+                if isinstance(model_ref_res, SyftError):
+                    return model_ref_res
             # TODO: Optimize this, currently, we load the full action object from blob
             # and then send the data to enclave.
             _ = action_object.syft_action_data

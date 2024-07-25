@@ -2,7 +2,6 @@
 from collections.abc import Callable
 from datetime import datetime
 from enum import Enum
-from functools import partial
 import hashlib
 from textwrap import dedent
 from typing import Any
@@ -546,7 +545,6 @@ def add_default_server_uid(context: TransformContext) -> TransformContext:
 
 def add_asset_hash(context: TransformContext) -> TransformContext:
     # relative
-    from ..action.action_service import ActionService
 
     if context.output is None:
         return context
@@ -607,7 +605,6 @@ def add_current_date(context: TransformContext) -> TransformContext:
 
 def add_model_hash(context: TransformContext) -> TransformContext:
     # relative
-    from ..action.action_service import ActionService
 
     if context.output is None:
         return context
@@ -729,18 +726,12 @@ class ModelRef(ActionObject):
                 "Either context or client should be provided to ModelRef.load_data()"
             )
 
-        if context is not None:
-            action_service_get = partial(
-                context.server.get_service_method(ActionService.get), context
-            )
-
-        else:
-            action_service_get = self_client.api.services.action.get  # type: ignore
+        client = context.server.root_client if context else self_client
 
         code_action_id = self.syft_action_data[0]
         asset_action_ids = self.syft_action_data[1::]
 
-        model = action_service_get(code_action_id)
+        model = client.api.services.action.get(code_action_id)
 
         if isinstance(model, OkErr):
             if model.is_err():
@@ -749,7 +740,7 @@ class ModelRef(ActionObject):
 
         asset_list = []
         for asset_action_id in asset_action_ids:
-            action_object = action_service_get(asset_action_id)
+            action_object = client.api.services.action.get(asset_action_id)
             if isinstance(action_object, OkErr):
                 if action_object.is_err():
                     return SyftError(
