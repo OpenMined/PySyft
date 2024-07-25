@@ -157,7 +157,8 @@ class DatasiteClient(SyftClient):
     def _replace_dataset(
         self, existed_dataset: Dataset, dataset: CreateDataset
     ) -> SyftSuccess | SyftError:
-        # upload the assets
+        # TODO: is there a way to check if the assets already exist and have not changed,
+        # since if uploading the assets will have different UIDs
         total_assets_size: float | SyftError = self._upload_assets(dataset.asset_list)
         if isinstance(total_assets_size, SyftError):
             return total_assets_size

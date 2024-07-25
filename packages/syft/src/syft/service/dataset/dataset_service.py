@@ -278,21 +278,12 @@ class DatasetService(AbstractService):
         existed_dataset_uid: UID,
         dataset: CreateDataset,
     ) -> SyftSuccess | SyftError:
-        new_dataset: Dataset = dataset.to(Dataset, context=context)
-        new_dataset.id = existed_dataset_uid
-        dataset_update = DatasetUpdate()
-        for name, value in new_dataset.to_dict().items():
-            if name == "asset_list":
-                continue
-            try:
-                setattr(dataset_update, name, value)
-            except Exception as e:
-                logger.error(f"Exception when upload with force replace: {e}")
-                pass
+        dataset = dataset.to(Dataset, context=context)
+        dataset.id = existed_dataset_uid
         result = self.stash.update(
-            credentials=context.credentials, dataset_update=dataset_update
+            credentials=context.credentials, dataset_update=dataset
         )
-        # TODO: delete the existed dataset's asssets
+        # TODO: should we delete the existed dataset's asssets after force replace?
         if result.is_err():
             return SyftError(message=result.err())
         return SyftSuccess(

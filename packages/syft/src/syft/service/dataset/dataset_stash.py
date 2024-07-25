@@ -42,14 +42,12 @@ class DatasetStash(BaseUIDStoreStash):
     def update(
         self,
         credentials: SyftVerifyKey,
-        dataset_update: DatasetUpdate,
+        dataset_update: DatasetUpdate | Dataset,
         has_permission: bool = False,
     ) -> Result[Dataset, str]:
-        res = self.check_type(dataset_update, DatasetUpdate)
-        # we dont use and_then logic here as it is hard because of the order of the arguments
-        if res.is_err():
-            return res
-        return super().update(credentials=credentials, obj=res.ok())
+        return super().update(
+            credentials=credentials, obj=dataset_update, has_permission=has_permission
+        )
 
     def search_action_ids(
         self, credentials: SyftVerifyKey, uid: UID
