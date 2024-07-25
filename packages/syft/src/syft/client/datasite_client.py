@@ -24,6 +24,7 @@ from ..service.code_history.code_history import UsersCodeHistoriesDict
 from ..service.dataset.dataset import Contributor
 from ..service.dataset.dataset import CreateAsset
 from ..service.dataset.dataset import CreateDataset
+from ..service.dataset.dataset import Dataset
 from ..service.migration.object_migration_state import MigrationData
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
@@ -106,16 +107,21 @@ class DatasiteClient(SyftClient):
         if not dataset_exists:
             return self._upload_dataset(dataset)
         else:
+            existed_dataset: Dataset = search_res[0]
             if not force_replace:
                 return SyftError(
                     message=f"Dataset with name the '{dataset.name}' already exists. "
                     "Please use `upload_dataset(dataset, force_replace=True)` to overwrite."
                 )
             else:
-                del_res = self.api.services.dataset.delete(search_res[0].id)
-                if isinstance(del_res, SyftError):
-                    return del_res
-                return self._upload_dataset(dataset)
+                replace_res = self.api.services.dataset.replace(
+                    uid=existed_dataset.id, dataset=dataset
+                )
+                if isinstance(replace_res, SyftError):
+                    return replace_res
+                return SyftSuccess(
+                    message=f"Dataset {dataset.name} has been successfully replaced."
+                )
 
     def _upload_dataset(self, dataset: CreateDataset) -> SyftSuccess | SyftError:
         if self.users is None:

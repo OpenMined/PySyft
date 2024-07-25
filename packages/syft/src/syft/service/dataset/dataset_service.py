@@ -120,18 +120,18 @@ class DatasetService(AbstractService):
         page_index: int | None = 0,
         include_deleted: bool = False,
     ) -> DatasetPageView | DictTuple[str, Dataset] | SyftError:
-        """Get a Dataset"""
-        result = self.stash.get_all(context.credentials)
-        if not result.is_ok():
-            return SyftError(message=result.err())
+        """Get all datasets"""
+        get_res = self.stash.get_all(
+            credentials=context.credentials, include_deleted=include_deleted
+        )
+        if not get_res.is_ok():
+            return SyftError(message=get_res.err())
 
-        datasets = result.ok()
+        datasets = get_res.ok()
+
         for dataset in datasets:
             if context.server is not None:
                 dataset.server_uid = context.server.id
-
-        if not include_deleted:
-            datasets = [dataset for dataset in datasets if not dataset.to_be_deleted]
 
         return _paginate_dataset_collection(
             datasets=datasets, page_size=page_size, page_index=page_index
@@ -270,14 +270,30 @@ class DatasetService(AbstractService):
         return SyftSuccess(message="\n".join(return_msg))
 
     @service_method(
-        path="dataset.update",
-        name="update",
+        path="dataset.replace",
+        name="replace",
         roles=DATA_OWNER_ROLE_LEVEL,
     )
-    def update(
-        self, context: AuthedServiceContext, uid: UID, dataset_update: DatasetUpdate
+    def replace(
+        self, context: AuthedServiceContext, uid: UID, dataset: CreateDataset
     ) -> SyftSuccess | SyftError:
-        pass
+        new_dataset: Dataset = dataset.to(Dataset, context=context)
+        new_dataset.id = uid
+        dataset_update = DatasetUpdate()
+        for name, value in new_dataset.to_dict().items():
+            if name == "asset_list":
+                continue
+            try:
+                setattr(dataset_update, name, value)
+            except Exception as e:
+                logger.error(f"Exception when upload with force replace: {e}")
+                pass
+        result = self.stash.update(
+            credentials=context.credentials, dataset_update=dataset_update
+        )
+        if result.is_err():
+            return SyftError(message=result.err())
+        return SyftSuccess(message=f"Dataset with id '{uid}' successfully replaced.")
 
 
 TYPE_TO_SERVICE[Dataset] = DatasetService

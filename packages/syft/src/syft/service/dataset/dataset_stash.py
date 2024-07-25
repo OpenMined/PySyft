@@ -62,12 +62,19 @@ class DatasetStash(BaseUIDStoreStash):
         credentials: SyftVerifyKey,
         order_by: PartitionKey | None = None,
         has_permission: bool = False,
+        include_deleted: bool = False,
     ) -> Ok[list] | Err[str]:
         result = super().get_all(credentials, order_by, has_permission)
 
         if result.is_err():
             return result
-        filtered_datasets = [
-            dataset for dataset in result.ok_value if not dataset.to_be_deleted
-        ]
+        datasets = result.ok_value
+
+        if not include_deleted:
+            filtered_datasets = [
+                dataset for dataset in datasets if not dataset.to_be_deleted
+            ]
+        else:
+            filtered_datasets = datasets
+
         return Ok(filtered_datasets)

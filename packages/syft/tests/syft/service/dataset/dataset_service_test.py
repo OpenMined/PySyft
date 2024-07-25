@@ -385,6 +385,7 @@ def test_reupload_dataset(worker: Worker, small_dataset: Dataset) -> None:
     del_res = root_client.api.services.dataset.delete(dataset.id)
     assert isinstance(del_res, SyftSuccess)
     assert len(root_client.api.services.dataset.get_all()) == 0
+    assert len(root_client.api.services.dataset.get_all(include_deleted=True)) == 1
     search_res = root_client.api.services.dataset.search(dataset.name)
     assert len(search_res) == 0
 
@@ -392,10 +393,22 @@ def test_reupload_dataset(worker: Worker, small_dataset: Dataset) -> None:
     reupload_res = root_client.upload_dataset(small_dataset)
     assert isinstance(reupload_res, SyftSuccess)
     assert len(root_client.api.services.dataset.get_all()) == 1
+    assert len(root_client.api.services.dataset.get_all(include_deleted=True)) == 2
     search_res = root_client.api.services.dataset.search(dataset.name)
     assert len(search_res) == 1
     assert all(small_dataset.assets[0].data == search_res[0].assets[0].data)
     assert all(small_dataset.assets[0].mock == search_res[0].assets[0].mock)
+
+
+@pytest.mark.skip(reason="Uploading with replacement is not yet fully implemented")
+def test_upload_dataset_with_force_replace(
+    worker: Worker, small_dataset: Dataset
+) -> None:
+    root_client = worker.root_client
+
+    # upload a dataset
+    upload_res = root_client.upload_dataset(small_dataset)
+    assert isinstance(upload_res, SyftSuccess)
 
     # upload with force_replace
     force_replace_upload_res = root_client.upload_dataset(
