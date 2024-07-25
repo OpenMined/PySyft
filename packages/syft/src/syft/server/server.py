@@ -785,7 +785,7 @@ class Server(AbstractServer):
     def __repr__(self) -> str:
         service_string = ""
         if not self.is_subprocess:
-            services = [service.__name__ for service in self.services]
+            services = [service.__name__ for service in self.initialized_services]
             service_string = ", ".join(sorted(services))
             service_string = f"\n\nServices:\n{service_string}"
         return f"{type(self).__name__}: {self.name} - {self.id} - {self.server_type}{service_string}"
@@ -1584,6 +1584,7 @@ class Server(AbstractServer):
                     show_warnings=self.enable_warnings,
                     association_request_auto_approval=self.association_request_auto_approval,
                     default_worker_pool=get_default_worker_pool_name(),
+                    notifications_enabled=False,
                 )
                 result = settings_stash.set(
                     credentials=self.signing_key.verify_key, settings=new_settings
