@@ -15,11 +15,6 @@ on:
         required: true
         type: string
 
-      release_id:
-        description: "A Unique Identifier for the Release, which would be appended as version+release_id, Can contain only [A-Z][a-z][0-9][.]"
-        required: true
-        type: string
-
       release_platform:
         description: "Release Platform"
         required: true
@@ -45,7 +40,6 @@ jobs:
 
     outputs:
       server_version: ${{ steps.release_metadata.outputs.server_version }}
-      short_server_version: ${{ steps.release_metadata.outputs.short_server_version }}
 
     steps:
       # actions/setup-python doesn't yet support ARM
@@ -105,12 +99,15 @@ jobs:
             echo "release_platform=linux/arm64" >> $GITHUB_OUTPUT
             echo "short_release_platform=arm64" >> $GITHUB_OUTPUT
           fi
-          echo "server_version=${{ github.event.inputs.release_version }}+${{ github.event.inputs.release_id }}.$(git rev-parse --short ${{ github.sha }})" >> $GITHUB_OUTPUT
-          echo "short_server_version=${{ github.event.inputs.release_version }}" >> $GITHUB_OUTPUT
+          echo "server_version=${{ github.event.inputs.release_version }}" >> $GITHUB_OUTPUT
 
       - name: Bump to Final Release version
         run: |
           python scripts/bump_version.py --bump-to-stable ${{ steps.release_metadata.outputs.server_version}}
+
+      - name: Update Commit Hash in Syft
+        run: |
+          python packages/syft/src/syft/util/update_commit.py packages/syft/src/syft/util/commit.py
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -251,35 +248,35 @@ jobs:
         working-directory: /tmp/digests/syft-backend
         run: |
           docker buildx imagetools create  \
-            -t openmined/syft-backend:${{ needs.build-and-push-docker-images.outputs.short_server_version }} \
+            -t openmined/syft-backend:${{ needs.build-and-push-docker-images.outputs.server_version }} \
             $(printf 'openmined/syft-backend@sha256:%s ' *)
 
       - name: Create manifest list and push for syft-frontend
         working-directory: /tmp/digests/syft-frontend
         run: |
           docker buildx imagetools create  \
-            -t openmined/syft-frontend:${{ needs.build-and-push-docker-images.outputs.short_server_version }} \
+            -t openmined/syft-frontend:${{ needs.build-and-push-docker-images.outputs.server_version }} \
             $(printf 'openmined/syft-frontend@sha256:%s ' *)
 
       - name: Create manifest list and push for syft-seaweedfs
         working-directory: /tmp/digests/syft-seaweedfs
         run: |
           docker buildx imagetools create  \
-            -t openmined/syft-seaweedfs:${{ needs.build-and-push-docker-images.outputs.short_server_version }} \
+            -t openmined/syft-seaweedfs:${{ needs.build-and-push-docker-images.outputs.server_version }} \
             $(printf 'openmined/syft-seaweedfs@sha256:%s ' *)
 
       - name: Create manifest list and push for syft-enclave-attestation
         working-directory: /tmp/digests/syft-enclave-attestation
         run: |
           docker buildx imagetools create  \
-            -t openmined/syft-enclave-attestation:${{ needs.build-and-push-docker-images.outputs.short_server_version }} \
+            -t openmined/syft-enclave-attestation:${{ needs.build-and-push-docker-images.outputs.server_version }} \
             $(printf 'openmined/syft-enclave-attestation@sha256:%s ' *)
 
       - name: Create manifest list and push for syft client
         working-directory: /tmp/digests/syft
         run: |
           docker buildx imagetools create  \
-            -t openmined/syft-client:${{ needs.build-and-push-docker-images.outputs.short_server_version }} \
+            -t openmined/syft-client:${{ needs.build-and-push-docker-images.outputs.server_version }} \
             $(printf 'openmined/syft-client@sha256:%s ' *)
 
   deploy-syft:
@@ -320,6 +317,10 @@ jobs:
       - name: Bump to Final Release version
         run: |
           python scripts/bump_version.py --bump-to-stable ${{ needs.merge-docker-images.outputs.server_version }}
+
+      - name: Update Commit Hash in Syft
+        run: |
+          python packages/syft/src/syft/util/update_commit.py packages/syft/src/syft/util/commit.py
 
       - name: Build Helm Chart
         shell: bash
