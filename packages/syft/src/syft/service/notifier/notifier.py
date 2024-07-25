@@ -1,3 +1,11 @@
+# .api.services.notifications.settings() is how the server itself would dispatch notifications.
+# .api.services.notifications.user_settings() sets if a specific user wants or not to receive notifications.
+# Class NotifierSettings holds both pieces of info.
+# Users will get notification x where x in {email, slack, sms, app} if three things are set to True:
+# 1) .....settings().active
+# 2) .....settings().x_enabled
+# 2) .....user_settings().x
+
 # stdlib
 from datetime import datetime
 from typing import TypeVar

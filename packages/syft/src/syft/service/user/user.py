@@ -13,6 +13,9 @@ from pydantic import EmailStr
 from pydantic import ValidationError
 from pydantic import field_validator
 
+# syft absolute
+from syft.types.syft_migration import migrate
+
 # relative
 from ...client.api import APIRegistry
 from ...serde.serializable import serializable
@@ -104,6 +107,19 @@ class User(SyftObject):
     __attr_searchable__ = ["name", "email", "verify_key", "role", "reset_token"]
     __attr_unique__ = ["email", "signing_key", "verify_key"]
     __repr_attrs__ = ["name", "email"]
+
+
+@migrate(UserV1, User)
+def migrate_server_user_update_v1_current() -> list[Callable]:
+    return [
+        make_set_default("reset_token", None),
+        make_set_default("reset_token_date", None),
+    ]
+
+
+@migrate(User, UserV1)
+def migrate_server_user_downgrade_current_v1() -> list[Callable]:
+    return [drop("reset_token"), drop("reset_token_date")]
 
 
 def default_role(role: ServiceRole) -> Callable:

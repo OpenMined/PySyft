@@ -124,6 +124,23 @@ class SettingsService(AbstractService):
                 new_settings = current_settings[0].model_copy(
                     update=settings.to_dict(exclude_empty=True)
                 )
+                notifier_service = context.server.get_service("notifierservice")
+
+                # If notifications_enabled is present in the update, we need to update the notifier settings
+                if settings.notifications_enabled is True:
+                    if not notifier_service.settings(context):
+                        return SyftError(
+                            message="Create notification settings using enable_notifications from user_service"
+                        )
+                    notifier_service = context.server.get_service("notifierservice")
+                    result = notifier_service.set_notifier_active_to_true(context)
+                elif settings.notifications_enabled is False:
+                    if not notifier_service.settings(context):
+                        return SyftError(
+                            message="Create notification settings using enable_notifications from user_service"
+                        )
+                    notifier_service = context.server.get_service("notifierservice")
+                    result = notifier_service.set_notifier_active_to_false(context)
                 update_result = self.stash.update(context.credentials, new_settings)
                 return update_result
             else:
