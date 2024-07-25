@@ -213,6 +213,13 @@
           "hash": "b2b62447445adc4cd0b77ab59d6fa56624dd316fb50281e570daad07556b6db2",
           "action": "remove"
         }
+      },
+      "VerifiableOutput": {
+        "1": {
+          "version": 1,
+          "hash": "7cb691231c5ff4d5bd66f0d11ae8327c89390268553e33cd769db47be6cdeb59",
+          "action": "add"
+        }
       }
     }
   }

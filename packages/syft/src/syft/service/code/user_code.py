@@ -1122,6 +1122,10 @@ class SubmitUserCode(SyftObject):
                 api = APIRegistry.get_by_recent_server_uid(
                     server_uid=server_identity.server_id,
                 )
+                if api is None:
+                    return SyftError(
+                        f"Can't access the api. You must login to {server_identity.server_id}"
+                    )
                 for obj_id in obj_dict.values():
                     input_id2hash[obj_id] = api.services.action.get_hash(obj_id)
             values["input_id2hash"] = input_id2hash
@@ -1760,6 +1764,8 @@ def submit_user_code_to_user_code() -> list[Callable]:
     ]
 
 
+# TODO: remove this and make the code submittable directly from the
+# project
 @transform(UserCode, SubmitUserCode)
 def user_code_to_submit_user_code() -> list[Callable]:
     return [
