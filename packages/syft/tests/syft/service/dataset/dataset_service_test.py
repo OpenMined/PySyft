@@ -400,8 +400,7 @@ def test_reupload_dataset(worker: Worker, small_dataset: Dataset) -> None:
     assert all(small_dataset.assets[0].mock == search_res[0].assets[0].mock)
 
 
-@pytest.mark.skip(reason="Uploading with replacement is not yet fully implemented")
-def test_upload_dataset_with_force_replace(
+def test_upload_dataset_with_force_replace_small_dataset(
     worker: Worker, small_dataset: Dataset
 ) -> None:
     root_client = worker.root_client
@@ -409,10 +408,38 @@ def test_upload_dataset_with_force_replace(
     # upload a dataset
     upload_res = root_client.upload_dataset(small_dataset)
     assert isinstance(upload_res, SyftSuccess)
+    first_uploaded_dataset = root_client.api.services.dataset.get_all()[0]
 
-    # upload with force_replace
-    force_replace_upload_res = root_client.upload_dataset(
-        small_dataset, force_replace=True
+    # change something about the dataset, then upload it again with `force_replace`
+    dataset = Dataset(
+        name=small_dataset.name,
+        asset_list=[
+            sy.Asset(
+                name="small_dataset",
+                data=np.array([3, 2, 1]),
+                mock=np.array([2, 2, 2]),
+            )
+        ],
+        description="This is my numpy data",
+        url="https://my-dataset.data",
+        summary="contain some super secret data",
     )
+    force_replace_upload_res = root_client.upload_dataset(dataset, force_replace=True)
     assert isinstance(force_replace_upload_res, SyftSuccess)
     assert len(root_client.api.services.dataset.get_all()) == 1
+
+    updated_dataset = root_client.api.services.dataset.get_all()[0]
+    assert updated_dataset.id == first_uploaded_dataset.id
+    assert updated_dataset.name == small_dataset.name
+    assert updated_dataset.description.text == dataset.description.text
+    assert updated_dataset.summary == dataset.summary
+    assert updated_dataset.url == dataset.url
+    assert all(updated_dataset.assets[0].data == dataset.assets[0].data)
+    assert all(updated_dataset.assets[0].mock == dataset.assets[0].mock)
+
+
+@pytest.mark.skip(reason="To be implemented")
+def test_upload_dataset_with_force_replace_big_dataset(
+    worker: Worker, big_dataset: Dataset
+) -> None:
+    pass
