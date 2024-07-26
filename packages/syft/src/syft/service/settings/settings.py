@@ -174,56 +174,6 @@ class ServerSettingsV2(SyftObject):
     )
     notifications_enabled: bool
 
-    def _repr_html_(self) -> Any:
-        # .api.services.notifications.settings() is how the server itself would dispatch notifications.
-        # .api.services.notifications.user_settings() sets if a specific user wants or not to receive notifications.
-        # Class NotifierSettings holds both pieces of info.
-        # Users will get notification x where x in {email, slack, sms, app} if three things are set to True:
-        # 1) .....settings().active
-        # 2) .....settings().x_enabled
-        # 3) .....user_settings().x
-
-        preferences = self._get_api().services.notifications.settings()
-        if not preferences:
-            notification_print_str = "Create notification settings using enable_notifications from user_service"
-        else:
-            notifications = []
-            if preferences.email_enabled:
-                notifications.append("email")
-            if preferences.sms_enabled:
-                notifications.append("sms")
-            if preferences.slack_enabled:
-                notifications.append("slack")
-            if preferences.app_enabled:
-                notifications.append("app")
-
-            # self.notifications_enabled = preferences.active
-            if preferences.active:
-                if notifications:
-                    notification_print_str = f"Enabled via {', '.join(notifications)}"
-                else:
-                    notification_print_str = "Enabled without any communication method"
-            else:
-                notification_print_str = "Disabled"
-
-        return f"""
-            <style>
-            .syft-settings {{color: {SURFACE[options.color_theme]};}}
-            </style>
-            <div class='syft-settings'>
-                <h3>Settings</h3>
-                <p><strong>Id: </strong>{self.id}</p>
-                <p><strong>Name: </strong>{self.name}</p>
-                <p><strong>Organization: </strong>{self.organization}</p>
-                <p><strong>Description: </strong>{self.description}</p>
-                <p><strong>Deployed on: </strong>{self.deployed_on}</p>
-                <p><strong>Signup enabled: </strong>{self.signup_enabled}</p>
-                <p><strong>Notifications enabled: </strong>{notification_print_str}</p>
-                <p><strong>Admin email: </strong>{self.admin_email}</p>
-            </div>
-
-            """
-
 
 @serializable()
 class ServerSettings(SyftObject):

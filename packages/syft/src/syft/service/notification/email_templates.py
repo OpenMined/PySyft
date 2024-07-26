@@ -72,7 +72,6 @@ class PasswordResetTemplate(EmailTemplate):
                 p {
                     font-size: 16px;
                     line-height: 1.5;
-                    text-align: center;
                 }
                 .button {
                     display: block;
@@ -96,9 +95,13 @@ class PasswordResetTemplate(EmailTemplate):
         body = f"""<body>
             <div class="container">
                 <h1>Password Reset</h1>
-                <p>Hello,</p>
                 <p>We received a request to reset your password. Your new temporary token is:</p>
                 <h1>{user.reset_token}</h1>
+                <p> Use
+                    <code style="color: #FF8C00;background-color: #f0f0f0;font-size: 12px;">
+                        syft_client.reset_password(token='{user.reset_token}', new_password=*****)
+                    </code>.
+                to reset your password.</p>
                 <p>If you didn't request a password reset, please ignore this email.</p>
             </div>
         </body>"""

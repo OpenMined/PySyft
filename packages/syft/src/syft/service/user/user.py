@@ -112,12 +112,23 @@ def migrate_server_user_update_v1_current() -> list[Callable]:
     return [
         make_set_default("reset_token", None),
         make_set_default("reset_token_date", None),
+        make_set_default(
+            "__attr_searchable__",
+            ["name", "email", "verify_key", "role", "reset_token"],
+        ),
     ]
 
 
 @migrate(User, UserV1)
 def migrate_server_user_downgrade_current_v1() -> list[Callable]:
-    return [drop("reset_token"), drop("reset_token_date")]
+    return [
+        drop("reset_token"),
+        drop("reset_token_date"),
+        drop("__attr_searchable__"),
+        make_set_default(
+            "__attr_searchable__", ["name", "email", "verify_key", "role"]
+        ),
+    ]
 
 
 def default_role(role: ServiceRole) -> Callable:

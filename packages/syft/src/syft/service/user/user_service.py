@@ -97,13 +97,14 @@ class UserService(AbstractService):
     def forgot_password(
         self, context: AuthedServiceContext, email: str
     ) -> SyftSuccess | SyftError:
+        success_msg = (
+            "If the email is valid, we sent a password "
+            + "reset token to your email or a password request to the admin."
+        )
         result = self.stash.get_by_email(credentials=context.credentials, email=email)
         # Isn't a valid email
         if result.is_err():
-            return SyftSuccess(
-                message="If the email is valid, we sent a password \
-                reset token to your email or a password request to the admin."
-            )
+            return SyftSuccess(message=success_msg)
         user = result.ok()
 
         user_role = self.get_role_for_credentials(user.verify_key)
@@ -159,10 +160,7 @@ class UserService(AbstractService):
             if isinstance(result, SyftError):
                 return result
 
-            return SyftSuccess(
-                message="If the email is valid, we sent a password reset \
-                token to your email or a password request to the admin."
-            )
+            return SyftSuccess(message=success_msg)
 
         # Email notification is Enabled
         # Therefore, we can directly send a message to the user with its new password.
@@ -180,9 +178,7 @@ class UserService(AbstractService):
         if isinstance(result, SyftError):
             return result
 
-        return SyftSuccess(
-            message="If the email is valid, we sent a password request to the admin."
-        )
+        return SyftSuccess(message=success_msg)
 
     @service_method(
         path="user.request_password_reset",
@@ -288,8 +284,6 @@ class UserService(AbstractService):
 
         if token_config.numbers:
             valid_characters += string.digits
-
-        # valid_characters = string.ascii_letters + string.digits
 
         generated_token = "".join(
             secrets.choice(valid_characters) for _ in range(token_config.token_len)
