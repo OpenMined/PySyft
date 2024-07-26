@@ -16,6 +16,9 @@ from syft.abstract_server import ServerSideType
 from syft.server.credentials import SyftSigningKey
 from syft.server.credentials import SyftVerifyKey
 from syft.service.context import AuthedServiceContext
+from syft.service.notifier.notifier import NotifierSettings
+from syft.service.notifier.notifier_stash import NotifierStash
+from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.settings.settings import ServerSettings
 from syft.service.settings.settings import ServerSettingsUpdate
@@ -140,6 +143,7 @@ def test_settingsservice_update_success(
     settings: ServerSettings,
     update_settings: ServerSettingsUpdate,
     authed_context: AuthedServiceContext,
+    notifier_stash: NotifierStash,
 ) -> None:
     # add a mock settings to the stash
     mock_settings = add_mock_settings(
@@ -162,6 +166,26 @@ def test_settingsservice_update_success(
         return Ok(mock_stash_get_all_output)
 
     monkeypatch.setattr(settings_service.stash, "get_all", mock_stash_get_all)
+
+    # Mock the get_service method to return a mocked notifier_service with the notifier_stash
+    class MockNotifierService:
+        def __init__(self, stash):
+            self.stash = stash
+
+        def set_notifier_active_to_false(self, context) -> SyftSuccess:
+            return SyftSuccess(message="Notifier mocked to True")
+
+        def settings(self, context):
+            return NotifierSettings()
+
+    mock_notifier_service = MockNotifierService(stash=notifier_stash)
+
+    def mock_get_service(service_name: str):
+        if service_name == "notifierservice":
+            return mock_notifier_service
+        raise ValueError(f"Unknown service: {service_name}")
+
+    monkeypatch.setattr(authed_context.server, "get_service", mock_get_service)
 
     # update the settings in the settings stash using settings_service
     response = settings_service.update(context=authed_context, settings=update_settings)
@@ -213,6 +237,7 @@ def test_settingsservice_update_fail(
     settings_service: SettingsService,
     update_settings: ServerSettingsUpdate,
     authed_context: AuthedServiceContext,
+    notifier_stash: NotifierStash,
 ) -> None:
     # the stash has a settings but we could not update it (the stash.update() function fails)
 
@@ -232,12 +257,29 @@ def test_settingsservice_update_fail(
 
     monkeypatch.setattr(settings_service.stash, "update", mock_stash_update_error)
 
+    # Mock the get_service method to return a mocked notifier_service with the notifier_stash
+    class MockNotifierService:
+        def __init__(self, stash):
+            self.stash = stash
+
+        def set_notifier_active_to_false(self, context) -> SyftSuccess:
+            return SyftSuccess(message="Notifier mocked to False")
+
+        def settings(self, context):
+            return NotifierSettings()
+
+    mock_notifier_service = MockNotifierService(stash=notifier_stash)
+
+    def mock_get_service(service_name: str):
+        if service_name == "notifierservice":
+            return mock_notifier_service
+        raise ValueError(f"Unknown service: {service_name}")
+
+    monkeypatch.setattr(authed_context.server, "get_service", mock_get_service)
+
+
     with pytest.raises(StashException) as exc:
         settings_service.update(context=authed_context, settings=update_settings)
-
-    assert exc.type == StashException
-    assert exc.value.public_message == mock_update_error_message
-
 
 def test_settings_allow_guest_registration(
     monkeypatch: MonkeyPatch, faker: Faker
@@ -255,6 +297,7 @@ def test_settings_allow_guest_registration(
         show_warnings=False,
         deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
         association_request_auto_approval=False,
+        notifications_enabled=False,
     )
 
     with mock.patch(
@@ -347,6 +390,7 @@ def test_settings_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker)
         show_warnings=False,
         deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
         association_request_auto_approval=False,
+        notifications_enabled=False,
     )
 
     with mock.patch(

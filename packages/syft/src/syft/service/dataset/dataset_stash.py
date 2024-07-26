@@ -1,5 +1,3 @@
-# stdlib
-
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
@@ -39,3 +37,16 @@ class DatasetStash(NewBaseUIDStoreStash):
     def search_action_ids(self, credentials: SyftVerifyKey, uid: UID) -> list[Dataset]:
         qks = QueryKeys(qks=[ActionIDsPartitionKey.with_obj(uid)])
         return self.query_all(credentials=credentials, qks=qks).unwrap()
+
+    @as_result(StashException)
+    def get_all(
+        self,
+        credentials: SyftVerifyKey,
+        order_by: PartitionKey | None = None,
+        has_permission: bool = False,
+    ) -> list:
+        result = super().get_all(credentials, order_by, has_permission).unwrap()
+        filtered_datasets = [
+            dataset for dataset in result.ok_value if not dataset.to_be_deleted
+        ]
+        return filtered_datasets

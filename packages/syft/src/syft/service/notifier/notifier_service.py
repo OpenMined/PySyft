@@ -63,6 +63,42 @@ class NotifierService(AbstractService):
             app=notifications[NOTIFIERS.APP],
         )
 
+    def set_notifier_active_to_true(
+        self, context: AuthedServiceContext
+    ) -> SyftSuccess | SyftError:
+        result = self.stash.get(credentials=context.credentials)
+        if result.is_err():
+            return SyftError(message=result.err())
+
+        notifier = result.ok()
+        if notifier is None:
+            return SyftError(message="Notifier settings not found.")
+        notifier.active = True
+        result = self.stash.update(credentials=context.credentials, settings=notifier)
+        if result.is_err():
+            return SyftError(message=result.err())
+        return SyftSuccess(message="notifier.active set to true.")
+
+    def set_notifier_active_to_false(
+        self, context: AuthedServiceContext
+    ) -> SyftSuccess:
+        """
+        Essentially a duplicate of turn_off method.
+        """
+        result = self.stash.get(credentials=context.credentials)
+        if result.is_err():
+            return SyftError(message=result.err())
+
+        notifier = result.ok()
+        if notifier is None:
+            return SyftError(message="Notifier settings not found.")
+
+        notifier.active = False
+        result = self.stash.update(credentials=context.credentials, settings=notifier)
+        if result.is_err():
+            return SyftError(message=result.err())
+        return SyftSuccess(message="notifier.active set to false.")
+
     @as_result(SyftException)
     def turn_on(
         self,
@@ -163,6 +199,8 @@ class NotifierService(AbstractService):
         )
 
         self.stash.update(credentials=context.credentials, settings=notifier).unwrap()
+        settings_service = context.server.get_service("settingsservice")
+        settings_service.update(context, notifications_enabled=True)
         return SyftSuccess(message="Notifications enabled successfully.")
 
     @as_result(StashException)
@@ -177,9 +215,10 @@ class NotifierService(AbstractService):
         notifier = self.stash.get(credentials=context.credentials).unwrap()
 
         notifier.active = False
-
         self.stash.update(credentials=context.credentials, settings=notifier).unwrap()
 
+        settings_service = context.server.get_service("settingsservice")
+        settings_service.update(context, notifications_enabled=False)
         return SyftSuccess(message="Notifications disabled succesfullly")
 
     @as_result(SyftException)
