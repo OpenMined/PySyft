@@ -1,0 +1,13 @@
+# Values for deploying in a gpu enclave
+# Patched on top of patch `base.yaml`
+
+server:
+  type: enclave
+  runtimeClassName: nvidia
+
+attestation:
+  enabled: true
+
+  resources:
+    limits:
+      nvidia.com/gpu: 1

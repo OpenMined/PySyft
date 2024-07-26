@@ -224,8 +224,8 @@ profiles:
         value:
           - ./helm/examples/azure/azure.high.yaml
 
-  - name: enclave
-    description: "Deploy an enclave server"
+  - name: enclave-cpu
+    description: "Deploy an CPU enclave server"
     patches:
       # enable image build for enclave-attestation
       - op: add
@@ -245,10 +245,54 @@ profiles:
           enclave-attestation:
             sync:
               - path: ./enclave/attestation/server:/app/server
-      # use gateway-specific chart values
+      # use enclave-specific chart values
       - op: add
         path: deployments.syft.helm.valuesFiles
-        value: ./helm/examples/dev/enclave.yaml
+        value: ./helm/examples/dev/enclave-cpu.yaml
+      # Port Re-Mapping
+      - op: replace
+        path: dev.mongo.ports[0].port
+        value: 27019:27017
+      - op: replace
+        path: dev.backend.ports[0].port
+        value: 5680:5678
+      - op: replace
+        path: dev.backend.containers.backend-container.ssh.localPort
+        value: 3482
+      - op: replace
+        path: dev.seaweedfs.ports
+        value:
+          - port: "9334:9333" # admin
+          - port: "8889:8888" # filer
+          - port: "8334:8333" # S3
+          - port: "4002:4001" # mount api
+
+  # TODO: Can we de-duplicate it?
+  - name: enclave-gpu
+    description: "Deploy an GPU enclave node"
+    patches:
+      # enable image build for enclave-attestation
+      - op: add
+        path: images
+        value:
+          enclave-attestation:
+            image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_ENCLAVE_ATTESTATION}"
+            buildKit:
+              args: ["--platform", "linux/amd64"]
+            dockerfile: ./enclave/attestation/attestation.dockerfile
+            context: ./enclave/attestation
+            tags:
+              - dev-${DEVSPACE_TIMESTAMP}
+      - op: add
+        path: dev.backend.containers
+        value:
+          enclave-attestation:
+            sync:
+              - path: ./enclave/attestation/server:/app/server
+      # use enclave-specific chart values
+      - op: add
+        path: deployments.syft.helm.valuesFiles
+        value: ./helm/examples/dev/enclave-gpu.yaml
       # Port Re-Mapping
       - op: replace
         path: dev.mongo.ports[0].port

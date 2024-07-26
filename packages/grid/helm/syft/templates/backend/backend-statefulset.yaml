@@ -27,6 +27,9 @@ spec:
       annotations: {{- toYaml .Values.server.podAnnotations | nindent 8 }}
       {{- end }}
     spec:
+      {{- if .Values.server.runtimeClassName }}
+      runtimeClassName: {{ .Values.server.runtimeClassName }}
+      {{- end }}
       {{- if .Values.server.nodeSelector }}
       nodeSelector: {{- .Values.server.nodeSelector | toYaml | nindent 8 }}
       {{- end }}
