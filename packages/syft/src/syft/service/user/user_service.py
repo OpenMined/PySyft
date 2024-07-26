@@ -249,7 +249,8 @@ class UserService(AbstractService):
         time_difference = now - user.reset_token_date
 
         # If token expired
-        if time_difference > timedelta(minutes=30):
+        expiration_time = context.server.settings.pwd_token_config.token_exp_min
+        if time_difference > timedelta(minutes=expiration_time):
             return invalid_token_error
 
         if not validate_password(new_password):

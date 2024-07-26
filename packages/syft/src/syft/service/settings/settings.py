@@ -39,6 +39,7 @@ class PwdTokenResetConfig(SyftObject):
     ascii: bool = True
     numbers: bool = True
     token_len: int = 12
+    token_exp_min: int = 30
 
     @model_validator(mode="after")
     def validate_char_types(self) -> Self:
