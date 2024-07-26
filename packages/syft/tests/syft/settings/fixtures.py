@@ -10,6 +10,7 @@ from syft.abstract_server import ServerSideType
 from syft.abstract_server import ServerType
 from syft.server.credentials import SyftSigningKey
 from syft.service.metadata.server_metadata import ServerMetadataJSON
+from syft.service.notifier.notifier_stash import NotifierStash
 from syft.service.settings.settings import ServerSettings
 from syft.service.settings.settings import ServerSettingsUpdate
 from syft.service.settings.settings_service import SettingsService
@@ -17,6 +18,11 @@ from syft.service.settings.settings_stash import SettingsStash
 from syft.types.syft_object import HIGHEST_SYFT_OBJECT_VERSION
 from syft.types.syft_object import LOWEST_SYFT_OBJECT_VERSION
 from syft.types.uid import UID
+
+
+@pytest.fixture()
+def notifier_stash(document_store) -> NotifierStash:
+    yield NotifierStash(store=document_store)
 
 
 @pytest.fixture()
@@ -41,6 +47,7 @@ def settings(worker, faker) -> ServerSettings:
         server_type=ServerType.DATASITE,
         association_request_auto_approval=False,
         default_worker_pool="default-pool",
+        notifications_enabled=False,
     )
 
 
