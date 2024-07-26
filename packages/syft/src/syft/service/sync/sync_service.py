@@ -57,6 +57,7 @@ class SyncService(AbstractService):
     def __init__(self, store: DocumentStore):
         self.store = store
         self.stash = SyncStash(store=store)
+        self._cached_all_syncable_items = None
 
     def add_actionobject_read_permissions(
         self,
@@ -378,7 +379,15 @@ class SyncService(AbstractService):
         unignored_batches: set[UID] = (
             new_unignored_batches if new_unignored_batches is not None else set()
         )
-        objects_res = self.get_all_syncable_items(context)
+
+        if not self._cached_all_syncable_items:
+            print("Getting all syncable items")
+            self._cached_all_syncable_items = self.get_all_syncable_items(context)
+        else:
+            print("Using cached syncable items")
+
+        objects_res = self._cached_all_syncable_items
+
         if objects_res.is_err():
             return objects_res
 
@@ -438,6 +447,8 @@ class SyncService(AbstractService):
         roles=ADMIN_ROLE_LEVEL,
     )
     def _get_state(self, context: AuthedServiceContext) -> SyncState | SyftError:
+        self._cached_all_syncable_items = None
+        print("invalidating cache")
         res = self.build_current_state(context)
         if res.is_err():
             return SyftError(message=res.value)

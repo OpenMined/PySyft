@@ -63,11 +63,11 @@ class SyncStash(BaseUIDStoreStash):
         self.last_state = item
 
         # use threading
-        threading.Thread(
-            target=super().set,
-            args=(
-                context,
-                item,
-            ),
-        ).start()
+        # threading.Thread(
+        #     target=super().set,
+        #     args=(
+        #         context,
+        #         item,
+        #     ),
+        # ).start()
         return Ok(item)
