@@ -89,12 +89,38 @@ class BlobRetrieval(SyftObject):
     file_size: int | None = None
 
 
+# This is short term solution to improve the performance for
+# testing, as the pydantic v2 is slow for instance checks for
+# the method attach_attributes_to_syft_object
+# ref: https://github.com/pydantic/pydantic/issues/9458
+# which greatly slows object retrieval from the store.
+
+
 @serializable()
-class SyftObjectRetrieval(BlobRetrieval):
+class SyftObjectRetrieval:
     __canonical_name__ = "SyftObjectRetrieval"
     __version__ = SYFT_OBJECT_VERSION_1
 
     syft_object: bytes
+    type_: type | None = None
+    file_name: str
+    syft_blob_storage_entry_id: UID | None = None
+    file_size: int | None = None
+
+    # init method to take in all class attributes
+    def __init__(
+        self,
+        syft_object: bytes,
+        file_name: str,
+        type_: type | None = None,
+        syft_blob_storage_entry_id: UID | None = None,
+        file_size: int | None = None,
+    ) -> None:
+        self.syft_object = syft_object
+        self.file_name = file_name
+        self.type_ = type_
+        self.syft_blob_storage_entry_id = syft_blob_storage_entry_id
+        self.file_size = file_size
 
     def _read_data(
         self, stream: bool = False, _deserialize: bool = True, **kwargs: Any

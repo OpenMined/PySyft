@@ -27,6 +27,7 @@ from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import generate_id
@@ -95,7 +96,7 @@ class Contributor(SyftObject):
 
 
 @serializable()
-class Asset(SyftObject):
+class AssetV1(SyftObject):
     # version
     __canonical_name__ = "Asset"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -110,6 +111,30 @@ class Asset(SyftObject):
     shape: tuple | None = None
     created_at: DateTime = DateTime.now()
     uploader: Contributor | None = None
+
+    # _kwarg_name and _dataset_name are set by the UserCode.assets
+    _kwarg_name: str | None = None
+    _dataset_name: str | None = None
+    __syft_include_id_coll_repr__ = False
+
+
+@serializable()
+class Asset(SyftObject):
+    # version
+    __canonical_name__ = "Asset"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    action_id: UID
+    server_uid: UID
+    name: str
+    description: MarkdownDescription | None = None
+    contributors: set[Contributor] = set()
+    data_subjects: list[DataSubject] = []
+    mock_is_real: bool = False
+    shape: tuple | None = None
+    created_at: DateTime = DateTime.now()
+    uploader: Contributor | None = None
+    asset_hash: str
 
     # _kwarg_name and _dataset_name are set by the UserCode.assets
     _kwarg_name: str | None = None
@@ -179,6 +204,7 @@ class Asset(SyftObject):
             <p>{self.description}</p>
             <p><strong>Asset ID: </strong>{self.id}</p>
             <p><strong>Action Object ID: </strong>{self.action_id}</p>
+            <p><strong>Asset Hash (Private): </strong>{self.asset_hash}</p>
             {uploaded_by_line}
             <p><strong>Created on: </strong>{self.created_at}</p>
             <p><strong>Data:</strong></p>
@@ -836,6 +862,31 @@ def add_default_server_uid(context: TransformContext) -> TransformContext:
     return context
 
 
+def add_asset_hash(context: TransformContext) -> TransformContext:
+    # relative
+    from ..action.action_service import ActionService
+
+    if context.output is None:
+        return context
+    if context.server is None:
+        raise ValueError("Context should have a server attached to it.")
+
+    action_id = context.output["action_id"]
+    if action_id is not None:
+        action_service = context.server.get_service(ActionService)
+        # Q: Why is service returning an result object [Ok, Err]?
+        action_obj = action_service.get(context=context, uid=action_id)
+
+        if action_obj.is_err():
+            return SyftError(f"Failed to get action object with id {action_obj.err()}")
+        # NOTE: for a TwinObject, this hash of the private data
+        context.output["asset_hash"] = action_obj.ok().hash()
+    else:
+        raise ValueError("Asset must have an action_id to generate a hash")
+
+    return context
+
+
 @transform(CreateAsset, Asset)
 def createasset_to_asset() -> list[Callable]:
     return [
@@ -845,6 +896,7 @@ def createasset_to_asset() -> list[Callable]:
         create_and_store_twin,
         set_data_subjects,
         add_default_server_uid,
+        add_asset_hash,
     ]
 
 

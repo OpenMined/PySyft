@@ -154,6 +154,12 @@ class ActionService(AbstractService):
         # 🟡 TODO 9: Create some kind of type checking / protocol for SyftSerializable
 
         if isinstance(action_object, ActionObject):
+            # Always recalculate the hash when saving
+            # at the server side
+            # Some objects like Model Ref require context to hash
+            # NOTE: should be placed before clear cache
+            action_object.hash(recalculate=True, context=context)  # type: ignore
+
             action_object.syft_created_at = DateTime.now()
             (
                 action_object._clear_cache()
@@ -163,6 +169,10 @@ class ActionService(AbstractService):
         else:  # TwinObject
             action_object.private_obj.syft_created_at = DateTime.now()  # type: ignore[unreachable]
             action_object.mock_obj.syft_created_at = DateTime.now()
+
+            # Compute Hash
+            action_object.private_obj.hash(recalculate=True, context=context)
+            action_object.mock_obj.hash(recalculate=True, context=context)
 
             # Clear cache if data is saved to blob storage
             (
@@ -949,6 +959,20 @@ class ActionService(AbstractService):
             return SyftSuccess(message=f"Object: {obj_id} exists")
         else:
             return SyftError(message=f"Object: {obj_id} does not exist")
+
+    @service_method(path="action.get_hash", name="get_hash", roles=GUEST_ROLE_LEVEL)
+    def get_hash(
+        self, context: AuthedServiceContext, obj_id: UID
+    ) -> Result[SyftSuccess, SyftError]:
+        """Returns the hash of the given object id in the Action Store"""
+        # TODO: This is a minor fix, which allows any user
+        # to get the hash of any object in the Action Store
+        # will be fixed in the future, with new permissions system
+        root_context = context.as_root_context()
+        action_obj = self.get(root_context, obj_id)
+        if action_obj.is_err():
+            return SyftError(message=action_obj.err())
+        return action_obj.ok().hash(context=context)
 
     @service_method(path="action.delete", name="delete", roles=ADMIN_ROLE_LEVEL)
     def delete(

@@ -72,7 +72,7 @@ class OnDiskBlobStorageConnection(BlobStorageConnection):
         self, fp: SecureFilePathLocation, type_: type | None, **kwargs: Any
     ) -> BlobRetrieval:
         file_path = self._base_directory / fp.path
-        return SyftObjectRetrieval(
+        return SyftObjectRetrieval(  # type: ignore
             syft_object=file_path.read_bytes(),
             file_name=file_path.name,
             type_=type_,

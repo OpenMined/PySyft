@@ -28,14 +28,14 @@
       "UserCode": {
         "2": {
           "version": 2,
-          "hash": "2a928e5a6104df764161e1dc72866a89f06a78b24eac7f3703fd21e9405a8d3d",
+          "hash": "001cdb613ad75743570cc206050fd035b9754d13ae690d75cecd76a6ac938380",
           "action": "add"
         }
       },
       "SubmitUserCode": {
         "2": {
           "version": 2,
-          "hash": "7ff1f35fc81bc5240b8e1a6e2d265882877f999d947139b1fdac3e498d02aba9",
+          "hash": "5ae1ff84ce31b39a6751c94373801104c6bb851d8b4577202b6a1676f53fbc38",
           "action": "add"
         }
       },
@@ -49,14 +49,14 @@
       "ModelAsset": {
         "1": {
           "version": 1,
-          "hash": "65177fc501311e783c1bddc33962112ff985b8c7b947db2e5959c924c08d9ed1",
+          "hash": "028c1eb30b2321184c43de2dd6d47b39c8f933b89174f7f7e70d8e667b19fcd0",
           "action": "add"
         }
       },
       "SubmitModelCode": {
         "1": {
           "version": 1,
-          "hash": "074e079e777e2b38bd98893ecc2102ac97151f6d16c01a183dc2230e56fcd96b",
+          "hash": "eca26af6cbc0a6557ac6e15c5b81fe78053eace9de5adef8ffcacce3ad8a3133",
           "action": "add"
         }
       },
@@ -70,21 +70,21 @@
       "Model": {
         "1": {
           "version": 1,
-          "hash": "551387bbd6ddf926b70b87d4b4f419df35e28e72978c98786ed94e0483f3818f",
+          "hash": "b32cfc037b89f28af88d6a363dcf8a9e9f05c4b8e0b2c5d4cc1b3da19c6f59d3",
           "action": "add"
         }
       },
       "CreateModel": {
         "1": {
           "version": 1,
-          "hash": "1381a04badf88098978932edce67ef9a11e88a8271e7a3c3618eff18588028ec",
+          "hash": "c9e57e0189513e6668add50a5d0252c8d61f9b6051ddb9aec403ced660d534e8",
           "action": "add"
         }
       },
       "ModelRef": {
         "1": {
           "version": 1,
-          "hash": "a723e56ca42b735eac9e6ca32aa4e4c423fcfd96578a0e66df3331a5c8969747",
+          "hash": "d7690a53229e4335cbfa0ad2669a8c24f0da7aae871c1aabad0e461ee7621ffd",
           "action": "add"
         }
       },
@@ -127,6 +127,97 @@
         "1": {
           "version": 1,
           "hash": "26bb701dcf2012589b476ba83a67d4405baf12da9628ac490bcd23e343e60645",
+          "action": "add"
+        }
+      },
+      "Asset": {
+        "2": {
+          "version": 2,
+          "hash": "ab3a6ec2957b4f2f9e37589fe7dd753ef6c045853f459ffd0d74ddcd1cc8e442",
+          "action": "add"
+        }
+      },
+      "RuntimePolicy": {
+        "1": {
+          "version": 1,
+          "hash": "ee7e1fdf0c525cc051888ca4516dc2e102f02044c92dfea91555b70776da6a86",
+          "action": "add"
+        }
+      },
+      "EmptyRuntimePolicy": {
+        "1": {
+          "version": 1,
+          "hash": "b8555d4cbb03e4d627aed5eb2096ec4b28cfef981e5524873f1d40bd37fa55e3",
+          "action": "add"
+        }
+      },
+      "ActionObject": {
+        "2": {
+          "version": 2,
+          "hash": "f8c925b930541d761e600a6a0957e8a202d371fdb81c969b8586a07678761ddc",
+          "action": "add"
+        }
+      },
+      "AnyActionObject": {
+        "2": {
+          "version": 2,
+          "hash": "6c3f0dc3aece484a992155d41af5bd09bab6075ec6424d297729ece7129e4ae7",
+          "action": "add"
+        }
+      },
+      "BlobFileOBject": {
+        "2": {
+          "version": 2,
+          "hash": "90c111cd8ada881cd9b01e6497a07a34d7ff445a7ffd2b593418c84dc5b161d7",
+          "action": "add"
+        }
+      },
+      "NumpyArrayObject": {
+        "2": {
+          "version": 2,
+          "hash": "33f68f5396e5f4569be64af4eaf0610e53b0a55141aa45a0c0a3543add383d29",
+          "action": "add"
+        }
+      },
+      "NumpyScalarObject": {
+        "2": {
+          "version": 2,
+          "hash": "304c615841b63a99bf8e8567ed8acbce1cb61b9d3e6299bc4207ae92c53ebc53",
+          "action": "add"
+        }
+      },
+      "NumpyBoolObject": {
+        "2": {
+          "version": 2,
+          "hash": "98dce617f4dd9ce1c9c30d930d557c574b9f873968461f70de74989be63f9d60",
+          "action": "add"
+        }
+      },
+      "PandasDataframeObject": {
+        "2": {
+          "version": 2,
+          "hash": "3dbd6c97379338902b8da4519a250e9f7d6b2ae755bdb1b68b0aa6a2f3106d6c",
+          "action": "add"
+        }
+      },
+      "PandasSeriesObject": {
+        "2": {
+          "version": 2,
+          "hash": "09d6867be6a50aef4aa7ad67a10ed52c23d863fe49d2294dff930e9a76f3e6ca",
+          "action": "add"
+        }
+      },
+      "SyftObjectRetrieval": {
+        "1": {
+          "version": 1,
+          "hash": "b2b62447445adc4cd0b77ab59d6fa56624dd316fb50281e570daad07556b6db2",
+          "action": "remove"
+        }
+      },
+      "VerifiableOutput": {
+        "1": {
+          "version": 1,
+          "hash": "7cb691231c5ff4d5bd66f0d11ae8327c89390268553e33cd769db47be6cdeb59",
           "action": "add"
         }
       }

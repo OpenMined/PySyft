@@ -806,11 +806,13 @@ class OutputPolicyExecuteOnce(OutputPolicyExecuteCount):
 SingleExecutionExactOutput = OutputPolicyExecuteOnce
 
 
+@serializable()
 class RuntimePolicy(Policy):
     __canonical_name__ = "RuntimePolicy"
     __version__ = SYFT_OBJECT_VERSION_1
 
 
+@serializable()
 class EmptyRuntimePolicy(RuntimePolicy):
     __canonical_name__ = "EmptyRuntimePolicy"
     __version__ = SYFT_OBJECT_VERSION_1

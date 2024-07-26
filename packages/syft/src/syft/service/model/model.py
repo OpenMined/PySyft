@@ -2,6 +2,7 @@
 from collections.abc import Callable
 from datetime import datetime
 from enum import Enum
+import hashlib
 from textwrap import dedent
 from typing import Any
 from typing import ClassVar
@@ -12,11 +13,13 @@ from IPython.display import display
 from pydantic import ConfigDict
 from result import Err
 from result import Ok
+from result import OkErr
 from result import Result
 
 # relative
 from ...client.client import SyftClient
 from ...serde.serializable import serializable
+from ...serde.serialize import _serialize as serialize
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -30,6 +33,7 @@ from ...util.markdown import as_markdown_python_code
 from ..action.action_object import ActionDataEmpty
 from ..action.action_object import ActionObject
 from ..action.action_object import BASE_PASSTHROUGH_ATTRS
+from ..action.action_service import ActionService
 from ..context import AuthedServiceContext
 from ..dataset.dataset import Contributor
 from ..dataset.dataset import MarkdownDescription
@@ -72,6 +76,7 @@ class ModelAsset(SyftObject):
     action_id: UID
     server_uid: UID
     created_at: DateTime = DateTime.now()
+    asset_hash: str
 
     __repr_attrs__ = ["name", "endpoint_path"]
 
@@ -85,7 +90,7 @@ class ModelAsset(SyftObject):
         super().__init__(**kwargs, description=description)
 
     def _repr_html_(self) -> Any:
-        return "todo a table"
+        return f"Asset Hash: {self.asset_hash}"
 
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         _repr_str = f"Asset: {self.name}\n"
@@ -153,7 +158,7 @@ def syft_model(
             code = dedent(get_code_from_class(cls))
             code = f"import syft as sy\n{code}"
             class_name = cls.__name__
-            res = SubmitModelCode(code=code, class_name=class_name)
+            res = SubmitModelCode(syft_action_data_cache=code, class_name=class_name)
         except Exception as e:
             raise e
 
@@ -172,16 +177,18 @@ class SubmitModelCode(ActionObject):
     __canonical_name__ = "SubmitModelCode"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    syft_internal_type: type | None = None  # type: ignore
+    syft_internal_type: ClassVar[type] = str
     syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS + [
         "code",
         "class_name",
         "__call__",
     ]
 
-    code: str
     class_name: str
-    # signature: inspect.Signature
+
+    @property
+    def code(self) -> str:
+        return self.syft_action_data
 
     def __call__(self, **kwargs: dict) -> Any:
         # Load Class
@@ -286,6 +293,7 @@ class Model(SyftObject):
     example_text: str | None = None
     mb_size: float | None = None
     code_action_id: UID | None = None
+    syft_model_hash: str | None = None
 
     def __init__(
         self,
@@ -330,8 +338,9 @@ class Model(SyftObject):
             "created at": str(self.created_at),
         }
 
-    # def _repr_html_(self) -> Any:
-    #     return "todo table"
+    def _repr_html_(self) -> Any:
+        # TODO: Improve Repr
+        return f"Model Hash: {self.syft_model_hash}"
 
     @property
     def assets(self) -> DictTuple[str, ModelAsset]:
@@ -534,9 +543,34 @@ def add_default_server_uid(context: TransformContext) -> TransformContext:
     return context
 
 
+def add_asset_hash(context: TransformContext) -> TransformContext:
+    # relative
+
+    if context.output is None:
+        return context
+
+    if context.server is None:
+        raise ValueError("Context should have a server attached to it.")
+
+    action_id = context.output["action_id"]
+    if action_id is not None:
+        action_service = context.server.get_service(ActionService)
+        # Q: Why is service returning an result object [Ok, Err]?
+        action_obj = action_service.get(context=context, uid=action_id)
+
+        if action_obj.is_err():
+            return SyftError(f"Failed to get action object with id {action_obj.err()}")
+        # NOTE: for a TwinObject, this hash of the private data
+        context.output["asset_hash"] = action_obj.ok().hash()
+    else:
+        raise ValueError("Model Asset must have an action_id to generate a hash")
+
+    return context
+
+
 @transform(CreateModelAsset, ModelAsset)
 def createmodelasset_to_asset() -> list[Callable]:
-    return [generate_id, add_msg_creation_time, add_default_server_uid]
+    return [generate_id, add_msg_creation_time, add_default_server_uid, add_asset_hash]
 
 
 def convert_asset(context: TransformContext) -> TransformContext:
@@ -569,6 +603,34 @@ def add_current_date(context: TransformContext) -> TransformContext:
     return context
 
 
+def add_model_hash(context: TransformContext) -> TransformContext:
+    # relative
+
+    if context.output is None:
+        return context
+
+    if context.server is None:
+        raise ValueError("Context should have a server attached to it.")
+
+    self_id = context.output["id"]
+    if self_id is not None:
+        action_service = context.server.get_service(ActionService)
+        # Q: Why is service returning an result object [Ok, Err]?
+        model_ref_action_obj = action_service.get(context=context, uid=self_id)
+
+        if model_ref_action_obj.is_err():
+            return SyftError(
+                f"[Model]Failed to get action object with id {model_ref_action_obj.err()}"
+            )
+        context.output["syft_model_hash"] = model_ref_action_obj.ok().hash(
+            context=context
+        )
+    else:
+        raise ValueError("Model  must have an valid ID")
+
+    return context
+
+
 @transform(CreateModel, Model)
 def createmodel_to_model() -> list[Callable]:
     return [
@@ -577,6 +639,7 @@ def createmodel_to_model() -> list[Callable]:
         validate_url,
         convert_asset,
         add_current_date,
+        add_model_hash,
     ]
 
 
@@ -619,23 +682,71 @@ class ModelRef(ActionObject):
 
         return None
 
+    def hash(
+        self,
+        recalculate: bool = False,
+        context: TransformContext | None = None,
+        client: SyftClient | None = None,
+    ) -> str:
+        if context is None and client is None:
+            raise ValueError(
+                "Either context or client should be provided to ModelRef.hash()"
+            )
+        if context and context.server is None:
+            raise ValueError("Context should have a server attached to it.")
+
+        self.syft_action_data_hash: str | None
+        if not recalculate and self.syft_action_data_hash:
+            return self.syft_action_data_hash
+
+        if not self.ref_objs:
+            if context:
+                action_objs = self.load_data(context)
+            else:
+                action_objs = self.load_data(self_client=client)
+        else:
+            action_objs = self.ref_objs
+
+        hash_items = [action_obj.hash() for action_obj in action_objs]
+        hash_bytes = serialize(hash_items, to_bytes=True)
+        hash_str = hashlib.sha256(hash_bytes).hexdigest()
+        self.syft_action_data_hash = hash_str
+        return self.syft_action_data_hash
+
     def load_data(
         self,
-        context: AuthedServiceContext,
+        context: AuthedServiceContext | None = None,
+        self_client: SyftClient | None = None,
         wrap_ref_to_obj: bool = False,
         unwrap_action_data: bool = True,
         remote_client: SyftClient | None = None,
     ) -> list:
-        admin_client = context.server.root_client
+        if context is None and self_client is None:
+            raise ValueError(
+                "Either context or client should be provided to ModelRef.load_data()"
+            )
+
+        client = context.server.root_client if context else self_client
 
         code_action_id = self.syft_action_data[0]
         asset_action_ids = self.syft_action_data[1::]
 
-        model = admin_client.services.action.get(code_action_id)
+        model = client.api.services.action.get(code_action_id)
+
+        if isinstance(model, OkErr):
+            if model.is_err():
+                return SyftError(message=f"Failed to load model code:{model.err()}")
+            model = model.ok()
 
         asset_list = []
         for asset_action_id in asset_action_ids:
-            action_object = admin_client.services.action.get(asset_action_id)
+            action_object = client.api.services.action.get(asset_action_id)
+            if isinstance(action_object, OkErr):
+                if action_object.is_err():
+                    return SyftError(
+                        message=f"Failed to load asset:{action_object.err()}"
+                    )
+                action_object = action_object.ok()
             action_data = action_object.syft_action_data
 
             # Save to blob storage of remote client if provided
