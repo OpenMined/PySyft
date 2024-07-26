@@ -1,0 +1,20 @@
+{
+  "2": {
+    "object_versions": {
+      "ServerSettingsUpdate": {
+        "2": {
+          "version": 2,
+          "hash": "23b2716e9dceca667e228408e2416c82f11821e322e5bccf1f83406f3d09abdc",
+          "action": "add"
+        }
+      },
+      "ServerSettings": {
+        "2": {
+          "version": 2,
+          "hash": "7727ea54e494dc9deaa0d1bd38ac8a6180bc192b74eec5659adbc338a19e21f5",
+          "action": "add"
+        }
+      }
+    }
+  }
+}
