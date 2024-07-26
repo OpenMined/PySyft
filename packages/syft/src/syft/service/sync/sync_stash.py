@@ -64,7 +64,7 @@ class SyncStash(BaseUIDStoreStash):
 
         # use threading
         threading.Thread(
-            target=self.set,
+            target=super().set,
             args=(
                 context,
                 item,
