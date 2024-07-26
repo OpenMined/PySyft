@@ -93,6 +93,7 @@ class ServerURL:
             "localhost",
             "host.docker.internal",
             "host.k3d.internal",
+            "0.0.0.0",
         ]:
             return self
 
