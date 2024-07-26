@@ -31,7 +31,7 @@ from .object_migration_state import SyftMigrationStateStash
 from .object_migration_state import SyftObjectMigrationState
 
 
-@serializable()
+@serializable(canonical_name="MigrationService", version=1)
 class MigrationService(AbstractService):
     store: DocumentStore
     stash: SyftMigrationStateStash
@@ -148,7 +148,7 @@ class MigrationService(AbstractService):
     ) -> Result[KeyValueActionStore | StorePartition, str]:
         object_partition: KeyValueActionStore | StorePartition | None = None
         if issubclass(object_type, ActionObject):
-            object_partition = cast(KeyValueActionStore, context.node.action_store)
+            object_partition = cast(KeyValueActionStore, context.server.action_store)
         else:
             canonical_name = object_type.__canonical_name__  # type: ignore[unreachable]
             object_partition = self.store.partitions.get(canonical_name)
@@ -240,9 +240,9 @@ class MigrationService(AbstractService):
         ]
 
         storage_permissions = [
-            StoragePermission(uid, node_uid)
-            for uid, node_uids in metadata.storage_permissions.items()
-            for node_uid in node_uids
+            StoragePermission(uid, server_uid)
+            for uid, server_uids in metadata.storage_permissions.items()
+            for server_uid in server_uids
         ]
 
         object_partition.add_permissions(permissions)
@@ -543,7 +543,7 @@ class MigrationService(AbstractService):
             context=context, object_types=action_object_types
         )
         result_dict: dict[type[SyftObject], list[SyftObject]] = defaultdict(list)
-        action_store = context.node.action_store
+        action_store = context.server.action_store
         action_store_objects_result = action_store._all(
             context.credentials, has_permission=True
         )
@@ -575,7 +575,7 @@ class MigrationService(AbstractService):
         self, context: AuthedServiceContext, objects: list[SyftObject]
     ) -> Result[str, str]:
         # Track all object types from action store
-        action_store = context.node.action_store
+        action_store = context.server.action_store
         for obj in objects:
             res = action_store.set(
                 uid=obj.id, credentials=context.credentials, syft_object=obj
@@ -610,8 +610,8 @@ class MigrationService(AbstractService):
         store_metadata = store_metadata_result.ok()
 
         return MigrationData(
-            node_uid=context.node.id,
-            signing_key=context.node.signing_key,
+            server_uid=context.server.id,
+            signing_key=context.server.signing_key,
             store_objects=store_objects,
             metadata=store_metadata,
             action_objects=action_objects,

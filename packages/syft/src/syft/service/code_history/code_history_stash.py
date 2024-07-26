@@ -4,8 +4,8 @@
 from result import Result
 
 # relative
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
 from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
@@ -17,7 +17,7 @@ NamePartitionKey = PartitionKey(key="service_func_name", type_=str)
 VerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
 
 
-@serializable()
+@serializable(canonical_name="CodeHistoryStash", version=1)
 class CodeHistoryStash(BaseUIDStoreStash):
     object_type = CodeHistory
     settings: PartitionSettings = PartitionSettings(

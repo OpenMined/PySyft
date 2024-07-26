@@ -1,7 +1,7 @@
-syft.node.server
+syft.server.server
 ================
 
-.. automodule:: syft.node.server
+.. automodule:: syft.server.server
 
    
    
@@ -17,7 +17,7 @@ syft.node.server
       kill_process
       make_app
       run_uvicorn
-      serve_node
+      serve_server
    
    
 

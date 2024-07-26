@@ -18,7 +18,12 @@ logger = logging.getLogger(__name__)
 
 def _syft_in_mro(self: Any, item: Any) -> bool:
     if hasattr(type(item), "mro") and type(item) != type:
-        mro = type(item).mro()
+        # if unbound method, supply self
+        if hasattr(type(item).mro, "__self__"):
+            mro = type(item).mro()
+        else:
+            mro = type(item).mro(type(item))  # type: ignore
+
     elif hasattr(item, "mro") and type(item) != type:
         mro = item.mro()
     else:
@@ -55,6 +60,22 @@ def _create_table_rows(
     extra_fields: list | None = None,
     add_index: bool = True,
 ) -> list[dict[str, Any]]:
+    """
+    Creates row data for a table based on input object obj.
+
+    If valid table data cannot be created, an empty list is returned.
+
+    Args:
+        _self (Mapping | Iterable): The input data as a Mapping or Iterable.
+        is_homogenous (bool): A boolean indicating whether the data is homogenous.
+        extra_fields (list | None, optional): Additional fields to include in the table. Defaults to None.
+        add_index (bool, optional): Whether to add an index column. Defaults to True.
+
+    Returns:
+        list[dict[str, Any]]: A list of dictionaries where each dictionary represents a row in the table.
+
+    """
+
     if extra_fields is None:
         extra_fields = []
 
@@ -139,9 +160,8 @@ def _create_table_rows(
 
     col_lengths = {len(cols[col]) for col in cols.keys()}
     if len(col_lengths) != 1:
-        raise ValueError(
-            "Cannot create table for items with different number of fields."
-        )
+        logger.debug("Cannot create table for items with different number of fields.")
+        return []
 
     num_rows = col_lengths.pop()
     if add_index and TABLE_INDEX_KEY not in cols:
@@ -194,19 +214,29 @@ def prepare_table_data(
     add_index: bool = True,
 ) -> tuple[list[dict], dict]:
     """
-    Returns table_data, table_metadata
+    Creates table data and metadata for a given object.
 
-    table_data is a list of dictionaries where each dictionary represents a row in the table.
-    table_metadata is a dictionary containing metadata about the table such as name, icon, etc.
+    If a tabular representation cannot be created, an empty list and empty dict are returned instead.
+
+    Args:
+        obj (Any): The input object for which table data is prepared.
+        add_index (bool, optional): Whether to add an index column to the table. Defaults to True.
+
+    Returns:
+        tuple: A tuple (table_data, table_metadata) where table_data is a list of dictionaries
+        where each dictionary represents a row in the table and table_metadata is a dictionary
+        containing metadata about the table such as name, icon, etc.
+
     """
 
     values = _get_values_for_table_repr(obj)
     if len(values) == 0:
         return [], {}
 
+    # check first value and obj itself to see if syft in mro. If not, don't create table
     first_value = values[0]
     if not _syft_in_mro(obj, first_value):
-        raise ValueError("Cannot create table for Non-syft objects.")
+        return [], {}
 
     extra_fields = getattr(first_value, "__repr_attrs__", [])
     is_homogenous = len({type(x) for x in values}) == 1
@@ -228,6 +258,10 @@ def prepare_table_data(
         extra_fields=extra_fields,
         add_index=add_index,
     )
+    # if empty result, collection objects have no table representation
+    if not table_data:
+        return [], {}
+
     table_data = _sort_table_rows(table_data, sort_key)
 
     table_metadata = {

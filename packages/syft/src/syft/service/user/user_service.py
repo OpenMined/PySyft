@@ -1,11 +1,11 @@
 # stdlib
 
 # relative
-from ...abstract_node import NodeType
+from ...abstract_server import ServerType
 from ...exceptions.user import UserAlreadyExistsException
-from ...node.credentials import SyftSigningKey
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftSigningKey
+from ...server.credentials import SyftVerifyKey
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
 from ...types.syft_metaclass import Empty
@@ -14,7 +14,7 @@ from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..context import AuthedServiceContext
-from ..context import NodeServiceContext
+from ..context import ServerServiceContext
 from ..context import UnauthedServiceContext
 from ..notification.email_templates import OnBoardEmailTemplate
 from ..notification.notification_service import CreateNotification
@@ -46,7 +46,7 @@ from .user_stash import UserStash
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="UserService", version=1)
 class UserService(AbstractService):
     store: DocumentStore
     stash: UserStash
@@ -55,7 +55,7 @@ class UserService(AbstractService):
         self.store = store
         self.stash = UserStash(store=store)
 
-    @service_method(path="user.create", name="create")
+    @service_method(path="user.create", name="create", autosplat="user_create")
     def create(
         self, context: AuthedServiceContext, user_create: UserCreate
     ) -> UserView | SyftError:
@@ -178,7 +178,9 @@ class UserService(AbstractService):
         page_index: int | None = 0,
     ) -> UserViewPage | None | list[UserView] | SyftError:
         kwargs = user_search.to_dict(exclude_empty=True)
-
+        kwargs.pop("created_date")
+        kwargs.pop("updated_date")
+        kwargs.pop("deleted_date")
         if len(kwargs) == 0:
             valid_search_params = list(UserSearch.__fields__.keys())
             return SyftError(
@@ -265,6 +267,7 @@ class UserService(AbstractService):
         path="user.update",
         name="update",
         roles=GUEST_ROLE_LEVEL,
+        autosplat="user_update",
     )
     def update(
         self, context: AuthedServiceContext, uid: UID, user_update: UserUpdate
@@ -320,9 +323,8 @@ class UserService(AbstractService):
         edits_non_role_attrs = any(
             getattr(user_update, attr) is not Empty
             for attr in user_update.to_dict()
-            if attr != "role"
+            if attr not in ["role", "created_date", "updated_date", "deleted_date"]
         )
-
         if (
             edits_non_role_attrs
             and user.verify_key != context.credentials
@@ -425,8 +427,8 @@ class UserService(AbstractService):
                 user.hashed_password,
             ):
                 if (
-                    context.node
-                    and context.node.node_type == NodeType.ENCLAVE
+                    context.server
+                    and context.server.server_type == ServerType.ENCLAVE
                     and user.role == ServiceRole.ADMIN
                 ):
                     return SyftError(
@@ -457,7 +459,7 @@ class UserService(AbstractService):
             return SyftError(message=str(e))
 
     def register(
-        self, context: NodeServiceContext, new_user: UserCreate
+        self, context: ServerServiceContext, new_user: UserCreate
     ) -> tuple[SyftSuccess, UserPrivateKey] | SyftError:
         """Register new user"""
 
@@ -468,14 +470,14 @@ class UserService(AbstractService):
         )
 
         can_user_register = (
-            context.node.settings.signup_enabled
+            context.server.settings.signup_enabled
             or request_user_role in DATA_OWNER_ROLE_LEVEL
         )
 
         if not can_user_register:
             return SyftError(
                 message=f"You don't have permission to create an account "
-                f"on the domain: {context.node.name}. Please contact the Domain Owner."
+                f"on the datasite: {context.server.name}. Please contact the Datasite Owner."
             )
 
         user = new_user.to(User)
@@ -505,7 +507,7 @@ class UserService(AbstractService):
 
         # Notification Step
         root_key = self.admin_verify_key()
-        root_context = AuthedServiceContext(node=context.node, credentials=root_key)
+        root_context = AuthedServiceContext(server=context.server, credentials=root_key)
         link = None
         if new_user.created_by:
             link = LinkedObject.with_context(user, context=root_context)
@@ -518,7 +520,7 @@ class UserService(AbstractService):
             email_template=OnBoardEmailTemplate,
         )
 
-        method = context.node.get_service_method(NotificationService.send)
+        method = context.server.get_service_method(NotificationService.send)
         result = method(context=root_context, notification=message)
 
         if request_user_role in DATA_OWNER_ROLE_LEVEL:

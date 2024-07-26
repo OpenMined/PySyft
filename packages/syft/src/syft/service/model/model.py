@@ -5,6 +5,7 @@ from enum import Enum
 from textwrap import dedent
 from typing import Any
 from typing import ClassVar
+from typing import cast
 
 # third party
 from IPython.display import display
@@ -69,7 +70,7 @@ class ModelAsset(SyftObject):
     description: MarkdownDescription | None = None
     contributors: set[Contributor] = set()
     action_id: UID
-    node_uid: UID
+    server_uid: UID
     created_at: DateTime = DateTime.now()
 
     __repr_attrs__ = ["name", "endpoint_path"]
@@ -111,7 +112,7 @@ class ModelAsset(SyftObject):
         from ...client.api import APIRegistry
 
         api = APIRegistry.api_for(
-            node_uid=self.node_uid,
+            server_uid=self.server_uid,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None or api.services is None:
@@ -132,7 +133,7 @@ class ModelAsset(SyftObject):
     #     return result
 
 
-@serializable()
+@serializable(canonical_name="SyftModelClass", version=1)
 class SyftModelClass:
     def __init__(self, assets: list[ModelAsset]) -> None:
         self.__user_init__(assets)
@@ -154,7 +155,6 @@ def syft_model(
             class_name = cls.__name__
             res = SubmitModelCode(code=code, class_name=class_name)
         except Exception as e:
-            print("e", e)
             raise e
 
         success_message = SyftSuccess(
@@ -205,7 +205,7 @@ class CreateModelAsset(SyftObject):
     __repr_attrs__ = ["name", "description", "contributors", "data", "created_at"]
 
     name: str
-    node_uid: UID | None = None
+    server_uid: UID | None = None
     description: MarkdownDescription | None = None
     contributors: set[Contributor] = set()
     data: Any | None = None  # SyftFolder will go here!
@@ -306,7 +306,7 @@ class Model(SyftObject):
         from ...client.api import APIRegistry
 
         api = APIRegistry.api_for(
-            node_uid=self.syft_node_location,
+            server_uid=self.syft_server_location,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None or api.services is None:
@@ -525,10 +525,10 @@ def add_msg_creation_time(context: TransformContext) -> TransformContext:
     return context
 
 
-def add_default_node_uid(context: TransformContext) -> TransformContext:
+def add_default_server_uid(context: TransformContext) -> TransformContext:
     if context.output is not None:
-        if context.output["node_uid"] is None and context.node is not None:
-            context.output["node_uid"] = context.node.id
+        if context.output["server_uid"] is None and context.server is not None:
+            context.output["server_uid"] = context.server.id
     else:
         raise ValueError(f"{context}'s output is None. No transformation happened")
     return context
@@ -536,7 +536,7 @@ def add_default_node_uid(context: TransformContext) -> TransformContext:
 
 @transform(CreateModelAsset, ModelAsset)
 def createmodelasset_to_asset() -> list[Callable]:
-    return [generate_id, add_msg_creation_time, add_default_node_uid]
+    return [generate_id, add_msg_creation_time, add_default_server_uid]
 
 
 def convert_asset(context: TransformContext) -> TransformContext:
@@ -600,24 +600,13 @@ class ModelRef(ActionObject):
     def store_ref_objs_to_store(
         self, context: AuthedServiceContext, clear_ref_objs: bool = False
     ) -> SyftError | None:
-        admin_client = context.node.root_client
+        admin_client = context.server.root_client
 
         if not self.ref_objs:
             return SyftError(message="No ref_objs to store in Model Ref")
 
         for ref_obj in self.ref_objs:
-            # print("ref_obj", type(ref_obj))
-            #  print("ref obj", ref_obj.syft_action_data, type(ref_obj.syft_action_data))
-            print("ref obj blob id", ref_obj.syft_blob_storage_entry_id)
             res = admin_client.services.action.set(ref_obj)
-            print("res", res)
-            ret_action_obj = admin_client.services.action.get(res.id)
-            print("ret_action_obj", ret_action_obj)
-            print(
-                "ret_action_obj.syft_action_data",
-                ret_action_obj.syft_action_data,
-                type(ret_action_obj.syft_action_data),
-            )
             if isinstance(res, SyftError):
                 return res
 
@@ -637,7 +626,7 @@ class ModelRef(ActionObject):
         unwrap_action_data: bool = True,
         remote_client: SyftClient | None = None,
     ) -> list:
-        admin_client = context.node.root_client
+        admin_client = context.server.root_client
 
         code_action_id = self.syft_action_data[0]
         asset_action_ids = self.syft_action_data[1::]
@@ -646,19 +635,26 @@ class ModelRef(ActionObject):
 
         asset_list = []
         for asset_action_id in asset_action_ids:
-            res = admin_client.services.action.get(asset_action_id)
-            action_data = res.syft_action_data
+            action_object = admin_client.services.action.get(asset_action_id)
+            action_data = action_object.syft_action_data
 
             # Save to blob storage of remote client if provided
             if remote_client is not None:
-                res.syft_blob_storage_entry_id = None
-                blob_res = res._save_to_blob_storage(client=remote_client)
+                action_object.syft_blob_storage_entry_id = None
+                blob_res = action_object._save_to_blob_storage(client=remote_client)
+                # For smaller data, we do not store in blob storage
+                # so for the cases, where we store in blob storage
+                # we need to clear the cache , to avoid sending the data again
+                # stdlib
+
+                action_object.syft_blob_storage_entry_id = cast(
+                    UID | None, action_object.syft_blob_storage_entry_id
+                )
+                if action_object.syft_blob_storage_entry_id:
+                    action_object._clear_cache()
                 if isinstance(blob_res, SyftError):
                     return blob_res
-
-            print("type(action_data)", type(action_data))
-            print("res", res)
-            asset_list.append(action_data if unwrap_action_data else res)
+            asset_list.append(action_data if unwrap_action_data else action_object)
 
         loaded_data = [model] + asset_list
         if wrap_ref_to_obj:

@@ -1,7 +1,7 @@
 # Values for deploying an cpu enclave
 # Patched on top of patch `base.yaml`
 
-node:
+server:
   type: enclave
 
 attestation:

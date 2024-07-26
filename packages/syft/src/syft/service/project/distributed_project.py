@@ -10,7 +10,7 @@ from pydantic import model_validator
 from typing_extensions import Self
 
 # relative
-from ...client.api import NodeIdentity
+from ...client.api import ServerIdentity
 from ...client.client import SyftClient
 from ...client.client import SyftClientSessionCache
 from ...types.uid import UID
@@ -20,7 +20,7 @@ from ...util.util import human_friendly_join
 from ..code.user_code import SubmitUserCode
 from ..code.user_code import UserCode
 from ..enclave.enclave import EnclaveInstance
-from ..metadata.node_metadata import NodeMetadata
+from ..metadata.server_metadata import ServerMetadata
 from ..request.request import Request
 from ..request.request import RequestStatus
 from ..response import SyftError
@@ -37,7 +37,7 @@ class DistributedProject(BaseModel):
     description: str = ""
     code: UserCode | SubmitUserCode  # only one code per project for this prototype
     clients: dict[UID, SyftClient] = Field(default_factory=dict)
-    members: dict[UID, NodeIdentity] = Field(default_factory=dict)
+    members: dict[UID, ServerIdentity] = Field(default_factory=dict)
     all_projects: dict[SyftClient, Project] = Field(default_factory=dict)
     project_permissions: set[str] = Field(default_factory=set)  # Unused at the moment
 
@@ -140,13 +140,13 @@ class DistributedProject(BaseModel):
         self._pre_execution_request_checks()
         code = self.verify_code(self.code)
 
-        # Request Enclave to be set up by its owner domain
+        # Request Enclave to be set up by its owner datasite
         provider = code.runtime_policy_init_kwargs.get("provider")
-        owner_node_id = provider.syft_node_location
-        owner_client = self.clients.get(owner_node_id)
+        owner_server_id = provider.syft_server_location
+        owner_client = self.clients.get(owner_server_id)
         if not owner_client:
             raise SyftException(
-                f"Can't access Syft client. You must login to {self.syft_node_location}"
+                f"Can't access Syft client. You must login to {self.syft_server_location}"
             )
         enclave_code_created = owner_client.api.services.enclave.request_enclave(
             user_code_id=self.code.id
@@ -154,7 +154,7 @@ class DistributedProject(BaseModel):
         if isinstance(enclave_code_created, SyftError):
             raise SyftException(enclave_code_created.message)
 
-        # Request each domain to transfer their assets to the Enclave
+        # Request each datasite to transfer their assets to the Enclave
         for client in self.clients.values():
             assets_transferred = client.api.services.enclave.request_assets_upload(
                 user_code_id=self.code.id
@@ -180,27 +180,29 @@ class DistributedProject(BaseModel):
             return {}
 
         clients = {
-            policy.node_id: client
+            policy.server_id: client
             for policy in self.code.input_policy_init_kwargs.keys()
             if
             (
-                # TODO use node_uid, verify_key instead as there could be multiple logged-in users to the same client
-                client := SyftClientSessionCache.get_client_for_node_uid(policy.node_id)
+                # TODO use server_uid, verify_key instead as there could be multiple logged-in users to the same client
+                client := SyftClientSessionCache.get_client_for_server_uid(
+                    policy.server_id
+                )
             )
         }
         return clients
 
-    def _get_members_from_clients(self) -> dict[UID, NodeIdentity]:
+    def _get_members_from_clients(self) -> dict[UID, ServerIdentity]:
         return {
-            node_id: self._to_node_identity(client)
-            for node_id, client in self.clients.items()
+            server_id: self._to_server_identity(client)
+            for server_id, client in self.clients.items()
         }
 
     @staticmethod
-    def _to_node_identity(client: SyftClient) -> NodeIdentity:
+    def _to_server_identity(client: SyftClient) -> ServerIdentity:
         if isinstance(client, SyftClient) and client.metadata is not None:
-            metadata = client.metadata.to(NodeMetadata)
-            return metadata.to(NodeIdentity)
+            metadata = client.metadata.to(ServerMetadata)
+            return metadata.to(ServerIdentity)
         else:
             raise SyftException(f"members must be SyftClient. Received: {type(client)}")
 
@@ -233,21 +235,22 @@ class DistributedProject(BaseModel):
         return projects_map
 
     def _pre_execution_request_checks(self) -> bool:
-        members_nodes_pending_approval = [
-            request.syft_node_location
+        members_servers_pending_approval = [
+            request.syft_server_location
             for request in self.requests
             if request.status == RequestStatus.PENDING
         ]
-        if members_nodes_pending_approval:
+        if members_servers_pending_approval:
             member_names = [
-                self._get_node_name(member_node_id) or f"Node ID: {member_node_id}"
-                for member_node_id in members_nodes_pending_approval
+                self._get_server_name(member_server_id)
+                or f"Server ID: {member_server_id}"
+                for member_server_id in members_servers_pending_approval
             ]
             raise SyftException(
                 f"Cannot execute project as approval request is pending for {human_friendly_join(member_names)}."
             )
         return True
 
-    def _get_node_name(self, node_id: UID) -> str | None:
-        node_identity = self.members.get(node_id)
-        return node_identity.node_name if node_identity else None
+    def _get_server_name(self, server_id: UID) -> str | None:
+        server_identity = self.members.get(server_id)
+        return server_identity.server_name if server_identity else None

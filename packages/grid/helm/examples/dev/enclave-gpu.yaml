@@ -1,7 +1,7 @@
 # Values for deploying in a gpu enclave
 # Patched on top of patch `base.yaml`
 
-node:
+server:
   type: enclave
   runtimeClassName: nvidia
 

@@ -20,26 +20,40 @@ from ...service.response import SyftSuccess
 from ...types.blob_storage import BlobStorageEntry
 from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.blob_storage import SecureFilePathLocation
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 
 
 @serializable()
 class OnDiskBlobDeposit(BlobDeposit):
     __canonical_name__ = "OnDiskBlobDeposit"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     def write(self, data: BytesIO) -> SyftSuccess | SyftError:
         # relative
         from ...service.service import from_api_or_context
 
-        write_to_disk_method = from_api_or_context(
-            func_or_path="blob_storage.write_to_disk",
-            syft_node_location=self.syft_node_location,
+        get_by_uid_method = from_api_or_context(
+            func_or_path="blob_storage.get_by_uid",
+            syft_server_location=self.syft_server_location,
             syft_client_verify_key=self.syft_client_verify_key,
         )
-        if write_to_disk_method is None:
-            return SyftError(message="write_to_disk_method is None")
-        return write_to_disk_method(data=data.read(), uid=self.blob_storage_entry_id)
+        if get_by_uid_method is None:
+            return SyftError(message="get_by_uid_method is None")
+
+        obj = get_by_uid_method(uid=self.blob_storage_entry_id)
+        if isinstance(obj, SyftError):
+            return obj
+        if obj is None:
+            return SyftError(
+                message=f"No blob storage entry exists for uid: {self.blob_storage_entry_id}, "
+                "or you have no permissions to read it"
+            )
+
+        try:
+            Path(obj.location.path).write_bytes(data.read())
+            return SyftSuccess(message="File successfully saved.")
+        except Exception as e:
+            return SyftError(message=f"Failed to write object to disk: {e}")
 
 
 class OnDiskBlobStorageConnection(BlobStorageConnection):
@@ -85,12 +99,12 @@ class OnDiskBlobStorageConnection(BlobStorageConnection):
             return SyftError(message=f"Failed to delete file: {e}")
 
 
-@serializable()
+@serializable(canonical_name="OnDiskBlobStorageClientConfig", version=1)
 class OnDiskBlobStorageClientConfig(BlobStorageClientConfig):
     base_directory: Path
 
 
-@serializable()
+@serializable(canonical_name="OnDiskBlobStorageClient", version=1)
 class OnDiskBlobStorageClient(BlobStorageClient):
     config: OnDiskBlobStorageClientConfig
 
@@ -102,7 +116,7 @@ class OnDiskBlobStorageClient(BlobStorageClient):
         return OnDiskBlobStorageConnection(self.config.base_directory)
 
 
-@serializable()
+@serializable(canonical_name="OnDiskBlobStorageConfig", version=1)
 class OnDiskBlobStorageConfig(BlobStorageConfig):
     client_type: type[BlobStorageClient] = OnDiskBlobStorageClient
     client_config: OnDiskBlobStorageClientConfig

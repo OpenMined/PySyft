@@ -20,24 +20,24 @@ spec:
       labels:
         {{- include "common.labels" . | nindent 8 }}
         app.kubernetes.io/component: backend
-        {{- if .Values.node.podLabels }}
-        {{- toYaml .Values.node.podLabels | nindent 8 }}
+        {{- if .Values.server.podLabels }}
+        {{- toYaml .Values.server.podLabels | nindent 8 }}
         {{- end }}
-      {{- if .Values.node.podAnnotations }}
-      annotations: {{- toYaml .Values.node.podAnnotations | nindent 8 }}
+      {{- if .Values.server.podAnnotations }}
+      annotations: {{- toYaml .Values.server.podAnnotations | nindent 8 }}
       {{- end }}
     spec:
-      {{- if .Values.node.runtimeClassName }}
-      runtimeClassName: {{ .Values.node.runtimeClassName }}
+      {{- if .Values.server.runtimeClassName }}
+      runtimeClassName: {{ .Values.server.runtimeClassName }}
       {{- end }}
-      {{- if .Values.node.nodeSelector }}
-      nodeSelector: {{- .Values.node.nodeSelector | toYaml | nindent 8 }}
+      {{- if .Values.server.nodeSelector }}
+      nodeSelector: {{- .Values.server.nodeSelector | toYaml | nindent 8 }}
       {{- end }}
       containers:
         - name: backend-container
-          image: {{ .Values.global.registry }}/openmined/grid-backend:{{ .Values.global.version }}
+          image: {{ .Values.global.registry }}/openmined/syft-backend:{{ .Values.global.version }}
           imagePullPolicy: Always
-          resources: {{ include "common.resources.set" (dict "resources" .Values.node.resources "preset" .Values.node.resourcesPreset) | nindent 12 }}
+          resources: {{ include "common.resources.set" (dict "resources" .Values.server.resources "preset" .Values.server.resourcesPreset) | nindent 12 }}
           env:
             # kubernetes runtime
             - name: K8S_POD_NAME
@@ -51,48 +51,48 @@ spec:
             - name: CONTAINER_HOST
               value: "k8s"
             # syft
-            - name: NODE_TYPE
-              value: {{ .Values.node.type | default "domain" | quote }}
-            - name: NODE_NAME
-              value: {{ .Values.node.name | default (printf "%s-node" .Release.Name) | quote }}
-            - name: NODE_SIDE_TYPE
-              value: {{ .Values.node.side | quote }}
+            - name: SERVER_TYPE
+              value: {{ .Values.server.type | default "datasite" | quote }}
+            - name: SERVER_NAME
+              value: {{ .Values.server.name | default (printf "%s-server" .Release.Name) | quote }}
+            - name: SERVER_SIDE_TYPE
+              value: {{ .Values.server.side | quote }}
             - name: DEFAULT_ROOT_EMAIL
-              value: {{ .Values.node.rootEmail | required "node.rootEmail is required" | quote }}
+              value: {{ .Values.server.rootEmail | required "server.rootEmail is required" | quote }}
             - name: DEFAULT_ROOT_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.node.secretKeyName | required "node.secretKeyName is required" }}
+                  name: {{ .Values.server.secretKeyName | required "server.secretKeyName is required" }}
                   key: defaultRootPassword
             - name: LOG_LEVEL
-              value: {{ .Values.node.logLevel | quote }}
+              value: {{ .Values.server.logLevel | quote }}
             - name: QUEUE_PORT
-              value: {{ .Values.node.queuePort | quote }}
+              value: {{ .Values.server.queuePort | quote }}
             - name: CREATE_PRODUCER
               value: "true"
             - name: INMEMORY_WORKERS
-              value: {{ .Values.node.inMemoryWorkers | quote }}
+              value: {{ .Values.server.inMemoryWorkers | quote }}
             - name: DEFAULT_WORKER_POOL_IMAGE
-              value: "{{ .Values.global.registry }}/openmined/grid-backend:{{ .Values.global.version }}"
+              value: "{{ .Values.global.registry }}/openmined/syft-backend:{{ .Values.global.version }}"
             - name: DEFAULT_WORKER_POOL_COUNT
-              value: {{ .Values.node.defaultWorkerPool.count | quote }}
+              value: {{ .Values.server.defaultWorkerPool.count | quote }}
             - name: DEFAULT_WORKER_POOL_POD_LABELS
-              value: {{ .Values.node.defaultWorkerPool.podLabels | toJson | quote }}
+              value: {{ .Values.server.defaultWorkerPool.podLabels | toJson | quote }}
             - name: DEFAULT_WORKER_POOL_POD_ANNOTATIONS
-              value: {{ .Values.node.defaultWorkerPool.podAnnotations | toJson | quote }}
+              value: {{ .Values.server.defaultWorkerPool.podAnnotations | toJson | quote }}
             - name: USE_INTERNAL_REGISTRY
-              value: {{ .Values.node.useInternalRegistry | quote }}
-            {{- if .Values.node.defaultBucketName }}
+              value: {{ .Values.server.useInternalRegistry | quote }}
+            {{- if .Values.server.defaultBucketName }}
             - name: DEFAULT_BUCKET_NAME
-              value: {{ .Values.node.defaultBucketName | quote }}
+              value: {{ .Values.server.defaultBucketName | quote }}
             {{- end }}
-            {{- if .Values.node.debuggerEnabled }}
+            {{- if .Values.server.debuggerEnabled }}
             - name: DEBUGGER_ENABLED
               value: "true"
             {{- end }}
-            {{- if eq .Values.node.type "gateway" }}
+            {{- if eq .Values.server.type "gateway" }}
             - name: ASSOCIATION_REQUEST_AUTO_APPROVAL
-              value: {{ .Values.node.associationRequestAutoApproval | quote }}
+              value: {{ .Values.server.associationRequestAutoApproval | quote }}
             {{- end }}
             {{- if .Values.rtunnel.enabled }}
             - name: RATHOLE_PORT
@@ -114,24 +114,24 @@ spec:
                   key: rootPassword
             # SMTP
             - name: SMTP_HOST
-              value: {{ .Values.node.smtp.host | quote }}
+              value: {{ .Values.server.smtp.host | quote }}
             - name: SMTP_PORT
-              value: {{ .Values.node.smtp.port | quote }}
+              value: {{ .Values.server.smtp.port | quote }}
             - name: SMTP_USERNAME
-              value: {{ .Values.node.smtp.username | quote }}
+              value: {{ .Values.server.smtp.username | quote }}
             - name: SMTP_PASSWORD
-              {{- if .Values.node.smtp.existingSecret }}
+              {{- if .Values.server.smtp.existingSecret }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.node.smtp.existingSecret }}
+                  name: {{ .Values.server.smtp.existingSecret }}
                   key: smtpPassword
               {{ else }}
-              value: {{ .Values.node.smtp.password | quote }}
+              value: {{ .Values.server.smtp.password | quote }}
               {{ end }}
             - name: EMAIL_SENDER
-              value: {{ .Values.node.smtp.from | quote}}
+              value: {{ .Values.server.smtp.from | quote}}
             # SeaweedFS
-            {{- if ne .Values.node.type "gateway"}}
+            {{- if ne .Values.server.type "gateway"}}
             - name: S3_ROOT_USER
               value: {{ .Values.seaweedfs.s3.rootUser | quote }}
             - name: S3_ROOT_PWD
@@ -156,8 +156,8 @@ spec:
             - name: ENCLAVE_ATTESTATION_ENABLED
               value: {{ .Values.attestation.enabled | quote }}
             {{- end }}
-            {{- if .Values.node.env }}
-            {{- toYaml .Values.node.env | nindent 12 }}
+            {{- if .Values.server.env }}
+            {{- toYaml .Values.server.env | nindent 12 }}
             {{- end }}
           ports:
             - name: api-port
@@ -183,7 +183,7 @@ spec:
           readinessProbe: null
         {{- if .Values.attestation.enabled }}
         - name: enclave-attestation
-          image: {{ .Values.global.registry }}/openmined/grid-enclave-attestation:{{ .Values.global.version }}
+          image: {{ .Values.global.registry }}/openmined/syft-enclave-attestation:{{ .Values.global.version }}
           imagePullPolicy: Always
           resources: {{ include "common.resources.set" (dict "resources" .Values.attestation.resources "preset" .Values.attestation.resourcesPreset) | nindent 12 }}
           env:

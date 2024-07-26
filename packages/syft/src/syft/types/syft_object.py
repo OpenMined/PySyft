@@ -7,7 +7,9 @@ from collections.abc import KeysView
 from collections.abc import Mapping
 from collections.abc import Sequence
 from collections.abc import Set
+from datetime import datetime
 from functools import cache
+from functools import total_ordering
 from hashlib import sha256
 import inspect
 from inspect import Signature
@@ -37,9 +39,9 @@ from typeguard import check_type
 from typing_extensions import Self
 
 # relative
-from ..node.credentials import SyftVerifyKey
-from ..serde.recursive_primitives import recursive_serde_register_type
+from ..serde.serializable import serializable
 from ..serde.serialize import _serialize as serialize
+from ..server.credentials import SyftVerifyKey
 from ..service.response import SyftError
 from ..util.autoreload import autoreload_enabled
 from ..util.markdown import as_markdown_python_code
@@ -49,6 +51,7 @@ from ..util.util import full_name_with_qualname
 from ..util.util import get_qualname_for
 from .syft_metaclass import Empty
 from .syft_metaclass import PartialModelMetaclass
+from .syft_object_registry import SyftObjectRegistry
 from .uid import UID
 
 logger = logging.getLogger(__name__)
@@ -84,10 +87,10 @@ HIGHEST_SYFT_OBJECT_VERSION = max(supported_object_versions)
 LOWEST_SYFT_OBJECT_VERSION = min(supported_object_versions)
 
 
-# These attributes are dynamically added based on node/client
+# These attributes are dynamically added based on server/client
 # that is interaction with the SyftObject
 DYNAMIC_SYFT_ATTRIBUTES = [
-    "syft_node_location",
+    "syft_server_location",
     "syft_client_verify_key",
 ]
 
@@ -133,17 +136,17 @@ class SyftBaseObject(pydantic.BaseModel, SyftHashableObject):
     __canonical_name__: str
     __version__: int  # data is always versioned
 
-    syft_node_location: UID | None = Field(default=None, exclude=True)
+    syft_server_location: UID | None = Field(default=None, exclude=True)
     syft_client_verify_key: SyftVerifyKey | None = Field(default=None, exclude=True)
 
-    def _set_obj_location_(self, node_uid: UID, credentials: SyftVerifyKey) -> None:
-        self.syft_node_location = node_uid
+    def _set_obj_location_(self, server_uid: UID, credentials: SyftVerifyKey) -> None:
+        self.syft_server_location = server_uid
         self.syft_client_verify_key = credentials
 
 
 class Context(SyftBaseObject):
     __canonical_name__ = "Context"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     pass
 
@@ -210,7 +213,7 @@ class SyftMigrationRegistry:
             "canonical_name": {"version_from x version_to": <function transform_function>}
         }
         For example
-        {'NodeMetadata': {'1x2': <function transform_function>,
+        {'ServerMetadata': {'1x2': <function transform_function>,
                           '2x1': <function transform_function>}}
         """
         if klass_type_str not in cls.__migration_version_registry__:
@@ -300,14 +303,53 @@ print_type_cache: dict = defaultdict(list)
 
 
 base_attrs_sync_ignore = [
-    "syft_node_location",
+    "syft_server_location",
     "syft_client_verify_key",
 ]
 
 
-class SyftObject(SyftBaseObject, SyftMigrationRegistry):
+@serializable()
+class SyftObjectVersioned(SyftBaseObject, SyftMigrationRegistry):
+    __canonical_name__ = "SyftObjectVersioned"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+
+@serializable()
+@total_ordering
+class BaseDateTime(SyftObjectVersioned):
+    __canonical_name__ = "BaseDateTime"
+    __version__ = SYFT_OBJECT_VERSION_1
+    # id: UID | None = None  # type: ignore
+    utc_timestamp: float
+
+    @classmethod
+    def now(cls) -> Self:
+        return cls(utc_timestamp=datetime.utcnow().timestamp())
+
+    def __str__(self) -> str:
+        utc_datetime = datetime.utcfromtimestamp(self.utc_timestamp)
+        return utc_datetime.strftime("%Y-%m-%d %H:%M:%S")
+
+    def __hash__(self) -> int:
+        return hash(self.utc_timestamp)
+
+    def __sub__(self, other: Self) -> Self:
+        res = self.utc_timestamp - other.utc_timestamp
+        return BaseDateTime(utc_timestamp=res)
+
+    def __eq__(self, other: Any) -> bool:
+        if other is None:
+            return False
+        return self.utc_timestamp == other.utc_timestamp
+
+    def __lt__(self, other: Self) -> bool:
+        return self.utc_timestamp < other.utc_timestamp
+
+
+@serializable()
+class SyftObject(SyftObjectVersioned):
     __canonical_name__ = "SyftObject"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
@@ -316,6 +358,10 @@ class SyftObject(SyftBaseObject, SyftMigrationRegistry):
 
     # all objects have a UID
     id: UID
+
+    created_date: BaseDateTime | None = None
+    updated_date: BaseDateTime | None = None
+    deleted_date: BaseDateTime | None = None
 
     # # move this to transforms
     @model_validator(mode="before")
@@ -459,7 +505,6 @@ class SyftObject(SyftBaseObject, SyftMigrationRegistry):
     # transform from one supported type to another
     def to(self, projection: type[T], context: Context | None = None) -> T:
         # relative
-        from .syft_object_registry import SyftObjectRegistry
 
         # 🟡 TODO 19: Could we do an mro style inheritence conversion? Risky?
         transform = SyftObjectRegistry.get_transform(type(self), projection)
@@ -563,6 +608,7 @@ class SyftObject(SyftBaseObject, SyftMigrationRegistry):
         attrs_to_check = self.__dict__.keys()
 
         obj_exclude_attrs = getattr(self, "__exclude_sync_diff_attrs__", [])
+        obj_exclude_attrs.extend(["created_date", "updated_date", "deleted_date"])
         for attr in attrs_to_check:
             if attr not in base_attrs_sync_ignore and attr not in obj_exclude_attrs:
                 obj_attr = getattr(self, attr)
@@ -589,6 +635,7 @@ class SyftObject(SyftBaseObject, SyftMigrationRegistry):
         attrs_to_check = self.__dict__.keys()
 
         obj_exclude_attrs = getattr(self, "__exclude_sync_diff_attrs__", [])
+        obj_exclude_attrs.extend(["created_date", "updated_date", "deleted_date"])
         for attr in attrs_to_check:
             if attr not in base_attrs_sync_ignore and attr not in obj_exclude_attrs:
                 obj_attr = getattr(self, attr)
@@ -629,9 +676,13 @@ class SyftObject(SyftBaseObject, SyftMigrationRegistry):
         # relative
         from ..client.api import APIRegistry
 
-        api = APIRegistry.api_for(self.syft_node_location, self.syft_client_verify_key)
+        api = APIRegistry.api_for(
+            self.syft_server_location, self.syft_client_verify_key
+        )
         if api is None:
-            return SyftError(f"Can't access the api. You must login to {self.node_uid}")
+            return SyftError(
+                f"Can't access the api. You must login to {self.server_uid}"
+            )
         return api
 
     ## OVERRIDING pydantic.BaseModel.__getattr__
@@ -706,7 +757,6 @@ class StorableObjectType:
     def to(self, projection: type, context: Context | None = None) -> Any:
         # 🟡 TODO 19: Could we do an mro style inheritence conversion? Risky?
         # relative
-        from .syft_object_registry import SyftObjectRegistry
 
         transform = SyftObjectRegistry.get_transform(type(self), projection)
         return transform(self, context)
@@ -718,17 +768,15 @@ class StorableObjectType:
 TupleGenerator = Generator[tuple[str, Any], None, None]
 
 
+@serializable()
 class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
     """Syft Object to which partial arguments can be provided."""
 
     __canonical_name__ = "PartialSyftObject"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     def __iter__(self) -> TupleGenerator:
         yield from ((k, v) for k, v in super().__iter__() if v is not Empty)
-
-
-recursive_serde_register_type(PartialSyftObject)
 
 
 def attach_attribute_to_syft_object(result: Any, attr_dict: dict[str, Any]) -> None:
