@@ -12,7 +12,6 @@ from inspect import Parameter
 from inspect import Signature
 from io import StringIO
 import sys
-import types
 from typing import Any
 from typing import ClassVar
 
@@ -1132,19 +1131,34 @@ def submit_policy_code_to_user_code() -> list[Callable]:
     ]
 
 
-def add_class_to_user_module(klass: type, unique_name: str) -> type:
-    klass.__module__ = "syft.user"
-    klass.__name__ = unique_name
-    # syft absolute
-    import syft as sy
+def register_policy_class(klass: type, unique_name: str) -> None:
+    nonrecursive = False
+    _serialize = None
+    _deserialize = None
+    attributes = list(klass.model_fields.keys())
+    exclude_attrs: list = []
+    serde_overrides: dict = {}
+    hash_exclude_attrs: list = []
+    cls = klass
+    attribute_types: list = []
+    version = 1
 
-    if not hasattr(sy, "user"):
-        user_module = types.ModuleType("user")
-        sys.modules["syft"].user = user_module
-    user_module = sy.user
-    setattr(user_module, unique_name, klass)
-    sys.modules["syft"].user = user_module
-    return klass
+    serde_attributes = (
+        nonrecursive,
+        _serialize,
+        _deserialize,
+        attributes,
+        exclude_attrs,
+        serde_overrides,
+        hash_exclude_attrs,
+        cls,
+        attribute_types,
+        version,
+    )
+
+    SyftObjectRegistry.register_cls(
+        canonical_name=unique_name, version=version, serde_attributes=serde_attributes
+    )
 
 
 def execute_policy_code(user_policy: UserPolicy) -> Any:
@@ -1168,7 +1182,7 @@ def execute_policy_code(user_policy: UserPolicy) -> Any:
             exec(user_policy.byte_code)  # nosec
             policy_class = eval(user_policy.unique_name)  # nosec
 
-        policy_class = add_class_to_user_module(policy_class, user_policy.unique_name)
+        register_policy_class(policy_class, user_policy.unique_name)
 
         sys.stdout = stdout_
         sys.stderr = stderr_
