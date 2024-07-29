@@ -2,6 +2,7 @@
 from copy import deepcopy
 from datetime import datetime
 from unittest import mock
+from uuid import uuid4
 
 # third party
 from faker import Faker
@@ -23,7 +24,6 @@ from syft.service.settings.settings import ServerSettings
 from syft.service.settings.settings import ServerSettingsUpdate
 from syft.service.settings.settings_service import SettingsService
 from syft.service.settings.settings_stash import SettingsStash
-from syft.service.user.user import UserCreate
 from syft.service.user.user_roles import ServiceRole
 
 
@@ -339,21 +339,22 @@ def test_settings_allow_guest_registration(
 def test_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker):
     # Mock patch this env variable to remove race conditions
     # where signup is enabled.
+
     def get_mock_client(faker, root_client, role):
-        user_create = UserCreate(
+        email = faker.email()
+        password = uuid4().hex
+
+        result = root_client.users.create(
             name=faker.name(),
-            email=faker.email(),
+            email=email,
             role=role,
-            password="password",
-            password_verify="password",
+            password=password,
+            password_verify=password,
         )
-        result = root_client.users.create(**user_create)
         assert not isinstance(result, SyftError)
 
         guest_client = root_client.guest()
-        return guest_client.login(
-            email=user_create.email, password=user_create.password
-        )
+        return guest_client.login(email=email, password=password)
 
     verify_key = SyftSigningKey.generate().verify_key
     mock_server_settings = ServerSettings(
