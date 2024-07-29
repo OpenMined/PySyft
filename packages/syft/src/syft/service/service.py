@@ -300,8 +300,7 @@ def _replace_empty_parameter(p: Parameter) -> Parameter:
 def _format_signature(s: inspect.Signature) -> inspect.Signature:
     params = (
         (_replace_empty_parameter(p) if _check_empty_parameter(p) else p)
-        for k, p in s.parameters.items()
-        if k not in EXCLUDED_FROM_SIGNATURE
+        for p in s.parameters.values()
     )
 
     return inspect.Signature(
@@ -380,7 +379,7 @@ def expand_signature(signature: Signature, autosplat: list[str]) -> Signature:
 
     # Reorder the parameter based on if they have default value or not
     new_params = sorted(
-        new_mapping.values(),
+        (v for k, v in new_mapping.items() if k not in EXCLUDED_FROM_SIGNATURE),
         key=lambda param: param.default is param.empty,
         reverse=True,
     )
