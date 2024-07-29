@@ -4,6 +4,7 @@ import pytest
 
 # syft absolute
 import syft as sy
+from syft.client.client import SyftClient
 from syft.custom_worker.config import DockerWorkerConfig
 from syft.custom_worker.config import PrebuiltWorkerConfig
 from syft.custom_worker.config import WorkerConfig
@@ -12,9 +13,6 @@ from syft.service.request.request import CreateCustomWorkerPoolChange
 from syft.service.response import SyftSuccess
 from syft.service.worker.worker_image import SyftWorkerImage
 from syft.service.worker.worker_pool import WorkerPool
-
-# relative
-from ..request.request_code_accept_deny_test import get_ds_client
 
 PREBUILT_IMAGE_TAG = f"docker.io/openmined/syft-backend:{sy.__version__}"
 
@@ -43,7 +41,11 @@ WORKER_CONFIG_TEST_CASES = [
 
 @pytest.mark.parametrize("docker_tag,worker_config", WORKER_CONFIG_TEST_CASES)
 def test_create_image_and_pool_request_accept(
-    faker: Faker, worker: Worker, docker_tag: str, worker_config: WorkerConfig
+    faker: Faker,
+    worker: Worker,
+    docker_tag: str,
+    worker_config: WorkerConfig,
+    ds_client: SyftClient,
 ) -> None:
     """
     Test the functionality of `SyftWorkerPoolService.create_image_and_pool_request`
@@ -51,7 +53,6 @@ def test_create_image_and_pool_request_accept(
     """
     # construct a root client and data scientist client for a datasite
     root_client = worker.root_client
-    ds_client = get_ds_client(faker, root_client, worker.guest_client)
     assert root_client.credentials != ds_client.credentials
 
     # the DS makes a request to create an image and a pool based on the image
@@ -99,6 +100,7 @@ def test_create_pool_request_accept(
     docker_tag: str,
     worker_config: WorkerConfig,
     n_images: int,
+    ds_client: SyftClient,
 ) -> None:
     """
     Test the functionality of `SyftWorkerPoolService.create_pool_request`
@@ -106,7 +108,6 @@ def test_create_pool_request_accept(
     """
     # construct a root client and data scientist client for a datasite
     root_client = worker.root_client
-    ds_client = get_ds_client(faker, root_client, worker.guest_client)
     assert root_client.credentials != ds_client.credentials
 
     # the DO submits the docker config to build an image
