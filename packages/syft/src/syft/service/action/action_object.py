@@ -1193,7 +1193,7 @@ class ActionObject(SyncableSyftObject):
         if isinstance(job, SyftError):
             return job
         elif job is not None:
-            return [job.id]
+            return [job]
         else:
             return []
 

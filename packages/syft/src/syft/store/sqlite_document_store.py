@@ -365,6 +365,63 @@ class SQLiteBackingStore(KeyValueBackingStore):
             logger.error("Could not close connection", exc_info=e)
 
 
+@serializable(
+    attrs=["index_name", "settings", "store_config"],
+    canonical_name="SQLiteBackingStoreIndex",
+    version=1,
+)
+class SQLiteBackingStoreIndex:
+    """Core Store logic for the SQLite stores.
+
+    Parameters:
+        `index_name`: str
+            Index name
+        `settings`: PartitionSettings
+            Syft specific settings
+        `store_config`: SQLiteStoreConfig
+            Connection Configuration
+        `ddtype`: Type
+            Class used as fallback on `get` errors
+    """
+
+    def __init__(
+        self,
+        index_name: str,
+        settings: PartitionSettings,
+        store_config: StoreConfig,
+        ddtype: type | None = None,
+    ) -> None:
+        self._ddtype = ddtype
+        self.data = {}
+
+    def __setitem__(self, key: Any, value: Any) -> None:
+        self._set(key, value)
+
+    def __getitem__(self, key: Any) -> Self:
+        try:
+            return self._get(key)
+        except KeyError as e:
+            if self._ddtype is not None:
+                return self._ddtype()
+            raise e
+
+    def _exists(self, key: UID) -> bool:
+        return key in self.data
+
+    def __contains__(self, key: Any) -> bool:
+        return self._exists(key)
+
+    def _get(self, key: UID) -> Any:
+        item = self.data.get(key, None)
+        if item is None:
+            raise KeyError(f"{key} not in {type(self)}")
+        return item
+
+    def _set(self, key: UID, value: Any) -> None:
+        self.data[key] = value
+        return None
+
+
 @serializable(canonical_name="SQLiteStorePartition", version=1)
 class SQLiteStorePartition(KeyValueStorePartition):
     """SQLite StorePartition

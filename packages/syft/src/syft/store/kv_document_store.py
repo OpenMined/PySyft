@@ -98,6 +98,9 @@ class KeyValueStorePartition(StorePartition):
     """
 
     def init_store(self) -> Result[Ok, Err]:
+        # relative
+        from .sqlite_document_store import SQLiteBackingStoreIndex
+
         store_status = super().init_store()
         if store_status.is_err():
             return store_status
@@ -109,7 +112,7 @@ class KeyValueStorePartition(StorePartition):
             self.unique_keys = self.store_config.backing_store(
                 "unique_keys", self.settings, self.store_config
             )
-            self.searchable_keys = self.store_config.backing_store(
+            self.searchable_keys = SQLiteBackingStoreIndex(
                 "searchable_keys", self.settings, self.store_config
             )
             # uid -> set['<uid>_permission']
@@ -429,6 +432,41 @@ class KeyValueStorePartition(StorePartition):
         return self._get_all_from_store(
             credentials=credentials, qks=qks, order_by=order_by
         )
+
+    def _find_index_or_search_keys_ids(
+        self,
+        credentials: SyftVerifyKey,
+        index_qks: QueryKeys,
+        search_qks: QueryKeys,
+        order_by: PartitionKey | None = None,
+    ) -> Result[list[UID], str]:
+        ids: set | None = None
+        errors = []
+        # third party
+        if len(index_qks.all) > 0:
+            index_results = self._get_keys_index(qks=index_qks)
+            if index_results.is_ok():
+                if ids is None:
+                    ids = index_results.ok()
+                ids = ids.intersection(index_results.ok())
+            else:
+                errors.append(index_results.err())
+
+        search_results = None
+        if len(search_qks.all) > 0:
+            search_results = self._find_keys_search(qks=search_qks)
+
+            if search_results.is_ok():
+                if ids is None:
+                    ids = search_results.ok()
+                ids = ids.intersection(search_results.ok())
+            else:
+                errors.append(search_results.err())
+
+        if len(errors) > 0:
+            return Err(" ".join(errors))
+
+        return Ok(list(ids or []))
 
     def _update(
         self,

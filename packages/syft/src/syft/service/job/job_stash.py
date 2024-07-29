@@ -868,7 +868,7 @@ class JobStash(BaseUIDStoreStash):
         qks = QueryKeys(
             qks=[PartitionKey(key="result_id", type_=UID).with_obj(result_id)]
         )
-        res = self.query_all(credentials=credentials, qks=qks)
+        res = self.query_all_ids(credentials=credentials, qks=qks)
         if res.is_err():
             return res
 
