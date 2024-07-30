@@ -73,7 +73,7 @@ def metadata_json(faker) -> ServerMetadataJSON:
         server_side_type=ServerSideType.LOW_SIDE.value,
         show_warnings=False,
         server_type=ServerType.DATASITE.value,
-        min_size_blob_storage_mb=0,
+        min_size_blob_storage_mb=1,
     )
 
 

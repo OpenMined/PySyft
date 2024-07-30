@@ -225,27 +225,29 @@ class SyncService(AbstractService):
                 else:
                     return SyftError(message=f"Failed to sync {res.err()}")
 
+        # NOTE include_items=False to avoid snapshotting the database
+        # Snapshotting is disabled to avoid mongo size limit and performance issues
         res = self.build_current_state(
             context,
             new_items=items,
             new_ignored_batches=ignored_batches,
             new_unignored_batches=unignored_batches,
+            include_items=False,
         )
 
         if res.is_err():
             return SyftError(message=res.message)
-        else:
-            new_state = res.ok()
-            res = self.stash.set(context.credentials, new_state)
-            if res.is_err():
-                return SyftError(message=res.message)
-            else:
-                message = f"Synced {len(items)} items"
-                if len(ignored_batches) > 0:
-                    message += f", ignored {len(ignored_batches)} batches"
-                if len(unignored_batches) > 0:
-                    message += f", unignored {len(unignored_batches)} batches"
-                return SyftSuccess(message=message)
+        new_state = res.ok()
+        res = self.stash.set(context.credentials, new_state)
+        if res.is_err():
+            return SyftError(message=res.message)
+
+        message = f"Synced {len(items)} items"
+        if len(ignored_batches) > 0:
+            message += f", ignored {len(ignored_batches)} batches"
+        if len(unignored_batches) > 0:
+            message += f", unignored {len(unignored_batches)} batches"
+        return SyftSuccess(message=message)
 
     @service_method(
         path="sync.get_permissions",
@@ -371,7 +373,7 @@ class SyncService(AbstractService):
         new_items: list[SyncableSyftObject] | None = None,
         new_ignored_batches: dict[UID, int] | None = None,
         new_unignored_batches: set[UID] | None = None,
-        include_job_results: bool = False,
+        include_items: bool = True,
     ) -> Result[SyncState, str]:
         new_items = new_items if new_items is not None else []
         new_ignored_batches = (
@@ -381,19 +383,18 @@ class SyncService(AbstractService):
             new_unignored_batches if new_unignored_batches is not None else set()
         )
 
-        if not self._cached_all_syncable_items:
-            print("Getting all syncable items")
-            self._cached_all_syncable_items = self.get_all_syncable_items(context)
+        if include_items:
+            objects_res = self.get_all_syncable_items(context)
+            if objects_res.is_err():
+                return objects_res
+
+            objects, errors = objects_res.ok()
+            permissions, storage_permissions = self.get_permissions(context, objects)
         else:
-            print("Using cached syncable items")
-
-        objects_res = self._cached_all_syncable_items
-
-        if objects_res.is_err():
-            return objects_res
-
-        objects, errors = objects_res.ok()
-        permissions, storage_permissions = self.get_permissions(context, objects)
+            objects = []
+            errors = {}
+            permissions = {}
+            storage_permissions = {}
 
         previous_state = self.stash.get_latest(context=context)
         if previous_state.is_err():
