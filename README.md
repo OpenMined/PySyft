@@ -2,8 +2,8 @@
 <br /><br /></div>
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/title_syft_dark.png">
-  <img alt="Syft Logo" src="docs/img/title_syft_light.png" width="200px" />
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/Syft-Logo-Light.svg">
+  <img alt="Syft Logo" src="docs/img/Syft-Logo.svg" width="200px" />
 </picture>
 
 <h3> Data Science on data you are not allowed to see</h3>
@@ -150,7 +150,7 @@ Find more about previous <a href="./releases.md">releases here</a>.
 
 # Community
 
-OpenMined is a fully distributed, open-source community of over 16,000 engineers, researchers, community organizers, product managers, writers, teachers, and enthusiasts.
+Supported by the OpenMined Foundation, the OpenMined Community is an online network of over 17,000 technologists, researchers, and industry professionals keen to *unlock 1000x more data in every scientific field and industry*.
 
 <a href="https://join.slack.com/t/openmined/shared_invite/zt-2hxwk07i9-HO7u5C7XOgou4Z62VU78zA"><img width=150px src="https://img.shields.io/badge/Join_us-%20slack-purple?logo=slack" /></a>
 
@@ -180,12 +180,16 @@ OpenMined is a fully distributed, open-source community of over 16,000 engineers
 
 # Contributors
 
-OpenMined and Syft appreciates all contributors, if you would like to fix a bug or suggest a new feature, please reach out via Github or Slack!
+OpenMined and Syft appreciates all contributors, if you would like to fix a bug or suggest a new feature, please reach out via <a href="https://github.com/OpenMined/PySyft/issues">Github</a> or <a href="https://join.slack.com/t/openmined/shared_invite/zt-2hxwk07i9-HO7u5C7XOgou4Z62VU78zA/">Slack</a>!
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/img/contributors_dark.jpg">
   <img src="docs/img/contributors_light.jpg" alt="Contributors" width="100%" />
 </picture>
+
+# About OpenMined
+
+OpenMined is a non-profit foundation creating technology infrastructure that helps researchers get answers from data without needing a copy or direct access. Our community of technologists is building Syft.
 
 # Supporters
 
