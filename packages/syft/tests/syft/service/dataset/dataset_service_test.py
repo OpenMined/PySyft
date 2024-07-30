@@ -300,7 +300,7 @@ def test_upload_dataset_with_assets_of_different_data_types(
     )
 
 
-def test_delete_small_datasets(worker: Worker, small_dataset: Dataset) -> None:
+def test_upload_delete_small_dataset(worker: Worker, small_dataset: Dataset) -> None:
     root_client = worker.root_client
     assert not can_upload_to_blob_storage(small_dataset, root_client.metadata)
     upload_res = root_client.upload_dataset(small_dataset)
@@ -310,6 +310,7 @@ def test_delete_small_datasets(worker: Worker, small_dataset: Dataset) -> None:
     asset = dataset.asset_list[0]
     assert isinstance(asset.data, np.ndarray)
     assert isinstance(asset.mock, np.ndarray)
+    assert len(root_client.api.services.blob_storage.get_all()) == 0
 
     # delete the dataset without deleting its assets
     del_res = root_client.api.services.dataset.delete(
@@ -319,6 +320,7 @@ def test_delete_small_datasets(worker: Worker, small_dataset: Dataset) -> None:
     assert isinstance(asset.data, np.ndarray)
     assert isinstance(asset.mock, np.ndarray)
     assert len(root_client.api.services.dataset.get_all()) == 0
+
     # we can still get back the deleted dataset by uid
     deleted_dataset = root_client.api.services.dataset.get_by_id(uid=dataset.id)
     assert deleted_dataset.name == f"_deleted_{dataset.name}_{dataset.id}"
@@ -334,7 +336,7 @@ def test_delete_small_datasets(worker: Worker, small_dataset: Dataset) -> None:
     assert len(root_client.api.services.dataset.get_all()) == 0
 
 
-def test_delete_big_datasets(worker: Worker, big_dataset: Dataset) -> None:
+def test_upload_delete_big_dataset(worker: Worker, big_dataset: Dataset) -> None:
     root_client = worker.root_client
     assert can_upload_to_blob_storage(big_dataset, root_client.metadata)
     upload_res = root_client.upload_dataset(big_dataset)
@@ -425,7 +427,7 @@ def test_upload_dataset_with_force_replace_small_dataset(
             )
         ],
         description="This is my numpy data",
-        url="https://my-dataset.data",
+        url="https://mydataset.com",
         summary="contain some super secret data",
     )
     force_replace_upload_res = root_client.upload_dataset(dataset, force_replace=True)
@@ -468,7 +470,7 @@ def test_upload_dataset_with_force_replace_big_dataset(
             )
         ],
         description="This is my numpy data",
-        url="https://my-dataset.data",
+        url="https://mydataset.com",
         summary="contain some super secret data",
     )
     force_replace_upload_res = root_client.upload_dataset(dataset, force_replace=True)
@@ -493,3 +495,39 @@ def test_upload_dataset_with_force_replace_big_dataset(
         updated_dataset.assets[0].data_blob_storage_entry_id
     ).read()
     assert np.sum(retrieved_data - updated_data) == 0
+
+
+def test_upload_big_dataset_blob_permissions(
+    worker: Worker, big_dataset: Dataset
+) -> None:
+    root_client = worker.root_client
+    assert can_upload_to_blob_storage(big_dataset, root_client.metadata)
+
+    # upload the dataset
+    upload_res = root_client.upload_dataset(big_dataset)
+    assert isinstance(upload_res, SyftSuccess)
+    uploaded_dataset = root_client.api.services.dataset.get_all()[0]
+
+    # check correctness of the uploaded data in blob storage
+    asset = uploaded_dataset.assets[0]
+    retrieved_mock = root_client.api.services.blob_storage.read(
+        asset.mock_blob_storage_entry_id
+    ).read()
+    assert np.sum(retrieved_mock - asset.mock) == 0
+    retrieved_data = root_client.api.services.blob_storage.read(
+        asset.data_blob_storage_entry_id
+    ).read()
+    assert np.sum(retrieved_data - asset.data) == 0
+
+    # check access permissions of the uploaded data in blob storage
+    guest_client = root_client.guest()
+    guest_dataset = guest_client.api.services.dataset.get_all()[0]
+    guest_asset = guest_dataset.assets[0]
+    guest_retrieved_mock = guest_client.api.services.blob_storage.read(
+        guest_asset.mock_blob_storage_entry_id
+    ).read()
+    assert np.sum(retrieved_mock - guest_retrieved_mock) == 0
+    guest_retrieved_data = guest_client.api.services.blob_storage.read(
+        guest_asset.data_blob_storage_entry_id
+    )
+    assert isinstance(guest_retrieved_data, SyftError)
