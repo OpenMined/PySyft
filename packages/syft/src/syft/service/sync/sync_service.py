@@ -371,6 +371,7 @@ class SyncService(AbstractService):
         new_items: list[SyncableSyftObject] | None = None,
         new_ignored_batches: dict[UID, int] | None = None,
         new_unignored_batches: set[UID] | None = None,
+        include_job_results: bool = False,
     ) -> Result[SyncState, str]:
         new_items = new_items if new_items is not None else []
         new_ignored_batches = (
