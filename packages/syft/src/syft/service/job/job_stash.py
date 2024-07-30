@@ -858,6 +858,15 @@ class JobStash(BaseUIDStoreStash):
         valid = self.check_type(item, self.object_type)
         if valid.is_err():
             return SyftError(message=valid.err())
+
+        # Ensure we never save cached result data in the database,
+        # as they can be arbitrarily large
+        if (
+            isinstance(item.result, ActionObject)
+            and item.result.syft_blob_storage_entry_id is not None
+        ):
+            item.result._clear_cache()
+
         return super().update(credentials, item, add_permissions)
 
     def get_by_result_id(
