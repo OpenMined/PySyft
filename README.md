@@ -120,7 +120,7 @@ Quick PySyft components links:
 
 ## Why use PySyft?
 
-In a variety of domains across society, data owners have **valid concerns about the risks associated with sharing their data**, such as legal risks, privacy invasion (*misuing the data*), or intellectual property (*copying and redistributing it*).
+In a variety of domains across society, data owners have **valid concerns about the risks associated with sharing their data**, such as legal risks, privacy invasion (_misuing the data_), or intellectual property (_copying and redistributing it_).
 
 Datasites enable data scientists to **answer questions** without even seeing or acquiring a copy of the data, **within the data owners's definition of acceptable use**. We call this process <b> Remote Data Science</b>.
 
@@ -143,7 +143,7 @@ For questions about PySyft, reach out via `#support` on <a href="https://slack.o
 
 ### Latest Beta
 
-- `0.9.0` (Beta) - `dev` branch 👈🏽 
+- `0.9.0` (Beta) - `dev` branch 👈🏽
 - Install PySyft (Beta): `pip install -U syft --pre`
 
 **Deprecated**:
