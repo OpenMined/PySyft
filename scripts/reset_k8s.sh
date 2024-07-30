@@ -9,7 +9,7 @@ NAMESPACE=${2:-syft}
 echo "Resetting Kubernetes resources in context $CONTEXT and namespace $NAMESPACE"
 
 print_progress() {
-  echo -e "\033[1;32m$1\033[0m"
+  echo -e "\033[1;32m[$(date +'%Y-%m-%d %H:%M:%S')] $1\033[0m"
 }
 
 # Set the Kubernetes context
@@ -55,10 +55,13 @@ delete_statefulset() {
 }
 
 # Reset MongoDB StatefulSet
-reset_statefulset "mongo" "mongo"
+reset_statefulset "mongo" "mongo" &
 
 # Reset SeaweedFS StatefulSet
-reset_statefulset "seaweedfs" "seaweedfs"
+reset_statefulset "seaweedfs" "seaweedfs" &
+
+# Wait for MongoDB and SeaweedFS to be reset
+wait
 
 # Delete default-pool StatefulSet
 delete_statefulset "default-pool"
