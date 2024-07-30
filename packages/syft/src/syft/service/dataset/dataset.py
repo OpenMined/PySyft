@@ -8,7 +8,6 @@ from typing import Any
 
 # third party
 from IPython.display import display
-import itables
 import markdown
 import pandas as pd
 from pydantic import ConfigDict
@@ -34,15 +33,16 @@ from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.transforms import validate_url
 from ...types.uid import UID
-from ...util import options
 from ...util.colors import ON_SURFACE_HIGHEST
 from ...util.colors import SURFACE
 from ...util.colors import SURFACE_SURFACE
+from ...util.colors import light_dark_css
 from ...util.markdown import as_markdown_python_code
 from ...util.misc_objs import MarkdownDescription
 from ...util.notebook_ui.icons import Icon
 from ...util.notebook_ui.styles import FONT_CSS
 from ...util.notebook_ui.styles import ITABLES_CSS
+from ...util.table import itable_template_from_df
 from ..action.action_data_empty import ActionDataEmpty
 from ..action.action_object import ActionObject
 from ..data_subject.data_subject import DataSubject
@@ -73,7 +73,7 @@ class Contributor(SyftObject):
     def _repr_html_(self) -> Any:
         return f"""
             <style>
-            .syft-contributor {{color: {SURFACE[options.color_theme]};}}
+            .syft-contributor {{color: {light_dark_css(SURFACE)};}}
             </style>
             <div class='syft-contributor' style="line-height:25%">
                 <h3>Contributor</h3>
@@ -130,9 +130,9 @@ class Asset(SyftObject):
         .itables table {{
             margin: 0 auto;
             float: left;
-            color: {ON_SURFACE_HIGHEST[options.color_theme]};
+            color: {light_dark_css(ON_SURFACE_HIGHEST)};
         }}
-        .itables table th {{color: {SURFACE_SURFACE[options.color_theme]};}}
+        .itables table th {{color: {light_dark_css(SURFACE_SURFACE)};}}
         """
 
         # relative
@@ -150,34 +150,27 @@ class Asset(SyftObject):
         else:
             private_data_obj = private_data_res.ok_value
             if isinstance(private_data_obj, ActionObject):
-                data_table_line = itables.to_html_datatable(
-                    df=self.data.syft_action_data, css=itables_css
+                df = pd.DataFrame(self.data.syft_action_data)
+                data_table_line = itable_template_from_df(
+                    df=private_data_obj.head(5), itable_css=itables_css
                 )
-            elif isinstance(private_data_obj, pd.DataFrame):
-                # stdlib
-                import json
 
-                data_table_line = f"""
-                <!-- Start itable_template -->
-                {json.dumps({"columns": private_data_obj.columns.tolist(),
-                             "data": private_data_obj.head(5).values.tolist()})}
-                <!-- End itable_template -->"""
+            elif isinstance(private_data_obj, pd.DataFrame):
+                data_table_line = itable_template_from_df(
+                    df=private_data_obj.head(5), itable_css=itables_css
+                )
             else:
                 data_table_line = private_data_res.ok_value
 
         if isinstance(self.mock, ActionObject):
-            mock_table_line = itables.to_html_datatable(
-                df=self.mock.syft_action_data, css=itables_css
+            df = pd.DataFrame(self.mock.syft_action_data)
+            mock_table_line = itable_template_from_df(
+                df=df.head(5), itable_css=itables_css
             )
         elif isinstance(self.mock, pd.DataFrame):
-            # stdlib
-            import json
-
-            mock_table_line = f"""
-            <!-- Start itable_template -->
-            {json.dumps({"columns": self.mock.columns.tolist(),
-                         "data": self.mock.head(5).values.tolist()})}
-            <!-- End itable_template -->"""
+            mock_table_line = itable_template_from_df(
+                df=self.mock.head(5), itable_css=itables_css
+            )
         else:
             mock_table_line = self.mock
             if isinstance(mock_table_line, SyftError):
@@ -186,7 +179,7 @@ class Asset(SyftObject):
         return f"""
             <style>
             {FONT_CSS}
-            .syft-asset {{color: {SURFACE[options.color_theme]};}}
+            .syft-asset {{color: {light_dark_css(SURFACE)};}}
             .syft-asset h3,
             .syft-asset p
               {{font-family: 'Open Sans'}}
@@ -557,7 +550,7 @@ class Dataset(SyftObject):
         return f"""
             <style>
             {FONT_CSS}
-            .syft-dataset {{color: {SURFACE[options.color_theme]};}}
+            .syft-dataset {{color: {light_dark_css(SURFACE)};}}
             .syft-dataset h3,
             .syft-dataset p
               {{font-family: 'Open Sans';}}

@@ -35,8 +35,8 @@ from ...types.transforms import transform
 from ...types.twin_object import TwinObject
 from ...types.uid import LineageID
 from ...types.uid import UID
-from ...util import options
 from ...util.colors import SURFACE
+from ...util.colors import light_dark_css
 from ...util.decorators import deprecated
 from ...util.markdown import markdown_as_class_with_fields
 from ...util.notebook_ui.icons import Icon
@@ -467,7 +467,7 @@ class Request(SyncableSyftObject):
 
         return f"""
             <style>
-            .syft-request {{color: {SURFACE[options.color_theme]};}}
+            .syft-request {{color: {light_dark_css(SURFACE)};}}
             </style>
             <div class='syft-request'>
                 <h3>Request</h3>

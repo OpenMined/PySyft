@@ -3,9 +3,14 @@ from collections import defaultdict
 from collections.abc import Iterable
 from collections.abc import Mapping
 from collections.abc import Set
+import json
 import logging
 import re
 from typing import Any
+
+# third party
+import itables
+import pandas as pd
 
 # relative
 from .util import full_name_with_qualname
@@ -273,3 +278,28 @@ def prepare_table_data(
     }
 
     return table_data, table_metadata
+
+
+def itable_template_from_df(df: pd.DataFrame, itable_css: str | None = None) -> str:
+    itable_template = f"""<!-- Start itable_template -->
+    {json.dumps({"columns": df.columns.tolist(),
+                    "data": df.values.tolist(),
+                    "itable_css": itable_css})}
+    <!-- End itable_template -->"""
+    return itable_template
+
+
+def render_itable_template(itable_str: str) -> str:
+    df, itable_css = _extract_df_from_itable_template(itable_str)
+    if itable_css:
+        return itables.to_html_datatable(df=df, css=itable_css)
+    else:
+        return itables.to_html_datatable(df=df)
+
+
+def _extract_df_from_itable_template(
+    itable_str: str,
+) -> tuple[pd.DataFrame, str | None]:
+    json_data = json.loads(itable_str)
+    extracted_df = pd.DataFrame(columns=json_data["columns"], data=json_data["data"])
+    return extracted_df, json_data.get("itable_css", None)

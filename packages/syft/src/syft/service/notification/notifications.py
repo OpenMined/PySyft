@@ -18,8 +18,8 @@ from ...types.transforms import add_server_uid_for_key
 from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.uid import UID
-from ...util import options
 from ...util.colors import SURFACE
+from ...util.colors import light_dark_css
 from ..notifier.notifier_enums import NOTIFIERS
 from .email_templates import EmailTemplate
 
@@ -78,7 +78,7 @@ class Notification(SyftObject):
     def _repr_html_(self) -> str:
         return f"""
             <style>
-            .syft-request {{color: {SURFACE[options.color_theme]}; line-height: 1;}}
+            .syft-request {{color: {light_dark_css(SURFACE)}; line-height: 1;}}
             </style>
             <div class='syft-request'>
                 <h3>Notification</h3>

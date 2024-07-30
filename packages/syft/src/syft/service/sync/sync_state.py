@@ -16,8 +16,8 @@ from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
-from ...util import options
 from ...util.colors import SURFACE
+from ...util.colors import light_dark_css
 from ...util.notebook_ui.components.sync import SyncTableObject
 from ...util.notebook_ui.styles import FONT_CSS
 from ...util.notebook_ui.styles import ITABLES_CSS
@@ -261,7 +261,7 @@ class SyncState(SyftObject):
         repr = f"""
         <style>
             {FONT_CSS}
-            .syft-syncstate {{color: {SURFACE[options.color_theme]};}}
+            .syft-syncstate {{color: {light_dark_css(SURFACE)};}}
             .syft-syncstate h3,
             .syft-syncstate p
               {{font-family: 'Open Sans';}}

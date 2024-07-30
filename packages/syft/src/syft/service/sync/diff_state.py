@@ -36,8 +36,8 @@ from ...types.syft_object import short_uid
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
-from ...util import options
 from ...util.colors import SURFACE
+from ...util.colors import light_dark_css
 from ...util.notebook_ui.components.sync import Label
 from ...util.notebook_ui.components.sync import SyncTableObject
 from ...util.notebook_ui.icons import Icon
@@ -464,7 +464,7 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         base_str = f"""
         <style>
         {FONT_CSS}
-        .syft-dataset {{color: {SURFACE[options.color_theme]};}}
+        .syft-dataset {{color: {light_dark_css(SURFACE)};}}
         .syft-dataset h3,
         .syft-dataset p
             {{font-family: 'Open Sans';}}

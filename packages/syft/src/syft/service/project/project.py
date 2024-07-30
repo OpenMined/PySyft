@@ -36,8 +36,8 @@ from ...types.transforms import TransformContext
 from ...types.transforms import rename
 from ...types.transforms import transform
 from ...types.uid import UID
-from ...util import options
 from ...util.colors import SURFACE
+from ...util.colors import light_dark_css
 from ...util.decorators import deprecated
 from ...util.markdown import markdown_as_class_with_fields
 from ...util.util import full_name_with_qualname
@@ -709,7 +709,7 @@ class Project(SyftObject):
         return (
             f"""
             <style>
-            .syft-project {{color: {SURFACE[options.color_theme]};}}
+            .syft-project {{color: {light_dark_css(SURFACE)};}}
             </style>
             """
             + "<div class='syft-project'>"
@@ -1210,7 +1210,7 @@ class ProjectSubmit(SyftObject):
         return (
             f"""
             <style>
-            .syft-project-create {{color: {SURFACE[options.color_theme]};}}
+            .syft-project-create {{color: {light_dark_css(SURFACE)};}}
             </style>
             """
             + "<div class='syft-project-create'>"

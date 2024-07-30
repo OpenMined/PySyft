@@ -3,12 +3,10 @@ import re
 from types import MethodType
 from typing import Any
 
-# third party
-import pandas as pd
-
 # relative
 from ..types.dicttuple import DictTuple
 from ..types.syft_object import SyftObject
+from .table import render_itable_template
 from .util import sanitize_html
 
 
@@ -102,7 +100,7 @@ def _patch_ipython_sanitization() -> None:
 
                 # remove escaped itables from sanitized html
                 sanitized_str = escaped_itable_template.sub(
-                    '<div class="template_itable"></div>', sanitized_str
+                    "SYFT_PLACEHOLDER_ITABLE", sanitized_str
                 )
                 sanitized_str = sanitize_html(sanitized_str)
 
@@ -110,30 +108,12 @@ def _patch_ipython_sanitization() -> None:
 
                 for matching_itable in matching_itables:
                     sanitized_str = sanitized_str.replace(
-                        '<div class="template_itable"></div>',
+                        "SYFT_PLACEHOLDER_ITABLE",
                         render_itable_template(matching_itable),
                         1,
                     )
                 return f"{css_reinsert} {sanitized_str} {template}"
         return None
-
-    def render_itable_template(itable_str: str) -> str:
-        # third party
-        import itables
-
-        return itables.to_html_datatable(
-            df=_extract_df_from_itable_template(itable_str), css=ITABLES_CSS
-        )
-
-    def _extract_df_from_itable_template(itable_str: str) -> pd.DataFrame:
-        # stdlib
-        import json
-
-        json_data = json.loads(itable_str)
-        extracted_df = pd.DataFrame(
-            columns=json_data["columns"], data=json_data["data"]
-        )
-        return extracted_df
 
     def display_sanitized_md(obj: SyftObject) -> str | None:
         if callable(getattr(obj, "_repr_markdown_", None)):
