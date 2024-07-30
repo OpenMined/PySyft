@@ -180,10 +180,11 @@ OpenMined is a fully distributed, open-source community of over 16,000 engineers
   <source media="(prefers-color-scheme: dark)" srcset="docs/img/panel_title_videos_papers.png">
   <img src="docs/img/panel_title_videos_papers_light.png" alt="" width="100%" align="center" />
 </picture>
-
-<p align="left"><sub><sup>
-📖 <a href="https://arxiv.org/pdf/2012.08347">Beyond Privacy Trade-offs with Structured Transpar..</a><br />
-📖 <a href="https://arxiv.org/pdf/2201.05159">Structured access: an emerging paradigm for safe AI..</a><br />
+<br>
+</br>
+<p align="left" style="margin-left:1em; font-size:120%"><sub><sup>
+📖 <a href="https://arxiv.org/pdf/2012.08347">Beyond Privacy Trade-offs with Structured Transparency</a><br />
+📖 <a href="https://arxiv.org/pdf/2201.05159">Structured access: an emerging paradigm for safe AI deployment</a><br />
 🎥 <a href="https://www.youtube.com/watch?v=qVf0tPBzr2k">PETs: Remote Data Science Unleashed - R gov 2021</a><br />
 🎥 <a href="https://youtu.be/sCoDWKTbh3s?list=PL_lsbAsL_o2BQKXG7mkGFA8LSApCnhljL">Introduction to Remote Data Science - PyTorch 2021</a><br />
 🎥 <a href="https://youtu.be/kzLeTz_vIeQ?list=PL_lsbAsL_o2BtOz6KUfUI_Zla6Rg5dmyc">The Future of AI Tools - PyTorch 2020</a><br />
