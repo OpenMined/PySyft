@@ -3,6 +3,9 @@ import re
 from types import MethodType
 from typing import Any
 
+# third party
+import pandas as pd
+
 # relative
 from ..types.dicttuple import DictTuple
 from ..types.syft_object import SyftObject
@@ -74,19 +77,63 @@ def _patch_ipython_sanitization() -> None:
     )
     jobs_pattern = re.compile(jobs_repr_template, re.DOTALL)
 
+    itable_template = (
+        r"<!-- Start itable_template -->\s*(.*?)\s*<!-- End itable_template -->"
+    )
+    escaped_itable_template = re.compile(itable_template, re.DOTALL)
+
     def display_sanitized_html(obj: SyftObject | DictTuple) -> str | None:
         if callable(getattr(obj, "_repr_html_", None)):
             html_str = obj._repr_html_()
             if html_str is not None:
+                # find matching table and jobs
                 matching_table = escaped_template.findall(html_str)
                 matching_jobs = jobs_pattern.findall(html_str)
+                matching_itables = escaped_itable_template.findall(html_str)
                 template = "\n".join(matching_table + matching_jobs)
+
+                # remove escaped tables from sanitized html
                 sanitized_str = escaped_template.sub("", html_str)
+                # remove escaped js/css from sanitized html
                 sanitized_str = escaped_js_css.sub("", sanitized_str)
+
+                # remove jobs from sanitized html
                 sanitized_str = jobs_pattern.sub("", sanitized_str)
+
+                # remove escaped itables from sanitized html
+                sanitized_str = escaped_itable_template.sub(
+                    '<div class="template_itable"></div>', sanitized_str
+                )
                 sanitized_str = sanitize_html(sanitized_str)
+
+                # add back css / js that skips sanitization
+
+                for matching_itable in matching_itables:
+                    sanitized_str = sanitized_str.replace(
+                        '<div class="template_itable"></div>',
+                        render_itable_template(matching_itable),
+                        1,
+                    )
                 return f"{css_reinsert} {sanitized_str} {template}"
         return None
+
+    def render_itable_template(itable_str: str) -> str:
+        # third party
+        import itables
+
+        return itables.to_html_datatable(
+            df=_extract_df_from_itable_template(itable_str), css=ITABLES_CSS
+        )
+
+    def _extract_df_from_itable_template(itable_str: str) -> pd.DataFrame:
+        # stdlib
+        import json
+
+        json_data = json.loads(itable_str)
+        extracted_df = pd.DataFrame(
+            columns=json_data["columns"], data=json_data["data"]
+        )
+        return extracted_df
 
     def display_sanitized_md(obj: SyftObject) -> str | None:
         if callable(getattr(obj, "_repr_markdown_", None)):

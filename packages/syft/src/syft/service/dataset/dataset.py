@@ -154,9 +154,14 @@ class Asset(SyftObject):
                     df=self.data.syft_action_data, css=itables_css
                 )
             elif isinstance(private_data_obj, pd.DataFrame):
-                data_table_line = itables.to_html_datatable(
-                    df=private_data_obj, css=itables_css
-                )
+                # stdlib
+                import json
+
+                data_table_line = f"""
+                <!-- Start itable_template -->
+                {json.dumps({"columns": private_data_obj.columns.tolist(),
+                             "data": private_data_obj.head(5).values.tolist()})}
+                <!-- End itable_template -->"""
             else:
                 data_table_line = private_data_res.ok_value
 
@@ -165,7 +170,14 @@ class Asset(SyftObject):
                 df=self.mock.syft_action_data, css=itables_css
             )
         elif isinstance(self.mock, pd.DataFrame):
-            mock_table_line = itables.to_html_datatable(df=self.mock, css=itables_css)
+            # stdlib
+            import json
+
+            mock_table_line = f"""
+            <!-- Start itable_template -->
+            {json.dumps({"columns": self.mock.columns.tolist(),
+                         "data": self.mock.head(5).values.tolist()})}
+            <!-- End itable_template -->"""
         else:
             mock_table_line = self.mock
             if isinstance(mock_table_line, SyftError):
