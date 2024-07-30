@@ -8,7 +8,16 @@ import time
 
 
 @contextlib.contextmanager
-def pyspy():
+def pyspy() -> None:  # type: ignore
+    """Profile a block of code using py-spy.
+
+    Example:
+    ```
+    with pyspy():
+        # do some work
+        a = [i for i in range(1000000)]
+    ```
+    """
     fd, fname = tempfile.mkstemp(".svg")
     os.close(fd)
 
@@ -36,8 +45,3 @@ def pyspy():
         os.chmod(fname, 0o444)
     except Exception as e:
         print(f"Error: {e}")
-
-
-if __name__ == "__main__":
-    with pyspy():
-        print("Goodbye")

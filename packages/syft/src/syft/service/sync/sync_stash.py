@@ -59,15 +59,21 @@ class SyncStash(BaseUIDStoreStash):
             return Ok(all_states[-1])
         return Ok(None)
 
-    def set(self, context, item):
+    def set(  # type: ignore
+        self,
+        context: AuthedServiceContext,
+        item: SyncState,
+        **kwargs,
+    ) -> Result[SyncState, str]:
         self.last_state = item
 
         # use threading
-        # threading.Thread(
-        #     target=super().set,
-        #     args=(
-        #         context,
-        #         item,
-        #     ),
-        # ).start()
+        threading.Thread(
+            target=super().set,
+            args=(
+                context,
+                item,
+            ),
+            kwargs=kwargs,
+        ).start()
         return Ok(item)
