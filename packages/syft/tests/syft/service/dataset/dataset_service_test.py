@@ -410,6 +410,10 @@ def test_upload_dataset_with_force_replace_small_dataset(
     assert isinstance(upload_res, SyftSuccess)
     first_uploaded_dataset = root_client.api.services.dataset.get_all()[0]
 
+    # upload again without the `force_replace` flag should fail
+    reupload_res = root_client.upload_dataset(small_dataset)
+    assert isinstance(reupload_res, SyftError)
+
     # change something about the dataset, then upload it again with `force_replace`
     dataset = Dataset(
         name=small_dataset.name,
@@ -438,8 +442,54 @@ def test_upload_dataset_with_force_replace_small_dataset(
     assert all(updated_dataset.assets[0].mock == dataset.assets[0].mock)
 
 
-@pytest.mark.skip(reason="To be implemented")
 def test_upload_dataset_with_force_replace_big_dataset(
     worker: Worker, big_dataset: Dataset
 ) -> None:
-    pass
+    root_client = worker.root_client
+    assert can_upload_to_blob_storage(big_dataset, root_client.metadata)
+
+    # upload a dataset
+    upload_res = root_client.upload_dataset(big_dataset)
+    assert isinstance(upload_res, SyftSuccess)
+    first_uploaded_dataset = root_client.api.services.dataset.get_all()[0]
+
+    # change about the dataset metadata and also its data and mock, but keep its name,
+    # then upload it again with `force_replace=True`
+    updated_mock = big_dataset.assets[0].mock * 2
+    updated_data = big_dataset.assets[0].data + 1
+
+    dataset = Dataset(
+        name=big_dataset.name,
+        asset_list=[
+            sy.Asset(
+                name="big_dataset",
+                data=updated_data,
+                mock=updated_mock,
+            )
+        ],
+        description="This is my numpy data",
+        url="https://my-dataset.data",
+        summary="contain some super secret data",
+    )
+    force_replace_upload_res = root_client.upload_dataset(dataset, force_replace=True)
+    assert isinstance(force_replace_upload_res, SyftSuccess)
+    # TODO: Old data were not removed from the blob storage after force replace. What to do?
+    assert len(root_client.api.services.blob_storage.get_all()) == 4
+    assert len(root_client.api.services.dataset.get_all()) == 1
+
+    updated_dataset = root_client.api.services.dataset.get_all()[0]
+    assert updated_dataset.id == first_uploaded_dataset.id
+    assert updated_dataset.name == big_dataset.name
+    assert updated_dataset.description.text == dataset.description.text
+    assert updated_dataset.summary == dataset.summary
+    assert updated_dataset.url == dataset.url
+    assert all(updated_dataset.assets[0].data == dataset.assets[0].data)
+    assert all(updated_dataset.assets[0].mock == dataset.assets[0].mock)
+    retrieved_mock = root_client.api.services.blob_storage.read(
+        updated_dataset.assets[0].mock_blob_storage_entry_id
+    ).read()
+    assert np.sum(retrieved_mock - updated_mock) == 0
+    retrieved_data = root_client.api.services.blob_storage.read(
+        updated_dataset.assets[0].data_blob_storage_entry_id
+    ).read()
+    assert np.sum(retrieved_data - updated_data) == 0
