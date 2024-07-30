@@ -1,15 +1,16 @@
 # stdlib
 from collections.abc import Callable
 from getpass import getpass
+from typing import Annotated
 from typing import Any
 
 # third party
 from bcrypt import checkpw
 from bcrypt import gensalt
 from bcrypt import hashpw
+from pydantic import BeforeValidator
 from pydantic import EmailStr
 from pydantic import ValidationError
-from pydantic import field_validator
 
 # relative
 from ...client.api import APIRegistry
@@ -19,6 +20,7 @@ from ...server.credentials import SyftVerifyKey
 from ...types.syft_metaclass import Empty
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import drop
@@ -112,21 +114,37 @@ def check_pwd(password: str, hashed_password: str) -> bool:
     )
 
 
+def _str_to_role(v: Any) -> Any:
+    if isinstance(v, str) and hasattr(ServiceRole, v.upper()):
+        return getattr(ServiceRole, v.upper())
+    return v
+
+
 @serializable()
 class UserUpdate(PartialSyftObject):
     __canonical_name__ = "UserUpdate"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    @field_validator("role", mode="before")
-    @classmethod
-    def str_to_role(cls, v: Any) -> Any:
-        if isinstance(v, str) and hasattr(ServiceRole, v.upper()):
-            return getattr(ServiceRole, v.upper())
-        return v
+    __version__ = SYFT_OBJECT_VERSION_2
 
     email: EmailStr
     name: str
-    role: ServiceRole  # make sure role cant be set without uid
+    # make sure role cant be set without uid
+    role: Annotated[ServiceRole, BeforeValidator(_str_to_role)]
+    password: str
+    password_verify: str
+    verify_key: SyftVerifyKey
+    institution: str
+    website: str
+    mock_execution_permission: bool
+
+
+@serializable()
+class UserUpdateV1(PartialSyftObject):
+    __canonical_name__ = "UserUpdate"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    email: EmailStr
+    name: str
+    role: ServiceRole
     password: str
     password_verify: str
     verify_key: SyftVerifyKey
@@ -273,14 +291,15 @@ class UserView(SyftObject):
         )
         if api is None:
             return SyftError(message=f"You must login to {self.server_uid}")
-        user_update = UserUpdate(
+
+        result = api.services.user.update(
+            uid=self.id,
             name=name,
             institution=institution,
             website=website,
             role=role,
             mock_execution_permission=mock_execution_permission,
         )
-        result = api.services.user.update(uid=self.id, **user_update)
 
         if isinstance(result, SyftError):
             return result
