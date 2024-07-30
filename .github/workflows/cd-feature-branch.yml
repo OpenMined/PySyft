@@ -367,15 +367,15 @@ jobs:
 
       - name: Copy helm repo files from Syft Repo
         run: |
-          rm -rf ghpages/helm/*
-          cp -R packages/grid/helm/repo/. ghpages/helm/
+          cp packages/grid/helm/repo/index.yaml ghpages/helm/
+          cp packages/grid/helm/repo/syft-${{ needs.merge-docker-images.outputs.server_version  }}.tgz ghpages/helm/
 
       - name: Commit changes to gh-pages
         uses: EndBug/add-and-commit@v9
         with:
           author_name: ${{ secrets.OM_BOT_NAME }}
           author_email: ${{ secrets.OM_BOT_EMAIL }}
-          message: "Update Helm package from Syft Repo"
+          message: "Add Helm package for Syft Version: ${{ needs.merge-docker-images.outputs.server_version }}"
           add: "helm/"
           push: "origin gh-pages"
           cwd: "./ghpages/"
