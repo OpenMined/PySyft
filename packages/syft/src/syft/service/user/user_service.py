@@ -159,24 +159,23 @@ class UserService(AbstractService):
             result = method(context=root_context, notification=message)
             if isinstance(result, SyftError):
                 return result
+        else:
+            # Email notification is Enabled
+            # Therefore, we can directly send a message to the
+            # user with its new password.
+            message = CreateNotification(
+                subject="You requested a password reset.",
+                from_user_verify_key=root_key,
+                to_user_verify_key=user.verify_key,
+                linked_obj=link,
+                notifier_types=[NOTIFIERS.EMAIL],
+                email_template=PasswordResetTemplate,
+            )
 
-            return SyftSuccess(message=success_msg)
-
-        # Email notification is Enabled
-        # Therefore, we can directly send a message to the user with its new password.
-        message = CreateNotification(
-            subject="You requested a password reset.",
-            from_user_verify_key=root_key,
-            to_user_verify_key=user.verify_key,
-            linked_obj=link,
-            notifier_types=[NOTIFIERS.EMAIL],
-            email_template=PasswordResetTemplate,
-        )
-
-        method = context.server.get_service_method(NotificationService.send)
-        result = method(context=root_context, notification=message)
-        if isinstance(result, SyftError):
-            return result
+            method = context.server.get_service_method(NotificationService.send)
+            result = method(context=root_context, notification=message)
+            if isinstance(result, SyftError):
+                return result
 
         return SyftSuccess(message=success_msg)
 
