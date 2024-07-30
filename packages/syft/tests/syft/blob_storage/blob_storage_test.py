@@ -119,8 +119,8 @@ def test_action_obj_send_save_to_blob_storage(worker):
     action_obj.send(root_client)
     assert action_obj.syft_blob_storage_entry_id is None
 
-    # big object that should be saved to blob storage
-    assert min_size_for_blob_storage_upload(root_client.api.metadata) == 16
+    # big object that should be saved to blob storage (in mb)
+    assert min_size_for_blob_storage_upload(root_client.api.metadata) == 1
     num_elements = 20 * 1024 * 1024
     data_big = np.random.randint(0, 100, size=num_elements)  # 4 bytes per int32
     action_obj_2 = ActionObject.from_obj(data_big)

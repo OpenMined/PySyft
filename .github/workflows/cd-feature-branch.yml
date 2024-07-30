@@ -42,29 +42,8 @@ jobs:
       server_version: ${{ steps.release_metadata.outputs.server_version }}
 
     steps:
-      # actions/setup-python doesn't yet support ARM
-      - name: Setup Python on x64
-        if: ${{ !endsWith(matrix.runner, '-arm64') }}
+      - name: Setup Python on ${{ matrix.runner }}
         uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      # Currently psutil package requires gcc to be installed on arm
-      # for building psutil from source
-      # as linux/aarch64 wheels not avaialble for psutil
-      # We could remove once we have aarch64 wheels
-      # https://github.com/giampaolo/psutil/issues/1972
-      - name: Install Metadata packages for arm64
-        if: ${{ endsWith(matrix.runner, '-arm64') }}
-        run: |
-          sudo apt update -y
-          sudo apt install software-properties-common -y
-          sudo apt install gcc curl -y
-          sudo apt-get install python3-dev -y
-
-      - name: Setup Python on arm64
-        if: ${{ endsWith(matrix.runner, '-arm64') }}
-        uses: deadsnakes/action@v3.1.0
         with:
           python-version: "3.12"
 
@@ -367,15 +346,15 @@ jobs:
 
       - name: Copy helm repo files from Syft Repo
         run: |
-          rm -rf ghpages/helm/*
-          cp -R packages/grid/helm/repo/. ghpages/helm/
+          cp packages/grid/helm/repo/index.yaml ghpages/helm/
+          cp packages/grid/helm/repo/syft-${{ needs.merge-docker-images.outputs.server_version  }}.tgz ghpages/helm/
 
       - name: Commit changes to gh-pages
         uses: EndBug/add-and-commit@v9
         with:
           author_name: ${{ secrets.OM_BOT_NAME }}
           author_email: ${{ secrets.OM_BOT_EMAIL }}
-          message: "Update Helm package from Syft Repo"
+          message: "Add Helm package for Syft Version: ${{ needs.merge-docker-images.outputs.server_version }}"
           add: "helm/"
           push: "origin gh-pages"
           cwd: "./ghpages/"
