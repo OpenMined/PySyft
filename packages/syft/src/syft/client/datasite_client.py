@@ -131,6 +131,13 @@ class DatasiteClient(SyftClient):
 
                 asset.action_id = twin.id
                 asset.server_uid = self.id
+                asset.mock_blob_storage_entry_id = (
+                    twin.mock_obj.syft_blob_storage_entry_id
+                )
+                asset.data_blob_storage_entry_id = (
+                    twin.private_obj.syft_blob_storage_entry_id
+                )
+
                 total_assets_size += get_mb_size(asset.data)
 
                 # Update the progress bar and set the dynamic description
