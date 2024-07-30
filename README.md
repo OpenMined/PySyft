@@ -1,7 +1,6 @@
 <div align="left"> <a href="https://pypi.org/project/syft/"><img src="https://static.pepy.tech/badge/pysyft" /></a> <a href="https://pypi.org/project/syft/"><img src="https://badge.fury.io/py/syft.svg" /></a> <a href="https://hub.docker.com/u/openmined"><img src="https://img.shields.io/badge/docker-images-blue?logo=docker" /></a> <a href="https://github.com/OpenMined/PySyft/actions/workflows/nightlies.yml"><img src="https://github.com/OpenMined/PySyft/actions/workflows/nightlies.yml/badge.svg?branch=dev" /></a> <a href="https://slack.openmined.org/"><img src="https://img.shields.io/badge/chat-on%20slack-purple?logo=slack" /></a> <a href="https://docs.openmined.org/en/latest/index.html"><img src="https://img.shields.io/badge/read-docs-yellow?logo=mdbook" /></a>
 <br /><br /></div>
 
-
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/img/title_syft_dark.png">
   <img alt="Syft Logo" src="docs/img/title_syft_light.png" width="200px" />
@@ -9,7 +8,7 @@
 
 <h3> Data Science on data you are not allowed to see</h3>
 
-PySyft enables a new way to do data science, where you can use non-public information, without seeing nor obtaining a copy of the data itself. All you need is to connect to a <a href="https://docs.openmined.org/en/latest/components/datasite_server.html">Datasite</a>! 
+PySyft enables a new way to do data science, where you can use non-public information, without seeing nor obtaining a copy of the data itself. All you need is to connect to a <a href="https://docs.openmined.org/en/latest/components/datasite_server.html">Datasite</a>!
 
 Datasites are like websites, but for data. Designed with the principles of <a href="https://arxiv.org/abs/2012.08347">structured transparency</a>, it enables data owners to control how their data is protected and data scientists to use data responsibly.
 
@@ -18,16 +17,14 @@ PySyft supports any statistical analysis or machine learning, offering support f
 <h4> Supported on:</h4>
 
 ✅ Linux
-✅ macOS 
+✅ macOS
 ✅ Windows
 ✅ Docker
 ✅ Kubernetes
 
-
 # Quickstart
 
 Try out your <a href="https://docs.openmined.org/en/latest/index.html">first query against a live demo Datasite! </a>
-
 
 ## Install Client
 
@@ -57,6 +54,7 @@ server = sy.orchestra.launch(
 ```
 
 or from the command line:
+
 ```bash
 $ syft launch --name=my-datasite --port=8080 --reset=True
 
@@ -81,7 +79,7 @@ datasite_client = sy.login(
 )
 ```
 
-## PySyft - Getting started 📝 
+## PySyft - Getting started 📝
 
 Learn about PySyft via our getting started guide:
 
@@ -92,12 +90,12 @@ Learn about PySyft via our getting started guide:
 - <a href="https://docs.openmined.org/en/latest/getting_started/part4_review_code_request.html"> Part 4: Review Code Requests</a>
 - <a href="https://docs.openmined.org/en/latest/getting_started/part5_retrieving_results.html"> Part 5: Retrieving Results</a>
 
-
 # PySyft In-depth
 
 📚 Check out <a href="https://docs.openmined.org/en/latest/index.html">our docs website</a>.
 
 Quick PySyft components links:
+
 - <a href="https://docs.openmined.org/en/latest/components/datasite_server.html">DataSite Server</a>
 
 - <a href="https://docs.openmined.org/en/latest//components/syft_client.html">Syft Client</a>
@@ -120,7 +118,6 @@ Quick PySyft components links:
 
 - <a href="https://docs.openmined.org/en/latest/components/syncing_api.html">Sync API (`.sync`)</a>
 
-
 ## Why use PySyft?
 
 In a variety of domains across society, data owners have **valid concerns about the risks associated with sharing their data**, such as legal risks, privacy invasion (*misuing the data*), or intellectual property (*copying and redistributing it*).
@@ -131,22 +128,22 @@ This means that the **current risks** of sharing information with someone will *
 
 Learn more about our work on <a href="https://openmined.org/">our website</a>.
 
-
 ## Support
 
 For questions about PySyft, reach out via `#support` on <a href="https://slack.openmined.org/">Slack</a>.
 
 ## Syft Versions
 
-:exclamation: PySyft and Syft Server must use the same `version`. 
+:exclamation: PySyft and Syft Server must use the same `version`.
 
 ### Latest Stable
-`0.8.8` (Stable) - <a href="https://docs.openmined.org/en/latest/index.html">Docs</a>
+
+- `0.8.8` (Stable) - <a href="https://docs.openmined.org/en/latest/index.html">Docs</a>
 - Install PySyft (Stable): `pip install -U syft`
 
-
 ### Latest Beta
-`0.9.0` (Beta) - `dev` branch 👈🏽 
+
+- `0.9.0` (Beta) - `dev` branch 👈🏽 
 - Install PySyft (Beta): `pip install -U syft --pre`
 
 **Deprecated**:
@@ -166,7 +163,7 @@ For questions about PySyft, reach out via `#support` on <a href="https://slack.o
 
 # Community
 
-OpenMined is a fully distributed, open-source community of over 16,000 engineers, researchers, community organizers, product managers, writers, teachers, and enthusiasts. 
+OpenMined is a fully distributed, open-source community of over 16,000 engineers, researchers, community organizers, product managers, writers, teachers, and enthusiasts.
 
 <a href="https://slack.openmined.org/"><img width=150px src="https://img.shields.io/badge/Join_us-%20slack-purple?logo=slack" /></a>
 
@@ -302,7 +299,6 @@ OpenMined and Syft appreciates all contributors, if you would like to fix a bug 
 </th>
 </tr>
 </table>
-
 
 # License
 
