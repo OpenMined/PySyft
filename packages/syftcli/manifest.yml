@@ -1,11 +1,11 @@
 manifestVersion: 1.0
 
-syftVersion: 0.9.0-beta.1
-dockerTag: 0.9.0-beta.1
+syftVersion: 0.9.0-beta.2
+dockerTag: 0.9.0-beta.2
 
 images:
-  - docker.io/openmined/syft-frontend:0.9.0-beta.1
-  - docker.io/openmined/syft-backend:0.9.0-beta.1
+  - docker.io/openmined/syft-frontend:0.9.0-beta.2
+  - docker.io/openmined/syft-backend:0.9.0-beta.2
   - docker.io/library/mongo:7.0.4
   - docker.io/traefik:v2.11.0
 
