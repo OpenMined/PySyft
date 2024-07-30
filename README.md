@@ -10,7 +10,7 @@
 
 PySyft enables a new way to do data science, where you can use non-public information, without seeing nor obtaining a copy of the data itself. All you need is to connect to a <a href="https://docs.openmined.org/en/latest/components/datasite_server.html">Datasite</a>! 
 
-Datasites are like websites, but for data. Designed with the principles of <a href="">structured transparency</a>, it enables data owners to control how their data is protected and data scientists to use data responsibly.
+Datasites are like websites, but for data. Designed with the principles of <a href="https://arxiv.org/abs/2012.08347">structured transparency</a>, it enables data owners to control how their data is protected and data scientists to use data responsibly.
 
 PySyft supports any statistical analysis or machine learning, offering support for running directly Python code - even using third-party Python libraries.
 
