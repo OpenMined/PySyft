@@ -471,7 +471,7 @@ class Server(AbstractServer):
             )
             config_ = OnDiskBlobStorageConfig(
                 client_config=client_config,
-                min_blob_size=os.getenv("MIN_SIZE_BLOB_STORAGE_MB", 16),
+                min_blob_size=os.getenv("MIN_SIZE_BLOB_STORAGE_MB", 0),
             )
         else:
             config_ = config
