@@ -191,6 +191,9 @@ OpenMined and Syft appreciates all contributors, if you would like to fix a bug 
 
 OpenMined is a non-profit foundation creating technology infrastructure that helps researchers get answers from data without needing a copy or direct access. Our community of technologists is building Syft.
 
+<a href="https://donate.stripe.com/fZe03H0aLdAO59e9AA
+"><img width=200px src="https://img.shields.io/badge/Donate_to-OpenMined-yellow?logo=stripe" /></a>
+
 # Supporters
 
 <table border="0">
