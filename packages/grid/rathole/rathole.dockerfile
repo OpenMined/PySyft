@@ -1,7 +1,7 @@
 ARG RATHOLE_VERSION="0.5.0"
 ARG PYTHON_VERSION="3.12"
 
-FROM rust as build
+FROM rust:1.79 as build
 ARG RATHOLE_VERSION
 ARG FEATURES
 RUN apt update && apt install -y git
