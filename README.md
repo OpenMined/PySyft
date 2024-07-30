@@ -1,6 +1,7 @@
 <div align="left"> <a href="https://pypi.org/project/syft/"><img src="https://static.pepy.tech/badge/pysyft" /></a> <a href="https://pypi.org/project/syft/"><img src="https://badge.fury.io/py/syft.svg" /></a> <a href="https://hub.docker.com/u/openmined"><img src="https://img.shields.io/badge/docker-images-blue?logo=docker" /></a> <a href="https://github.com/OpenMined/PySyft/actions/workflows/nightlies.yml"><img src="https://github.com/OpenMined/PySyft/actions/workflows/nightlies.yml/badge.svg?branch=dev" /></a> <a href="https://slack.openmined.org/"><img src="https://img.shields.io/badge/chat-on%20slack-purple?logo=slack" /></a> <a href="https://docs.openmined.org/en/latest/index.html"><img src="https://img.shields.io/badge/read-docs-yellow?logo=mdbook" /></a>
 <br /><br /></div>
 
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/img/title_syft_dark.png">
   <img alt="Syft Logo" src="docs/img/title_syft_light.png" width="200px" />
@@ -165,25 +166,14 @@ For questions about PySyft, reach out via `#support` on <a href="https://slack.o
 
 # Community
 
-OpenMined is a growing community of over 15000 engineers, educators, scientists, product managers and privacy-aware individuals. 
+OpenMined is a fully distributed, open-source community of over 16,000 engineers, researchers, community organizers, product managers, writers, teachers, and enthusiasts. 
+
+<a href="https://slack.openmined.org/"><img width=150px src="https://img.shields.io/badge/Join_us-%20slack-purple?logo=slack" /></a>
 
 <table border="5" bordercolor="grey">
 <tr>
 <th align="center" valign="top">
-<img width="441" height="1">
-<div align="center">
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/panel_slack_title_dark.png">
-  <img src="docs/img/panel_slack_title_light.png" alt="" width="100%" align="center" />
-</picture>
-
-<a href="https://slack.openmined.org/"><img src="docs/img/panel_slack.png" alt="" width="100%" align="center" /></a>
-
-</div>
-</th>
-<th align="center" valign="top">
-<img width="441" height="1">
+<img width="300" height="1">
 <div align="center">
 
 <picture>
@@ -192,6 +182,8 @@ OpenMined is a growing community of over 15000 engineers, educators, scientists,
 </picture>
 
 <p align="left"><sub><sup>
+📖 <a href="https://arxiv.org/pdf/2012.08347">Beyond Privacy Trade-offs with Structured Transpar..</a><br />
+📖 <a href="https://arxiv.org/pdf/2201.05159">Structured access: an emerging paradigm for safe AI..</a><br />
 🎥 <a href="https://www.youtube.com/watch?v=qVf0tPBzr2k">PETs: Remote Data Science Unleashed - R gov 2021</a><br />
 🎥 <a href="https://youtu.be/sCoDWKTbh3s?list=PL_lsbAsL_o2BQKXG7mkGFA8LSApCnhljL">Introduction to Remote Data Science - PyTorch 2021</a><br />
 🎥 <a href="https://youtu.be/kzLeTz_vIeQ?list=PL_lsbAsL_o2BtOz6KUfUI_Zla6Rg5dmyc">The Future of AI Tools - PyTorch 2020</a><br />
@@ -205,7 +197,7 @@ OpenMined is a growing community of over 15000 engineers, educators, scientists,
 </div>
 </th>
 <th align="center" valign="top">
-<img width="441" height="1">
+<img width="300" height="1">
 <div align="center">
 
 <picture>
@@ -225,18 +217,18 @@ OpenMined is a growing community of over 15000 engineers, educators, scientists,
 <table border="5" bordercolor="grey">
 <tr>
 <th align="center">
-<img width="441" height="1">
+<img width="200" height="1">
 <div align="center">
 <a href="https://courses.openmined.org/courses/our-privacy-opportunity"><img src="docs/img/course_privacy.png" alt="" width="100%" align="center" /></a>
 </th>
 <th align="center">
-<img width="441" height="1">
+<img width="200" height="1">
 <div align="center">
 <a href="https://courses.openmined.org/courses/foundations-of-private-computation"><img src="docs/img/course_foundations.png" alt="" width="100%" align="center" /></a>
 </div>
 </th>
 <th align="center">
-<img width="441" height="1">
+<img width="200" height="1">
 <div align="center">
 <a href="https://courses.openmined.org/courses/introduction-to-remote-data-science"><img src="docs/img/course_introduction.png" alt="" width="100%" align="center"></a>
 </div>
