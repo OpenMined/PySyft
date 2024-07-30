@@ -1,5 +1,4 @@
 # third party
-from faker import Faker
 import pytest
 
 # syft absolute
@@ -41,7 +40,6 @@ WORKER_CONFIG_TEST_CASES = [
 
 @pytest.mark.parametrize("docker_tag,worker_config", WORKER_CONFIG_TEST_CASES)
 def test_create_image_and_pool_request_accept(
-    faker: Faker,
     worker: Worker,
     docker_tag: str,
     worker_config: WorkerConfig,
@@ -95,7 +93,6 @@ def test_create_image_and_pool_request_accept(
     WORKER_CONFIG_TEST_CASES_WITH_N_IMAGES,
 )
 def test_create_pool_request_accept(
-    faker: Faker,
     worker: Worker,
     docker_tag: str,
     worker_config: WorkerConfig,
