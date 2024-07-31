@@ -1,6 +1,5 @@
 # third party
 from faker import Faker
-from request_code_accept_deny_test import get_ds_client
 
 # syft absolute
 import syft
@@ -12,7 +11,7 @@ from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 
 
-def test_set_tags_delete_requests(faker: Faker, worker: Worker):
+def test_set_tags_delete_requests(faker: Faker, worker: Worker, ds_client: SyftClient):
     """ "
     Scneario: DS client submits a code request. Root client sets some wrong tags, then
     delete the request. DS client then submit the request again, root client then set
@@ -22,8 +21,6 @@ def test_set_tags_delete_requests(faker: Faker, worker: Worker):
     dummy_data = [1, 2, 3]
     data = ActionObject.from_obj(dummy_data)
     action_obj = data.send(root_client)
-
-    ds_client: SyftClient = get_ds_client(faker, root_client, worker.guest_client)
 
     @syft.syft_function(
         input_policy=syft.ExactMatch(data=action_obj),
