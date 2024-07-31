@@ -8,7 +8,7 @@
 
 <h3> Data Science on data you are not allowed to see</h3>
 
-PySyft enables a new way to do data science, where you can use non-public information, without seeing nor obtaining a copy of the data itself. All you need is to connect to a <a href="https://docs.openmined.org/en/latest/components/datasite_server.html">Datasite</a>!
+PySyft enables a new way to do data science, where you can use non-public information, without seeing nor obtaining a copy of the data itself. All you need is to connect to a <a href="https://docs.openmined.org/en/latest/components/datasite-server.html">Datasite</a>!
 
 Datasites are like websites, but for data. Designed with the principles of <a href="https://arxiv.org/abs/2012.08347">structured transparency</a>, they enable data owners to control how their data is protected and data scientists to use data without obtaining a copy.
 
@@ -96,27 +96,27 @@ Learn about PySyft via our getting started guide:
 
 Quick PySyft components links:
 
-- <a href="https://docs.openmined.org/en/latest/components/datasite_server.html">DataSite Server</a>
+- <a href="https://docs.openmined.org/en/latest/components/datasite-server.html">DataSite Server</a>
 
-- <a href="https://docs.openmined.org/en/latest//components/syft_client.html">Syft Client</a>
+- <a href="https://docs.openmined.org/en/latest//components/syft-client.html">Syft Client</a>
 
 - <a href="https://docs.openmined.org/en/latest/components/datasets.html">Datasets API (`.datasets`)</a>
 
 - <a href="https://docs.openmined.org/en/latest/components/users-api.html">Users API (`.users`)</a>
 
-- <a href="https://docs.openmined.org/en/latest/components/projects_api.html">Projects API (`.projects`)</a>
+- <a href="https://docs.openmined.org/en/latest/components/projects-api.html">Projects API (`.projects`)</a>
 
-- <a href="https://docs.openmined.org/en/latest/components/requests_api.html">Request API (`.requests`)</a>
+- <a href="https://docs.openmined.org/en/latest/components/requests-api.html">Request API (`.requests`)</a>
 
 - <a href="https://docs.openmined.org/en/latest/components/code-api.html">Code API (`.code`)</a>
 
-- <a href="https://docs.openmined.org/en/latest/components/syft_policies.html">Syft Policies API (`.policy`)</a>
+- <a href="https://docs.openmined.org/en/latest/components/syft-policies.html">Syft Policies API (`.policy`)</a>
 
-- <a href="https://docs.openmined.org/en/latest/components/settings_api.html">Settings API (`.settings`)</a>
+- <a href="https://docs.openmined.org/en/latest/components/settings-api.html">Settings API (`.settings`)</a>
 
 - <a href="https://docs.openmined.org/en/latest/components/notifications.html">Notifications API (`.notifications`)</a>
 
-- <a href="https://docs.openmined.org/en/latest/components/syncing_api.html">Sync API (`.sync`)</a>
+- <a href="https://docs.openmined.org/en/latest/components/syncing-api.html">Sync API (`.sync`)</a>
 
 ## Why use PySyft?
 
