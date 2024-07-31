@@ -134,7 +134,9 @@ class Worker(SyftBaseModel):
         self.expiry_t.reset()
 
     def _syft_worker(
-        self, stash: WorkerStash, credentials: SyftVerifyKey
+        self,
+        stash: WorkerStash,
+        credentials: SyftVerifyKey,
     ) -> Result[SyftWorker | None, str]:
         return stash.get_by_uid(credentials=credentials, uid=self.syft_worker_id)
 
@@ -196,7 +198,7 @@ class ZMQProducer(QueueProducer):
                 if self.thread.is_alive():
                     logger.error(
                         f"ZMQProducer message sending thread join timed out during closing. "
-                        f"Queue name {self.queue_name}, "
+                        f"Queue name {self.queue_name}, ",
                     )
                 self.thread = None
 
@@ -205,7 +207,7 @@ class ZMQProducer(QueueProducer):
                 if self.producer_thread.is_alive():
                     logger.error(
                         f"ZMQProducer queue thread join timed out during closing. "
-                        f"Queue name {self.queue_name}, "
+                        f"Queue name {self.queue_name}, ",
                     )
                 self.producer_thread = None
 
@@ -245,14 +247,16 @@ class ZMQProducer(QueueProducer):
             if isinstance(arg, list):
                 for elem in arg:
                     value = self.contains_unresolved_action_objects(
-                        elem, recursion=recursion + 1
+                        elem,
+                        recursion=recursion + 1,
                     )
                     if value:
                         return True
             if isinstance(arg, dict):
                 for elem in arg.values():
                     value = self.contains_unresolved_action_objects(
-                        elem, recursion=recursion + 1
+                        elem,
+                        recursion=recursion + 1,
                     )
                     if value:
                         return True
@@ -290,13 +294,13 @@ class ZMQProducer(QueueProducer):
                         if isinstance(item, ActionQueueItem):
                             action = item.kwargs["action"]
                             if self.contains_unresolved_action_objects(
-                                action.args
+                                action.args,
                             ) or self.contains_unresolved_action_objects(action.kwargs):
                                 continue
 
                         msg_bytes = serialize(item, to_bytes=True)
                         worker_pool = item.worker_pool.resolve_with_context(
-                            self.auth_context
+                            self.auth_context,
                         )
                         worker_pool = worker_pool.ok()
                         service_name = worker_pool.name
@@ -316,7 +320,7 @@ class ZMQProducer(QueueProducer):
                         res = self.queue_stash.update(item.syft_client_verify_key, item)
                         if res.is_err():
                             logger.error(
-                                f"Failed to update queue item={item} error={res.err()}"
+                                f"Failed to update queue item={item} error={res.err()}",
                             )
                     elif item.status == Status.PROCESSING:
                         # Evaluate Retry condition here
@@ -331,7 +335,7 @@ class ZMQProducer(QueueProducer):
                 res = self.queue_stash.update(item.syft_client_verify_key, item)
                 if res.is_err():
                     logger.error(
-                        f"Failed to update queue item={item} error={res.err()}"
+                        f"Failed to update queue item={item} error={res.err()}",
                     )
 
     def run(self) -> None:
@@ -377,16 +381,19 @@ class ZMQProducer(QueueProducer):
                 from ...service.worker.worker_service import WorkerService
 
                 worker_service = cast(
-                    WorkerService, self.auth_context.server.get_service(WorkerService)
+                    WorkerService,
+                    self.auth_context.server.get_service(WorkerService),
                 )
                 worker_service._delete(self.auth_context, syft_worker)
 
     def update_consumer_state_for_worker(
-        self, syft_worker_id: UID, consumer_state: ConsumerState
+        self,
+        syft_worker_id: UID,
+        consumer_state: ConsumerState,
     ) -> None:
         if self.worker_stash is None:
             logger.error(  # type: ignore[unreachable]
-                f"ZMQProducer worker stash not defined for {self.queue_name} - {self.id}"
+                f"ZMQProducer worker stash not defined for {self.queue_name} - {self.id}",
             )
             return
 
