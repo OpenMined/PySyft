@@ -27,7 +27,10 @@ class AttestationService(AbstractService):
         self.store = store
 
     def perform_request(
-        self, method: Callable, endpoint: str, raw: bool = False
+        self,
+        method: Callable,
+        endpoint: str,
+        raw: bool = False,
     ) -> SyftSuccess | SyftError | str:
         try:
             response = method(f"{ATTESTATION_SERVICE_URL}{endpoint}")
@@ -51,7 +54,9 @@ class AttestationService(AbstractService):
         roles=GUEST_ROLE_LEVEL,
     )
     def get_cpu_attestation(
-        self, context: AuthedServiceContext, raw_token: bool = False
+        self,
+        context: AuthedServiceContext,
+        raw_token: bool = False,
     ) -> str | SyftError | SyftSuccess:
         return self.perform_request(requests.get, ATTEST_CPU_ENDPOINT, raw_token)
 
@@ -61,6 +66,7 @@ class AttestationService(AbstractService):
         roles=GUEST_ROLE_LEVEL,
     )
     def get_gpu_attestation(
-        self, context: AuthedServiceContext, raw_token: bool = False
-    ) -> str | SyftError | SyftSuccess:
+        self,
+        context: AuthedServiceContext,
+        raw_token: bool = False,    ) -> str | SyftError | SyftSuccess:
         return self.perform_request(requests.get, ATTEST_GPU_ENDPOINT, raw_token)
