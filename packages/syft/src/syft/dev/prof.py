@@ -2,14 +2,14 @@
 import contextlib
 import os
 import signal
-import subprocess
+import subprocess  # nosec
 import tempfile
 import time
 
 
 @contextlib.contextmanager
 def pyspy() -> None:  # type: ignore
-    """Profile a block of code using py-spy.
+    """Profile a block of code using py-spy. Intended for development purposes only.
 
     Example:
     ```
@@ -33,7 +33,7 @@ def pyspy() -> None:  # type: ignore
         "--pid",
         str(os.getpid()),
     ]
-    process = subprocess.Popen(command, preexec_fn=os.setsid)
+    process = subprocess.Popen(command, preexec_fn=os.setsid)  # nosec
 
     start_time = time.time()
     yield process
