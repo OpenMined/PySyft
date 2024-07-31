@@ -259,7 +259,7 @@ class UserService(AbstractService):
                 and at least one number."
             )
 
-        salt, hashed = salt_and_hash_password(new_password, len(new_password))
+        salt, hashed = salt_and_hash_password(new_password, 12)
         user.hashed_password = hashed
         user.salt = salt
 
