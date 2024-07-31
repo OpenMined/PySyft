@@ -11,7 +11,7 @@ from result import Result
 
 
 class SMTPClient(BaseModel):
-    SOCKET_TIMEOUT: float = 5  # seconds
+    SOCKET_TIMEOUT: int = 5  # seconds
 
     def __init__(
         self,
