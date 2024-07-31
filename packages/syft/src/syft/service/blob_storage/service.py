@@ -48,7 +48,8 @@ class BlobStorageService(AbstractService):
 
     @service_method(path="blob_storage.get_all", name="get_all")
     def get_all_blob_storage_entries(
-        self, context: AuthedServiceContext
+        self,
+        context: AuthedServiceContext,
     ) -> list[BlobStorageEntry] | SyftError:
         result = self.stash.get_all(context.credentials)
         if result.is_ok():
@@ -99,7 +100,7 @@ class BlobStorageService(AbstractService):
         print(init_request.content)
         # TODO check return code
         res = context.server.blob_storage_client.connect().client.list_objects(
-            Bucket=bucket_name
+            Bucket=bucket_name,
         )
         # stdlib
         objects = res["Contents"]
@@ -135,10 +136,13 @@ class BlobStorageService(AbstractService):
         return SyftSuccess(message="Mounting Azure Successful!")
 
     @service_method(
-        path="blob_storage.get_files_from_bucket", name="get_files_from_bucket"
+        path="blob_storage.get_files_from_bucket",
+        name="get_files_from_bucket",
     )
     def get_files_from_bucket(
-        self, context: AuthedServiceContext, bucket_name: str
+        self,
+        context: AuthedServiceContext,
+        bucket_name: str,
     ) -> list | SyftError:
         result = self.stash.find_all(context.credentials, bucket_name=bucket_name)
         if result.is_err():
@@ -168,7 +172,9 @@ class BlobStorageService(AbstractService):
 
     @service_method(path="blob_storage.get_by_uid", name="get_by_uid")
     def get_blob_storage_entry_by_uid(
-        self, context: AuthedServiceContext, uid: UID
+        self,
+        context: AuthedServiceContext,
+        uid: UID,
     ) -> BlobStorageEntry | SyftError:
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
@@ -177,7 +183,9 @@ class BlobStorageService(AbstractService):
 
     @service_method(path="blob_storage.get_metadata", name="get_metadata")
     def get_blob_storage_metadata_by_uid(
-        self, context: AuthedServiceContext, uid: UID
+        self,
+        context: AuthedServiceContext,
+        uid: UID,
     ) -> BlobStorageEntry | SyftError:
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
@@ -192,7 +200,8 @@ class BlobStorageService(AbstractService):
         roles=GUEST_ROLE_LEVEL,
     )
     def read(
-        self, context: AuthedServiceContext, uid: UID
+        self,
+        context: AuthedServiceContext,
     ) -> BlobRetrieval | SyftError:
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
