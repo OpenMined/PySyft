@@ -7,12 +7,18 @@ from collections.abc import Iterable
 from collections.abc import KeysView
 from collections.abc import Mapping
 from types import MappingProxyType
+from typing import Any
 from typing import Generic
 from typing import SupportsIndex
 from typing import TypeVar
+from typing import get_args
+from typing import get_origin
 from typing import overload
 
 # third party
+from pydantic import GetCoreSchemaHandler
+from pydantic import ValidatorFunctionWrapHandler
+from pydantic_core import core_schema
 from typing_extensions import Self
 
 _T = TypeVar("_T")
@@ -233,3 +239,35 @@ class DictTuple(tuple[_VT, ...], Generic[_KT, _VT], metaclass=_Meta):
 
     def items(self) -> Iterable[tuple[_KT, _VT]]:
         return zip(self.__mapping.keys(), self)
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, source_type: Any, handler: GetCoreSchemaHandler
+    ):
+        origin = get_origin(source_type)
+        if origin is None:  # used as `x: Owner` without params
+            origin = source_type
+            kt, vt = (Any, Any)
+        else:
+            kt, vt, *_ = get_args(source_type)
+
+        k_schema = handler.generate_schema(MappingProxyType[kt, int])
+        v_schema = handler.generate_schema(vt)
+
+        def val_k(v: cls, handler: ValidatorFunctionWrapHandler) -> cls:
+            handler(v.__mapping)
+            return v
+
+        def val_v(v: cls, handler: ValidatorFunctionWrapHandler) -> cls:
+            handler(v)
+            return v
+
+        return core_schema.chain_schema(
+            [
+                core_schema.is_instance_schema(cls),
+                core_schema.no_info_wrap_validator_function(
+                    val_v, core_schema.tuple_variable_schema(items_schema=v_schema)
+                ),
+                core_schema.no_info_wrap_validator_function(val_k, k_schema),
+            ]
+        )
