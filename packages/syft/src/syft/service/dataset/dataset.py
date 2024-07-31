@@ -25,11 +25,13 @@ from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
+from ...types.syft_migration import migrate
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
+from ...types.transforms import drop
 from ...types.transforms import generate_id
 from ...types.transforms import make_set_default
 from ...types.transforms import transform
@@ -974,3 +976,33 @@ class DatasetUpdate(PartialSyftObject):
     description: MarkdownDescription
     uploader: Contributor
     summary: str
+
+
+@migrate(AssetV1, Asset)
+def migrate_asset_v1_to_v2() -> list[Callable]:
+    return [
+        make_set_default("mock_blob_storage_entry_id", None),
+        make_set_default("data_blob_storage_entry_id", None),
+    ]
+
+
+@migrate(Asset, AssetV1)
+def migrate_asset_v2_to_v1() -> list[Callable]:
+    return [
+        drop(["mock_blob_storage_entry_id", "data_blob_storage_entry_id"]),
+    ]
+
+
+@migrate(CreateAssetV1, CreateAsset)
+def migrate_create_asset_v1_to_v2() -> list[Callable]:
+    return [
+        make_set_default("mock_blob_storage_entry_id", None),
+        make_set_default("data_blob_storage_entry_id", None),
+    ]
+
+
+@migrate(CreateAsset, CreateAssetV1)
+def migrate_create_asset_v2_to_v1() -> list[Callable]:
+    return [
+        drop(["mock_blob_storage_entry_id", "data_blob_storage_entry_id"]),
+    ]
