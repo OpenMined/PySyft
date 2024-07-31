@@ -9,7 +9,7 @@
 
 ### Latest Beta
 
-- `0.9.0` (Beta) - `dev` branch 👈🏽 
+- `0.9.0` (Beta) - `dev` branch 👈🏽
 - Install PySyft (Beta): `pip install -U syft --pre`
 
 **Deprecated**:
