@@ -33,7 +33,8 @@ def pyspy() -> None:  # type: ignore
         "--pid",
         str(os.getpid()),
     ]
-    process = subprocess.Popen(command, preexec_fn=os.setsid)  # nosec
+    # Use start_new_session=True to avoid using preexec_fn
+    process = subprocess.Popen(command, start_new_session=True)  # nosec
 
     start_time = time.time()
     yield process
