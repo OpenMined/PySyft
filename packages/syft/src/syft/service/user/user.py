@@ -395,6 +395,24 @@ def user_create_to_user() -> list[Callable]:
     ]
 
 
+@transform(UserV1, UserView)
+def userv1_to_view_user() -> list[Callable]:
+    return [
+        keep(
+            [
+                "id",
+                "email",
+                "name",
+                "role",
+                "institution",
+                "website",
+                "mock_execution_permission",
+                "notifications_enabled",
+            ]
+        )
+    ]
+
+
 @transform(User, UserView)
 def user_to_view_user() -> list[Callable]:
     return [
@@ -421,6 +439,11 @@ class UserPrivateKey(SyftObject):
     email: str
     signing_key: SyftSigningKey
     role: ServiceRole
+
+
+@transform(UserV1, UserPrivateKey)
+def userv1_to_user_verify() -> list[Callable]:
+    return [keep(["email", "signing_key", "id", "role"])]
 
 
 @transform(User, UserPrivateKey)
