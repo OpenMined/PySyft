@@ -250,7 +250,6 @@ class DatasiteClient(SyftClient):
         items = resolved_state.create_objs + resolved_state.update_objs
 
         action_objects = [x for x in items if isinstance(x, ActionObject)]
-
         for action_object in action_objects:
             action_object.reload_cache()
             # NOTE permissions are added separately server side
