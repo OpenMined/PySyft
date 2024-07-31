@@ -216,11 +216,14 @@ class SyncService(AbstractService):
                     context, item, new_storage_permissions
                 )
 
+        # NOTE include_items=False to avoid snapshotting the database
+        # Snapshotting is disabled to avoid mongo size limit and performance issues
         new_state = self.build_current_state(
             context,
             new_items=items,
             new_ignored_batches=ignored_batches,
             new_unignored_batches=unignored_batches,
+            include_items=False,
         ).unwrap()
 
         self.stash.set(context.credentials, new_state).unwrap()
@@ -349,6 +352,7 @@ class SyncService(AbstractService):
         new_items: list[SyncableSyftObject] | None = None,
         new_ignored_batches: dict[UID, int] | None = None,
         new_unignored_batches: set[UID] | None = None,
+        include_items: bool = True,
     ) -> SyncState:
         new_items = new_items if new_items is not None else []
         new_ignored_batches = (
@@ -357,9 +361,14 @@ class SyncService(AbstractService):
         unignored_batches: set[UID] = (
             new_unignored_batches if new_unignored_batches is not None else set()
         )
-        objects, errors = self.get_all_syncable_items(context).unwrap()
-
-        permissions, storage_permissions = self.get_permissions(context, objects)
+        if include_items:
+            objects, errors = self.get_all_syncable_items(context).unwrap()
+            permissions, storage_permissions = self.get_permissions(context, objects)
+        else:
+            objects = []
+            errors = {}
+            permissions = {}
+            storage_permissions = {}
 
         previous_state = self.stash.get_latest(context=context).unwrap()
 

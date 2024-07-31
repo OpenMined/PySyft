@@ -2,6 +2,9 @@
 
 # stdlib
 
+# stdlib
+import threading
+
 # third party
 
 # relative
@@ -34,14 +37,41 @@ class SyncStash(NewBaseUIDStoreStash):
         self.store = store
         self.settings = self.settings
         self._object_type = self.object_type
+        self.last_state: SyncState | None = None
 
     @as_result(StashException)
     def get_latest(self, context: AuthedServiceContext) -> SyncState | None:
+        if self.last_state is not None:
+            return self.last_state
         all_states = self.get_all(
             credentials=context.server.verify_key,  # type: ignore
             order_by=OrderByDatePartitionKey,
         ).unwrap()
 
         if len(all_states) > 0:
+            self.last_state = all_states[-1]
             return all_states[-1]
         return None
+
+    def unwrap_set(self, context, item):
+        return super().set(context, item).unwrap()
+
+    @as_result(StashException)
+    def set(  # type: ignore
+        self,
+        context: AuthedServiceContext,
+        item: SyncState,
+        **kwargs,
+    ) -> SyncState:
+        self.last_state = item
+
+        # use threading
+        threading.Thread(
+            target=self.unwrap_set,
+            args=(
+                context,
+                item,
+            ),
+            kwargs=kwargs,
+        ).start()
+        return item

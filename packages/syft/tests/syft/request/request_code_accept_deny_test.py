@@ -1,8 +1,5 @@
-# third party
-from faker import Faker
-import pytest
-
 # syft absolute
+import pytest
 import syft
 from syft.client.client import SyftClient
 from syft.server.worker import Worker
@@ -15,32 +12,11 @@ from syft.service.request.request import ActionStoreChange
 from syft.service.request.request import ObjectMutation
 from syft.service.request.request import RequestStatus
 from syft.service.request.request import UserCodeStatusChange
-from syft.service.request.request_service import RequestService
+from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.settings.settings_service import SettingsService
-from syft.service.user.user import UserPrivateKey
-from syft.store.document_store import DocumentStore
 from syft.store.linked_obj import LinkedObject
 from syft.types.errors import SyftException
-
-
-@pytest.fixture
-def request_service(document_store: DocumentStore):
-    yield RequestService(store=document_store)
-
-
-def get_ds_client(faker: Faker, root_client: SyftClient, guest_client: SyftClient):
-    guest_email = faker.email()
-    password = "mysecretpassword"
-    result = root_client.register(
-        name=faker.name(),
-        email=guest_email,
-        password=password,
-        password_verify=password,
-    )
-    assert isinstance(result.value, UserPrivateKey)
-    ds_client = guest_client.login(email=guest_email, password=password)
-    return ds_client
 
 
 def test_object_mutation(worker: Worker):
@@ -77,15 +53,13 @@ def test_object_mutation(worker: Worker):
     assert setting.organization == original_name
 
 
-def test_action_store_change(faker: Faker, worker: Worker):
+def test_action_store_change(worker: Worker, ds_client: SyftClient):
     root_client = worker.root_client
     dummy_data = [1, 2, 3]
     data = ActionObject.from_obj(dummy_data)
     action_obj = data.send(root_client)
 
     assert action_obj.get() == dummy_data
-
-    ds_client = get_ds_client(faker, root_client, worker.guest_client)
 
     action_object_link = LinkedObject.from_obj(
         action_obj, server_uid=action_obj.syft_server_uid
@@ -120,13 +94,11 @@ def test_action_store_change(faker: Faker, worker: Worker):
     assert "Permission", "denied" in exc.value.public_message
 
 
-def test_user_code_status_change(faker: Faker, worker: Worker):
+def test_user_code_status_change(worker: Worker, ds_client: SyftClient):
     root_client = worker.root_client
     dummy_data = [1, 2, 3]
     data = ActionObject.from_obj(dummy_data)
     action_obj = data.send(root_client)
-
-    ds_client = get_ds_client(faker, root_client, worker.guest_client)
 
     @syft.syft_function(
         input_policy=syft.ExactMatch(data=action_obj),
@@ -168,13 +140,11 @@ def test_user_code_status_change(faker: Faker, worker: Worker):
     assert not user_code.status.approved
 
 
-def test_code_accept_deny(faker: Faker, worker: Worker):
+def test_code_accept_deny(worker: Worker, ds_client: SyftClient):
     root_client = worker.root_client
     dummy_data = [1, 2, 3]
     data = ActionObject.from_obj(dummy_data)
     action_obj = data.send(root_client)
-
-    ds_client = get_ds_client(faker, root_client, worker.guest_client)
 
     @syft.syft_function(
         input_policy=syft.ExactMatch(data=action_obj),
