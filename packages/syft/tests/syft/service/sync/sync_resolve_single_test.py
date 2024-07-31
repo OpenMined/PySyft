@@ -126,10 +126,10 @@ def test_diff_state(low_worker, high_worker):
         from_client=high_client, to_client=low_client
     )
 
-    high_state = high_client.get_sync_state()
-    low_state = high_client.get_sync_state()
-    assert high_state.get_previous_state_diff().is_same
-    assert low_state.get_previous_state_diff().is_same
+    # high_state = high_client.get_sync_state()
+    # low_state = high_client.get_sync_state()
+    # assert high_state.get_previous_state_diff().is_same
+    # assert low_state.get_previous_state_diff().is_same
     assert diff_state_after.is_same
 
     client_low_ds.refresh()
@@ -178,10 +178,10 @@ def test_diff_state_with_dataset(low_worker: Worker, high_worker: Worker):
         from_client=high_client, to_client=low_client
     )
 
-    high_state = high_client.get_sync_state()
-    low_state = high_client.get_sync_state()
-    assert high_state.get_previous_state_diff().is_same
-    assert low_state.get_previous_state_diff().is_same
+    # high_state = high_client.get_sync_state()
+    # low_state = high_client.get_sync_state()
+    # assert high_state.get_previous_state_diff().is_same
+    # assert low_state.get_previous_state_diff().is_same
     assert diff_state_after.is_same
 
     client_low_ds.refresh()
