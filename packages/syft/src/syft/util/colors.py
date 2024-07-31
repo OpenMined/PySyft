@@ -10,4 +10,4 @@ SURFACE = {"light": "#464158", "dark": "#ffffff"}
 
 
 def light_dark_css(cmap: dict[str, str]) -> str:
-    return f"light-dark({cmap["light"], cmap['dark']})"
+    return f"light-dark({cmap['light'], cmap['dark']})"
