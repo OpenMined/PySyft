@@ -571,6 +571,7 @@ body {
   background-color: #c2def0;
 }
 
+.syft-code,
 .syft-user_code,
 .syft-project,
 .syft-project-create,
@@ -591,7 +592,9 @@ body {
 .syft-asset h3,
 .syft-asset p,
 .syft-syncstate h3,
-.syft-syncstate p {
+.syft-syncstate p,
+.syft-code p,
+.syft-code h3 {
   font-family: "Open Sans";
 }
 
@@ -620,32 +623,6 @@ body {
 
 .syft-space {
   margin-top: 1em;
-}
-
-.syft-code {
-  color: var(--surface-color);
-}
-
-.syft-user_code {
-  color: var(--surface-color);
-}
-
-.syft-code h3,
-.syft-code p {
-  font-family: "Open Sans";
-}
-
-.syft-contributor {
-  color: var(--surface-color);
-}
-
-.syft-asset {
-  color: var(--surface-color);
-}
-
-.syft-asset h3,
-p {
-  font-family: "Open Sans";
 }
 
 .itables {
