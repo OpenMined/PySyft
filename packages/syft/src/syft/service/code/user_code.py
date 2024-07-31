@@ -52,7 +52,7 @@ from ...types.dicttuple import DictTuple
 from ...types.errors import SyftException
 from ...types.result import as_result
 from ...types.syft_migration import migrate
-from ...types.syft_object import PartialSyftObject
+from ...types.syft_object import SYFT_OBJECT_VERSION_2, PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
@@ -1643,12 +1643,23 @@ class UserCodeExecutionResult(SyftObject):
     stderr: str
     result: Any = None
 
+@serializable()
+class UserCodeExecutionOutputV1(SyftObject):
+    # version
+    __canonical_name__ = "UserCodeExecutionOutput"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: UID
+    user_code_id: UID
+    stdout: str
+    stderr: str
+    result: Any = None
 
 @serializable()
 class UserCodeExecutionOutput(SyftObject):
     # version
     __canonical_name__ = "UserCodeExecutionOutput"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
     user_code_id: UID

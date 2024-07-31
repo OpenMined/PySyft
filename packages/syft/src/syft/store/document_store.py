@@ -12,8 +12,10 @@ from typing import TypeVar
 # third party
 from pydantic import BaseModel
 from pydantic import Field
-from result import Err
-from result import Ok
+# from result import Err
+# from result import Ok
+from ..types.result import Ok
+from ..types.result import Err
 from typeguard import check_type
 
 # relative
@@ -392,7 +394,7 @@ class StorePartition:
         add_permissions: list[ActionObjectPermission] | None = None,
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
-    ) -> Result[SyftObject, str]:
+    ) -> SyftObject:
         if obj.created_date is None:
             obj.created_date = BaseDateTime.now()
         return self._thread_safe_cbk(
@@ -713,15 +715,7 @@ class NewBaseStash:
         order_by: PartitionKey | None = None,
         has_permission: bool = False,
     ) -> list[NewBaseStash.object_type]:
-        result = self.partition.all(credentials, order_by, has_permission)
-
-        match result:
-            case Ok(value):
-                return value
-            case Err(err):
-                raise StashException(err)
-            case _:
-                raise StashException("Unexpected error")
+        return self.partition.all(credentials, order_by, has_permission).unwrap()
 
     def add_permissions(self, permissions: list[ActionObjectPermission]) -> None:
         self.partition.add_permissions(permissions)
@@ -750,21 +744,21 @@ class NewBaseStash:
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> NewBaseStash.object_type:
-        result = self.partition.set(
+        return self.partition.set(
             credentials=credentials,
             obj=obj,
             ignore_duplicates=ignore_duplicates,
             add_permissions=add_permissions,
             add_storage_permission=add_storage_permission,
-        )
+        ).unwrap()
 
-        match result:
-            case Ok(value):
-                return value
-            case Err(err):
-                raise StashException(err)
-            case _:
-                raise StashException("Unexpected error")
+        # match result:
+        #     case Ok(value):
+        #         return value
+        #     case Err(err):
+        #         raise StashException(err)
+        #     case _:
+        #         raise StashException("Unexpected error")
 
     @as_result(StashException)
     def query_all(
@@ -793,20 +787,20 @@ class NewBaseStash:
         index_qks = QueryKeys(qks=unique_keys)
         search_qks = QueryKeys(qks=searchable_keys)
 
-        result = self.partition.find_index_or_search_keys(
+        return self.partition.find_index_or_search_keys(
             credentials=credentials,
             index_qks=index_qks,
             search_qks=search_qks,
             order_by=order_by,
-        )
+        ).unwrap()
 
-        match result:
-            case Ok(value):
-                return value
-            case Err(err):
-                raise StashException(err)
-            case _:
-                raise StashException("Unexpected error")
+        # match result:
+        #     case Ok(value):
+        #         return value
+        #     case Err(err):
+        #         raise StashException(err)
+        #     case _:
+        #         raise StashException("Unexpected error")
 
     @as_result(StashException)
     def query_all_kwargs(
@@ -876,17 +870,17 @@ class NewBaseStash:
     def delete(
         self, credentials: SyftVerifyKey, qk: QueryKey, has_permission: bool = False
     ) -> Literal[True]:
-        result = self.partition.delete(
+        return self.partition.delete(
             credentials=credentials, qk=qk, has_permission=has_permission
-        )
+        ).unwrap()
 
-        match result:
-            case Ok(_):
-                return True
-            case Err(err):
-                raise StashException(str(err))
-            case _:
-                raise StashException("Unexpected error")
+        # match result:
+        #     case Ok(_):
+        #         return True
+        #     case Err(err):
+        #         raise StashException(str(err))
+        #     case _:
+        #         raise StashException("Unexpected error")
 
     @as_result(StashException)
     def update(

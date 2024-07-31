@@ -127,6 +127,9 @@ class ServiceConfigV1(BaseConfigV1):
     __canonical_name__ = "ServiceConfig"
     __version__ = SYFT_OBJECT_VERSION_1
 
+    permissions: list
+    roles: list[ServiceRole]
+
 @serializable()
 class ServiceConfig(BaseConfig):
     __canonical_name__ = "ServiceConfig"

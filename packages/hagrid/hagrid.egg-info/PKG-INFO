@@ -1,0 +1,27 @@
+Metadata-Version: 2.1
+Name: hagrid
+Version: 0.3.112
+Summary: Happy Automation for Grid
+Author: Andrew Trask <andrew@openmined.org>
+Description-Content-Type: text/plain
+Requires-Dist: ascii_magic
+Requires-Dist: click>=8.1.7
+Requires-Dist: cryptography>=41.0.4
+Requires-Dist: gitpython
+Requires-Dist: jinja2
+Requires-Dist: names
+Requires-Dist: packaging>=23.0
+Requires-Dist: paramiko
+Requires-Dist: pyOpenSSL>=23.2.0
+Requires-Dist: requests
+Requires-Dist: rich
+Requires-Dist: setuptools
+Requires-Dist: virtualenv-api
+Requires-Dist: virtualenv
+Requires-Dist: PyYAML
+Requires-Dist: tqdm
+Requires-Dist: gevent<=23.9.1,>=22.10.2
+Requires-Dist: ansible
+Requires-Dist: ansible-core
+
+HAGrid is the swiss army knife of OpenMined's PySyft and PyGrid.

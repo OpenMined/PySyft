@@ -175,67 +175,64 @@ class KeyValueStorePartition(StorePartition):
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> SyftObject:
-        try:
-            store_query_key: QueryKey = self.settings.store_key.with_obj(obj)
-            uid = store_query_key.value
-            write_permission = ActionObjectWRITE(uid=uid, credentials=credentials)
-            can_write = self.has_permission(write_permission)
-            unique_query_keys: QueryKeys = self.settings.unique_keys.with_obj(obj)
-            store_key_exists = store_query_key.value in self.data
-            searchable_query_keys = self.settings.searchable_keys.with_obj(obj)
+        store_query_key: QueryKey = self.settings.store_key.with_obj(obj)
+        uid = store_query_key.value
+        write_permission = ActionObjectWRITE(uid=uid, credentials=credentials)
+        can_write = self.has_permission(write_permission)
+        unique_query_keys: QueryKeys = self.settings.unique_keys.with_obj(obj)
+        store_key_exists = store_query_key.value in self.data
+        searchable_query_keys = self.settings.searchable_keys.with_obj(obj)
 
-            ck_check = self._check_partition_keys_unique(
-                unique_query_keys=unique_query_keys
+        ck_check = self._check_partition_keys_unique(
+            unique_query_keys=unique_query_keys
+        )
+
+        if not store_key_exists and ck_check == UniqueKeyCheck.EMPTY:
+            # attempt to claim it for writing
+            self.take_ownership(
+                uid=uid, credentials=credentials
+            ).unwrap()  # TODO Error: this feels wrong, initially this could be None
+        elif not ignore_duplicates:
+            keys = ", ".join(f"`{key.key}`" for key in unique_query_keys.all)
+            raise SyftException(
+                public_message=f"Duplication Key Error for {obj}.\n"
+                f"The fields that should be unique are {keys}."
             )
+        else:
+            # we are not throwing an error, because we are ignoring duplicates
+            # we are also not writing though
+            return obj
 
-            if not store_key_exists and ck_check == UniqueKeyCheck.EMPTY:
-                # attempt to claim it for writing
-                self.take_ownership(
-                    uid=uid, credentials=credentials
-                ).unwrap()  # TODO Error: this feels wrong, initially this could be None
-            elif not ignore_duplicates:
-                keys = ", ".join(f"`{key.key}`" for key in unique_query_keys.all)
-                raise SyftException(
-                    public_message=f"Duplication Key Error for {obj}.\n"
-                    f"The fields that should be unique are {keys}."
-                )
-            else:
-                # we are not throwing an error, because we are ignoring duplicates
-                # we are also not writing though
-                return obj
+        if can_write:
+            self._set_data_and_keys(
+                store_query_key=store_query_key,
+                unique_query_keys=unique_query_keys,
+                searchable_query_keys=searchable_query_keys,
+                obj=obj,
+            )
+            self.data[uid] = obj
 
-            if can_write:
-                self._set_data_and_keys(
-                    store_query_key=store_query_key,
-                    unique_query_keys=unique_query_keys,
-                    searchable_query_keys=searchable_query_keys,
-                    obj=obj,
-                )
-                self.data[uid] = obj
+            # Add default permissions
+            if uid not in self.permissions:
+                self.permissions[uid] = set()
+            self.add_permission(ActionObjectREAD(uid=uid, credentials=credentials))
+            if add_permissions is not None:
+                self.add_permissions(add_permissions)
 
-                # Add default permissions
-                if uid not in self.permissions:
-                    self.permissions[uid] = set()
-                self.add_permission(ActionObjectREAD(uid=uid, credentials=credentials))
-                if add_permissions is not None:
-                    self.add_permissions(add_permissions)
-
-                if uid not in self.storage_permissions:
-                    self.storage_permissions[uid] = set()
-                if add_storage_permission:
-                    self.add_storage_permission(
-                        StoragePermission(
-                            uid=uid,
-                            server_uid=self.server_uid,
-                        )
+            if uid not in self.storage_permissions:
+                self.storage_permissions[uid] = set()
+            if add_storage_permission:
+                self.add_storage_permission(
+                    StoragePermission(
+                        uid=uid,
+                        server_uid=self.server_uid,
                     )
-                return obj
-            else:
-                raise SyftException(
-                    public_message=f"Permission: {write_permission} denied"
                 )
-        except Exception as e:
-            raise SyftException.from_exception(e)
+            return obj
+        else:
+            raise SyftException(
+                public_message=f"Permission: {write_permission} denied"
+            )
 
     @as_result(SyftException)
     def take_ownership(self, uid: UID, credentials: SyftVerifyKey) -> SyftSuccess:

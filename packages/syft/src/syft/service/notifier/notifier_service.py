@@ -65,18 +65,10 @@ class NotifierService(AbstractService):
 
     def set_notifier_active_to_true(
         self, context: AuthedServiceContext
-    ) -> SyftSuccess | SyftError:
-        result = self.stash.get(credentials=context.credentials)
-        if result.is_err():
-            return SyftError(message=result.err())
-
-        notifier = result.ok()
-        if notifier is None:
-            return SyftError(message="Notifier settings not found.")
+    ) -> SyftSuccess:
+        notifier = self.stash.get(credentials=context.credentials).unwrap(public_message="Notifier settings not found.")
         notifier.active = True
-        result = self.stash.update(credentials=context.credentials, settings=notifier)
-        if result.is_err():
-            return SyftError(message=result.err())
+        self.stash.update(credentials=context.credentials, settings=notifier).unwrap()
         return SyftSuccess(message="notifier.active set to true.")
 
     def set_notifier_active_to_false(
@@ -85,18 +77,9 @@ class NotifierService(AbstractService):
         """
         Essentially a duplicate of turn_off method.
         """
-        result = self.stash.get(credentials=context.credentials)
-        if result.is_err():
-            return SyftError(message=result.err())
-
-        notifier = result.ok()
-        if notifier is None:
-            return SyftError(message="Notifier settings not found.")
-
+        notifier = self.stash.get(credentials=context.credentials).unwrap()
         notifier.active = False
-        result = self.stash.update(credentials=context.credentials, settings=notifier)
-        if result.is_err():
-            return SyftError(message=result.err())
+        self.stash.update(credentials=context.credentials, settings=notifier).unwrap()
         return SyftSuccess(message="notifier.active set to false.")
 
     @as_result(SyftException)

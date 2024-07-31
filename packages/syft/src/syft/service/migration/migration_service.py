@@ -84,9 +84,12 @@ class MigrationService(AbstractService):
             canonical_name = object_type.__canonical_name__
             object_version = object_type.__version__
 
-            migration_state = self.get_state(context, canonical_name).unwrap(
-                public_message=f"Failed to get migration state for {canonical_name}."
-            )
+            try:
+                migration_state = self.get_state(context, canonical_name).unwrap(
+                    public_message=f"Failed to get migration state for {canonical_name}."
+                )
+            except NotFoundException:
+                migration_state = None
             if (
                 migration_state is not None
                 and migration_state.current_version != migration_state.latest_version
@@ -243,7 +246,7 @@ class MigrationService(AbstractService):
         else:
             klasses_to_migrate = self._find_klasses_pending_for_migration(
                 context=context, object_types=document_store_object_types
-            )
+            ).unwrap()
 
         result = defaultdict(list)
 

@@ -4,5 +4,37 @@
   },
   "2": {
     "release_name": "0.8.8.json"
+  },
+  "dev": {
+    "object_versions": {
+      "BaseConfig": {
+        "2": {
+          "version": 2,
+          "hash": "890d2879ac44611db9b88ba9334a721130d0ac3aa18a303fa9e4081f14b9b8c7",
+          "action": "add"
+        }
+      },
+      "ServiceConfig": {
+        "2": {
+          "version": 2,
+          "hash": "93dfab144e0b0884c602358b3a9ce889bb29ab96e3b4adcfe3cef47a31694a9a",
+          "action": "add"
+        }
+      },
+      "LibConfig": {
+        "2": {
+          "version": 2,
+          "hash": "a8a78a8d726ee9e79f95614f3d0fa5b85edc6fce7be7651715208669be93e0e3",
+          "action": "add"
+        }
+      },
+      "UserCodeExecutionOutput": {
+        "2": {
+          "version": 2,
+          "hash": "8a4237816a5193dc8063496f3ac6c56ab6d190179bc3c71cd3937332f5ef9e07",
+          "action": "add"
+        }
+      }
+    }
   }
 }
