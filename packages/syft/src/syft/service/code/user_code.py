@@ -726,17 +726,6 @@ class UserCode(SyncableSyftObject):
         if isinstance(api, SyftError):
             return api
 
-        # get all assets on the server
-        datasets: list[Dataset] = api.services.dataset.get_all()
-        if isinstance(datasets, SyftError):
-            return datasets
-
-        all_assets: dict[UID, Asset] = {}
-        for dataset in datasets:
-            for asset in dataset.asset_list:
-                asset._dataset_name = dataset.name
-                all_assets[asset.action_id] = asset
-
         # get a flat dict of all inputs
         all_inputs = {}
         inputs = self.input_policy_init_kwargs or {}
@@ -746,10 +735,14 @@ class UserCode(SyncableSyftObject):
         # map the action_id to the asset
         used_assets: list[Asset] = []
         for kwarg_name, action_id in all_inputs.items():
-            asset = all_assets.get(action_id, None)
-            if asset:
-                asset._kwarg_name = kwarg_name
-                used_assets.append(asset)
+            
+                assets = api.dataset.get_assets_by_action_id(uid=action_id)
+                if isinstance(assets, SyftError):
+                    return assets
+                if assets:
+                    asset = assets[0]
+                    asset._kwarg_name = kwarg_name
+                    used_assets.append(asset)
 
         asset_dict = {asset._kwarg_name: asset for asset in used_assets}
         return DictTuple(asset_dict)
