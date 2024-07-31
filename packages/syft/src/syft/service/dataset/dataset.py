@@ -33,15 +33,9 @@ from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.transforms import validate_url
 from ...types.uid import UID
-from ...util.colors import ON_SURFACE_HIGHEST
-from ...util.colors import SURFACE
-from ...util.colors import SURFACE_SURFACE
-from ...util.colors import light_dark_css
 from ...util.markdown import as_markdown_python_code
 from ...util.misc_objs import MarkdownDescription
 from ...util.notebook_ui.icons import Icon
-from ...util.notebook_ui.styles import FONT_CSS
-from ...util.notebook_ui.styles import ITABLES_CSS
 from ...util.table import itable_template_from_df
 from ..action.action_data_empty import ActionDataEmpty
 from ..action.action_object import ActionObject
@@ -72,9 +66,6 @@ class Contributor(SyftObject):
 
     def _repr_html_(self) -> Any:
         return f"""
-            <style>
-            .syft-contributor {{color: {light_dark_css(SURFACE)};}}
-            </style>
             <div class='syft-contributor' style="line-height:25%">
                 <h3>Contributor</h3>
                 <p><strong>Name: </strong>{self.name}</p>
@@ -126,15 +117,6 @@ class Asset(SyftObject):
         super().__init__(**data, description=description)
 
     def _repr_html_(self) -> Any:
-        itables_css = f"""
-        .itables table {{
-            margin: 0 auto;
-            float: left;
-            color: {light_dark_css(ON_SURFACE_HIGHEST)};
-        }}
-        .itables table th {{color: {light_dark_css(SURFACE_SURFACE)};}}
-        """
-
         # relative
         from ...service.action.action_object import ActionObject
 
@@ -151,41 +133,24 @@ class Asset(SyftObject):
             private_data_obj = private_data_res.ok_value
             if isinstance(private_data_obj, ActionObject):
                 df = pd.DataFrame(self.data.syft_action_data)
-                data_table_line = itable_template_from_df(
-                    df=private_data_obj.head(5), itable_css=itables_css
-                )
+                data_table_line = itable_template_from_df(df=private_data_obj.head(5))
 
             elif isinstance(private_data_obj, pd.DataFrame):
-                data_table_line = itable_template_from_df(
-                    df=private_data_obj.head(5), itable_css=itables_css
-                )
+                data_table_line = itable_template_from_df(df=private_data_obj.head(5))
             else:
                 data_table_line = private_data_res.ok_value
 
         if isinstance(self.mock, ActionObject):
             df = pd.DataFrame(self.mock.syft_action_data)
-            mock_table_line = itable_template_from_df(
-                df=df.head(5), itable_css=itables_css
-            )
+            mock_table_line = itable_template_from_df(df=df.head(5))
         elif isinstance(self.mock, pd.DataFrame):
-            mock_table_line = itable_template_from_df(
-                df=self.mock.head(5), itable_css=itables_css
-            )
+            mock_table_line = itable_template_from_df(df=self.mock.head(5))
         else:
             mock_table_line = self.mock
             if isinstance(mock_table_line, SyftError):
                 mock_table_line = mock_table_line.message
 
         return f"""
-            <style>
-            {FONT_CSS}
-            .syft-asset {{color: {light_dark_css(SURFACE)};}}
-            .syft-asset h3,
-            .syft-asset p
-              {{font-family: 'Open Sans'}}
-            {ITABLES_CSS}
-            </style>
-
             <div class="syft-asset">
             <h3>{self.name}</h3>
             <p>{self.description or ""}</p>
@@ -548,14 +513,6 @@ class Dataset(SyftObject):
         if self.to_be_deleted:
             return "This dataset has been marked for deletion. The underlying data may be not available."
         return f"""
-            <style>
-            {FONT_CSS}
-            .syft-dataset {{color: {light_dark_css(SURFACE)};}}
-            .syft-dataset h3,
-            .syft-dataset p
-              {{font-family: 'Open Sans';}}
-              {ITABLES_CSS}
-            </style>
             <div class='syft-dataset'>
             <h1>{self.name}</h1>
             <h2><strong><span class='pr-8'>Summary</span></strong></h2>

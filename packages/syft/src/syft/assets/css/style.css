@@ -7,6 +7,7 @@ body.vscode-dark {
   --colors-black: #ffffff;
   --surface-color: #fff;
   --text-color: #ffffff;
+  --surface-highest-color: #ffffff;
 }
 
 body {
@@ -17,6 +18,7 @@ body {
   --colors-black: #17161d;
   --surface-color: #464158;
   --text-color: #2e2b3b;
+  --surface-highest-color: #534f64;
 }
 
 .header-1 {
@@ -618,4 +620,48 @@ body {
 
 .syft-space {
   margin-top: 1em;
+}
+
+.syft-code {
+  color: var(--surface-color);
+}
+
+.syft-user_code {
+  color: var(--surface-color);
+}
+
+.syft-code h3,
+.syft-code p {
+  font-family: "Open Sans";
+}
+
+.syft-contributor {
+  color: var(--surface-color);
+}
+
+.syft-asset {
+  color: var(--surface-color);
+}
+
+.syft-asset h3,
+p {
+  font-family: "Open Sans";
+}
+
+.itables {
+  font-family: "Consolas", monospace, sans-serif;
+}
+
+.itables table {
+  margin: 0 auto;
+  float: left;
+  color: var(--surface-highest-color);
+}
+
+.itables table th {
+  color: var(--text-color);
+}
+
+.syft-request {
+  line-height: 1;
 }

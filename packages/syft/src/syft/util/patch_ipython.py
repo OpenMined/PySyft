@@ -31,7 +31,6 @@ def _patch_ipython_sanitization() -> None:
     from .notebook_ui.components.sync import COPY_CSS
     from .notebook_ui.styles import CSS_CODE
     from .notebook_ui.styles import FONT_CSS
-    from .notebook_ui.styles import ITABLES_CSS
     from .notebook_ui.styles import JS_DOWNLOAD_FONTS
 
     tabulator_js = load_js("tabulator.min.js")
@@ -41,7 +40,6 @@ def _patch_ipython_sanitization() -> None:
 
     SKIP_SANITIZE = [
         FONT_CSS,
-        ITABLES_CSS,
         CSS_CODE,
         JS_DOWNLOAD_FONTS,
         tabulator_js,
@@ -51,7 +49,6 @@ def _patch_ipython_sanitization() -> None:
 
     css_reinsert = f"""
 <style>{FONT_CSS}</style>
-<style>{ITABLES_CSS}</style>
 {JS_DOWNLOAD_FONTS}
 {CSS_CODE}
 <style>{ALERT_CSS}</style>

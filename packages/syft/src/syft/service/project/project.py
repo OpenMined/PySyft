@@ -36,8 +36,6 @@ from ...types.transforms import TransformContext
 from ...types.transforms import rename
 from ...types.transforms import transform
 from ...types.uid import UID
-from ...util.colors import SURFACE
-from ...util.colors import light_dark_css
 from ...util.decorators import deprecated
 from ...util.markdown import markdown_as_class_with_fields
 from ...util.util import full_name_with_qualname
@@ -707,12 +705,7 @@ class Project(SyftObject):
 
     def _repr_html_(self) -> Any:
         return (
-            f"""
-            <style>
-            .syft-project {{color: {light_dark_css(SURFACE)};}}
-            </style>
-            """
-            + "<div class='syft-project'>"
+            "<div class='syft-project'>"
             + f"<h3>{self.name}</h3>"
             + f"<p>{self.description}</p>"
             + f"<p><strong>Created by: </strong>{self.username} ({self.created_by})</p>"
@@ -1208,12 +1201,7 @@ class ProjectSubmit(SyftObject):
 
     def _repr_html_(self) -> Any:
         return (
-            f"""
-            <style>
-            .syft-project-create {{color: {light_dark_css(SURFACE)};}}
-            </style>
-            """
-            + "<div class='syft-project-create'>"
+            "<div class='syft-project-create'>"
             + f"<h3>{self.name}</h3>"
             + f"<p>{self.description}</p>"
             + f"<p><strong>Created by: </strong>{self.username} ({self.created_by})</p>"

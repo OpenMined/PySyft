@@ -61,8 +61,6 @@ from ...types.transforms import add_server_uid_for_key
 from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.uid import UID
-from ...util.colors import SURFACE
-from ...util.colors import light_dark_css
 from ...util.decorators import deprecated
 from ...util.markdown import CodeMarkdown
 from ...util.markdown import as_markdown_code
@@ -158,10 +156,7 @@ class UserCodeStatusCollection(SyncableSyftObject):
         return str(self.status_dict)
 
     def _repr_html_(self) -> str:
-        string = f"""
-            <style>
-                .syft-user_code {{color: {light_dark_css(SURFACE)};}}
-                </style>
+        string = """
                 <div class='syft-user_code'>
                     <h3 style="line-height: 25%; margin-top: 25px;">User Code Status</h3>
                     <p style="margin-left: 3px;">
@@ -924,9 +919,6 @@ class UserCode(SyncableSyftObject):
         repr_str = f"""
     <style>
     {FONT_CSS}
-    .syft-code {{color: {light_dark_css(SURFACE)};}}
-    .syft-code h3,
-    .syft-code p {{font-family: 'Open Sans'}}
     </style>
     <div class="syft-code">
     <h3>{tabs}UserCode</h3>

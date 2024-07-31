@@ -36,13 +36,9 @@ from ...types.syft_object import short_uid
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
-from ...util.colors import SURFACE
-from ...util.colors import light_dark_css
 from ...util.notebook_ui.components.sync import Label
 from ...util.notebook_ui.components.sync import SyncTableObject
 from ...util.notebook_ui.icons import Icon
-from ...util.notebook_ui.styles import FONT_CSS
-from ...util.notebook_ui.styles import ITABLES_CSS
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
@@ -461,15 +457,7 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         if self.low_obj is None and self.high_obj is None:
             return SyftError(message="Something broke")
 
-        base_str = f"""
-        <style>
-        {FONT_CSS}
-        .syft-dataset {{color: {light_dark_css(SURFACE)};}}
-        .syft-dataset h3,
-        .syft-dataset p
-            {{font-family: 'Open Sans';}}
-            {ITABLES_CSS}
-        </style>
+        base_str = """
         <div class='syft-diff'>
         """
 

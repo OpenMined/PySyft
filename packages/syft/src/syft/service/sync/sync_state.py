@@ -16,11 +16,7 @@ from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
-from ...util.colors import SURFACE
-from ...util.colors import light_dark_css
 from ...util.notebook_ui.components.sync import SyncTableObject
-from ...util.notebook_ui.styles import FONT_CSS
-from ...util.notebook_ui.styles import ITABLES_CSS
 from ..context import AuthedServiceContext
 
 
@@ -259,16 +255,6 @@ class SyncState(SyftObject):
             date_html = prop_template.format("last sync", "not synced yet")
 
         repr = f"""
-        <style>
-            {FONT_CSS}
-            .syft-syncstate {{color: {light_dark_css(SURFACE)};}}
-            .syft-syncstate h3,
-            .syft-syncstate p
-              {{font-family: 'Open Sans';}}
-              {ITABLES_CSS}
-              {{font-family: 'Open Sans';}}
-              {ITABLES_CSS}
-            </style>
         <div class='syft-syncstate'>
             <p style="margin-bottom:16px;"></p>
             {name_html}
