@@ -200,6 +200,16 @@ class DatasiteEnclaveService(AbstractService):
             if isinstance(blob_res, SyftError):
                 return blob_res
 
+            # set the object location to the enclave
+            # TODO: fix Tech Debt
+            # Currently, Setting the Location of the object to the remote client
+            # As this is later used by the enclave to fetch the syft_action_data
+            # in reload_cache method of action object
+            # This is a quick fix to address the same
+            action_object._set_obj_location_(
+                enclave_client.id, current_server_credentials.verify_key
+            )
+
         # Upload the assets to the enclave
         result = enclave_client.api.services.enclave.upload_assets(
             user_code_id=user_code_id, action_objects=action_objects

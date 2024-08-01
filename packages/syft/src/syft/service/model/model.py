@@ -765,6 +765,14 @@ class ModelRef(ActionObject):
                     action_object._clear_cache()
                 if isinstance(blob_res, SyftError):
                     return blob_res
+                # TODO: fix Tech Debt
+                # Currently, Setting the Location of the object to the remote client
+                # As this is later used by the enclave to fetch the syft_action_data
+                # in reload_cache method of action object
+                # This is a quick fix to address the same
+                action_object._set_obj_location_(
+                    remote_client.id, context.server.signing_key.verify_key
+                )
             asset_list.append(action_data if unwrap_action_data else action_object)
 
         loaded_data = [model] + asset_list
