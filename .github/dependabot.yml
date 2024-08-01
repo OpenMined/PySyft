@@ -7,3 +7,11 @@ updates:
     schedule:
       # Check for updates to GitHub Actions every week
       interval: "weekly"
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
