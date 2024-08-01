@@ -185,7 +185,7 @@ class KeyValueStorePartition(StorePartition):
 
         ck_check = self._check_partition_keys_unique(
             unique_query_keys=unique_query_keys
-        )
+        ).unwrap()
 
         if not store_key_exists and ck_check == UniqueKeyCheck.EMPTY:
             # attempt to claim it for writing
