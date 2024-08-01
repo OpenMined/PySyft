@@ -309,11 +309,13 @@ def _format_signature(s: inspect.Signature) -> inspect.Signature:
     )
 
 
+_SIGNATURE_ERROR_MESSAGE = (
+    "Please provide the correct arguments to the method according to this signature"
+)
+
+
 def _signature_error_message(s: inspect.Signature) -> str:
-    return (
-        f"Please provide the correct arguments to the method "
-        f"according to this signature\n{s}."
-    )
+    return f"{_SIGNATURE_ERROR_MESSAGE}\n{s}"
 
 
 def reconstruct_args_kwargs(

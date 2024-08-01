@@ -13,6 +13,7 @@ from result import Ok
 # syft absolute
 import syft
 from syft.abstract_server import ServerSideType
+from syft.client.datasite_client import DatasiteClient
 from syft.server.credentials import SyftSigningKey
 from syft.server.credentials import SyftVerifyKey
 from syft.service.context import AuthedServiceContext
@@ -20,6 +21,7 @@ from syft.service.notifier.notifier import NotifierSettings
 from syft.service.notifier.notifier_stash import NotifierStash
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
+from syft.service.service import _SIGNATURE_ERROR_MESSAGE
 from syft.service.settings.settings import ServerSettings
 from syft.service.settings.settings import ServerSettingsUpdate
 from syft.service.settings.settings_service import SettingsService
@@ -409,3 +411,27 @@ def test_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker):
             [u.email in emails_added for u in root_client.users.get_all()]
         )
         assert users_created_count == len(emails_added)
+
+
+def test_invalid_args_error_message(root_datasite_client: DatasiteClient) -> None:
+    update_args = {
+        "name": uuid4().hex,
+        "organization": uuid4().hex,
+    }
+
+    update = ServerSettingsUpdate(**update_args)
+
+    res = root_datasite_client.api.services.settings.update(settings=update)
+    assert isinstance(res, SyftError)
+    assert _SIGNATURE_ERROR_MESSAGE in res.message
+
+    res = root_datasite_client.api.services.settings.update(update)
+    assert isinstance(res, SyftError)
+    assert _SIGNATURE_ERROR_MESSAGE in res.message
+
+    res = root_datasite_client.api.services.settings.update(**update_args)
+    assert not isinstance(res, SyftError)
+
+    settings = root_datasite_client.api.services.settings.get()
+    assert settings.name == update_args["name"]
+    assert settings.organization == update_args["organization"]
