@@ -18,6 +18,7 @@ from .user_roles import ServiceRole
 
 # 🟡 TODO 27: it would be nice if these could be defined closer to the User
 EmailPartitionKey = PartitionKey(key="email", type_=str)
+PasswordResetTokenPartitionKey = PartitionKey(key="reset_token", type_=str)
 RolePartitionKey = PartitionKey(key="role", type_=ServiceRole)
 SigningKeyPartitionKey = PartitionKey(key="signing_key", type_=SyftSigningKey)
 VerifyKeyPartitionKey = PartitionKey(key="verify_key", type_=SyftVerifyKey)
@@ -57,7 +58,16 @@ class UserStash(NewBaseUIDStoreStash):
             )
 
     @as_result(StashException, NotFoundException)
-    def get_by_email(self, credentials: SyftVerifyKey, email: str) -> User:
+    def get_by_reset_token(
+        self, credentials: SyftVerifyKey, token: str
+    ) -> Result[User | None, str]:
+        qks = QueryKeys(qks=[PasswordResetTokenPartitionKey.with_obj(token)])
+        return self.query_one(credentials=credentials, qks=qks)
+
+    @as_result(StashException, NotFoundException)
+    def get_by_email(
+        self, credentials: SyftVerifyKey, email: str
+    ) -> Result[User | None, str]:
         qks = QueryKeys(qks=[EmailPartitionKey.with_obj(email)])
 
         try:
