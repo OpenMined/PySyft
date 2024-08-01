@@ -112,7 +112,7 @@ class JobStashSQL:
         with self.session_context() as session:
             subjobs = (
                 session.query(JobDB)
-                .select_from(get_permission_from())
+                .join(JobPermissionDB, JobDB.id == JobPermissionDB.object_id)
                 .where(get_permission_where(str(credentials.verify_key)))
                 .filter_by(parent_id=unwrap_uid(uid))
                 .all()
@@ -132,7 +132,7 @@ class JobStashSQL:
         with self.session_context() as session:
             jobs = (
                 session.query(JobDB)
-                .select_from(get_permission_from())
+                .join(JobPermissionDB, JobDB.id == JobPermissionDB.object_id)
                 .where(get_permission_where(str(credentials.verify_key)))
                 .filter_by(status=JobStatus.PROCESSING)
                 .all()
@@ -145,7 +145,7 @@ class JobStashSQL:
         with self.session_context() as session:
             jobs = (
                 session.query(JobDB)
-                .select_from(get_permission_from())
+                .join(JobPermissionDB, JobDB.id == JobPermissionDB.object_id)
                 .where(get_permission_where(str(credentials.verify_key)))
                 .filter_by(worker_id=unwrap_uid(worker_id))
                 .all()
@@ -158,7 +158,7 @@ class JobStashSQL:
         with self.session_context() as session:
             jobs = (
                 session.query(JobDB)
-                .select_from(get_permission_from())
+                .join(JobPermissionDB, JobDB.id == JobPermissionDB.object_id)
                 .where(get_permission_where(str(credentials.verify_key)))
                 .filter_by(user_code_id=unwrap_uid(user_code_id))
                 .all()
@@ -171,7 +171,7 @@ class JobStashSQL:
         with self.session_context() as session:
             jobs = session.execute(
                 select(JobDB)
-                .select_from(get_permission_from())
+                .join(JobPermissionDB, JobDB.id == JobPermissionDB.object_id)
                 .where(get_permission_where(str(credentials.verify_key)))
             ).scalars()
             return Ok([job.to_obj() for job in jobs])
@@ -214,7 +214,6 @@ class JobStashSQL:
 
         with self.session_context() as session:
             session.add(job_db)
-            session.flush()
             session.commit()
             return Ok(job_db.to_obj())
 
@@ -222,7 +221,7 @@ class JobStashSQL:
         with self.session_context() as session:
             job_db = (
                 session.query(JobDB)
-                .select_from(get_permission_from())
+                .join(JobPermissionDB, JobDB.id == JobPermissionDB.object_id)
                 .where(get_permission_where(str(credentials.verify_key)))
                 .filter_by(id=unwrap_uid(uid))
                 .first()
@@ -245,10 +244,23 @@ class JobStashSQL:
         ):
             item.result._clear_cache()
         with self.session_context() as session:
-            job_db = JobDB.from_obj(item)
-            session.query(JobDB).select_from(get_permission_from()).where(
-                get_permission_where(str(credentials.verify_key))
-            ).filter_by(id=unwrap_uid(item.id)).update(job_db.to_dict())
+            # TODO we need to check write permissions here
+            updated_job_db = JobDB.from_obj(item)
+            job_db = (
+                session.query(JobDB)
+                .join(JobPermissionDB, JobDB.id == JobPermissionDB.object_id)
+                .where(get_permission_where(str(credentials.verify_key)))
+                .filter_by(id=unwrap_uid(item.id))
+                .first()
+            )
+
+            if job_db is None:
+                return Err("Job not found")
+
+            for key, value in updated_job_db.to_dict().items():
+                setattr(job_db, key, value)
+
+            # session.add(job_db)
             session.commit()
             return Ok(job_db.to_obj())
 

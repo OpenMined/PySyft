@@ -313,7 +313,9 @@ class ActionObjectDB(CommonMixin, Base):
             syft_action_data_str_=obj.syft_action_data_str_,
             syft_has_bool_attr=obj.syft_has_bool_attr,
             syft_resolved=obj.syft_resolved,
-            created_at=obj.syft_created_at.to_datetime(),
+            created_at=obj.syft_created_at.to_datetime()
+            if obj.syft_created_at
+            else None,
             syft_action_data_server_id=unwrap_uid(obj.syft_action_data_server_id)
             if obj.syft_action_data_server_id
             else None,
@@ -342,7 +344,9 @@ class ActionObjectDB(CommonMixin, Base):
             syft_action_data_str_=self.syft_action_data_str_,
             syft_has_bool_attr=self.syft_has_bool_attr,
             syft_resolved=self.syft_resolved,
-            created_at=DateTime.from_datetime(self.created_at),
+            created_at=DateTime.from_datetime(self.created_at)
+            if self.created_at
+            else None,
             syft_action_data_server_id=wrap_uid(self.syft_action_data_server_id),
             syft_action_saved_to_blob_store=self.syft_action_saved_to_blob_store,
         )
