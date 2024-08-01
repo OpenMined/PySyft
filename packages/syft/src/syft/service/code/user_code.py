@@ -71,7 +71,6 @@ from ..action.action_endpoint import CustomEndpointActionObject
 from ..action.action_object import Action
 from ..action.action_object import ActionObject
 from ..dataset.dataset import Asset
-from ..dataset.dataset import Dataset
 from ..job.job_stash import Job
 from ..output.output_service import ExecutionOutput
 from ..output.output_service import OutputService
@@ -733,17 +732,6 @@ class UserCode(SyncableSyftObject):
         if isinstance(api, SyftError):
             return api
 
-        # get all assets on the server
-        datasets: list[Dataset] = api.services.dataset.get_all()
-        if isinstance(datasets, SyftError):
-            return datasets
-
-        all_assets: dict[UID, Asset] = {}
-        for dataset in datasets:
-            for asset in dataset.asset_list:
-                asset._dataset_name = dataset.name
-                all_assets[asset.action_id] = asset
-
         # get a flat dict of all inputs
         all_inputs = {}
         inputs = self.input_policy_init_kwargs or {}
@@ -753,8 +741,11 @@ class UserCode(SyncableSyftObject):
         # map the action_id to the asset
         used_assets: list[Asset] = []
         for kwarg_name, action_id in all_inputs.items():
-            asset = all_assets.get(action_id)
-            if asset:
+            assets = api.dataset.get_assets_by_action_id(uid=action_id)
+            if isinstance(assets, SyftError):
+                return assets
+            if assets:
+                asset = assets[0]
                 asset._kwarg_name = kwarg_name
                 used_assets.append(asset)
 

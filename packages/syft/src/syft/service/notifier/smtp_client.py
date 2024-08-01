@@ -4,13 +4,14 @@ from email.mime.text import MIMEText
 import smtplib
 
 # third party
+from pydantic import BaseModel
 from result import Err
 from result import Ok
 from result import Result
 
 
-class SMTPClient:
-    SOCKET_TIMEOUT = 5  # seconds
+class SMTPClient(BaseModel):
+    SOCKET_TIMEOUT: int = 5  # seconds
 
     def __init__(
         self,
