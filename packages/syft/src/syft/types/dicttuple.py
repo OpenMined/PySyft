@@ -244,6 +244,13 @@ class DictTuple(tuple[_VT, ...], Generic[_KT, _VT], metaclass=_Meta):
     def items(self) -> Iterable[tuple[_KT, _VT]]:
         return zip(self.__mapping.keys(), self)
 
+    # https://docs.pydantic.dev/latest/concepts/types/#handling-custom-generic-classes
+    # pydantic validator
+    # this enables annotating a field with DictTuple[K, V] instead of just DictTuple
+    # inside a pydantic BaseModel, e.g.
+    #
+    # class DatasetPageView(BaseModel):
+    #     datasets: DictTuple[str, Dataset]
     @classmethod
     def __get_pydantic_core_schema__(
         cls, source_type: Any, handler: GetCoreSchemaHandler
@@ -266,6 +273,10 @@ class DictTuple(tuple[_VT, ...], Generic[_KT, _VT], metaclass=_Meta):
             handler(v)
             return v
 
+        # pydantic validator for DictTuple[K, V]
+        # - check that object has type DictTuple
+        # - check that object is a tuple[V]
+        # - check that the keys have type K
         return core_schema.chain_schema(
             [
                 core_schema.is_instance_schema(cls),
