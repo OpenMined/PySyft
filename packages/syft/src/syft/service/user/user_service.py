@@ -296,7 +296,7 @@ class UserService(AbstractService):
                     message=f"You are not allowed to modify '{field_name}'."
                 )
 
-        if user_update.name is not Empty and user_update.name.strip() == "":
+        if user_update.name is not Empty and user_update.name.strip() == "":  # type: ignore[comparison-overlap]
             return SyftError(message="Name can't be an empty string.")
 
         # check if the email already exists (with root's key)
