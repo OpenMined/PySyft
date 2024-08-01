@@ -178,7 +178,6 @@ class KeyValueStorePartition(StorePartition):
         store_query_key: QueryKey = self.settings.store_key.with_obj(obj)
         uid = store_query_key.value
         write_permission = ActionObjectWRITE(uid=uid, credentials=credentials)
-        can_write = self.has_permission(write_permission)
         unique_query_keys: QueryKeys = self.settings.unique_keys.with_obj(obj)
         store_key_exists = store_query_key.value in self.data
         searchable_query_keys = self.settings.searchable_keys.with_obj(obj)
@@ -203,36 +202,37 @@ class KeyValueStorePartition(StorePartition):
             # we are also not writing though
             return obj
 
-        if can_write:
-            self._set_data_and_keys(
-                store_query_key=store_query_key,
-                unique_query_keys=unique_query_keys,
-                searchable_query_keys=searchable_query_keys,
-                obj=obj,
-            )
-            self.data[uid] = obj
+        if not self.has_permission(write_permission):
+            raise SyftException( public_message=f"Permission: {write_permission} denied")
 
-            # Add default permissions
-            if uid not in self.permissions:
-                self.permissions[uid] = set()
-            self.add_permission(ActionObjectREAD(uid=uid, credentials=credentials))
-            if add_permissions is not None:
-                self.add_permissions(add_permissions)
+        self._set_data_and_keys(
+            store_query_key=store_query_key,
+            unique_query_keys=unique_query_keys,
+            searchable_query_keys=searchable_query_keys,
+            obj=obj,
+        )
+        self.data[uid] = obj
 
-            if uid not in self.storage_permissions:
-                self.storage_permissions[uid] = set()
-            if add_storage_permission:
-                self.add_storage_permission(
-                    StoragePermission(
-                        uid=uid,
-                        server_uid=self.server_uid,
-                    )
+        # Add default permissions
+        if uid not in self.permissions:
+            self.permissions[uid] = set()
+
+        self.add_permission(ActionObjectREAD(uid=uid, credentials=credentials))
+
+        if add_permissions is not None:
+            self.add_permissions(add_permissions)
+
+        if uid not in self.storage_permissions:
+            self.storage_permissions[uid] = set()
+
+        if add_storage_permission:
+            self.add_storage_permission(
+                StoragePermission(
+                    uid=uid,
+                    server_uid=self.server_uid,
                 )
-            return obj
-        else:
-            raise SyftException(
-                public_message=f"Permission: {write_permission} denied"
             )
+        return obj
 
     @as_result(SyftException)
     def take_ownership(self, uid: UID, credentials: SyftVerifyKey) -> SyftSuccess:
