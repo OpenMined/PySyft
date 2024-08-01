@@ -285,6 +285,20 @@ class UserService(AbstractService):
         # Get user to be updated by its UID
         result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
 
+        immutable_fields = {"created_date", "updated_date", "deleted_date"}
+        updated_fields = user_update.to_dict(
+            exclude_none=True, exclude_empty=True
+        ).keys()
+
+        for field_name in immutable_fields:
+            if field_name in updated_fields:
+                return SyftError(
+                    message=f"You are not allowed to modify '{field_name}'."
+                )
+
+        if user_update.name is not Empty and user_update.name.strip() == "":
+            return SyftError(message="Name can't be an empty string.")
+
         # check if the email already exists (with root's key)
         if user_update.email is not Empty:
             user_with_email_exists: bool = self.stash.email_exists(
