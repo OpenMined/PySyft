@@ -137,9 +137,9 @@ class DockerWorkerConfig(WorkerConfig):
     @classmethod
     def validate_dockerfile(cls, dockerfile: str) -> str:
         if not dockerfile:
-            raise ValueError("Dockerfile cannot be empty")
-        dockerfile = dockerfile.strip()
-        return dockerfile
+            msg = "Dockerfile cannot be empty"
+            raise ValueError(msg)
+        return dockerfile.strip()
 
     @classmethod
     def from_path(
@@ -173,7 +173,7 @@ class DockerWorkerConfig(WorkerConfig):
             with contextlib.closing(docker.from_env()) as client:
                 if not client.ping():
                     return SyftError(
-                        "Cannot reach docker server. Please check if docker is running."
+                        "Cannot reach docker server. Please check if docker is running.",
                     )
 
                 kwargs["fileobj"] = io.BytesIO(self.dockerfile.encode("utf-8"))

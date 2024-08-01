@@ -46,7 +46,7 @@ ImportancePartitionKey = PartitionKey(key="importance", type_=int)
 class MockStash(BaseUIDStoreStash):
     object_type = MockObject
     settings = PartitionSettings(
-        name=MockObject.__canonical_name__, object_type=MockObject
+        name=MockObject.__canonical_name__, object_type=MockObject,
     )
 
 
@@ -66,7 +66,7 @@ P = ParamSpec("P")
 
 
 def create_unique(
-    gen: Callable[P, T], xs: Container[T], *args: P.args, **kwargs: P.kwargs
+    gen: Callable[P, T], xs: Container[T], *args: P.args, **kwargs: P.kwargs,
 ) -> T:
     """Generate a value with `gen()` that does not collide with any element in xs"""
     x = gen(*args, **kwargs)
@@ -96,7 +96,7 @@ def object_kwargs(faker: Faker, **kwargs: Any) -> dict[str, Any]:
 
 
 def multiple_object_kwargs(
-    faker: Faker, n=10, same=False, **kwargs: Any
+    faker: Faker, n=10, same=False, **kwargs: Any,
 ) -> list[dict[str, Any]]:
     if same:
         kwargs_ = {"id": UID(), **object_kwargs(faker), **kwargs}
@@ -115,7 +115,7 @@ def mock_objects(faker: Faker) -> list[MockObject]:
 
 
 def test_basestash_set(
-    root_verify_key, base_stash: MockStash, mock_object: MockObject
+    root_verify_key, base_stash: MockStash, mock_object: MockObject,
 ) -> None:
     result = add_mock_object(root_verify_key, base_stash, mock_object)
 
@@ -124,7 +124,7 @@ def test_basestash_set(
 
 
 def test_basestash_set_duplicate(
-    root_verify_key, base_stash: MockStash, faker: Faker
+    root_verify_key, base_stash: MockStash, faker: Faker,
 ) -> None:
     original, duplicate = (
         MockObject(**kwargs) for kwargs in multiple_object_kwargs(faker, n=2, same=True)
@@ -138,7 +138,7 @@ def test_basestash_set_duplicate(
 
 
 def test_basestash_set_duplicate_unique_key(
-    root_verify_key, base_stash: MockStash, faker: Faker
+    root_verify_key, base_stash: MockStash, faker: Faker,
 ) -> None:
     original, duplicate = (
         MockObject(**kwargs)
@@ -153,12 +153,12 @@ def test_basestash_set_duplicate_unique_key(
 
 
 def test_basestash_delete(
-    root_verify_key, base_stash: MockStash, mock_object: MockObject
+    root_verify_key, base_stash: MockStash, mock_object: MockObject,
 ) -> None:
     add_mock_object(root_verify_key, base_stash, mock_object)
 
     result = base_stash.delete(
-        root_verify_key, UIDPartitionKey.with_obj(mock_object.id)
+        root_verify_key, UIDPartitionKey.with_obj(mock_object.id),
     )
     assert result.is_ok()
 
@@ -166,7 +166,7 @@ def test_basestash_delete(
 
 
 def test_basestash_cannot_delete_non_existent(
-    root_verify_key, base_stash: MockStash, mock_object: MockObject
+    root_verify_key, base_stash: MockStash, mock_object: MockObject,
 ) -> None:
     add_mock_object(root_verify_key, base_stash, mock_object)
 
@@ -182,14 +182,14 @@ def test_basestash_cannot_delete_non_existent(
         len(
             base_stash.get_all(
                 root_verify_key,
-            ).ok()
+            ).ok(),
         )
         == 1
     )
 
 
 def test_basestash_update(
-    root_verify_key, base_stash: MockStash, mock_object: MockObject, faker: Faker
+    root_verify_key, base_stash: MockStash, mock_object: MockObject, faker: Faker,
 ) -> None:
     add_mock_object(root_verify_key, base_stash, mock_object)
 
@@ -204,7 +204,7 @@ def test_basestash_update(
 
 
 def test_basestash_cannot_update_non_existent(
-    root_verify_key, base_stash: MockStash, mock_object: MockObject, faker: Faker
+    root_verify_key, base_stash: MockStash, mock_object: MockObject, faker: Faker,
 ) -> None:
     add_mock_object(root_verify_key, base_stash, mock_object)
 
@@ -217,7 +217,7 @@ def test_basestash_cannot_update_non_existent(
 
 
 def test_basestash_set_get_all(
-    root_verify_key, base_stash: MockStash, mock_objects: list[MockObject]
+    root_verify_key, base_stash: MockStash, mock_objects: list[MockObject],
 ) -> None:
     for obj in mock_objects:
         res = base_stash.set(root_verify_key, obj)
@@ -237,7 +237,7 @@ def test_basestash_set_get_all(
 
 
 def test_basestash_get_by_uid(
-    root_verify_key, base_stash: MockStash, mock_object: MockObject
+    root_verify_key, base_stash: MockStash, mock_object: MockObject,
 ) -> None:
     add_mock_object(root_verify_key, base_stash, mock_object)
 
@@ -252,7 +252,7 @@ def test_basestash_get_by_uid(
 
 
 def test_basestash_delete_by_uid(
-    root_verify_key, base_stash: MockStash, mock_object: MockObject
+    root_verify_key, base_stash: MockStash, mock_object: MockObject,
 ) -> None:
     add_mock_object(root_verify_key, base_stash, mock_object)
 
@@ -267,7 +267,7 @@ def test_basestash_delete_by_uid(
 
 
 def test_basestash_query_one(
-    root_verify_key, base_stash: MockStash, mock_objects: list[MockObject], faker: Faker
+    root_verify_key, base_stash: MockStash, mock_objects: list[MockObject], faker: Faker,
 ) -> None:
     for obj in mock_objects:
         base_stash.set(root_verify_key, obj)
@@ -277,7 +277,7 @@ def test_basestash_query_one(
     for result in (
         base_stash.query_one_kwargs(root_verify_key, name=obj.name),
         base_stash.query_one(
-            root_verify_key, QueryKey.from_obj(NamePartitionKey, obj.name)
+            root_verify_key, QueryKey.from_obj(NamePartitionKey, obj.name),
         ),
     ):
         assert result.is_ok()
@@ -289,7 +289,7 @@ def test_basestash_query_one(
     for result in (
         base_stash.query_one_kwargs(root_verify_key, name=random_name),
         base_stash.query_one(
-            root_verify_key, QueryKey.from_obj(NamePartitionKey, random_name)
+            root_verify_key, QueryKey.from_obj(NamePartitionKey, random_name),
         ),
     ):
         assert result.is_ok()
@@ -313,7 +313,7 @@ def test_basestash_query_one(
 
 
 def test_basestash_query_all(
-    root_verify_key, base_stash: MockStash, mock_objects: list[MockObject], faker: Faker
+    root_verify_key, base_stash: MockStash, mock_objects: list[MockObject], faker: Faker,
 ) -> None:
     desc = random_sentence(faker)
     n_same = 3
@@ -327,7 +327,7 @@ def test_basestash_query_all(
     for result in [
         base_stash.query_all_kwargs(root_verify_key, desc=desc),
         base_stash.query_all(
-            root_verify_key, QueryKey.from_obj(DescPartitionKey, desc)
+            root_verify_key, QueryKey.from_obj(DescPartitionKey, desc),
         ),
     ]:
         assert result.is_ok()
@@ -339,12 +339,12 @@ def test_basestash_query_all(
         assert original_object_values == retrived_objects_values
 
     random_desc = create_unique(
-        random_sentence, [obj.desc for obj in all_objects], faker
+        random_sentence, [obj.desc for obj in all_objects], faker,
     )
     for result in [
         base_stash.query_all_kwargs(root_verify_key, desc=random_desc),
         base_stash.query_all(
-            root_verify_key, QueryKey.from_obj(DescPartitionKey, random_desc)
+            root_verify_key, QueryKey.from_obj(DescPartitionKey, random_desc),
         ),
     ]:
         assert result.is_ok()
@@ -367,13 +367,13 @@ def test_basestash_query_all(
 
 
 def test_basestash_query_all_kwargs_multiple_params(
-    root_verify_key, base_stash: MockStash, mock_objects: list[MockObject], faker: Faker
+    root_verify_key, base_stash: MockStash, mock_objects: list[MockObject], faker: Faker,
 ) -> None:
     desc = random_sentence(faker)
     importance = random.randrange(5)
     n_same = 3
     kwargs_list = multiple_object_kwargs(
-        faker, n=n_same, importance=importance, desc=desc
+        faker, n=n_same, importance=importance, desc=desc,
     )
     similar_objects = [MockObject(**kwargs) for kwargs in kwargs_list]
     all_objects = mock_objects + similar_objects
@@ -420,7 +420,7 @@ def test_basestash_query_all_kwargs_multiple_params(
 
 
 def test_basestash_cannot_query_non_searchable(
-    root_verify_key, base_stash: MockStash, mock_objects: list[MockObject]
+    root_verify_key, base_stash: MockStash, mock_objects: list[MockObject],
 ) -> None:
     for obj in mock_objects:
         base_stash.set(root_verify_key, obj)
@@ -430,10 +430,10 @@ def test_basestash_cannot_query_non_searchable(
     assert base_stash.query_one_kwargs(root_verify_key, value=10).is_err()
     assert base_stash.query_all_kwargs(root_verify_key, value=10).is_err()
     assert base_stash.query_one_kwargs(
-        root_verify_key, value=10, name=obj.name
+        root_verify_key, value=10, name=obj.name,
     ).is_err()
     assert base_stash.query_all_kwargs(
-        root_verify_key, value=10, name=obj.name
+        root_verify_key, value=10, name=obj.name,
     ).is_err()
 
     ValuePartitionKey = PartitionKey(key="value", type_=int)
@@ -443,5 +443,5 @@ def test_basestash_cannot_query_non_searchable(
     assert base_stash.query_all(root_verify_key, qk).is_err()
     assert base_stash.query_all(root_verify_key, QueryKeys(qks=[qk])).is_err()
     assert base_stash.query_all(
-        root_verify_key, QueryKeys(qks=[qk, UIDPartitionKey.with_obj(obj.id)])
+        root_verify_key, QueryKeys(qks=[qk, UIDPartitionKey.with_obj(obj.id)]),
     ).is_err()

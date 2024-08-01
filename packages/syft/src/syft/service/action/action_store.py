@@ -17,7 +17,6 @@ from ...store.dict_document_store import DictStoreConfig
 from ...store.document_store import BasePartitionSettings
 from ...store.document_store import DocumentStore
 from ...store.document_store import StoreConfig
-from ...types.syft_object import SyftObject
 from ...types.twin_object import TwinObject
 from ...types.uid import LineageID
 from ...types.uid import UID
@@ -30,6 +29,10 @@ from .action_permissions import ActionObjectREAD
 from .action_permissions import ActionObjectWRITE
 from .action_permissions import ActionPermission
 from .action_permissions import StoragePermission
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ...types.syft_object import SyftObject
 
 lock = threading.RLock()
 
@@ -60,13 +63,13 @@ class KeyValueActionStore(ActionStore):
         self.store_config = store_config
         self.settings = BasePartitionSettings(name="Action")
         self.data = self.store_config.backing_store(
-            "data", self.settings, self.store_config
+            "data", self.settings, self.store_config,
         )
         self.permissions = self.store_config.backing_store(
-            "permissions", self.settings, self.store_config, ddtype=set
+            "permissions", self.settings, self.store_config, ddtype=set,
         )
         self.storage_permissions = self.store_config.backing_store(
-            "storage_permissions", self.settings, self.store_config, ddtype=set
+            "storage_permissions", self.settings, self.store_config, ddtype=set,
         )
 
         if root_verify_key is None:
@@ -81,7 +84,7 @@ class KeyValueActionStore(ActionStore):
             self.__user_stash = UserStash(store=document_store)
 
     def get(
-        self, uid: UID, credentials: SyftVerifyKey, has_permission: bool = False
+        self, uid: UID, credentials: SyftVerifyKey, has_permission: bool = False,
     ) -> Result[SyftObject, str]:
         uid = uid.id  # We only need the UID from LineageID or UID
 
@@ -94,7 +97,8 @@ class KeyValueActionStore(ActionStore):
                 elif isinstance(uid, UID):
                     syft_object = self.data[uid]
                 else:
-                    raise Exception(f"Unrecognized UID type: {type(uid)}")
+                    msg = f"Unrecognized UID type: {type(uid)}"
+                    raise Exception(msg)
                 return Ok(syft_object)
             except Exception as e:
                 return Err(f"Could not find item with uid {uid}, {e}")
@@ -106,7 +110,7 @@ class KeyValueActionStore(ActionStore):
         try:
             syft_object = self.data[uid]
             if isinstance(syft_object, TwinObject) and not is_action_data_empty(
-                syft_object.mock
+                syft_object.mock,
             ):
                 return Ok(syft_object.mock)
             return Err("No mock")
@@ -166,13 +170,13 @@ class KeyValueActionStore(ActionStore):
             # attempt to claim it for writing
             if has_result_read_permission:
                 ownership_result = self.take_ownership(uid=uid, credentials=credentials)
-                can_write = True if ownership_result.is_ok() else False
+                can_write = bool(ownership_result.is_ok())
             else:
                 # root takes owneship, but you can still write
                 ownership_result = self.take_ownership(
-                    uid=uid, credentials=self.root_verify_key
+                    uid=uid, credentials=self.root_verify_key,
                 )
-                can_write = True if ownership_result.is_ok() else False
+                can_write = bool(ownership_result.is_ok())
 
         if can_write:
             self.data[uid] = syft_object
@@ -186,7 +190,7 @@ class KeyValueActionStore(ActionStore):
                     [
                         ActionObjectWRITE(uid=uid, credentials=credentials),
                         ActionObjectEXECUTE(uid=uid, credentials=credentials),
-                    ]
+                    ],
                 )
 
             if uid not in self.storage_permissions:
@@ -194,14 +198,14 @@ class KeyValueActionStore(ActionStore):
                 self.storage_permissions[uid] = set()
             if add_storage_permission:
                 self.add_storage_permission(
-                    StoragePermission(uid=uid, server_uid=self.server_uid)
+                    StoragePermission(uid=uid, server_uid=self.server_uid),
                 )
 
             return Ok(SyftSuccess(message=f"Set for ID: {uid}"))
         return Err(f"Permission: {write_permission} denied")
 
     def take_ownership(
-        self, uid: UID, credentials: SyftVerifyKey
+        self, uid: UID, credentials: SyftVerifyKey,
     ) -> Result[SyftSuccess, str]:
         uid = uid.id  # We only need the UID from LineageID or UID
 
@@ -213,7 +217,7 @@ class KeyValueActionStore(ActionStore):
                     ActionObjectWRITE(uid=uid, credentials=credentials),
                     ActionObjectREAD(uid=uid, credentials=credentials),
                     ActionObjectEXECUTE(uid=uid, credentials=credentials),
-                ]
+                ],
             )
             return Ok(SyftSuccess(message=f"Ownership of ID: {uid} taken."))
         return Err(f"UID: {uid} already owned.")
@@ -235,7 +239,8 @@ class KeyValueActionStore(ActionStore):
 
     def has_permission(self, permission: ActionObjectPermission) -> bool:
         if not isinstance(permission.permission, ActionPermission):
-            raise Exception(f"ObjectPermission type: {permission.permission} not valid")
+            msg = f"ObjectPermission type: {permission.permission} not valid"
+            raise Exception(msg)
 
         if (
             permission.credentials is not None
@@ -266,13 +271,7 @@ class KeyValueActionStore(ActionStore):
             return True
 
         # 🟡 TODO 14: add ALL_READ, ALL_EXECUTE etc
-        if permission.permission == ActionPermission.OWNER:
-            pass
-        elif permission.permission == ActionPermission.READ:
-            pass
-        elif permission.permission == ActionPermission.WRITE:
-            pass
-        elif permission.permission == ActionPermission.EXECUTE:
+        if permission.permission == ActionPermission.OWNER or permission.permission == ActionPermission.READ or (permission.permission == ActionPermission.WRITE or permission.permission == ActionPermission.EXECUTE):
             pass
 
         return False
@@ -338,12 +337,12 @@ class KeyValueActionStore(ActionStore):
         has_permission: bool | None = False,
     ) -> Result[list[SyftObject], str]:
         # this checks permissions
-        res = [self.get(uid, credentials, has_permission) for uid in self.data.keys()]
+        res = [self.get(uid, credentials, has_permission) for uid in self.data]
         result = [x.ok() for x in res if x.is_ok()]
         return Ok(result)
 
     def migrate_data(
-        self, to_klass: SyftObject, credentials: SyftVerifyKey
+        self, to_klass: SyftObject, credentials: SyftVerifyKey,
     ) -> Result[bool, str]:
         has_root_permission = credentials == self.root_verify_key
 
@@ -355,7 +354,7 @@ class KeyValueActionStore(ActionStore):
                     migrated_value = value.migrate_to(to_klass.__version__)
                 except Exception as e:
                     return Err(
-                        f"Failed to migrate data to {to_klass} {to_klass.__version__} for qk: {key}. Exception: {e}"
+                        f"Failed to migrate data to {to_klass} {to_klass.__version__} for qk: {key}. Exception: {e}",
                     )
                 result = self.set(
                     uid=key,
@@ -409,7 +408,6 @@ class SQLiteActionStore(KeyValueActionStore):
             Signature verification key, used for checking access permissions.
     """
 
-    pass
 
 
 @serializable(canonical_name="MongoActionStore", version=1)
@@ -423,4 +421,3 @@ class MongoActionStore(KeyValueActionStore):
             Signature verification key, used for checking access permissions.
     """
 
-    pass

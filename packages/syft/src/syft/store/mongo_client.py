@@ -207,7 +207,7 @@ class MongoClient:
                 else collection_settings.name
             )
             collection = db.get_collection(
-                name=collection_name, codec_options=SYFT_CODEC_OPTIONS
+                name=collection_name, codec_options=SYFT_CODEC_OPTIONS,
             )
         except BaseException as e:
             return Err(str(e))
@@ -215,7 +215,7 @@ class MongoClient:
         return Ok(collection)
 
     def with_collection_permissions(
-        self, collection_settings: PartitionSettings, store_config: StoreConfig
+        self, collection_settings: PartitionSettings, store_config: StoreConfig,
     ) -> Result[MongoCollection, Err]:
         """
         For each collection, create a corresponding collection
@@ -229,7 +229,7 @@ class MongoClient:
         try:
             collection_permissions_name: str = collection_settings.name + "_permissions"
             collection_permissions = db.get_collection(
-                name=collection_permissions_name, codec_options=SYFT_CODEC_OPTIONS
+                name=collection_permissions_name, codec_options=SYFT_CODEC_OPTIONS,
             )
         except BaseException as e:
             return Err(str(e))
@@ -237,7 +237,7 @@ class MongoClient:
         return Ok(collection_permissions)
 
     def with_collection_storage_permissions(
-        self, collection_settings: PartitionSettings, store_config: StoreConfig
+        self, collection_settings: PartitionSettings, store_config: StoreConfig,
     ) -> Result[MongoCollection, Err]:
         """
         For each collection, create a corresponding collection

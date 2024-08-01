@@ -41,7 +41,7 @@ def test_nested_jobs(server):
 
     new_user_email = "aa@b.org"
     res = client.register(
-        name="a", email=new_user_email, password="c", password_verify="c"
+        name="a", email=new_user_email, password="c", password_verify="c",
     )
     assert isinstance(res, SyftSuccess)
 

@@ -46,7 +46,8 @@ class LinkedObject(SyftObject):
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None:
-            raise ValueError(f"api is None. You must login to {self.server_uid}")
+            msg = f"api is None. You must login to {self.server_uid}"
+            raise ValueError(msg)
 
         resolve: SyftObject = api.services.notifications.resolve_object(self)
         self._resolve_cache = resolve
@@ -54,13 +55,14 @@ class LinkedObject(SyftObject):
 
     def resolve_with_context(self, context: ServerServiceContext) -> Any:
         if context.server is None:
-            raise ValueError(f"context {context}'s server is None")
+            msg = f"context {context}'s server is None"
+            raise ValueError(msg)
         return context.server.get_service(self.service_type).resolve_link(
-            context=context, linked_obj=self
+            context=context, linked_obj=self,
         )
 
     def update_with_context(
-        self, context: ServerServiceContext | ChangeContext | Any, obj: Any
+        self, context: ServerServiceContext | ChangeContext | Any, obj: Any,
     ) -> SyftSuccess | SyftError:
         if isinstance(context, AuthedServiceContext):
             credentials = context.credentials
@@ -90,19 +92,18 @@ class LinkedObject(SyftObject):
             from ..service.action.action_service import ActionService
             from ..service.service import TYPE_TO_SERVICE
 
-            if isinstance(obj, ActionObject):
-                service_type = ActionService
-            else:
-                service_type = TYPE_TO_SERVICE[type(obj)]
+            service_type = ActionService if isinstance(obj, ActionObject) else TYPE_TO_SERVICE[type(obj)]
 
         object_uid = getattr(obj, "id", None)
         if object_uid is None:
-            raise Exception(f"{cls} Requires an object UID")
+            msg = f"{cls} Requires an object UID"
+            raise Exception(msg)
 
         if server_uid is None:
             server_uid = getattr(obj, "server_uid", None)
             if server_uid is None:
-                raise Exception(f"{cls} Requires an object UID")
+                msg = f"{cls} Requires an object UID"
+                raise Exception(msg)
 
         return LinkedObject(
             server_uid=server_uid,
@@ -129,10 +130,12 @@ class LinkedObject(SyftObject):
         if object_uid is None and hasattr(obj, "id"):
             object_uid = getattr(obj, "id", None)
         if object_uid is None:
-            raise Exception(f"{cls} Requires an object UID")
+            msg = f"{cls} Requires an object UID"
+            raise Exception(msg)
 
         if context.server is None:
-            raise ValueError(f"context {context}'s server is None")
+            msg = f"context {context}'s server is None"
+            raise ValueError(msg)
         server_uid = context.server.id
 
         return LinkedObject(

@@ -40,7 +40,7 @@ class SyncStash(BaseUIDStoreStash):
         self.last_state: SyncState | None = None
 
     def get_latest(
-        self, context: AuthedServiceContext
+        self, context: AuthedServiceContext,
     ) -> Result[SyncState | None, str]:
         # print("SyncStash.get_latest called")
         if self.last_state is not None:

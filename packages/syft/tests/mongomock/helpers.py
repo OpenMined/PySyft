@@ -101,8 +101,9 @@ def create_index_list(key_or_list, direction=None):
     if isinstance(key_or_list, str):
         return [(key_or_list, direction or ASCENDING)]
     if not isinstance(key_or_list, (list, tuple, abc.Iterable)):
+        msg = "if no direction is specified, " "key_or_list must be an instance of list"
         raise TypeError(
-            "if no direction is specified, " "key_or_list must be an instance of list"
+            msg,
         )
     return key_or_list
 
@@ -160,38 +161,45 @@ class hashdict(dict):
         return hash(self.__key())
 
     def __setitem__(self, key, value):
+        msg = "{0} does not support item assignment".format(self.__class__.__name__)
         raise TypeError(
-            "{0} does not support item assignment".format(self.__class__.__name__)
+            msg,
         )
 
     def __delitem__(self, key):
+        msg = "{0} does not support item assignment".format(self.__class__.__name__)
         raise TypeError(
-            "{0} does not support item assignment".format(self.__class__.__name__)
+            msg,
         )
 
     def clear(self):
+        msg = "{0} does not support item assignment".format(self.__class__.__name__)
         raise TypeError(
-            "{0} does not support item assignment".format(self.__class__.__name__)
+            msg,
         )
 
     def pop(self, *args, **kwargs):
+        msg = "{0} does not support item assignment".format(self.__class__.__name__)
         raise TypeError(
-            "{0} does not support item assignment".format(self.__class__.__name__)
+            msg,
         )
 
     def popitem(self, *args, **kwargs):
+        msg = "{0} does not support item assignment".format(self.__class__.__name__)
         raise TypeError(
-            "{0} does not support item assignment".format(self.__class__.__name__)
+            msg,
         )
 
     def setdefault(self, *args, **kwargs):
+        msg = "{0} does not support item assignment".format(self.__class__.__name__)
         raise TypeError(
-            "{0} does not support item assignment".format(self.__class__.__name__)
+            msg,
         )
 
     def update(self, *args, **kwargs):
+        msg = "{0} does not support item assignment".format(self.__class__.__name__)
         raise TypeError(
-            "{0} does not support item assignment".format(self.__class__.__name__)
+            msg,
         )
 
     def __add__(self, right):
@@ -212,8 +220,9 @@ def fields_list_to_dict(fields):
     as_dict = {}
     for field in fields:
         if not isinstance(field, str):
+            msg = "fields must be a list of key names, each an instance of str"
             raise TypeError(
-                "fields must be a list of key names, each an instance of str"
+                msg,
             )
         as_dict[field] = 1
     return as_dict
@@ -244,7 +253,8 @@ def parse_uri(uri, default_port=27017, warn=False):
     scheme_free = uri[len(SCHEME) :]
 
     if not scheme_free:
-        raise InvalidURI("Must provide at least one hostname or IP.")
+        msg = "Must provide at least one hostname or IP."
+        raise InvalidURI(msg)
 
     dbase = None
 
@@ -256,27 +266,28 @@ def parse_uri(uri, default_port=27017, warn=False):
             path_part = ""
         if "/" in host_part:
             raise InvalidURI(
-                "Any '/' in a unix domain socket must be" " URL encoded: %s" % host_part
+                "Any '/' in a unix domain socket must be" " URL encoded: %s" % host_part,
             )
         path_part = unquote_plus(path_part)
     else:
         host_part, _, path_part = scheme_free.partition("/")
 
     if not path_part and "?" in host_part:
-        raise InvalidURI("A '/' is required between " "the host list and any options.")
+        msg = "A '/' is required between " "the host list and any options."
+        raise InvalidURI(msg)
 
     nodelist = []
-    if "," in host_part:
-        hosts = host_part.split(",")
-    else:
-        hosts = [host_part]
+    hosts = host_part.split(",") if "," in host_part else [host_part]
     for host in hosts:
         match = _HOST_MATCH.match(host)
         if not match:
-            raise ValueError(
+            msg = (
                 "Reserved characters such as ':' must be escaped according RFC "
                 "2396. An IPv6 address literal must be enclosed in '[' and ']' "
                 "according to RFC 2732."
+            )
+            raise ValueError(
+                msg,
             )
         host = match.group(2)
         if host.startswith("[") and host.endswith("]"):
@@ -289,8 +300,9 @@ def parse_uri(uri, default_port=27017, warn=False):
                 if port < 0 or port > 65535:
                     raise ValueError()
             except ValueError as err:
+                msg = "Port must be an integer between 0 and 65535:"
                 raise ValueError(
-                    "Port must be an integer between 0 and 65535:", port
+                    msg, port,
                 ) from err
         else:
             port = default_port
@@ -319,10 +331,13 @@ def split_hosts(hosts, default_port=27017):
 
         match = _SIMPLE_HOST_MATCH.match(entity)
         if not match:
-            raise ValueError(
+            msg = (
                 "Reserved characters such as ':' must be escaped according RFC "
                 "2396. An IPv6 address literal must be enclosed in '[' and ']' "
                 "according to RFC 2732."
+            )
+            raise ValueError(
+                msg,
             )
         host = match.group(1)
         if host.startswith("[") and host.endswith("]"):
@@ -334,8 +349,9 @@ def split_hosts(hosts, default_port=27017):
                 if port < 0 or port > 65535:
                     raise ValueError()
             except ValueError as err:
+                msg = "Port must be an integer between 0 and 65535:"
                 raise ValueError(
-                    "Port must be an integer between 0 and 65535:", port
+                    msg, port,
                 ) from err
 
         nodelist.append((host, port))
@@ -349,8 +365,9 @@ _LAST_TIMESTAMP_INC = []
 def get_current_timestamp():
     """Get the current timestamp as a bson Timestamp object."""
     if not Timestamp:
+        msg = "timestamp is not supported. Import pymongo to use it."
         raise NotImplementedError(
-            "timestamp is not supported. Import pymongo to use it."
+            msg,
         )
     now = int(time.time())
     if _LAST_TIMESTAMP_INC and _LAST_TIMESTAMP_INC[0] == now:
@@ -378,7 +395,7 @@ def patch_datetime_awareness_in_document(value):
         mongo_us = (value.microsecond // 1000) * 1000
         if value.tzinfo:
             return (value - value.utcoffset()).replace(
-                tzinfo=None, microsecond=mongo_us
+                tzinfo=None, microsecond=mongo_us,
             )
         return value.replace(microsecond=mongo_us)
     if Timestamp and isinstance(value, Timestamp) and not value.time and not value.inc:

@@ -23,10 +23,12 @@ def _deserialize(
         )
         or not (from_bytes or from_proto)
     ):
-        raise TypeError("Wrong deserialization format.")
+        msg = "Wrong deserialization format."
+        raise TypeError(msg)
 
     if from_bytes:
         return rs_bytes2object(blob)
 
     if from_proto:
         return rs_proto2object(blob)
+    return None

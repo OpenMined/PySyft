@@ -59,10 +59,10 @@ def private_function(context) -> str:
 @pytest.mark.local_server
 def test_twin_api_integration(full_high_worker, full_low_worker):
     low_client = full_low_worker.login(
-        email="info@openmined.org", password="changethis"
+        email="info@openmined.org", password="changethis",
     )
     high_client = full_high_worker.login(
-        email="info@openmined.org", password="changethis"
+        email="info@openmined.org", password="changethis",
     )
     client_low_ds = get_ds_client(low_client)
 
@@ -80,7 +80,7 @@ def test_twin_api_integration(full_high_worker, full_low_worker):
     private_job_id = job.id
 
     diff_before, diff_after = compare_and_resolve(
-        from_client=high_client, to_client=low_client
+        from_client=high_client, to_client=low_client,
     )
     assert not diff_before.is_same
     assert diff_after.is_same
@@ -96,13 +96,13 @@ def test_twin_api_integration(full_high_worker, full_low_worker):
     _ = client_low_ds.code.request_code_execution(compute)
 
     diff_before, diff_after = compare_and_resolve(
-        from_client=low_client, to_client=high_client
+        from_client=low_client, to_client=high_client,
     )
 
     job_high = high_client.code.compute(query=high_client.api.services.testapi.query)
     high_client.requests[0].deposit_result(job_high)
     diff_before, diff_after = compare_and_resolve(
-        from_client=high_client, to_client=low_client
+        from_client=high_client, to_client=low_client,
     )
     client_low_ds.refresh()
     res = client_low_ds.code.compute(query=client_low_ds.api.services.testapi.query)
@@ -118,7 +118,7 @@ def test_twin_api_integration(full_high_worker, full_low_worker):
     private_res = low_client.api.services.testapi.query.private()
     assert mock_res == -42
     assert isinstance(
-        private_res, SyftError
+        private_res, SyftError,
     ), "Should not be able to access private function on low side."
 
     # verify updating twin api endpoint works
@@ -126,7 +126,7 @@ def test_twin_api_integration(full_high_worker, full_low_worker):
     timeout_before = (
         full_low_worker.python_server.get_service("apiservice")
         .stash.get_all(
-            credentials=full_low_worker.client.credentials, has_permission=True
+            credentials=full_low_worker.client.credentials, has_permission=True,
         )
         .ok()[0]
         .endpoint_timeout
@@ -134,7 +134,7 @@ def test_twin_api_integration(full_high_worker, full_low_worker):
     expected_timeout_after = timeout_before + 1
 
     high_client.custom_api.update(
-        endpoint_path="testapi.query", endpoint_timeout=expected_timeout_after
+        endpoint_path="testapi.query", endpoint_timeout=expected_timeout_after,
     )
     widget = sy.sync(from_client=high_client, to_client=low_client)
     result = widget[0].click_sync()
@@ -143,7 +143,7 @@ def test_twin_api_integration(full_high_worker, full_low_worker):
     timeout_after = (
         full_low_worker.python_server.get_service("apiservice")
         .stash.get_all(
-            credentials=full_low_worker.client.credentials, has_permission=True
+            credentials=full_low_worker.client.credentials, has_permission=True,
         )
         .ok()[0]
         .endpoint_timeout
@@ -157,7 +157,7 @@ def test_twin_api_integration(full_high_worker, full_low_worker):
 @pytest.mark.local_server
 def test_function_error(full_low_worker) -> None:
     root_datasite_client = full_low_worker.login(
-        email="info@openmined.org", password="changethis"
+        email="info@openmined.org", password="changethis",
     )
     root_datasite_client.register(
         name="data-scientist",

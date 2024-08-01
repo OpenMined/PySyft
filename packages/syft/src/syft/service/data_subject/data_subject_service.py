@@ -29,14 +29,14 @@ from .data_subject_member_service import DataSubjectMemberService
 class DataSubjectStash(BaseUIDStoreStash):
     object_type = DataSubject
     settings: PartitionSettings = PartitionSettings(
-        name=DataSubject.__canonical_name__, object_type=DataSubject
+        name=DataSubject.__canonical_name__, object_type=DataSubject,
     )
 
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
 
     def get_by_name(
-        self, credentials: SyftVerifyKey, name: str
+        self, credentials: SyftVerifyKey, name: str,
     ) -> Result[DataSubject | None, str]:
         qks = QueryKeys(qks=[NamePartitionKey.with_obj(name)])
         return self.query_one(credentials, qks=qks)
@@ -66,12 +66,12 @@ class DataSubjectService(AbstractService):
 
     @service_method(path="data_subject.add", name="add_data_subject")
     def add(
-        self, context: AuthedServiceContext, data_subject: DataSubjectCreate
+        self, context: AuthedServiceContext, data_subject: DataSubjectCreate,
     ) -> SyftSuccess | SyftError:
         """Register a data subject."""
 
         member_relationship_add = context.server.get_service_method(
-            DataSubjectMemberService.add
+            DataSubjectMemberService.add,
         )
 
         member_relationships: set[tuple[str, str]] = data_subject.member_relationships
@@ -98,7 +98,7 @@ class DataSubjectService(AbstractService):
                     return result
 
         return SyftSuccess(
-            message=f"{len(member_relationships)+1} Data Subjects Registered"
+            message=f"{len(member_relationships)+1} Data Subjects Registered",
         )
 
     @service_method(path="data_subject.get_all", name="get_all")
@@ -106,16 +106,15 @@ class DataSubjectService(AbstractService):
         """Get all Data subjects"""
         result = self.stash.get_all(context.credentials)
         if result.is_ok():
-            data_subjects = result.ok()
-            return data_subjects
+            return result.ok()
         return SyftError(message=result.err())
 
     @service_method(path="data_subject.get_members", name="members_for")
     def get_members(
-        self, context: AuthedServiceContext, data_subject_name: str
+        self, context: AuthedServiceContext, data_subject_name: str,
     ) -> list[DataSubject] | SyftError:
         get_relatives = context.server.get_service_method(
-            DataSubjectMemberService.get_relatives
+            DataSubjectMemberService.get_relatives,
         )
 
         relatives = get_relatives(context, data_subject_name)
@@ -134,13 +133,12 @@ class DataSubjectService(AbstractService):
 
     @service_method(path="data_subject.get_by_name", name="get_by_name")
     def get_by_name(
-        self, context: AuthedServiceContext, name: str
+        self, context: AuthedServiceContext, name: str,
     ) -> SyftSuccess | SyftError:
         """Get a Data Subject by its name."""
         result = self.stash.get_by_name(context.credentials, name=name)
         if result.is_ok():
-            data_subject = result.ok()
-            return data_subject
+            return result.ok()
         return SyftError(message=result.err())
 
 

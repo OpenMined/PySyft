@@ -111,7 +111,8 @@ except ImportError:
         @property
         def upserted_ids(self):
             if self.__bulk_api_result:
-                return dict(
-                    (upsert["index"], upsert["_id"])
+                return {
+                    upsert["index"]: upsert["_id"]
                     for upsert in self.bulk_api_result["upserted"]
-                )
+                }
+            return None

@@ -83,9 +83,10 @@ class ServerPeer(SyftObject):
 
         if route:
             if not isinstance(
-                route, HTTPServerRoute | PythonServerRoute | VeilidServerRoute
+                route, HTTPServerRoute | PythonServerRoute | VeilidServerRoute,
             ):
-                raise ValueError(f"Unsupported route type: {type(route)}")
+                msg = f"Unsupported route type: {type(route)}"
+                raise ValueError(msg)
             for i, r in enumerate(self.server_routes):
                 if route == r:
                     return (True, i)
@@ -167,7 +168,7 @@ class ServerPeer(SyftObject):
             self.update_route(new_route)
 
     def update_existed_route_priority(
-        self, route: ServerRoute, priority: int | None = None
+        self, route: ServerRoute, priority: int | None = None,
     ) -> ServerRouteType | SyftError:
         """
         Update the priority of an existed route.
@@ -183,7 +184,7 @@ class ServerPeer(SyftObject):
         """
         if priority is not None and priority <= 0:
             return SyftError(
-                message="Priority must be greater than 0. Now it is {priority}."
+                message="Priority must be greater than 0. Now it is {priority}.",
             )
 
         existed, index = self.existed_route(route=route)
@@ -195,7 +196,7 @@ class ServerPeer(SyftObject):
             self.server_routes[index].priority = priority
         else:
             self.server_routes[index].priority = self.update_route_priority(
-                route
+                route,
             ).priority
 
         return self.server_routes[index]
@@ -203,7 +204,8 @@ class ServerPeer(SyftObject):
     @staticmethod
     def from_client(client: SyftClient) -> "ServerPeer":
         if not client.metadata:
-            raise ValueError("Client has to have metadata first")
+            msg = "Client has to have metadata first"
+            raise ValueError(msg)
 
         peer = client.metadata.to(ServerMetadata).to(ServerPeer)
         route = connection_to_route(client.connection)
@@ -221,12 +223,13 @@ class ServerPeer(SyftObject):
         return self.server_routes[-1] if self.server_routes else None
 
     def client_with_context(
-        self, context: ServerServiceContext
+        self, context: ServerServiceContext,
     ) -> Result[type[SyftClient], str]:
         # third party
 
         if len(self.server_routes) < 1:
-            raise ValueError(f"No routes to peer: {self}")
+            msg = f"No routes to peer: {self}"
+            raise ValueError(msg)
         # select the route with highest priority to connect to the peer
         final_route: ServerRoute = self.pick_highest_priority_route()
         connection: ServerConnection = route_to_connection(route=final_route)
@@ -239,12 +242,13 @@ class ServerPeer(SyftObject):
         if isinstance(client_type, SyftError):
             return Err(client_type.message)
         return Ok(
-            client_type(connection=connection, credentials=context.server.signing_key)
+            client_type(connection=connection, credentials=context.server.signing_key),
         )
 
     def client_with_key(self, credentials: SyftSigningKey) -> SyftClient | SyftError:
         if len(self.server_routes) < 1:
-            raise ValueError(f"No routes to peer: {self}")
+            msg = f"No routes to peer: {self}"
+            raise ValueError(msg)
 
         final_route: ServerRoute = self.pick_highest_priority_route()
 
@@ -285,7 +289,7 @@ class ServerPeer(SyftObject):
                 self.server_routes = [r for r in self.server_routes if r != route]
             except Exception as e:
                 return SyftError(
-                    message=f"Error deleting route with id {route.id}. Exception: {e}"
+                    message=f"Error deleting route with id {route.id}. Exception: {e}",
                 )
 
         return None

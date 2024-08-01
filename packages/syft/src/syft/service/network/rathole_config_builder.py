@@ -38,7 +38,8 @@ class RatholeConfigBuilder:
 
         rathole_route = peer.get_rtunnel_route()
         if not rathole_route:
-            raise Exception(f"Peer: {peer} has no rathole route: {rathole_route}")
+            msg = f"Peer: {peer} has no rathole route: {rathole_route}"
+            raise Exception(msg)
 
         random_port = self._get_random_port()
 
@@ -54,11 +55,12 @@ class RatholeConfigBuilder:
 
         # Get rathole toml config map
         rathole_config_map = KubeUtils.get_configmap(
-            client=self.k8rs_client, name=RATHOLE_TOML_CONFIG_MAP
+            client=self.k8rs_client, name=RATHOLE_TOML_CONFIG_MAP,
         )
 
         if rathole_config_map is None:
-            raise Exception("Rathole config map not found.")
+            msg = "Rathole config map not found."
+            raise Exception(msg)
 
         client_filename = RatholeServerToml.filename
 
@@ -93,11 +95,12 @@ class RatholeConfigBuilder:
         """
 
         rathole_config_map = KubeUtils.get_configmap(
-            client=self.k8rs_client, name=RATHOLE_TOML_CONFIG_MAP
+            client=self.k8rs_client, name=RATHOLE_TOML_CONFIG_MAP,
         )
 
         if rathole_config_map is None:
-            raise Exception("Rathole config map not found.")
+            msg = "Rathole config map not found."
+            raise Exception(msg)
 
         client_filename = RatholeServerToml.filename
 
@@ -120,7 +123,7 @@ class RatholeConfigBuilder:
         return secrets.randbits(15)
 
     def add_host_to_client(
-        self, peer_name: str, peer_id: str, rtunnel_token: str, remote_addr: str
+        self, peer_name: str, peer_id: str, rtunnel_token: str, remote_addr: str,
     ) -> None:
         """Add a host to the rathole client toml file."""
 
@@ -134,11 +137,12 @@ class RatholeConfigBuilder:
 
         # Get rathole toml config map
         rathole_config_map = KubeUtils.get_configmap(
-            client=self.k8rs_client, name=RATHOLE_TOML_CONFIG_MAP
+            client=self.k8rs_client, name=RATHOLE_TOML_CONFIG_MAP,
         )
 
         if rathole_config_map is None:
-            raise Exception("Rathole config map not found.")
+            msg = "Rathole config map not found."
+            raise Exception(msg)
 
         client_filename = RatholeClientToml.filename
 
@@ -159,11 +163,12 @@ class RatholeConfigBuilder:
         """Remove a host from the rathole client toml file."""
 
         rathole_config_map = KubeUtils.get_configmap(
-            client=self.k8rs_client, name=RATHOLE_TOML_CONFIG_MAP
+            client=self.k8rs_client, name=RATHOLE_TOML_CONFIG_MAP,
         )
 
         if rathole_config_map is None:
-            raise Exception("Rathole config map not found.")
+            msg = "Rathole config map not found."
+            raise Exception(msg)
 
         client_filename = RatholeClientToml.filename
 
@@ -181,16 +186,17 @@ class RatholeConfigBuilder:
         KubeUtils.update_configmap(config_map=rathole_config_map, patch={"data": data})
 
     def _add_dynamic_addr_to_rathole(
-        self, config: RatholeConfig, entrypoint: str = "web"
+        self, config: RatholeConfig, entrypoint: str = "web",
     ) -> None:
         """Add a port to the rathole proxy config map."""
 
         rathole_proxy_config_map = KubeUtils.get_configmap(
-            self.k8rs_client, RATHOLE_PROXY_CONFIG_MAP
+            self.k8rs_client, RATHOLE_PROXY_CONFIG_MAP,
         )
 
         if rathole_proxy_config_map is None:
-            raise Exception("Rathole proxy config map not found.")
+            msg = "Rathole proxy config map not found."
+            raise Exception(msg)
 
         rathole_proxy = rathole_proxy_config_map.data["rathole-dynamic.yml"]
 
@@ -201,12 +207,12 @@ class RatholeConfigBuilder:
 
         rathole_proxy["http"]["services"][config.server_name] = {
             "loadBalancer": {
-                "servers": [{"url": f"http://rathole:{config.local_addr_port}"}]
-            }
+                "servers": [{"url": f"http://rathole:{config.local_addr_port}"}],
+            },
         }
 
         rathole_proxy["http"]["middlewares"]["strip-rathole-prefix"] = {
-            "replacePathRegex": {"regex": "^/rathole/(.*)", "replacement": "/$1"}
+            "replacePathRegex": {"regex": "^/rathole/(.*)", "replacement": "/$1"},
         }
 
         proxy_rule = (
@@ -232,11 +238,12 @@ class RatholeConfigBuilder:
         """Remove a port from the rathole proxy config map."""
 
         rathole_proxy_config_map = KubeUtils.get_configmap(
-            self.k8rs_client, RATHOLE_PROXY_CONFIG_MAP
+            self.k8rs_client, RATHOLE_PROXY_CONFIG_MAP,
         )
 
         if rathole_proxy_config_map is None:
-            raise Exception("Rathole proxy config map not found.")
+            msg = "Rathole proxy config map not found."
+            raise Exception(msg)
 
         rathole_proxy = rathole_proxy_config_map.data["rathole-dynamic.yml"]
 
@@ -284,7 +291,7 @@ class RatholeConfigBuilder:
                     "port": port,
                     "targetPort": port,
                     "protocol": "TCP",
-                }
+                },
             )
 
         rathole_service.patch(config)

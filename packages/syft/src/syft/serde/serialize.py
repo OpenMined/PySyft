@@ -27,8 +27,8 @@ def _serialize(
                 tmp_file.seek(0)
                 return tmp_file.read()
         else:
-            res = proto.to_bytes()
-            return res
+            return proto.to_bytes()
 
     if to_proto:
         return proto
+    return None

@@ -71,7 +71,7 @@ class APIService(AbstractService):
 
         if isinstance(endpoint, CreateTwinAPIEndpoint):
             endpoint_exists = self.stash.path_exists(
-                context.credentials, new_endpoint.path
+                context.credentials, new_endpoint.path,
             )
 
             if endpoint_exists.is_err():
@@ -79,7 +79,7 @@ class APIService(AbstractService):
 
             if endpoint_exists.is_ok() and endpoint_exists.ok():
                 return SyftError(
-                    message="An API endpoint already exists at the given path."
+                    message="An API endpoint already exists at the given path.",
                 )
 
         result = self.stash.upsert(context.credentials, endpoint=new_endpoint)
@@ -131,7 +131,7 @@ class APIService(AbstractService):
         ):
             return SyftError(
                 message='At least one of "mock_function", "private_function", '
-                '"hide_mock_definition" or "endpoint_timeout" is required.'
+                '"hide_mock_definition" or "endpoint_timeout" is required.',
             )
 
         endpoint_result = self.stash.get_by_path(context.credentials, endpoint_path)
@@ -193,7 +193,7 @@ class APIService(AbstractService):
         roles=ADMIN_ROLE_LEVEL,
     )
     def delete(
-        self, context: AuthedServiceContext, endpoint_path: str
+        self, context: AuthedServiceContext, endpoint_path: str,
     ) -> SyftSuccess | SyftError:
         """Deletes an specific API endpoint."""
 
@@ -219,7 +219,7 @@ class APIService(AbstractService):
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def view(
-        self, context: AuthedServiceContext, path: str
+        self, context: AuthedServiceContext, path: str,
     ) -> TwinAPIEndpointView | SyftError:
         """Retrieves an specific API endpoint."""
         result = self.stash.get_by_path(context.server.verify_key, path)
@@ -235,15 +235,14 @@ class APIService(AbstractService):
         roles=ADMIN_ROLE_LEVEL,
     )
     def get(
-        self, context: AuthedServiceContext, api_path: str
+        self, context: AuthedServiceContext, api_path: str,
     ) -> TwinAPIEndpoint | SyftError:
         """Retrieves an specific API endpoint."""
         result = self.stash.get_by_path(context.server.verify_key, api_path)
         if result.is_err():
             return SyftError(message=result.err())
-        api_endpoint = result.ok()
+        return result.ok()
 
-        return api_endpoint
 
     @service_method(
         path="api.set_state",
@@ -327,15 +326,14 @@ class APIService(AbstractService):
             return SyftError(message=result.err())
 
         all_api_endpoints = result.ok()
-        api_endpoint_view = [
+        return [
             api_endpoint.to(TwinAPIEndpointView, context=context)
             for api_endpoint in all_api_endpoints
         ]
 
-        return api_endpoint_view
 
     @service_method(
-        path="api.call_in_jobs", name="call_in_jobs", roles=GUEST_ROLE_LEVEL
+        path="api.call_in_jobs", name="call_in_jobs", roles=GUEST_ROLE_LEVEL,
     )
     def call_in_jobs(
         self,
@@ -426,7 +424,7 @@ class APIService(AbstractService):
                     message=(
                         f"Function timed out in {custom_endpoint.endpoint_timeout} seconds. "
                         + f"Get the Job with id: {job_id} to check results."
-                    )
+                    ),
                 )
 
         if job.status == JobStatus.COMPLETED:
@@ -435,10 +433,10 @@ class APIService(AbstractService):
             return SyftError(message="Function failed to complete.")
 
     @service_method(
-        path="api.get_public_context", name="get_public_context", roles=ADMIN_ROLE_LEVEL
+        path="api.get_public_context", name="get_public_context", roles=ADMIN_ROLE_LEVEL,
     )
     def get_public_context(
-        self, context: AuthedServiceContext, path: str
+        self, context: AuthedServiceContext, path: str,
     ) -> dict[str, Any] | SyftError:
         """Get specific public api context."""
         custom_endpoint = self.get_code(
@@ -449,7 +447,7 @@ class APIService(AbstractService):
             return custom_endpoint
 
         return custom_endpoint.mock_function.build_internal_context(context=context).to(
-            TwinAPIContextView
+            TwinAPIContextView,
         )
 
     @service_method(
@@ -458,7 +456,7 @@ class APIService(AbstractService):
         roles=ADMIN_ROLE_LEVEL,
     )
     def get_private_context(
-        self, context: AuthedServiceContext, path: str
+        self, context: AuthedServiceContext, path: str,
     ) -> dict[str, Any] | SyftError:
         """Get specific private api context."""
         custom_endpoint = self.get_code(
@@ -469,11 +467,11 @@ class APIService(AbstractService):
             return custom_endpoint
 
         custom_endpoint.private_function = cast(
-            PrivateAPIEndpoint, custom_endpoint.private_function
+            PrivateAPIEndpoint, custom_endpoint.private_function,
         )
 
         return custom_endpoint.private_function.build_internal_context(
-            context=context
+            context=context,
         ).to(TwinAPIContextView)
 
     @service_method(path="api.get_all", name="get_all", roles=ADMIN_ROLE_LEVEL)
@@ -518,7 +516,7 @@ class APIService(AbstractService):
             )
             if result.is_err():
                 return SyftError(
-                    message=f"Failed to set result to store: {result.err()}"
+                    message=f"Failed to set result to store: {result.err()}",
                 )
 
             return Ok(result.ok())
@@ -558,7 +556,7 @@ class APIService(AbstractService):
             )
             if result.is_err():
                 return SyftError(
-                    message=f"Failed to set result to store: {result.err()}"
+                    message=f"Failed to set result to store: {result.err()}",
                 )
 
             return Ok(result.ok())
@@ -569,7 +567,7 @@ class APIService(AbstractService):
             return Err(value=f"Failed to run. {e}, {traceback.format_exc()}")
 
     @service_method(
-        path="api.call_private", name="call_private", roles=GUEST_ROLE_LEVEL
+        path="api.call_private", name="call_private", roles=GUEST_ROLE_LEVEL,
     )
     def call_private(
         self,
@@ -596,11 +594,11 @@ class APIService(AbstractService):
         action_service = cast(ActionService, context.server.get_service(ActionService))
         try:
             result = action_service.set_result_to_store(
-                context=context, result_action_object=action_obj
+                context=context, result_action_object=action_obj,
             )
             if result.is_err():
                 return SyftError(
-                    message=f"Failed to set result to store: {result.err()}"
+                    message=f"Failed to set result to store: {result.err()}",
                 )
 
             return Ok(result.ok())
@@ -616,7 +614,7 @@ class APIService(AbstractService):
         name="exists",
     )
     def exists(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID,
     ) -> SyftSuccess | SyftError:
         """Check if an endpoint exists"""
         endpoint = self.get_endpoint_by_uid(context, uid)
@@ -672,7 +670,7 @@ class APIService(AbstractService):
         return endpoint.exec_code(endpoint.mock_function, context, *args, **kwargs)
 
     def get_endpoint_by_uid(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID,
     ) -> TwinAPIEndpoint | SyftError:
         admin_key = context.server.get_service("userservice").admin_verify_key()
         result = self.stash.get_by_uid(admin_key, uid)
@@ -681,7 +679,7 @@ class APIService(AbstractService):
         return result.ok()
 
     def get_endpoints(
-        self, context: AuthedServiceContext
+        self, context: AuthedServiceContext,
     ) -> list[TwinAPIEndpoint] | SyftError:
         # TODO: Add ability to specify which roles see which endpoints
         # for now skip auth
@@ -691,12 +689,12 @@ class APIService(AbstractService):
         return SyftError(messages="Unable to get CustomAPIEndpoint")
 
     def get_code(
-        self, context: AuthedServiceContext, endpoint_path: str
+        self, context: AuthedServiceContext, endpoint_path: str,
     ) -> TwinAPIEndpoint | SyftError:
         result = self.stash.get_by_path(context.server.verify_key, path=endpoint_path)
         if result.is_err():
             return SyftError(
-                message=f"CustomAPIEndpoint: {endpoint_path} does not exist"
+                message=f"CustomAPIEndpoint: {endpoint_path} does not exist",
             )
 
         if result.is_ok():

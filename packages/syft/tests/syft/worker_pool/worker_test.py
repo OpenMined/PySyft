@@ -3,8 +3,11 @@ import syft as sy
 from syft.custom_worker.config import DockerWorkerConfig
 from syft.server.worker import Worker
 from syft.service.response import SyftSuccess
-from syft.service.worker.worker_image import SyftWorkerImage
 from syft.types.datetime import DateTime
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from syft.service.worker.worker_image import SyftWorkerImage
 
 
 def get_docker_config():
@@ -24,7 +27,7 @@ def test_syft_worker(worker: Worker):
     root_client = worker.root_client
     docker_config = get_docker_config()
     submit_result = root_client.api.services.worker_image.submit(
-        worker_config=docker_config
+        worker_config=docker_config,
     )
     assert isinstance(submit_result, SyftSuccess)
 

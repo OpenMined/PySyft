@@ -170,7 +170,7 @@ class KubernetesRunner:
                         "secret": {
                             "secretName": secret_name,
                         },
-                    }
+                    },
                 )
                 volume_mounts.append(
                     {
@@ -178,14 +178,14 @@ class KubernetesRunner:
                         "mountPath": mount_opts.get("mountPath"),
                         "subPath": mount_opts.get("subPath"),
                         "readOnly": True,
-                    }
+                    },
                 )
 
         if pull_secret:
             pull_secret_obj = [
                 {
                     "name": pull_secret.name,
-                }
+                },
             ]
 
         default_pod_labels = {
@@ -193,10 +193,7 @@ class KubernetesRunner:
             "app.kubernetes.io/component": pool_name,
         }
 
-        if isinstance(pod_labels, dict):
-            pod_labels = {**default_pod_labels, **pod_labels}
-        else:
-            pod_labels = default_pod_labels
+        pod_labels = {**default_pod_labels, **pod_labels} if isinstance(pod_labels, dict) else default_pod_labels
 
         stateful_set = StatefulSet(
             {
@@ -213,7 +210,7 @@ class KubernetesRunner:
                     "selector": {
                         "matchLabels": {
                             "app.kubernetes.io/component": pool_name,
-                        }
+                        },
                     },
                     "template": {
                         "metadata": {
@@ -247,13 +244,13 @@ class KubernetesRunner:
                                         "failureThreshold": 30,
                                         "periodSeconds": 10,
                                     },
-                                }
+                                },
                             ],
                             "volumes": volumes,
                             "imagePullSecrets": pull_secret_obj,
                         },
                     },
                 },
-            }
+            },
         )
         return KubeUtils.create_or_get(stateful_set)

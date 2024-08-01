@@ -18,7 +18,7 @@ class MetadataService(AbstractService):
         self.store = store
 
     @service_method(
-        path="metadata.get_metadata", name="get_metadata", roles=GUEST_ROLE_LEVEL
+        path="metadata.get_metadata", name="get_metadata", roles=GUEST_ROLE_LEVEL,
     )
     def get_metadata(self, context: AuthedServiceContext) -> ServerMetadata:
         return context.server.metadata  # type: ignore

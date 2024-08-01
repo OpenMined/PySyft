@@ -20,7 +20,7 @@ class SyftObjectRegistry:
 
     @classmethod
     def register_cls(
-        cls, canonical_name: str, version: int, serde_attributes: tuple
+        cls, canonical_name: str, version: int, serde_attributes: tuple,
     ) -> None:
         if canonical_name not in cls.__object_serialization_registry__:
             cls.__object_serialization_registry__[canonical_name] = {}
@@ -76,7 +76,8 @@ class SyftObjectRegistry:
         obj_type = type(obj)
         if obj_type in cls.__type_to_canonical_name__:
             return cls.__type_to_canonical_name__[obj_type]
-        raise ValueError(f"Could not find canonical name for {obj}")
+        msg = f"Could not find canonical name for {obj}"
+        raise ValueError(msg)
 
     @classmethod
     def get_serde_properties(cls, canonical_name: str, version: int) -> tuple:
@@ -117,7 +118,7 @@ class SyftObjectRegistry:
 
     @classmethod
     def get_transform(
-        cls, type_from: type["SyftObject"], type_to: type["SyftObject"]
+        cls, type_from: type["SyftObject"], type_to: type["SyftObject"],
     ) -> Callable:
         # relative
         from .syft_object import SyftBaseObject
@@ -148,7 +149,10 @@ class SyftObjectRegistry:
                     return SyftObjectRegistry.__object_transform_registry__[
                         mapping_string
                     ]
-        raise Exception(
+        msg = (
             f"No mapping found for: {type_from} to {type_to} in"
             f"the registry: {SyftObjectRegistry.__object_transform_registry__.keys()}"
+        )
+        raise Exception(
+            msg,
         )

@@ -24,7 +24,7 @@ ActionIDsPartitionKey = PartitionKey(key="action_ids", type_=list[UID])
 class SettingsStash(BaseUIDStoreStash):
     object_type = ServerSettings
     settings: PartitionSettings = PartitionSettings(
-        name=ServerSettings.__canonical_name__, object_type=ServerSettings
+        name=ServerSettings.__canonical_name__, object_type=ServerSettings,
     )
 
     def __init__(self, store: DocumentStore) -> None:

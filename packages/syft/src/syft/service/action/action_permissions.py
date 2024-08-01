@@ -34,16 +34,16 @@ class ActionObjectPermission:
         permission: ActionPermission,
         credentials: SyftVerifyKey | None = None,
     ):
-        if credentials is None:
-            if permission not in COMPOUND_ACTION_PERMISSION:
-                raise Exception(f"{permission} not in {COMPOUND_ACTION_PERMISSION}")
+        if credentials is None and permission not in COMPOUND_ACTION_PERMISSION:
+            msg = f"{permission} not in {COMPOUND_ACTION_PERMISSION}"
+            raise Exception(msg)
         self.uid = uid
         self.credentials = credentials
         self.permission = permission
 
     @classmethod
     def from_permission_string(
-        cls, uid: UID, permission_string: str
+        cls, uid: UID, permission_string: str,
     ) -> "ActionObjectPermission":
         if permission_string.startswith("ALL_"):
             permission = ActionPermission[permission_string]

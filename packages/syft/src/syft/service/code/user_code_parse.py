@@ -9,14 +9,16 @@ from .unparse import unparse
 class GlobalsVisitor(ast.NodeVisitor):
     def generic_visit(self, node: Any) -> None:
         if isinstance(node, ast.Global):
-            raise Exception("No Globals allows")
+            msg = "No Globals allows"
+            raise Exception(msg)
         ast.NodeVisitor.generic_visit(self, node)
 
 
 def check_no_returns(module: ast.Module) -> None:
     for node in module.body:
         if isinstance(node, ast.Return):
-            raise Exception("Main body of function cannot return")
+            msg = "Main body of function cannot return"
+            raise Exception(msg)
 
 
 def make_return(var_name: str) -> ast.Return:
@@ -33,15 +35,14 @@ def make_ast_args(args: list[str]) -> ast.arguments:
 
 
 def make_ast_func(
-    name: str, input_kwargs: list[str], output_arg: str, body: list[ast.AST]
+    name: str, input_kwargs: list[str], output_arg: str, body: list[ast.AST],
 ) -> ast.FunctionDef:
     args = make_ast_args(input_kwargs)
     r = make_return(output_arg)
     new_body = body + [r]
-    f = ast.FunctionDef(
-        name=name, args=args, body=new_body, decorator_list=[], lineno=0
+    return ast.FunctionDef(
+        name=name, args=args, body=new_body, decorator_list=[], lineno=0,
     )
-    return f
 
 
 def parse_and_wrap_code(

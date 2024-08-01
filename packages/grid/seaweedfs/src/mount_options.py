@@ -26,4 +26,5 @@ class MountOptions(BaseModel):
             return S3Bucket(**v)
         if v["type"] == "azure":
             return AzureBucket(**v)
-        raise ValueError(f"Invalid remote bucket type: {v['type']}")
+        msg = f"Invalid remote bucket type: {v['type']}"
+        raise ValueError(msg)

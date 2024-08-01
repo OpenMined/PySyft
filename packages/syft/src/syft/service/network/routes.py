@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING
 from typing_extensions import Self
 
 # relative
-from ...abstract_server import AbstractServer
 from ...client.client import HTTPConnection
 from ...client.client import PythonConnection
 from ...client.client import ServerConnection
@@ -19,21 +18,22 @@ from ...serde.serializable import serializable
 from ...server.worker_settings import WorkerSettings
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
-from ...types.transforms import TransformContext
-from ...types.uid import UID
-from ..context import AuthedServiceContext
-from ..context import ServerServiceContext
 from ..response import SyftError
 
 if TYPE_CHECKING:
     # relative
+    from ..context import AuthedServiceContext
+    from ...types.transforms import TransformContext
+    from ...abstract_server import AbstractServer
+    from ...types.uid import UID
+    from ..context import ServerServiceContext
     from .server_peer import ServerPeer
 
 
 @serializable(canonical_name="ServerRoute", version=1)
 class ServerRoute:
     def client_with_context(
-        self, context: ServerServiceContext
+        self, context: ServerServiceContext,
     ) -> SyftClient | SyftError:
         """
         Convert the current route (self) to a connection (either HTTP, Veilid or Python)
@@ -51,11 +51,11 @@ class ServerRoute:
         if isinstance(client_type, SyftError):
             return client_type
         return client_type(
-            connection=connection, credentials=context.server.signing_key
+            connection=connection, credentials=context.server.signing_key,
         )
 
     def validate_with_context(
-        self, context: AuthedServiceContext
+        self, context: AuthedServiceContext,
     ) -> ServerPeer | SyftError:
         # relative
         from .server_peer import ServerPeer
@@ -74,7 +74,7 @@ class ServerRoute:
         try:
             # Verifying if the challenge is valid
             context.server.verify_key.verify_key.verify(
-                random_challenge, challenge_signature
+                random_challenge, challenge_signature,
             )
         except Exception:
             return SyftError(message="Signature Verification Failed in ping")
@@ -133,7 +133,7 @@ class PythonServerRoute(SyftObject, ServerRoute):
         # relative
         from ...server.worker import Worker
 
-        server = Worker(
+        return Worker(
             id=self.worker_settings.id,
             name=self.worker_settings.name,
             server_type=self.worker_settings.server_type,
@@ -143,7 +143,6 @@ class PythonServerRoute(SyftObject, ServerRoute):
             action_store_config=self.worker_settings.action_store_config,
             processes=1,
         )
-        return server
 
     @classmethod
     def with_server(cls, server: AbstractServer) -> Self:
@@ -191,14 +190,15 @@ ServerRouteType = HTTPServerRoute | PythonServerRoute
 
 
 def route_to_connection(
-    route: ServerRoute, context: TransformContext | None = None
+    route: ServerRoute, context: TransformContext | None = None,
 ) -> ServerConnection:
     if isinstance(route, HTTPServerRoute):
         return route.to(HTTPConnection, context=context)
     elif isinstance(route, PythonServerRoute):
         return route.to(PythonConnection, context=context)
     else:
-        raise ValueError(f"Route {route} is not supported.")
+        msg = f"Route {route} is not supported."
+        raise ValueError(msg)
 
 
 def connection_to_route(connection: ServerConnection) -> ServerRoute:
@@ -207,4 +207,5 @@ def connection_to_route(connection: ServerConnection) -> ServerRoute:
     elif isinstance(connection, PythonConnection):  # type: ignore[unreachable]
         return connection.to(PythonServerRoute)
     else:
-        raise ValueError(f"Connection {connection} is not supported.")
+        msg = f"Connection {connection} is not supported."
+        raise ValueError(msg)

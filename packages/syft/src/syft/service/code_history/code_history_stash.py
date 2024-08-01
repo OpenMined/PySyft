@@ -21,7 +21,7 @@ VerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
 class CodeHistoryStash(BaseUIDStoreStash):
     object_type = CodeHistory
     settings: PartitionSettings = PartitionSettings(
-        name=CodeHistory.__canonical_name__, object_type=CodeHistory
+        name=CodeHistory.__canonical_name__, object_type=CodeHistory,
     )
 
     def __init__(self, store: DocumentStore) -> None:
@@ -37,18 +37,18 @@ class CodeHistoryStash(BaseUIDStoreStash):
             qks=[
                 NamePartitionKey.with_obj(service_func_name),
                 VerifyKeyPartitionKey.with_obj(user_verify_key),
-            ]
+            ],
         )
         return self.query_one(credentials=credentials, qks=qks)
 
     def get_by_service_func_name(
-        self, credentials: SyftVerifyKey, service_func_name: str
+        self, credentials: SyftVerifyKey, service_func_name: str,
     ) -> Result[list[CodeHistory], str]:
         qks = QueryKeys(qks=[NamePartitionKey.with_obj(service_func_name)])
         return self.query_all(credentials=credentials, qks=qks)
 
     def get_by_verify_key(
-        self, credentials: SyftVerifyKey, user_verify_key: SyftVerifyKey
+        self, credentials: SyftVerifyKey, user_verify_key: SyftVerifyKey,
     ) -> Result[CodeHistory | None, str]:
         if isinstance(user_verify_key, str):
             user_verify_key = SyftVerifyKey.from_string(user_verify_key)

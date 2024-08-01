@@ -54,7 +54,8 @@ class CustomWorkerBuilder:
         elif isinstance(config, CustomWorkerConfig):
             return self._build_template(config, **kwargs)
         else:
-            raise TypeError("Unknown worker config type")
+            msg = "Unknown worker config type"
+            raise TypeError(msg)
 
     def push_image(
         self,
@@ -98,7 +99,8 @@ class CustomWorkerBuilder:
         # Builds a Docker pre-made CPU/GPU image template using a CustomWorkerConfig
         # remove once GPU is supported
         if config.build.gpu:
-            raise Exception("GPU custom worker is not supported yet")
+            msg = "GPU custom worker is not supported yet"
+            raise Exception(msg)
 
         type = self.TYPE_GPU if config.build.gpu else self.TYPE_CPU
 
@@ -140,4 +142,5 @@ class CustomWorkerBuilder:
             if path.exists():
                 return path
 
-        raise FileNotFoundError(f"Cannot find the {filename}")
+        msg = f"Cannot find the {filename}"
+        raise FileNotFoundError(msg)

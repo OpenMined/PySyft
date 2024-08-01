@@ -26,7 +26,7 @@ class PolicyService(AbstractService):
 
     @service_method(path="policy.get_all", name="get_all")
     def get_all_user_policy(
-        self, context: AuthedServiceContext
+        self, context: AuthedServiceContext,
     ) -> list[UserPolicy] | SyftError:
         result = self.stash.get_all(context.credentials)
         if result.is_ok():
@@ -48,7 +48,7 @@ class PolicyService(AbstractService):
 
     @service_method(path="policy.get_by_uid", name="get_by_uid")
     def get_policy_by_uid(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID,
     ) -> SyftSuccess | SyftError:
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():

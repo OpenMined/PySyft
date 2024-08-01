@@ -29,7 +29,7 @@ class _MongoMockGridOutCursor(MongoMockCursor):
     def next(self):
         next_file = super(_MongoMockGridOutCursor, self).next()
         return PyMongoGridOut(
-            self.__root_collection, file_document=next_file, session=self.session
+            self.__root_collection, file_document=next_file, session=self.session,
         )
 
     __next__ = next
@@ -59,10 +59,11 @@ def enable_gridfs_integration():
     """
 
     if not _HAVE_PYMONGO:
-        raise NotImplementedError("gridfs mocking requires pymongo to work")
+        msg = "gridfs mocking requires pymongo to work"
+        raise NotImplementedError(msg)
 
     mock.patch("gridfs.Database", (PyMongoDatabase, MongoMockDatabase)).start()
     mock.patch(
-        "gridfs.grid_file.Collection", (PyMongoCollection, MongoMockCollection)
+        "gridfs.grid_file.Collection", (PyMongoCollection, MongoMockCollection),
     ).start()
     mock.patch("gridfs.GridOutCursor", _create_grid_out_cursor).start()

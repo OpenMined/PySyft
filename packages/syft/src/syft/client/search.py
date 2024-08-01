@@ -33,11 +33,8 @@ class SearchResults:
                 if isinstance(key, UID):
                     if dataset.id == key:
                         return dataset
-                elif isinstance(key, str):
-                    if dataset.name == key:
-                        return dataset
-                    elif str(dataset.id) == key:
-                        return dataset
+                elif isinstance(key, str) and (dataset.name == key or str(dataset.id) == key):
+                    return dataset
         raise KeyError
 
     def __repr__(self) -> str:
@@ -47,10 +44,7 @@ class SearchResults:
         return self._datasets._repr_html_()
 
     def client_for(self, key: Dataset | int | str | UID) -> SyftClient:
-        if isinstance(key, Dataset):
-            dataset = key
-        else:
-            dataset = self.__getitem__(key)
+        dataset = key if isinstance(key, Dataset) else self.__getitem__(key)
         return self._dataset_client[dataset.id]
 
     def __len__(self) -> int:
@@ -65,7 +59,7 @@ class Search:
 
     @staticmethod
     def __search_one_server(
-        peer_tuple: tuple[ServerPeer, ServerMetadataJSON], name: str
+        peer_tuple: tuple[ServerPeer, ServerMetadataJSON], name: str,
     ) -> tuple[SyftClient | None, list[Dataset]]:
         try:
             peer, server_metadata = peer_tuple
@@ -74,7 +68,7 @@ class Search:
             return (client, results)
         except Exception as e:  # noqa
             warning = SyftWarning(
-                message=f"Got exception {e} at server {server_metadata.name}"
+                message=f"Got exception {e} at server {server_metadata.name}",
             )
             display(warning)
             return (None, [])
@@ -88,12 +82,11 @@ class Search:
                 executor.map(
                     lambda peer_tuple: self.__search_one_server(peer_tuple, name),
                     self.datasites,
-                )
+                ),
             )
         # filter out SyftError
-        filtered = [(client, result) for client, result in results if client and result]
+        return [(client, result) for client, result in results if client and result]
 
-        return filtered
 
     def search(self, name: str) -> SearchResults:
         """

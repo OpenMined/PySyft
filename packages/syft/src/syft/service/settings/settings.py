@@ -44,8 +44,9 @@ class PwdTokenResetConfig(SyftObject):
     @model_validator(mode="after")
     def validate_char_types(self) -> Self:
         if not self.ascii and not self.numbers:
+            msg = "Invalid config, at least one of the ascii/number options must be true."
             raise ValueError(
-                "Invalid config, at least one of the ascii/number options must be true."
+                msg,
             )
 
         return self
@@ -54,7 +55,8 @@ class PwdTokenResetConfig(SyftObject):
     @classmethod
     def check_token_len(cls, value: int) -> int:
         if value < 4:
-            raise ValueError("Token length must be greater than 4.")
+            msg = "Token length must be greater than 4."
+            raise ValueError(msg)
         return value
 
 
@@ -138,7 +140,7 @@ class ServerSettingsV1(SyftObject):
     eager_execution_enabled: bool = False
     default_worker_pool: str = DEFAULT_WORKER_POOL_NAME
     welcome_markdown: HTMLObject | MarkdownDescription = HTMLObject(
-        text=DEFAULT_WELCOME_MSG
+        text=DEFAULT_WELCOME_MSG,
     )
 
 
@@ -171,7 +173,7 @@ class ServerSettingsV2(SyftObject):
     eager_execution_enabled: bool = False
     default_worker_pool: str = DEFAULT_WORKER_POOL_NAME
     welcome_markdown: HTMLObject | MarkdownDescription = HTMLObject(
-        text=DEFAULT_WELCOME_MSG
+        text=DEFAULT_WELCOME_MSG,
     )
     notifications_enabled: bool
 
@@ -205,7 +207,7 @@ class ServerSettings(SyftObject):
     eager_execution_enabled: bool = False
     default_worker_pool: str = DEFAULT_WORKER_POOL_NAME
     welcome_markdown: HTMLObject | MarkdownDescription = HTMLObject(
-        text=DEFAULT_WELCOME_MSG
+        text=DEFAULT_WELCOME_MSG,
     )
     notifications_enabled: bool
     pwd_token_config: PwdTokenResetConfig = PwdTokenResetConfig()

@@ -7,15 +7,12 @@ from typing import TYPE_CHECKING
 # relative
 from ..abstract_server import ServerSideType
 from ..serde.serializable import serializable
-from ..service.metadata.server_metadata import ServerMetadataJSON
-from ..service.network.routes import ServerRouteType
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftObject
 from ..util.assets import load_png_base64
 from ..util.notebook_ui.styles import FONT_CSS
-from .api import APIModule
 from .client import SyftClient
 from .client import login
 from .client import login_as_guest
@@ -23,6 +20,9 @@ from .protocol import SyftProtocol
 
 if TYPE_CHECKING:
     # relative
+    from .api import APIModule
+    from ..service.metadata.server_metadata import ServerMetadataJSON
+    from ..service.network.routes import ServerRouteType
     from ..orchestra import ServerHandle
 
 
@@ -95,7 +95,7 @@ class EnclaveClient(SyftClient):
                         f"Connected {self.metadata.server_type} "
                         f"'{self.metadata.name}' to gateway '{client.name}'. "
                         f"{res.message}"
-                    )
+                    ),
                 )
             else:
                 return SyftSuccess(message=f"Connected to '{client.name}' gateway")

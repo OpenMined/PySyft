@@ -67,7 +67,7 @@ def mock_dataset(root_verify_key, mock_dataset_stash, mock_asset) -> Dataset:
         email="test@test.org",
     )
     mock_dataset = Dataset(
-        id=UID(), name="test_dataset", uploader=uploader, contributors=[uploader]
+        id=UID(), name="test_dataset", uploader=uploader, contributors=[uploader],
     )
     mock_dataset.asset_list.append(mock_asset)
     result = mock_dataset_stash.partition.set(root_verify_key, mock_dataset)

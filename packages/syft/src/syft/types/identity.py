@@ -9,12 +9,12 @@ from typing_extensions import Self
 
 # relative
 from ..serde.serializable import serializable
-from ..server.credentials import SyftVerifyKey
 from .base import SyftBaseModel
-from .uid import UID
 
 if TYPE_CHECKING:
     # relative
+    from ..server.credentials import SyftVerifyKey
+    from .uid import UID
     from ..client.client import SyftClient
 
 
@@ -30,7 +30,8 @@ class Identity(SyftBaseModel):
     @classmethod
     def from_client(cls, client: SyftClient) -> Self:
         if not client.credentials:
-            raise ValueError(f"{client} has no signing key!")
+            msg = f"{client} has no signing key!"
+            raise ValueError(msg)
         return cls(server_id=client.id, verify_key=client.credentials.verify_key)
 
 
@@ -38,4 +39,3 @@ class Identity(SyftBaseModel):
 class UserIdentity(Identity):
     """This class is used to identify the data scientist users of the server"""
 
-    pass

@@ -99,10 +99,7 @@ def format_table_data(table_data: list[dict[str, Any]]) -> list[dict[str, str]]:
                 row_formatted[k] = sanitize_html(v.replace("\n", "<br>"))
                 continue
             # make UID copyable and trimmed
-            if isinstance(v, UID):
-                v_formatted = format_uid(v)
-            else:
-                v_formatted = format_dict(v)
+            v_formatted = format_uid(v) if isinstance(v, UID) else format_dict(v)
             row_formatted[k] = v_formatted
         formatted.append(row_formatted)
     return formatted
@@ -124,18 +121,18 @@ def _render_tabulator_table(
 
     # Add tabulator as a named module for VSCode compatibility
     tabulator_js = tabulator_js.replace(
-        "define(t)", "define('tabulator-tables', [], t)"
+        "define(t)", "define('tabulator-tables', [], t)",
     )
 
-    icon = table_metadata.get("icon", None)
+    icon = table_metadata.get("icon")
     if icon is None:
         icon = Icon.TABLE.svg
 
     column_data, row_header = create_tabulator_columns(
-        table_metadata["columns"], header_sort=header_sort
+        table_metadata["columns"], header_sort=header_sort,
     )
     table_data = format_table_data(table_data)
-    table_html = table_template.render(
+    return table_template.render(
         uid=uid,
         columns=json.dumps(column_data),
         row_header=json.dumps(row_header),
@@ -152,7 +149,6 @@ def _render_tabulator_table(
         header_sort=json.dumps(header_sort),
     )
 
-    return table_html
 
 
 def build_tabulator_table_with_data(
@@ -180,7 +176,7 @@ def build_tabulator_table_with_data(
     """
     uid = uid if uid is not None else secrets.token_hex(4)
     return _render_tabulator_table(
-        uid, table_data, table_metadata, max_height, pagination, header_sort
+        uid, table_data, table_metadata, max_height, pagination, header_sort,
     )
 
 
@@ -215,7 +211,7 @@ def build_tabulator_table(
             return None
 
     return build_tabulator_table_with_data(
-        table_data, table_metadata, uid, max_height, pagination, header_sort
+        table_data, table_metadata, uid, max_height, pagination, header_sort,
     )
 
 

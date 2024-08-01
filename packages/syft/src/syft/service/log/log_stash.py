@@ -12,7 +12,7 @@ from .log import SyftLog
 class LogStash(BaseUIDStoreStash):
     object_type = SyftLog
     settings: PartitionSettings = PartitionSettings(
-        name=SyftLog.__canonical_name__, object_type=SyftLog
+        name=SyftLog.__canonical_name__, object_type=SyftLog,
     )
 
     def __init__(self, store: DocumentStore) -> None:

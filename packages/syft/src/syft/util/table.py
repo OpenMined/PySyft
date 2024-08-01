@@ -110,7 +110,7 @@ def _create_table_rows(
             ret_val = item._coll_repr_()
             if "id" in ret_val:
                 del ret_val["id"]
-            for key in ret_val.keys():
+            for key in ret_val:
                 cols[key].append(ret_val[key])
         else:
             for field in extra_fields:
@@ -158,7 +158,7 @@ def _create_table_rows(
                     value = None
                 cols[field].append(sanitize_html(str(value)))
 
-    col_lengths = {len(cols[col]) for col in cols.keys()}
+    col_lengths = {len(cols[col]) for col in cols}
     if len(col_lengths) != 1:
         logger.debug("Cannot create table for items with different number of fields.")
         return []
@@ -171,7 +171,7 @@ def _create_table_rows(
     rows = []
     for i in range(num_rows):
         row = {}
-        for col in cols.keys():
+        for col in cols:
             row[col] = cols[col][i]
         rows.append(row)
 
@@ -197,7 +197,7 @@ def _sort_table_rows(rows: list[dict[str, Any]], sort_key: str) -> list[dict[str
         sort_values = [d.utc_timestamp for d in sort_values]
         reverse_sort = True
 
-    rows_sorted = [
+    return [
         row
         for _, row in sorted(
             zip(sort_values, rows),
@@ -206,7 +206,6 @@ def _sort_table_rows(rows: list[dict[str, Any]], sort_key: str) -> list[dict[str
         )
     ]
 
-    return rows_sorted
 
 
 def prepare_table_data(
@@ -244,7 +243,7 @@ def prepare_table_data(
         sort_key = getattr(first_value, "__table_sort_attr__", None) or "created_at"
         cls_name = first_value.__class__.__name__
         grid_template_columns, grid_template_cell_columns = _get_grid_template_columns(
-            first_value
+            first_value,
         )
     else:
         sort_key = "created_at"

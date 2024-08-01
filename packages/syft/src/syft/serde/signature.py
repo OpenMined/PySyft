@@ -74,7 +74,7 @@ def signature_remove_self(signature: Signature) -> Signature:
     params = dict(signature.parameters)
     params.pop("self", None)
     return Signature(
-        list(params.values()), return_annotation=signature.return_annotation
+        list(params.values()), return_annotation=signature.return_annotation,
     )
 
 
@@ -82,7 +82,7 @@ def signature_remove_context(signature: Signature) -> Signature:
     params = dict(signature.parameters)
     params.pop("context", None)
     return Signature(
-        list(params.values()), return_annotation=signature.return_annotation
+        list(params.values()), return_annotation=signature.return_annotation,
     )
 
 
@@ -109,7 +109,7 @@ def get_str_signature_from_docstring(doc: str, callable_name: str) -> str | None
 
                 if re.search(rf"(?<={params[-1]})\],", signature_str):
                     signature_str = signature_str.replace(
-                        f"[{params[-1]}],", params[-1]
+                        f"[{params[-1]}],", params[-1],
                     )
                 else:
                     signature_str = signature_str.replace(
@@ -139,7 +139,8 @@ def get_signature(_callable: Callable) -> inspect.Signature:
     try:
         res = inspect.signature(_callable)
         if res is None:
-            raise ValueError("")
+            msg = ""
+            raise ValueError(msg)
         else:
             return res
     except Exception:

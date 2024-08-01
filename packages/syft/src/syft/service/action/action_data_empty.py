@@ -8,7 +8,10 @@ from types import NoneType
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
-from ...types.uid import UID
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ...types.uid import UID
 
 
 @serializable()

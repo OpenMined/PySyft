@@ -156,13 +156,13 @@ class ServerURL:
 
         # TODO: only ignore ssl in dev mode
         r = requests.get(  # nosec
-            self.base_url, verify=verify_tls()
+            self.base_url, verify=verify_tls(),
         )  # ignore ssl cert if its fake
         new_base_url = r.url
         if new_base_url.endswith("/"):
             new_base_url = new_base_url[0:-1]
         return self.__class__.from_url(
-            url=f"{new_base_url}{self.path}{self.query_string}"
+            url=f"{new_base_url}{self.path}{self.query_string}",
         )
 
     def __repr__(self) -> str:

@@ -123,7 +123,7 @@ def test_mock_always_not_real_after_set_to_empty(
     ],
 )
 def test_cannot_set_empty_mock_with_true_mock_is_real(
-    asset_with_mock: dict[str, Any], empty_mock: Any
+    asset_with_mock: dict[str, Any], empty_mock: Any,
 ) -> None:
     asset = Asset(**asset_with_mock, mock_is_real=True)
     assert asset.mock_is_real
@@ -176,7 +176,7 @@ def test_dataset_can_have_assets_with_empty_mock() -> None:
 
 
 def test_cannot_add_assets_with_none_mock_to_dataset(
-    asset_with_mock: dict[str, Any], asset_without_mock: dict[str, Any]
+    asset_with_mock: dict[str, Any], asset_without_mock: dict[str, Any],
 ) -> None:
     dataset = Dataset(name=random_hash())
 
@@ -231,10 +231,10 @@ def test_adding_contributors_with_duplicate_email():
 
     dataset = Dataset(name="Sample  dataset")
     res1 = dataset.add_contributor(
-        role=sy.roles.UPLOADER, name="Alice", email="alice@naboo.net"
+        role=sy.roles.UPLOADER, name="Alice", email="alice@naboo.net",
     )
     res2 = dataset.add_contributor(
-        role=sy.roles.UPLOADER, name="Alice Smith", email="alice@naboo.net"
+        role=sy.roles.UPLOADER, name="Alice Smith", email="alice@naboo.net",
     )
 
     assert isinstance(res1, SyftSuccess)
@@ -245,11 +245,11 @@ def test_adding_contributors_with_duplicate_email():
     asset = Asset(**make_asset_without_mock(), mock=ActionObject.empty())
 
     res3 = asset.add_contributor(
-        role=sy.roles.UPLOADER, name="Bob", email="bob@naboo.net"
+        role=sy.roles.UPLOADER, name="Bob", email="bob@naboo.net",
     )
 
     res4 = asset.add_contributor(
-        role=sy.roles.UPLOADER, name="Bob Abraham", email="bob@naboo.net"
+        role=sy.roles.UPLOADER, name="Bob Abraham", email="bob@naboo.net",
     )
     dataset.add_asset(asset)
 
@@ -267,7 +267,7 @@ def test_adding_contributors_with_duplicate_email():
         np.array([1, 2, 3]),
         pd.DataFrame(data={"col1": [1, 2], "col2": [3, 4]}),
         torch.Tensor([1, 2, 3]),
-    ]
+    ],
 )
 def different_data_types(
     request,
@@ -293,10 +293,10 @@ def test_upload_dataset_with_assets_of_different_data_types(
     assert isinstance(res, SyftSuccess)
     assert len(root_datasite_client.api.services.dataset.get_all()) == 1
     assert type(root_datasite_client.datasets[0].assets[0].data) == type(
-        different_data_types
+        different_data_types,
     )
     assert type(root_datasite_client.datasets[0].assets[0].mock) == type(
-        different_data_types
+        different_data_types,
     )
 
 
@@ -313,7 +313,7 @@ def test_delete_small_datasets(worker: Worker, small_dataset: Dataset) -> None:
 
     # delete the dataset without deleting its assets
     del_res = root_client.api.services.dataset.delete(
-        uid=dataset.id, delete_assets=False
+        uid=dataset.id, delete_assets=False,
     )
     assert isinstance(del_res, SyftSuccess)
     assert isinstance(asset.data, np.ndarray)
@@ -326,7 +326,7 @@ def test_delete_small_datasets(worker: Worker, small_dataset: Dataset) -> None:
 
     # delete the dataset and its assets
     del_res = root_client.api.services.dataset.delete(
-        uid=dataset.id, delete_assets=True
+        uid=dataset.id, delete_assets=True,
     )
     assert isinstance(del_res, SyftSuccess)
     assert asset.data is None
@@ -349,7 +349,7 @@ def test_delete_big_datasets(worker: Worker, big_dataset: Dataset) -> None:
 
     # delete the dataset without deleting its assets
     del_res = root_client.api.services.dataset.delete(
-        uid=dataset.id, delete_assets=False
+        uid=dataset.id, delete_assets=False,
     )
     assert isinstance(del_res, SyftSuccess)
     assert isinstance(asset.data, np.ndarray)
@@ -364,7 +364,7 @@ def test_delete_big_datasets(worker: Worker, big_dataset: Dataset) -> None:
 
     # delete the dataset
     del_res = root_client.api.services.dataset.delete(
-        uid=dataset.id, delete_assets=True
+        uid=dataset.id, delete_assets=True,
     )
     assert isinstance(del_res, SyftSuccess)
     assert asset.data is None

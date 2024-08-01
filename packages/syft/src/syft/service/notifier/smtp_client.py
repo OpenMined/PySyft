@@ -20,7 +20,8 @@ class SMTPClient:
         password: str,
     ) -> None:
         if not (username and password):
-            raise ValueError("Both username and password must be provided")
+            msg = "Both username and password must be provided"
+            raise ValueError(msg)
 
         self.username = username
         self.password = password
@@ -29,7 +30,8 @@ class SMTPClient:
 
     def send(self, sender: str, receiver: list[str], subject: str, body: str) -> None:
         if not (subject and body and receiver):
-            raise ValueError("Subject, body, and recipient email(s) are required")
+            msg = "Subject, body, and recipient email(s) are required"
+            raise ValueError(msg)
 
         msg = MIMEMultipart("alternative")
         msg["From"] = sender
@@ -38,7 +40,7 @@ class SMTPClient:
         msg.attach(MIMEText(body, "html"))
 
         with smtplib.SMTP(
-            self.server, self.port, timeout=self.SOCKET_TIMEOUT
+            self.server, self.port, timeout=self.SOCKET_TIMEOUT,
         ) as server:
             server.ehlo()
             if server.has_extn("STARTTLS"):
@@ -51,7 +53,7 @@ class SMTPClient:
 
     @classmethod
     def check_credentials(
-        cls, server: str, port: int, username: str, password: str
+        cls, server: str, port: int, username: str, password: str,
     ) -> Result[Ok, Err]:
         """Check if the credentials are valid.
 

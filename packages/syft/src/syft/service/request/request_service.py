@@ -62,7 +62,7 @@ class RequestService(AbstractService):
                 link = LinkedObject.with_context(request, context=context)
 
                 admin_verify_key = context.server.get_service_method(
-                    UserService.admin_verify_key
+                    UserService.admin_verify_key,
                 )
 
                 root_verify_key = admin_verify_key()
@@ -70,7 +70,7 @@ class RequestService(AbstractService):
                     subject_msg = f"Result to request {str(request.id)[:4]}...{str(request.id)[-3:]}\
                         has been successfully deposited."
                     message = CreateNotification(
-                        subject=subject_msg if not reason else reason,
+                        subject=reason if reason else subject_msg,
                         from_user_verify_key=context.credentials,
                         to_user_verify_key=root_verify_key,
                         linked_obj=link,
@@ -83,7 +83,7 @@ class RequestService(AbstractService):
                         return request
                     else:
                         return SyftError(
-                            message=f"Failed to send notification: {result.err()}"
+                            message=f"Failed to send notification: {result.err()}",
                         )
 
                 return request
@@ -96,10 +96,10 @@ class RequestService(AbstractService):
             raise e
 
     @service_method(
-        path="request.get_by_uid", name="get_by_uid", roles=DATA_SCIENTIST_ROLE_LEVEL
+        path="request.get_by_uid", name="get_by_uid", roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_by_uid(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID,
     ) -> Request | None | SyftError:
         result = self.stash.get_by_uid(context.credentials, uid)
         if result.is_err():
@@ -107,15 +107,14 @@ class RequestService(AbstractService):
         return result.ok()
 
     @service_method(
-        path="request.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL
+        path="request.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_all(self, context: AuthedServiceContext) -> list[Request] | SyftError:
         result = self.stash.get_all(context.credentials)
         if result.is_err():
             return SyftError(message=str(result.err()))
-        requests = result.ok()
+        return result.ok()
         # return [self.resolve_nested_requests(context, request) for request in requests]
-        return requests
 
     @service_method(path="request.get_all_info", name="get_all_info")
     def get_all_info(
@@ -132,7 +131,7 @@ class RequestService(AbstractService):
 
         method = context.server.get_service_method(UserService.get_by_verify_key)
         get_message = context.server.get_service_method(
-            NotificationService.filter_by_obj
+            NotificationService.filter_by_obj,
         )
 
         requests: list[RequestInfo] = []
@@ -154,13 +153,13 @@ class RequestService(AbstractService):
 
     @service_method(path="request.add_changes", name="add_changes")
     def add_changes(
-        self, context: AuthedServiceContext, uid: UID, changes: list[Change]
+        self, context: AuthedServiceContext, uid: UID, changes: list[Change],
     ) -> Request | SyftError:
         result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
 
         if result.is_err():
             return SyftError(
-                message=f"Failed to retrieve request with uid: {uid}. Error: {result.err()}"
+                message=f"Failed to retrieve request with uid: {uid}. Error: {result.err()}",
             )
 
         request = result.ok()
@@ -178,7 +177,7 @@ class RequestService(AbstractService):
         """Get a Dataset"""
         result = self.get_all_info(context)
         requests = list(
-            filter(lambda res: (request_filter.name in res.user.name), result)
+            filter(lambda res: (request_filter.name in res.user.name), result),
         )
 
         # If chunk size is defined, then split list into evenly sized chunks
@@ -210,17 +209,17 @@ class RequestService(AbstractService):
             result = request.apply(context=context)
 
             filter_by_obj = context.server.get_service_method(
-                NotificationService.filter_by_obj
+                NotificationService.filter_by_obj,
             )
             request_notification = filter_by_obj(context=context, obj_uid=uid)
 
             link = LinkedObject.with_context(request, context=context)
-            if not request.get_status(context) == RequestStatus.PENDING:
+            if request.get_status(context) != RequestStatus.PENDING:
                 if request_notification is not None and not isinstance(
-                    request_notification, SyftError
+                    request_notification, SyftError,
                 ):
                     mark_as_read = context.server.get_service_method(
-                        NotificationService.mark_as_read
+                        NotificationService.mark_as_read,
                     )
                     mark_as_read(context=context, uid=request_notification.id)
 
@@ -233,7 +232,7 @@ class RequestService(AbstractService):
                         email_template=RequestUpdateEmailTemplate,
                     )
                     send_notification = context.server.get_service_method(
-                        NotificationService.send
+                        NotificationService.send,
                     )
                     send_notification(context=context, notification=notification)
 
@@ -245,12 +244,12 @@ class RequestService(AbstractService):
 
     @service_method(path="request.undo", name="undo")
     def undo(
-        self, context: AuthedServiceContext, uid: UID, reason: str
+        self, context: AuthedServiceContext, uid: UID, reason: str,
     ) -> SyftSuccess | SyftError:
         result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
         if result.is_err():
             return SyftError(
-                message=f"Failed to update request: {uid} with error: {result.err()}"
+                message=f"Failed to update request: {uid} with error: {result.err()}",
             )
 
         request = result.ok()
@@ -262,7 +261,7 @@ class RequestService(AbstractService):
 
         if result.is_err():
             return SyftError(
-                message=f"Failed to undo Request: <{uid}> with error: {result.err()}"
+                message=f"Failed to undo Request: <{uid}> with error: {result.err()}",
             )
 
         link = LinkedObject.with_context(request, context=context)
@@ -283,13 +282,13 @@ class RequestService(AbstractService):
         return SyftSuccess(message=f"Request {uid} successfully denied !")
 
     def save(
-        self, context: AuthedServiceContext, request: Request
+        self, context: AuthedServiceContext, request: Request,
     ) -> Request | SyftError:
         result = self.stash.update(context.credentials, request)
         if result.is_ok():
             return result.ok()
         return SyftError(
-            message=f"Failed to update Request: <{request.id}>. Error: {result.err()}"
+            message=f"Failed to update Request: <{request.id}>. Error: {result.err()}",
         )
 
     @service_method(
@@ -297,7 +296,7 @@ class RequestService(AbstractService):
         name="delete_by_uid",
     )
     def delete_by_uid(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID,
     ) -> SyftSuccess | SyftError:
         """Delete the request with the given uid."""
         result = self.stash.delete_by_uid(context.credentials, uid)
@@ -328,7 +327,7 @@ class RequestService(AbstractService):
 
     @service_method(path="request.get_by_usercode_id", name="get_by_usercode_id")
     def get_by_usercode_id(
-        self, context: AuthedServiceContext, usercode_id: UID
+        self, context: AuthedServiceContext, usercode_id: UID,
     ) -> list[Request] | SyftError:
         result = self.stash.get_by_usercode_id(context.credentials, usercode_id)
         if result.is_err():

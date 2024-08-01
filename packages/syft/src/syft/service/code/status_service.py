@@ -40,7 +40,7 @@ class StatusStash(BaseUIDStoreStash):
         self._object_type = self.object_type
 
     def get_by_uid(
-        self, credentials: SyftVerifyKey, uid: UID
+        self, credentials: SyftVerifyKey, uid: UID,
     ) -> Result[UserCodeStatusCollection, str]:
         qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
         return self.query_one(credentials=credentials, qks=qks)
@@ -71,10 +71,10 @@ class UserCodeStatusService(AbstractService):
         return SyftError(message=result.err())
 
     @service_method(
-        path="code_status.get_by_uid", name="get_by_uid", roles=GUEST_ROLE_LEVEL
+        path="code_status.get_by_uid", name="get_by_uid", roles=GUEST_ROLE_LEVEL,
     )
     def get_status(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID,
     ) -> UserCodeStatusCollection | SyftError:
         """Get the status of a user code item"""
         result = self.stash.get_by_uid(context.credentials, uid=uid)
@@ -84,7 +84,7 @@ class UserCodeStatusService(AbstractService):
 
     @service_method(path="code_status.get_all", name="get_all", roles=ADMIN_ROLE_LEVEL)
     def get_all(
-        self, context: AuthedServiceContext
+        self, context: AuthedServiceContext,
     ) -> list[UserCodeStatusCollection] | SyftError:
         """Get all user code item statuses"""
         result = self.stash.get_all(context.credentials)
@@ -94,7 +94,7 @@ class UserCodeStatusService(AbstractService):
 
     @service_method(path="code_status.remove", name="remove", roles=ADMIN_ROLE_LEVEL)
     def remove(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID,
     ) -> SyftSuccess | SyftError:
         """Remove a user code item status"""
         result = self.stash.delete_by_uid(context.credentials, uid=uid)

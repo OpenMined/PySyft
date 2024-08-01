@@ -30,7 +30,7 @@ class QueueService(AbstractService):
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_subjobs(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID,
     ) -> list[QueueItem] | SyftError:
         res = self.stash.get_by_parent_id(context.credentials, uid=uid)
         if res.is_err():

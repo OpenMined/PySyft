@@ -69,7 +69,7 @@ class MongoClient(object):
         self._document_class = document_class
         if read_preference is not None:
             read_preferences.ensure_read_preference_type(
-                "read_preference", read_preference
+                "read_preference", read_preference,
             )
         self._read_preference = read_preference or _READ_PREFERENCE_PRIMARY
 
@@ -108,7 +108,7 @@ class MongoClient(object):
             return self.address == other.address
         return NotImplemented
 
-    if helpers.PYMONGO_VERSION >= version.parse("3.12"):
+    if version.parse("3.12") <= helpers.PYMONGO_VERSION:
 
         def __hash__(self):
             return hash(self.address)
@@ -147,11 +147,11 @@ class MongoClient(object):
             "ok": 1,
         }
 
-    if helpers.PYMONGO_VERSION < version.parse("4.0"):
+    if version.parse("4.0") > helpers.PYMONGO_VERSION:
 
         def database_names(self):
             warnings.warn(
-                "database_names is deprecated. Use list_database_names instead."
+                "database_names is deprecated. Use list_database_names instead.",
             )
             return self.list_database_names()
 
@@ -206,7 +206,8 @@ class MongoClient(object):
         name = self.__default_database_name
         name = name if name is not None else default
         if name is None:
-            raise ConfigurationError("No default database name defined or provided.")
+            msg = "No default database name defined or provided."
+            raise ConfigurationError(msg)
 
         return self.get_database(name=name, **kwargs)
 
@@ -219,4 +220,5 @@ class MongoClient(object):
 
     def start_session(self, causal_consistency=True, default_transaction_options=None):
         """Start a logical session."""
-        raise NotImplementedError("Mongomock does not support sessions yet")
+        msg = "Mongomock does not support sessions yet"
+        raise NotImplementedError(msg)

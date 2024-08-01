@@ -30,7 +30,6 @@ def submit_subjobs_code(submit_user_code, ep_client) -> None:  # type: ignore
             )  # works only in interactive envs (like jupyter notebooks)
         except Exception:
             ipython = None
-            pass
 
         for call in nested_calls:
             if ipython is not None:
@@ -49,8 +48,9 @@ def check_for_global_vars(code_tree: ast.Module) -> GlobalsVisitor | SyftWarning
     try:
         v.visit(code_tree)
     except Exception:
+        msg = "Your code contains (a) global variable(s), which is not allowed"
         raise SyftException(
-            "Your code contains (a) global variable(s), which is not allowed"
+            msg,
         )
     return v
 
@@ -62,5 +62,6 @@ def parse_code(raw_code: str) -> ast.Module | SyftWarning:
     try:
         tree = ast.parse(raw_code)
     except SyntaxError as e:
-        raise SyftException(f"Your code contains syntax error: {e}")
+        msg = f"Your code contains syntax error: {e}"
+        raise SyftException(msg)
     return tree

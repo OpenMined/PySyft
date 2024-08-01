@@ -24,7 +24,8 @@ def _distutils_strtoint(s: str) -> int:
         return 1
     if ls in _falsy:
         return 0
-    raise ValueError(f"invalid truth value '{s}'")
+    msg = f"invalid truth value '{s}'"
+    raise ValueError(msg)
 
 
 def str_to_int(bool_str: Any) -> int:
@@ -81,14 +82,14 @@ class Settings(BaseSettings):
 
     EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = 48
     EMAIL_TEMPLATES_DIR: str = os.path.expandvars(
-        "$HOME/app/grid/email-templates/build"
+        "$HOME/app/grid/email-templates/build",
     )
     EMAILS_ENABLED: bool = False
 
     @model_validator(mode="after")
     def get_emails_enabled(self) -> Self:
         self.EMAILS_ENABLED = bool(
-            self.SMTP_HOST and self.SMTP_PORT and self.EMAILS_FROM_EMAIL
+            self.SMTP_HOST and self.SMTP_PORT and self.EMAILS_FROM_EMAIL,
         )
 
         return self
@@ -105,7 +106,7 @@ class Settings(BaseSettings):
 
     # DATASITE_ASSOCIATION_REQUESTS_AUTOMATICALLY_ACCEPTED: bool = True
     USE_BLOB_STORAGE: bool = (
-        True if os.getenv("USE_BLOB_STORAGE", "false").lower() == "true" else False
+        os.getenv("USE_BLOB_STORAGE", "false").lower() == "true"
     )
     S3_ENDPOINT: str = os.getenv("S3_ENDPOINT", "seaweedfs")
     S3_PORT: int = int(os.getenv("S3_PORT", 8333))
@@ -113,7 +114,7 @@ class Settings(BaseSettings):
     S3_ROOT_PWD: str | None = os.getenv("S3_ROOT_PWD", "admin")
     S3_REGION: str = os.getenv("S3_REGION", "us-east-1")
     S3_PRESIGNED_TIMEOUT_SECS: int = int(
-        os.getenv("S3_PRESIGNED_TIMEOUT_SECS", 1800)
+        os.getenv("S3_PRESIGNED_TIMEOUT_SECS", 1800),
     )  # 30 minutes in seconds
     SEAWEED_MOUNT_PORT: int = int(os.getenv("SEAWEED_MOUNT_PORT", 4001))
 
@@ -130,11 +131,11 @@ class Settings(BaseSettings):
     MONGO_PORT: int = int(os.getenv("MONGO_PORT", 27017))
     MONGO_USERNAME: str = str(os.getenv("MONGO_USERNAME", ""))
     MONGO_PASSWORD: str = str(os.getenv("MONGO_PASSWORD", ""))
-    DEV_MODE: bool = True if os.getenv("DEV_MODE", "false").lower() == "true" else False
+    DEV_MODE: bool = os.getenv("DEV_MODE", "false").lower() == "true"
     # ZMQ stuff
     QUEUE_PORT: int = int(os.getenv("QUEUE_PORT", 5556))
     CREATE_PRODUCER: bool = (
-        True if os.getenv("CREATE_PRODUCER", "false").lower() == "true" else False
+        os.getenv("CREATE_PRODUCER", "false").lower() == "true"
     )
     N_CONSUMERS: int = int(os.getenv("N_CONSUMERS", 1))
     SQLITE_PATH: str = os.path.expandvars("$HOME/data/db/")
@@ -149,15 +150,15 @@ class Settings(BaseSettings):
     SMTP_HOST: str = os.getenv("SMTP_HOST", "")
 
     TEST_MODE: bool = (
-        True if os.getenv("TEST_MODE", "false").lower() == "true" else False
+        os.getenv("TEST_MODE", "false").lower() == "true"
     )
     ASSOCIATION_TIMEOUT: int = 10
     ASSOCIATION_REQUEST_AUTO_APPROVAL: bool = str_to_bool(
-        os.getenv("ASSOCIATION_REQUEST_AUTO_APPROVAL", "False")
+        os.getenv("ASSOCIATION_REQUEST_AUTO_APPROVAL", "False"),
     )
     MIN_SIZE_BLOB_STORAGE_MB: int = int(os.getenv("MIN_SIZE_BLOB_STORAGE_MB", 1))
     REVERSE_TUNNEL_ENABLED: bool = str_to_bool(
-        os.getenv("REVERSE_TUNNEL_ENABLED", "false")
+        os.getenv("REVERSE_TUNNEL_ENABLED", "false"),
     )
     model_config = SettingsConfigDict(case_sensitive=True)
 

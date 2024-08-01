@@ -96,7 +96,7 @@ class SyftWorker(SyftObject):
             job = api.services.job.get(self.job_id)
             if job.action.user_code_id is not None:
                 func_name = api.services.code.get_by_id(
-                    job.action.user_code_id
+                    job.action.user_code_id,
                 ).service_func_name
                 return f"{func_name} ({short_uid(self.job_id)})"
             else:
@@ -181,24 +181,22 @@ class WorkerPool(SyftObject):
     @property
     def running_workers(self) -> list[SyftWorker] | SyftError:
         """Query the running workers using an API call to the server"""
-        _running_workers = [
+        return [
             worker for worker in self.workers if worker.status == WorkerStatus.RUNNING
         ]
 
-        return _running_workers
 
     @property
     def healthy_workers(self) -> list[SyftWorker] | SyftError:
         """
         Query the healthy workers using an API call to the server
         """
-        _healthy_workers = [
+        return [
             worker
             for worker in self.workers
             if worker.healthcheck == WorkerHealth.HEALTHY
         ]
 
-        return _healthy_workers
 
     def _coll_repr_(self) -> dict[str, Any]:
         if self.image and self.image.image_identifier:
@@ -280,7 +278,7 @@ def _get_worker_container(
     except docker.errors.APIError as e:
         return SyftError(
             message=f"Unable to access worker {worker.id} container. "
-            + f"Container server error {e}"
+            + f"Container server error {e}",
         )
 
 
@@ -293,7 +291,7 @@ _CONTAINER_STATUS_TO_WORKER_STATUS: dict[str, WorkerStatus] = dict(
         ),
         ("restarting", WorkerStatus.RESTARTED),
         ("created", WorkerStatus.PENDING),
-    ]
+    ],
 )
 
 

@@ -20,14 +20,14 @@ MISSING_PATH_STRING = "Endpoint path: {path} does not exist."
 class TwinAPIEndpointStash(BaseUIDStoreStash):
     object_type = TwinAPIEndpoint
     settings: PartitionSettings = PartitionSettings(
-        name=TwinAPIEndpoint.__canonical_name__, object_type=TwinAPIEndpoint
+        name=TwinAPIEndpoint.__canonical_name__, object_type=TwinAPIEndpoint,
     )
 
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
 
     def get_by_path(
-        self, credentials: SyftVerifyKey, path: str
+        self, credentials: SyftVerifyKey, path: str,
     ) -> Result[TwinAPIEndpoint, str]:
         endpoint_results = self.get_all(credentials=credentials)
         if endpoint_results.is_err():
@@ -68,7 +68,6 @@ class TwinAPIEndpointStash(BaseUIDStoreStash):
         if result.ok():
             super().delete_by_uid(credentials=credentials, uid=endpoint.id)
 
-        result = super().set(
-            credentials=credentials, obj=endpoint, ignore_duplicates=False
+        return super().set(
+            credentials=credentials, obj=endpoint, ignore_duplicates=False,
         )
-        return result

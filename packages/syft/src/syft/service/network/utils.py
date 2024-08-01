@@ -41,7 +41,7 @@ class PeerHealthCheckTask:
         """
 
         network_service = cast(
-            NetworkService, context.server.get_service(NetworkService)
+            NetworkService, context.server.get_service(NetworkService),
         )
         network_stash = network_service.stash
 
@@ -60,7 +60,7 @@ class PeerHealthCheckTask:
                 peer_client = peer.client_with_context(context=context)
                 if peer_client.is_err():
                     logger.error(
-                        f"Failed to create client for peer: {peer}: {peer_client.err()}"
+                        f"Failed to create client for peer: {peer}: {peer_client.err()}",
                     )
                     peer_update.ping_status = ServerPeerConnectionStatus.TIMEOUT
                     peer_client = None
@@ -73,7 +73,7 @@ class PeerHealthCheckTask:
             if peer_client is not None:
                 peer_client = peer_client.ok()
                 peer_status = peer_client.api.services.network.check_peer_association(
-                    peer_id=context.server.id
+                    peer_id=context.server.id,
                 )
                 peer_update.ping_status = (
                     ServerPeerConnectionStatus.ACTIVE
@@ -113,13 +113,13 @@ class PeerHealthCheckTask:
         if self.thread is not None:
             logger.info(
                 f"Peer health check task is already running in thread "
-                f"{self.thread.name} with ID: {self.thread.ident}."
+                f"{self.thread.name} with ID: {self.thread.ident}.",
             )
         else:
             self.thread = threading.Thread(target=self._run, args=(context,))
             logger.info(
                 f"Start running peers health check in thread "
-                f"{self.thread.name} with ID: {self.thread.ident}."
+                f"{self.thread.name} with ID: {self.thread.ident}.",
             )
             self.thread.start()
 

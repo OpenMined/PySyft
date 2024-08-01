@@ -113,7 +113,7 @@ class ActionStoreChange(Change):
     __repr_attrs__ = ["linked_obj", "apply_permission_type"]
 
     def _run(
-        self, context: ChangeContext, apply: bool
+        self, context: ChangeContext, apply: bool,
     ) -> Result[SyftSuccess, SyftError]:
         try:
             action_service: ActionService = context.server.get_service(ActionService)  # type: ignore[assignment]
@@ -165,12 +165,12 @@ class ActionStoreChange(Change):
                 )
                 if apply:
                     logger.debug(
-                        "ADDING PERMISSION", requesting_permission_action_obj, id_action
+                        "ADDING PERMISSION", requesting_permission_action_obj, id_action,
                     )
                     action_store.add_permission(requesting_permission_action_obj)
                     (
                         blob_storage_service.stash.add_permission(
-                            requesting_permission_blob_obj
+                            requesting_permission_blob_obj,
                         )
                         if requesting_permission_blob_obj
                         else None
@@ -181,17 +181,17 @@ class ActionStoreChange(Change):
                     if (
                         requesting_permission_blob_obj
                         and blob_storage_service.stash.has_permission(
-                            requesting_permission_blob_obj
+                            requesting_permission_blob_obj,
                         )
                     ):
                         blob_storage_service.stash.remove_permission(
-                            requesting_permission_blob_obj
+                            requesting_permission_blob_obj,
                         )
             else:
                 return Err(
                     SyftError(
-                        message=f"No permission for approving_user_credentials {context.approving_user_credentials}"
-                    )
+                        message=f"No permission for approving_user_credentials {context.approving_user_credentials}",
+                    ),
                 )
             return Ok(SyftSuccess(message=f"{type(self)} Success"))
         except Exception as e:
@@ -224,25 +224,26 @@ class CreateCustomImageChange(Change):
     @model_validator(mode="after")
     def _tag_required_for_dockerworkerconfig(self) -> Self:
         if isinstance(self.config, DockerWorkerConfig) and self.tag is None:
-            raise ValueError("`tag` is required for `DockerWorkerConfig`.")
+            msg = "`tag` is required for `DockerWorkerConfig`."
+            raise ValueError(msg)
         return self
 
     def _run(
-        self, context: ChangeContext, apply: bool
+        self, context: ChangeContext, apply: bool,
     ) -> Result[SyftSuccess, SyftError]:
         try:
             worker_image_service = context.server.get_service("SyftWorkerImageService")
 
             service_context = context.to_service_ctx()
             result = worker_image_service.submit(
-                service_context, worker_config=self.config
+                service_context, worker_config=self.config,
             )
 
             if isinstance(result, SyftError):
                 return Err(result)
 
             result = worker_image_service.stash.get_by_worker_config(
-                service_context.credentials, config=self.config
+                service_context.credentials, config=self.config,
             )
 
             if result.is_err():
@@ -268,7 +269,7 @@ class CreateCustomImageChange(Change):
                 build_success_message = build_result.message
 
             build_success = SyftSuccess(
-                message=f"Build result: {build_success_message}"
+                message=f"Build result: {build_success_message}",
             )
 
             if IN_KUBERNETES and not worker_image.is_prebuilt:
@@ -284,8 +285,8 @@ class CreateCustomImageChange(Change):
 
                 return Ok(
                     SyftSuccess(
-                        message=f"{build_success}\nPush result: {push_result.message}"
-                    )
+                        message=f"{build_success}\nPush result: {push_result.message}",
+                    ),
                 )
 
             return Ok(build_success)
@@ -318,7 +319,7 @@ class CreateCustomWorkerPoolChange(Change):
     __repr_attrs__ = ["pool_name", "num_workers", "image_uid"]
 
     def _run(
-        self, context: ChangeContext, apply: bool
+        self, context: ChangeContext, apply: bool,
     ) -> Result[SyftSuccess, SyftError]:
         """
         This function is run when the DO approves (apply=True)
@@ -333,7 +334,7 @@ class CreateCustomWorkerPoolChange(Change):
 
             if self.config is not None:
                 result = worker_pool_service.image_stash.get_by_worker_config(
-                    service_context.credentials, self.config
+                    service_context.credentials, self.config,
                 )
                 if result.is_err():
                     return Err(SyftError(message=f"{result.err()}"))
@@ -357,8 +358,8 @@ class CreateCustomWorkerPoolChange(Change):
         else:
             return Err(
                 SyftError(
-                    message=f"Request to create a worker pool with name {self.name} denied"
-                )
+                    message=f"Request to create a worker pool with name {self.name} denied",
+                ),
             )
 
     def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
@@ -440,7 +441,7 @@ class Request(SyncableSyftObject):
         if self.code and len(self.code.output_readers) > 0:
             # owner_names = ["canada", "US"]
             owners_string = " and ".join(
-                [f"<strong>{x}</strong>" for x in self.code.output_reader_names]  # type: ignore
+                [f"<strong>{x}</strong>" for x in self.code.output_reader_names],  # type: ignore
             )
             shared_with_line += (
                 f"<p><strong>Custom Policy: </strong> "
@@ -492,9 +493,8 @@ class Request(SyncableSyftObject):
         desc = desc.replace("<b>", "")
         desc = desc.replace("</b>", "")
         desc = desc.replace("<i>", "")
-        desc = desc.replace("</i>", "")
+        return desc.replace("</i>", "")
 
-        return desc
 
     def _coll_repr_(self) -> dict[str, str | dict[str, str]]:
         if self.status == RequestStatus.APPROVED:
@@ -525,7 +525,7 @@ class Request(SyncableSyftObject):
             if isinstance(change, UserCodeStatusChange):
                 return change.linked_user_code.object_uid
         return SyftError(
-            message="This type of request does not have code associated with it."
+            message="This type of request does not have code associated with it.",
         )
 
     @property
@@ -534,7 +534,7 @@ class Request(SyncableSyftObject):
             if isinstance(change, UserCodeStatusChange):
                 return change.codes
         return SyftError(
-            message="This type of request does not have code associated with it."
+            message="This type of request does not have code associated with it.",
         )
 
     def get_user_code(self, context: AuthedServiceContext) -> UserCode | None:
@@ -549,7 +549,7 @@ class Request(SyncableSyftObject):
             if isinstance(change, UserCodeStatusChange):
                 return change.code
         return SyftError(
-            message="This type of request does not have code associated with it."
+            message="This type of request does not have code associated with it.",
         )
 
     @property
@@ -580,11 +580,10 @@ class Request(SyncableSyftObject):
             len(self.current_change_state) == len(self.changes)
         )
 
-        request_status = (
+        return (
             RequestStatus.APPROVED if all_changes_applied else RequestStatus.REJECTED
         )
 
-        return request_status
 
     @property
     def status(self) -> RequestStatus:
@@ -602,20 +601,17 @@ class Request(SyncableSyftObject):
 
         if self.is_l0_deployment:
             return SyftError(
-                message="This request is a low-side request. Please sync your results to approve."
+                message="This request is a low-side request. Please sync your results to approve.",
             )
         # TODO: Refactor so that object can also be passed to generate warnings
-        if api.connection:
-            metadata = api.connection.get_server_metadata(api.signing_key)
-        else:
-            metadata = None
+        metadata = api.connection.get_server_metadata(api.signing_key) if api.connection else None
         message = None
 
         is_code_request = not isinstance(self.codes, SyftError)
 
         if is_code_request and len(self.codes) > 1 and not approve_nested:
             return SyftError(
-                message="Multiple codes detected, please use approve_nested=True"
+                message="Multiple codes detected, please use approve_nested=True",
             )
 
         if metadata and metadata.server_side_type == ServerSideType.HIGH_SIDE.value:
@@ -633,8 +629,7 @@ class Request(SyncableSyftObject):
         )
 
         print("".join(msg))
-        res = api.services.request.apply(self.id, **kwargs)
-        return res
+        return api.services.request.apply(self.id, **kwargs)
 
     def deny(self, reason: str) -> SyftSuccess | SyftError:
         """Denies the particular request.
@@ -650,7 +645,7 @@ class Request(SyncableSyftObject):
             if self.status == RequestStatus.APPROVED:
                 prompt_warning_message(
                     "This request already has results published to the data scientist. "
-                    "They will still be able to access those results."
+                    "They will still be able to access those results.",
                 )
             result = api.code.update(id=self.code_id, l0_deny_reason=reason)
             if isinstance(result, SyftError):
@@ -673,7 +668,7 @@ class Request(SyncableSyftObject):
     def approve_with_client(self, client: SyftClient) -> Result[SyftSuccess, SyftError]:
         if self.is_l0_deployment:
             return SyftError(
-                message="This request is a low-side request. Please sync your results to approve."
+                message="This request is a low-side request. Please sync your results to approve.",
             )
 
         print(f"Approving request for datasite {client.name}")
@@ -755,7 +750,7 @@ class Request(SyncableSyftObject):
             existing_job = api.services.job.get_by_result_id(result.id.id)
             if existing_job is not None:
                 return SyftError(
-                    message=f"This ActionObject is already the result of Job {existing_job.id}"
+                    message=f"This ActionObject is already the result of Job {existing_job.id}",
                 )
             action_object = result
         else:
@@ -767,7 +762,7 @@ class Request(SyncableSyftObject):
 
         # Ensure ActionObject exists on this server
         action_object_is_from_this_server = isinstance(
-            api.services.action.exists(action_object.id.id), SyftSuccess
+            api.services.action.exists(action_object.id.id), SyftSuccess,
         )
         if (
             action_object.syft_blob_storage_entry_id is None
@@ -781,7 +776,7 @@ class Request(SyncableSyftObject):
         return action_object
 
     def _create_output_history_for_deposited_result(
-        self, job: Job, result: Any
+        self, job: Job, result: Any,
     ) -> SyftSuccess | SyftError:
         code = self.code
         if isinstance(code, SyftError):
@@ -795,14 +790,13 @@ class Request(SyncableSyftObject):
         if input_policy is not None:
             for input_ in input_policy.inputs.values():
                 input_ids.update(input_)
-        res = api.services.code.store_execution_output(
+        return api.services.code.store_execution_output(
             user_code_id=code.id,
             outputs=result,
             job_id=job.id,
             input_ids=input_ids,
         )
 
-        return res
 
     def deposit_result(
         self,
@@ -837,7 +831,7 @@ class Request(SyncableSyftObject):
         if not self.is_l0_deployment:
             return SyftError(
                 message="deposit_result is only available for low side code requests. "
-                "Please use request.approve() instead."
+                "Please use request.approve() instead.",
             )
 
         # Create ActionObject
@@ -874,7 +868,7 @@ class Request(SyncableSyftObject):
         pass
 
     def get_sync_dependencies(
-        self, context: AuthedServiceContext
+        self, context: AuthedServiceContext,
     ) -> list[UID] | SyftError:
         dependencies = []
         code_id = self.code_id
@@ -923,7 +917,7 @@ def hash_changes(context: TransformContext) -> TransformContext:
     changes = context.output["changes"]
 
     time_hash = hashlib.sha256(
-        _serialize(request_time.utc_timestamp, to_bytes=True)
+        _serialize(request_time.utc_timestamp, to_bytes=True),
     ).digest()
     key_hash = hashlib.sha256(bytes(key.verify_key)).digest()
     changes_hash = hashlib.sha256(_serialize(changes, to_bytes=True)).digest()
@@ -943,7 +937,7 @@ def add_request_time(context: TransformContext) -> TransformContext:
 def check_requesting_user_verify_key(context: TransformContext) -> TransformContext:
     if context.output and context.server and context.obj:
         if context.obj.requesting_user_verify_key and context.server.is_root(
-            context.credentials
+            context.credentials,
         ):
             context.output["requesting_user_verify_key"] = (
                 context.obj.requesting_user_verify_key
@@ -1013,7 +1007,7 @@ class ObjectMutation(Change):
         return f"Mutate <b>{self.attr_name}</b> to <b>{self.value}</b>"
 
     def _run(
-        self, context: ChangeContext, apply: bool
+        self, context: ChangeContext, apply: bool,
     ) -> Result[SyftSuccess, SyftError]:
         if self.linked_obj is None:
             return Err(SyftError(message=f"{self}'s linked object is None"))
@@ -1069,13 +1063,13 @@ class EnumMutation(ObjectMutation):
     def valid(self) -> SyftSuccess | SyftError:
         if self.match_type and not isinstance(self.value, self.enum_type):
             return SyftError(
-                message=f"{type(self.value)} must be of type: {self.enum_type}"
+                message=f"{type(self.value)} must be of type: {self.enum_type}",
             )
         return SyftSuccess(message=f"{type(self)} valid")
 
     @staticmethod
     def from_obj(
-        linked_obj: LinkedObject, attr_name: str, value: Enum | None = None
+        linked_obj: LinkedObject, attr_name: str, value: Enum | None = None,
     ) -> "EnumMutation":
         enum_type = type_for_field(linked_obj.object_type, attr_name)
         return EnumMutation(
@@ -1087,7 +1081,7 @@ class EnumMutation(ObjectMutation):
         )
 
     def _run(
-        self, context: ChangeContext, apply: bool
+        self, context: ChangeContext, apply: bool,
     ) -> Result[SyftSuccess, SyftError]:
         try:
             valid = self.valid
@@ -1223,7 +1217,7 @@ class UserCodeStatusChange(Change):
         if self.match_type and not isinstance(self.value, UserCodeStatus):
             # TODO: fix the mypy issue
             return SyftError(  # type: ignore[unreachable]
-                message=f"{type(self.value)} must be of type: {UserCodeStatus}"
+                message=f"{type(self.value)} must be of type: {UserCodeStatus}",
             )
         return SyftSuccess(message=f"{type(self)} valid")
 
@@ -1254,7 +1248,7 @@ class UserCodeStatusChange(Change):
         return res
 
     def _run(
-        self, context: ChangeContext, apply: bool
+        self, context: ChangeContext, apply: bool,
     ) -> Result[SyftSuccess, SyftError]:
         try:
             valid = self.valid
@@ -1318,16 +1312,16 @@ class SyncedUserCodeStatusChange(UserCodeStatusChange):
         undo: bool,
     ) -> UserCodeStatusCollection | SyftError:
         return SyftError(
-            message="Synced UserCodes status is computed, and cannot be updated manually."
+            message="Synced UserCodes status is computed, and cannot be updated manually.",
         )
 
     def _run(
-        self, context: ChangeContext, apply: bool
+        self, context: ChangeContext, apply: bool,
     ) -> Result[SyftSuccess, SyftError]:
         return Ok(
             SyftError(
-                message="Synced UserCodes status is computed, and cannot be updated manually."
-            )
+                message="Synced UserCodes status is computed, and cannot be updated manually.",
+            ),
         )
 
     def link(self) -> Any:  # type: ignore

@@ -35,7 +35,7 @@ from .smtp_client import SMTPClient
 
 class BaseNotifier:
     def send(
-        self, target: SyftVerifyKey, notification: Notification
+        self, target: SyftVerifyKey, notification: Notification,
     ) -> SyftSuccess | SyftError:
         return SyftError(message="Not implemented")
 
@@ -88,7 +88,7 @@ class EmailNotifier(BaseNotifier):
         )
 
     def send(
-        self, context: AuthedServiceContext, notification: Notification
+        self, context: AuthedServiceContext, notification: Notification,
     ) -> Result[Ok, Err]:
         try:
             user_service = context.server.get_service("userservice")
@@ -97,17 +97,17 @@ class EmailNotifier(BaseNotifier):
 
             if not receiver.notifications_enabled[NOTIFIERS.EMAIL]:
                 return Ok(
-                    "Email notifications are disabled for this user."
+                    "Email notifications are disabled for this user.",
                 )  # TODO: Should we return an error here?
 
             receiver_email = receiver.email
 
             if notification.email_template:
                 subject = notification.email_template.email_title(
-                    notification, context=context
+                    notification, context=context,
                 )
                 body = notification.email_template.email_body(
-                    notification, context=context
+                    notification, context=context,
                 )
             else:
                 subject = notification.subject
@@ -117,12 +117,12 @@ class EmailNotifier(BaseNotifier):
                 receiver_email = [receiver_email]
 
             self.smtp_client.send(
-                sender=self.sender, receiver=receiver_email, subject=subject, body=body
+                sender=self.sender, receiver=receiver_email, subject=subject, body=body,
             )
             return Ok("Email sent successfully!")
         except Exception:
             return Err(
-                "Some notifications failed to be delivered. Please check the health of the mailing server."
+                "Some notifications failed to be delivered. Please check the health of the mailing server.",
             )
 
 
@@ -273,7 +273,7 @@ class NotifierSettings(SyftObject):
                             password=self.email_password,
                             sender=self.email_sender,
                             server=self.email_server,
-                        )
+                        ),
                     )
                 # If notifier is not email, we just create the notifier object
                 # TODO: Add the other notifiers, and its auth methods

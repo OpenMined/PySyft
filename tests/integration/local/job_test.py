@@ -21,12 +21,12 @@ def test_job_restart(job) -> None:
     job.wait(timeout=2)
 
     assert wait_until(
-        lambda: job.fetched_status == JobStatus.PROCESSING
+        lambda: job.fetched_status == JobStatus.PROCESSING,
     ), "Job not started"
     assert wait_until(
         lambda: all(
             subjob.fetched_status == JobStatus.PROCESSING for subjob in job.subjobs
-        )
+        ),
     ), "Subjobs not started"
 
     result = job.subjobs[0].restart()
@@ -45,7 +45,7 @@ def test_job_restart(job) -> None:
     job.wait(timeout=10)
 
     assert wait_until(
-        lambda: job.fetched_status == JobStatus.PROCESSING
+        lambda: job.fetched_status == JobStatus.PROCESSING,
     ), "Job not restarted"
     assert wait_until(
         lambda: len(
@@ -53,9 +53,9 @@ def test_job_restart(job) -> None:
                 subjob.fetched_status == JobStatus.PROCESSING
                 for subjob in job.subjobs
                 if subjob.fetched_status != JobStatus.INTERRUPTED
-            ]
+            ],
         )
-        == 2
+        == 2,
     ), "Subjobs not restarted"
 
 
@@ -118,12 +118,12 @@ def job(server):
 def test_job_kill(job) -> None:
     job.wait(timeout=2)
     assert wait_until(
-        lambda: job.fetched_status == JobStatus.PROCESSING
+        lambda: job.fetched_status == JobStatus.PROCESSING,
     ), "Job not started"
     assert wait_until(
         lambda: all(
             subjob.fetched_status == JobStatus.PROCESSING for subjob in job.subjobs
-        )
+        ),
     ), "Subjobs not started"
 
     result = job.subjobs[0].kill()

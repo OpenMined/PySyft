@@ -208,12 +208,12 @@ class BlobStorageService(AbstractService):
             obj: BlobStorageEntry | None = result.ok()
             if obj is None:
                 return SyftError(
-                    message=f"No blob storage entry exists for uid: {uid}, or you have no permissions to read it"
+                    message=f"No blob storage entry exists for uid: {uid}, or you have no permissions to read it",
                 )
 
             with context.server.blob_storage_client.connect() as conn:
                 res: BlobRetrieval = conn.read(
-                    obj.location, obj.type_, bucket_name=obj.bucket_name
+                    obj.location, obj.type_, bucket_name=obj.bucket_name,
                 )
                 res.syft_blob_storage_entry_id = uid
                 res.file_size = obj.file_size
@@ -273,7 +273,7 @@ class BlobStorageService(AbstractService):
         roles=GUEST_ROLE_LEVEL,
     )
     def allocate(
-        self, context: AuthedServiceContext, obj: CreateBlobStorageEntry
+        self, context: AuthedServiceContext, obj: CreateBlobStorageEntry,
     ) -> BlobDepositType | SyftError:
         return self._allocate(context, obj)
 
@@ -296,7 +296,7 @@ class BlobStorageService(AbstractService):
         roles=GUEST_ROLE_LEVEL,
     )
     def write_to_disk(
-        self, context: AuthedServiceContext, uid: UID, data: bytes
+        self, context: AuthedServiceContext, uid: UID, data: bytes,
     ) -> SyftSuccess | SyftError:
         result = self.stash.get_by_uid(
             credentials=context.credentials,
@@ -309,7 +309,7 @@ class BlobStorageService(AbstractService):
 
         if obj is None:
             return SyftError(
-                message=f"No blob storage entry exists for uid: {uid}, or you have no permissions to read it"
+                message=f"No blob storage entry exists for uid: {uid}, or you have no permissions to read it",
             )
 
         try:
@@ -341,7 +341,7 @@ class BlobStorageService(AbstractService):
 
         if obj is None:
             return SyftError(
-                message=f"No blob storage entry exists for uid: {uid}, or you have no permissions to read it"
+                message=f"No blob storage entry exists for uid: {uid}, or you have no permissions to read it",
             )
 
         obj.no_lines = no_lines
@@ -353,13 +353,12 @@ class BlobStorageService(AbstractService):
             return SyftError(message=f"{result.err()}")
 
         with context.server.blob_storage_client.connect() as conn:
-            result = conn.complete_multipart_upload(obj, etags)
+            return conn.complete_multipart_upload(obj, etags)
 
-        return result
 
     @service_method(path="blob_storage.delete", name="delete")
     def delete(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID,
     ) -> SyftSuccess | SyftError:
         get_res = self.stash.get_by_uid(context.credentials, uid=uid)
         if get_res.is_err():
@@ -369,7 +368,7 @@ class BlobStorageService(AbstractService):
         if obj is None:
             return SyftError(
                 message=f"No blob storage entry exists for uid: {uid}, "
-                f"or you have no permissions to read it"
+                f"or you have no permissions to read it",
             )
 
         try:
@@ -379,17 +378,17 @@ class BlobStorageService(AbstractService):
                     return file_unlinked_result
         except Exception as e:
             return SyftError(
-                message=f"Failed to delete blob file with id '{uid}'. Error: {e}"
+                message=f"Failed to delete blob file with id '{uid}'. Error: {e}",
             )
 
         blob_entry_delete_res = self.stash.delete(
-            context.credentials, UIDPartitionKey.with_obj(uid), has_permission=True
+            context.credentials, UIDPartitionKey.with_obj(uid), has_permission=True,
         )
         if blob_entry_delete_res.is_err():
             return SyftError(message=blob_entry_delete_res.err())
 
         return SyftSuccess(
-            message=f"Blob storage entry with id '{uid}' deleted successfully."
+            message=f"Blob storage entry with id '{uid}' deleted successfully.",
         )
 
 

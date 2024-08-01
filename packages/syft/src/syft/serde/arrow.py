@@ -24,7 +24,7 @@ def arrow_serialize(obj: np.ndarray) -> bytes:
             numpy_bytes = buffer.to_pybytes()
         else:
             numpy_bytes = pa.compress(
-                buffer, asbytes=True, codec=flags.APACHE_ARROW_COMPRESSION.value
+                buffer, asbytes=True, codec=flags.APACHE_ARROW_COMPRESSION.value,
             )
         dtype = original_dtype.name
         return (numpy_bytes, buffer.size, dtype)
@@ -34,7 +34,7 @@ def arrow_serialize(obj: np.ndarray) -> bytes:
 
 
 def arrow_deserialize(
-    numpy_bytes: bytes, decompressed_size: int, dtype: str
+    numpy_bytes: bytes, decompressed_size: int, dtype: str,
 ) -> np.ndarray:
     original_dtype = np.dtype(dtype)
     if flags.APACHE_ARROW_COMPRESSION is ApacheArrowCompression.NONE:
@@ -107,7 +107,7 @@ def arraytonumpyutf8(string_list: str | np.ndarray) -> bytes:
     shape = np.array(array_shape, dtype=np.uint64)
     shape_length = np.array([len(shape)], dtype=np.uint64)
     output_array = np.concatenate(
-        [np_bytes, np_indexes, index_length, shape, shape_length]
+        [np_bytes, np_indexes, index_length, shape, shape_length],
     )
 
     return cast(bytes, _serialize(output_array, to_bytes=True))
@@ -127,4 +127,5 @@ def numpy_deserialize(buf: bytes) -> np.ndarray:
     elif isinstance(deser, np.ndarray):
         return numpyutf8toarray(deser)
     else:
-        raise ValueError(f"Invalid type:{type(deser)} for numpy deserialization")
+        msg = f"Invalid type:{type(deser)} for numpy deserialization"
+        raise ValueError(msg)

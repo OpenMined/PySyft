@@ -19,7 +19,7 @@ def run_lsof_for_pid(pid):
     """Run the lsof command for a specific PID and return its output."""
     try:
         process = subprocess.Popen(
-            ["lsof", "-p", str(pid)], stdout=subprocess.PIPE, text=True
+            ["lsof", "-p", str(pid)], stdout=subprocess.PIPE, text=True,
         )
         output, _ = process.communicate()
         return output
@@ -66,7 +66,7 @@ def parse_lsof_output(lsof_output, verbose):
                 "FD Type": fd_type,
                 "FD Info": fd_info,
                 "File Path": file_path,
-            }
+            },
         )
 
     return data
@@ -84,7 +84,7 @@ def main(pid=None, verbose=False):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="List open files for Python processes."
+        description="List open files for Python processes.",
     )
     parser.add_argument(
         "pid",

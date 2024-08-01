@@ -35,13 +35,13 @@ class DataSubjectMemberStash(BaseUIDStoreStash):
         super().__init__(store=store)
 
     def get_all_for_parent(
-        self, credentials: SyftVerifyKey, name: str
+        self, credentials: SyftVerifyKey, name: str,
     ) -> Result[DataSubjectMemberRelationship | None, str]:
         qks = QueryKeys(qks=[ParentPartitionKey.with_obj(name)])
         return self.query_all(credentials=credentials, qks=qks)
 
     def get_all_for_child(
-        self, credentials: SyftVerifyKey, name: str
+        self, credentials: SyftVerifyKey, name: str,
     ) -> Result[DataSubjectMemberRelationship | None, str]:
         qks = QueryKeys(qks=[ChildPartitionKey.with_obj(name)])
         return self.query_all(credentials=credentials, qks=qks)
@@ -58,7 +58,7 @@ class DataSubjectMemberService(AbstractService):
         self.stash = DataSubjectMemberStash(store=store)
 
     def add(
-        self, context: AuthedServiceContext, parent: str, child: str
+        self, context: AuthedServiceContext, parent: str, child: str,
     ) -> SyftSuccess | SyftError:
         """Register relationship between data subject and it's member."""
         relation = DataSubjectMemberRelationship(parent=parent, child=child)
@@ -68,15 +68,14 @@ class DataSubjectMemberService(AbstractService):
         return SyftSuccess(message=f"Relationship added for: {parent} -> {child}")
 
     def get_relatives(
-        self, context: AuthedServiceContext, data_subject_name: str
+        self, context: AuthedServiceContext, data_subject_name: str,
     ) -> list[str] | SyftError:
         """Get all Members for given data subject"""
         result = self.stash.get_all_for_parent(
-            context.credentials, name=data_subject_name
+            context.credentials, name=data_subject_name,
         )
         if result.is_ok():
-            data_subject_members = result.ok()
-            return data_subject_members
+            return result.ok()
         return SyftError(message=result.err())
 
 

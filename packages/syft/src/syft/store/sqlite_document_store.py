@@ -147,7 +147,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
                 self.cur.execute(
                     f"create table {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
                     + "repr TEXT NOT NULL, value BLOB NOT NULL, "  # nosec
-                    + "sqltime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL)"  # nosec
+                    + "sqltime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL)",  # nosec
                 )
                 self.db.commit()
         except Exception as e:
@@ -187,7 +187,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         self.db.commit()
 
     def _execute(
-        self, sql: str, *args: list[Any] | None
+        self, sql: str, *args: list[Any] | None,
     ) -> Result[Ok[sqlite3.Cursor], Err[str]]:
         with self.lock:
             cursor: sqlite3.Cursor | None = None
@@ -234,12 +234,14 @@ class SQLiteBackingStore(KeyValueBackingStore):
         select_sql = f"select * from {self.table_name} where uid = ? order by sqltime"  # nosec
         res = self._execute(select_sql, [str(key)])
         if res.is_err():
-            raise KeyError(f"Query {select_sql} failed")
+            msg = f"Query {select_sql} failed"
+            raise KeyError(msg)
         cursor = res.ok()
 
         row = cursor.fetchone()
         if row is None or len(row) == 0:
-            raise KeyError(f"{key} not in {type(self)}")
+            msg = f"{key} not in {type(self)}"
+            raise KeyError(msg)
         data = row[2]
         return _deserialize(data, from_bytes=True)
 
@@ -288,8 +290,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         if rows is None:
             return []
 
-        keys = [UID(row[0]) for row in rows]
-        return keys
+        return [UID(row[0]) for row in rows]
 
     def _delete(self, key: UID) -> None:
         select_sql = f"delete from {self.table_name} where uid = ?"  # nosec
@@ -309,8 +310,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         if res.is_err():
             raise ValueError(res.err())
         cursor = res.ok()
-        cnt = cursor.fetchone()[0]
-        return cnt
+        return cursor.fetchone()[0]
 
     def __setitem__(self, key: Any, value: Any) -> None:
         self._set(key, value)

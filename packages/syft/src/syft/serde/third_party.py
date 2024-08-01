@@ -57,10 +57,10 @@ recursive_serde_register(
 
 # result Ok and Err
 recursive_serde_register(
-    Ok, serialize_attrs=["_value"], canonical_name="result_Ok", version=1
+    Ok, serialize_attrs=["_value"], canonical_name="result_Ok", version=1,
 )
 recursive_serde_register(
-    Err, serialize_attrs=["_value"], canonical_name="result_Err", version=1
+    Err, serialize_attrs=["_value"], canonical_name="result_Err", version=1,
 )
 
 # exceptions
@@ -68,7 +68,7 @@ recursive_serde_register(cls=TypeError, canonical_name="TypeError", version=1)
 
 # mongo collection
 recursive_serde_register_type(
-    Collection, canonical_name="pymongo_collection", version=1
+    Collection, canonical_name="pymongo_collection", version=1,
 )
 
 
@@ -82,16 +82,14 @@ def serialize_dataframe(df: DataFrame) -> bytes:
     }
     pq.write_table(table, sink, **parquet_args)
     buffer = sink.getvalue()
-    numpy_bytes = buffer.to_pybytes()
-    return numpy_bytes
+    return buffer.to_pybytes()
 
 
 def deserialize_dataframe(buf: bytes) -> DataFrame:
     reader = pa.BufferReader(buf)
     numpy_bytes = reader.read_buffer()
     result = pq.read_table(numpy_bytes)
-    df = result.to_pandas()
-    return df
+    return result.to_pandas()
 
 
 # pandas
@@ -180,10 +178,10 @@ recursive_serde_register(
 
 
 recursive_serde_register_type(
-    ModelMetaclass, canonical_name="pydantic_model_metaclass", version=1
+    ModelMetaclass, canonical_name="pydantic_model_metaclass", version=1,
 )
 recursive_serde_register_type(
-    PartialModelMetaclass, canonical_name="partial_model_metaclass", version=1
+    PartialModelMetaclass, canonical_name="partial_model_metaclass", version=1,
 )
 
 
@@ -216,10 +214,10 @@ try:
     from torch._C import _TensorMeta
 
     recursive_serde_register_type(
-        _TensorMeta, canonical_name="torch_tensor_meta", version=1
+        _TensorMeta, canonical_name="torch_tensor_meta", version=1,
     )
     recursive_serde_register_type(
-        torch.Tensor, canonical_name="torch_tensor", version=1
+        torch.Tensor, canonical_name="torch_tensor", version=1,
     )
 
     def torch_serialize(tensor: torch.Tensor) -> bytes:
@@ -267,15 +265,15 @@ try:
 
     # Checking db_dtypes availability this way to avoid unused ruff issues, but this package is used internally
     if not find_spec("db_dtypes"):
-        raise ImportError("db_dtypes module not found")
+        msg = "db_dtypes module not found"
+        raise ImportError(msg)
 
     def convert_to_dataframe(obj: RowIterator) -> bytes:
         dataframe = obj.to_dataframe()
         return serialize_dataframe(dataframe)
 
     def convert_from_dataframe(blob: bytes) -> DataFrame:
-        dataframe = deserialize_dataframe(blob)
-        return dataframe
+        return deserialize_dataframe(blob)
 
     recursive_serde_register(
         RowIterator,

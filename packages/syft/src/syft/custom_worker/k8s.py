@@ -89,7 +89,7 @@ class PodStatus(BaseModel):
             phase=PodPhase(status.get("phase", "Unknown")),
             condition=PodCondition.from_conditions(status.get("conditions", [])),
             container=ContainerStatus.from_status(
-                status.get("containerStatuses", {})[0]
+                status.get("containerStatuses", {})[0],
             ),
         )
 
@@ -97,7 +97,8 @@ class PodStatus(BaseModel):
 @cache
 def get_kr8s_client() -> kr8s.Api:
     if not IN_KUBERNETES:
-        raise RuntimeError("Not inside a kubernetes environment")
+        msg = "Not inside a kubernetes environment"
+        raise RuntimeError(msg)
     return kr8s.api(namespace=KUBERNETES_NAMESPACE)
 
 
@@ -239,7 +240,7 @@ class KubeUtils:
                 },
                 "type": type,
                 "data": data,
-            }
+            },
         )
         return KubeUtils.create_or_get(secret)
 

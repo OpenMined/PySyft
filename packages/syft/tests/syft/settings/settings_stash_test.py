@@ -7,7 +7,7 @@ from syft.service.settings.settings_stash import SettingsStash
 
 
 def add_mock_settings(
-    root_verify_key, settings_stash: SettingsStash, settings: ServerSettings
+    root_verify_key, settings_stash: SettingsStash, settings: ServerSettings,
 ) -> ServerSettings:
     # prepare: add mock settings
     result = settings_stash.partition.set(root_verify_key, settings)
@@ -20,7 +20,7 @@ def add_mock_settings(
 
 
 def test_settingsstash_set(
-    root_verify_key, settings_stash: SettingsStash, settings: ServerSettings
+    root_verify_key, settings_stash: SettingsStash, settings: ServerSettings,
 ) -> None:
     result = settings_stash.set(root_verify_key, settings)
     assert result.is_ok()

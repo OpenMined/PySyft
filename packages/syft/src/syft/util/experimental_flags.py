@@ -24,7 +24,7 @@ class ExperimentalFlags:
             os.getenv(
                 "ENABLE_SIGNUP",
                 "False",
-            )
+            ),
         )
 
     @property

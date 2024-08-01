@@ -59,7 +59,8 @@ def mount_bucket(
     try:
         mount_conf_dir = prepare_dir(mount_conf_dir, delete_if_exist=overwrite)
     except FileExistsError:
-        raise FileExistsError(f"Bucket already mounted {swfs_config_name}")
+        msg = f"Bucket already mounted {swfs_config_name}"
+        raise FileExistsError(msg)
 
     # create the supervisord mount
     mount_env = creds_to_env(opts.remote_bucket.creds, mount_conf_dir)
@@ -72,7 +73,7 @@ def mount_bucket(
             remote_bucket=opts.remote_bucket.bucket_name,
             remote_type=opts.remote_bucket.type.value,
             remote_creds=get_remote_cred_args(opts.remote_bucket.type),
-        )
+        ),
     )
     proc = subprocess.run(
         mount_shell_cmd,
@@ -102,7 +103,7 @@ def mount_bucket(
         SupervisordConfArgs(
             name=supervisord_conf_name,
             command=f'sh -c "{sync_cmd}"',
-        )
+        ),
     )
     # write the config to the supervisord include directory
     mount_conf_file.write_text(mount_conf)
@@ -134,14 +135,16 @@ def get_remote_cred_args(remote_type: BucketType) -> str:
     elif remote_type == BucketType.AZURE:
         return "-azure.account_name=$AZURE_ACCOUNT_NAME -azure.account_key=$AZURE_ACCOUNT_KEY"
     else:
-        raise ValueError(f"Unsupported remote type: {remote_type}")
+        msg = f"Unsupported remote type: {remote_type}"
+        raise ValueError(msg)
 
 
 def prepare_dir(dirpath: Path, delete_if_exist: bool = True) -> Path:
     if dirpath.exists() and delete_if_exist:
         shutil.rmtree(dirpath)
     elif dirpath.exists():
-        raise FileExistsError(f"Directory {dirpath} already exists")
+        msg = f"Directory {dirpath} already exists"
+        raise FileExistsError(msg)
     dirpath.mkdir(parents=True, exist_ok=True)
     return dirpath
 
@@ -154,4 +157,5 @@ def creds_to_env(creds: Any, conf_dir: Path) -> dict:
         }
     elif isinstance(creds, AzureCreds | S3Creds):
         return dict_upper_keys(creds.model_dump())
-    raise ValueError("Unsupported credentials type")
+    msg = "Unsupported credentials type"
+    raise ValueError(msg)

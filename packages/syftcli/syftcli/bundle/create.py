@@ -36,7 +36,7 @@ VersionOpts = Annotated[str, Option("--version", "-v")]
 EngineOpts = Annotated[Engine, Option("--engine", "-e")]
 DryrunOpts = Annotated[bool, Option("--dryrun")]
 OutdirOpts = Annotated[
-    Path, Option("--outdir", "-d", dir_okay=True, file_okay=False, writable=True)
+    Path, Option("--outdir", "-d", dir_okay=True, file_okay=False, writable=True),
 ]
 
 
@@ -115,7 +115,7 @@ def get_container_engine(engine_name: Engine, dryrun: bool = False) -> Container
     if not dryrun and not engine.is_available():
         error(
             f"Error: '{engine_name}' is unavailable. "
-            "Make sure it is installed and running."
+            "Make sure it is installed and running.",
         )
         raise Exit(1)
 
@@ -213,7 +213,7 @@ def create_syft_bundle(
         debug(
             f"Bundle: {bundle_path}\n"
             f"+ Image: {archive_path}\n"
-            f"+ Deployment Config: {config_path}\n"
+            f"+ Deployment Config: {config_path}\n",
         )
         return
 

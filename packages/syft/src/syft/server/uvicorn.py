@@ -70,8 +70,9 @@ def app_factory() -> FastAPI:
         ServerType.ENCLAVE: Enclave,
     }
     if settings.server_type not in worker_classes:
+        msg = f"server_type: {settings.server_type} is not supported"
         raise NotImplementedError(
-            f"server_type: {settings.server_type} is not supported"
+            msg,
         )
     worker_class = worker_classes[settings.server_type]
 
@@ -79,7 +80,7 @@ def app_factory() -> FastAPI:
     if settings.dev_mode:
         print(
             f"WARN: private key is based on server name: {settings.name} in dev_mode. "
-            "Don't run this in production."
+            "Don't run this in production.",
         )
         worker = worker_class.named(**kwargs)
     else:

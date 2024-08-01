@@ -72,13 +72,14 @@ class CodeHistoryView(SyftObject):
 
     def __getitem__(self, index: int | str) -> UserCode | SyftError:
         if isinstance(index, str):
-            raise TypeError(f"index {index} must be an integer, not a string")
+            msg = f"index {index} must be an integer, not a string"
+            raise TypeError(msg)
         api = APIRegistry.api_for(
-            self.syft_server_location, self.syft_client_verify_key
+            self.syft_server_location, self.syft_client_verify_key,
         )
         if api is None:
             return SyftError(
-                message=f"Can't access the api. You must login to {self.server_uid}"
+                message=f"Can't access the api. You must login to {self.server_uid}",
             )
         if (
             api.user.get_current_user().role.value >= ServiceRole.DATA_OWNER.value
@@ -87,7 +88,7 @@ class CodeHistoryView(SyftObject):
             # negative index would dynamically resolve to a different version
             return SyftError(
                 message="For security concerns we do not allow negative indexing. \
-                Try using absolute values when indexing"
+                Try using absolute values when indexing",
             )
         return self.user_code_history[index]
 
@@ -111,12 +112,13 @@ class CodeHistoriesDict(SyftObject):
 
     def __getitem__(self, name: str | int) -> Any:
         if isinstance(name, int):
-            raise TypeError("name argument ({name}) must be a string, not an integer.")
+            msg = "name argument ({name}) must be a string, not an integer."
+            raise TypeError(msg)
         return self.code_versions[name]
 
     def __getattr__(self, name: str) -> Any:
         code_versions = object.__getattribute__(self, "code_versions")
-        if name in code_versions.keys():
+        if name in code_versions:
             return code_versions[name]
         return object.__getattribute__(self, name)
 
@@ -141,7 +143,7 @@ class UsersCodeHistoriesDict(SyftObject):
         api = APIRegistry.api_for(self.server_uid, self.syft_client_verify_key)
         if api is None:
             return SyftError(
-                message=f"Can't access the api. You must login to {self.server_uid}"
+                message=f"Can't access the api. You must login to {self.server_uid}",
             )
         return api.services.code_history.get_history_for_user(key)
 

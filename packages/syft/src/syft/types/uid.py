@@ -2,11 +2,9 @@
 from __future__ import annotations
 
 # stdlib
-from collections.abc import Callable
-from collections.abc import Sequence
 import hashlib
 import logging
-from typing import Any
+from typing import Any, TYPE_CHECKING
 import uuid
 from uuid import UUID as uuid_type
 
@@ -15,6 +13,10 @@ from typing_extensions import Self
 
 # relative
 from ..serde.serializable import serializable
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from collections.abc import Callable
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +40,7 @@ class UID:
     """
 
     __serde_overrides__: dict[str, Sequence[Callable]] = {
-        "value": (lambda x: x.bytes, lambda x: uuid.UUID(bytes=bytes(x)))
+        "value": (lambda x: x.bytes, lambda x: uuid.UUID(bytes=bytes(x))),
     }
 
     __slots__ = "value"
@@ -207,7 +209,7 @@ class UID:
         else:
             # Ask @Madhava , can we check for  invalid types , even though type annotation is specified.
             return ValueError(  # type: ignore
-                f"Incorrect value,type:{value,type(value)} for conversion to UID, expected str | uuid.UUID | Self"
+                f"Incorrect value,type:{value,type(value)} for conversion to UID, expected str | uuid.UUID | Self",
             )
 
 
@@ -248,7 +250,8 @@ class LineageID(UID):
         elif isinstance(other, UID):
             return hash(self) == hash(other)
         else:
-            raise ValueError(f"Unsupported comparison: LineageID with {type(other)}")
+            msg = f"Unsupported comparison: LineageID with {type(other)}"
+            raise ValueError(msg)
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__}: {self.no_dash} - {self.syft_history_hash}>"

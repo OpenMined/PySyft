@@ -151,18 +151,18 @@ class Asset(SyftObject):
             private_data_obj = private_data_res.ok_value
             if isinstance(private_data_obj, ActionObject):
                 data_table_line = itables.to_html_datatable(
-                    df=self.data.syft_action_data, css=itables_css
+                    df=self.data.syft_action_data, css=itables_css,
                 )
             elif isinstance(private_data_obj, pd.DataFrame):
                 data_table_line = itables.to_html_datatable(
-                    df=private_data_obj, css=itables_css
+                    df=private_data_obj, css=itables_css,
                 )
             else:
                 data_table_line = private_data_res.ok_value
 
         if isinstance(self.mock, ActionObject):
             mock_table_line = itables.to_html_datatable(
-                df=self.mock.syft_action_data, css=itables_css
+                df=self.mock.syft_action_data, css=itables_css,
             )
         elif isinstance(self.mock, pd.DataFrame):
             mock_table_line = itables.to_html_datatable(df=self.mock, css=itables_css)
@@ -219,10 +219,9 @@ class Asset(SyftObject):
 
         # _kwarg_name and _dataset_name are set by the UserCode.assets
         # if they are None, we remove them from the dict
-        filtered_dict = {
+        return {
             key: value for key, value in base_dict.items() if value is not None
         }
-        return filtered_dict
 
     def _get_dict_for_user_code_repr(self) -> dict[str, Any]:
         return {
@@ -255,6 +254,7 @@ class Asset(SyftObject):
         )
         if api is not None and api.services is not None:
             return api.services.action.get_pointer(self.action_id)
+        return None
 
     @property
     def mock(self) -> SyftError | Any:
@@ -373,14 +373,10 @@ class CreateAsset(SyftObject):
 
     def contains_empty(self) -> bool:
         if isinstance(self.mock, ActionObject) and isinstance(
-            self.mock.syft_action_data_cache, ActionDataEmpty
+            self.mock.syft_action_data_cache, ActionDataEmpty,
         ):
             return True
-        if isinstance(self.data, ActionObject) and isinstance(
-            self.data.syft_action_data_cache, ActionDataEmpty
-        ):
-            return True
-        return False
+        return bool(isinstance(self.data, ActionObject) and isinstance(self.data.syft_action_data_cache, ActionDataEmpty))
 
     def add_data_subject(self, data_subject: DataSubject) -> None:
         self.data_subjects.append(data_subject)
@@ -396,16 +392,16 @@ class CreateAsset(SyftObject):
         try:
             _role_str = role.value if isinstance(role, Enum) else role
             contributor = Contributor(
-                name=name, role=_role_str, email=email, phone=phone, note=note
+                name=name, role=_role_str, email=email, phone=phone, note=note,
             )
             if contributor in self.contributors:
                 return SyftError(
-                    message=f"Contributor with email: '{email}' already exists in '{self.name}' Asset."
+                    message=f"Contributor with email: '{email}' already exists in '{self.name}' Asset.",
                 )
             self.contributors.add(contributor)
 
             return SyftSuccess(
-                message=f"Contributor '{name}' added to '{self.name}' Asset."
+                message=f"Contributor '{name}' added to '{self.name}' Asset.",
             )
         except Exception as e:
             return SyftError(message=f"Failed to add contributor. Error: {e}")
@@ -423,7 +419,8 @@ class CreateAsset(SyftObject):
             raise SyftException(mock_data)
 
         if mock_is_real and (mock_data is None or _is_action_data_empty(mock_data)):
-            raise SyftException("`mock_is_real` must be False if mock is empty")
+            msg = "`mock_is_real` must be False if mock is empty"
+            raise SyftException(msg)
 
         self.mock = mock_data
         self.mock_is_real = mock_is_real
@@ -440,7 +437,7 @@ class CreateAsset(SyftObject):
     def check(self) -> SyftSuccess | SyftError:
         if not check_mock(self.data, self.mock):
             return SyftError(
-                message=f"set_obj type {type(self.data)} must match set_mock type {type(self.mock)}"
+                message=f"set_obj type {type(self.data)} must match set_mock type {type(self.mock)}",
             )
         # if not _is_action_data_empty(self.mock):
         #     data_shape = get_shape_or_len(self.data)
@@ -580,7 +577,7 @@ class Dataset(SyftObject):
         for asset in self.asset_list:
             if asset.description is not None:
                 description_text = textwrap.shorten(
-                    asset.description.text, width=100, placeholder="..."
+                    asset.description.text, width=100, placeholder="...",
                 )
                 _repr_str += f"\t{asset.name}: {description_text}\n\n"
             else:
@@ -601,7 +598,7 @@ class Dataset(SyftObject):
         client = SyftClientSessionCache.get_client_for_server_uid(self.server_uid)
         if client is None:
             return SyftError(
-                message=f"No clients for {self.server_uid} in memory. Please login with sy.login"
+                message=f"No clients for {self.server_uid} in memory. Please login with sy.login",
             )
         return client
 
@@ -613,7 +610,7 @@ _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE: str = "".join(
         "You can create an asset without a mock with `sy.Asset(..., mock=sy.ActionObject.empty())` or\n"
         "set the mock of an existing asset to be empty with `asset.no_mock()` or ",
         "`asset.mock = sy.ActionObject.empty()`.",
-    ]
+    ],
 )
 
 
@@ -627,8 +624,8 @@ def _check_asset_must_contain_mock(asset_list: list[CreateAsset]) -> None:
                     *[f"{asset}\n" for asset in assets_without_mock],
                     "\n",
                     _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE,
-                ]
-            )
+                ],
+            ),
         )
 
 
@@ -660,7 +657,7 @@ class CreateDataset(Dataset):
     @field_validator("asset_list")
     @classmethod
     def __assets_must_contain_mock(
-        cls, asset_list: list[CreateAsset]
+        cls, asset_list: list[CreateAsset],
     ) -> list[CreateAsset]:
         _check_asset_must_contain_mock(asset_list)
         return asset_list
@@ -669,7 +666,8 @@ class CreateDataset(Dataset):
     @classmethod
     def __to_be_deleted_must_be_false(cls, v: bool) -> bool:
         if v is True:
-            raise ValueError("to_be_deleted must be False")
+            msg = "to_be_deleted must be False"
+            raise ValueError(msg)
         return v
 
     def set_description(self, description: str) -> None:
@@ -695,21 +693,21 @@ class CreateDataset(Dataset):
         try:
             _role_str = role.value if isinstance(role, Enum) else role
             contributor = Contributor(
-                name=name, role=_role_str, email=email, phone=phone, note=note
+                name=name, role=_role_str, email=email, phone=phone, note=note,
             )
             if contributor in self.contributors:
                 return SyftError(
-                    message=f"Contributor with email: '{email}' already exists in '{self.name}' Dataset."
+                    message=f"Contributor with email: '{email}' already exists in '{self.name}' Dataset.",
                 )
             self.contributors.add(contributor)
             return SyftSuccess(
-                message=f"Contributor '{name}' added to '{self.name}' Dataset."
+                message=f"Contributor '{name}' added to '{self.name}' Dataset.",
             )
         except Exception as e:
             return SyftError(message=f"Failed to add contributor. Error: {e}")
 
     def add_asset(
-        self, asset: CreateAsset, force_replace: bool = False
+        self, asset: CreateAsset, force_replace: bool = False,
     ) -> SyftSuccess | SyftError:
         if asset.mock is None:
             raise ValueError(_ASSET_WITH_NONE_MOCK_ERROR_MESSAGE)
@@ -719,18 +717,18 @@ class CreateDataset(Dataset):
                 if not force_replace:
                     return SyftError(
                         message=f"""Asset "{asset.name}" already exists in '{self.name}' Dataset."""
-                        """ Use add_asset(asset, force_replace=True) to replace."""
+                        """ Use add_asset(asset, force_replace=True) to replace.""",
                     )
                 else:
                     self.asset_list[i] = asset
                     return SyftSuccess(
-                        message=f"Asset {asset.name} has been successfully replaced."
+                        message=f"Asset {asset.name} has been successfully replaced.",
                     )
 
         self.asset_list.append(asset)
 
         return SyftSuccess(
-            message=f"Asset '{asset.name}' added to '{self.name}' Dataset."
+            message=f"Asset '{asset.name}' added to '{self.name}' Dataset.",
         )
 
     def replace_asset(self, asset: CreateAsset) -> SyftSuccess | SyftError:
@@ -747,7 +745,7 @@ class CreateDataset(Dataset):
             return SyftError(message=f"No asset exists with name: {name}")
         self.asset_list.remove(asset_to_remove)
         return SyftSuccess(
-            message=f"Asset '{self.name}' removed from '{self.name}' Dataset."
+            message=f"Asset '{self.name}' removed from '{self.name}' Dataset.",
         )
 
     def check(self) -> Result[SyftSuccess, list[SyftError]]:
@@ -763,7 +761,8 @@ class CreateDataset(Dataset):
 
 def create_and_store_twin(context: TransformContext) -> TransformContext:
     if context.output is None:
-        raise ValueError(f"{context}'s output is None. No transformation happened")
+        msg = f"{context}'s output is None. No transformation happened"
+        raise ValueError(msg)
 
     action_id = context.output["action_id"]
     if action_id is None:
@@ -773,7 +772,8 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
         private_obj = context.output.pop("data", None)
         mock_obj = context.output.pop("mock", None)
         if private_obj is None and mock_obj is None:
-            raise ValueError("No data and no action_id means this asset has no data")
+            msg = "No data and no action_id means this asset has no data"
+            raise ValueError(msg)
 
         asset = context.obj  # type: ignore
         contains_empty = asset.contains_empty()  # type: ignore
@@ -790,8 +790,9 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
             logger.debug(res.message)
         # TODO, upload to blob storage here
         if context.server is None:
+            msg = "f{context}'s server is None, please log in. No trasformation happened"
             raise ValueError(
-                "f{context}'s server is None, please log in. No trasformation happened"
+                msg,
             )
         action_service = context.server.get_service("actionservice")
         result = action_service._set(
@@ -799,7 +800,8 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
             action_object=twin,
         )
         if result.is_err():
-            raise RuntimeError(f"Failed to create and store twin. Error: {result}")
+            msg = f"Failed to create and store twin. Error: {result}"
+            raise RuntimeError(msg)
 
         context.output["action_id"] = twin.id
     else:
@@ -811,19 +813,20 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
 
 def infer_shape(context: TransformContext) -> TransformContext:
     if context.output is None:
-        raise ValueError(f"{context}'s output is None. No transformation happened")
-    if context.output["shape"] is None:
-        if context.obj is not None and not _is_action_data_empty(context.obj.mock):
-            context.output["shape"] = get_shape_or_len(context.obj.mock)
+        msg = f"{context}'s output is None. No transformation happened"
+        raise ValueError(msg)
+    if context.output["shape"] is None and context.obj is not None and not _is_action_data_empty(context.obj.mock):
+        context.output["shape"] = get_shape_or_len(context.obj.mock)
     return context
 
 
 def set_data_subjects(context: TransformContext) -> TransformContext | SyftError:
     if context.output is None:
-        raise ValueError(f"{context}'s output is None. No transformation happened")
+        msg = f"{context}'s output is None. No transformation happened"
+        raise ValueError(msg)
     if context.server is None:
         return SyftError(
-            "f{context}'s server is None, please log in. No trasformation happened"
+            "f{context}'s server is None, please log in. No trasformation happened",
         )
     data_subjects = context.output["data_subjects"]
     get_data_subject = context.server.get_service_method(DataSubjectService.get_by_name)
@@ -850,7 +853,8 @@ def add_default_server_uid(context: TransformContext) -> TransformContext:
         if context.output["server_uid"] is None and context.server is not None:
             context.output["server_uid"] = context.server.id
     else:
-        raise ValueError(f"{context}'s output is None. No transformation happened")
+        msg = f"{context}'s output is None. No transformation happened"
+        raise ValueError(msg)
     return context
 
 

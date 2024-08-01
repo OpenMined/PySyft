@@ -38,8 +38,8 @@ def singleton(cls: Any) -> Callable:
 
     @functools.wraps(cls)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
-        if cls in previous_instances and previous_instances.get(cls, None).get(
-            "args"
+        if cls in previous_instances and previous_instances.get(cls).get(
+            "args",
         ) == (args, kwargs):
             return previous_instances[cls].get("instance")
         else:

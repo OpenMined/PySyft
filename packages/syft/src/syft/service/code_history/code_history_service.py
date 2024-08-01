@@ -8,7 +8,6 @@ from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..code.user_code import SubmitUserCode
 from ..code.user_code import UserCode
-from ..code.user_code_service import UserCodeService
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -22,6 +21,10 @@ from .code_history import CodeHistory
 from .code_history import CodeHistoryView
 from .code_history import UsersCodeHistoriesDict
 from .code_history_stash import CodeHistoryStash
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..code.user_code_service import UserCodeService
 
 
 @instrument
@@ -82,7 +85,7 @@ class CodeHistoryService(AbstractService):
         return SyftSuccess(message="Code version submit success")
 
     @service_method(
-        path="code_history.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL
+        path="code_history.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_all(self, context: AuthedServiceContext) -> list[CodeHistory] | SyftError:
         """Get a Dataset"""
@@ -92,21 +95,20 @@ class CodeHistoryService(AbstractService):
         return SyftError(message=result.err())
 
     @service_method(
-        path="code_history.get", name="get", roles=DATA_SCIENTIST_ROLE_LEVEL
+        path="code_history.get", name="get", roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_code_by_uid(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID,
     ) -> SyftSuccess | SyftError:
         """Get a User Code Item"""
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
-            code_history = result.ok()
-            return code_history
+            return result.ok()
         return SyftError(message=result.err())
 
     @service_method(path="code_history.delete", name="delete")
     def delete(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID,
     ) -> SyftSuccess | SyftError:
         result = self.stash.delete_by_uid(context.credentials, uid)
         if result.is_ok():
@@ -115,19 +117,19 @@ class CodeHistoryService(AbstractService):
             return SyftError(message=result.err())
 
     def fetch_histories_for_user(
-        self, context: AuthedServiceContext, user_verify_key: SyftVerifyKey
+        self, context: AuthedServiceContext, user_verify_key: SyftVerifyKey,
     ) -> CodeHistoriesDict | SyftError:
         if context.role in [ServiceRole.DATA_OWNER, ServiceRole.ADMIN]:
             result = self.stash.get_by_verify_key(
-                credentials=context.server.verify_key, user_verify_key=user_verify_key
+                credentials=context.server.verify_key, user_verify_key=user_verify_key,
             )
         else:
             result = self.stash.get_by_verify_key(
-                credentials=context.credentials, user_verify_key=user_verify_key
+                credentials=context.credentials, user_verify_key=user_verify_key,
             )
 
         user_code_service: UserCodeService = context.server.get_service(
-            "usercodeservice"
+            "usercodeservice",
         )  # type: ignore
 
         def get_code(uid: UID) -> UserCode | SyftError:
@@ -160,10 +162,10 @@ class CodeHistoryService(AbstractService):
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_histories_for_current_user(
-        self, context: AuthedServiceContext
+        self, context: AuthedServiceContext,
     ) -> CodeHistoriesDict | SyftError:
         return self.fetch_histories_for_user(
-            context=context, user_verify_key=context.credentials
+            context=context, user_verify_key=context.credentials,
         )
 
     @service_method(
@@ -172,16 +174,16 @@ class CodeHistoryService(AbstractService):
         roles=DATA_OWNER_ROLE_LEVEL,
     )
     def get_history_for_user(
-        self, context: AuthedServiceContext, email: str
+        self, context: AuthedServiceContext, email: str,
     ) -> CodeHistoriesDict | SyftError:
         user_service = context.server.get_service("userservice")
         result = user_service.stash.get_by_email(
-            credentials=context.credentials, email=email
+            credentials=context.credentials, email=email,
         )
         if result.is_ok():
             user = result.ok()
             return self.fetch_histories_for_user(
-                context=context, user_verify_key=user.verify_key
+                context=context, user_verify_key=user.verify_key,
             )
         return SyftError(message=result.err())
 
@@ -191,7 +193,7 @@ class CodeHistoryService(AbstractService):
         roles=DATA_OWNER_ROLE_LEVEL,
     )
     def get_histories_group_by_user(
-        self, context: AuthedServiceContext
+        self, context: AuthedServiceContext,
     ) -> UsersCodeHistoriesDict | SyftError:
         if context.role in [ServiceRole.DATA_OWNER, ServiceRole.ADMIN]:
             result = self.stash.get_all(context.credentials, has_permission=True)
@@ -217,7 +219,7 @@ class CodeHistoryService(AbstractService):
         for code_history in code_histories:
             user_email = verify_key_2_user_email[code_history.user_verify_key]
             user_code_histories.user_dict[user_email].append(
-                code_history.service_func_name
+                code_history.service_func_name,
             )
 
         return user_code_histories

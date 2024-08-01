@@ -21,13 +21,16 @@ from ..service import AbstractService
 from ..service import service_method
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
-from .image_registry import SyftImageRegistry
 from .image_registry_service import SyftImageRegistryService
 from .utils import image_build
 from .utils import image_push
 from .worker_image import SyftWorkerImage
 from .worker_image import SyftWorkerImageIdentifier
 from .worker_image_stash import SyftWorkerImageStash
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .image_registry import SyftImageRegistry
 
 
 @serializable(canonical_name="SyftWorkerImageService", version=1)
@@ -45,7 +48,7 @@ class SyftWorkerImageService(AbstractService):
         roles=DATA_OWNER_ROLE_LEVEL,
     )
     def submit(
-        self, context: AuthedServiceContext, worker_config: WorkerConfig
+        self, context: AuthedServiceContext, worker_config: WorkerConfig,
     ) -> SyftSuccess | SyftError:
         image_identifier: SyftWorkerImageIdentifier | None = None
         if isinstance(worker_config, PrebuiltWorkerConfig):
@@ -54,7 +57,7 @@ class SyftWorkerImageService(AbstractService):
             except Exception:
                 return SyftError(
                     f"Invalid Docker image name: {worker_config.tag}.\n"
-                    + "Please specify the image name in this format <registry>/<repo>:<tag>."
+                    + "Please specify the image name in this format <registry>/<repo>:<tag>.",
                 )
 
         worker_image = SyftWorkerImage(
@@ -68,7 +71,7 @@ class SyftWorkerImageService(AbstractService):
             return SyftError(message=res.err())
 
         return SyftSuccess(
-            message=f"Dockerfile ID: {worker_image.id} successfully submitted."
+            message=f"Dockerfile ID: {worker_image.id} successfully submitted.",
         )
 
     @service_method(
@@ -92,7 +95,7 @@ class SyftWorkerImageService(AbstractService):
         result = self.stash.get_by_uid(credentials=context.credentials, uid=image_uid)
         if result.is_err():
             return SyftError(
-                message=f"Failed to get image for uid: {image_uid}. Error: {result.err()}"
+                message=f"Failed to get image for uid: {image_uid}. Error: {result.err()}",
             )
 
         worker_image: SyftWorkerImage = result.ok()
@@ -100,7 +103,7 @@ class SyftWorkerImageService(AbstractService):
         if registry_uid:
             # get registry from image registry service
             image_registry_service: AbstractService = context.server.get_service(
-                SyftImageRegistryService
+                SyftImageRegistryService,
             )
             registry_result = image_registry_service.get_by_id(context, registry_uid)
             if registry_result.is_err():
@@ -110,7 +113,7 @@ class SyftWorkerImageService(AbstractService):
         try:
             if registry:
                 image_identifier = SyftWorkerImageIdentifier.with_registry(
-                    tag=tag, registry=registry
+                    tag=tag, registry=registry,
                 )
             else:
                 image_identifier = SyftWorkerImageIdentifier.from_str(tag=tag)
@@ -138,18 +141,18 @@ class SyftWorkerImageService(AbstractService):
             worker_image.built_at = DateTime.now()
 
             result = SyftSuccess(
-                message=f"Build for Worker ID: {worker_image.id} succeeded.\n{build_result.logs}"
+                message=f"Build for Worker ID: {worker_image.id} succeeded.\n{build_result.logs}",
             )
         else:
             result = SyftSuccess(
-                message="Image building skipped, since using in-memory workers."
+                message="Image building skipped, since using in-memory workers.",
             )
 
         update_result = self.stash.update(context.credentials, obj=worker_image)
 
         if update_result.is_err():
             return SyftError(
-                message=f"Failed to update image meta information: {update_result.err()}"
+                message=f"Failed to update image meta information: {update_result.err()}",
             )
 
         return result
@@ -169,7 +172,7 @@ class SyftWorkerImageService(AbstractService):
         result = self.stash.get_by_uid(credentials=context.credentials, uid=image_uid)
         if result.is_err():
             return SyftError(
-                message=f"Failed to get Image ID: {image_uid}. Error: {result.err()}"
+                message=f"Failed to get Image ID: {image_uid}. Error: {result.err()}",
             )
         worker_image: SyftWorkerImage = result.ok()
 
@@ -180,7 +183,7 @@ class SyftWorkerImageService(AbstractService):
             or worker_image.image_identifier.registry_host == ""
         ):
             return SyftError(
-                message=f"Image ID: {worker_image.id} does not have a valid registry host."
+                message=f"Image ID: {worker_image.id} does not have a valid registry host.",
             )
 
         result = image_push(
@@ -193,7 +196,7 @@ class SyftWorkerImageService(AbstractService):
             return result
 
         return SyftSuccess(
-            message=f'Pushed Image ID: {worker_image.id} to "{worker_image.image_identifier.full_name_with_tag}".'
+            message=f'Pushed Image ID: {worker_image.id} to "{worker_image.image_identifier.full_name_with_tag}".',
         )
 
     @service_method(
@@ -202,7 +205,7 @@ class SyftWorkerImageService(AbstractService):
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_all(
-        self, context: AuthedServiceContext
+        self, context: AuthedServiceContext,
     ) -> DictTuple[str, SyftWorkerImage] | SyftError:
         """
         One image one docker file for now
@@ -230,7 +233,7 @@ class SyftWorkerImageService(AbstractService):
         roles=DATA_OWNER_ROLE_LEVEL,
     )
     def remove(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID,
     ) -> SyftSuccess | SyftError:
         #  Delete Docker image given image tag
         res = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
@@ -243,7 +246,7 @@ class SyftWorkerImageService(AbstractService):
         elif IN_KUBERNETES:
             # TODO: Implement image deletion in kubernetes
             return SyftError(
-                message="Image Deletion is not yet implemented in Kubernetes !!"
+                message="Image Deletion is not yet implemented in Kubernetes !!",
             )
         elif image and image.image_identifier:
             try:
@@ -254,7 +257,7 @@ class SyftWorkerImageService(AbstractService):
                 return SyftError(message=f"Image Tag: {full_tag} not found.")
             except Exception as e:
                 return SyftError(
-                    message=f"Failed to delete Image Tag: {full_tag}. Error: {e}"
+                    message=f"Failed to delete Image Tag: {full_tag}. Error: {e}",
                 )
 
         result = self.stash.delete_by_uid(credentials=context.credentials, uid=uid)
@@ -274,12 +277,12 @@ class SyftWorkerImageService(AbstractService):
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_by_uid(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID,
     ) -> SyftWorkerImage | SyftError:
         res = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
         if res.is_err():
             return SyftError(
-                message=f"Failed to get image with uid {uid}. Error: {res.err()}"
+                message=f"Failed to get image with uid {uid}. Error: {res.err()}",
             )
         image: SyftWorkerImage = res.ok()
         return image
@@ -290,14 +293,14 @@ class SyftWorkerImageService(AbstractService):
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_by_config(
-        self, context: AuthedServiceContext, worker_config: WorkerConfig
+        self, context: AuthedServiceContext, worker_config: WorkerConfig,
     ) -> SyftWorkerImage | SyftError:
         res = self.stash.get_by_worker_config(
-            credentials=context.credentials, config=worker_config
+            credentials=context.credentials, config=worker_config,
         )
         if res.is_err():
             return SyftError(
-                message=f"Failed to get image with docker config {worker_config}. Error: {res.err()}"
+                message=f"Failed to get image with docker config {worker_config}. Error: {res.err()}",
             )
         image: SyftWorkerImage = res.ok()
         return image

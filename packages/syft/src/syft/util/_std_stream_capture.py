@@ -21,10 +21,7 @@ patchsysdict = {0: "stdin", 1: "stdout", 2: "stderr"}
 try:
     devnullpath = os.devnull
 except AttributeError:
-    if os.name == "nt":
-        devnullpath = "NUL"
-    else:
-        devnullpath = "/dev/null"
+    devnullpath = "NUL" if os.name == "nt" else "/dev/null"
 
 
 class DontReadFromInput:
@@ -36,14 +33,16 @@ class DontReadFromInput:
     """
 
     def read(self, *args: Any) -> None:
-        raise OSError("reading from stdin while output is captured")
+        msg = "reading from stdin while output is captured"
+        raise OSError(msg)
 
     readline = read
     readlines = read
     __iter__ = read
 
     def fileno(self) -> None:
-        raise ValueError("redirected Stdin is pseudofile, has no fileno()")
+        msg = "redirected Stdin is pseudofile, has no fileno()"
+        raise ValueError(msg)
 
     def isatty(self) -> bool:
         return False
@@ -71,7 +70,8 @@ class Capture:
     def reset(self) -> tuple[str, str]:
         """reset sys.stdout/stderr and return captured output as strings."""
         if hasattr(self, "_reset"):
-            raise ValueError("was already reset")
+            msg = "was already reset"
+            raise ValueError(msg)
         self._reset = True
         outfile, errfile = self.done(save=False)
         out, err = "", ""
@@ -121,8 +121,9 @@ class FDCapture:
         try:
             os.fstat(self._savefd)
         except OSError:
+            msg = "saved filedescriptor not valid, " "did you call start() twice?"
             raise ValueError(
-                "saved filedescriptor not valid, " "did you call start() twice?"
+                msg,
             )
         if self.targetfd == 0 and not self.tmpfile:
             fd = os.open(devnullpath, os.O_RDONLY)
@@ -190,10 +191,8 @@ class StdCaptureFD(Capture):
         mixed = self._options["mixed"]
         patchsys = self._options["patchsys"]
         if in_:
-            try:
+            with contextlib.suppress(OSError):
                 self.in_ = FDCapture(0, tmpfile=None, now=False, patchsys=patchsys)
-            except OSError:
-                pass
         if out:
             tmpfile = None
             if hasattr(out, "write"):
@@ -243,14 +242,8 @@ class StdCaptureFD(Capture):
 
     def readouterr(self) -> tuple[str, str]:
         """return snapshot value of stdout/stderr capturings."""
-        if hasattr(self, "out"):
-            out = self._readsnapshot(self.out.tmpfile)
-        else:
-            out = ""
-        if hasattr(self, "err"):
-            err = self._readsnapshot(self.err.tmpfile)
-        else:
-            err = ""
+        out = self._readsnapshot(self.out.tmpfile) if hasattr(self, "out") else ""
+        err = self._readsnapshot(self.err.tmpfile) if hasattr(self, "err") else ""
         return out, err
 
     def _readsnapshot(self, f: Any) -> str:
@@ -260,16 +253,13 @@ class StdCaptureFD(Capture):
         if enc:
 
             def _totext(
-                obj: Any, encoding: str | None = None, errors: str | None = None
+                obj: Any, encoding: str | None = None, errors: str | None = None,
             ) -> str:
                 """
                 Source: https://github.com/pytest-dev/py/blob/master/py/_builtin.py
                 """
                 if isinstance(obj, bytes):
-                    if errors is None:
-                        obj = obj.decode(encoding)
-                    else:
-                        obj = obj.decode(encoding, errors)
+                    obj = obj.decode(encoding) if errors is None else obj.decode(encoding, errors)
                 elif not isinstance(obj, str):
                     obj = str(obj)
                 return obj

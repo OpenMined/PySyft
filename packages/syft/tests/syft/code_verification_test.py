@@ -125,7 +125,7 @@ def test_history_hash_reproducibility(data1: ActionObject) -> None:
 
 
 def test_empty_action_obj_hash_consistency(
-    data1: ActionObject, empty1: ActionObject
+    data1: ActionObject, empty1: ActionObject,
 ) -> None:
     """Test that Empty Action Objects and regular Action Objects can work together"""
 

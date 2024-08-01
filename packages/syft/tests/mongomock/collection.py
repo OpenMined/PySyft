@@ -112,7 +112,7 @@ def validate_is_mapping(option, value):
         raise TypeError(
             "%s must be an instance of dict, bson.son.SON, or "
             "other type that inherits from "
-            "collections.Mapping" % (option,)
+            "collections.Mapping" % (option,),
         )
 
 
@@ -121,7 +121,7 @@ def validate_is_mutable_mapping(option, value):
         raise TypeError(
             "%s must be an instance of dict, bson.son.SON, or "
             "other type that inherits from "
-            "collections.MutableMapping" % (option,)
+            "collections.MutableMapping" % (option,),
         )
 
 
@@ -130,16 +130,19 @@ def validate_ok_for_replace(replacement):
     if replacement:
         first = next(iter(replacement))
         if first.startswith("$"):
-            raise ValueError("replacement can not include $ operators")
+            msg = "replacement can not include $ operators"
+            raise ValueError(msg)
 
 
 def validate_ok_for_update(update):
     validate_is_mapping("update", update)
     if not update:
-        raise ValueError("update only works with $ operators")
+        msg = "update only works with $ operators"
+        raise ValueError(msg)
     first = next(iter(update))
     if not first.startswith("$"):
-        raise ValueError("update only works with $ operators")
+        msg = "update only works with $ operators"
+        raise ValueError(msg)
 
 
 def validate_write_concern_params(**params):
@@ -240,7 +243,7 @@ def _combine_projection_spec(projection_fields_spec):
                 if not v:
                     raise NotImplementedError(
                         "Mongomock does not support overriding excluding projection: %s"
-                        % projection_fields_spec
+                        % projection_fields_spec,
                     )
                 raise OperationFailure("Path collision at %s" % f)
             tmp_spec[f] = v
@@ -250,7 +253,7 @@ def _combine_projection_spec(projection_fields_spec):
             if not isinstance(tmp_spec.get(base_field), dict):
                 if base_field in tmp_spec:
                     raise OperationFailure(
-                        "Path collision at %s remaining portion %s" % (f, new_field)
+                        "Path collision at %s remaining portion %s" % (f, new_field),
                     )
                 tmp_spec[base_field] = OrderedDict()
             tmp_spec[base_field][new_field] = v
@@ -268,11 +271,13 @@ def _combine_projection_spec(projection_fields_spec):
 def _project_by_spec(doc, combined_projection_spec, is_include, container):
     if "$" in combined_projection_spec:
         if is_include:
+            msg = "Positional projection is not implemented in mongomock"
             raise NotImplementedError(
-                "Positional projection is not implemented in mongomock"
+                msg,
             )
+        msg = "Cannot exclude array elements with the positional operator"
         raise OperationFailure(
-            "Cannot exclude array elements with the positional operator"
+            msg,
         )
 
     doc_copy = container()
@@ -310,8 +315,9 @@ def _copy_field(obj, container):
 def _recursive_key_check_null_character(data):
     for key, value in data.items():
         if "\0" in key:
+            msg = f"Field names cannot contain the null character (found: {key})"
             raise InvalidDocument(
-                f"Field names cannot contain the null character (found: {key})"
+                msg,
             )
         if isinstance(value, Mapping):
             _recursive_key_check_null_character(value)
@@ -319,11 +325,14 @@ def _recursive_key_check_null_character(data):
 
 def _validate_data_fields(data):
     _recursive_key_check_null_character(data)
-    for key in data.keys():
+    for key in data:
         if key.startswith("$"):
-            raise InvalidDocument(
+            msg = (
                 f'Top-level field names cannot start with the "$" sign '
                 f"(found: {key})"
+            )
+            raise InvalidDocument(
+                msg,
             )
 
 
@@ -344,7 +353,7 @@ class BulkOperationBuilder(object):
     def insert(self, doc):
         def exec_insert():
             self.collection.insert_one(
-                doc, bypass_document_validation=self._bypass_document_validation
+                doc, bypass_document_validation=self._bypass_document_validation,
             )
             return {"nInserted": 1}
 
@@ -364,15 +373,7 @@ class BulkOperationBuilder(object):
             else:
                 agg_val.append(value)
         else:
-            assert False, (
-                "Fixme: missed aggreation rule for type: %s for"
-                " key {%s=%s}"
-                % (
-                    type(agg_val),
-                    key,
-                    agg_val,
-                )
-            )
+            raise AssertionError("Fixme: missed aggreation rule for type: %s for" " key {%s=%s}" % (type(agg_val), key, agg_val))
 
     def _set_nModified_policy(self, insert, update):
         self._insert_returns_nModified = insert
@@ -380,9 +381,11 @@ class BulkOperationBuilder(object):
 
     def execute(self, write_concern=None):
         if not self.executors:
-            raise InvalidOperation("Bulk operation empty!")
+            msg = "Bulk operation empty!"
+            raise InvalidOperation(msg)
         if self.done:
-            raise InvalidOperation("Bulk operation already executed!")
+            msg = "Bulk operation already executed!"
+            raise InvalidOperation(msg)
         self.done = True
         result = {
             "nModified": 0,
@@ -408,7 +411,7 @@ class BulkOperationBuilder(object):
                         "index": index,
                         "code": error.code,
                         "errmsg": str(error),
-                    }
+                    },
                 )
                 if self.ordered:
                     break
@@ -423,11 +426,7 @@ class BulkOperationBuilder(object):
 
         if broken_nModified_info:
             result.pop("nModified")
-        elif has_insert and self._insert_returns_nModified:
-            pass
-        elif has_update and self._update_returns_nModified:
-            pass
-        elif self._update_returns_nModified and self._insert_returns_nModified:
+        elif has_insert and self._insert_returns_nModified or has_update and self._update_returns_nModified or self._update_returns_nModified and self._insert_returns_nModified:
             pass
         else:
             result.pop("nModified")
@@ -452,7 +451,7 @@ class BulkOperationBuilder(object):
     ):
         if array_filters:
             raise_not_implemented(
-                "array_filters", "Array filters are not implemented in mongomock yet."
+                "array_filters", "Array filters are not implemented in mongomock yet.",
             )
         write_operation = BulkWriteOperation(self, selector, is_upsert=upsert)
         write_operation.register_update_op(doc, multi, hint=hint)
@@ -482,8 +481,9 @@ class Collection(object):
         self._db_store = _db_store
         self._write_concern = write_concern or WriteConcern()
         if read_concern and not isinstance(read_concern, ReadConcern):
+            msg = "read_concern must be an instance of pymongo.read_concern.ReadConcern"
             raise TypeError(
-                "read_concern must be an instance of pymongo.read_concern.ReadConcern"
+                msg,
             )
         self._read_concern = read_concern or ReadConcern()
         self._read_preference = read_preference or _READ_PREFERENCE_PRIMARY
@@ -499,7 +499,7 @@ class Collection(object):
         if attr.startswith("_"):
             raise AttributeError(
                 "%s has no attribute '%s'. To access the %s.%s collection, use database['%s.%s']."
-                % (self.__class__.__name__, attr, self.name, attr, self.name, attr)
+                % (self.__class__.__name__, attr, self.name, attr, self.name, attr),
             )
         return self.__getitem__(attr)
 
@@ -507,7 +507,7 @@ class Collection(object):
         name = self._name if "." not in self._name else self._name.split(".")[-1]
         raise TypeError(
             "'Collection' object is not callable. If you meant to call the '%s' method on a "
-            "'Collection' object it is failing because no such method exists." % name
+            "'Collection' object it is failing because no such method exists." % name,
         )
 
     def __eq__(self, other):
@@ -515,7 +515,7 @@ class Collection(object):
             return self.database == other.database and self.name == other.name
         return NotImplemented
 
-    if helpers.PYMONGO_VERSION >= version.parse("3.12"):
+    if version.parse("3.12") <= helpers.PYMONGO_VERSION:
 
         def __hash__(self):
             return hash((self.database, self.name))
@@ -546,15 +546,15 @@ class Collection(object):
 
     def initialize_unordered_bulk_op(self, bypass_document_validation=False):
         return BulkOperationBuilder(
-            self, ordered=False, bypass_document_validation=bypass_document_validation
+            self, ordered=False, bypass_document_validation=bypass_document_validation,
         )
 
     def initialize_ordered_bulk_op(self, bypass_document_validation=False):
         return BulkOperationBuilder(
-            self, ordered=True, bypass_document_validation=bypass_document_validation
+            self, ordered=True, bypass_document_validation=bypass_document_validation,
         )
 
-    if helpers.PYMONGO_VERSION < version.parse("4.0"):
+    if version.parse("4.0") > helpers.PYMONGO_VERSION:
 
         def insert(
             self,
@@ -578,16 +578,17 @@ class Collection(object):
         return InsertOneResult(self._insert(document, session), acknowledged=True)
 
     def insert_many(
-        self, documents, ordered=True, bypass_document_validation=False, session=None
+        self, documents, ordered=True, bypass_document_validation=False, session=None,
     ):
         if not isinstance(documents, Iterable) or not documents:
-            raise TypeError("documents must be a non-empty list")
+            msg = "documents must be a non-empty list"
+            raise TypeError(msg)
         documents = list(documents)
         if not bypass_document_validation:
             for document in documents:
                 validate_is_mutable_mapping("document", document)
         return InsertManyResult(
-            self._insert(documents, session, ordered=ordered), acknowledged=True
+            self._insert(documents, session, ordered=ordered), acknowledged=True,
         )
 
     @property
@@ -611,7 +612,7 @@ class Collection(object):
                             "code": error.code,
                             "errmsg": str(error),
                             "op": item,
-                        }
+                        },
                     )
                     if ordered:
                         break
@@ -623,16 +624,17 @@ class Collection(object):
                     {
                         "writeErrors": write_errors,
                         "nInserted": num_inserted,
-                    }
+                    },
                 )
             return results
 
         if not all(isinstance(k, str) for k in data):
-            raise ValueError("Document keys must be strings")
+            msg = "Document keys must be strings"
+            raise ValueError(msg)
 
         if BSON:
             # bson validation
-            check_keys = helpers.PYMONGO_VERSION < version.parse("3.6")
+            check_keys = version.parse("3.6") > helpers.PYMONGO_VERSION
             if not check_keys:
                 _validate_data_fields(data)
 
@@ -647,7 +649,8 @@ class Collection(object):
         if isinstance(object_id, dict):
             object_id = helpers.hashdict(object_id)
         if object_id in self._store:
-            raise DuplicateKeyError("E11000 Duplicate Key Error", 11000)
+            msg = "E11000 Duplicate Key Error"
+            raise DuplicateKeyError(msg, 11000)
 
         data = helpers.patch_datetime_awareness_in_document(data)
 
@@ -680,7 +683,8 @@ class Collection(object):
                 find_kwargs = {"$and": [partial_filter_expression, find_kwargs]}
             answer_count = len(list(self._iter_documents(find_kwargs)))
             if answer_count > 1:
-                raise DuplicateKeyError("E11000 Duplicate Key Error", 11000)
+                msg = "E11000 Duplicate Key Error"
+                raise DuplicateKeyError(msg, 11000)
 
     def _internalize_dict(self, d):
         return {k: copy.deepcopy(v) for k, v in d.items()}
@@ -764,12 +768,12 @@ class Collection(object):
             validate_ok_for_replace(replacement)
         return UpdateResult(
             self._update(
-                filter, replacement, upsert=upsert, hint=hint, session=session
+                filter, replacement, upsert=upsert, hint=hint, session=session,
             ),
             acknowledged=True,
         )
 
-    if helpers.PYMONGO_VERSION < version.parse("4.0"):
+    if version.parse("4.0") > helpers.PYMONGO_VERSION:
 
         def update(
             self,
@@ -788,7 +792,7 @@ class Collection(object):
                 stacklevel=2,
             )
             return self._update(
-                spec, document, upsert, manipulate, multi, check_keys, **kwargs
+                spec, document, upsert, manipulate, multi, check_keys, **kwargs,
             )
 
     def _update(
@@ -809,9 +813,12 @@ class Collection(object):
         if session:
             raise_not_implemented("session", "Mongomock does not handle sessions yet")
         if hint:
-            raise NotImplementedError(
+            msg = (
                 "The hint argument of update is valid but has not been implemented in "
                 "mongomock yet"
+            )
+            raise NotImplementedError(
+                msg,
             )
         if collation:
             raise_not_implemented(
@@ -821,7 +828,7 @@ class Collection(object):
             )
         if array_filters:
             raise_not_implemented(
-                "array_filters", "Array filters are not implemented in mongomock yet."
+                "array_filters", "Array filters are not implemented in mongomock yet.",
             )
         if let:
             raise_not_implemented(
@@ -877,16 +884,19 @@ class Collection(object):
                     updater = _updaters[k]
                     subdocument = (
                         self._update_document_fields_with_positional_awareness(
-                            existing_document, v, spec, updater, subdocument
+                            existing_document, v, spec, updater, subdocument,
                         )
                     )
 
                 elif k == "$rename":
                     for src, dst in v.items():
                         if "." in src or "." in dst:
-                            raise NotImplementedError(
+                            msg = (
                                 "Using the $rename operator with dots is a valid MongoDB "
                                 "operation, but it is not yet supported by mongomock"
+                            )
+                            raise NotImplementedError(
+                                msg,
                             )
                         if self._has_key(existing_document, src):
                             existing_document[dst] = existing_document.pop(src)
@@ -896,7 +906,7 @@ class Collection(object):
                         continue
                     subdocument = (
                         self._update_document_fields_with_positional_awareness(
-                            existing_document, v, spec, _set_updater, subdocument
+                            existing_document, v, spec, _set_updater, subdocument,
                         )
                     )
 
@@ -918,15 +928,14 @@ class Collection(object):
                             if field not in existing_document:
                                 existing_document[field] = []
                             # document should be a list append to it
-                            if isinstance(value, dict):
-                                if "$each" in value:
-                                    # append the list to the field
-                                    existing_document[field] += [
-                                        obj
-                                        for obj in list(value["$each"])
-                                        if obj not in existing_document[field]
-                                    ]
-                                    continue
+                            if isinstance(value, dict) and "$each" in value:
+                                # append the list to the field
+                                existing_document[field] += [
+                                    obj
+                                    for obj in list(value["$each"])
+                                    if obj not in existing_document[field]
+                                ]
+                                continue
                             if value not in existing_document[field]:
                                 existing_document[field].append(value)
                             continue
@@ -944,7 +953,7 @@ class Collection(object):
 
                             # get subdocument with $ oprator support
                             subdocument, _ = self._get_subdocument(
-                                existing_document, spec, nested_field_list
+                                existing_document, spec, nested_field_list,
                             )
 
                             # we're pushing a list
@@ -971,7 +980,7 @@ class Collection(object):
                         if "$" in nested_field_list:
                             if not subdocument:
                                 subdocument, _ = self._get_subdocument(
-                                    existing_document, spec, nested_field_list
+                                    existing_document, spec, nested_field_list,
                                 )
 
                             # value should be a dictionary since we're pulling
@@ -1027,7 +1036,7 @@ class Collection(object):
                             continue
                         else:
                             subdocument, _ = self._get_subdocument(
-                                existing_document, spec, nested_field_list
+                                existing_document, spec, nested_field_list,
                             )
 
                             if nested_field_list[-1] in subdocument:
@@ -1040,7 +1049,7 @@ class Collection(object):
                         # Find the place where to push.
                         nested_field_list = field.rsplit(".")
                         subdocument, field = self._get_subdocument(
-                            existing_document, spec, nested_field_list
+                            existing_document, spec, nested_field_list,
                         )
 
                         # Push the new element or elements.
@@ -1064,13 +1073,13 @@ class Collection(object):
                                     push_results = sorted(
                                         push_results,
                                         key=lambda d: helpers.get_value_by_dot(
-                                            d, sort_key
+                                            d, sort_key,
                                         ),
                                         reverse=set(sort_spec.values()).pop() < 0,
                                     )
                                 else:
                                     push_results = sorted(
-                                        push_results, reverse=sort_spec < 0
+                                        push_results, reverse=sort_spec < 0,
                                     )
 
                             if "$slice" in value:
@@ -1091,7 +1100,7 @@ class Collection(object):
                             if unused_modifiers:
                                 raise WriteError(
                                     "Unrecognized clause in $push: "
-                                    + unused_modifiers.pop()
+                                    + unused_modifiers.pop(),
                                 )
                         else:
                             push_results.append(value)
@@ -1099,12 +1108,13 @@ class Collection(object):
                 else:
                     if first:
                         # replace entire document
-                        for key in document.keys():
+                        for key in document:
                             if key.startswith("$"):
                                 # can't mix modifiers with non-modifiers in
                                 # update
+                                msg = "field names cannot start with $ [{}]".format(k)
                                 raise ValueError(
-                                    "field names cannot start with $ [{}]".format(k)
+                                    msg,
                                 )
                         _id = spec.get("_id", existing_document.get("_id"))
                         existing_document.clear()
@@ -1112,21 +1122,25 @@ class Collection(object):
                             existing_document["_id"] = _id
                         if BSON:
                             # bson validation
-                            check_keys = helpers.PYMONGO_VERSION < version.parse("3.6")
+                            check_keys = version.parse("3.6") > helpers.PYMONGO_VERSION
                             if not check_keys:
                                 _validate_data_fields(document)
                             _bson_encode(document, self.codec_options)
                         existing_document.update(self._internalize_dict(document))
                         if existing_document["_id"] != _id:
-                            raise OperationFailure(
+                            msg = (
                                 "The _id field cannot be changed from {0} to {1}".format(
-                                    existing_document["_id"], _id
+                                    existing_document["_id"], _id,
                                 )
+                            )
+                            raise OperationFailure(
+                                msg,
                             )
                         break
                     else:
                         # can't mix modifiers with non-modifiers in update
-                        raise ValueError("Invalid modifier specified: {}".format(k))
+                        msg = "Invalid modifier specified: {}".format(k)
+                        raise ValueError(msg)
                 first = False
             # if empty document comes
             if not document:
@@ -1143,15 +1157,18 @@ class Collection(object):
 
                 # Make sure the ID was not change.
                 if original_document_snapshot.get("_id") != existing_document.get(
-                    "_id"
+                    "_id",
                 ):
                     # Rollback.
                     self._store[original_document_snapshot["_id"]] = (
                         original_document_snapshot
                     )
-                    raise WriteError(
+                    msg = (
                         "After applying the update, the (immutable) field '_id' was found to have "
                         "been altered to _id: {}".format(existing_document.get("_id"))
+                    )
+                    raise WriteError(
+                        msg,
                     )
 
                 # Make sure it still respect the unique indexes and, if not, to
@@ -1199,8 +1216,9 @@ class Collection(object):
         for index, subfield in enumerate(nested_field_list):
             if subfield == "$":
                 if not is_following_spec:
+                    msg = "The positional operator did not find the match needed from the query"
                     raise WriteError(
-                        "The positional operator did not find the match needed from the query"
+                        msg,
                     )
                 # Positional element should have the equivalent elemMatch in the query.
                 subspec = subspec["$elemMatch"]
@@ -1211,8 +1229,9 @@ class Collection(object):
                         subfield = spec_index
                         break
                 else:
+                    msg = "The positional operator did not find the match needed from the query"
                     raise WriteError(
-                        "The positional operator did not find the match needed from the query"
+                        msg,
                     )
 
             parent_doc = doc
@@ -1233,6 +1252,7 @@ class Collection(object):
             doc = parent_doc[subfield]
             if is_following_spec:
                 subspec = subspec[subfield]
+        return None
 
     def _expand_dots(self, doc):
         expanded = {}
@@ -1242,7 +1262,7 @@ class Collection(object):
             def _raise_incompatible(subkey):
                 raise WriteError(
                     "cannot infer query fields to set, both paths '%s' and '%s' are matched"
-                    % (k, paths[subkey])
+                    % (k, paths[subkey]),
                 )
 
             if k in paths:
@@ -1319,17 +1339,20 @@ class Collection(object):
                         dataset = iter(reversed(list(dataset)))
                     continue
                 if sort_key.startswith("$"):
-                    raise NotImplementedError(
+                    msg = (
                         "Sorting by {} is not implemented in mongomock yet".format(
-                            sort_key
+                            sort_key,
                         )
+                    )
+                    raise NotImplementedError(
+                        msg,
                     )
                 dataset = iter(
                     sorted(
                         dataset,
                         key=lambda x: filtering.resolve_sort_key(sort_key, x),
                         reverse=sort_direction < 0,
-                    )
+                    ),
                 )
         for document in dataset:
             yield self._copy_only_fields(document, fields, as_class)
@@ -1342,7 +1365,8 @@ class Collection(object):
             if isinstance(value, dict):
                 for op in value:
                     if op not in allowed_projection_operators:
-                        raise ValueError("Unsupported projection option: {}".format(op))
+                        msg = "Unsupported projection option: {}".format(op)
+                        raise ValueError(msg)
                 result[key] = value
 
         for key in result:
@@ -1363,19 +1387,25 @@ class Collection(object):
 
             if "$slice" in op:
                 if not isinstance(doc_copy[field], list):
-                    raise OperationFailure(
+                    msg = (
                         "Unsupported type {} for slicing operation: {}".format(
-                            type(doc_copy[field]), op
+                            type(doc_copy[field]), op,
                         )
+                    )
+                    raise OperationFailure(
+                        msg,
                     )
                 op_value = op["$slice"]
                 slice_ = None
                 if isinstance(op_value, list):
                     if len(op_value) != 2:
-                        raise OperationFailure(
+                        msg = (
                             "Unsupported slice format {} for slicing operation: {}".format(
-                                op_value, op
+                                op_value, op,
                             )
+                        )
+                        raise OperationFailure(
+                            msg,
                         )
                     skip, limit = op_value
                     if skip < 0:
@@ -1395,10 +1425,13 @@ class Collection(object):
                 if slice_:
                     doc_copy[field] = doc_copy[field][slice_]
                 else:
-                    raise OperationFailure(
+                    msg = (
                         "Unsupported slice value {} for slicing operation: {}".format(
-                            op_value, op
+                            op_value, op,
                         )
+                    )
+                    raise OperationFailure(
+                        msg,
                     )
 
             if "$elemMatch" in op:
@@ -1426,7 +1459,7 @@ class Collection(object):
         if (
             fields is None
             or not fields
-            and helpers.PYMONGO_VERSION >= version.parse("4.0")
+            and version.parse("4.0") <= helpers.PYMONGO_VERSION
         ):
             return _copy_field(doc, container)
 
@@ -1444,16 +1477,14 @@ class Collection(object):
 
         # other than the _id field, all fields must be either includes or
         # excludes, this can evaluate to 0
-        if len(set(list(fields.values()))) > 1:
-            raise ValueError("You cannot currently mix including and excluding fields.")
+        if len(set(fields.values())) > 1:
+            msg = "You cannot currently mix including and excluding fields."
+            raise ValueError(msg)
 
         # if we have novalues passed in, make a doc_copy based on the
         # id_value
         if not fields:
-            if id_value == 1:
-                doc_copy = container()
-            else:
-                doc_copy = _copy_field(doc, container)
+            doc_copy = container() if id_value == 1 else _copy_field(doc, container)
         else:
             doc_copy = _project_by_spec(
                 doc,
@@ -1483,7 +1514,7 @@ class Collection(object):
             self._update_document_single_field(doc, k, v, updater)
 
     def _update_document_fields_positional(
-        self, doc, fields, spec, updater, subdocument=None
+        self, doc, fields, spec, updater, subdocument=None,
     ):
         """Implements the $set behavior on an existing document"""
         for k, v in fields.items():
@@ -1528,13 +1559,13 @@ class Collection(object):
         return subdocument
 
     def _update_document_fields_with_positional_awareness(
-        self, existing_document, v, spec, updater, subdocument
+        self, existing_document, v, spec, updater, subdocument,
     ):
-        positional = any("$" in key for key in v.keys())
+        positional = any("$" in key for key in v)
 
         if positional:
             return self._update_document_fields_positional(
-                existing_document, v, spec, updater, subdocument
+                existing_document, v, spec, updater, subdocument,
             )
         self._update_document_fields(existing_document, v, updater)
         return subdocument
@@ -1544,10 +1575,7 @@ class Collection(object):
         for part in field_name_parts[:-1]:
             if isinstance(doc, list):
                 try:
-                    if part == "$":
-                        doc = doc[0]
-                    else:
-                        doc = doc[int(part)]
+                    doc = doc[0] if part == "$" else doc[int(part)]
                     continue
                 except ValueError:
                     pass
@@ -1603,7 +1631,7 @@ class Collection(object):
         validate_is_mapping("filter", filter)
         validate_ok_for_replace(replacement)
         return self._find_and_modify(
-            filter, projection, replacement, upsert, sort, return_document, **kwargs
+            filter, projection, replacement, upsert, sort, return_document, **kwargs,
         )
 
     def find_one_and_update(
@@ -1619,14 +1647,14 @@ class Collection(object):
         validate_is_mapping("filter", filter)
         validate_ok_for_update(update)
         return self._find_and_modify(
-            filter, projection, update, upsert, sort, return_document, **kwargs
+            filter, projection, update, upsert, sort, return_document, **kwargs,
         )
 
-    if helpers.PYMONGO_VERSION < version.parse("4.0"):
+    if version.parse("4.0") > helpers.PYMONGO_VERSION:
 
         def find_and_modify(
             self,
-            query={},
+            query=None,
             update=None,
             upsert=False,
             sort=None,
@@ -1635,6 +1663,8 @@ class Collection(object):
             fields=None,
             **kwargs,
         ):
+            if query is None:
+                query = {}
             warnings.warn(
                 "find_and_modify is deprecated, use find_one_and_delete"
                 ", find_one_and_replace, or find_one_and_update instead",
@@ -1642,8 +1672,9 @@ class Collection(object):
                 stacklevel=2,
             )
             if "projection" in kwargs:
+                msg = "find_and_modify() got an unexpected keyword argument 'projection'"
                 raise TypeError(
-                    "find_and_modify() got an unexpected keyword argument 'projection'"
+                    msg,
                 )
             return self._find_and_modify(
                 query,
@@ -1670,17 +1701,20 @@ class Collection(object):
         remove = kwargs.get("remove", False)
         if kwargs.get("new", False) and remove:
             # message from mongodb
-            raise OperationFailure("remove and returnNew can't co-exist")
+            msg = "remove and returnNew can't co-exist"
+            raise OperationFailure(msg)
 
         if not (remove or update):
-            raise ValueError("Must either update or remove")
+            msg = "Must either update or remove"
+            raise ValueError(msg)
 
         if remove and update:
-            raise ValueError("Can't do both update and remove")
+            msg = "Can't do both update and remove"
+            raise ValueError(msg)
 
         old = self.find_one(query, projection=projection, sort=sort)
         if not old and not upsert:
-            return
+            return None
 
         if old and "_id" in old:
             query = {"_id": old["_id"]}
@@ -1696,7 +1730,7 @@ class Collection(object):
             return self.find_one(query, projection)
         return old
 
-    if helpers.PYMONGO_VERSION < version.parse("4.0"):
+    if version.parse("4.0") > helpers.PYMONGO_VERSION:
 
         def save(self, to_save, manipulate=True, check_keys=True, **kwargs):
             warnings.warn(
@@ -1722,23 +1756,26 @@ class Collection(object):
     def delete_one(self, filter, collation=None, hint=None, session=None):
         validate_is_mapping("filter", filter)
         return DeleteResult(
-            self._delete(filter, collation=collation, hint=hint, session=session), True
+            self._delete(filter, collation=collation, hint=hint, session=session), True,
         )
 
     def delete_many(self, filter, collation=None, hint=None, session=None):
         validate_is_mapping("filter", filter)
         return DeleteResult(
             self._delete(
-                filter, collation=collation, hint=hint, multi=True, session=session
+                filter, collation=collation, hint=hint, multi=True, session=session,
             ),
             True,
         )
 
     def _delete(self, filter, collation=None, hint=None, multi=False, session=None):
         if hint:
-            raise NotImplementedError(
+            msg = (
                 "The hint argument of delete is valid but has not been implemented in "
                 "mongomock yet"
+            )
+            raise NotImplementedError(
+                msg,
             )
         if collation:
             raise_not_implemented(
@@ -1771,7 +1808,7 @@ class Collection(object):
             "err": None,
         }
 
-    if helpers.PYMONGO_VERSION < version.parse("4.0"):
+    if version.parse("4.0") > helpers.PYMONGO_VERSION:
 
         def remove(self, spec_or_id=None, multi=True, **kwargs):
             warnings.warn(
@@ -1793,7 +1830,7 @@ class Collection(object):
             )
             if kwargs.pop("session", None):
                 raise_not_implemented(
-                    "session", "Mongomock does not handle sessions yet"
+                    "session", "Mongomock does not handle sessions yet",
                 )
             if filter is None:
                 return len(self._store)
@@ -1813,9 +1850,11 @@ class Collection(object):
         if "limit" in kwargs:
             limit = kwargs.pop("limit")
             if not isinstance(limit, (int, float)):
-                raise OperationFailure("the limit must be specified as a number")
+                msg = "the limit must be specified as a number"
+                raise OperationFailure(msg)
             if limit <= 0:
-                raise OperationFailure("the limit must be positive")
+                msg = "the limit must be positive"
+                raise OperationFailure(msg)
             limit = math.floor(limit)
         else:
             limit = None
@@ -1830,15 +1869,16 @@ class Collection(object):
 
     def estimated_document_count(self, **kwargs):
         if kwargs.pop("session", None):
+            msg = "estimated_document_count does not support sessions"
             raise ConfigurationError(
-                "estimated_document_count does not support sessions"
+                msg,
             )
         unknown_kwargs = set(kwargs) - {"limit", "maxTimeMS", "hint"}
         if self.database.client.server_info()["versionArray"] < [5]:
             unknown_kwargs.discard("skip")
         if unknown_kwargs:
             raise OperationFailure(
-                "BSON field 'count.%s' is an unknown field." % list(unknown_kwargs)[0]
+                "BSON field 'count.%s' is an unknown field." % list(unknown_kwargs)[0],
             )
         return self.count_documents({}, **kwargs)
 
@@ -1847,7 +1887,7 @@ class Collection(object):
             raise_not_implemented("session", "Mongomock does not handle sessions yet")
         self.database.drop_collection(self.name)
 
-    if helpers.PYMONGO_VERSION < version.parse("4.0"):
+    if version.parse("4.0") > helpers.PYMONGO_VERSION:
 
         def ensure_index(self, key_or_list, cache_for=300, **kwargs):
             return self.create_index(key_or_list, cache_for, **kwargs)
@@ -1872,13 +1912,13 @@ class Collection(object):
             and kwargs["partialFilterExpression"] is not None
         ):
             index_dict["partialFilterExpression"] = kwargs.pop(
-                "partialFilterExpression"
+                "partialFilterExpression",
             )
 
         existing_index = self._store.indexes.get(index_name)
         if existing_index and index_dict != existing_index:
             raise OperationFailure(
-                "Index with name: %s already exists with different options" % index_name
+                "Index with name: %s already exists with different options" % index_name,
             )
 
         # Check that documents already verify the uniquess of this new index.
@@ -1888,7 +1928,7 @@ class Collection(object):
             documents_gen = self._store.documents
             for doc in documents_gen:
                 index = []
-                for key, unused_order in index_list:
+                for key, _unused_order in index_list:
                     try:
                         index.append(helpers.get_value_by_dot(doc, key))
                     except KeyError:
@@ -1925,7 +1965,7 @@ class Collection(object):
         for index in indexes:
             if not isinstance(index, IndexModel):
                 raise TypeError(
-                    "%s is not an instance of pymongo.operations.IndexModel" % index
+                    "%s is not an instance of pymongo.operations.IndexModel" % index,
                 )
 
         return [
@@ -1943,10 +1983,7 @@ class Collection(object):
     def drop_index(self, index_or_name, session=None):
         if session:
             raise_not_implemented("session", "Mongomock does not handle sessions yet")
-        if isinstance(index_or_name, list):
-            name = helpers.gen_index_name(index_or_name)
-        else:
-            name = index_or_name
+        name = helpers.gen_index_name(index_or_name) if isinstance(index_or_name, list) else index_or_name
         try:
             self._store.drop_index(name)
         except KeyError as err:
@@ -1957,12 +1994,12 @@ class Collection(object):
             raise_not_implemented("session", "Mongomock does not handle sessions yet")
         self._store.indexes = {}
 
-    if helpers.PYMONGO_VERSION < version.parse("4.0"):
+    if version.parse("4.0") > helpers.PYMONGO_VERSION:
 
         def reindex(self, session=None):
             if session:
                 raise_not_implemented(
-                    "session", "Mongomock does not handle sessions yet"
+                    "session", "Mongomock does not handle sessions yet",
                 )
 
     def _list_all_indexes(self):
@@ -1983,7 +2020,7 @@ class Collection(object):
             raise_not_implemented("session", "Mongomock does not handle sessions yet")
         return {name: dict(index, v=2) for name, index in self._list_all_indexes()}
 
-    if helpers.PYMONGO_VERSION < version.parse("4.0"):
+    if version.parse("4.0") > helpers.PYMONGO_VERSION:
 
         def map_reduce(
             self,
@@ -1996,13 +2033,16 @@ class Collection(object):
             session=None,
         ):
             if execjs is None:
-                raise NotImplementedError(
+                msg = (
                     "PyExecJS is required in order to run Map-Reduce. "
                     "Use 'pip install pyexecjs pymongo' to support Map-Reduce mock."
                 )
+                raise NotImplementedError(
+                    msg,
+                )
             if session:
                 raise_not_implemented(
-                    "session", "Mongomock does not handle sessions yet"
+                    "session", "Mongomock does not handle sessions yet",
                 )
             if limit == 0:
                 limit = None
@@ -2039,7 +2079,7 @@ class Collection(object):
                     }
                     return mappedDict;
                 }
-            """
+            """,
             )
             reduce_ctx = execjs.compile(
                 """
@@ -2053,7 +2093,7 @@ class Collection(object):
                     }
                     return reducedList;
                 }
-            """
+            """,
             )
             doc_list = [
                 json.dumps(doc, default=json_util.default) for doc in self.find(query)
@@ -2066,7 +2106,7 @@ class Collection(object):
             reduced_rows = sorted(reduced_rows, key=lambda x: x["_id"])
             if full_response:
                 full_dict["counts"]["input"] = len(doc_list)
-                for key in mapped_rows.keys():
+                for key in mapped_rows:
                     emit_count = len(mapped_rows[key])
                     full_dict["counts"]["emit"] += emit_count
                     if emit_count > 1:
@@ -2089,7 +2129,8 @@ class Collection(object):
                 ret_val = reduced_rows
                 full_dict["result"] = reduced_rows
             else:
-                raise TypeError("'out' must be an instance of string, dict or bson.SON")
+                msg = "'out' must be an instance of string, dict or bson.SON"
+                raise TypeError(msg)
             time_millis = (time.perf_counter() - start_time) * 1000
             full_dict["timeMillis"] = int(round(time_millis))
             if full_response:
@@ -2120,15 +2161,19 @@ class Collection(object):
             raise_not_implemented("session", "Mongomock does not handle sessions yet")
         return self.find(filter).distinct(key)
 
-    if helpers.PYMONGO_VERSION < version.parse("4.0"):
+    if version.parse("4.0") > helpers.PYMONGO_VERSION:
 
         def group(self, key, condition, initial, reduce, finalize=None):
-            if helpers.PYMONGO_VERSION >= version.parse("3.6"):
-                raise OperationFailure("no such command: 'group'")
+            if version.parse("3.6") <= helpers.PYMONGO_VERSION:
+                msg = "no such command: 'group'"
+                raise OperationFailure(msg)
             if execjs is None:
-                raise NotImplementedError(
+                msg = (
                     "PyExecJS is required in order to use group. "
                     "Use 'pip install pyexecjs pymongo' to support group mock."
+                )
+                raise NotImplementedError(
+                    msg,
                 )
             reduce_ctx = execjs.compile(
                 """
@@ -2144,14 +2189,14 @@ class Collection(object):
                     }
                 return docList[docList.length - 1];
                 }
-            """
+            """,
             )
 
             ret_array = []
             doc_list_copy = []
             ret_array_copy = []
             reduced_val = {}
-            doc_list = [doc for doc in self.find(condition)]
+            doc_list = list(self.find(condition))
             for doc in doc_list:
                 doc_copy = copy.deepcopy(doc)
                 for doc_key in doc:
@@ -2160,7 +2205,7 @@ class Collection(object):
                     if doc_key not in key and doc_key not in reduce:
                         del doc_copy[doc_key]
                 for initial_key in initial:
-                    if initial_key in doc.keys():
+                    if initial_key in doc:
                         pass
                     else:
                         doc_copy[initial_key] = initial[initial_key]
@@ -2170,26 +2215,26 @@ class Collection(object):
                 doc_list = sorted(doc_list, key=lambda x: filtering.resolve_key(k1, x))
             for k2 in key:
                 if not isinstance(k2, str):
+                    msg = "Keys must be a list of key names, each an instance of str"
                     raise TypeError(
-                        "Keys must be a list of key names, each an instance of str"
+                        msg,
                     )
                 for _, group in itertools.groupby(doc_list, lambda item: item[k2]):
-                    group_list = [x for x in group]
+                    group_list = list(group)
                     reduced_val = reduce_ctx.call("doReduce", reduce, group_list)
                     ret_array.append(reduced_val)
             for doc in ret_array:
                 doc_copy = copy.deepcopy(doc)
                 for k in doc:
-                    if k not in key and k not in initial.keys():
+                    if k not in key and k not in initial:
                         del doc_copy[k]
                 ret_array_copy.append(doc_copy)
-            ret_array = ret_array_copy
-            return ret_array
+            return ret_array_copy
 
     def aggregate(self, pipeline, session=None, **unused_kwargs):
-        in_collection = [doc for doc in self.find()]
+        in_collection = list(self.find())
         return aggregate.process_pipeline(
-            in_collection, self.database, pipeline, session
+            in_collection, self.database, pipeline, session,
         )
 
     def with_options(
@@ -2207,8 +2252,9 @@ class Collection(object):
             has_changes = True
             for attr in options.attrs:
                 if not hasattr(value, attr):
+                    msg = "{} must be an instance of {}".format(key, options.typename)
                     raise TypeError(
-                        "{} must be an instance of {}".format(key, options.typename)
+                        msg,
                     )
 
         mongomock_codec_options.is_supported(codec_options)
@@ -2234,12 +2280,15 @@ class Collection(object):
         return self.database.rename_collection(self.name, new_name, **kwargs)
 
     def bulk_write(
-        self, requests, ordered=True, bypass_document_validation=False, session=None
+        self, requests, ordered=True, bypass_document_validation=False, session=None,
     ):
         if bypass_document_validation:
-            raise NotImplementedError(
+            msg = (
                 "Skipping document validation is a valid MongoDB operation;"
                 " however Mongomock does not support it yet."
+            )
+            raise NotImplementedError(
+                msg,
             )
         if session:
             raise_not_implemented(
@@ -2278,13 +2327,15 @@ class Collection(object):
         comment=None,
         allow_disk_use=False,
     ):
+        msg = "find_raw_batches method is not implemented in mongomock yet"
         raise NotImplementedError(
-            "find_raw_batches method is not implemented in mongomock yet"
+            msg,
         )
 
     def aggregate_raw_batches(self, pipeline, **kwargs):
+        msg = "aggregate_raw_batches method is not implemented in mongomock yet"
         raise NotImplementedError(
-            "aggregate_raw_batches method is not implemented in mongomock yet"
+            msg,
         )
 
 
@@ -2312,7 +2363,7 @@ class Cursor(object):
         self._factory_last_generated_results = None
         self._results = None
         self._factory = functools.partial(
-            collection._get_dataset, spec, sort, projection, dict
+            collection._get_dataset, spec, sort, projection, dict,
         )
         # pymongo limit defaults to 0, returning everything
         self._limit = limit if limit != 0 else None
@@ -2371,14 +2422,15 @@ class Cursor(object):
     def sort(self, key_or_list, direction=None):
         sort = helpers.create_index_list(key_or_list, direction)
         if not sort:
-            raise ValueError("key_or_list must not be the empty list")
+            msg = "key_or_list must not be the empty list"
+            raise ValueError(msg)
         self._sort = sort
         self._factory = functools.partial(
-            self.collection._get_dataset, self._spec, self._sort, self._projection, dict
+            self.collection._get_dataset, self._spec, self._sort, self._projection, dict,
         )
         return self
 
-    if helpers.PYMONGO_VERSION < version.parse("4.0"):
+    if version.parse("4.0") > helpers.PYMONGO_VERSION:
 
         def count(self, with_limit_and_skip=False):
             warnings.warn(
@@ -2405,7 +2457,8 @@ class Cursor(object):
 
     def hint(self, unused_hint):
         if self._emitted:
-            raise InvalidOperation("cannot set options after executing query")
+            msg = "cannot set options after executing query"
+            raise InvalidOperation(msg)
         # TODO(pascal): Once we implement $text indexes and queries, raise an
         # exception if hint is used on a $text query.
         # https://docs.mongodb.com/manual/reference/method/cursor.hint/#behavior
@@ -2415,7 +2468,8 @@ class Cursor(object):
         if session:
             raise_not_implemented("session", "Mongomock does not handle sessions yet")
         if not isinstance(key, str):
-            raise TypeError("cursor.distinct key must be a string")
+            msg = "cursor.distinct key must be a string"
+            raise TypeError(msg)
         unique = set()
         for x in self._compute_results():
             for values in filtering.iter_key_candidates(key, x):
@@ -2433,13 +2487,15 @@ class Cursor(object):
     def __getitem__(self, index):
         if isinstance(index, slice):
             if index.step is not None:
-                raise IndexError("Cursor instances do not support slice steps")
+                msg = "Cursor instances do not support slice steps"
+                raise IndexError(msg)
 
             skip = 0
             if index.start is not None:
                 if index.start < 0:
+                    msg = "Cursor instances do not support" "negative indices"
                     raise IndexError(
-                        "Cursor instances do not support" "negative indices"
+                        msg,
                     )
                 skip = index.start
 
@@ -2448,7 +2504,7 @@ class Cursor(object):
                 if limit < 0:
                     raise IndexError(
                         "stop index must be greater than start"
-                        "index for slice %r" % index
+                        "index for slice %r" % index,
                     )
                 if limit == 0:
                     self.__empty = True
@@ -2461,7 +2517,8 @@ class Cursor(object):
         if not isinstance(index, int):
             raise TypeError("index '%s' cannot be applied to Cursor instances" % index)
         if index < 0:
-            raise IndexError("Cursor instances do not support negativeindices")
+            msg = "Cursor instances do not support negativeindices"
+            raise IndexError(msg)
         return self._compute_results(with_limit_and_skip=True)[index]
 
     def __enter__(self):
@@ -2480,13 +2537,15 @@ class Cursor(object):
 
     def max_time_ms(self, max_time_ms):
         if max_time_ms is not None and not isinstance(max_time_ms, int):
-            raise TypeError("max_time_ms must be an integer or None")
+            msg = "max_time_ms must be an integer or None"
+            raise TypeError(msg)
         # Currently the value is ignored as mongomock never times out.
         return self
 
     def allow_disk_use(self, allow_disk_use=False):
         if allow_disk_use is not None and not isinstance(allow_disk_use, bool):
-            raise TypeError("allow_disk_use must be a bool")
+            msg = "allow_disk_use must be a bool"
+            raise TypeError(msg)
         return self
 
 
@@ -2495,20 +2554,23 @@ def _set_updater(doc, field_name, value, codec_options=None):
         value = copy.deepcopy(value)
     if BSON:
         # bson validation
-        check_keys = helpers.PYMONGO_VERSION < version.parse("3.6")
-        if not check_keys:
-            if "\0" in field_name or field_name.startswith("$"):
-                raise InvalidDocument(
-                    f"Field name cannot contain the null character and top-level field name "
-                    f'cannot start with "$" (found: {field_name})'
-                )
+        check_keys = version.parse("3.6") > helpers.PYMONGO_VERSION
+        if not check_keys and ("\0" in field_name or field_name.startswith("$")):
+            msg = (
+                f"Field name cannot contain the null character and top-level field name "
+                f'cannot start with "$" (found: {field_name})'
+            )
+            raise InvalidDocument(
+                msg,
+            )
         _bson_encode({field_name: value}, codec_options)
     if isinstance(doc, dict):
         doc[field_name] = value
     if isinstance(doc, list):
         field_index = int(field_name)
         if field_index < 0:
-            raise WriteError("Negative index provided")
+            msg = "Negative index provided"
+            raise WriteError(msg)
         len_diff = field_index - (len(doc) - 1)
         if len_diff > 0:
             doc += [None] * len_diff
@@ -2527,7 +2589,8 @@ def _inc_updater(doc, field_name, value, codec_options=None):
     if isinstance(doc, list):
         field_index = int(field_name)
         if field_index < 0:
-            raise WriteError("Negative index provided")
+            msg = "Negative index provided"
+            raise WriteError(msg)
         try:
             doc[field_index] += value
         except IndexError:
@@ -2555,12 +2618,14 @@ def _pop_updater(doc, field_name, value, codec_options=None):
             doc[field_name] = list(doc[field_name])
             _pop_from_list(doc[field_name], value)
             return
-        raise WriteError("Path contains element of non-array type")
+        msg = "Path contains element of non-array type"
+        raise WriteError(msg)
 
     if isinstance(doc, list):
         field_index = int(field_name)
         if field_index < 0:
-            raise WriteError("Negative index provided")
+            msg = "Negative index provided"
+            raise WriteError(msg)
         if field_index >= len(doc):
             return
         _pop_from_list(doc[field_index], value)

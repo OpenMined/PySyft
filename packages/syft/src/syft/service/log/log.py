@@ -37,6 +37,6 @@ class SyftLog(SyncableSyftObject):
         self.stdout = ""
 
     def get_sync_dependencies(
-        self, context: AuthedServiceContext, **kwargs: dict
+        self, context: AuthedServiceContext, **kwargs: dict,
     ) -> list[UID]:  # type: ignore
         return [self.job_id]

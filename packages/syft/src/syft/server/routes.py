@@ -61,8 +61,7 @@ def make_routes(worker: Worker) -> APIRouter:
         network_service = worker.get_service("NetworkService")
         peer = network_service.stash.get_by_uid(worker.verify_key, peer_uid).ok()
         peer_server_route = peer.pick_highest_priority_route()
-        connection = route_to_connection(route=peer_server_route)
-        return connection
+        return route_to_connection(route=peer_server_route)
 
     @router.get("/stream/{peer_uid}/{url_path}/", name="stream")
     async def stream_download(peer_uid: str, url_path: str) -> StreamingResponse:
@@ -143,11 +142,11 @@ def make_routes(worker: Worker) -> APIRouter:
         )
 
     def handle_syft_new_api(
-        user_verify_key: SyftVerifyKey, communication_protocol: PROTOCOL_TYPE
+        user_verify_key: SyftVerifyKey, communication_protocol: PROTOCOL_TYPE,
     ) -> Response:
         return Response(
             serialize(
-                worker.get_api(user_verify_key, communication_protocol), to_bytes=True
+                worker.get_api(user_verify_key, communication_protocol), to_bytes=True,
             ),
             media_type="application/octet-stream",
         )
@@ -155,7 +154,7 @@ def make_routes(worker: Worker) -> APIRouter:
     # get the SyftAPI object
     @router.get("/api")
     def syft_new_api(
-        request: Request, verify_key: str, communication_protocol: PROTOCOL_TYPE
+        request: Request, verify_key: str, communication_protocol: PROTOCOL_TYPE,
     ) -> Response:
         user_verify_key: SyftVerifyKey = SyftVerifyKey.from_string(verify_key)
         if TRACE_MODE:
@@ -179,7 +178,7 @@ def make_routes(worker: Worker) -> APIRouter:
     # make a request to the SyftAPI
     @router.post("/api_call")
     def syft_new_api_call(
-        request: Request, data: Annotated[bytes, Depends(get_body)]
+        request: Request, data: Annotated[bytes, Depends(get_body)],
     ) -> Response:
         if TRACE_MODE:
             with trace.get_tracer(syft_new_api_call.__module__).start_as_current_span(
@@ -199,7 +198,7 @@ def make_routes(worker: Worker) -> APIRouter:
 
         method = server.get_service_method(UserService.exchange_credentials)
         context = UnauthedServiceContext(
-            server=server, login_credentials=login_credentials
+            server=server, login_credentials=login_credentials,
         )
         result = method(context=context)
 
@@ -209,7 +208,8 @@ def make_routes(worker: Worker) -> APIRouter:
         else:
             user_private_key = result
             if not isinstance(user_private_key, UserPrivateKey):
-                raise Exception(f"Incorrect return type: {type(user_private_key)}")
+                msg = f"Incorrect return type: {type(user_private_key)}"
+                raise Exception(msg)
             response = user_private_key
 
         return Response(
@@ -221,7 +221,8 @@ def make_routes(worker: Worker) -> APIRouter:
         user_create = deserialize(data, from_bytes=True)
 
         if not isinstance(user_create, UserCreate):
-            raise Exception(f"Incorrect type received: {user_create}")
+            msg = f"Incorrect type received: {user_create}"
+            raise Exception(msg)
 
         context = ServerServiceContext(server=server)
         method = server.get_method_with_context(UserService.register, context)
@@ -230,7 +231,7 @@ def make_routes(worker: Worker) -> APIRouter:
 
         if isinstance(result, SyftError):
             logger.error(
-                f"Register Error: {result.message}. user={user_create.model_dump()}"
+                f"Register Error: {result.message}. user={user_create.model_dump()}",
             )
             response = SyftError(message=f"{result.message}")
         else:
@@ -260,7 +261,7 @@ def make_routes(worker: Worker) -> APIRouter:
 
     @router.post("/register", name="register", status_code=200)
     def register(
-        request: Request, data: Annotated[bytes, Depends(get_body)]
+        request: Request, data: Annotated[bytes, Depends(get_body)],
     ) -> Response:
         if TRACE_MODE:
             with trace.get_tracer(register.__module__).start_as_current_span(

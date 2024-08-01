@@ -74,8 +74,7 @@ class TwinAPIContextView(SyftObject):
 
 def get_signature(func: Callable) -> Signature:
     sig = inspect.signature(func)
-    sig = signature_remove_context(sig)
-    return sig
+    return signature_remove_context(sig)
 
 
 def register_fn_in_linecache(fname: str, src: str) -> None:
@@ -183,7 +182,8 @@ class Endpoint(SyftObject):
             valid_code = False
 
         if not valid_code:
-            raise ValueError("Code must be a valid Python function.")
+            msg = "Code must be a valid Python function."
+            raise ValueError(msg)
 
         return api_code
 
@@ -191,13 +191,14 @@ class Endpoint(SyftObject):
     @classmethod
     def validate_func_name(cls, func_name: str) -> str:
         if not str.isidentifier(func_name) or keyword.iskeyword(func_name):
-            raise ValueError("Invalid function name.")
+            msg = "Invalid function name."
+            raise ValueError(msg)
         return func_name
 
     @field_validator("settings", check_fields=False)
     @classmethod
     def validate_settings(
-        cls, settings: dict[str, Any] | None
+        cls, settings: dict[str, Any] | None,
     ) -> dict[str, Any] | None:
         return settings
 
@@ -247,12 +248,12 @@ class Endpoint(SyftObject):
         from ..context import AuthedServiceContext
 
         mock_context = AuthedServiceContext(
-            server=AbstractServer(), credentials=SyftSigningKey.generate().verify_key
+            server=AbstractServer(), credentials=SyftSigningKey.generate().verify_key,
         )
         return self.call_locally(mock_context, *args, **kwargs)
 
     def call_locally(
-        self, context: AuthedServiceContext, *args: Any, **kwargs: Any
+        self, context: AuthedServiceContext, *args: Any, **kwargs: Any,
     ) -> Any:
         inner_function = ast.parse(self.api_code).body[0]
         inner_function.decorator_list = []
@@ -303,8 +304,9 @@ class BaseTwinAPIEndpoint(SyftObject):
 
         # Add none check
         if private_function and private_function.signature != mock_function.signature:
+            msg = "Mock and Private API Endpoints must have the same signature."
             raise ValueError(
-                "Mock and Private API Endpoints must have the same signature."
+                msg,
             )
 
         return data
@@ -315,20 +317,23 @@ class BaseTwinAPIEndpoint(SyftObject):
         # TODO: Check path doesn't collide with system endpoints
 
         if path.startswith(".") or path.endswith("."):
-            raise ValueError("Path cannot start or end with a '.'")
+            msg = "Path cannot start or end with a '.'"
+            raise ValueError(msg)
         if not path.islower():
-            raise ValueError("Path must be lowercase")
+            msg = "Path must be lowercase"
+            raise ValueError(msg)
         parts = path.split(".")
         for part in parts:
             if not str.isidentifier(part) or keyword.iskeyword(part):
-                raise ValueError(f"Invalid path: {part} is not a valid identifier")
+                msg = f"Invalid path: {part} is not a valid identifier"
+                raise ValueError(msg)
 
         return path
 
     @field_validator("private_function", check_fields=False)
     @classmethod
     def validate_private_function(
-        cls, private_function: PrivateAPIEndpoint | None
+        cls, private_function: PrivateAPIEndpoint | None,
     ) -> PrivateAPIEndpoint | None:
         # TODO: what kind of validation should we do here?
 
@@ -337,7 +342,7 @@ class BaseTwinAPIEndpoint(SyftObject):
     @field_validator("mock_function", check_fields=False)
     @classmethod
     def validate_mock_function(
-        cls, mock_function: PublicAPIEndpoint
+        cls, mock_function: PublicAPIEndpoint,
     ) -> PublicAPIEndpoint:
         # TODO: what kind of validation should we do here?
         return mock_function
@@ -371,7 +376,7 @@ class CreateTwinAPIEndpoint(BaseTwinAPIEndpoint):
     endpoint_timeout: int = 60
 
     def __init__(
-        self, description: str | MarkdownDescription | None = "", **kwargs: Any
+        self, description: str | MarkdownDescription | None = "", **kwargs: Any,
     ) -> None:
         if isinstance(description, str):
             description = MarkdownDescription(text=description)
@@ -422,9 +427,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
         Returns:
             bool: True if the user has permission to access the endpoint, False otherwise.
         """
-        if context.role.value == 128:
-            return True
-        return False
+        return context.role.value == 128
 
     def select_code(self, context: AuthedServiceContext) -> Result[Ok, Err]:
         """Select the code to execute based on the user's permissions and public code availability.
@@ -456,7 +459,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
         return self.exec_code(selected_code, context, *args, **kwargs)
 
     def exec_mock_function(
-        self, context: AuthedServiceContext, *args: Any, **kwargs: Any
+        self, context: AuthedServiceContext, *args: Any, **kwargs: Any,
     ) -> Any:
         """Execute the public code if it exists."""
         if self.mock_function:
@@ -465,7 +468,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
         return SyftError(message="No public code available")
 
     def exec_private_function(
-        self, context: AuthedServiceContext, *args: Any, **kwargs: Any
+        self, context: AuthedServiceContext, *args: Any, **kwargs: Any,
     ) -> Any:
         """Execute the private code if user is has the proper permissions.
 
@@ -489,10 +492,10 @@ class TwinAPIEndpoint(SyncableSyftObject):
         guest_client = context.server.get_guest_client()
         user_client = guest_client
         signing_key_for_verify_key = context.server.get_service_method(
-            UserService.signing_key_for_verify_key
+            UserService.signing_key_for_verify_key,
         )
         private_key = signing_key_for_verify_key(
-            context=context, verify_key=context.credentials
+            context=context, verify_key=context.credentials,
         )
         signing_key = private_key.signing_key
         user_client.credentials = signing_key
@@ -524,7 +527,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
             exec(raw_byte_code)  # nosec
 
             internal_context = code.build_internal_context(
-                context=context, admin_client=admin_client, user_client=user_client
+                context=context, admin_client=admin_client, user_client=user_client,
             )
 
             # execute it
@@ -541,7 +544,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
 
             api_service = context.server.get_service("apiservice")
             upsert_result = api_service.stash.upsert(
-                context.server.get_service("userservice").admin_verify_key(), self
+                context.server.get_service("userservice").admin_verify_key(), self,
             )
 
             if upsert_result.is_err():
@@ -554,11 +557,11 @@ class TwinAPIEndpoint(SyncableSyftObject):
             # TODO: cleanup typeerrors
             if context.role.value == 128 or isinstance(e, TypeError):
                 return SyftError(
-                    message=f"An error was raised during the execution of the API endpoint call: \n {str(e)}"
+                    message=f"An error was raised during the execution of the API endpoint call: \n {str(e)}",
                 )
             else:
                 return SyftError(
-                    message="Ops something went wrong during this endpoint execution, please contact your admin."
+                    message="Ops something went wrong during this endpoint execution, please contact your admin.",
                 )
 
 
@@ -575,8 +578,9 @@ def check_and_cleanup_signature(context: TransformContext) -> TransformContext:
     if context.output is not None and context.obj is not None:
         params = dict(context.obj.signature.parameters)
         if "context" not in params:
+            msg = "Function Signature must include 'context' [AuthedContext] parameters."
             raise ValueError(
-                "Function Signature must include 'context' [AuthedContext] parameters."
+                msg,
             )
         params.pop("context", None)
         context.output["signature"] = Signature(
@@ -659,8 +663,8 @@ def endpoint_to_private_endpoint() -> list[Callable]:
                 "helper_functions",
                 "state",
                 "signature",
-            ]
-        )
+            ],
+        ),
     ]
 
 
@@ -676,8 +680,8 @@ def endpoint_to_public_endpoint() -> list[Callable]:
                 "helper_functions",
                 "state",
                 "signature",
-            ]
-        )
+            ],
+        ),
     ]
 
 

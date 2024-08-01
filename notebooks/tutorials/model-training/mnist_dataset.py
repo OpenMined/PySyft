@@ -52,7 +52,7 @@ def mnist_raw() -> tuple[ndarray, ndarray, ndarray, ndarray]:
         with gzip.open(filename, "rb") as fh:
             _, num_data, rows, cols = struct.unpack(">IIII", fh.read(16))
             return np.array(array.array("B", fh.read()), dtype=np.uint8).reshape(
-                num_data, rows, cols
+                num_data, rows, cols,
             )
 
     for filename in [

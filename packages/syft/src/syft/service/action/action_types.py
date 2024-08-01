@@ -24,7 +24,7 @@ def action_type_for_type(obj_or_type: Any) -> type:
 
     if obj_or_type not in action_types:
         logger.debug(
-            f"WARNING: No Type for {obj_or_type}, returning {action_types[Any]}"
+            f"WARNING: No Type for {obj_or_type}, returning {action_types[Any]}",
         )
 
     return action_types.get(obj_or_type, action_types[Any])

@@ -16,7 +16,8 @@ class SyncDirection(str, Enum):
         elif self == SyncDirection.HIGH_TO_LOW:
             return SyncDecision.HIGH
         else:
-            raise ValueError("Invalid SyncDirection")
+            msg = "Invalid SyncDirection"
+            raise ValueError(msg)
 
 
 class SyncDecision(Enum):

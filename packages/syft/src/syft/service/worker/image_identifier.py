@@ -40,7 +40,8 @@ class SyftWorkerImageIdentifier(SyftBaseModel):
 
         # if we parsed a registry string, make sure it matches the registry object
         if registry_str and registry_str != registry.url:
-            raise ValueError(f"Registry URL mismatch: {registry_str} != {registry.url}")
+            msg = f"Registry URL mismatch: {registry_str} != {registry.url}"
+            raise ValueError(msg)
 
         return cls(repo=repo, tag=tag, registry=registry)
 

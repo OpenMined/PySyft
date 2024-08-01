@@ -21,7 +21,7 @@ def test_dict_store_partition_sanity(dict_store_partition: DictStorePartition) -
 
 
 def test_dict_store_partition_set(
-    root_verify_key, dict_store_partition: DictStorePartition
+    root_verify_key, dict_store_partition: DictStorePartition,
 ) -> None:
     res = dict_store_partition.init_store()
     assert res.is_ok()
@@ -35,7 +35,7 @@ def test_dict_store_partition_set(
         len(
             dict_store_partition.all(
                 root_verify_key,
-            ).ok()
+            ).ok(),
         )
         == 1
     )
@@ -46,7 +46,7 @@ def test_dict_store_partition_set(
         len(
             dict_store_partition.all(
                 root_verify_key,
-            ).ok()
+            ).ok(),
         )
         == 1
     )
@@ -57,7 +57,7 @@ def test_dict_store_partition_set(
         len(
             dict_store_partition.all(
                 root_verify_key,
-            ).ok()
+            ).ok(),
         )
         == 1
     )
@@ -70,7 +70,7 @@ def test_dict_store_partition_set(
         len(
             dict_store_partition.all(
                 root_verify_key,
-            ).ok()
+            ).ok(),
         )
         == 2
     )
@@ -84,14 +84,14 @@ def test_dict_store_partition_set(
             len(
                 dict_store_partition.all(
                     root_verify_key,
-                ).ok()
+                ).ok(),
             )
             == 3 + idx
         )
 
 
 def test_dict_store_partition_delete(
-    root_verify_key, dict_store_partition: DictStorePartition
+    root_verify_key, dict_store_partition: DictStorePartition,
 ) -> None:
     res = dict_store_partition.init_store()
     assert res.is_ok()
@@ -106,7 +106,7 @@ def test_dict_store_partition_delete(
     assert len(
         dict_store_partition.all(
             root_verify_key,
-        ).ok()
+        ).ok(),
     ) == len(objs)
 
     # random object
@@ -117,7 +117,7 @@ def test_dict_store_partition_delete(
     assert len(
         dict_store_partition.all(
             root_verify_key,
-        ).ok()
+        ).ok(),
     ) == len(objs)
 
     # cleanup store
@@ -129,7 +129,7 @@ def test_dict_store_partition_delete(
             len(
                 dict_store_partition.all(
                     root_verify_key,
-                ).ok()
+                ).ok(),
             )
             == len(objs) - idx - 1
         )
@@ -140,7 +140,7 @@ def test_dict_store_partition_delete(
             len(
                 dict_store_partition.all(
                     root_verify_key,
-                ).ok()
+                ).ok(),
             )
             == len(objs) - idx - 1
         )
@@ -149,14 +149,14 @@ def test_dict_store_partition_delete(
         len(
             dict_store_partition.all(
                 root_verify_key,
-            ).ok()
+            ).ok(),
         )
         == 0
     )
 
 
 def test_dict_store_partition_update(
-    root_verify_key, dict_store_partition: DictStorePartition
+    root_verify_key, dict_store_partition: DictStorePartition,
 ) -> None:
     dict_store_partition.init_store()
 
@@ -185,7 +185,7 @@ def test_dict_store_partition_update(
             len(
                 dict_store_partition.all(
                     root_verify_key,
-                ).ok()
+                ).ok(),
             )
             == 1
         )
@@ -215,7 +215,7 @@ def test_dict_store_partition_update(
         )
 
         stored = dict_store_partition.get_all_from_store(
-            root_verify_key, QueryKeys(qks=[key])
+            root_verify_key, QueryKeys(qks=[key]),
         )
         assert stored.ok()[0].data == v
 
@@ -238,7 +238,7 @@ def test_dict_store_partition_set_multithreaded(
 
             for _ in range(10):
                 res = dict_store_partition.set(
-                    root_verify_key, obj, ignore_duplicates=False
+                    root_verify_key, obj, ignore_duplicates=False,
                 )
                 if res.is_ok():
                     break
@@ -261,7 +261,7 @@ def test_dict_store_partition_set_multithreaded(
     stored_cnt = len(
         dict_store_partition.all(
             root_verify_key,
-        ).ok()
+        ).ok(),
     )
     assert stored_cnt == repeats * thread_cnt
 
@@ -324,7 +324,7 @@ def test_dict_store_partition_set_delete_multithreaded(
 
             for _ in range(10):
                 res = dict_store_partition.set(
-                    root_verify_key, obj, ignore_duplicates=False
+                    root_verify_key, obj, ignore_duplicates=False,
                 )
                 if res.is_ok():
                     break
@@ -353,6 +353,6 @@ def test_dict_store_partition_set_delete_multithreaded(
     stored_cnt = len(
         dict_store_partition.all(
             root_verify_key,
-        ).ok()
+        ).ok(),
     )
     assert stored_cnt == 0

@@ -51,7 +51,8 @@ class Hosts:
         elif Platform.windows():
             p = "C:\Windows\System32\drivers\etc\hosts"
         else:
-            raise Exception(f"Unsupported OS: {Platform.system}")
+            msg = f"Unsupported OS: {Platform.system}"
+            raise Exception(msg)
 
         p = Path(p).absolute()
         assert p.exists(), "Host file does not exist"
@@ -83,7 +84,7 @@ class Hosts:
 
         # inplace
         self.content = re.sub(
-            f"(.+)\s+{datasite}\n", f"{ip}\t{datasite}\n", self.content
+            f"(.+)\s+{datasite}\n", f"{ip}\t{datasite}\n", self.content,
         )
         self.__write()
 
@@ -167,7 +168,7 @@ def main():
 
     if not args.hosts and not running_as_root():
         print(
-            "ERROR: This script must be run as root since it will modify system hosts file"
+            "ERROR: This script must be run as root since it will modify system hosts file",
         )
         sys.exit(1)
 

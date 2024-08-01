@@ -1,6 +1,6 @@
 # stdlib
 import datetime
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 # third party
 from pydantic import model_validator
@@ -10,7 +10,6 @@ from ....client.sync_decision import SyncDirection
 from ....service.code.user_code import UserCode
 from ....service.job.job_stash import Job
 from ....service.request.request import Request
-from ....service.response import SyftError
 from ....service.user.user import UserView
 from ....types.datetime import DateTime
 from ....types.datetime import format_timedelta_human_readable
@@ -19,6 +18,9 @@ from ....types.syft_object import SyftObject
 from ..icons import Icon
 from ..styles import CSS_CODE
 from .base import HTMLComponentBase
+
+if TYPE_CHECKING:
+    from ....service.response import SyftError
 
 COPY_CSS = """
 .copy-container {
@@ -65,7 +67,7 @@ class CopyButton(HTMLComponentBase):
     def to_html(self) -> str:
         copy_js = f"event.stopPropagation(); navigator.clipboard.writeText('{self.copy_text}');"
         text_formatted = self.format_copy_text(self.copy_text)
-        button_html = f"""
+        return f"""
         <style>{COPY_CSS}</style>
         <div class="copy-container" onclick="{copy_js}">
             <span class="copy-text-display" style="max-width: {self.max_width}px;">
@@ -74,7 +76,6 @@ class CopyButton(HTMLComponentBase):
             {Icon.COPY.svg}
         </div>
         """
-        return button_html
 
 
 class CopyIDButton(CopyButton):
@@ -100,7 +101,8 @@ class SyncTableObject(HTMLComponentBase):
             code = self.object.code
             statusses = list(code.status.status_dict.values())
             if len(statusses) != 1:
-                raise ValueError("Request code should have exactly one status")
+                msg = "Request code should have exactly one status"
+                raise ValueError(msg)
             status_tuple = statusses[0]
             status, _ = status_tuple
             return status.value
@@ -149,7 +151,7 @@ class SyncTableObject(HTMLComponentBase):
         type_html = TypeLabel(object=self.object).to_html()
         description_html = MainDescription(object=self.object).to_html()
         copy_id_button = CopyIDButton(
-            copy_text=str(self.object.id.id), max_width=60
+            copy_text=str(self.object.id.id), max_width=60,
         ).to_html()
 
         updated_delta_str = self.get_updated_delta_str()
@@ -171,8 +173,7 @@ class SyncTableObject(HTMLComponentBase):
             </span>
             </div>
         """  # noqa: E501
-        summary_html = summary_html.replace("\n", "").replace("    ", "")
-        return summary_html
+        return summary_html.replace("\n", "").replace("    ", "")
 
 
 ALERT_CSS = """
@@ -252,9 +253,7 @@ class TypeLabel(Label):
 
     @staticmethod
     def type_label_class(obj: Any) -> str:
-        if isinstance(obj, UserCode):
-            return "label-light-blue"
-        elif isinstance(obj, Job):  # type: ignore
+        if isinstance(obj, (UserCode, Job)):
             return "label-light-blue"
         elif isinstance(obj, Request):  # type: ignore
             # TODO: handle other requests
@@ -293,7 +292,8 @@ class SyncWidgetHeader(SyncTableObject):
     @classmethod
     def add_object(cls, values: dict) -> dict:
         if "diff_batch" not in values:
-            raise ValueError("diff_batch is required")
+            msg = "diff_batch is required"
+            raise ValueError(msg)
         diff_batch = values["diff_batch"]
         values["object"] = diff_batch.root_diff.non_empty_object
         return values
@@ -307,7 +307,7 @@ class SyncWidgetHeader(SyncTableObject):
         type_html = TypeLabel(object=self.object).to_html()
         description_html = MainDescription(object=self.object).to_html()
         copy_id_button = CopyIDButton(
-            copy_text=str(self.object.id.id), max_width=60
+            copy_text=str(self.object.id.id), max_width=60,
         ).to_html()
 
         second_line_html = f"""
@@ -330,7 +330,7 @@ class SyncWidgetHeader(SyncTableObject):
         # Third line HTML
         third_line_html = f"<span style='color: #5E5A72;'>This would sync <span style='color: #B8520A'>{num_diffs} changes </span> from <i>{source_side} Server</i> to <i>{target_side} Server</i></span>"  # noqa: E501
 
-        header_html = f"""
+        return f"""
         {style}
         {first_line_html}
         {second_line_html}
@@ -338,4 +338,3 @@ class SyncWidgetHeader(SyncTableObject):
         <div style='height: 16px;'></div>
         """
 
-        return header_html

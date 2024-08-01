@@ -46,7 +46,7 @@ class AuthedServiceContext(ServerServiceContext):
 
     def with_credentials(self, credentials: SyftVerifyKey, role: ServiceRole) -> Self:
         return AuthedServiceContext(
-            credentials=credentials, role=role, server=self.server
+            credentials=credentials, role=role, server=self.server,
         )
 
     def as_root_context(self) -> Self:

@@ -76,7 +76,7 @@ class SyftMigrationStateStash(BaseStash):
         )
 
     def get_by_name(
-        self, canonical_name: str, credentials: SyftVerifyKey
+        self, canonical_name: str, credentials: SyftVerifyKey,
     ) -> Result[SyftObjectMigrationState, str]:
         qks = KlassNamePartitionKey.with_obj(canonical_name)
         return self.query_one(credentials=credentials, qks=qks)

@@ -77,7 +77,7 @@ def main():
 
     # Converting the readme file to pypi format
     convert_github_markdown_to_pypi(
-        args.input_file, args.output_file, args.repo, args.version
+        args.input_file, args.output_file, args.repo, args.version,
     )
 
     print("\n\n")

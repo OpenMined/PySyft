@@ -50,7 +50,7 @@ def gateway():
 @pytest.fixture(params=[True, False])
 def gateway_association_request_auto_approval(request: pytest.FixtureRequest):
     server = _launch(
-        ServerType.GATEWAY, association_request_auto_approval=request.param
+        ServerType.GATEWAY, association_request_auto_approval=request.param,
     )
     yield (request.param, server)
     server.python_server.cleanup()
@@ -178,7 +178,7 @@ def test_create_gateway(
 
 @pytest.mark.local_server
 def test_datasite_connect_to_gateway(
-    gateway_association_request_auto_approval, datasite
+    gateway_association_request_auto_approval, datasite,
 ):
     association_request_auto_approval, gateway = (
         gateway_association_request_auto_approval
@@ -231,10 +231,10 @@ def test_datasite_connect_to_gateway(
     assert proxy_datasite_client.user_role == ServiceRole.NONE
 
     datasite_client = datasite_client.login(
-        email="info@openmined.org", password="changethis"
+        email="info@openmined.org", password="changethis",
     )
     proxy_datasite_client = proxy_datasite_client.login(
-        email="info@openmined.org", password="changethis"
+        email="info@openmined.org", password="changethis",
     )
 
     assert proxy_datasite_client.logged_in_user == "info@openmined.org"
@@ -252,7 +252,7 @@ def test_datasite_connect_to_gateway(
 
 @pytest.mark.local_server
 def test_datasite_connect_to_gateway_routes_priority(
-    gateway, datasite, datasite_2
+    gateway, datasite, datasite_2,
 ) -> None:
     """
     A test for routes' priority (PythonServerRoute)
@@ -340,7 +340,7 @@ def test_enclave_connect_to_gateway(faker: Faker, gateway, enclave):
 
     enclave_client = enclave_client.login(email=user_email, password=password)
     proxy_enclave_client = proxy_enclave_client.login(
-        email=user_email, password=password
+        email=user_email, password=password,
     )
 
     assert proxy_enclave_client.logged_in_user == user_email
@@ -353,10 +353,10 @@ def test_enclave_connect_to_gateway(faker: Faker, gateway, enclave):
 
 @pytest.mark.local_server
 @pytest.mark.parametrize(
-    "gateway_association_request_auto_approval", [False], indirect=True
+    "gateway_association_request_auto_approval", [False], indirect=True,
 )
 def test_repeated_association_requests_peers_health_check(
-    gateway_association_request_auto_approval, datasite
+    gateway_association_request_auto_approval, datasite,
 ):
     _, gateway = gateway_association_request_auto_approval
     gateway_client: GatewayClient = gateway.login(
@@ -382,7 +382,7 @@ def test_repeated_association_requests_peers_health_check(
 
     # the gateway client checks that the peer is associated
     res = gateway_client.api.services.network.check_peer_association(
-        peer_id=datasite_client.id
+        peer_id=datasite_client.id,
     )
     assert isinstance(res, ServerPeerAssociationStatus)
     assert res.value == "PEER_ASSOCIATED"

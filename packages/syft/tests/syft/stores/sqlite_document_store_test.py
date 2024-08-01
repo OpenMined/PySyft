@@ -36,7 +36,7 @@ def test_sqlite_store_partition_set(
         len(
             sqlite_store_partition.all(
                 root_verify_key,
-            ).ok()
+            ).ok(),
         )
         == 1
     )
@@ -47,7 +47,7 @@ def test_sqlite_store_partition_set(
         len(
             sqlite_store_partition.all(
                 root_verify_key,
-            ).ok()
+            ).ok(),
         )
         == 1
     )
@@ -58,7 +58,7 @@ def test_sqlite_store_partition_set(
         len(
             sqlite_store_partition.all(
                 root_verify_key,
-            ).ok()
+            ).ok(),
         )
         == 1
     )
@@ -71,7 +71,7 @@ def test_sqlite_store_partition_set(
         len(
             sqlite_store_partition.all(
                 root_verify_key,
-            ).ok()
+            ).ok(),
         )
         == 2
     )
@@ -84,7 +84,7 @@ def test_sqlite_store_partition_set(
             len(
                 sqlite_store_partition.all(
                     root_verify_key,
-                ).ok()
+                ).ok(),
             )
             == 3 + idx
         )
@@ -105,7 +105,7 @@ def test_sqlite_store_partition_delete(
     assert len(
         sqlite_store_partition.all(
             root_verify_key,
-        ).ok()
+        ).ok(),
     ) == len(objs)
 
     # random object
@@ -116,7 +116,7 @@ def test_sqlite_store_partition_delete(
     assert len(
         sqlite_store_partition.all(
             root_verify_key,
-        ).ok()
+        ).ok(),
     ) == len(objs)
 
     # cleanup store
@@ -128,7 +128,7 @@ def test_sqlite_store_partition_delete(
             len(
                 sqlite_store_partition.all(
                     root_verify_key,
-                ).ok()
+                ).ok(),
             )
             == len(objs) - idx - 1
         )
@@ -139,7 +139,7 @@ def test_sqlite_store_partition_delete(
             len(
                 sqlite_store_partition.all(
                     root_verify_key,
-                ).ok()
+                ).ok(),
             )
             == len(objs) - idx - 1
         )
@@ -148,7 +148,7 @@ def test_sqlite_store_partition_delete(
         len(
             sqlite_store_partition.all(
                 root_verify_key,
-            ).ok()
+            ).ok(),
         )
         == 0
     )
@@ -166,7 +166,7 @@ def test_sqlite_store_partition_update(
         len(
             sqlite_store_partition.all(
                 root_verify_key,
-            ).ok()
+            ).ok(),
         )
         == 1
     )
@@ -191,7 +191,7 @@ def test_sqlite_store_partition_update(
             len(
                 sqlite_store_partition.all(
                     root_verify_key,
-                ).ok()
+                ).ok(),
             )
             == 1
         )
@@ -221,7 +221,7 @@ def test_sqlite_store_partition_update(
         )
 
         stored = sqlite_store_partition.get_all_from_store(
-            root_verify_key, QueryKeys(qks=[key])
+            root_verify_key, QueryKeys(qks=[key]),
         )
         assert stored.ok()[0].data == v
 
@@ -240,13 +240,13 @@ def test_sqlite_store_partition_set_threading(
         nonlocal execution_err
 
         sqlite_store_partition = sqlite_store_partition_fn(
-            root_verify_key, sqlite_workspace
+            root_verify_key, sqlite_workspace,
         )
         for idx in range(repeats):
             for _ in range(10):
                 obj = MockObjectType(data=idx)
                 res = sqlite_store_partition.set(
-                    root_verify_key, obj, ignore_duplicates=False
+                    root_verify_key, obj, ignore_duplicates=False,
                 )
                 if res.is_ok():
                     break
@@ -270,12 +270,12 @@ def test_sqlite_store_partition_set_threading(
     assert execution_err is None
 
     sqlite_store_partition = sqlite_store_partition_fn(
-        root_verify_key, sqlite_workspace
+        root_verify_key, sqlite_workspace,
     )
     stored_cnt = len(
         sqlite_store_partition.all(
             root_verify_key,
-        ).ok()
+        ).ok(),
     )
     assert stored_cnt == thread_cnt * repeats
 
@@ -334,7 +334,7 @@ def test_sqlite_store_partition_update_threading(
     repeats = 5
 
     sqlite_store_partition = sqlite_store_partition_fn(
-        root_verify_key, sqlite_workspace
+        root_verify_key, sqlite_workspace,
     )
     obj = MockSyftObject(data=0)
     key = sqlite_store_partition.settings.store_key.with_obj(obj)
@@ -345,7 +345,7 @@ def test_sqlite_store_partition_update_threading(
         nonlocal execution_err
 
         sqlite_store_partition_local = sqlite_store_partition_fn(
-            root_verify_key, sqlite_workspace
+            root_verify_key, sqlite_workspace,
         )
         for repeat in range(repeats):
             obj = MockSyftObject(data=repeat)
@@ -423,7 +423,7 @@ def test_sqlite_store_partition_set_delete_threading(
     def _kv_cbk(tid: int) -> None:
         nonlocal execution_err
         sqlite_store_partition = sqlite_store_partition_fn(
-            root_verify_key, sqlite_workspace
+            root_verify_key, sqlite_workspace,
         )
 
         for idx in range(repeats):
@@ -431,7 +431,7 @@ def test_sqlite_store_partition_set_delete_threading(
 
             for _ in range(10):
                 res = sqlite_store_partition.set(
-                    root_verify_key, obj, ignore_duplicates=False
+                    root_verify_key, obj, ignore_duplicates=False,
                 )
                 if res.is_ok():
                     break
@@ -460,12 +460,12 @@ def test_sqlite_store_partition_set_delete_threading(
     assert execution_err is None
 
     sqlite_store_partition = sqlite_store_partition_fn(
-        root_verify_key, sqlite_workspace
+        root_verify_key, sqlite_workspace,
     )
     stored_cnt = len(
         sqlite_store_partition.all(
             root_verify_key,
-        ).ok()
+        ).ok(),
     )
     assert stored_cnt == 0
 

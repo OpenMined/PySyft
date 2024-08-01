@@ -48,7 +48,7 @@ class SyftImageRegistryService(AbstractService):
             return SyftError(message=f"Failed to create registry. {res.err()}")
 
         return SyftSuccess(
-            message=f"Image Registry ID: {registry.id} created successfully"
+            message=f"Image Registry ID: {registry.id} created successfully",
         )
 
     @service_method(
@@ -70,7 +70,7 @@ class SyftImageRegistryService(AbstractService):
             if res.is_err():
                 return SyftError(message=res.err())
             return SyftSuccess(
-                message=f"Image Registry URL: {url} successfully deleted."
+                message=f"Image Registry URL: {url} successfully deleted.",
             )
 
         # if uid is provided, delete by uid
@@ -79,7 +79,7 @@ class SyftImageRegistryService(AbstractService):
             if res.is_err():
                 return SyftError(message=res.err())
             return SyftSuccess(
-                message=f"Image Registry ID: {uid} successfully deleted."
+                message=f"Image Registry ID: {uid} successfully deleted.",
             )
         else:
             return SyftError(message="Either UID or URL must be provided.")
@@ -104,7 +104,7 @@ class SyftImageRegistryService(AbstractService):
         roles=DATA_OWNER_ROLE_LEVEL,
     )
     def get_by_id(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID,
     ) -> SyftImageRegistry | SyftError:
         result = self.stash.get_by_uid(context.credentials, uid)
         if result.is_err():

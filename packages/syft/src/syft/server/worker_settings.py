@@ -9,13 +9,16 @@ from ..abstract_server import AbstractServer
 from ..abstract_server import ServerSideType
 from ..abstract_server import ServerType
 from ..serde.serializable import serializable
-from ..server.credentials import SyftSigningKey
-from ..service.queue.base_queue import QueueConfig
-from ..store.blob_storage import BlobStorageConfig
-from ..store.document_store import StoreConfig
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftObject
-from ..types.uid import UID
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..types.uid import UID
+    from ..store.document_store import StoreConfig
+    from ..store.blob_storage import BlobStorageConfig
+    from ..service.queue.base_queue import QueueConfig
+    from ..server.credentials import SyftSigningKey
 
 
 @serializable()

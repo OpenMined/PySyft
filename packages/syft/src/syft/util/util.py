@@ -119,14 +119,16 @@ def extract_name(klass: type) -> str:
             logger.error(f"Failed to get klass name {klass}", exc_info=e)
             raise e
     else:
-        raise ValueError(f"Failed to match regex for klass {klass}")
+        msg = f"Failed to match regex for klass {klass}"
+        raise ValueError(msg)
 
 
 def validate_type(_object: object, _type: type, optional: bool = False) -> Any:
     if isinstance(_object, _type) or (optional and (_object is None)):
         return _object
 
-    raise Exception(f"Object {_object} should've been of type {_type}, not {_object}.")
+    msg = f"Object {_object} should've been of type {_type}, not {_object}."
+    raise Exception(msg)
 
 
 def validate_field(_object: object, _field: str) -> Any:
@@ -135,7 +137,8 @@ def validate_field(_object: object, _field: str) -> Any:
     if object is not None:
         return object
 
-    raise Exception(f"Object {_object} has no {_field} field set.")
+    msg = f"Object {_object} has no {_field} field set."
+    raise Exception(msg)
 
 
 def get_fully_qualified_name(obj: object) -> str:
@@ -183,7 +186,6 @@ def key_emoji(key: object) -> str:
             return char_emoji(hex_chars=hex_chars)
     except Exception as e:
         logger.error(f"Fail to get key emoji: {e}")
-        pass
     return "ALL"
 
 
@@ -312,13 +314,13 @@ def print_dynamic_log(
         set_start_method("fork", force=True)
 
     multiprocessing.Process(
-        target=print_process, args=(message, finish, success, lock)
+        target=print_process, args=(message, finish, success, lock),
     ).start()
     return (finish, success)
 
 
 def find_available_port(
-    host: str, port: int | None = None, search: bool = False
+    host: str, port: int | None = None, search: bool = False,
 ) -> int:
     if port is None:
         port = random.randint(1500, 65000)  # nosec
@@ -438,7 +440,8 @@ def index_syft_by_module_name(fully_qualified_name: str) -> object:
     attr_list = fully_qualified_name.split(".")
 
     if attr_list[0] != "syft":
-        raise ReferenceError(f"Reference don't match: {attr_list[0]}")
+        msg = f"Reference don't match: {attr_list[0]}"
+        raise ReferenceError(msg)
 
     # if attr_list[1] != "core" and attr_list[1] != "user":
     #     raise ReferenceError(f"Reference don't match: {attr_list[1]}")
@@ -454,7 +457,7 @@ def obj2pointer_type(obj: object | None = None, fqn: str | None = None) -> type:
             # sometimes the object doesn't have a __module__ so you need to use the type
             # like: collections.OrderedDict
             logger.debug(
-                f"Unable to get get_fully_qualified_name of {type(obj)} trying type. {e}"
+                f"Unable to get get_fully_qualified_name of {type(obj)} trying type. {e}",
             )
             fqn = get_fully_qualified_name(obj=type(obj))
 
@@ -465,7 +468,8 @@ def obj2pointer_type(obj: object | None = None, fqn: str | None = None) -> type:
     try:
         ref = get_loaded_syft().lib_ast.query(fqn, obj_type=type(obj))
     except Exception:
-        raise Exception(f"Cannot find {type(obj)} {fqn} in lib_ast.")
+        msg = f"Cannot find {type(obj)} {fqn} in lib_ast."
+        raise Exception(msg)
 
     return ref.pointer_type
 
@@ -700,7 +704,7 @@ def inherit_tags(
 
 
 def autocache(
-    url: str, extension: str | None = None, cache: bool = True
+    url: str, extension: str | None = None, cache: bool = True,
 ) -> Path | None:
     try:
         data_path = get_root_data_path()
@@ -757,7 +761,8 @@ def parallel_execution(
             List[Any]: Results from the parties
         """
         if args is None or len(args) == 0:
-            raise Exception("Parallel execution requires more than 0 args")
+            msg = "Parallel execution requires more than 0 args"
+            raise Exception(msg)
 
         # _base.Executor
         executor: type
@@ -786,24 +791,22 @@ def parallel_execution(
         futures = []
 
         with executor(
-            max_workers=nr_parties, initializer=initializer, initargs=(loop,)
+            max_workers=nr_parties, initializer=initializer, initargs=(loop,),
         ) as executor:
             for i in range(nr_parties):
                 _args = args[i]
                 _kwargs = kwargs
                 futures.append(executor.submit(funcs[i], *_args, **_kwargs))
 
-        local_shares = [f.result() for f in futures]
+        return [f.result() for f in futures]
 
-        return local_shares
 
     return wrapper
 
 
 def concurrency_count(factor: float = 0.8) -> int:
     force_count = int(os.environ.get("FORCE_CONCURRENCY_COUNT", 0))
-    mp_count = force_count if force_count >= 1 else int(mp.cpu_count() * factor)
-    return mp_count
+    return force_count if force_count >= 1 else int(mp.cpu_count() * factor)
 
 
 class bcolors:
@@ -882,8 +885,7 @@ def get_interpreter_module() -> str:
         # third party
         from IPython import get_ipython
 
-        shell = get_ipython().__class__.__module__
-        return shell
+        return get_ipython().__class__.__module__
     except NameError:
         return "StandardInterpreter"  # not sure
 

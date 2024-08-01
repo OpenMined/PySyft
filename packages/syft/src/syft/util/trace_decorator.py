@@ -82,7 +82,7 @@ def instrument(
                                 record_exception=record_exception,
                                 attributes=attributes,
                                 existing_tracer=existing_tracer,
-                            )
+                            ),
                         ),
                     )
                 else:
@@ -127,7 +127,7 @@ def instrument(
             span.set_attribute(SpanAttributes.CODE_LINENO, func.__code__.co_firstlineno)
 
         def _set_attributes(
-            span: Span, attributes_dict: dict[str, str] | None = None
+            span: Span, attributes_dict: dict[str, str] | None = None,
         ) -> None:
             if attributes_dict is not None:
                 for att in attributes_dict:
@@ -137,7 +137,7 @@ def instrument(
         def wrap_with_span_sync(*args: Any, **kwargs: Any) -> Any:
             name = span_name or TracingDecoratorOptions.naming_scheme(func_or_class)
             with tracer.start_as_current_span(
-                name, record_exception=record_exception
+                name, record_exception=record_exception,
             ) as span:
                 _set_semantic_attributes(span, func_or_class)
                 _set_attributes(span, TracingDecoratorOptions.default_attributes)
@@ -148,7 +148,7 @@ def instrument(
         async def wrap_with_span_async(*args: Any, **kwargs: Any) -> Callable:
             name = span_name or TracingDecoratorOptions.naming_scheme(func_or_class)
             with tracer.start_as_current_span(
-                name, record_exception=record_exception
+                name, record_exception=record_exception,
             ) as span:
                 _set_semantic_attributes(span, func_or_class)
                 _set_attributes(span, TracingDecoratorOptions.default_attributes)

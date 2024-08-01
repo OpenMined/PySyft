@@ -15,7 +15,7 @@ from ...types.syft_object import SyftObject
 # - (sub.)*.name.tld
 # - (sub.)*.name.tld:[port]
 REGX_DATASITE = re.compile(
-    r"^(localhost|([a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*))(\:\d{1,5})?"
+    r"^(localhost|([a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*))(\:\d{1,5})?",
 )
 
 
@@ -34,10 +34,12 @@ class SyftImageRegistry(SyftObject):
     @classmethod
     def validate_url(cls, val: str) -> str:
         if not val:
-            raise ValueError("Invalid Registry URL. Must not be empty")
+            msg = "Invalid Registry URL. Must not be empty"
+            raise ValueError(msg)
 
         if not bool(re.match(REGX_DATASITE, val)):
-            raise ValueError("Invalid Registry URL. Must be a valid datasite.")
+            msg = "Invalid Registry URL. Must be a valid datasite."
+            raise ValueError(msg)
 
         return val
 

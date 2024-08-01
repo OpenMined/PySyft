@@ -38,7 +38,7 @@ def server(server_args: dict[str, Any]) -> Generator[ServerHandle, None, None]:
             "queue_port": None,
             "local_db": False,
             **server_args,
-        }
+        },
     )
     # startup code here
     yield _server
@@ -78,7 +78,6 @@ SERVER_ARGS_TEST_CASES = {
 class FlakyMark(RuntimeError):
     """To mark a flaky part of a test to use with @pytest.mark.flaky"""
 
-    pass
 
 
 @pytest.mark.flaky(reruns=3, rerun_delay=1, only_rerun=["FlakyMark"])
@@ -90,7 +89,7 @@ class FlakyMark(RuntimeError):
 )
 @pytest.mark.parametrize("force", [True, False])
 def test_delete_idle_worker(
-    server: ServerHandle, force: bool, server_args: dict[str, Any]
+    server: ServerHandle, force: bool, server_args: dict[str, Any],
 ) -> None:
     client = server.login(email="info@openmined.org", password="changethis")
 
@@ -111,9 +110,12 @@ def test_delete_idle_worker(
     while True:
         workers = client.worker.get_all()
         if isinstance(workers, SyftError):
-            raise FlakyMark(
+            msg = (
                 f"`workers = client.worker.get_all()` failed.\n"
                 f"{workers.message=} {server_args=} {[(w.id, w.name) for w in original_workers]}"
+            )
+            raise FlakyMark(
+                msg,
             )
 
         if len(workers) == len(original_workers) - 1 and all(
@@ -121,7 +123,8 @@ def test_delete_idle_worker(
         ):
             break
         if time.time() - start > 3:
-            raise TimeoutError("Worker did not get removed from stash.")
+            msg = "Worker did not get removed from stash."
+            raise TimeoutError(msg)
 
 
 @pytest.mark.parametrize("server_args", matrix(**SERVER_ARGS_TEST_CASES))
@@ -151,7 +154,8 @@ def test_delete_worker(server: ServerHandle, force: bool) -> None:
         if (syft_worker_id := client.jobs.get_all()[0].job_worker_id) is not None:
             break
         if time.time() - start > 5:
-            raise TimeoutError("Job did not get picked up by any worker.")
+            msg = "Job did not get picked up by any worker."
+            raise TimeoutError(msg)
 
     res = client.worker.delete(syft_worker_id, force=force)
     assert not isinstance(res, SyftError)
@@ -172,6 +176,7 @@ def test_delete_worker(server: ServerHandle, force: bool) -> None:
         if isinstance(res, SyftError):
             break
         if time.time() - start > 5:
-            raise TimeoutError("Worker did not get removed from stash.")
+            msg = "Worker did not get removed from stash."
+            raise TimeoutError(msg)
 
     assert len(client.worker.get_all()) == 0

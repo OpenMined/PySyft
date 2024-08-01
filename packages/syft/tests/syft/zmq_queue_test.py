@@ -240,7 +240,7 @@ def test_zmq_queue_manager(queue_manager) -> None:
             received_messages.append(message)
 
     producer = queue_manager.create_producer(
-        queue_name=QueueName, queue_stash=None, worker_stash=None, context=None
+        queue_name=QueueName, queue_stash=None, worker_stash=None, context=None,
     )
 
     assert isinstance(producer, ZMQProducer)

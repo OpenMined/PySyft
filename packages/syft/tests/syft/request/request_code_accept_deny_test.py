@@ -60,7 +60,7 @@ def test_action_store_change(worker: Worker, ds_client: SyftClient):
     assert action_obj.get() == dummy_data
 
     action_object_link = LinkedObject.from_obj(
-        action_obj, server_uid=action_obj.syft_server_uid
+        action_obj, server_uid=action_obj.syft_server_uid,
     )
     permission_change = ActionStoreChange(
         linked_obj=action_object_link,

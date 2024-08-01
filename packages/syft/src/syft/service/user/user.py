@@ -127,7 +127,7 @@ def migrate_server_user_downgrade_current_v1() -> list[Callable]:
         drop("reset_token_date"),
         drop("__attr_searchable__"),
         make_set_default(
-            "__attr_searchable__", ["name", "email", "verify_key", "role"]
+            "__attr_searchable__", ["name", "email", "verify_key", "role"],
         ),
     ]
 
@@ -287,11 +287,11 @@ class UserView(SyftObject):
         api.services.user.update(uid=self.id, password=new_password)
         return SyftSuccess(
             message=f"Successfully updated password for "
-            f"user '{self.name}' with email '{self.email}'."
+            f"user '{self.name}' with email '{self.email}'.",
         )
 
     def set_password(
-        self, new_password: str | None = None, confirm: bool = True
+        self, new_password: str | None = None, confirm: bool = True,
     ) -> SyftError | SyftSuccess:
         """Set a new password interactively with confirmed password from user input"""
         # TODO: Add password validation for special characters
@@ -326,7 +326,7 @@ class UserView(SyftObject):
         self.email = email
         return SyftSuccess(
             message=f"Successfully updated email for the user "
-            f"'{self.name}' to '{self.email}'."
+            f"'{self.name}' to '{self.email}'.",
         )
 
     def update(
@@ -409,8 +409,8 @@ def userv1_to_view_user() -> list[Callable]:
                 "website",
                 "mock_execution_permission",
                 "notifications_enabled",
-            ]
-        )
+            ],
+        ),
     ]
 
 
@@ -427,8 +427,8 @@ def user_to_view_user() -> list[Callable]:
                 "website",
                 "mock_execution_permission",
                 "notifications_enabled",
-            ]
-        )
+            ],
+        ),
     ]
 
 

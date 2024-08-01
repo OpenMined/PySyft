@@ -79,8 +79,7 @@ class ActionService(AbstractService):
         if isinstance(blob_store_result, SyftWarning):
             logger.debug(blob_store_result.message)
 
-        np_pointer = self._set(context, np_obj)
-        return np_pointer
+        return self._set(context, np_obj)
 
     @service_method(
         path="action.set",
@@ -129,13 +128,7 @@ class ActionService(AbstractService):
             and not ignore_detached_obj
         ):
             return True
-        if isinstance(action_object, ActionObject) and (
-            action_object.syft_action_saved_to_blob_store
-            and action_object.syft_blob_storage_entry_id is None
-            and not ignore_detached_obj
-        ):
-            return True
-        return False
+        return bool(isinstance(action_object, ActionObject) and (action_object.syft_action_saved_to_blob_store and action_object.syft_blob_storage_entry_id is None and not ignore_detached_obj))
 
     def _set(
         self,
@@ -147,7 +140,7 @@ class ActionService(AbstractService):
     ) -> Result[ActionObject, str]:
         if self.is_detached_obj(action_object, ignore_detached_objs):
             return Err(
-                "You uploaded an ActionObject that is not yet in the blob storage"
+                "You uploaded an ActionObject that is not yet in the blob storage",
             )
         """Save an object to the action store"""
         # 🟡 TODO 9: Create some kind of type checking / protocol for SyftSerializable
@@ -195,23 +188,20 @@ class ActionService(AbstractService):
                 if action_object.mock_obj.syft_action_saved_to_blob_store:
                     blob_id = action_object.mock_obj.syft_blob_storage_entry_id
                     permission = ActionObjectPermission(
-                        blob_id, ActionPermission.ALL_READ
+                        blob_id, ActionPermission.ALL_READ,
                     )
                     blob_storage_service: AbstractService = context.server.get_service(
-                        BlobStorageService
+                        BlobStorageService,
                     )
                     blob_storage_service.stash.add_permission(permission)
-                if has_result_read_permission:
-                    action_object = action_object.private
-                else:
-                    action_object = action_object.mock
+                action_object = action_object.private if has_result_read_permission else action_object.mock
 
             action_object.syft_point_to(context.server.id)
             return Ok(action_object)
         return result.err()
 
     @service_method(
-        path="action.is_resolved", name="is_resolved", roles=GUEST_ROLE_LEVEL
+        path="action.is_resolved", name="is_resolved", roles=GUEST_ROLE_LEVEL,
     )
     def is_resolved(
         self,
@@ -224,7 +214,7 @@ class ActionService(AbstractService):
             obj = result.ok()
             if obj.is_link:
                 result = self.resolve_links(
-                    context, obj.syft_action_data.action_object_id.id
+                    context, obj.syft_action_data.action_object_id.id,
                 )
                 # Checking in case any error occurred
                 if result.is_err():
@@ -242,7 +232,7 @@ class ActionService(AbstractService):
         return result
 
     @service_method(
-        path="action.resolve_links", name="resolve_links", roles=GUEST_ROLE_LEVEL
+        path="action.resolve_links", name="resolve_links", roles=GUEST_ROLE_LEVEL,
     )
     def resolve_links(
         self,
@@ -260,10 +250,9 @@ class ActionService(AbstractService):
 
             # If it's not a leaf
             if obj.is_link:
-                nested_result = self.resolve_links(
-                    context, obj.syft_action_data.action_object_id.id, twin_mode
+                return self.resolve_links(
+                    context, obj.syft_action_data.action_object_id.id, twin_mode,
                 )
-                return nested_result
 
             # If it's a leaf
             return result
@@ -291,7 +280,7 @@ class ActionService(AbstractService):
     ) -> Result[ActionObject, str]:
         """Get an object from the action store"""
         result = self.store.get(
-            uid=uid, credentials=context.credentials, has_permission=has_permission
+            uid=uid, credentials=context.credentials, has_permission=has_permission,
         )
         if result.is_ok() and context.server is not None:
             obj: TwinObject | ActionObject = result.ok()
@@ -306,13 +295,12 @@ class ActionService(AbstractService):
                 and obj.is_link
             ):
                 if not self.is_resolved(  # type: ignore[unreachable]
-                    context, obj.syft_action_data.action_object_id.id
+                    context, obj.syft_action_data.action_object_id.id,
                 ).ok():
                     return SyftError(message="This object is not resolved yet.")
-                result = self.resolve_links(
-                    context, obj.syft_action_data.action_object_id.id, twin_mode
+                return self.resolve_links(
+                    context, obj.syft_action_data.action_object_id.id, twin_mode,
                 )
-                return result
             if isinstance(obj, TwinObject):
                 if twin_mode == TwinMode.PRIVATE:
                     obj = obj.private
@@ -328,15 +316,15 @@ class ActionService(AbstractService):
             return result
 
     @service_method(
-        path="action.get_pointer", name="get_pointer", roles=GUEST_ROLE_LEVEL
+        path="action.get_pointer", name="get_pointer", roles=GUEST_ROLE_LEVEL,
     )
     def get_pointer(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID,
     ) -> Result[ActionObjectPointer, str]:
         """Get a pointer from the action store"""
 
         result = self.store.get_pointer(
-            uid=uid, credentials=context.credentials, server_uid=context.server.id
+            uid=uid, credentials=context.credentials, server_uid=context.server.id,
         )
         if result.is_ok():
             obj = result.ok()
@@ -349,7 +337,7 @@ class ActionService(AbstractService):
 
     @service_method(path="action.get_mock", name="get_mock", roles=GUEST_ROLE_LEVEL)
     def get_mock(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID,
     ) -> Result[SyftError, SyftObject]:
         """Get a pointer from the action store"""
         result = self.store.get_mock(uid=uid)
@@ -367,7 +355,7 @@ class ActionService(AbstractService):
 
     def has_read_permission(self, context: AuthedServiceContext, uid: UID) -> bool:
         return self.store.has_permissions(
-            [ActionObjectREAD(uid=uid, credentials=context.credentials)]
+            [ActionObjectREAD(uid=uid, credentials=context.credentials)],
         )
 
     # not a public service endpoint
@@ -399,7 +387,7 @@ class ActionService(AbstractService):
 
             # Filter input kwargs based on policy
             filtered_kwargs = input_policy.filter_kwargs(
-                kwargs=kwargs, context=context, code_item_id=code_item.id
+                kwargs=kwargs, context=context, code_item_id=code_item.id,
             )
             if filtered_kwargs.is_err():
                 return filtered_kwargs
@@ -446,7 +434,7 @@ class ActionService(AbstractService):
                 # no twins
                 # allow python types from inputpolicy
                 filtered_kwargs = filter_twin_kwargs(
-                    real_kwargs, twin_mode=TwinMode.NONE, allow_python_types=True
+                    real_kwargs, twin_mode=TwinMode.NONE, allow_python_types=True,
                 )
                 exec_result = execute_byte_code(code_item, filtered_kwargs, context)
                 if output_policy:
@@ -459,17 +447,17 @@ class ActionService(AbstractService):
                 user_code_service.update_code_state(context, code_item)
                 if isinstance(exec_result.result, ActionObject):
                     result_action_object = ActionObject.link(
-                        result_id=result_id, pointer_id=exec_result.result.id
+                        result_id=result_id, pointer_id=exec_result.result.id,
                     )
                 else:
                     result_action_object = wrap_result(result_id, exec_result.result)
             else:
                 # twins
                 private_kwargs = filter_twin_kwargs(
-                    real_kwargs, twin_mode=TwinMode.PRIVATE, allow_python_types=True
+                    real_kwargs, twin_mode=TwinMode.PRIVATE, allow_python_types=True,
                 )
                 private_exec_result = execute_byte_code(
-                    code_item, private_kwargs, context
+                    code_item, private_kwargs, context,
                 )
                 if output_policy:
                     private_exec_result.result = output_policy.apply_to_output(
@@ -480,11 +468,11 @@ class ActionService(AbstractService):
                 code_item.output_policy = output_policy  # type: ignore
                 user_code_service.update_code_state(context, code_item)
                 result_action_object_private = wrap_result(
-                    result_id, private_exec_result.result
+                    result_id, private_exec_result.result,
                 )
 
                 mock_kwargs = filter_twin_kwargs(
-                    real_kwargs, twin_mode=TwinMode.MOCK, allow_python_types=True
+                    real_kwargs, twin_mode=TwinMode.MOCK, allow_python_types=True,
                 )
                 # relative
                 from .action_data_empty import ActionDataEmpty
@@ -493,11 +481,11 @@ class ActionService(AbstractService):
                     mock_exec_result_obj = ActionDataEmpty()
                 else:
                     mock_exec_result = execute_byte_code(
-                        code_item, mock_kwargs, context
+                        code_item, mock_kwargs, context,
                     )
                     if output_policy:
                         mock_exec_result.result = output_policy.apply_to_output(
-                            context, mock_exec_result.result, update_policy=False
+                            context, mock_exec_result.result, update_policy=False,
                         )
                     mock_exec_result_obj = mock_exec_result.result
 
@@ -567,7 +555,7 @@ class ActionService(AbstractService):
             return set_result
 
         blob_storage_service: AbstractService = context.server.get_service(
-            BlobStorageService
+            BlobStorageService,
         )
 
         def store_permission(
@@ -622,7 +610,7 @@ class ActionService(AbstractService):
         return self._get(context, result_id, TwinMode.MOCK, has_permission=True)
 
     def call_function(
-        self, context: AuthedServiceContext, action: Action
+        self, context: AuthedServiceContext, action: Action,
     ) -> Result[ActionObject, str] | Err:
         # run function/class init
         _user_lib_config_registry = UserLibConfigRegistry.from_user(context.credentials)
@@ -633,7 +621,7 @@ class ActionService(AbstractService):
             return execute_callable(self, context, action)
         else:
             return Err(
-                f"Failed executing {action}. You have no permission for {absolute_path}"
+                f"Failed executing {action}. You have no permission for {absolute_path}",
             )
 
     def set_attribute(
@@ -645,13 +633,13 @@ class ActionService(AbstractService):
         args, _ = resolve_action_args(action, context, self)
         if args.is_err():
             return Err(
-                f"Failed executing action {action}, could not resolve args: {args.err()}"
+                f"Failed executing action {action}, could not resolve args: {args.err()}",
             )
         else:
             args = args.ok()
         if not isinstance(args[0], ActionObject):
             return Err(
-                f"Failed executing action {action} setattribute requires a non-twin string as first argument"
+                f"Failed executing action {action} setattribute requires a non-twin string as first argument",
             )
         name = args[0].syft_action_data
         # dont do the whole filtering dance with the name
@@ -671,12 +659,12 @@ class ActionService(AbstractService):
                 TwinObject(
                     id=action.result_id,
                     private_obj=ActionObject.from_obj(
-                        resolved_self.private.syft_action_data
+                        resolved_self.private.syft_action_data,
                     ),
                     private_obj_id=action.result_id,
                     mock_obj=ActionObject.from_obj(resolved_self.mock.syft_action_data),
                     mock_obj_id=action.result_id,
-                )
+                ),
             )
         else:
             # TODO: Implement for twinobject args
@@ -692,7 +680,7 @@ class ActionService(AbstractService):
             # result_action_object = Ok(wrap_result(action.result_id, val))
 
     def get_attribute(
-        self, action: Action, resolved_self: ActionObject | TwinObject
+        self, action: Action, resolved_self: ActionObject | TwinObject,
     ) -> Ok[TwinObject | ActionObject]:
         if isinstance(resolved_self, TwinObject):
             private_result = getattr(resolved_self.private.syft_action_data, action.op)
@@ -704,7 +692,7 @@ class ActionService(AbstractService):
                     private_obj_id=action.result_id,
                     mock_obj=ActionObject.from_obj(mock_result),
                     mock_obj_id=action.result_id,
-                )
+                ),
             )
         else:
             val = getattr(resolved_self.syft_action_data, action.op)  # type: ignore[unreachable]
@@ -727,14 +715,14 @@ class ActionService(AbstractService):
             )
             if private_result.is_err():
                 return Err(
-                    f"Failed executing action {action}, result is an error: {private_result.err()}"
+                    f"Failed executing action {action}, result is an error: {private_result.err()}",
                 )
             mock_result = execute_object(
-                self, context, resolved_self.mock, action, twin_mode=TwinMode.MOCK
+                self, context, resolved_self.mock, action, twin_mode=TwinMode.MOCK,
             )
             if mock_result.is_err():
                 return Err(
-                    f"Failed executing action {action}, result is an error: {mock_result.err()}"
+                    f"Failed executing action {action}, result is an error: {mock_result.err()}",
                 )
 
             private_result = private_result.ok()
@@ -747,13 +735,13 @@ class ActionService(AbstractService):
                     private_obj_id=action.result_id,
                     mock_obj=mock_result,
                     mock_obj_id=action.result_id,
-                )
+                ),
             )
         else:
             return execute_object(self, context, resolved_self, action)  # type:ignore[unreachable]
 
     def unwrap_nested_actionobjects(
-        self, context: AuthedServiceContext, data: Any
+        self, context: AuthedServiceContext, data: Any,
     ) -> Any:
         """recursively unwraps nested action objects"""
 
@@ -772,8 +760,9 @@ class ActionService(AbstractService):
             else:
                 nested_res = res.syft_action_data
                 if isinstance(nested_res, ActionObject):
+                    msg = "More than double nesting of ActionObjects is currently not supported"
                     raise ValueError(
-                        "More than double nesting of ActionObjects is currently not supported"
+                        msg,
                     )
                 return nested_res
         return data
@@ -785,10 +774,7 @@ class ActionService(AbstractService):
 
         def unwrap_collection(col: set | dict | list) -> [Any]:  # type: ignore
             return_values = []
-            if isinstance(col, dict):
-                values = list(col.values()) + list(col.keys())
-            else:
-                values = list(col)
+            values = list(col.values()) + list(col.keys()) if isinstance(col, dict) else list(col)
             for v in values:
                 if isinstance(v, list | dict | set):
                     return_values += unwrap_collection(v)
@@ -798,8 +784,7 @@ class ActionService(AbstractService):
 
         if isinstance(data, list | dict | set):
             values = unwrap_collection(data)
-            has_action_object = any(isinstance(x, ActionObject) for x in values)
-            return has_action_object
+            return any(isinstance(x, ActionObject) for x in values)
         elif isinstance(data, ActionObject):
             return True
         return False
@@ -831,7 +816,7 @@ class ActionService(AbstractService):
 
     @service_method(path="action.execute", name="execute", roles=GUEST_ROLE_LEVEL)
     def execute(
-        self, context: AuthedServiceContext, action: Action
+        self, context: AuthedServiceContext, action: Action,
     ) -> Result[ActionObject, Err]:
         """Execute an operation on objects in the action store"""
         # relative
@@ -845,10 +830,9 @@ class ActionService(AbstractService):
             for k, v in action.kwargs.items():
                 # transform lineage ids into ids
                 kwarg_ids[k] = v.id
-            result_action_object = usercode_service._call(
-                context, action.user_code_id, action.result_id, **kwarg_ids
+            return usercode_service._call(
+                context, action.user_code_id, action.result_id, **kwarg_ids,
             )
-            return result_action_object
         elif action.action_type == ActionType.FUNCTION:
             result_action_object = self.call_function(context, action)
         else:
@@ -860,19 +844,18 @@ class ActionService(AbstractService):
             )
             if resolved_self.is_err():
                 return Err(
-                    f"Failed executing action {action}, could not resolve self: {resolved_self.err()}"
+                    f"Failed executing action {action}, could not resolve self: {resolved_self.err()}",
                 )
             resolved_self = resolved_self.ok()
             if action.op == "__call__" and resolved_self.syft_action_data_type == Plan:
-                result_action_object = self.execute_plan(
+                return self.execute_plan(
                     plan=resolved_self.syft_action_data,
                     context=context,
                     plan_kwargs=action.kwargs,
                 )
-                return result_action_object
             elif action.action_type == ActionType.SETATTRIBUTE:
                 result_action_object = self.set_attribute(
-                    context, action, resolved_self
+                    context, action, resolved_self,
                 )
             elif action.action_type == ActionType.GETATTRIBUTE:
                 result_action_object = self.get_attribute(action, resolved_self)
@@ -883,14 +866,14 @@ class ActionService(AbstractService):
 
         if result_action_object.is_err():
             return Err(
-                f"Failed executing action {action}, result is an error: {result_action_object.err()}"
+                f"Failed executing action {action}, result is an error: {result_action_object.err()}",
             )
         else:
             result_action_object = result_action_object.ok()
 
         # check if we have read permissions on the result
         has_result_read_permission = self.has_read_permission_for_action_result(
-            context, action
+            context, action,
         )
 
         result_action_object._set_obj_location_(
@@ -903,7 +886,7 @@ class ActionService(AbstractService):
 
         # pass permission information to the action store as extra kwargs
         context.extra_kwargs = {
-            "has_result_read_permission": has_result_read_permission
+            "has_result_read_permission": has_result_read_permission,
         }
         if isinstance(blob_store_result, SyftWarning):
             logger.debug(blob_store_result.message)
@@ -913,13 +896,13 @@ class ActionService(AbstractService):
         )
         if set_result.is_err():
             return Err(
-                f"Failed executing action {action}, set result is an error: {set_result.err()}"
+                f"Failed executing action {action}, set result is an error: {set_result.err()}",
             )
 
         return set_result
 
     def has_read_permission_for_action_result(
-        self, context: AuthedServiceContext, action: Action
+        self, context: AuthedServiceContext, action: Action,
     ) -> bool:
         action_obj_ids = (
             action.args + list(action.kwargs.values()) + [action.remote_self]
@@ -932,7 +915,7 @@ class ActionService(AbstractService):
 
     @service_method(path="action.exists", name="exists", roles=GUEST_ROLE_LEVEL)
     def exists(
-        self, context: AuthedServiceContext, obj_id: UID
+        self, context: AuthedServiceContext, obj_id: UID,
     ) -> Result[SyftSuccess, SyftError]:
         """Checks if the given object id exists in the Action Store"""
         if self.store.exists(obj_id):
@@ -942,7 +925,7 @@ class ActionService(AbstractService):
 
     @service_method(path="action.delete", name="delete", roles=ADMIN_ROLE_LEVEL)
     def delete(
-        self, context: AuthedServiceContext, uid: UID, soft_delete: bool = False
+        self, context: AuthedServiceContext, uid: UID, soft_delete: bool = False,
     ) -> SyftSuccess | SyftError:
         get_res = self.store.get(uid=uid, credentials=context.credentials)
         if get_res.is_err():
@@ -958,7 +941,7 @@ class ActionService(AbstractService):
 
         # delete the action object from the action store
         store_del_res = self._delete_from_action_store(
-            context=context, uid=obj.id, soft_delete=soft_delete
+            context=context, uid=obj.id, soft_delete=soft_delete,
         )
         if isinstance(store_del_res, SyftError):
             return SyftError(message=store_del_res.message)
@@ -973,12 +956,12 @@ class ActionService(AbstractService):
     ) -> SyftSuccess | SyftError:
         deleted_blob_ids = []
         blob_store_service = cast(
-            BlobStorageService, context.server.get_service(BlobStorageService)
+            BlobStorageService, context.server.get_service(BlobStorageService),
         )
 
         if isinstance(obj, ActionObject) and obj.syft_blob_storage_entry_id:
             blob_del_res = blob_store_service.delete(
-                context=context, uid=obj.syft_blob_storage_entry_id
+                context=context, uid=obj.syft_blob_storage_entry_id,
             )
             if isinstance(blob_del_res, SyftError):
                 return SyftError(message=blob_del_res.message)
@@ -987,7 +970,7 @@ class ActionService(AbstractService):
         if isinstance(obj, TwinObject):
             if obj.private.syft_blob_storage_entry_id:
                 blob_del_res = blob_store_service.delete(
-                    context=context, uid=obj.private.syft_blob_storage_entry_id
+                    context=context, uid=obj.private.syft_blob_storage_entry_id,
                 )
                 if isinstance(blob_del_res, SyftError):
                     return SyftError(message=blob_del_res.message)
@@ -995,7 +978,7 @@ class ActionService(AbstractService):
 
             if obj.mock.syft_blob_storage_entry_id:
                 blob_del_res = blob_store_service.delete(
-                    context=context, uid=obj.mock.syft_blob_storage_entry_id
+                    context=context, uid=obj.mock.syft_blob_storage_entry_id,
                 )
                 if isinstance(blob_del_res, SyftError):
                     return SyftError(message=blob_del_res.message)
@@ -1019,7 +1002,7 @@ class ActionService(AbstractService):
 
             if isinstance(obj, TwinObject):
                 res = self._soft_delete_action_obj(
-                    context=context, action_obj=obj.private
+                    context=context, action_obj=obj.private,
                 )
                 if res.is_err():
                     return SyftError(message=res.err())
@@ -1039,27 +1022,26 @@ class ActionService(AbstractService):
         return SyftSuccess(message=f"Action object with uid '{uid}' deleted.")
 
     def _soft_delete_action_obj(
-        self, context: AuthedServiceContext, action_obj: ActionObject
+        self, context: AuthedServiceContext, action_obj: ActionObject,
     ) -> Result[ActionObject, str]:
         action_obj.syft_action_data_cache = None
         res = action_obj._save_to_blob_storage()
         if isinstance(res, SyftError):
             return Err(res.message)
-        set_result = self._set(
+        return self._set(
             context=context,
             action_object=action_obj,
         )
-        return set_result
 
 
 def resolve_action_args(
-    action: Action, context: AuthedServiceContext, service: ActionService
+    action: Action, context: AuthedServiceContext, service: ActionService,
 ) -> tuple[Ok[dict], bool]:
     has_twin_inputs = False
     args = []
     for arg_id in action.args:
         arg_value = service._get(
-            context=context, uid=arg_id, twin_mode=TwinMode.NONE, has_permission=True
+            context=context, uid=arg_id, twin_mode=TwinMode.NONE, has_permission=True,
         )
         if arg_value.is_err():
             return arg_value, False
@@ -1070,13 +1052,13 @@ def resolve_action_args(
 
 
 def resolve_action_kwargs(
-    action: Action, context: AuthedServiceContext, service: ActionService
+    action: Action, context: AuthedServiceContext, service: ActionService,
 ) -> tuple[Ok[dict], bool]:
     has_twin_inputs = False
     kwargs = {}
     for key, arg_id in action.kwargs.items():
         kwarg_value = service._get(
-            context=context, uid=arg_id, twin_mode=TwinMode.NONE, has_permission=True
+            context=context, uid=arg_id, twin_mode=TwinMode.NONE, has_permission=True,
         )
         if kwarg_value.is_err():
             return kwarg_value, False
@@ -1113,8 +1095,7 @@ def execute_callable(
         res = importlib.import_module(path_elements[0])
         for p in path_elements[1:]:
             res = getattr(res, p)
-        res = getattr(res, op)
-        return res
+        return getattr(res, op)
 
     target_callable = _get_target_callable(action.path, action.op)
 
@@ -1135,7 +1116,7 @@ def execute_callable(
                 private_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
                 private_result = target_callable(*private_args, **private_kwargs)
                 result_action_object_private = wrap_result(
-                    action.result_id, private_result
+                    action.result_id, private_result,
                 )
 
                 twin_mode = TwinMode.MOCK
@@ -1195,7 +1176,7 @@ def execute_object(
                 private_kwargs = filter_twin_kwargs(kwargs, twin_mode=TwinMode.PRIVATE)
                 private_result = target_method(*private_args, **private_kwargs)
                 result_action_object_private = wrap_result(
-                    action.result_id, private_result
+                    action.result_id, private_result,
                 )
 
                 mock_args = filter_twin_args(args, twin_mode=TwinMode.MOCK)
@@ -1222,8 +1203,9 @@ def execute_object(
                 result = target_method(*mock_args, **mock_kwargs)
                 result_action_object = wrap_result(action.result_id, result)
             else:
+                msg = f"Bad combination of: twin_mode: {twin_mode} and has_twin_inputs: {has_twin_inputs}"
                 raise Exception(
-                    f"Bad combination of: twin_mode: {twin_mode} and has_twin_inputs: {has_twin_inputs}"
+                    msg,
                 )
         else:
             return Err("Missing target method")
@@ -1237,8 +1219,7 @@ def execute_object(
 def wrap_result(result_id: UID, result: Any) -> ActionObject:
     # 🟡 TODO 11: Figure out how we want to store action object results
     action_type = action_type_for_type(result)
-    result_action_object = action_type(id=result_id, syft_action_data_cache=result)
-    return result_action_object
+    return action_type(id=result_id, syft_action_data_cache=result)
 
 
 def filter_twin_args(args: list[Any], twin_mode: TwinMode) -> Any:
@@ -1250,8 +1231,9 @@ def filter_twin_args(args: list[Any], twin_mode: TwinMode) -> Any:
             elif twin_mode == TwinMode.MOCK:
                 filtered.append(arg.mock.syft_action_data)
             else:
+                msg = f"Filter can only use {TwinMode.PRIVATE} or {TwinMode.MOCK}"
                 raise Exception(
-                    f"Filter can only use {TwinMode.PRIVATE} or {TwinMode.MOCK}"
+                    msg,
                 )
         else:
             filtered.append(arg.syft_action_data)
@@ -1259,7 +1241,7 @@ def filter_twin_args(args: list[Any], twin_mode: TwinMode) -> Any:
 
 
 def filter_twin_kwargs(
-    kwargs: dict, twin_mode: TwinMode, allow_python_types: bool = False
+    kwargs: dict, twin_mode: TwinMode, allow_python_types: bool = False,
 ) -> Any:
     filtered = {}
     for k, v in kwargs.items():
@@ -1269,8 +1251,9 @@ def filter_twin_kwargs(
             elif twin_mode == TwinMode.MOCK:
                 filtered[k] = v.mock.syft_action_data
             else:
+                msg = f"Filter can only use {TwinMode.PRIVATE} or {TwinMode.MOCK}"
                 raise Exception(
-                    f"Filter can only use {TwinMode.PRIVATE} or {TwinMode.MOCK}"
+                    msg,
                 )
         else:
             if isinstance(v, ActionObject):
@@ -1282,8 +1265,9 @@ def filter_twin_kwargs(
                 filtered[k] = v
             else:
                 # third party
+                msg = f"unexepected value {v} passed to filtered twin kwargs"
                 raise ValueError(
-                    f"unexepected value {v} passed to filtered twin kwargs"
+                    msg,
                 )
     return filtered
 

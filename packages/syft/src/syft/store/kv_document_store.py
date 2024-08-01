@@ -4,7 +4,7 @@ from __future__ import annotations
 # stdlib
 from collections import defaultdict
 from enum import Enum
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 # third party
 from result import Err
@@ -14,7 +14,6 @@ from typing_extensions import Self
 
 # relative
 from ..serde.serializable import serializable
-from ..server.credentials import SyftVerifyKey
 from ..service.action.action_permissions import ActionObjectEXECUTE
 from ..service.action.action_permissions import ActionObjectOWNER
 from ..service.action.action_permissions import ActionObjectPermission
@@ -22,9 +21,7 @@ from ..service.action.action_permissions import ActionObjectREAD
 from ..service.action.action_permissions import ActionObjectWRITE
 from ..service.action.action_permissions import ActionPermission
 from ..service.action.action_permissions import StoragePermission
-from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
-from ..types.syft_object import SyftObject
 from ..types.uid import UID
 from .document_store import BaseStash
 from .document_store import PartitionKey
@@ -32,6 +29,11 @@ from .document_store import PartitionKeys
 from .document_store import QueryKey
 from .document_store import QueryKeys
 from .document_store import StorePartition
+
+if TYPE_CHECKING:
+    from ..service.context import AuthedServiceContext
+    from ..types.syft_object import SyftObject
+    from ..server.credentials import SyftVerifyKey
 
 
 @serializable(canonical_name="UniqueKeyCheck", version=1)
@@ -104,17 +106,17 @@ class KeyValueStorePartition(StorePartition):
 
         try:
             self.data = self.store_config.backing_store(
-                "data", self.settings, self.store_config
+                "data", self.settings, self.store_config,
             )
             self.unique_keys = self.store_config.backing_store(
-                "unique_keys", self.settings, self.store_config
+                "unique_keys", self.settings, self.store_config,
             )
             self.searchable_keys = self.store_config.backing_store(
-                "searchable_keys", self.settings, self.store_config
+                "searchable_keys", self.settings, self.store_config,
             )
             # uid -> set['<uid>_permission']
             self.permissions: dict[UID, set[str]] = self.store_config.backing_store(
-                "permissions", self.settings, self.store_config, ddtype=set
+                "permissions", self.settings, self.store_config, ddtype=set,
             )
 
             # uid -> set['<server_uid>']
@@ -187,7 +189,7 @@ class KeyValueStorePartition(StorePartition):
             searchable_query_keys = self.settings.searchable_keys.with_obj(obj)
 
             ck_check = self._check_partition_keys_unique(
-                unique_query_keys=unique_query_keys
+                unique_query_keys=unique_query_keys,
             )
 
             if not store_key_exists and ck_check == UniqueKeyCheck.EMPTY:
@@ -198,7 +200,7 @@ class KeyValueStorePartition(StorePartition):
                 keys = ", ".join(f"`{key.key}`" for key in unique_query_keys.all)
                 return Err(
                     f"Duplication Key Error for {obj}.\n"
-                    f"The fields that should be unique are {keys}."
+                    f"The fields that should be unique are {keys}.",
                 )
             else:
                 # we are not throwing an error, because we are ignoring duplicates
@@ -228,7 +230,7 @@ class KeyValueStorePartition(StorePartition):
                         StoragePermission(
                             uid=uid,
                             server_uid=self.server_uid,
-                        )
+                        ),
                     )
 
                 return Ok(obj)
@@ -238,7 +240,7 @@ class KeyValueStorePartition(StorePartition):
             return Err(f"Failed to write obj {obj}. {e}")
 
     def take_ownership(
-        self, uid: UID, credentials: SyftVerifyKey
+        self, uid: UID, credentials: SyftVerifyKey,
     ) -> Result[SyftSuccess, str]:
         # first person using this UID can claim ownership
         if uid not in self.permissions and uid not in self.data:
@@ -248,7 +250,7 @@ class KeyValueStorePartition(StorePartition):
                     ActionObjectWRITE(uid=uid, credentials=credentials),
                     ActionObjectREAD(uid=uid, credentials=credentials),
                     ActionObjectEXECUTE(uid=uid, credentials=credentials),
-                ]
+                ],
             )
             return Ok(SyftSuccess(message=f"Ownership of ID: {uid} taken."))
         return Err(f"UID: {uid} already owned.")
@@ -269,7 +271,8 @@ class KeyValueStorePartition(StorePartition):
 
     def has_permission(self, permission: ActionObjectPermission) -> bool:
         if not isinstance(permission.permission, ActionPermission):
-            raise Exception(f"ObjectPermission type: {permission.permission} not valid")
+            msg = f"ObjectPermission type: {permission.permission} not valid"
+            raise Exception(msg)
 
         if (
             permission.credentials
@@ -297,14 +300,12 @@ class KeyValueStorePartition(StorePartition):
         elif (
             permission.permission == ActionPermission.READ
             and ActionObjectPermission(
-                permission.uid, ActionPermission.ALL_READ
+                permission.uid, ActionPermission.ALL_READ,
             ).permission_string
             in self.permissions[permission.uid]
         ):
             return True
-        elif permission.permission == ActionPermission.WRITE:
-            pass
-        elif permission.permission == ActionPermission.EXECUTE:
+        elif permission.permission == ActionPermission.WRITE or permission.permission == ActionPermission.EXECUTE:
             pass
 
         return False
@@ -354,7 +355,7 @@ class KeyValueStorePartition(StorePartition):
         has_permission: bool | None = False,
     ) -> Result[list[BaseStash.object_type], str]:
         # this checks permissions
-        res = [self._get(uid, credentials, has_permission) for uid in self.data.keys()]
+        res = [self._get(uid, credentials, has_permission) for uid in self.data]
         result = [x.ok() for x in res if x.is_ok()]
         if order_by is not None:
             result = sorted(result, key=lambda x: getattr(x, order_by.key, ""))
@@ -427,7 +428,7 @@ class KeyValueStorePartition(StorePartition):
 
         qks: QueryKeys = self.store_query_keys(ids)
         return self._get_all_from_store(
-            credentials=credentials, qks=qks, order_by=order_by
+            credentials=credentials, qks=qks, order_by=order_by,
         )
 
     def _update(
@@ -444,11 +445,11 @@ class KeyValueStorePartition(StorePartition):
                 return Err(f"No object exists for query key: {qk}")
 
             if has_permission or self.has_permission(
-                ActionObjectWRITE(uid=qk.value, credentials=credentials)
+                ActionObjectWRITE(uid=qk.value, credentials=credentials),
             ):
                 _original_obj = self.data[qk.value]
                 _original_unique_keys = self.settings.unique_keys.with_obj(
-                    _original_obj
+                    _original_obj,
                 )
                 if allow_missing_keys:
                     searchable_keys = PartitionKeys(
@@ -456,13 +457,13 @@ class KeyValueStorePartition(StorePartition):
                             x
                             for x in self.settings.searchable_keys.all
                             if hasattr(_original_obj, x.key)
-                        ]
+                        ],
                     )
                     _original_searchable_keys = searchable_keys.with_obj(_original_obj)
 
                 else:
                     _original_searchable_keys = self.settings.searchable_keys.with_obj(
-                        _original_obj
+                        _original_obj,
                     )
 
                 store_query_key = self.settings.store_key.with_obj(_original_obj)
@@ -490,7 +491,7 @@ class KeyValueStorePartition(StorePartition):
                     store_query_key=store_query_key,
                     unique_query_keys=self.settings.unique_keys.with_obj(_original_obj),
                     searchable_query_keys=self.settings.searchable_keys.with_obj(
-                        _original_obj
+                        _original_obj,
                     ),
                     # has been updated
                     obj=_original_obj,
@@ -513,11 +514,10 @@ class KeyValueStorePartition(StorePartition):
     ) -> Result[list[SyftObject], str]:
         matches = []
         for qk in qks.all:
-            if qk.value in self.data:
-                if self.has_permission(
-                    ActionObjectREAD(uid=qk.value, credentials=credentials)
-                ):
-                    matches.append(self.data[qk.value])
+            if qk.value in self.data and self.has_permission(
+                ActionObjectREAD(uid=qk.value, credentials=credentials),
+            ):
+                matches.append(self.data[qk.value])
         if order_by is not None:
             matches = sorted(matches, key=lambda x: getattr(x, order_by.key, ""))
         return Ok(matches)
@@ -526,11 +526,11 @@ class KeyValueStorePartition(StorePartition):
         pass
 
     def _delete(
-        self, credentials: SyftVerifyKey, qk: QueryKey, has_permission: bool = False
+        self, credentials: SyftVerifyKey, qk: QueryKey, has_permission: bool = False,
     ) -> Result[SyftSuccess, Err]:
         try:
             if has_permission or self.has_permission(
-                ActionObjectWRITE(uid=qk.value, credentials=credentials)
+                ActionObjectWRITE(uid=qk.value, credentials=credentials),
             ):
                 _obj = self.data.pop(qk.value)
                 self.permissions.pop(qk.value)
@@ -540,7 +540,7 @@ class KeyValueStorePartition(StorePartition):
                 return Ok(SyftSuccess(message="Deleted"))
             else:
                 return Err(
-                    f"Failed to delete with query key {qk}, you have no permission"
+                    f"Failed to delete with query key {qk}, you have no permission",
                 )
         except Exception as e:
             return Err(f"Failed to delete with query key {qk} with error: {e}")
@@ -575,7 +575,7 @@ class KeyValueStorePartition(StorePartition):
                 if pk_key not in self.unique_keys:
                     return Err(f"Failed to query index with {qk}")
                 ck_col = self.unique_keys[pk_key]
-                if pk_value not in ck_col.keys():
+                if pk_value not in ck_col:
                     # must be at least one in all query keys
                     continue
                 store_value = ck_col[pk_value]
@@ -610,7 +610,7 @@ class KeyValueStorePartition(StorePartition):
                     # the values of the list will be turned into strings in a single key
                     matches = set()
                     for item in pk_value:
-                        for col_key in ck_col.keys():
+                        for col_key in ck_col:
                             if str(item) in col_key:
                                 store_values = ck_col[col_key]
                                 for value in store_values:
@@ -619,7 +619,7 @@ class KeyValueStorePartition(StorePartition):
                         subsets.append(matches)
                 else:
                     # this is the normal path
-                    if pk_value not in ck_col.keys():
+                    if pk_value not in ck_col:
                         # must be at least one in all query keys
                         subsets.append(set())
                         continue
@@ -637,7 +637,7 @@ class KeyValueStorePartition(StorePartition):
             return Err(f"Failed to query with {qks}. {e}")
 
     def _check_partition_keys_unique(
-        self, unique_query_keys: QueryKeys
+        self, unique_query_keys: QueryKeys,
     ) -> UniqueKeyCheck:
         # dont check the store key
         qks = [
@@ -649,8 +649,9 @@ class KeyValueStorePartition(StorePartition):
         for qk in qks:
             pk_key, pk_value = qk.key, qk.value
             if pk_key not in self.unique_keys:
+                msg = f"pk_key: {pk_key} not in unique_keys: {self.unique_keys.keys()}"
                 raise Exception(
-                    f"pk_key: {pk_key} not in unique_keys: {self.unique_keys.keys()}"
+                    msg,
                 )
             ck_col = self.unique_keys[pk_key]
             if pk_value in ck_col:
@@ -702,7 +703,7 @@ class KeyValueStorePartition(StorePartition):
         self.data[store_query_key.value] = obj
 
     def _migrate_data(
-        self, to_klass: SyftObject, context: AuthedServiceContext, has_permission: bool
+        self, to_klass: SyftObject, context: AuthedServiceContext, has_permission: bool,
     ) -> Result[bool, str]:
         credentials = context.credentials
         has_permission = (credentials == self.root_verify_key) or has_permission
@@ -712,7 +713,7 @@ class KeyValueStorePartition(StorePartition):
                     migrated_value = value.migrate_to(to_klass.__version__, context)
                 except Exception:
                     return Err(
-                        f"Failed to migrate data to {to_klass} for qk {to_klass.__version__}: {key}"
+                        f"Failed to migrate data to {to_klass} for qk {to_klass.__version__}: {key}",
                     )
                 qk = self.settings.store_key.with_obj(key)
                 result = self._update(

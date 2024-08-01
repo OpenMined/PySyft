@@ -28,7 +28,7 @@ class AzureRemoteProfile(RemoteProfile):
 class RemoteProfileStash(BaseUIDStoreStash):
     object_type = RemoteProfile
     settings: PartitionSettings = PartitionSettings(
-        name=RemoteProfile.__canonical_name__, object_type=RemoteProfile
+        name=RemoteProfile.__canonical_name__, object_type=RemoteProfile,
     )
 
     def __init__(self, store: DocumentStore) -> None:

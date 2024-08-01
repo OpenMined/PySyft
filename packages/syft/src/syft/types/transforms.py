@@ -47,7 +47,7 @@ class TransformContext(Context):
     def to_server_context(self) -> ServerServiceContext:
         if self.credentials:
             return AuthedServiceContext(
-                server=self.server, credentials=self.credentials
+                server=self.server, credentials=self.credentials,
             )
         if self.server:
             return ServerServiceContext(server=self.server)
@@ -55,7 +55,7 @@ class TransformContext(Context):
 
 
 def geteitherattr(
-    _self: Any, output: dict, key: str, default: Any = NotNone
+    _self: Any, output: dict, key: str, default: Any = NotNone,
 ) -> Any | None:
     if key in output:
         return output[key]
@@ -88,7 +88,7 @@ def rename(old_key: str, new_key: str) -> Callable:
     def drop_keys(context: TransformContext) -> TransformContext:
         if context.output:
             context.output[new_key] = geteitherattr(
-                context.obj, context.output, old_key
+                context.obj, context.output, old_key,
             )
             if old_key in context.output:
                 del context.output[old_key]
@@ -118,19 +118,20 @@ def keep(list_keys: list[str]) -> Callable:
 
 
 def convert_types(
-    list_keys: list[str], types: type | list[type]
+    list_keys: list[str], types: type | list[type],
 ) -> Callable[[TransformContext], TransformContext]:
     if not isinstance(types, list):
         types = [types] * len(list_keys)
 
     if isinstance(types, list) and len(types) != len(list_keys):
-        raise Exception("convert types lists must be the same length")
+        msg = "convert types lists must be the same length"
+        raise Exception(msg)
 
     def run_convert_types(context: TransformContext) -> TransformContext:
         if context.output:
             for key, _type in zip(list_keys, types):
                 context.output[key] = _type(
-                    geteitherattr(context.obj, context.output, key)
+                    geteitherattr(context.obj, context.output, key),
                 )
         return context
 
@@ -149,7 +150,7 @@ def generate_action_object_id(context: TransformContext) -> TransformContext:
     if context.output is None:
         return context
     if "action_object_id" not in context.output or not isinstance(
-        context.output["action_object_id"], UID
+        context.output["action_object_id"], UID,
     ):
         context.output["action_object_id"] = UID()
     return context
@@ -194,7 +195,7 @@ def add_server_uid_for_key(key: str) -> Callable:
 
 
 def generate_transform_wrapper(
-    klass_from: type, klass_to: type, transforms: list[Callable]
+    klass_from: type, klass_to: type, transforms: list[Callable],
 ) -> Callable:
     def wrapper(
         self: klass_from,
@@ -215,8 +216,9 @@ def validate_klass_and_version(
     version_to: int | None = None,
 ) -> tuple[str, int | None, str, int | None]:
     if not isinstance(klass_from, type | str):
+        msg = "Arguments to `klass_from` should be either of `Type` or `str` type."
         raise NotImplementedError(
-            "Arguments to `klass_from` should be either of `Type` or `str` type."
+            msg,
         )
 
     if isinstance(klass_from, str):
@@ -229,8 +231,9 @@ def validate_klass_and_version(
         version_from = None
 
     if not isinstance(klass_to, type | str):
+        msg = "Arguments to `klass_to` should be either of `Type` or `str` type."
         raise NotImplementedError(
-            "Arguments to `klass_to` should be either of `Type` or `str` type."
+            msg,
         )
 
     if isinstance(klass_to, str):
@@ -299,7 +302,7 @@ def transform(
         transforms = function()
 
         wrapper = generate_transform_wrapper(
-            klass_from=klass_from, klass_to=klass_to, transforms=transforms
+            klass_from=klass_from, klass_to=klass_to, transforms=transforms,
         )
 
         SyftObjectRegistry.add_transform(

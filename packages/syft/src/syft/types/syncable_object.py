@@ -31,6 +31,6 @@ class SyncableSyftObject(SyftObject):
         return self.model_copy(update=update, deep=True)
 
     def get_sync_dependencies(
-        self, context: AuthedServiceContext
+        self, context: AuthedServiceContext,
     ) -> list[UID] | SyftError:
         return []

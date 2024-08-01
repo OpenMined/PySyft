@@ -52,12 +52,12 @@ class _Meta(type):
 
     @overload
     def __call__(
-        cls: type[_T], __value: Iterable[_VT], __key: Collection[_KT]
+        cls: type[_T], __value: Iterable[_VT], __key: Collection[_KT],
     ) -> _T: ...
 
     @overload
     def __call__(
-        cls: type[_T], __value: Iterable[_VT], __key: Callable[[_VT], _KT]
+        cls: type[_T], __value: Iterable[_VT], __key: Callable[[_VT], _KT],
     ) -> _T: ...
 
     def __call__(
@@ -186,22 +186,26 @@ class DictTuple(tuple[_VT, ...], Generic[_KT, _VT], metaclass=_Meta):
             self.__mapping = MappingProxyType(__value)
         elif isinstance(__value, Iterable):
             self.__mapping = MappingProxyType(
-                OrderedDict((k, i) for i, k in enumerate(__value))
+                OrderedDict((k, i) for i, k in enumerate(__value)),
             )
         elif isinstance(__value, Callable):
             self.__mapping = MappingProxyType(
-                OrderedDict((__value(v), i) for i, v in enumerate(self))
+                OrderedDict((__value(v), i) for i, v in enumerate(self)),
             )
 
         super().__init__()
 
         if len(self.__mapping) != len(self):
-            raise ValueError("`__keys` and `__values` do not have the same length")
+            msg = "`__keys` and `__values` do not have the same length"
+            raise ValueError(msg)
 
-        if any(isinstance(k, SupportsIndex) for k in self.__mapping.keys()):
-            raise ValueError(
+        if any(isinstance(k, SupportsIndex) for k in self.__mapping):
+            msg = (
                 "values of `__keys` should not have type `int`, "
                 "or implement `__index__()`"
+            )
+            raise ValueError(
+                msg,
             )
 
     @overload

@@ -58,14 +58,14 @@ NP_2dARRAY = np.array([[3, 4, 5, 2], [6, 7, 2, 6]])
             "hsplit",
             "np.array([[3, 4, 5, 2], [6, 7, 2, 6]]), 4",
             marks=pytest.mark.xfail(
-                raises=ValueError, reason="Value error insinde Syft"
+                raises=ValueError, reason="Value error insinde Syft",
             ),
         ),
         pytest.param(
             "vsplit",
             "np.array([[3, 4, 5, 2], [6, 7, 2, 6]]), 2",
             marks=pytest.mark.xfail(
-                raises=ValueError, reason="Value error insinde Syft"
+                raises=ValueError, reason="Value error insinde Syft",
             ),
         ),
         pytest.param(
@@ -86,7 +86,7 @@ def test_numpy_functions(func, func_arguments, request):
     try:
         if func == "where":
             exec(
-                "a = np.array([[3, 4, 5, 2], [6, 7, 2, 6]])"
+                "a = np.array([[3, 4, 5, 2], [6, 7, 2, 6]])",
             )  # this is needed for where test
         result = eval(f"np_sy.{func}({func_arguments})")
 

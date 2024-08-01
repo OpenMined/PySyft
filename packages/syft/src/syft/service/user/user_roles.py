@@ -82,19 +82,19 @@ GUEST_ROLE_LEVEL = ServiceRole.roles_for_level(
     ServiceRole.GUEST
     + ServiceRole.DATA_SCIENTIST
     + ServiceRole.DATA_OWNER
-    + ServiceRole.ADMIN
+    + ServiceRole.ADMIN,
 )
 
 DATA_SCIENTIST_ROLE_LEVEL: list[ServiceRole] = ServiceRole.roles_for_level(
-    ServiceRole.DATA_SCIENTIST + ServiceRole.DATA_OWNER + ServiceRole.ADMIN
+    ServiceRole.DATA_SCIENTIST + ServiceRole.DATA_OWNER + ServiceRole.ADMIN,
 )
 
 ONLY_DATA_SCIENTIST_ROLE_LEVEL: list[ServiceRole] = ServiceRole.roles_for_level(
-    ServiceRole.DATA_SCIENTIST
+    ServiceRole.DATA_SCIENTIST,
 )
 
 DATA_OWNER_ROLE_LEVEL: list[ServiceRole] = ServiceRole.roles_for_level(
-    ServiceRole.DATA_OWNER + ServiceRole.ADMIN
+    ServiceRole.DATA_OWNER + ServiceRole.ADMIN,
 )
 
 ADMIN_ROLE_LEVEL = ServiceRole.roles_for_level(ServiceRole.ADMIN)

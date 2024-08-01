@@ -14,6 +14,6 @@ def min_size_for_blob_storage_upload(
 
 
 def can_upload_to_blob_storage(
-    data: Any, metadata: ServerMetadata | ServerMetadataJSON
+    data: Any, metadata: ServerMetadata | ServerMetadataJSON,
 ) -> bool:
     return get_mb_serialized_size(data) >= min_size_for_blob_storage_upload(metadata)

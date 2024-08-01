@@ -15,8 +15,7 @@ from .attestation_constants import NRAS_URL
 def extract_token(captured_value: str) -> str:
     match = re.search(r"Entity Attestation Token is (\S+)", captured_value)
     if match:
-        token = match.group(1)  # Extract the token, which is in group 1 of the match
-        return token
+        return match.group(1)  # Extract the token, which is in group 1 of the match
     else:
         return "Token not found"
 
@@ -29,7 +28,7 @@ def attest_gpu() -> tuple[str, str]:
     logger.info("[RemoteGPUTest] server name : {}", client.get_name())
 
     client.add_verifier(
-        attestation.Devices.GPU, attestation.Environment.REMOTE, NRAS_URL, ""
+        attestation.Devices.GPU, attestation.Environment.REMOTE, NRAS_URL, "",
     )
 
     # Step 1: Redirect stdout

@@ -132,7 +132,7 @@ def test_get_all_error_on_get_all_inbox(
     expected_error = "Failed to get all inbox."
 
     def mock_get_all_inbox_for_verify_key(
-        credentials: SyftVerifyKey, verify_key: SyftVerifyKey
+        credentials: SyftVerifyKey, verify_key: SyftVerifyKey,
     ) -> Err:
         return Err(expected_error)
 
@@ -192,7 +192,7 @@ def test_get_all_error_on_get_all_sent(
     expected_error = "Failed to get all sent."
 
     def mock_get_all_sent_for_verify_key(
-        credentials: SyftVerifyKey, verify_key: SyftVerifyKey
+        credentials: SyftVerifyKey, verify_key: SyftVerifyKey,
     ) -> Err:
         return Err(expected_error)
 
@@ -238,7 +238,7 @@ def test_get_all_for_status_success(
     )
 
     response = test_notification_service.get_all_for_status(
-        authed_context, NotificationStatus.UNREAD
+        authed_context, NotificationStatus.UNREAD,
     )
 
     assert len(response) == 1
@@ -431,7 +431,7 @@ def test_mark_as_read_success(
     )
 
     response = test_notification_service.mark_as_read(
-        authed_context, expected_message.id
+        authed_context, expected_message.id,
     )
 
     assert response.status == NotificationStatus.READ
@@ -458,7 +458,7 @@ def test_mark_as_read_error_on_update_notification_status(
     expected_error = "Failed to update notification status."
 
     def mock_update_notification_status(
-        credentials: SyftVerifyKey, uid: UID, status: NotificationStatus
+        credentials: SyftVerifyKey, uid: UID, status: NotificationStatus,
     ) -> Err:
         return Err(expected_error)
 
@@ -506,7 +506,7 @@ def test_mark_as_unread_success(
     )
 
     response = test_notification_service.mark_as_unread(
-        authed_context, expected_notification.id
+        authed_context, expected_notification.id,
     )
 
     assert response.status == NotificationStatus.UNREAD
@@ -533,7 +533,7 @@ def test_mark_as_unread_error_on_update_notification_status(
     expected_error = "Failed to update notification status."
 
     def mock_update_notificatiion_status(
-        credentials: SyftVerifyKey, uid: UID, status: NotificationStatus
+        credentials: SyftVerifyKey, uid: UID, status: NotificationStatus,
     ) -> Err:
         return Err(expected_error)
 
@@ -544,7 +544,7 @@ def test_mark_as_unread_error_on_update_notification_status(
     )
 
     response = notification_service.mark_as_unread(
-        authed_context, expected_notification.id
+        authed_context, expected_notification.id,
     )
 
     assert isinstance(response, SyftError)
@@ -572,7 +572,7 @@ def test_resolve_object_success(
     )
 
     def mock_resolve_link(
-        context: AuthedServiceContext, linked_obj: LinkedObject
+        context: AuthedServiceContext, linked_obj: LinkedObject,
     ) -> Ok:
         return Ok(None)
 
@@ -607,7 +607,7 @@ def test_resolve_object_error_on_resolve_link(
     )
 
     def mock_resolve_link(
-        context: AuthedServiceContext, linked_obj: LinkedObject
+        context: AuthedServiceContext, linked_obj: LinkedObject,
     ) -> Err:
         return Err(expected_error)
 

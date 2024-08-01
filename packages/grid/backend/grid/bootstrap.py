@@ -51,7 +51,8 @@ def get_credentials_file_key(key: str) -> str | None:
 def save_credential(key: str, value: str) -> str:
     credentials = get_credentials_file()
     if key in credentials:
-        raise Exception(f"{key} already set in credentials file. Can't overwrite.")
+        msg = f"{key} already set in credentials file. Can't overwrite."
+        raise Exception(msg)
     credentials[key] = value
     try:
         dirname = os.path.dirname(CREDENTIALS_PATH)
@@ -95,7 +96,8 @@ def validate_private_key(private_key: str | bytes) -> str:
             return str_key
     except Exception:
         pass
-    raise Exception(f"{SERVER_PRIVATE_KEY} is invalid")
+    msg = f"{SERVER_PRIVATE_KEY} is invalid"
+    raise Exception(msg)
 
 
 def validate_uid(server_uid: str) -> str:
@@ -105,11 +107,12 @@ def validate_uid(server_uid: str) -> str:
             return str(uid)
     except Exception:
         pass
-    raise Exception(f"{SERVER_UID} is invalid")
+    msg = f"{SERVER_UID} is invalid"
+    raise Exception(msg)
 
 
 def get_credential(
-    key: str, validation_func: Callable, generation_func: Callable
+    key: str, validation_func: Callable, generation_func: Callable,
 ) -> str:
     """
     This method will try to get a credential and if it isn't supplied or doesn't exist
@@ -125,7 +128,8 @@ def get_credential(
         and file_credential is not None
         and env_credential is not None
     ):
-        raise Exception(f"{key} from ENV must match {key} in {CREDENTIALS_PATH}")
+        msg = f"{key} from ENV must match {key} in {CREDENTIALS_PATH}"
+        raise Exception(msg)
 
     if env_credential is not None and file_credential is None:
         # if there is no key in the credential file but one is passed in ENV then save it
@@ -136,12 +140,13 @@ def get_credential(
     elif file_credential is not None and validation_func(file_credential):
         return file_credential
 
-    raise Exception("Failed to get or generate Private Key")
+    msg = "Failed to get or generate Private Key"
+    raise Exception(msg)
 
 
 def get_private_key() -> str:
     return get_credential(
-        SERVER_PRIVATE_KEY, validate_private_key, generate_private_key
+        SERVER_PRIVATE_KEY, validate_private_key, generate_private_key,
     )
 
 
@@ -159,10 +164,10 @@ if __name__ == "__main__":
     parser.add_argument("--private_key", action="store_true", help="Get Private Key")
     parser.add_argument("--uid", action="store_true", help="Get UID")
     parser.add_argument(
-        "--file", action="store_true", help="Generate credentials as file"
+        "--file", action="store_true", help="Generate credentials as file",
     )
     parser.add_argument(
-        "--debug", action="store_true", help="Show ENV and file credentials"
+        "--debug", action="store_true", help="Show ENV and file credentials",
     )
     args = parser.parse_args()
 

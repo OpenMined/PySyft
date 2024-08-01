@@ -35,18 +35,20 @@ class PasswordResetTemplate(EmailTemplate):
 
         user = user_service.get_by_verify_key(notification.to_user_verify_key)
         if not user:
-            raise Exception("User not found!")
+            msg = "User not found!"
+            raise Exception(msg)
 
         user.reset_token = user_service.generate_new_password_reset_token(
-            context.server.settings.pwd_token_config
+            context.server.settings.pwd_token_config,
         )
         user.reset_token_date = datetime.now()
 
         result = user_service.stash.update(
-            credentials=context.credentials, user=user, has_permission=True
+            credentials=context.credentials, user=user, has_permission=True,
         )
         if result.is_err():
-            raise Exception("Couldn't update the user password")
+            msg = "Couldn't update the user password"
+            raise Exception(msg)
 
         head = """<head>
             <style>
@@ -118,7 +120,7 @@ class OnBoardEmailTemplate(EmailTemplate):
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
         user_service = context.server.get_service("userservice")
         admin_name = user_service.get_by_verify_key(
-            user_service.admin_verify_key()
+            user_service.admin_verify_key(),
         ).name
 
         head = (

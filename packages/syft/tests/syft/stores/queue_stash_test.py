@@ -31,7 +31,7 @@ def mock_queue_object():
         server_uid=UID(),
         service_type=SyftWorkerPoolService,
     )
-    obj = QueueItem(
+    return QueueItem(
         id=UID(),
         server_uid=UID(),
         method="dummy_method",
@@ -40,7 +40,6 @@ def mock_queue_object():
         kwargs={},
         worker_pool=linked_worker_pool,
     )
-    return obj
 
 
 @pytest.mark.parametrize(

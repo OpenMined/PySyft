@@ -68,5 +68,5 @@ class AttestationService(AbstractService):
     def get_gpu_attestation(
         self,
         context: AuthedServiceContext,
-        raw_token: bool = False,    ) -> str | SyftError | SyftSuccess:
+        raw_token: bool = False    ) -> str | SyftError | SyftSuccess:
         return self.perform_request(requests.get, ATTEST_GPU_ENDPOINT, raw_token)

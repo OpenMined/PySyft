@@ -225,7 +225,8 @@ class ZMQProducer(QueueProducer):
         if self.auth_context.server is not None:
             return self.auth_context.server.get_service("ActionService")
         else:
-            raise Exception(f"{self.auth_context} does not have a server.")
+            msg = f"{self.auth_context} does not have a server."
+            raise Exception(msg)
 
     def contains_unresolved_action_objects(self, arg: Any, recursion: int = 0) -> bool:
         """recursively check collections for unresolved action objects"""
@@ -534,7 +535,7 @@ class ZMQProducer(QueueProducer):
         worker_ready = hexlify(address) in self.workers
         worker = self.require_worker(address)
 
-        if QueueMsgProtocol.W_READY == command:
+        if command == QueueMsgProtocol.W_READY:
             service_name = data.pop(0).decode()
             syft_worker_id = data.pop(0).decode()
             if worker_ready:
@@ -556,7 +557,7 @@ class ZMQProducer(QueueProducer):
                 worker.syft_worker_id = UID(syft_worker_id)
                 self.worker_waiting(worker)
 
-        elif QueueMsgProtocol.W_HEARTBEAT == command:
+        elif command == QueueMsgProtocol.W_HEARTBEAT:
             if worker_ready:
                 # If worker is ready then reset expiry
                 # and add it to worker waiting list
@@ -565,7 +566,7 @@ class ZMQProducer(QueueProducer):
             else:
                 logger.info(f"Got heartbeat, but worker not ready. {worker}")
                 self.delete_worker(worker, True)
-        elif QueueMsgProtocol.W_DISCONNECT == command:
+        elif command == QueueMsgProtocol.W_DISCONNECT:
             logger.info(f"Removing disconnected worker: {worker}")
             self.delete_worker(worker, False)
         else:
@@ -586,7 +587,7 @@ class ZMQProducer(QueueProducer):
 
         if worker.syft_worker_id is not None:
             self.update_consumer_state_for_worker(
-                worker.syft_worker_id, ConsumerState.DETACHED
+                worker.syft_worker_id, ConsumerState.DETACHED,
             )
 
     @property
@@ -658,7 +659,7 @@ class ZMQConsumer(QueueConsumer):
                     logger.error(
                         f"ZMQConsumer thread join timed out during closing. "
                         f"SyftWorker id {self.syft_worker_id}, "
-                        f"service name {self.service_name}."
+                        f"service name {self.service_name}.",
                     )
                 self.thread = None
             self.poller.unregister(self.socket)
@@ -809,7 +810,7 @@ class ZMQConsumer(QueueConsumer):
             )
             if res.is_err():
                 logger.error(
-                    f"Failed to update consumer state for {self.service_name}-{self.id}, error={res.err()}"
+                    f"Failed to update consumer state for {self.service_name}-{self.id}, error={res.err()}",
                 )
 
     @property
@@ -848,9 +849,8 @@ class ZMQClient(QueueClient):
     @staticmethod
     def _get_free_tcp_port(host: str) -> int:
         with socketserver.TCPServer((host, 0), None) as s:
-            free_port = s.server_address[1]
+            return s.server_address[1]
 
-        return free_port
 
     def add_producer(
         self,
@@ -921,14 +921,14 @@ class ZMQClient(QueueClient):
         producer = self.producers.get(queue_name)
         if producer is None:
             return SyftError(
-                message=f"No producer attached for queue: {queue_name}. Please add a producer for it."
+                message=f"No producer attached for queue: {queue_name}. Please add a producer for it.",
             )
         try:
             producer.send(message=message, worker=worker)
         except Exception as e:
             # stdlib
             return SyftError(
-                message=f"Failed to send message to: {queue_name} with error: {e}"
+                message=f"Failed to send message to: {queue_name} with error: {e}",
             )
         return SyftSuccess(
             message=f"Successfully queued message to : {queue_name}",

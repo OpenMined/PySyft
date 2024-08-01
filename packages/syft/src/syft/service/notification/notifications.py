@@ -110,7 +110,7 @@ class Notification(SyftObject):
         api: SyftAPI = cast(
             SyftAPI,
             APIRegistry.api_for(
-                self.server_uid, user_verify_key=self.syft_client_verify_key
+                self.server_uid, user_verify_key=self.syft_client_verify_key,
             ),
         )
         return api.services.notifications.mark_as_read(uid=self.id)
@@ -119,7 +119,7 @@ class Notification(SyftObject):
         api: SyftAPI = cast(
             SyftAPI,
             APIRegistry.api_for(
-                self.server_uid, user_verify_key=self.syft_client_verify_key
+                self.server_uid, user_verify_key=self.syft_client_verify_key,
             ),
         )
         return api.services.notifications.mark_as_unread(uid=self.id)
@@ -152,7 +152,8 @@ def add_msg_creation_time(context: TransformContext) -> TransformContext:
     if context.output is not None:
         context.output["created_at"] = DateTime.now()
     else:
-        raise ValueError(f"{context}'s output is None. No transformation happened")
+        msg = f"{context}'s output is None. No transformation happened"
+        raise ValueError(msg)
     return context
 
 

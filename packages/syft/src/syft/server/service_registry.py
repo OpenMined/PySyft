@@ -82,7 +82,7 @@ class ServiceRegistry:
 
     services: list[AbstractService] = field(default_factory=list, init=False)
     service_path_map: dict[str, AbstractService] = field(
-        default_factory=dict, init=False
+        default_factory=dict, init=False,
     )
 
     @classmethod
@@ -132,4 +132,5 @@ class ServiceRegistry:
             service_name = path_list.pop()
             return self.service_path_map[service_name.lower()]
         except KeyError:
-            raise ValueError(f"Service {path} not found.")
+            msg = f"Service {path} not found."
+            raise ValueError(msg)

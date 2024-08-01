@@ -70,7 +70,7 @@ class _Filterer(object):
             {
                 "$eq": _list_expand(operator_eq),
                 "$ne": _list_expand(
-                    lambda dv, sv: not operator_eq(dv, sv), negative=True
+                    lambda dv, sv: not operator_eq(dv, sv), negative=True,
                 ),
                 "$all": self._all_op,
                 "$in": _in_op,
@@ -89,8 +89,9 @@ class _Filterer(object):
 
     def apply(self, search_filter, document):
         if not isinstance(search_filter, dict):
+            msg = "the match filter must be an expression in an object"
             raise OperationFailure(
-                "the match filter must be an expression in an object"
+                msg,
             )
 
         for key, search in search_filter.items():
@@ -99,8 +100,9 @@ class _Filterer(object):
                 continue
             if key in LOGICAL_OPERATOR_MAP:
                 if not search:
+                    msg = "BadValue $and/$or/$nor must be a nonempty array"
                     raise OperationFailure(
-                        "BadValue $and/$or/$nor must be a nonempty array"
+                        msg,
                     )
                 if not LOGICAL_OPERATOR_MAP[key](document, search, self.apply):
                     return False
@@ -111,8 +113,9 @@ class _Filterer(object):
                     return False
                 continue
             if key in _TOP_LEVEL_OPERATORS:
+                msg = "The {} operator is not implemented in mongomock yet".format(key)
                 raise NotImplementedError(
-                    "The {} operator is not implemented in mongomock yet".format(key)
+                    msg,
                 )
             if key.startswith("$"):
                 raise OperationFailure("unknown top level operator: " + key)
@@ -143,7 +146,7 @@ class _Filterer(object):
                 is_ops_filter = (
                     search
                     and isinstance(search, dict)
-                    and all(key.startswith("$") for key in search.keys())
+                    and all(key.startswith("$") for key in search)
                 )
                 if is_ops_filter:
                     if "$options" in search and "$regex" in search:
@@ -156,10 +159,10 @@ class _Filterer(object):
                         if not_implemented_operators:
                             raise NotImplementedError(
                                 "'%s' is a valid operation but it is not supported by Mongomock "
-                                "yet." % list(not_implemented_operators)[0]
+                                "yet." % list(not_implemented_operators)[0],
                             )
                         raise OperationFailure(
-                            "unknown operator: " + list(unknown_operators)[0]
+                            "unknown operator: " + list(unknown_operators)[0],
                         )
                     is_match = (
                         all(
@@ -175,8 +178,9 @@ class _Filterer(object):
                     is_match = _regex(doc_val, search)
                 elif key in LOGICAL_OPERATOR_MAP:
                     if not search:
+                        msg = "BadValue $and/$or/$nor must be a nonempty array"
                         raise OperationFailure(
-                            "BadValue $and/$or/$nor must be a nonempty array"
+                            msg,
                         )
                     is_match = LOGICAL_OPERATOR_MAP[key](document, search, self.apply)
                 elif isinstance(doc_val, (list, tuple)):
@@ -203,20 +207,22 @@ class _Filterer(object):
 
     def _not_op(self, d, k, s):
         if isinstance(s, dict):
-            for key in s.keys():
+            for key in s:
                 if key not in self._operator_map and key not in LOGICAL_OPERATOR_MAP:
                     raise OperationFailure("unknown operator: %s" % key)
         elif isinstance(s, _RE_TYPES):
             pass
         else:
-            raise OperationFailure("$not needs a regex or a document")
+            msg = "$not needs a regex or a document"
+            raise OperationFailure(msg)
         return not self.apply({k: s}, d)
 
     def _elem_match_op(self, doc_val, query):
         if not isinstance(doc_val, list):
             return False
         if not isinstance(query, dict):
-            raise OperationFailure("$elemMatch needs an Object")
+            msg = "$elemMatch needs an Object"
+            raise OperationFailure(msg)
         for item in doc_val:
             try:
                 if self.apply(query, item):
@@ -305,17 +311,15 @@ def _force_list(v):
 
 def _in_op(doc_val, search_val):
     if not isinstance(search_val, (list, tuple)):
-        raise OperationFailure("$in needs an array")
+        msg = "$in needs an array"
+        raise OperationFailure(msg)
     if doc_val is None and None in search_val:
         return True
     doc_val = _force_list(doc_val)
     is_regex_list = [isinstance(x, _RE_TYPES) for x in search_val]
     if not any(is_regex_list):
         return any(x in search_val for x in doc_val)
-    for x, is_regex in zip(search_val, is_regex_list):
-        if (is_regex and _regex(doc_val, x)) or (x in doc_val):
-            return True
-    return False
+    return any(is_regex and _regex(doc_val, x) or x in doc_val for x, is_regex in zip(search_val, is_regex_list))
 
 
 def _not_None_and(f):
@@ -423,7 +427,7 @@ def _get_compare_type(val):
 
 
 def _regex(doc_val, regex):
-    if not (isinstance(doc_val, (str, list)) or isinstance(doc_val, RE_TYPE)):
+    if not (isinstance(doc_val, (str, list, RE_TYPE))):
         return False
     if isinstance(regex, str):
         regex = re.compile(regex)
@@ -444,7 +448,7 @@ def _size_op(doc_val, search_val):
 def _list_expand(f, negative=False):
     def func(doc_val, search_val):
         if isinstance(doc_val, (list, tuple)) and not isinstance(
-            search_val, (list, tuple)
+            search_val, (list, tuple),
         ):
             if negative:
                 return all(f(val, search_val) for val in doc_val)
@@ -459,7 +463,7 @@ def _type_op(doc_val, search_val, in_array=False):
         raise OperationFailure("%r is not a valid $type" % search_val)
     elif TYPE_MAP[search_val] is None:
         raise NotImplementedError(
-            "%s is a valid $type but not implemented" % search_val
+            "%s is a valid $type but not implemented" % search_val,
         )
     if TYPE_MAP[search_val](doc_val):
         return True
@@ -470,7 +474,8 @@ def _type_op(doc_val, search_val, in_array=False):
 
 def _combine_regex_options(search):
     if not isinstance(search["$options"], str):
-        raise OperationFailure("$options has to be a string")
+        msg = "$options has to be a string"
+        raise OperationFailure(msg)
 
     options = None
     for option in search["$options"]:
@@ -491,13 +496,13 @@ def _combine_regex_options(search):
     if isinstance(search["$regex"], _RE_TYPES):
         if isinstance(search["$regex"], RE_TYPE):
             search_copy["$regex"] = re.compile(
-                search["$regex"].pattern, search["$regex"].flags | options
+                search["$regex"].pattern, search["$regex"].flags | options,
             )
         else:
             # bson.Regex
             regex = search["$regex"]
             search_copy["$regex"] = regex.__class__(
-                regex.pattern, regex.flags | options
+                regex.pattern, regex.flags | options,
             )
     else:
         search_copy["$regex"] = re.compile(search["$regex"], options)

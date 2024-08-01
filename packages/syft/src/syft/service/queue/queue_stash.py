@@ -100,7 +100,7 @@ class APIEndpointQueueItem(QueueItem):
 class QueueStash(BaseStash):
     object_type = QueueItem
     settings: PartitionSettings = PartitionSettings(
-        name=QueueItem.__canonical_name__, object_type=QueueItem
+        name=QueueItem.__canonical_name__, object_type=QueueItem,
     )
 
     def __init__(self, store: DocumentStore) -> None:
@@ -136,21 +136,20 @@ class QueueStash(BaseStash):
         return item
 
     def get_by_uid(
-        self, credentials: SyftVerifyKey, uid: UID
+        self, credentials: SyftVerifyKey, uid: UID,
     ) -> Result[QueueItem | None, str]:
         qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
-        item = self.query_one(credentials=credentials, qks=qks)
-        return item
+        return self.query_one(credentials=credentials, qks=qks)
 
     def pop(
-        self, credentials: SyftVerifyKey, uid: UID
+        self, credentials: SyftVerifyKey, uid: UID,
     ) -> Result[QueueItem | None, str]:
         item = self.get_by_uid(credentials=credentials, uid=uid)
         self.delete_by_uid(credentials=credentials, uid=uid)
         return item
 
     def pop_on_complete(
-        self, credentials: SyftVerifyKey, uid: UID
+        self, credentials: SyftVerifyKey, uid: UID,
     ) -> Result[QueueItem | None, str]:
         item = self.get_by_uid(credentials=credentials, uid=uid)
         if item.is_ok():
@@ -160,7 +159,7 @@ class QueueStash(BaseStash):
         return item
 
     def delete_by_uid(
-        self, credentials: SyftVerifyKey, uid: UID
+        self, credentials: SyftVerifyKey, uid: UID,
     ) -> Result[SyftSuccess, str]:
         qk = UIDPartitionKey.with_obj(uid)
         result = super().delete(credentials=credentials, qk=qk)
@@ -169,7 +168,7 @@ class QueueStash(BaseStash):
         return result
 
     def get_by_status(
-        self, credentials: SyftVerifyKey, status: Status
+        self, credentials: SyftVerifyKey, status: Status,
     ) -> Result[list[QueueItem], str]:
         qks = QueryKeys(qks=StatusPartitionKey.with_obj(status))
 

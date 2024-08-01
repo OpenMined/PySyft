@@ -30,13 +30,13 @@ _FIELDS = (
     "tzinfo",
 )
 
-if codec_options and helpers.PYMONGO_VERSION >= version.parse("3.8"):
+if codec_options and version.parse("3.8") <= helpers.PYMONGO_VERSION:
     _DEFAULT_TYPE_REGISTRY = codec_options.TypeRegistry()
     _FIELDS = _FIELDS + ("type_registry",)
 else:
     _DEFAULT_TYPE_REGISTRY = TypeRegistry()
 
-if codec_options and helpers.PYMONGO_VERSION >= version.parse("4.3.0"):
+if codec_options and version.parse("4.3.0") <= helpers.PYMONGO_VERSION:
     _DATETIME_CONVERSION_VALUES = codec_options.DatetimeConversion._value2member_map_
     _DATETIME_CONVERSION_DEFAULT_VALUE = codec_options.DatetimeConversion.DATETIME
     _FIELDS = _FIELDS + ("datetime_conversion",)
@@ -46,10 +46,7 @@ else:
 
 # New default in Pymongo v4:
 # https://pymongo.readthedocs.io/en/stable/examples/uuid.html#unspecified
-if helpers.PYMONGO_VERSION >= version.parse("4.0"):
-    _DEFAULT_UUID_REPRESENTATION = 0
-else:
-    _DEFAULT_UUID_REPRESENTATION = 3
+_DEFAULT_UUID_REPRESENTATION = 0 if version.parse("4.0") <= helpers.PYMONGO_VERSION else 3
 
 
 class CodecOptions(collections.namedtuple("CodecOptions", _FIELDS)):
@@ -66,22 +63,25 @@ class CodecOptions(collections.namedtuple("CodecOptions", _FIELDS)):
         if document_class != dict:
             raise NotImplementedError(
                 "Mongomock does not implement custom document_class yet: %r"
-                % document_class
+                % document_class,
             )
 
         if not isinstance(tz_aware, bool):
-            raise TypeError("tz_aware must be True or False")
+            msg = "tz_aware must be True or False"
+            raise TypeError(msg)
 
         if uuid_representation is None:
             uuid_representation = _DEFAULT_UUID_REPRESENTATION
 
         if unicode_decode_error_handler not in ("strict", None):
+            msg = "Mongomock does not handle custom unicode_decode_error_handler yet"
             raise NotImplementedError(
-                "Mongomock does not handle custom unicode_decode_error_handler yet"
+                msg,
             )
 
         if tzinfo:
-            raise NotImplementedError("Mongomock does not handle custom tzinfo yet")
+            msg = "Mongomock does not handle custom tzinfo yet"
+            raise NotImplementedError(msg)
 
         values = (
             document_class,
@@ -101,8 +101,9 @@ class CodecOptions(collections.namedtuple("CodecOptions", _FIELDS)):
                 datetime_conversion
                 and datetime_conversion not in _DATETIME_CONVERSION_VALUES
             ):
+                msg = "datetime_conversion must be member of DatetimeConversion"
                 raise TypeError(
-                    "datetime_conversion must be member of DatetimeConversion"
+                    msg,
                 )
             values = values + (datetime_conversion,)
 

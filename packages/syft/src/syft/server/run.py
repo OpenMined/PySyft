@@ -18,7 +18,7 @@ def run() -> ServerHandle | None:
     parser = argparse.ArgumentParser()
     parser.add_argument("command", help="command: launch", type=str, default="none")
     parser.add_argument(
-        "--name", help="server name", type=str, default="syft-server", dest="name"
+        "--name", help="server name", type=str, default="syft-server", dest="name",
     )
     parser.add_argument(
         "--server-type",
@@ -36,7 +36,7 @@ def run() -> ServerHandle | None:
     )
 
     parser.add_argument(
-        "--port", help="port for binding", type=int, default=8080, dest="port"
+        "--port", help="port for binding", type=int, default=8080, dest="port",
     )
     parser.add_argument(
         "--dev-mode",

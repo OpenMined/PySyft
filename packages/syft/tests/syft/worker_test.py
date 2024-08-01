@@ -143,7 +143,7 @@ def test_user_service(worker) -> None:
 
     # create a context
     context = AuthedServiceContext(
-        server=worker, credentials=test_signing_key.verify_key
+        server=worker, credentials=test_signing_key.verify_key,
     )
 
     # call the create function
@@ -268,7 +268,7 @@ def test_worker_handle_api_request(
     root_client = worker_with_proc.root_client
 
     api_call = SyftAPICall(
-        server_uid=server_uid, path=path, args=[], kwargs=kwargs, blocking=blocking
+        server_uid=server_uid, path=path, args=[], kwargs=kwargs, blocking=blocking,
     )
     # should fail on unsigned requests
     result = worker_with_proc.handle_api_call(api_call).message.data
@@ -328,7 +328,7 @@ def test_worker_handle_api_response(
     root_client = worker_with_proc.root_client
 
     call = SyftAPICall(
-        server_uid=server_uid, path=path, args=[], kwargs=kwargs, blocking=blocking
+        server_uid=server_uid, path=path, args=[], kwargs=kwargs, blocking=blocking,
     )
     signed_api_call = call.sign(root_client.credentials)
 
@@ -342,12 +342,12 @@ def test_worker_handle_api_response(
 
     # validation should work with the worker key
     root_client.credentials.verify_key.verify_key.verify(
-        signed_result.serialized_message, signed_result.signature
+        signed_result.serialized_message, signed_result.signature,
     )
     # the validation should fail with the client key
     with pytest.raises(BadSignatureError):
         guest_client.credentials.verify_key.verify_key.verify(
-            signed_result.serialized_message, signed_result.signature
+            signed_result.serialized_message, signed_result.signature,
         )
 
     # the signed result should be the same as the unsigned one

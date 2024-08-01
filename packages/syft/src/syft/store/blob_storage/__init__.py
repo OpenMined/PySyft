@@ -97,13 +97,10 @@ class SyftObjectRetrieval(BlobRetrieval):
     syft_object: bytes
 
     def _read_data(
-        self, stream: bool = False, _deserialize: bool = True, **kwargs: Any
+        self, stream: bool = False, _deserialize: bool = True, **kwargs: Any,
     ) -> Any:
         # development setup, we can access the same filesystem
-        if not _deserialize:
-            res = self.syft_object
-        else:
-            res = deserialize(self.syft_object, from_bytes=True)
+        res = self.syft_object if not _deserialize else deserialize(self.syft_object, from_bytes=True)
 
         # TODO: implement proper streaming from local files
         if stream:
@@ -127,11 +124,11 @@ def syft_iter_content(
         headers = {"Range": f"bytes={current_byte}-"}
         try:
             with requests.get(
-                str(blob_url), stream=True, headers=headers, timeout=(timeout, timeout)
+                str(blob_url), stream=True, headers=headers, timeout=(timeout, timeout),
             ) as response:
                 response.raise_for_status()
                 for chunk in response.iter_content(
-                    chunk_size=chunk_size, decode_unicode=False
+                    chunk_size=chunk_size, decode_unicode=False,
                 ):
                     current_byte += len(chunk)
                     yield chunk
@@ -139,7 +136,7 @@ def syft_iter_content(
         except requests.exceptions.RequestException as e:
             if attempt < max_retries:
                 logger.debug(
-                    f"Attempt {attempt}/{max_retries} failed: {e} at byte {current_byte}. Retrying..."
+                    f"Attempt {attempt}/{max_retries} failed: {e} at byte {current_byte}. Retrying...",
                 )
             else:
                 logger.error(f"Max retries reached - {e}")
@@ -184,11 +181,11 @@ class BlobRetrievalByURL(BlobRetrieval):
         if api and api.connection and isinstance(self.url, ServerURL):
             if self.proxy_server_uid is None:
                 blob_url = api.connection.to_blob_route(
-                    self.url.url_path, host=self.url.host_or_ip
+                    self.url.url_path, host=self.url.host_or_ip,
                 )
             else:
                 blob_url = api.connection.stream_via(
-                    self.proxy_server_uid, self.url.url_path
+                    self.proxy_server_uid, self.url.url_path,
                 )
                 stream = True
         else:
@@ -196,7 +193,7 @@ class BlobRetrievalByURL(BlobRetrieval):
 
         try:
             is_blob_file = self.type_ is not None and issubclass(
-                self.type_, BlobFileType
+                self.type_, BlobFileType,
             )
             if is_blob_file and stream:
                 return syft_iter_content(blob_url, chunk_size)
@@ -241,7 +238,7 @@ class BlobStorageConnection:
         raise NotImplementedError
 
     def allocate(
-        self, obj: CreateBlobStorageEntry
+        self, obj: CreateBlobStorageEntry,
     ) -> SecureFilePathLocation | SyftError:
         raise NotImplementedError
 

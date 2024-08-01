@@ -131,8 +131,9 @@ class ExecutionOutput(SyncableSyftObject):
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None:
+            msg = f"Can't access the api. Please log in to {self.syft_server_location}"
             raise ValueError(
-                f"Can't access the api. Please log in to {self.syft_server_location}"
+                msg,
             )
         action_service = api.services.action
 
@@ -172,10 +173,7 @@ class ExecutionOutput(SyncableSyftObject):
         """
         if not self.input_ids:
             return True
-        for key, value in kwargs.items():  # Iterate over items of kwargs dictionary
-            if key not in self.input_ids or self.input_ids[key] != value:
-                return False
-        return True
+        return all(not (key not in self.input_ids or self.input_ids[key] != value) for key, value in kwargs.items())
 
     def get_sync_dependencies(self, context: AuthedServiceContext) -> list[UID]:
         # Output ids, user code id, job id
@@ -194,7 +192,7 @@ class ExecutionOutput(SyncableSyftObject):
 class OutputStash(BaseUIDStoreStash):
     object_type = ExecutionOutput
     settings: PartitionSettings = PartitionSettings(
-        name=ExecutionOutput.__canonical_name__, object_type=ExecutionOutput
+        name=ExecutionOutput.__canonical_name__, object_type=ExecutionOutput,
     )
 
     def __init__(self, store: DocumentStore) -> None:
@@ -204,23 +202,23 @@ class OutputStash(BaseUIDStoreStash):
         self._object_type = self.object_type
 
     def get_by_user_code_id(
-        self, credentials: SyftVerifyKey, user_code_id: UID
+        self, credentials: SyftVerifyKey, user_code_id: UID,
     ) -> Result[list[ExecutionOutput], str]:
         qks = QueryKeys(
             qks=[UserCodeIdPartitionKey.with_obj(user_code_id)],
         )
         return self.query_all(
-            credentials=credentials, qks=qks, order_by=CreatedAtPartitionKey
+            credentials=credentials, qks=qks, order_by=CreatedAtPartitionKey,
         )
 
     def get_by_job_id(
-        self, credentials: SyftVerifyKey, user_code_id: UID
+        self, credentials: SyftVerifyKey, user_code_id: UID,
     ) -> Result[ExecutionOutput | None, str]:
         qks = QueryKeys(
             qks=[JobIdPartitionKey.with_obj(user_code_id)],
         )
         res = self.query_all(
-            credentials=credentials, qks=qks, order_by=CreatedAtPartitionKey
+            credentials=credentials, qks=qks, order_by=CreatedAtPartitionKey,
         )
         if res.is_err():
             return res
@@ -234,13 +232,13 @@ class OutputStash(BaseUIDStoreStash):
                 return Ok(res[0])
 
     def get_by_output_policy_id(
-        self, credentials: SyftVerifyKey, output_policy_id: UID
+        self, credentials: SyftVerifyKey, output_policy_id: UID,
     ) -> Result[list[ExecutionOutput], str]:
         qks = QueryKeys(
             qks=[OutputPolicyIdPartitionKey.with_obj(output_policy_id)],
         )
         return self.query_all(
-            credentials=credentials, qks=qks, order_by=CreatedAtPartitionKey
+            credentials=credentials, qks=qks, order_by=CreatedAtPartitionKey,
         )
 
 
@@ -279,8 +277,7 @@ class OutputService(AbstractService):
             input_ids=input_ids,
         )
 
-        res = self.stash.set(context.credentials, output)
-        return res
+        return self.stash.set(context.credentials, output)
 
     @service_method(
         path="output.get_by_user_code_id",
@@ -288,7 +285,7 @@ class OutputService(AbstractService):
         roles=GUEST_ROLE_LEVEL,
     )
     def get_by_user_code_id(
-        self, context: AuthedServiceContext, user_code_id: UID
+        self, context: AuthedServiceContext, user_code_id: UID,
     ) -> list[ExecutionOutput] | SyftError:
         result = self.stash.get_by_user_code_id(
             credentials=context.server.verify_key,  # type: ignore
@@ -338,7 +335,7 @@ class OutputService(AbstractService):
         roles=ADMIN_ROLE_LEVEL,
     )
     def get_by_job_id(
-        self, context: AuthedServiceContext, user_code_id: UID
+        self, context: AuthedServiceContext, user_code_id: UID,
     ) -> ExecutionOutput | None | SyftError:
         result = self.stash.get_by_job_id(
             credentials=context.server.verify_key,  # type: ignore
@@ -354,7 +351,7 @@ class OutputService(AbstractService):
         roles=GUEST_ROLE_LEVEL,
     )
     def get_by_output_policy_id(
-        self, context: AuthedServiceContext, output_policy_id: UID
+        self, context: AuthedServiceContext, output_policy_id: UID,
     ) -> list[ExecutionOutput] | SyftError:
         result = self.stash.get_by_output_policy_id(
             credentials=context.server.verify_key,  # type: ignore
@@ -370,7 +367,7 @@ class OutputService(AbstractService):
         roles=GUEST_ROLE_LEVEL,
     )
     def get(
-        self, context: AuthedServiceContext, id: UID
+        self, context: AuthedServiceContext, id: UID,
     ) -> ExecutionOutput | SyftError:
         result = self.stash.get_by_uid(context.credentials, id)
         if result.is_ok():
@@ -379,7 +376,7 @@ class OutputService(AbstractService):
 
     @service_method(path="output.get_all", name="get_all", roles=GUEST_ROLE_LEVEL)
     def get_all(
-        self, context: AuthedServiceContext
+        self, context: AuthedServiceContext,
     ) -> list[ExecutionOutput] | SyftError:
         result = self.stash.get_all(context.credentials)
         if result.is_ok():

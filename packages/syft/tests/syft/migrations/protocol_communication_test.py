@@ -14,7 +14,6 @@ from syft.protocol.data_protocol import protocol_release_dir
 from syft.protocol.data_protocol import stage_protocol_changes
 from syft.serde.recursive import TYPE_BANK
 from syft.serde.serializable import serializable
-from syft.server.worker import Worker
 from syft.service.context import AuthedServiceContext
 from syft.service.response import SyftError
 from syft.service.service import AbstractService
@@ -32,6 +31,10 @@ from syft.types.transforms import convert_types
 from syft.types.transforms import rename
 from syft.types.uid import UID
 from syft.util.util import index_syft_by_module_name
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from syft.server.worker import Worker
 
 MOCK_TYPE_BANK = deepcopy(TYPE_BANK)
 
@@ -137,7 +140,7 @@ def setup_version_one(server_name: str):
 
     worker.services.append(syft_service_klass)
     worker.service_path_map[syft_service_klass.__name__.lower()] = syft_service_klass(
-        store=worker.document_store
+        store=worker.document_store,
     )
 
     return server, syft_klass_version_one
@@ -162,7 +165,7 @@ def setup_version_second(server_name: str, klass_version_one: type):
 
     worker.services.append(syft_service_klass)
     worker.service_path_map[syft_service_klass.__name__.lower()] = syft_service_klass(
-        store=worker.document_store
+        store=worker.document_store,
     )
 
     return server, syft_klass_version_second
@@ -184,12 +187,12 @@ def my_stage_protocol(protocol_file: Path):
         if os.path.exists(protocol_release_dir()):
             for _file_path in protocol_release_dir().iterdir():
                 for version in dp.read_json(_file_path):
-                    if version not in dp.protocol_history.keys():
+                    if version not in dp.protocol_history:
                         _file_path.unlink()
 
 
 @pytest.mark.skip(
-    reason="Issues running with other tests. Shared release folder causes issues."
+    reason="Issues running with other tests. Shared release folder causes issues.",
 )
 def test_client_server_running_different_protocols(my_stage_protocol):
     def patched_index_syft_by_module_name(fully_qualified_name: str):
@@ -201,74 +204,72 @@ def test_client_server_running_different_protocols(my_stage_protocol):
         return index_syft_by_module_name(fully_qualified_name)
 
     server_name = UID().to_string()
-    with mock.patch("syft.serde.recursive.TYPE_BANK", MOCK_TYPE_BANK):
+    with mock.patch("syft.serde.recursive.TYPE_BANK", MOCK_TYPE_BANK), mock.patch(
+        "syft.protocol.data_protocol.TYPE_BANK",
+        MOCK_TYPE_BANK,
+    ), mock.patch(
+        "syft.client.api.index_syft_by_module_name",
+        patched_index_syft_by_module_name,
+    ):
+        # Setup mock object version one
+        nh1, klass_v1 = setup_version_one(server_name)
+        assert klass_v1.__canonical_name__ == "SyftMockObjectTest"
+        assert klass_v1.__name__ == "SyftMockObjectTestV1"
+
+        nh1_client = nh1.client
+        assert nh1_client is not None
+        result_from_client_1 = nh1_client.api.services.dummy.get()
+
+        protocol_version_with_mock_obj_v1 = get_data_protocol().latest_version
+
+        # No data saved
+        assert len(result_from_client_1) == 0
+
+        # Setup mock object version second
         with mock.patch(
-            "syft.protocol.data_protocol.TYPE_BANK",
-            MOCK_TYPE_BANK,
+            "syft.protocol.data_protocol.__version__", mock_syft_version(),
         ):
-            with mock.patch(
-                "syft.client.api.index_syft_by_module_name",
-                patched_index_syft_by_module_name,
-            ):
-                # Setup mock object version one
-                nh1, klass_v1 = setup_version_one(server_name)
-                assert klass_v1.__canonical_name__ == "SyftMockObjectTest"
-                assert klass_v1.__name__ == "SyftMockObjectTestV1"
+            nh2, klass_v2 = setup_version_second(
+                server_name, klass_version_one=klass_v1,
+            )
 
-                nh1_client = nh1.client
-                assert nh1_client is not None
-                result_from_client_1 = nh1_client.api.services.dummy.get()
+            # Create a sample data in version second
+            sample_data = klass_v2(full_name="John", version=str(1), id=UID())
 
-                protocol_version_with_mock_obj_v1 = get_data_protocol().latest_version
+            assert isinstance(sample_data, klass_v2)
 
-                # No data saved
-                assert len(result_from_client_1) == 0
+            # Validate migrations
+            sample_data_v1 = sample_data.migrate_to(
+                version=klass_v1.__version__,
+            )
+            assert sample_data_v1.name == sample_data.full_name
+            assert sample_data_v1.version == int(sample_data.version)
 
-                # Setup mock object version second
-                with mock.patch(
-                    "syft.protocol.data_protocol.__version__", mock_syft_version()
-                ):
-                    nh2, klass_v2 = setup_version_second(
-                        server_name, klass_version_one=klass_v1
-                    )
+            # Set the sample data in version second
+            service_klass = nh1.python_server.get_service(
+                "SyftMockObjectService",
+            )
+            service_klass.stash.set(
+                nh1.python_server.root_client.verify_key,
+                sample_data,
+            )
 
-                    # Create a sample data in version second
-                    sample_data = klass_v2(full_name="John", version=str(1), id=UID())
+            nh2_client = nh2.client
+            assert nh2_client is not None
+            # Force communication protocol to when version object is defined
+            nh2_client.communication_protocol = (
+                protocol_version_with_mock_obj_v1
+            )
+            # Reset api
+            nh2_client._api = None
 
-                    assert isinstance(sample_data, klass_v2)
+            # Call the API with an older communication protocol version
+            result2 = nh2_client.api.services.dummy.get()
+            assert isinstance(result2, list)
 
-                    # Validate migrations
-                    sample_data_v1 = sample_data.migrate_to(
-                        version=klass_v1.__version__,
-                    )
-                    assert sample_data_v1.name == sample_data.full_name
-                    assert sample_data_v1.version == int(sample_data.version)
-
-                    # Set the sample data in version second
-                    service_klass = nh1.python_server.get_service(
-                        "SyftMockObjectService"
-                    )
-                    service_klass.stash.set(
-                        nh1.python_server.root_client.verify_key,
-                        sample_data,
-                    )
-
-                    nh2_client = nh2.client
-                    assert nh2_client is not None
-                    # Force communication protocol to when version object is defined
-                    nh2_client.communication_protocol = (
-                        protocol_version_with_mock_obj_v1
-                    )
-                    # Reset api
-                    nh2_client._api = None
-
-                    # Call the API with an older communication protocol version
-                    result2 = nh2_client.api.services.dummy.get()
-                    assert isinstance(result2, list)
-
-                    # Validate the data received
-                    for data in result2:
-                        assert isinstance(data, klass_v1)
-                        assert data.name == sample_data.full_name
-                        assert data.version == int(sample_data.version)
+            # Validate the data received
+            for data in result2:
+                assert isinstance(data, klass_v1)
+                assert data.name == sample_data.full_name
+                assert data.version == int(sample_data.version)
     ServiceConfigRegistry.__service_config_registry__.pop("dummy.syft_object", None)

@@ -88,10 +88,9 @@ def handle_annotation_repr_(annotation: type) -> str:
         origin_repr = handle_union_type_klass_name(origin_repr)
         return f"{origin_repr}: [{args_repr}]"
     elif args:
-        args_repr = ", ".join(
+        return ", ".join(
             getattr(arg, "__name__", str(arg)) for arg in sorted(args)
         )
-        return args_repr
     else:
         return repr(annotation)
 
@@ -118,7 +117,7 @@ class DataProtocol:
         field_data = {
             field: handle_annotation_repr_(field_info.rebuild_annotation())
             for field, field_info in sorted(
-                klass.model_fields.items(), key=itemgetter(0)
+                klass.model_fields.items(), key=itemgetter(0),
             )
         }
         obj_meta_info = {
@@ -140,7 +139,7 @@ class DataProtocol:
     def read_history(self) -> dict:
         protocol_history = self.read_json(self.file_path)
 
-        for version in protocol_history.keys():
+        for version in protocol_history:
             if version == "dev":
                 continue
             release_version_path = (
@@ -156,7 +155,7 @@ class DataProtocol:
             for file_path in protocol_release_dir().iterdir():
                 for version in self.read_json(file_path):
                     # Skip adding file if the version is not part of the history
-                    if version not in history.keys():
+                    if version not in history:
                         continue
                     history[version] = {"release_name": file_path.name}
         self.file_path.write_text(json.dumps(history, indent=2) + "\n")
@@ -185,18 +184,20 @@ class DataProtocol:
                     state_versions = state_dict[canonical_name]
                     state_version_hashes = [val[0] for val in state_versions.values()]
                     if action == "add" and (
-                        str(version) in state_versions.keys()
+                        str(version) in state_versions
                         or hash_str in state_version_hashes
                     ):
+                        msg = f"Can't add {object_metadata} already in state {versions}"
                         raise Exception(
-                            f"Can't add {object_metadata} already in state {versions}"
+                            msg,
                         )
                     if action == "remove" and (
-                        str(version) not in state_versions.keys()
+                        str(version) not in state_versions
                         and hash_str not in state_version_hashes
                     ):
+                        msg = f"Can't remove {object_metadata} missing from state {versions} for object {canonical_name}."
                         raise Exception(
-                            f"Can't remove {object_metadata} missing from state {versions} for object {canonical_name}."
+                            msg,
                         )
                     if action == "add":
                         state_dict[canonical_name][str(version)] = (
@@ -231,7 +232,7 @@ class DataProtocol:
             if issubclass(cls, SyftBaseObject):
                 canonical_name = cls.__canonical_name__
                 if canonical_name in IGNORE_TYPES or canonical_name.startswith(
-                    "MockSyftObject_"
+                    "MockSyftObject_",
                 ):
                     continue
 
@@ -248,12 +249,12 @@ class DataProtocol:
 
                 versions = state[canonical_name]
                 if (
-                    str(version) in versions.keys()
+                    str(version) in versions
                     and versions[str(version)][0] == hash_str
                 ):
                     # already there so do nothing
                     continue
-                elif str(version) in versions.keys():
+                elif str(version) in versions:
                     is_protocol_dev = versions[str(version)][1] == "dev"
                     if is_protocol_dev:
                         # force overwrite existing object so its an add
@@ -287,7 +288,7 @@ with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
                     object_diff[canonical_name][str(version)] = obj_to_remove
                     continue
                 versions = compare_dict[canonical_name]
-                if str(version) not in versions.keys():
+                if str(version) not in versions:
                     # missing so its a remove
                     obj_to_remove = self.obj_json(int(version), hash_str, "remove")
                     object_diff[canonical_name][str(version)] = obj_to_remove
@@ -325,7 +326,7 @@ with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
 
             # Sort the version dict
             object_versions[canonical_name] = sort_dict_naturally(
-                object_versions.get(canonical_name, {})
+                object_versions.get(canonical_name, {}),
             )
 
         current_history["dev"]["object_versions"] = object_versions
@@ -340,8 +341,9 @@ with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
 
     def bump_protocol_version(self) -> Result[SyftSuccess, SyftError]:
         if len(self.diff):
+            msg = "You can't bump the protocol version with unstaged changes."
             raise Exception(
-                "You can't bump the protocol version with unstaged changes."
+                msg,
             )
 
         keys = self.protocol_history.keys()
@@ -349,11 +351,11 @@ with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
             self.validate_release()
             print("You can't bump the protocol if there are no staged changes.")
             return SyftError(
-                message="Failed to bump version as there are no staged changes."
+                message="Failed to bump version as there are no staged changes.",
             )
 
         highest_protocol = 0
-        for k in self.protocol_history.keys():
+        for k in self.protocol_history:
             if k == "dev":
                 continue
             highest_protocol = max(highest_protocol, int(k))
@@ -380,7 +382,7 @@ with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
 
         # Save the new released version
         release_file.write_text(
-            json.dumps({latest_protocol: release_history}, indent=2)
+            json.dumps({latest_protocol: release_history}, indent=2),
         )
 
     def validate_release(self) -> None:
@@ -411,7 +413,7 @@ with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
 
         # Update release name to latest beta, stable or post based on current syft version
         print(
-            f"Current release {release_name} will be updated to {current_syft_version}"
+            f"Current release {release_name} will be updated to {current_syft_version}",
         )
 
         # Get latest protocol file path
@@ -464,6 +466,7 @@ with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
         # Save history
         self.save_history(protocol_history)
         self.load_state()
+        return None
 
     def check_protocol(self) -> Result[SyftSuccess, SyftError]:
         if len(self.diff) != 0:
@@ -474,8 +477,7 @@ with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
     def check_or_stage_protocol(self) -> Result[SyftSuccess, SyftError]:
         if not self.check_protocol():
             self.stage_protocol_changes()
-        result = self.check_protocol()
-        return result
+        return self.check_protocol()
 
     @property
     def supported_protocols(self) -> list[int | str]:
@@ -495,7 +497,7 @@ with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
             # we assume its supported until we prove otherwise
             protocol_supported[v] = True
             # iterate through each object
-            for canonical_name in version_data["object_versions"].keys():
+            for canonical_name in version_data["object_versions"]:
                 if canonical_name not in self.state:
                     protocol_supported[v] = False
                     break
@@ -506,9 +508,7 @@ with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
 
     @property
     def has_dev(self) -> bool:
-        if "dev" in self.protocol_history.keys():
-            return True
-        return False
+        return "dev" in self.protocol_history
 
     def reset_dev_protocol(self) -> None:
         if self.has_dev:
@@ -609,7 +609,8 @@ def migrate_args_and_kwargs(
         to_protocol = data_protocol.latest_version if to_latest_protocol else None
 
     if to_protocol is None:
-        raise SyftException("Protocol version missing.")
+        msg = "Protocol version missing."
+        raise SyftException(msg)
 
     # If latest protocol being used is equal to the protocol to be migrate
     # then skip migration of the object

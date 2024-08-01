@@ -107,7 +107,8 @@ def module_property(func: Any) -> Callable:
     module = sys.modules[func.__module__]
 
     def base_getattr(name: str) -> None:
-        raise AttributeError(f"module {module.__name__!r} has no attribute {name!r}")
+        msg = f"module {module.__name__!r} has no attribute {name!r}"
+        raise AttributeError(msg)
 
     old_getattr = getattr(module, "__getattr__", base_getattr)
 

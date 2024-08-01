@@ -4,7 +4,7 @@ from __future__ import annotations
 # stdlib
 import logging
 from typing import Any
-from typing import ClassVar
+from typing import ClassVar, TYPE_CHECKING
 
 # third party
 from pydantic import field_validator
@@ -12,7 +12,6 @@ from pydantic import model_validator
 from typing_extensions import Self
 
 # relative
-from ..client.client import SyftClient
 from ..serde.serializable import serializable
 from ..service.action.action_object import ActionObject
 from ..service.action.action_object import TwinMode
@@ -22,7 +21,10 @@ from ..service.response import SyftSuccess
 from ..service.response import SyftWarning
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftObject
-from .uid import UID
+
+if TYPE_CHECKING:
+    from .uid import UID
+    from ..client.client import SyftClient
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +35,8 @@ def to_action_object(obj: Any) -> ActionObject:
 
     if type(obj) in action_types:
         return action_types[type(obj)](syft_action_data_cache=obj)
-    raise ValueError(f"{type(obj)} not in action_types")
+    msg = f"{type(obj)} not in action_types"
+    raise ValueError(msg)
 
 
 @serializable()
@@ -88,7 +91,7 @@ class TwinObject(SyftObject):
         return mock
 
     def _save_to_blob_storage(
-        self, allow_empty: bool = False
+        self, allow_empty: bool = False,
     ) -> SyftError | SyftSuccess | SyftWarning:
         # Set server location and verify key
         self.private_obj._set_obj_location_(
@@ -109,8 +112,7 @@ class TwinObject(SyftObject):
         blob_store_result = self._save_to_blob_storage()
         if isinstance(blob_store_result, SyftWarning):
             logger.debug(blob_store_result.message)
-        res = client.api.services.action.set(
+        return client.api.services.action.set(
             self,
             add_storage_permission=add_storage_permission,
         )
-        return res

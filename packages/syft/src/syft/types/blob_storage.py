@@ -71,12 +71,12 @@ class BlobFile(SyftObject):
     ) -> Any:
         # get blob retrieval object from api + syft_blob_storage_entry_id
         read_method = from_api_or_context(
-            "blob_storage.read", self.syft_server_location, self.syft_client_verify_key
+            "blob_storage.read", self.syft_server_location, self.syft_client_verify_key,
         )
         if read_method is not None:
             blob_retrieval_object = read_method(self.syft_blob_storage_entry_id)
             return blob_retrieval_object._read_data(
-                stream=stream, chunk_size=chunk_size, _deserialize=False
+                stream=stream, chunk_size=chunk_size, _deserialize=False,
             )
         else:
             return None
@@ -90,7 +90,8 @@ class BlobFile(SyftObject):
 
     def _upload_to_blobstorage_from_api(self, api: SyftAPI) -> SyftError | None:
         if self.path is None:
-            raise ValueError("cannot upload BlobFile, no path specified")
+            msg = "cannot upload BlobFile, no path specified"
+            raise ValueError(msg)
         storage_entry = CreateBlobStorageEntry.from_path(self.path)
 
         blob_deposit_object = api.services.blob_storage.allocate(storage_entry)
@@ -124,16 +125,10 @@ class BlobFile(SyftObject):
                 if pending is not None:
                     chunk = pending + chunk  # type: ignore[unreachable]
                 lines = chunk.splitlines()
-                if lines and lines[-1] and chunk and lines[-1][-1] == chunk[-1]:
-                    pending = lines.pop()
-                else:
-                    pending = None
+                pending = lines.pop() if lines and lines[-1] and chunk and lines[-1][-1] == chunk[-1] else None
                 yield from lines
             else:
-                if pending is None:
-                    pending = chunk
-                else:
-                    pending = pending + chunk
+                pending = chunk if pending is None else pending + chunk
 
         if pending is not None:
             yield pending
@@ -164,7 +159,7 @@ class BlobFile(SyftObject):
         queue.put(0)
 
     def iter_lines(
-        self, chunk_size: int = DEFAULT_CHUNK_SIZE, progress: bool = False
+        self, chunk_size: int = DEFAULT_CHUNK_SIZE, progress: bool = False,
     ) -> Iterator[str]:
         item_queue: Queue = Queue()
         threading.Thread(
@@ -247,7 +242,7 @@ class SeaweedSecureFilePathLocation(SecureFilePathLocation):
             from ..store.blob_storage import BlobRetrievalByURL
 
             return BlobRetrievalByURL(
-                url=ServerURL.from_url(url), file_name=Path(self.path).name, type_=type_
+                url=ServerURL.from_url(url), file_name=Path(self.path).name, type_=type_,
             )
         except BotoClientError as e:
             raise SyftException(e)
@@ -263,7 +258,7 @@ class AzureSecureFilePathLocation(SecureFilePathLocation):
     bucket_name: str
 
     def generate_url(
-        self, connection: "BlobStorageConnection", type_: type | None, *args: Any
+        self, connection: "BlobStorageConnection", type_: type | None, *args: Any,
     ) -> "BlobRetrievalByURL":
         # SAS is almost the same thing as the presigned url
         config = connection.config.remote_profiles[self.azure_profile_name]
@@ -348,9 +343,11 @@ class CreateBlobStorageEntry(SyftObject):
     def from_path(cls, fp: str | Path, mimetype: str | None = None) -> Self:
         path = Path(fp)
         if not path.exists():
-            raise SyftException(f"{fp} does not exist.")
+            msg = f"{fp} does not exist."
+            raise SyftException(msg)
         if not path.is_file():
-            raise SyftException(f"{fp} is not a file.")
+            msg = f"{fp} is not a file."
+            raise SyftException(msg)
 
         if path.suffix.lower() == ".jsonl":
             mimetype = "application/json-lines"
@@ -359,9 +356,12 @@ class CreateBlobStorageEntry(SyftObject):
             if len(mime_types) > 0 and mime_types[0] is not None:
                 mimetype = mime_types[0]
             else:
-                raise SyftException(
+                msg = (
                     "mimetype could not be identified.\n"
                     "Please specify mimetype manually `from_path(..., mimetype = ...)`."
+                )
+                raise SyftException(
+                    msg,
                 )
 
         return cls(

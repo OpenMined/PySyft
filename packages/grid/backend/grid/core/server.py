@@ -25,15 +25,14 @@ from grid.core.config import settings
 
 
 def queue_config() -> ZMQQueueConfig:
-    queue_config = ZMQQueueConfig(
+    return ZMQQueueConfig(
         client_config=ZMQClientConfig(
             create_producer=settings.CREATE_PRODUCER,
             queue_port=settings.QUEUE_PORT,
             n_consumers=settings.N_CONSUMERS,
             consumer_service=settings.CONSUMER_SERVICE_NAME,
-        )
+        ),
     )
-    return queue_config
 
 
 def mongo_store_config() -> MongoStoreConfig:

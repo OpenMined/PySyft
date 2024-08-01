@@ -47,7 +47,6 @@ class NoLockingConfig(LockingConfig):
     No-locking policy
     """
 
-    pass
 
 
 @serializable(canonical_name="ThreadingLockingConfig", version=1)
@@ -56,7 +55,6 @@ class ThreadingLockingConfig(LockingConfig):
     Threading-based locking policy
     """
 
-    pass
 
 
 class ThreadingLock(BaseLock):
@@ -101,7 +99,7 @@ class ThreadingLock(BaseLock):
             self._release()
 
         status = self.lock.acquire(
-            blocking=False
+            blocking=False,
         )  # timeout/retries handle in the `acquire` method
         if status:
             self.locked_timestamp = time.time()
@@ -157,7 +155,8 @@ class SyftLock(BaseLock):
         elif isinstance(config, ThreadingLockingConfig):
             self._lock = ThreadingLock(**base_params)
         else:
-            raise ValueError("Unsupported config type")
+            msg = "Unsupported config type"
+            raise ValueError(msg)
 
     @property
     def _locked(self) -> bool:
@@ -193,7 +192,7 @@ class SyftLock(BaseLock):
             else:
                 return True
         logger.debug(
-            f"Timeout elapsed after {self.timeout} seconds while trying to acquiring lock."
+            f"Timeout elapsed after {self.timeout} seconds while trying to acquiring lock.",
         )
         # third party
         return False

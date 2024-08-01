@@ -22,13 +22,13 @@ class ContainerEngine(ABC):
 
     @abstractmethod
     def pull(
-        self, images: list[str], dryrun: bool, stream_output: dict | None
+        self, images: list[str], dryrun: bool, stream_output: dict | None,
     ) -> list[CompletedProcess]:
         raise NotImplementedError()
 
     @abstractmethod
     def save(
-        self, images: list[str], archive_path: str, dryrun: bool
+        self, images: list[str], archive_path: str, dryrun: bool,
     ) -> CompletedProcess:
         raise NotImplementedError()
 

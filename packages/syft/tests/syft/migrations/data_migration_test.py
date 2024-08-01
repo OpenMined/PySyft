@@ -44,7 +44,7 @@ def create_dataset(client):
                 data=private,
                 shape=private.shape,
                 mock_is_real=True,
-            )
+            ),
         ],
     )
 

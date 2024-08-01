@@ -42,7 +42,8 @@ class BaseBucket(BaseModel):
 
 def check_creds(v: Any) -> Any:
     if isinstance(v, Path) and not v.exists():
-        raise FileNotFoundError(f"Credentials file not found: {v}")
+        msg = f"Credentials file not found: {v}"
+        raise FileNotFoundError(msg)
     return v
 
 
@@ -136,7 +137,8 @@ class GCSCreds(BaseModel):
         if isinstance(self.val, Path):
             return self.val
         elif default is None:
-            raise ValueError("No path provided to save GCS credentials")
+            msg = "No path provided to save GCS credentials"
+            raise ValueError(msg)
 
         # or save the value to the provided path
         default.write_text(json.dumps(self.val))
@@ -152,7 +154,8 @@ class GCSBucket(BaseBucket):
     @classmethod
     def validate_creds(cls, v: Any) -> GCSCreds:
         if isinstance(v, Path) and not v.exists():
-            raise FileNotFoundError(f"GCS credentials file not found: {v}")
+            msg = f"GCS credentials file not found: {v}"
+            raise FileNotFoundError(msg)
 
         # we don't need to read the file, as we can just pass the path to Seaweed
         return GCSCreds(val=v)

@@ -97,10 +97,13 @@ class KubernetesBuilder(BuilderBase):
             image_digest = self._get_image_digest(job)
             if not image_digest:
                 exit_code = self._get_exit_code(job)
-                raise BuildFailed(
+                msg = (
                     "Failed to build the image. "
                     f"Kaniko exit code={exit_code}. "
                     f"Logs={logs}"
+                )
+                raise BuildFailed(
+                    msg,
                 )
 
         except Exception:
@@ -201,7 +204,7 @@ class KubernetesBuilder(BuilderBase):
                 "data": {
                     "Dockerfile": dockerfile,
                 },
-            }
+            },
         )
         return KubeUtils.create_or_get(config_map)
 
@@ -268,7 +271,7 @@ class KubernetesBuilder(BuilderBase):
                                             "mountPath": "/workspace",
                                         },
                                     ],
-                                }
+                                },
                             ],
                             "volumes": [
                                 {
@@ -278,10 +281,10 @@ class KubernetesBuilder(BuilderBase):
                                     },
                                 },
                             ],
-                        }
+                        },
                     },
                 },
-            }
+            },
         )
 
         return KubeUtils.create_or_get(job)
@@ -338,7 +341,7 @@ class KubernetesBuilder(BuilderBase):
                                             "readOnly": True,
                                         },
                                     ],
-                                }
+                                },
                             ],
                             "volumes": [
                                 {
@@ -354,10 +357,10 @@ class KubernetesBuilder(BuilderBase):
                                     },
                                 },
                             ],
-                        }
+                        },
                     },
                 },
-            }
+            },
         )
         return KubeUtils.create_or_get(job)
 

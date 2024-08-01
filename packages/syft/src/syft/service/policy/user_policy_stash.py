@@ -18,14 +18,14 @@ from .policy import UserPolicy
 class UserPolicyStash(BaseUIDStoreStash):
     object_type = UserPolicy
     settings: PartitionSettings = PartitionSettings(
-        name=UserPolicy.__canonical_name__, object_type=UserPolicy
+        name=UserPolicy.__canonical_name__, object_type=UserPolicy,
     )
 
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
 
     def get_all_by_user_verify_key(
-        self, credentials: SyftVerifyKey, user_verify_key: SyftVerifyKey
+        self, credentials: SyftVerifyKey, user_verify_key: SyftVerifyKey,
     ) -> Result[list[UserPolicy], str]:
         qks = QueryKeys(qks=[PolicyUserVerifyKeyPartitionKey.with_obj(user_verify_key)])
         return self.query_one(credentials=credentials, qks=qks)

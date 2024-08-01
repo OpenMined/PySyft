@@ -32,7 +32,8 @@ class RatholeConfig(SyftBaseModel):
         high_priority_route = peer.pick_highest_priority_route()
 
         if not isinstance(high_priority_route, HTTPServerRoute):
-            raise ValueError("Rathole only supports HTTPServerRoute")
+            msg = "Rathole only supports HTTPServerRoute"
+            raise ValueError(msg)
 
         return cls(
             uuid=peer.id,

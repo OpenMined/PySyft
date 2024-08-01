@@ -35,7 +35,7 @@ def _patch_ipython_sanitization() -> None:
 
     tabulator_js = load_js("tabulator.min.js")
     tabulator_js = tabulator_js.replace(
-        "define(t)", "define('tabulator-tables', [], t)"
+        "define(t)", "define('tabulator-tables', [], t)",
     )
 
     SKIP_SANITIZE = [
@@ -96,13 +96,13 @@ def _patch_ipython_sanitization() -> None:
         return None
 
     ip.display_formatter.formatters["text/html"].for_type(
-        SyftObject, display_sanitized_html
+        SyftObject, display_sanitized_html,
     )
     ip.display_formatter.formatters["text/html"].for_type(
-        DictTuple, display_sanitized_html
+        DictTuple, display_sanitized_html,
     )
     ip.display_formatter.formatters["text/markdown"].for_type(
-        SyftObject, display_sanitized_md
+        SyftObject, display_sanitized_md,
     )
 
 
@@ -128,7 +128,7 @@ def _patch_ipython_autocompletion() -> None:
             [
                 ("syft.client.api", "APIModule"),
                 ("syft.client.api", "SyftAPI"),
-            ]
+            ],
         )
         original_can_get_attr = policy.can_get_attr
 
@@ -136,10 +136,7 @@ def _patch_ipython_autocompletion() -> None:
             attr_name = "__syft_allow_autocomplete__"
             # first check if exist to prevent side effects
             if hasattr(value, attr_name) and attr in getattr(value, attr_name, []):
-                if attr in dir(value):
-                    return True
-                else:
-                    return False
+                return attr in dir(value)
             else:
                 return original_can_get_attr(value, attr)
 
@@ -176,7 +173,7 @@ def _patch_ipython_autocompletion() -> None:
                 return res
 
         ipython.Completer.attr_matches = MethodType(
-            patched_attr_matches, ipython.Completer
+            patched_attr_matches, ipython.Completer,
         )
     except Exception:
         print("Failed to patch syft autocompletion for __syft_dir__")

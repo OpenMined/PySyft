@@ -24,7 +24,7 @@ def automount(automount_conf: Path, mount_conf_dir: Path) -> None:
         try:
             logger.info(
                 f"Auto mount type={mount_opts.remote_bucket.type} "
-                f"bucket={mount_opts.remote_bucket.bucket_name}"
+                f"bucket={mount_opts.remote_bucket.bucket_name}",
             )
             result = mount_bucket(
                 mount_opts,
@@ -36,7 +36,7 @@ def automount(automount_conf: Path, mount_conf_dir: Path) -> None:
             logger.info(e)
         except subprocess.CalledProcessError as e:
             logger.error(
-                f"Mount error: code={e.returncode} stdout={e.stdout} stderr={e.stderr}"
+                f"Mount error: code={e.returncode} stdout={e.stdout} stderr={e.stderr}",
             )
         except Exception as e:
             logger.error(f"Unhandled exception: {e}")

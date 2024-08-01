@@ -71,7 +71,7 @@ class CMPBase:
 
         if text_signature is not None:
             self.signature = _signature_fromstr(
-                inspect.Signature, obj, text_signature, True
+                inspect.Signature, obj, text_signature, True,
             )
 
         self.is_built = False
@@ -88,7 +88,7 @@ class CMPBase:
 
         child_paths = set(self.children.keys())
 
-        for attr_name in getattr(self.obj, "__dict__", {}).keys():
+        for attr_name in getattr(self.obj, "__dict__", {}):
             if attr_name not in LIB_IGNORE_ATTRIBUTES:
                 if attr_name in child_paths:
                     child = self.children[attr_name]
@@ -111,7 +111,8 @@ class CMPBase:
         if __name in self.children:
             return self.children[__name]
         else:
-            raise ValueError(f"property {__name} not defined")
+            msg = f"property {__name} not defined"
+            raise ValueError(msg)
 
     def init_child(
         self,
@@ -139,7 +140,7 @@ class CMPBase:
                 absolute_path=absolute_path,
             )  # type: ignore
         elif inspect.ismodule(child_obj) and CMPBase.is_submodule(
-            parent_obj, child_obj
+            parent_obj, child_obj,
         ):
             ## TODO, we could register modules and functions in 2 ways:
             # A) as numpy.float32 (what we are doing now)
@@ -169,10 +170,7 @@ class CMPBase:
                 return False
             else:
                 child_parent_module = child.__package__.rsplit(".", 1)[0]
-                if parent.__package__ == child_parent_module:
-                    return True
-                else:
-                    return False
+                return parent.__package__ == child_parent_module
         except Exception:  # nosec
             pass
         return False
@@ -204,7 +202,7 @@ class CMPBase:
         )
 
     def __repr__(
-        self, indent: int = 0, is_last: bool = False, parent_path: str = ""
+        self, indent: int = 0, is_last: bool = False, parent_path: str = "",
     ) -> str:
         """Visualize the tree, e.g.:
         ├───numpy (ALL_EXECUTE)
@@ -237,16 +235,13 @@ class CMPBase:
                     sorted(
                         self.children.values(),
                         key=lambda x: x.permissions.permission_string,  # type: ignore
-                    )
+                    ),
                 )
-            ]
+            ],
         )
         tree_prefix = "└───" if is_last else "├───"
         indent_str = "│    " * indent + tree_prefix
-        if parent_path != "":
-            path = self.path.replace(f"{parent_path}.", "")
-        else:
-            path = self.path
+        path = self.path.replace(f"{parent_path}.", "") if parent_path != "" else self.path
         return f"{indent_str}{path} ({self.permissions})\n{children_string}"
 
 
@@ -324,7 +319,8 @@ class CMPTree:
         if _name in self.children:
             return self.children[_name]
         else:
-            raise ValueError(f"property {_name} does not exist")
+            msg = f"property {_name} does not exist"
+            raise ValueError(msg)
 
     def __repr__(self) -> str:
         return "\n".join([c.__repr__() for c in self.children.values()])
@@ -351,5 +347,5 @@ action_execute_registry_libs = CMPTree(
                 CMPModule("testing", permissions=NONE_EXECUTE),
             ],
         ),
-    ]
+    ],
 ).build()

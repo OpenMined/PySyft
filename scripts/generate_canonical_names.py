@@ -36,7 +36,7 @@ def get_class_file_path(cls: type) -> str:
 
 
 def get_decorator_with_lines(
-    file_path: str, class_name: str, decorator_name: str
+    file_path: str, class_name: str, decorator_name: str,
 ) -> tuple[ast.Call | None, int | None, int | None]:
     with open(file_path) as source:
         tree = ast.parse(source.read())
@@ -65,40 +65,40 @@ def add_canonical_name_version(decorator: ast.Call, class_name: str) -> ast.Call
 
     if not canonical_name_exists:
         new_decorator.keywords.append(
-            ast.keyword(arg="canonical_name", value=ast.Constant(value=class_name))
+            ast.keyword(arg="canonical_name", value=ast.Constant(value=class_name)),
         )
     if not version_exists:
         new_decorator.keywords.append(
-            ast.keyword(arg="version", value=ast.Constant(value=1))
+            ast.keyword(arg="version", value=ast.Constant(value=1)),
         )
 
     return ast.copy_location(new_decorator, decorator)
 
 
 def update_decorator_for_cls(
-    cls: type, existing_canonical_names: list[str]
+    cls: type, existing_canonical_names: list[str],
 ) -> str | None:
     file_path = inspect.getfile(cls)
     class_name = cls.__name__
 
     decorator, start_line, end_line = get_decorator_with_lines(
-        file_path, class_name, "serializable"
+        file_path, class_name, "serializable",
     )
 
     if decorator is None:
         print(
-            f"{cls.__module__}: Could not find decorator for class {class_name}. Did not update canonical name."
+            f"{cls.__module__}: Could not find decorator for class {class_name}. Did not update canonical name.",
         )
         return None
     if start_line is None or end_line is None:
         print(
-            f"{cls.__module__}: No start/end lines for decorator in class {class_name}. Did not update canonical name."
+            f"{cls.__module__}: No start/end lines for decorator in class {class_name}. Did not update canonical name.",
         )
         return None
 
     if class_name in existing_canonical_names:
         print(
-            f"{cls.__module__}: {class_name} is already a registered canonical name. Did not update canonical name."
+            f"{cls.__module__}: {class_name} is already a registered canonical name. Did not update canonical name.",
         )
         return None
 

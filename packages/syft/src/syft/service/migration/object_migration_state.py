@@ -93,7 +93,7 @@ class SyftMigrationStateStash(BaseStash):
         )
 
     def get_by_name(
-        self, canonical_name: str, credentials: SyftVerifyKey
+        self, canonical_name: str, credentials: SyftVerifyKey,
     ) -> Result[SyftObjectMigrationState, str]:
         qks = KlassNamePartitionKey.with_obj(canonical_name)
         return self.query_one(credentials=credentials, qks=qks)
@@ -150,15 +150,14 @@ class MigrationData(SyftObject):
     def make_migration_config(self) -> dict[str, Any]:
         server_uid = self.server_uid.to_string()
         server_private_key = str(self.signing_key)
-        migration_config = {
+        return {
             "server": {
                 "env": [
                     {"name": "SERVER_UID", "value": server_uid},
                     {"name": "SERVER_PRIVATE_KEY", "value": server_private_key},
-                ]
-            }
+                ],
+            },
         }
-        return migration_config
 
     @classmethod
     def from_file(self, path: str | Path) -> Self | SyftError:
@@ -233,7 +232,7 @@ class MigrationData(SyftObject):
         blob_create = CreateBlobStorageEntry.from_blob_storage_entry(migrated_obj)
         blob_create.file_size = size
         blob_deposit_object = api.services.blob_storage.allocate_for_user(
-            blob_create, migrated_obj.uploaded_by
+            blob_create, migrated_obj.uploaded_by,
         )
 
         if isinstance(blob_deposit_object, SyftError):
@@ -243,7 +242,7 @@ class MigrationData(SyftObject):
     def copy_without_blobs(self) -> "MigrationData":
         # Create a shallow copy of the MigrationData instance, removing blob-related data
         # This is required for sending the MigrationData to the backend.
-        copy_data = self.__class__(
+        return self.__class__(
             server_uid=self.server_uid,
             signing_key=self.signing_key,
             store_objects=self.store_objects.copy(),
@@ -252,4 +251,3 @@ class MigrationData(SyftObject):
             blob_storage_objects=[],
             blobs={},
         )
-        return copy_data

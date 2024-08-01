@@ -204,7 +204,7 @@ class TestDictTupleProperties:
             assert dict_tuple[k] == case.mapping[k]
 
     def test_convert_to_other_iterable_types(
-        self, dict_tuple: DictTuple, case: Case
+        self, dict_tuple: DictTuple, case: Case,
     ) -> None:
         assert list(dict_tuple) == list(case.values)
         assert tuple(dict_tuple) == tuple(case.values)
@@ -213,7 +213,7 @@ class TestDictTupleProperties:
         assert list(dict_tuple.keys()) == list(case.keys)
 
     def test_dicttuple_is_not_a_mapping(
-        self, dict_tuple: DictTuple, case: Case
+        self, dict_tuple: DictTuple, case: Case,
     ) -> None:
         assert not isinstance(dict_tuple, Mapping)
 
@@ -224,7 +224,7 @@ class TestDictTupleProperties:
         assert dict(dict_tuple.items()) == case.mapping
 
     def test_constructing_dicttuple_from_itself(
-        self, dict_tuple: DictTuple, case: Case
+        self, dict_tuple: DictTuple, case: Case,
     ) -> None:
         dd = DictTuple(dict_tuple)
         assert tuple(dd) == tuple(case.values)
@@ -232,7 +232,7 @@ class TestDictTupleProperties:
 
 
 @pytest.mark.parametrize(
-    "args", Case(values=["z", "b"], keys=[1, 2]).constructor_args()
+    "args", Case(values=["z", "b"], keys=[1, 2]).constructor_args(),
 )
 def test_keys_should_not_be_int(args: Callable[[], tuple]) -> None:
     with pytest.raises(ValueError, match="int"):
@@ -258,7 +258,7 @@ def test_keys_and_values_should_have_same_length(args: Callable[[], tuple]) -> N
 
 def test_datasetpageview(faker: Faker):
     uploader = Contributor(
-        name=faker.name(), role=str(Roles.UPLOADER), email=faker.email()
+        name=faker.name(), role=str(Roles.UPLOADER), email=faker.email(),
     )
 
     length = 10

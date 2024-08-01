@@ -58,8 +58,7 @@ def serialize_iterable(iterable: Collection) -> bytes:
             message.write(tmp_file)
             del message
             tmp_file.seek(0)
-            res = tmp_file.read()
-            return res
+            return tmp_file.read()
     else:
         res = message.to_bytes()
         del message
@@ -73,7 +72,7 @@ def deserialize_iterable(iterable_type: type, blob: bytes) -> Collection:
     MAX_TRAVERSAL_LIMIT = 2**64 - 1
 
     with iterable_schema.from_bytes(
-        blob, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
+        blob, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT,
     ) as msg:
         values = [
             _deserialize(combine_bytes(element), from_bytes=True)
@@ -116,14 +115,14 @@ def get_deserialized_kv_pairs(blob: bytes) -> list[Any]:
     pairs = []
 
     with kv_iterable_schema.from_bytes(
-        blob, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
+        blob, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT,
     ) as msg:
         for key, value in zip(msg.keys, msg.values):
             pairs.append(
                 (
                     _deserialize(key, from_bytes=True),
                     _deserialize(combine_bytes(value), from_bytes=True),
-                )
+                ),
             )
     return pairs
 
@@ -176,7 +175,7 @@ def serialize_type(_type_to_serialize: type) -> bytes:
     # relative
     type_to_serialize = typing.get_origin(_type_to_serialize) or _type_to_serialize
     canonical_name, version = SyftObjectRegistry.get_identifier_for_type(
-        type_to_serialize
+        type_to_serialize,
     )
     return f"{canonical_name}:{version}".encode()
 
@@ -301,7 +300,7 @@ recursive_serde_register(
 recursive_serde_register(
     bool,
     serialize=lambda x: b"1" if x else b"0",
-    deserialize=lambda x: False if x == b"0" else True,
+    deserialize=lambda x: x != b"0",
     canonical_name="bool",
     version=1,
 )
@@ -449,7 +448,7 @@ def recursive_serde_register_type(
     # former case is for instance for _GerericAlias itself or UnionGenericAlias
     # Latter case is true for for instance List[str], which is currently not used
     if (isinstance(t, type) and issubclass(t, _GenericAlias)) or issubclass(
-        type(t), _GenericAlias
+        type(t), _GenericAlias,
     ):
         recursive_serde_register(
             t,
@@ -557,7 +556,7 @@ recursive_serde_register_type(
     version=1,
 )
 recursive_serde_register_type(
-    _SpecialGenericAlias, canonical_name="_SpecialGenericAlias", version=1
+    _SpecialGenericAlias, canonical_name="_SpecialGenericAlias", version=1,
 )
 recursive_serde_register_type(GenericAlias, canonical_name="GenericAlias", version=1)
 

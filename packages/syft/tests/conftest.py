@@ -118,7 +118,7 @@ def stage_protocol(protocol_file: Path):
         if os.path.exists(protocol_release_dir()):
             for _file_path in protocol_release_dir().iterdir():
                 for version in dp.read_json(_file_path):
-                    if version not in dp.protocol_history.keys():
+                    if version not in dp.protocol_history:
                         _file_path.unlink()
 
 
@@ -147,7 +147,7 @@ def second_worker() -> Worker:
 @pytest.fixture(scope="function")
 def high_worker() -> Worker:
     worker = sy.Worker.named(
-        name=token_hex(8), server_side_type=ServerSideType.HIGH_SIDE
+        name=token_hex(8), server_side_type=ServerSideType.HIGH_SIDE,
     )
     yield worker
     worker.cleanup()
@@ -157,7 +157,7 @@ def high_worker() -> Worker:
 @pytest.fixture(scope="function")
 def low_worker() -> Worker:
     worker = sy.Worker.named(
-        name=token_hex(8), server_side_type=ServerSideType.LOW_SIDE
+        name=token_hex(8), server_side_type=ServerSideType.LOW_SIDE,
     )
     yield worker
     worker.cleanup()
@@ -191,7 +191,7 @@ def guest_datasite_client(root_datasite_client) -> DatasiteClient:
 
 @pytest.fixture
 def ds_client(
-    faker: Faker, root_datasite_client: DatasiteClient, guest_client: DatasiteClient
+    faker: Faker, root_datasite_client: DatasiteClient, guest_client: DatasiteClient,
 ):
     guest_email = faker.email()
     password = "mysecretpassword"
@@ -283,7 +283,7 @@ def small_dataset() -> Dataset:
                 name="small_dataset",
                 data=np.array([1, 2, 3]),
                 mock=np.array([1, 1, 1]),
-            )
+            ),
         ],
     )
     yield dataset
@@ -301,7 +301,7 @@ def big_dataset() -> Dataset:
                 name="big_dataset",
                 data=data_big,
                 mock=mock_big,
-            )
+            ),
         ],
     )
     yield dataset

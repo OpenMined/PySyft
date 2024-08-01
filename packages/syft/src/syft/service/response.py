@@ -37,8 +37,9 @@ class SyftResponseMessage(SyftBaseModel):
         ] or name.startswith("_repr"):
             return super().__getattr__(name)
         display(self)
+        msg = f"You have tried accessing `{name}` on a {type(self).__name__} with message: {self.message}"
         raise AttributeError(
-            f"You have tried accessing `{name}` on a {type(self).__name__} with message: {self.message}"
+            msg,
         )
 
     def __bool__(self) -> bool:
@@ -155,10 +156,10 @@ class SyftException(Exception):
 
 
 def syft_exception_handler(
-    shell: Any, etype: Any, evalue: Any, tb: Any, tb_offset: Any = None
+    shell: Any, etype: Any, evalue: Any, tb: Any, tb_offset: Any = None,
 ) -> None:
     template = evalue.format_traceback(
-        etype=etype, evalue=evalue, tb=tb, tb_offset=tb_offset
+        etype=etype, evalue=evalue, tb=tb, tb_offset=tb_offset,
     )
     sys.stderr.write(template)
 

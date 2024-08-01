@@ -175,17 +175,17 @@ class MainObjectDiffWidget:
             target_side = "Low side"
 
         html_from = create_diff_html(
-            f"From <i>{source_side}</i> (new values)", from_properties, self.statuses
+            f"From <i>{source_side}</i> (new values)", from_properties, self.statuses,
         )
         html_to = create_diff_html(
-            f"To <i>{target_side}</i> (old values)", to_properties, self.statuses
+            f"To <i>{target_side}</i> (old values)", to_properties, self.statuses,
         )
 
         widget_from = widgets.HTML(
-            value=html_from, layout=widgets.Layout(width="50%", overflow="auto")
+            value=html_from, layout=widgets.Layout(width="50%", overflow="auto"),
         )
         widget_to = widgets.HTML(
-            value=html_to, layout=widgets.Layout(width="50%", overflow="auto")
+            value=html_to, layout=widgets.Layout(width="50%", overflow="auto"),
         )
         css_accordion = """
             <style>
@@ -221,17 +221,14 @@ class CollapsableObjectDiffWidget:
         self.sync: bool = False
         self.is_main_widget: bool = False
         self.has_private_data = isinstance(
-            self.diff.non_empty_object, SyftLog | ActionObject | TwinAPIEndpoint
+            self.diff.non_empty_object, SyftLog | ActionObject | TwinAPIEndpoint,
         )
         self.widget = self.build()
         self.set_and_disable_sync()
 
     @property
     def mockify(self) -> bool:
-        if self.has_private_data and not self.share_private_data:
-            return True
-        else:
-            return False
+        return bool(self.has_private_data and not self.share_private_data)
 
     @property
     def warning_html(self) -> str:
@@ -257,7 +254,7 @@ class CollapsableObjectDiffWidget:
         description_html = MainDescription(object=object).to_html()
         copy_id_button = CopyIDButton(copy_text=str(object.id.id), max_width=60)
 
-        second_line_html = f"""
+        return f"""
             <div class="widget-header2">
             <div class="widget-header2-2">
             {type_html} {description_html}
@@ -265,7 +262,6 @@ class CollapsableObjectDiffWidget:
             {copy_id_button.to_html()}
             </div>
         """  # noqa: E501
-        return second_line_html
 
     def set_and_disable_sync(self) -> None:
         self._sync_checkbox.disabled = True
@@ -299,15 +295,15 @@ class CollapsableObjectDiffWidget:
 
         self._share_private_checkbox = share_private_checkbox
         self._share_private_checkbox.observe(
-            self._on_share_private_data_change, "value"
+            self._on_share_private_data_change, "value",
         )
 
         return accordion
 
     def create_accordion_css(
-        self, header_id: str, body_id: str, class_name: str
+        self, header_id: str, body_id: str, class_name: str,
     ) -> str:
-        css_accordion = f"""
+        return f"""
             <style>
             .accordion {{
                 padding: 0 10px;
@@ -338,7 +334,6 @@ class CollapsableObjectDiffWidget:
             }}
             </style>
         """
-        return css_accordion
 
     def build_accordion(
         self,
@@ -388,7 +383,7 @@ class CollapsableObjectDiffWidget:
             layout=Layout(width="auto", margin="0 2px 0 0"),
         )
         sync_checkbox = Checkbox(
-            description="Sync", layout=Layout(width="auto", margin="0 2px 0 0")
+            description="Sync", layout=Layout(width="auto", margin="0 2px 0 0"),
         )
 
         checkboxes = []
@@ -430,13 +425,13 @@ class ResolveWidget:
         self.build_state = build_state
         self.obj_diff_batch: ObjectDiffBatch = obj_diff_batch
         self.id2widget: dict[
-            UID, CollapsableObjectDiffWidget | MainObjectDiffWidget
+            UID, CollapsableObjectDiffWidget | MainObjectDiffWidget,
         ] = {}
         self.on_sync_callback = on_sync_callback
         self.main_widget = self.build()
         self.result_widget = VBox()  # Placeholder for SyftSuccess / SyftError
         self.widget = VBox(
-            [self.build_css_widget(), self.main_widget, self.result_widget]
+            [self.build_css_widget(), self.main_widget, self.result_widget],
         )
         self.is_synced = False
         self.hide_result_widget()
@@ -475,7 +470,7 @@ class ResolveWidget:
 
         if self.is_synced:
             return SyftError(
-                message="The changes in this widget have already been synced."
+                message="The changes in this widget have already been synced.",
             )
 
         res = handle_sync_batch(
@@ -492,9 +487,9 @@ class ResolveWidget:
     @property
     def batch_diff_widgets(self) -> list[CollapsableObjectDiffWidget]:
         dependents = self.obj_diff_batch.get_dependents(
-            include_roots=False, include_batch_root=False
+            include_roots=False, include_batch_root=False,
         )
-        dependent_diff_widgets = [
+        return [
             CollapsableObjectDiffWidget(
                 diff,
                 direction=self.obj_diff_batch.sync_direction,
@@ -502,17 +497,16 @@ class ResolveWidget:
             )
             for diff in dependents
         ]
-        return dependent_diff_widgets
 
     @property
     def dependent_root_diff_widgets(self) -> list[CollapsableObjectDiffWidget]:
         dependencies = self.obj_diff_batch.get_dependencies(
-            include_roots=True, include_batch_root=False
+            include_roots=True, include_batch_root=False,
         )
         other_roots = [
             d for d in dependencies if d.object_id in self.obj_diff_batch.global_roots
         ]
-        widgets = [
+        return [
             CollapsableObjectDiffWidget(
                 diff,
                 direction=self.obj_diff_batch.sync_direction,
@@ -520,16 +514,14 @@ class ResolveWidget:
             )
             for diff in other_roots
         ]
-        return widgets
 
     @property
     def main_object_diff_widget(self) -> MainObjectDiffWidget:
-        obj_diff_widget = MainObjectDiffWidget(
+        return MainObjectDiffWidget(
             self.obj_diff_batch.root_diff,
             direction=self.obj_diff_batch.sync_direction,
             build_state=self.build_state,
         )
-        return obj_diff_widget
 
     def set_widget_result_state(self, res: SyftSuccess | SyftError) -> None:
         self.is_synced = True
@@ -579,7 +571,7 @@ class ResolveWidget:
             children=[d.widget for d in dependent_batch_diff_widgets],
         )
 
-        full_widget = widgets.VBox(
+        return widgets.VBox(
             [
                 self.build_header(),
                 self.main_object_diff_widget.widget,
@@ -589,9 +581,8 @@ class ResolveWidget:
                 dependency_items,
                 self.spacer(8),
                 self.sync_button(),
-            ]
+            ],
         )
-        return full_widget
 
     def sync_button(self) -> Button:
         sync_button = Button(
@@ -644,7 +635,7 @@ class PaginationControl:
                 self.previous_button,
                 self.next_button,
                 self.last_button,
-            ]
+            ],
         )
         self.update_buttons()
         self.update_index_callback()
@@ -687,13 +678,13 @@ class PaginationControl:
 
     def build(self) -> widgets.VBox:
         return widgets.VBox(
-            [widgets.HBox([self.buttons, self.index_label]), self.output]
+            [widgets.HBox([self.buttons, self.index_label]), self.output],
         )
 
 
 class PaginatedWidget:
     def __init__(
-        self, children: list, on_paginate_callback: Callable[[int], None] | None = None
+        self, children: list, on_paginate_callback: Callable[[int], None] | None = None,
     ):
         # on_paginate_callback is an optional secondary callback,
         # called after updating the page index and displaying the new widget
@@ -720,7 +711,7 @@ class PaginatedWidget:
 
     def build(self) -> widgets.VBox:
         return widgets.VBox(
-            [self.pagination_control.build(), self.spacer(8), self.container]
+            [self.pagination_control.build(), self.spacer(8), self.container],
         )
 
 
@@ -763,7 +754,7 @@ class PaginatedResolveWidget:
         with self.table_output:
             display.display(display.HTML(self.batch_table))
             highlight_single_row(
-                self.table_uid, self.paginated_widget.current_index, jump_to_row=True
+                self.table_uid, self.paginated_widget.current_index, jump_to_row=True,
             )
 
         self.widget = self.build()

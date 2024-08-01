@@ -28,7 +28,7 @@ for container in containers:
 
     # Get the container logs
     container_logs = subprocess.check_output(
-        "docker logs " + container_name, shell=True, stderr=subprocess.STDOUT
+        "docker logs " + container_name, shell=True, stderr=subprocess.STDOUT,
     ).decode("utf-8")
 
     path = job_path / container_name

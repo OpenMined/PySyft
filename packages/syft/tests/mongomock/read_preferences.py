@@ -32,10 +32,13 @@ def ensure_read_preference_type(key, value):
     """Raise a TypeError if the value is not a type compatible for ReadPreference."""
     for attr in ("document", "mode", "mongos_mode", "max_staleness"):
         if not hasattr(value, attr):
-            raise TypeError(
+            msg = (
                 "{} must be an instance of {}".format(
-                    key, "pymongo.read_preference.ReadPreference"
+                    key, "pymongo.read_preference.ReadPreference",
                 )
+            )
+            raise TypeError(
+                msg,
             )
 
 

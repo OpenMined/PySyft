@@ -29,9 +29,7 @@ def test_mount_bucket_s3(fake_process: FakeProcess, random_path: Path) -> None:
     fake_process.register([fake_process.any()], callback=subprocess_cb)
 
     opts = MountOptions(
-        **{
-            "local_bucket": token_hex(8),
-            "remote_bucket": {
+        local_bucket=token_hex(8), remote_bucket={
                 "type": "s3",
                 "bucket_name": token_hex(8),
                 "creds": {
@@ -39,7 +37,6 @@ def test_mount_bucket_s3(fake_process: FakeProcess, random_path: Path) -> None:
                     "aws_secret_access_key": token_hex(8),
                 },
             },
-        }
     )
     result = mount_bucket(opts, random_path)
     conf_path = result["path"]
@@ -60,9 +57,7 @@ def test_mount_bucket_gcs(fake_process: FakeProcess, random_path: Path) -> None:
     fake_process.register([fake_process.any()], callback=subprocess_cb)
 
     opts = MountOptions(
-        **{
-            "local_bucket": token_hex(8),
-            "remote_bucket": {
+        local_bucket=token_hex(8), remote_bucket={
                 "type": "gcs",
                 "bucket_name": token_hex(8),
                 "creds": {
@@ -74,7 +69,6 @@ def test_mount_bucket_gcs(fake_process: FakeProcess, random_path: Path) -> None:
                     "universe_domain": "googleapis.com",
                 },
             },
-        }
     )
 
     result = mount_bucket(opts, random_path)
@@ -97,9 +91,7 @@ def test_mount_bucket_azure(fake_process: FakeProcess, random_path: Path) -> Non
     fake_process.register([fake_process.any()], callback=subprocess_cb)
 
     opts = MountOptions(
-        **{
-            "local_bucket": token_hex(8),
-            "remote_bucket": {
+        local_bucket=token_hex(8), remote_bucket={
                 "type": "azure",
                 "container_name": token_hex(8),
                 "creds": {
@@ -107,7 +99,6 @@ def test_mount_bucket_azure(fake_process: FakeProcess, random_path: Path) -> Non
                     "azure_account_key": token_hex(8),
                 },
             },
-        }
     )
     result = mount_bucket(opts, random_path)
     conf_path = result["path"]

@@ -3,7 +3,6 @@ from __future__ import annotations
 
 # stdlib
 import ast
-from collections.abc import Callable
 from copy import deepcopy
 from enum import Enum
 import hashlib
@@ -13,7 +12,7 @@ from inspect import Signature
 from io import StringIO
 import sys
 from typing import Any
-from typing import ClassVar
+from typing import ClassVar, TYPE_CHECKING
 
 # third party
 from RestrictedPython import compile_restricted
@@ -33,7 +32,6 @@ from ...serde.recursive_primitives import recursive_serde_register_type
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...store.document_store import PartitionKey
-from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.syft_object_registry import SyftObjectRegistry
@@ -56,10 +54,14 @@ from ..dataset.dataset import Asset
 from ..response import SyftError
 from ..response import SyftSuccess
 
+if TYPE_CHECKING:
+    from ...types.datetime import DateTime
+    from collections.abc import Callable
+
 DEFAULT_USER_POLICY_VERSION = 1
 
 PolicyUserVerifyKeyPartitionKey = PartitionKey(
-    key="user_verify_key", type_=SyftVerifyKey
+    key="user_verify_key", type_=SyftVerifyKey,
 )
 PyCodeObject = Any
 
@@ -72,7 +74,8 @@ def extract_uid(v: Any) -> UID:
         value = v.id
 
     if not isinstance(value, UID):
-        raise Exception(f"Input {v} must have a UID not {type(v)}")
+        msg = f"Input {v} must have a UID not {type(v)}"
+        raise Exception(msg)
     return value
 
 
@@ -85,8 +88,7 @@ def filter_only_uids(results: Any) -> list[UID] | dict[str, UID] | UID:
         results = [results]
 
     if isinstance(results, list):
-        output_list = [extract_uid(v) for v in results]
-        return output_list
+        return [extract_uid(v) for v in results]
     elif isinstance(results, dict):
         output_dict = {}
         for k, v in results.items():
@@ -160,7 +162,8 @@ def partition_by_server(kwargs: dict[str, Any]) -> dict[ServerIdentity, dict[str
         if isinstance(v, Asset):
             uid = v.action_id
         if not isinstance(uid, UID):
-            raise Exception(f"Input {k} must have a UID not {type(v)}")
+            msg = f"Input {k} must have a UID not {type(v)}"
+            raise Exception(msg)
 
         _obj_exists = False
         for api in api_list:
@@ -180,7 +183,8 @@ def partition_by_server(kwargs: dict[str, Any]) -> dict[ServerIdentity, dict[str
                 continue
 
         if not _obj_exists:
-            raise Exception(f"Input data {k}:{uid} does not belong to any Datasite")
+            msg = f"Input data {k}:{uid} does not belong to any Datasite"
+            raise Exception(msg)
 
     return output_kwargs
 
@@ -194,7 +198,7 @@ class PolicyRule(SyftObject):
     requires_input: bool = True
 
     def is_met(
-        self, context: AuthedServiceContext, action_object: ActionObject
+        self, context: AuthedServiceContext, action_object: ActionObject,
     ) -> bool:
         return False
 
@@ -219,10 +223,7 @@ class CreatePolicyRuleConstant(CreatePolicyRule):
     @classmethod
     def set_klass(cls, data: Any) -> Any:
         val = data["val"]
-        if isinstance(val, RemoteFunction):
-            klass = CustomEndpointActionObject
-        else:
-            klass = type(val)
+        klass = CustomEndpointActionObject if isinstance(val, RemoteFunction) else type(val)
         data["klass"] = klass
         return data
 
@@ -245,7 +246,7 @@ class Matches(PolicyRule):
     val: UID
 
     def is_met(
-        self, context: AuthedServiceContext, action_object: ActionObject
+        self, context: AuthedServiceContext, action_object: ActionObject,
     ) -> bool:
         return action_object.id == self.val
 
@@ -263,16 +264,15 @@ class Constant(PolicyRule):
         return True
 
     def transform_kwarg(
-        self, context: AuthedServiceContext, val: Any
+        self, context: AuthedServiceContext, val: Any,
     ) -> Result[Any, str]:
-        if isinstance(self.val, UID):
-            if issubclass(self.klass, CustomEndpointActionObject):
-                res = context.server.get_service("actionservice").get(context, self.val)
-                if res.is_err():
-                    return res
-                else:
-                    obj = res.ok()
-                    return Ok(obj.syft_action_data)
+        if isinstance(self.val, UID) and issubclass(self.klass, CustomEndpointActionObject):
+            res = context.server.get_service("actionservice").get(context, self.val)
+            if res.is_err():
+                return res
+            else:
+                obj = res.ok()
+                return Ok(obj.syft_action_data)
         return Ok(self.val)
 
 
@@ -296,27 +296,25 @@ class UserOwned(PolicyRule):
     )
 
     def is_owned(
-        self, context: AuthedServiceContext, action_object: ActionObject
+        self, context: AuthedServiceContext, action_object: ActionObject,
     ) -> bool:
         action_store = context.server.get_service("actionservice").store
         return action_store.has_permission(
             ActionObjectPermission(
-                action_object.id, ActionPermission.OWNER, context.credentials
-            )
+                action_object.id, ActionPermission.OWNER, context.credentials,
+            ),
         )
 
     def is_met(
-        self, context: AuthedServiceContext, action_object: ActionObject
+        self, context: AuthedServiceContext, action_object: ActionObject,
     ) -> bool:
         return type(action_object.syft_action_data) == self.type and self.is_owned(
-            context, action_object
+            context, action_object,
         )
 
 
 def user_code_arg2id(arg: Any) -> UID:
-    if isinstance(arg, ActionObject):
-        uid = arg.id
-    elif isinstance(arg, TwinObject):
+    if isinstance(arg, (ActionObject, TwinObject)):
         uid = arg.id
     elif isinstance(arg, Asset):
         uid = arg.action_id
@@ -335,7 +333,7 @@ def retrieve_item_from_db(id: UID, context: AuthedServiceContext) -> ActionObjec
 
     action_service = context.server.get_service("actionservice")
     root_context = AuthedServiceContext(
-        server=context.server, credentials=context.server.verify_key
+        server=context.server, credentials=context.server.verify_key,
     )
     value = action_service._get(
         context=root_context,
@@ -386,7 +384,7 @@ class InputPolicy(Policy):
         user_server_view = ServerIdentity.from_change_context(context)
         inputs = self.inputs[user_server_view]
         root_context = AuthedServiceContext(
-            server=context.server, credentials=context.approving_user_credentials
+            server=context.server, credentials=context.approving_user_credentials,
         ).as_root_context()
 
         action_service = context.server.get_service("actionservice")
@@ -414,7 +412,7 @@ class MixedInputPolicy(InputPolicy):
     kwarg_rules: dict[ServerIdentity, dict[str, PolicyRule]]
 
     def __init__(
-        self, init_kwargs: Any = None, client: Any = None, *args: Any, **kwargs: Any
+        self, init_kwargs: Any = None, client: Any = None, *args: Any, **kwargs: Any,
     ) -> None:
         if init_kwargs is not None:
             kwarg_rules = init_kwargs
@@ -424,30 +422,31 @@ class MixedInputPolicy(InputPolicy):
             kwarg_rules_current_server = {}
             for kw, arg in kwargs.items():
                 if isinstance(
-                    arg, UID | Asset | ActionObject | TwinObject | RemoteFunction
+                    arg, UID | Asset | ActionObject | TwinObject | RemoteFunction,
                 ):
                     kwarg_rules_current_server[kw] = Matches(
-                        kw=kw, val=user_code_arg2id(arg)
+                        kw=kw, val=user_code_arg2id(arg),
                     )
                 elif arg in [str, float, int, bool, dict, list, set, tuple]:  # type: ignore[unreachable]
                     kwarg_rules_current_server[kw] = UserOwned(kw=kw, type=arg)
                 elif isinstance(arg, CreatePolicyRule):
                     kwarg_rules_current_server[kw] = arg.to_policy_rule(kw)
                 else:
-                    raise ValueError("Incorrect argument")
+                    msg = "Incorrect argument"
+                    raise ValueError(msg)
             kwarg_rules = {server_identity: kwarg_rules_current_server}
 
         super().__init__(
-            *args, kwarg_rules=kwarg_rules, init_kwargs=kwarg_rules, **kwargs
+            *args, kwarg_rules=kwarg_rules, init_kwargs=kwarg_rules, **kwargs,
         )
 
     def transform_kwargs(
-        self, context: AuthedServiceContext, kwargs: dict[str, Any]
+        self, context: AuthedServiceContext, kwargs: dict[str, Any],
     ) -> dict[str, Any]:
         for _, rules in self.kwarg_rules.items():
             for kw, rule in rules.items():
                 if hasattr(rule, "transform_kwarg"):
-                    res_val = rule.transform_kwarg(context, kwargs.get(kw, None))
+                    res_val = rule.transform_kwarg(context, kwargs.get(kw))
                     if res_val.is_err():
                         return res_val
                     else:
@@ -455,7 +454,7 @@ class MixedInputPolicy(InputPolicy):
         return Ok(kwargs)
 
     def find_server_identity(
-        self, kwargs: dict[str, Any], client: Any = None
+        self, kwargs: dict[str, Any], client: Any = None,
     ) -> ServerIdentity:
         if client is not None:
             return ServerIdentity.from_api(client.api)
@@ -467,7 +466,7 @@ class MixedInputPolicy(InputPolicy):
             # we mostly get the UID here because we don't want to store all those
             # other objects, so we need to create a global UID obj lookup service
             if isinstance(
-                val, UID | Asset | ActionObject | TwinObject | RemoteFunction
+                val, UID | Asset | ActionObject | TwinObject | RemoteFunction,
             ):
                 has_ids = True
                 id = user_code_arg2id(val)
@@ -493,17 +492,20 @@ class MixedInputPolicy(InputPolicy):
                 if len(apis) == 1:
                     return ServerIdentity.from_api(api)
                 else:
+                    msg = "Multiple Server Identities, please only login to one client (for this policy) and try again"
                     raise ValueError(
-                        "Multiple Server Identities, please only login to one client (for this policy) and try again"
+                        msg,
                     )
             else:
-                raise ValueError("No Server Identities")
+                msg = "No Server Identities"
+                raise ValueError(msg)
         if len(matches) > 1:
             # TODO: Beach Fix
-            raise ValueError("Multiple Server Identities")
+            msg = "Multiple Server Identities"
+            raise ValueError(msg)
             # we need to fix this as its possible we could
             # grab the wrong API and call a different user context in jupyter testing
-            pass  # just grab the first one
+            # just grab the first one
         return matches.pop()
 
     def filter_kwargs(
@@ -519,7 +521,7 @@ class MixedInputPolicy(InputPolicy):
                     if rule.requires_input:
                         passed_id = kwargs[kw]
                         actionobject: ActionObject = retrieve_item_from_db(
-                            passed_id, context
+                            passed_id, context,
                         )
                         rule_check_args = (actionobject,)
                     else:
@@ -527,7 +529,8 @@ class MixedInputPolicy(InputPolicy):
                         # TODO
                         actionobject = rule.value
                     if not rule.is_met(context, *rule_check_args):
-                        raise ValueError(f"{rule} is not met")
+                        msg = f"{rule} is not met"
+                        raise ValueError(msg)
                     else:
                         res[kw] = actionobject
         except Exception as e:
@@ -553,7 +556,7 @@ class MixedInputPolicy(InputPolicy):
 
         expected_input_kwargs = set()
         for _inp_kwargs in self.inputs.values():
-            for k in _inp_kwargs.keys():
+            for k in _inp_kwargs:
                 if k not in usr_input_kwargs:
                     return Err(f"Function missing required keyword argument: '{k}'")
             expected_input_kwargs.update(_inp_kwargs.keys())
@@ -562,13 +565,13 @@ class MixedInputPolicy(InputPolicy):
         not_approved_kwargs = set(expected_input_kwargs) - set(permitted_input_kwargs)
         if len(not_approved_kwargs) > 0:
             return Err(
-                f"Input arguments: {not_approved_kwargs} to the function are not approved yet."
+                f"Input arguments: {not_approved_kwargs} to the function are not approved yet.",
             )
         return Ok(True)
 
 
 def retrieve_from_db(
-    code_item_id: UID, allowed_inputs: dict[str, UID], context: AuthedServiceContext
+    code_item_id: UID, allowed_inputs: dict[str, UID], context: AuthedServiceContext,
 ) -> Result[dict[str, Any], str]:
     # relative
     from ...service.action.action_object import TwinMode
@@ -582,7 +585,7 @@ def retrieve_from_db(
     # but we are not modifying the permissions of the private data
 
     root_context = AuthedServiceContext(
-        server=context.server, credentials=context.server.verify_key
+        server=context.server, credentials=context.server.verify_key,
     )
     if context.server.server_type == ServerType.DATASITE:
         for var_name, arg_id in allowed_inputs.items():
@@ -596,8 +599,9 @@ def retrieve_from_db(
                 return Err(kwarg_value.err())
             code_inputs[var_name] = kwarg_value.ok()
     else:
+        msg = f"Invalid Server Type for Code Submission:{context.server.server_type}"
         raise Exception(
-            f"Invalid Server Type for Code Submission:{context.server.server_type}"
+            msg,
         )
     return Ok(code_inputs)
 
@@ -615,11 +619,12 @@ def allowed_ids_only(
         )
         allowed_inputs = allowed_inputs.get(server_identity, {})
     else:
+        msg = f"Invalid Server Type for Code Submission:{context.server.server_type}"
         raise Exception(
-            f"Invalid Server Type for Code Submission:{context.server.server_type}"
+            msg,
         )
     filtered_kwargs = {}
-    for key in allowed_inputs.keys():
+    for key in allowed_inputs:
         if key in kwargs:
             value = kwargs[key]
             uid = value
@@ -627,8 +632,9 @@ def allowed_ids_only(
                 uid = getattr(value, "id", None)
 
             if uid != allowed_inputs[key]:
+                msg = f"Input with uid: {uid} for `{key}` not in allowed inputs: {allowed_inputs}"
                 raise Exception(
-                    f"Input with uid: {uid} for `{key}` not in allowed inputs: {allowed_inputs}"
+                    msg,
                 )
             filtered_kwargs[key] = value
     return filtered_kwargs
@@ -648,7 +654,7 @@ class ExactMatch(InputPolicy):
     ) -> Result[dict[Any, Any], str]:
         try:
             allowed_inputs = allowed_ids_only(
-                allowed_inputs=self.inputs, kwargs=kwargs, context=context
+                allowed_inputs=self.inputs, kwargs=kwargs, context=context,
             )
 
             results = retrieve_from_db(
@@ -679,7 +685,7 @@ class ExactMatch(InputPolicy):
 
         expected_input_kwargs = set()
         for _inp_kwargs in self.inputs.values():
-            for k in _inp_kwargs.keys():
+            for k in _inp_kwargs:
                 if k not in usr_input_kwargs:
                     return Err(f"Function missing required keyword argument: '{k}'")
             expected_input_kwargs.update(_inp_kwargs.keys())
@@ -688,7 +694,7 @@ class ExactMatch(InputPolicy):
         not_approved_kwargs = set(expected_input_kwargs) - set(permitted_input_kwargs)
         if len(not_approved_kwargs) > 0:
             return Err(
-                f"Function arguments: {not_approved_kwargs} are not approved yet."
+                f"Function arguments: {not_approved_kwargs} are not approved yet.",
             )
         return Ok(True)
 
@@ -745,11 +751,12 @@ class OutputPolicyExecuteCount(OutputPolicy):
     @property
     def count(self) -> SyftError | int:
         api = APIRegistry.api_for(
-            self.syft_server_location, self.syft_client_verify_key
+            self.syft_server_location, self.syft_client_verify_key,
         )
         if api is None:
+            msg = f"api is None. You must login to {self.syft_server_location}"
             raise ValueError(
-                f"api is None. You must login to {self.syft_server_location}"
+                msg,
             )
         output_history = api.services.output.get_by_output_policy_id(self.id)
 
@@ -763,10 +770,10 @@ class OutputPolicyExecuteCount(OutputPolicy):
         is_valid = execution_count < self.limit
         if is_valid:
             return SyftSuccess(
-                message=f"Policy is still valid. count: {execution_count} < limit: {self.limit}"
+                message=f"Policy is still valid. count: {execution_count} < limit: {self.limit}",
             )
         return SyftError(
-            message=f"Policy is no longer valid. count: {execution_count} >= limit: {self.limit}"
+            message=f"Policy is no longer valid. count: {execution_count} >= limit: {self.limit}",
         )
 
     def _is_valid(self, context: AuthedServiceContext) -> SyftSuccess | SyftError:
@@ -779,10 +786,10 @@ class OutputPolicyExecuteCount(OutputPolicy):
         is_valid = execution_count < self.limit
         if is_valid:
             return SyftSuccess(
-                message=f"Policy is still valid. count: {execution_count} < limit: {self.limit}"
+                message=f"Policy is still valid. count: {execution_count} < limit: {self.limit}",
             )
         return SyftError(
-            message=f"Policy is no longer valid. count: {execution_count} >= limit: {self.limit}"
+            message=f"Policy is no longer valid. count: {execution_count} >= limit: {self.limit}",
         )
 
     def public_state(self) -> dict[str, int]:
@@ -829,19 +836,16 @@ class UserOutputPolicy(OutputPolicy):
     # Do not validate private attributes of user-defined policies, User annotations can
     # contain any type and throw a NameError when resolving.
     __validate_private_attrs__ = False
-    pass
 
 
 class UserInputPolicy(InputPolicy):
     __canonical_name__ = "UserInputPolicy"
     __validate_private_attrs__ = False
-    pass
 
 
 @serializable()
 class EmpyInputPolicy(InputPolicy):
     __canonical_name__ = "EmptyInputPolicy"
-    pass
 
 
 class CustomInputPolicy(metaclass=CustomPolicy):
@@ -901,7 +905,8 @@ def new_getfile(object: Any) -> Any:  # TODO: fix the mypy issue
         ):
             return inspect.getfile(member)
     else:
-        raise TypeError(f"Source for {object!r} not found")
+        msg = f"Source for {object!r} not found"
+        raise TypeError(msg)
 
 
 def get_code_from_class(policy: type[CustomPolicy]) -> str:
@@ -964,7 +969,8 @@ def generate_unique_class_name(context: TransformContext) -> TransformContext:
         unique_name = f"{service_class_name}_{context.credentials}_{code_hash}"
         context.output["unique_name"] = unique_name
     else:
-        raise ValueError(f"{context}'s output is None. No transformation happened")
+        msg = f"{context}'s output is None. No transformation happened"
+        raise ValueError(msg)
 
     return context
 
@@ -982,17 +988,21 @@ def process_class_code(raw_code: str, class_name: str) -> str:
     v = GlobalsVisitor()
     v.visit(tree)
     if len(tree.body) != 1 or not isinstance(tree.body[0], ast.ClassDef):
+        msg = "Class code should only contain the Class definition for your policy"
         raise Exception(
-            "Class code should only contain the Class definition for your policy"
+            msg,
         )
     old_class = tree.body[0]
     if len(old_class.bases) != 1 or old_class.bases[0].attr not in [
         CustomInputPolicy.__name__,
         CustomOutputPolicy.__name__,
     ]:
-        raise Exception(
+        msg = (
             f"Class code should either implement {CustomInputPolicy.__name__} "
             f"or {CustomOutputPolicy.__name__}"
+        )
+        raise Exception(
+            msg,
         )
 
     # TODO: changes the bases
@@ -1027,7 +1037,7 @@ def process_class_code(raw_code: str, class_name: str) -> str:
             module="__future__",
             names=[ast.alias(name="annotations", asname="annotations")],
             level=0,
-        )
+        ),
     )
     new_body.append(ast.Import(names=[ast.alias(name="syft", asname="sy")], level=0))
     typing_types = [
@@ -1049,7 +1059,7 @@ def process_class_code(raw_code: str, class_name: str) -> str:
                 for typing_type in typing_types
             ],
             level=0,
-        )
+        ),
     )
     new_body.append(new_class)
     module = ast.Module(new_body, type_ignores=[])
@@ -1087,10 +1097,11 @@ def compile_code(context: TransformContext) -> TransformContext:
         if byte_code is None:
             raise Exception(
                 "Unable to compile byte code from parsed code. "
-                + context.output["parsed_code"]
+                + context.output["parsed_code"],
             )
     else:
-        raise ValueError(f"{context}'s output is None. No transformation happened")
+        msg = f"{context}'s output is None. No transformation happened"
+        raise ValueError(msg)
 
     return context
 
@@ -1158,7 +1169,7 @@ def register_policy_class(klass: type, unique_name: str) -> None:
     )
 
     SyftObjectRegistry.register_cls(
-        canonical_name=unique_name, version=version, serde_attributes=serde_attributes
+        canonical_name=unique_name, version=version, serde_attributes=serde_attributes,
     )
 
 
@@ -1177,7 +1188,7 @@ def execute_policy_code(user_policy: UserPolicy) -> Any:
 
         try:
             policy_class = SyftObjectRegistry.get_serde_class(
-                class_name, version=DEFAULT_USER_POLICY_VERSION
+                class_name, version=DEFAULT_USER_POLICY_VERSION,
             )
         except Exception:
             exec(user_policy.byte_code)  # nosec
@@ -1200,10 +1211,10 @@ def execute_policy_code(user_policy: UserPolicy) -> Any:
 
 def load_policy_code(user_policy: UserPolicy) -> Any:
     try:
-        policy_class = execute_policy_code(user_policy)
-        return policy_class
+        return execute_policy_code(user_policy)
     except Exception as e:
-        raise Exception(f"Exception loading code. {user_policy}. {e}")
+        msg = f"Exception loading code. {user_policy}. {e}"
+        raise Exception(msg)
 
 
 def init_policy(user_policy: UserPolicy, init_args: dict[str, Any]) -> Any:
@@ -1217,7 +1228,8 @@ def init_policy(user_policy: UserPolicy, init_args: dict[str, Any]) -> Any:
     if len(init_args) and isinstance(list(init_args.keys())[0], ServerIdentity):
         unwrapped_init_kwargs = init_args
         if len(init_args) > 1:
-            raise Exception("You shoudn't have more than one Server Identity.")
+            msg = "You shoudn't have more than one Server Identity."
+            raise Exception(msg)
         # Otherwise, unwrapp it
         init_args = init_args[list(init_args.keys())[0]]
 

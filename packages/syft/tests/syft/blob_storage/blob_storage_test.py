@@ -11,7 +11,6 @@ import syft as sy
 from syft import ActionObject
 from syft import Dataset
 from syft import Worker
-from syft.client.datasite_client import DatasiteClient
 from syft.service.blob_storage.util import can_upload_to_blob_storage
 from syft.service.blob_storage.util import min_size_for_blob_storage_upload
 from syft.service.context import AuthedServiceContext
@@ -20,6 +19,10 @@ from syft.service.user.user import UserCreate
 from syft.store.blob_storage import BlobDeposit
 from syft.store.blob_storage import SyftObjectRetrieval
 from syft.types.blob_storage import CreateBlobStorageEntry
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from syft.client.datasite_client import DatasiteClient
 
 raw_data = {"test": "test"}
 data = sy.serialize(raw_data, to_bytes=True)
@@ -47,7 +50,7 @@ def test_blob_storage_write():
     worker = sy.Worker.named(name=name)
     blob_storage = worker.get_service("BlobStorageService")
     authed_context = AuthedServiceContext(
-        server=worker, credentials=worker.signing_key.verify_key
+        server=worker, credentials=worker.signing_key.verify_key,
     )
     blob_data = CreateBlobStorageEntry.from_obj(data)
     blob_deposit = blob_storage.allocate(authed_context, blob_data)
@@ -65,7 +68,7 @@ def test_blob_storage_write_syft_object():
     worker = sy.Worker.named(name=name)
     blob_storage = worker.get_service("BlobStorageService")
     authed_context = AuthedServiceContext(
-        server=worker, credentials=worker.signing_key.verify_key
+        server=worker, credentials=worker.signing_key.verify_key,
     )
     blob_data = CreateBlobStorageEntry.from_obj(data)
     blob_deposit = blob_storage.allocate(authed_context, blob_data)
@@ -83,7 +86,7 @@ def test_blob_storage_read():
     worker = sy.Worker.named(name=name)
     blob_storage = worker.get_service("BlobStorageService")
     authed_context = AuthedServiceContext(
-        server=worker, credentials=worker.signing_key.verify_key
+        server=worker, credentials=worker.signing_key.verify_key,
     )
     blob_data = CreateBlobStorageEntry.from_obj(data)
     blob_deposit = blob_storage.allocate(authed_context, blob_data)
@@ -91,7 +94,7 @@ def test_blob_storage_read():
     blob_deposit.write(file_data)
 
     syft_retrieved_data = blob_storage.read(
-        authed_context, blob_deposit.blob_storage_entry_id
+        authed_context, blob_deposit.blob_storage_entry_id,
     )
 
     assert isinstance(syft_retrieved_data, SyftObjectRetrieval)
@@ -127,18 +130,18 @@ def test_action_obj_send_save_to_blob_storage(worker):
     assert isinstance(action_obj_2.syft_blob_storage_entry_id, sy.UID)
     # get back the object from blob storage to check if it is the same
     root_authed_ctx = AuthedServiceContext(
-        server=worker, credentials=root_client.verify_key
+        server=worker, credentials=root_client.verify_key,
     )
     blob_storage = worker.get_service("BlobStorageService")
     syft_retrieved_data = blob_storage.read(
-        root_authed_ctx, action_obj_2.syft_blob_storage_entry_id
+        root_authed_ctx, action_obj_2.syft_blob_storage_entry_id,
     )
     assert isinstance(syft_retrieved_data, SyftObjectRetrieval)
     assert all(syft_retrieved_data.read() == data_big)
 
 
 def test_upload_dataset_save_to_blob_storage(
-    worker: Worker, big_dataset: Dataset, small_dataset: Dataset
+    worker: Worker, big_dataset: Dataset, small_dataset: Dataset,
 ) -> None:
     root_client: DatasiteClient = worker.root_client
     # the small dataset should not be saved to the blob storage

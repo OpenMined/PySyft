@@ -136,7 +136,7 @@ class ListDiff(AttrDiff):
             elif low_list[i] != high_list[i]:
                 diff_ids.append(i)
 
-        change_diff = ListDiff(
+        return ListDiff(
             attr_name=attr_name,
             low_attr=low_list,
             high_attr=high_list,
@@ -144,7 +144,6 @@ class ListDiff(AttrDiff):
             new_low_ids=new_low_ids,
             new_high_ids=new_high_ids,
         )
-        return change_diff
 
 
 def recursive_attr_repr(value_attr: list | dict | bytes, num_tabs: int = 0) -> str:
@@ -221,7 +220,8 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
             permissions = self.high_storage_permissions
             server_uid = self.high_server_uid
         else:
-            raise ValueError("Invalid side")
+            msg = "Invalid side"
+            raise ValueError(msg)
 
         if obj is None or other_obj is None:
             return False
@@ -245,7 +245,8 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         last_sync_date_high: DateTime | None = None,
     ) -> "ObjectDiff":
         if low_obj is None and high_obj is None:
-            raise ValueError("Both low and high objects are None")
+            msg = "Both low and high objects are None"
+            raise ValueError(msg)
         obj_type = type(low_obj if low_obj is not None else high_obj)
 
         res = cls(
@@ -348,7 +349,7 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
             if value_low is None or value_high is None:
                 res[attr] = DiffStatus.NEW
             elif isinstance(value_low, pd.DataFrame) and isinstance(
-                value_high, pd.DataFrame
+                value_high, pd.DataFrame,
             ):
                 res[attr] = (
                     DiffStatus.MODIFIED
@@ -396,7 +397,8 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
                 attrs_str += f"{diff.attr_name}: {diff.__repr_side__(side)}\n"
             return attrs_str
         else:
-            raise ValueError("")
+            msg = ""
+            raise ValueError(msg)
 
     def diff_side_str(self, side: str) -> str:
         obj = self.low_obj if side == "low" else self.high_obj
@@ -447,7 +449,8 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         if self.status == "NEW":
             return self.low_obj if self.low_obj is not None else self.high_obj
         else:
-            raise ValueError("Cannot get object from a diff that is not new")
+            msg = "Cannot get object from a diff that is not new"
+            raise ValueError(msg)
 
     def _coll_repr_(self) -> dict[str, Any]:
         low_state = f"{self.status}\n{self.diff_side_str('low')}"
@@ -530,11 +533,11 @@ def _wrap_text(text: str, width: int, indent: int = 4) -> str:
                     break_long_words=False,
                     replace_whitespace=False,
                     subsequent_indent=" " * indent,
-                )
+                ),
             )
             for line in text.splitlines()
             if line.strip() != ""
-        ]
+        ],
     )
 
 
@@ -607,7 +610,8 @@ class ObjectDiffBatch(SyftObject):
     @property
     def target_server_uid(self) -> UID:
         if self.sync_direction is None:
-            raise ValueError("no direction specified")
+            msg = "no direction specified"
+            raise ValueError(msg)
         if self.sync_direction == SyncDirection.LOW_TO_HIGH:
             return self.high_server_uid
         else:
@@ -616,7 +620,8 @@ class ObjectDiffBatch(SyftObject):
     @property
     def source_server_uid(self) -> UID:
         if self.sync_direction is None:
-            raise ValueError("no direction specified")
+            msg = "no direction specified"
+            raise ValueError(msg)
         if self.sync_direction == SyncDirection.LOW_TO_HIGH:
             return self.low_server_uid
         else:
@@ -625,7 +630,8 @@ class ObjectDiffBatch(SyftObject):
     @property
     def target_verify_key(self) -> SyftVerifyKey:
         if self.sync_direction is None:
-            raise ValueError("no direction specified")
+            msg = "no direction specified"
+            raise ValueError(msg)
         if self.sync_direction == SyncDirection.LOW_TO_HIGH:
             return self.user_verify_key_high
         else:
@@ -634,7 +640,8 @@ class ObjectDiffBatch(SyftObject):
     @property
     def source_verify_key(self) -> SyftVerifyKey:
         if self.sync_direction is None:
-            raise ValueError("no direction specified")
+            msg = "no direction specified"
+            raise ValueError(msg)
         if self.sync_direction == SyncDirection.LOW_TO_HIGH:
             return self.user_verify_key_low
         else:
@@ -653,12 +660,11 @@ class ObjectDiffBatch(SyftObject):
         from ...client.datasite_client import DatasiteClient
 
         api = APIRegistry.api_for(server_uid, syft_client_verify_key)
-        client = DatasiteClient(
+        return DatasiteClient(
             api=api,
             connection=api.connection,  # type: ignore
             credentials=api.signing_key,  # type: ignore
         )
-        return client
 
     def get_dependencies(
         self,
@@ -689,7 +695,7 @@ class ObjectDiffBatch(SyftObject):
         return self.status == "SAME"
 
     def get_dependents(
-        self, include_roots: bool = False, include_batch_root: bool = True
+        self, include_roots: bool = False, include_batch_root: bool = True,
     ) -> list[ObjectDiff]:
         return self.walk_graph(
             deps=self.dependents,
@@ -751,10 +757,10 @@ class ObjectDiffBatch(SyftObject):
         Returns new ResolvedSyncState objects for the source and target servers
         """
         resolved_state_low = ResolvedSyncState(
-            server_uid=self.low_server_uid, alias="low"
+            server_uid=self.low_server_uid, alias="low",
         )
         resolved_state_high = ResolvedSyncState(
-            server_uid=self.high_server_uid, alias="high"
+            server_uid=self.high_server_uid, alias="high",
         )
 
         # Return source, target
@@ -778,7 +784,7 @@ class ObjectDiffBatch(SyftObject):
         sync_direction: SyncDirection,
     ) -> "ObjectDiffBatch":
         def _build_hierarchy_helper(
-            uid: UID, level: int = 0, visited: set | None = None
+            uid: UID, level: int = 0, visited: set | None = None,
         ) -> list:
             visited = visited if visited is not None else set()
 
@@ -804,7 +810,7 @@ class ObjectDiffBatch(SyftObject):
                                 uid=dep_uid,
                                 level=level + 1,
                                 visited=visited | set(deps) - {dep_uid},
-                            )
+                            ),
                         )
             return result
 
@@ -847,8 +853,8 @@ class ObjectDiffBatch(SyftObject):
         except Exception as _:
             return SyftError(
                 message=html.escape(
-                    "Could not render batch, please use resolve(<batch>) instead."
-                )
+                    "Could not render batch, please use resolve(<batch>) instead.",
+                ),
             )._repr_html_()
 
         return f"""
@@ -910,7 +916,8 @@ class ObjectDiffBatch(SyftObject):
                 TwinAPIEndpoint: [],
             }
         else:
-            raise ValueError(f"Unknown root type: {self.root.obj_type}")
+            msg = f"Unknown root type: {self.root.obj_type}"
+            raise ValueError(msg)
 
     @property
     def root(self) -> ObjectDiff:
@@ -925,15 +932,15 @@ class ObjectDiffBatch(SyftObject):
         except Exception as _:
             return SyftError(
                 message=html.escape(
-                    "Could not render batch, please use resolve(<batch>) instead."
-                )
+                    "Could not render batch, please use resolve(<batch>) instead.",
+                ),
             )._repr_html_()
 
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         return ""  # Turns off the _repr_markdown_ of SyftObject
 
     def _get_visual_hierarchy(
-        self, server: ObjectDiff, visited: set[UID] | None = None
+        self, server: ObjectDiff, visited: set[UID] | None = None,
     ) -> dict[ObjectDiff, dict]:
         visited = visited if visited is not None else set()
         visited.add(server.object_id)
@@ -941,7 +948,7 @@ class ObjectDiffBatch(SyftObject):
         _, child_types_map = self.visual_hierarchy
         child_types = child_types_map.get(server.obj_type, [])
         dep_ids = self.dependencies.get(server.object_id, []) + self.dependents.get(
-            server.object_id, []
+            server.object_id, [],
         )
 
         result = {}
@@ -969,7 +976,8 @@ class ObjectDiffBatch(SyftObject):
             if isinstance(diff.low_obj or diff.high_obj, visual_root_type)
         ]
         if not len(visual_roots):
-            raise ValueError("No visual root found")
+            msg = "No visual root found"
+            raise ValueError(msg)
 
         return visual_roots[0]
 
@@ -1086,7 +1094,8 @@ class FilterProperty(enum.Enum):
         elif self == FilterProperty.IGNORED:
             return batch.is_ignored
         else:
-            raise ValueError(f"Invalid property: {property}")
+            msg = f"Invalid property: {property}"
+            raise ValueError(msg)
 
 
 @dataclass
@@ -1144,7 +1153,7 @@ class ServerDiff(SyftObject):
     include_ignored: bool = False
 
     def resolve(
-        self, build_state: bool = True
+        self, build_state: bool = True,
     ) -> "PaginatedResolveWidget | SyftSuccess":
         if len(self.batches) == 0:
             return SyftSuccess(message="No batches to resolve")
@@ -1177,7 +1186,7 @@ class ServerDiff(SyftObject):
         for ignored_batch in self.ignored_batches:
             other_batches = [b for b in self.all_batches if b is not ignored_batch]
             result.append(
-                IgnoredBatchView(batch=ignored_batch, other_batches=other_batches)
+                IgnoredBatchView(batch=ignored_batch, other_batches=other_batches),
             )
         return result
 
@@ -1273,7 +1282,7 @@ class ServerDiff(SyftObject):
 
     @staticmethod
     def apply_previous_ignore_state(
-        batches: list[ObjectDiffBatch], previously_ignored_batches: dict[UID, int]
+        batches: list[ObjectDiffBatch], previously_ignored_batches: dict[UID, int],
     ) -> None:
         """
         Loop through all ignored batches in syncstate. If batch did not change, set to ignored
@@ -1289,7 +1298,7 @@ class ServerDiff(SyftObject):
                     else:
                         logger.debug(
                             f"""A batch with type {batch.root_type.__name__} was previously ignored but has changed
-It will be available for review again."""
+It will be available for review again.""",
                         )
                         # batch has changed, so unignore
                         batch.decision = None
@@ -1309,11 +1318,11 @@ It will be available for review again."""
 
     @staticmethod
     def dependencies_from_states(
-        low_state: SyncState, high_state: SyncState
+        low_state: SyncState, high_state: SyncState,
     ) -> dict[UID, list[UID]]:
         dependencies = {}
         all_parents = set(low_state.dependencies.keys()) | set(
-            high_state.dependencies.keys()
+            high_state.dependencies.keys(),
         )
         for parent in all_parents:
             low_deps = low_state.dependencies.get(parent, [])
@@ -1358,8 +1367,7 @@ It will be available for review again."""
         """  # noqa: E501
         repr_html = repr_html.replace("\n", "")
 
-        res = repr_html + self.batches._repr_html_()
-        return res
+        return repr_html + self.batches._repr_html_()
 
     @staticmethod
     def _sort_batches(hierarchies: list[ObjectDiffBatch]) -> list[ObjectDiffBatch]:
@@ -1387,7 +1395,7 @@ It will be available for review again."""
                 key=lambda x: (
                     hierarchy_order.index(x.root.obj_type),
                     x.root.object_id,
-                )
+                ),
             )
 
         # sorted = sorted groups + without_usercode
@@ -1448,15 +1456,14 @@ It will be available for review again."""
         for batch in batches:
             batch.global_batches = batches
 
-        hierarchies_sorted = ServerDiff._sort_batches(batches)
-        return hierarchies_sorted
+        return ServerDiff._sort_batches(batches)
 
     @property
     def is_same(self) -> bool:
         return all(object_diff.status == "SAME" for object_diff in self.diffs)
 
     def _apply_filters(
-        self, filters: list[ServerDiffFilter], inplace: bool = True
+        self, filters: list[ServerDiffFilter], inplace: bool = True,
     ) -> Self:
         """
         Apply filters to the ServerDiff object and return a new ServerDiff object
@@ -1497,29 +1504,29 @@ It will be available for review again."""
         new_filters = []
         if user_email is not None:
             new_filters.append(
-                ServerDiffFilter(FilterProperty.USER, user_email, operator.eq)
+                ServerDiffFilter(FilterProperty.USER, user_email, operator.eq),
             )
         if not include_ignored:
             new_filters.append(
-                ServerDiffFilter(FilterProperty.IGNORED, True, operator.ne)
+                ServerDiffFilter(FilterProperty.IGNORED, True, operator.ne),
             )
         if not include_same:
             new_filters.append(
-                ServerDiffFilter(FilterProperty.STATUS, "SAME", operator.ne)
+                ServerDiffFilter(FilterProperty.STATUS, "SAME", operator.ne),
             )
         if include_types is not None:
             include_types_ = {
                 t.__name__ if isinstance(t, type) else t for t in include_types
             }
             new_filters.append(
-                ServerDiffFilter(FilterProperty.TYPE, include_types_, operator.contains)
+                ServerDiffFilter(FilterProperty.TYPE, include_types_, operator.contains),
             )
         if exclude_types:
             for exclude_type in exclude_types:
                 if isinstance(exclude_type, type):
                     exclude_type = exclude_type.__name__
                 new_filters.append(
-                    ServerDiffFilter(FilterProperty.TYPE, exclude_type, operator.ne)
+                    ServerDiffFilter(FilterProperty.TYPE, exclude_type, operator.ne),
                 )
 
         return self._apply_filters(new_filters, inplace=inplace)
@@ -1561,8 +1568,9 @@ class SyncInstruction(SyftObject):
                         diff.object_type != "Job"
                         and diff.object_type != "ExecutionOutput"
                     ):
+                        msg = "share_to_user is required to share private data"
                         raise ValueError(
-                            "share_to_user is required to share private data"
+                            msg,
                         )
                 else:
                     new_permissions_low_side = [
@@ -1570,7 +1578,7 @@ class SyncInstruction(SyftObject):
                             uid=diff.object_id,
                             permission=ActionPermission.READ,
                             credentials=share_to_user,
-                        )
+                        ),
                     ]
 
         # storage permissions
@@ -1581,12 +1589,12 @@ class SyncInstruction(SyftObject):
             if not mockify:
                 new_storage_permissions.append(
                     StoragePermission(
-                        uid=diff.object_id, server_uid=diff.low_server_uid
-                    )
+                        uid=diff.object_id, server_uid=diff.low_server_uid,
+                    ),
                 )
         elif sync_direction == SyncDirection.LOW_TO_HIGH:
             new_storage_permissions.append(
-                StoragePermission(uid=diff.object_id, server_uid=diff.high_server_uid)
+                StoragePermission(uid=diff.object_id, server_uid=diff.high_server_uid),
             )
 
         return cls(
@@ -1617,8 +1625,9 @@ class ResolvedSyncState(SyftObject):
     def from_client(cls, client: SyftClient) -> "ResolvedSyncState":
         alias: str = client.metadata.server_side_type  # type: ignore
         if alias not in ["low", "high"]:
+            msg = "can only create resolved sync state for high, low side deployments"
             raise ValueError(
-                "can only create resolved sync state for high, low side deployments"
+                msg,
             )
         return cls(server_uid=client.id, alias=alias)
 
@@ -1670,14 +1679,15 @@ class ResolvedSyncState(SyftObject):
         if self.alias == "low":
             self.new_permissions.extend(sync_instruction.new_permissions_lowside)
             self.new_storage_permissions.extend(
-                sync_instruction.new_storage_permissions_lowside
+                sync_instruction.new_storage_permissions_lowside,
             )
         elif self.alias == "high":
             self.new_storage_permissions.extend(
-                sync_instruction.new_storage_permissions_highside
+                sync_instruction.new_storage_permissions_highside,
             )
         else:
-            raise ValueError("Invalid alias")
+            msg = "Invalid alias"
+            raise ValueError(msg)
 
     @property
     def is_empty(self) -> bool:
@@ -1722,7 +1732,7 @@ def display_diff_hierarchy(diff_hierarchy: list[tuple[ObjectDiff, int]]) -> None
         low_side_panel.title = "Low side"
         low_side_panel.title_align = "left"
         high_side_panel = display_diff_object(
-            diff.high_state if diff.high_obj is not None else None
+            diff.high_state if diff.high_obj is not None else None,
         )
         high_side_panel.title = "High side"
         high_side_panel.title_align = "left"

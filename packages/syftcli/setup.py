@@ -35,6 +35,6 @@ setup(
             "syft-cli = syftcli.cli:app",
             "syftcli = syftcli.cli:app",
             "syftctl = syftcli.cli:app",
-        ]
+        ],
     },
 )

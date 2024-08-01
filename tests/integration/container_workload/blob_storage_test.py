@@ -16,7 +16,7 @@ import syft as sy
 @pytest.mark.container_workload
 def test_mount_azure_blob_storage(datasite_1_port):
     datasite_client = sy.login(
-        email="info@openmined.org", password="changethis", port=datasite_1_port
+        email="info@openmined.org", password="changethis", port=datasite_1_port,
     )
 
     azure_storage_key = os.environ.get("AZURE_BLOB_STORAGE_KEY", None)
@@ -29,7 +29,7 @@ def test_mount_azure_blob_storage(datasite_1_port):
         bucket_name="helmazurebucket",
     )
     blob_files = datasite_client.api.services.blob_storage.get_files_from_bucket(
-        bucket_name="helmazurebucket"
+        bucket_name="helmazurebucket",
     )
     assert isinstance(blob_files, list), blob_files
     assert len(blob_files) > 0

@@ -46,7 +46,7 @@ def test_directly_call_service_with_permission(worker, guest_mock_user, update_u
 
 def test_directly_call_service_no_permission(guest_datasite_client):
     api_call = SyftAPICall(
-        server_uid=guest_datasite_client.id, path="user.get_all", args=[], kwargs={}
+        server_uid=guest_datasite_client.id, path="user.get_all", args=[], kwargs={},
     )
     signed_call = api_call.sign(guest_datasite_client.api.signing_key)
     signed_result = guest_datasite_client.api.connection.make_call(signed_call)

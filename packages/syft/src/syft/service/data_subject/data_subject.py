@@ -40,8 +40,7 @@ class DataSubject(SyftObject):
         api = APIRegistry.api_for(self.server_uid, self.syft_client_verify_key)
         if api is None:
             return SyftError(message=f"You must login to {self.server_uid}")
-        members = api.services.data_subject.members_for(self.name)
-        return members
+        return api.services.data_subject.members_for(self.name)
 
     __attr_searchable__ = ["name", "description"]
     __repr_attrs__ = ["name", "description"]
@@ -97,7 +96,7 @@ class DataSubjectCreate(SyftObject):
         return f"DataSubject({self.name})"
 
     def _create_member_relationship(
-        self, data_subject: Self, _relationship_set: set
+        self, data_subject: Self, _relationship_set: set,
     ) -> None:
         for member in data_subject.members.values():
             _relationship_set.add((data_subject, member))

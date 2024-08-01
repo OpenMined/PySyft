@@ -94,11 +94,11 @@ class SeaweedFSBlobDeposit(BlobDeposit):
                     if api is not None and api.connection is not None:
                         if self.proxy_server_uid is None:
                             blob_url = api.connection.to_blob_route(
-                                url.url_path, host=url.host_or_ip
+                                url.url_path, host=url.host_or_ip,
                             )
                         else:
                             blob_url = api.connection.stream_via(
-                                self.proxy_server_uid, url.url_path
+                                self.proxy_server_uid, url.url_path,
                             )
                     else:
                         blob_url = url
@@ -109,7 +109,7 @@ class SeaweedFSBlobDeposit(BlobDeposit):
                             self.no_lines = 0
 
                         def async_generator(
-                            self, chunk_size: int = DEFAULT_UPLOAD_CHUNK_SIZE
+                            self, chunk_size: int = DEFAULT_UPLOAD_CHUNK_SIZE,
                         ) -> Generator:
                             item_queue: Queue = Queue(maxsize=MAX_QUEUE_SIZE)
                             threading.Thread(
@@ -170,7 +170,7 @@ class SeaweedFSBlobDeposit(BlobDeposit):
         if mark_write_complete_method is None:
             return SyftError(message="mark_write_complete_method is None")
         return mark_write_complete_method(
-            etags=etags, uid=self.blob_storage_entry_id, no_lines=no_lines
+            etags=etags, uid=self.blob_storage_entry_id, no_lines=no_lines,
         )
 
 
@@ -193,7 +193,8 @@ class SeaweedFSClientConfig(BlobStorageClientConfig):
     @property
     def mount_url(self) -> str:
         if self.mount_port is None:
-            raise ValueError("Seaweed should be configured with a mount port to mount")
+            msg = "Seaweed should be configured with a mount port to mount"
+            raise ValueError(msg)
         return f"http://{self.host}:{self.mount_port}/configure_azure"
 
 
@@ -261,7 +262,7 @@ class SeaweedFSConnection(BlobStorageConnection):
         return fp.generate_url(self, type_, bucket_name)
 
     def allocate(
-        self, obj: CreateBlobStorageEntry
+        self, obj: CreateBlobStorageEntry,
     ) -> SecureFilePathLocation | SyftError:
         try:
             file_name = obj.file_name
@@ -273,7 +274,7 @@ class SeaweedFSConnection(BlobStorageConnection):
             return SeaweedSecureFilePathLocation(upload_id=upload_id, path=file_name)
         except BotoClientError as e:
             return SyftError(
-                message=f"Failed to allocate space for {obj} with error: {e}"
+                message=f"Failed to allocate space for {obj} with error: {e}",
             )
 
     def write(self, obj: BlobStorageEntry) -> BlobDeposit:
@@ -290,12 +291,12 @@ class SeaweedFSConnection(BlobStorageConnection):
                         "PartNumber": i + 1,
                     },
                     ExpiresIn=WRITE_EXPIRATION_TIME,
-                )
+                ),
             )
             for i in range(total_parts)
         ]
         return SeaweedFSBlobDeposit(
-            blob_storage_entry_id=obj.id, urls=urls, size=obj.file_size
+            blob_storage_entry_id=obj.id, urls=urls, size=obj.file_size,
         )
 
     def complete_multipart_upload(

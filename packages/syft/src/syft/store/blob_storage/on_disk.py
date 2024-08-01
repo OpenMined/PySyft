@@ -55,7 +55,7 @@ class OnDiskBlobStorageConnection(BlobStorageConnection):
         pass
 
     def read(
-        self, fp: SecureFilePathLocation, type_: type | None, **kwargs: Any
+        self, fp: SecureFilePathLocation, type_: type | None, **kwargs: Any,
     ) -> BlobRetrieval:
         file_path = self._base_directory / fp.path
         return SyftObjectRetrieval(
@@ -65,11 +65,11 @@ class OnDiskBlobStorageConnection(BlobStorageConnection):
         )
 
     def allocate(
-        self, obj: CreateBlobStorageEntry
+        self, obj: CreateBlobStorageEntry,
     ) -> SecureFilePathLocation | SyftError:
         try:
             return SecureFilePathLocation(
-                path=str((self._base_directory / obj.file_name).absolute())
+                path=str((self._base_directory / obj.file_name).absolute()),
             )
         except Exception as e:
             return SyftError(message=f"Failed to allocate: {e}")

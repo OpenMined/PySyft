@@ -87,7 +87,7 @@ class DatasetService(AbstractService):
         roles=DATA_OWNER_ROLE_LEVEL,
     )
     def add(
-        self, context: AuthedServiceContext, dataset: CreateDataset
+        self, context: AuthedServiceContext, dataset: CreateDataset,
     ) -> SyftSuccess | SyftError:
         """Add a Dataset"""
         dataset = dataset.to(Dataset, context=context)
@@ -96,7 +96,7 @@ class DatasetService(AbstractService):
             dataset,
             add_permissions=[
                 ActionObjectPermission(
-                    uid=dataset.id, permission=ActionPermission.ALL_READ
+                    uid=dataset.id, permission=ActionPermission.ALL_READ,
                 ),
             ],
         )
@@ -104,7 +104,7 @@ class DatasetService(AbstractService):
             return SyftError(message=str(result.err()))
         return SyftSuccess(
             message=f"Dataset uploaded to '{context.server.name}'. "
-            f"To see the datasets uploaded by a client on this server, use command `[your_client].datasets`"
+            f"To see the datasets uploaded by a client on this server, use command `[your_client].datasets`",
         )
 
     @service_method(
@@ -133,7 +133,7 @@ class DatasetService(AbstractService):
                 datasets.remove(dataset)
 
         return _paginate_dataset_collection(
-            datasets=datasets, page_size=page_size, page_index=page_index
+            datasets=datasets, page_size=page_size, page_index=page_index,
         )
 
     @service_method(path="dataset.search", name="search", roles=GUEST_ROLE_LEVEL)
@@ -157,7 +157,7 @@ class DatasetService(AbstractService):
         ]
 
         return _paginate_dataset_collection(
-            filtered_results, page_size=page_size, page_index=page_index
+            filtered_results, page_size=page_size, page_index=page_index,
         )
 
     @service_method(path="dataset.get_by_id", name="get_by_id")
@@ -174,7 +174,7 @@ class DatasetService(AbstractService):
 
     @service_method(path="dataset.get_by_action_id", name="get_by_action_id")
     def get_by_action_id(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID,
     ) -> list[Dataset] | SyftError:
         """Get Datasets by an Action ID"""
         result = self.stash.search_action_ids(context.credentials, uid=uid)
@@ -194,7 +194,7 @@ class DatasetService(AbstractService):
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_assets_by_action_id(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID,
     ) -> list[Asset] | SyftError:
         """Get Assets by an Action ID"""
         datasets = self.get_by_action_id(context=context, uid=uid)
@@ -217,7 +217,7 @@ class DatasetService(AbstractService):
         warning=HighSideCRUDWarning(confirmation=True),
     )
     def delete(
-        self, context: AuthedServiceContext, uid: UID, delete_assets: bool = True
+        self, context: AuthedServiceContext, uid: UID, delete_assets: bool = True,
     ) -> SyftSuccess | SyftError:
         """
         Soft delete: keep the dataset object, only remove the blob store entries
@@ -242,10 +242,10 @@ class DatasetService(AbstractService):
                 )
 
                 action_service = cast(
-                    ActionService, context.server.get_service(ActionService)
+                    ActionService, context.server.get_service(ActionService),
                 )
                 del_res: SyftSuccess | SyftError = action_service.delete(
-                    context=context, uid=asset.action_id, soft_delete=True
+                    context=context, uid=asset.action_id, soft_delete=True,
                 )
 
                 if isinstance(del_res, SyftError):
@@ -259,7 +259,7 @@ class DatasetService(AbstractService):
 
         # soft delete the dataset object from the store
         dataset_update = DatasetUpdate(
-            id=uid, name=f"_deleted_{dataset.name}_{uid}", to_be_deleted=True
+            id=uid, name=f"_deleted_{dataset.name}_{uid}", to_be_deleted=True,
         )
         result = self.stash.update(context.credentials, dataset_update)
         if result.is_err():

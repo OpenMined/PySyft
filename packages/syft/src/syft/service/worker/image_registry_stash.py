@@ -41,7 +41,7 @@ class SyftImageRegistryStash(BaseUIDStoreStash):
         return self.query_one(credentials=credentials, qks=qks)
 
     def delete_by_url(
-        self, credentials: SyftVerifyKey, url: str
+        self, credentials: SyftVerifyKey, url: str,
     ) -> Result[SyftSuccess, str]:
         qk = URLPartitionKey.with_obj(url)
         result = super().delete(credentials=credentials, qk=qk)

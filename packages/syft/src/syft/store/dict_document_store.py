@@ -2,21 +2,23 @@
 from __future__ import annotations
 
 # stdlib
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 # third party
 from pydantic import Field
 
 # relative
 from ..serde.serializable import serializable
-from ..server.credentials import SyftVerifyKey
-from ..types import uid
 from .document_store import DocumentStore
 from .document_store import StoreConfig
 from .kv_document_store import KeyValueBackingStore
 from .kv_document_store import KeyValueStorePartition
 from .locks import LockingConfig
 from .locks import ThreadingLockingConfig
+
+if TYPE_CHECKING:
+    from ..server.credentials import SyftVerifyKey
+    from ..types import uid
 
 
 @serializable(canonical_name="DictBackingStore", version=1)
@@ -30,8 +32,7 @@ class DictBackingStore(dict, KeyValueBackingStore):  # type: ignore[misc]
 
     def __getitem__(self, key: Any) -> Any:
         try:
-            value = super().__getitem__(key)
-            return value
+            return super().__getitem__(key)
         except KeyError as e:
             if self._ddtype:
                 return self._ddtype()

@@ -32,7 +32,7 @@ class SyftWorkerPoolStash(BaseUIDStoreStash):
         super().__init__(store=store)
 
     def get_by_name(
-        self, credentials: SyftVerifyKey, pool_name: str
+        self, credentials: SyftVerifyKey, pool_name: str,
     ) -> Result[WorkerPool | None, str]:
         qks = QueryKeys(qks=[PoolNamePartitionKey.with_obj(pool_name)])
         return self.query_one(credentials=credentials, qks=qks)
@@ -48,7 +48,7 @@ class SyftWorkerPoolStash(BaseUIDStoreStash):
         # By default all worker pools have all read permission
         add_permissions = [] if add_permissions is None else add_permissions
         add_permissions.append(
-            ActionObjectPermission(uid=obj.id, permission=ActionPermission.ALL_READ)
+            ActionObjectPermission(uid=obj.id, permission=ActionPermission.ALL_READ),
         )
         return super().set(
             credentials,
@@ -59,7 +59,7 @@ class SyftWorkerPoolStash(BaseUIDStoreStash):
         )
 
     def get_by_image_uid(
-        self, credentials: SyftVerifyKey, image_uid: UID
+        self, credentials: SyftVerifyKey, image_uid: UID,
     ) -> list[WorkerPool]:
         qks = QueryKeys(qks=[PoolImageIDPartitionKey.with_obj(image_uid)])
         return self.query_all(credentials=credentials, qks=qks)

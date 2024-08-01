@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 # stdlib
-from collections.abc import Callable
 
 # third party
 from packaging import version
@@ -22,10 +21,14 @@ from ...types.transforms import drop
 from ...types.transforms import rename
 from ...types.transforms import transform
 from ...types.uid import UID
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 def check_version(
-    client_version: str, server_version: str, server_name: str, silent: bool = False
+    client_version: str, server_version: str, server_name: str, silent: bool = False,
 ) -> bool:
     client_syft_version = version.parse(client_version)
     server_syft_version = version.parse(server_version)
@@ -35,10 +38,9 @@ def check_version(
     )
     if client_syft_version.base_version != server_syft_version.base_version:
         raise ValueError(msg)
-    if client_syft_version.pre != server_syft_version.pre:
-        if not silent:
-            print(f"Warning: {msg}")
-            return False
+    if client_syft_version.pre != server_syft_version.pre and not silent:
+        print(f"Warning: {msg}")
+        return False
     return True
 
 

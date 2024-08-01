@@ -44,12 +44,12 @@ class SyftWorkerImageStash(BaseUIDStoreStash):
 
         # By default syft images have all read permission
         add_permissions.append(
-            ActionObjectPermission(uid=obj.id, permission=ActionPermission.ALL_READ)
+            ActionObjectPermission(uid=obj.id, permission=ActionPermission.ALL_READ),
         )
 
         if isinstance(obj.config, DockerWorkerConfig):
             result = self.get_by_worker_config(
-                credentials=credentials, config=obj.config
+                credentials=credentials, config=obj.config,
             )
             if result.is_ok() and result.ok() is not None:
                 return Err(f"Image already exists for: {obj.config}")
@@ -63,7 +63,7 @@ class SyftWorkerImageStash(BaseUIDStoreStash):
         )
 
     def get_by_worker_config(
-        self, credentials: SyftVerifyKey, config: WorkerConfig
+        self, credentials: SyftVerifyKey, config: WorkerConfig,
     ) -> Result[SyftWorkerImage | None, str]:
         qks = QueryKeys(qks=[WorkerConfigPK.with_obj(config)])
         return self.query_one(credentials=credentials, qks=qks)

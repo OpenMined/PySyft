@@ -74,7 +74,7 @@ class LogService(AbstractService):
         return result.ok()
 
     @service_method(
-        path="log.get_stdout", name="get_stdout", roles=DATA_SCIENTIST_ROLE_LEVEL
+        path="log.get_stdout", name="get_stdout", roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_stdout(self, context: AuthedServiceContext, uid: UID) -> str | SyftError:
         result = self.get(context, uid)
@@ -115,7 +115,7 @@ class LogService(AbstractService):
 
     @service_method(path="log.delete", name="delete", roles=DATA_SCIENTIST_ROLE_LEVEL)
     def delete(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID,
     ) -> SyftSuccess | SyftError:
         result = self.stash.delete_by_uid(context.credentials, uid)
         if result.is_ok():
@@ -130,9 +130,8 @@ class LogService(AbstractService):
     )
     def has_storage_permission(self, context: AuthedServiceContext, uid: UID) -> bool:
         permission = StoragePermission(uid=uid, server_uid=context.server.id)
-        result = self.stash.has_storage_permission(permission)
+        return self.stash.has_storage_permission(permission)
 
-        return result
 
 
 TYPE_TO_SERVICE[SyftLog] = LogService

@@ -59,7 +59,7 @@ class MonitorThread(threading.Thread):
     def monitor(self) -> None:
         # Implement the monitoring logic here
         job = self.worker.job_stash.get_by_uid(
-            self.credentials, self.queue_item.job_id
+            self.credentials, self.queue_item.job_id,
         ).ok()
         if job and job.status == JobStatus.TERMINATING:
             self.terminate(job)
@@ -103,7 +103,7 @@ class QueueManager(BaseQueueManager):
         address: str | None = None,
         syft_worker_id: UID | None = None,
     ) -> QueueConsumer:
-        consumer = self._client.add_consumer(
+        return self._client.add_consumer(
             message_handler=message_handler,
             queue_name=message_handler.queue_name,
             address=address,
@@ -111,7 +111,6 @@ class QueueManager(BaseQueueManager):
             worker_stash=worker_stash,
             syft_worker_id=syft_worker_id,
         )
-        return consumer
 
     def create_producer(
         self,
@@ -155,7 +154,8 @@ def handle_message_multiprocessing(
     time.sleep(0.5)
     queue_config = worker_settings.queue_config
     if queue_config is None:
-        raise ValueError(f"{worker_settings} has no queue configurations!")
+        msg = f"{worker_settings} has no queue configurations!"
+        raise ValueError(msg)
     queue_config.client_config.create_producer = False
     queue_config.client_config.n_consumers = 0
 
@@ -210,16 +210,17 @@ def handle_message_multiprocessing(
         if isinstance(result, Ok):
             result = result.ok()
             if hasattr(result, "syft_action_data") and isinstance(
-                result.syft_action_data, Err
+                result.syft_action_data, Err,
             ):
                 status = Status.ERRORED
                 job_status = JobStatus.ERRORED
-        elif isinstance(result, SyftError) or isinstance(result, Err):
+        elif isinstance(result, (SyftError, Err)):
             status = Status.ERRORED
             job_status = JobStatus.ERRORED
 
         else:
-            raise Exception(f"Unknown result type: {type(result)}")
+            msg = f"Unknown result type: {type(result)}"
+            raise Exception(msg)
     except Exception as e:
         status = Status.ERRORED
         job_status = JobStatus.ERRORED
@@ -232,7 +233,8 @@ def handle_message_multiprocessing(
     # get new job item to get latest iter status
     job_item = worker.job_stash.get_by_uid(credentials, queue_item.job_id).ok()
     if job_item is None:
-        raise Exception(f"Job {queue_item.job_id} not found!")
+        msg = f"Job {queue_item.job_id} not found!"
+        raise Exception(msg)
 
     job_item.server_uid = worker.id
     job_item.result = result
@@ -298,16 +300,18 @@ class APICallMessageHandler(AbstractMessageHandler):
 
         queue_result = worker.queue_stash.set_result(credentials, queue_item)
         if isinstance(queue_result, SyftError):
-            raise Exception(f"{queue_result.err()}")
+            msg = f"{queue_result.err()}"
+            raise Exception(msg)
 
         job_result = worker.job_stash.set_result(credentials, job_item)
         if isinstance(job_result, SyftError):
-            raise Exception(f"{job_result.err()}")
+            msg = f"{job_result.err()}"
+            raise Exception(msg)
 
         logger.info(
             f"Handling queue item: id={queue_item.id}, method={queue_item.method} "
             f"args={queue_item.args}, kwargs={queue_item.kwargs} "
-            f"service={queue_item.service}, as_thread={queue_config.thread_workers}"
+            f"service={queue_item.service}, as_thread={queue_config.thread_workers}",
         )
 
         if queue_config.thread_workers:

@@ -37,18 +37,18 @@ def get_protocol_changes() -> str:
                 "../../",
                 "syft/src/syft/protocol",
                 "protocol_version.json",
-            )
-        )
+            ),
+        ),
     )
 
     protocol_changes = ""
     if protocol_path.exists():
         dev_protocol_changes = json.loads(protocol_path.read_text()).get("dev", {})
         protocol_changes = json.dumps(
-            dev_protocol_changes.get("object_versions", {}), indent=4
+            dev_protocol_changes.get("object_versions", {}), indent=4,
         )
 
-    protocol_changelog = f"""
+    return f"""
     Following class versions are either added/removed.
 
     {protocol_changes}
@@ -57,7 +57,6 @@ def get_protocol_changes() -> str:
     their latest class versions during the upgrade.
     """
 
-    return protocol_changelog
 
 
 if __name__ == "__main__":

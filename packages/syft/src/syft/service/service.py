@@ -3,7 +3,6 @@ from __future__ import annotations
 
 # stdlib
 from collections import defaultdict
-from collections.abc import Callable
 from copy import deepcopy
 import functools
 from functools import partial
@@ -19,7 +18,6 @@ from result import OkErr
 from typing_extensions import Self
 
 # relative
-from ..abstract_server import AbstractServer
 from ..protocol.data_protocol import migrate_args_and_kwargs
 from ..serde.lib_permissions import CMPCRUDPermission
 from ..serde.lib_permissions import CMPPermission
@@ -31,25 +29,27 @@ from ..serde.serializable import serializable
 from ..serde.signature import Signature
 from ..serde.signature import signature_remove_context
 from ..serde.signature import signature_remove_self
-from ..server.credentials import SyftVerifyKey
 from ..store.document_store import DocumentStore
-from ..store.linked_obj import LinkedObject
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
 from ..types.syft_object import attach_attribute_to_syft_object
-from ..types.uid import UID
 from .context import AuthedServiceContext
 from .context import ChangeContext
 from .response import SyftError
 from .user.user_roles import DATA_OWNER_ROLE_LEVEL
 from .user.user_roles import ServiceRole
-from .warnings import APIEndpointWarning
 
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     # relative
+    from ..types.uid import UID
+    from .warnings import APIEndpointWarning
+    from ..store.linked_obj import LinkedObject
+    from ..abstract_server import AbstractServer
+    from ..server.credentials import SyftVerifyKey
+    from collections.abc import Callable
     from ..client.api import APIModule
 
 TYPE_TO_SERVICE: dict = {}
@@ -175,7 +175,7 @@ class UserLibConfigRegistry:
                 k: lib_config
                 for k, lib_config in LibConfigRegistry.get_registered_configs().items()
                 if lib_config.has_permission(credentials)
-            }
+            },
         )
 
     def __contains__(self, path: str) -> bool:
@@ -201,7 +201,7 @@ class UserServiceConfigRegistry:
                 k: service_config
                 for k, service_config in ServiceConfigRegistry.get_registered_configs().items()
                 if service_config.has_permission(user_service_role)
-            }
+            },
         )
 
     def __contains__(self, path: str) -> bool:
@@ -219,20 +219,19 @@ def register_lib_obj(lib_obj: CMPBase) -> None:
     path = lib_obj.absolute_path
     func_name = lib_obj.name
 
-    if signature is not None:
-        if path != "numpy.source":
-            lib_config = LibConfig(
-                public_path=str(path),
-                private_path=str(path),
-                public_name=str(func_name),
-                method_name=str(func_name),
-                doc_string=str(lib_obj.__doc__),
-                signature=signature,
-                permissions={lib_obj.permissions},
-                is_from_lib=True,
-            )
+    if signature is not None and path != "numpy.source":
+        lib_config = LibConfig(
+            public_path=str(path),
+            private_path=str(path),
+            public_name=str(func_name),
+            method_name=str(func_name),
+            doc_string=str(lib_obj.__doc__),
+            signature=signature,
+            permissions={lib_obj.permissions},
+            is_from_lib=True,
+        )
 
-            LibConfigRegistry.register(lib_config)
+        LibConfigRegistry.register(lib_config)
 
 
 # hacky, prevent circular imports
@@ -241,7 +240,7 @@ for lib_obj in action_execute_registry_libs.flatten():
     # func_name = func.__name__
     # # for classes
     # func_name = path.split(".")[-1]
-    if isinstance(lib_obj, CMPFunction) or isinstance(lib_obj, CMPClass):
+    if isinstance(lib_obj, (CMPFunction, CMPClass)):
         register_lib_obj(lib_obj)
 
 
@@ -249,8 +248,9 @@ def deconstruct_param(param: inspect.Parameter) -> dict[str, Any]:
     # Gets the init signature form pydantic object
     param_type = param.annotation
     if not hasattr(param_type, "__signature__"):
+        msg = f"Type {param_type} needs __signature__. Or code changed to support backup init"
         raise Exception(
-            f"Type {param_type} needs __signature__. Or code changed to support backup init"
+            msg,
         )
     signature = param_type.__signature__
     sub_mapping = {}
@@ -293,7 +293,8 @@ def reconstruct_args_kwargs(
         elif not isinstance(param.default, type(Parameter.empty)):
             final_kwargs[param_key] = param.default
         else:
-            raise Exception(f"Missing {param_key} not in kwargs.")
+            msg = f"Missing {param_key} not in kwargs."
+            raise Exception(msg)
 
     if "context" in kwargs:
         final_kwargs["context"] = kwargs["context"]
@@ -326,10 +327,7 @@ def expand_signature(signature: Signature, autosplat: list[str]) -> Signature:
     )
 
     return Signature(
-        **{
-            "parameters": new_params,
-            "return_annotation": signature.return_annotation,
-        }
+        parameters=new_params, return_annotation=signature.return_annotation,
     )
 
 
@@ -360,7 +358,7 @@ def service_method(
 
             if communication_protocol:
                 args, kwargs = migrate_args_and_kwargs(
-                    args=args, kwargs=kwargs, to_latest_protocol=True
+                    args=args, kwargs=kwargs, to_latest_protocol=True,
                 )
             if autosplat is not None and len(autosplat) > 0:
                 args, kwargs = reconstruct_args_kwargs(
@@ -439,7 +437,7 @@ class SyftServiceRegistry:
 
     @classmethod
     def get_transform(
-        cls, type_from: type[SyftObject], type_to: type[SyftObject]
+        cls, type_from: type[SyftObject], type_to: type[SyftObject],
     ) -> Callable:
         klass_from = type_from.__canonical_name__
         version_from = type_from.__version__
@@ -485,11 +483,11 @@ def from_api_or_context(
         if func_or_path not in user_config_registry:
             if ServiceConfigRegistry.path_exists(func_or_path):
                 return SyftError(
-                    message=f"As a `{server_context.role}` you have has no access to: {func_or_path}"
+                    message=f"As a `{server_context.role}` you have has no access to: {func_or_path}",
                 )
             else:
                 return SyftError(
-                    message=f"API call not in registered services: {func_or_path}"
+                    message=f"API call not in registered services: {func_or_path}",
                 )
 
         _private_api_path = user_config_registry.private_path_for(func_or_path)

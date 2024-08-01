@@ -8,7 +8,7 @@ from syft.service.metadata.server_metadata import check_version
 
 def test_check_base_version_success() -> None:
     response = check_version(
-        client_version=__version__, server_version=__version__, server_name="test"
+        client_version=__version__, server_version=__version__, server_name="test",
     )
 
     assert response is True
@@ -17,7 +17,7 @@ def test_check_base_version_success() -> None:
 def test_check_base_version_fail() -> None:
     with pytest.raises(ValueError):
         check_version(
-            client_version="x.x.x", server_version=__version__, server_name="test"
+            client_version="x.x.x", server_version=__version__, server_name="test",
         )
 
 

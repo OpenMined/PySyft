@@ -24,7 +24,7 @@ def test_requeststash_get_all_for_verify_key_no_requests(
 
     verify_key: SyftVerifyKey = guest_datasite_client.credentials.verify_key
     requests = request_stash.get_all_for_verify_key(
-        root_verify_key, verify_key=verify_key
+        root_verify_key, verify_key=verify_key,
     )
     assert requests.is_ok() is True
     assert len(requests.ok()) == 0
@@ -88,7 +88,7 @@ def test_requeststash_get_all_for_verify_key_fail(
     )
 
     def mock_query_all_error(
-        credentials: SyftVerifyKey, qks: QueryKeys, order_by: PartitionKey | None
+        credentials: SyftVerifyKey, qks: QueryKeys, order_by: PartitionKey | None,
     ) -> Err:
         return Err(mock_error_message)
 

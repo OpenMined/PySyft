@@ -70,7 +70,7 @@ class SyncStateRow(SyftObject):
         if self.last_sync_date is not None:
             last_sync_date = self.last_sync_date
             last_sync_delta = timedelta(
-                seconds=DateTime.now().utc_timestamp - last_sync_date.utc_timestamp
+                seconds=DateTime.now().utc_timestamp - last_sync_date.utc_timestamp,
             )
             last_sync_delta_str = td_format(last_sync_delta)
             last_sync_html = (
@@ -152,7 +152,7 @@ class SyncState(SyftObject):
             syft_client_verify_key=self.syft_client_verify_key,
         )
         self._previous_state_diff = ServerDiff.from_sync_state(
-            previous_state, self, _include_server_status=False, direction=None
+            previous_state, self, _include_server_status=False, direction=None,
         )
 
     def get_previous_state_diff(self) -> Any:
@@ -182,7 +182,7 @@ class SyncState(SyftObject):
         return diff.status
 
     def add_objects(
-        self, objects: list[SyncableSyftObject], context: AuthedServiceContext
+        self, objects: list[SyncableSyftObject], context: AuthedServiceContext,
     ) -> None:
         for obj in objects:
             if isinstance(obj.id, LineageID):
@@ -190,7 +190,8 @@ class SyncState(SyftObject):
             elif isinstance(obj.id, UID):
                 self.objects[obj.id] = obj
             else:
-                raise ValueError(f"Unsupported id type: {type(obj.id)}")
+                msg = f"Unsupported id type: {type(obj.id)}"
+                raise ValueError(msg)
 
         # TODO might get slow with large states,
         # need to build dependencies every time to not have UIDs
@@ -216,7 +217,8 @@ class SyncState(SyftObject):
 
         previous_diff = self.get_previous_state_diff()
         if previous_diff is None:
-            raise ValueError("No previous state to compare to")
+            msg = "No previous state to compare to"
+            raise ValueError(msg)
         for batch in previous_diff.batches:
             # NOTE we re-use ServerDiff to compare to previous state,
             # low_obj is previous state, high_obj is current state
@@ -251,7 +253,7 @@ class SyncState(SyftObject):
             previous_state = self.previous_state_link.resolve
             delta = timedelta(
                 seconds=self.created_at.utc_timestamp
-                - previous_state.created_at.utc_timestamp
+                - previous_state.created_at.utc_timestamp,
             )
             val = f"{td_format(delta)} ago"
             date_html = prop_template.format("last sync", val)

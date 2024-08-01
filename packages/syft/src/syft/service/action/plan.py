@@ -37,7 +37,7 @@ class Plan(SyftObject):
 
         inp_str = "Inputs:\n"
         inp_str += "\n".join(
-            [f"\t\t{k}: {v.__class__.__name__}" for k, v in self.inputs.items()]
+            [f"\t\t{k}: {v.__class__.__name__}" for k, v in self.inputs.items()],
         )
 
         act_str = f"Actions:\n\t\t{len(self.actions)} Actions"
@@ -67,7 +67,8 @@ def planify(func: Callable) -> ActionObject:
     worker = Worker.named(name="plan_building", reset=True, processes=0)
     client = worker.root_client
     if client is None:
-        raise ValueError("Not able to get client for plan building")
+        msg = "Not able to get client for plan building"
+        raise ValueError(msg)
     # if client.settings is not None:
     #     client.settings.enable_eager_execution(enable=True) # NOTE: Disabled until we bring back eager execution
     TraceResultRegistry.set_trace_result_for_current_thread(client=client)
@@ -75,7 +76,7 @@ def planify(func: Callable) -> ActionObject:
         # TraceResult._client = client
         plan_kwargs = build_plan_inputs(func, client)
         outputs = func(**plan_kwargs)
-        if not (isinstance(outputs, list) or isinstance(outputs, tuple)):
+        if not (isinstance(outputs, (list, tuple))):
             outputs = [outputs]
         ActionObject.remove_trace_hook()
         actions = TraceResultRegistry.get_trace_result_for_thread().result  # type: ignore
@@ -92,7 +93,7 @@ def planify(func: Callable) -> ActionObject:
 
 
 def build_plan_inputs(
-    forward_func: Callable, client: SyftClient
+    forward_func: Callable, client: SyftClient,
 ) -> dict[str, ActionObject]:
     signature = inspect.signature(forward_func)
     res = {}
@@ -103,8 +104,9 @@ def build_plan_inputs(
                 default_value = ActionObject.from_obj(default_value)
             res[k] = default_value.send(client)
         else:
+            msg = f"arg {k} has no placeholder as default value (required for @make_plan functions)"
             raise ValueError(
-                f"arg {k} has no placeholder as default value (required for @make_plan functions)"
+                msg,
             )
     return res
 

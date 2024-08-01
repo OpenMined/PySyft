@@ -102,7 +102,7 @@ def update_user(faker) -> UserSearch:
 @pytest.fixture
 def guest_user_search(guest_user) -> UserSearch:
     yield UserSearch(
-        name=guest_user.name, email=guest_user.email, verify_key=guest_user.verify_key
+        name=guest_user.name, email=guest_user.email, verify_key=guest_user.verify_key,
     )
 
 
@@ -128,9 +128,9 @@ def server_context(worker: Worker) -> ServerServiceContext:
 
 @pytest.fixture
 def unauthed_context(
-    guest_create_user: UserCreate, worker: Worker
+    guest_create_user: UserCreate, worker: Worker,
 ) -> UnauthedServiceContext:
     login_credentials = UserLoginCredentials(
-        email=guest_create_user.email, password=guest_create_user.password
+        email=guest_create_user.email, password=guest_create_user.password,
     )
     yield UnauthedServiceContext(login_credentials=login_credentials, server=worker)

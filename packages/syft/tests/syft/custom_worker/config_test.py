@@ -30,14 +30,14 @@ DEFAULT_BUILD_CONFIG = {
     "custom_cmds": [],
 }
 # must follow the default values set in CustomBuildConfig class definition
-assert DEFAULT_BUILD_CONFIG == to_json_like_dict(CustomBuildConfig())
+assert to_json_like_dict(CustomBuildConfig()) == DEFAULT_BUILD_CONFIG
 
 
 DEFAULT_WORKER_CONFIG_VERSION = "1"
 # must be set to the default value of CustomWorkerConfig.version
 assert (
-    DEFAULT_WORKER_CONFIG_VERSION
-    == CustomWorkerConfig(build=CustomBuildConfig()).version
+    CustomWorkerConfig(build=CustomBuildConfig()).version
+    == DEFAULT_WORKER_CONFIG_VERSION
 )
 
 
@@ -88,12 +88,12 @@ def generate_partial_custom_build_configs(
 
 
 CUSTOM_BUILD_CONFIG_TEST_CASES = generate_partial_custom_build_configs(
-    CUSTOM_BUILD_CONFIG
+    CUSTOM_BUILD_CONFIG,
 )
 
 
 def get_worker_config(
-    build_config: dict[str, Any], worker_config_version: str | None = None
+    build_config: dict[str, Any], worker_config_version: str | None = None,
 ) -> dict[str, Any]:
     worker_config = {"build": build_config}
 
@@ -109,7 +109,7 @@ def get_full_build_config(build_config: dict[str, Any]) -> dict[str, Any]:
 
 @pytest.fixture
 def worker_config(
-    build_config: dict[str, Any], worker_config_version: str | None
+    build_config: dict[str, Any], worker_config_version: str | None,
 ) -> dict[str, Any]:
     yield get_worker_config(build_config, worker_config_version)
 
@@ -141,14 +141,15 @@ def test_load_custom_worker_config(
         parsed_worker_config_obj = CustomWorkerConfig.from_path(worker_config_yaml)
     elif method == "from_str":
         parsed_worker_config_obj = CustomWorkerConfig.from_str(
-            worker_config_yaml.read_text()
+            worker_config_yaml.read_text(),
         )
     elif method == "from_dict":
         with open(worker_config_yaml) as f:
             config = yaml.safe_load(f)
         parsed_worker_config_obj = CustomWorkerConfig.from_dict(config)
     else:
-        raise ValueError(f"method must be one of {METHODS}")
+        msg = f"method must be one of {METHODS}"
+        raise ValueError(msg)
 
     worker_config_version = (
         DEFAULT_WORKER_CONFIG_VERSION
@@ -188,14 +189,15 @@ def test_docker_worker_config(dockerfile_path: Path, method: str) -> None:
     description = "I want to do some cool DS stuff with Syft and OpenDP"
     if method == "from_str":
         docker_config = DockerWorkerConfig(
-            dockerfile=dockerfile_path.read_text(), description=description
+            dockerfile=dockerfile_path.read_text(), description=description,
         )
     elif method == "from_path":
         docker_config = DockerWorkerConfig.from_path(
-            path=dockerfile_path, description=description
+            path=dockerfile_path, description=description,
         )
     else:
-        raise ValueError(f"method must be one of {METHODS}")
+        msg = f"method must be one of {METHODS}"
+        raise ValueError(msg)
 
     assert docker_config.dockerfile == dockerfile_path.read_text().strip()
     assert docker_config.description == description

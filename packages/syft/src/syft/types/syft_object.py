@@ -148,7 +148,6 @@ class Context(SyftBaseObject):
     __canonical_name__ = "Context"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    pass
 
 
 @cache
@@ -192,7 +191,7 @@ class SyftMigrationRegistry:
             else:
                 # only if the cls has not been registered do we want to register it
                 cls.__migration_version_registry__[mapping_string] = {
-                    klass_version: fqn
+                    klass_version: fqn,
                 }
 
     # @classmethod
@@ -205,7 +204,7 @@ class SyftMigrationRegistry:
 
     @classmethod
     def register_migration_function(
-        cls, klass_type_str: str, version_from: int, version_to: int, method: Callable
+        cls, klass_type_str: str, version_from: int, version_to: int, method: Callable,
     ) -> None:
         """
         Populate the __migration_transform_registry__ dictionary with format
@@ -217,7 +216,8 @@ class SyftMigrationRegistry:
                           '2x1': <function transform_function>}}
         """
         if klass_type_str not in cls.__migration_version_registry__:
-            raise Exception(f"{klass_type_str} is not yet registered.")
+            msg = f"{klass_type_str} is not yet registered."
+            raise Exception(msg)
 
         available_versions = cls.__migration_version_registry__[klass_type_str]
 
@@ -231,14 +231,17 @@ class SyftMigrationRegistry:
                 cls.__migration_function_registry__[klass_type_str] = {}
             cls.__migration_function_registry__[klass_type_str][mapping_string] = method
         else:
-            raise Exception(
+            msg = (
                 f"Available versions for {klass_type_str} are: {available_versions}."
                 f"You're trying to add a transform from version: {version_from} to version: {version_to}"
+            )
+            raise Exception(
+                msg,
             )
 
     @classmethod
     def get_migration(
-        cls, type_from: type[SyftBaseObject], type_to: type[SyftBaseObject]
+        cls, type_from: type[SyftBaseObject], type_to: type[SyftBaseObject],
     ) -> Callable:
         for type_from_mro in type_from.mro():
             if (
@@ -265,14 +268,17 @@ class SyftMigrationRegistry:
                             return cls.__migration_function_registry__[klass_from][
                                 mapping_string
                             ]
-        raise ValueError(
+        msg = (
             f"No migration found for class type: {type_from} to "
             f"type: {type_to} in the migration registry."
+        )
+        raise ValueError(
+            msg,
         )
 
     @classmethod
     def get_migration_for_version(
-        cls, type_from: type[SyftBaseObject], version_to: int
+        cls, type_from: type[SyftBaseObject], version_to: int,
     ) -> Callable:
         canonical_name = type_from.__canonical_name__
         for type_from_mro in type_from.mro():
@@ -293,9 +299,12 @@ class SyftMigrationRegistry:
                         mapping_string
                     ]
 
-        raise Exception(
+        msg = (
             f"No migration found for class type: {type_from} to "
             f"version: {version_to} in the migration registry."
+        )
+        raise Exception(
+            msg,
         )
 
 
@@ -379,7 +388,7 @@ class SyftObject(SyftObjectVersioned):
     __attr_unique__: ClassVar[list[str]] = []
     # the unique keys for the particular Collection the objects will be stored in
     __serde_overrides__: dict[
-        str, Sequence[Callable]
+        str, Sequence[Callable],
     ] = {}  # List of attributes names which require a serde override.
     __owner__: str
 
@@ -412,8 +421,7 @@ class SyftObject(SyftObjectVersioned):
 
     def __repr__(self) -> str:
         try:
-            fqn = full_name_with_qualname(type(self))
-            return fqn
+            return full_name_with_qualname(type(self))
         except Exception:
             return str(type(self))
 
@@ -424,7 +432,7 @@ class SyftObject(SyftObjectVersioned):
         class_name = get_qualname_for(type(self))
         _repr_str = f"class {class_name}:\n"
         fields = getattr(self, "model_fields", {})
-        for attr in fields.keys():
+        for attr in fields:
             if attr in DYNAMIC_SYFT_ATTRIBUTES:
                 continue
             value = getattr(self, attr, "<Missing>")
@@ -511,7 +519,7 @@ class SyftObject(SyftObjectVersioned):
         return transform(self, context)
 
     def to_dict(
-        self, exclude_none: bool = False, exclude_empty: bool = False
+        self, exclude_none: bool = False, exclude_empty: bool = False,
     ) -> dict[str, Any]:
         new_dict = {}
         for k, v in dict(self).items():
@@ -544,8 +552,9 @@ class SyftObject(SyftObjectVersioned):
                 setattr(self, attr, value)
             else:
                 if not _is_optional(var_annotation):
+                    msg = f"{attr}\n field required (type=value_error.missing)"
                     raise ValueError(
-                        f"{attr}\n field required (type=value_error.missing)"
+                        msg,
                     )
 
     def __init__(self, **kwargs: Any) -> None:
@@ -594,7 +603,7 @@ class SyftObject(SyftObjectVersioned):
     def migrate_to(self, version: int, context: Context | None = None) -> Any:
         if self.__version__ != version:
             migration_transform = SyftMigrationRegistry.get_migration_for_version(
-                type_from=type(self), version_to=version
+                type_from=type(self), version_to=version,
             )
             return migration_transform(
                 self,
@@ -630,7 +639,8 @@ class SyftObject(SyftObjectVersioned):
 
         # Sanity check
         if self.id != ext_obj.id:
-            raise Exception("Not the same id for low side and high side requests")
+            msg = "Not the same id for low side and high side requests"
+            raise Exception(msg)
 
         attrs_to_check = self.__dict__.keys()
 
@@ -652,7 +662,7 @@ class SyftObject(SyftObjectVersioned):
                     diff_attrs.append(diff_attr)
                 if isinstance(obj_attr, list) and isinstance(ext_obj_attr, list):
                     list_diff = ListDiff.from_lists(
-                        attr_name=attr, low_list=obj_attr, high_list=ext_obj_attr
+                        attr_name=attr, low_list=obj_attr, high_list=ext_obj_attr,
                     )
                     if not list_diff.is_empty:
                         diff_attrs.append(list_diff)
@@ -677,11 +687,11 @@ class SyftObject(SyftObjectVersioned):
         from ..client.api import APIRegistry
 
         api = APIRegistry.api_for(
-            self.syft_server_location, self.syft_client_verify_key
+            self.syft_server_location, self.syft_client_verify_key,
         )
         if api is None:
             return SyftError(
-                f"Can't access the api. You must login to {self.server_uid}"
+                f"Can't access the api. You must login to {self.server_uid}",
             )
         return api
 
@@ -703,8 +713,9 @@ class SyftObject(SyftObjectVersioned):
                     # Note: self.__pydantic_private__ cannot be None if self.__private_attributes__ has items
                     return self.__pydantic_private__[item]  # type: ignore
                 except KeyError as exc:
+                    msg = f"{type(self).__name__!r} object has no attribute {item!r}"
                     raise AttributeError(
-                        f"{type(self).__name__!r} object has no attribute {item!r}"
+                        msg,
                     ) from exc
             else:
                 # `__pydantic_extra__` can fail to be set if the model is not yet fully initialized.
@@ -718,18 +729,20 @@ class SyftObject(SyftObjectVersioned):
                     try:
                         return pydantic_extra[item]
                     except KeyError as exc:
+                        msg = f"{type(self).__name__!r} object has no attribute {item!r}"
                         raise AttributeError(
-                            f"{type(self).__name__!r} object has no attribute {item!r}"
+                            msg,
                         ) from exc
                 else:
                     if hasattr(self.__class__, item):
                         return self.__getattribute__(
-                            item
+                            item,
                         )  # Raises AttributeError if appropriate
                     else:
                         # this is the current error
+                        msg = f"{type(self).__name__!r} object has no attribute {item!r}"
                         raise AttributeError(
-                            f"{type(self).__name__!r} object has no attribute {item!r}"
+                            msg,
                         )
 
 
@@ -798,5 +811,5 @@ def attach_attribute_to_syft_object(result: Any, attr_dict: dict[str, Any]) -> N
             for attr_name, attr_value in attr_dict.items():
                 setattr(_object, attr_name, attr_value)
 
-            for field in _object.model_fields.keys():
+            for field in _object.model_fields:
                 attach_attribute_to_syft_object(getattr(_object, field), attr_dict)

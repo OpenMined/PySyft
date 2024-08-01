@@ -71,10 +71,7 @@ def patch(servers="localhost", on_new="error"):
     if _IMPORT_MOCK_ERROR:
         raise _IMPORT_MOCK_ERROR  # pylint: disable=raising-bad-type
 
-    if _IMPORT_PYMONGO_ERROR:
-        PyMongoClient = None
-    else:
-        PyMongoClient = pymongo.MongoClient
+    PyMongoClient = None if _IMPORT_PYMONGO_ERROR else pymongo.MongoClient
 
     persisted_clients = {}
     parsed_servers = set()
@@ -102,7 +99,7 @@ def patch(servers="localhost", on_new="error"):
             # TODO(pcorpet): Only wait when trying to access the server's data.
             time.sleep(kwargs.get("serverSelectionTimeoutMS", 30000))
             raise pymongo.errors.ServerSelectionTimeoutError(
-                "%s:%d: [Errno 111] Connection refused" % client.address
+                "%s:%d: [Errno 111] Connection refused" % client.address,
             )
 
         if on_new == "pymongo":
@@ -110,7 +107,7 @@ def patch(servers="localhost", on_new="error"):
 
         raise ValueError(
             "MongoDB server %s:%d does not exist.\n" % client.address
-            + "%s" % parsed_servers
+            + "%s" % parsed_servers,
         )
 
     class _PersistentClient:

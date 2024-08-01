@@ -19,7 +19,7 @@ class WriteConcern(object):
     def __eq__(self, other):
         try:
             return _with_default_values(other.document) == _with_default_values(
-                self.document
+                self.document,
             )
         except AttributeError:
             return NotImplemented
@@ -27,7 +27,7 @@ class WriteConcern(object):
     def __ne__(self, other):
         try:
             return _with_default_values(other.document) != _with_default_values(
-                self.document
+                self.document,
             )
         except AttributeError:
             return NotImplemented
