@@ -138,12 +138,12 @@ For questions about PySyft, reach out via `#support` on <a href="https://slack.o
 
 **Latest Stable**
 
-- `0.8.8` (Stable) - <a href="https://docs.openmined.org/en/latest/index.html">Docs</a>
+- `0.9.0` (Stable) - <a href="https://docs.openmined.org/en/latest/index.html">Docs</a>
 - Install PySyft (Stable): `pip install -U syft`
 
 **Latest Beta**
 
-- `0.9.0` (Beta) - `dev` branch 👈🏽
+- `0.9.1` (Beta) - `dev` branch 👈🏽
 - Install PySyft (Beta): `pip install -U syft --pre`
 
 Find more about previous <a href="./releases.md">releases here</a>.
