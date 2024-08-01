@@ -8,8 +8,6 @@ from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
-from ..action.action_permissions import ActionObjectPermission
-from ..action.action_permissions import ActionPermission
 from ..context import AuthedServiceContext
 from ..notification.email_templates import RequestEmailTemplate
 from ..notification.email_templates import RequestUpdateEmailTemplate
@@ -58,15 +56,7 @@ class RequestService(AbstractService):
         """Submit a Request"""
         try:
             req = request.to(Request, context=context)
-            result = self.stash.set(
-                context.credentials,
-                req,
-                add_permissions=[
-                    ActionObjectPermission(
-                        uid=req.id, permission=ActionPermission.ALL_READ
-                    ),
-                ],
-            )
+            result = self.stash.set(context.credentials, req)
             if result.is_ok():
                 request = result.ok()
                 link = LinkedObject.with_context(request, context=context)
