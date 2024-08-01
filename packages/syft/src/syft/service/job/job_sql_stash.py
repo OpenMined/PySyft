@@ -6,7 +6,7 @@ import contextlib
 import threading
 
 # third party
-from result import Ok
+from result import Ok, Err
 from result import Result
 from sqlalchemy import create_engine
 from sqlalchemy.exc import IntegrityError
@@ -74,6 +74,15 @@ class JobStashSQL:
             if job_db is None:
                 return Ok(None)
             return Ok(job_db.to_obj())
+
+    def get_index(
+        self, index: int, order_by: str = "created_at", descending: bool = True
+    ) -> Result[Job, str]:
+        with self.session_context() as session:
+            job = session.query(JobDB).order_by(order_by).offset(index).first()
+            if job is None:
+                return Err("Job not found")
+            return Ok(job.to_obj())
 
     def get_by_parent_id(
         self, credentials: SyftVerifyKey, uid: UID

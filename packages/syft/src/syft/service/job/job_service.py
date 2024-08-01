@@ -76,6 +76,21 @@ class JobService(AbstractService):
             return res
 
     @service_method(
+        path="job.get_index",
+        name="get_index",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
+    def get_index(
+        self, context: AuthedServiceContext, index: int, order_by: str, descending: bool
+    ) -> Job | SyftError:
+        res = self.stash.get_index(context.credentials, index, order_by, descending)
+        if res.is_err():
+            return SyftError(message=res.err())
+        else:
+            res = res.ok()
+            return res
+
+    @service_method(
         path="job.get_by_user_code_id",
         name="get_by_user_code_id",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
