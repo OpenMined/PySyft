@@ -24,6 +24,9 @@ from .job_sql import JobDB
 from .job_sql import unwrap_uid
 from .job_stash import Job
 from .job_stash import JobStatus
+from sqlalchemy.orm import sessionmaker
+import threading
+import contextlib
 
 
 @serializable(canonical_name="JobStashSQL", version=1)
@@ -36,8 +39,20 @@ class JobStashSQL:
     def __init__(self, server_uid) -> None:
         self.server_uid = server_uid
         self.engine = create_engine(f"sqlite:////tmp/{server_uid}.db")
+        self.SessionFactory = sessionmaker(bind=self.engine)
+        self.thread_local = threading.local()
 
         Base.metadata.create_all(self.engine)
+
+    def get_session(self) -> Session:
+        if not hasattr(self.thread_local, "session"):
+            self.thread_local.session = self.SessionFactory()
+        return self.thread_local.session
+
+    @contextlib.contextmanager
+    def session_context(self):
+        session = self.get_session()
+        yield session
 
     def set_result(
         self,
@@ -52,7 +67,7 @@ class JobStashSQL:
         credentials: SyftVerifyKey,
         result_id: UID,
     ) -> Result[Job | None, str]:
-        with Session(self.engine) as session:
+        with self.session_context() as session:
             job_db = (
                 session.query(JobDB).filter_by(result_id=unwrap_uid(result_id)).first()
             )
@@ -63,12 +78,12 @@ class JobStashSQL:
     def get_by_parent_id(
         self, credentials: SyftVerifyKey, uid: UID
     ) -> Result[Job | None, str]:
-        with Session(self.engine) as session:
+        with self.session_context() as session:
             subjobs = session.query(JobDB).filter_by(parent_id=unwrap_uid(uid)).all()
             return Ok([job.to_obj() for job in subjobs])
 
     def delete_by_uid(self, credentials: SyftVerifyKey, uid: UID) -> Result[Ok, str]:
-        with Session(self.engine) as session:
+        with self.session_context() as session:
             try:
                 session.query(JobDB).filter_by(id=unwrap_uid(uid)).delete()
                 session.commit()
@@ -77,21 +92,21 @@ class JobStashSQL:
                 return str(e)
 
     def get_active(self, credentials: SyftVerifyKey) -> Result[list[Job], str]:
-        with Session(self.engine) as session:
+        with self.session_context() as session:
             jobs = session.query(JobDB).filter_by(status=JobStatus.PROCESSING).all()
             return Ok([job.to_obj() for job in jobs])
 
     def get_by_worker(
         self, credentials: SyftVerifyKey, worker_id: str
     ) -> Result[list[Job], str]:
-        with Session(self.engine) as session:
+        with self.session_context() as session:
             jobs = session.query(JobDB).filter_by(worker_id=unwrap_uid(worker_id)).all()
             return Ok([job.to_obj() for job in jobs])
 
     def get_by_user_code_id(
         self, credentials: SyftVerifyKey, user_code_id: UID
     ) -> Result[list[Job], str]:
-        with Session(self.engine) as session:
+        with self.session_context() as session:
             jobs = (
                 session.query(JobDB)
                 .filter_by(user_code_id=unwrap_uid(user_code_id))
@@ -100,7 +115,7 @@ class JobStashSQL:
             return Ok([job.to_obj() for job in jobs])
 
     def get_all(self, credentials: SyftVerifyKey) -> Result[list[Job], str]:
-        with Session(self.engine) as session:
+        with self.session_context() as session:
             jobs = session.query(JobDB).all()
             return Ok([job.to_obj() for job in jobs])
 
@@ -119,14 +134,14 @@ class JobStashSQL:
             item.result._clear_cache()
         job_db = JobDB.from_obj(item)
 
-        with Session(self.engine) as session:
+        with self.session_context() as session:
             session.add(job_db)
             session.flush()
             session.commit()
             return Ok(job_db.to_obj())
 
     def get_by_uid(self, credentials: SyftVerifyKey, uid: UID) -> Result[Job, str]:
-        with Session(self.engine) as session:
+        with self.session_context() as session:
             job_db = session.query(JobDB).filter_by(id=unwrap_uid(uid)).first()
             if job_db is None:
                 return Ok(None)
@@ -146,7 +161,7 @@ class JobStashSQL:
         ):
             item.result._clear_cache()
 
-        with Session(self.engine) as session:
+        with self.session_context() as session:
             job_db = JobDB.from_obj(item)
             session.query(JobDB).filter_by(id=unwrap_uid(item.id)).update(
                 job_db.to_dict()

@@ -266,7 +266,6 @@ class SyncService(AbstractService):
         storage_permissions = {}
 
         for item in items:
-            print("item", item)
             store = get_store(context, item)
             if store is not None:
                 # TODO fix error handling
@@ -335,10 +334,10 @@ class SyncService(AbstractService):
 
         action_service = context.server.get_service("actionservice")
         for result_id in job_result_ids:
-            action_object = action_service.get(context, result_id)
-            if action_object.is_err():
-                return action_object
-            job_batch.append(action_object.ok())
+            action_object_res = action_service.get(context, result_id)
+            if action_object_res.is_err():
+                return action_object_res
+            job_batch.append(action_object_res.ok())
 
         return Ok(job_batch)
 
@@ -368,6 +367,9 @@ class SyncService(AbstractService):
             return items_for_jobs
         items_for_jobs, errors = items_for_jobs.ok()
         all_items.extend(items_for_jobs)
+
+        for item in all_items:
+            print("i", type(item))
 
         return Ok((all_items, errors))
 
