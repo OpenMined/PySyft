@@ -44,6 +44,9 @@ def get_store(context: AuthedServiceContext, item: SyncableSyftObject) -> Any:
     if isinstance(item, ActionObject):
         service = context.server.get_service("actionservice")  # type: ignore
         return service.store  # type: ignore
+    if isinstance(item, Job):
+        service = context.server.get_service("jobservice")
+        return service.stash  # type: ignore
     service = context.server.get_service(TYPE_TO_SERVICE[type(item)])  # type: ignore
     return service.stash.partition
 
@@ -263,6 +266,7 @@ class SyncService(AbstractService):
         storage_permissions = {}
 
         for item in items:
+            print("item", item)
             store = get_store(context, item)
             if store is not None:
                 # TODO fix error handling

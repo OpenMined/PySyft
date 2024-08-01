@@ -214,10 +214,10 @@ class OutputStash(BaseUIDStoreStash):
         )
 
     def get_by_job_id(
-        self, credentials: SyftVerifyKey, user_code_id: UID
+        self, credentials: SyftVerifyKey, job_id: UID
     ) -> Result[ExecutionOutput | None, str]:
         qks = QueryKeys(
-            qks=[JobIdPartitionKey.with_obj(user_code_id)],
+            qks=[JobIdPartitionKey.with_obj(job_id)],
         )
         res = self.query_all(
             credentials=credentials, qks=qks, order_by=CreatedAtPartitionKey
@@ -338,11 +338,11 @@ class OutputService(AbstractService):
         roles=ADMIN_ROLE_LEVEL,
     )
     def get_by_job_id(
-        self, context: AuthedServiceContext, user_code_id: UID
+        self, context: AuthedServiceContext, job_id: UID
     ) -> ExecutionOutput | None | SyftError:
         result = self.stash.get_by_job_id(
             credentials=context.server.verify_key,  # type: ignore
-            user_code_id=user_code_id,
+            job_id=job_id,
         )
         if result.is_ok():
             return result.ok()

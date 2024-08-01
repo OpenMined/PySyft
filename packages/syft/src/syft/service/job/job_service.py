@@ -27,8 +27,8 @@ from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
+from .job_sql_stash import JobStashSQL
 from .job_stash import Job
-from .job_stash import JobStash
 from .job_stash import JobStatus
 
 
@@ -48,11 +48,10 @@ def wait_until(
 @serializable(canonical_name="JobService", version=1)
 class JobService(AbstractService):
     store: DocumentStore
-    stash: JobStash
 
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
-        self.stash = JobStash(store=store)
+        self.stash = JobStashSQL(self.store.server_uid)
 
     @service_method(
         path="job.get",

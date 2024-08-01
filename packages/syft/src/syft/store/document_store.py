@@ -738,39 +738,6 @@ class BaseStash:
             order_by=order_by,
         )
 
-    def query_all_ids(
-        self,
-        credentials: SyftVerifyKey,
-        qks: QueryKey | QueryKeys,
-        order_by: PartitionKey | None = None,
-    ) -> Result[list[BaseStash.object_type], str]:
-        if isinstance(qks, QueryKey):
-            qks = QueryKeys(qks=qks)
-
-        unique_keys = []
-        searchable_keys = []
-
-        for qk in qks.all:
-            pk = qk.partition_key
-            if self.partition.matches_unique_cks(pk):
-                unique_keys.append(qk)
-            elif self.partition.matches_searchable_cks(pk):
-                searchable_keys.append(qk)
-            else:
-                return Err(
-                    f"{qk} not in {type(self.partition)} unique or searchable keys"
-                )
-
-        index_qks = QueryKeys(qks=unique_keys)
-        search_qks = QueryKeys(qks=searchable_keys)
-
-        return self.partition._find_index_or_search_keys_ids(
-            credentials=credentials,
-            index_qks=index_qks,
-            search_qks=search_qks,
-            order_by=order_by,
-        )
-
     def query_all_kwargs(
         self,
         credentials: SyftVerifyKey,
