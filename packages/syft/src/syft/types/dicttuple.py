@@ -256,7 +256,7 @@ class DictTuple(tuple[_VT, ...], Generic[_KT, _VT], metaclass=_Meta):
         cls, source_type: Any, handler: GetCoreSchemaHandler
     ) -> CoreSchema:
         origin = get_origin(source_type)
-        if origin is None:  # used as `x: Owner` without params
+        if origin is None:
             origin = source_type
             kt, vt = (Any, Any)
         else:

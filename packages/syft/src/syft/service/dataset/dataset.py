@@ -597,7 +597,6 @@ def _check_asset_must_contain_mock(asset_list: list[CreateAsset]) -> None:
 
 @serializable()
 class DatasetPageView(SyftObject):
-    # version
     __canonical_name__ = "DatasetPageView"
     __version__ = SYFT_OBJECT_VERSION_2
 
@@ -607,7 +606,6 @@ class DatasetPageView(SyftObject):
 
 @serializable()
 class DatasetPageViewV1(SyftObject):
-    # version
     __canonical_name__ = "DatasetPageView"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -617,7 +615,6 @@ class DatasetPageViewV1(SyftObject):
 
 @serializable()
 class CreateDataset(Dataset):
-    # version
     __canonical_name__ = "CreateDataset"
     __version__ = SYFT_OBJECT_VERSION_1
     asset_list: list[CreateAsset] = []
