@@ -26,8 +26,8 @@ class ServiceRoleCapability(Enum):
 
 
 def _str_to_role(v: Any) -> Any:
-    if isinstance(v, str) and hasattr(ServiceRole, v.upper()):
-        return getattr(ServiceRole, v.upper())
+    if isinstance(v, str) and hasattr(ServiceRole, v_upper := v.upper()):
+        return getattr(ServiceRole, v_upper)
     return v
 
 
