@@ -112,6 +112,7 @@ def migrate_server_user_update_v1_current() -> list[Callable]:
     return [
         make_set_default("reset_token", None),
         make_set_default("reset_token_date", None),
+        drop("__attr_searchable__"),
         make_set_default(
             "__attr_searchable__",
             ["name", "email", "verify_key", "role", "reset_token"],
