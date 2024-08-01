@@ -2,6 +2,8 @@
 
 # stdlib
 import builtins
+import contextlib
+import threading
 
 # third party
 from result import Ok
@@ -9,6 +11,7 @@ from result import Result
 from sqlalchemy import create_engine
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+from sqlalchemy.orm import sessionmaker
 
 # relative
 from ...serde.serializable import serializable
@@ -24,9 +27,6 @@ from .job_sql import JobDB
 from .job_sql import unwrap_uid
 from .job_stash import Job
 from .job_stash import JobStatus
-from sqlalchemy.orm import sessionmaker
-import threading
-import contextlib
 
 
 @serializable(canonical_name="JobStashSQL", version=1)

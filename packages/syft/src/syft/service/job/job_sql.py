@@ -11,18 +11,19 @@ from sqlalchemy.orm import declared_attr
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import JSON
+from typing_extensions import Self
 
 # syft absolute
 import syft as sy
-from syft.service.action.action_object import Action, ActionType
 
 # relative
-from ...types.uid import UID, LineageID
+from ...types.uid import LineageID
+from ...types.uid import UID
+from ..action.action_object import Action
+from ..action.action_object import ActionType
 from .job_stash import Job
 from .job_stash import JobStatus
 from .job_stash import JobType
-
-from typing_extensions import Self
 
 
 class Base(DeclarativeBase):

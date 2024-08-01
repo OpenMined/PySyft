@@ -27,7 +27,7 @@ def pyspy() -> None:  # type: ignore
         "py-spy",
         "record",
         "-r",
-        "100",
+        "200",
         "-o",
         fname,
         "--pid",
