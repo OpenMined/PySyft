@@ -676,7 +676,7 @@ class SyftObject(SyftObjectVersioned):
         # relative
         from ..client.api import APIRegistry
 
-        return APIRegistry._api_for(
+        return APIRegistry.api_for(
             self.syft_server_location, self.syft_client_verify_key
         ).unwrap()
 
