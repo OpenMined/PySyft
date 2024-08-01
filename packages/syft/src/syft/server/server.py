@@ -1133,6 +1133,8 @@ class Server(AbstractServer):
             api_call = api_call.message
 
             role = self.get_role_for_credentials(credentials=credentials)
+            if not self.settings.enable_guest_sessions and role == ServiceRole.GUEST:
+                return SyftError(message="Server doesn't allow guest sessions.")
             context = AuthedServiceContext(
                 server=self,
                 credentials=credentials,

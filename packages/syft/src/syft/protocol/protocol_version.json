@@ -40,12 +40,22 @@
           "version": 3,
           "hash": "335c7946f2e52d09c7b26f511120cd340717c74c5cca9107e84f839da993c55c",
           "action": "add"
+        },
+        "4": {
+          "version": 4,
+          "hash": "33e5f00a7193521bd5e395f4a21bf634c4875daaa31741fb57c6e15a0a4e5a57",
+          "action": "add"
         }
       },
       "ServerSettings": {
         "3": {
           "version": 3,
           "hash": "997667e1cba22d151857aacc2caba6b1ca73c1648adbd03461dc74a0c0c372b3",
+          "action": "add"
+        },
+        "4": {
+          "version": 4,
+          "hash": "c105b05d3822f01e73eb4256d8aa3d5a1a3977022423627c0e7bd90088036b11",
           "action": "add"
         }
       }
