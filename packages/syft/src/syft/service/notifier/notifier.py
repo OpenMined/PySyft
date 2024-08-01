@@ -12,6 +12,7 @@ from datetime import datetime
 from typing import TypeVar
 
 # third party
+from pydantic import BaseModel
 from result import Err
 from result import Ok
 from result import Result
@@ -33,7 +34,7 @@ from .notifier_enums import NOTIFIERS
 from .smtp_client import SMTPClient
 
 
-class BaseNotifier:
+class BaseNotifier(BaseModel):
     def send(
         self, target: SyftVerifyKey, notification: Notification
     ) -> SyftSuccess | SyftError:
@@ -54,7 +55,7 @@ class UserNotificationActivity(SyftObject):
 @serializable(canonical_name="EmailNotifier", version=1)
 class EmailNotifier(BaseNotifier):
     smtp_client: SMTPClient
-    sender = ""
+    sender: str = ""
 
     def __init__(
         self,
