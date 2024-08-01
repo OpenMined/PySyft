@@ -1063,9 +1063,11 @@ class SyftClient:
             user_verify_key=self.credentials.verify_key,
             api=_api,
         )
+
         self._api = _api
         self._api.metadata = self.metadata
         self.services = _api.services
+
         return _api
 
 

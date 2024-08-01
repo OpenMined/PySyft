@@ -700,8 +700,10 @@ class Server(AbstractServer):
         connection = PythonConnection(server=self)
         client_type = connection.get_client_type().unwrap()
         root_client = client_type(connection=connection, credentials=self.signing_key)
+
         if root_client.api.refresh_api_callback is not None:
             root_client.api.refresh_api_callback()
+
         return root_client
 
     def _find_klasses_pending_for_migration(
@@ -780,7 +782,7 @@ class Server(AbstractServer):
     def __repr__(self) -> str:
         service_string = ""
         if not self.is_subprocess:
-            services = [service.__name__ for service in self.initialized_services]
+            services = [service.__class__.__name__ for service in self.initialized_services]
             service_string = ", ".join(sorted(services))
             service_string = f"\n\nServices:\n{service_string}"
         return f"{type(self).__name__}: {self.name} - {self.id} - {self.server_type}{service_string}"
