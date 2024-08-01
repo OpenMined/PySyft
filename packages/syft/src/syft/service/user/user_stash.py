@@ -60,14 +60,14 @@ class UserStash(NewBaseUIDStoreStash):
     @as_result(StashException, NotFoundException)
     def get_by_reset_token(
         self, credentials: SyftVerifyKey, token: str
-    ) -> Result[User | None, str]:
+    ) -> User:
         qks = QueryKeys(qks=[PasswordResetTokenPartitionKey.with_obj(token)])
         return self.query_one(credentials=credentials, qks=qks)
 
     @as_result(StashException, NotFoundException)
     def get_by_email(
         self, credentials: SyftVerifyKey, email: str
-    ) -> Result[User | None, str]:
+    ) -> User:
         qks = QueryKeys(qks=[EmailPartitionKey.with_obj(email)])
 
         try:

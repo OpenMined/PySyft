@@ -251,7 +251,7 @@ class SettingsService(AbstractService):
     @service_method(path="settings.set_email_rate_limit", name="set_email_rate_limit")
     def set_email_rate_limit(
         self, context: AuthedServiceContext, email_type: EMAIL_TYPES, daily_limit: int
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         notifier_service = context.server.get_service("notifierservice")
         return notifier_service.set_email_rate_limit(context, email_type, daily_limit)
 

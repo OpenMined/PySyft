@@ -133,7 +133,7 @@ class UserService(AbstractService):
     )
     def forgot_password(
         self, context: AuthedServiceContext, email: str
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         success_msg = (
             "If the email is valid, we sent a password "
             + "reset token to your email or a password request to the admin."
@@ -146,9 +146,7 @@ class UserService(AbstractService):
 
         user_role = self.get_role_for_credentials(user.verify_key)
         if user_role == ServiceRole.ADMIN:
-            return SyftError(
-                message="You can't request password reset for an Admin user."
-            )
+            raise SyftException(public_message="You can't request password reset for an Admin user.")
 
         # Email is valid
         # Notifications disabled
@@ -194,8 +192,6 @@ class UserService(AbstractService):
             )
 
             result = method(context=root_context, notification=message)
-            if isinstance(result, SyftError):
-                return result
         else:
             # Email notification is Enabled
             # Therefore, we can directly send a message to the
@@ -211,8 +207,6 @@ class UserService(AbstractService):
 
             method = context.server.get_service_method(NotificationService.send)
             result = method(context=root_context, notification=message)
-            if isinstance(result, SyftError):
-                return result
 
         return SyftSuccess(message=success_msg)
 
@@ -223,39 +217,22 @@ class UserService(AbstractService):
     )
     def request_password_reset(
         self, context: AuthedServiceContext, uid: UID
-    ) -> str | SyftError:
-        result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
-        if result.is_err():
-            return SyftError(
-                message=(
-                    f"Failed to retrieve user with UID: {uid}. Error: {str(result.err())}"
-                )
-            )
-        user = result.ok()
-        if user is None:
-            return SyftError(message=f"No user exists for given: {uid}")
-
+    ) -> str:
+        user = self.stash.get_by_uid(credentials=context.credentials, uid=uid).unwrap()
         user_role = self.get_role_for_credentials(user.verify_key)
+
         if user_role == ServiceRole.ADMIN:
-            return SyftError(
-                message="You can't request password reset for an Admin user."
-            )
+            raise SyftException( public_message="You can't request password reset for an Admin user.")
 
         user.reset_token = self.generate_new_password_reset_token(
             context.server.settings.pwd_token_config
         )
         user.reset_token_date = datetime.now()
 
-        result = self.stash.update(
-            credentials=context.credentials, user=user, has_permission=True
-        )
-        if result.is_err():
-            return SyftError(
-                message=(
-                    f"Failed to update user with UID: {uid}. Error: {str(result.err())}"
-                )
-            )
-
+        self.stash.update(
+            credentials=context.credentials, obj=user, has_permission=True
+        ).unwrap()
+        
         return user.reset_token
 
     @service_method(
@@ -263,23 +240,14 @@ class UserService(AbstractService):
     )
     def reset_password(
         self, context: AuthedServiceContext, token: str, new_password: str
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         """Resets a certain user password using a temporary token."""
-        result = self.stash.get_by_reset_token(
-            credentials=context.credentials, token=token
-        )
-        invalid_token_error = SyftError(
-            message=("Failed to reset user password. Token is invalid or expired!")
-        )
-
-        if result.is_err():
-            return SyftError(message="Failed to reset user password.")
-
-        user = result.ok()
-
-        # If token isn't found
-        if user is None:
-            return invalid_token_error
+        try:
+            user = self.stash.get_by_reset_token(
+                credentials=context.credentials, token=token
+            ).unwrap()
+        except NotFoundException:
+            raise SyftException(public_message="Failed to reset user password. Token is invalid or expired.")
 
         now = datetime.now()
         time_difference = now - user.reset_token_date
@@ -287,11 +255,11 @@ class UserService(AbstractService):
         # If token expired
         expiration_time = context.server.settings.pwd_token_config.token_exp_min
         if time_difference > timedelta(minutes=expiration_time):
-            return invalid_token_error
+            raise SyftException(public_message="Failed to reset user password. Token is invalid or expired.")
 
         if not validate_password(new_password):
-            return SyftError(
-                message="Your new password must have at least 8 \
+            raise SyftException(
+                public_message="Your new password must have at least 8 \
                 characters, Upper case and lower case characters\
                 and at least one number."
             )
@@ -303,13 +271,10 @@ class UserService(AbstractService):
         user.reset_token = None
         user.reset_token_date = None
 
-        result = self.stash.update(
-            credentials=context.credentials, user=user, has_permission=True
+        self.stash.update(
+            credentials=context.credentials, obj=user, has_permission=True
         )
-        if result.is_err():
-            return SyftError(
-                message=(f"Failed to update user password.  Error: {str(result.err())}")
-            )
+
         return SyftSuccess(message="User Password updated successfully!")
 
     def generate_new_password_reset_token(

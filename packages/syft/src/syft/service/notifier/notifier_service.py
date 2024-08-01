@@ -305,17 +305,16 @@ class NotifierService(AbstractService):
 
     def set_email_rate_limit(
         self, context: AuthedServiceContext, email_type: EMAIL_TYPES, daily_limit: int
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         notifier = self.stash.get(context.credentials)
+
         if notifier.is_err():
-            return SyftError(message="Couldn't set the email rate limit.")
+            raise SyftException(public_message="Couldn't set the email rate limit.")
 
         notifier = notifier.ok()
 
         notifier.email_rate_limit[email_type.value] = daily_limit
-        result = self.stash.update(credentials=context.credentials, settings=notifier)
-        if result.is_err():
-            return SyftError(message="Couldn't update the notifier.")
+        self.stash.update(credentials=context.credentials, settings=notifier)
 
         return SyftSuccess(message="Email rate limit updated!")
 
@@ -375,8 +374,8 @@ class NotifierService(AbstractService):
                         current_state.count += 1
                         current_state.date = datetime.now()
                     else:
-                        return SyftError(
-                            message="Couldn't send the email. You have surpassed the"
+                        raise SyftException(
+                            public_message="Couldn't send the email. You have surpassed the"
                             + " email threshold limit. Please try again later."
                         )
             else:
@@ -386,11 +385,9 @@ class NotifierService(AbstractService):
                     )
                 }
 
-            result = self.stash.update(credentials=admin_key, settings=notifier)
-            if result.is_err():
-                return SyftError(message="Couldn't update the notifier.")
+            self.stash.update(credentials=admin_key, settings=notifier).unwrap()
 
-            resp = notifier.send_notifications(
+            notifier.send_notifications(
                 context=context, notification=notification
             ).unwrap()
 
