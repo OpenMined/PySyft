@@ -3,6 +3,7 @@
 # stdlib
 import builtins
 import contextlib
+from re import I
 import threading
 
 # third party
@@ -19,14 +20,35 @@ from ...server.credentials import SyftVerifyKey
 from ...store.document_store import PartitionSettings
 from ...types.uid import UID
 from ..action.action_object import ActionObject
-from ..action.action_permissions import ActionObjectPermission
+from ..action.action_permissions import (
+    COMPOUND_ACTION_PERMISSION,
+    ActionObjectPermission,
+)
 from ..action.action_permissions import ActionPermission
 from ..response import SyftSuccess
-from .job_sql import Base
+from .job_sql import Base, JobPermissionDB
 from .job_sql import JobDB
 from .job_sql import unwrap_uid
 from .job_stash import Job
 from .job_stash import JobStatus
+from sqlalchemy.orm import Session
+from sqlalchemy import select, or_, and_, join
+
+
+def get_permission_from():
+    return join(JobPermissionDB, JobDB.id == JobPermissionDB.object_id)
+
+
+def get_permission_where(user_id):
+    return or_(
+        JobPermissionDB.user_id == user_id,
+        and_(
+            JobPermissionDB.user_id is None,
+            JobPermissionDB.permission.in_(
+                COMPOUND_ACTION_PERMISSION,
+            ),
+        ),
+    )
 
 
 @serializable(canonical_name="JobStashSQL", version=1)
@@ -88,7 +110,13 @@ class JobStashSQL:
         self, credentials: SyftVerifyKey, uid: UID
     ) -> Result[Job | None, str]:
         with self.session_context() as session:
-            subjobs = session.query(JobDB).filter_by(parent_id=unwrap_uid(uid)).all()
+            subjobs = (
+                session.query(JobDB)
+                .select_from(get_permission_from())
+                .where(get_permission_where(str(credentials.verify_key)))
+                .filter_by(parent_id=unwrap_uid(uid))
+                .all()
+            )
             return Ok([job.to_obj() for job in subjobs])
 
     def delete_by_uid(self, credentials: SyftVerifyKey, uid: UID) -> Result[Ok, str]:
@@ -102,14 +130,26 @@ class JobStashSQL:
 
     def get_active(self, credentials: SyftVerifyKey) -> Result[list[Job], str]:
         with self.session_context() as session:
-            jobs = session.query(JobDB).filter_by(status=JobStatus.PROCESSING).all()
+            jobs = (
+                session.query(JobDB)
+                .select_from(get_permission_from())
+                .where(get_permission_where(str(credentials.verify_key)))
+                .filter_by(status=JobStatus.PROCESSING)
+                .all()
+            )
             return Ok([job.to_obj() for job in jobs])
 
     def get_by_worker(
         self, credentials: SyftVerifyKey, worker_id: str
     ) -> Result[list[Job], str]:
         with self.session_context() as session:
-            jobs = session.query(JobDB).filter_by(worker_id=unwrap_uid(worker_id)).all()
+            jobs = (
+                session.query(JobDB)
+                .select_from(get_permission_from())
+                .where(get_permission_where(str(credentials.verify_key)))
+                .filter_by(worker_id=unwrap_uid(worker_id))
+                .all()
+            )
             return Ok([job.to_obj() for job in jobs])
 
     def get_by_user_code_id(
@@ -118,21 +158,31 @@ class JobStashSQL:
         with self.session_context() as session:
             jobs = (
                 session.query(JobDB)
+                .select_from(get_permission_from())
+                .where(get_permission_where(str(credentials.verify_key)))
                 .filter_by(user_code_id=unwrap_uid(user_code_id))
                 .all()
             )
             return Ok([job.to_obj() for job in jobs])
 
     def get_all(self, credentials: SyftVerifyKey) -> Result[list[Job], str]:
+        user_id = str(credentials.verify_key)
+
         with self.session_context() as session:
-            jobs = session.query(JobDB).all()
+            jobs = session.execute(
+                select(JobDB)
+                .select_from(get_permission_from())
+                .where(get_permission_where(str(credentials.verify_key)))
+            ).scalars()
             return Ok([job.to_obj() for job in jobs])
 
     def set(
         self,
         credentials: SyftVerifyKey,
         item: Job,
-        **kwargs,
+        add_permissions: list[ActionObjectPermission] | None = None,
+        add_storage_permission: bool = True,
+        ignore_duplicates: bool = False,
     ) -> Result[Job, str]:
         # Ensure we never save cached result data in the database,
         # as they can be arbitrarily large
@@ -143,6 +193,25 @@ class JobStashSQL:
             item.result._clear_cache()
         job_db = JobDB.from_obj(item)
 
+        job_db.permissions = {
+            JobPermissionDB(
+                id=job_db.id,
+                permission=ActionPermission.READ,
+                user_id=str(credentials.verify_key),
+            )
+        }
+        if add_permissions:
+            job_db.permissions |= {
+                JobPermissionDB(
+                    uid=job_db.id,
+                    permission=permission.permission,
+                    user_id=str(permission.credentials)
+                    if permission.credentials
+                    else None,
+                )
+                for permission in add_permissions
+            }
+
         with self.session_context() as session:
             session.add(job_db)
             session.flush()
@@ -151,7 +220,13 @@ class JobStashSQL:
 
     def get_by_uid(self, credentials: SyftVerifyKey, uid: UID) -> Result[Job, str]:
         with self.session_context() as session:
-            job_db = session.query(JobDB).filter_by(id=unwrap_uid(uid)).first()
+            job_db = (
+                session.query(JobDB)
+                .select_from(get_permission_from())
+                .where(get_permission_where(str(credentials.verify_key)))
+                .filter_by(id=unwrap_uid(uid))
+                .first()
+            )
             if job_db is None:
                 return Ok(None)
             return Ok(job_db.to_obj())
@@ -169,12 +244,11 @@ class JobStashSQL:
             and item.result.syft_blob_storage_entry_id is not None
         ):
             item.result._clear_cache()
-
         with self.session_context() as session:
             job_db = JobDB.from_obj(item)
-            session.query(JobDB).filter_by(id=unwrap_uid(item.id)).update(
-                job_db.to_dict()
-            )
+            session.query(JobDB).select_from(get_permission_from()).where(
+                get_permission_where(str(credentials.verify_key))
+            ).filter_by(id=unwrap_uid(item.id)).update(job_db.to_dict())
             session.commit()
             return Ok(job_db.to_obj())
 

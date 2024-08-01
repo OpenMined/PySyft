@@ -1,5 +1,6 @@
 # stdlib
 from datetime import datetime
+from turtle import back
 import uuid
 
 # third party
@@ -12,6 +13,7 @@ from sqlalchemy.orm import declared_attr
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import JSON
+from syft.service.action.action_permissions import ActionPermission
 from typing_extensions import Self
 
 # syft absolute
@@ -129,6 +131,10 @@ class JobDB(CommonMixin, Base):
     requested_by: Mapped[uuid.UUID | None] = mapped_column(default=None)
     job_type: Mapped[JobType] = mapped_column(default=JobType.JOB)
 
+    permissions: Mapped[set["JobPermissionDB"]] = relationship(
+        "JobPermissionDB", lazy="joined"
+    )
+
     @classmethod
     def from_obj(cls, obj: "Job") -> "JobDB":
         return cls(
@@ -179,6 +185,15 @@ class JobDB(CommonMixin, Base):
             requested_by=wrap_uid(self.requested_by),
             job_type=self.job_type,
         )
+
+
+class JobPermissionDB(CommonMixin, Base):
+    id: Mapped[uuid.UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid.uuid4)
+    object_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("jobdb.id"), back_populates="permissions"
+    )
+    user_id: Mapped[str | None] = mapped_column(default=None)
+    permission: Mapped[ActionPermission]
 
 
 class ActionDB(CommonMixin, Base):
