@@ -41,7 +41,7 @@ class DatasiteEnclaveService(AbstractService):
         roles=ADMIN_ROLE_LEVEL,
     )
     def add(
-        self, context: AuthedServiceContext, route: ServerRouteType
+        self, context: AuthedServiceContext, route: ServerRouteType | str
     ) -> SyftSuccess | SyftError:
         """Add an Enclave to the network."""
         enclave = EnclaveInstance(route=route)

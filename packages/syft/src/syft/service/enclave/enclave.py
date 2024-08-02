@@ -1,6 +1,7 @@
 # stdlib
 from enum import Enum
 from typing import Any
+from urllib.parse import urlparse
 
 # third party
 from pydantic import model_validator
@@ -11,6 +12,7 @@ from ...client.enclave_client import EnclaveClient
 from ...serde.serializable import serializable
 from ...server.credentials import SyftSigningKey
 from ...service.metadata.server_metadata import ServerMetadataJSON
+from ...service.network.routes import HTTPServerRoute
 from ...service.network.routes import ServerRouteType
 from ...service.network.server_peer import route_to_connection
 from ...service.response import SyftException
@@ -48,8 +50,15 @@ class EnclaveInstance(SyftObject):
     @model_validator(mode="before")
     @classmethod
     def initialize_values(cls, values: dict[str, Any]) -> dict[str, Any]:
-        is_being_created = "id" not in values
+        route = values.get("route")
+        if isinstance(route, str):
+            # convert the route string to a ServerRouteType object
+            route_url = urlparse(route)
+            values["route"] = HTTPServerRoute(
+                host_or_ip=route_url.hostname, port=route_url.port
+            )
 
+        is_being_created = "id" not in values
         if is_being_created and "route" in values:
             connection = route_to_connection(values["route"])
             metadata = connection.get_server_metadata(credentials=None)
