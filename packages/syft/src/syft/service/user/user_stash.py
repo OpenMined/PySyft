@@ -23,6 +23,7 @@ from .user_roles import ServiceRole
 
 # 🟡 TODO 27: it would be nice if these could be defined closer to the User
 EmailPartitionKey = PartitionKey(key="email", type_=str)
+PasswordResetTokenPartitionKey = PartitionKey(key="reset_token", type_=str)
 RolePartitionKey = PartitionKey(key="role", type_=ServiceRole)
 SigningKeyPartitionKey = PartitionKey(key="signing_key", type_=SyftSigningKey)
 VerifyKeyPartitionKey = PartitionKey(key="verify_key", type_=SyftVerifyKey)
@@ -72,6 +73,12 @@ class UserStash(BaseStash):
         self, credentials: SyftVerifyKey, uid: UID
     ) -> Result[User | None, str]:
         qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
+        return self.query_one(credentials=credentials, qks=qks)
+
+    def get_by_reset_token(
+        self, credentials: SyftVerifyKey, token: str
+    ) -> Result[User | None, str]:
+        qks = QueryKeys(qks=[PasswordResetTokenPartitionKey.with_obj(token)])
         return self.query_one(credentials=credentials, qks=qks)
 
     def get_by_email(
