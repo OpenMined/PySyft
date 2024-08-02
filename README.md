@@ -8,7 +8,7 @@
 
 <h3> Data Science on data you are not allowed to see</h3>
 
-PySyft enables a new way to do data science, where you can use non-public information, without seeing nor obtaining a copy of the data itself. All you need is to connect to a <a href="https://docs.openmined.org/en/latest/components/datasite-server.html">Datasite</a>!
+PySyft enables a new way to do data science, where you can use non-public information, without seeing nor obtaining a copy of the data itself. All you need is to connect to a <a href="https://docs.openmined.org/en/latest/components/datasite_server.html">Datasite</a>!
 
 Datasites are like websites, but for data. Designed with the principles of <a href="https://arxiv.org/abs/2012.08347">structured transparency</a>, they enable data owners to control how their data is protected and data scientists to use data without obtaining a copy.
 
@@ -96,7 +96,7 @@ Learn about PySyft via our getting started guide:
 
 Quick PySyft components links:
 
-- <a href="https://docs.openmined.org/en/latest/components/datasite-server.html">DataSite Server</a>
+- <a href="https://docs.openmined.org/en/latest/components/datasite_server.html">DataSite Server</a>
 
 - <a href="https://docs.openmined.org/en/latest//components/syft-client.html">Syft Client</a>
 
