@@ -321,7 +321,7 @@ class RemoteFunction(SyftObject):
 
         allowed = self.warning.show() if self.warning else True
         if not allowed:
-            return
+            return None
         result = self.make_call(api_call=api_call, cache_result=cache_result)
 
         # TODO: annotate this on the service method decorator
