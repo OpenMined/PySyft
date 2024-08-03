@@ -5,6 +5,7 @@ from urllib.parse import urlparse
 
 # third party
 from pydantic import model_validator
+from urllib3.connectionpool import port_by_scheme
 
 # relative
 from ...client.client import SyftClient
@@ -54,9 +55,9 @@ class EnclaveInstance(SyftObject):
         if isinstance(route, str):
             # convert the route string to a ServerRouteType object
             route_url = urlparse(route)
-            values["route"] = HTTPServerRoute(
-                host_or_ip=route_url.hostname, port=route_url.port
-            )
+            hostname = route_url.hostname
+            port = route_url.port or port_by_scheme.get(route_url.scheme)
+            values["route"] = HTTPServerRoute(host_or_ip=hostname, port=port)
 
         is_being_created = "id" not in values
         if is_being_created and "route" in values:
