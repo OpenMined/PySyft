@@ -10,16 +10,72 @@ extend-exclude = ["*.gypi"]
 # https://beta.ruff.rs/docs/configuration/#using-rufftoml
 [lint]
 select = [
-    "E",    # pycodestyle
-    "F",    # pyflake
-    "B",    # flake8-bugbear
-    "C4",   # flake8-comprehensions
-    # "PERF", # perflint
-    "UP",   # pyupgrade
+   "A",     # flake8-builtins 
+   "AIR",   # Airflow
+   "ANN",   # flake8-annotations
+   "ARG",   # flake8-unused-arguments  
+   "ASYNC", # flake8-async
+   "B",     # flake8-bugbear  
+   "BLE",   # flake8-blind-except 
+   "C4",    # flake8-comprehensions 
+   "C90",   # McCabe cyclomatic complexity
+   "COM",   # flake8-commas
+   "CPY",   # flake8-copyright
+   "D",     # pydocstyle  
+   "DJ",    # flake8-django
+   "DOC",   # pydoclint
+   "DTZ",   # flake8-datetimez 
+   "E",     # pycodestyle
+   "EM",    # flake8-errmsg
+   "ERA",   # eradicate 
+   "EXE",   # flake8-executable 
+   "F",     # Pyflakes 
+   "FA",    # flake8-future-annotations
+   "FAST",  # FastAPI
+   "FBT",   # flake8-boolean-trap
+   "FIX",   # flake8-pp
+   "FLY",   # flynt 
+   "FURB",  # refurb 
+   "G",     # flake8-logging-format
+   "I",     # isort 
+   "ICN",   # flake8-import-conventions
+   "INP",   # flake8-no-pep420
+   "INT",   # flake8-gettext 
+   "ISC",   # flake8-implicit-str-concat 
+   "LOG",   # flake8-logging 
+   "N",     # pep8-naming 
+   "NPY",   # NumPy-specific rules 
+   "PD",    # pandas-vet 
+   "PERF",  # Perflint 
+   "PGH",   # pygrep-hooks 
+   "PIE",   # flake8-pie 
+   "PL",    # Pylint 
+   "PT",    # flake8-pytest-style
+   "PTH",   # flake8-use-pathlib
+   "PYI",   # flake8-pyi  
+   "Q",     # flake8-quotes
+   "R",     # Refactor
+   "RET",   # flake8-return
+   "RSE",   # flake8-raise 
+   "RUF",   # Ruff-specific rules
+   "S",     # flake8-bandit 
+   "SIM",   # flake8-simplify 
+   "SLF",   # flake8-self 
+   "SLOT",  # flake8-slots 
+   "T10",   # flake8-debugger 
+   "T20",   # flake8-print
+   "TCH",   # flake8-type-checking 
+   "TD",    # flake8-todos
+   "TID",   # flake8-tidy-imports
+   "TRY",   # tryceratops 
+   "UP",    # pyupgrade 
+   "W",     # pycodestyle 
+   "YTT",   # flake8-2020 
 ]
 ignore = [
     "B904",  # check for raise statements in exception handlers that lack a from clause
     "B905",  # zip() without an explicit strict= parameter
+    "TID252",  # Prefer absolute imports over relative imports from parent modules
 ]
 
 [lint.per-file-ignores]
