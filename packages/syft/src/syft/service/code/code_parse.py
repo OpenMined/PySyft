@@ -1,6 +1,6 @@
 # stdlib
-from _ast import Module
 import ast
+from _ast import Module
 from typing import Any
 
 

@@ -1,6 +1,7 @@
 # stdlib
 import io
 import random
+from typing import TYPE_CHECKING
 
 # third party
 import numpy as np
@@ -8,18 +9,16 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft import ActionObject
-from syft import Dataset
-from syft import Worker
-from syft.service.blob_storage.util import can_upload_to_blob_storage
-from syft.service.blob_storage.util import min_size_for_blob_storage_upload
+from syft import ActionObject, Dataset, Worker
+from syft.service.blob_storage.util import (
+    can_upload_to_blob_storage,
+    min_size_for_blob_storage_upload,
+)
 from syft.service.context import AuthedServiceContext
 from syft.service.response import SyftSuccess
 from syft.service.user.user import UserCreate
-from syft.store.blob_storage import BlobDeposit
-from syft.store.blob_storage import SyftObjectRetrieval
+from syft.store.blob_storage import BlobDeposit, SyftObjectRetrieval
 from syft.types.blob_storage import CreateBlobStorageEntry
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from syft.client.datasite_client import DatasiteClient
@@ -28,23 +27,23 @@ raw_data = {"test": "test"}
 data = sy.serialize(raw_data, to_bytes=True)
 
 
-@pytest.fixture
+@pytest.fixture()
 def authed_context(worker):
-    yield AuthedServiceContext(server=worker, credentials=worker.signing_key.verify_key)
+    return AuthedServiceContext(server=worker, credentials=worker.signing_key.verify_key)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def blob_storage(worker):
-    yield worker.get_service("BlobStorageService")
+    return worker.get_service("BlobStorageService")
 
 
-def test_blob_storage_allocate(authed_context, blob_storage):
+def test_blob_storage_allocate(authed_context, blob_storage) -> None:
     blob_data = CreateBlobStorageEntry.from_obj(data)
     blob_deposit = blob_storage.allocate(authed_context, blob_data)
     assert isinstance(blob_deposit, BlobDeposit)
 
 
-def test_blob_storage_write():
+def test_blob_storage_write() -> None:
     random.seed()
     name = "".join(str(random.randint(0, 9)) for i in range(8))
     worker = sy.Worker.named(name=name)
@@ -62,7 +61,7 @@ def test_blob_storage_write():
     worker.cleanup()
 
 
-def test_blob_storage_write_syft_object():
+def test_blob_storage_write_syft_object() -> None:
     random.seed()
     name = "".join(str(random.randint(0, 9)) for i in range(8))
     worker = sy.Worker.named(name=name)
@@ -80,7 +79,7 @@ def test_blob_storage_write_syft_object():
     worker.cleanup()
 
 
-def test_blob_storage_read():
+def test_blob_storage_read() -> None:
     random.seed()
     name = "".join(str(random.randint(0, 9)) for i in range(8))
     worker = sy.Worker.named(name=name)
@@ -102,7 +101,7 @@ def test_blob_storage_read():
     worker.cleanup()
 
 
-def test_blob_storage_delete(authed_context, blob_storage):
+def test_blob_storage_delete(authed_context, blob_storage) -> None:
     blob_data = CreateBlobStorageEntry.from_obj(data)
     blob_deposit = blob_storage.allocate(authed_context, blob_data)
     blob_storage.delete(authed_context, blob_deposit.blob_storage_entry_id)
@@ -111,7 +110,7 @@ def test_blob_storage_delete(authed_context, blob_storage):
         blob_storage.read(authed_context, blob_deposit.blob_storage_entry_id)
 
 
-def test_action_obj_send_save_to_blob_storage(worker):
+def test_action_obj_send_save_to_blob_storage(worker) -> None:
     # this small object should not be saved to blob storage
     data_small: np.ndarray = np.array([1, 2, 3])
     action_obj = ActionObject.from_obj(data_small)

@@ -7,43 +7,44 @@ import typing
 from typing import Any
 
 # third party
-from pydantic import BaseModel
-from pydantic import Field
-from result import Err
-from result import Ok
-from result import Result
+from pydantic import BaseModel, Field
+from result import Err, Ok, Result
 from typeguard import check_type
 
 # relative
 from ..serde.serializable import serializable
-from ..server.credentials import SyftSigningKey
-from ..server.credentials import SyftVerifyKey
+from ..server.credentials import SyftSigningKey, SyftVerifyKey
 from ..service.response import SyftSuccess
 from ..types.base import SyftBaseModel
-from ..types.syft_object import BaseDateTime
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
-from ..types.syft_object import SyftBaseObject
-from ..types.syft_object import SyftObject
+from ..types.syft_object import (
+    SYFT_OBJECT_VERSION_1,
+    BaseDateTime,
+    SyftBaseObject,
+    SyftObject,
+)
 from ..types.uid import UID
 from ..util.telemetry import instrument
-from .locks import LockingConfig
-from .locks import NoLockingConfig
-from .locks import SyftLock
+from .locks import LockingConfig, NoLockingConfig, SyftLock
 
 if typing.TYPE_CHECKING:
-    from ..service.action.action_permissions import ActionObjectPermission
-    from ..service.action.action_permissions import StoragePermission
-    from ..service.context import AuthedServiceContext
     from collections.abc import Callable
+
+    from ..service.action.action_permissions import (
+        ActionObjectPermission,
+        StoragePermission,
+    )
+    from ..service.context import AuthedServiceContext
 
 
 @serializable(canonical_name="BasePartitionSettings", version=1)
 class BasePartitionSettings(SyftBaseModel):
-    """Basic Partition Settings
+    """Basic Partition Settings.
 
-    Parameters:
+    Parameters
+    ----------
         name: str
             Identifier to be used as prefix by stores and for partitioning
+
     """
 
     name: str
@@ -60,7 +61,7 @@ def is_generic_alias(t: type) -> bool:
 
 
 class StoreClientConfig(BaseModel):
-    """Base Client specific configuration"""
+    """Base Client specific configuration."""
 
 
 
@@ -69,7 +70,7 @@ class PartitionKey(BaseModel):
     key: str
     type_: type | object
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         return (
             type(other) == type(self)
             and self.key == other.key
@@ -118,7 +119,7 @@ class PartitionKeys(BaseModel):
         return QueryKeys.from_tuple(partition_keys=self, args=args)
 
     def add(self, pk: PartitionKey) -> PartitionKeys:
-        return PartitionKeys(pks=list(self.all) + [pk])
+        return PartitionKeys(pks=[*list(self.all), pk])
 
     @staticmethod
     def from_dict(cks_dict: dict[str, type]) -> PartitionKeys:
@@ -132,7 +133,7 @@ class PartitionKeys(BaseModel):
 class QueryKey(PartitionKey):
     value: Any = None
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         return (
             type(other) == type(self)
             and self.key == other.key
@@ -221,12 +222,11 @@ class QueryKeys(SyftBaseModel):
                 pk_value = pk_value()
             if partition_key.type_list:
                 pk_value = partition_key.extract_list(obj)
-            else:
-                if pk_value and not isinstance(pk_value, pk_type):
-                    msg = f"PartitionKey {pk_value} of type {type(pk_value)} must be {pk_type}."
-                    raise Exception(
-                        msg,
-                    )
+            elif pk_value and not isinstance(pk_value, pk_type):
+                msg = f"PartitionKey {pk_value} of type {type(pk_value)} must be {pk_type}."
+                raise Exception(
+                    msg,
+                )
             qk = QueryKey(key=pk_key, type_=pk_type, value=pk_value)
             qks.append(qk)
         return QueryKeys(qks=qks)
@@ -303,13 +303,15 @@ class PartitionSettings(BasePartitionSettings):
     version=1,
 )
 class StorePartition:
-    """Base StorePartition
+    """Base StorePartition.
 
-    Parameters:
+    Parameters
+    ----------
         settings: PartitionSettings
             PySyft specific settings
         store_config: StoreConfig
             Backend specific configuration
+
     """
 
     def __init__(
@@ -575,11 +577,13 @@ class StorePartition:
 @instrument
 @serializable(canonical_name="DocumentStore", version=1)
 class DocumentStore:
-    """Base Document Store
+    """Base Document Store.
 
-    Parameters:
+    Parameters
+    ----------
         store_config: StoreConfig
             Store specific configuration.
+
     """
 
     partitions: dict[str, StorePartition]
@@ -842,9 +846,10 @@ class BaseUIDStoreStash(BaseStash):
 
 @serializable()
 class StoreConfig(SyftBaseObject):
-    """Base Store configuration
+    """Base Store configuration.
 
-    Parameters:
+    Parameters
+    ----------
         store_type: Type
             Document Store type
         client_config: Optional[StoreClientConfig]
@@ -854,6 +859,7 @@ class StoreConfig(SyftBaseObject):
                 * NoLockingConfig: no locking, ideal for single-thread stores.
                 * ThreadingLockingConfig: threading-based locking, ideal for same-process in-memory stores.
             Defaults to NoLockingConfig.
+
     """
 
     __canonical_name__ = "StoreConfig"

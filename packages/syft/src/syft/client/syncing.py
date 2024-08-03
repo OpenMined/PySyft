@@ -1,26 +1,21 @@
 # stdlib
 
 # stdlib
-from collections.abc import Collection
 import logging
+from collections.abc import Collection
+from typing import TYPE_CHECKING
 
 # relative
 from ..abstract_server import ServerSideType
-from ..service.response import SyftError
-from ..service.response import SyftSuccess
-from ..service.sync.diff_state import ObjectDiffBatch
-from ..service.sync.diff_state import ServerDiff
-from ..service.sync.diff_state import SyncInstruction
-from ..service.sync.resolve_widget import PaginatedResolveWidget
-from ..service.sync.resolve_widget import ResolveWidget
+from ..service.response import SyftError, SyftSuccess
+from ..service.sync.diff_state import ObjectDiffBatch, ServerDiff, SyncInstruction
+from ..service.sync.resolve_widget import PaginatedResolveWidget, ResolveWidget
 from ..service.sync.sync_state import SyncState
 from ..types.uid import UID
 from ..util.decorators import deprecated
 from ..util.util import prompt_warning_message
 from .datasite_client import DatasiteClient
-from .sync_decision import SyncDecision
-from .sync_decision import SyncDirection
-from typing import TYPE_CHECKING
+from .sync_decision import SyncDecision, SyncDirection
 
 if TYPE_CHECKING:
     from ..server.credentials import SyftVerifyKey
@@ -244,7 +239,7 @@ def handle_ignore_batch(
     tgt_client = obj_diff_batch.target_client
     src_resolved_state, tgt_resolved_state = obj_diff_batch.create_new_resolved_states()
 
-    for batch in [obj_diff_batch] + other_ignore_batches:
+    for batch in [obj_diff_batch, *other_ignore_batches]:
         src_resolved_state.add_ignored(batch)
         tgt_resolved_state.add_ignored(batch)
 

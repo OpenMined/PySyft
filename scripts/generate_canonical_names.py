@@ -10,12 +10,12 @@ os.environ["SYFT_SEARCH_MISSING_CANONICAL_NAME"] = "true"
 # NOTE import has to happen after setting the environment variable
 
 # relative
-from ..serde.recursive import SYFT_CLASSES_MISSING_CANONICAL_NAME  # noqa: E402
-from ..types.syft_object_registry import SyftObjectRegistry  # noqa: E402
+from ..serde.recursive import SYFT_CLASSES_MISSING_CANONICAL_NAME
+from ..types.syft_object_registry import SyftObjectRegistry
 
 
 class DecoratorFinder(ast.NodeVisitor):
-    def __init__(self, class_name: str, decorator_name: str):
+    def __init__(self, class_name: str, decorator_name: str) -> None:
         self.class_name = class_name
         self.decorator_name = decorator_name
         self.decorator: ast.Call | None = None
@@ -86,20 +86,11 @@ def update_decorator_for_cls(
     )
 
     if decorator is None:
-        print(
-            f"{cls.__module__}: Could not find decorator for class {class_name}. Did not update canonical name.",
-        )
         return None
     if start_line is None or end_line is None:
-        print(
-            f"{cls.__module__}: No start/end lines for decorator in class {class_name}. Did not update canonical name.",
-        )
         return None
 
     if class_name in existing_canonical_names:
-        print(
-            f"{cls.__module__}: {class_name} is already a registered canonical name. Did not update canonical name.",
-        )
         return None
 
     new_decorator = add_canonical_name_version(decorator, class_name)
@@ -114,11 +105,10 @@ def update_decorator_for_cls(
     with open(file_path, "w") as file:
         file.writelines(lines)
 
-    print(f"Updated {cls.__module__}.{cls.__name__}")
     return class_name
 
 
-def update_canonical_names():
+def update_canonical_names() -> None:
     existing_cnames = list(SyftObjectRegistry.__object_serialization_registry__.keys())
     for cls in SYFT_CLASSES_MISSING_CANONICAL_NAME:
         new_name = update_decorator_for_cls(cls, existing_cnames)

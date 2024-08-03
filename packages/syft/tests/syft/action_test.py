@@ -1,10 +1,11 @@
 # stdlib
 import uuid
 
-# third party
-from faker import Faker
 import numpy as np
 import pytest
+
+# third party
+from faker import Faker
 
 # syft absolute
 from syft import ActionObject
@@ -20,7 +21,7 @@ from ..utils.custom_markers import currently_fail_on_python_3_12
 
 
 @pytest.mark.skip(reason="Disabled until we bring back eager execution")
-def test_actionobject_method(worker):
+def test_actionobject_method(worker) -> None:
     root_datasite_client = worker.root_client
     assert root_datasite_client.settings.enable_eager_execution(enable=True)
     action_store = worker.get_service("actionservice").store
@@ -68,7 +69,7 @@ def test_new_admin_has_action_object_permission(
 
 
 @currently_fail_on_python_3_12(raises=AttributeError)
-def test_lib_function_action(worker):
+def test_lib_function_action(worker) -> None:
     root_datasite_client = worker.root_client
     numpy_client = root_datasite_client.api.lib.numpy
     res = numpy_client.zeros_like([1, 2, 3])
@@ -78,12 +79,12 @@ def test_lib_function_action(worker):
     assert len(worker.get_service("actionservice").store.data) > 0
 
 
-def test_call_lib_function_action2(worker):
+def test_call_lib_function_action2(worker) -> None:
     root_datasite_client = worker.root_client
     assert root_datasite_client.api.lib.numpy.add(1, 2) == 3
 
 
-def test_lib_class_init_action(worker):
+def test_lib_class_init_action(worker) -> None:
     root_datasite_client = worker.root_client
     numpy_client = root_datasite_client.api.lib.numpy
     res = numpy_client.float32(4.0)
@@ -93,7 +94,7 @@ def test_lib_class_init_action(worker):
     assert len(worker.get_service("actionservice").store.data) > 0
 
 
-def test_call_lib_wo_permission(worker):
+def test_call_lib_wo_permission(worker) -> None:
     root_datasite_client = worker.root_client
     fname = ActionObject.from_obj("my_fake_file")
     obj1_pointer = fname.send(root_datasite_client)
@@ -112,7 +113,7 @@ def test_call_lib_wo_permission(worker):
     assert isinstance(res, SyftError)
 
 
-def test_call_lib_custom_signature(worker):
+def test_call_lib_custom_signature(worker) -> None:
     root_datasite_client = worker.root_client
     # concatenate has a manually set signature
     assert all(

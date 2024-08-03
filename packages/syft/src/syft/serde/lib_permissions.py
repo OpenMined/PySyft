@@ -16,7 +16,7 @@ class CMPCRUDPermission(Enum):
 class CMPPermission:
     @property
     def permissions_string(self) -> str:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def __repr__(self) -> str:
         return self.permission_string
@@ -24,7 +24,7 @@ class CMPPermission:
 
 @serializable(canonical_name="CMPUserPermission", version=1)
 class CMPUserPermission(CMPPermission):
-    def __init__(self, user_id: UID, permission: CMPCRUDPermission):
+    def __init__(self, user_id: UID, permission: CMPCRUDPermission) -> None:
         self.user_id = user_id
         self.permissions = permission
 
@@ -38,7 +38,7 @@ class CMPUserPermission(CMPPermission):
 
 @serializable(canonical_name="CMPCompoundPermission", version=1)
 class CMPCompoundPermission(CMPPermission):
-    def __init__(self, permission: CMPCRUDPermission):
+    def __init__(self, permission: CMPCRUDPermission) -> None:
         self.permissions = permission
 
     @property

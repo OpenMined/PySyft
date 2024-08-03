@@ -1,18 +1,17 @@
 # stdlib
-from contextlib import contextmanager
 import secrets
+from contextlib import contextmanager
 
 # third party
 import faker
 import numpy as np
-import yaml
 
 # syft absolute
 import syft as sy
+import yaml
 from syft.client.datasite_client import DatasiteClient
 from syft.service.migration.object_migration_state import MigrationData
-from syft.service.response import SyftError
-from syft.service.response import SyftSuccess
+from syft.service.response import SyftError, SyftSuccess
 from syft.service.user.user import User
 
 
@@ -77,7 +76,7 @@ def prepare_data(client: DatasiteClient) -> None:
     assert result.get() == 42
 
 
-def test_get_migration_data(worker, tmp_path):
+def test_get_migration_data(worker, tmp_path) -> None:
     # Tests a full data dump for migration
     # TODO current prepare_data is a small scenario, add more data + edge-cases
     client = worker.root_client
@@ -86,7 +85,6 @@ def test_get_migration_data(worker, tmp_path):
     migration_data = client.get_migration_data()
     assert isinstance(migration_data, MigrationData)
 
-    print(migration_data._repr_markdown_())
 
     # Admin + data scientist
     assert len(migration_data.store_objects[User]) == 2
@@ -123,7 +121,7 @@ def named_worker_context(name):
         worker.cleanup()
 
 
-def test_data_migration_same_version(tmp_path):
+def test_data_migration_same_version(tmp_path) -> None:
     server_name = secrets.token_hex(8)
     blob_path = tmp_path / "migration.blob"
     yaml_path = tmp_path / "migration.yaml"

@@ -6,11 +6,13 @@ from result import Result
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import BaseUIDStoreStash
-from ...store.document_store import PartitionKey
-from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
-from ...store.document_store import UIDPartitionKey
+from ...store.document_store import (
+    BaseUIDStoreStash,
+    PartitionKey,
+    PartitionSettings,
+    QueryKeys,
+    UIDPartitionKey,
+)
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..request.request import Request

@@ -1,41 +1,37 @@
 # stdlib
-from datetime import date
-from datetime import datetime
-from datetime import time
 import functools
+from datetime import date, datetime, time
 from importlib.util import find_spec
 from io import BytesIO
 
-# third party
-from dateutil import parser
-from nacl.signing import SigningKey
-from nacl.signing import VerifyKey
 import numpy as np
-from pandas import DataFrame
-from pandas import Series
-from pandas._libs.tslibs.timestamps import Timestamp
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pydantic
+
+# third party
+from dateutil import parser
+from nacl.signing import SigningKey, VerifyKey
+from pandas import DataFrame, Series
+from pandas._libs.tslibs.timestamps import Timestamp
 from pydantic._internal._model_construction import ModelMetaclass
 from pymongo.collection import Collection
-from result import Err
-from result import Ok
+from result import Err, Ok
 
 # relative
 from ..types.dicttuple import DictTuple
 from ..types.dicttuple import _Meta as _DictTupleMetaClass
-from ..types.syft_metaclass import EmptyType
-from ..types.syft_metaclass import PartialModelMetaclass
-from .array import numpy_deserialize
-from .array import numpy_serialize
+from ..types.syft_metaclass import EmptyType, PartialModelMetaclass
+from .array import numpy_deserialize, numpy_serialize
 from .deserialize import _deserialize as deserialize
-from .recursive_primitives import _serialize_kv_pairs
-from .recursive_primitives import deserialize_kv
-from .recursive_primitives import deserialize_type
-from .recursive_primitives import recursive_serde_register
-from .recursive_primitives import recursive_serde_register_type
-from .recursive_primitives import serialize_type
+from .recursive_primitives import (
+    _serialize_kv_pairs,
+    deserialize_kv,
+    deserialize_type,
+    recursive_serde_register,
+    recursive_serde_register_type,
+    serialize_type,
+)
 from .serialize import _serialize as serialize
 
 recursive_serde_register(

@@ -6,13 +6,9 @@ from typing_extensions import Self
 
 # relative
 from ..serde.serializable import serializable
-from ..service.context import AuthedServiceContext
-from ..service.context import ChangeContext
-from ..service.context import ServerServiceContext
-from ..service.response import SyftError
-from ..service.response import SyftSuccess
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
-from ..types.syft_object import SyftObject
+from ..service.context import AuthedServiceContext, ChangeContext, ServerServiceContext
+from ..service.response import SyftError, SyftSuccess
+from ..types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject
 from ..types.uid import UID
 
 

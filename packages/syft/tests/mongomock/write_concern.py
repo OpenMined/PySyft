@@ -4,8 +4,8 @@ def _with_default_values(document):
     return dict(document, w=1)
 
 
-class WriteConcern(object):
-    def __init__(self, w=None, wtimeout=None, j=None, fsync=None):
+class WriteConcern:
+    def __init__(self, w=None, wtimeout=None, j=None, fsync=None) -> None:
         self._document = {}
         if w is not None:
             self._document["w"] = w
@@ -33,7 +33,7 @@ class WriteConcern(object):
             return NotImplemented
 
     @property
-    def acknowledged(self):
+    def acknowledged(self) -> bool:
         return True
 
     @property
@@ -41,5 +41,5 @@ class WriteConcern(object):
         return self._document.copy()
 
     @property
-    def is_server_default(self):
+    def is_server_default(self) -> bool:
         return not self._document

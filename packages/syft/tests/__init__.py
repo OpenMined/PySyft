@@ -1,2 +1,2 @@
 # relative
-from . import conftest  # noqa:F401
+from . import conftest

@@ -1,12 +1,10 @@
 # stdlib
 import time
-from typing import Any
-from typing import cast
+from typing import Any, cast
 
 # third party
 from pydantic import ValidationError
-from result import Err
-from result import Ok
+from result import Err, Ok
 
 # relative
 from ...serde.serializable import serializable
@@ -17,22 +15,23 @@ from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_service import ActionService
 from ..context import AuthedServiceContext
-from ..response import SyftError
-from ..response import SyftSuccess
-from ..service import AbstractService
-from ..service import TYPE_TO_SERVICE
-from ..service import service_method
-from ..user.user_roles import ADMIN_ROLE_LEVEL
-from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
-from ..user.user_roles import GUEST_ROLE_LEVEL
-from .api import CreateTwinAPIEndpoint
-from .api import Endpoint
-from .api import PrivateAPIEndpoint
-from .api import PublicAPIEndpoint
-from .api import TwinAPIContextView
-from .api import TwinAPIEndpoint
-from .api import TwinAPIEndpointView
-from .api import UpdateTwinAPIEndpoint
+from ..response import SyftError, SyftSuccess
+from ..service import TYPE_TO_SERVICE, AbstractService, service_method
+from ..user.user_roles import (
+    ADMIN_ROLE_LEVEL,
+    DATA_SCIENTIST_ROLE_LEVEL,
+    GUEST_ROLE_LEVEL,
+)
+from .api import (
+    CreateTwinAPIEndpoint,
+    Endpoint,
+    PrivateAPIEndpoint,
+    PublicAPIEndpoint,
+    TwinAPIContextView,
+    TwinAPIEndpoint,
+    TwinAPIEndpointView,
+    UpdateTwinAPIEndpoint,
+)
 from .api_stash import TwinAPIEndpointStash
 
 
@@ -119,7 +118,6 @@ class APIService(AbstractService):
         endpoint_timeout: int | None = None,
     ) -> SyftSuccess | SyftError:
         """Updates an specific API endpoint."""
-
         # if any of these are supplied e.g. truthy then keep going otherwise return
         # an error
         # TODO: change to an Update object with autosplat
@@ -196,7 +194,6 @@ class APIService(AbstractService):
         self, context: AuthedServiceContext, endpoint_path: str,
     ) -> SyftSuccess | SyftError:
         """Deletes an specific API endpoint."""
-
         result = self.stash.get_by_path(context.credentials, endpoint_path)
 
         if result.is_err():
@@ -342,7 +339,7 @@ class APIService(AbstractService):
         *args: Any,
         **kwargs: Any,
     ) -> Any | SyftError:
-        """Call a Custom API Method in a Job"""
+        """Call a Custom API Method in a Job."""
         return self._call_in_jobs(context, "call", path, *args, **kwargs)
 
     @service_method(
@@ -357,7 +354,7 @@ class APIService(AbstractService):
         *args: Any,
         **kwargs: Any,
     ) -> Any | SyftError:
-        """Call a Custom API Method in a Job"""
+        """Call a Custom API Method in a Job."""
         return self._call_in_jobs(context, "call_private", path, *args, **kwargs)
 
     @service_method(
@@ -372,7 +369,7 @@ class APIService(AbstractService):
         *args: Any,
         **kwargs: Any,
     ) -> Any | SyftError:
-        """Call a Custom API Method in a Job"""
+        """Call a Custom API Method in a Job."""
         return self._call_in_jobs(context, "call_public", path, *args, **kwargs)
 
     def _call_in_jobs(
@@ -413,9 +410,7 @@ class APIService(AbstractService):
         start = time.time()
         # TODO: what can we do here?????
         while (
-            job is None
-            or job.status == JobStatus.PROCESSING
-            or job.status == JobStatus.CREATED
+            job is None or job.status in (JobStatus.PROCESSING, JobStatus.CREATED)
         ):
             job = job_service.get(context, job_id)
             time.sleep(0.1)
@@ -493,7 +488,7 @@ class APIService(AbstractService):
         *args: Any,
         **kwargs: Any,
     ) -> SyftSuccess | SyftError:
-        """Call a Custom API Method"""
+        """Call a Custom API Method."""
         custom_endpoint = self.get_code(
             context=context,
             endpoint_path=path,
@@ -534,7 +529,7 @@ class APIService(AbstractService):
         *args: Any,
         **kwargs: Any,
     ) -> ActionObject | SyftError:
-        """Call a Custom API Method in public mode"""
+        """Call a Custom API Method in public mode."""
         custom_endpoint = self.get_code(
             context=context,
             endpoint_path=path,
@@ -576,7 +571,7 @@ class APIService(AbstractService):
         *args: Any,
         **kwargs: Any,
     ) -> ActionObject | SyftError:
-        """Call a Custom API Method in private mode"""
+        """Call a Custom API Method in private mode."""
         custom_endpoint = self.get_code(
             context=context,
             endpoint_path=path,
@@ -616,7 +611,7 @@ class APIService(AbstractService):
     def exists(
         self, context: AuthedServiceContext, uid: UID,
     ) -> SyftSuccess | SyftError:
-        """Check if an endpoint exists"""
+        """Check if an endpoint exists."""
         endpoint = self.get_endpoint_by_uid(context, uid)
         return (
             SyftSuccess(message="Endpoint exists")

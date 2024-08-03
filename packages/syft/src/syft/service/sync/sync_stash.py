@@ -6,15 +6,16 @@
 import threading
 
 # third party
-from result import Ok
-from result import Result
+from result import Ok, Result
 
 # relative
 from ...serde.serializable import serializable
-from ...store.document_store import BaseUIDStoreStash
-from ...store.document_store import DocumentStore
-from ...store.document_store import PartitionKey
-from ...store.document_store import PartitionSettings
+from ...store.document_store import (
+    BaseUIDStoreStash,
+    DocumentStore,
+    PartitionKey,
+    PartitionSettings,
+)
 from ...types.datetime import DateTime
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
@@ -32,7 +33,7 @@ class SyncStash(BaseUIDStoreStash):
         object_type=SyncState,
     )
 
-    def __init__(self, store: DocumentStore):
+    def __init__(self, store: DocumentStore) -> None:
         super().__init__(store)
         self.store = store
         self.settings = self.settings

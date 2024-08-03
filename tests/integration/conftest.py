@@ -3,11 +3,11 @@ from secrets import token_hex
 
 # third party
 import _pytest
-from faker import Faker
 import pytest
 
 # syft absolute
 import syft as sy
+from faker import Faker
 from syft.abstract_server import ServerSideType
 from syft.server.worker import Worker
 
@@ -21,27 +21,27 @@ def pytest_configure(config: _pytest.config.Config) -> None:
     config.addinivalue_line("markers", "local_server: local server integration tests")
 
 
-@pytest.fixture
+@pytest.fixture()
 def gateway_port() -> int:
     return 9081
 
 
-@pytest.fixture
+@pytest.fixture()
 def datasite_1_port() -> int:
     return 9082
 
 
-@pytest.fixture
+@pytest.fixture()
 def datasite_2_port() -> int:
     return 9083
 
 
-@pytest.fixture
+@pytest.fixture()
 def faker():
     return Faker()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def full_low_worker(n_consumers: int = 3, create_producer: bool = True) -> Worker:
     _server = sy.orchestra.launch(
         server_side_type=ServerSideType.LOW_SIDE,
@@ -61,7 +61,7 @@ def full_low_worker(n_consumers: int = 3, create_producer: bool = True) -> Worke
     _server.land()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def full_high_worker(n_consumers: int = 3, create_producer: bool = True) -> Worker:
     _server = sy.orchestra.launch(
         server_side_type=ServerSideType.HIGH_SIDE,

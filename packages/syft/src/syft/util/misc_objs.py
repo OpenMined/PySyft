@@ -1,11 +1,9 @@
 # third party
-from IPython.display import HTML
-from IPython.display import display
+from IPython.display import HTML, display
 
 # relative
 from ..serde.serializable import serializable
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
-from ..types.syft_object import SyftObject
+from ..types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject
 
 
 @serializable()

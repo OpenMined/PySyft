@@ -1,23 +1,21 @@
 # syft absolute
 from syft.abstract_server import ServerType
-from syft.server.datasite import Datasite
-from syft.server.datasite import Server
+from syft.server.datasite import Datasite, Server
 from syft.server.enclave import Enclave
 from syft.server.gateway import Gateway
-from syft.server.server import get_default_bucket_name
-from syft.server.server import get_enable_warnings
-from syft.server.server import get_server_name
-from syft.server.server import get_server_side_type
-from syft.server.server import get_server_type
-from syft.server.server import get_server_uid_env
-from syft.service.queue.zmq_queue import ZMQClientConfig
-from syft.service.queue.zmq_queue import ZMQQueueConfig
-from syft.store.blob_storage.seaweedfs import SeaweedFSClientConfig
-from syft.store.blob_storage.seaweedfs import SeaweedFSConfig
+from syft.server.server import (
+    get_default_bucket_name,
+    get_enable_warnings,
+    get_server_name,
+    get_server_side_type,
+    get_server_type,
+    get_server_uid_env,
+)
+from syft.service.queue.zmq_queue import ZMQClientConfig, ZMQQueueConfig
+from syft.store.blob_storage.seaweedfs import SeaweedFSClientConfig, SeaweedFSConfig
 from syft.store.mongo_client import MongoStoreClientConfig
 from syft.store.mongo_document_store import MongoStoreConfig
-from syft.store.sqlite_document_store import SQLiteStoreClientConfig
-from syft.store.sqlite_document_store import SQLiteStoreConfig
+from syft.store.sqlite_document_store import SQLiteStoreClientConfig, SQLiteStoreConfig
 from syft.types.uid import UID
 
 # server absolute

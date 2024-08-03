@@ -1,14 +1,16 @@
 try:
     # third party
-    from pymongo.results import BulkWriteResult
-    from pymongo.results import DeleteResult
-    from pymongo.results import InsertManyResult
-    from pymongo.results import InsertOneResult
-    from pymongo.results import UpdateResult
+    from pymongo.results import (
+        BulkWriteResult,
+        DeleteResult,
+        InsertManyResult,
+        InsertOneResult,
+        UpdateResult,
+    )
 except ImportError:
 
-    class _WriteResult(object):
-        def __init__(self, acknowledged=True):
+    class _WriteResult:
+        def __init__(self, acknowledged=True) -> None:
             self.__acknowledged = acknowledged
 
         @property
@@ -18,9 +20,9 @@ except ImportError:
     class InsertOneResult(_WriteResult):
         __slots__ = ("__inserted_id", "__acknowledged")
 
-        def __init__(self, inserted_id, acknowledged=True):
+        def __init__(self, inserted_id, acknowledged=True) -> None:
             self.__inserted_id = inserted_id
-            super(InsertOneResult, self).__init__(acknowledged)
+            super().__init__(acknowledged)
 
         @property
         def inserted_id(self):
@@ -29,9 +31,9 @@ except ImportError:
     class InsertManyResult(_WriteResult):
         __slots__ = ("__inserted_ids", "__acknowledged")
 
-        def __init__(self, inserted_ids, acknowledged=True):
+        def __init__(self, inserted_ids, acknowledged=True) -> None:
             self.__inserted_ids = inserted_ids
-            super(InsertManyResult, self).__init__(acknowledged)
+            super().__init__(acknowledged)
 
         @property
         def inserted_ids(self):
@@ -40,9 +42,9 @@ except ImportError:
     class UpdateResult(_WriteResult):
         __slots__ = ("__raw_result", "__acknowledged")
 
-        def __init__(self, raw_result, acknowledged=True):
+        def __init__(self, raw_result, acknowledged=True) -> None:
             self.__raw_result = raw_result
-            super(UpdateResult, self).__init__(acknowledged)
+            super().__init__(acknowledged)
 
         @property
         def raw_result(self):
@@ -65,9 +67,9 @@ except ImportError:
     class DeleteResult(_WriteResult):
         __slots__ = ("__raw_result", "__acknowledged")
 
-        def __init__(self, raw_result, acknowledged=True):
+        def __init__(self, raw_result, acknowledged=True) -> None:
             self.__raw_result = raw_result
-            super(DeleteResult, self).__init__(acknowledged)
+            super().__init__(acknowledged)
 
         @property
         def raw_result(self):
@@ -80,9 +82,9 @@ except ImportError:
     class BulkWriteResult(_WriteResult):
         __slots__ = ("__bulk_api_result", "__acknowledged")
 
-        def __init__(self, bulk_api_result, acknowledged):
+        def __init__(self, bulk_api_result, acknowledged) -> None:
             self.__bulk_api_result = bulk_api_result
-            super(BulkWriteResult, self).__init__(acknowledged)
+            super().__init__(acknowledged)
 
         @property
         def bulk_api_result(self):

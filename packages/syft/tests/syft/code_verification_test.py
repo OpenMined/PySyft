@@ -8,32 +8,32 @@ from syft.service.action.action_object import ActionObject
 from syft.service.action.numpy import NumpyArrayObject
 
 
-@pytest.fixture
+@pytest.fixture()
 def data1() -> ActionObject:
-    """Returns an Action Object with a NumPy dataset with values between -1 and 1"""
-    yield NumpyArrayObject.from_obj(2 * np.random.rand(10, 10) - 1)
+    """Returns an Action Object with a NumPy dataset with values between -1 and 1."""
+    return NumpyArrayObject.from_obj(2 * np.random.rand(10, 10) - 1)
 
 
-@pytest.fixture
+@pytest.fixture()
 def data2() -> ActionObject:
-    """Returns an Action Object with a NumPy dataset with values between -1 and 1"""
-    yield NumpyArrayObject.from_obj(2 * np.random.rand(10, 10) - 1)
+    """Returns an Action Object with a NumPy dataset with values between -1 and 1."""
+    return NumpyArrayObject.from_obj(2 * np.random.rand(10, 10) - 1)
 
 
-@pytest.fixture
+@pytest.fixture()
 def empty1(data1) -> ActionObject:
-    """Returns an Empty Action Object corresponding to data1"""
-    yield ActionObject.empty(syft_internal_type=np.ndarray, id=data1.id)
+    """Returns an Empty Action Object corresponding to data1."""
+    return ActionObject.empty(syft_internal_type=np.ndarray, id=data1.id)
 
 
-@pytest.fixture
+@pytest.fixture()
 def empty2(data1) -> ActionObject:
-    """Returns an Empty Action Object corresponding to data2"""
-    yield NumpyArrayObject.from_obj(ActionDataEmpty(), id=data2.id)
+    """Returns an Empty Action Object corresponding to data2."""
+    return NumpyArrayObject.from_obj(ActionDataEmpty(), id=data2.id)
 
 
 def test_add_private(data1: ActionObject, data2: ActionObject) -> None:
-    """Test whether adding two ActionObjects produces the correct history hash"""
+    """Test whether adding two ActionObjects produces the correct history hash."""
     result1 = data1 + data2
     result2 = data1 + data2
     result3 = data2 + data1
@@ -43,7 +43,7 @@ def test_add_private(data1: ActionObject, data2: ActionObject) -> None:
 
 
 def test_op(data1: ActionObject, data2: ActionObject) -> None:
-    """Ensure that using a different op will produce a different history hash"""
+    """Ensure that using a different op will produce a different history hash."""
     result1 = data1 + data2
     result2 = data1 == data2
 
@@ -51,7 +51,7 @@ def test_op(data1: ActionObject, data2: ActionObject) -> None:
 
 
 def test_args(data1: ActionObject, data2: ActionObject) -> None:
-    """Ensure that passing args results in different history hashes"""
+    """Ensure that passing args results in different history hashes."""
     result1 = data1.std()
     result2 = data1.std(1)
 
@@ -63,7 +63,7 @@ def test_args(data1: ActionObject, data2: ActionObject) -> None:
 
 
 def test_kwargs(data1: ActionObject) -> None:
-    """Ensure that passing kwargs results in different history hashes"""
+    """Ensure that passing kwargs results in different history hashes."""
     result1 = data1.std()
     result2 = data1.std(axis=1)
 
@@ -71,7 +71,7 @@ def test_kwargs(data1: ActionObject) -> None:
 
 
 def test_trace_single_op(data1: ActionObject) -> None:
-    """Test that we can recreate the correct history hash using TraceMode"""
+    """Test that we can recreate the correct history hash using TraceMode."""
     result1 = data1.std()
     trace_result = NumpyArrayObject.from_obj(ActionDataEmpty(), id=data1.id).std()
 
@@ -79,7 +79,7 @@ def test_trace_single_op(data1: ActionObject) -> None:
 
 
 def test_empty_arithmetic_hash(data1: ActionObject, empty1: ActionObject) -> None:
-    """Test that we can recreate the correct hash history using Empty Objects"""
+    """Test that we can recreate the correct hash history using Empty Objects."""
     result1 = data1 + data1
     result2 = empty1 + empty1
 
@@ -87,7 +87,7 @@ def test_empty_arithmetic_hash(data1: ActionObject, empty1: ActionObject) -> Non
 
 
 def test_empty_multiple_operations(data1: ActionObject, empty1: ActionObject) -> None:
-    """Test that EmptyActionObjects are good for multiple operations"""
+    """Test that EmptyActionObjects are good for multiple operations."""
     real_tuple = (20, 5)
     remote_tuple = ActionObject.from_obj(real_tuple)
 
@@ -109,7 +109,7 @@ def test_empty_multiple_operations(data1: ActionObject, empty1: ActionObject) ->
 
 
 def test_history_hash_reproducibility(data1: ActionObject) -> None:
-    """Test that the same history hash is produced, given the same inputs"""
+    """Test that the same history hash is produced, given the same inputs."""
     result1 = data1.mean().std()
     result2 = data1.mean().std()
     assert result1.syft_history_hash == result2.syft_history_hash
@@ -127,8 +127,7 @@ def test_history_hash_reproducibility(data1: ActionObject) -> None:
 def test_empty_action_obj_hash_consistency(
     data1: ActionObject, empty1: ActionObject,
 ) -> None:
-    """Test that Empty Action Objects and regular Action Objects can work together"""
-
+    """Test that Empty Action Objects and regular Action Objects can work together."""
     result1 = data1 + empty1
     result2 = data1 + data1
 

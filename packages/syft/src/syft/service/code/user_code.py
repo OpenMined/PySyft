@@ -3,112 +3,99 @@ from __future__ import annotations
 
 # stdlib
 import ast
-from copy import deepcopy
 import datetime
-from enum import Enum
 import hashlib
 import inspect
-from io import StringIO
 import json
 import keyword
 import random
 import re
 import sys
-from textwrap import dedent
-from threading import Thread
 import time
 import traceback
-from typing import Any
-from typing import ClassVar
-from typing import TYPE_CHECKING
-from typing import cast
-from typing import final
+from copy import deepcopy
+from enum import Enum
+from io import StringIO
+from textwrap import dedent
+from threading import Thread
+from typing import TYPE_CHECKING, Any, ClassVar, cast, final
 
 # third party
-from IPython.display import HTML
-from IPython.display import Markdown
-from IPython.display import display
-from pydantic import ValidationError
-from pydantic import field_validator
-from result import Err
-from result import Ok
-from result import Result
+from IPython.display import HTML, Markdown, display
+from pydantic import ValidationError, field_validator
+from result import Err, Ok, Result
 from typing_extensions import Self
 
 # relative
-from ...abstract_server import ServerSideType
-from ...abstract_server import ServerType
-from ...client.api import APIRegistry
-from ...client.api import ServerIdentity
-from ...client.api import generate_remote_function
+from ...abstract_server import ServerSideType, ServerType
+from ...client.api import APIRegistry, ServerIdentity, generate_remote_function
 from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
-from ...serde.signature import signature_remove_context
-from ...serde.signature import signature_remove_self
+from ...serde.signature import signature_remove_context, signature_remove_self
 from ...server.credentials import SyftVerifyKey
 from ...store.document_store import PartitionKey
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
-from ...types.syft_object import PartialSyftObject
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, PartialSyftObject, SyftObject
 from ...types.syncable_object import SyncableSyftObject
-from ...types.transforms import TransformContext
-from ...types.transforms import add_server_uid_for_key
-from ...types.transforms import generate_id
-from ...types.transforms import transform
+from ...types.transforms import (
+    TransformContext,
+    add_server_uid_for_key,
+    generate_id,
+    transform,
+)
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
 from ...util.decorators import deprecated
-from ...util.markdown import CodeMarkdown
-from ...util.markdown import as_markdown_code
+from ...util.markdown import CodeMarkdown, as_markdown_code
 from ...util.notebook_ui.styles import FONT_CSS
 from ...util.util import prompt_warning_message
 from ..action.action_endpoint import CustomEndpointActionObject
-from ..action.action_object import Action
-from ..action.action_object import ActionObject
+from ..action.action_object import Action, ActionObject
 from ..dataset.dataset import Asset
 from ..job.job_stash import Job
-from ..output.output_service import ExecutionOutput
-from ..output.output_service import OutputService
-from ..policy.policy import Constant
-from ..policy.policy import CustomInputPolicy
-from ..policy.policy import CustomOutputPolicy
-from ..policy.policy import EmpyInputPolicy
-from ..policy.policy import ExactMatch
-from ..policy.policy import InputPolicy
-from ..policy.policy import OutputPolicy
-from ..policy.policy import SingleExecutionExactOutput
-from ..policy.policy import SubmitUserPolicy
-from ..policy.policy import UserPolicy
-from ..policy.policy import filter_only_uids
-from ..policy.policy import init_policy
-from ..policy.policy import load_policy_code
-from ..policy.policy import partition_by_server
+from ..output.output_service import ExecutionOutput, OutputService
+from ..policy.policy import (
+    Constant,
+    CustomInputPolicy,
+    CustomOutputPolicy,
+    EmpyInputPolicy,
+    ExactMatch,
+    InputPolicy,
+    OutputPolicy,
+    SingleExecutionExactOutput,
+    SubmitUserPolicy,
+    UserPolicy,
+    filter_only_uids,
+    init_policy,
+    load_policy_code,
+    partition_by_server,
+)
 from ..policy.policy_service import PolicyService
-from ..response import SyftError
-from ..response import SyftException
-from ..response import SyftInfo
-from ..response import SyftNotReady
-from ..response import SyftSuccess
-from ..response import SyftWarning
+from ..response import (
+    SyftError,
+    SyftException,
+    SyftInfo,
+    SyftNotReady,
+    SyftSuccess,
+    SyftWarning,
+)
 from ..service import ServiceConfigRegistry
 from ..user.user_roles import ServiceRole
 from .code_parse import LaunchJobVisitor
 from .unparse import unparse
-from .utils import check_for_global_vars
-from .utils import parse_code
-from .utils import submit_subjobs_code
+from .utils import check_for_global_vars, parse_code, submit_subjobs_code
 
 if TYPE_CHECKING:
     # relative
+    from collections.abc import Callable
+
+    from ...service.sync.diff_state import AttrDiff
     from ..context import AuthedServiceContext
     from ..user.user import UserView
-    from collections.abc import Callable
-    from ...service.sync.diff_state import AttrDiff
 
 UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
 CodeHashPartitionKey = PartitionKey(key="code_hash", type_=str)
@@ -142,8 +129,8 @@ class UserCodeStatusCollection(SyncableSyftObject):
         from ...service.sync.diff_state import AttrDiff
 
         diff_attrs = []
-        status = list(self.status_dict.values())[0]
-        ext_status = list(ext_obj.status_dict.values())[0]
+        status = next(iter(self.status_dict.values()))
+        ext_status = next(iter(ext_obj.status_dict.values()))
 
         if status != ext_status:
             diff_attr = AttrDiff(
@@ -365,7 +352,7 @@ class UserCode(SyncableSyftObject):
             return super().__setattr__(key, value)
 
     def _coll_repr_(self) -> dict[str, Any]:
-        status = [status for status, _ in self.status.status_dict.values()][0].value
+        status = next(status for status, _ in self.status.status_dict.values()).value
         if status == UserCodeStatus.PENDING.value:
             badge_color = "badge-purple"
         elif status == UserCodeStatus.APPROVED.value:
@@ -580,8 +567,7 @@ class UserCode(SyncableSyftObject):
                 raise Exception(msg)
         try:
             return _deserialize(self.input_policy_state, from_bytes=True)
-        except Exception as e:
-            print(f"Failed to deserialize custom input policy state. {e}")
+        except Exception:
             return None
 
     def is_output_policy_approved(self, context: AuthedServiceContext) -> bool:
@@ -643,8 +629,7 @@ class UserCode(SyncableSyftObject):
             output_policy.syft_server_location = self.syft_server_location
             output_policy.syft_client_verify_key = self.syft_client_verify_key
             return output_policy
-        except Exception as e:
-            print(f"Failed to deserialize custom output policy state. {e}")
+        except Exception:
             return None
 
     @property
@@ -1071,10 +1056,8 @@ class SubmitUserCode(SyftObject):
                 filtered_kwargs[k], arg_type = debox_asset(v)
                 on_private_data = on_private_data or arg_type == ArgumentType.PRIVATE
                 on_mock_data = on_mock_data or arg_type == ArgumentType.MOCK
-            if on_private_data:
-                print("Warning: The result you see is computed on PRIVATE data.")
-            elif on_mock_data:
-                print("Warning: The result you see is computed on MOCK data.")
+            if on_private_data or on_mock_data:
+                pass
             return self.local_function(**filtered_kwargs)
         else:
             raise NotImplementedError
@@ -1094,11 +1077,6 @@ class SubmitUserCode(SyftObject):
         # In the future we might need to have the same pools/images as well
 
         if time_alive is None and not blocking:
-            print(
-                SyftInfo(
-                    message="Closing the server after time_alive=300 (the default value)",
-                ),
-            )
             time_alive = 300
 
         # This could be changed given the work on containers
@@ -1168,9 +1146,7 @@ class SubmitUserCode(SyftObject):
         def task() -> None:
             if "blocking" in kwargs and not kwargs["blocking"]:
                 time.sleep(time_alive)
-            print(SyftInfo(message="Landing the ephmeral server..."))
             ep_server.land()
-            print(SyftInfo(message="Server Landed!"))
 
         thread = Thread(target=task)
         thread.start()
@@ -1377,7 +1353,7 @@ def parse_user_code(
     )
 
     return_stmt = ast.Return(value=ast.Name(id="result"))
-    new_body = tree.body + [call_stmt, return_stmt]
+    new_body = [*tree.body, call_stmt, return_stmt]
 
     wrapper_function = ast.FunctionDef(
         name=func_name,
@@ -1471,8 +1447,8 @@ def locate_launch_jobs(context: TransformContext) -> TransformContext:
 def compile_byte_code(parsed_code: str) -> PyCodeObject | None:
     try:
         return compile(parsed_code, "<string>", "exec")
-    except Exception as e:
-        print("WARNING: to compile byte code", e)
+    except Exception:
+        pass
     return None
 
 
@@ -1749,7 +1725,6 @@ class SecureContext:
                 # set_api_registry()
 
             except Exception as e:
-                print(f"ERROR {e}")
                 msg = f"error while launching job:\n{e}"
                 raise ValueError(msg)
 
@@ -1826,14 +1801,7 @@ def execute_byte_code(
                 if context.server is not None:
                     log_service = context.server.get_service("LogService")
                     log_service.append(context=context, uid=log_id, new_str=new_str)
-                time = datetime.datetime.now().strftime("%d/%m/%y %H:%M:%S")
-                return __builtin__.print(
-                    f"{time} FUNCTION LOG ({job_id}):",
-                    *new_args,
-                    end=end,
-                    sep=sep,
-                    file=sys.stderr,
-                )
+                datetime.datetime.now().strftime("%d/%m/%y %H:%M:%S")
 
         else:
             print = original_print
@@ -1923,7 +1891,8 @@ def execute_byte_code(
 
 def traceback_from_error(e: Exception, code: UserCode) -> str:
     """We do this because the normal traceback.format_exc() does not work well for exec,
-    it missed the references to the actual code"""
+    it missed the references to the actual code.
+    """
     line_nr = 0
     tb = e.__traceback__
     while tb is not None:

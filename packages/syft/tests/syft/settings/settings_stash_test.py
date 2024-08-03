@@ -1,8 +1,7 @@
 # third party
 
 # syft absolute
-from syft.service.settings.settings import ServerSettings
-from syft.service.settings.settings import ServerSettingsUpdate
+from syft.service.settings.settings import ServerSettings, ServerSettingsUpdate
 from syft.service.settings.settings_stash import SettingsStash
 
 

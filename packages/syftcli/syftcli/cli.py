@@ -1,8 +1,7 @@
 # third party
 from rich import box
 from rich.table import Table
-from typer import Typer
-from typer import echo
+from typer import Typer, echo
 
 # syftcli absolute
 from syftcli.bundle import cmd as bundle_cmd

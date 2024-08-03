@@ -9,21 +9,20 @@ from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
 from ..notification.notification_service import NotificationService
 from ..notification.notifications import CreateNotification
-from ..response import SyftError
-from ..response import SyftNotReady
-from ..response import SyftSuccess
-from ..service import AbstractService
-from ..service import SERVICE_TO_TYPES
-from ..service import TYPE_TO_SERVICE
-from ..service import service_method
-from ..user.user_roles import GUEST_ROLE_LEVEL
-from ..user.user_roles import ONLY_DATA_SCIENTIST_ROLE_LEVEL
-from ..user.user_roles import ServiceRole
-from .project import Project
-from .project import ProjectEvent
-from .project import ProjectRequest
-from .project import ProjectSubmit
-from .project import create_project_hash
+from ..response import SyftError, SyftNotReady, SyftSuccess
+from ..service import SERVICE_TO_TYPES, TYPE_TO_SERVICE, AbstractService, service_method
+from ..user.user_roles import (
+    GUEST_ROLE_LEVEL,
+    ONLY_DATA_SCIENTIST_ROLE_LEVEL,
+    ServiceRole,
+)
+from .project import (
+    Project,
+    ProjectEvent,
+    ProjectRequest,
+    ProjectSubmit,
+    create_project_hash,
+)
 from .project_stash import ProjectStash
 
 
@@ -57,8 +56,7 @@ class ProjectService(AbstractService):
     def create_project(
         self, context: AuthedServiceContext, project: ProjectSubmit,
     ) -> SyftSuccess | SyftError:
-        """Start a Project"""
-
+        """Start a Project."""
         check_role = self.can_create_project(context)
         if isinstance(check_role, SyftError):
             return check_role
@@ -106,20 +104,16 @@ class ProjectService(AbstractService):
                         ),
                     )
                 leader_server_peer = peer.ok()
+            elif project.leader_server_route is not None:
+                leader_server_peer = (
+                    project.leader_server_route.validate_with_context(
+                        context=context,
+                    )
+                )
             else:
-                # for the leader server, as it does not have route information to itself
-                # we rely on the data scientist to provide the route
-                # the route is then validated by the leader
-                if project.leader_server_route is not None:
-                    leader_server_peer = (
-                        project.leader_server_route.validate_with_context(
-                            context=context,
-                        )
-                    )
-                else:
-                    return SyftError(
-                        message=f"project {project}'s leader_server_route is None",
-                    )
+                return SyftError(
+                    message=f"project {project}'s leader_server_route is None",
+                )
 
             project_obj.leader_server_peer = leader_server_peer
 
@@ -136,9 +130,8 @@ class ProjectService(AbstractService):
             )
 
 
-        except Exception as e:
-            print("Failed to submit Project", e)
-            raise e
+        except Exception:
+            raise
 
     @service_method(
         path="project.add_event",
@@ -148,8 +141,7 @@ class ProjectService(AbstractService):
     def add_event(
         self, context: AuthedServiceContext, project_event: ProjectEvent,
     ) -> SyftSuccess | SyftError:
-        """To add events to a projects"""
-
+        """To add events to a projects."""
         # Event object should be received from the leader of the project
 
         # retrieve the project object by server verify key
@@ -191,7 +183,7 @@ class ProjectService(AbstractService):
     def broadcast_event(
         self, context: AuthedServiceContext, project_event: ProjectEvent,
     ) -> SyftSuccess | SyftError:
-        """To add events to a projects"""
+        """To add events to a projects."""
         # Only the leader of the project could add events to the projects
         # Any Event to be added to the project should be sent to the leader of the project
         # The leader broadcasts the event to all the members of the project
@@ -270,8 +262,7 @@ class ProjectService(AbstractService):
     def sync(
         self, context: AuthedServiceContext, project_id: UID, seq_no: int,
     ) -> list[ProjectEvent] | SyftError:
-        """To fetch unsynced events from the project"""
-
+        """To fetch unsynced events from the project."""
         # Event object should be received from the leader of the project
 
         # retrieve the project object by server verify key
@@ -373,17 +364,19 @@ class ProjectService(AbstractService):
         project_event: ProjectEvent,
         context: AuthedServiceContext,
     ) -> SyftSuccess | SyftError:
-        """To check for project request event and create a message for the root user
+        """To check for project request event and create a message for the root user.
 
         Args:
+        ----
             project (Project): Project object
             project_event (ProjectEvent): Project event object
             context (AuthedServiceContext): Context of the server
 
         Returns:
+        -------
             Union[SyftSuccess, SyftError]: SyftSuccess if message is created else SyftError
-        """
 
+        """
         if (
             isinstance(project_event, ProjectRequest)
             and project_event.linked_request.server_uid == context.server.id

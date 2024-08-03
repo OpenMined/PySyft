@@ -1,13 +1,11 @@
 # stdlib
-from datetime import datetime
 import logging
 import traceback
+from datetime import datetime
 
 # third party
 from pydantic import EmailStr
-from result import Err
-from result import Ok
-from result import Result
+from result import Err, Ok, Result
 
 # relative
 from ...abstract_server import AbstractServer
@@ -16,14 +14,14 @@ from ...store.document_store import DocumentStore
 from ..context import AuthedServiceContext
 from ..notification.email_templates import PasswordResetTemplate
 from ..notification.notifications import Notification
-from ..response import SyftError
-from ..response import SyftSuccess
+from ..response import SyftError, SyftSuccess
 from ..service import AbstractService
-from .notifier import NotificationPreferences
-from .notifier import NotifierSettings
-from .notifier import UserNotificationActivity
-from .notifier_enums import EMAIL_TYPES
-from .notifier_enums import NOTIFIERS
+from .notifier import (
+    NotificationPreferences,
+    NotifierSettings,
+    UserNotificationActivity,
+)
+from .notifier_enums import EMAIL_TYPES, NOTIFIERS
 from .notifier_stash import NotifierStash
 
 logger = logging.getLogger(__name__)
@@ -42,12 +40,14 @@ class NotifierService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> NotifierSettings | SyftError:
-        """Get Notifier Settings
+        """Get Notifier Settings.
 
         Args:
+        ----
             context: The request context
         Returns:
             Union[NotifierSettings, SyftError]: Notifier Settings or SyftError
+
         """
         result = self.stash.get(credentials=context.credentials)
         if result.is_err():
@@ -88,9 +88,7 @@ class NotifierService(AbstractService):
     def set_notifier_active_to_false(
         self, context: AuthedServiceContext,
     ) -> SyftSuccess:
-        """
-        Essentially a duplicate of turn_off method.
-        """
+        """Essentially a duplicate of turn_off method."""
         result = self.stash.get(credentials=context.credentials)
         if result.is_err():
             return SyftError(message=result.err())
@@ -117,17 +115,20 @@ class NotifierService(AbstractService):
         """Turn on email notifications.
 
         Args:
+        ----
             email_username (Optional[str]): Email server username. Defaults to None.
             email_password (Optional[str]): Email email server password. Defaults to None.
             sender_email (Optional[str]): Email sender email. Defaults to None.
+
         Returns:
+        -------
             Union[SyftSuccess, SyftError]: A union type representing the success or error response.
 
         Raises:
+        ------
             None
 
         """
-
         result = self.stash.get(credentials=context.credentials)
 
         # 1 -  If something went wrong at db level, return the error
@@ -225,11 +226,9 @@ class NotifierService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> SyftSuccess | SyftError:
-        """
-        Turn off email notifications service.
+        """Turn off email notifications service.
         PySyft notifications will still work.
         """
-
         result = self.stash.get(credentials=context.credentials)
 
         if result.is_err():
@@ -251,11 +250,9 @@ class NotifierService(AbstractService):
     def activate(
         self, context: AuthedServiceContext, notifier_type: NOTIFIERS = NOTIFIERS.EMAIL,
     ) -> SyftSuccess | SyftError:
-        """
-        Activate email notifications for the authenticated user.
+        """Activate email notifications for the authenticated user.
         This will only work if the datasite owner has enabled notifications.
         """
-
         user_service = context.server.get_service("userservice")
         return user_service.enable_notifications(context, notifier_type=notifier_type)
 
@@ -265,7 +262,6 @@ class NotifierService(AbstractService):
         """Deactivate email notifications for the authenticated user
         This will only work if the datasite owner has enabled notifications.
         """
-
         user_service = context.server.get_service("userservice")
         return user_service.disable_notifications(context, notifier_type=notifier_type)
 
@@ -283,6 +279,7 @@ class NotifierService(AbstractService):
         If not, it will create a new one.
 
         Args:
+        ----
             server: Server to initialize the notifier
             active: If notifier should be active
             email_username: Email username to send notifications
@@ -291,6 +288,7 @@ class NotifierService(AbstractService):
             Exception: If something went wrong
         Returns:
             Union: SyftSuccess or SyftError
+
         """
         try:
             # Create a new NotifierStash since its a static method.

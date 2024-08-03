@@ -1,4 +1,4 @@
-def test_client_logged_in_user(worker):
+def test_client_logged_in_user(worker) -> None:
     guest_client = worker.guest_client
     assert guest_client.logged_in_user == ""
 

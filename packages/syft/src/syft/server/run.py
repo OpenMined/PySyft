@@ -2,14 +2,13 @@
 import argparse
 
 # relative
-from ..orchestra import Orchestra
-from ..orchestra import ServerHandle
+from ..orchestra import Orchestra, ServerHandle
 
 
 def str_to_bool(bool_str: str | None) -> bool:
     result = False
     bool_str = str(bool_str).lower()
-    if bool_str == "true" or bool_str == "1":
+    if bool_str in ("true", "1"):
         result = True
     return result
 
@@ -76,7 +75,7 @@ def run() -> ServerHandle | None:
 
     args = parser.parse_args()
     if args.command != "launch":
-        print("syft launch is the only command currently supported")
+        pass
 
     args.dev_mode = str_to_bool(args.dev_mode)
     args.reset = str_to_bool(args.reset)

@@ -9,29 +9,30 @@ from ...store.linked_obj import LinkedObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
-from ..notification.email_templates import RequestEmailTemplate
-from ..notification.email_templates import RequestUpdateEmailTemplate
-from ..notification.notification_service import CreateNotification
-from ..notification.notification_service import NotificationService
+from ..notification.email_templates import (
+    RequestEmailTemplate,
+    RequestUpdateEmailTemplate,
+)
+from ..notification.notification_service import CreateNotification, NotificationService
 from ..notification.notifications import Notification
 from ..notifier.notifier_enums import NOTIFIERS
-from ..response import SyftError
-from ..response import SyftSuccess
-from ..service import AbstractService
-from ..service import SERVICE_TO_TYPES
-from ..service import TYPE_TO_SERVICE
-from ..service import service_method
+from ..response import SyftError, SyftSuccess
+from ..service import SERVICE_TO_TYPES, TYPE_TO_SERVICE, AbstractService, service_method
 from ..user.user import UserView
-from ..user.user_roles import ADMIN_ROLE_LEVEL
-from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
-from ..user.user_roles import GUEST_ROLE_LEVEL
+from ..user.user_roles import (
+    ADMIN_ROLE_LEVEL,
+    DATA_SCIENTIST_ROLE_LEVEL,
+    GUEST_ROLE_LEVEL,
+)
 from ..user.user_service import UserService
-from .request import Change
-from .request import Request
-from .request import RequestInfo
-from .request import RequestInfoFilter
-from .request import RequestStatus
-from .request import SubmitRequest
+from .request import (
+    Change,
+    Request,
+    RequestInfo,
+    RequestInfoFilter,
+    RequestStatus,
+    SubmitRequest,
+)
 from .request_stash import RequestStash
 
 
@@ -53,7 +54,7 @@ class RequestService(AbstractService):
         send_message: bool = True,
         reason: str | None = "",
     ) -> Request | SyftError:
-        """Submit a Request"""
+        """Submit a Request."""
         try:
             req = request.to(Request, context=context)
             result = self.stash.set(context.credentials, req)
@@ -91,9 +92,8 @@ class RequestService(AbstractService):
             if result.is_err():
                 return SyftError(message=str(result.err()))
             return result.ok()
-        except Exception as e:
-            print("Failed to submit Request", e)
-            raise e
+        except Exception:
+            raise
 
     @service_method(
         path="request.get_by_uid", name="get_by_uid", roles=DATA_SCIENTIST_ROLE_LEVEL,
@@ -123,8 +123,7 @@ class RequestService(AbstractService):
         page_index: int | None = 0,
         page_size: int | None = 0,
     ) -> list[list[RequestInfo]] | list[RequestInfo] | SyftError:
-        """Get the information of all requests"""
-
+        """Get the information of all requests."""
         result = self.stash.get_all(context.credentials)
         if result.is_err():
             return SyftError(message=result.err())
@@ -174,7 +173,7 @@ class RequestService(AbstractService):
         page_index: int | None = 0,
         page_size: int | None = 0,
     ) -> list[RequestInfo] | SyftError:
-        """Get a Dataset"""
+        """Get a Dataset."""
         result = self.get_all_info(context)
         requests = list(
             filter(lambda res: (request_filter.name in res.user.name), result),

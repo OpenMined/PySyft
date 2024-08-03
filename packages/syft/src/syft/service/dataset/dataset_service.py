@@ -1,7 +1,6 @@
 # stdlib
-from collections.abc import Collection
-from collections.abc import Sequence
 import logging
+from collections.abc import Collection, Sequence
 from typing import cast
 
 # relative
@@ -10,26 +9,18 @@ from ...store.document_store import DocumentStore
 from ...types.dicttuple import DictTuple
 from ...types.uid import UID
 from ...util.telemetry import instrument
-from ..action.action_permissions import ActionObjectPermission
-from ..action.action_permissions import ActionPermission
+from ..action.action_permissions import ActionObjectPermission, ActionPermission
 from ..action.action_service import ActionService
 from ..context import AuthedServiceContext
-from ..response import SyftError
-from ..response import SyftSuccess
-from ..service import AbstractService
-from ..service import SERVICE_TO_TYPES
-from ..service import TYPE_TO_SERVICE
-from ..service import service_method
-from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
-from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
-from ..user.user_roles import GUEST_ROLE_LEVEL
-from ..warnings import CRUDReminder
-from ..warnings import HighSideCRUDWarning
-from .dataset import Asset
-from .dataset import CreateDataset
-from .dataset import Dataset
-from .dataset import DatasetPageView
-from .dataset import DatasetUpdate
+from ..response import SyftError, SyftSuccess
+from ..service import SERVICE_TO_TYPES, TYPE_TO_SERVICE, AbstractService, service_method
+from ..user.user_roles import (
+    DATA_OWNER_ROLE_LEVEL,
+    DATA_SCIENTIST_ROLE_LEVEL,
+    GUEST_ROLE_LEVEL,
+)
+from ..warnings import CRUDReminder, HighSideCRUDWarning
+from .dataset import Asset, CreateDataset, Dataset, DatasetPageView, DatasetUpdate
 from .dataset_stash import DatasetStash
 
 logger = logging.getLogger(__name__)
@@ -89,7 +80,7 @@ class DatasetService(AbstractService):
     def add(
         self, context: AuthedServiceContext, dataset: CreateDataset,
     ) -> SyftSuccess | SyftError:
-        """Add a Dataset"""
+        """Add a Dataset."""
         dataset = dataset.to(Dataset, context=context)
         result = self.stash.set(
             context.credentials,
@@ -119,7 +110,7 @@ class DatasetService(AbstractService):
         page_size: int | None = 0,
         page_index: int | None = 0,
     ) -> DatasetPageView | DictTuple[str, Dataset] | SyftError:
-        """Get a Dataset"""
+        """Get a Dataset."""
         result = self.stash.get_all(context.credentials)
         if not result.is_ok():
             return SyftError(message=result.err())
@@ -144,7 +135,7 @@ class DatasetService(AbstractService):
         page_size: int | None = 0,
         page_index: int | None = 0,
     ) -> DatasetPageView | SyftError:
-        """Search a Dataset by name"""
+        """Search a Dataset by name."""
         results = self.get_all(context)
 
         if isinstance(results, SyftError):
@@ -162,7 +153,7 @@ class DatasetService(AbstractService):
 
     @service_method(path="dataset.get_by_id", name="get_by_id")
     def get_by_id(self, context: AuthedServiceContext, uid: UID) -> Dataset | SyftError:
-        """Get a Dataset"""
+        """Get a Dataset."""
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_err():
             return SyftError(message=result.err())
@@ -176,7 +167,7 @@ class DatasetService(AbstractService):
     def get_by_action_id(
         self, context: AuthedServiceContext, uid: UID,
     ) -> list[Dataset] | SyftError:
-        """Get Datasets by an Action ID"""
+        """Get Datasets by an Action ID."""
         result = self.stash.search_action_ids(context.credentials, uid=uid)
         if result.is_err():
             return SyftError(message=result.err())
@@ -196,7 +187,7 @@ class DatasetService(AbstractService):
     def get_assets_by_action_id(
         self, context: AuthedServiceContext, uid: UID,
     ) -> list[Asset] | SyftError:
-        """Get Assets by an Action ID"""
+        """Get Assets by an Action ID."""
         datasets = self.get_by_action_id(context=context, uid=uid)
         if isinstance(datasets, SyftError):
             return datasets
@@ -219,8 +210,7 @@ class DatasetService(AbstractService):
     def delete(
         self, context: AuthedServiceContext, uid: UID, delete_assets: bool = True,
     ) -> SyftSuccess | SyftError:
-        """
-        Soft delete: keep the dataset object, only remove the blob store entries
+        """Soft delete: keep the dataset object, only remove the blob store entries
         After soft deleting a dataset, the user will not be able to
         see it using the `datasets.get_all` endpoint.
         Delete unique `dataset.name` key and leave UID, just rename it in case the

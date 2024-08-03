@@ -10,8 +10,7 @@ import torch
 from syft import UID
 from syft.service.action.action_object import ActionObject
 from syft.service.user.user import User
-from syft.util.table import TABLE_INDEX_KEY
-from syft.util.table import prepare_table_data
+from syft.util.table import TABLE_INDEX_KEY, prepare_table_data
 
 
 def table_displayed(obj_to_check: Any) -> bool:
@@ -66,7 +65,7 @@ def table_test_cases() -> list[tuple[list, str | None]]:
 
 
 @pytest.mark.parametrize("test_case", table_test_cases())
-def test_list_dict_repr_html(test_case):
+def test_list_dict_repr_html(test_case) -> None:
     obj, validation_func = test_case
 
     assert validation_func(obj)
@@ -75,7 +74,7 @@ def test_list_dict_repr_html(test_case):
     assert validation_func(tuple(obj))
 
 
-def test_sort_table_rows():
+def test_sort_table_rows() -> None:
     emails = [
         "x@y.z",
         "a@b.c",

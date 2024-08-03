@@ -11,7 +11,7 @@ from syft.service.response import SyftAttributeError
 from syft.service.user.user_roles import ServiceRole
 
 
-def test_api_cache_invalidation(worker):
+def test_api_cache_invalidation(worker) -> None:
     root_datasite_client = worker.root_client
     dataset = sy.Dataset(
         name="test",
@@ -39,7 +39,7 @@ def test_api_cache_invalidation(worker):
     assert isinstance(root_datasite_client.code.my_func, Callable)
 
 
-def test_api_cache_invalidation_login(root_verify_key, worker):
+def test_api_cache_invalidation_login(root_verify_key, worker) -> None:
     guest_client = worker.guest_client
     worker.root_client.settings.allow_guest_signup(enable=True)
     assert guest_client.register(
@@ -50,7 +50,7 @@ def test_api_cache_invalidation_login(root_verify_key, worker):
 
     def get_role(verify_key):
         users = worker.get_service("UserService").stash.get_all(root_verify_key).ok()
-        user = [u for u in users if u.verify_key == verify_key][0]
+        user = next(u for u in users if u.verify_key == verify_key)
         return user.role
 
     assert get_role(guest_client.credentials.verify_key) == ServiceRole.DATA_SCIENTIST

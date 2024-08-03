@@ -8,15 +8,13 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft import syft_function
-from syft import syft_function_single_use
+from syft import syft_function, syft_function_single_use
 from syft.service.job.job_service import wait_until
 from syft.service.job.job_stash import JobStatus
-from syft.service.response import SyftError
-from syft.service.response import SyftSuccess
+from syft.service.response import SyftError, SyftSuccess
 
 
-@pytest.mark.local_server
+@pytest.mark.local_server()
 def test_job_restart(job) -> None:
     job.wait(timeout=2)
 
@@ -59,7 +57,7 @@ def test_job_restart(job) -> None:
     ), "Subjobs not restarted"
 
 
-@pytest.fixture
+@pytest.fixture()
 def server():
     server = sy.orchestra.launch(
         name=token_hex(8),
@@ -77,14 +75,14 @@ def server():
         server.land()
 
 
-@pytest.fixture
+@pytest.fixture()
 def job(server):
     client = server.login(email="info@openmined.org", password="changethis")
     _ = client.register(name="a", email="aa@b.org", password="c", password_verify="c")
     ds_client = server.login(email="aa@b.org", password="c")
 
     @syft_function()
-    def process_batch():
+    def process_batch() -> None:
         # stdlib
         import time
 
@@ -94,7 +92,7 @@ def job(server):
     ds_client.code.submit(process_batch)
 
     @syft_function_single_use()
-    def process_all(datasite):
+    def process_all(datasite) -> None:
         # stdlib
         import time
 
@@ -114,7 +112,7 @@ def job(server):
         job.kill()
 
 
-@pytest.mark.local_server
+@pytest.mark.local_server()
 def test_job_kill(job) -> None:
     job.wait(timeout=2)
     assert wait_until(

@@ -9,11 +9,9 @@ from typing_extensions import Self
 # relative
 from ..abstract_server import AbstractServer
 from ..server.credentials import SyftVerifyKey
-from ..service.context import AuthedServiceContext
-from ..service.context import ServerServiceContext
+from ..service.context import AuthedServiceContext, ServerServiceContext
 from .server_url import ServerURL
-from .syft_object import Context
-from .syft_object import SyftBaseObject
+from .syft_object import Context, SyftBaseObject
 from .syft_object_registry import SyftObjectRegistry
 from .uid import UID
 

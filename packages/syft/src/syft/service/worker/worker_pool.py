@@ -1,7 +1,6 @@
 # stdlib
 from enum import Enum
-from typing import Any
-from typing import cast
+from typing import Any, cast
 
 # third party
 import docker
@@ -13,14 +12,11 @@ from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
 from ...types.base import SyftBaseModel
 from ...types.datetime import DateTime
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
-from ...types.syft_object import short_uid
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject, short_uid
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
-from ...util.notebook_ui.styles import FONT_CSS
-from ...util.notebook_ui.styles import ITABLES_CSS
+from ...util.notebook_ui.styles import FONT_CSS, ITABLES_CSS
 from ..response import SyftError
 from .worker_image import SyftWorkerImage
 
@@ -165,9 +161,8 @@ class WorkerPool(SyftObject):
 
     @property
     def image(self) -> SyftWorkerImage | SyftError | None:
-        """
-        Get the pool's image using the worker_image service API. This way we
-        get the latest state of the image from the SyftWorkerImageStash
+        """Get the pool's image using the worker_image service API. This way we
+        get the latest state of the image from the SyftWorkerImageStash.
         """
         api = APIRegistry.api_for(
             server_uid=self.syft_server_location,
@@ -180,7 +175,7 @@ class WorkerPool(SyftObject):
 
     @property
     def running_workers(self) -> list[SyftWorker] | SyftError:
-        """Query the running workers using an API call to the server"""
+        """Query the running workers using an API call to the server."""
         return [
             worker for worker in self.workers if worker.status == WorkerStatus.RUNNING
         ]
@@ -188,9 +183,7 @@ class WorkerPool(SyftObject):
 
     @property
     def healthy_workers(self) -> list[SyftWorker] | SyftError:
-        """
-        Query the healthy workers using an API call to the server
-        """
+        """Query the healthy workers using an API call to the server."""
         return [
             worker
             for worker in self.workers

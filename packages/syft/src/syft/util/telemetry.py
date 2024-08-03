@@ -1,9 +1,8 @@
 # stdlib
-from collections.abc import Callable
 import logging
 import os
-from typing import Any
-from typing import TypeVar
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +10,7 @@ logger = logging.getLogger(__name__)
 def str_to_bool(bool_str: str | None) -> bool:
     result = False
     bool_str = str(bool_str).lower()
-    if bool_str == "true" or bool_str == "1":
+    if bool_str in ("true", "1"):
         result = True
     return result
 
@@ -37,8 +36,7 @@ else:
         # third party
         from opentelemetry import trace
         from opentelemetry.exporter.jaeger.thrift import JaegerExporter
-        from opentelemetry.sdk.resources import Resource
-        from opentelemetry.sdk.resources import SERVICE_NAME
+        from opentelemetry.sdk.resources import SERVICE_NAME, Resource
         from opentelemetry.sdk.trace import TracerProvider
         from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
@@ -77,5 +75,5 @@ else:
 
         instrument = _instrument
     except Exception as e:
-        logger.error("Failed to import opentelemetry", exc_info=e)
+        logger.exception("Failed to import opentelemetry", exc_info=e)
         instrument = noop

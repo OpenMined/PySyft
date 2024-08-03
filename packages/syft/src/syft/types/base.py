@@ -1,8 +1,7 @@
 # stdlib
 
 # third party
-from pydantic import BaseModel
-from pydantic import ConfigDict
+from pydantic import BaseModel, ConfigDict
 
 
 class SyftBaseModel(BaseModel):

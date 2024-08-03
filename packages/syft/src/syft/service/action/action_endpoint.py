@@ -2,18 +2,16 @@
 from __future__ import annotations
 
 # stdlib
-from enum import Enum
-from enum import auto
-from typing import Any, TYPE_CHECKING
+from enum import Enum, auto
+from typing import TYPE_CHECKING, Any
 
 # relative
 from ...serde.serializable import serializable
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject
 
 if TYPE_CHECKING:
-    from ..context import AuthedServiceContext
     from ...types.uid import UID
+    from ..context import AuthedServiceContext
 
 
 class EXECUTION_MODE(Enum):

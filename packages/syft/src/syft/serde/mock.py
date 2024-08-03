@@ -1,6 +1,6 @@
 # stdlib
-from collections import defaultdict
 import secrets
+from collections import defaultdict
 from typing import Any
 
 # third party
@@ -9,7 +9,7 @@ from faker import Faker
 
 class CachedFaker:
     """Normal faker object can get slow when sampling large datasets, e.g. for Mocks. This one is cached
-    And therefore faster
+    And therefore faster.
     """
 
     def __init__(self) -> None:

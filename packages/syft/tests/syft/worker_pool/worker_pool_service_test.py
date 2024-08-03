@@ -1,17 +1,20 @@
 # third party
+from typing import TYPE_CHECKING
+
 import pytest
 
 # syft absolute
 import syft as sy
 from syft.client.client import SyftClient
-from syft.custom_worker.config import DockerWorkerConfig
-from syft.custom_worker.config import PrebuiltWorkerConfig
-from syft.custom_worker.config import WorkerConfig
+from syft.custom_worker.config import (
+    DockerWorkerConfig,
+    PrebuiltWorkerConfig,
+    WorkerConfig,
+)
 from syft.server.worker import Worker
 from syft.service.request.request import CreateCustomWorkerPoolChange
 from syft.service.response import SyftSuccess
 from syft.service.worker.worker_pool import WorkerPool
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from syft.service.worker.worker_image import SyftWorkerImage
@@ -41,16 +44,15 @@ WORKER_CONFIG_TEST_CASES = [
 ]
 
 
-@pytest.mark.parametrize("docker_tag,worker_config", WORKER_CONFIG_TEST_CASES)
+@pytest.mark.parametrize(("docker_tag", "worker_config"), WORKER_CONFIG_TEST_CASES)
 def test_create_image_and_pool_request_accept(
     worker: Worker,
     docker_tag: str,
     worker_config: WorkerConfig,
     ds_client: SyftClient,
 ) -> None:
-    """
-    Test the functionality of `SyftWorkerPoolService.create_image_and_pool_request`
-    when the request is accepted
+    """Test the functionality of `SyftWorkerPoolService.create_image_and_pool_request`
+    when the request is accepted.
     """
     # construct a root client and data scientist client for a datasite
     root_client = worker.root_client
@@ -92,7 +94,7 @@ def test_create_image_and_pool_request_accept(
 
 
 @pytest.mark.parametrize(
-    "docker_tag,worker_config,n_images",
+    ("docker_tag", "worker_config", "n_images"),
     WORKER_CONFIG_TEST_CASES_WITH_N_IMAGES,
 )
 def test_create_pool_request_accept(
@@ -102,9 +104,8 @@ def test_create_pool_request_accept(
     n_images: int,
     ds_client: SyftClient,
 ) -> None:
-    """
-    Test the functionality of `SyftWorkerPoolService.create_pool_request`
-    when the request is accepted
+    """Test the functionality of `SyftWorkerPoolService.create_pool_request`
+    when the request is accepted.
     """
     # construct a root client and data scientist client for a datasite
     root_client = worker.root_client

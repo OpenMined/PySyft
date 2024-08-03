@@ -7,8 +7,7 @@ from syft.store.document_store import QueryKeys
 from syft.types.uid import UID
 
 # relative
-from .store_mocks_test import MockObjectType
-from .store_mocks_test import MockSyftObject
+from .store_mocks_test import MockObjectType, MockSyftObject
 
 
 def test_dict_store_partition_sanity(dict_store_partition: DictStorePartition) -> None:

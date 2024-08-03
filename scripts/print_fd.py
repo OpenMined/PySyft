@@ -1,7 +1,7 @@
 # stdlib
 import argparse
-from collections import defaultdict
 import subprocess
+from collections import defaultdict
 
 
 def run_lsof():
@@ -10,8 +10,7 @@ def run_lsof():
         process = subprocess.Popen(["lsof"], stdout=subprocess.PIPE, text=True)
         output, _ = process.communicate()
         return output
-    except Exception as e:
-        print(f"Error running lsof: {e}")
+    except Exception:
         return ""
 
 
@@ -23,8 +22,7 @@ def run_lsof_for_pid(pid):
         )
         output, _ = process.communicate()
         return output
-    except Exception as e:
-        print(f"Error running lsof for PID {pid}: {e}")
+    except Exception:
         return ""
 
 
@@ -72,14 +70,13 @@ def parse_lsof_output(lsof_output, verbose):
     return data
 
 
-def main(pid=None, verbose=False):
+def main(pid=None, verbose=False) -> None:
     lsof_output = run_lsof_for_pid(pid) if pid else run_lsof()
     files_by_pid = parse_lsof_output(lsof_output, verbose)
 
     for pid, files in files_by_pid.items():
-        print(f"PID {pid} open files:")
-        for file in files:
-            print(f"  {file['File Path']} ({file['FD Type']} - {file['FD Info']})")
+        for _file in files:
+            pass
 
 
 if __name__ == "__main__":

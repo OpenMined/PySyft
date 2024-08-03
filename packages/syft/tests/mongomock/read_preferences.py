@@ -1,14 +1,14 @@
-class _Primary(object):
+class _Primary:
     @property
-    def mongos_mode(self):
+    def mongos_mode(self) -> str:
         return "primary"
 
     @property
-    def mode(self):
+    def mode(self) -> int:
         return 0
 
     @property
-    def name(self):
+    def name(self) -> str:
         return "Primary"
 
     @property
@@ -20,15 +20,15 @@ class _Primary(object):
         return [{}]
 
     @property
-    def max_staleness(self):
+    def max_staleness(self) -> int:
         return -1
 
     @property
-    def min_wire_version(self):
+    def min_wire_version(self) -> int:
         return 0
 
 
-def ensure_read_preference_type(key, value):
+def ensure_read_preference_type(key, value) -> None:
     """Raise a TypeError if the value is not a type compatible for ReadPreference."""
     for attr in ("document", "mode", "mongos_mode", "max_staleness"):
         if not hasattr(value, attr):

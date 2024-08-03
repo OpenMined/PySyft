@@ -24,14 +24,9 @@ def _patch_ipython_sanitization() -> None:
     from importlib import resources
 
     # relative
-    from .assets import load_css
-    from .assets import load_js
-    from .notebook_ui.components.sync import ALERT_CSS
-    from .notebook_ui.components.sync import COPY_CSS
-    from .notebook_ui.styles import CSS_CODE
-    from .notebook_ui.styles import FONT_CSS
-    from .notebook_ui.styles import ITABLES_CSS
-    from .notebook_ui.styles import JS_DOWNLOAD_FONTS
+    from .assets import load_css, load_js
+    from .notebook_ui.components.sync import ALERT_CSS, COPY_CSS
+    from .notebook_ui.styles import CSS_CODE, FONT_CSS, ITABLES_CSS, JS_DOWNLOAD_FONTS
 
     tabulator_js = load_js("tabulator.min.js")
     tabulator_js = tabulator_js.replace(
@@ -142,7 +137,7 @@ def _patch_ipython_autocompletion() -> None:
 
         policy.can_get_attr = patched_can_get_attr
     except Exception:
-        print("Failed to patch ipython autocompletion for syft property getters")
+        pass
 
     try:
         # this constraints the completions for autocomplete.
@@ -176,7 +171,7 @@ def _patch_ipython_autocompletion() -> None:
             patched_attr_matches, ipython.Completer,
         )
     except Exception:
-        print("Failed to patch syft autocompletion for __syft_dir__")
+        pass
 
 
 def patch_ipython() -> None:

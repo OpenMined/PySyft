@@ -7,23 +7,19 @@ from typing import TYPE_CHECKING
 # relative
 from ..abstract_server import ServerSideType
 from ..serde.serializable import serializable
-from ..service.response import SyftError
-from ..service.response import SyftSuccess
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
-from ..types.syft_object import SyftObject
+from ..service.response import SyftError, SyftSuccess
+from ..types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject
 from ..util.assets import load_png_base64
 from ..util.notebook_ui.styles import FONT_CSS
-from .client import SyftClient
-from .client import login
-from .client import login_as_guest
+from .client import SyftClient, login, login_as_guest
 from .protocol import SyftProtocol
 
 if TYPE_CHECKING:
     # relative
-    from .api import APIModule
+    from ..orchestra import ServerHandle
     from ..service.metadata.server_metadata import ServerMetadataJSON
     from ..service.network.routes import ServerRouteType
-    from ..orchestra import ServerHandle
+    from .api import APIModule
 
 
 @serializable()
@@ -64,7 +60,7 @@ class EnclaveClient(SyftClient):
         via_client: SyftClient | None = None,
         url: str | None = None,
         port: int | None = None,
-        handle: ServerHandle | None = None,  # noqa: F821
+        handle: ServerHandle | None = None,
         email: str | None = None,
         password: str | None = None,
         protocol: str | SyftProtocol = SyftProtocol.HTTP,

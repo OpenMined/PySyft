@@ -12,7 +12,7 @@ from ..utils.custom_markers import currently_fail_on_python_3_12
 
 
 @pytest.mark.skip(reason="Disabled until we bring back eager execution")
-def test_eager_permissions(worker, guest_client):
+def test_eager_permissions(worker, guest_client) -> None:
     root_datasite_client = worker.root_client
 
     assert root_datasite_client.settings.enable_eager_execution(enable=True)
@@ -41,7 +41,7 @@ def test_eager_permissions(worker, guest_client):
 
 
 @pytest.mark.skip(reason="Disabled until we bring back eager execution")
-def test_plan(worker):
+def test_plan(worker) -> None:
     root_datasite_client = worker.root_client
 
     assert root_datasite_client.settings.enable_eager_execution(enable=True)
@@ -88,7 +88,7 @@ def test_plan(worker):
 
 @pytest.mark.skip(reason="Disabled until we bring back eager execution")
 @currently_fail_on_python_3_12(raises=AttributeError)
-def test_plan_with_function_call(worker, guest_client):
+def test_plan_with_function_call(worker, guest_client) -> None:
     root_datasite_client = worker.root_client
 
     assert root_datasite_client.settings.enable_eager_execution(enable=True)
@@ -114,7 +114,7 @@ def test_plan_with_function_call(worker, guest_client):
 
 
 @pytest.mark.skip(reason="Disabled until we bring back eager execution")
-def test_plan_with_object_instantiation(worker, guest_client):
+def test_plan_with_object_instantiation(worker, guest_client) -> None:
     root_datasite_client = worker.root_client
 
     assert root_datasite_client.settings.enable_eager_execution(enable=True)
@@ -143,7 +143,7 @@ def test_plan_with_object_instantiation(worker, guest_client):
 
 
 @pytest.mark.skip(reason="Disabled until we bring back eager execution")
-def test_setattribute(worker, guest_client):
+def test_setattribute(worker, guest_client) -> None:
     root_datasite_client = worker.root_client
 
     assert root_datasite_client.settings.enable_eager_execution(enable=True)
@@ -185,7 +185,7 @@ def test_setattribute(worker, guest_client):
 
 
 @pytest.mark.skip(reason="Disabled until we bring back eager execution")
-def test_getattribute(worker, guest_client):
+def test_getattribute(worker, guest_client) -> None:
     root_datasite_client = worker.root_client
     assert root_datasite_client.settings.enable_eager_execution(enable=True)
     guest_client = worker.guest_client
@@ -205,7 +205,7 @@ def test_getattribute(worker, guest_client):
 
 
 @pytest.mark.skip(reason="Disabled until we bring back eager execution")
-def test_eager_method(worker, guest_client):
+def test_eager_method(worker, guest_client) -> None:
     root_datasite_client = worker.root_client
     assert root_datasite_client.settings.enable_eager_execution(enable=True)
     guest_client = worker.guest_client
@@ -229,7 +229,7 @@ def test_eager_method(worker, guest_client):
 
 
 @pytest.mark.skip(reason="Disabled until we bring back eager execution")
-def test_eager_dunder_method(worker, guest_client):
+def test_eager_dunder_method(worker, guest_client) -> None:
     root_datasite_client = worker.root_client
     assert root_datasite_client.settings.enable_eager_execution(enable=True)
     guest_client = worker.guest_client

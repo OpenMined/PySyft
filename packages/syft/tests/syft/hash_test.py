@@ -3,9 +3,11 @@ from uuid import uuid4
 
 # syft absolute
 from syft.serde.serializable import serializable
-from syft.types.syft_object import SYFT_OBJECT_VERSION_1
-from syft.types.syft_object import SyftBaseObject
-from syft.types.syft_object import SyftHashableObject
+from syft.types.syft_object import (
+    SYFT_OBJECT_VERSION_1,
+    SyftBaseObject,
+    SyftHashableObject,
+)
 
 
 @serializable(
@@ -21,7 +23,7 @@ class MockObject(SyftHashableObject):
     # Serialize `flag`, but don't use it for hashing
     __hash_exclude_attrs__ = ["flag"]
 
-    def __init__(self, key, value, flag=None):
+    def __init__(self, key, value, flag=None) -> None:
         self.key = key
         self.value = value
         self.flag = flag
@@ -36,7 +38,7 @@ class MockWrapper(SyftBaseObject, SyftHashableObject):
     data: MockObject | None
 
 
-def test_simple_hashing():
+def test_simple_hashing() -> None:
     obj1 = MockObject(key="key", value="value")
     obj2 = MockObject(key="key", value="value")
 
@@ -44,7 +46,7 @@ def test_simple_hashing():
     assert obj1.hash() == obj2.hash()
 
 
-def test_nested_hashing():
+def test_nested_hashing() -> None:
     common_id = str(uuid4())
     obj1 = MockWrapper(
         id=common_id,

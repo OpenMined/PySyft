@@ -5,13 +5,9 @@ from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_permissions import StoragePermission
 from ..context import AuthedServiceContext
-from ..response import SyftError
-from ..response import SyftSuccess
-from ..service import AbstractService
-from ..service import TYPE_TO_SERVICE
-from ..service import service_method
-from ..user.user_roles import ADMIN_ROLE_LEVEL
-from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
+from ..response import SyftError, SyftSuccess
+from ..service import TYPE_TO_SERVICE, AbstractService, service_method
+from ..user.user_roles import ADMIN_ROLE_LEVEL, DATA_SCIENTIST_ROLE_LEVEL
 from .log import SyftLog
 from .log_stash import LogStash
 

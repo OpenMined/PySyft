@@ -13,23 +13,21 @@ from typing import TypeVar
 
 # third party
 from pydantic import BaseModel
-from result import Err
-from result import Ok
-from result import Result
+from result import Err, Ok, Result
 
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...types.syft_migration import migrate
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SyftObject
-from ...types.transforms import drop
-from ...types.transforms import make_set_default
+from ...types.syft_object import (
+    SYFT_OBJECT_VERSION_1,
+    SYFT_OBJECT_VERSION_2,
+    SyftObject,
+)
+from ...types.transforms import drop, make_set_default
 from ..context import AuthedServiceContext
 from ..notification.notifications import Notification
-from ..response import SyftError
-from ..response import SyftSuccess
+from ..response import SyftError, SyftSuccess
 from .notifier_enums import NOTIFIERS
 from .smtp_client import SMTPClient
 
@@ -251,13 +249,14 @@ class NotifierSettings(SyftObject):
         return Ok("Notification sent successfully!")
 
     def select_notifiers(self, notification: Notification) -> list[BaseNotifier]:
-        """
-        Return a list of the notifiers enabled for the given notification"
+        """Return a list of the notifiers enabled for the given notification".
 
         Args:
+        ----
             notification (Notification): The notification object
         Returns:
             List[BaseNotifier]: A list of enabled notifier objects
+
         """
         notifier_objs = []
         for notifier_type in notification.notifier_types:

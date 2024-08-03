@@ -1,6 +1,5 @@
 # stdlib
-from typing import Any
-from typing import ClassVar
+from typing import Any, ClassVar
 
 # third party
 import numpy as np
@@ -9,9 +8,7 @@ from typing_extensions import Self
 # relative
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from .action_object import ActionObject
-from .action_object import ActionObjectPointer
-from .action_object import BASE_PASSTHROUGH_ATTRS
+from .action_object import BASE_PASSTHROUGH_ATTRS, ActionObject, ActionObjectPointer
 from .action_types import action_types
 
 # @serializable(attrs=["id", "server_uid", "parent_id"])

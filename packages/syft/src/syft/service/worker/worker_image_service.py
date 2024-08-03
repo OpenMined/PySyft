@@ -1,13 +1,13 @@
 # stdlib
 import contextlib
+from typing import TYPE_CHECKING
 
 # third party
 import docker
 import pydantic
 
 # relative
-from ...custom_worker.config import PrebuiltWorkerConfig
-from ...custom_worker.config import WorkerConfig
+from ...custom_worker.config import PrebuiltWorkerConfig, WorkerConfig
 from ...custom_worker.k8s import IN_KUBERNETES
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
@@ -15,19 +15,13 @@ from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
 from ...types.uid import UID
 from ..context import AuthedServiceContext
-from ..response import SyftError
-from ..response import SyftSuccess
-from ..service import AbstractService
-from ..service import service_method
-from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
-from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
+from ..response import SyftError, SyftSuccess
+from ..service import AbstractService, service_method
+from ..user.user_roles import DATA_OWNER_ROLE_LEVEL, DATA_SCIENTIST_ROLE_LEVEL
 from .image_registry_service import SyftImageRegistryService
-from .utils import image_build
-from .utils import image_push
-from .worker_image import SyftWorkerImage
-from .worker_image import SyftWorkerImageIdentifier
+from .utils import image_build, image_push
+from .worker_image import SyftWorkerImage, SyftWorkerImageIdentifier
 from .worker_image_stash import SyftWorkerImageStash
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .image_registry import SyftImageRegistry
@@ -207,9 +201,7 @@ class SyftWorkerImageService(AbstractService):
     def get_all(
         self, context: AuthedServiceContext,
     ) -> DictTuple[str, SyftWorkerImage] | SyftError:
-        """
-        One image one docker file for now
-        """
+        """One image one docker file for now."""
         result = self.stash.get_all(credentials=context.credentials)
         if result.is_err():
             return SyftError(message=f"{result.err()}")

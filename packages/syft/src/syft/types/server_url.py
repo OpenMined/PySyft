@@ -50,8 +50,8 @@ class ServerURL:
                 query=getattr(parts, "query", ""),
             )
         except Exception as e:
-            logger.error(f"Failed to convert url: {url} to ServerURL. {e}")
-            raise e
+            logger.exception(f"Failed to convert url: {url} to ServerURL. {e}")
+            raise
 
     def __init__(
         self,

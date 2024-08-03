@@ -3,30 +3,29 @@ from __future__ import annotations
 
 # stdlib
 import secrets
-from typing import Any
 from typing import TYPE_CHECKING
 
 # third party
 from typing_extensions import Self
 
 # relative
-from ...client.client import HTTPConnection
-from ...client.client import PythonConnection
-from ...client.client import ServerConnection
-from ...client.client import SyftClient
+from ...client.client import (
+    HTTPConnection,
+    PythonConnection,
+    ServerConnection,
+    SyftClient,
+)
 from ...serde.serializable import serializable
 from ...server.worker_settings import WorkerSettings
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject
 from ..response import SyftError
 
 if TYPE_CHECKING:
     # relative
-    from ..context import AuthedServiceContext
-    from ...types.transforms import TransformContext
     from ...abstract_server import AbstractServer
+    from ...types.transforms import TransformContext
     from ...types.uid import UID
-    from ..context import ServerServiceContext
+    from ..context import AuthedServiceContext, ServerServiceContext
     from .server_peer import ServerPeer
 
 
@@ -35,16 +34,18 @@ class ServerRoute:
     def client_with_context(
         self, context: ServerServiceContext,
     ) -> SyftClient | SyftError:
-        """
-        Convert the current route (self) to a connection (either HTTP, Veilid or Python)
+        """Convert the current route (self) to a connection (either HTTP, Veilid or Python)
         and create a SyftClient from the connection.
 
         Args:
+        ----
             context (ServerServiceContext): The ServerServiceContext containing the server information.
 
         Returns:
+        -------
             SyftClient | SyftError: Returns the created SyftClient, or SyftError
                 if the client type is not valid or if the context's server is None.
+
         """
         connection = route_to_connection(route=self, context=context)
         client_type = connection.get_client_type()
@@ -100,7 +101,7 @@ class HTTPServerRoute(SyftObject, ServerRoute):
     priority: int = 1
     rtunnel_token: str | None = None
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, HTTPServerRoute):
             return False
         return hash(self) == hash(other)
@@ -149,7 +150,7 @@ class PythonServerRoute(SyftObject, ServerRoute):
         worker_settings = WorkerSettings.from_server(server)
         return cls(id=worker_settings.id, worker_settings=worker_settings)
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, PythonServerRoute):
             return False
         return hash(self) == hash(other)
@@ -176,7 +177,7 @@ class VeilidServerRoute(SyftObject, ServerRoute):
     proxy_target_uid: UID | None = None
     priority: int = 1
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, VeilidServerRoute):
             return False
         return hash(self) == hash(other)

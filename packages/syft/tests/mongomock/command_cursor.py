@@ -1,5 +1,5 @@
-class CommandCursor(object):
-    def __init__(self, collection, curser_info=None, address=None, retrieved=0):
+class CommandCursor:
+    def __init__(self, collection, curser_info=None, address=None, retrieved=0) -> None:
         self._collection = iter(collection)
         self._id = None
         self._address = address
@@ -12,14 +12,14 @@ class CommandCursor(object):
     def address(self):
         return self._address
 
-    def close(self):
+    def close(self) -> None:
         pass
 
     def batch_size(self, batch_size):
         return self
 
     @property
-    def alive(self):
+    def alive(self) -> bool:
         return True
 
     def __iter__(self):

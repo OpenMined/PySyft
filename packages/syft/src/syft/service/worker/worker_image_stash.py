@@ -1,21 +1,20 @@
 # stdlib
 
 # third party
-from result import Err
-from result import Result
+from result import Err, Result
 
 # relative
-from ...custom_worker.config import DockerWorkerConfig
-from ...custom_worker.config import WorkerConfig
+from ...custom_worker.config import DockerWorkerConfig, WorkerConfig
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import BaseUIDStoreStash
-from ...store.document_store import DocumentStore
-from ...store.document_store import PartitionKey
-from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
-from ..action.action_permissions import ActionObjectPermission
-from ..action.action_permissions import ActionPermission
+from ...store.document_store import (
+    BaseUIDStoreStash,
+    DocumentStore,
+    PartitionKey,
+    PartitionSettings,
+    QueryKeys,
+)
+from ..action.action_permissions import ActionObjectPermission, ActionPermission
 from .worker_image import SyftWorkerImage
 
 WorkerConfigPK = PartitionKey(key="config", type_=WorkerConfig)

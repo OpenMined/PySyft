@@ -4,22 +4,24 @@ from unittest import mock
 # third party
 from faker import Faker
 from pytest import MonkeyPatch
-from result import Err
-from result import Ok
+from result import Err, Ok
 
 # syft absolute
 from syft.server.credentials import SyftVerifyKey
 from syft.server.worker import Worker
-from syft.service.context import AuthedServiceContext
-from syft.service.context import ServerServiceContext
-from syft.service.context import UnauthedServiceContext
-from syft.service.response import SyftError
-from syft.service.response import SyftSuccess
-from syft.service.user.user import User
-from syft.service.user.user import UserCreate
-from syft.service.user.user import UserPrivateKey
-from syft.service.user.user import UserUpdate
-from syft.service.user.user import UserView
+from syft.service.context import (
+    AuthedServiceContext,
+    ServerServiceContext,
+    UnauthedServiceContext,
+)
+from syft.service.response import SyftError, SyftSuccess
+from syft.service.user.user import (
+    User,
+    UserCreate,
+    UserPrivateKey,
+    UserUpdate,
+    UserView,
+)
 from syft.service.user.user_roles import ServiceRole
 from syft.service.user.user_service import UserService
 from syft.types.uid import UID

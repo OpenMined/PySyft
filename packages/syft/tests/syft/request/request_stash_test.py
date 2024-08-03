@@ -7,12 +7,12 @@ from result import Err
 from syft.client.client import SyftClient
 from syft.server.credentials import SyftVerifyKey
 from syft.service.context import AuthedServiceContext
-from syft.service.request.request import Request
-from syft.service.request.request import SubmitRequest
-from syft.service.request.request_stash import RequestStash
-from syft.service.request.request_stash import RequestingUserVerifyKeyPartitionKey
-from syft.store.document_store import PartitionKey
-from syft.store.document_store import QueryKeys
+from syft.service.request.request import Request, SubmitRequest
+from syft.service.request.request_stash import (
+    RequestingUserVerifyKeyPartitionKey,
+    RequestStash,
+)
+from syft.store.document_store import PartitionKey, QueryKeys
 
 
 def test_requeststash_get_all_for_verify_key_no_requests(
@@ -30,7 +30,7 @@ def test_requeststash_get_all_for_verify_key_no_requests(
     assert len(requests.ok()) == 0
 
 
-@pytest.mark.xfail
+@pytest.mark.xfail()
 def test_requeststash_get_all_for_verify_key_success(
     root_verify_key,
     request_stash: RequestStash,

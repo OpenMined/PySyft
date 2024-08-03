@@ -1,10 +1,9 @@
 # stdlib
-from collections.abc import Generator
-from collections.abc import Iterable
-from itertools import product
 import operator
-from secrets import token_hex
 import time
+from collections.abc import Generator, Iterable
+from itertools import product
+from secrets import token_hex
 from typing import Any
 
 # third party
@@ -26,7 +25,7 @@ def server_args() -> dict[str, Any]:
     return {}
 
 
-@pytest.fixture
+@pytest.fixture()
 def server(server_args: dict[str, Any]) -> Generator[ServerHandle, None, None]:
     _server = sy.orchestra.launch(
         **{
@@ -76,7 +75,7 @@ SERVER_ARGS_TEST_CASES = {
 
 
 class FlakyMark(RuntimeError):
-    """To mark a flaky part of a test to use with @pytest.mark.flaky"""
+    """To mark a flaky part of a test to use with @pytest.mark.flaky."""
 
 
 

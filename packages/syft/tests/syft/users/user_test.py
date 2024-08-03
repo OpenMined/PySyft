@@ -1,22 +1,20 @@
 # stdlib
 from secrets import token_hex
 
-# third party
-from faker import Faker
 import pytest
 
 # syft absolute
 import syft as sy
-from syft import SyftError
-from syft import SyftSuccess
+
+# third party
+from faker import Faker
+from syft import SyftError, SyftSuccess
 from syft.client.api import SyftAPICall
 from syft.client.datasite_client import DatasiteClient
 from syft.server.server import get_default_root_email
 from syft.server.worker import Worker
 from syft.service.context import AuthedServiceContext
-from syft.service.user.user import ServiceRole
-from syft.service.user.user import UserCreate
-from syft.service.user.user import UserView
+from syft.service.user.user import ServiceRole, UserCreate, UserView
 
 GUEST_ROLES = [ServiceRole.GUEST]
 DS_ROLES = [ServiceRole.GUEST, ServiceRole.DATA_SCIENTIST]
@@ -45,7 +43,7 @@ def get_mock_client(root_client, role) -> DatasiteClient:
         name=name, email=mail, password=password, password_verify=password,
     )
     assert user
-    user_id = [u for u in get_users(worker) if u.email == mail][0].id
+    user_id = next(u for u in get_users(worker) if u.email == mail).id
     assert worker.root_client.api.services.user.update(uid=user_id, role=role)
     client = client.login(email=mail, password=password)
     client._fetch_api(client.credentials)
@@ -66,29 +64,29 @@ def manually_call_service(worker, client, service, args=None, kwargs=None):
     return signed_result.message.data
 
 
-@pytest.fixture
+@pytest.fixture()
 def guest_client(worker) -> DatasiteClient:
     return get_mock_client(worker.root_client, ServiceRole.GUEST)
 
 
-@pytest.fixture
+@pytest.fixture()
 def ds_client(worker) -> DatasiteClient:
     return get_mock_client(worker.root_client, ServiceRole.DATA_SCIENTIST)
 
 
-@pytest.fixture
+@pytest.fixture()
 def do_client(worker) -> DatasiteClient:
     return get_mock_client(worker.root_client, ServiceRole.DATA_OWNER)
 
 
 # this shadows the normal conftests.py/root_client, but I am experiencing a lot of problems
 # with that fixture
-@pytest.fixture
+@pytest.fixture()
 def root_client(worker):
     return get_mock_client(worker.root_client, ServiceRole.DATA_OWNER)
 
 
-def test_read_user(worker, root_client, do_client, ds_client, guest_client):
+def test_read_user(worker, root_client, do_client, ds_client, guest_client) -> None:
     for client in [ds_client, guest_client]:
         assert not manually_call_service(worker, client, "user.get_all")
 
@@ -96,7 +94,7 @@ def test_read_user(worker, root_client, do_client, ds_client, guest_client):
         assert manually_call_service(worker, client, "user.get_all")
 
 
-def test_read_returns_view(root_client):
+def test_read_returns_view(root_client) -> None:
     # Test reading returns userview (and not real user), this wasnt the case, adding this as a sanity check
     users = root_client.api.services.user
     assert len(list(users))
@@ -105,7 +103,7 @@ def test_read_returns_view(root_client):
         assert isinstance(root_client.api.services.user[0], UserView)
 
 
-def test_user_create(worker, do_client, guest_client, ds_client, root_client):
+def test_user_create(worker, do_client, guest_client, ds_client, root_client) -> None:
     for client in [ds_client, guest_client]:
         assert not manually_call_service(worker, client, "user.create")
     for client in [do_client, root_client]:
@@ -118,7 +116,7 @@ def test_user_create(worker, do_client, guest_client, ds_client, root_client):
         assert isinstance(res, UserView)
 
 
-def test_user_delete(do_client, guest_client, ds_client, worker, root_client):
+def test_user_delete(do_client, guest_client, ds_client, worker, root_client) -> None:
     # admins can delete lower users
     clients = [get_mock_client(root_client, role) for role in DO_ROLES]
     for c in clients:
@@ -156,7 +154,7 @@ def test_user_delete(do_client, guest_client, ds_client, worker, root_client):
         assert not guest_client.api.services.user.delete(c.user_id)
 
 
-def test_user_update_roles(do_client, guest_client, ds_client, root_client, worker):
+def test_user_update_roles(do_client, guest_client, ds_client, root_client, worker) -> None:
     # admins can update the roles of lower roles
     clients = [get_mock_client(root_client, role) for role in DO_ROLES]
     for _c in clients:
@@ -209,7 +207,7 @@ def test_user_update_roles(do_client, guest_client, ds_client, root_client, work
             )
 
 
-def test_user_update(root_client):
+def test_user_update(root_client) -> None:
     executing_clients = [get_mock_client(root_client, role) for role in ADMIN_ROLES]
     target_clients = [get_mock_client(root_client, role) for role in ADMIN_ROLES]
 
@@ -268,7 +266,7 @@ def test_user_view_set_invalid_email(
 
 
 @pytest.mark.parametrize(
-    "valid_email_root, valid_email_ds",
+    ("valid_email_root", "valid_email_ds"),
     [
         ("syft@gmail.com", "syft_ds@gmail.com"),
         ("syft@openmined.com", "syft_ds@openmined.com"),

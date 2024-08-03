@@ -6,9 +6,7 @@ from typing import Any
 from ...client.api import APIRegistry
 from ...serde.serializable import serializable
 from ...service.user.user_roles import ServiceRole
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
-from ...types.syft_object import SyftVerifyKey
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject, SyftVerifyKey
 from ...types.uid import UID
 from ...util.notebook_ui.components.tabulator_template import (
     build_tabulator_table_with_data,

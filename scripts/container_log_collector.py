@@ -1,8 +1,7 @@
 # stdlib
 import os
-from pathlib import Path
-from pathlib import PosixPath
 import subprocess
+from pathlib import Path, PosixPath
 
 # Make a log directory
 log_path = Path("logs")
@@ -34,7 +33,6 @@ for container in containers:
     path = job_path / container_name
     path.write_text(container_logs, encoding="utf-8")
 
-for file in job_path.iterdir():
-    print(file)
+for _file in job_path.iterdir():
+    pass
 
-print("============Log export completed for job: ", job_name)

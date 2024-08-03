@@ -6,8 +6,7 @@ import numpy as np
 import pyarrow as pa
 
 # relative
-from ..util.experimental_flags import ApacheArrowCompression
-from ..util.experimental_flags import flags
+from ..util.experimental_flags import ApacheArrowCompression, flags
 from .deserialize import _deserialize
 from .serialize import _serialize
 
@@ -57,16 +56,19 @@ def numpyutf8toarray(input_index: np.ndarray) -> np.ndarray:
     """Decodes utf-8 encoded numpy array to string numpy array.
 
     Args:
+    ----
         input_index (np.ndarray): utf-8 encoded array
 
     Returns:
+    -------
         np.ndarray: decoded NumpyArray.
+
     """
     shape_length = int(input_index[-1])
-    shape = tuple(input_index[-(shape_length + 1) : -1])  # noqa
+    shape = tuple(input_index[-(shape_length + 1) : -1])
     string_index = input_index[: -(shape_length + 1)]
     index_length = int(string_index[-1])
-    index_array = string_index[-(index_length + 1) : -1]  # noqa
+    index_array = string_index[-(index_length + 1) : -1]
     string_array: np.ndarray = string_index[: -(index_length + 1)]
     output_bytes: bytes = string_array.astype(np.uint8).tobytes()
     output_list = []
@@ -83,10 +85,13 @@ def arraytonumpyutf8(string_list: str | np.ndarray) -> bytes:
     """Encodes string Numpyarray  to utf-8 encoded numpy array.
 
     Args:
+    ----
         string_list (np.ndarray): NumpyArray to be encoded
 
     Returns:
+    -------
         bytes: serialized utf-8 encoded int Numpy array
+
     """
     array_shape = np.array(string_list).shape
     string_list = np.array(string_list).flatten()

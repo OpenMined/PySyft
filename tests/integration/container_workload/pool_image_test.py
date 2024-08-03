@@ -1,5 +1,6 @@
 # stdlib
 import os
+from typing import TYPE_CHECKING
 from uuid import uuid4
 
 # third party
@@ -8,17 +9,13 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.custom_worker.config import DockerWorkerConfig
-from syft.custom_worker.config import PrebuiltWorkerConfig
+from syft.custom_worker.config import DockerWorkerConfig, PrebuiltWorkerConfig
 from syft.service.request.request import Request
-from syft.service.response import SyftError
-from syft.service.response import SyftSuccess
+from syft.service.response import SyftError, SyftSuccess
 from syft.service.worker.worker_image import SyftWorkerImage
-from syft.service.worker.worker_pool import SyftWorker
-from syft.service.worker.worker_pool import WorkerPool
+from syft.service.worker.worker_pool import SyftWorker, WorkerPool
 from syft.types.uid import UID
 from syft.util.util import get_latest_tag
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from syft.client.datasite_client import DatasiteClient
@@ -33,7 +30,7 @@ external_registry_username = os.getenv("EXTERNAL_REGISTRY_USERNAME", None)
 external_registry_password = os.getenv("EXTERNAL_REGISTRY_PASSWORD", None)
 
 
-@pytest.fixture
+@pytest.fixture()
 def external_registry_uid(datasite_1_port: int) -> UID:
     datasite_client: DatasiteClient = sy.login(
         port=datasite_1_port, email="info@openmined.org", password="changethis",
@@ -68,7 +65,7 @@ def make_docker_config_test_case(pkg: str) -> tuple[str, str]:
     )
 
 
-@pytest.mark.container_workload
+@pytest.mark.container_workload()
 def test_image_build(datasite_1_port: int, external_registry_uid: UID) -> None:
     datasite_client: DatasiteClient = sy.login(
         port=datasite_1_port, email="info@openmined.org", password="changethis",
@@ -104,7 +101,7 @@ def test_image_build(datasite_1_port: int, external_registry_uid: UID) -> None:
     assert workerimage.image_hash is not None
 
 
-@pytest.mark.container_workload
+@pytest.mark.container_workload()
 # @pytest.mark.parametrize("prebuilt", [True, False])
 @pytest.mark.parametrize("prebuilt", [False])
 def test_pool_launch(
@@ -205,15 +202,14 @@ def test_pool_launch(
     # TODO: delete the launched pool
 
 
-@pytest.mark.container_workload
+@pytest.mark.container_workload()
 @pytest.mark.parametrize("prebuilt", [True, False])
 def test_pool_image_creation_job_requests(
     datasite_1_port: int, external_registry_uid: UID, prebuilt: bool,
 ) -> None:
-    """
-    Test register ds client, ds requests to create an image and pool creation,
+    """Test register ds client, ds requests to create an image and pool creation,
     do approves, then ds creates a function attached to the worker pool, then creates another
-    request. DO approves and runs the function
+    request. DO approves and runs the function.
     """
     # construct a root client and data scientist client for the test datasite
     datasite_client: DatasiteClient = sy.login(

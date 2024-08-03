@@ -1,18 +1,15 @@
 # stdlib
-from collections import defaultdict
 import logging
-from typing import Any, TYPE_CHECKING
+from collections import defaultdict
+from typing import TYPE_CHECKING, Any
 
 # third party
-from result import Err
-from result import Ok
-from result import Result
+from result import Err, Ok, Result
 
 # relative
 from ...client.api import ServerIdentity
 from ...serde.serializable import serializable
-from ...store.document_store import BaseStash
-from ...store.document_store import DocumentStore
+from ...store.document_store import BaseStash, DocumentStore
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.syft_object import SyftObject
@@ -20,18 +17,17 @@ from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_object import ActionObject
-from ..action.action_permissions import ActionObjectPermission
-from ..action.action_permissions import ActionPermission
-from ..action.action_permissions import StoragePermission
+from ..action.action_permissions import (
+    ActionObjectPermission,
+    ActionPermission,
+    StoragePermission,
+)
 from ..api.api import TwinAPIEndpoint
 from ..code.user_code import UserCodeStatusCollection
 from ..context import AuthedServiceContext
 from ..job.job_stash import Job
-from ..response import SyftError
-from ..response import SyftSuccess
-from ..service import AbstractService
-from ..service import TYPE_TO_SERVICE
-from ..service import service_method
+from ..response import SyftError, SyftSuccess
+from ..service import TYPE_TO_SERVICE, AbstractService, service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from .sync_stash import SyncStash
 from .sync_state import SyncState
@@ -56,7 +52,7 @@ class SyncService(AbstractService):
     store: DocumentStore
     stash: SyncStash
 
-    def __init__(self, store: DocumentStore):
+    def __init__(self, store: DocumentStore) -> None:
         self.store = store
         self.stash = SyncStash(store=store)
 
@@ -110,7 +106,7 @@ class SyncService(AbstractService):
             identity = ServerIdentity.from_server(context.server)
             res = {}
             for key in item.status_dict:
-                # todo, check if they are actually only two servers
+                # TODO, check if they are actually only two servers
                 res[identity] = item.status_dict[key]
             item.status_dict = res
 
@@ -282,9 +278,7 @@ class SyncService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> Result[tuple[list[SyncableSyftObject], dict[UID, str]], str]:
-        """
-        Returns all Jobs, along with their Logs, ExecutionOutputs and ActionObjects
-        """
+        """Returns all Jobs, along with their Logs, ExecutionOutputs and ActionObjects."""
         items_for_jobs = []
         errors = {}
 

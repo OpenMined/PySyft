@@ -11,7 +11,7 @@ from syft.server.server import Server
 
 
 @pytest.mark.parametrize("server_type", ["datasite", "gateway", "enclave"])
-def test_orchestra_python_local(server_type):
+def test_orchestra_python_local(server_type) -> None:
     name = token_hex(8)
     server = sy.orchestra.launch(name=name, server_type=server_type, local_db=False)
 
@@ -26,7 +26,7 @@ def test_orchestra_python_local(server_type):
 
 
 @pytest.mark.parametrize("server_type", ["datasite", "gateway", "enclave"])
-def test_orchestra_python_server(server_type):
+def test_orchestra_python_server(server_type) -> None:
     name = token_hex(8)
     server = sy.orchestra.launch(
         name=name,

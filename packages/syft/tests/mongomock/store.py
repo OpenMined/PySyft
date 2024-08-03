@@ -8,10 +8,10 @@ from .helpers import utcnow
 from .thread import RWLock
 
 
-class ServerStore(object):
+class ServerStore:
     """Object holding the data for a whole server (many databases)."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._databases = {}
 
     def __getitem__(self, db_name):
@@ -21,17 +21,17 @@ class ServerStore(object):
             db = self._databases[db_name] = DatabaseStore()
             return db
 
-    def __contains__(self, db_name):
+    def __contains__(self, db_name) -> bool:
         return self[db_name].is_created
 
     def list_created_database_names(self):
         return [name for name, db in self._databases.items() if db.is_created]
 
 
-class DatabaseStore(object):
+class DatabaseStore:
     """Object holding the data for a database (many collections)."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._collections = {}
 
     def __getitem__(self, col_name):
@@ -41,7 +41,7 @@ class DatabaseStore(object):
             col = self._collections[col_name] = CollectionStore(col_name)
             return col
 
-    def __contains__(self, col_name):
+    def __contains__(self, col_name) -> bool:
         return self[col_name].is_created
 
     def list_created_collection_names(self):
@@ -52,7 +52,7 @@ class DatabaseStore(object):
         col.create()
         return col
 
-    def rename(self, name, new_name):
+    def rename(self, name, new_name) -> None:
         col = self._collections.pop(name, CollectionStore(new_name))
         col.name = new_name
         self._collections[new_name] = col
@@ -62,10 +62,10 @@ class DatabaseStore(object):
         return any(col.is_created for col in self._collections.values())
 
 
-class CollectionStore(object):
+class CollectionStore:
     """Object holding the data for a collection."""
 
-    def __init__(self, name):
+    def __init__(self, name) -> None:
         self._documents = collections.OrderedDict()
         self.indexes = {}
         self._is_force_created = False
@@ -75,25 +75,25 @@ class CollectionStore(object):
         # 694 - Lock for safely iterating and mutating OrderedDicts
         self._rwlock = RWLock()
 
-    def create(self):
+    def create(self) -> None:
         self._is_force_created = True
 
     @property
     def is_created(self):
         return self._documents or self.indexes or self._is_force_created
 
-    def drop(self):
+    def drop(self) -> None:
         self._documents = collections.OrderedDict()
         self.indexes = {}
         self._ttl_indexes = {}
         self._is_force_created = False
 
-    def create_index(self, index_name, index_dict):
+    def create_index(self, index_name, index_dict) -> None:
         self.indexes[index_name] = index_dict
         if index_dict.get("expireAfterSeconds") is not None:
             self._ttl_indexes[index_name] = index_dict
 
-    def drop_index(self, index_name):
+    def drop_index(self, index_name) -> None:
         self._remove_expired_documents()
 
         # The main index object should raise a KeyError, but the
@@ -102,11 +102,11 @@ class CollectionStore(object):
         self._ttl_indexes.pop(index_name, None)
 
     @property
-    def is_empty(self):
+    def is_empty(self) -> bool:
         self._remove_expired_documents()
         return not self._documents
 
-    def __contains__(self, key):
+    def __contains__(self, key) -> bool:
         self._remove_expired_documents()
         with self._rwlock.reader():
             return key in self._documents
@@ -116,15 +116,15 @@ class CollectionStore(object):
         with self._rwlock.reader():
             return self._documents[key]
 
-    def __setitem__(self, key, val):
+    def __setitem__(self, key, val) -> None:
         with self._rwlock.writer():
             self._documents[key] = val
 
-    def __delitem__(self, key):
+    def __delitem__(self, key) -> None:
         with self._rwlock.writer():
             del self._documents[key]
 
-    def __len__(self):
+    def __len__(self) -> int:
         self._remove_expired_documents()
         with self._rwlock.reader():
             return len(self._documents)
@@ -133,14 +133,13 @@ class CollectionStore(object):
     def documents(self):
         self._remove_expired_documents()
         with self._rwlock.reader():
-            for doc in self._documents.values():
-                yield doc
+            yield from self._documents.values()
 
-    def _remove_expired_documents(self):
+    def _remove_expired_documents(self) -> None:
         for index in self._ttl_indexes.values():
             self._expire_documents(index)
 
-    def _expire_documents(self, index):
+    def _expire_documents(self, index) -> None:
         # TODO(juannyg): use a caching mechanism to avoid re-expiring the documents if
         # we just did and no document was added / updated
 
@@ -180,12 +179,12 @@ def _get_min_datetime_from_value(val):
     if not val:
         return datetime.datetime.max
     if isinstance(val, list):
-        return functools.reduce(_min_dt, [datetime.datetime.max] + val)
+        return functools.reduce(_min_dt, [datetime.datetime.max, *val])
     return val
 
 
 def _min_dt(dt1, dt2):
     try:
-        return dt1 if dt1 < dt2 else dt2
+        return min(dt2, dt1)
     except TypeError:
         return dt1

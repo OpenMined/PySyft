@@ -11,25 +11,21 @@ from ...service.action.action_object import ActionObject
 from ...store.blob_storage import BlobRetrieval
 from ...store.blob_storage.on_disk import OnDiskBlobDeposit
 from ...store.blob_storage.seaweedfs import SeaweedFSBlobDeposit
-from ...store.document_store import DocumentStore
-from ...store.document_store import UIDPartitionKey
-from ...types.blob_storage import AzureSecureFilePathLocation
-from ...types.blob_storage import BlobFileType
-from ...types.blob_storage import BlobStorageEntry
-from ...types.blob_storage import BlobStorageMetadata
-from ...types.blob_storage import CreateBlobStorageEntry
-from ...types.blob_storage import SeaweedSecureFilePathLocation
+from ...store.document_store import DocumentStore, UIDPartitionKey
+from ...types.blob_storage import (
+    AzureSecureFilePathLocation,
+    BlobFileType,
+    BlobStorageEntry,
+    BlobStorageMetadata,
+    CreateBlobStorageEntry,
+    SeaweedSecureFilePathLocation,
+)
 from ...types.uid import UID
 from ..context import AuthedServiceContext
-from ..response import SyftError
-from ..response import SyftSuccess
-from ..service import AbstractService
-from ..service import TYPE_TO_SERVICE
-from ..service import service_method
-from ..user.user_roles import ADMIN_ROLE_LEVEL
-from ..user.user_roles import GUEST_ROLE_LEVEL
-from .remote_profile import AzureRemoteProfile
-from .remote_profile import RemoteProfileStash
+from ..response import SyftError, SyftSuccess
+from ..service import TYPE_TO_SERVICE, AbstractService, service_method
+from ..user.user_roles import ADMIN_ROLE_LEVEL, GUEST_ROLE_LEVEL
+from .remote_profile import AzureRemoteProfile, RemoteProfileStash
 from .stash import BlobStorageStash
 
 BlobDepositType = OnDiskBlobDeposit | SeaweedFSBlobDeposit
@@ -96,8 +92,7 @@ class BlobStorageService(AbstractService):
 
         # TODO: possible wrap this in try catch
         cfg = context.server.blob_store_config.client_config
-        init_request = requests.post(url=cfg.mount_url, json=args_dict)  # nosec
-        print(init_request.content)
+        requests.post(url=cfg.mount_url, json=args_dict)  # nosec
         # TODO check return code
         res = context.server.blob_storage_client.connect().client.list_objects(
             Bucket=bucket_name,
@@ -226,12 +221,12 @@ class BlobStorageService(AbstractService):
         obj: CreateBlobStorageEntry,
         uploaded_by: SyftVerifyKey | None = None,
     ) -> BlobDepositType | SyftError:
-        """
-        Allocate a secure location for the blob storage entry.
+        """Allocate a secure location for the blob storage entry.
 
         If uploaded_by is None, the credentials of the context will be used.
 
         Args:
+        ----
             context (AuthedServiceContext): context
             obj (CreateBlobStorageEntry): create blob parameters
             uploaded_by (SyftVerifyKey | None, optional): Uploader credentials.
@@ -239,7 +234,9 @@ class BlobStorageService(AbstractService):
                 Defaults to None.
 
         Returns:
+        -------
             BlobDepositType | SyftError: Blob deposit
+
         """
         upload_credentials = uploaded_by or context.credentials
 

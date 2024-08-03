@@ -1,18 +1,14 @@
 # stdlib
 import base64
+import json
+import os
 from collections.abc import Iterable
 from enum import Enum
 from functools import cache
-import json
-import os
 
 # third party
 import kr8s
-from kr8s.objects import APIObject
-from kr8s.objects import ConfigMap
-from kr8s.objects import Pod
-from kr8s.objects import Secret
-from kr8s.objects import Service
+from kr8s.objects import APIObject, ConfigMap, Pod, Secret, Service
 from pydantic import BaseModel
 from typing_extensions import Self
 
@@ -103,8 +99,7 @@ def get_kr8s_client() -> kr8s.Api:
 
 
 class KubeUtils:
-    """
-    This class contains utility functions for interacting with kubernetes objects.
+    """This class contains utility functions for interacting with kubernetes objects.
 
     DO NOT call `get_kr8s_client()` inside this class, instead pass it as an argument to the functions.
     This is to avoid calling these functions on resources across namespaces!
@@ -112,7 +107,7 @@ class KubeUtils:
 
     @staticmethod
     def resolve_pod(client: kr8s.Api, pod: str | Pod) -> Pod | None:
-        """Return the first pod that matches the given name"""
+        """Return the first pod that matches the given name."""
         if isinstance(pod, Pod):
             return pod
 
@@ -255,7 +250,6 @@ class KubeUtils:
     @staticmethod
     def patch_env_vars(env_list: list[dict], env_dict: dict) -> list[dict]:
         """Patch kubernetes pod environment variables in the list with the provided dictionary."""
-
         # update existing
         for item in env_list:
             k = item["name"]

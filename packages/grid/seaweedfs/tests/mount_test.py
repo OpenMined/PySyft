@@ -1,8 +1,8 @@
 # stdlib
-from pathlib import Path
 import re
-from secrets import token_hex
 import shutil
+from pathlib import Path
+from secrets import token_hex
 from subprocess import CompletedProcess
 
 # third party
@@ -11,8 +11,7 @@ from pytest_subprocess.fake_popen import FakePopen
 
 # first party
 # from src.mount import create_mount_dotenv
-from src.mount import mount_bucket
-from src.mount import seaweed_safe_config_name
+from src.mount import mount_bucket, seaweed_safe_config_name
 from src.mount_options import MountOptions
 
 

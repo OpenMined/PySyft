@@ -6,21 +6,25 @@ from typing import Any
 # third party
 from typing_extensions import Self
 
-# relative
-from . import BlobDeposit
-from . import BlobRetrieval
-from . import BlobStorageClient
-from . import BlobStorageClientConfig
-from . import BlobStorageConfig
-from . import BlobStorageConnection
-from . import SyftObjectRetrieval
 from ...serde.serializable import serializable
-from ...service.response import SyftError
-from ...service.response import SyftSuccess
-from ...types.blob_storage import BlobStorageEntry
-from ...types.blob_storage import CreateBlobStorageEntry
-from ...types.blob_storage import SecureFilePathLocation
+from ...service.response import SyftError, SyftSuccess
+from ...types.blob_storage import (
+    BlobStorageEntry,
+    CreateBlobStorageEntry,
+    SecureFilePathLocation,
+)
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+
+# relative
+from . import (
+    BlobDeposit,
+    BlobRetrieval,
+    BlobStorageClient,
+    BlobStorageClientConfig,
+    BlobStorageConfig,
+    BlobStorageConnection,
+    SyftObjectRetrieval,
+)
 
 
 @serializable()
@@ -51,7 +55,7 @@ class OnDiskBlobStorageConnection(BlobStorageConnection):
     def __enter__(self) -> Self:
         return self
 
-    def __exit__(self, *exc: Any) -> None:
+    def __exit__(self, *exc: object) -> None:
         pass
 
     def read(
@@ -94,7 +98,7 @@ class OnDiskBlobStorageClientConfig(BlobStorageClientConfig):
 class OnDiskBlobStorageClient(BlobStorageClient):
     config: OnDiskBlobStorageClientConfig
 
-    def __init__(self, **data: Any):
+    def __init__(self, **data: Any) -> None:
         super().__init__(**data)
         self.config.base_directory.mkdir(exist_ok=True)
 

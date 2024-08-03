@@ -1,21 +1,23 @@
 # stdlib
-from itertools import chain
-from itertools import combinations
 import json
+from itertools import chain, combinations
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-# third party
-from pydantic import BaseModel
 import pytest
-import yaml
 
 # syft absolute
 import syft as sy
-from syft.custom_worker.config import CustomBuildConfig
-from syft.custom_worker.config import CustomWorkerConfig
-from syft.custom_worker.config import DockerWorkerConfig
+import yaml
+
+# third party
+from pydantic import BaseModel
+from syft.custom_worker.config import (
+    CustomBuildConfig,
+    CustomWorkerConfig,
+    DockerWorkerConfig,
+)
 
 
 # in Pydantic v2 this would just be model.model_dump(mode='json')
@@ -52,13 +54,12 @@ CUSTOM_BUILD_CONFIG = {
 def generate_partial_custom_build_configs(
     full_config: dict[str, Any],
 ) -> list[dict[str, Any]]:
-    """
-    generate_partial_custom_build_configs({
+    """generate_partial_custom_build_configs({
         "gpu": True,
         "python_packages": ["toolz==0.12.0"],
         "system_packages": ["curl"],
         "custom_cmds": ["echo Hello"],
-    })
+    }).
 
     would return
 
@@ -107,14 +108,14 @@ def get_full_build_config(build_config: dict[str, Any]) -> dict[str, Any]:
     return {**DEFAULT_BUILD_CONFIG, **build_config}
 
 
-@pytest.fixture
+@pytest.fixture()
 def worker_config(
     build_config: dict[str, Any], worker_config_version: str | None,
 ) -> dict[str, Any]:
-    yield get_worker_config(build_config, worker_config_version)
+    return get_worker_config(build_config, worker_config_version)
 
 
-@pytest.fixture
+@pytest.fixture()
 def worker_config_yaml(tmp_path: Path, worker_config: dict[str, Any]) -> Path:
     file_name = f"{uuid4().hex}.yaml"
     file_path = tmp_path / file_name
@@ -172,7 +173,7 @@ DOCKER_CONFIG_OPENDP = f"""
 """
 
 
-@pytest.fixture
+@pytest.fixture()
 def dockerfile_path(tmp_path: Path) -> Path:
     file_name = f"{uuid4().hex}.Dockerfile"
     file_path = tmp_path / file_name

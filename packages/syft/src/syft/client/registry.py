@@ -1,27 +1,27 @@
 # future
 from __future__ import annotations
 
-# stdlib
-from concurrent import futures
 import json
 import logging
 import os
-from typing import Any, TYPE_CHECKING
+
+# stdlib
+from concurrent import futures
+from typing import TYPE_CHECKING, Any
 
 # third party
 import pandas as pd
 import requests
 
 # relative
-from ..service.network.server_peer import ServerPeer
-from ..service.network.server_peer import ServerPeerConnectionStatus
+from ..service.network.server_peer import ServerPeer, ServerPeerConnectionStatus
 from ..service.response import SyftException
 from ..types.server_url import ServerURL
 from ..util.constants import DEFAULT_TIMEOUT
 
 if TYPE_CHECKING:
-    from .client import SyftClient as Client
     from ..service.metadata.server_metadata import ServerMetadataJSON
+    from .client import SyftClient as Client
 
 logger = logging.getLogger(__name__)
 NETWORK_REGISTRY_URL = (
@@ -266,7 +266,7 @@ class DatasiteRegistry:
             try:
                 network_client = NetworkRegistry.create_client(network)
             except Exception as e:
-                logger.error(f"Error in creating network client {e}")
+                logger.exception(f"Error in creating network client {e}")
                 continue
 
             datasites: list[ServerPeer] = network_client.datasites.retrieve_servers()

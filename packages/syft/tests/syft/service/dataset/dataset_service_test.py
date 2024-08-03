@@ -6,22 +6,19 @@ from uuid import uuid4
 # third party
 import numpy as np
 import pandas as pd
-from pydantic import ValidationError
 import pytest
-import torch
 
 # syft absolute
 import syft as sy
+import torch
+from pydantic import ValidationError
 from syft.server.worker import Worker
-from syft.service.action.action_object import ActionObject
-from syft.service.action.action_object import TwinMode
+from syft.service.action.action_object import ActionObject, TwinMode
 from syft.service.blob_storage.util import can_upload_to_blob_storage
+from syft.service.dataset.dataset import _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE
 from syft.service.dataset.dataset import CreateAsset as Asset
 from syft.service.dataset.dataset import CreateDataset as Dataset
-from syft.service.dataset.dataset import _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE
-from syft.service.response import SyftError
-from syft.service.response import SyftException
-from syft.service.response import SyftSuccess
+from syft.service.response import SyftError, SyftException, SyftSuccess
 
 
 def random_hash() -> str:
@@ -65,7 +62,7 @@ asset_with_empty_mock = pytest.fixture(make_asset_with_empty_mock)
 )
 def test_asset_without_mock_mock_is_real_must_be_false(
     asset_without_mock: dict[str, Any],
-):
+) -> None:
     asset = Asset(**asset_without_mock, mock_is_real=True)
     asset.mock_is_real = True
     assert not asset.mock_is_real
@@ -226,7 +223,7 @@ def test_datasite_client_cannot_upload_dataset_with_non_mock(worker: Worker) -> 
     assert _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE in str(excinfo.value)
 
 
-def test_adding_contributors_with_duplicate_email():
+def test_adding_contributors_with_duplicate_email() -> None:
     # Datasets
 
     dataset = Dataset(name="Sample  dataset")

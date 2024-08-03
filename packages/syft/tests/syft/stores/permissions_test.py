@@ -2,14 +2,16 @@
 import secrets
 
 # syft absolute
-from syft.service.action.action_permissions import ActionObjectPermission
-from syft.service.action.action_permissions import ActionPermission
-from syft.service.action.action_permissions import COMPOUND_ACTION_PERMISSION
-from syft.service.action.action_permissions import SyftVerifyKey
-from syft.service.action.action_permissions import UID
+from syft.service.action.action_permissions import (
+    COMPOUND_ACTION_PERMISSION,
+    UID,
+    ActionObjectPermission,
+    ActionPermission,
+    SyftVerifyKey,
+)
 
 
-def test_permission_string_round_trip():
+def test_permission_string_round_trip() -> None:
     for permission in ActionPermission:
         uid = UID()
         if permission in COMPOUND_ACTION_PERMISSION:

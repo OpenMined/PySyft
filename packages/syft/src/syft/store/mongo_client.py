@@ -7,90 +7,85 @@ from pymongo.collection import Collection as MongoCollection
 from pymongo.database import Database as MongoDatabase
 from pymongo.errors import ConnectionFailure
 from pymongo.mongo_client import MongoClient as PyMongoClient
-from result import Err
-from result import Ok
-from result import Result
+from result import Err, Ok, Result
 
 # relative
 from ..serde.serializable import serializable
-from .document_store import PartitionSettings
-from .document_store import StoreClientConfig
-from .document_store import StoreConfig
+from .document_store import PartitionSettings, StoreClientConfig, StoreConfig
 from .mongo_codecs import SYFT_CODEC_OPTIONS
 
 
 @serializable(canonical_name="MongoStoreClientConfig", version=1)
 class MongoStoreClientConfig(StoreClientConfig):
-    """
-    Paramaters:
-        `hostname`: optional string
-            hostname or IP address or Unix domain socket path of a single mongod or mongos
-            instance to connect to, or a mongodb URI, or a list of hostnames (but no more
-            than one mongodb URI). If `host` is an IPv6 literal it must be enclosed in '['
-            and ']' characters following the RFC2732 URL syntax (e.g. '[::1]' for localhost).
-            Multihomed and round robin DNS addresses are **not** supported.
-        `port` : optional int
-            port number on which to connect
-        `directConnection`: bool
-            if ``True``, forces this client to connect directly to the specified MongoDB host
-            as a standalone. If ``false``, the client connects to the entire replica set of which
-            the given MongoDB host(s) is a part. If this is ``True`` and a mongodb+srv:// URI
-            or a URI containing multiple seeds is provided, an exception will be raised.
-        `maxPoolSize`: int. Default 100
-            The maximum allowable number of concurrent connections to each connected server.
-            Requests to a server will block if there are `maxPoolSize` outstanding connections
-            to the requested server. Defaults to 100. Can be either 0 or None, in which case
-            there is no limit on the number of concurrent connections.
-        `minPoolSize` : int. Default 0
-            The minimum required number of concurrent connections that the pool will maintain
-            to each connected server. Default is 0.
-        `maxIdleTimeMS`: int
-            The maximum number of milliseconds that a connection can remain idle in the pool
-            before being removed and replaced. Defaults to `None` (no limit).
-        `appname`: string
-            The name of the application that created this MongoClient instance. The server will
-            log this value upon establishing each connection. It is also recorded in the slow
-            query log and profile collections.
-        `maxConnecting`: optional int
-            The maximum number of connections that each pool can establish concurrently.
-            Defaults to `2`.
-        `timeoutMS`: (integer or None)
-            Controls how long (in milliseconds) the driver will wait when executing an operation
-            (including retry attempts) before raising a timeout error. ``0`` or ``None`` means
-            no timeout.
-        `socketTimeoutMS`: (integer or None)
-            Controls how long (in milliseconds) the driver will wait for a response after sending
-            an ordinary (non-monitoring) database operation before concluding that a network error
-            has occurred. ``0`` or ``None`` means no timeout. Defaults to ``None`` (no timeout).
-        `connectTimeoutMS`: (integer or None)
-            Controls how long (in milliseconds) the driver will wait during server monitoring when
-            connecting a new socket to a server before concluding the server is unavailable.
-            ``0`` or ``None`` means no timeout. Defaults to ``20000`` (20 seconds).
-        `serverSelectionTimeoutMS`: (integer)
-            Controls how long (in milliseconds) the driver will wait to find an available, appropriate
-            server to carry out a database operation; while it is waiting, multiple server monitoring
-            operations may be carried out, each controlled by `connectTimeoutMS`.
-            Defaults to ``120000`` (120 seconds).
-        `waitQueueTimeoutMS`: (integer or None)
-            How long (in milliseconds) a thread will wait for a socket from the pool if the pool
-            has no free sockets. Defaults to ``None`` (no timeout).
-        `heartbeatFrequencyMS`: (optional)
-            The number of milliseconds between periodic server checks, or None to accept the default
-            frequency of 10 seconds.
-        # Auth
-        username: str
-            Database username
-        password: str
-            Database pass
-        authSource: str
-            The database to authenticate on.
-            Defaults to the database specified in the URI, if provided, or to “admin”.
-        tls: bool
-            If True, create the connection to the server using transport layer security.
-            Defaults to False.
-        # Testing and connection reuse
-        client: Optional[PyMongoClient]
-            If provided, this client is reused. Default = None
+    """Paramaters:
+    `hostname`: optional string
+        hostname or IP address or Unix domain socket path of a single mongod or mongos
+        instance to connect to, or a mongodb URI, or a list of hostnames (but no more
+        than one mongodb URI). If `host` is an IPv6 literal it must be enclosed in '['
+        and ']' characters following the RFC2732 URL syntax (e.g. '[::1]' for localhost).
+        Multihomed and round robin DNS addresses are **not** supported.
+    `port` : optional int
+        port number on which to connect
+    `directConnection`: bool
+        if ``True``, forces this client to connect directly to the specified MongoDB host
+        as a standalone. If ``false``, the client connects to the entire replica set of which
+        the given MongoDB host(s) is a part. If this is ``True`` and a mongodb+srv:// URI
+        or a URI containing multiple seeds is provided, an exception will be raised.
+    `maxPoolSize`: int. Default 100
+        The maximum allowable number of concurrent connections to each connected server.
+        Requests to a server will block if there are `maxPoolSize` outstanding connections
+        to the requested server. Defaults to 100. Can be either 0 or None, in which case
+        there is no limit on the number of concurrent connections.
+    `minPoolSize` : int. Default 0
+        The minimum required number of concurrent connections that the pool will maintain
+        to each connected server. Default is 0.
+    `maxIdleTimeMS`: int
+        The maximum number of milliseconds that a connection can remain idle in the pool
+        before being removed and replaced. Defaults to `None` (no limit).
+    `appname`: string
+        The name of the application that created this MongoClient instance. The server will
+        log this value upon establishing each connection. It is also recorded in the slow
+        query log and profile collections.
+    `maxConnecting`: optional int
+        The maximum number of connections that each pool can establish concurrently.
+        Defaults to `2`.
+    `timeoutMS`: (integer or None)
+        Controls how long (in milliseconds) the driver will wait when executing an operation
+        (including retry attempts) before raising a timeout error. ``0`` or ``None`` means
+        no timeout.
+    `socketTimeoutMS`: (integer or None)
+        Controls how long (in milliseconds) the driver will wait for a response after sending
+        an ordinary (non-monitoring) database operation before concluding that a network error
+        has occurred. ``0`` or ``None`` means no timeout. Defaults to ``None`` (no timeout).
+    `connectTimeoutMS`: (integer or None)
+        Controls how long (in milliseconds) the driver will wait during server monitoring when
+        connecting a new socket to a server before concluding the server is unavailable.
+        ``0`` or ``None`` means no timeout. Defaults to ``20000`` (20 seconds).
+    `serverSelectionTimeoutMS`: (integer)
+        Controls how long (in milliseconds) the driver will wait to find an available, appropriate
+        server to carry out a database operation; while it is waiting, multiple server monitoring
+        operations may be carried out, each controlled by `connectTimeoutMS`.
+        Defaults to ``120000`` (120 seconds).
+    `waitQueueTimeoutMS`: (integer or None)
+        How long (in milliseconds) a thread will wait for a socket from the pool if the pool
+        has no free sockets. Defaults to ``None`` (no timeout).
+    `heartbeatFrequencyMS`: (optional)
+        The number of milliseconds between periodic server checks, or None to accept the default
+        frequency of 10 seconds.
+    # Auth
+    username: str
+        Database username
+    password: str
+        Database pass
+    authSource: str
+        The database to authenticate on.
+        Defaults to the database specified in the URI, if provided, or to “admin”.
+    tls: bool
+        If True, create the connection to the server using transport layer security.
+        Defaults to False.
+    # Testing and connection reuse
+    client: Optional[PyMongoClient]
+        If provided, this client is reused. Default = None.
 
     """
 
@@ -217,9 +212,8 @@ class MongoClient:
     def with_collection_permissions(
         self, collection_settings: PartitionSettings, store_config: StoreConfig,
     ) -> Result[MongoCollection, Err]:
-        """
-        For each collection, create a corresponding collection
-        that store the permissions to the data in that collection
+        """For each collection, create a corresponding collection
+        that store the permissions to the data in that collection.
         """
         res = self.with_db(db_name=store_config.db_name)
         if res.is_err():
@@ -239,9 +233,8 @@ class MongoClient:
     def with_collection_storage_permissions(
         self, collection_settings: PartitionSettings, store_config: StoreConfig,
     ) -> Result[MongoCollection, Err]:
-        """
-        For each collection, create a corresponding collection
-        that store the permissions to the data in that collection
+        """For each collection, create a corresponding collection
+        that store the permissions to the data in that collection.
         """
         res = self.with_db(db_name=store_config.db_name)
         if res.is_err():

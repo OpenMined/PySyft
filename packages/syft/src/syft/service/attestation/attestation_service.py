@@ -9,14 +9,14 @@ from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...util.util import str_to_bool
 from ..context import AuthedServiceContext
-from ..response import SyftError
-from ..response import SyftSuccess
-from ..service import AbstractService
-from ..service import service_method
+from ..response import SyftError, SyftSuccess
+from ..service import AbstractService, service_method
 from ..user.user_roles import GUEST_ROLE_LEVEL
-from .attestation_constants import ATTESTATION_SERVICE_URL
-from .attestation_constants import ATTEST_CPU_ENDPOINT
-from .attestation_constants import ATTEST_GPU_ENDPOINT
+from .attestation_constants import (
+    ATTEST_CPU_ENDPOINT,
+    ATTEST_GPU_ENDPOINT,
+    ATTESTATION_SERVICE_URL,
+)
 
 
 @serializable(canonical_name="AttestationService", version=1)

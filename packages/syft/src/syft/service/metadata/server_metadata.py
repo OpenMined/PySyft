@@ -1,27 +1,21 @@
 # future
 from __future__ import annotations
 
-# stdlib
+from typing import TYPE_CHECKING
 
+# stdlib
 # third party
 from packaging import version
-from pydantic import BaseModel
-from pydantic import model_validator
+from pydantic import BaseModel, model_validator
 
 # relative
 from ...abstract_server import ServerType
 from ...protocol.data_protocol import get_data_protocol
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import StorableObjectType
-from ...types.syft_object import SyftObject
-from ...types.transforms import convert_types
-from ...types.transforms import drop
-from ...types.transforms import rename
-from ...types.transforms import transform
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, StorableObjectType, SyftObject
+from ...types.transforms import convert_types, drop, rename, transform
 from ...types.uid import UID
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -38,10 +32,7 @@ def check_version(
     )
     if client_syft_version.base_version != server_syft_version.base_version:
         raise ValueError(msg)
-    if client_syft_version.pre != server_syft_version.pre and not silent:
-        print(f"Warning: {msg}")
-        return False
-    return True
+    return not (client_syft_version.pre != server_syft_version.pre and not silent)
 
 
 @serializable()

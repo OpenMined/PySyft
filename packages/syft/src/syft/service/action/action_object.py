@@ -1,71 +1,53 @@
 # future
 from __future__ import annotations
 
-# stdlib
-from collections.abc import Callable
-from collections.abc import Iterable
-from enum import Enum
 import inspect
-from io import BytesIO
 import logging
-from pathlib import Path
 import sys
 import threading
 import time
 import traceback
 import types
-from typing import Any
-from typing import ClassVar
-from typing import TYPE_CHECKING
+
+# stdlib
+from collections.abc import Callable, Iterable
+from enum import Enum
+from io import BytesIO
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, ClassVar
 
 # third party
-from pydantic import ConfigDict
-from pydantic import Field
-from pydantic import field_validator
-from pydantic import model_validator
-from result import Err
-from result import Ok
-from result import Result
+from pydantic import ConfigDict, Field, field_validator, model_validator
+from result import Err, Ok, Result
 from typing_extensions import Self
 
 # relative
-from ...client.api import APIRegistry
-from ...client.api import SyftAPI
-from ...client.api import SyftAPICall
+from ...client.api import APIRegistry, SyftAPI, SyftAPICall
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize as serialize
 from ...service.blob_storage.util import can_upload_to_blob_storage
-from ...service.response import SyftError
-from ...service.response import SyftSuccess
-from ...service.response import SyftWarning
+from ...service.response import SyftError, SyftSuccess, SyftWarning
 from ...store.linked_obj import LinkedObject
 from ...types.base import SyftBaseModel
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftBaseObject
-from ...types.syft_object import SyftObject
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, SyftBaseObject, SyftObject
 from ...types.syncable_object import SyncableSyftObject
-from ...types.uid import LineageID
-from ...types.uid import UID
+from ...types.uid import UID, LineageID
 from ...util.util import prompt_warning_message
 from ..response import SyftException
 from ..service import from_api_or_context
-from .action_data_empty import ActionDataEmpty
-from .action_data_empty import ActionDataLink
-from .action_data_empty import ObjectNotReady
+from .action_data_empty import ActionDataEmpty, ActionDataLink, ObjectNotReady
 from .action_permissions import ActionPermission
-from .action_types import action_type_for_object
-from .action_types import action_type_for_type
-from .action_types import action_types
+from .action_types import action_type_for_object, action_type_for_type, action_types
 
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     # relative
-    from ..job.job_stash import Job
-    from ...types.datetime import DateTime
     from ...client.client import SyftClient
-    from ..context import AuthedServiceContext
     from ...server.credentials import SyftVerifyKey
+    from ...types.datetime import DateTime
+    from ..context import AuthedServiceContext
+    from ..job.job_stash import Job
     from ..sync.diff_state import AttrDiff
 
 NoneType = type(None)
@@ -97,7 +79,8 @@ def repr_cls(c: Any) -> str:
 class Action(SyftObject):
     """Serializable Action object.
 
-    Parameters:
+    Parameters
+    ----------
         path: str
             The path of the Type of the remote object.
         op: str
@@ -110,6 +93,7 @@ class Action(SyftObject):
             `op` kwargs
         result_id: Optional[LineageID]
             Extended UID of the resulted SyftObject
+
     """
 
     __canonical_name__ = "Action"
@@ -134,7 +118,7 @@ class Action(SyftObject):
 
     @property
     def full_path(self) -> str:
-        """Action path and operation"""
+        """Action path and operation."""
         return f"{self.path}.{self.op}"
 
     @property
@@ -430,9 +414,10 @@ class PreHookContext(SyftBaseObject):
 def make_action_side_effect(
     context: PreHookContext, *args: Any, **kwargs: Any,
 ) -> Result[Ok[tuple[PreHookContext, tuple[Any, ...], dict[str, Any]]], Err[str]]:
-    """Create a new action from context_op_name, and add it to the PreHookContext
+    """Create a new action from context_op_name, and add it to the PreHookContext.
 
-    Parameters:
+    Parameters
+    ----------
         context: PreHookContext
             PreHookContext object
         *args:
@@ -442,6 +427,7 @@ def make_action_side_effect(
     Returns:
         - Ok[[Tuple[PreHookContext, Tuple[Any, ...], Dict[str, Any]]] on success
         - Err[str] on failure
+
     """
     try:
         action = context.obj.syft_make_action_with_self(
@@ -453,7 +439,7 @@ def make_action_side_effect(
         context.action = action
     except Exception as e:
         msg = "make_action_side_effect failed"
-        logger.error(msg, exc_info=e)
+        logger.exception(msg, exc_info=e)
         return Err(f"{msg} with {traceback.format_exc()}")
 
     return Ok((context, args, kwargs))
@@ -527,7 +513,7 @@ def convert_to_pointers(
             arg.syft_server_uid = server_uid
             r = arg._save_to_blob_storage()
             if isinstance(r, SyftError):
-                print(r.message)
+                pass
             if isinstance(r, SyftWarning):
                 logger.debug(r.message)
             arg = api.services.action.set(arg)
@@ -570,9 +556,10 @@ def send_action_side_effect(
 def propagate_server_uid(
     context: PreHookContext, op: str, result: Any,
 ) -> Result[Ok[Any], Err[str]]:
-    """Patch the result to include the syft_server_uid
+    """Patch the result to include the syft_server_uid.
 
-    Parameters:
+    Parameters
+    ----------
         context: PreHookContext
             PreHookContext object
         op: str
@@ -582,6 +569,7 @@ def propagate_server_uid(
     Returns:
         - Ok[[result] on success
         - Err[str] on failure
+
     """
     if context.op_name in dont_make_side_effects or not hasattr(
         context.obj, "syft_server_uid",
@@ -754,7 +742,7 @@ class ActionObject(SyncableSyftObject):
         if self.syft_blob_storage_entry_id and self.syft_created_at:
             res = self.reload_cache()
             if isinstance(res, SyftError):
-                print(res)
+                pass
         return self.syft_action_data_cache
 
     def reload_cache(self) -> SyftError | None:
@@ -801,8 +789,7 @@ class ActionObject(SyncableSyftObject):
 
     def _save_to_blob_storage_(self, data: Any) -> SyftError | SyftWarning | None:
         # relative
-        from ...types.blob_storage import BlobFile
-        from ...types.blob_storage import CreateBlobStorageEntry
+        from ...types.blob_storage import BlobFile, CreateBlobStorageEntry
 
         if not isinstance(data, ActionDataEmpty):
             if isinstance(data, BlobFile):
@@ -887,8 +874,8 @@ class ActionObject(SyncableSyftObject):
             return SyftSuccess(
                 message=f"Saved action object {self.id} to the blob store",
             )
-        except Exception as e:
-            raise e
+        except Exception:
+            raise
 
     def _clear_cache(self) -> None:
         self.syft_action_data_cache = self.as_empty_data()
@@ -910,7 +897,7 @@ class ActionObject(SyncableSyftObject):
 
     @property
     def syft_lineage_id(self) -> LineageID:
-        """Compute the LineageID of the ActionObject, using the `id` and the `syft_history_hash` members"""
+        """Compute the LineageID of the ActionObject, using the `id` and the `syft_history_hash` members."""
         return LineageID(self.id, self.syft_history_hash)
 
     model_config = ConfigDict(validate_assignment=True)
@@ -947,7 +934,7 @@ class ActionObject(SyncableSyftObject):
         return self.syft_twin_type != TwinMode.NONE
 
     def syft_point_to(self, server_uid: UID) -> ActionObject:
-        """Set the syft_server_uid, used in the post hooks"""
+        """Set the syft_server_uid, used in the post hooks."""
         self.syft_server_uid = server_uid
         return self
 
@@ -972,24 +959,26 @@ class ActionObject(SyncableSyftObject):
     def syft_execute_action(
         self, action: Action, sync: bool = True,
     ) -> ActionObjectPointer:
-        """Execute a remote action
+        """Execute a remote action.
 
-        Parameters:
+        Parameters
+        ----------
             action: Action
                 Which action to execute
             sync: bool
                 Run sync/async
 
-        Returns:
+        Returns
+        -------
             ActionObjectPointer
+
         """
         if self.syft_server_uid is None:
             msg = "Pointers can't execute without a server_uid."
             raise SyftException(msg)
 
         # relative
-        from ...client.api import APIRegistry
-        from ...client.api import SyftAPICall
+        from ...client.api import APIRegistry, SyftAPICall
 
         api = APIRegistry.api_for(
             server_uid=self.syft_server_uid,
@@ -1009,8 +998,7 @@ class ActionObject(SyncableSyftObject):
 
     def request(self, client: SyftClient) -> Any | SyftError:
         # relative
-        from ..request.request import ActionStoreChange
-        from ..request.request import SubmitRequest
+        from ..request.request import ActionStoreChange, SubmitRequest
 
         action_object_link = LinkedObject.from_obj(
             self, server_uid=self.syft_server_uid,
@@ -1066,16 +1054,13 @@ class ActionObject(SyncableSyftObject):
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None:
-            print(
-                f"failed saving {obj} to blob storage, api is None. You must login to {self.syft_server_location}",
-            )
             return
         else:
             obj._set_obj_location_(api.server_uid, api.signing_key.verify_key)  # type: ignore[union-attr]
 
         res = api.services.action.execute(action)
         if isinstance(res, SyftError):
-            print(f"Failed to to store (arg) {obj} to store, {res}")
+            pass
 
     def _syft_prepare_obj_uid(self, obj: Any) -> LineageID:
         # We got the UID
@@ -1115,9 +1100,10 @@ class ActionObject(SyncableSyftObject):
         ) = None,
         action_type: ActionType | None = None,
     ) -> Action:
-        """Generate new action from the information
+        """Generate new action from the information.
 
-        Parameters:
+        Parameters
+        ----------
             path: str
                 The path of the Type of the remote object.
             op: str
@@ -1131,9 +1117,11 @@ class ActionObject(SyncableSyftObject):
         Returns:
             Action object
 
-        Raises:
+        Raises
+        ------
             ValueError: For invalid args or kwargs
             PydanticValidationError: For args and kwargs
+
         """
         if args is None:
             args = []
@@ -1162,7 +1150,8 @@ class ActionObject(SyncableSyftObject):
     ) -> Action:
         """Generate new method action from the current object.
 
-        Parameters:
+        Parameters
+        ----------
             op: str
                 The method to be executed from the remote object.
             args: List[LineageID]
@@ -1172,9 +1161,11 @@ class ActionObject(SyncableSyftObject):
         Returns:
             Action object
 
-        Raises:
+        Raises
+        ------
             ValueError: For invalid args or kwargs
             PydanticValidationError: For args and kwargs
+
         """
         path = self.syft_get_path()
         return self.syft_make_action(
@@ -1201,7 +1192,7 @@ class ActionObject(SyncableSyftObject):
             return []
 
     def syft_get_path(self) -> str:
-        """Get the type path of the underlying object"""
+        """Get the type path of the underlying object."""
         if (
             isinstance(self, AnyActionObject)
             and self.syft_internal_type
@@ -1217,12 +1208,15 @@ class ActionObject(SyncableSyftObject):
     ) -> Callable:
         """Generate a Callable object for remote calls.
 
-        Parameters:
+        Parameters
+        ----------
             op: str
                 he method to be executed from the remote object.
 
-        Returns:
+        Returns
+        -------
             A function
+
         """
 
         def wrapper(
@@ -1267,7 +1261,7 @@ class ActionObject(SyncableSyftObject):
         return res
 
     def get_from(self, client: SyftClient) -> Any:
-        """Get the object from a Syft Client"""
+        """Get the object from a Syft Client."""
         res = client.api.services.action.get(self.id)
         if not isinstance(res, ActionObject):
             return SyftError(message=f"{res}")
@@ -1301,7 +1295,7 @@ class ActionObject(SyncableSyftObject):
         return api.services.action.has_storage_permission(self.id)
 
     def get(self, block: bool = False) -> Any:
-        """Get the object from a Syft Client"""
+        """Get the object from a Syft Client."""
         # relative
 
         if block:
@@ -1402,13 +1396,15 @@ class ActionObject(SyncableSyftObject):
     ) -> ActionObject:
         """Create an ActionObject from an existing object.
 
-        Parameters:
+        Parameters
+        ----------
             syft_action_data: Any
                 The object to be converted to a Syft ActionObject
             id: Optional[UID]
                 Which ID to use for the ActionObject. Optional
             syft_lineage_id: Optional[LineageID]
                 Which LineageID to use for the ActionObject. Optional
+
         """
         if id is not None and syft_lineage_id is not None and id != syft_lineage_id.id:
             msg = "UID and LineageID should match"
@@ -1510,17 +1506,18 @@ class ActionObject(SyncableSyftObject):
         data_server_id: UID | None = None,
         syft_blob_storage_entry_id: UID | None = None,
     ) -> Self:
-        """Create an ActionObject from a type, using a ActionDataEmpty object
+        """Create an ActionObject from a type, using a ActionDataEmpty object.
 
-        Parameters:
+        Parameters
+        ----------
             syft_internal_type: Type
                 The Type for which to create a ActionDataEmpty object
             id: Optional[UID]
                 Which ID to use for the ActionObject. Optional
             syft_lineage_id: Optional[LineageID]
                 Which LineageID to use for the ActionObject. Optional
-        """
 
+        """
         syft_internal_type = (
             type(None) if syft_internal_type is None else syft_internal_type
         )
@@ -1569,14 +1566,14 @@ class ActionObject(SyncableSyftObject):
         self.syft_history_hash = hash(self.id)
 
     def _syft_add_pre_hooks__(self, eager_execution: bool) -> None:
-        """
-        Add pre-hooks
+        """Add pre-hooks.
 
         Args:
+        ----
             eager_execution: bool: If eager execution is enabled, hooks for
                 tracing and executing the action on remote are added.
-        """
 
+        """
         # this should be a list as orders matters
         for side_effect in [make_action_side_effect]:
             if side_effect not in self.syft_pre_hooks__[HOOK_ALWAYS]:
@@ -1591,12 +1588,13 @@ class ActionObject(SyncableSyftObject):
                 self.syft_pre_hooks__[HOOK_ALWAYS].append(trace_action_side_effect)
 
     def _syft_add_post_hooks__(self, eager_execution: bool) -> None:
-        """
-        Add post-hooks
+        """Add post-hooks.
 
         Args:
+        ----
             eager_execution: bool: If eager execution is enabled, hooks for
                 tracing and executing the action on remote are added.
+
         """
         if eager_execution:
             # this should be a list as orders matters
@@ -1607,7 +1605,7 @@ class ActionObject(SyncableSyftObject):
     def _syft_run_pre_hooks__(
         self, context: PreHookContext, name: str, args: Any, kwargs: Any,
     ) -> tuple[PreHookContext, tuple[Any, ...], dict[str, Any]]:
-        """Hooks executed before the actual call"""
+        """Hooks executed before the actual call."""
         result_args, result_kwargs = args, kwargs
         if name in self.syft_pre_hooks__:
             for hook in self.syft_pre_hooks__[name]:
@@ -1640,7 +1638,7 @@ class ActionObject(SyncableSyftObject):
     def _syft_run_post_hooks__(
         self, context: PreHookContext, name: str, result: Any,
     ) -> Any:
-        """Hooks executed after the actual call"""
+        """Hooks executed after the actual call."""
         new_result = result
         if name in self.syft_post_hooks__:
             for hook in self.syft_post_hooks__[name]:
@@ -1672,7 +1670,7 @@ class ActionObject(SyncableSyftObject):
     def _syft_output_action_object(
         self, result: Any, context: PreHookContext | None = None,
     ) -> Any:
-        """Wrap the result in an ActionObject"""
+        """Wrap the result in an ActionObject."""
         if issubclass(type(result), ActionObject):
             return result
 
@@ -1924,9 +1922,11 @@ class ActionObject(SyncableSyftObject):
          * use the syft/_syft prefix for internal methods.
          * add the method name to the passthrough_attrs.
 
-        Parameters:
+        Parameters
+        ----------
             name: str
                 The name of the attribute to access.
+
         """
         # bypass ipython canary verification
         if name == "_ipython_canary_method_should_not_exist_":
@@ -1995,18 +1995,17 @@ class ActionObject(SyncableSyftObject):
 
         if isinstance(self.syft_action_data_cache, ActionDataEmpty):
             data_repr_ = self.syft_action_data_repr_
+        elif inspect.isclass(self.syft_action_data_cache):
+            data_repr_ = repr_cls(self.syft_action_data_cache)
         else:
-            if inspect.isclass(self.syft_action_data_cache):
-                data_repr_ = repr_cls(self.syft_action_data_cache)
-            else:
-                data_repr_ = (
-                    self.syft_action_data_cache._repr_markdown_()
-                    if (
-                        self.syft_action_data_cache is not None
-                        and hasattr(self.syft_action_data_cache, "_repr_markdown_")
-                    )
-                    else self.syft_action_data_cache.__repr__()
+            data_repr_ = (
+                self.syft_action_data_cache._repr_markdown_()
+                if (
+                    self.syft_action_data_cache is not None
+                    and hasattr(self.syft_action_data_cache, "_repr_markdown_")
                 )
+                else self.syft_action_data_cache.__repr__()
+            )
 
         return f"\n**{res}**\n\n{data_repr_}\n"
 
@@ -2069,10 +2068,10 @@ class ActionObject(SyncableSyftObject):
     def __matmul__(self, other: Any) -> Any:
         return self._syft_output_action_object(self.__matmul__(other))
 
-    def __eq__(self, other: Any) -> Any:
+    def __eq__(self, other: object) -> Any:
         return self._syft_output_action_object(self.__eq__(other))
 
-    def __ne__(self, other: Any) -> Any:
+    def __ne__(self, other: object) -> Any:
         return self._syft_output_action_object(self.__ne__(other))
 
     def __lt__(self, other: Any) -> Any:
@@ -2191,8 +2190,7 @@ class ActionObject(SyncableSyftObject):
 
 @serializable()
 class AnyActionObject(ActionObject):
-    """
-    This is a catch-all class for all objects that are not
+    """This is a catch-all class for all objects that are not
     defined in the `action_types` dictionary.
     """
 

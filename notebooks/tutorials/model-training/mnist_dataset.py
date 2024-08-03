@@ -1,15 +1,14 @@
-"""
-Code for the MNIST dataset
-Source: https://github.com/google/jax/blob/main/examples/datasets.py
+"""Code for the MNIST dataset
+Source: https://github.com/google/jax/blob/main/examples/datasets.py.
 """
 
 # stdlib
 import array
 import gzip
 import os
-from os import path
 import struct
 import urllib.request
+from os import path
 
 # third party
 import numpy as np
@@ -25,7 +24,6 @@ def _download(url: str, filename: str) -> None:
     out_file = path.join(_DATA, filename)
     if not path.isfile(out_file):
         urllib.request.urlretrieve(url, out_file)
-        print(f"downloaded {url} to {_DATA}")
 
 
 def _partial_flatten(x) -> ndarray:

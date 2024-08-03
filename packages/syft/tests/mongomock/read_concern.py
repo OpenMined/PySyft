@@ -1,5 +1,5 @@
-class ReadConcern(object):
-    def __init__(self, level=None):
+class ReadConcern:
+    def __init__(self, level=None) -> None:
         self._document = {}
 
         if level is not None:
@@ -10,7 +10,7 @@ class ReadConcern(object):
         return self._document.get("level")
 
     @property
-    def ok_for_legacy(self):
+    def ok_for_legacy(self) -> bool:
         return True
 
     @property

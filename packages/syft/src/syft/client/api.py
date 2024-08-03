@@ -1,75 +1,60 @@
 # future
 from __future__ import annotations
 
+import inspect
+import types
+
 # stdlib
 from collections import OrderedDict
-import inspect
-from inspect import Parameter
-from inspect import signature
-import types
-from typing import Any
-from typing import TYPE_CHECKING
-from typing import _GenericAlias
-from typing import cast
-from typing import get_args
-from typing import get_origin
+from inspect import Parameter, signature
+from typing import TYPE_CHECKING, Any, _GenericAlias, cast, get_args, get_origin
 
 # third party
 from nacl.exceptions import BadSignatureError
-from pydantic import BaseModel
-from pydantic import ConfigDict
-from pydantic import EmailStr
-from pydantic import TypeAdapter
-from result import OkErr
-from result import Result
-from typeguard import TypeCheckError
-from typeguard import check_type
+from pydantic import BaseModel, ConfigDict, EmailStr, TypeAdapter
+from result import OkErr, Result
+from typeguard import TypeCheckError, check_type
 
 # relative
-from ..protocol.data_protocol import PROTOCOL_TYPE
-from ..protocol.data_protocol import get_data_protocol
-from ..protocol.data_protocol import migrate_args_and_kwargs
+from ..protocol.data_protocol import (
+    PROTOCOL_TYPE,
+    get_data_protocol,
+    migrate_args_and_kwargs,
+)
 from ..serde.deserialize import _deserialize
 from ..serde.serializable import serializable
 from ..serde.serialize import _serialize
-from ..serde.signature import Signature
-from ..serde.signature import signature_remove_context
-from ..serde.signature import signature_remove_self
-from ..server.credentials import SyftSigningKey
-from ..server.credentials import SyftVerifyKey
-from ..service.context import AuthedServiceContext
-from ..service.context import ChangeContext
-from ..service.response import SyftAttributeError
-from ..service.response import SyftError
-from ..service.response import SyftSuccess
-from ..service.service import UserLibConfigRegistry
-from ..service.service import UserServiceConfigRegistry
+from ..serde.signature import Signature, signature_remove_context, signature_remove_self
+from ..server.credentials import SyftSigningKey, SyftVerifyKey
+from ..service.context import AuthedServiceContext, ChangeContext
+from ..service.response import SyftAttributeError, SyftError, SyftSuccess
+from ..service.service import UserLibConfigRegistry, UserServiceConfigRegistry
 from ..service.user.user_roles import ServiceRole
-from ..service.warnings import APIEndpointWarning
-from ..service.warnings import WarningContext
+from ..service.warnings import APIEndpointWarning, WarningContext
 from ..types.cache_object import CachedSyftObject
 from ..types.identity import Identity
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
-from ..types.syft_object import SyftBaseObject
-from ..types.syft_object import SyftMigrationRegistry
-from ..types.syft_object import SyftObject
-from ..types.uid import LineageID
-from ..types.uid import UID
+from ..types.syft_object import (
+    SYFT_OBJECT_VERSION_1,
+    SyftBaseObject,
+    SyftMigrationRegistry,
+    SyftObject,
+)
+from ..types.uid import UID, LineageID
 from ..util.autoreload import autoreload_enabled
 from ..util.markdown import as_markdown_python_code
 from ..util.notebook_ui.components.tabulator_template import build_tabulator_table
 from ..util.telemetry import instrument
-from ..util.util import index_syft_by_module_name
-from ..util.util import prompt_warning_message
+from ..util.util import index_syft_by_module_name, prompt_warning_message
 
 if TYPE_CHECKING:
     # relative
-    from .connection import ServerConnection
-    from ..abstract_server import AbstractServer
-    from ..service.metadata.server_metadata import ServerMetadataJSON
     from collections.abc import Callable
+
+    from ..abstract_server import AbstractServer
     from ..server import Server
     from ..service.job.job_stash import Job
+    from ..service.metadata.server_metadata import ServerMetadataJSON
+    from .connection import ServerConnection
 
 
 IPYNB_BACKGROUND_METHODS = {
@@ -436,7 +421,7 @@ class RemoteFunction(SyftObject):
 class RemoteUserCodeFunction(RemoteFunction):
     __canonical_name__ = "RemoteUserFunction"
     __version__ = SYFT_OBJECT_VERSION_1
-    __repr_attrs__ = RemoteFunction.__repr_attrs__ + ["user_code_id"]
+    __repr_attrs__ = [*RemoteFunction.__repr_attrs__, "user_code_id"]
 
     api: SyftAPI
 
@@ -586,9 +571,11 @@ def generate_remote_lib_function(
             _valid_kwargs.update(pre_kwargs)
 
         # relative
-        from ..service.action.action_object import Action
-        from ..service.action.action_object import ActionType
-        from ..service.action.action_object import convert_to_pointers
+        from ..service.action.action_object import (
+            Action,
+            ActionType,
+            convert_to_pointers,
+        )
 
         action_args, action_kwargs = convert_to_pointers(
             api, wrapper_server_uid, _valid_args, _valid_kwargs,
@@ -650,10 +637,10 @@ class APIModule:
         self.refresh_callback = refresh_callback
 
     def __dir__(self) -> list[str]:
-        return self._modules + ["path"]
+        return [*self._modules, "path"]
 
     def has_submodule(self, name: str) -> bool:
-        """We use this as hasattr() triggers __getattribute__ which triggers recursion"""
+        """We use this as hasattr() triggers __getattribute__ which triggers recursion."""
         try:
             _ = object.__getattribute__(self, name)
             return True
@@ -776,8 +763,8 @@ def downgrade_signature(signature: Signature, object_versions: dict) -> Signatur
             parameters=migrated_parameters,
             return_annotation=migrated_return_annotation,
         )
-    except Exception as e:
-        raise e
+    except Exception:
+        raise
 
     return new_signature
 
@@ -818,8 +805,7 @@ def unwrap_and_migrate_annotation(annotation: Any, object_versions: dict) -> Any
 
 def result_needs_api_update(api_call_result: Any) -> bool:
     # relative
-    from ..service.request.request import Request
-    from ..service.request.request import UserCodeStatusChange
+    from ..service.request.request import Request, UserCodeStatusChange
 
     if isinstance(api_call_result, Request) and any(
         isinstance(x, UserCodeStatusChange) for x in api_call_result.changes
@@ -863,11 +849,11 @@ class SyftAPI(SyftObject):
 
     def __dir__(self) -> list[str]:
         modules = getattr(self.api_module, "_modules", [])
-        return ["services"] + modules
+        return ["services", *modules]
 
     def __syft_dir__(self) -> list[str]:
         modules = getattr(self.api_module, "_modules", [])
-        return ["services"] + modules
+        return ["services", *modules]
 
     def __getattr__(self, name: str) -> Any:
         try:
@@ -1060,7 +1046,6 @@ class SyftAPI(SyftObject):
         self, api_module: APIModule, endpoint: APIEndpoint, endpoint_method: Callable,
     ) -> None:
         """Recursively create a module path to the route endpoint."""
-
         _modules = endpoint.module_path.split(".")[:-1] + [endpoint.name]
 
         _self = api_module
@@ -1164,8 +1149,7 @@ class SyftAPI(SyftObject):
 # code from here:
 # https://github.com/ipython/ipython/blob/339c0d510a1f3cb2158dd8c6e7f4ac89aa4c89d8/IPython/core/oinspect.py#L370
 def _render_signature(obj_signature: Signature, obj_name: str) -> str:
-    """
-    This was mostly taken from inspect.Signature.__str__.
+    """This was mostly taken from inspect.Signature.__str__.
     Look there for the comments.
     The only change is to add linebreaks when this gets too long.
     """
@@ -1207,7 +1191,8 @@ def _render_signature(obj_signature: Signature, obj_name: str) -> str:
 def _getdef(self: Any, obj: Any, oname: str = "") -> str | None:
     """Return the call signature for any callable object.
     If any exception is generated, None is returned instead and the
-    exception is suppressed."""
+    exception is suppressed.
+    """
     try:
         return _render_signature(signature(obj), oname)
     except:  # noqa: E722
@@ -1275,7 +1260,7 @@ class ServerIdentity(Identity):
             verify_key=server.signing_key.verify_key,
         )
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, ServerIdentity):
             return False
         return (

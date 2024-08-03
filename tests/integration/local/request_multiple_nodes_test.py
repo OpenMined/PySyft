@@ -9,7 +9,7 @@ import pytest
 import syft as sy
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def server_1():
     server = sy.orchestra.launch(
         name=token_hex(8),
@@ -26,7 +26,7 @@ def server_1():
     server.land()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def server_2():
     server = sy.orchestra.launch(
         name=token_hex(8),
@@ -43,17 +43,17 @@ def server_2():
     server.land()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def client_do_1(server_1):
     return server_1.login(email="info@openmined.org", password="changethis")
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def client_do_2(server_2):
     return server_2.login(email="info@openmined.org", password="changethis")
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def client_ds_1(server_1, client_do_1):
     client_do_1.register(
         name="test_user", email="test@us.er", password="1234", password_verify="1234",
@@ -61,7 +61,7 @@ def client_ds_1(server_1, client_do_1):
     return server_1.login(email="test@us.er", password="1234")
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def dataset_1(client_do_1):
     mock = np.array([0, 1, 2, 3, 4])
     private = np.array([5, 6, 7, 8, 9])
@@ -84,7 +84,7 @@ def dataset_1(client_do_1):
     return client_do_1.datasets[0].assets[0]
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def dataset_2(client_do_2):
     mock = np.array([0, 1, 2, 3, 4]) + 10
     private = np.array([5, 6, 7, 8, 9]) + 10

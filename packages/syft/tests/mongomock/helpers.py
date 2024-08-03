@@ -1,13 +1,11 @@
 # stdlib
-from collections import OrderedDict
-from collections import abc
-from datetime import datetime
-from datetime import timedelta
-from datetime import tzinfo
 import re
 import time
-from urllib.parse import unquote_plus
 import warnings
+from collections import OrderedDict, abc
+from datetime import datetime, timedelta, tzinfo
+from typing import NoReturn
+from urllib.parse import unquote_plus
 
 # third party
 from packaging import version
@@ -19,8 +17,10 @@ from . import InvalidURI
 # in this module but is made available for callers of this module.
 try:
     # third party
-    from bson import ObjectId  # pylint: disable=unused-import
-    from bson import Timestamp
+    from bson import (
+        ObjectId,  # pylint: disable=unused-import
+        Timestamp,
+    )
     from pymongo import version as pymongo_version
 
     PYMONGO_VERSION = version.parse(pymongo_version)
@@ -44,7 +44,7 @@ try:
 except ImportError:
 
     class _FixedOffset(tzinfo):
-        def __init__(self, offset, name):
+        def __init__(self, offset, name) -> None:
             self.__offset = timedelta(minutes=offset)
             self.__name = name
 
@@ -68,7 +68,7 @@ DESCENDING = -1
 
 
 def utcnow():
-    """Simple wrapper for datetime.utcnow
+    """Simple wrapper for datetime.utcnow.
 
     This provides a centralized definition of "now" in the mongomock realm,
     allowing users to transform the value of "now" to the future or the past,
@@ -84,11 +84,11 @@ def utcnow():
     return datetime.utcnow()
 
 
-def print_deprecation_warning(old_param_name, new_param_name):
+def print_deprecation_warning(old_param_name, new_param_name) -> None:
     warnings.warn(
-        "'%s' has been deprecated to be in line with pymongo implementation, a new parameter '%s' "
+        f"'{old_param_name}' has been deprecated to be in line with pymongo implementation, a new parameter '{new_param_name}' "
         "should be used instead. the old parameter will be kept for backward compatibility "
-        "purposes." % (old_param_name, new_param_name),
+        "purposes.",
         DeprecationWarning,
     )
 
@@ -100,8 +100,8 @@ def create_index_list(key_or_list, direction=None):
     """
     if isinstance(key_or_list, str):
         return [(key_or_list, direction or ASCENDING)]
-    if not isinstance(key_or_list, (list, tuple, abc.Iterable)):
-        msg = "if no direction is specified, " "key_or_list must be an instance of list"
+    if not isinstance(key_or_list, list | tuple | abc.Iterable):
+        msg = "if no direction is specified, key_or_list must be an instance of list"
         raise TypeError(
             msg,
         )
@@ -110,8 +110,7 @@ def create_index_list(key_or_list, direction=None):
 
 def gen_index_name(index_list):
     """Generate an index name based on the list of keys with directions."""
-
-    return "_".join(["%s_%s" % item for item in index_list])
+    return "_".join(["{}_{}".format(*item) for item in index_list])
 
 
 class hashdict(dict):
@@ -149,55 +148,55 @@ class hashdict(dict):
             for k, v in self.items()
         )
 
-    def __repr__(self):
-        return "{0}({1})".format(
+    def __repr__(self) -> str:
+        return "{}({})".format(
             self.__class__.__name__,
             ", ".join(
-                "{0}={1}".format(str(i[0]), repr(i[1])) for i in sorted(self.__key())
+                f"{i[0]!s}={i[1]!r}" for i in sorted(self.__key())
             ),
         )
 
     def __hash__(self):
         return hash(self.__key())
 
-    def __setitem__(self, key, value):
-        msg = "{0} does not support item assignment".format(self.__class__.__name__)
+    def __setitem__(self, key, value) -> None:
+        msg = f"{self.__class__.__name__} does not support item assignment"
         raise TypeError(
             msg,
         )
 
-    def __delitem__(self, key):
-        msg = "{0} does not support item assignment".format(self.__class__.__name__)
+    def __delitem__(self, key) -> None:
+        msg = f"{self.__class__.__name__} does not support item assignment"
         raise TypeError(
             msg,
         )
 
-    def clear(self):
-        msg = "{0} does not support item assignment".format(self.__class__.__name__)
+    def clear(self) -> NoReturn:
+        msg = f"{self.__class__.__name__} does not support item assignment"
         raise TypeError(
             msg,
         )
 
-    def pop(self, *args, **kwargs):
-        msg = "{0} does not support item assignment".format(self.__class__.__name__)
+    def pop(self, *args, **kwargs) -> NoReturn:
+        msg = f"{self.__class__.__name__} does not support item assignment"
         raise TypeError(
             msg,
         )
 
-    def popitem(self, *args, **kwargs):
-        msg = "{0} does not support item assignment".format(self.__class__.__name__)
+    def popitem(self, *args, **kwargs) -> NoReturn:
+        msg = f"{self.__class__.__name__} does not support item assignment"
         raise TypeError(
             msg,
         )
 
-    def setdefault(self, *args, **kwargs):
-        msg = "{0} does not support item assignment".format(self.__class__.__name__)
+    def setdefault(self, *args, **kwargs) -> NoReturn:
+        msg = f"{self.__class__.__name__} does not support item assignment"
         raise TypeError(
             msg,
         )
 
-    def update(self, *args, **kwargs):
-        msg = "{0} does not support item assignment".format(self.__class__.__name__)
+    def update(self, *args, **kwargs) -> NoReturn:
+        msg = f"{self.__class__.__name__} does not support item assignment"
         raise TypeError(
             msg,
         )
@@ -248,7 +247,8 @@ def parse_uri(uri, default_port=27017, warn=False):
     SCHEME = "mongodb://"
 
     if not uri.startswith(SCHEME):
-        raise InvalidURI("Invalid URI scheme: URI " "must begin with '%s'" % (SCHEME,))
+        msg = f"Invalid URI scheme: URI must begin with '{SCHEME}'"
+        raise InvalidURI(msg)
 
     scheme_free = uri[len(SCHEME) :]
 
@@ -265,15 +265,16 @@ def parse_uri(uri, default_port=27017, warn=False):
             host_part = path_part
             path_part = ""
         if "/" in host_part:
+            msg = f"Any '/' in a unix domain socket must be URL encoded: {host_part}"
             raise InvalidURI(
-                "Any '/' in a unix domain socket must be" " URL encoded: %s" % host_part,
+                msg,
             )
         path_part = unquote_plus(path_part)
     else:
         host_part, _, path_part = scheme_free.partition("/")
 
     if not path_part and "?" in host_part:
-        msg = "A '/' is required between " "the host list and any options."
+        msg = "A '/' is required between the host list and any options."
         raise InvalidURI(msg)
 
     nodelist = []
@@ -298,7 +299,7 @@ def parse_uri(uri, default_port=27017, warn=False):
             try:
                 port = int(port)
                 if port < 0 or port > 65535:
-                    raise ValueError()
+                    raise ValueError
             except ValueError as err:
                 msg = "Port must be an integer between 0 and 65535:"
                 raise ValueError(
@@ -322,7 +323,6 @@ def parse_uri(uri, default_port=27017, warn=False):
 
 def split_hosts(hosts, default_port=27017):
     """Split the entity into a list of tuples of host and port."""
-
     nodelist = []
     for entity in hosts.split(","):
         port = default_port
@@ -347,7 +347,7 @@ def split_hosts(hosts, default_port=27017):
             try:
                 port = int(match.group(3))
                 if port < 0 or port > 65535:
-                    raise ValueError()
+                    raise ValueError
             except ValueError as err:
                 msg = "Port must be an integer between 0 and 65535:"
                 raise ValueError(
@@ -389,7 +389,7 @@ def patch_datetime_awareness_in_document(value):
             return best_type(
                 (k, patch_datetime_awareness_in_document(v)) for k, v in value.items()
             )
-    if isinstance(value, (tuple, list)):
+    if isinstance(value, tuple | list):
         return [patch_datetime_awareness_in_document(item) for item in value]
     if isinstance(value, datetime):
         mongo_us = (value.microsecond // 1000) * 1000
@@ -411,7 +411,7 @@ def make_datetime_timezone_aware_in_document(value):
         return {
             k: make_datetime_timezone_aware_in_document(v) for k, v in value.items()
         }
-    if isinstance(value, (tuple, list)):
+    if isinstance(value, tuple | list):
         return [make_datetime_timezone_aware_in_document(item) for item in value]
     if isinstance(value, datetime):
         return value.replace(tzinfo=utc)
@@ -419,14 +419,14 @@ def make_datetime_timezone_aware_in_document(value):
 
 
 def get_value_by_dot(doc, key, can_generate_array=False):
-    """Get dictionary value using dotted key"""
+    """Get dictionary value using dotted key."""
     result = doc
     key_items = key.split(".")
     for key_index, key_item in enumerate(key_items):
         if isinstance(result, dict):
             result = result[key_item]
 
-        elif isinstance(result, (list, tuple)):
+        elif isinstance(result, list | tuple):
             try:
                 int_key = int(key_item)
             except ValueError as err:
@@ -447,7 +447,7 @@ def get_value_by_dot(doc, key, can_generate_array=False):
 
 
 def set_value_by_dot(doc, key, value):
-    """Set dictionary value using dotted key"""
+    """Set dictionary value using dotted key."""
     try:
         parent_key, child_key = key.rsplit(".", 1)
         parent = get_value_by_dot(doc, parent_key)
@@ -457,13 +457,13 @@ def set_value_by_dot(doc, key, value):
 
     if isinstance(parent, dict):
         parent[child_key] = value
-    elif isinstance(parent, (list, tuple)):
+    elif isinstance(parent, list | tuple):
         try:
             parent[int(child_key)] = value
         except (ValueError, IndexError) as err:
-            raise KeyError() from err
+            raise KeyError from err
     else:
-        raise KeyError()
+        raise KeyError
 
     return doc
 
@@ -486,6 +486,5 @@ def delete_value_by_dot(doc, key):
 
 
 def mongodb_to_bool(value):
-    """Converts any value to bool the way MongoDB does it"""
-
+    """Converts any value to bool the way MongoDB does it."""
     return value not in [False, None, 0]

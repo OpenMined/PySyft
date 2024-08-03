@@ -1,6 +1,5 @@
 # stdlib
-from enum import Enum
-from enum import auto
+from enum import Enum, auto
 
 # relative
 from ...serde.serializable import serializable

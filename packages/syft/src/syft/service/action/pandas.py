@@ -1,16 +1,13 @@
 # stdlib
-from typing import Any
-from typing import ClassVar
+from typing import Any, ClassVar
 
 # third party
-from pandas import DataFrame
-from pandas import Series
+from pandas import DataFrame, Series
 
 # relative
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from .action_object import ActionObject
-from .action_object import BASE_PASSTHROUGH_ATTRS
+from .action_object import BASE_PASSTHROUGH_ATTRS, ActionObject
 from .action_types import action_types
 
 

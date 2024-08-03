@@ -1,27 +1,28 @@
 # stdlib
-from collections.abc import Callable
-from collections.abc import Container
 import random
-from typing import Any
-from typing import TypeVar
+from collections.abc import Callable, Container
+from typing import Any, TypeVar
+
+import pytest
 
 # third party
 from faker import Faker
-import pytest
-from typing_extensions import ParamSpec
 
 # syft absolute
 from syft.serde.serializable import serializable
 from syft.service.response import SyftSuccess
 from syft.store.dict_document_store import DictDocumentStore
-from syft.store.document_store import BaseUIDStoreStash
-from syft.store.document_store import PartitionKey
-from syft.store.document_store import PartitionSettings
-from syft.store.document_store import QueryKey
-from syft.store.document_store import QueryKeys
-from syft.store.document_store import UIDPartitionKey
+from syft.store.document_store import (
+    BaseUIDStoreStash,
+    PartitionKey,
+    PartitionSettings,
+    QueryKey,
+    QueryKeys,
+    UIDPartitionKey,
+)
 from syft.types.syft_object import SyftObject
 from syft.types.uid import UID
+from typing_extensions import ParamSpec
 
 
 @serializable()
@@ -68,7 +69,7 @@ P = ParamSpec("P")
 def create_unique(
     gen: Callable[P, T], xs: Container[T], *args: P.args, **kwargs: P.kwargs,
 ) -> T:
-    """Generate a value with `gen()` that does not collide with any element in xs"""
+    """Generate a value with `gen()` that does not collide with any element in xs."""
     x = gen(*args, **kwargs)
     while x in xs:
         x = gen(*args, **kwargs)
@@ -76,9 +77,9 @@ def create_unique(
     return x
 
 
-@pytest.fixture
+@pytest.fixture()
 def base_stash(root_verify_key) -> MockStash:
-    yield MockStash(store=DictDocumentStore(UID(), root_verify_key))
+    return MockStash(store=DictDocumentStore(UID(), root_verify_key))
 
 
 def random_sentence(faker: Faker) -> str:
@@ -104,14 +105,14 @@ def multiple_object_kwargs(
     return [object_kwargs(faker, **kwargs) for _ in range(n)]
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_object(faker: Faker) -> MockObject:
-    yield MockObject(**object_kwargs(faker))
+    return MockObject(**object_kwargs(faker))
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_objects(faker: Faker) -> list[MockObject]:
-    yield [MockObject(**kwargs) for kwargs in multiple_object_kwargs(faker)]
+    return [MockObject(**kwargs) for kwargs in multiple_object_kwargs(faker)]
 
 
 def test_basestash_set(

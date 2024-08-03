@@ -9,11 +9,8 @@ from ...serde.serializable import serializable
 from ...types.datetime import DateTime
 from ..context import AuthedServiceContext
 from ..response import SyftError
-from .network_service import NetworkService
-from .network_service import ServerPeerAssociationStatus
-from .server_peer import ServerPeer
-from .server_peer import ServerPeerConnectionStatus
-from .server_peer import ServerPeerUpdate
+from .network_service import NetworkService, ServerPeerAssociationStatus
+from .server_peer import ServerPeer, ServerPeerConnectionStatus, ServerPeerUpdate
 
 logger = logging.getLogger(__name__)
 
@@ -28,18 +25,19 @@ class PeerHealthCheckTask:
         self._stop = False
 
     def peer_route_heathcheck(self, context: AuthedServiceContext) -> SyftError | None:
-        """
-        Perform a health check on the peers in the network stash.
+        """Perform a health check on the peers in the network stash.
         - If peer is accessible, ping the peer.
         - Peer is connected to the network.
 
         Args:
+        ----
             context (AuthedServiceContext): The authenticated service context.
 
         Returns:
+        -------
             None
-        """
 
+        """
         network_service = cast(
             NetworkService, context.server.get_service(NetworkService),
         )
@@ -65,7 +63,7 @@ class PeerHealthCheckTask:
                     peer_update.ping_status = ServerPeerConnectionStatus.TIMEOUT
                     peer_client = None
             except Exception as e:
-                logger.error(f"Failed to create client for peer: {peer}", exc_info=e)
+                logger.exception(f"Failed to create client for peer: {peer}", exc_info=e)
 
                 peer_update.ping_status = ServerPeerConnectionStatus.TIMEOUT
                 peer_client = None

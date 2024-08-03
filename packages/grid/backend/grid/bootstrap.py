@@ -1,9 +1,9 @@
 # stdlib
 import argparse
-from collections.abc import Callable
 import json
 import os
 import uuid
+from collections.abc import Callable
 
 # third party
 from nacl.encoding import HexEncoder
@@ -60,8 +60,8 @@ def save_credential(key: str, value: str) -> str:
             os.makedirs(dirname, exist_ok=True)
         with open(CREDENTIALS_PATH, "w") as f:
             f.write(f"{json.dumps(credentials)}")
-    except Exception as e:
-        raise e
+    except Exception:
+        raise
     return value
 
 
@@ -114,8 +114,7 @@ def validate_uid(server_uid: str) -> str:
 def get_credential(
     key: str, validation_func: Callable, generation_func: Callable,
 ) -> str:
-    """
-    This method will try to get a credential and if it isn't supplied or doesn't exist
+    """This method will try to get a credential and if it isn't supplied or doesn't exist
     it will generate one and save it. If the one supplied doesn't match the one saved
     it will raise an Exception.
     """
@@ -172,18 +171,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.private_key or args.uid:
-        if args.private_key:
-            print(get_private_key())
-        elif args.uid:
-            print(get_server_uid())
+        if args.private_key or args.uid:
+            pass
     elif args.file:
         delete_credential_file()
         get_private_key()
         get_server_uid()
-        print(f"Generated credentials file at '{CREDENTIALS_PATH}'")
     elif args.debug:
-        print("Credentials File", get_credentials_file())
-        print(SERVER_PRIVATE_KEY, "=", get_private_key_env())
-        print(SERVER_UID, "=", get_server_uid_env())
+        pass
     else:
         parser.print_help()

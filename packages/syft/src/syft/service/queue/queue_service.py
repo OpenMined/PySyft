@@ -7,11 +7,9 @@ from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
 from ..response import SyftError
-from ..service import AbstractService
-from ..service import service_method
+from ..service import AbstractService, service_method
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
-from .queue_stash import QueueItem
-from .queue_stash import QueueStash
+from .queue_stash import QueueItem, QueueStash
 
 
 @instrument

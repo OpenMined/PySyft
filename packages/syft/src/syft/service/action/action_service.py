@@ -1,14 +1,11 @@
 # stdlib
 import importlib
 import logging
-from typing import Any
-from typing import cast
+from typing import Any, cast
 
 # third party
 import numpy as np
-from result import Err
-from result import Ok
-from result import Result
+from result import Err, Ok, Result
 
 # relative
 from ...serde.serializable import serializable
@@ -18,37 +15,39 @@ from ...types.syft_object import SyftObject
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
 from ..blob_storage.service import BlobStorageService
-from ..code.user_code import UserCode
-from ..code.user_code import execute_byte_code
+from ..code.user_code import UserCode, execute_byte_code
 from ..context import AuthedServiceContext
-from ..policy.policy import OutputPolicy
-from ..policy.policy import retrieve_from_db
-from ..response import SyftError
-from ..response import SyftSuccess
-from ..response import SyftWarning
-from ..service import AbstractService
-from ..service import SERVICE_TO_TYPES
-from ..service import TYPE_TO_SERVICE
-from ..service import UserLibConfigRegistry
-from ..service import service_method
-from ..user.user_roles import ADMIN_ROLE_LEVEL
-from ..user.user_roles import GUEST_ROLE_LEVEL
-from ..user.user_roles import ServiceRole
+from ..policy.policy import OutputPolicy, retrieve_from_db
+from ..response import SyftError, SyftSuccess, SyftWarning
+from ..service import (
+    SERVICE_TO_TYPES,
+    TYPE_TO_SERVICE,
+    AbstractService,
+    UserLibConfigRegistry,
+    service_method,
+)
+from ..user.user_roles import ADMIN_ROLE_LEVEL, GUEST_ROLE_LEVEL, ServiceRole
 from .action_endpoint import CustomEndpointActionObject
-from .action_object import Action
-from .action_object import ActionObject
-from .action_object import ActionObjectPointer
-from .action_object import ActionType
-from .action_object import AnyActionObject
-from .action_object import TwinMode
-from .action_permissions import ActionObjectPermission
-from .action_permissions import ActionObjectREAD
-from .action_permissions import ActionPermission
+from .action_object import (
+    Action,
+    ActionObject,
+    ActionObjectPointer,
+    ActionType,
+    AnyActionObject,
+    TwinMode,
+)
+from .action_permissions import (
+    ActionObjectPermission,
+    ActionObjectREAD,
+    ActionPermission,
+)
 from .action_store import ActionStore
 from .action_types import action_type_for_type
 from .numpy import NumpyArrayObject
-from .pandas import PandasDataFrameObject  # noqa: F401
-from .pandas import PandasSeriesObject  # noqa: F401
+from .pandas import (
+    PandasDataFrameObject,  # noqa: F401
+    PandasSeriesObject,  # noqa: F401
+)
 
 logger = logging.getLogger(__name__)
 
@@ -110,9 +109,7 @@ class ActionService(AbstractService):
         action_object: ActionObject | TwinObject,
         ignore_detached_obj: bool = False,
     ) -> bool:
-        """
-        A detached object is an object that is not yet saved to the blob storage.
-        """
+        """A detached object is an object that is not yet saved to the blob storage."""
         if (
             isinstance(action_object, TwinObject)
             and (
@@ -208,7 +205,7 @@ class ActionService(AbstractService):
         context: AuthedServiceContext,
         uid: UID,
     ) -> Result[Ok[bool], Err[str]]:
-        """Get an object from the action store"""
+        """Get an object from the action store."""
         result = self._get(context, uid)
         if result.is_ok():
             obj = result.ok()
@@ -240,7 +237,7 @@ class ActionService(AbstractService):
         uid: UID,
         twin_mode: TwinMode = TwinMode.PRIVATE,
     ) -> Result[Ok[ActionObject], Err[str]]:
-        """Get an object from the action store"""
+        """Get an object from the action store."""
         # relative
 
         result = self.store.get(uid=uid, credentials=context.credentials)
@@ -267,7 +264,7 @@ class ActionService(AbstractService):
         twin_mode: TwinMode = TwinMode.PRIVATE,
         resolve_nested: bool = True,
     ) -> Result[ActionObject, str]:
-        """Get an object from the action store"""
+        """Get an object from the action store."""
         return self._get(context, uid, twin_mode, resolve_nested=resolve_nested)
 
     def _get(
@@ -278,7 +275,7 @@ class ActionService(AbstractService):
         has_permission: bool = False,
         resolve_nested: bool = True,
     ) -> Result[ActionObject, str]:
-        """Get an object from the action store"""
+        """Get an object from the action store."""
         result = self.store.get(
             uid=uid, credentials=context.credentials, has_permission=has_permission,
         )
@@ -321,8 +318,7 @@ class ActionService(AbstractService):
     def get_pointer(
         self, context: AuthedServiceContext, uid: UID,
     ) -> Result[ActionObjectPointer, str]:
-        """Get a pointer from the action store"""
-
+        """Get a pointer from the action store."""
         result = self.store.get_pointer(
             uid=uid, credentials=context.credentials, server_uid=context.server.id,
         )
@@ -339,7 +335,7 @@ class ActionService(AbstractService):
     def get_mock(
         self, context: AuthedServiceContext, uid: UID,
     ) -> Result[SyftError, SyftObject]:
-        """Get a pointer from the action store"""
+        """Get a pointer from the action store."""
         result = self.store.get_mock(uid=uid)
         if result.is_ok():
             return result.ok()
@@ -376,7 +372,7 @@ class ActionService(AbstractService):
         output_policy = code_item.get_output_policy(context)
 
         # Unwrap nested ActionObjects
-        for _k, arg in kwargs.items():
+        for arg in kwargs.values():
             self.flatten_action_arg(context, arg) if isinstance(arg, UID) else None
 
         if not override_execution_permission:
@@ -646,11 +642,11 @@ class ActionService(AbstractService):
         args = [args[1]]
 
         if isinstance(resolved_self, TwinObject):
-            # todo, create copy?
+            # TODO, create copy?
             private_args = filter_twin_args(args, twin_mode=TwinMode.PRIVATE)
             private_val = private_args[0]
             setattr(resolved_self.private.syft_action_data, name, private_val)
-            # todo: what do we use as data for the mock here?
+            # TODO: what do we use as data for the mock here?
             # depending on permisisons?
             public_args = filter_twin_args(args, twin_mode=TwinMode.MOCK)
             public_val = public_args[0]
@@ -674,7 +670,7 @@ class ActionService(AbstractService):
             return Ok(
                 ActionObject.from_obj(resolved_self.syft_action_data),
             )
-            # todo: permissions
+            # TODO: permissions
             # setattr(resolved_self.syft_action_data, name, val)
             # val = resolved_self.syft_action_data
             # result_action_object = Ok(wrap_result(action.result_id, val))
@@ -743,8 +739,7 @@ class ActionService(AbstractService):
     def unwrap_nested_actionobjects(
         self, context: AuthedServiceContext, data: Any,
     ) -> Any:
-        """recursively unwraps nested action objects"""
-
+        """Recursively unwraps nested action objects."""
         if isinstance(data, list):
             return [self.unwrap_nested_actionobjects(context, obj) for obj in data]
         if isinstance(data, dict):
@@ -768,9 +763,7 @@ class ActionService(AbstractService):
         return data
 
     def contains_nested_actionobjects(self, data: Any) -> bool:
-        """
-        returns if this is a list/set/dict that contains ActionObjects
-        """
+        """Returns if this is a list/set/dict that contains ActionObjects."""
 
         def unwrap_collection(col: set | dict | list) -> [Any]:  # type: ignore
             return_values = []
@@ -793,7 +786,7 @@ class ActionService(AbstractService):
         """ "If the argument is a collection (of collections) of ActionObjects,
         We want to flatten the collection and upload a new ActionObject that contains
         its values. E.g. [[ActionObject1, ActionObject2],[ActionObject3, ActionObject4]]
-        -> [[value1, value2],[value3, value4]]
+        -> [[value1, value2],[value3, value4]].
         """
         res = self.get(context=context, uid=arg)
         if res.is_err():
@@ -818,7 +811,7 @@ class ActionService(AbstractService):
     def execute(
         self, context: AuthedServiceContext, action: Action,
     ) -> Result[ActionObject, Err]:
-        """Execute an operation on objects in the action store"""
+        """Execute an operation on objects in the action store."""
         # relative
         from .plan import Plan
 
@@ -917,7 +910,7 @@ class ActionService(AbstractService):
     def exists(
         self, context: AuthedServiceContext, obj_id: UID,
     ) -> Result[SyftSuccess, SyftError]:
-        """Checks if the given object id exists in the Action Store"""
+        """Checks if the given object id exists in the Action Store."""
         if self.store.exists(obj_id):
             return SyftSuccess(message=f"Object: {obj_id} exists")
         else:
@@ -1132,7 +1125,6 @@ def execute_callable(
                 )
 
     except Exception as e:
-        print("what is this exception", e)
         return Err(e)
     return Ok(result_action_object)
 
@@ -1255,20 +1247,19 @@ def filter_twin_kwargs(
                 raise Exception(
                     msg,
                 )
+        elif isinstance(v, ActionObject):
+            filtered[k] = v.syft_action_data
+        elif (
+            isinstance(v, str | int | float | dict | CustomEndpointActionObject)
+            and allow_python_types
+        ):
+            filtered[k] = v
         else:
-            if isinstance(v, ActionObject):
-                filtered[k] = v.syft_action_data
-            elif (
-                isinstance(v, str | int | float | dict | CustomEndpointActionObject)
-                and allow_python_types
-            ):
-                filtered[k] = v
-            else:
-                # third party
-                msg = f"unexepected value {v} passed to filtered twin kwargs"
-                raise ValueError(
-                    msg,
-                )
+            # third party
+            msg = f"unexepected value {v} passed to filtered twin kwargs"
+            raise ValueError(
+                msg,
+            )
     return filtered
 
 

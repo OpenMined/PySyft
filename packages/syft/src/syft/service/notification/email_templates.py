@@ -1,7 +1,6 @@
 # stdlib
 from datetime import datetime
-from typing import TYPE_CHECKING
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 # relative
 from ...serde.serializable import serializable

@@ -3,63 +3,50 @@ from __future__ import annotations
 
 # stdlib
 import base64
-from enum import Enum
-from getpass import getpass
 import json
 import logging
-from typing import Any
-from typing import TYPE_CHECKING
-from typing import cast
+from enum import Enum
+from getpass import getpass
+from typing import TYPE_CHECKING, Any, cast
+
+import requests
 
 # third party
 from argon2 import PasswordHasher
-from cachetools import TTLCache
-from cachetools import cached
+from cachetools import TTLCache, cached
 from pydantic import field_validator
-import requests
-from requests import Response
-from requests import Session
+from requests import Response, Session
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry  # type: ignore[import-untyped]
 from typing_extensions import Self
 
 # relative
 from .. import __version__
-from ..abstract_server import AbstractServer
-from ..abstract_server import ServerSideType
-from ..abstract_server import ServerType
-from ..protocol.data_protocol import DataProtocol
-from ..protocol.data_protocol import PROTOCOL_TYPE
-from ..protocol.data_protocol import get_data_protocol
+from ..abstract_server import AbstractServer, ServerSideType, ServerType
+from ..protocol.data_protocol import PROTOCOL_TYPE, DataProtocol, get_data_protocol
 from ..serde.deserialize import _deserialize
 from ..serde.serializable import serializable
 from ..serde.serialize import _serialize
-from ..server.credentials import SyftSigningKey
-from ..server.credentials import SyftVerifyKey
-from ..server.credentials import UserLoginCredentials
+from ..server.credentials import SyftSigningKey, SyftVerifyKey, UserLoginCredentials
 from ..service.context import ServerServiceContext
-from ..service.metadata.server_metadata import ServerMetadata
-from ..service.metadata.server_metadata import ServerMetadataJSON
-from ..service.response import SyftError
-from ..service.response import SyftSuccess
-from ..service.user.user import UserCreate
-from ..service.user.user import UserPrivateKey
-from ..service.user.user import UserView
+from ..service.metadata.server_metadata import ServerMetadata, ServerMetadataJSON
+from ..service.response import SyftError, SyftSuccess
+from ..service.user.user import UserCreate, UserPrivateKey, UserView
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..types.server_url import ServerURL
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.uid import UID
 from ..util.telemetry import instrument
-from ..util.util import prompt_warning_message
-from ..util.util import thread_ident
-from ..util.util import verify_tls
-from .api import APIModule
-from .api import APIRegistry
-from .api import SignedSyftAPICall
-from .api import SyftAPI
-from .api import SyftAPICall
-from .api import debox_signed_syftapicall_response
+from ..util.util import prompt_warning_message, thread_ident, verify_tls
+from .api import (
+    APIModule,
+    APIRegistry,
+    SignedSyftAPICall,
+    SyftAPI,
+    SyftAPICall,
+    debox_signed_syftapicall_response,
+)
 from .connection import ServerConnection
 from .protocol import SyftProtocol
 
@@ -67,9 +54,8 @@ logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     # relative
-    from collections.abc import Iterable
-    from collections.abc import Generator
-    from collections.abc import Callable
+    from collections.abc import Callable, Generator, Iterable
+
     from ..service.network.server_peer import ServerPeer
 
 
@@ -80,8 +66,8 @@ def upgrade_tls(url: ServerURL, response: Response) -> ServerURL:
             https_url = ServerURL.from_url(response.url).with_path("")
             logger.debug(f"ServerURL Upgraded to HTTPS. {https_url}")
             return https_url
-    except Exception as e:
-        print(f"Failed to upgrade to HTTPS. {e}")
+    except Exception:
+        pass
     return url
 
 
@@ -497,7 +483,7 @@ class PythonConnection(ServerConnection):
         communication_protocol: int,
         metadata: ServerMetadataJSON | None = None,
     ) -> SyftAPI:
-        # todo: its a bit odd to identify a user by its verify key maybe?
+        # TODO: its a bit odd to identify a user by its verify key maybe?
         if self.proxy_target_uid:
             obj = forward_message_to_proxy(
                 self.make_call,
@@ -840,10 +826,7 @@ class SyftClient:
         _guest_client = self.guest()
 
         if self.metadata is not None:
-            print(
-                f"Logged into <{self.name}: {self.metadata.server_side_type.capitalize()}-side "
-                f"{self.metadata.server_type.capitalize()}> as GUEST",
-            )
+            pass
 
         return _guest_client
 
@@ -852,10 +835,7 @@ class SyftClient:
         if not isinstance(user_private_key, UserPrivateKey):
             return user_private_key
         if self.metadata is not None:
-            print(
-                f"Logged into <{self.name}: {self.metadata.server_side_type.capitalize()}-side "
-                f"{self.metadata.server_type.capitalize()}> as {email}",
-            )
+            pass
 
         return self.__class__(
             connection=self.connection,
@@ -900,10 +880,6 @@ class SyftClient:
             client.__logged_in_username = client.users.get_current_user().name
 
         if signing_key is not None and client.metadata is not None:
-            print(
-                f"Logged into <{client.name}: {client.metadata.server_side_type.capitalize()} side "
-                f"{client.metadata.server_type.capitalize()}> as <{email}>",
-            )
             # relative
             from ..server.server import get_default_root_password
 
@@ -1005,7 +981,7 @@ class SyftClient:
     def __hash__(self) -> int:
         return hash(self.id) + hash(self.connection)
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, SyftClient):
             return False
         return (
@@ -1121,10 +1097,7 @@ def login_as_guest(
         return _client
 
     if verbose and _client.metadata is not None:
-        print(
-            f"Logged into <{_client.name}: {_client.metadata.server_side_type.capitalize()}-"
-            f"side {_client.metadata.server_type.capitalize()}> as GUEST",
-        )
+        pass
 
     return _client.guest()
 
@@ -1164,9 +1137,6 @@ def login(
             connection=connection,
         )
         if _client_cache:
-            print(
-                f"Using cached client for {_client.name} as <{login_credentials.email}>",
-            )
             _client = _client_cache
 
     if not _client.authed and login_credentials:

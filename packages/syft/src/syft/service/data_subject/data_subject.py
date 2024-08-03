@@ -1,6 +1,5 @@
 # stdlib
 from collections.abc import Callable
-from typing import Any
 
 # third party
 from typing_extensions import Self
@@ -8,12 +7,13 @@ from typing_extensions import Self
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
-from ...types.transforms import TransformContext
-from ...types.transforms import add_server_uid_for_key
-from ...types.transforms import generate_id
-from ...types.transforms import transform
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject
+from ...types.transforms import (
+    TransformContext,
+    add_server_uid_for_key,
+    generate_id,
+    transform,
+)
 from ...types.uid import UID
 from ...util.markdown import as_markdown_python_code
 from ..response import SyftError
@@ -49,7 +49,7 @@ class DataSubject(SyftObject):
     def __hash__(self) -> int:
         return hash(self.name)
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         return hash(self) == hash(other)
 
     def __repr_syft_nested__(self) -> str:
@@ -89,7 +89,7 @@ class DataSubjectCreate(SyftObject):
     def __hash__(self) -> int:
         return hash(self.name)
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         return hash(self) == hash(other)
 
     def __repr_syft_nested__(self) -> str:

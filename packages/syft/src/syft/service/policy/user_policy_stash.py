@@ -6,12 +6,13 @@ from result import Result
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import BaseUIDStoreStash
-from ...store.document_store import DocumentStore
-from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
-from .policy import PolicyUserVerifyKeyPartitionKey
-from .policy import UserPolicy
+from ...store.document_store import (
+    BaseUIDStoreStash,
+    DocumentStore,
+    PartitionSettings,
+    QueryKeys,
+)
+from .policy import PolicyUserVerifyKeyPartitionKey, UserPolicy
 
 
 @serializable(canonical_name="UserPolicyStash", version=1)

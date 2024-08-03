@@ -1,23 +1,21 @@
 # stdlib
-from binascii import hexlify
-from collections import defaultdict
 import itertools
 import logging
 import socketserver
-import sys
 import threading
-from threading import Event
 import time
+from binascii import hexlify
+from collections import defaultdict
+from threading import Event
 from time import sleep
-from typing import Any
-from typing import cast
+from typing import Any, cast
+
+import zmq
 
 # third party
 from pydantic import field_validator
 from result import Result
-import zmq
-from zmq import Frame
-from zmq import LINGER
+from zmq import LINGER, Frame
 from zmq.error import ContextTerminated
 
 # relative
@@ -28,25 +26,22 @@ from ...server.credentials import SyftVerifyKey
 from ...service.action.action_object import ActionObject
 from ...service.context import AuthedServiceContext
 from ...types.base import SyftBaseModel
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject
 from ...types.uid import UID
 from ...util.util import get_queue_address
-from ..response import SyftError
-from ..response import SyftSuccess
+from ..response import SyftError, SyftSuccess
 from ..service import AbstractService
-from ..worker.worker_pool import ConsumerState
-from ..worker.worker_pool import SyftWorker
+from ..worker.worker_pool import ConsumerState, SyftWorker
 from ..worker.worker_stash import WorkerStash
-from .base_queue import AbstractMessageHandler
-from .base_queue import QueueClient
-from .base_queue import QueueClientConfig
-from .base_queue import QueueConfig
-from .base_queue import QueueConsumer
-from .base_queue import QueueProducer
-from .queue_stash import ActionQueueItem
-from .queue_stash import QueueStash
-from .queue_stash import Status
+from .base_queue import (
+    AbstractMessageHandler,
+    QueueClient,
+    QueueClientConfig,
+    QueueConfig,
+    QueueConsumer,
+    QueueProducer,
+)
+from .queue_stash import ActionQueueItem, QueueStash, Status
 
 # Producer/Consumer heartbeat interval (in seconds)
 HEARTBEAT_INTERVAL_SEC = 2
@@ -82,7 +77,7 @@ MAX_RECURSION_NESTED_ACTIONOBJECTS = 5
 
 
 class Timeout:
-    def __init__(self, offset_sec: float):
+    def __init__(self, offset_sec: float) -> None:
         self.__offset = float(offset_sec)
         self.__next_ts: float = 0.0
 
@@ -175,7 +170,6 @@ class ZMQProducer(QueueProducer):
 
     def post_init(self) -> None:
         """Initialize producer state."""
-
         self.services: dict[str, Service] = {}
         self.workers: dict[bytes, Worker] = {}
         self.waiting: list[Worker] = []
@@ -229,7 +223,7 @@ class ZMQProducer(QueueProducer):
             raise Exception(msg)
 
     def contains_unresolved_action_objects(self, arg: Any, recursion: int = 0) -> bool:
-        """recursively check collections for unresolved action objects"""
+        """Recursively check collections for unresolved action objects."""
         if isinstance(arg, UID):
             arg = self.action_service.get(self.auth_context, arg).ok()
             return self.contains_unresolved_action_objects(arg, recursion=recursion + 1)
@@ -330,12 +324,11 @@ class ZMQProducer(QueueProducer):
                         # or container id doesn't exists, kill process or container
                         # else decrease retry count and mark status as CREATED.
                         pass
-            except Exception as e:
-                print(e, file=sys.stderr)
+            except Exception:
                 item.status = Status.ERRORED
                 res = self.queue_stash.update(item.syft_client_verify_key, item)
                 if res.is_err():
-                    logger.error(
+                    logger.exception(
                         f"Failed to update queue item={item} error={res.err()}",
                     )
 
@@ -356,7 +349,7 @@ class ZMQProducer(QueueProducer):
         logger.info(f"ZMQProducer endpoint: {endpoint}")
 
     def send_heartbeats(self) -> None:
-        """Send heartbeats to idle workers if it's time"""
+        """Send heartbeats to idle workers if it's time."""
         if self.heartbeat_t.has_expired():
             for worker in self.waiting:
                 self.send_to_worker(worker, QueueMsgProtocol.W_HEARTBEAT)
@@ -418,7 +411,7 @@ class ZMQProducer(QueueProducer):
                     f"to state: {consumer_state} error={res.err()}",
                 )
         except Exception as e:
-            logger.error(
+            logger.exception(
                 f"Failed to update consumer state for worker id: {syft_worker_id} to state {consumer_state}",
                 exc_info=e,
             )
@@ -435,7 +428,7 @@ class ZMQProducer(QueueProducer):
         self.dispatch(worker.service, None)
 
     def dispatch(self, service: Service, msg: bytes) -> None:
-        """Dispatch requests to waiting workers as possible"""
+        """Dispatch requests to waiting workers as possible."""
         if msg is not None:  # Queue message if any
             service.requests.append(msg)
 
@@ -457,7 +450,6 @@ class ZMQProducer(QueueProducer):
 
         If message is provided, sends that message.
         """
-
         if self.socket.closed:
             logger.warning("Socket is closed. Cannot send message.")
             return
@@ -479,7 +471,7 @@ class ZMQProducer(QueueProducer):
             try:
                 self.socket.send_multipart(msg)
             except zmq.ZMQError as e:
-                logger.error("ZMQProducer send error", exc_info=e)
+                logger.exception("ZMQProducer send error", exc_info=e)
 
     def _run(self) -> None:
         try:
@@ -622,7 +614,7 @@ class ZMQConsumer(QueueConsumer):
         self.post_init()
 
     def reconnect_to_producer(self) -> None:
-        """Connect or reconnect to producer"""
+        """Connect or reconnect to producer."""
         if self.socket:
             self.poller.unregister(self.socket)  # type: ignore[unreachable]
             self.socket.close()
@@ -664,7 +656,7 @@ class ZMQConsumer(QueueConsumer):
                 self.thread = None
             self.poller.unregister(self.socket)
         except Exception as e:
-            logger.error("Failed to unregister worker.", exc_info=e)
+            logger.exception("Failed to unregister worker.", exc_info=e)
         finally:
             self.socket.close()
             self.context.destroy()
@@ -699,7 +691,7 @@ class ZMQConsumer(QueueConsumer):
             try:
                 self.socket.send_multipart(msg)
             except zmq.ZMQError as e:
-                logger.error("ZMQConsumer send error", exc_info=e)
+                logger.exception("ZMQConsumer send error", exc_info=e)
 
     def _run(self) -> None:
         """Send reply, if any, to producer and wait for next request."""
@@ -715,7 +707,7 @@ class ZMQConsumer(QueueConsumer):
                     logger.info("Context terminated")
                     return
                 except Exception as e:
-                    logger.error("ZMQ poll error", exc_info=e)
+                    logger.exception("ZMQ poll error", exc_info=e)
                     continue
 
                 if items:
@@ -755,11 +747,10 @@ class ZMQConsumer(QueueConsumer):
                         self.reconnect_to_producer()
                     else:
                         logger.error(f"ZMQConsumer invalid command: {command}")
-                else:
-                    if not self.is_producer_alive():
-                        logger.info("Producer check-alive timed out. Reconnecting.")
-                        self.reconnect_to_producer()
-                        self.set_producer_alive()
+                elif not self.is_producer_alive():
+                    logger.info("Producer check-alive timed out. Reconnecting.")
+                    self.reconnect_to_producer()
+                    self.set_producer_alive()
 
                 if not self._stop.is_set():
                     self.send_heartbeat()
@@ -864,7 +855,6 @@ class ZMQClient(QueueClient):
 
         A queue can have at most one producer attached to it.
         """
-
         if port is None:
             if self.config.queue_port is None:
                 self.config.queue_port = self._get_free_tcp_port(self.host)
@@ -891,12 +881,11 @@ class ZMQClient(QueueClient):
         worker_stash: WorkerStash | None = None,
         syft_worker_id: UID | None = None,
     ) -> ZMQConsumer:
-        """Add a consumer to a queue
+        """Add a consumer to a queue.
 
         A queue should have at least one producer attached to the group.
 
         """
-
         if address is None:
             address = get_queue_address(self.config.queue_port)
 
@@ -978,7 +967,7 @@ class ZMQQueueConfig(QueueConfig):
         client_type: type[ZMQClient] | None = None,
         client_config: ZMQClientConfig | None = None,
         thread_workers: bool = False,
-    ):
+    ) -> None:
         self.client_type = client_type or ZMQClient
         self.client_config: ZMQClientConfig = client_config or ZMQClientConfig()
         self.thread_workers = thread_workers

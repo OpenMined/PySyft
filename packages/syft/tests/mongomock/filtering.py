@@ -1,15 +1,14 @@
 # stdlib
-from datetime import datetime
 import itertools
 import numbers
 import operator
 import re
 import uuid
+from datetime import datetime
 
 # relative
 from . import OperationFailure
-from .helpers import ObjectId
-from .helpers import RE_TYPE
+from .helpers import RE_TYPE, ObjectId
 
 try:
     # stdlib
@@ -19,8 +18,7 @@ except ImportError:
 
 try:
     # third party
-    from bson import DBRef
-    from bson import Regex
+    from bson import DBRef, Regex
 
     _RE_TYPES = (RE_TYPE, Regex)
 except ImportError:
@@ -51,7 +49,7 @@ _NOT_IMPLEMENTED_OPERATORS = {
 
 
 def filter_applies(search_filter, document):
-    """Applies given filter
+    """Applies given filter.
 
     This function implements MongoDB's matching strategy over documents in the find() method
     and other related scenarios (like $elemMatch)
@@ -59,13 +57,13 @@ def filter_applies(search_filter, document):
     return _filterer_inst.apply(search_filter, document)
 
 
-class _Filterer(object):
+class _Filterer:
     """An object to help applying a filter, using the MongoDB query language."""
 
     # This is populated using register_parse_expression further down.
     parse_expression = []
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._operator_map = dict(
             {
                 "$eq": _list_expand(operator_eq),
@@ -87,7 +85,7 @@ class _Filterer(object):
             },
         )
 
-    def apply(self, search_filter, document):
+    def apply(self, search_filter, document) -> bool:
         if not isinstance(search_filter, dict):
             msg = "the match filter must be an expression in an object"
             raise OperationFailure(
@@ -113,7 +111,7 @@ class _Filterer(object):
                     return False
                 continue
             if key in _TOP_LEVEL_OPERATORS:
-                msg = "The {} operator is not implemented in mongomock yet".format(key)
+                msg = f"The {key} operator is not implemented in mongomock yet"
                 raise NotImplementedError(
                     msg,
                 )
@@ -157,12 +155,15 @@ class _Filterer(object):
                             unknown_operators & _NOT_IMPLEMENTED_OPERATORS
                         )
                         if not_implemented_operators:
+                            msg = (
+                                f"'{next(iter(not_implemented_operators))}' is a valid operation but it is not supported by Mongomock "
+                                "yet."
+                            )
                             raise NotImplementedError(
-                                "'%s' is a valid operation but it is not supported by Mongomock "
-                                "yet." % list(not_implemented_operators)[0],
+                                msg,
                             )
                         raise OperationFailure(
-                            "unknown operator: " + list(unknown_operators)[0],
+                            "unknown operator: " + next(iter(unknown_operators)),
                         )
                     is_match = (
                         all(
@@ -174,7 +175,7 @@ class _Filterer(object):
                         )
                         and search
                     )
-                elif isinstance(search, _RE_TYPES) and isinstance(doc_val, (str, list)):
+                elif isinstance(search, _RE_TYPES) and isinstance(doc_val, str | list):
                     is_match = _regex(doc_val, search)
                 elif key in LOGICAL_OPERATOR_MAP:
                     if not search:
@@ -183,7 +184,7 @@ class _Filterer(object):
                             msg,
                         )
                     is_match = LOGICAL_OPERATOR_MAP[key](document, search, self.apply)
-                elif isinstance(doc_val, (list, tuple)):
+                elif isinstance(doc_val, list | tuple):
                     is_match = search in doc_val or search == doc_val
                     if isinstance(search, ObjectId):
                         is_match |= str(search) in doc_val
@@ -205,11 +206,12 @@ class _Filterer(object):
 
         return True
 
-    def _not_op(self, d, k, s):
+    def _not_op(self, d, k, s) -> bool:
         if isinstance(s, dict):
             for key in s:
                 if key not in self._operator_map and key not in LOGICAL_OPERATOR_MAP:
-                    raise OperationFailure("unknown operator: %s" % key)
+                    msg = f"unknown operator: {key}"
+                    raise OperationFailure(msg)
         elif isinstance(s, _RE_TYPES):
             pass
         else:
@@ -217,7 +219,7 @@ class _Filterer(object):
             raise OperationFailure(msg)
         return not self.apply({k: s}, d)
 
-    def _elem_match_op(self, doc_val, query):
+    def _elem_match_op(self, doc_val, query) -> bool:
         if not isinstance(doc_val, list):
             return False
         if not isinstance(query, dict):
@@ -246,7 +248,7 @@ class _Filterer(object):
 
 
 def iter_key_candidates(key, doc):
-    """Get possible subdocuments or lists that are referred to by the key in question
+    """Get possible subdocuments or lists that are referred to by the key in question.
 
     Returns the appropriate nested value if the key includes dot notation.
     """
@@ -272,7 +274,7 @@ def iter_key_candidates(key, doc):
 
 
 def _iter_key_candidates_sublist(key, doc):
-    """Iterates of candidates
+    """Iterates of candidates.
 
     :param doc: a list to be searched for candidates for our key
     :param key: the string key to be matched
@@ -306,11 +308,11 @@ def _iter_key_candidates_sublist(key, doc):
 
 
 def _force_list(v):
-    return v if isinstance(v, (list, tuple)) else [v]
+    return v if isinstance(v, list | tuple) else [v]
 
 
 def _in_op(doc_val, search_val):
-    if not isinstance(search_val, (list, tuple)):
+    if not isinstance(search_val, list | tuple):
         msg = "$in needs an array"
         raise OperationFailure(msg)
     if doc_val is None and None in search_val:
@@ -323,7 +325,7 @@ def _in_op(doc_val, search_val):
 
 
 def _not_None_and(f):
-    """wrap an operator to return False if the first arg is None"""
+    """Wrap an operator to return False if the first arg is None."""
     return lambda v, l: v is not None and f(v, l)
 
 
@@ -345,12 +347,14 @@ def bson_compare(op, a, b, can_compare_types=True):
     """Compare two elements using BSON comparison.
 
     Args:
+    ----
         op: the basic operation to compare (e.g. operator.lt, operator.ge).
         a: the first operand
         b: the second operand
         can_compare_types: if True, according to BSON's definition order
             between types is used, otherwise always return False when types are
             different.
+
     """
     a_type = _get_compare_type(a)
     b_type = _get_compare_type(b)
@@ -370,7 +374,7 @@ def bson_compare(op, a, b, can_compare_types=True):
         a = [(_get_compare_type(v), k, v) for k, v in a.items()]
         b = [(_get_compare_type(v), k, v) for k, v in b.items()]
 
-    if isinstance(a, (tuple, list)):
+    if isinstance(a, tuple | list):
         for item_a, item_b in zip(a, b):
             if item_a != item_b:
                 return bson_compare(op, item_a, item_b)
@@ -390,7 +394,7 @@ def bson_compare(op, a, b, can_compare_types=True):
     return op(a, b)
 
 
-def _get_compare_type(val):
+def _get_compare_type(val) -> int:
     """Get a number representing the base type of the value used for comparison.
 
     See https://docs.mongodb.com/manual/reference/bson-type-comparison-order/
@@ -407,7 +411,7 @@ def _get_compare_type(val):
         return 15
     if isinstance(val, dict):
         return 20
-    if isinstance(val, (tuple, list)):
+    if isinstance(val, tuple | list):
         return 25
     if isinstance(val, uuid.UUID):
         return 30
@@ -427,7 +431,7 @@ def _get_compare_type(val):
 
 
 def _regex(doc_val, regex):
-    if not (isinstance(doc_val, (str, list, RE_TYPE))):
+    if not (isinstance(doc_val, str | list | RE_TYPE)):
         return False
     if isinstance(regex, str):
         regex = re.compile(regex)
@@ -440,15 +444,15 @@ def _regex(doc_val, regex):
 
 
 def _size_op(doc_val, search_val):
-    if isinstance(doc_val, (list, tuple, dict)):
+    if isinstance(doc_val, list | tuple | dict):
         return search_val == len(doc_val)
     return search_val == 1 if doc_val and doc_val is not None else 0
 
 
 def _list_expand(f, negative=False):
     def func(doc_val, search_val):
-        if isinstance(doc_val, (list, tuple)) and not isinstance(
-            search_val, (list, tuple),
+        if isinstance(doc_val, list | tuple) and not isinstance(
+            search_val, list | tuple,
         ):
             if negative:
                 return all(f(val, search_val) for val in doc_val)
@@ -460,14 +464,16 @@ def _list_expand(f, negative=False):
 
 def _type_op(doc_val, search_val, in_array=False):
     if search_val not in TYPE_MAP:
-        raise OperationFailure("%r is not a valid $type" % search_val)
+        msg = f"{search_val!r} is not a valid $type"
+        raise OperationFailure(msg)
     elif TYPE_MAP[search_val] is None:
+        msg = f"{search_val} is a valid $type but not implemented"
         raise NotImplementedError(
-            "%s is a valid $type but not implemented" % search_val,
+            msg,
         )
     if TYPE_MAP[search_val](doc_val):
         return True
-    if isinstance(doc_val, (list, tuple)) and not in_array:
+    if isinstance(doc_val, list | tuple) and not in_array:
         return any(_type_op(val, search_val, in_array=True) for val in doc_val)
     return False
 
@@ -576,7 +582,7 @@ def resolve_sort_key(key, doc):
         return 1, BsonComparable(None)
 
     # List or tuples are sorted solely by their first value.
-    if isinstance(value, (tuple, list)):
+    if isinstance(value, tuple | list):
         if not value:
             return 0, BsonComparable(None)
         return 1, BsonComparable(value[0])
@@ -584,10 +590,10 @@ def resolve_sort_key(key, doc):
     return 1, BsonComparable(value)
 
 
-class BsonComparable(object):
+class BsonComparable:
     """Wraps a value in an BSON like object that can be compared one to another."""
 
-    def __init__(self, obj):
+    def __init__(self, obj) -> None:
         self.obj = obj
 
     def __lt__(self, other):
@@ -599,8 +605,7 @@ _filterer_inst = _Filterer()
 
 # Developer note: to avoid a cross-modules dependency (filtering requires aggregation, that requires
 # filtering), the aggregation module needs to register its parse_expression function here.
-def register_parse_expression(parse_expression):
+def register_parse_expression(parse_expression) -> None:
     """Register the parse_expression function from the aggregate module."""
-
     del _Filterer.parse_expression[:]
     _Filterer.parse_expression.append(parse_expression)

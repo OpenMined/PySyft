@@ -1,14 +1,11 @@
 # stdlib
-from enum import Enum
-from enum import unique
 import json
+from enum import Enum, unique
 from pathlib import Path
 from typing import Any
 
 # third party
-from pydantic import BaseModel
-from pydantic import Field
-from pydantic import field_validator
+from pydantic import BaseModel, Field, field_validator
 
 __all__ = [
     "BucketType",
@@ -24,7 +21,7 @@ __all__ = [
 
 @unique
 class BucketType(Enum):
-    """Weed shell supported values"""
+    """Weed shell supported values."""
 
     S3 = "s3"
     AZURE = "azure"
@@ -37,7 +34,7 @@ class BaseBucket(BaseModel):
 
     @property
     def full_bucket_name(self) -> str:
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 def check_creds(v: Any) -> Any:
@@ -49,7 +46,6 @@ def check_creds(v: Any) -> Any:
 
 def check_and_read_creds(v: Any) -> Any:
     """Check if creds are provided as a path to a JSON file, load them if so."""
-
     v = check_creds(v)
     if isinstance(v, str | Path):
         return json.loads(Path(v).read_text())

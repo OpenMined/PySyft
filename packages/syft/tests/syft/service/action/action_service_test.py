@@ -15,7 +15,7 @@ def get_auth_ctx(worker):
     )
 
 
-def test_action_service_sanity(worker):
+def test_action_service_sanity(worker) -> None:
     service = worker.get_service("actionservice")
     root_datasite_client = worker.root_client
 

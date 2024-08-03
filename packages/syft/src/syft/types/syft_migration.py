@@ -3,8 +3,7 @@ from collections.abc import Callable
 
 # relative
 from .syft_object import SyftMigrationRegistry
-from .transforms import generate_transform_wrapper
-from .transforms import validate_klass_and_version
+from .transforms import generate_transform_wrapper, validate_klass_and_version
 
 
 def migrate(

@@ -22,8 +22,7 @@ class Icon(enum.Enum):
 
     @property
     def js_escaped_svg(self) -> str:
-        """
-        Required for in-line SVGs in JS
-        TODO remove after refactoring table + templating
+        """Required for in-line SVGs in JS
+        TODO remove after refactoring table + templating.
         """
         return json.dumps(self.svg)

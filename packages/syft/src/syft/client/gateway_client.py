@@ -1,23 +1,20 @@
 # stdlib
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 # relative
-from ..abstract_server import ServerSideType
-from ..abstract_server import ServerType
+from ..abstract_server import ServerSideType, ServerType
 from ..serde.serializable import serializable
 from ..server.credentials import SyftSigningKey
 from ..service.network.server_peer import ServerPeer
-from ..service.response import SyftError
-from ..service.response import SyftException
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
-from ..types.syft_object import SyftObject
+from ..service.response import SyftError, SyftException
+from ..types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject
 from ..util.assets import load_png_base64
 from ..util.notebook_ui.styles import FONT_CSS
 from .client import SyftClient
 
 if TYPE_CHECKING:
-    from .connection import ServerConnection
     from ..service.metadata.server_metadata import ServerMetadataJSON
+    from .connection import ServerConnection
 
 
 @serializable(canonical_name="GatewayClient", version=1)

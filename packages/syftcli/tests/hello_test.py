@@ -1,8 +1,7 @@
 # third party
-from typer.testing import CliRunner
-
 # syftcli absolute
 from syftcli.cli import app
+from typer.testing import CliRunner
 
 runner = CliRunner()
 

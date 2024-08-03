@@ -1,21 +1,17 @@
 # stdlib
-from collections.abc import Callable
-from collections.abc import Sequence
 import importlib
 import inspect
-from inspect import Signature
-from inspect import _signature_fromstr
+from collections.abc import Callable, Sequence
+from inspect import Signature, _signature_fromstr
 from types import BuiltinFunctionType
 from typing import Any
 
 # third party
-import numpy
+import numpy as np
 from typing_extensions import Self
 
 # relative
-from .lib_permissions import ALL_EXECUTE
-from .lib_permissions import CMPPermission
-from .lib_permissions import NONE_EXECUTE
+from .lib_permissions import ALL_EXECUTE, NONE_EXECUTE, CMPPermission
 from .signature import get_signature
 
 LIB_IGNORE_ATTRIBUTES = {
@@ -42,7 +38,7 @@ def import_from_path(path: str) -> type:
 
 
 class CMPBase:
-    """cmp: cascading module permissions"""
+    """cmp: cascading module permissions."""
 
     def __init__(
         self,
@@ -52,7 +48,7 @@ class CMPBase:
         obj: Any | None = None,
         absolute_path: str | None = None,
         text_signature: str | None = None,
-    ):
+    ) -> None:
         self.permissions: CMPPermission | None = permissions
         self.path: str = path
         self.obj: Any | None = obj if obj is not None else None
@@ -121,15 +117,18 @@ class CMPBase:
         child_obj: type | object,
         absolute_path: str,
     ) -> Self | None:
-        """Get the child of parent as a CMPBase object
+        """Get the child of parent as a CMPBase object.
 
         Args:
+        ----
             parent_obj (_type_): parent object
             child_path (_type_): _description_
             child_obj (_type_): _description_
 
         Returns:
+        -------
             _type_: _description_
+
         """
         parent_is_parent_module = CMPBase.parent_is_parent_module(parent_obj, child_obj)
         if CMPBase.isfunction(child_obj) and parent_is_parent_module:
@@ -197,7 +196,7 @@ class CMPBase:
     def isfunction(obj: Callable) -> bool:
         return (
             inspect.isfunction(obj)
-            or type(obj) == numpy.ufunc
+            or type(obj) == np.ufunc
             or isinstance(obj, BuiltinFunctionType)
         )
 
@@ -217,15 +216,18 @@ class CMPBase:
         │    ├───char (ALL_EXECUTE)
         │    │    ├───_use_unicode (ALL_EXECUTE)
         │    │    ├───_to_string_or_unicode_array (ALL_EXECUTE)
-        │    │    ├───_clean_args (ALL_EXECUTE)
+        │    │    ├───_clean_args (ALL_EXECUTE).
 
         Args:
+        ----
             indent (int, optional): indentation level. Defaults to 0.
             is_last (bool, optional): is last item of collection. Defaults to False.
             parent_path (str, optional): path of the parent obj. Defaults to "".
 
         Returns:
+        -------
             str: representation of the CMP
+
         """
         last_idx, c_indent = len(self.children) - 1, indent + 1
         children_string = "".join(
@@ -298,9 +300,9 @@ class CMPProperty(CMPBase):
 
 
 class CMPTree:
-    """root node of the Tree(s), with one child per library"""
+    """root node of the Tree(s), with one child per library."""
 
-    def __init__(self, children: list[CMPModule]):
+    def __init__(self, children: list[CMPModule]) -> None:
         self.children = {c.path: c for c in children}
 
     def build(self) -> Self:

@@ -1,39 +1,34 @@
 # stdlib
-from abc import ABCMeta
-from collections import OrderedDict
-from collections import defaultdict
-from collections.abc import Collection
-from collections.abc import Iterable
-from collections.abc import Mapping
-from enum import Enum
-from enum import EnumMeta
 import functools
 import inspect
 import pathlib
-from pathlib import PurePath
 import sys
 import tempfile
-from types import MappingProxyType
-from types import UnionType
 import typing
-from typing import Any
-from typing import GenericAlias
-from typing import Optional
-from typing import TypeVar
-from typing import Union
-from typing import _GenericAlias
-from typing import _SpecialForm
-from typing import _SpecialGenericAlias
-from typing import _UnionGenericAlias
-from typing import cast
 import weakref
+from abc import ABCMeta
+from collections import OrderedDict, defaultdict
+from collections.abc import Collection, Iterable, Mapping
+from enum import Enum, EnumMeta
+from pathlib import PurePath
+from types import MappingProxyType, UnionType
+from typing import (
+    Any,
+    GenericAlias,
+    Optional,
+    TypeVar,
+    Union,
+    _GenericAlias,
+    _SpecialForm,
+    _SpecialGenericAlias,
+    _UnionGenericAlias,
+    cast,
+)
 
 # relative
 from ..types.syft_object_registry import SyftObjectRegistry
 from .capnp import get_capnp_schema
-from .recursive import chunk_bytes
-from .recursive import combine_bytes
-from .recursive import recursive_serde_register
+from .recursive import chunk_bytes, combine_bytes, recursive_serde_register
 from .util import compatible_with_large_file_writes_capnp
 
 iterable_schema = get_capnp_schema("iterable.capnp").Iterable
@@ -434,8 +429,8 @@ def deserialize_generic_alias(type_blob: bytes) -> type:
         if type_constructor == Optional:
             _args = _args[0]
         return type_constructor[_args]
-    except Exception as e:
-        raise e
+    except Exception:
+        raise
 
 
 # 🟡 TODO 5: add tests and all typing options for signatures

@@ -1,23 +1,22 @@
 # stdlib
 
 # third party
-from result import Err
-from result import Ok
-from result import Result
+from result import Err, Ok, Result
 
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import BaseUIDStoreStash
-from ...store.document_store import PartitionKey
-from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
+from ...store.document_store import (
+    BaseUIDStoreStash,
+    PartitionKey,
+    PartitionSettings,
+    QueryKeys,
+)
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.uid import UID
 from ...util.telemetry import instrument
-from .notifications import Notification
-from .notifications import NotificationStatus
+from .notifications import Notification, NotificationStatus
 
 FromUserVerifyKeyPartitionKey = PartitionKey(
     key="from_user_verify_key", type_=SyftVerifyKey,

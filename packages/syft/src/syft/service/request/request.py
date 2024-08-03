@@ -1,40 +1,37 @@
 # stdlib
-from collections.abc import Callable
-from enum import Enum
 import hashlib
 import inspect
 import logging
+from collections.abc import Callable
+from enum import Enum
 from typing import Any
 
 # third party
 from pydantic import model_validator
-from result import Err
-from result import Ok
-from result import Result
+from result import Err, Ok, Result
 from typing_extensions import Self
 
 # relative
 from ...abstract_server import ServerSideType
 from ...client.api import APIRegistry
 from ...client.client import SyftClient
-from ...custom_worker.config import DockerWorkerConfig
-from ...custom_worker.config import WorkerConfig
+from ...custom_worker.config import DockerWorkerConfig, WorkerConfig
 from ...custom_worker.k8s import IN_KUBERNETES
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
 from ...server.credentials import SyftVerifyKey
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject
 from ...types.syncable_object import SyncableSyftObject
-from ...types.transforms import TransformContext
-from ...types.transforms import add_server_uid_for_key
-from ...types.transforms import generate_id
-from ...types.transforms import transform
+from ...types.transforms import (
+    TransformContext,
+    add_server_uid_for_key,
+    generate_id,
+    transform,
+)
 from ...types.twin_object import TwinObject
-from ...types.uid import LineageID
-from ...types.uid import UID
+from ...types.uid import UID, LineageID
 from ...util import options
 from ...util.colors import SURFACE
 from ...util.decorators import deprecated
@@ -43,19 +40,13 @@ from ...util.notebook_ui.icons import Icon
 from ...util.util import prompt_warning_message
 from ..action.action_object import ActionObject
 from ..action.action_service import ActionService
-from ..action.action_store import ActionObjectPermission
-from ..action.action_store import ActionPermission
+from ..action.action_store import ActionObjectPermission, ActionPermission
 from ..blob_storage.service import BlobStorageService
-from ..code.user_code import UserCode
-from ..code.user_code import UserCodeStatus
-from ..code.user_code import UserCodeStatusCollection
-from ..context import AuthedServiceContext
-from ..context import ChangeContext
-from ..job.job_stash import Job
-from ..job.job_stash import JobStatus
+from ..code.user_code import UserCode, UserCodeStatus, UserCodeStatusCollection
+from ..context import AuthedServiceContext, ChangeContext
+from ..job.job_stash import Job, JobStatus
 from ..notification.notifications import Notification
-from ..response import SyftError
-from ..response import SyftSuccess
+from ..response import SyftError, SyftSuccess
 from ..user.user import UserView
 
 logger = logging.getLogger(__name__)
@@ -195,7 +186,7 @@ class ActionStoreChange(Change):
                 )
             return Ok(SyftSuccess(message=f"{type(self)} Success"))
         except Exception as e:
-            logger.error(f"failed to apply {type(self)}", exc_info=e)
+            logger.exception(f"failed to apply {type(self)}", exc_info=e)
             return Err(SyftError(message=str(e)))
 
     def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
@@ -321,8 +312,7 @@ class CreateCustomWorkerPoolChange(Change):
     def _run(
         self, context: ChangeContext, apply: bool,
     ) -> Result[SyftSuccess, SyftError]:
-        """
-        This function is run when the DO approves (apply=True)
+        """This function is run when the DO approves (apply=True)
         or deny (apply=False) the request.
         """
         # TODO: refactor the returned Err(SyftError) or Ok(SyftSuccess) to just
@@ -622,20 +612,16 @@ class Request(SyncableSyftObject):
             )
         if message and metadata and metadata.show_warnings and not disable_warnings:
             prompt_warning_message(message=message, confirm=True)
-        msg = (
-            "Approving request ",
-            f"on change {self.code.service_func_name} " if is_code_request else "",
-            f"for datasite {api.server_name}",
-        )
 
-        print("".join(msg))
         return api.services.request.apply(self.id, **kwargs)
 
     def deny(self, reason: str) -> SyftSuccess | SyftError:
         """Denies the particular request.
 
         Args:
+        ----
             reason (str): Reason for which the request has been denied.
+
         """
         api = self._get_api()
         if isinstance(api, SyftError):
@@ -671,7 +657,6 @@ class Request(SyncableSyftObject):
                 message="This request is a low-side request. Please sync your results to approve.",
             )
 
-        print(f"Approving request for datasite {client.name}")
         return client.api.services.request.apply(self.id)
 
     def apply(self, context: AuthedServiceContext) -> Result[SyftSuccess, SyftError]:
@@ -804,21 +789,22 @@ class Request(SyncableSyftObject):
         log_stdout: str = "",
         log_stderr: str = "",
     ) -> Job | SyftError:
-        """
-        Adds a result to this Request:
+        """Adds a result to this Request:
         - Create an ActionObject from the result (if not already an ActionObject)
         - Ensure ActionObject exists on this server
         - Create Job with new result and logs
-        - Update the output history
+        - Update the output history.
 
         Args:
+        ----
             result (Any): ActionObject or any object to be saved as an ActionObject.
             logs (str | None, optional): Optional logs to be saved with the Job. Defaults to None.
 
         Returns:
+        -------
             Job | SyftError: Job object if successful, else SyftError.
-        """
 
+        """
         # TODO check if this is a low-side request. If not, SyftError
 
         api = self._get_api()
@@ -1026,7 +1012,6 @@ class ObjectMutation(Change):
 
             return Ok(SyftSuccess(message=f"{type(self)} Success"))
         except Exception as e:
-            print(f"failed to apply {type(self)}. {e}")
             return Err(SyftError(message=str(e)))
 
     def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
@@ -1101,7 +1086,6 @@ class EnumMutation(ObjectMutation):
                 raise NotImplementedError
             return Ok(SyftSuccess(message=f"{type(self)} Success"))
         except Exception as e:
-            print(f"failed to apply {type(self)}. {e}")
             return Err(SyftError(message=e))
 
     def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
@@ -1179,13 +1163,12 @@ class UserCodeStatusChange(Change):
         msg += "to permission RequestStatus.APPROVED."
         if self.code.nested_codes is None or self.code.nested_codes == {}:  # type: ignore
             msg += " No nested requests"
+        elif self.nested_solved:
+            # else:
+            msg += "<br><br>This change requests the following nested functions calls:<br>"
+            msg += self.nested_repr()
         else:
-            if self.nested_solved:
-                # else:
-                msg += "<br><br>This change requests the following nested functions calls:<br>"
-                msg += self.nested_repr()
-            else:
-                msg += " Nested Requests not resolved"
+            msg += " Nested Requests not resolved"
         return msg
 
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
@@ -1279,7 +1262,7 @@ class UserCodeStatusChange(Change):
                 self.linked_obj.update_with_context(context, updated_status)
             return Ok(SyftSuccess(message=f"{type(self)} Success"))
         except Exception as e:
-            logger.error(f"failed to apply {type(self)}", exc_info=e)
+            logger.exception(f"failed to apply {type(self)}", exc_info=e)
             return Err(SyftError(message=str(e)))
 
     def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:

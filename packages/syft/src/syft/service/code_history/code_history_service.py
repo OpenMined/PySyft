@@ -1,27 +1,29 @@
 # stdlib
 
 # relative
+from typing import TYPE_CHECKING
+
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...store.document_store import DocumentStore
 from ...types.uid import UID
 from ...util.telemetry import instrument
-from ..code.user_code import SubmitUserCode
-from ..code.user_code import UserCode
+from ..code.user_code import SubmitUserCode, UserCode
 from ..context import AuthedServiceContext
-from ..response import SyftError
-from ..response import SyftSuccess
-from ..service import AbstractService
-from ..service import service_method
-from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
-from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
-from ..user.user_roles import ServiceRole
-from .code_history import CodeHistoriesDict
-from .code_history import CodeHistory
-from .code_history import CodeHistoryView
-from .code_history import UsersCodeHistoriesDict
+from ..response import SyftError, SyftSuccess
+from ..service import AbstractService, service_method
+from ..user.user_roles import (
+    DATA_OWNER_ROLE_LEVEL,
+    DATA_SCIENTIST_ROLE_LEVEL,
+    ServiceRole,
+)
+from .code_history import (
+    CodeHistoriesDict,
+    CodeHistory,
+    CodeHistoryView,
+    UsersCodeHistoriesDict,
+)
 from .code_history_stash import CodeHistoryStash
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..code.user_code_service import UserCodeService
@@ -88,7 +90,7 @@ class CodeHistoryService(AbstractService):
         path="code_history.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_all(self, context: AuthedServiceContext) -> list[CodeHistory] | SyftError:
-        """Get a Dataset"""
+        """Get a Dataset."""
         result = self.stash.get_all(context.credentials)
         if result.is_ok():
             return result.ok()
@@ -100,7 +102,7 @@ class CodeHistoryService(AbstractService):
     def get_code_by_uid(
         self, context: AuthedServiceContext, uid: UID,
     ) -> SyftSuccess | SyftError:
-        """Get a User Code Item"""
+        """Get a User Code Item."""
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
             return result.ok()

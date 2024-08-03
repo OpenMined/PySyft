@@ -1,22 +1,19 @@
 # stdlib
+import logging
+import textwrap
 from collections.abc import Callable
 from datetime import datetime
 from enum import Enum
-import logging
-import textwrap
 from typing import Any
 
-# third party
-from IPython.display import display
 import itables
 import markdown
 import pandas as pd
-from pydantic import ConfigDict
-from pydantic import field_validator
-from pydantic import model_validator
-from result import Err
-from result import Ok
-from result import Result
+
+# third party
+from IPython.display import display
+from pydantic import ConfigDict, field_validator, model_validator
+from result import Err, Ok, Result
 from typing_extensions import Self
 
 # relative
@@ -25,33 +22,26 @@ from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
-from ...types.syft_object import PartialSyftObject
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
-from ...types.transforms import TransformContext
-from ...types.transforms import generate_id
-from ...types.transforms import make_set_default
-from ...types.transforms import transform
-from ...types.transforms import validate_url
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, PartialSyftObject, SyftObject
+from ...types.transforms import (
+    TransformContext,
+    generate_id,
+    make_set_default,
+    transform,
+    validate_url,
+)
 from ...types.uid import UID
 from ...util import options
-from ...util.colors import ON_SURFACE_HIGHEST
-from ...util.colors import SURFACE
-from ...util.colors import SURFACE_SURFACE
+from ...util.colors import ON_SURFACE_HIGHEST, SURFACE, SURFACE_SURFACE
 from ...util.markdown import as_markdown_python_code
 from ...util.misc_objs import MarkdownDescription
 from ...util.notebook_ui.icons import Icon
-from ...util.notebook_ui.styles import FONT_CSS
-from ...util.notebook_ui.styles import ITABLES_CSS
+from ...util.notebook_ui.styles import FONT_CSS, ITABLES_CSS
 from ..action.action_data_empty import ActionDataEmpty
 from ..action.action_object import ActionObject
-from ..data_subject.data_subject import DataSubject
-from ..data_subject.data_subject import DataSubjectCreate
+from ..data_subject.data_subject import DataSubject, DataSubjectCreate
 from ..data_subject.data_subject_service import DataSubjectService
-from ..response import SyftError
-from ..response import SyftException
-from ..response import SyftSuccess
-from ..response import SyftWarning
+from ..response import SyftError, SyftException, SyftSuccess, SyftWarning
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
 logger = logging.getLogger(__name__)
@@ -120,7 +110,7 @@ class Asset(SyftObject):
         self,
         description: MarkdownDescription | str | None = "",
         **data: Any,
-    ):
+    ) -> None:
         if isinstance(description, str):
             description = MarkdownDescription(text=description)
         super().__init__(**data, description=description)
@@ -286,12 +276,13 @@ class Asset(SyftObject):
         )
 
     def _private_data(self) -> Result[Any, str]:
-        """
-        Retrieves the private data associated with this asset.
+        """Retrieves the private data associated with this asset.
 
-        Returns:
+        Returns
+        -------
             Result[Any, str]: A Result object containing the private data if the user has permission
             otherwise an Err object with the message "You do not have permission to access private data."
+
         """
         api = APIRegistry.api_for(
             server_uid=self.server_uid,
@@ -603,15 +594,7 @@ class Dataset(SyftObject):
         return client
 
 
-_ASSET_WITH_NONE_MOCK_ERROR_MESSAGE: str = "".join(
-    [
-        "To be included in a Dataset, an asset must either contain a mock, ",
-        "or have it explicitly set to be empty.\n",
-        "You can create an asset without a mock with `sy.Asset(..., mock=sy.ActionObject.empty())` or\n"
-        "set the mock of an existing asset to be empty with `asset.no_mock()` or ",
-        "`asset.mock = sy.ActionObject.empty()`.",
-    ],
-)
+_ASSET_WITH_NONE_MOCK_ERROR_MESSAGE: str = "To be included in a Dataset, an asset must either contain a mock, or have it explicitly set to be empty.\nYou can create an asset without a mock with `sy.Asset(..., mock=sy.ActionObject.empty())` or\nset the mock of an existing asset to be empty with `asset.no_mock()` or `asset.mock = sy.ActionObject.empty()`."
 
 
 def _check_asset_must_contain_mock(asset_list: list[CreateAsset]) -> None:

@@ -1,15 +1,13 @@
 # stdlib
-from collections import defaultdict
-from collections.abc import Iterable
-from collections.abc import Mapping
-from collections.abc import Set
 import logging
 import re
+from collections import defaultdict
+from collections.abc import Iterable, Mapping
+from collections.abc import Set as AbstractSet
 from typing import Any
 
 # relative
-from .util import full_name_with_qualname
-from .util import sanitize_html
+from .util import full_name_with_qualname, sanitize_html
 
 TABLE_INDEX_KEY = "_table_repr_index"
 
@@ -35,7 +33,7 @@ def _syft_in_mro(self: Any, item: Any) -> bool:
 def _get_values_for_table_repr(obj: Any) -> Any:
     if isinstance(obj, Mapping):
         values = list(obj.values())
-    elif isinstance(obj, Set):
+    elif isinstance(obj, AbstractSet):
         values = list(obj)
     else:
         values = obj
@@ -60,22 +58,22 @@ def _create_table_rows(
     extra_fields: list | None = None,
     add_index: bool = True,
 ) -> list[dict[str, Any]]:
-    """
-    Creates row data for a table based on input object obj.
+    """Creates row data for a table based on input object obj.
 
     If valid table data cannot be created, an empty list is returned.
 
     Args:
+    ----
         _self (Mapping | Iterable): The input data as a Mapping or Iterable.
         is_homogenous (bool): A boolean indicating whether the data is homogenous.
         extra_fields (list | None, optional): Additional fields to include in the table. Defaults to None.
         add_index (bool, optional): Whether to add an index column. Defaults to True.
 
     Returns:
+    -------
         list[dict[str, Any]]: A list of dictionaries where each dictionary represents a row in the table.
 
     """
-
     if extra_fields is None:
         extra_fields = []
 
@@ -153,8 +151,7 @@ def _create_table_rows(
                     if value is None:
                         value = "n/a"
 
-                except Exception as e:
-                    print(e)
+                except Exception:
                     value = None
                 cols[field].append(sanitize_html(str(value)))
 
@@ -186,8 +183,7 @@ def _sort_table_rows(rows: list[dict[str, Any]], sort_key: str) -> list[dict[str
         return rows
 
     # relative
-    from ..types.datetime import DateTime
-    from ..types.datetime import str_is_datetime
+    from ..types.datetime import DateTime, str_is_datetime
 
     if all(isinstance(v, str) and str_is_datetime(v) for v in sort_values):
         sort_values = [DateTime.from_str(v) for v in sort_values]
@@ -212,22 +208,22 @@ def prepare_table_data(
     obj: Any,
     add_index: bool = True,
 ) -> tuple[list[dict], dict]:
-    """
-    Creates table data and metadata for a given object.
+    """Creates table data and metadata for a given object.
 
     If a tabular representation cannot be created, an empty list and empty dict are returned instead.
 
     Args:
+    ----
         obj (Any): The input object for which table data is prepared.
         add_index (bool, optional): Whether to add an index column to the table. Defaults to True.
 
     Returns:
+    -------
         tuple: A tuple (table_data, table_metadata) where table_data is a list of dictionaries
         where each dictionary represents a row in the table and table_metadata is a dictionary
         containing metadata about the table such as name, icon, etc.
 
     """
-
     values = _get_values_for_table_repr(obj)
     if len(values) == 0:
         return [], {}

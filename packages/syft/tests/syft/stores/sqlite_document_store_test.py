@@ -10,8 +10,7 @@ from syft.store.sqlite_document_store import SQLiteStorePartition
 
 # relative
 from .store_fixtures_test import sqlite_store_partition_fn
-from .store_mocks_test import MockObjectType
-from .store_mocks_test import MockSyftObject
+from .store_mocks_test import MockObjectType, MockSyftObject
 
 
 def test_sqlite_store_partition_sanity(

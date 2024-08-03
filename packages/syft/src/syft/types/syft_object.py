@@ -1,38 +1,39 @@
 # stdlib
-from collections import defaultdict
-from collections.abc import Callable
-from collections.abc import Generator
-from collections.abc import Iterable
-from collections.abc import KeysView
-from collections.abc import Mapping
-from collections.abc import Sequence
-from collections.abc import Set
-from datetime import datetime
-from functools import cache
-from functools import total_ordering
-from hashlib import sha256
 import inspect
-from inspect import Signature
 import logging
 import types
-from types import NoneType
-from types import UnionType
 import typing
-from typing import Any
-from typing import ClassVar
-from typing import Optional
-from typing import TYPE_CHECKING
-from typing import TypeVar
-from typing import Union
-from typing import get_args
-from typing import get_origin
+from collections import defaultdict
+from collections.abc import (
+    Callable,
+    Generator,
+    Iterable,
+    KeysView,
+    Mapping,
+    Sequence,
+)
+from collections.abc import (
+    Set as AbstractSet,
+)
+from datetime import datetime
+from functools import cache, total_ordering
+from hashlib import sha256
+from inspect import Signature
+from types import NoneType, UnionType
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Optional,
+    TypeVar,
+    Union,
+    get_args,
+    get_origin,
+)
 
 # third party
 import pydantic
-from pydantic import ConfigDict
-from pydantic import EmailStr
-from pydantic import Field
-from pydantic import model_validator
+from pydantic import ConfigDict, EmailStr, Field, model_validator
 from pydantic.fields import PydanticUndefined
 from result import OkErr
 from typeguard import check_type
@@ -46,11 +47,8 @@ from ..service.response import SyftError
 from ..util.autoreload import autoreload_enabled
 from ..util.markdown import as_markdown_python_code
 from ..util.notebook_ui.components.tabulator_template import build_tabulator_table
-from ..util.util import aggressive_set_attr
-from ..util.util import full_name_with_qualname
-from ..util.util import get_qualname_for
-from .syft_metaclass import Empty
-from .syft_metaclass import PartialModelMetaclass
+from ..util.util import aggressive_set_attr, full_name_with_qualname, get_qualname_for
+from .syft_metaclass import Empty, PartialModelMetaclass
 from .syft_object_registry import SyftObjectRegistry
 from .uid import UID
 
@@ -62,7 +60,7 @@ if TYPE_CHECKING:
     from ..service.sync.diff_state import AttrDiff
 
 IntStr = int | str
-AbstractSetIntStr = Set[IntStr]
+AbstractSetIntStr = AbstractSet[IntStr]
 MappingIntStrAny = Mapping[IntStr, Any]
 T = TypeVar("T")
 
@@ -160,8 +158,7 @@ class SyftMigrationRegistry:
     __migration_function_registry__: dict[str, dict[str, Callable]] = {}
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
-        """
-        Populate the `__migration_version_registry__` dictionary with format
+        """Populate the `__migration_version_registry__` dictionary with format
         __migration_version_registry__ = {
             "canonical_name": {version_number: "klass_name"}
         }
@@ -169,7 +166,7 @@ class SyftMigrationRegistry:
         __migration_version_registry__ = {
             'APIEndpoint': {1: 'syft.client.api.APIEndpoint'},
             'Action':      {1: 'syft.service.action.action_object.Action'},
-        }
+        }.
         """
         super().__init_subclass__(**kwargs)
         klass = type(cls) if not isinstance(cls, type) else cls
@@ -206,14 +203,13 @@ class SyftMigrationRegistry:
     def register_migration_function(
         cls, klass_type_str: str, version_from: int, version_to: int, method: Callable,
     ) -> None:
-        """
-        Populate the __migration_transform_registry__ dictionary with format
+        """Populate the __migration_transform_registry__ dictionary with format
         __migration_version_registry__ = {
             "canonical_name": {"version_from x version_to": <function transform_function>}
         }
         For example
         {'ServerMetadata': {'1x2': <function transform_function>,
-                          '2x1': <function transform_function>}}
+                          '2x1': <function transform_function>}}.
         """
         if klass_type_str not in cls.__migration_version_registry__:
             msg = f"{klass_type_str} is not yet registered."
@@ -346,7 +342,7 @@ class BaseDateTime(SyftObjectVersioned):
         res = self.utc_timestamp - other.utc_timestamp
         return BaseDateTime(utc_timestamp=res)
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if other is None:
             return False
         return self.utc_timestamp == other.utc_timestamp
@@ -455,7 +451,7 @@ class SyftObject(SyftObjectVersioned):
             fields = list(getattr(self, "__fields__", {}).keys())  # type: ignore[unreachable]
 
         if "id" not in fields:
-            fields = ["id"] + fields
+            fields = ["id", *fields]
 
         dynam_attrs = set(DYNAMIC_SYFT_ATTRIBUTES)
         fields = [x for x in fields if x not in dynam_attrs]
@@ -550,12 +546,11 @@ class SyftObject(SyftObjectVersioned):
                     # Otherwise validate value against the variable annotation
                     check_type(value, var_annotation)
                 setattr(self, attr, value)
-            else:
-                if not _is_optional(var_annotation):
-                    msg = f"{attr}\n field required (type=value_error.missing)"
-                    raise ValueError(
-                        msg,
-                    )
+            elif not _is_optional(var_annotation):
+                msg = f"{attr}\n field required (type=value_error.missing)"
+                raise ValueError(
+                    msg,
+                )
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
@@ -578,11 +573,11 @@ class SyftObject(SyftObjectVersioned):
                     if isinstance(method, types.FunctionType):
                         type_ = method.__annotations__["return"]
                 except Exception as e:
-                    logger.error(
+                    logger.exception(
                         f"Failed to get attribute from key {key} type for {cls} storage.",
                         exc_info=e,
                     )
-                    raise e
+                    raise
             # EmailStr seems to be lost every time the value is set even with a validator
             # this means the incoming type is str so our validators fail
 
@@ -632,8 +627,7 @@ class SyftObject(SyftObjectVersioned):
     def syft_get_diffs(self, ext_obj: Self) -> list["AttrDiff"]:
         # self is low, ext is high
         # relative
-        from ..service.sync.diff_state import AttrDiff
-        from ..service.sync.diff_state import ListDiff
+        from ..service.sync.diff_state import AttrDiff, ListDiff
 
         diff_attrs = []
 
@@ -733,17 +727,16 @@ class SyftObject(SyftObjectVersioned):
                         raise AttributeError(
                             msg,
                         ) from exc
+                elif hasattr(self.__class__, item):
+                    return self.__getattribute__(
+                        item,
+                    )  # Raises AttributeError if appropriate
                 else:
-                    if hasattr(self.__class__, item):
-                        return self.__getattribute__(
-                            item,
-                        )  # Raises AttributeError if appropriate
-                    else:
-                        # this is the current error
-                        msg = f"{type(self).__name__!r} object has no attribute {item!r}"
-                        raise AttributeError(
-                            msg,
-                        )
+                    # this is the current error
+                    msg = f"{type(self).__name__!r} object has no attribute {item!r}"
+                    raise AttributeError(
+                        msg,
+                    )
 
 
 def short_qual_name(name: str) -> str:

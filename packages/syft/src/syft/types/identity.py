@@ -13,9 +13,9 @@ from .base import SyftBaseModel
 
 if TYPE_CHECKING:
     # relative
+    from ..client.client import SyftClient
     from ..server.credentials import SyftVerifyKey
     from .uid import UID
-    from ..client.client import SyftClient
 
 
 class Identity(SyftBaseModel):
@@ -37,5 +37,5 @@ class Identity(SyftBaseModel):
 
 @serializable(canonical_name="UserIdentity", version=1)
 class UserIdentity(Identity):
-    """This class is used to identify the data scientist users of the server"""
+    """This class is used to identify the data scientist users of the server."""
 

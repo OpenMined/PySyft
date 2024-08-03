@@ -1,21 +1,16 @@
 # stdlib
 import base64
 import binascii
-from collections.abc import AsyncGenerator
 import logging
+from collections.abc import AsyncGenerator
 from typing import Annotated
 
-# third party
-from fastapi import APIRouter
-from fastapi import Body
-from fastapi import Depends
-from fastapi import HTTPException
-from fastapi import Request
-from fastapi import Response
-from fastapi.responses import JSONResponse
-from fastapi.responses import StreamingResponse
-from pydantic import ValidationError
 import requests
+
+# third party
+from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response
+from fastapi.responses import JSONResponse, StreamingResponse
+from pydantic import ValidationError
 
 # relative
 from ..abstract_server import AbstractServer
@@ -23,17 +18,14 @@ from ..client.connection import ServerConnection
 from ..protocol.data_protocol import PROTOCOL_TYPE
 from ..serde.deserialize import _deserialize as deserialize
 from ..serde.serialize import _serialize as serialize
-from ..service.context import ServerServiceContext
-from ..service.context import UnauthedServiceContext
+from ..service.context import ServerServiceContext, UnauthedServiceContext
 from ..service.metadata.server_metadata import ServerMetadataJSON
 from ..service.response import SyftError
-from ..service.user.user import UserCreate
-from ..service.user.user import UserPrivateKey
+from ..service.user.user import UserCreate, UserPrivateKey
 from ..service.user.user_service import UserService
 from ..types.uid import UID
 from ..util.telemetry import TRACE_MODE
-from .credentials import SyftVerifyKey
-from .credentials import UserLoginCredentials
+from .credentials import SyftVerifyKey, UserLoginCredentials
 from .worker import Worker
 
 logger = logging.getLogger(__name__)
@@ -47,7 +39,7 @@ def make_routes(worker: Worker) -> APIRouter:
             from opentelemetry import trace
             from opentelemetry.propagate import extract
         except Exception as e:
-            logger.error("Failed to import opentelemetry", exc_info=e)
+            logger.exception("Failed to import opentelemetry", exc_info=e)
 
     router = APIRouter()
 
@@ -102,7 +94,6 @@ def make_routes(worker: Worker) -> APIRouter:
             peer_connection = _get_server_connection(peer_uid_parsed)
             url = peer_connection.to_blob_route(url_path_parsed)
 
-            print("Url on stream", url.path)
             response = peer_connection._make_put(url.path, data=data, stream=True)
         except requests.RequestException:
             raise HTTPException(404, "Failed to upload data to datasite")
@@ -120,8 +111,7 @@ def make_routes(worker: Worker) -> APIRouter:
         response_class=JSONResponse,
     )
     def root() -> dict[str, str]:
-        """
-        Currently, all service backends must satisfy either of the following requirements to
+        """Currently, all service backends must satisfy either of the following requirements to
         pass the HTTP health checks sent to it from the GCE loadbalancer: 1. Respond with a
         200 on '/'. The content does not matter. 2. Expose an arbitrary url as a readiness
         probe on the pods backing the Service.

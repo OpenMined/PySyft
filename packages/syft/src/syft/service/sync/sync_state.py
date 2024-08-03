@@ -1,7 +1,6 @@
 # stdlib
 from datetime import timedelta
-from typing import Any
-from typing import Optional
+from typing import Any, Optional
 
 # third party
 from pydantic import Field
@@ -11,16 +10,13 @@ from ...abstract_server import ServerSideType
 from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject
 from ...types.syncable_object import SyncableSyftObject
-from ...types.uid import LineageID
-from ...types.uid import UID
+from ...types.uid import UID, LineageID
 from ...util import options
 from ...util.colors import SURFACE
 from ...util.notebook_ui.components.sync import SyncTableObject
-from ...util.notebook_ui.styles import FONT_CSS
-from ...util.notebook_ui.styles import ITABLES_CSS
+from ...util.notebook_ui.styles import FONT_CSS, ITABLES_CSS
 from ..context import AuthedServiceContext
 
 
@@ -32,7 +28,7 @@ def get_hierarchy_level_prefix(level: int) -> str:
 
 
 class SyncStateRow(SyftObject):
-    """A row in the SyncState table"""
+    """A row in the SyncState table."""
 
     __canonical_name__ = "SyncStateItem"
     __version__ = SYFT_OBJECT_VERSION_1

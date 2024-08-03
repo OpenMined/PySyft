@@ -1,15 +1,15 @@
 # stdlib
-from contextlib import contextmanager
 import threading
+from contextlib import contextmanager
 
 
 class RWLock:
-    """Lock enabling multiple readers but only 1 exclusive writer
+    """Lock enabling multiple readers but only 1 exclusive writer.
 
     Source: https://cutt.ly/Ij70qaq
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._read_switch = _LightSwitch()
         self._write_switch = _LightSwitch()
         self._no_readers = threading.Lock()
@@ -36,18 +36,18 @@ class RWLock:
         finally:
             self._writer_release()
 
-    def _reader_acquire(self):
-        """Readers should block whenever a writer has acquired"""
+    def _reader_acquire(self) -> None:
+        """Readers should block whenever a writer has acquired."""
         self._readers_queue.acquire()
         self._no_readers.acquire()
         self._read_switch.acquire(self._no_writers)
         self._no_readers.release()
         self._readers_queue.release()
 
-    def _reader_release(self):
+    def _reader_release(self) -> None:
         self._read_switch.release(self._no_writers)
 
-    def _writer_acquire(self):
+    def _writer_acquire(self) -> None:
         """Acquire the writer lock.
 
         Only the first writer will lock the readtry and then
@@ -62,31 +62,31 @@ class RWLock:
         self._write_switch.acquire(self._no_readers)
         self._no_writers.acquire()
 
-    def _writer_release(self):
+    def _writer_release(self) -> None:
         self._no_writers.release()
         self._write_switch.release(self._no_readers)
 
 
 class _LightSwitch:
-    """An auxiliary "light switch"-like object
+    """An auxiliary "light switch"-like object.
 
     The first thread turns on the "switch", the last one turns it off.
 
     Source: https://cutt.ly/Ij70qaq
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._counter = 0
         self._mutex = threading.RLock()
 
-    def acquire(self, lock):
+    def acquire(self, lock) -> None:
         self._mutex.acquire()
         self._counter += 1
         if self._counter == 1:
             lock.acquire()
         self._mutex.release()
 
-    def release(self, lock):
+    def release(self, lock) -> None:
         self._mutex.acquire()
         self._counter -= 1
         if self._counter == 0:

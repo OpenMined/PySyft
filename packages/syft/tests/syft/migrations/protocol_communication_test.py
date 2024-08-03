@@ -1,7 +1,8 @@
 # stdlib
-from copy import deepcopy
 import os
+from copy import deepcopy
 from pathlib import Path
+from typing import TYPE_CHECKING
 from unittest import mock
 
 # third party
@@ -9,29 +10,23 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.protocol.data_protocol import get_data_protocol
-from syft.protocol.data_protocol import protocol_release_dir
-from syft.protocol.data_protocol import stage_protocol_changes
+from syft.protocol.data_protocol import (
+    get_data_protocol,
+    protocol_release_dir,
+    stage_protocol_changes,
+)
 from syft.serde.recursive import TYPE_BANK
 from syft.serde.serializable import serializable
 from syft.service.context import AuthedServiceContext
 from syft.service.response import SyftError
-from syft.service.service import AbstractService
-from syft.service.service import ServiceConfigRegistry
-from syft.service.service import service_method
+from syft.service.service import AbstractService, ServiceConfigRegistry, service_method
 from syft.service.user.user_roles import GUEST_ROLE_LEVEL
-from syft.store.document_store import BaseStash
-from syft.store.document_store import DocumentStore
-from syft.store.document_store import PartitionSettings
+from syft.store.document_store import BaseStash, DocumentStore, PartitionSettings
 from syft.types.syft_migration import migrate
-from syft.types.syft_object import SYFT_OBJECT_VERSION_1
-from syft.types.syft_object import SyftBaseObject
-from syft.types.syft_object import SyftObject
-from syft.types.transforms import convert_types
-from syft.types.transforms import rename
+from syft.types.syft_object import SYFT_OBJECT_VERSION_1, SyftBaseObject, SyftObject
+from syft.types.transforms import convert_types, rename
 from syft.types.uid import UID
 from syft.util.util import index_syft_by_module_name
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from syft.server.worker import Worker
@@ -146,7 +141,7 @@ def setup_version_one(server_name: str):
     return server, syft_klass_version_one
 
 
-def mock_syft_version():
+def mock_syft_version() -> str:
     return f"{sy.__version__}.dev"
 
 
@@ -171,7 +166,7 @@ def setup_version_second(server_name: str, klass_version_one: type):
     return server, syft_klass_version_second
 
 
-@pytest.fixture
+@pytest.fixture()
 def my_stage_protocol(protocol_file: Path):
     with mock.patch(
         "syft.protocol.data_protocol.PROTOCOL_STATE_FILENAME",
@@ -194,7 +189,7 @@ def my_stage_protocol(protocol_file: Path):
 @pytest.mark.skip(
     reason="Issues running with other tests. Shared release folder causes issues.",
 )
-def test_client_server_running_different_protocols(my_stage_protocol):
+def test_client_server_running_different_protocols(my_stage_protocol) -> None:
     def patched_index_syft_by_module_name(fully_qualified_name: str):
         if klass_v1.__name__ in fully_qualified_name:
             return klass_v1

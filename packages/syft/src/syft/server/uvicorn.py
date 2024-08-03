@@ -1,25 +1,25 @@
 # stdlib
-from collections.abc import Callable
+import contextlib
 import logging
 import multiprocessing
 import multiprocessing.synchronize
 import os
-from pathlib import Path
 import platform
 import signal
 import subprocess  # nosec
 import sys
 import time
+from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
-# third party
-from fastapi import APIRouter
-from fastapi import FastAPI
-from pydantic_settings import BaseSettings
-from pydantic_settings import SettingsConfigDict
 import requests
-from starlette.middleware.cors import CORSMiddleware
 import uvicorn
+
+# third party
+from fastapi import APIRouter, FastAPI
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from starlette.middleware.cors import CORSMiddleware
 
 # relative
 from ..abstract_server import ServerSideType
@@ -32,8 +32,7 @@ from .enclave import Enclave
 from .gateway import Gateway
 from .routes import make_routes
 from .server import ServerType
-from .utils import get_named_server_uid
-from .utils import remove_temp_dir_for_server
+from .utils import get_named_server_uid, remove_temp_dir_for_server
 
 if os_name() == "macOS":
     # needed on MacOS to prevent [__NSCFConstantString initialize] may have been in
@@ -77,14 +76,7 @@ def app_factory() -> FastAPI:
     worker_class = worker_classes[settings.server_type]
 
     kwargs = settings.model_dump()
-    if settings.dev_mode:
-        print(
-            f"WARN: private key is based on server name: {settings.name} in dev_mode. "
-            "Don't run this in production.",
-        )
-        worker = worker_class.named(**kwargs)
-    else:
-        worker = worker_class(**kwargs)
+    worker = worker_class.named(**kwargs) if settings.dev_mode else worker_class(**kwargs)
 
     app = FastAPI(title=settings.name)
     router = make_routes(worker=worker)
@@ -107,15 +99,7 @@ def attach_debugger() -> None:
 
     os.environ["PYDEVD_DISABLE_FILE_VALIDATION"] = "1"
     _, debug_port = debugpy.listen(0)
-    print(
-        "\nStarting the server with the Python Debugger enabled (`debug=True`).\n"
-        'To attach the debugger, open the command palette in VSCode and select "Debug: Start Debugging (F5)".\n'
-        f"Then, enter `{debug_port}` in the port field and press Enter.\n",
-        flush=True,
-    )
-    print(f"Waiting for debugger to attach on port `{debug_port}`...", flush=True)
     debugpy.wait_for_client()  # blocks execution until a remote debugger is attached
-    print("Debugger attached", flush=True)
 
 
 def run_uvicorn(
@@ -128,7 +112,6 @@ def run_uvicorn(
     should_reset = dev_mode and kwargs.get("reset")
 
     if should_reset:
-        print("Found `reset=True` in the launch configuration. Resetting the server...")
         named_server_uid = get_named_server_uid(kwargs.get("name"))
         remove_temp_dir_for_server(named_server_uid)
         # Explicitly set `reset` to False to prevent multiple resets during hot-reload
@@ -137,11 +120,10 @@ def run_uvicorn(
         try:
             python_pids = find_python_processes_on_port(port)
             for pid in python_pids:
-                print(f"Stopping process on port: {port}")
                 kill_process(pid)
                 time.sleep(1)
         except Exception:  # nosec
-            print(f"Failed to kill python process on port: {port}")
+            pass
 
     log_level = "critical"
     if dev_mode:
@@ -230,16 +212,13 @@ def serve_server(
     )
 
     def stop() -> None:
-        print(f"Stopping {name}")
         server_process.terminate()
         server_process.join(3)
         if server_process.is_alive():
             # this is needed because often the process is still alive
             server_process.kill()
-            print("killed")
 
     def start() -> None:
-        print(f"Starting {name} server on {host}:{port}")
         server_process.start()
 
         # Wait for the child process to start uvicorn server before starting the readiness checks.
@@ -262,14 +241,13 @@ def serve_server(
                         timeout=DEFAULT_TIMEOUT,
                     )
                     if req.status_code == 200:
-                        print(" Done.")
                         break
                 except Exception:
                     time.sleep(1)
                     if i == 0:
-                        print("Waiting for server to start", end="")
+                        pass
                     else:
-                        print(".", end="")
+                        pass
 
     return start, stop
 
@@ -321,8 +299,7 @@ def find_python_processes_on_port(port: int) -> list[int]:
                 text=True,
             )
             output, _ = process.communicate()
-        except Exception as e:
-            print(f"Error checking process {pid}: {e}")
+        except Exception:
             continue
 
         lines = output.strip().split("\n")
@@ -333,8 +310,5 @@ def find_python_processes_on_port(port: int) -> list[int]:
 
 
 def kill_process(pid: int) -> None:
-    try:
+    with contextlib.suppress(Exception):
         os.kill(pid, signal.SIGTERM)
-        print(f"Process {pid} terminated.")
-    except Exception as e:
-        print(f"Error killing process {pid}: {e}")

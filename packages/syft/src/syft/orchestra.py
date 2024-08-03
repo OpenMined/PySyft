@@ -3,21 +3,20 @@
 # future
 from __future__ import annotations
 
-# stdlib
-from enum import Enum
 import getpass
 import inspect
 import logging
 import os
-import sys
-from typing import Any, TYPE_CHECKING
+
+# stdlib
+from enum import Enum
+from typing import TYPE_CHECKING, Any
 
 # third party
 from IPython.display import display
 
 # relative
-from .abstract_server import ServerSideType
-from .abstract_server import ServerType
+from .abstract_server import ServerSideType, ServerType
 from .client.client import login as sy_login
 from .client.client import login_as_guest as sy_login_as_guest
 from .protocol.data_protocol import stage_protocol_changes
@@ -25,8 +24,7 @@ from .server.datasite import Datasite
 from .server.enclave import Enclave
 from .server.gateway import Gateway
 from .server.uvicorn import serve_server
-from .service.response import SyftError
-from .service.response import SyftInfo
+from .service.response import SyftError, SyftInfo
 from .util.util import get_random_available_port
 
 if TYPE_CHECKING:
@@ -46,7 +44,7 @@ def get_server_type(server_type: str | ServerType | None) -> ServerType | None:
     try:
         return ServerType(server_type)
     except ValueError:
-        print(f"server_type: {server_type} is not a valid ServerType: {ServerType}")
+        pass
     return None
 
 
@@ -59,9 +57,7 @@ def get_deployment_type(deployment_type: str | None) -> DeploymentType | None:
     try:
         return DeploymentType(deployment_type)
     except ValueError:
-        print(
-            f"deployment_type: {deployment_type} is not a valid DeploymentType: {DeploymentType}",
-        )
+        pass
     return None
 
 
@@ -163,10 +159,7 @@ class ServerHandle:
             if self.shutdown:
                 self.shutdown()
         else:
-            print(
-                f"Shutdown not implemented for the deployment type:{self.deployment_type}",
-                file=sys.stderr,
-            )
+            pass
 
 
 def deploy_to_python(

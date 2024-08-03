@@ -7,9 +7,7 @@ import numpy as np
 import pandas as pd
 
 # relative
-from ..response import SyftError
-from ..response import SyftResponseMessage
-from ..response import SyftSuccess
+from ..response import SyftError, SyftResponseMessage, SyftSuccess
 from .action_object import ActionObject
 
 
@@ -18,7 +16,7 @@ def verify_result(
     private_inputs: ActionObject | list[ActionObject],
     private_outputs: ActionObject | list[ActionObject],
 ) -> SyftResponseMessage:
-    """Verify a single result of Code Verification"""
+    """Verify a single result of Code Verification."""
     trace_assets = []
     if not isinstance(private_inputs, list):
         private_inputs = [private_inputs]
@@ -42,7 +40,6 @@ def verify_result(
                 msg,
             )
 
-    print("Code Verification in progress.")
     traced_results = func(*trace_assets)
 
     if isinstance(private_outputs, list):
@@ -72,7 +69,7 @@ def compare_hashes(
 
 
 def code_verification(func: Callable) -> Callable:
-    """Compares history hashes of an Empty Action Object to that of the real action object
+    """Compares history hashes of an Empty Action Object to that of the real action object.
 
     Inputs:
     - func:: a Callable whose sole argument should be the Private Dataset(s) being used. Constraints:
@@ -106,13 +103,9 @@ def code_verification(func: Callable) -> Callable:
                     msg,
                 )
 
-        print("Evaluating function normally to obtain history hash")
         results = func(*args, **kwargs).syft_history_hash
-        print(8 * "(-(-_(-_-)_-)-)")
 
-        print("Tracing function to obtain history hash")
         traced_results = func(*trace_assets, **kwargs).syft_history_hash
-        print(8 * "(-(-_(-_-)_-)-)")
 
         # assert len(results) == len(traced_results)
         hashes_match = results == traced_results

@@ -1,6 +1,5 @@
 # stdlib
-from importlib.resources import as_file
-from importlib.resources import files
+from importlib.resources import as_file, files
 
 # third party
 import capnp

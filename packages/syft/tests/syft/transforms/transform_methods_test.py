@@ -3,35 +3,38 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from types import FunctionType
 
+import pytest
+
 # third party
 from pydantic import EmailStr
 from pydantic_core import PydanticCustomError
-import pytest
 
 # syft absolute
-from syft.types.transforms import NotNone
-from syft.types.transforms import TransformContext
-from syft.types.transforms import add_credentials_for_key
-from syft.types.transforms import add_server_uid_for_key
-from syft.types.transforms import drop
-from syft.types.transforms import generate_id
-from syft.types.transforms import geteitherattr
-from syft.types.transforms import keep
-from syft.types.transforms import make_set_default
-from syft.types.transforms import rename
-from syft.types.transforms import validate_email
-from syft.types.transforms import validate_url
+from syft.types.transforms import (
+    NotNone,
+    TransformContext,
+    add_credentials_for_key,
+    add_server_uid_for_key,
+    drop,
+    generate_id,
+    geteitherattr,
+    keep,
+    make_set_default,
+    rename,
+    validate_email,
+    validate_url,
+)
 from syft.types.uid import UID
 
 
 @pytest.mark.parametrize(
-    "syft_obj, context",
+    ("syft_obj", "context"),
     [
         ("admin_user", "authed_context"),
         ("guest_user", "server_context"),
     ],
 )
-def test_transformcontext(syft_obj, context, request):
+def test_transformcontext(syft_obj, context, request) -> None:
     syft_obj = request.getfixturevalue(syft_obj)
     context = request.getfixturevalue(context)
 
@@ -54,14 +57,14 @@ def test_transformcontext(syft_obj, context, request):
 
 
 @pytest.mark.parametrize(
-    "output, key",
+    ("output", "key"),
     [
         ({"my_key": "value"}, "not_my_key"),
         ({"my_key": "value"}, "my_key"),
     ],
 )
 @pytest.mark.parametrize("default", [NotNone, "DefaultValue"])
-def test_geteitherattr(output, key, default):
+def test_geteitherattr(output, key, default) -> None:
     @dataclass
     class MockObject:
         my_key = "MockValue"
@@ -84,14 +87,14 @@ def test_geteitherattr(output, key, default):
 
 
 @pytest.mark.parametrize(
-    "key, value",
+    ("key", "value"),
     [
         ("dict_key", "dict_value"),
         ("obj_key", "obj_value"),
         ("no_key", "no_value"),
     ],
 )
-def test_make_set_default(faker, key, value, server_context):
+def test_make_set_default(faker, key, value, server_context) -> None:
     result = make_set_default(key, value)
     assert isinstance(result, FunctionType)
     assert isinstance(result, Callable)
@@ -123,7 +126,7 @@ def test_make_set_default(faker, key, value, server_context):
         assert resultant_context.output[key] == mock_obj.obj_key
 
 
-def test_drop(faker, server_context):
+def test_drop(faker, server_context) -> None:
     @dataclass
     class MockObject:
         name: str
@@ -164,7 +167,7 @@ def test_drop(faker, server_context):
     assert resultant_context.output == expected_output
 
 
-def test_keep(faker, server_context):
+def test_keep(faker, server_context) -> None:
     @dataclass
     class MockObject:
         name: str
@@ -203,7 +206,7 @@ def test_keep(faker, server_context):
     assert resultant_context.output == expected_output
 
 
-def test_rename(faker, server_context):
+def test_rename(faker, server_context) -> None:
     @dataclass
     class MockObject:
         name: str
@@ -242,7 +245,7 @@ def test_rename(faker, server_context):
     assert resultant_context.output == expected_output
 
 
-def test_generate_id(faker, server_context):
+def test_generate_id(faker, server_context) -> None:
     @dataclass
     class MockObject:
         name: str
@@ -311,7 +314,7 @@ def test_generate_id(faker, server_context):
     assert result.output["id"] == uid
 
 
-def test_add_credentials_for_key(faker, authed_context):
+def test_add_credentials_for_key(faker, authed_context) -> None:
     @dataclass
     class MockObject:
         name: str
@@ -337,7 +340,7 @@ def test_add_credentials_for_key(faker, authed_context):
     assert result.output[key] == authed_context.credentials
 
 
-def test_add_server_uid_for_key(faker, server_context):
+def test_add_server_uid_for_key(faker, server_context) -> None:
     @dataclass
     class MockObject:
         name: str
@@ -363,7 +366,7 @@ def test_add_server_uid_for_key(faker, server_context):
     assert result.output[key] == server_context.server.id
 
 
-def test_validate_url(faker, server_context):
+def test_validate_url(faker, server_context) -> None:
     @dataclass
     class MockObject:
         url: str | None
@@ -395,7 +398,7 @@ def test_validate_url(faker, server_context):
     assert result.output["url"] == url
 
 
-def test_validate_email(faker, server_context):
+def test_validate_email(faker, server_context) -> None:
     @dataclass
     class MockObject:
         email: str

@@ -6,18 +6,15 @@ from threading import Thread
 import pytest
 
 # syft absolute
-from syft.store.document_store import PartitionSettings
-from syft.store.document_store import QueryKeys
+from syft.store.document_store import PartitionSettings, QueryKeys
 from syft.store.kv_document_store import KeyValueStorePartition
 from syft.types.uid import UID
 
 # relative
-from .store_mocks_test import MockObjectType
-from .store_mocks_test import MockStoreConfig
-from .store_mocks_test import MockSyftObject
+from .store_mocks_test import MockObjectType, MockStoreConfig, MockSyftObject
 
 
-@pytest.fixture
+@pytest.fixture()
 def kv_store_partition(worker):
     store_config = MockStoreConfig()
     settings = PartitionSettings(name="test", object_type=MockObjectType)
@@ -31,7 +28,7 @@ def kv_store_partition(worker):
     res = store.init_store()
     assert res.is_ok()
 
-    yield store
+    return store
 
 
 def test_kv_store_partition_sanity(kv_store_partition: KeyValueStorePartition) -> None:

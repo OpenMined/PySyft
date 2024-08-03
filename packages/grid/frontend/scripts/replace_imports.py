@@ -35,11 +35,10 @@ def scan_and_process_ts_files(folder_path: str) -> None:
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: python script_name.py /path/to/your/folder")
         sys.exit(1)
 
     folder_path = sys.argv[1]
     if not os.path.isdir(folder_path):
-        print(f"Error: {folder_path} is not a valid directory.")
+        pass
     else:
         scan_and_process_ts_files(folder_path)

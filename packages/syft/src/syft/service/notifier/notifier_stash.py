@@ -1,18 +1,18 @@
 # stdlib
 
 # third party
-from result import Err
-from result import Ok
-from result import Result
+from result import Err, Ok, Result
 
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...service.response import SyftError
-from ...store.document_store import BaseStash
-from ...store.document_store import DocumentStore
-from ...store.document_store import PartitionKey
-from ...store.document_store import PartitionSettings
+from ...store.document_store import (
+    BaseStash,
+    DocumentStore,
+    PartitionKey,
+    PartitionSettings,
+)
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
@@ -38,7 +38,7 @@ class NotifierStash(BaseStash):
 
     # TODO: should this method behave like a singleton?
     def get(self, credentials: SyftVerifyKey) -> Result[NotifierSettings, Err]:
-        """Get Settings"""
+        """Get Settings."""
         result = self.get_all(credentials)
         if result.is_ok():
             settings = result.ok()

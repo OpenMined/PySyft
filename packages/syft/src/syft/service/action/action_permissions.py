@@ -33,7 +33,7 @@ class ActionObjectPermission:
         uid: UID,
         permission: ActionPermission,
         credentials: SyftVerifyKey | None = None,
-    ):
+    ) -> None:
         if credentials is None and permission not in COMPOUND_ACTION_PERMISSION:
             msg = f"{permission} not in {COMPOUND_ACTION_PERMISSION}"
             raise Exception(msg)
@@ -81,28 +81,28 @@ class ActionObjectPermission:
 
 
 class ActionObjectOWNER(ActionObjectPermission):
-    def __init__(self, uid: UID, credentials: SyftVerifyKey):
+    def __init__(self, uid: UID, credentials: SyftVerifyKey) -> None:
         self.uid = uid
         self.credentials = credentials
         self.permission = ActionPermission.OWNER
 
 
 class ActionObjectREAD(ActionObjectPermission):
-    def __init__(self, uid: UID, credentials: SyftVerifyKey):
+    def __init__(self, uid: UID, credentials: SyftVerifyKey) -> None:
         self.uid = uid
         self.credentials = credentials
         self.permission = ActionPermission.READ
 
 
 class ActionObjectWRITE(ActionObjectPermission):
-    def __init__(self, uid: UID, credentials: SyftVerifyKey):
+    def __init__(self, uid: UID, credentials: SyftVerifyKey) -> None:
         self.uid = uid
         self.credentials = credentials
         self.permission = ActionPermission.WRITE
 
 
 class ActionObjectEXECUTE(ActionObjectPermission):
-    def __init__(self, uid: UID, credentials: SyftVerifyKey):
+    def __init__(self, uid: UID, credentials: SyftVerifyKey) -> None:
         self.uid = uid
         self.credentials = credentials
         self.permission = ActionPermission.EXECUTE
@@ -110,7 +110,7 @@ class ActionObjectEXECUTE(ActionObjectPermission):
 
 @serializable(canonical_name="StoragePermission", version=1)
 class StoragePermission:
-    def __init__(self, uid: UID, server_uid: UID):
+    def __init__(self, uid: UID, server_uid: UID) -> None:
         self.uid = uid
         self.server_uid = server_uid
 

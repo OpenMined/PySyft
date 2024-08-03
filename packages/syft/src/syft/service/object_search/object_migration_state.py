@@ -6,13 +6,17 @@ from result import Result
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import BaseStash
-from ...store.document_store import DocumentStore
-from ...store.document_store import PartitionKey
-from ...store.document_store import PartitionSettings
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftMigrationRegistry
-from ...types.syft_object import SyftObject
+from ...store.document_store import (
+    BaseStash,
+    DocumentStore,
+    PartitionKey,
+    PartitionSettings,
+)
+from ...types.syft_object import (
+    SYFT_OBJECT_VERSION_1,
+    SyftMigrationRegistry,
+    SyftObject,
+)
 from ..action.action_permissions import ActionObjectPermission
 
 

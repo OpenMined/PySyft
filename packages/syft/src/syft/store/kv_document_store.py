@@ -4,36 +4,38 @@ from __future__ import annotations
 # stdlib
 from collections import defaultdict
 from enum import Enum
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 # third party
-from result import Err
-from result import Ok
-from result import Result
+from result import Err, Ok, Result
 from typing_extensions import Self
 
 # relative
 from ..serde.serializable import serializable
-from ..service.action.action_permissions import ActionObjectEXECUTE
-from ..service.action.action_permissions import ActionObjectOWNER
-from ..service.action.action_permissions import ActionObjectPermission
-from ..service.action.action_permissions import ActionObjectREAD
-from ..service.action.action_permissions import ActionObjectWRITE
-from ..service.action.action_permissions import ActionPermission
-from ..service.action.action_permissions import StoragePermission
+from ..service.action.action_permissions import (
+    ActionObjectEXECUTE,
+    ActionObjectOWNER,
+    ActionObjectPermission,
+    ActionObjectREAD,
+    ActionObjectWRITE,
+    ActionPermission,
+    StoragePermission,
+)
 from ..service.response import SyftSuccess
 from ..types.uid import UID
-from .document_store import BaseStash
-from .document_store import PartitionKey
-from .document_store import PartitionKeys
-from .document_store import QueryKey
-from .document_store import QueryKeys
-from .document_store import StorePartition
+from .document_store import (
+    BaseStash,
+    PartitionKey,
+    PartitionKeys,
+    QueryKey,
+    QueryKeys,
+    StorePartition,
+)
 
 if TYPE_CHECKING:
+    from ..server.credentials import SyftVerifyKey
     from ..service.context import AuthedServiceContext
     from ..types.syft_object import SyftObject
-    from ..server.credentials import SyftVerifyKey
 
 
 @serializable(canonical_name="UniqueKeyCheck", version=1)
@@ -90,13 +92,15 @@ class KeyValueBackingStore:
 
 
 class KeyValueStorePartition(StorePartition):
-    """Key-Value StorePartition
+    """Key-Value StorePartition.
 
-    Parameters:
+    Parameters
+    ----------
         `settings`: PartitionSettings
             PySyft specific settings
         `store_config`: StoreConfig
             Backend specific configuration
+
     """
 
     def init_store(self) -> Result[Ok, Err]:
@@ -305,7 +309,7 @@ class KeyValueStorePartition(StorePartition):
             in self.permissions[permission.uid]
         ):
             return True
-        elif permission.permission == ActionPermission.WRITE or permission.permission == ActionPermission.EXECUTE:
+        elif permission.permission in (ActionPermission.WRITE, ActionPermission.EXECUTE):
             pass
 
         return False
@@ -385,9 +389,8 @@ class KeyValueStorePartition(StorePartition):
                         store_key.value in ck_col[pk_value_str]
                     ):
                         ck_col[pk_value_str].remove(store_key.value)
-            else:
-                if pk_value in ck_col and (store_key.value in ck_col[pk_value]):
-                    ck_col[pk_value].remove(store_key.value)
+            elif pk_value in ck_col and (store_key.value in ck_col[pk_value]):
+                ck_col[pk_value].remove(store_key.value)
             self.searchable_keys[pk_key] = ck_col
 
     def _find_index_or_search_keys(

@@ -7,8 +7,7 @@ def test_cache_download() -> None:
     import pandas as pd
 
     # syft absolute
-    from syft.util.util import PANDAS_DATA
-    from syft.util.util import autocache
+    from syft.util.util import PANDAS_DATA, autocache
 
     encoding = {"bikes.csv": "ISO-8859-1"}
 

@@ -1,17 +1,14 @@
 # stdlib
-from collections.abc import Callable
 import inspect
+from collections.abc import Callable
 from typing import Any
 
 # relative
-from ... import ActionObject
-from ... import Worker
+from ... import ActionObject, Worker
 from ...client.client import SyftClient
 from ...serde.recursive import recursive_serde_register
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
-from .action_object import Action
-from .action_object import TraceResultRegistry
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject
+from .action_object import Action, TraceResultRegistry
 
 
 class Plan(SyftObject):
@@ -76,7 +73,7 @@ def planify(func: Callable) -> ActionObject:
         # TraceResult._client = client
         plan_kwargs = build_plan_inputs(func, client)
         outputs = func(**plan_kwargs)
-        if not (isinstance(outputs, (list, tuple))):
+        if not (isinstance(outputs, list | tuple)):
             outputs = [outputs]
         ActionObject.remove_trace_hook()
         actions = TraceResultRegistry.get_trace_result_for_thread().result  # type: ignore

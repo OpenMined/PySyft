@@ -1,65 +1,51 @@
 # stdlib
-from collections.abc import Callable
-from enum import Enum
 import logging
 import secrets
-from typing import Any
-from typing import cast
+from collections.abc import Callable
+from enum import Enum
+from typing import Any, cast
 
 # third party
 from result import Result
 
 # relative
 from ...abstract_server import ServerType
-from ...client.client import HTTPConnection
-from ...client.client import PythonConnection
-from ...client.client import SyftClient
+from ...client.client import HTTPConnection, PythonConnection, SyftClient
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...server.worker_settings import WorkerSettings
 from ...service.settings.settings import ServerSettings
-from ...store.document_store import BaseUIDStoreStash
-from ...store.document_store import DocumentStore
-from ...store.document_store import PartitionKey
-from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
+from ...store.document_store import (
+    BaseUIDStoreStash,
+    DocumentStore,
+    PartitionKey,
+    PartitionSettings,
+    QueryKeys,
+)
 from ...types.server_url import ServerURL
-from ...types.transforms import TransformContext
-from ...types.transforms import keep
-from ...types.transforms import make_set_default
-from ...types.transforms import transform
-from ...types.transforms import transform_method
+from ...types.transforms import (
+    TransformContext,
+    keep,
+    make_set_default,
+    transform,
+    transform_method,
+)
 from ...types.uid import UID
 from ...util.telemetry import instrument
-from ...util.util import generate_token
-from ...util.util import get_env
-from ...util.util import prompt_warning_message
-from ...util.util import str_to_bool
+from ...util.util import generate_token, get_env, prompt_warning_message, str_to_bool
 from ..context import AuthedServiceContext
 from ..data_subject.data_subject import NamePartitionKey
 from ..metadata.server_metadata import ServerMetadata
-from ..request.request import Request
-from ..request.request import RequestStatus
-from ..request.request import SubmitRequest
+from ..request.request import Request, RequestStatus, SubmitRequest
 from ..request.request_service import RequestService
-from ..response import SyftError
-from ..response import SyftInfo
-from ..response import SyftSuccess
-from ..service import AbstractService
-from ..service import SERVICE_TO_TYPES
-from ..service import TYPE_TO_SERVICE
-from ..service import service_method
-from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
-from ..user.user_roles import GUEST_ROLE_LEVEL
+from ..response import SyftError, SyftInfo, SyftSuccess
+from ..service import SERVICE_TO_TYPES, TYPE_TO_SERVICE, AbstractService, service_method
+from ..user.user_roles import DATA_OWNER_ROLE_LEVEL, GUEST_ROLE_LEVEL
 from ..warnings import CRUDWarning
 from .association_request import AssociationRequestChange
 from .reverse_tunnel_service import ReverseTunnelService
-from .routes import HTTPServerRoute
-from .routes import PythonServerRoute
-from .routes import ServerRoute
-from .routes import ServerRouteType
-from .server_peer import ServerPeer
-from .server_peer import ServerPeerUpdate
+from .routes import HTTPServerRoute, PythonServerRoute, ServerRoute, ServerRouteType
+from .server_peer import ServerPeer, ServerPeerUpdate
 
 logger = logging.getLogger(__name__)
 
@@ -112,17 +98,19 @@ class NetworkStash(BaseUIDStoreStash):
     def create_or_update_peer(
         self, credentials: SyftVerifyKey, peer: ServerPeer,
     ) -> Result[ServerPeer, str]:
-        """
-        Update the selected peer and its route priorities if the peer already exists
+        """Update the selected peer and its route priorities if the peer already exists
         If the peer does not exist, simply adds it to the database.
 
         Args:
+        ----
             credentials (SyftVerifyKey): The credentials used to authenticate the request.
             peer (ServerPeer): The peer to be updated or added.
 
         Returns:
+        -------
             Result[ServerPeer, str]: The updated or added peer if the operation
             was successful, or an error message if the operation failed.
+
         """
         valid = self.check_type(peer, ServerPeer)
         if valid.is_err():
@@ -182,10 +170,7 @@ class NetworkService(AbstractService):
         remote_server_verify_key: SyftVerifyKey,
         reverse_tunnel: bool = False,
     ) -> Request | SyftSuccess | SyftError:
-        """
-        Exchange Route With Another Server. If there is a pending association request, return it
-        """
-
+        """Exchange Route With Another Server. If there is a pending association request, return it."""
         # Step 1: Validate the Route
         self_server_peer = self_server_route.validate_with_context(context=context)
 
@@ -364,8 +349,7 @@ class NetworkService(AbstractService):
     def ping(
         self, context: AuthedServiceContext, challenge: bytes,
     ) -> bytes | SyftError:
-        """To check alivesness/authenticity of a peer"""
-
+        """To check alivesness/authenticity of a peer."""
         # # Only the root user can ping the server to check its state
         # if context.server.verify_key != context.credentials:
         #     return SyftError(message=("Only the root user can access ping endpoint"))
@@ -386,8 +370,7 @@ class NetworkService(AbstractService):
     def check_peer_association(
         self, context: AuthedServiceContext, peer_id: UID,
     ) -> ServerPeerAssociationStatus | SyftError:
-        """Check if a peer exists in the network stash"""
-
+        """Check if a peer exists in the network stash."""
         # get the server peer for the given sender peer_id
         peer = self.stash.get_by_uid(context.server.verify_key, peer_id)
         if err := peer.is_err():
@@ -416,8 +399,7 @@ class NetworkService(AbstractService):
     def get_all_peers(
         self, context: AuthedServiceContext,
     ) -> list[ServerPeer] | SyftError:
-        """Get all Peers"""
-
+        """Get all Peers."""
         result = self.stash.get_all(
             credentials=context.server.verify_key,
             order_by=OrderByNamePartitionKey,
@@ -432,8 +414,7 @@ class NetworkService(AbstractService):
     def get_peer_by_name(
         self, context: AuthedServiceContext, name: str,
     ) -> ServerPeer | None | SyftError:
-        """Get Peer by Name"""
-
+        """Get Peer by Name."""
         result = self.stash.get_by_name(
             credentials=context.server.verify_key,
             name=name,
@@ -527,7 +508,7 @@ class NetworkService(AbstractService):
     def delete_peer_by_id(
         self, context: AuthedServiceContext, uid: UID,
     ) -> SyftSuccess | SyftError:
-        """Delete Server Peer"""
+        """Delete Server Peer."""
         retrieve_result = self.stash.get_by_uid(context.credentials, uid)
         if err := retrieve_result.is_err():
             return SyftError(
@@ -571,17 +552,19 @@ class NetworkService(AbstractService):
         peer: ServerPeer,
         route: ServerRoute,
     ) -> SyftSuccess | SyftError:
-        """
-        Add or update the route information on the remote peer.
+        """Add or update the route information on the remote peer.
 
         Args:
+        ----
             context (AuthedServiceContext): The authentication context.
             peer (ServerPeer): The peer representing the remote server.
             route (ServerRoute): The route to be added.
 
         Returns:
+        -------
             SyftSuccess | SyftError: A success message if the route is verified,
                 otherwise an error message.
+
         """
         # creates a client on the remote server based on the credentials
         # of the current server's client
@@ -607,17 +590,19 @@ class NetworkService(AbstractService):
         route: ServerRoute,
         called_by_peer: bool = False,
     ) -> SyftSuccess | SyftError:
-        """
-        Add a route to the peer. If the route already exists, update its priority.
+        """Add a route to the peer. If the route already exists, update its priority.
 
         Args:
+        ----
             context (AuthedServiceContext): The authentication context of the remote server.
             peer_verify_key (SyftVerifyKey): The verify key of the remote server peer.
             route (ServerRoute): The route to be added.
             called_by_peer (bool): The flag to indicate that it's called by a remote peer.
 
         Returns:
+        -------
             SyftSuccess | SyftError
+
         """
         # verify if the peer is truly the one sending the request to add the route to itself
         if called_by_peer and peer_verify_key != context.credentials:
@@ -652,9 +637,9 @@ class NetworkService(AbstractService):
         if result.is_err():
             return SyftError(message=str(result.err()))
         return SyftSuccess(
-            message=f"New route ({str(route)}) with id '{route.id}' "
+            message=f"New route ({route!s}) with id '{route.id}' "
             f"to peer {remote_server_peer.server_type.value} '{remote_server_peer.name}' "
-            f"was added for {str(context.server.server_type)} '{context.server.name}'",
+            f"was added for {context.server.server_type!s} '{context.server.name}'",
         )
 
     @service_method(path="network.delete_route_on_peer", name="delete_route_on_peer")
@@ -664,19 +649,21 @@ class NetworkService(AbstractService):
         peer: ServerPeer,
         route: ServerRoute,
     ) -> SyftSuccess | SyftError | SyftInfo:
-        """
-        Delete the route on the remote peer.
+        """Delete the route on the remote peer.
 
         Args:
+        ----
             context (AuthedServiceContext): The authentication context for the service.
             peer (ServerPeer): The peer for which the route will be deleted.
             route (ServerRoute): The route to be deleted.
 
         Returns:
+        -------
             SyftSuccess: If the route is successfully deleted.
             SyftError: If there is an error deleting the route.
             SyftInfo: If there is only one route left for the peer and
                 the admin chose not to remove it
+
         """
         # creates a client on the remote server based on the credentials
         # of the current server's client
@@ -704,22 +691,24 @@ class NetworkService(AbstractService):
         route: ServerRoute | None = None,
         called_by_peer: bool = False,
     ) -> SyftSuccess | SyftError | SyftInfo:
-        """
-        Delete a route for a given peer.
+        """Delete a route for a given peer.
         If a peer has no routes left, there will be a prompt asking if the user want to remove it.
         If the answer is yes, it will be removed from the stash and will no longer be a peer.
 
         Args:
+        ----
             context (AuthedServiceContext): The authentication context for the service.
             peer_verify_key (SyftVerifyKey): The verify key of the remote server peer.
             route (ServerRoute): The route to be deleted.
             called_by_peer (bool): The flag to indicate that it's called by a remote peer.
 
         Returns:
+        -------
             SyftSuccess: If the route is successfully deleted.
             SyftError: If there is an error deleting the route.
             SyftInfo: If there is only one route left for the peer and
                 the admin chose not to remove it
+
         """
         if called_by_peer and peer_verify_key != context.credentials:
             # verify if the peer is truly the one sending the request to delete the route to itself
@@ -741,7 +730,7 @@ class NetworkService(AbstractService):
                 f"There is only one route left to peer "
                 f"{remote_server_peer.server_type.value} '{remote_server_peer.name}'. "
                 f"Removing this route will remove the peer for "
-                f"{str(context.server.server_type)} '{context.server.name}'."
+                f"{context.server.server_type!s} '{context.server.name}'."
             )
             response: bool = prompt_warning_message(
                 message=warning_message,
@@ -756,9 +745,9 @@ class NetworkService(AbstractService):
 
         result = remote_server_peer.delete_route(route=route)
         return_message = (
-            f"Route '{str(route)}' to peer "
+            f"Route '{route!s}' to peer "
             f"{remote_server_peer.server_type.value} '{remote_server_peer.name}' "
-            f"was deleted for {str(context.server.server_type)} '{context.server.name}'."
+            f"was deleted for {context.server.server_type!s} '{context.server.name}'."
         )
         if isinstance(result, SyftError):
             return result
@@ -774,7 +763,7 @@ class NetworkService(AbstractService):
             return_message += (
                 f" There is no routes left to connect to peer "
                 f"{remote_server_peer.server_type.value} '{remote_server_peer.name}', so it is deleted for "
-                f"{str(context.server.server_type)} '{context.server.name}'."
+                f"{context.server.server_type!s} '{context.server.name}'."
             )
         else:
             # update the peer with the route removed
@@ -800,10 +789,10 @@ class NetworkService(AbstractService):
         route: ServerRoute,
         priority: int | None = None,
     ) -> SyftSuccess | SyftError:
-        """
-        Update the route priority on the remote peer.
+        """Update the route priority on the remote peer.
 
         Args:
+        ----
             context (AuthedServiceContext): The authentication context.
             peer (ServerPeer): The peer representing the remote server.
             route (ServerRoute): The route to be added.
@@ -811,8 +800,10 @@ class NetworkService(AbstractService):
                 provided, it will be assigned the highest priority among all peers
 
         Returns:
+        -------
             SyftSuccess | SyftError: A success message if the route is verified,
                 otherwise an error message.
+
         """
         # creates a client on the remote server based on the credentials
         # of the current server's client
@@ -843,10 +834,10 @@ class NetworkService(AbstractService):
         priority: int | None = None,
         called_by_peer: bool = False,
     ) -> SyftSuccess | SyftError:
-        """
-        Updates a route's priority for the given peer
+        """Updates a route's priority for the given peer.
 
         Args:
+        ----
             context (AuthedServiceContext): The authentication context for the service.
             peer_verify_key (SyftVerifyKey): The verify key of the peer whose route priority needs to be updated.
             route (ServerRoute): The route for which the priority needs to be updated.
@@ -854,7 +845,9 @@ class NetworkService(AbstractService):
                 provided, it will be assigned the highest priority among all peers
 
         Returns:
+        -------
             SyftSuccess | SyftError: Successful / Error response
+
         """
         if called_by_peer and peer_verify_key != context.credentials:
             return SyftError(
@@ -894,9 +887,8 @@ class NetworkService(AbstractService):
     def _get_remote_server_peer_by_verify_key(
         self, context: AuthedServiceContext, peer_verify_key: SyftVerifyKey,
     ) -> ServerPeer | SyftError:
-        """
-        Helper function to get the full server peer object from t
-        he stash using its verify key
+        """Helper function to get the full server peer object from t
+        he stash using its verify key.
         """
         remote_server_peer: Result[ServerPeer | None, SyftError] = (
             self.stash.get_by_verify_key(
@@ -916,9 +908,7 @@ class NetworkService(AbstractService):
     def _get_association_requests_by_peer_id(
         self, context: AuthedServiceContext, peer_id: UID,
     ) -> list[Request]:
-        """
-        Get all the association requests from a peer. The association requests are sorted by request_time.
-        """
+        """Get all the association requests from a peer. The association requests are sorted by request_time."""
         request_get_all_method: Callable = context.server.get_service_method(
             RequestService.get_all,
         )

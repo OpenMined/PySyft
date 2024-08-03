@@ -1,6 +1,6 @@
 # stdlib
-from collections import OrderedDict
 import sys
+from collections import OrderedDict
 
 # third party
 import numpy as np
@@ -12,7 +12,7 @@ from syft.client.api import APIRegistry
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
-def test_local_execution(worker):
+def test_local_execution(worker) -> None:
     root_datasite_client = worker.root_client
     dataset = sy.Dataset(
         name="local_test",

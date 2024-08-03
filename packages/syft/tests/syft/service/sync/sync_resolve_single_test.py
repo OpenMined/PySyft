@@ -8,13 +8,11 @@ import syft
 import syft as sy
 from syft.client.datasite_client import DatasiteClient
 from syft.client.sync_decision import SyncDecision
-from syft.client.syncing import compare_clients
-from syft.client.syncing import resolve
+from syft.client.syncing import compare_clients, resolve
 from syft.server.worker import Worker
 from syft.service.job.job_stash import Job
 from syft.service.request.request import RequestStatus
-from syft.service.response import SyftError
-from syft.service.response import SyftSuccess
+from syft.service.response import SyftError, SyftSuccess
 from syft.service.sync.resolve_widget import ResolveWidget
 
 
@@ -39,7 +37,7 @@ def compare_and_resolve(
     from_client: DatasiteClient,
     to_client: DatasiteClient,
     decision: SyncDecision = SyncDecision.LOW,
-    decision_callback: callable = None,
+    decision_callback: callable | None = None,
     share_private_data: bool = True,
 ):
     diff_state_before = compare_clients(from_client, to_client)
@@ -101,7 +99,7 @@ def get_ds_client(client: DatasiteClient) -> DatasiteClient:
     return client.login(email="a@a.com", password="asdf")
 
 
-def test_diff_state(low_worker, high_worker):
+def test_diff_state(low_worker, high_worker) -> None:
     low_client: DatasiteClient = low_worker.root_client
     client_low_ds = get_ds_client(low_client)
     high_client: DatasiteClient = high_worker.root_client
@@ -136,7 +134,7 @@ def test_diff_state(low_worker, high_worker):
     assert res == compute(syft_no_server=True)
 
 
-def test_diff_state_with_dataset(low_worker: Worker, high_worker: Worker):
+def test_diff_state_with_dataset(low_worker: Worker, high_worker: Worker) -> None:
     low_client: DatasiteClient = low_worker.root_client
     client_low_ds = get_ds_client(low_client)
     high_client: DatasiteClient = high_worker.root_client
@@ -193,8 +191,8 @@ def test_diff_state_with_dataset(low_worker: Worker, high_worker: Worker):
     assert res_blocking == res_non_blocking == mean_result
 
 
-def test_sync_with_error(low_worker, high_worker):
-    """Check syncing with an error in a syft function"""
+def test_sync_with_error(low_worker, high_worker) -> None:
+    """Check syncing with an error in a syft function."""
     low_client: DatasiteClient = low_worker.root_client
     client_low_ds = get_ds_client(low_client)
     high_client: DatasiteClient = high_worker.root_client
@@ -227,7 +225,7 @@ def test_sync_with_error(low_worker, high_worker):
     assert isinstance(res.get(), SyftError)
 
 
-def test_ignore_unignore_single(low_worker, high_worker):
+def test_ignore_unignore_single(low_worker, high_worker) -> None:
     low_client: DatasiteClient = low_worker.root_client
     client_low_ds = get_ds_client(low_client)
     high_client: DatasiteClient = high_worker.root_client
@@ -262,7 +260,7 @@ def test_ignore_unignore_single(low_worker, high_worker):
     assert len(diff.all_batches) == 2
 
 
-def test_request_code_execution_multiple(low_worker, high_worker):
+def test_request_code_execution_multiple(low_worker, high_worker) -> None:
     low_client = low_worker.root_client
     client_low_ds = low_worker.guest_client
     high_client = high_worker.root_client
@@ -299,7 +297,7 @@ def test_request_code_execution_multiple(low_worker, high_worker):
     assert diff_after.is_same
 
 
-def test_approve_request_on_sync_blocking(low_worker, high_worker):
+def test_approve_request_on_sync_blocking(low_worker, high_worker) -> None:
     low_client = low_worker.root_client
     client_low_ds = get_ds_client(low_client)
     high_client = high_worker.root_client
@@ -333,7 +331,8 @@ def test_approve_request_on_sync_blocking(low_worker, high_worker):
     diff_before, diff_after = compare_and_resolve(
         from_client=high_client, to_client=low_client, share_private_data=True,
     )
-    assert len(diff_before.batches) == 1 and diff_before.batches[0].root_type is Job
+    assert len(diff_before.batches) == 1
+    assert diff_before.batches[0].root_type is Job
     assert low_client.requests[0].status == RequestStatus.APPROVED
 
     assert client_low_ds.code.compute().get() == 42
@@ -342,7 +341,7 @@ def test_approve_request_on_sync_blocking(low_worker, high_worker):
     assert len(client_low_ds.requests[0].code.output_history) == 1
 
 
-def test_deny_and_sync(low_worker, high_worker):
+def test_deny_and_sync(low_worker, high_worker) -> None:
     low_client = low_worker.root_client
     client_low_ds = get_ds_client(low_client)
     high_client = high_worker.root_client
@@ -360,8 +359,7 @@ def test_deny_and_sync(low_worker, high_worker):
 
     # Deny on low side
     request_low = low_client.requests[0]
-    res = request_low.deny(reason="bad request")
-    print(res)
+    request_low.deny(reason="bad request")
     assert low_client.requests[0].status == RequestStatus.REJECTED
 
     # Un-deny. NOTE: not supported by current UX, this is just used to re-deny on high side

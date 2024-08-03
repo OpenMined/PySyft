@@ -6,33 +6,25 @@ import copy
 import hashlib
 import textwrap
 import time
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 # third party
-from pydantic import Field
-from pydantic import field_validator
+from pydantic import Field, field_validator
 from rich.progress import Progress
 from typing_extensions import Self
 
 # relative
 from ...client.api import ServerIdentity
-from ...client.client import SyftClient
-from ...client.client import SyftClientSessionCache
+from ...client.client import SyftClient, SyftClientSessionCache
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
-from ...server.credentials import SyftSigningKey
-from ...server.credentials import SyftVerifyKey
+from ...server.credentials import SyftSigningKey, SyftVerifyKey
 from ...service.metadata.server_metadata import ServerMetadata
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
-from ...types.identity import Identity
-from ...types.identity import UserIdentity
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
-from ...types.syft_object import short_qual_name
-from ...types.transforms import TransformContext
-from ...types.transforms import rename
-from ...types.transforms import transform
+from ...types.identity import Identity, UserIdentity
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject, short_qual_name
+from ...types.transforms import TransformContext, rename, transform
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
@@ -40,21 +32,15 @@ from ...util.decorators import deprecated
 from ...util.markdown import markdown_as_class_with_fields
 from ...util.util import full_name_with_qualname
 from ..code.user_code import SubmitUserCode
-from ..network.routes import ServerRoute
-from ..network.routes import connection_to_route
-from ..request.request import Request
-from ..request.request import RequestStatus
-from ..response import SyftError
-from ..response import SyftException
-from ..response import SyftInfo
-from ..response import SyftNotReady
-from ..response import SyftSuccess
+from ..network.routes import ServerRoute, connection_to_route
+from ..request.request import Request, RequestStatus
+from ..response import SyftError, SyftException, SyftInfo, SyftNotReady, SyftSuccess
 from ..user.user import UserView
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable
+
     from ..network.network_service import ServerPeer
-    from collections.abc import Iterable
-    from collections.abc import Callable
 
 
 @serializable(canonical_name="EventAlreadyAddedException", version=1)
@@ -182,7 +168,7 @@ class ProjectEvent(SyftObject):
                 and type(self) not in parent_event.allowed_sub_types
             ):
                 return SyftError(
-                    message=f"{self} is not a valid subevent" f"for {parent_event}",
+                    message=f"{self} is not a valid subeventfor {parent_event}",
                 )
         return SyftSuccess(message=f"{self} is valid descendant of {prev_event}")
 
@@ -321,12 +307,15 @@ class ProjectRequest(ProjectEventAddObject):
         """Returns the status of the request.
 
         Args:
+        ----
             project (Project): Project object to check the status
 
         Returns:
+        -------
             str: Status of the request.
 
         During Request  status calculation, we do not allow multiple responses
+
         """
         responses: list[ProjectEvent] = project.get_children(self)
         if len(responses) == 0:
@@ -347,192 +336,76 @@ class ProjectRequest(ProjectEventAddObject):
                 message=f"Response : {type(response)} is not of type ProjectRequestResponse",
             )
 
-        print("Request Status : ", "Approved" if response.response else "Denied")
 
         return None
 
 
 def poll_creation_wizard() -> tuple[str, list[str]]:
-    w = textwrap.TextWrapper(initial_indent="\t", subsequent_indent="\t")
+    textwrap.TextWrapper(initial_indent="\t", subsequent_indent="\t")
 
-    welcome_msg = "Welcome to the Poll Creation Wizard 🧙‍♂️ 🪄!!!"
 
-    description1 = """You've arrived here because you were interested in a creating poll.
-A poll is a way to gather opinions or information from a group of people.
-It typically involves asking a specific question and providing a set of answer choices for respondents to choose from"""
 
-    description2 = """In a poll, the question is the inquiry being asked of the participants.
-It should be a multiple-choice. The choices are the options that respondents
-are given to select as their answer to the question.For example, a poll question might be
-"Which is your favorite color?" with answer choices of red, blue, green, and yellow.
-Participants can then select the answer that best represents their opinion or preference"""
 
-    description3 = """Since you didn't pass in questions, choices into .create_poll() (or you did so incorrectly),
-this wizard is going to guide you through the process of creating a poll"""
 
-    description4 = """In this wizard, we're going to ask you for a question and list of choices
-to create the poll. The Questions and choices are converted to strings"""
 
-    print("\t" + "=" * 69)
-    print(w.fill(welcome_msg))
-    print("\t" + "=" * 69)
-    print()
-    print(w.fill(description1))
-    print()
-    print(w.fill(description2))
-    print()
-    print(w.fill(description3))
-    print()
-    print(w.fill(description4))
-    print()
 
-    print("\tDo you understand, and are you ready to proceed? (yes/no)")
-    print()
     consent = str(input("\t"))
-    print()
 
     if consent == "no":
         msg = "User cancelled poll creation wizard!"
         raise Exception(msg)
 
-    print("\tExcellent! Let's begin!")
 
-    print()
 
-    print("\t" + "-" * 69)
-    print()
 
-    print(w.fill("Question 1: Input a question to ask in the poll"))
-    print()
-    print(w.fill("Examples:"))
-    print("\t - What is your favorite type of food?")
-    print("\t - What day shall we meet?")
-    print("\t - Do you believe that climate change is a serious problem?")
-    print()
-    print()
     question = input("\t")
-    print()
 
-    print("\t" + "-" * 69)
-    print()
-    print(
-        w.fill(
-            "Question 2: Enter the number of choices, you would like to have in the poll",
-        ),
-    )
-    print()
     while True:
         try:
             num_choices = int(input("\t"))
         except ValueError:
-            print()
-            print(
-                w.fill("Number of choices, should be an integer.Kindly re-enter again."),
-            )
-            print()
             continue
         break
 
-    print()
-    print("\t" + "-" * 69)
-    print()
-    print(w.fill("Excellent! Let's  input each choice for the input"))
-    print()
     choices = []
-    for idx in range(num_choices):
-        print(w.fill(f"Enter Choice {idx+1}"))
-        print()
+    for _idx in range(num_choices):
         choice = str(input("\t"))
         choices.append(choice)
-        print()
-    print("\t" + "=" * 69)
 
-    print()
 
-    print(
-        w.fill("All done! You have successfully completed the Poll Creation Wizard! 🎩"),
-    )
     return (question, choices)
 
 
 def poll_answer_wizard(poll: ProjectMultipleChoicePoll) -> int:
-    w = textwrap.TextWrapper(initial_indent="\t", subsequent_indent="\t")
+    textwrap.TextWrapper(initial_indent="\t", subsequent_indent="\t")
 
-    welcome_msg = "Welcome to the Poll Answer Wizard 🧙‍♂️ 🪄!!!"
 
-    description1 = """You've arrived here because you were interested in a answering a poll.
-A poll is a way to gather opinions or information from a group of people.
-It typically involves asking a specific question and providing a set of answer choices for respondents to choose from"""
 
-    description2 = """In a poll, the question is the inquiry being asked of the participants.
-It should be a multiple-choice. The choices are the options that respondents
-are given to select as their answer to the question.For example, a poll question might be
-"Which is your favorite color?" with answer choices of red, blue, green, and yellow.
-Participants can then select the answer that best represents their opinion or preference"""
 
-    description3 = """Since you didn't pass in the choices into .answer_poll() (or you did so incorrectly),
-this wizard is going to guide you through the process of answering the poll."""
 
-    print("\t" + "=" * 69)
-    print(w.fill(welcome_msg))
-    print("\t" + "=" * 69)
-    print()
-    print(w.fill(description1))
-    print()
-    print(w.fill(description2))
-    print()
-    print(w.fill(description3))
-    print()
 
-    print("\tDo you understand, and are you ready to proceed? (yes/no)")
-    print()
     consent = str(input("\t"))
-    print()
 
     if consent == "no":
         msg = "User cancelled poll answer wizard!"
         raise Exception(msg)
 
-    print("\tExcellent! Let's display the poll question")
 
-    print()
 
-    print("\t" + "-" * 69)
-    print()
 
-    print(w.fill(f"Question : {poll.question}"))
-    print()
-    for idx, choice_i in enumerate(poll.choices):
-        print(w.fill(f"{idx+1}. {choice_i}"))
-        print()
+    for _idx, _choice_i in enumerate(poll.choices):
+        pass
 
-    print("\t" + "-" * 69)
-    print()
 
-    print(w.fill("Kindly enter your choice for the poll"))
-    print()
     while True:
         try:
             choice: int = int(input("\t"))
             if choice < 1 or choice > len(poll.choices):
-                raise ValueError()
+                raise ValueError
         except ValueError:
-            print()
-            print(
-                w.fill(
-                    f"Poll Answer should be a natural number between 1 and {len(poll.choices)}",
-                ),
-            )
-            print()
             continue
         break
 
-    print("\t" + "=" * 69)
-    print()
-    print(
-        w.fill("All done! You have successfully completed the Poll Answer Wizard! 🎩"),
-    )
-    print()
 
     return choice
 
@@ -568,16 +441,19 @@ class ProjectMultipleChoicePoll(ProjectEventAddObject):
     def status(
         self, project: Project, pretty_print: bool = True,
     ) -> dict | SyftError | SyftInfo | None:
-        """Returns the status of the poll
+        """Returns the status of the poll.
 
         Args:
+        ----
             project (Project): Project object to check the status
 
         Returns:
+        -------
             str: Status of the poll
 
         During Poll calculation, a user would have answered the poll many times
         The status of the poll would be calculated based on the latest answer of the user
+
         """
         poll_answers = project.get_children(self)
         if len(poll_answers) == 0:
@@ -596,11 +472,10 @@ class ProjectMultipleChoicePoll(ProjectEventAddObject):
             if identity not in respondents:
                 respondents[identity] = poll_answer.answer
         if pretty_print:
-            for respondent, answer in respondents.items():
-                print(f"{str(respondent.verify_key)[0:8]}: {answer}")
-            print("\nChoices:\n")
-            for idx, choice in enumerate(self.choices):
-                print(f"{idx+1}: {choice}")
+            for _respondent, _answer in respondents.items():
+                pass
+            for _idx, _choice in enumerate(self.choices):
+                pass
             return None
         else:
             return respondents
@@ -857,12 +732,7 @@ class Project(SyftObject):
             current_hash = event.event_hash
 
             if debug:
-                icon = "✅" if result else "❌"
-                prev_event = last_event if last_event is not None else self
-                print(
-                    f"{icon} {type(event).__name__}: {event.id} "
-                    f"after {type(prev_event).__name__}: {prev_event.id}",
-                )
+                pass
 
             if not result:
                 return result
@@ -1097,8 +967,7 @@ class Project(SyftObject):
         return result
 
     def sync(self, verbose: bool | None = True) -> SyftSuccess | SyftError:
-        """Sync the latest project with the state sync leader"""
-
+        """Sync the latest project with the state sync leader."""
         leader_client = self.get_leader_client(self.user_signing_key)
 
         unsynced_events = leader_client.api.services.project.sync(
@@ -1191,7 +1060,7 @@ class ProjectSubmit(SyftObject):
     project_permissions: set[str] = set()
     consensus_model: ConsensusModel = DemocraticConsensusModel()
 
-    def __init__(self, *args: Any, **kwargs: Any):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
         # Preserve member SyftClients in a private variable clients
@@ -1405,13 +1274,16 @@ def new_projectsubmit_to_project() -> list[Callable]:
 
 
 def hash_object(obj: Any) -> tuple[bytes, str]:
-    """Hashes an object using sha256
+    """Hashes an object using sha256.
 
     Args:
+    ----
         obj (Any): Object to be hashed
 
     Returns:
+    -------
         str: Hashed value of the object
+
     """
     hash_bytes = _serialize(obj, to_bytes=True, for_hashing=True)
     hash = hashlib.sha256(hash_bytes)

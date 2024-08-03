@@ -1,6 +1,6 @@
 # stdlib
-from collections.abc import Callable
 import inspect
+from collections.abc import Callable
 
 # third party
 import pytest
@@ -9,8 +9,7 @@ import pytest
 from syft.types import transforms
 from syft.types.syft_object import SyftBaseObject
 from syft.types.syft_object_registry import SyftObjectRegistry
-from syft.types.transforms import TransformContext
-from syft.types.transforms import validate_klass_and_version
+from syft.types.transforms import TransformContext, validate_klass_and_version
 
 
 class MockObjectFromSyftBaseObj(SyftBaseObject):
@@ -28,7 +27,7 @@ class MockObjectToSyftBaseObj(SyftBaseObject):
 
 
 @pytest.mark.parametrize(
-    "klass_from, klass_to",
+    ("klass_from", "klass_to"),
     [
         (MockObjectFromSyftBaseObj, MockObjectToSyftBaseObj),
         (MockObjectFromSyftBaseObj.__canonical_name__, MockObjectToSyftBaseObj),
@@ -44,7 +43,7 @@ def test_validate_klass_and_version(
     klass_to,
     version_from,
     version_to,
-):
+) -> None:
     if klass_from == 1 or klass_to == 2:
         with pytest.raises(NotImplementedError):
             validate_klass_and_version(
@@ -75,7 +74,7 @@ def test_validate_klass_and_version(
         assert result == expected_result
 
 
-def test_generate_transform_wrapper(faker, monkeypatch, server_context):
+def test_generate_transform_wrapper(faker, monkeypatch, server_context) -> None:
     mock_value = faker.random_int()
 
     def mock_transform_method(context: TransformContext) -> TransformContext:
@@ -101,7 +100,7 @@ def test_generate_transform_wrapper(faker, monkeypatch, server_context):
     assert output.value == mock_value
 
 
-def test_transform_method(monkeypatch):
+def test_transform_method(monkeypatch) -> None:
     mock_klass_from_str, mock_version_from = (
         MockObjectFromSyftBaseObj.__canonical_name__,
         MockObjectFromSyftBaseObj.__version__,
@@ -121,7 +120,7 @@ def test_transform_method(monkeypatch):
         klass_to: str,
         version_to: int,
         method: Callable,
-    ):
+    ) -> None:
         mock_syft_transform_registry[mapping_key] = method
 
     def mock_validate_klass_and_version(
@@ -137,7 +136,7 @@ def test_transform_method(monkeypatch):
             mock_version_to,
         )
 
-    def mock_method():
+    def mock_method() -> bool:
         return True
 
     def mock_wrapper():

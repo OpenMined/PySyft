@@ -1,13 +1,13 @@
 # third party
-from pydantic import ValidationError
 import pytest
 
 # syft absolute
 import syft as sy
+from pydantic import ValidationError
 from syft.service.project.project import Project
 
 
-def test_project_creation(worker):
+def test_project_creation(worker) -> None:
     root_client = worker.root_client
 
     root_client.register(
@@ -33,7 +33,7 @@ def test_project_creation(worker):
     assert project.description == "My Cool Description"
 
 
-def test_error_data_owner_project_creation(worker):
+def test_error_data_owner_project_creation(worker) -> None:
     root_client = worker.root_client
 
     root_client.register(
@@ -53,7 +53,7 @@ def test_error_data_owner_project_creation(worker):
     assert project.message == "Only Data Scientists can create projects"
 
 
-def test_exception_different_email(worker):
+def test_exception_different_email(worker) -> None:
     root_client = worker.root_client
 
     root_client.register(
@@ -86,7 +86,7 @@ def test_exception_different_email(worker):
         )
 
 
-def test_project_serde(worker):
+def test_project_serde(worker) -> None:
     root_client = worker.root_client
 
     root_client.register(

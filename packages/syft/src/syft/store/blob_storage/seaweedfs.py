@@ -1,46 +1,46 @@
 # stdlib
-from collections.abc import Generator
-from io import BytesIO
 import logging
 import math
-from queue import Queue
 import threading
-from typing import Any
+from collections.abc import Generator
+from io import BytesIO
+from queue import Queue
 
 # third party
 import boto3
+import requests
 from botocore.client import BaseClient as S3BaseClient
 from botocore.client import ClientError as BotoClientError
 from botocore.client import Config
 from botocore.exceptions import ConnectionError
-import requests
-from tenacity import retry
-from tenacity import retry_if_exception_type
-from tenacity import stop_after_delay
-from tenacity import wait_fixed
+from tenacity import retry, retry_if_exception_type, stop_after_delay, wait_fixed
 from tqdm import tqdm
 from typing_extensions import Self
 
-# relative
-from . import BlobDeposit
-from . import BlobRetrieval
-from . import BlobStorageClient
-from . import BlobStorageClientConfig
-from . import BlobStorageConfig
-from . import BlobStorageConnection
 from ...serde.serializable import serializable
 from ...service.blob_storage.remote_profile import AzureRemoteProfile
-from ...service.response import SyftError
-from ...service.response import SyftSuccess
+from ...service.response import SyftError, SyftSuccess
 from ...service.service import from_api_or_context
-from ...types.blob_storage import BlobStorageEntry
-from ...types.blob_storage import CreateBlobStorageEntry
-from ...types.blob_storage import SeaweedSecureFilePathLocation
-from ...types.blob_storage import SecureFilePathLocation
+from ...types.blob_storage import (
+    BlobStorageEntry,
+    CreateBlobStorageEntry,
+    SeaweedSecureFilePathLocation,
+    SecureFilePathLocation,
+)
 from ...types.server_url import ServerURL
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.uid import UID
 from ...util.constants import DEFAULT_TIMEOUT
+
+# relative
+from . import (
+    BlobDeposit,
+    BlobRetrieval,
+    BlobStorageClient,
+    BlobStorageClientConfig,
+    BlobStorageConfig,
+    BlobStorageConnection,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -128,7 +128,7 @@ class SeaweedFSBlobDeposit(BlobDeposit):
                             queue: Queue,
                             chunk_size: int = DEFAULT_UPLOAD_CHUNK_SIZE,
                         ) -> None:
-                            """Creates a data geneator for the part"""
+                            """Creates a data geneator for the part."""
                             n = 0
 
                             try:
@@ -159,7 +159,7 @@ class SeaweedFSBlobDeposit(BlobDeposit):
                     etags.append({"ETag": etag, "PartNumber": part_no})
 
         except requests.RequestException as e:
-            logger.error(f"Failed to upload file to SeaweedFS - {e}")
+            logger.exception(f"Failed to upload file to SeaweedFS - {e}")
             return SyftError(message=str(e))
 
         mark_write_complete_method = from_api_or_context(
@@ -228,7 +228,7 @@ class SeaweedFSConnection(BlobStorageConnection):
         client: S3BaseClient,
         default_bucket_name: str,
         config: SeaweedFSClientConfig,
-    ):
+    ) -> None:
         self.client = client
         self.default_bucket_name = default_bucket_name
         self.config = config
@@ -238,7 +238,7 @@ class SeaweedFSConnection(BlobStorageConnection):
     def __enter__(self) -> Self:
         return self
 
-    def __exit__(self, *exc: Any) -> None:
+    def __exit__(self, *exc: object) -> None:
         self.client.close()
 
     @retry(

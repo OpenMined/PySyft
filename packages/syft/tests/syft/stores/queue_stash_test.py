@@ -1,7 +1,7 @@
 # stdlib
 import threading
-from threading import Thread
 import time
+from threading import Thread
 from typing import Any
 
 # third party
@@ -15,8 +15,7 @@ from syft.store.linked_obj import LinkedObject
 from syft.types.uid import UID
 
 # relative
-from .store_fixtures_test import mongo_queue_stash_fn
-from .store_fixtures_test import sqlite_queue_stash_fn
+from .store_fixtures_test import mongo_queue_stash_fn, sqlite_queue_stash_fn
 
 
 def mock_queue_object():
@@ -311,7 +310,7 @@ def helper_queue_set_threading(root_verify_key, create_queue_cbk) -> None:
 
 
 @pytest.mark.flaky(reruns=3, reruns_delay=3)
-def test_queue_set_sqlite(root_verify_key, sqlite_workspace):
+def test_queue_set_sqlite(root_verify_key, sqlite_workspace) -> None:
     def create_queue_cbk():
         return sqlite_queue_stash_fn(root_verify_key, sqlite_workspace)
 
@@ -319,7 +318,7 @@ def test_queue_set_sqlite(root_verify_key, sqlite_workspace):
 
 
 @pytest.mark.flaky(reruns=3, reruns_delay=3)
-def test_queue_set_threading_mongo(root_verify_key, mongo_document_store):
+def test_queue_set_threading_mongo(root_verify_key, mongo_document_store) -> None:
     def create_queue_cbk():
         return mongo_queue_stash_fn(mongo_document_store)
 
@@ -369,7 +368,7 @@ def helper_queue_update_threading(root_verify_key, create_queue_cbk) -> None:
 
 
 @pytest.mark.flaky(reruns=3, reruns_delay=3)
-def test_queue_update_threading_sqlite(root_verify_key, sqlite_workspace):
+def test_queue_update_threading_sqlite(root_verify_key, sqlite_workspace) -> None:
     def create_queue_cbk():
         return sqlite_queue_stash_fn(root_verify_key, sqlite_workspace)
 
@@ -377,7 +376,7 @@ def test_queue_update_threading_sqlite(root_verify_key, sqlite_workspace):
 
 
 @pytest.mark.flaky(reruns=3, reruns_delay=3)
-def test_queue_update_threading_mongo(root_verify_key, mongo_document_store):
+def test_queue_update_threading_mongo(root_verify_key, mongo_document_store) -> None:
     def create_queue_cbk():
         return mongo_queue_stash_fn(mongo_document_store)
 
@@ -435,7 +434,7 @@ def helper_queue_set_delete_threading(
 
 
 @pytest.mark.flaky(reruns=3, reruns_delay=3)
-def test_queue_delete_threading_sqlite(root_verify_key, sqlite_workspace):
+def test_queue_delete_threading_sqlite(root_verify_key, sqlite_workspace) -> None:
     def create_queue_cbk():
         return sqlite_queue_stash_fn(root_verify_key, sqlite_workspace)
 
@@ -443,7 +442,7 @@ def test_queue_delete_threading_sqlite(root_verify_key, sqlite_workspace):
 
 
 @pytest.mark.flaky(reruns=3, reruns_delay=3)
-def test_queue_delete_threading_mongo(root_verify_key, mongo_document_store):
+def test_queue_delete_threading_mongo(root_verify_key, mongo_document_store) -> None:
     def create_queue_cbk():
         return mongo_queue_stash_fn(mongo_document_store)
 

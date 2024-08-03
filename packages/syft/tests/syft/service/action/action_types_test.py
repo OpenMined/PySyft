@@ -8,8 +8,7 @@ import pytest
 
 # syft absolute
 from syft.service.action.action_data_empty import ActionDataEmpty
-from syft.service.action.action_types import action_type_for_type
-from syft.service.action.action_types import action_types
+from syft.service.action.action_types import action_type_for_type, action_types
 
 
 @pytest.mark.parametrize(
@@ -26,7 +25,7 @@ from syft.service.action.action_types import action_types
         ActionDataEmpty(),
     ],
 )
-def test_action_type_for_type_any(obj: Any):
+def test_action_type_for_type_any(obj: Any) -> None:
     assert Any in action_types
     assert action_type_for_type(obj) == action_types[Any]
 
@@ -49,7 +48,7 @@ def test_action_type_for_type_any(obj: Any):
         np.float64,
     ],
 )
-def test_action_type_for_type_numpy(np_type: Any):
+def test_action_type_for_type_numpy(np_type: Any) -> None:
     assert np_type in action_types
 
     np_obj = np.asarray([1, 2, 3]) if np_type == np.ndarray else np_type(1)
@@ -64,7 +63,7 @@ def test_action_type_for_type_numpy(np_type: Any):
         pd.DataFrame,
     ],
 )
-def test_action_type_for_type_pandas(pd_type: Any):
+def test_action_type_for_type_pandas(pd_type: Any) -> None:
     assert pd_type in action_types
     if pd_type == pd.DataFrame:
         pd_obj = pd_type(np.asarray([[1, 2, 3]]))

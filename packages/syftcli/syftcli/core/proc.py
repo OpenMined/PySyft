@@ -1,11 +1,8 @@
 # stdlib
+import threading
 from collections.abc import Callable
 from functools import wraps
-from subprocess import CalledProcessError
-from subprocess import CompletedProcess
-from subprocess import PIPE
-from subprocess import Popen
-import threading
+from subprocess import PIPE, CalledProcessError, CompletedProcess, Popen
 from typing import Any
 
 __all__ = ["run_command", "check_returncode", "CalledProcessError", "CompletedProcess"]
@@ -23,10 +20,10 @@ def run_command(
     stream_output: dict | None = None,
     dryrun: bool = False,
 ) -> CompletedProcess:
-    """
-    Run a command in a subprocess.
+    """Run a command in a subprocess.
 
     Args:
+    ----
         command       (str): The command to run.
         working_dir   (str): The working directory to run the command in.
         stdout        (int): The stdout file descriptor. Defaults to subprocess.PIPE.
@@ -35,15 +32,17 @@ def run_command(
         dryrun        (bool): If True, the command will not be executed.
 
     Returns:
+    -------
         A CompletedProcess object.
 
     Example:
+    -------
         >>> from syftcli.core.proc import run_command
         >>> result = run_command("echo 'hello world'")
         >>> result.check_returncode()
         >>> result.stdout
-    """
 
+    """
     if dryrun:
         return CompletedProcess(command, 0, stdout="", stderr="")
 

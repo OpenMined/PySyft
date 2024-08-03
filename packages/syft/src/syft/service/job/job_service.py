@@ -1,9 +1,8 @@
 # stdlib
-from collections.abc import Callable
 import inspect
 import time
-from typing import Any
-from typing import cast
+from collections.abc import Callable
+from typing import Any, cast
 
 # relative
 from ...serde.serializable import serializable
@@ -12,24 +11,20 @@ from ...store.document_store import DocumentStore
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_object import ActionObject
-from ..action.action_permissions import ActionObjectPermission
-from ..action.action_permissions import ActionPermission
+from ..action.action_permissions import ActionObjectPermission, ActionPermission
 from ..code.user_code import UserCode
 from ..context import AuthedServiceContext
 from ..log.log_service import LogService
 from ..queue.queue_stash import ActionQueueItem
-from ..response import SyftError
-from ..response import SyftSuccess
-from ..service import AbstractService
-from ..service import TYPE_TO_SERVICE
-from ..service import service_method
-from ..user.user_roles import ADMIN_ROLE_LEVEL
-from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
-from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
-from ..user.user_roles import GUEST_ROLE_LEVEL
-from .job_stash import Job
-from .job_stash import JobStash
-from .job_stash import JobStatus
+from ..response import SyftError, SyftSuccess
+from ..service import TYPE_TO_SERVICE, AbstractService, service_method
+from ..user.user_roles import (
+    ADMIN_ROLE_LEVEL,
+    DATA_OWNER_ROLE_LEVEL,
+    DATA_SCIENTIST_ROLE_LEVEL,
+    GUEST_ROLE_LEVEL,
+)
+from .job_stash import Job, JobStash, JobStatus
 
 
 def wait_until(

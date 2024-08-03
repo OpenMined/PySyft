@@ -6,13 +6,13 @@ from syft.service.worker.image_identifier import SyftWorkerImageIdentifier
 from syft.service.worker.image_registry import SyftImageRegistry
 
 
-def test_image_id_str_no_host():
+def test_image_id_str_no_host() -> None:
     tag = "openmined/test-nginx:0.7.8"
     image_id = SyftWorkerImageIdentifier.from_str(tag)
     assert image_id.registry_host == ""
 
 
-def test_image_id_str_with_host():
+def test_image_id_str_with_host() -> None:
     tag = "localhost:5678/openmined/test-nginx:0.7.8"
     image_id = SyftWorkerImageIdentifier.from_str(tag)
     assert image_id.registry_host == "localhost:5678"
@@ -22,7 +22,7 @@ def test_image_id_str_with_host():
     assert image_id.full_name_with_tag == tag
 
 
-def test_image_id_with_registry():
+def test_image_id_with_registry() -> None:
     tag = "docker.io/openmined/test-nginx:0.7.8"
     registry = SyftImageRegistry.from_url("docker.io")
     image_id = SyftWorkerImageIdentifier.with_registry(tag, registry)
@@ -34,7 +34,7 @@ def test_image_id_with_registry():
     assert image_id.full_name_with_tag == tag
 
 
-def test_image_id_with_gcp_registry():
+def test_image_id_with_gcp_registry() -> None:
     tag = "openmined/test-image:1.0"
 
     gcp_url = "us-central1-docker.pkg.dev/project-12345/registry-name"
@@ -51,7 +51,7 @@ def test_image_id_with_gcp_registry():
     assert image_id.full_name_with_tag == f"{gcp_url}/{tag}"
 
 
-def test_image_id_with_incorrect_registry():
+def test_image_id_with_incorrect_registry() -> None:
     with pytest.raises(ValueError):
         tag = "docker.io/openmined/test-nginx:0.7.8"
         registry = SyftImageRegistry.from_url("localhost:5678")

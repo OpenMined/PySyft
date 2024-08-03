@@ -1,34 +1,28 @@
 # stdlib
 from collections import defaultdict
-import sys
 from typing import cast
 
 # third party
-from result import Err
-from result import Ok
-from result import Result
+from result import Err, Ok, Result
 
 # relative
 from ...serde.serializable import serializable
-from ...store.document_store import DocumentStore
-from ...store.document_store import StorePartition
+from ...store.document_store import DocumentStore, StorePartition
 from ...types.blob_storage import BlobStorageEntry
 from ...types.syft_object import SyftObject
-from ..action.action_object import Action
-from ..action.action_object import ActionObject
-from ..action.action_permissions import ActionObjectPermission
-from ..action.action_permissions import StoragePermission
+from ..action.action_object import Action, ActionObject
+from ..action.action_permissions import ActionObjectPermission, StoragePermission
 from ..action.action_store import KeyValueActionStore
 from ..context import AuthedServiceContext
-from ..response import SyftError
-from ..response import SyftSuccess
-from ..service import AbstractService
-from ..service import service_method
+from ..response import SyftError, SyftSuccess
+from ..service import AbstractService, service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
-from .object_migration_state import MigrationData
-from .object_migration_state import StoreMetadata
-from .object_migration_state import SyftMigrationStateStash
-from .object_migration_state import SyftObjectMigrationState
+from .object_migration_state import (
+    MigrationData,
+    StoreMetadata,
+    SyftMigrationStateStash,
+    SyftObjectMigrationState,
+)
 
 
 @serializable(canonical_name="MigrationService", version=1)
@@ -45,7 +39,6 @@ class MigrationService(AbstractService):
         self, context: AuthedServiceContext, canonical_name: str,
     ) -> int | SyftError:
         """Search for the metadata for an object."""
-
         result = self.stash.get_by_name(
             canonical_name=canonical_name, credentials=context.credentials,
         )
@@ -254,7 +247,6 @@ class MigrationService(AbstractService):
     def _update_store_metadata(
         self, context: AuthedServiceContext, store_metadata: dict[type, StoreMetadata],
     ) -> Result[str, str]:
-        print("Updating store metadata")
         for metadata in store_metadata.values():
             result = self._update_store_metadata_for_klass(context, metadata)
             if result.is_err():
@@ -373,9 +365,6 @@ class MigrationService(AbstractService):
             )
             if result.is_err():
                 if ignore_existing and "Duplication Key Error" in result.value:
-                    print(
-                        f"{type(migrated_object)} #{migrated_object.id} already exists",
-                    )
                     continue
                 else:
                     return result
@@ -422,9 +411,7 @@ class MigrationService(AbstractService):
             )
 
             if result.is_err():
-                print("ERR:", result.value, file=sys.stderr)
-                print("ERR:", type(migrated_object), file=sys.stderr)
-                print("ERR:", migrated_object, file=sys.stderr)
+                pass
                 # return result
         return Ok(value="success")
 
@@ -435,18 +422,14 @@ class MigrationService(AbstractService):
     ) -> Result[list[SyftObject], str]:
         migrated_objects = []
         for klass, objects in migration_objects.items():
-            canonical_name = klass.__canonical_name__
             # Migrate data for objects in document store
-            print(f"Migrating data for: {canonical_name} table.")
             for object in objects:
                 try:
                     migrated_value = object.migrate_to(klass.__version__, context)
                     migrated_objects.append(migrated_value)
                 except Exception:
                     # stdlib
-                    import traceback
 
-                    print(traceback.format_exc())
                     return Err(
                         f"Failed to migrate data to {klass} for qk {klass.__version__}: {object.id}",
                     )

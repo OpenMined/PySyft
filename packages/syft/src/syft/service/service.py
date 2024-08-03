@@ -1,56 +1,55 @@
 # future
 from __future__ import annotations
 
+import functools
+import inspect
+import logging
+
 # stdlib
 from collections import defaultdict
 from copy import deepcopy
-import functools
 from functools import partial
-import inspect
 from inspect import Parameter
-import logging
-from typing import Any
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 # third party
-from result import Ok
-from result import OkErr
+from result import Ok, OkErr
 from typing_extensions import Self
 
 # relative
 from ..protocol.data_protocol import migrate_args_and_kwargs
-from ..serde.lib_permissions import CMPCRUDPermission
-from ..serde.lib_permissions import CMPPermission
-from ..serde.lib_service_registry import CMPBase
-from ..serde.lib_service_registry import CMPClass
-from ..serde.lib_service_registry import CMPFunction
-from ..serde.lib_service_registry import action_execute_registry_libs
+from ..serde.lib_permissions import CMPCRUDPermission, CMPPermission
+from ..serde.lib_service_registry import (
+    CMPBase,
+    CMPClass,
+    CMPFunction,
+    action_execute_registry_libs,
+)
 from ..serde.serializable import serializable
-from ..serde.signature import Signature
-from ..serde.signature import signature_remove_context
-from ..serde.signature import signature_remove_self
+from ..serde.signature import Signature, signature_remove_context, signature_remove_self
 from ..store.document_store import DocumentStore
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
-from ..types.syft_object import SyftBaseObject
-from ..types.syft_object import SyftObject
-from ..types.syft_object import attach_attribute_to_syft_object
-from .context import AuthedServiceContext
-from .context import ChangeContext
+from ..types.syft_object import (
+    SYFT_OBJECT_VERSION_1,
+    SyftBaseObject,
+    SyftObject,
+    attach_attribute_to_syft_object,
+)
+from .context import AuthedServiceContext, ChangeContext
 from .response import SyftError
-from .user.user_roles import DATA_OWNER_ROLE_LEVEL
-from .user.user_roles import ServiceRole
+from .user.user_roles import DATA_OWNER_ROLE_LEVEL, ServiceRole
 
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     # relative
+    from collections.abc import Callable
+
+    from ..abstract_server import AbstractServer
+    from ..client.api import APIModule
+    from ..server.credentials import SyftVerifyKey
+    from ..store.linked_obj import LinkedObject
     from ..types.uid import UID
     from .warnings import APIEndpointWarning
-    from ..store.linked_obj import LinkedObject
-    from ..abstract_server import AbstractServer
-    from ..server.credentials import SyftVerifyKey
-    from collections.abc import Callable
-    from ..client.api import APIModule
 
 TYPE_TO_SERVICE: dict = {}
 SERVICE_TO_TYPES: defaultdict = defaultdict(set)
@@ -165,7 +164,7 @@ class LibConfigRegistry:
 
 
 class UserLibConfigRegistry:
-    def __init__(self, service_config_registry: dict[str, LibConfig]):
+    def __init__(self, service_config_registry: dict[str, LibConfig]) -> None:
         self.__service_config_registry__: dict[str, LibConfig] = service_config_registry
 
     @classmethod
@@ -189,7 +188,7 @@ class UserLibConfigRegistry:
 
 
 class UserServiceConfigRegistry:
-    def __init__(self, service_config_registry: dict[str, ServiceConfig]):
+    def __init__(self, service_config_registry: dict[str, ServiceConfig]) -> None:
         self.__service_config_registry__: dict[str, ServiceConfig] = (
             service_config_registry
         )
@@ -240,7 +239,7 @@ for lib_obj in action_execute_registry_libs.flatten():
     # func_name = func.__name__
     # # for classes
     # func_name = path.split(".")[-1]
-    if isinstance(lib_obj, (CMPFunction, CMPClass)):
+    if isinstance(lib_obj, CMPFunction | CMPClass):
         register_lib_obj(lib_obj)
 
 

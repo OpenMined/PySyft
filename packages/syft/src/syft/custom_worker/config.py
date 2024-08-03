@@ -1,21 +1,20 @@
 # stdlib
 import contextlib
-from hashlib import sha256
 import io
+from hashlib import sha256
 from pathlib import Path
 from typing import Any
 
 # third party
 import docker
+import yaml
 from packaging import version
 from pydantic import field_validator
 from typing_extensions import Self
-import yaml
 
 # relative
 from ..serde.serializable import serializable
-from ..service.response import SyftError
-from ..service.response import SyftSuccess
+from ..service.response import SyftError, SyftSuccess
 from ..types.base import SyftBaseModel
 from .utils import iterator_to_string
 

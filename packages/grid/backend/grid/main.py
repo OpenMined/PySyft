@@ -1,6 +1,6 @@
 # stdlib
-from contextlib import asynccontextmanager
 import logging
+from contextlib import asynccontextmanager
 from typing import Any
 
 # third party
@@ -70,8 +70,7 @@ if settings.DEV_MODE:
     response_class=JSONResponse,
 )
 def healthcheck() -> dict[str, str]:
-    """
-    Currently, all service backends must satisfy either of the following requirements to
+    """Currently, all service backends must satisfy either of the following requirements to
     pass the HTTP health checks sent to it from the GCE loadbalancer: 1. Respond with a
     200 on '/'. The content does not matter. 2. Expose an arbitrary url as a readiness
     probe on the pods backing the Service.

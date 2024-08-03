@@ -4,18 +4,19 @@ from pytest import MonkeyPatch
 from result import Err
 
 # syft absolute
-from syft.server.credentials import SyftSigningKey
-from syft.server.credentials import SyftVerifyKey
+from syft.server.credentials import SyftSigningKey, SyftVerifyKey
 from syft.service.notification.notification_stash import (
+    FromUserVerifyKeyPartitionKey,
+    NotificationStash,
     OrderByCreatedAtTimeStampPartitionKey,
+    StatusPartitionKey,
+    ToUserVerifyKeyPartitionKey,
 )
-from syft.service.notification.notification_stash import FromUserVerifyKeyPartitionKey
-from syft.service.notification.notification_stash import NotificationStash
-from syft.service.notification.notification_stash import StatusPartitionKey
-from syft.service.notification.notification_stash import ToUserVerifyKeyPartitionKey
-from syft.service.notification.notifications import Notification
-from syft.service.notification.notifications import NotificationExpiryStatus
-from syft.service.notification.notifications import NotificationStatus
+from syft.service.notification.notifications import (
+    Notification,
+    NotificationExpiryStatus,
+    NotificationStatus,
+)
 from syft.types.datetime import DateTime
 from syft.types.uid import UID
 

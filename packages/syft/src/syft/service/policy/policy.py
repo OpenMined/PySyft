@@ -3,60 +3,48 @@ from __future__ import annotations
 
 # stdlib
 import ast
-from copy import deepcopy
-from enum import Enum
 import hashlib
 import inspect
-from inspect import Parameter
-from inspect import Signature
-from io import StringIO
 import sys
-from typing import Any
-from typing import ClassVar, TYPE_CHECKING
+from copy import deepcopy
+from enum import Enum
+from inspect import Parameter, Signature
+from io import StringIO
+from typing import TYPE_CHECKING, Any, ClassVar
+
+import requests
+from pydantic import field_validator, model_validator
 
 # third party
 from RestrictedPython import compile_restricted
-from pydantic import field_validator
-from pydantic import model_validator
-import requests
-from result import Err
-from result import Ok
-from result import Result
+from result import Err, Ok, Result
 
 # relative
 from ...abstract_server import ServerType
-from ...client.api import APIRegistry
-from ...client.api import RemoteFunction
-from ...client.api import ServerIdentity
+from ...client.api import APIRegistry, RemoteFunction, ServerIdentity
 from ...serde.recursive_primitives import recursive_serde_register_type
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...store.document_store import PartitionKey
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject
 from ...types.syft_object_registry import SyftObjectRegistry
-from ...types.transforms import TransformContext
-from ...types.transforms import generate_id
-from ...types.transforms import transform
+from ...types.transforms import TransformContext, generate_id, transform
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
 from ...util.util import is_interpreter_jupyter
 from ..action.action_endpoint import CustomEndpointActionObject
 from ..action.action_object import ActionObject
-from ..action.action_permissions import ActionObjectPermission
-from ..action.action_permissions import ActionPermission
+from ..action.action_permissions import ActionObjectPermission, ActionPermission
 from ..code.code_parse import GlobalsVisitor
 from ..code.unparse import unparse
-from ..context import AuthedServiceContext
-from ..context import ChangeContext
-from ..context import ServerServiceContext
+from ..context import AuthedServiceContext, ChangeContext, ServerServiceContext
 from ..dataset.dataset import Asset
-from ..response import SyftError
-from ..response import SyftSuccess
+from ..response import SyftError, SyftSuccess
 
 if TYPE_CHECKING:
-    from ...types.datetime import DateTime
     from collections.abc import Callable
+
+    from ...types.datetime import DateTime
 
 DEFAULT_USER_POLICY_VERSION = 1
 
@@ -142,9 +130,7 @@ class UserPolicyStatus(Enum):
 
 def partition_by_server(kwargs: dict[str, Any]) -> dict[ServerIdentity, dict[str, UID]]:
     # relative
-    from ...client.api import APIRegistry
-    from ...client.api import RemoteFunction
-    from ...client.api import ServerIdentity
+    from ...client.api import APIRegistry, RemoteFunction, ServerIdentity
     from ...types.twin_object import TwinObject
     from ..action.action_object import ActionObject
 
@@ -284,15 +270,7 @@ class UserOwned(PolicyRule):
     # str, float, int, bool, dict, list, set, tuple
 
     type: (
-        type[str]
-        | type[float]
-        | type[int]
-        | type[bool]
-        | type[dict]
-        | type[list]
-        | type[set]
-        | type[tuple]
-        | None
+        type[str | float | int | bool | dict | list | set | tuple] | None
     )
 
     def is_owned(
@@ -314,7 +292,7 @@ class UserOwned(PolicyRule):
 
 
 def user_code_arg2id(arg: Any) -> UID:
-    if isinstance(arg, (ActionObject, TwinObject)):
+    if isinstance(arg, ActionObject | TwinObject):
         uid = arg.id
     elif isinstance(arg, Asset):
         uid = arg.action_id
@@ -443,7 +421,7 @@ class MixedInputPolicy(InputPolicy):
     def transform_kwargs(
         self, context: AuthedServiceContext, kwargs: dict[str, Any],
     ) -> dict[str, Any]:
-        for _, rules in self.kwarg_rules.items():
+        for rules in self.kwarg_rules.values():
             for kw, rule in rules.items():
                 if hasattr(rule, "transform_kwarg"):
                     res_val = rule.transform_kwarg(context, kwargs.get(kw))
@@ -516,7 +494,7 @@ class MixedInputPolicy(InputPolicy):
     ) -> Result[dict[Any, Any], str]:
         try:
             res = {}
-            for _, rules in self.kwarg_rules.items():
+            for rules in self.kwarg_rules.values():
                 for kw, rule in rules.items():
                     if rule.requires_input:
                         passed_id = kwargs[kw]
@@ -738,7 +716,7 @@ class OutputPolicy(Policy):
         return outputs
 
     def is_valid(self, context: AuthedServiceContext) -> SyftSuccess | SyftError:  # type: ignore
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 @serializable()
@@ -904,13 +882,12 @@ def new_getfile(object: Any) -> Any:  # TODO: fix the mypy issue
             and object.__qualname__ + "." + member.__name__ == member.__qualname__
         ):
             return inspect.getfile(member)
-    else:
-        msg = f"Source for {object!r} not found"
-        raise TypeError(msg)
+    msg = f"Source for {object!r} not found"
+    raise TypeError(msg)
 
 
 def get_code_from_class(policy: type[CustomPolicy]) -> str:
-    klasses = [inspect.getmro(policy)[0]]  #
+    klasses = [inspect.getmro(policy)[0]]
     whole_str = ""
     for klass in klasses:
         if is_interpreter_jupyter():
@@ -978,8 +955,8 @@ def generate_unique_class_name(context: TransformContext) -> TransformContext:
 def compile_byte_code(parsed_code: str) -> PyCodeObject | None:
     try:
         return compile(parsed_code, "<string>", "exec")
-    except Exception as e:
-        print("WARNING: to compile byte code", e)
+    except Exception:
+        pass
     return None
 
 
@@ -1065,9 +1042,8 @@ def process_class_code(raw_code: str, class_name: str) -> str:
     module = ast.Module(new_body, type_ignores=[])
     try:
         return unparse(module)
-    except Exception as e:
-        print("failed to unparse", e)
-        raise e
+    except Exception:
+        raise
 
 
 def check_class_code(context: TransformContext) -> TransformContext:
@@ -1085,8 +1061,8 @@ def check_class_code(context: TransformContext) -> TransformContext:
             class_name=context.output["unique_name"],
         )
         context.output["parsed_code"] = processed_code
-    except Exception as e:
-        raise e
+    except Exception:
+        raise
 
     return context
 
@@ -1225,13 +1201,13 @@ def init_policy(user_policy: UserPolicy, init_args: dict[str, Any]) -> Any:
     # Tech debt : For input policies, we required to have ServerIdentity args beforehand,
     # therefore at this stage we had to return back to the normal args.
     # Maybe there's better way to do it.
-    if len(init_args) and isinstance(list(init_args.keys())[0], ServerIdentity):
+    if len(init_args) and isinstance(next(iter(init_args.keys())), ServerIdentity):
         unwrapped_init_kwargs = init_args
         if len(init_args) > 1:
             msg = "You shoudn't have more than one Server Identity."
             raise Exception(msg)
         # Otherwise, unwrapp it
-        init_args = init_args[list(init_args.keys())[0]]
+        init_args = init_args[next(iter(init_args.keys()))]
 
     init_args = {k: v for k, v in init_args.items() if k != "id"}
 

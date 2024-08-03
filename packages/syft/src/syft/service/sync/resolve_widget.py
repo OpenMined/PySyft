@@ -1,42 +1,39 @@
 # stdlib
-from collections.abc import Callable
-from enum import Enum
-from enum import auto
-from functools import partial
 import html
 import secrets
+from collections.abc import Callable
+from enum import Enum, auto
+from functools import partial
 from typing import Any
 from uuid import uuid4
 
+import ipywidgets as widgets
+
 # third party
 from IPython import display
-import ipywidgets as widgets
-from ipywidgets import Button
-from ipywidgets import Checkbox
-from ipywidgets import HBox
-from ipywidgets import HTML
-from ipywidgets import Layout
-from ipywidgets import VBox
+from ipywidgets import HTML, Button, Checkbox, HBox, Layout, VBox
 
 # relative
 from ...client.sync_decision import SyncDirection
 from ...types.uid import UID
-from ...util.notebook_ui.components.sync import Alert
-from ...util.notebook_ui.components.sync import CopyIDButton
-from ...util.notebook_ui.components.sync import MainDescription
-from ...util.notebook_ui.components.sync import SyncWidgetHeader
-from ...util.notebook_ui.components.sync import TypeLabel
-from ...util.notebook_ui.components.tabulator_template import build_tabulator_table
-from ...util.notebook_ui.components.tabulator_template import highlight_single_row
-from ...util.notebook_ui.components.tabulator_template import update_table_cell
+from ...util.notebook_ui.components.sync import (
+    Alert,
+    CopyIDButton,
+    MainDescription,
+    SyncWidgetHeader,
+    TypeLabel,
+)
+from ...util.notebook_ui.components.tabulator_template import (
+    build_tabulator_table,
+    highlight_single_row,
+    update_table_cell,
+)
 from ...util.notebook_ui.styles import CSS_CODE
 from ..action.action_object import ActionObject
 from ..api.api import TwinAPIEndpoint
 from ..log.log import SyftLog
-from ..response import SyftError
-from ..response import SyftSuccess
-from .diff_state import ObjectDiff
-from .diff_state import ObjectDiffBatch
+from ..response import SyftError, SyftSuccess
+from .diff_state import ObjectDiff, ObjectDiffBatch
 
 # Standard div Jupyter Lab uses for notebook outputs
 # This is needed to use alert styles from SyftSuccess and SyftError
@@ -106,7 +103,7 @@ class MainObjectDiffWidget:
         with_box: bool = True,
         show_share_warning: bool = False,
         build_state: bool = True,
-    ):
+    ) -> None:
         build_state = build_state
 
         if build_state:
@@ -202,7 +199,7 @@ class MainObjectDiffWidget:
             result = VBox([widgets.HTML(warning), result])
 
         if self.with_box:
-            result._dom_classes = result._dom_classes + ("diff-container",)
+            result._dom_classes = (*result._dom_classes, "diff-container")
 
         return result
 
@@ -213,7 +210,7 @@ class CollapsableObjectDiffWidget:
         diff: ObjectDiff,
         direction: SyncDirection,
         build_state: bool = True,
-    ):
+    ) -> None:
         self.direction = direction
         self.build_state = build_state
         self.share_private_data = False
@@ -261,7 +258,7 @@ class CollapsableObjectDiffWidget:
             </div>
             {copy_id_button.to_html()}
             </div>
-        """  # noqa: E501
+        """
 
     def set_and_disable_sync(self) -> None:
         self._sync_checkbox.disabled = True
@@ -393,7 +390,7 @@ class CollapsableObjectDiffWidget:
             checkboxes.append(sync_checkbox)
 
         accordion_header = HBox(
-            [title_html] + checkboxes,
+            [title_html, *checkboxes],
             layout=Layout(width="100%", justify_content="space-between"),
         )
 
@@ -421,7 +418,7 @@ class ResolveWidget:
         obj_diff_batch: ObjectDiffBatch,
         on_sync_callback: Callable | None = None,
         build_state: bool = True,
-    ):
+    ) -> None:
         self.build_state = build_state
         self.obj_diff_batch: ObjectDiffBatch = obj_diff_batch
         self.id2widget: dict[
@@ -612,7 +609,7 @@ class ResolveWidget:
 
 
 class PaginationControl:
-    def __init__(self, data: list, callback: Callable[[int], None]):
+    def __init__(self, data: list, callback: Callable[[int], None]) -> None:
         self.data = data
         self.callback = callback
         self.current_index = 0
@@ -685,7 +682,7 @@ class PaginationControl:
 class PaginatedWidget:
     def __init__(
         self, children: list, on_paginate_callback: Callable[[int], None] | None = None,
-    ):
+    ) -> None:
         # on_paginate_callback is an optional secondary callback,
         # called after updating the page index and displaying the new widget
         self.children = children
@@ -716,13 +713,12 @@ class PaginatedWidget:
 
 
 class PaginatedResolveWidget:
-    """
-    PaginatedResolveWidget is a widget that displays
+    """PaginatedResolveWidget is a widget that displays
     a ResolveWidget for each ObjectDiffBatch,
     paginated by a PaginationControl widget.
     """
 
-    def __init__(self, batches: list[ObjectDiffBatch], build_state: bool = True):
+    def __init__(self, batches: list[ObjectDiffBatch], build_state: bool = True) -> None:
         self.build_state = build_state
         self.batches = batches
         self.resolve_widgets: list[ResolveWidget] = [

@@ -2,10 +2,10 @@
 import contextlib
 import logging
 import os
-from pathlib import Path
 import socket
 import socketserver
 import sys
+from pathlib import Path
 from typing import Any
 
 # third party
@@ -16,11 +16,9 @@ from kr8s.objects import Pod
 # relative
 from ...abstract_server import AbstractServer
 from ...custom_worker.builder import CustomWorkerBuilder
-from ...custom_worker.builder_types import ImageBuildResult
-from ...custom_worker.builder_types import ImagePushResult
+from ...custom_worker.builder_types import ImageBuildResult, ImagePushResult
 from ...custom_worker.config import PrebuiltWorkerConfig
-from ...custom_worker.k8s import KubeUtils
-from ...custom_worker.k8s import PodStatus
+from ...custom_worker.k8s import KubeUtils, PodStatus
 from ...custom_worker.runner_k8s import KubernetesRunner
 from ...server.credentials import SyftVerifyKey
 from ...types.uid import UID
@@ -29,11 +27,13 @@ from ..response import SyftError
 from .image_identifier import SyftWorkerImageIdentifier
 from .worker_image import SyftWorkerImage
 from .worker_image_stash import SyftWorkerImageStash
-from .worker_pool import ContainerSpawnStatus
-from .worker_pool import SyftWorker
-from .worker_pool import WorkerHealth
-from .worker_pool import WorkerOrchestrationType
-from .worker_pool import WorkerStatus
+from .worker_pool import (
+    ContainerSpawnStatus,
+    SyftWorker,
+    WorkerHealth,
+    WorkerOrchestrationType,
+    WorkerStatus,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -265,7 +265,7 @@ def run_workers_in_threads(
                 address=address,
             )
         except Exception as e:
-            logger.error(
+            logger.exception(
                 f"Failed to start consumer for pool={pool_name} worker={worker_name}",
                 exc_info=e,
             )
@@ -375,7 +375,7 @@ def create_kubernetes_pool(
             try:
                 pool.delete()  # this raises another exception if the pool never starts
             except Exception as e2:
-                logger.error(
+                logger.exception(
                     f"Failed to delete pool {pool_name} after failed creation. {e2}",
                 )
         # stdlib
@@ -680,7 +680,6 @@ def image_push(
 
 def get_orchestration_type() -> WorkerOrchestrationType:
     """Returns orchestration type from env. Defaults to Python."""
-
     orchstration_type_ = os.getenv("CONTAINER_HOST")
     return (
         WorkerOrchestrationType(orchstration_type_.lower())

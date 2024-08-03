@@ -6,21 +6,17 @@ from result import Result
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import BaseUIDStoreStash
-from ...store.document_store import DocumentStore
-from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
+from ...store.document_store import (
+    BaseUIDStoreStash,
+    DocumentStore,
+    PartitionSettings,
+    QueryKeys,
+)
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
-from ..response import SyftError
-from ..response import SyftSuccess
-from ..service import AbstractService
-from ..service import SERVICE_TO_TYPES
-from ..service import TYPE_TO_SERVICE
-from ..service import service_method
-from .data_subject import DataSubject
-from .data_subject import DataSubjectCreate
-from .data_subject import NamePartitionKey
+from ..response import SyftError, SyftSuccess
+from ..service import SERVICE_TO_TYPES, TYPE_TO_SERVICE, AbstractService, service_method
+from .data_subject import DataSubject, DataSubjectCreate, NamePartitionKey
 from .data_subject_member_service import DataSubjectMemberService
 
 
@@ -69,7 +65,6 @@ class DataSubjectService(AbstractService):
         self, context: AuthedServiceContext, data_subject: DataSubjectCreate,
     ) -> SyftSuccess | SyftError:
         """Register a data subject."""
-
         member_relationship_add = context.server.get_service_method(
             DataSubjectMemberService.add,
         )
@@ -103,7 +98,7 @@ class DataSubjectService(AbstractService):
 
     @service_method(path="data_subject.get_all", name="get_all")
     def get_all(self, context: AuthedServiceContext) -> list[DataSubject] | SyftError:
-        """Get all Data subjects"""
+        """Get all Data subjects."""
         result = self.stash.get_all(context.credentials)
         if result.is_ok():
             return result.ok()

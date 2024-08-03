@@ -1,18 +1,17 @@
 # stdlib
-from collections.abc import Callable
-from enum import Enum
-from enum import EnumMeta
 import os
 import tempfile
 import types
+from collections.abc import Callable
+from enum import Enum, EnumMeta
 from typing import Any
+
+# syft absolute
+import syft as sy
 
 # third party
 from capnp.lib.capnp import _DynamicStructBuilder
 from pydantic import BaseModel
-
-# syft absolute
-import syft as sy
 
 # relative
 from ..types.syft_object_registry import SyftObjectRegistry
@@ -50,7 +49,7 @@ def get_types(cls: type, keys: list[str] | None = None) -> list[type] | None:
 def check_fqn_alias(cls: object | type) -> tuple[str, ...] | None:
     """Currently, typing.Any has different metaclasses in different versions of Python 🤦‍♂️.
     For Python <=3.10
-    Any is an instance of typing._SpecialForm
+    Any is an instance of typing._SpecialForm.
 
     For Python >=3.11
     Any is an instance of typing._AnyMeta
@@ -120,12 +119,10 @@ def validate_cannonical_name_version(
 def skip_unregistered_class(
     cls: type, canonical_name: str | None, version: str | None,
 ) -> bool:
-    """
-    Used to gather all classes that are missing canonical_name and version for development.
+    """Used to gather all classes that are missing canonical_name and version for development.
 
     Returns True if the class should be skipped, False otherwise.
     """
-
     search_unregistered_classes = (
         os.getenv("SYFT_SEARCH_MISSING_CANONICAL_NAME", False) == "true"
     )
@@ -283,7 +280,7 @@ def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuild
 
     msg = recursive_scheme.new_message()
 
-    # todo: rewrite and make sure every object has a canonical name and version
+    # TODO: rewrite and make sure every object has a canonical name and version
     canonical_name, version = SyftObjectRegistry.get_canonical_name_version(self)
 
     if not SyftObjectRegistry.has_serde_class(canonical_name, version):
@@ -370,8 +367,9 @@ def rs_bytes2object(blob: bytes) -> Any:
 
 
 def map_fqns_for_backward_compatibility(fqn: str) -> str:
-    """for backwards compatibility with 0.8.6. Sometimes classes where moved to another file. Which is
-    exactly why we are implementing it differently"""
+    """For backwards compatibility with 0.8.6. Sometimes classes where moved to another file. Which is
+    exactly why we are implementing it differently.
+    """
     mapping = {
         "syft.service.dataset.dataset.MarkdownDescription": "syft.util.misc_objs.MarkdownDescription",
         "syft.service.object_search.object_migration_state.SyftObjectMigrationState": "syft.service.migration.object_migration_state.SyftObjectMigrationState",  # noqa: E501

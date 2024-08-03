@@ -1,14 +1,12 @@
 # stdlib
-from typing import Any
-from typing import ClassVar
+from typing import Any, ClassVar
 
 # relative
 from ...serde.serializable import serializable
 from ...service.context import AuthedServiceContext
 from ...store.document_store import BaseStash
 from ...types.uid import UID
-from ..response import SyftError
-from ..response import SyftSuccess
+from ..response import SyftError, SyftSuccess
 from ..worker.worker_stash import WorkerStash
 
 
@@ -73,7 +71,7 @@ class QueueClient:
 
 @serializable(canonical_name="QueueConfig", version=1)
 class QueueConfig:
-    """Base Queue configuration"""
+    """Base Queue configuration."""
 
     client_type: type[QueueClient]
     client_config: QueueClientConfig
@@ -83,7 +81,7 @@ class QueueConfig:
 class BaseQueueManager:
     config: QueueConfig
 
-    def __init__(self, config: QueueConfig):
+    def __init__(self, config: QueueConfig) -> None:
         self.config = config
         self.post_init()
 

@@ -1,19 +1,16 @@
 # stdlib
 import secrets
-from typing import cast, TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 # third party
-from result import Err
-from result import Ok
-from result import Result
+from result import Err, Ok, Result
 
 # relative
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ..context import ChangeContext
 from ..request.request import Change
-from ..response import SyftError
-from ..response import SyftSuccess
+from ..response import SyftError, SyftSuccess
 from .routes import ServerRoute
 from .server_peer import ServerPeer
 
@@ -35,15 +32,17 @@ class AssociationRequestChange(Change):
     def _run(
         self, context: ChangeContext, apply: bool,
     ) -> Result[tuple[bytes, ServerPeer], SyftError]:
-        """
-        Executes the association request.
+        """Executes the association request.
 
         Args:
+        ----
             context (ChangeContext): The change context.
             apply (bool): A flag indicating whether to apply the association request.
 
         Returns:
+        -------
             Result[tuple[bytes, ServerPeer], SyftError]: The result of the association request.
+
         """
         # relative
         from .network_service import NetworkService

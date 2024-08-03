@@ -2,14 +2,13 @@
 
 # third party
 import pytest
-from typeguard import TypeCheckError
 
 # syft absolute
 from syft.service.dataset.dataset import Dataset
-from syft.service.dataset.dataset_stash import ActionIDsPartitionKey
-from syft.service.dataset.dataset_stash import NamePartitionKey
+from syft.service.dataset.dataset_stash import ActionIDsPartitionKey, NamePartitionKey
 from syft.store.document_store import QueryKey
 from syft.types.uid import UID
+from typeguard import TypeCheckError
 
 
 def test_dataset_namepartitionkey() -> None:
@@ -83,7 +82,7 @@ def test_dataset_get_by_name(root_verify_key, mock_dataset_stash, mock_dataset) 
 #     )
 
 
-def test_dataset_search_action_ids(root_verify_key, mock_dataset_stash, mock_dataset):
+def test_dataset_search_action_ids(root_verify_key, mock_dataset_stash, mock_dataset) -> None:
     action_id = mock_dataset.assets[0].action_id
 
     result = mock_dataset_stash.search_action_ids(root_verify_key, uid=action_id)

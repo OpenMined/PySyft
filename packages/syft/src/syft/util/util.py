@@ -1,47 +1,44 @@
 # stdlib
 import asyncio
-from asyncio.selector_events import BaseSelectorEventLoop
-from collections.abc import Callable
-from collections.abc import Iterator
-from collections.abc import Sequence
-from concurrent.futures import ProcessPoolExecutor
-from concurrent.futures import ThreadPoolExecutor
-from contextlib import contextmanager
-from copy import deepcopy
-from datetime import datetime
 import functools
 import hashlib
-from itertools import repeat
 import json
 import logging
 import multiprocessing
 import multiprocessing as mp
-from multiprocessing import set_start_method
-from multiprocessing.synchronize import Event as EventClass
-from multiprocessing.synchronize import Lock as LockBase
 import operator
 import os
-from pathlib import Path
 import platform
 import random
 import re
 import secrets
-from secrets import randbelow
 import socket
 import sys
 import threading
 import time
 import types
+from asyncio.selector_events import BaseSelectorEventLoop
+from collections.abc import Callable, Iterator, Sequence
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+from contextlib import contextmanager
+from copy import deepcopy
+from datetime import datetime
+from itertools import repeat
+from multiprocessing import set_start_method
+from multiprocessing.synchronize import Event as EventClass
+from multiprocessing.synchronize import Lock as LockBase
+from pathlib import Path
+from secrets import randbelow
 from types import ModuleType
 from typing import Any
 
-# third party
-from IPython.display import display
-from forbiddenfruit import curse
-from nacl.signing import SigningKey
-from nacl.signing import VerifyKey
 import nh3
 import requests
+from forbiddenfruit import curse
+
+# third party
+from IPython.display import display
+from nacl.signing import SigningKey, VerifyKey
 
 # relative
 from ..serde.serialize import _serialize as serialize
@@ -64,7 +61,7 @@ def full_name_with_qualname(klass: type) -> str:
         return f"{klass.__module__}.{get_qualname_for(klass)}"
     except Exception as e:
         # try name as backup
-        logger.error(f"Failed to get FQN for: {klass} {type(klass)}", exc_info=e)
+        logger.exception(f"Failed to get FQN for: {klass} {type(klass)}", exc_info=e)
     return full_name_with_name(klass=klass)
 
 
@@ -75,8 +72,8 @@ def full_name_with_name(klass: type) -> str:
             return f"builtins.{get_name_for(klass)}"
         return f"{klass.__module__}.{get_name_for(klass)}"
     except Exception as e:
-        logger.error(f"Failed to get FQN for: {klass} {type(klass)}", exc_info=e)
-        raise e
+        logger.exception(f"Failed to get FQN for: {klass} {type(klass)}", exc_info=e)
+        raise
 
 
 def get_qualname_for(klass: type) -> str:
@@ -116,8 +113,8 @@ def extract_name(klass: type) -> str:
                 return fqn.split(".")[-1]
             return fqn
         except Exception as e:
-            logger.error(f"Failed to get klass name {klass}", exc_info=e)
-            raise e
+            logger.exception(f"Failed to get klass name {klass}", exc_info=e)
+            raise
     else:
         msg = f"Failed to match regex for klass {klass}"
         raise ValueError(msg)
@@ -142,32 +139,34 @@ def validate_field(_object: object, _field: str) -> Any:
 
 
 def get_fully_qualified_name(obj: object) -> str:
-    """Return the full path and name of a class
+    """Return the full path and name of a class.
 
     Sometimes we want to return the entire path and name encoded
     using periods.
 
     Args:
+    ----
         obj: the object we want to get the name of
 
     Returns:
+    -------
         the full path and name of the object
 
     """
-
     fqn = obj.__class__.__module__
 
     try:
         fqn += "." + obj.__class__.__name__
     except Exception as e:
-        logger.error(f"Failed to get FQN: {e}")
+        logger.exception(f"Failed to get FQN: {e}")
     return fqn
 
 
 def aggressive_set_attr(obj: object, name: str, attr: object) -> None:
-    """Different objects prefer different types of monkeypatching - try them all
+    """Different objects prefer different types of monkeypatching - try them all.
 
     Args:
+    ----
         obj: object whose attribute has to be set
         name: attribute name
         attr: value given to the attribute
@@ -185,7 +184,7 @@ def key_emoji(key: object) -> str:
             hex_chars = bytes(key).hex()[-8:]
             return char_emoji(hex_chars=hex_chars)
     except Exception as e:
-        logger.error(f"Fail to get key emoji: {e}")
+        logger.exception(f"Fail to get key emoji: {e}")
     return "ALL"
 
 
@@ -215,7 +214,6 @@ def download_file(url: str, full_path: str | Path) -> Path | None:
     if not full_path.exists():
         r = requests.get(url, allow_redirects=True, verify=verify_tls())  # nosec
         if not r.ok:
-            print(f"Got {r.status_code} trying to download {url}")
             return None
         full_path.parent.mkdir(parents=True, exist_ok=True)
         full_path.write_bytes(r.content)
@@ -279,27 +277,23 @@ def print_process(  # type: ignore
 ) -> None:
     with lock:
         while not finish.is_set():
-            print(f"{bcolors.bold(message)} .", end="\r")
             time.sleep(refresh_rate)
             sys.stdout.flush()
-            print(f"{bcolors.bold(message)} ..", end="\r")
             time.sleep(refresh_rate)
             sys.stdout.flush()
-            print(f"{bcolors.bold(message)} ...", end="\r")
             time.sleep(refresh_rate)
             sys.stdout.flush()
         if success.is_set():
-            print(f"{bcolors.success(message)}" + (" " * len(message)), end="\n")
+            pass
         else:
-            print(f"{bcolors.failure(message)}" + (" " * len(message)), end="\n")
+            pass
         sys.stdout.flush()
 
 
 def print_dynamic_log(
     message: str,
 ) -> tuple[EventClass, EventClass]:
-    """
-    Prints a dynamic log message that will change its color (to green or red) when some process is done.
+    """Prints a dynamic log message that will change its color (to green or red) when some process is done.
 
     message: str = Message to be printed.
 
@@ -333,15 +327,14 @@ def find_available_port(
             if result_of_check != 0:
                 port_available = True
                 break
+            elif search:
+                port += 1
             else:
-                if search:
-                    port += 1
-                else:
-                    break
+                break
             sock.close()
 
         except Exception as e:
-            logger.error(f"Failed to check port {port}. {e}")
+            logger.exception(f"Failed to check port {port}. {e}")
     sock.close()
 
     if search is False and port_available is False:
@@ -359,6 +352,7 @@ def get_random_available_port() -> int:
     Returns
     -------
     int: Available port number.
+
     """
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as soc:
         soc.bind(("localhost", 0))
@@ -370,7 +364,7 @@ def get_loaded_syft() -> ModuleType:
 
 
 def get_subclasses(obj_type: type) -> list[type]:
-    """Recursively generate the list of all classes within the sub-tree of an object
+    """Recursively generate the list of all classes within the sub-tree of an object.
 
     As a paradigm in Syft, we often allow for something to be known about by another
     part of the codebase merely because it has subclassed a particular object. While
@@ -382,13 +376,14 @@ def get_subclasses(obj_type: type) -> list[type]:
     hierarchy.
 
     Args:
+    ----
         obj_type: the type we want to look for sub-classes of
 
     Returns:
+    -------
         the list of subclasses of obj_type
 
     """
-
     classes = []
     for sc in obj_type.__subclasses__():
         classes.append(sc)
@@ -397,27 +392,28 @@ def get_subclasses(obj_type: type) -> list[type]:
 
 
 def index_modules(a_dict: object, keys: list[str]) -> object:
-    """Recursively find a syft module from its path
+    """Recursively find a syft module from its path.
 
     This is the recursive inner function of index_syft_by_module_name.
     See that method for a full description.
 
     Args:
+    ----
         a_dict: a module we're traversing
         keys: the list of string attributes we're using to traverse the module
 
     Returns:
+    -------
         a reference to the final object
 
     """
-
     if len(keys) == 0:
         return a_dict
     return index_modules(a_dict=a_dict.__dict__[keys[0]], keys=keys[1:])
 
 
 def index_syft_by_module_name(fully_qualified_name: str) -> object:
-    """Look up a Syft class/module/function from full path and name
+    """Look up a Syft class/module/function from full path and name.
 
     Sometimes we want to use the fully qualified name (such as one
     generated from the 'get_fully_qualified_name' method below) to
@@ -426,13 +422,14 @@ def index_syft_by_module_name(fully_qualified_name: str) -> object:
     representation of the specific object it is meant to deserialize to.
 
     Args:
+    ----
         fully_qualified_name: the name in str of a module, class, or function
 
     Returns:
+    -------
         a reference to the actual object at that string path
 
     """
-
     # @Tudor this needs fixing during the serde refactor
     # we should probably just support the native type names as lookups for serde
     if fully_qualified_name == "builtins.NoneType":
@@ -486,10 +483,9 @@ def prompt_warning_message(message: str, confirm: bool = False) -> bool:
         if response == "y":
             return True
         elif response == "n":
-            print("Aborted.")
             return False
         else:
-            print("Invalid response. Please enter Y or N.")
+            pass
 
     return True
 
@@ -716,15 +712,14 @@ def autocache(
         if os.path.exists(file_path) and cache:
             return file_path
         return download_file(url, file_path)
-    except Exception as e:
-        print(f"Failed to autocache: {url}. {e}")
+    except Exception:
         return None
 
 
 def str_to_bool(bool_str: str | None) -> bool:
     result = False
     bool_str = str(bool_str).lower()
-    if bool_str == "true" or bool_str == "1":
+    if bool_str in ("true", "1"):
         result = True
     return result
 
@@ -736,7 +731,9 @@ def parallel_execution(
     cpu_bound: bool = False,
 ) -> Callable[..., list[Any]]:
     """Wrap a function such that it can be run in parallel at multiple parties.
+
     Args:
+    ----
         fn (Callable): The function to run.
         parties (Union[None, List[Any]]): Clients from syft. If this is set, then the
             function should be run remotely. Defaults to None.
@@ -746,6 +743,7 @@ def parallel_execution(
             it makes sense to use threads since there is no bottleneck on the CPU side
     Returns:
         Callable[..., List[Any]]: A Callable that returns a list of results.
+
     """
 
     @functools.wraps(fn)
@@ -754,11 +752,16 @@ def parallel_execution(
         kwargs: dict[Any, dict[Any, Any]] | None = None,
     ) -> list[Any]:
         """Wrap sanity checks and checks what executor should be used.
+
         Args:
+        ----
             args (List[List[Any]]): Args.
             kwargs (Optional[Dict[Any, Dict[Any, Any]]]): Kwargs. Default to None.
+
         Returns:
-            List[Any]: Results from the parties
+        -------
+            List[Any]: Results from the parties.
+
         """
         if args is None or len(args) == 0:
             msg = "Parallel execution requires more than 0 args"
@@ -915,7 +918,6 @@ def set_klass_module_to_syft(klass: type, module_name: str) -> None:
 
 def get_queue_address(port: int) -> str:
     """Get queue address based on container host name."""
-
     container_host = os.getenv("CONTAINER_HOST", None)
     if container_host == "k8s":
         return f"tcp://backend:{port}"
@@ -1010,6 +1012,6 @@ def get_nb_secrets(defaults: dict | None = None) -> dict:
             loaded = json.loads(f.read())
             defaults.update(loaded)
     except Exception:
-        print(f"Unable to load {filename}")
+        pass
 
     return defaults

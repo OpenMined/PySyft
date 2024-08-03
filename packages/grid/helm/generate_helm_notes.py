@@ -1,13 +1,12 @@
 # stdlib
 import json
 import os
-from pathlib import Path
 import sys
+from pathlib import Path
 
 
 def add_notes(helm_chart_template_dir: str) -> None:
     """Add notes or information post helm install or upgrade."""
-
     notes = """
     Thank you for installing {{ .Chart.Name }}.
     Your release is named {{ .Release.Name }}.
@@ -62,10 +61,6 @@ def get_protocol_changes() -> str:
 if __name__ == "__main__":
     # write code to path from user and pass to generate notes
     if len(sys.argv) != 2:
-        print("Please provide helm chart template directory path")
         sys.exit(1)
     helm_chart_template_dir = sys.argv[1]
     add_notes(helm_chart_template_dir)
-    print("=" * 50)
-    print("Notes Generated Successfully")
-    print("=" * 50)

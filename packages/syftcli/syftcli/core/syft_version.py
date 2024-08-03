@@ -2,8 +2,7 @@
 from functools import cached_property
 
 # third party
-from packaging.specifiers import SpecifierSet
-from packaging.specifiers import Version
+from packaging.specifiers import SpecifierSet, Version
 from packaging.version import InvalidVersion
 
 # relative
@@ -13,23 +12,22 @@ __all__ = ["SyftVersion", "InvalidVersion"]
 
 
 class SyftVersion:
-    def __init__(self, version: str):
+    def __init__(self, version: str) -> None:
         self._ver: Version = self._resolve(version)
 
     @property
     def version(self) -> Version:
-        """Returns the underlying Version object"""
+        """Returns the underlying Version object."""
         return self._ver
 
     @property
     def release_tag(self) -> str:
-        """Returns the Github release version string (e.g. v0.8.2)"""
-
+        """Returns the Github release version string (e.g. v0.8.2)."""
         return f"v{self.version}"
 
     @cached_property
     def docker_tag(self) -> str:
-        """Returns the docker version/tag (e.g. 0.8.2-beta.26)"""
+        """Returns the docker version/tag (e.g. 0.8.2-beta.26)."""
         manifest = SyftRepo.get_manifest(self.release_tag)
         return manifest["dockerTag"]
 

@@ -1,6 +1,6 @@
 # stdlib
-from collections.abc import Callable
 import importlib
+from collections.abc import Callable
 from typing import Any
 
 # third party

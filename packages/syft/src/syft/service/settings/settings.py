@@ -1,32 +1,30 @@
 # stdlib
-from collections.abc import Callable
 import logging
+from collections.abc import Callable
 from typing import Any
 
 # third party
-from pydantic import field_validator
-from pydantic import model_validator
+from pydantic import field_validator, model_validator
 from typing_extensions import Self
 
 # relative
-from ...abstract_server import ServerSideType
-from ...abstract_server import ServerType
+from ...abstract_server import ServerSideType, ServerType
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...service.worker.utils import DEFAULT_WORKER_POOL_NAME
 from ...types.syft_migration import migrate
-from ...types.syft_object import PartialSyftObject
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
-from ...types.syft_object import SyftObject
-from ...types.transforms import drop
-from ...types.transforms import make_set_default
+from ...types.syft_object import (
+    SYFT_OBJECT_VERSION_1,
+    SYFT_OBJECT_VERSION_2,
+    SYFT_OBJECT_VERSION_3,
+    PartialSyftObject,
+    SyftObject,
+)
+from ...types.transforms import drop, make_set_default
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
-from ...util.misc_objs import HTMLObject
-from ...util.misc_objs import MarkdownDescription
+from ...util.misc_objs import HTMLObject, MarkdownDescription
 from ...util.schema import DEFAULT_WELCOME_MSG
 
 logger = logging.getLogger(__name__)

@@ -2,9 +2,7 @@
 from string import Template
 
 # third party
-from result import Err
-from result import Ok
-from result import Result
+from result import Err, Ok, Result
 
 # relative
 from ...abstract_server import ServerSideType
@@ -12,25 +10,16 @@ from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...util.assets import load_png_base64
 from ...util.experimental_flags import flags
-from ...util.misc_objs import HTMLObject
-from ...util.misc_objs import MarkdownDescription
+from ...util.misc_objs import HTMLObject, MarkdownDescription
 from ...util.notebook_ui.styles import FONT_CSS
-from ...util.schema import DO_COMMANDS
-from ...util.schema import DS_COMMANDS
-from ...util.schema import GUEST_COMMANDS
-from ..context import AuthedServiceContext
-from ..context import UnauthedServiceContext
+from ...util.schema import DO_COMMANDS, DS_COMMANDS, GUEST_COMMANDS
+from ..context import AuthedServiceContext, UnauthedServiceContext
 from ..notifier.notifier_enums import EMAIL_TYPES
-from ..response import SyftError
-from ..response import SyftSuccess
-from ..service import AbstractService
-from ..service import service_method
-from ..user.user_roles import ADMIN_ROLE_LEVEL
-from ..user.user_roles import GUEST_ROLE_LEVEL
-from ..user.user_roles import ServiceRole
+from ..response import SyftError, SyftSuccess
+from ..service import AbstractService, service_method
+from ..user.user_roles import ADMIN_ROLE_LEVEL, GUEST_ROLE_LEVEL, ServiceRole
 from ..warnings import HighSideCRUDWarning
-from .settings import ServerSettings
-from .settings import ServerSettingsUpdate
+from .settings import ServerSettings, ServerSettingsUpdate
 from .settings_stash import SettingsStash
 
 
@@ -45,8 +34,7 @@ class SettingsService(AbstractService):
 
     @service_method(path="settings.get", name="get")
     def get(self, context: UnauthedServiceContext) -> Result[Ok, Err]:
-        """Get Settings"""
-
+        """Get Settings."""
         result = self.stash.get_all(context.server.signing_key.verify_key)
         if result.is_ok():
             settings = result.ok()
@@ -62,7 +50,7 @@ class SettingsService(AbstractService):
     def set(
         self, context: AuthedServiceContext, settings: ServerSettings,
     ) -> Result[Ok, Err]:
-        """Set a new the Server Settings"""
+        """Set a new the Server Settings."""
         result = self.stash.set(context.credentials, settings)
         if result.is_ok():
             return result
@@ -92,10 +80,10 @@ class SettingsService(AbstractService):
     def _update(
         self, context: AuthedServiceContext, settings: ServerSettingsUpdate,
     ) -> Result[Ok, Err]:
-        """
-        Update the Server Settings using the provided values.
+        """Update the Server Settings using the provided values.
 
         Args:
+        ----
             name: Optional[str]
                 Server name
             organization: Optional[str]
@@ -111,11 +99,14 @@ class SettingsService(AbstractService):
             association_request_auto_approval: Optional[bool]
 
         Returns:
+        -------
             Result[SyftSuccess, SyftError]: A result indicating the success or failure of the update operation.
 
         Example:
+        -------
         >>> server_client.update(name='foo', organization='bar', description='baz', signup_enabled=True)
         SyftSuccess: Settings updated successfully.
+
         """
         result = self.stash.get_all(context.credentials)
         if result.is_ok():
@@ -298,7 +289,6 @@ class SettingsService(AbstractService):
                 message="Invalid markdown/html fields. You must set one of them.",
             )
 
-        welcome_msg = None
         return MarkdownDescription(text=markdown) if markdown else HTMLObject(text=html)
 
 
@@ -356,8 +346,7 @@ class SettingsService(AbstractService):
                 )
                 commands = ""
                 if (
-                    role.value == ServiceRole.NONE.value
-                    or role.value == ServiceRole.GUEST.value
+                    role.value in (ServiceRole.NONE.value, ServiceRole.GUEST.value)
                 ):
                     commands = GUEST_COMMANDS
                 elif (

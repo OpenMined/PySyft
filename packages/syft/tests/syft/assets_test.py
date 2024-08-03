@@ -2,13 +2,11 @@
 import pytest
 
 # syft absolute
-from syft.util.assets import load_css
-from syft.util.assets import load_png_base64
-from syft.util.assets import load_svg
+from syft.util.assets import load_css, load_png_base64, load_svg
 from syft.util.notebook_ui.icons import Icon
 
 
-def test_load_assets():
+def test_load_assets() -> None:
     png = load_png_base64("small-syft-symbol-logo.png")
     assert isinstance(png, str)
 
@@ -22,7 +20,7 @@ def test_load_assets():
     assert isinstance(css, str)
 
 
-def test_icons():
+def test_icons() -> None:
     for icon in Icon:
         assert isinstance(icon.svg, str)
         assert isinstance(icon.js_escaped_svg, str)

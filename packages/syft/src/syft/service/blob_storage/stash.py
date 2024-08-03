@@ -1,8 +1,6 @@
 # relative
 from ...serde.serializable import serializable
-from ...store.document_store import BaseUIDStoreStash
-from ...store.document_store import DocumentStore
-from ...store.document_store import PartitionSettings
+from ...store.document_store import BaseUIDStoreStash, DocumentStore, PartitionSettings
 from ...types.blob_storage import BlobStorageEntry
 
 

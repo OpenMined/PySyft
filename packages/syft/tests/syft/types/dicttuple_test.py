@@ -1,31 +1,23 @@
 # stdlib
-from collections.abc import Callable
-from collections.abc import Collection
-from collections.abc import Generator
-from collections.abc import Iterable
-from collections.abc import Mapping
-from functools import cached_property
-from itertools import chain
-from itertools import combinations
-from typing import Any
-from typing import Generic
-from typing import TypeVar
 import uuid
+from collections.abc import Callable, Collection, Generator, Iterable, Mapping
+from functools import cached_property
+from itertools import chain, combinations
+from typing import Any, Generic, TypeVar
+
+import pytest
 
 # third party
 from faker import Faker
-import pytest
-from typing_extensions import Self
 
 # syft absolute
-from syft.service.dataset.dataset import Contributor
-from syft.service.dataset.dataset import Dataset
-from syft.service.dataset.dataset import DatasetPageView
+from syft.service.dataset.dataset import Contributor, Dataset, DatasetPageView
 from syft.service.user.roles import Roles
 from syft.types.dicttuple import DictTuple
+from typing_extensions import Self
 
 
-def test_dict_tuple_not_subclassing_mapping():
+def test_dict_tuple_not_subclassing_mapping() -> None:
     assert not issubclass(DictTuple, Mapping)
 
 
@@ -164,7 +156,7 @@ class Case(Generic[_KT, _VT]):
     def from_kv(cls, kv: Mapping[_KT, _VT]) -> Self:
         return cls(kv.values(), kv.keys())
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.__class__.__qualname__}{self.mapping}"
 
 
@@ -175,7 +167,7 @@ TEST_CASES: list[Case] = [
 
 
 @pytest.mark.parametrize(
-    "args1,args2",
+    ("args1", "args2"),
     chain.from_iterable(combinations(c.constructor_args(), 2) for c in TEST_CASES),
 )
 def test_all_equal(args1: Callable[[], tuple], args2: Callable[[], tuple]) -> None:
@@ -256,7 +248,7 @@ def test_keys_and_values_should_have_same_length(args: Callable[[], tuple]) -> N
         DictTuple(*args())
 
 
-def test_datasetpageview(faker: Faker):
+def test_datasetpageview(faker: Faker) -> None:
     uploader = Contributor(
         name=faker.name(), role=str(Roles.UPLOADER), email=faker.email(),
     )
@@ -276,12 +268,12 @@ class EnhancedDictTuple(DictTuple):
 
 
 @pytest.mark.parametrize(
-    "args,case",
+    ("args", "case"),
     chain.from_iterable(
         ((args, c) for args in c.constructor_args()) for c in TEST_CASES
     ),
 )
-def test_subclassing_dicttuple(args: Callable[[], tuple], case: Case):
+def test_subclassing_dicttuple(args: Callable[[], tuple], case: Case) -> None:
     dict_tuple = DictTuple(*args())
     enhanced_dict_tuple = EnhancedDictTuple(*args())
     dict_tuple_enhanced_dict_tuple = DictTuple(enhanced_dict_tuple)

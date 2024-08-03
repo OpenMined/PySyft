@@ -1,6 +1,6 @@
 # stdlib
 import datetime
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 # third party
 from pydantic import model_validator
@@ -11,10 +11,8 @@ from ....service.code.user_code import UserCode
 from ....service.job.job_stash import Job
 from ....service.request.request import Request
 from ....service.user.user import UserView
-from ....types.datetime import DateTime
-from ....types.datetime import format_timedelta_human_readable
-from ....types.syft_object import SYFT_OBJECT_VERSION_1
-from ....types.syft_object import SyftObject
+from ....types.datetime import DateTime, format_timedelta_human_readable
+from ....types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject
 from ..icons import Icon
 from ..styles import CSS_CODE
 from .base import HTMLComponentBase
@@ -253,7 +251,7 @@ class TypeLabel(Label):
 
     @staticmethod
     def type_label_class(obj: Any) -> str:
-        if isinstance(obj, (UserCode, Job)):
+        if isinstance(obj, UserCode | Job):
             return "label-light-blue"
         elif isinstance(obj, Request):  # type: ignore
             # TODO: handle other requests
@@ -317,7 +315,7 @@ class SyncWidgetHeader(SyncTableObject):
             </div>
             {copy_id_button}
             </div>
-        """  # noqa: E501
+        """
 
         num_diffs = len(self.diff_batch.get_dependencies(include_roots=True))
         if self.diff_batch.sync_direction == SyncDirection.HIGH_TO_LOW:

@@ -1,5 +1,6 @@
 # stdlib
 import sys
+from typing import NoReturn
 
 # third party
 import pytest
@@ -8,12 +9,10 @@ import pytest
 import syft
 import syft as sy
 from syft.client.datasite_client import DatasiteClient
-from syft.client.syncing import compare_clients
-from syft.client.syncing import resolve
+from syft.client.syncing import compare_clients, resolve
 from syft.service.action.action_object import ActionObject
 from syft.service.job.job_stash import JobStatus
-from syft.service.response import SyftError
-from syft.service.response import SyftSuccess
+from syft.service.response import SyftError, SyftSuccess
 
 
 def compare_and_resolve(*, from_client: DatasiteClient, to_client: DatasiteClient):
@@ -56,8 +55,8 @@ def private_function(context) -> str:
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
-@pytest.mark.local_server
-def test_twin_api_integration(full_high_worker, full_low_worker):
+@pytest.mark.local_server()
+def test_twin_api_integration(full_high_worker, full_low_worker) -> None:
     low_client = full_low_worker.login(
         email="info@openmined.org", password="changethis",
     )
@@ -154,7 +153,7 @@ def test_twin_api_integration(full_high_worker, full_low_worker):
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
-@pytest.mark.local_server
+@pytest.mark.local_server()
 def test_function_error(full_low_worker) -> None:
     root_datasite_client = full_low_worker.login(
         email="info@openmined.org", password="changethis",
@@ -173,7 +172,7 @@ def test_function_error(full_low_worker) -> None:
     users = root_datasite_client.users.get_all()
 
     @sy.syft_function_single_use()
-    def compute_sum():
+    def compute_sum() -> NoReturn:
         raise RuntimeError
 
     ds_client.api.services.code.request_code_execution(compute_sum)

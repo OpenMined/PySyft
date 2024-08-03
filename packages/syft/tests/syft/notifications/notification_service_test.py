@@ -1,19 +1,18 @@
 # third party
 from pytest import MonkeyPatch
-from result import Err
-from result import Ok
+from result import Err, Ok
 
 # syft absolute
-from syft.server.credentials import SyftSigningKey
-from syft.server.credentials import SyftVerifyKey
+from syft.server.credentials import SyftSigningKey, SyftVerifyKey
 from syft.service.context import AuthedServiceContext
 from syft.service.notification.notification_service import NotificationService
 from syft.service.notification.notification_stash import NotificationStash
-from syft.service.notification.notifications import CreateNotification
-from syft.service.notification.notifications import Notification
-from syft.service.notification.notifications import NotificationStatus
-from syft.service.response import SyftError
-from syft.service.response import SyftSuccess
+from syft.service.notification.notifications import (
+    CreateNotification,
+    Notification,
+    NotificationStatus,
+)
+from syft.service.response import SyftError, SyftSuccess
 from syft.store.document_store import DocumentStore
 from syft.store.linked_obj import LinkedObject
 from syft.types.datetime import DateTime

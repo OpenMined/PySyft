@@ -8,27 +8,27 @@ from result import Err
 
 # syft absolute
 from syft.server.credentials import SyftVerifyKey
-from syft.service.action.action_permissions import ActionObjectPermission
-from syft.service.action.action_permissions import ActionPermission
-from syft.service.action.action_permissions import StoragePermission
-from syft.service.action.action_store import ActionObjectEXECUTE
-from syft.service.action.action_store import ActionObjectOWNER
-from syft.service.action.action_store import ActionObjectREAD
-from syft.service.action.action_store import ActionObjectWRITE
-from syft.store.document_store import PartitionSettings
-from syft.store.document_store import QueryKey
-from syft.store.document_store import QueryKeys
+from syft.service.action.action_permissions import (
+    ActionObjectPermission,
+    ActionPermission,
+    StoragePermission,
+)
+from syft.service.action.action_store import (
+    ActionObjectEXECUTE,
+    ActionObjectOWNER,
+    ActionObjectREAD,
+    ActionObjectWRITE,
+)
+from syft.store.document_store import PartitionSettings, QueryKey, QueryKeys
 from syft.store.mongo_client import MongoStoreClientConfig
-from syft.store.mongo_document_store import MongoStoreConfig
-from syft.store.mongo_document_store import MongoStorePartition
+from syft.store.mongo_document_store import MongoStoreConfig, MongoStorePartition
 from syft.types.uid import UID
 
 # relative
 from ...mongomock.collection import Collection as MongoCollection
 from .store_constants_test import TEST_VERIFY_KEY_STRING_HACKER
 from .store_fixtures_test import mongo_store_partition_fn
-from .store_mocks_test import MockObjectType
-from .store_mocks_test import MockSyftObject
+from .store_mocks_test import MockObjectType, MockSyftObject
 
 PERMISSIONS = [
     ActionObjectOWNER,
@@ -611,9 +611,7 @@ def test_mongo_store_partition_permissions_collection(
 def test_mongo_store_partition_add_remove_permission(
     root_verify_key: SyftVerifyKey, mongo_store_partition: MongoStorePartition,
 ) -> None:
-    """
-    Test the add_permission and remove_permission functions of MongoStorePartition
-    """
+    """Test the add_permission and remove_permission functions of MongoStorePartition."""
     # setting up
     res = mongo_store_partition.init_store()
     assert res.is_ok()
@@ -701,10 +699,7 @@ def test_mongo_store_partition_add_remove_storage_permission(
     root_verify_key: SyftVerifyKey,
     mongo_store_partition: MongoStorePartition,
 ) -> None:
-    """
-    Test the add_storage_permission and remove_storage_permission functions of MongoStorePartition
-    """
-
+    """Test the add_storage_permission and remove_storage_permission functions of MongoStorePartition."""
     obj = MockSyftObject(data=1)
 
     storage_permission = StoragePermission(
@@ -884,9 +879,7 @@ def test_mongo_store_partition_permissions_set(
     guest_verify_key: SyftVerifyKey,
     mongo_store_partition: MongoStorePartition,
 ) -> None:
-    """
-    Test the permissions functionalities when using MongoStorePartition._set function
-    """
+    """Test the permissions functionalities when using MongoStorePartition._set function."""
     hacker_verify_key = SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_HACKER)
     res = mongo_store_partition.init_store()
     assert res.is_ok()

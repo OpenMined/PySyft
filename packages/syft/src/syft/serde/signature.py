@@ -1,11 +1,8 @@
 # stdlib
-from collections.abc import Callable
 import inspect
-from inspect import Parameter
-from inspect import Signature
-from inspect import _ParameterKind
-from inspect import _signature_fromstr
 import re
+from collections.abc import Callable
+from inspect import Parameter, Signature, _ParameterKind, _signature_fromstr
 
 # relative
 from .deserialize import _deserialize

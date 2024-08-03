@@ -1,15 +1,14 @@
 # stdlib
 import logging
-from multiprocessing import Process
 import threading
-from threading import Thread
 import time
+from multiprocessing import Process
+from threading import Thread
 from typing import Any
 
 # third party
 import psutil
-from result import Err
-from result import Ok
+from result import Err, Ok
 
 # relative
 from ...serde.deserialize import _deserialize as deserialize
@@ -20,18 +19,17 @@ from ...service.context import AuthedServiceContext
 from ...store.document_store import BaseStash
 from ...types.datetime import DateTime
 from ...types.uid import UID
-from ..job.job_stash import Job
-from ..job.job_stash import JobStatus
-from ..response import SyftError
-from ..response import SyftSuccess
+from ..job.job_stash import Job, JobStatus
+from ..response import SyftError, SyftSuccess
 from ..worker.worker_stash import WorkerStash
-from .base_queue import AbstractMessageHandler
-from .base_queue import BaseQueueManager
-from .base_queue import QueueConfig
-from .base_queue import QueueConsumer
-from .base_queue import QueueProducer
-from .queue_stash import QueueItem
-from .queue_stash import Status
+from .base_queue import (
+    AbstractMessageHandler,
+    BaseQueueManager,
+    QueueConfig,
+    QueueConsumer,
+    QueueProducer,
+)
+from .queue_stash import QueueItem, Status
 
 logger = logging.getLogger(__name__)
 
@@ -214,7 +212,7 @@ def handle_message_multiprocessing(
             ):
                 status = Status.ERRORED
                 job_status = JobStatus.ERRORED
-        elif isinstance(result, (SyftError, Err)):
+        elif isinstance(result, SyftError | Err):
             status = Status.ERRORED
             job_status = JobStatus.ERRORED
 
@@ -224,7 +222,7 @@ def handle_message_multiprocessing(
     except Exception as e:
         status = Status.ERRORED
         job_status = JobStatus.ERRORED
-        logger.error("Unhandled error in handle_message_multiprocessing", exc_info=e)
+        logger.exception("Unhandled error in handle_message_multiprocessing", exc_info=e)
 
     queue_item.result = result
     queue_item.resolved = True

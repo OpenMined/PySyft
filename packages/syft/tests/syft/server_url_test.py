@@ -15,7 +15,7 @@ test_suite = [
 ]
 
 
-@pytest.mark.parametrize("url, port, ground_truth", test_suite)
+@pytest.mark.parametrize(("url", "port", "ground_truth"), test_suite)
 def test_server_url(url, port, ground_truth) -> None:
     if not url and not port:
         assert ServerURL().base_url == ground_truth

@@ -4,12 +4,7 @@ from pathlib import Path
 from secrets import token_hex
 
 # first party
-from src.buckets import AzureBucket
-from src.buckets import AzureCreds
-from src.buckets import GCSBucket
-from src.buckets import GCSCreds
-from src.buckets import S3Bucket
-from src.buckets import S3Creds
+from src.buckets import AzureBucket, AzureCreds, GCSBucket, GCSCreds, S3Bucket, S3Creds
 from src.mount_options import MountOptions
 
 

@@ -3,19 +3,19 @@ from typing import ClassVar
 
 # third party
 from pydantic import model_validator
-from result import Err
-from result import Ok
-from result import Result
+from result import Err, Ok, Result
 
 # relative
 from ...client.api import APIRegistry
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import BaseUIDStoreStash
-from ...store.document_store import DocumentStore
-from ...store.document_store import PartitionKey
-from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
+from ...store.document_store import (
+    BaseUIDStoreStash,
+    DocumentStore,
+    PartitionKey,
+    PartitionSettings,
+    QueryKeys,
+)
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -26,11 +26,8 @@ from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectREAD
 from ..context import AuthedServiceContext
 from ..response import SyftError
-from ..service import AbstractService
-from ..service import TYPE_TO_SERVICE
-from ..service import service_method
-from ..user.user_roles import ADMIN_ROLE_LEVEL
-from ..user.user_roles import GUEST_ROLE_LEVEL
+from ..service import TYPE_TO_SERVICE, AbstractService, service_method
+from ..user.user_roles import ADMIN_ROLE_LEVEL, GUEST_ROLE_LEVEL
 
 CreatedAtPartitionKey = PartitionKey(key="created_at", type_=DateTime)
 UserCodeIdPartitionKey = PartitionKey(key="user_code_id", type_=UID)
@@ -91,10 +88,8 @@ class ExecutionOutput(SyncableSyftObject):
         input_ids: dict[str, UID] | None = None,
     ) -> "ExecutionOutput":
         # relative
-        from ..code.user_code_service import UserCode
-        from ..code.user_code_service import UserCodeService
-        from ..job.job_service import Job
-        from ..job.job_service import JobService
+        from ..code.user_code_service import UserCode, UserCodeService
+        from ..job.job_service import Job, JobService
 
         if isinstance(output_ids, UID):
             output_ids = [output_ids]
@@ -162,14 +157,16 @@ class ExecutionOutput(SyncableSyftObject):
         return []
 
     def check_input_ids(self, kwargs: dict[str, UID]) -> bool:
-        """
-        Checks the input IDs against the stored input IDs.
+        """Checks the input IDs against the stored input IDs.
 
         Args:
+        ----
             kwargs (dict[str, UID]): A dictionary containing the input IDs to be checked.
 
         Returns:
+        -------
             bool: True if the input IDs are valid, False otherwise.
+
         """
         if not self.input_ids:
             return True
@@ -248,7 +245,7 @@ class OutputService(AbstractService):
     store: DocumentStore
     stash: OutputStash
 
-    def __init__(self, store: DocumentStore):
+    def __init__(self, store: DocumentStore) -> None:
         self.store = store
         self.stash = OutputStash(store=store)
 

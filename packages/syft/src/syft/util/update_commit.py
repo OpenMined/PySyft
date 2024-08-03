@@ -12,8 +12,7 @@ def get_commit_hash() -> str:
             cwd=cwd,  # nosec
         )
         return output.strip().decode("ascii")
-    except subprocess.CalledProcessError as e:
-        print(f"Error getting commit hash: {e}")
+    except subprocess.CalledProcessError:
         sys.exit(1)
 
 
@@ -32,15 +31,13 @@ def update_commit_variable(file_path: str, commit_hash: str) -> None:
                 else:
                     file.write(line)
             if not updated:
-                print("No __commit__ variable found in the file.")
-    except OSError as e:
-        print(f"Error reading or writing file: {e}")
+                pass
+    except OSError:
         sys.exit(1)
 
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: python update_commit.py <file_path>")
         sys.exit(1)
 
     file_path = sys.argv[1]

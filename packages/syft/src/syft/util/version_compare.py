@@ -1,6 +1,6 @@
 # stdlib
-from collections.abc import Callable
 import operator
+from collections.abc import Callable
 from typing import Any
 
 # third party
@@ -59,7 +59,7 @@ def check_rule(
 
 def make_requires(LATEST_STABLE_SYFT: str, __version__: str) -> Callable:
     def requires(version_string: str, silent: bool = False) -> bool | None:
-        syft_version = version.parse(__version__)
+        version.parse(__version__)
         parts = version_string.split(",")
         result = True
         all_requirements = []
@@ -78,18 +78,13 @@ def make_requires(LATEST_STABLE_SYFT: str, __version__: str) -> Callable:
         if silent:
             return result
 
-        msg_requirements = " and ".join(all_requirements)
+        " and ".join(all_requirements)
         if result:
-            print(
-                f"✅ The installed version of syft=={syft_version} matches {msg_requirements}",
-            )
+            pass
         else:
-            print(
-                f"❌ The installed version of syft=={syft_version} doesn't match {msg_requirements}",
-            )
+            pass
         if len(all_messages):
-            print("This code or notebook may have issues if APIs have changed\n")
-            print("\n\n".join(all_messages))
+            pass
         return None
 
     return requires

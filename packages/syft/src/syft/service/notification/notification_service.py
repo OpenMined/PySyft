@@ -8,21 +8,21 @@ from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectREAD
 from ..context import AuthedServiceContext
 from ..notifier.notifier import NotifierSettings
-from ..response import SyftError
-from ..response import SyftSuccess
-from ..service import AbstractService
-from ..service import SERVICE_TO_TYPES
-from ..service import TYPE_TO_SERVICE
-from ..service import service_method
-from ..user.user_roles import ADMIN_ROLE_LEVEL
-from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
-from ..user.user_roles import GUEST_ROLE_LEVEL
+from ..response import SyftError, SyftSuccess
+from ..service import SERVICE_TO_TYPES, TYPE_TO_SERVICE, AbstractService, service_method
+from ..user.user_roles import (
+    ADMIN_ROLE_LEVEL,
+    DATA_SCIENTIST_ROLE_LEVEL,
+    GUEST_ROLE_LEVEL,
+)
 from .notification_stash import NotificationStash
-from .notifications import CreateNotification
-from .notifications import LinkedObject
-from .notifications import Notification
-from .notifications import NotificationStatus
-from .notifications import ReplyNotification
+from .notifications import (
+    CreateNotification,
+    LinkedObject,
+    Notification,
+    NotificationStatus,
+    ReplyNotification,
+)
 
 
 @instrument
@@ -39,7 +39,7 @@ class NotificationService(AbstractService):
     def send(
         self, context: AuthedServiceContext, notification: CreateNotification,
     ) -> Notification | SyftError:
-        """Send a new notification"""
+        """Send a new notification."""
         new_notification = notification.to(Notification, context=context)
 
         # Add read permissions to person receiving this message

@@ -1,36 +1,38 @@
 # stdlib
+import sys
 from io import BytesIO
 from pathlib import Path
-import sys
 from typing import Any
+
+import yaml
 
 # third party
 from result import Result
 from typing_extensions import Self
-import yaml
 
 # relative
 from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
-from ...server.credentials import SyftSigningKey
-from ...server.credentials import SyftVerifyKey
-from ...store.document_store import BaseStash
-from ...store.document_store import DocumentStore
-from ...store.document_store import PartitionKey
-from ...store.document_store import PartitionSettings
-from ...types.blob_storage import BlobStorageEntry
-from ...types.blob_storage import CreateBlobStorageEntry
-from ...types.syft_object import Context
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftBaseObject
-from ...types.syft_object import SyftObject
+from ...server.credentials import SyftSigningKey, SyftVerifyKey
+from ...store.document_store import (
+    BaseStash,
+    DocumentStore,
+    PartitionKey,
+    PartitionSettings,
+)
+from ...types.blob_storage import BlobStorageEntry, CreateBlobStorageEntry
+from ...types.syft_object import (
+    SYFT_OBJECT_VERSION_1,
+    Context,
+    SyftBaseObject,
+    SyftObject,
+)
 from ...types.syft_object_registry import SyftObjectRegistry
 from ...types.uid import UID
 from ...util.util import prompt_warning_message
 from ..action.action_permissions import ActionObjectPermission
-from ..response import SyftError
-from ..response import SyftSuccess
+from ..response import SyftError, SyftSuccess
 
 
 @serializable()
@@ -160,10 +162,10 @@ class MigrationData(SyftObject):
         }
 
     @classmethod
-    def from_file(self, path: str | Path) -> Self | SyftError:
+    def from_file(cls, path: str | Path) -> Self | SyftError:
         path = Path(path)
         if not path.exists():
-            return SyftError(f"File {str(path)} does not exist.")
+            return SyftError(f"File {path!s} does not exist.")
 
         with open(path, "rb") as f:
             res: MigrationData = _deserialize(f.read(), from_bytes=True)
@@ -190,7 +192,7 @@ class MigrationData(SyftObject):
         with open(yaml_path, "w") as f:
             yaml.dump(migration_config, f)
 
-        return SyftSuccess(message=f"Migration data saved to {str(path)}.")
+        return SyftSuccess(message=f"Migration data saved to {path!s}.")
 
     def download_blobs(self) -> None | SyftError:
         for obj in self.blob_storage_objects:

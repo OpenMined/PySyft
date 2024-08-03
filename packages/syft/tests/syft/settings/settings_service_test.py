@@ -3,24 +3,20 @@ from copy import deepcopy
 from datetime import datetime
 from unittest import mock
 
+# syft absolute
+import syft
+
 # third party
 from faker import Faker
 from pytest import MonkeyPatch
-from result import Err
-from result import Ok
-
-# syft absolute
-import syft
+from result import Err, Ok
 from syft.abstract_server import ServerSideType
-from syft.server.credentials import SyftSigningKey
-from syft.server.credentials import SyftVerifyKey
+from syft.server.credentials import SyftSigningKey, SyftVerifyKey
 from syft.service.context import AuthedServiceContext
 from syft.service.notifier.notifier import NotifierSettings
 from syft.service.notifier.notifier_stash import NotifierStash
-from syft.service.response import SyftError
-from syft.service.response import SyftSuccess
-from syft.service.settings.settings import ServerSettings
-from syft.service.settings.settings import ServerSettingsUpdate
+from syft.service.response import SyftError, SyftSuccess
+from syft.service.settings.settings import ServerSettings, ServerSettingsUpdate
 from syft.service.settings.settings_service import SettingsService
 from syft.service.settings.settings_stash import SettingsStash
 from syft.service.user.user import UserCreate
@@ -155,7 +151,7 @@ def test_settingsservice_update_success(
 
     # Mock the get_service method to return a mocked notifier_service with the notifier_stash
     class MockNotifierService:
-        def __init__(self, stash):
+        def __init__(self, stash) -> None:
             self.stash = stash
 
         def set_notifier_active_to_false(self, context) -> SyftSuccess:
@@ -241,7 +237,7 @@ def test_settingsservice_update_fail(
 
     # Mock the get_service method to return a mocked notifier_service with the notifier_stash
     class MockNotifierService:
-        def __init__(self, stash):
+        def __init__(self, stash) -> None:
             self.stash = stash
 
         def set_notifier_active_to_false(self, context) -> SyftSuccess:
@@ -338,7 +334,7 @@ def test_settings_allow_guest_registration(
         assert any(user.email == email2 for user in root_datasite_client.users)
 
 
-def test_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker):
+def test_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker) -> None:
     # Mock patch this env variable to remove race conditions
     # where signup is enabled.
     def get_mock_client(faker, root_client, role):

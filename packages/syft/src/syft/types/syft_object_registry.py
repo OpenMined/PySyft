@@ -1,7 +1,6 @@
 # stdlib
 from collections.abc import Callable
-from typing import Any
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 SYFT_086_PROTOCOL_VERSION = "4"
 
@@ -40,15 +39,12 @@ class SyftObjectRegistry:
 
     @classmethod
     def get_identifier_for_type(cls, obj: Any) -> tuple[str, int]:
-        """
-        This is to create the string in nonrecursiveBlob
-        """
+        """This is to create the string in nonrecursiveBlob."""
         return cls.__type_to_canonical_name__[obj]
 
     @classmethod
     def get_canonical_name_version(cls, obj: Any) -> tuple[str, int]:
-        """
-        Retrieves the canonical name for both objects and types.
+        """Retrieves the canonical name for both objects and types.
 
         This function works for both objects and types, returning the canonical name
         as a string. It handles various cases, including built-in types, instances of
@@ -57,18 +53,21 @@ class SyftObjectRegistry:
         If the object is not registered in the registry, a ValueError is raised.
 
         Examples:
+        --------
             get_canonical_name_version([1,2,3]) -> "list"
             get_canonical_name_version(list) -> "type"
             get_canonical_name_version(MyEnum.A) -> "MyEnum"
             get_canonical_name_version(MyEnum) -> "type"
 
         Args:
+        ----
             obj: The object or type for which to get the canonical name.
 
         Returns:
+        -------
             The canonical name and version of the object or type.
-        """
 
+        """
         # for types we return "type"
         if isinstance(obj, type):
             return cls.__type_to_canonical_name__[type]
@@ -121,8 +120,7 @@ class SyftObjectRegistry:
         cls, type_from: type["SyftObject"], type_to: type["SyftObject"],
     ) -> Callable:
         # relative
-        from .syft_object import SyftBaseObject
-        from .syft_object import SyftObject
+        from .syft_object import SyftBaseObject, SyftObject
 
         for type_from_mro in type_from.mro():
             if issubclass(type_from_mro, SyftObject):

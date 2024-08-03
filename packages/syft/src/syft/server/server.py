@@ -1,131 +1,138 @@
 # future
 from __future__ import annotations
 
-# stdlib
-from collections import OrderedDict
-from datetime import MINYEAR
-from datetime import datetime
-from functools import partial
 import hashlib
 import json
 import logging
 import os
 import subprocess  # nosec
 import sys
-from time import sleep
 import traceback
-from typing import Any
-from typing import cast, TYPE_CHECKING
+
+# stdlib
+from collections import OrderedDict
+from datetime import MINYEAR, datetime
+from functools import partial
+from time import sleep
+from typing import TYPE_CHECKING, Any, cast
 
 # third party
 from nacl.signing import SigningKey
 
 # relative
 from .. import __version__
-from ..abstract_server import AbstractServer
-from ..abstract_server import ServerSideType
-from ..abstract_server import ServerType
-from ..client.api import SignedSyftAPICall
-from ..client.api import SyftAPI
-from ..client.api import SyftAPICall
-from ..client.api import SyftAPIData
-from ..client.api import debox_signed_syftapicall_response
+from ..abstract_server import AbstractServer, ServerSideType, ServerType
+from ..client.api import (
+    SignedSyftAPICall,
+    SyftAPI,
+    SyftAPICall,
+    SyftAPIData,
+    debox_signed_syftapicall_response,
+)
 from ..exceptions.exception import PySyftException
-from ..protocol.data_protocol import PROTOCOL_TYPE
-from ..protocol.data_protocol import get_data_protocol
-from ..service.action.action_object import Action
-from ..service.action.action_object import ActionObject
-from ..service.action.action_store import ActionStore
-from ..service.action.action_store import DictActionStore
-from ..service.action.action_store import MongoActionStore
-from ..service.action.action_store import SQLiteActionStore
+from ..protocol.data_protocol import PROTOCOL_TYPE, get_data_protocol
+from ..service.action.action_object import Action, ActionObject
+from ..service.action.action_store import (
+    ActionStore,
+    DictActionStore,
+    MongoActionStore,
+    SQLiteActionStore,
+)
 from ..service.blob_storage.service import BlobStorageService
 from ..service.code.user_code_service import UserCodeService
-from ..service.context import AuthedServiceContext
-from ..service.context import ServerServiceContext
-from ..service.context import UnauthedServiceContext
-from ..service.context import UserLoginCredentials
-from ..service.job.job_stash import Job
-from ..service.job.job_stash import JobStash
-from ..service.job.job_stash import JobStatus
-from ..service.job.job_stash import JobType
+from ..service.context import (
+    AuthedServiceContext,
+    ServerServiceContext,
+    UnauthedServiceContext,
+    UserLoginCredentials,
+)
+from ..service.job.job_stash import Job, JobStash, JobStatus, JobType
 from ..service.metadata.server_metadata import ServerMetadata
 from ..service.network.network_service import NetworkService
 from ..service.network.utils import PeerHealthCheckTask
 from ..service.notifier.notifier_service import NotifierService
-from ..service.queue.queue import APICallMessageHandler
-from ..service.queue.queue import QueueManager
-from ..service.queue.queue_stash import APIEndpointQueueItem
-from ..service.queue.queue_stash import ActionQueueItem
-from ..service.queue.queue_stash import QueueItem
-from ..service.queue.queue_stash import QueueStash
-from ..service.queue.zmq_queue import QueueConfig
-from ..service.queue.zmq_queue import ZMQClientConfig
-from ..service.queue.zmq_queue import ZMQQueueConfig
+from ..service.queue.queue import APICallMessageHandler, QueueManager
+from ..service.queue.queue_stash import (
+    ActionQueueItem,
+    APIEndpointQueueItem,
+    QueueItem,
+    QueueStash,
+)
+from ..service.queue.zmq_queue import QueueConfig, ZMQClientConfig, ZMQQueueConfig
 from ..service.response import SyftError
-from ..service.service import AbstractService
-from ..service.service import ServiceConfigRegistry
-from ..service.service import UserServiceConfigRegistry
-from ..service.settings.settings import ServerSettings
-from ..service.settings.settings import ServerSettingsUpdate
+from ..service.service import (
+    AbstractService,
+    ServiceConfigRegistry,
+    UserServiceConfigRegistry,
+)
+from ..service.settings.settings import ServerSettings, ServerSettingsUpdate
 from ..service.settings.settings_stash import SettingsStash
-from ..service.user.user import User
-from ..service.user.user import UserCreate
-from ..service.user.user import UserView
+from ..service.user.user import User, UserCreate, UserView
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..service.user.user_stash import UserStash
-from ..service.worker.utils import DEFAULT_WORKER_IMAGE_TAG
-from ..service.worker.utils import DEFAULT_WORKER_POOL_NAME
-from ..service.worker.utils import create_default_image
+from ..service.worker.utils import (
+    DEFAULT_WORKER_IMAGE_TAG,
+    DEFAULT_WORKER_POOL_NAME,
+    create_default_image,
+)
 from ..service.worker.worker_image_service import SyftWorkerImageService
 from ..service.worker.worker_pool_service import SyftWorkerPoolService
-from ..store.blob_storage.on_disk import OnDiskBlobStorageClientConfig
-from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
+from ..store.blob_storage.on_disk import (
+    OnDiskBlobStorageClientConfig,
+    OnDiskBlobStorageConfig,
+)
 from ..store.blob_storage.seaweedfs import SeaweedFSBlobDeposit
 from ..store.dict_document_store import DictStoreConfig
 from ..store.linked_obj import LinkedObject
 from ..store.mongo_document_store import MongoStoreConfig
-from ..store.sqlite_document_store import SQLiteStoreClientConfig
-from ..store.sqlite_document_store import SQLiteStoreConfig
+from ..store.sqlite_document_store import SQLiteStoreClientConfig, SQLiteStoreConfig
 from ..types.datetime import DATETIME_FORMAT
 from ..types.syft_metaclass import Empty
-from ..types.syft_object import Context
-from ..types.syft_object import PartialSyftObject
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
-from ..types.syft_object import SyftObject
+from ..types.syft_object import (
+    SYFT_OBJECT_VERSION_1,
+    Context,
+    PartialSyftObject,
+    SyftObject,
+)
 from ..types.uid import UID
 from ..util.experimental_flags import flags
 from ..util.telemetry import instrument
-from ..util.util import get_dev_mode
-from ..util.util import get_env
-from ..util.util import get_queue_address
-from ..util.util import random_name
-from ..util.util import str_to_bool
-from ..util.util import thread_ident
-from .credentials import SyftSigningKey
-from .credentials import SyftVerifyKey
+from ..util.util import (
+    get_dev_mode,
+    get_env,
+    get_queue_address,
+    random_name,
+    str_to_bool,
+    thread_ident,
+)
+from .credentials import SyftSigningKey, SyftVerifyKey
 from .service_registry import ServiceRegistry
-from .utils import get_named_server_uid
-from .utils import get_temp_dir_for_server
-from .utils import remove_temp_dir_for_server
+from .utils import (
+    get_named_server_uid,
+    get_temp_dir_for_server,
+    remove_temp_dir_for_server,
+)
 from .worker_settings import WorkerSettings
 
 if TYPE_CHECKING:
-    from ..service.queue.base_queue import AbstractMessageHandler
-    from result import Err
-    from ..service.queue.base_queue import QueueProducer
-    from ..service.worker.worker_pool import WorkerPool
+    from collections.abc import Callable
+    from pathlib import Path
+
+    from result import Err, Result
+
+    from ..client.client import SyftClient
     from ..service.code.user_code_stash import UserCodeStash
+    from ..service.queue.base_queue import (
+        AbstractMessageHandler,
+        QueueConsumer,
+        QueueProducer,
+    )
+    from ..service.worker.worker_pool import WorkerPool
     from ..service.worker.worker_pool_stash import SyftWorkerPoolStash
     from ..service.worker.worker_stash import WorkerStash
-    from ..store.document_store import StoreConfig
     from ..store.blob_storage import BlobStorageConfig
-    from ..client.client import SyftClient
-    from result import Result
-    from ..service.queue.base_queue import QueueConsumer
-    from pathlib import Path
-    from collections.abc import Callable
+    from ..store.document_store import StoreConfig
 
 logger = logging.getLogger(__name__)
 
@@ -335,7 +342,7 @@ class Server(AbstractServer):
         smtp_host: str | None = None,
         association_request_auto_approval: bool = False,
         background_tasks: bool = False,
-    ):
+    ) -> None:
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
         self.dev_mode = dev_mode or get_dev_mode()
@@ -891,16 +898,13 @@ class Server(AbstractServer):
         return getattr(service_obj, method_name)
 
     def get_temp_dir(self, dir_name: str = "") -> Path:
-        """
-        Get a temporary directory unique to the server.
+        """Get a temporary directory unique to the server.
         Provide all dbs, blob dirs, and locks using this directory.
         """
         return get_temp_dir_for_server(self.id, dir_name)
 
     def remove_temp_dir(self) -> None:
-        """
-        Remove the temporary directory for this server.
-        """
+        """Remove the temporary directory for this server."""
         remove_temp_dir_for_server(self.id)
 
     def update_self(self, settings: ServerSettings) -> None:
@@ -978,7 +982,7 @@ class Server(AbstractServer):
     def __hash__(self) -> int:
         return hash(self.id)
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, type(self)):
             return False
 
@@ -1109,9 +1113,8 @@ class Server(AbstractServer):
             return SyftError(
                 message=f"You sent a {type(api_call)}. This server requires SignedSyftAPICall.",
             )
-        else:
-            if not api_call.is_valid:
-                return SyftError(message="Your message signature is invalid")
+        elif not api_call.is_valid:
+            return SyftError(message="Your message signature is invalid")
 
         if api_call.message.server_uid != self.id and check_call_location:
             return self.forward_message(api_call=api_call)
@@ -1590,7 +1593,7 @@ class Server(AbstractServer):
                     return result.ok()
                 return None
         except Exception as e:
-            logger.error("create_initial_settings failed", exc_info=e)
+            logger.exception("create_initial_settings failed", exc_info=e)
             return None
 
 
@@ -1631,7 +1634,7 @@ def create_admin_new(
                 msg = f"Could not create user: {result}"
                 raise Exception(msg)
     except Exception as e:
-        logger.error("Unable to create new admin", exc_info=e)
+        logger.exception("Unable to create new admin", exc_info=e)
 
     return None
 

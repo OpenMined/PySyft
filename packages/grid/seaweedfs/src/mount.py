@@ -1,22 +1,21 @@
 # stdlib
-from hashlib import sha256
 import logging
-from pathlib import Path
 import re
 import shutil
 import subprocess
+from hashlib import sha256
+from pathlib import Path
 from typing import Any
 
 # relative
-from .buckets import AzureCreds
-from .buckets import BucketType
-from .buckets import GCSCreds
-from .buckets import S3Creds
-from .mount_cmd import MountCmdArgs
-from .mount_cmd import SupervisordConfArgs
-from .mount_cmd import create_mount_cmd
-from .mount_cmd import create_supervisord_conf
-from .mount_cmd import create_sync_cmd
+from .buckets import AzureCreds, BucketType, GCSCreds, S3Creds
+from .mount_cmd import (
+    MountCmdArgs,
+    SupervisordConfArgs,
+    create_mount_cmd,
+    create_supervisord_conf,
+    create_sync_cmd,
+)
 from .mount_options import MountOptions
 from .util import dict_upper_keys
 
@@ -45,8 +44,7 @@ def mount_bucket(
     conf_dir: Path = SUPERVISORD_CONF_DIR,
     overwrite: bool = False,
 ) -> dict:
-    """Mount a remote bucket in seaweedfs"""
-
+    """Mount a remote bucket in seaweedfs."""
     # create a seaweedfs safe config name
     swfs_config_name = seaweed_safe_config_name(
         remote_name=opts.remote_bucket.type.value,
@@ -121,7 +119,7 @@ def mount_bucket(
 
 
 def seaweed_safe_config_name(remote_name: str, bucket_name: str) -> str:
-    """Seaweed-friendly name for the remote config"""
+    """Seaweed-friendly name for the remote config."""
     bucket_id = sha256(bucket_name.encode()).hexdigest()[:8]
     final = "mnt" + remote_name + bucket_id
     return re.sub(r"[^a-zA-Z0-9]", "", final)

@@ -1,6 +1,5 @@
 # stdlib
-from typing import Any
-from typing import ClassVar
+from typing import Any, ClassVar
 
 # relative
 from ...serde.serializable import serializable

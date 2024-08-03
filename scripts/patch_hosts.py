@@ -1,11 +1,11 @@
 # stdlib
 import argparse
-from functools import cached_property
 import os
-from pathlib import Path
 import platform
 import re
 import sys
+from functools import cached_property
+from pathlib import Path
 
 
 class Platform:
@@ -34,7 +34,7 @@ class Platform:
 
 
 class Hosts:
-    def __init__(self, path: str = None) -> None:
+    def __init__(self, path: str | None = None) -> None:
         self.__path = path
         self.content = self.read()
 
@@ -49,7 +49,7 @@ class Hosts:
             old_hosts = "/private/etc/hosts"
             p = new_hosts if os.path.exists(new_hosts) else old_hosts
         elif Platform.windows():
-            p = "C:\Windows\System32\drivers\etc\hosts"
+            p = r"C:\Windows\System32\drivers\etc\hosts"
         else:
             msg = f"Unsupported OS: {Platform.system}"
             raise Exception(msg)
@@ -62,7 +62,7 @@ class Hosts:
         return self.path.read_text()
 
     def get(self, datasite: str) -> list[str]:
-        return re.findall(f"(.+)\s+{datasite}", self.content)
+        return re.findall(rf"(.+)\s+{datasite}", self.content)
 
     def add(self, ip: str, datasite: str) -> None:
         if self.get(datasite):
@@ -75,7 +75,7 @@ class Hosts:
         if not self.get(datasite):
             return
 
-        self.content = re.sub(f"(.+)\s+{datasite}\n", "", self.content)
+        self.content = re.sub(rf"(.+)\s+{datasite}\n", "", self.content)
         self.__write()
 
     def update(self, ip: str, datasite: str) -> None:
@@ -84,7 +84,7 @@ class Hosts:
 
         # inplace
         self.content = re.sub(
-            f"(.+)\s+{datasite}\n", f"{ip}\t{datasite}\n", self.content,
+            rf"(.+)\s+{datasite}\n", f"{ip}\t{datasite}\n", self.content,
         )
         self.__write()
 
@@ -124,7 +124,7 @@ def wsl2_disable_auto_hosts() -> None:
             conf.write(fp)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--add",
@@ -167,48 +167,31 @@ def main():
     args = parser.parse_args()
 
     if not args.hosts and not running_as_root():
-        print(
-            "ERROR: This script must be run as root since it will modify system hosts file",
-        )
         sys.exit(1)
 
     hosts = Hosts(args.hosts)
 
-    print(">> Args", args.__dict__)
-    print(">> OS:", Platform.system)
-    print(">> Release:", Platform.uname.release)
-    print(">> Version:", Platform.uname.version)
-    print(">> Hosts file:", hosts.path)
 
     if len(args.add):
         for ip, datasite in args.add:
-            print(f">> Adding {ip} {datasite}")
             hosts.update(ip, datasite)
 
     if args.add_k3d_registry:
-        print(">> Adding k3d registry host entry")
         hosts.update("127.0.0.1", "k3d-registry.localhost")
 
     if args.fix_docker_hosts:
         if Platform.windows() or Platform.wsl2():
-            print(">> Fixing docker host entries for Windows/WSL2")
             hosts.update("0.0.0.0", "host.docker.internal")
             hosts.update("0.0.0.0", "gateway.docker.internal")
             hosts.update("127.0.0.1", "kubernetes.docker.internal")
         else:
-            print(">> Removing docker host entries")
             hosts.remove("host.docker.internal")
             hosts.remove("gateway.docker.internal")
             hosts.remove("kubernetes.docker.internal")
 
     if args.wsl2_disable_auto_hosts and Platform.wsl2():
-        print(">> Disabling auto hosts generation")
         wsl2_disable_auto_hosts()
 
-    print(">> Done")
-    print("-" * 50)
-    print(hosts.read())
-    print("-" * 50)
 
 
 if __name__ == "__main__":

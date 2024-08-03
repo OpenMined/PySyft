@@ -12,8 +12,7 @@ import sys
 # Command line processing
 
 
-def bump_to_stable(version: str):
-    print(f"Bumping to stable version {version}.")
+def bump_to_stable(version: str) -> None:
 
     # Invoke bump2version by subprocess and pass the version
 
@@ -45,9 +44,8 @@ def bump_to_stable(version: str):
     )
 
 
-def bump_to_next_beta(version: str):
+def bump_to_next_beta(version: str) -> None:
     version = version + "-beta.0"
-    print(f"Bumping to next beta version {version}.")
 
     # bumping stable to beta
     subprocess.run(
@@ -63,7 +61,7 @@ def bump_to_next_beta(version: str):
     )
 
 
-def handle_command_line():
+def handle_command_line() -> None:
     parser = argparse.ArgumentParser(description="Bump the version of the package.")
     parser.add_argument(
         "--bump-to-stable",

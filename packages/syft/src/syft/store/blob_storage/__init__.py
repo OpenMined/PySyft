@@ -1,4 +1,4 @@
-"""Blob file storage
+"""Blob file storage.
 
 Contains blob file storage interfaces. See `on_disk.py` for an example of a concrete implementation.
 
@@ -41,35 +41,34 @@ Read/retrieve SyftObject from blob storage
 """
 
 # stdlib
-from collections.abc import Callable
-from collections.abc import Generator
-from io import BytesIO
 import logging
+from collections.abc import Callable, Generator
+from io import BytesIO
 from typing import Any
+
+import requests
 
 # third party
 from pydantic import BaseModel
-import requests
 from typing_extensions import Self
 
 # relative
 from ...serde.deserialize import _deserialize as deserialize
 from ...serde.serializable import serializable
-from ...service.response import SyftError
-from ...service.response import SyftSuccess
+from ...service.response import SyftError, SyftSuccess
 from ...types.base import SyftBaseModel
-from ...types.blob_storage import BlobFile
-from ...types.blob_storage import BlobFileType
-from ...types.blob_storage import BlobStorageEntry
-from ...types.blob_storage import CreateBlobStorageEntry
-from ...types.blob_storage import DEFAULT_CHUNK_SIZE
-from ...types.blob_storage import SecureFilePathLocation
+from ...types.blob_storage import (
+    DEFAULT_CHUNK_SIZE,
+    BlobFile,
+    BlobFileType,
+    BlobStorageEntry,
+    CreateBlobStorageEntry,
+    SecureFilePathLocation,
+)
 from ...types.server_url import ServerURL
 from ...types.syft_migration import migrate
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
-from ...types.transforms import drop
-from ...types.transforms import make_set_default
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject
+from ...types.transforms import drop, make_set_default
 from ...types.uid import UID
 
 logger = logging.getLogger(__name__)
@@ -118,7 +117,7 @@ def syft_iter_content(
     max_retries: int = MAX_RETRIES,
     timeout: int = DEFAULT_TIMEOUT,
 ) -> Generator:
-    """Custom iter content with smart retries (start from last byte read)"""
+    """Custom iter content with smart retries (start from last byte read)."""
     current_byte = 0
     for attempt in range(max_retries):
         headers = {"Range": f"bytes={current_byte}-"}
@@ -139,7 +138,7 @@ def syft_iter_content(
                     f"Attempt {attempt}/{max_retries} failed: {e} at byte {current_byte}. Retrying...",
                 )
             else:
-                logger.error(f"Max retries reached - {e}")
+                logger.exception(f"Max retries reached - {e}")
                 raise
 
 
@@ -231,7 +230,7 @@ class BlobStorageConnection:
     def __enter__(self) -> Self:
         raise NotImplementedError
 
-    def __exit__(self, *exc: Any) -> None:
+    def __exit__(self, *exc: object) -> None:
         raise NotImplementedError
 
     def read(self, fp: SecureFilePathLocation, type_: type | None) -> BlobRetrieval:

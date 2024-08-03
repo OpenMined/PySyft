@@ -1,19 +1,19 @@
 # stdlib
 
 # third party
-from result import Ok
-from result import Result
+from result import Ok, Result
 
 # relative
 from ...serde.serializable import serializable
-from ...server.credentials import SyftSigningKey
-from ...server.credentials import SyftVerifyKey
-from ...store.document_store import BaseStash
-from ...store.document_store import DocumentStore
-from ...store.document_store import PartitionKey
-from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
-from ...store.document_store import UIDPartitionKey
+from ...server.credentials import SyftSigningKey, SyftVerifyKey
+from ...store.document_store import (
+    BaseStash,
+    DocumentStore,
+    PartitionKey,
+    PartitionSettings,
+    QueryKeys,
+    UIDPartitionKey,
+)
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
@@ -89,7 +89,7 @@ class UserStash(BaseStash):
 
     def email_exists(self, email: str) -> bool:
         res = self.get_by_email(credentials=self.admin_verify_key().ok(), email=email)
-        return not res.ok() is None
+        return res.ok() is not None
 
     def get_by_role(
         self, credentials: SyftVerifyKey, role: ServiceRole,

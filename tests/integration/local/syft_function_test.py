@@ -1,21 +1,18 @@
 # stdlib
-from secrets import token_hex
 import sys
+from secrets import token_hex
 
 # third party
 import pytest
 
 # syft absolute
 import syft as sy
-from syft import ActionObject
-from syft import syft_function
-from syft import syft_function_single_use
+from syft import ActionObject, syft_function, syft_function_single_use
 from syft.service.job.job_stash import Job
-from syft.service.response import SyftError
-from syft.service.response import SyftSuccess
+from syft.service.response import SyftError, SyftSuccess
 
 
-@pytest.fixture
+@pytest.fixture()
 def server():
     _server = sy.orchestra.launch(
         name=token_hex(8),
@@ -35,8 +32,8 @@ def server():
 
 # @pytest.mark.flaky(reruns=3, reruns_delay=3)
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
-@pytest.mark.local_server
-def test_nested_jobs(server):
+@pytest.mark.local_server()
+def test_nested_jobs(server) -> None:
     client = server.login(email="info@openmined.org", password="changethis")
 
     new_user_email = "aa@b.org"
@@ -69,11 +66,9 @@ def test_nested_jobs(server):
     ## Batch function
     @syft_function()
     def process_batch(batch):
-        print(f"starting batch {batch}")
         return batch + 1
 
     res = ds_client.code.submit(process_batch)
-    print(res)
 
     ## Main function
 
@@ -91,7 +86,6 @@ def test_nested_jobs(server):
 
     # Approve & run
     res = ds_client.code.request_code_execution(process_all)
-    print(res)
     assert not isinstance(res, SyftError)
 
     assert ds_client.code[-1].worker_pool_name is not None

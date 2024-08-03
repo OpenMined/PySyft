@@ -1,26 +1,23 @@
 # stdlib
+import tarfile
 from enum import Enum
 from pathlib import Path
 from shutil import rmtree
-import tarfile
 from typing import Annotated
 
 # third party
-from typer import Exit
-from typer import Option
+from typer import Exit, Option
 
 # relative
-from ..core.console import debug
-from ..core.console import error
-from ..core.console import info
-from ..core.console import success
-from ..core.container_engine import ContainerEngine
-from ..core.container_engine import ContainerEngineError
-from ..core.container_engine import Docker
-from ..core.container_engine import Podman
+from ..core.console import debug, error, info, success
+from ..core.container_engine import (
+    ContainerEngine,
+    ContainerEngineError,
+    Docker,
+    Podman,
+)
 from ..core.syft_repo import SyftRepo
-from ..core.syft_version import InvalidVersion
-from ..core.syft_version import SyftVersion
+from ..core.syft_version import InvalidVersion, SyftVersion
 
 __all__ = "create"
 
@@ -47,7 +44,6 @@ def create(
     dryrun: DryrunOpts = False,
 ) -> None:
     """Create an offline deployment bundle for Syft."""
-
     # Validate Syft version. Fails if version is not valid.
     ver = validate_version(version)
 

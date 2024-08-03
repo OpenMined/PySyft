@@ -3,33 +3,29 @@ from __future__ import annotations
 
 # stdlib
 import threading
+from typing import TYPE_CHECKING
 
 # third party
-from result import Err
-from result import Ok
-from result import Result
+from result import Err, Ok, Result
 
 # relative
 from ...serde.serializable import serializable
-from ...server.credentials import SyftSigningKey
-from ...server.credentials import SyftVerifyKey
+from ...server.credentials import SyftSigningKey, SyftVerifyKey
 from ...store.dict_document_store import DictStoreConfig
-from ...store.document_store import BasePartitionSettings
-from ...store.document_store import DocumentStore
-from ...store.document_store import StoreConfig
+from ...store.document_store import BasePartitionSettings, DocumentStore, StoreConfig
 from ...types.twin_object import TwinObject
-from ...types.uid import LineageID
-from ...types.uid import UID
+from ...types.uid import UID, LineageID
 from ..response import SyftSuccess
 from .action_object import is_action_data_empty
-from .action_permissions import ActionObjectEXECUTE
-from .action_permissions import ActionObjectOWNER
-from .action_permissions import ActionObjectPermission
-from .action_permissions import ActionObjectREAD
-from .action_permissions import ActionObjectWRITE
-from .action_permissions import ActionPermission
-from .action_permissions import StoragePermission
-from typing import TYPE_CHECKING
+from .action_permissions import (
+    ActionObjectEXECUTE,
+    ActionObjectOWNER,
+    ActionObjectPermission,
+    ActionObjectREAD,
+    ActionObjectWRITE,
+    ActionPermission,
+    StoragePermission,
+)
 
 if TYPE_CHECKING:
     from ...types.syft_object import SyftObject
@@ -45,11 +41,13 @@ class ActionStore:
 class KeyValueActionStore(ActionStore):
     """Generic Key-Value Action store.
 
-    Parameters:
+    Parameters
+    ----------
         store_config: StoreConfig
             Backend specific configuration, including connection configuration, database name, or client class type.
         root_verify_key: Optional[SyftVerifyKey]
             Signature verification key, used for checking access permissions.
+
     """
 
     def __init__(
@@ -271,7 +269,7 @@ class KeyValueActionStore(ActionStore):
             return True
 
         # 🟡 TODO 14: add ALL_READ, ALL_EXECUTE etc
-        if permission.permission == ActionPermission.OWNER or permission.permission == ActionPermission.READ or (permission.permission == ActionPermission.WRITE or permission.permission == ActionPermission.EXECUTE):
+        if permission.permission in (ActionPermission.OWNER, ActionPermission.READ) or (permission.permission in (ActionPermission.WRITE, ActionPermission.EXECUTE)):
             pass
 
         return False
@@ -374,11 +372,13 @@ class KeyValueActionStore(ActionStore):
 class DictActionStore(KeyValueActionStore):
     """Dictionary-Based Key-Value Action store.
 
-    Parameters:
+    Parameters
+    ----------
         store_config: StoreConfig
             Backend specific configuration, including client class type.
         root_verify_key: Optional[SyftVerifyKey]
             Signature verification key, used for checking access permissions.
+
     """
 
     def __init__(
@@ -401,11 +401,13 @@ class DictActionStore(KeyValueActionStore):
 class SQLiteActionStore(KeyValueActionStore):
     """SQLite-Based Key-Value Action store.
 
-    Parameters:
+    Parameters
+    ----------
         store_config: StoreConfig
             SQLite specific configuration, including connection settings or client class type.
         root_verify_key: Optional[SyftVerifyKey]
             Signature verification key, used for checking access permissions.
+
     """
 
 
@@ -414,10 +416,12 @@ class SQLiteActionStore(KeyValueActionStore):
 class MongoActionStore(KeyValueActionStore):
     """Mongo-Based  Action store.
 
-    Parameters:
+    Parameters
+    ----------
         store_config: StoreConfig
             Mongo specific configuration.
         root_verify_key: Optional[SyftVerifyKey]
             Signature verification key, used for checking access permissions.
+
     """
 

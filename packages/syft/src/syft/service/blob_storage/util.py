@@ -3,8 +3,7 @@ from typing import Any
 
 # relative
 from ...util.util import get_mb_serialized_size
-from ..metadata.server_metadata import ServerMetadata
-from ..metadata.server_metadata import ServerMetadataJSON
+from ..metadata.server_metadata import ServerMetadata, ServerMetadataJSON
 
 
 def min_size_for_blob_storage_upload(

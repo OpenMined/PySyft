@@ -16,8 +16,8 @@ try:
 except ImportError:
 
     class OperationFailure(PyMongoError):
-        def __init__(self, message, code=None, details=None):
-            super(OperationFailure, self).__init__()
+        def __init__(self, message, code=None, details=None) -> None:
+            super().__init__()
             self._message = message
             self._code = code
             self._details = details
@@ -25,7 +25,7 @@ except ImportError:
         code = property(lambda self: self._code)
         details = property(lambda self: self._details)
 
-        def __str__(self):
+        def __str__(self) -> str:
             return self._message
 
 
@@ -53,8 +53,8 @@ try:
 except ImportError:
 
     class BulkWriteError(OperationFailure):
-        def __init__(self, results):
-            super(BulkWriteError, self).__init__(
+        def __init__(self, results) -> None:
+            super().__init__(
                 "batch op errors occurred", 65, results,
             )
 
@@ -127,8 +127,7 @@ __all__ = [
 from .collection import Collection
 from .database import Database
 from .mongo_client import MongoClient
-from .not_implemented import ignore_feature
-from .not_implemented import warn_on_feature
+from .not_implemented import ignore_feature, warn_on_feature
 from .patch import patch
 from .write_concern import WriteConcern
 

@@ -1,21 +1,21 @@
 # stdlib
 import os
-from secrets import token_hex
 import time
+from secrets import token_hex
 
-# third party
-from faker import Faker
 import pytest
 
 # syft absolute
 import syft as sy
+
+# third party
+from faker import Faker
 from syft.abstract_server import ServerType
 from syft.client.datasite_client import DatasiteClient
 from syft.client.enclave_client import EnclaveClient
 from syft.client.gateway_client import GatewayClient
 from syft.service.network.network_service import ServerPeerAssociationStatus
-from syft.service.network.server_peer import ServerPeer
-from syft.service.network.server_peer import ServerPeerConnectionStatus
+from syft.service.network.server_peer import ServerPeer, ServerPeerConnectionStatus
 from syft.service.network.utils import PeerHealthCheckTask
 from syft.service.request.request import Request
 from syft.service.response import SyftSuccess
@@ -39,7 +39,7 @@ def _launch(
     )
 
 
-@pytest.fixture
+@pytest.fixture()
 def gateway():
     server = _launch(ServerType.GATEWAY)
     yield server
@@ -57,7 +57,7 @@ def gateway_association_request_auto_approval(request: pytest.FixtureRequest):
     server.land()
 
 
-@pytest.fixture
+@pytest.fixture()
 def datasite():
     server = _launch(ServerType.DATASITE)
     yield server
@@ -65,7 +65,7 @@ def datasite():
     server.land()
 
 
-@pytest.fixture
+@pytest.fixture()
 def datasite_2():
     server = _launch(ServerType.DATASITE)
     yield server
@@ -73,7 +73,7 @@ def datasite_2():
     server.land()
 
 
-@pytest.fixture
+@pytest.fixture()
 def enclave():
     server = _launch(ServerType.ENCLAVE)
     yield server
@@ -81,28 +81,28 @@ def enclave():
     server.land()
 
 
-@pytest.fixture
+@pytest.fixture()
 def gateway_webserver():
     server = _launch(server_type=ServerType.GATEWAY, port="auto")
     yield server
     server.land()
 
 
-@pytest.fixture
+@pytest.fixture()
 def datasite_webserver():
     server = _launch(ServerType.DATASITE, port="auto")
     yield server
     server.land()
 
 
-@pytest.fixture
+@pytest.fixture()
 def datasite_2_webserver():
     server = _launch(ServerType.DATASITE, port="auto")
     yield server
     server.land()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def set_network_json_env_var(gateway_webserver):
     """Set the environment variable for the network registry JSON string."""
     json_string = f"""
@@ -129,13 +129,13 @@ def set_network_json_env_var(gateway_webserver):
     del os.environ["NETWORK_REGISTRY_JSON"]
 
 
-@pytest.mark.local_server
+@pytest.mark.local_server()
 def test_create_gateway(
     set_network_json_env_var,
     gateway_webserver,
     datasite_webserver,
     datasite_2_webserver,
-):
+) -> None:
     assert isinstance(sy.gateways, sy.NetworkRegistry)
     assert len(sy.gateways) == 1
     assert len(sy.gateways.all_networks) == 1
@@ -176,10 +176,10 @@ def test_create_gateway(
     assert client.metadata.server_type == ServerType.GATEWAY.value
 
 
-@pytest.mark.local_server
+@pytest.mark.local_server()
 def test_datasite_connect_to_gateway(
     gateway_association_request_auto_approval, datasite,
-):
+) -> None:
     association_request_auto_approval, gateway = (
         gateway_association_request_auto_approval
     )
@@ -250,13 +250,11 @@ def test_datasite_connect_to_gateway(
     assert all_peers[0].server_routes[0].priority == 1
 
 
-@pytest.mark.local_server
+@pytest.mark.local_server()
 def test_datasite_connect_to_gateway_routes_priority(
     gateway, datasite, datasite_2,
 ) -> None:
-    """
-    A test for routes' priority (PythonServerRoute)
-    """
+    """A test for routes' priority (PythonServerRoute)."""
     gateway_client: GatewayClient = gateway.login(
         email="info@openmined.org",
         password="changethis",
@@ -296,8 +294,8 @@ def test_datasite_connect_to_gateway_routes_priority(
         assert peer.server_routes[0].priority == 1
 
 
-@pytest.mark.local_server
-def test_enclave_connect_to_gateway(faker: Faker, gateway, enclave):
+@pytest.mark.local_server()
+def test_enclave_connect_to_gateway(faker: Faker, gateway, enclave) -> None:
     gateway_client = gateway.client
     enclave_client: EnclaveClient = enclave.client
 
@@ -351,13 +349,13 @@ def test_enclave_connect_to_gateway(faker: Faker, gateway, enclave):
     )
 
 
-@pytest.mark.local_server
+@pytest.mark.local_server()
 @pytest.mark.parametrize(
     "gateway_association_request_auto_approval", [False], indirect=True,
 )
 def test_repeated_association_requests_peers_health_check(
     gateway_association_request_auto_approval, datasite,
-):
+) -> None:
     _, gateway = gateway_association_request_auto_approval
     gateway_client: GatewayClient = gateway.login(
         email="info@openmined.org",

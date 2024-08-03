@@ -22,7 +22,7 @@ def markdown_as_class_with_fields(
 
 
 class CodeMarkdown:
-    def __init__(self, code: str, lang: str = "python"):
+    def __init__(self, code: str, lang: str = "python") -> None:
         self._code = code
         self._lang = lang
 

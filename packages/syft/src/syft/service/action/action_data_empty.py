@@ -3,12 +3,11 @@ from __future__ import annotations
 
 # stdlib
 from types import NoneType
+from typing import TYPE_CHECKING
 
 # relative
 from ...serde.serializable import serializable
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
-from typing import TYPE_CHECKING
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject
 
 if TYPE_CHECKING:
     from ...types.uid import UID

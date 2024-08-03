@@ -7,8 +7,7 @@ from syft import ActionObject
 from syft.service.response import SyftAttributeError
 
 # relative
-from ...utils.custom_markers import FAIL_ON_PYTHON_3_12_REASON
-from ...utils.custom_markers import PYTHON_AT_LEAST_3_12
+from ...utils.custom_markers import FAIL_ON_PYTHON_3_12_REASON, PYTHON_AT_LEAST_3_12
 
 PYTHON_ARRAY = [0, 1, 1, 2, 2, 3]
 NP_ARRAY = np.array([0, 1, 1, 5, 5, 3])
@@ -16,7 +15,7 @@ NP_2dARRAY = np.array([[3, 4, 5, 2], [6, 7, 2, 6]])
 
 
 @pytest.mark.parametrize(
-    "func, func_arguments",
+    ("func", "func_arguments"),
     [
         ("array", "[0, 1, 1, 2, 2, 3]"),
         ("linspace", "10,10,10"),
@@ -49,7 +48,6 @@ NP_2dARRAY = np.array([[3, 4, 5, 2], [6, 7, 2, 6]])
         ("std", "[0, 1, 1, 2, 2, 3]"),
         ("var", "[0, 1, 1, 2, 2, 3]"),
         ("percentile", "[0, 1, 1, 2, 2, 3], 2"),
-        ("var", "[0, 1, 1, 2, 2, 3]"),
         ("amin", "[0, 1, 1, 2, 2, 3]"),  # alias for min not exist in Syft
         ("amax", "[0, 1, 1, 2, 2, 3]"),  # alias for max not exist in Syft
         ("where", "a > 5, a, -1"),  # required condition
@@ -79,7 +77,7 @@ NP_2dARRAY = np.array([[3, 4, 5, 2], [6, 7, 2, 6]])
     ],
 )
 @pytest.mark.xfail(PYTHON_AT_LEAST_3_12, reason=FAIL_ON_PYTHON_3_12_REASON)
-def test_numpy_functions(func, func_arguments, request):
+def test_numpy_functions(func, func_arguments, request) -> None:
     # the problem is that ruff removes the unsued variable,
     # but this test case np_sy and a are considered as unused, though used in the eval string
     exec("np_sy = request.getfixturevalue('numpy_syft_instance')")
@@ -94,7 +92,6 @@ def test_numpy_functions(func, func_arguments, request):
         assert (
             e == SyftAttributeError
         ), f"Can not evaluate {func}({func_arguments}) with {e}"
-        print(e)
     else:
         original_result = eval(f"np.{func}({func_arguments})")
 

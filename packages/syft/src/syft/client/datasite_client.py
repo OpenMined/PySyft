@@ -3,12 +3,11 @@ from __future__ import annotations
 
 # stdlib
 import logging
-from pathlib import Path
 import re
-from string import Template
 import traceback
-from typing import TYPE_CHECKING
-from typing import cast
+from pathlib import Path
+from string import Template
+from typing import TYPE_CHECKING, cast
 
 # third party
 import markdown
@@ -18,21 +17,14 @@ from tqdm import tqdm
 from ..abstract_server import ServerSideType
 from ..serde.serializable import serializable
 from ..service.action.action_object import ActionObject
-from ..service.dataset.dataset import Contributor
-from ..service.dataset.dataset import CreateAsset
-from ..service.dataset.dataset import CreateDataset
+from ..service.dataset.dataset import Contributor, CreateAsset, CreateDataset
 from ..service.migration.object_migration_state import MigrationData
-from ..service.response import SyftError
-from ..service.response import SyftSuccess
-from ..service.response import SyftWarning
+from ..service.response import SyftError, SyftSuccess, SyftWarning
 from ..service.user.roles import Roles
 from ..types.blob_storage import BlobFile
 from ..util.misc_objs import HTMLObject
-from ..util.util import get_mb_size
-from ..util.util import prompt_warning_message
-from .client import SyftClient
-from .client import login
-from .client import login_as_guest
+from ..util.util import get_mb_size, prompt_warning_message
+from .client import SyftClient, login, login_as_guest
 from .connection import ServerConnection
 from .protocol import SyftProtocol
 
@@ -40,16 +32,19 @@ logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     # relative
-    from ..service.code_history.code_history import UsersCodeHistoriesDict
+    from result import Result
+
+    from ..orchestra import ServerHandle
+    from ..service.code_history.code_history import (
+        CodeHistoriesDict,
+        UsersCodeHistoriesDict,
+    )
+    from ..service.project.project import Project
     from ..service.sync.diff_state import ResolvedSyncState
     from ..service.sync.sync_state import SyncState
-    from result import Result
+    from ..service.user.user import UserView
     from ..types.uid import UID
     from .api import APIModule
-    from ..service.code_history.code_history import CodeHistoriesDict
-    from ..service.user.user import UserView
-    from ..orchestra import ServerHandle
-    from ..service.project.project import Project
 
 
 def _get_files_from_glob(glob_path: str) -> list[Path]:
@@ -242,9 +237,6 @@ class DatasiteClient(SyftClient):
                     res = input(
                         f"Do you want to include all files recursively in {path.absolute()}? [y/n]: ",
                     ).lower()
-                    print(
-                        f'{"Recursively uploading all files" if res == "y" else "Uploading files"} in {path.absolute()}',
-                    )
                     allow_recursive = res == "y"
                 expanded_file_list.extend(_get_files_from_dir(path, allow_recursive))
             elif path.exists():
@@ -253,23 +245,19 @@ class DatasiteClient(SyftClient):
         if not expanded_file_list:
             return SyftError(message="No files to upload were found")
 
-        print(
-            f"Uploading {len(expanded_file_list)} {'file' if len(expanded_file_list) == 1 else 'files'}:",
-        )
 
         if show_files:
             for file in expanded_file_list:
                 if isinstance(file, BlobFile):
-                    print(file.path or file.file_name)
+                    pass
                 else:
-                    print(file.absolute())
+                    pass
 
         try:
             result = []
             for file in expanded_file_list:
                 if not isinstance(file, BlobFile):
                     file = BlobFile(path=file, file_name=file.name)
-                print("Uploading", file.file_name)
                 if not file.uploaded:
                     file.upload_to_blobstorage(self)
                 result.append(file)
@@ -285,7 +273,7 @@ class DatasiteClient(SyftClient):
         via_client: SyftClient | None = None,
         url: str | None = None,
         port: int | None = None,
-        handle: ServerHandle | None = None,  # noqa: F821
+        handle: ServerHandle | None = None,
         email: str | None = None,
         password: str | None = None,
         protocol: str | SyftProtocol = SyftProtocol.HTTP,
@@ -445,8 +433,7 @@ class DatasiteClient(SyftClient):
         name: str | None = None,
         uid: UID | None = None,
     ) -> Project | None:
-        """Get project by name or UID"""
-
+        """Get project by name or UID."""
         if not self.api.has_service("project"):
             return None
 

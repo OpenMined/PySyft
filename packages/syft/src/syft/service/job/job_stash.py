@@ -1,38 +1,32 @@
 # stdlib
-from datetime import datetime
-from datetime import timedelta
-from datetime import timezone
-from enum import Enum
 import random
+from datetime import datetime, timedelta, timezone
+from enum import Enum
 from string import Template
 from time import sleep
 from typing import Any
 
 # third party
-from pydantic import Field
-from pydantic import model_validator
-from result import Err
-from result import Ok
-from result import Result
+from pydantic import Field, model_validator
+from result import Err, Ok, Result
 from typing_extensions import Self
 
 # relative
-from ...client.api import APIRegistry
-from ...client.api import SyftAPICall
+from ...client.api import APIRegistry, SyftAPICall
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...service.context import AuthedServiceContext
 from ...service.worker.worker_pool import SyftWorker
-from ...store.document_store import BaseUIDStoreStash
-from ...store.document_store import DocumentStore
-from ...store.document_store import PartitionKey
-from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
-from ...store.document_store import UIDPartitionKey
-from ...types.datetime import DateTime
-from ...types.datetime import format_timedelta
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
+from ...store.document_store import (
+    BaseUIDStoreStash,
+    DocumentStore,
+    PartitionKey,
+    PartitionSettings,
+    QueryKeys,
+    UIDPartitionKey,
+)
+from ...types.datetime import DateTime, format_timedelta
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import UID
 from ...util import options
@@ -40,13 +34,10 @@ from ...util.colors import SURFACE
 from ...util.markdown import as_markdown_code
 from ...util.telemetry import instrument
 from ...util.util import prompt_warning_message
-from ..action.action_object import Action
-from ..action.action_object import ActionObject
+from ..action.action_object import Action, ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..log.log import SyftLog
-from ..response import SyftError
-from ..response import SyftNotReady
-from ..response import SyftSuccess
+from ..response import SyftError, SyftNotReady, SyftSuccess
 from ..user.user import UserView
 from .html_template import job_repr_template
 
@@ -242,16 +233,15 @@ class Job(SyncableSyftObject):
         if self.status in [JobStatus.PROCESSING, JobStatus.COMPLETED]:
             if self.current_iter is None:
                 return ""
-            else:
-                if self.n_iters is not None:
-                    return self.time_remaining_string
-                # if self.current_iter !=0
-                # we can compute the remaining time
+            elif self.n_iters is not None:
+                return self.time_remaining_string
+            # if self.current_iter !=0
+            # we can compute the remaining time
 
-                # we cannot compute the remaining time
-                else:
-                    n_iters_str = "?" if self.n_iters is None else str(self.n_iters)
-                    return f"{self.current_iter}/{n_iters_str}"
+            # we cannot compute the remaining time
+            else:
+                n_iters_str = "?" if self.n_iters is None else str(self.n_iters)
+                return f"{self.current_iter}/{n_iters_str}"
         else:
             return ""
 
@@ -412,10 +402,8 @@ class Job(SyncableSyftObject):
                 # no access
                 if isinstance(self.result, Err):
                     results.append(self.result.value)
-        else:
-            # add short error
-            if isinstance(self.result, Err):
-                results.append(self.result.value)
+        elif isinstance(self.result, Err):
+            results.append(self.result.value)
 
         if has_permissions:
             has_storage_permission = api.services.log.has_storage_permission(
@@ -430,7 +418,6 @@ class Job(SyncableSyftObject):
         if not _print:
             return results_str
         else:
-            print(results_str)
             return None
 
     # def __repr__(self) -> str:
@@ -485,8 +472,7 @@ class Job(SyncableSyftObject):
                 {worker_summary}
                 """
             summary_html = summary_html.replace("\n", "")
-        except Exception as e:
-            print("Failed to build table", e)
+        except Exception:
             raise
         return summary_html
 
@@ -696,11 +682,6 @@ class Job(SyncableSyftObject):
                     self.result.id, resolve_nested=False,
                 )
                 if result_obj.is_link and job_only:
-                    print(
-                        "You're trying to wait on a job that has a link as a result."
-                        "This means that the job may be ready but the linked result may not."
-                        "Use job.wait().get() instead to wait for the linked result.",
-                    )
                     print_warning = False
 
             sleep(1)
@@ -800,7 +781,7 @@ class JobInfo(SyftObject):
 
         result_str = "<h4>Result</h4>"
         if self.includes_result:
-            result_str += f"<p style='margin-left: 10px;'>{str(self.result)}</p>"
+            result_str += f"<p style='margin-left: 10px;'>{self.result!s}</p>"
         else:
             result_str += "<p style='margin-left: 10px;'><i>No result included</i></p>"
 

@@ -1,8 +1,7 @@
 # stdlib
 
 # third party
-from pydantic import BaseModel
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 __MOUNT_CMD_TEMPLATE = """
 . ./scripts/wait_for_swfs.sh &&
@@ -45,8 +44,7 @@ class SupervisordConfArgs(BaseModel):
 
 
 def create_mount_cmd(args: MountCmdArgs) -> str:
-    """Generate the seaweedfs mount command"""
-
+    """Generate the seaweedfs mount command."""
     return __MOUNT_CMD_TEMPLATE.format(**args.model_dump()).replace("\n", " ").strip()
 
 
@@ -56,6 +54,5 @@ def create_sync_cmd(local_bucket: str) -> str:
 
 
 def create_supervisord_conf(args: SupervisordConfArgs) -> str:
-    """Generate the supervisord configuration for a command"""
-
+    """Generate the supervisord configuration for a command."""
     return __SUPERVISORD_TEMPLATE.format(**args.model_dump()).strip()

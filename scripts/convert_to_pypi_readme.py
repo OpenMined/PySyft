@@ -1,10 +1,10 @@
 # stdlib
 import argparse
-from pathlib import Path
 import re
+from pathlib import Path
 
 
-def convert_github_markdown_to_pypi(input_file, output_file, repo, version):
+def convert_github_markdown_to_pypi(input_file, output_file, repo, version) -> None:
     with open(input_file, encoding="utf-8") as file:
         content = file.read()
 
@@ -35,7 +35,7 @@ def convert_github_markdown_to_pypi(input_file, output_file, repo, version):
         file.write(content)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--input-file",
@@ -69,21 +69,12 @@ def main():
 
     args = parser.parse_args()
 
-    print(">> Args", args.__dict__)
-    print(">> Input File:", args.input_file)
-    print(">> Output File:", args.output_file)
-    print(">> Repo URL:", args.repo)
-    print(">> Version:", args.version)
 
     # Converting the readme file to pypi format
     convert_github_markdown_to_pypi(
         args.input_file, args.output_file, args.repo, args.version,
     )
 
-    print("\n\n")
-    print("-" * 50)
-    print(">> Done")
-    print("-" * 50)
 
 
 if __name__ == "__main__":

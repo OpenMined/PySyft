@@ -13,8 +13,8 @@ NETWORK_PORT = 9081
 @pytest.mark.parametrize(
     "server_metadata", [(NETWORK_PORT, GatewayClient), (DATASITE_PORT, DatasiteClient)],
 )
-@pytest.mark.network
-def test_client_type(server_metadata):
+@pytest.mark.network()
+def test_client_type(server_metadata) -> None:
     port, client_type = server_metadata
     client = sy.login(port=port, email="info@openmined.org", password="changethis")
 

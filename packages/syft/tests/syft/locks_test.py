@@ -1,18 +1,20 @@
 # stdlib
+import tempfile
+import time
 from pathlib import Path
 from secrets import token_hex
-import tempfile
 from threading import Thread
-import time
 
 # third party
 import pytest
 
 # syft absolute
-from syft.store.locks import LockingConfig
-from syft.store.locks import NoLockingConfig
-from syft.store.locks import SyftLock
-from syft.store.locks import ThreadingLockingConfig
+from syft.store.locks import (
+    LockingConfig,
+    NoLockingConfig,
+    SyftLock,
+    ThreadingLockingConfig,
+)
 
 def_params = {
     "lock_name": "testing_lock",
@@ -22,16 +24,16 @@ def_params = {
 }
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def locks_nop_config(request):
     def_params["lock_name"] = token_hex(8)
-    yield NoLockingConfig(**def_params)
+    return NoLockingConfig(**def_params)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def locks_threading_config(request):
     def_params["lock_name"] = token_hex(8)
-    yield ThreadingLockingConfig(**def_params)
+    return ThreadingLockingConfig(**def_params)
 
 
 @pytest.mark.parametrize(
@@ -41,7 +43,7 @@ def locks_threading_config(request):
         pytest.lazy_fixture("locks_threading_config"),
     ],
 )
-def test_sanity(config: LockingConfig):
+def test_sanity(config: LockingConfig) -> None:
     lock = SyftLock(config)
 
     assert lock is not None
@@ -53,7 +55,7 @@ def test_sanity(config: LockingConfig):
         pytest.lazy_fixture("locks_nop_config"),
     ],
 )
-def test_acquire_nop(config: LockingConfig):
+def test_acquire_nop(config: LockingConfig) -> None:
     lock = SyftLock(config)
 
     assert lock.locked() is False
@@ -75,7 +77,7 @@ def test_acquire_nop(config: LockingConfig):
     ],
 )
 @pytest.mark.flaky(reruns=3, reruns_delay=3)
-def test_acquire_release(config: LockingConfig):
+def test_acquire_release(config: LockingConfig) -> None:
     lock = SyftLock(config)
 
     expected_not_locked = lock.locked()
@@ -101,7 +103,7 @@ def test_acquire_release(config: LockingConfig):
     ],
 )
 @pytest.mark.flaky(reruns=3, reruns_delay=3)
-def test_acquire_release_with(config: LockingConfig):
+def test_acquire_release_with(config: LockingConfig) -> None:
     was_locked = True
     with SyftLock(config) as lock:
         was_locked = lock.locked()
@@ -115,7 +117,7 @@ def test_acquire_release_with(config: LockingConfig):
         pytest.lazy_fixture("locks_threading_config"),
     ],
 )
-def test_acquire_expire(config: LockingConfig):
+def test_acquire_expire(config: LockingConfig) -> None:
     config.expire = 1  # second
     lock = SyftLock(config)
 
@@ -142,7 +144,7 @@ def test_acquire_expire(config: LockingConfig):
     ],
 )
 @pytest.mark.flaky(reruns=3, reruns_delay=3)
-def test_acquire_double_aqcuire_timeout_fail(config: LockingConfig):
+def test_acquire_double_aqcuire_timeout_fail(config: LockingConfig) -> None:
     config.timeout = 1
     config.expire = 5
     lock = SyftLock(config)
@@ -164,7 +166,7 @@ def test_acquire_double_aqcuire_timeout_fail(config: LockingConfig):
     ],
 )
 @pytest.mark.flaky(reruns=3, reruns_delay=3)
-def test_acquire_double_aqcuire_timeout_ok(config: LockingConfig):
+def test_acquire_double_aqcuire_timeout_ok(config: LockingConfig) -> None:
     config.timeout = 2
     config.expire = 1
     lock = SyftLock(config)
@@ -188,7 +190,7 @@ def test_acquire_double_aqcuire_timeout_ok(config: LockingConfig):
     ],
 )
 @pytest.mark.flaky(reruns=3, reruns_delay=3)
-def test_acquire_double_aqcuire_nonblocking(config: LockingConfig):
+def test_acquire_double_aqcuire_nonblocking(config: LockingConfig) -> None:
     config.timeout = 2
     config.expire = 1
     lock = SyftLock(config)
@@ -212,7 +214,7 @@ def test_acquire_double_aqcuire_nonblocking(config: LockingConfig):
     ],
 )
 @pytest.mark.flaky(reruns=3, reruns_delay=3)
-def test_acquire_double_aqcuire_retry_interval(config: LockingConfig):
+def test_acquire_double_aqcuire_retry_interval(config: LockingConfig) -> None:
     config.timeout = 2
     config.expire = 1
     config.retry_interval = 3
@@ -237,7 +239,7 @@ def test_acquire_double_aqcuire_retry_interval(config: LockingConfig):
     ],
 )
 @pytest.mark.flaky(reruns=3, reruns_delay=3)
-def test_acquire_double_release(config: LockingConfig):
+def test_acquire_double_release(config: LockingConfig) -> None:
     lock = SyftLock(config)
 
     lock.acquire(blocking=True)
@@ -253,7 +255,7 @@ def test_acquire_double_release(config: LockingConfig):
     ],
 )
 @pytest.mark.flaky(reruns=3, reruns_delay=3)
-def test_acquire_same_name_diff_namespace(config: LockingConfig):
+def test_acquire_same_name_diff_namespace(config: LockingConfig) -> None:
     config.namespace = "ns1"
     lock1 = SyftLock(config)
     assert lock1.acquire(blocking=True)
@@ -304,8 +306,8 @@ def test_locks_parallel_multithreading(config: LockingConfig) -> None:
                         f.write(str(prev + 1))
                         f.flush()
                     break
-                except BaseException as e:
-                    print("failed ", e)
+                except BaseException:
+                    pass
 
             lock.release()
 

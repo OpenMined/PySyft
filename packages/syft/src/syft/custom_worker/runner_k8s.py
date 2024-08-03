@@ -2,15 +2,10 @@
 from typing import Any
 
 # third party
-from kr8s.objects import Pod
-from kr8s.objects import Secret
-from kr8s.objects import StatefulSet
+from kr8s.objects import Pod, Secret, StatefulSet
 
 # relative
-from .k8s import KUBERNETES_NAMESPACE
-from .k8s import KubeUtils
-from .k8s import PodStatus
-from .k8s import get_kr8s_client
+from .k8s import KUBERNETES_NAMESPACE, KubeUtils, PodStatus, get_kr8s_client
 
 JSONPATH_AVAILABLE_REPLICAS = "{.status.availableReplicas}"
 CREATE_POOL_TIMEOUT_SEC = 180
@@ -155,8 +150,7 @@ class KubernetesRunner:
         pod_labels: dict[str, str] | None = None,
         **kwargs: Any,
     ) -> StatefulSet:
-        """Create a stateful set for a pool"""
-
+        """Create a stateful set for a pool."""
         volumes = []
         volume_mounts = []
         pull_secret_obj = None

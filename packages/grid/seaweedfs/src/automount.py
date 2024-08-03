@@ -1,8 +1,8 @@
 # stdlib
 import logging
 import logging.config
-from pathlib import Path
 import subprocess
+from pathlib import Path
 
 # third party
 import yaml
@@ -35,8 +35,8 @@ def automount(automount_conf: Path, mount_conf_dir: Path) -> None:
         except FileExistsError as e:
             logger.info(e)
         except subprocess.CalledProcessError as e:
-            logger.error(
+            logger.exception(
                 f"Mount error: code={e.returncode} stdout={e.stdout} stderr={e.stderr}",
             )
         except Exception as e:
-            logger.error(f"Unhandled exception: {e}")
+            logger.exception(f"Unhandled exception: {e}")

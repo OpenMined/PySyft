@@ -3,13 +3,10 @@
 
 # stdlib
 import asyncio
+import inspect
 from collections.abc import Callable
 from functools import wraps
-import inspect
-from typing import Any
-from typing import ClassVar
-from typing import TypeVar
-from typing import cast
+from typing import Any, ClassVar, TypeVar, cast
 
 # third party
 from opentelemetry import trace
@@ -53,8 +50,7 @@ def instrument(
     existing_tracer: Tracer | None = None,
     ignore: bool = False,
 ) -> T:
-    """
-    A decorator to instrument a class or function with an OTEL tracing span.
+    """A decorator to instrument a class or function with an OTEL tracing span.
     :param cls: internal, used to specify scope of instrumentation
     :param _func_or_class: The function or span to instrument, this is automatically assigned
     :param span_name: Specify the span name explicitly, rather than use the naming convention.
@@ -65,7 +61,7 @@ def instrument(
     class decorator, they will be added to every function span under the class.: dict
     :param existing_tracer: Use a specific tracer instead of creating one :Tracer
     :param ignore: Do not instrument this function, has no effect for class decorators:bool
-    :return:The decorator function
+    :return:The decorator function.
     """
 
     def decorate_class(cls: T) -> T:

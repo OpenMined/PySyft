@@ -1,54 +1,47 @@
 # stdlib
-from datetime import datetime
-from datetime import timedelta
 import secrets
 import string
+from datetime import datetime, timedelta
 
 # relative
 from ...abstract_server import ServerType
 from ...exceptions.user import UserAlreadyExistsException
 from ...serde.serializable import serializable
-from ...server.credentials import SyftSigningKey
-from ...server.credentials import SyftVerifyKey
+from ...server.credentials import SyftSigningKey, SyftVerifyKey
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
 from ...types.syft_metaclass import Empty
 from ...types.uid import UID
 from ...util.telemetry import instrument
-from ..action.action_permissions import ActionObjectPermission
-from ..action.action_permissions import ActionPermission
-from ..context import AuthedServiceContext
-from ..context import ServerServiceContext
-from ..context import UnauthedServiceContext
-from ..notification.email_templates import OnBoardEmailTemplate
-from ..notification.email_templates import PasswordResetTemplate
-from ..notification.notification_service import CreateNotification
-from ..notification.notification_service import NotificationService
+from ..action.action_permissions import ActionObjectPermission, ActionPermission
+from ..context import AuthedServiceContext, ServerServiceContext, UnauthedServiceContext
+from ..notification.email_templates import OnBoardEmailTemplate, PasswordResetTemplate
+from ..notification.notification_service import CreateNotification, NotificationService
 from ..notifier.notifier_enums import NOTIFIERS
-from ..response import SyftError
-from ..response import SyftSuccess
-from ..service import AbstractService
-from ..service import SERVICE_TO_TYPES
-from ..service import TYPE_TO_SERVICE
-from ..service import service_method
+from ..response import SyftError, SyftSuccess
+from ..service import SERVICE_TO_TYPES, TYPE_TO_SERVICE, AbstractService, service_method
 from ..settings.settings import PwdTokenResetConfig
 from ..settings.settings_stash import SettingsStash
-from .user import User
-from .user import UserCreate
-from .user import UserPrivateKey
-from .user import UserSearch
-from .user import UserUpdate
-from .user import UserView
-from .user import UserViewPage
-from .user import check_pwd
-from .user import salt_and_hash_password
-from .user import validate_password
-from .user_roles import ADMIN_ROLE_LEVEL
-from .user_roles import DATA_OWNER_ROLE_LEVEL
-from .user_roles import DATA_SCIENTIST_ROLE_LEVEL
-from .user_roles import GUEST_ROLE_LEVEL
-from .user_roles import ServiceRole
-from .user_roles import ServiceRoleCapability
+from .user import (
+    User,
+    UserCreate,
+    UserPrivateKey,
+    UserSearch,
+    UserUpdate,
+    UserView,
+    UserViewPage,
+    check_pwd,
+    salt_and_hash_password,
+    validate_password,
+)
+from .user_roles import (
+    ADMIN_ROLE_LEVEL,
+    DATA_OWNER_ROLE_LEVEL,
+    DATA_SCIENTIST_ROLE_LEVEL,
+    GUEST_ROLE_LEVEL,
+    ServiceRole,
+    ServiceRoleCapability,
+)
 from .user_stash import UserStash
 
 
@@ -66,7 +59,7 @@ class UserService(AbstractService):
     def create(
         self, context: AuthedServiceContext, user_create: UserCreate,
     ) -> UserView | SyftError:
-        """Create a new user"""
+        """Create a new user."""
         user = user_create.to(User)
         result = self.stash.get_by_email(
             credentials=context.credentials, email=user.email,
@@ -191,7 +184,7 @@ class UserService(AbstractService):
         if result.is_err():
             return SyftError(
                 message=(
-                    f"Failed to retrieve user with UID: {uid}. Error: {str(result.err())}"
+                    f"Failed to retrieve user with UID: {uid}. Error: {result.err()!s}"
                 ),
             )
         user = result.ok()
@@ -215,7 +208,7 @@ class UserService(AbstractService):
         if result.is_err():
             return SyftError(
                 message=(
-                    f"Failed to update user with UID: {uid}. Error: {str(result.err())}"
+                    f"Failed to update user with UID: {uid}. Error: {result.err()!s}"
                 ),
             )
 
@@ -271,7 +264,7 @@ class UserService(AbstractService):
         )
         if result.is_err():
             return SyftError(
-                message=(f"Failed to update user password.  Error: {str(result.err())}"),
+                message=(f"Failed to update user password.  Error: {result.err()!s}"),
             )
         return SyftSuccess(message="User Password updated successfully!")
 
@@ -294,7 +287,7 @@ class UserService(AbstractService):
     def view(
         self, context: AuthedServiceContext, uid: UID,
     ) -> UserView | None | SyftError:
-        """Get user for given uid"""
+        """Get user for given uid."""
         result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
         if result.is_ok():
             user = result.ok()
@@ -515,7 +508,7 @@ class UserService(AbstractService):
 
         if result.is_err():
             error_msg = (
-                f"Failed to find user with UID: {uid}. Error: {str(result.err())}"
+                f"Failed to find user with UID: {uid}. Error: {result.err()!s}"
             )
             return SyftError(message=error_msg)
 
@@ -570,7 +563,7 @@ class UserService(AbstractService):
 
         if result.is_err():
             error_msg = (
-                f"Failed to update user with UID: {uid}. Error: {str(result.err())}"
+                f"Failed to update user with UID: {uid}. Error: {result.err()!s}"
             )
             return SyftError(message=error_msg)
 
@@ -633,7 +626,7 @@ class UserService(AbstractService):
         self, context: UnauthedServiceContext,
     ) -> UserPrivateKey | SyftError:
         """Verify user
-        TODO: We might want to use a SyftObject instead
+        TODO: We might want to use a SyftObject instead.
         """
         result = self.stash.get_by_email(
             credentials=self.admin_verify_key(), email=context.login_credentials.email,
@@ -679,8 +672,7 @@ class UserService(AbstractService):
     def register(
         self, context: ServerServiceContext, new_user: UserCreate,
     ) -> tuple[SyftSuccess, UserPrivateKey] | SyftError:
-        """Register new user"""
-
+        """Register new user."""
         request_user_role = (
             ServiceRole.GUEST
             if new_user.created_by is None

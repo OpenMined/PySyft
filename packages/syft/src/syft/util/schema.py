@@ -1,7 +1,7 @@
 # stdlib
-from collections import defaultdict
 import json
 import os
+from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
@@ -163,20 +163,17 @@ def process_type_bank(type_bank: dict[str, tuple[Any, ...]]) -> dict[str, dict]:
         # process types with an attribute list and attribute types first
         if attribute_list and attribute_types:
             if ".uid." not in str(cls):
-                print(f"Skipping {k}")
                 continue
             try:
-                print(f"Processing {k}")
                 schema = convert_attribute_types(cls, attribute_list, attribute_types)
                 json_mappings[cls.__name__] = schema
                 converted_types[lib] += 1
             except Exception:  # nosec
-                print(f"Failed to process. {k}")
+                pass
 
         # TODO: process other types of serializable objects
 
-    converted = sum(converted_types.values())
-    print(f"Finished converting {converted} out of {count}")
+    sum(converted_types.values())
     return json_mappings
 
 
@@ -191,12 +188,9 @@ def resolve_references(json_mappings: dict[str, dict]) -> dict[str, dict]:
                 if _type_str in primitive_mapping.values():
                     # no issue with primitive types
                     continue
-                else:
-                    # if we don't have a type yet its because its not supported
-                    # lets create an empty type to satisfy the generation process
-                    if _type_str not in json_mappings:
-                        reference = make_fake_type(_type_str)
-                        new_types[_type_str] = reference
+                elif _type_str not in json_mappings:
+                    reference = make_fake_type(_type_str)
+                    new_types[_type_str] = reference
 
                 # if the type is a reference we need to replace its type entry after
                 replace_types[attribute] = {

@@ -1,38 +1,38 @@
 # stdlib
 import contextlib
-from typing import Any
-from typing import cast
+from typing import Any, cast
 
 # third party
 import docker
 from docker.models.containers import Container
 
 # relative
-from ...custom_worker.k8s import IN_KUBERNETES
-from ...custom_worker.k8s import PodStatus
+from ...custom_worker.k8s import IN_KUBERNETES, PodStatus
 from ...custom_worker.runner_k8s import KubernetesRunner
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import DocumentStore
-from ...store.document_store import SyftSuccess
+from ...store.document_store import DocumentStore, SyftSuccess
 from ...types.uid import UID
 from ...util.telemetry import instrument
-from ..service import AbstractService
-from ..service import AuthedServiceContext
-from ..service import SyftError
-from ..service import service_method
-from ..user.user_roles import ADMIN_ROLE_LEVEL
-from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
-from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
-from .utils import DEFAULT_WORKER_POOL_NAME
-from .utils import _get_healthcheck_based_on_status
-from .utils import map_pod_to_worker_status
-from .worker_pool import ContainerSpawnStatus
-from .worker_pool import SyftWorker
-from .worker_pool import WorkerHealth
-from .worker_pool import WorkerStatus
-from .worker_pool import _get_worker_container
-from .worker_pool import _get_worker_container_status
+from ..service import AbstractService, AuthedServiceContext, SyftError, service_method
+from ..user.user_roles import (
+    ADMIN_ROLE_LEVEL,
+    DATA_OWNER_ROLE_LEVEL,
+    DATA_SCIENTIST_ROLE_LEVEL,
+)
+from .utils import (
+    DEFAULT_WORKER_POOL_NAME,
+    _get_healthcheck_based_on_status,
+    map_pod_to_worker_status,
+)
+from .worker_pool import (
+    ContainerSpawnStatus,
+    SyftWorker,
+    WorkerHealth,
+    WorkerStatus,
+    _get_worker_container,
+    _get_worker_container_status,
+)
 from .worker_stash import WorkerStash
 
 
@@ -55,7 +55,6 @@ class WorkerService(AbstractService):
         self, context: AuthedServiceContext, n: int = 1,
     ) -> list[ContainerSpawnStatus] | SyftError:
         """Add a Container Image."""
-
         worker_pool_service = context.server.get_service("SyftWorkerPoolService")
         return worker_pool_service.add_workers(
             context, number=n, pool_name=DEFAULT_WORKER_POOL_NAME,

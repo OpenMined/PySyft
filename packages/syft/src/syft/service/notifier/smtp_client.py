@@ -1,13 +1,11 @@
 # stdlib
+import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-import smtplib
 
 # third party
 from pydantic import BaseModel
-from result import Err
-from result import Ok
-from result import Result
+from result import Err, Ok, Result
 
 
 class SMTPClient(BaseModel):
@@ -58,8 +56,10 @@ class SMTPClient(BaseModel):
     ) -> Result[Ok, Err]:
         """Check if the credentials are valid.
 
-        Returns:
+        Returns
+        -------
             bool: True if the credentials are valid, False otherwise.
+
         """
         try:
             with smtplib.SMTP(server, port, timeout=cls.SOCKET_TIMEOUT) as smtp_server:

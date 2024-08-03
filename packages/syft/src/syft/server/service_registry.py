@@ -1,10 +1,8 @@
 # stdlib
-from collections.abc import Callable
-from dataclasses import dataclass
-from dataclasses import field
 import typing
-from typing import Any
-from typing import TYPE_CHECKING
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any
 
 # relative
 from ..serde.serializable import serializable

@@ -1,29 +1,26 @@
 # stdlib
 import itertools
 import warnings
+from typing import NoReturn
 
 # third party
 from packaging import version
 
 # relative
-from . import ConfigurationError
+from . import ConfigurationError, helpers, read_preferences
 from . import codec_options as mongomock_codec_options
-from . import helpers
-from . import read_preferences
 from .database import Database
 from .store import ServerStore
 
 try:
     # third party
     from pymongo import ReadPreference
-    from pymongo.uri_parser import parse_uri
-    from pymongo.uri_parser import split_hosts
+    from pymongo.uri_parser import parse_uri, split_hosts
 
     _READ_PREFERENCE_PRIMARY = ReadPreference.PRIMARY
 except ImportError:
     # relative
-    from .helpers import parse_uri
-    from .helpers import split_hosts
+    from .helpers import parse_uri, split_hosts
 
     _READ_PREFERENCE_PRIMARY = read_preferences.PRIMARY
 
@@ -33,7 +30,7 @@ def _convert_version_to_list(version_str):
     return pieces + [0] * (4 - len(pieces))
 
 
-class MongoClient(object):
+class MongoClient:
     HOST = "localhost"
     PORT = 27017
     _CONNECTION_ID = itertools.count()
@@ -50,9 +47,9 @@ class MongoClient(object):
         uuidRepresentation=None,
         type_registry=None,
         **kwargs,
-    ):
+    ) -> None:
         if host:
-            self.host = host[0] if isinstance(host, (list, tuple)) else host
+            self.host = host[0] if isinstance(host, list | tuple) else host
         else:
             self.host = self.HOST
         self.port = port or self.PORT
@@ -100,8 +97,8 @@ class MongoClient(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
-    def __repr__(self):
-        return "mongomock.MongoClient('{0}', {1})".format(self.host, self.port)
+    def __repr__(self) -> str:
+        return f"mongomock.MongoClient('{self.host}', {self.port})"
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -113,15 +110,15 @@ class MongoClient(object):
         def __hash__(self):
             return hash(self.address)
 
-    def close(self):
+    def close(self) -> None:
         pass
 
     @property
-    def is_mongos(self):
+    def is_mongos(self) -> bool:
         return True
 
     @property
-    def is_primary(self):
+    def is_primary(self) -> bool:
         return True
 
     @property
@@ -158,8 +155,8 @@ class MongoClient(object):
     def list_database_names(self):
         return self._store.list_created_database_names()
 
-    def drop_database(self, name_or_db):
-        def drop_collections_for_db(_db):
+    def drop_database(self, name_or_db) -> None:
+        def drop_collections_for_db(_db) -> None:
             db_store = self._store[_db.name]
             for col_name in db_store.list_created_collection_names():
                 _db.drop_collection(col_name)
@@ -211,14 +208,14 @@ class MongoClient(object):
 
         return self.get_database(name=name, **kwargs)
 
-    def alive(self):
+    def alive(self) -> bool:
         """The original MongoConnection.alive method checks the status of the server.
 
         In our case as we mock the actual server, we should always return True.
         """
         return True
 
-    def start_session(self, causal_consistency=True, default_transaction_options=None):
+    def start_session(self, causal_consistency=True, default_transaction_options=None) -> NoReturn:
         """Start a logical session."""
         msg = "Mongomock does not support sessions yet"
         raise NotImplementedError(msg)

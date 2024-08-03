@@ -1,10 +1,11 @@
 # syft absolute
+from typing import TYPE_CHECKING
+
 import syft as sy
 from syft.custom_worker.config import DockerWorkerConfig
 from syft.server.worker import Worker
 from syft.service.response import SyftSuccess
 from syft.types.datetime import DateTime
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from syft.service.worker.worker_image import SyftWorkerImage
@@ -19,10 +20,9 @@ def get_docker_config():
     return DockerWorkerConfig(dockerfile=custom_dockerfile)
 
 
-def test_syft_worker(worker: Worker):
-    """
-    Test the functionalities of `SyftWorkerImageService.build`,
-    `SyftWorkerPoolService.launch`, and the `SyftWorker` class
+def test_syft_worker(worker: Worker) -> None:
+    """Test the functionalities of `SyftWorkerImageService.build`,
+    `SyftWorkerPoolService.launch`, and the `SyftWorker` class.
     """
     root_client = worker.root_client
     docker_config = get_docker_config()

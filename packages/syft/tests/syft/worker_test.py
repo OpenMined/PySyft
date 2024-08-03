@@ -2,29 +2,24 @@
 from secrets import token_hex
 from typing import Any
 
-# third party
-from nacl.exceptions import BadSignatureError
 import numpy as np
 import pytest
-from result import Ok
 
 # syft absolute
 import syft as sy
-from syft.client.api import SignedSyftAPICall
-from syft.client.api import SyftAPICall
-from syft.server.credentials import SIGNING_KEY_FOR
-from syft.server.credentials import SyftSigningKey
-from syft.server.credentials import SyftVerifyKey
+
+# third party
+from nacl.exceptions import BadSignatureError
+from result import Ok
+from syft.client.api import SignedSyftAPICall, SyftAPICall
+from syft.server.credentials import SIGNING_KEY_FOR, SyftSigningKey, SyftVerifyKey
 from syft.server.worker import Worker
 from syft.service.action.action_object import ActionObject
 from syft.service.action.action_store import DictActionStore
 from syft.service.context import AuthedServiceContext
 from syft.service.queue.queue_stash import QueueItem
-from syft.service.response import SyftAttributeError
-from syft.service.response import SyftError
-from syft.service.user.user import User
-from syft.service.user.user import UserCreate
-from syft.service.user.user import UserView
+from syft.service.response import SyftAttributeError, SyftError
+from syft.service.user.user import User, UserCreate, UserView
 from syft.service.user.user_service import UserService
 from syft.types.uid import UID
 
@@ -242,7 +237,7 @@ def worker_with_proc(request):
 
 
 @pytest.mark.parametrize(
-    "path, kwargs",
+    ("path", "kwargs"),
     [
         ("data_subject.get_all", {}),
         ("data_subject.get_by_name", {"name": "test"}),
@@ -294,7 +289,7 @@ def test_worker_handle_api_request(
 
 
 @pytest.mark.parametrize(
-    "path, kwargs",
+    ("path", "kwargs"),
     [
         ("data_subject.get_all", {}),
         ("data_subject.get_by_name", {"name": "test"}),

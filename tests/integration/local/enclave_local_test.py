@@ -9,8 +9,8 @@ import syft as sy
 from syft.service.response import SyftError
 
 
-@pytest.mark.local_server
-def test_enclave_root_client_exception():
+@pytest.mark.local_server()
+def test_enclave_root_client_exception() -> None:
     enclave_server = sy.orchestra.launch(
         name=token_hex(8),
         server_type=sy.ServerType.ENCLAVE,

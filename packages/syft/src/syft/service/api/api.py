@@ -1,37 +1,32 @@
 # stdlib
 import ast
-from collections.abc import Callable
 import inspect
-from inspect import Signature
 import keyword
 import linecache
 import re
 import textwrap
-from typing import Any
-from typing import cast
+from collections.abc import Callable
+from inspect import Signature
+from typing import Any, cast
 
 # third party
-from pydantic import ValidationError
-from pydantic import field_validator
-from pydantic import model_validator
-from result import Err
-from result import Ok
-from result import Result
+from pydantic import ValidationError, field_validator, model_validator
+from result import Err, Ok, Result
 
 # relative
 from ...abstract_server import AbstractServer
 from ...client.client import SyftClient
 from ...serde.serializable import serializable
 from ...serde.signature import signature_remove_context
-from ...types.syft_object import PartialSyftObject
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, PartialSyftObject, SyftObject
 from ...types.syncable_object import SyncableSyftObject
-from ...types.transforms import TransformContext
-from ...types.transforms import generate_action_object_id
-from ...types.transforms import generate_id
-from ...types.transforms import keep
-from ...types.transforms import transform
+from ...types.transforms import (
+    TransformContext,
+    generate_action_object_id,
+    generate_id,
+    keep,
+    transform,
+)
 from ...types.uid import UID
 from ...util.misc_objs import MarkdownDescription
 from ..context import AuthedServiceContext
@@ -78,8 +73,9 @@ def get_signature(func: Callable) -> Signature:
 
 
 def register_fn_in_linecache(fname: str, src: str) -> None:
-    """adds a function to linecache, such that inspect.getsource works for functions nested in this function.
-    This only works if the same function is compiled under the same filename"""
+    """Adds a function to linecache, such that inspect.getsource works for functions nested in this function.
+    This only works if the same function is compiled under the same filename.
+    """
     lines = [
         line + "\n" for line in src.splitlines()
     ]  # use same splitting method same as linecache 112 (py3.12)
@@ -114,21 +110,21 @@ class TwinAPIEndpointView(SyftObject):
     def _coll_repr_(self) -> dict[str, Any]:
         if self.mock_function:
             mock_parsed_code = ast.parse(self.mock_function)
-            mock_function_name = [
+            mock_function_name = next(
                 server.name
                 for server in ast.walk(mock_parsed_code)
                 if isinstance(server, ast.FunctionDef)
-            ][0]
+            )
         else:
             mock_function_name = NOT_ACCESSIBLE_STRING
 
         if self.private_function:
             private_parsed_code = ast.parse(self.private_function)
-            private_function_name = [
+            private_function_name = next(
                 server.name
                 for server in ast.walk(private_parsed_code)
                 if isinstance(server, ast.FunctionDef)
-            ][0]
+            )
         else:
             private_function_name = NOT_ACCESSIBLE_STRING
 
@@ -423,9 +419,13 @@ class TwinAPIEndpoint(SyncableSyftObject):
         """Check if the user has permission to access the endpoint.
 
         Args:
+        ----
             context: The context of the user requesting the code.
+
         Returns:
+        -------
             bool: True if the user has permission to access the endpoint, False otherwise.
+
         """
         return context.role.value == 128
 
@@ -433,9 +433,13 @@ class TwinAPIEndpoint(SyncableSyftObject):
         """Select the code to execute based on the user's permissions and public code availability.
 
         Args:
+        ----
             context: The context of the user requesting the code.
+
         Returns:
+        -------
             Result[Ok, Err]: The selected code to execute.
+
         """
         if self.has_permission(context) and self.private_function:
             return Ok(self.private_function)
@@ -445,11 +449,13 @@ class TwinAPIEndpoint(SyncableSyftObject):
         """Execute the code based on the user's permissions and public code availability.
 
         Args:
+        ----
             context: The context of the user requesting the code.
             *args: Any
             **kwargs: Any
         Returns:
             Any: The result of the executed code.
+
         """
         result = self.select_code(context)
         if result.is_err():
@@ -473,11 +479,13 @@ class TwinAPIEndpoint(SyncableSyftObject):
         """Execute the private code if user is has the proper permissions.
 
         Args:
+        ----
             context: The context of the user requesting the code.
             *args: Any
             **kwargs: Any
         Returns:
             Any: The result of the executed code.
+
         """
         if self.private_function is None:
             return SyftError(message="No private code available")
@@ -557,7 +565,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
             # TODO: cleanup typeerrors
             if context.role.value == 128 or isinstance(e, TypeError):
                 return SyftError(
-                    message=f"An error was raised during the execution of the API endpoint call: \n {str(e)}",
+                    message=f"An error was raised during the execution of the API endpoint call: \n {e!s}",
                 )
             else:
                 return SyftError(

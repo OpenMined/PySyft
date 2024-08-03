@@ -4,17 +4,15 @@ import logging
 import secrets
 from typing import Any
 
-# third party
-from IPython.display import HTML
-from IPython.display import display
 import jinja2
+
+# third party
+from IPython.display import HTML, display
 
 # relative
 from ....types.uid import UID
-from ...assets import load_css
-from ...assets import load_js
-from ...table import TABLE_INDEX_KEY
-from ...table import prepare_table_data
+from ...assets import load_css, load_js
+from ...table import TABLE_INDEX_KEY, prepare_table_data
 from ...util import sanitize_html
 from ..icons import Icon
 
@@ -29,7 +27,7 @@ def create_tabulator_columns(
     column_widths: dict | None = None,
     header_sort: bool = True,
 ) -> tuple[list[dict], dict | None]:
-    """Returns tuple of (columns, row_header) for tabulator table"""
+    """Returns tuple of (columns, row_header) for tabulator table."""
     if column_widths is None:
         column_widths = {}
 
@@ -64,9 +62,7 @@ def create_tabulator_columns(
 
 def format_dict(data: Any) -> str:
     # relative
-    from .sync import Badge
-    from .sync import CopyButton
-    from .sync import Label
+    from .sync import Badge, CopyButton, Label
 
     if not isinstance(data, dict):
         return data
@@ -159,10 +155,10 @@ def build_tabulator_table_with_data(
     pagination: bool = True,
     header_sort: bool = True,
 ) -> str:
-    """
-    Builds a Tabulator table for the provided data and metadata.
+    """Builds a Tabulator table for the provided data and metadata.
 
     Args:
+    ----
         table_data (list[dict]): The data to populate the table.
         table_metadata (dict): The metadata for the table.
         uid (str, optional): The unique identifier for the table. Defaults to None.
@@ -171,6 +167,7 @@ def build_tabulator_table_with_data(
         header_sort (bool, optional): Whether to enable header sorting. Defaults to True.
 
     Returns:
+    -------
         str: The HTML representation of the Tabulator table.
 
     """
@@ -187,12 +184,12 @@ def build_tabulator_table(
     pagination: bool = True,
     header_sort: bool = True,
 ) -> str | None:
-    """
-    Builds a Tabulator table from the given object if possible.
+    """Builds a Tabulator table from the given object if possible.
 
     If the object cannot be represented as a table, returns None.
 
     Args:
+    ----
         obj (Any): The object to build the table from.
         uid (str, optional): The unique identifier for the table. Defaults to None.
         max_height (int, optional): The maximum height of the table. Defaults to None.
@@ -200,6 +197,7 @@ def build_tabulator_table(
         header_sort (bool, optional): Whether to enable header sorting. Defaults to True.
 
     Returns:
+    -------
         str | None: The HTML representation of the Tabulator table or None
 
     """

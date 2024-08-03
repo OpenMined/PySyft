@@ -18,7 +18,7 @@ except ImportError:
     _UUID_REPRESENTATIONS = None
 
 
-class TypeRegistry(object):
+class TypeRegistry:
     pass
 
 
@@ -32,14 +32,14 @@ _FIELDS = (
 
 if codec_options and version.parse("3.8") <= helpers.PYMONGO_VERSION:
     _DEFAULT_TYPE_REGISTRY = codec_options.TypeRegistry()
-    _FIELDS = _FIELDS + ("type_registry",)
+    _FIELDS = (*_FIELDS, "type_registry")
 else:
     _DEFAULT_TYPE_REGISTRY = TypeRegistry()
 
 if codec_options and version.parse("4.3.0") <= helpers.PYMONGO_VERSION:
     _DATETIME_CONVERSION_VALUES = codec_options.DatetimeConversion._value2member_map_
     _DATETIME_CONVERSION_DEFAULT_VALUE = codec_options.DatetimeConversion.DATETIME
-    _FIELDS = _FIELDS + ("datetime_conversion",)
+    _FIELDS = (*_FIELDS, "datetime_conversion")
 else:
     _DATETIME_CONVERSION_VALUES = ()
     _DATETIME_CONVERSION_DEFAULT_VALUE = None
@@ -61,9 +61,9 @@ class CodecOptions(collections.namedtuple("CodecOptions", _FIELDS)):
         datetime_conversion=_DATETIME_CONVERSION_DEFAULT_VALUE,
     ):
         if document_class != dict:
+            msg = f"Mongomock does not implement custom document_class yet: {document_class!r}"
             raise NotImplementedError(
-                "Mongomock does not implement custom document_class yet: %r"
-                % document_class,
+                msg,
             )
 
         if not isinstance(tz_aware, bool):
@@ -94,7 +94,7 @@ class CodecOptions(collections.namedtuple("CodecOptions", _FIELDS)):
         if "type_registry" in _FIELDS:
             if not type_registry:
                 type_registry = _DEFAULT_TYPE_REGISTRY
-            values = values + (type_registry,)
+            values = (*values, type_registry)
 
         if "datetime_conversion" in _FIELDS:
             if (
@@ -105,7 +105,7 @@ class CodecOptions(collections.namedtuple("CodecOptions", _FIELDS)):
                 raise TypeError(
                     msg,
                 )
-            values = values + (datetime_conversion,)
+            values = (*values, datetime_conversion)
 
         return tuple.__new__(cls, values)
 

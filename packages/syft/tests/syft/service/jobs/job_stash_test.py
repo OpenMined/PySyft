@@ -1,20 +1,17 @@
 # stdlib
-from datetime import datetime
-from datetime import timedelta
-from datetime import timezone
+from datetime import datetime, timedelta, timezone
 
 # third party
 import pytest
 
 # syft absolute
 import syft as sy
-from syft.service.job.job_stash import Job
-from syft.service.job.job_stash import JobStatus
+from syft.service.job.job_stash import Job, JobStatus
 from syft.types.uid import UID
 
 
 @pytest.mark.parametrize(
-    "current_iter, n_iters, status, creation_time_delta, expected",
+    ("current_iter", "n_iters", "status", "creation_time_delta", "expected"),
     [
         (0, 10, JobStatus.CREATED, timedelta(hours=2), None),
         (1, None, JobStatus.CREATED, timedelta(hours=2), None),
@@ -29,7 +26,7 @@ from syft.types.uid import UID
         (2, 10, JobStatus.PROCESSING, timedelta(seconds=119.6), "00:59s/it"),
     ],
 )
-def test_eta_string(current_iter, n_iters, status, creation_time_delta, expected):
+def test_eta_string(current_iter, n_iters, status, creation_time_delta, expected) -> None:
     job = Job(
         id=UID(),
         server_uid=UID(),
@@ -47,12 +44,12 @@ def test_eta_string(current_iter, n_iters, status, creation_time_delta, expected
         assert expected in job.eta_string
 
 
-def test_job_no_consumer(worker):
+def test_job_no_consumer(worker) -> None:
     client = worker.root_client
     ds_client = worker.guest_client
 
     @sy.syft_function_single_use()
-    def process_all(): ...
+    def process_all() -> None: ...
 
     _ = ds_client.code.request_code_execution(process_all)
     job = client.code.process_all(blocking=False)

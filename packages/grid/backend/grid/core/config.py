@@ -4,13 +4,8 @@ import secrets
 from typing import Any
 
 # third party
-from pydantic import AnyHttpUrl
-from pydantic import EmailStr
-from pydantic import HttpUrl
-from pydantic import field_validator
-from pydantic import model_validator
-from pydantic_settings import BaseSettings
-from pydantic_settings import SettingsConfigDict
+from pydantic import AnyHttpUrl, EmailStr, HttpUrl, field_validator, model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import Self
 
 _truthy = {"yes", "y", "true", "t", "on", "1"}
@@ -18,7 +13,7 @@ _falsy = {"no", "n", "false", "f", "off", "0"}
 
 
 def _distutils_strtoint(s: str) -> int:
-    """implements the deprecated distutils.util.strtoint"""
+    """Implements the deprecated distutils.util.strtoint."""
     ls = s.lower()
     if ls in _truthy:
         return 1

@@ -1,13 +1,11 @@
 # stdlib
 
 # relative
-from ...custom_worker.config import PrebuiltWorkerConfig
-from ...custom_worker.config import WorkerConfig
+from ...custom_worker.config import PrebuiltWorkerConfig, WorkerConfig
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...types.datetime import DateTime
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject
 from ...types.uid import UID
 from .image_identifier import SyftWorkerImageIdentifier
 
@@ -38,7 +36,6 @@ class SyftWorkerImage(SyftObject):
     @property
     def is_built(self) -> bool:
         """Returns True if the image has been built or is prebuilt."""
-
         return self.built_at is not None or self.is_prebuilt
 
     @property
@@ -48,7 +45,6 @@ class SyftWorkerImage(SyftObject):
     @property
     def built_image_tag(self) -> str | None:
         """Returns the full name of the image if it has been built."""
-
         if self.is_built and self.image_identifier:
             return self.image_identifier.full_name_with_tag
         return None

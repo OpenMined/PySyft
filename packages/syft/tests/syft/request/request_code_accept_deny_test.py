@@ -4,20 +4,20 @@ from syft.client.client import SyftClient
 from syft.server.worker import Worker
 from syft.service.action.action_object import ActionObject
 from syft.service.action.action_permissions import ActionPermission
-from syft.service.code.user_code import UserCode
-from syft.service.code.user_code import UserCodeStatus
+from syft.service.code.user_code import UserCode, UserCodeStatus
 from syft.service.context import ChangeContext
-from syft.service.request.request import ActionStoreChange
-from syft.service.request.request import ObjectMutation
-from syft.service.request.request import RequestStatus
-from syft.service.request.request import UserCodeStatusChange
-from syft.service.response import SyftError
-from syft.service.response import SyftSuccess
+from syft.service.request.request import (
+    ActionStoreChange,
+    ObjectMutation,
+    RequestStatus,
+    UserCodeStatusChange,
+)
+from syft.service.response import SyftError, SyftSuccess
 from syft.service.settings.settings_service import SettingsService
 from syft.store.linked_obj import LinkedObject
 
 
-def test_object_mutation(worker: Worker):
+def test_object_mutation(worker: Worker) -> None:
     root_client = worker.root_client
     setting = root_client.api.services.settings.get()
     linked_obj = LinkedObject.from_obj(setting, SettingsService, server_uid=worker.id)
@@ -51,7 +51,7 @@ def test_object_mutation(worker: Worker):
     assert setting.organization == original_name
 
 
-def test_action_store_change(worker: Worker, ds_client: SyftClient):
+def test_action_store_change(worker: Worker, ds_client: SyftClient) -> None:
     root_client = worker.root_client
     dummy_data = [1, 2, 3]
     data = ActionObject.from_obj(dummy_data)
@@ -89,7 +89,7 @@ def test_action_store_change(worker: Worker, ds_client: SyftClient):
     assert isinstance(result, SyftError)
 
 
-def test_user_code_status_change(worker: Worker, ds_client: SyftClient):
+def test_user_code_status_change(worker: Worker, ds_client: SyftClient) -> None:
     root_client = worker.root_client
     dummy_data = [1, 2, 3]
     data = ActionObject.from_obj(dummy_data)
@@ -135,7 +135,7 @@ def test_user_code_status_change(worker: Worker, ds_client: SyftClient):
     assert not user_code.status.approved
 
 
-def test_code_accept_deny(worker: Worker, ds_client: SyftClient):
+def test_code_accept_deny(worker: Worker, ds_client: SyftClient) -> None:
     root_client = worker.root_client
     dummy_data = [1, 2, 3]
     data = ActionObject.from_obj(dummy_data)

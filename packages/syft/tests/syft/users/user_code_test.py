@@ -1,22 +1,21 @@
 # stdlib
 import uuid
 
-# third party
-from faker import Faker
 import numpy as np
-from pydantic import ValidationError
 import pytest
 
 # syft absolute
 import syft as sy
+
+# third party
+from faker import Faker
+from pydantic import ValidationError
 from syft.client.datasite_client import DatasiteClient
 from syft.server.worker import Worker
 from syft.service.action.action_data_empty import ActionDataEmpty
 from syft.service.action.action_object import ActionObject
-from syft.service.request.request import Request
-from syft.service.request.request import UserCodeStatusChange
-from syft.service.response import SyftError
-from syft.service.response import SyftSuccess
+from syft.service.request.request import Request, UserCodeStatusChange
+from syft.service.response import SyftError, SyftSuccess
 from syft.service.user.user import User
 from syft.service.user.user_roles import ServiceRole
 
@@ -29,14 +28,14 @@ ds_client = ds_client_fixture  # work around some ruff quirks
 @sy.syft_function(
     input_policy=sy.ExactMatch(), output_policy=sy.SingleExecutionExactOutput(),
 )
-def mock_syft_func():
+def mock_syft_func() -> int:
     return 1
 
 
 @sy.syft_function(
     input_policy=sy.ExactMatch(), output_policy=sy.SingleExecutionExactOutput(),
 )
-def mock_syft_func_2():
+def mock_syft_func_2() -> int:
     return 1
 
 
@@ -197,7 +196,7 @@ def test_scientist_can_list_code_assets(worker: sy.Worker, faker: Faker) -> None
     asset_input = root_client.datasets.search(name=dataset_name)[0].asset_list[0]
 
     @sy.syft_function_single_use(asset=asset_input)
-    def func(asset):
+    def func(asset) -> int:
         return 0
 
     request = guest_client.code.request_code_execution(func)
@@ -213,7 +212,7 @@ def test_scientist_can_list_code_assets(worker: sy.Worker, faker: Faker) -> None
 
 
 @sy.syft_function()
-def mock_inner_func():
+def mock_inner_func() -> int:
     return 1
 
 
@@ -224,7 +223,7 @@ def mock_outer_func(datasite):
     return datasite.launch_job(mock_inner_func)
 
 
-def test_nested_requests(worker, guest_client: User):
+def test_nested_requests(worker, guest_client: User) -> None:
     guest_client.api.services.code.submit(mock_inner_func)
     guest_client.api.services.code.request_code_execution(mock_outer_func)
 
@@ -296,7 +295,7 @@ def test_user_code_mock_execution(worker) -> None:
 
     # DO grants permissions
     users = root_datasite_client.users.get_all()
-    guest_user = [u for u in users if u.id == guest_user.id][0]
+    guest_user = next(u for u in users if u.id == guest_user.id)
     guest_user.allow_mock_execution()
 
     # Mock execution succeeds
@@ -377,7 +376,7 @@ def test_mock_no_arguments(worker) -> None:
     users = root_datasite_client.users.get_all()
 
     @sy.syft_function_single_use()
-    def compute_sum():
+    def compute_sum() -> int:
         return 1
 
     ds_client.api.services.code.request_code_execution(compute_sum)
@@ -410,27 +409,27 @@ def test_submit_invalid_name(worker) -> None:
     client = worker.root_client
 
     @sy.syft_function_single_use()
-    def valid_name():
+    def valid_name() -> None:
         pass
 
     res = client.code.submit(valid_name)
     assert isinstance(res, SyftSuccess)
 
     @sy.syft_function_single_use()
-    def get_all():
+    def get_all() -> None:
         pass
 
     assert isinstance(get_all, SyftError)
 
     @sy.syft_function_single_use()
-    def _():
+    def _() -> None:
         pass
 
     assert isinstance(_, SyftError)
 
     # overwrite valid function name before submit, fail on serde
     @sy.syft_function_single_use()
-    def valid_name_2():
+    def valid_name_2() -> None:
         pass
 
     valid_name_2.func_name = "get_all"
@@ -473,7 +472,7 @@ def test_request_existing_usercodesubmit(worker) -> None:
     )
 
     @sy.syft_function_single_use()
-    def my_func():
+    def my_func() -> int:
         return 42
 
     res_submit = ds_client.api.services.code.submit(my_func)
@@ -504,7 +503,7 @@ def test_request_existing_usercode(worker) -> None:
     )
 
     @sy.syft_function_single_use()
-    def my_func():
+    def my_func() -> int:
         return 42
 
     res_submit = ds_client.api.services.code.submit(my_func)
@@ -522,7 +521,7 @@ def test_request_existing_usercode(worker) -> None:
     assert len(ds_client.requests.get_all()) == 1
 
 
-def test_submit_existing_code_different_user(worker):
+def test_submit_existing_code_different_user(worker) -> None:
     root_datasite_client = worker.root_client
 
     root_datasite_client.register(
@@ -548,7 +547,7 @@ def test_submit_existing_code_different_user(worker):
     )
 
     @sy.syft_function_single_use()
-    def my_func():
+    def my_func() -> int:
         return 42
 
     res_submit = ds_client_1.api.services.code.submit(my_func)

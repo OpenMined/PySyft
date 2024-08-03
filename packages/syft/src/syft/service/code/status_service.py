@@ -6,21 +6,19 @@ from result import Result
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import BaseUIDStoreStash
-from ...store.document_store import DocumentStore
-from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
-from ...store.document_store import UIDPartitionKey
+from ...store.document_store import (
+    BaseUIDStoreStash,
+    DocumentStore,
+    PartitionSettings,
+    QueryKeys,
+    UIDPartitionKey,
+)
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
-from ..response import SyftError
-from ..response import SyftSuccess
-from ..service import AbstractService
-from ..service import TYPE_TO_SERVICE
-from ..service import service_method
-from ..user.user_roles import ADMIN_ROLE_LEVEL
-from ..user.user_roles import GUEST_ROLE_LEVEL
+from ..response import SyftError, SyftSuccess
+from ..service import TYPE_TO_SERVICE, AbstractService, service_method
+from ..user.user_roles import ADMIN_ROLE_LEVEL, GUEST_ROLE_LEVEL
 from .user_code import UserCodeStatusCollection
 
 
@@ -52,7 +50,7 @@ class UserCodeStatusService(AbstractService):
     store: DocumentStore
     stash: StatusStash
 
-    def __init__(self, store: DocumentStore):
+    def __init__(self, store: DocumentStore) -> None:
         self.store = store
         self.stash = StatusStash(store=store)
 
@@ -76,7 +74,7 @@ class UserCodeStatusService(AbstractService):
     def get_status(
         self, context: AuthedServiceContext, uid: UID,
     ) -> UserCodeStatusCollection | SyftError:
-        """Get the status of a user code item"""
+        """Get the status of a user code item."""
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
             return result.ok()
@@ -86,7 +84,7 @@ class UserCodeStatusService(AbstractService):
     def get_all(
         self, context: AuthedServiceContext,
     ) -> list[UserCodeStatusCollection] | SyftError:
-        """Get all user code item statuses"""
+        """Get all user code item statuses."""
         result = self.stash.get_all(context.credentials)
         if result.is_ok():
             return result.ok()
@@ -96,7 +94,7 @@ class UserCodeStatusService(AbstractService):
     def remove(
         self, context: AuthedServiceContext, uid: UID,
     ) -> SyftSuccess | SyftError:
-        """Remove a user code item status"""
+        """Remove a user code item status."""
         result = self.stash.delete_by_uid(context.credentials, uid=uid)
         if result.is_ok():
             return result.ok()

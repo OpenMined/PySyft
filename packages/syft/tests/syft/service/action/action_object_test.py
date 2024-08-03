@@ -1,9 +1,9 @@
 # stdlib
-from collections.abc import Callable
-from enum import Enum
 import inspect
 import math
 import sys
+from collections.abc import Callable
+from enum import Enum
 from typing import Any
 
 # third party
@@ -13,21 +13,21 @@ import pytest
 
 # syft absolute
 from syft.service.action.action_data_empty import ActionDataEmpty
-from syft.service.action.action_object import Action
-from syft.service.action.action_object import ActionObject
-from syft.service.action.action_object import ActionType
-from syft.service.action.action_object import HOOK_ALWAYS
-from syft.service.action.action_object import HOOK_ON_POINTERS
-from syft.service.action.action_object import PreHookContext
-from syft.service.action.action_object import make_action_side_effect
-from syft.service.action.action_object import propagate_server_uid
-from syft.service.action.action_object import send_action_side_effect
+from syft.service.action.action_object import (
+    HOOK_ALWAYS,
+    HOOK_ON_POINTERS,
+    Action,
+    ActionObject,
+    ActionType,
+    PreHookContext,
+    make_action_side_effect,
+    propagate_server_uid,
+    send_action_side_effect,
+)
 from syft.service.action.action_types import action_type_for_type
-from syft.service.response import SyftError
-from syft.service.response import SyftSuccess
+from syft.service.response import SyftError, SyftSuccess
 from syft.store.blob_storage import SyftObjectRetrieval
-from syft.types.uid import LineageID
-from syft.types.uid import UID
+from syft.types.uid import UID, LineageID
 
 
 def helper_make_action_obj(orig_obj: Any):
@@ -59,7 +59,7 @@ def helper_make_action_pointers(worker, obj, *args, **kwargs):
         ("set", "add"),
     ],
 )
-def test_action_sanity(path_op: tuple[str, str]):
+def test_action_sanity(path_op: tuple[str, str]) -> None:
     path, op = path_op
 
     remote_self = LineageID()
@@ -90,7 +90,7 @@ def test_action_sanity(path_op: tuple[str, str]):
         ActionDataEmpty(),
     ],
 )
-def test_actionobject_from_obj_sanity(orig_obj: Any):
+def test_actionobject_from_obj_sanity(orig_obj: Any) -> None:
     # no id
     obj = ActionObject.from_obj(orig_obj)
     assert obj.id is not None
@@ -110,7 +110,7 @@ def test_actionobject_from_obj_sanity(orig_obj: Any):
     assert obj.syft_history_hash == lin_obj_id.syft_history_hash
 
 
-def test_actionobject_from_obj_fail_id_mismatch():
+def test_actionobject_from_obj_fail_id_mismatch() -> None:
     obj_id = UID()
     lineage_id = LineageID()
 
@@ -119,7 +119,7 @@ def test_actionobject_from_obj_fail_id_mismatch():
 
 
 @pytest.mark.parametrize("dtype", [int, float, str, Any, bool, dict, set, tuple, list])
-def test_actionobject_make_empty_sanity(dtype: type):
+def test_actionobject_make_empty_sanity(dtype: type) -> None:
     syft_type = action_type_for_type(dtype)
 
     obj = ActionObject.empty(
@@ -158,7 +158,7 @@ def test_actionobject_make_empty_sanity(dtype: type):
         ActionDataEmpty(),
     ],
 )
-def test_actionobject_hooks_init(orig_obj: Any):
+def test_actionobject_hooks_init(orig_obj: Any) -> None:
     obj = ActionObject.from_obj(orig_obj)
 
     assert HOOK_ALWAYS in obj.syft_pre_hooks__
@@ -169,7 +169,7 @@ def test_actionobject_hooks_init(orig_obj: Any):
     assert make_action_side_effect in obj.syft_pre_hooks__[HOOK_ALWAYS]
 
 
-def test_actionobject_add_pre_hooks():
+def test_actionobject_add_pre_hooks() -> None:
     # Eager execution is disabled by default
     obj = ActionObject.from_obj(1)
 
@@ -201,7 +201,7 @@ def test_actionobject_add_pre_hooks():
         ({1, 2, 3}, "add"),
     ],
 )
-def test_actionobject_hooks_make_action_side_effect(orig_obj_op: Any):
+def test_actionobject_hooks_make_action_side_effect(orig_obj_op: Any) -> None:
     orig_obj, op = orig_obj_op
     action_type_for_type(type(orig_obj))
 
@@ -217,7 +217,7 @@ def test_actionobject_hooks_make_action_side_effect(orig_obj_op: Any):
     assert context.action.full_path.endswith("." + op)
 
 
-def test_actionobject_hooks_send_action_side_effect_err_no_id(worker):
+def test_actionobject_hooks_send_action_side_effect_err_no_id(worker) -> None:
     orig_obj = "abc"
     op = "capitalize"
 
@@ -228,7 +228,7 @@ def test_actionobject_hooks_send_action_side_effect_err_no_id(worker):
     assert result.is_err()
 
 
-def test_actionobject_hooks_send_action_side_effect_err_invalid_args(worker):
+def test_actionobject_hooks_send_action_side_effect_err_invalid_args(worker) -> None:
     orig_obj, op, args, kwargs = (1, 2, 3), "count", [], {}  # count expect one argument
 
     obj = helper_make_action_obj(orig_obj)
@@ -255,7 +255,7 @@ def test_actionobject_hooks_send_action_side_effect_err_invalid_args(worker):
 )
 def test_actionobject_hooks_send_action_side_effect_ignore_op(
     root_datasite_client, orig_obj_op,
-):
+) -> None:
     orig_obj, op, args, kwargs = orig_obj_op
 
     obj = helper_make_action_obj(orig_obj)
@@ -285,7 +285,7 @@ def test_actionobject_hooks_send_action_side_effect_ignore_op(
         ({1, 2, 3}, "clear", [], {}),
     ],
 )
-def test_actionobject_hooks_send_action_side_effect_ok(worker, orig_obj_op):
+def test_actionobject_hooks_send_action_side_effect_ok(worker, orig_obj_op) -> None:
     orig_obj, op, args, kwargs = orig_obj_op
 
     obj = helper_make_action_obj(orig_obj)
@@ -302,7 +302,7 @@ def test_actionobject_hooks_send_action_side_effect_ok(worker, orig_obj_op):
     assert context.result_id is not None
 
 
-def test_actionobject_hooks_propagate_server_uid_err():
+def test_actionobject_hooks_propagate_server_uid_err() -> None:
     orig_obj = "abc"
     op = "capitalize"
 
@@ -313,7 +313,7 @@ def test_actionobject_hooks_propagate_server_uid_err():
     assert result.is_err()
 
 
-def test_actionobject_hooks_propagate_server_uid_ok():
+def test_actionobject_hooks_propagate_server_uid_ok() -> None:
     orig_obj = "abc"
     op = "capitalize"
 
@@ -327,7 +327,7 @@ def test_actionobject_hooks_propagate_server_uid_ok():
     assert result.is_ok()
 
 
-def test_actionobject_syft_point_to():
+def test_actionobject_syft_point_to() -> None:
     orig_obj = "abc"
 
     obj_id = UID()
@@ -352,7 +352,7 @@ def test_actionobject_syft_point_to():
         (complex(1, 2), "conjugate", [], {}, complex(1, -2)),
     ],
 )
-def test_actionobject_syft_execute_ok(worker, testcase):
+def test_actionobject_syft_execute_ok(worker, testcase) -> None:
     orig_obj, op, args, kwargs, expected = testcase
 
     obj = helper_make_action_obj(orig_obj)
@@ -389,7 +389,7 @@ def test_actionobject_syft_execute_ok(worker, testcase):
         ({1, 2, 3}, "clear", [], {}),
     ],
 )
-def test_actionobject_syft_make_action(worker, testcase):
+def test_actionobject_syft_make_action(worker, testcase) -> None:
     orig_obj, op, args, kwargs = testcase
 
     obj = helper_make_action_obj(orig_obj)
@@ -421,7 +421,7 @@ def test_actionobject_syft_make_action(worker, testcase):
         (complex(1, 2), "conjugate", [], {}),
     ],
 )
-def test_actionobject_syft_make_action_with_self(worker, testcase):
+def test_actionobject_syft_make_action_with_self(worker, testcase) -> None:
     orig_obj, op, args, kwargs = testcase
 
     obj = helper_make_action_obj(orig_obj)
@@ -454,7 +454,7 @@ def test_actionobject_syft_make_action_with_self(worker, testcase):
         (complex(1, 2), "conjugate", [], {}),
     ],
 )
-def test_actionobject_syft_make_remote_method_action(worker, testcase):
+def test_actionobject_syft_make_remote_method_action(worker, testcase) -> None:
     orig_obj, op, args, kwargs = testcase
 
     obj = helper_make_action_obj(orig_obj)
@@ -483,7 +483,7 @@ def test_actionobject_syft_make_remote_method_action(worker, testcase):
         complex(1, 2),
     ],
 )
-def test_actionobject_syft_get_path(testcase):
+def test_actionobject_syft_get_path(testcase) -> None:
     orig_obj = testcase
     obj = helper_make_action_obj(orig_obj)
 
@@ -505,7 +505,7 @@ def test_actionobject_syft_get_path(testcase):
         complex(1, 2),
     ],
 )
-def test_actionobject_syft_send_get(worker, testcase):
+def test_actionobject_syft_send_get(worker, testcase) -> None:
     root_datasite_client = worker.root_client
     root_datasite_client._fetch_api(root_datasite_client.credentials)
     action_store = worker.get_service("actionservice").store
@@ -537,7 +537,7 @@ def test_actionobject_syft_send_get(worker, testcase):
         complex(1, 2),
     ],
 )
-def test_actionobject_syft_passthrough_attrs(testcase):
+def test_actionobject_syft_passthrough_attrs(testcase) -> None:
     obj = helper_make_action_obj(testcase)
 
     assert str(obj) == str(testcase)
@@ -554,14 +554,14 @@ def test_actionobject_syft_passthrough_attrs(testcase):
         {1, 2, 3},
     ],
 )
-def test_actionobject_syft_dont_wrap_output_attrs(testcase):
+def test_actionobject_syft_dont_wrap_output_attrs(testcase) -> None:
     obj = helper_make_action_obj(testcase)
 
     assert not hasattr(len(obj), "id")
     assert not hasattr(len(obj), "syft_history_hash")
 
 
-def test_actionobject_syft_get_attr_context():
+def test_actionobject_syft_get_attr_context() -> None:
     orig_obj = "test"
     obj = helper_make_action_obj(orig_obj)
 
@@ -585,7 +585,7 @@ def test_actionobject_syft_get_attr_context():
     ],
 )
 @pytest.mark.skip(reason="Disabled until we bring back eager execution")
-def test_actionobject_syft_execute_hooks(worker, testcase):
+def test_actionobject_syft_execute_hooks(worker, testcase) -> None:
     client = worker.root_client
     assert client.settings.enable_eager_execution(enable=True)
 
@@ -625,7 +625,7 @@ def test_actionobject_syft_execute_hooks(worker, testcase):
         complex(1, 2),
     ],
 )
-def test_actionobject_syft_wrap_attribute_for_bool_on_nonbools(testcase):
+def test_actionobject_syft_wrap_attribute_for_bool_on_nonbools(testcase) -> None:
     obj = helper_make_action_obj(testcase)
 
     assert isinstance(bool(obj), bool)
@@ -646,7 +646,7 @@ def test_actionobject_syft_wrap_attribute_for_bool_on_nonbools(testcase):
         complex(1, 2),
     ],
 )
-def test_actionobject_syft_wrap_attribute_for_properties(orig_obj):
+def test_actionobject_syft_wrap_attribute_for_properties(orig_obj) -> None:
     obj = helper_make_action_obj(orig_obj)
 
     # test properties from the original object
@@ -679,7 +679,7 @@ def test_actionobject_syft_wrap_attribute_for_properties(orig_obj):
         complex(1, 2),
     ],
 )
-def test_actionobject_syft_wrap_attribute_for_methods(orig_obj):
+def test_actionobject_syft_wrap_attribute_for_methods(orig_obj) -> None:
     obj = helper_make_action_obj(orig_obj)
 
     # test properties from the original object
@@ -715,7 +715,7 @@ def helper_prepare_obj_for_scenario(scenario: AttrScenario, worker, obj: ActionO
 
 
 @pytest.mark.parametrize("scenario", [AttrScenario.AS_OBJ, AttrScenario.AS_PTR])
-def test_actionobject_syft_getattr_str(worker, scenario):
+def test_actionobject_syft_getattr_str(worker, scenario) -> None:
     orig_obj = "a bC"
 
     obj = ActionObject.from_obj(orig_obj)
@@ -738,7 +738,7 @@ def test_actionobject_syft_getattr_str(worker, scenario):
     assert obj < "zzzz"
     for idx, c in enumerate(obj):
         assert c == orig_obj[idx]
-        assert obj[idx] == orig_obj[idx]
+        assert c == orig_obj[idx]
     for idx, c in enumerate(orig_obj):
         assert c == obj[idx]
 
@@ -747,7 +747,7 @@ def test_actionobject_syft_getattr_str(worker, scenario):
     assert list(reversed(obj)) == list(reversed(orig_obj))
 
 
-def test_actionobject_syft_getattr_str_history():
+def test_actionobject_syft_getattr_str_history() -> None:
     obj1 = ActionObject.from_obj("abc")
     obj2 = ActionObject.from_obj("xyz")
 
@@ -757,7 +757,7 @@ def test_actionobject_syft_getattr_str_history():
 
 
 @pytest.mark.parametrize("scenario", [AttrScenario.AS_OBJ, AttrScenario.AS_PTR])
-def test_actionobject_syft_getattr_list(worker, scenario):
+def test_actionobject_syft_getattr_list(worker, scenario) -> None:
     orig_obj = [3, 2, 1, 4]
 
     obj = ActionObject.from_obj(orig_obj)
@@ -779,7 +779,7 @@ def test_actionobject_syft_getattr_list(worker, scenario):
     assert obj.clear() == []
 
 
-def test_actionobject_syft_getattr_list_history():
+def test_actionobject_syft_getattr_list_history() -> None:
     obj1 = ActionObject.from_obj([1, 2, 3, 4])
     obj2 = ActionObject.from_obj([5, 6, 7])
 
@@ -789,7 +789,7 @@ def test_actionobject_syft_getattr_list_history():
 
 
 @pytest.mark.parametrize("scenario", [AttrScenario.AS_OBJ, AttrScenario.AS_PTR])
-def test_actionobject_syft_getattr_dict(worker, scenario):
+def test_actionobject_syft_getattr_dict(worker, scenario) -> None:
     orig_obj = {"a": 1, "b": 2}
 
     obj = ActionObject.from_obj(orig_obj)
@@ -803,7 +803,7 @@ def test_actionobject_syft_getattr_dict(worker, scenario):
     assert obj.clear() == {}
 
 
-def test_actionobject_syft_getattr_dict_history():
+def test_actionobject_syft_getattr_dict_history() -> None:
     obj1 = ActionObject.from_obj({"a": 1, "b": 2})
     obj2 = ActionObject.from_obj({"c": 1, "b": 2})
 
@@ -813,7 +813,7 @@ def test_actionobject_syft_getattr_dict_history():
 
 
 @pytest.mark.parametrize("scenario", [AttrScenario.AS_OBJ, AttrScenario.AS_PTR])
-def test_actionobject_syft_getattr_tuple(worker, scenario):
+def test_actionobject_syft_getattr_tuple(worker, scenario) -> None:
     orig_obj = (1, 2, 3, 4, 4)
 
     obj = ActionObject.from_obj(orig_obj)
@@ -833,7 +833,7 @@ def test_actionobject_syft_getattr_tuple(worker, scenario):
 
 
 @pytest.mark.parametrize("scenario", [AttrScenario.AS_OBJ, AttrScenario.AS_PTR])
-def test_actionobject_syft_getattr_set(worker, scenario):
+def test_actionobject_syft_getattr_set(worker, scenario) -> None:
     orig_obj = {1, 2, 3, 4}
 
     obj = ActionObject.from_obj(orig_obj)
@@ -845,7 +845,7 @@ def test_actionobject_syft_getattr_set(worker, scenario):
     assert len(obj) == 4
 
 
-def test_actionobject_syft_getattr_set_history():
+def test_actionobject_syft_getattr_set_history() -> None:
     obj1 = ActionObject.from_obj({1, 2, 3, 4})
     obj2 = ActionObject.from_obj({1, 2})
 
@@ -856,7 +856,7 @@ def test_actionobject_syft_getattr_set_history():
 
 @pytest.mark.parametrize("orig_obj", [True, False])
 @pytest.mark.parametrize("scenario", [AttrScenario.AS_OBJ, AttrScenario.AS_PTR])
-def test_actionobject_syft_getattr_bool(orig_obj, worker, scenario):
+def test_actionobject_syft_getattr_bool(orig_obj, worker, scenario) -> None:
     obj = ActionObject.from_obj(orig_obj)
     obj = helper_prepare_obj_for_scenario(scenario, worker, obj)
 
@@ -874,7 +874,7 @@ def test_actionobject_syft_getattr_bool(orig_obj, worker, scenario):
     assert (obj + obj) == orig_obj + orig_obj
 
 
-def test_actionobject_syft_getattr_bool_history():
+def test_actionobject_syft_getattr_bool_history() -> None:
     orig_obj = True
 
     obj1 = ActionObject.from_obj(orig_obj)
@@ -887,7 +887,7 @@ def test_actionobject_syft_getattr_bool_history():
 
 @pytest.mark.parametrize("orig_obj", [-5, 0, 5])
 @pytest.mark.parametrize("scenario", [AttrScenario.AS_OBJ, AttrScenario.AS_PTR])
-def test_actionobject_syft_getattr_int(orig_obj: int, worker, scenario):
+def test_actionobject_syft_getattr_int(orig_obj: int, worker, scenario) -> None:
     obj = ActionObject.from_obj(orig_obj)
     obj = helper_prepare_obj_for_scenario(scenario, worker, obj)
 
@@ -941,7 +941,7 @@ def test_actionobject_syft_getattr_int(orig_obj: int, worker, scenario):
         assert (3 >> obj) == (3 >> orig_obj)
 
 
-def test_actionobject_syft_getattr_int_history():
+def test_actionobject_syft_getattr_int_history() -> None:
     orig_obj = 5
     obj1 = ActionObject.from_obj(orig_obj)
     obj2 = ActionObject.from_obj(orig_obj)
@@ -952,7 +952,7 @@ def test_actionobject_syft_getattr_int_history():
 
 @pytest.mark.parametrize("orig_obj", [-5.5, 0.0, 5.5])
 @pytest.mark.parametrize("scenario", [AttrScenario.AS_OBJ, AttrScenario.AS_PTR])
-def test_actionobject_syft_getattr_float(orig_obj: float, worker, scenario):
+def test_actionobject_syft_getattr_float(orig_obj: float, worker, scenario) -> None:
     obj = ActionObject.from_obj(orig_obj)
     obj = helper_prepare_obj_for_scenario(scenario, worker, obj)
 
@@ -992,7 +992,7 @@ def test_actionobject_syft_getattr_float(orig_obj: float, worker, scenario):
     assert math.trunc(obj) == math.trunc(orig_obj)
 
 
-def test_actionobject_syft_getattr_float_history():
+def test_actionobject_syft_getattr_float_history() -> None:
     obj1 = ActionObject.from_obj(5.5)
     obj2 = ActionObject.from_obj(5.2)
 
@@ -1006,7 +1006,7 @@ def test_actionobject_syft_getattr_float_history():
     sys.platform != "linux",
     reason="This is a hackish way to test attribute set/get, and it might fail on Windows or OSX",
 )
-def test_actionobject_syft_getattr_np(worker):
+def test_actionobject_syft_getattr_np(worker) -> None:
     orig_obj = np.array([1, 2, 3])
 
     obj = ActionObject.from_obj(orig_obj)
@@ -1018,7 +1018,7 @@ def test_actionobject_syft_getattr_np(worker):
         assert obj.dtype == dtype
 
 
-def test_actionobject_syft_getattr_pandas(worker):
+def test_actionobject_syft_getattr_pandas(worker) -> None:
     orig_obj = pd.DataFrame([[1, 2, 3]], columns=["1", "2", "3"])
 
     obj = ActionObject.from_obj(orig_obj)
@@ -1029,10 +1029,8 @@ def test_actionobject_syft_getattr_pandas(worker):
     assert (obj.columns == ["a", "b", "c"]).all()
 
 
-def test_actionobject_delete(worker):
-    """
-    Test deleting action objects and their corresponding blob storage entries
-    """
+def test_actionobject_delete(worker) -> None:
+    """Test deleting action objects and their corresponding blob storage entries."""
     root_client = worker.root_client
 
     # small object with no blob store entry

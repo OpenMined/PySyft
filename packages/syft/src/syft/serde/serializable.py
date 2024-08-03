@@ -22,10 +22,10 @@ def serializable(
     canonical_name: str | None = None,
     version: int | None = None,
 ) -> Callable[[T], T]:
-    """
-    Recursively serialize attributes of the class.
+    """Recursively serialize attributes of the class.
 
     Args:
+    ----
         `attrs`       : List of attributes to serialize
         `without`     : List of attributes to exclude from serialization
         `inherit`     : Whether to inherit serializable attribute list from base class
@@ -44,7 +44,9 @@ def serializable(
         - `inherit`, `inheritable` will not work as pydantic inherits by default
 
     Returns:
+    -------
         Decorated class
+
     """
 
     def rs_decorator(cls: T) -> T:

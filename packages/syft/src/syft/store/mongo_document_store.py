@@ -1,15 +1,15 @@
 # stdlib
 from collections.abc import Callable
-from typing import Any
-from typing import Set  # noqa: UP035
+from typing import (
+    Any,
+    Set,
+)
 
 # third party
 from pydantic import Field
 from pymongo import ASCENDING
 from pymongo.collection import Collection as MongoCollection
-from result import Err
-from result import Ok
-from result import Result
+from result import Err, Ok, Result
 from typing_extensions import Self
 
 # relative
@@ -17,35 +17,37 @@ from ..serde.deserialize import _deserialize
 from ..serde.serializable import serializable
 from ..serde.serialize import _serialize
 from ..server.credentials import SyftVerifyKey
-from ..service.action.action_permissions import ActionObjectEXECUTE
-from ..service.action.action_permissions import ActionObjectOWNER
-from ..service.action.action_permissions import ActionObjectPermission
-from ..service.action.action_permissions import ActionObjectREAD
-from ..service.action.action_permissions import ActionObjectWRITE
-from ..service.action.action_permissions import ActionPermission
-from ..service.action.action_permissions import StoragePermission
+from ..service.action.action_permissions import (
+    ActionObjectEXECUTE,
+    ActionObjectOWNER,
+    ActionObjectPermission,
+    ActionObjectREAD,
+    ActionObjectWRITE,
+    ActionPermission,
+    StoragePermission,
+)
 from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
-from ..types.syft_object import StorableObjectType
-from ..types.syft_object import SyftBaseObject
-from ..types.syft_object import SyftObject
-from ..types.transforms import TransformContext
-from ..types.transforms import transform
-from ..types.transforms import transform_method
+from ..types.syft_object import (
+    SYFT_OBJECT_VERSION_1,
+    StorableObjectType,
+    SyftBaseObject,
+    SyftObject,
+)
+from ..types.transforms import TransformContext, transform, transform_method
 from ..types.uid import UID
-from .document_store import DocumentStore
-from .document_store import PartitionKey
-from .document_store import PartitionSettings
-from .document_store import QueryKey
-from .document_store import QueryKeys
-from .document_store import StoreConfig
-from .document_store import StorePartition
+from .document_store import (
+    DocumentStore,
+    PartitionKey,
+    PartitionSettings,
+    QueryKey,
+    QueryKeys,
+    StoreConfig,
+    StorePartition,
+)
 from .kv_document_store import KeyValueBackingStore
-from .locks import LockingConfig
-from .locks import NoLockingConfig
-from .mongo_client import MongoClient
-from .mongo_client import MongoStoreClientConfig
+from .locks import LockingConfig, NoLockingConfig
+from .mongo_client import MongoClient, MongoStoreClientConfig
 
 
 @serializable()
@@ -120,13 +122,15 @@ def from_mongo(
 
 @serializable(attrs=["storage_type"], canonical_name="MongoStorePartition", version=1)
 class MongoStorePartition(StorePartition):
-    """Mongo StorePartition
+    """Mongo StorePartition.
 
-    Parameters:
+    Parameters
+    ----------
         `settings`: PartitionSettings
             PySyft specific settings, used for partitioning and indexing.
         `store_config`: MongoStoreConfig
             Mongo specific configuration
+
     """
 
     storage_type: type[StorableObjectType] = MongoBsonObject
@@ -173,7 +177,7 @@ class MongoStorePartition(StorePartition):
     # These methods are called from the public thread-safe API, and will hang the process.
 
     def _create_update_index(self) -> Result[Ok, Err]:
-        """Create or update mongo database indexes"""
+        """Create or update mongo database indexes."""
         collection_status = self.collection
         if collection_status.is_err():
             return collection_status
@@ -482,7 +486,7 @@ class MongoStorePartition(StorePartition):
             )
 
     def has_permission(self, permission: ActionObjectPermission) -> bool:
-        """Check if the permission is inside the permission collection"""
+        """Check if the permission is inside the permission collection."""
         collection_permissions_status = self.permissions
         if collection_permissions_status.is_err():
             return False
@@ -637,7 +641,7 @@ class MongoStorePartition(StorePartition):
             self.add_storage_permission(permission)
 
     def has_storage_permission(self, permission: StoragePermission) -> bool:  # type: ignore
-        """Check if the storage_permission is inside the storage_permission collection"""
+        """Check if the storage_permission is inside the storage_permission collection."""
         storage_permissions_or_err = self.storage_permissions
         if storage_permissions_or_err.is_err():
             return storage_permissions_or_err
@@ -808,11 +812,13 @@ class MongoStorePartition(StorePartition):
 
 @serializable(canonical_name="MongoDocumentStore", version=1)
 class MongoDocumentStore(DocumentStore):
-    """Mongo Document Store
+    """Mongo Document Store.
 
-    Parameters:
+    Parameters
+    ----------
         `store_config`: MongoStoreConfig
             Mongo specific configuration, including connection configuration, database name, or client class type.
+
     """
 
     partition_type = MongoStorePartition
@@ -824,10 +830,10 @@ class MongoDocumentStore(DocumentStore):
     version=1,
 )
 class MongoBackingStore(KeyValueBackingStore):
-    """
-    Core logic for the MongoDB key-value store
+    """Core logic for the MongoDB key-value store.
 
-    Parameters:
+    Parameters
+    ----------
         `index_name`: str
             Index name (can be either 'data' or 'permissions')
         `settings`: PartitionSettings
@@ -837,6 +843,7 @@ class MongoBackingStore(KeyValueBackingStore):
          `ddtype`: Type
             Optional and should be None
             Used to make a consistent interface with SQLiteBackingStore
+
     """
 
     def __init__(
@@ -945,8 +952,8 @@ class MongoBackingStore(KeyValueBackingStore):
     def __getitem__(self, key: Any) -> Self:
         try:
             return self._get(key)
-        except KeyError as e:
-            raise e
+        except KeyError:
+            raise
 
     def _len(self) -> int:
         collection_status = self.collection
@@ -1023,18 +1030,15 @@ class MongoBackingStore(KeyValueBackingStore):
         raise NotImplementedError
 
     def update(self, *args: Any, **kwargs: Any) -> None:
-        """
-        Inserts the specified items to the dictionary.
-        """
+        """Inserts the specified items to the dictionary."""
         # 🟡 TODO
         raise NotImplementedError
 
     def __del__(self) -> None:
-        """
-        Close the mongo client connection:
-            - Cleanup client resources and disconnect from MongoDB
-            - End all server sessions created by this client
-            - Close all sockets in the connection pools and stop the monitor threads
+        """Close the mongo client connection:
+        - Cleanup client resources and disconnect from MongoDB
+        - End all server sessions created by this client
+        - Close all sockets in the connection pools and stop the monitor threads.
         """
         self.client.close()
 

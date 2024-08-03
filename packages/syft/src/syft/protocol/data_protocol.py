@@ -1,30 +1,25 @@
 # stdlib
-from collections import defaultdict
-from collections.abc import Iterable
-from collections.abc import MutableMapping
-from collections.abc import MutableSequence
-from functools import cache
 import hashlib
 import json
-from operator import itemgetter
 import os
-from pathlib import Path
 import re
-from types import UnionType
 import typing
-from typing import Any
 import warnings
+from collections import defaultdict
+from collections.abc import Iterable, MutableMapping, MutableSequence
+from functools import cache
+from operator import itemgetter
+from pathlib import Path
+from types import UnionType
+from typing import Any
 
 # third party
 from packaging.version import parse
-from result import OkErr
-from result import Result
+from result import OkErr, Result
 
 # relative
 from .. import __version__
-from ..service.response import SyftError
-from ..service.response import SyftException
-from ..service.response import SyftSuccess
+from ..service.response import SyftError, SyftException, SyftSuccess
 from ..types.dicttuple import DictTuple
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object_registry import SyftObjectRegistry
@@ -349,7 +344,6 @@ with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
         keys = self.protocol_history.keys()
         if "dev" not in keys:
             self.validate_release()
-            print("You can't bump the protocol if there are no staged changes.")
             return SyftError(
                 message="Failed to bump version as there are no staged changes.",
             )
@@ -371,7 +365,6 @@ with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
     @staticmethod
     def freeze_release(protocol_history: dict, latest_protocol: str) -> None:
         """Freezes latest release as a separate release file."""
-
         # Get release history
         release_history = protocol_history[latest_protocol]
 
@@ -386,7 +379,7 @@ with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
         )
 
     def validate_release(self) -> None:
-        """Validate if latest release name is consistent with syft version"""
+        """Validate if latest release name is consistent with syft version."""
         # Read the protocol history
         protocol_history = self.read_json(self.file_path)
         sorted_protocol_versions = sorted(protocol_history.keys(), key=natural_key)
@@ -412,9 +405,6 @@ with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
             return
 
         # Update release name to latest beta, stable or post based on current syft version
-        print(
-            f"Current release {release_name} will be updated to {current_syft_version}",
-        )
 
         # Get latest protocol file path
         latest_protocol_fp: Path = protocol_release_dir() / release_name
@@ -437,8 +427,7 @@ with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
         self.read_history()
 
     def revert_latest_protocol(self) -> Result[SyftSuccess, SyftError]:
-        """Revert latest protocol changes to dev"""
-
+        """Revert latest protocol changes to dev."""
         # Get current protocol history
         protocol_history = self.read_json(self.file_path)
 

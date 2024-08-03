@@ -3,12 +3,9 @@ from typing import Any
 
 # syft absolute
 from syft.serde.serializable import serializable
-from syft.store.document_store import DocumentStore
-from syft.store.document_store import PartitionSettings
-from syft.store.document_store import StoreConfig
+from syft.store.document_store import DocumentStore, PartitionSettings, StoreConfig
 from syft.store.kv_document_store import KeyValueBackingStore
-from syft.types.syft_object import SYFT_OBJECT_VERSION_2
-from syft.types.syft_object import SyftObject
+from syft.types.syft_object import SYFT_OBJECT_VERSION_2, SyftObject
 from syft.types.uid import UID
 
 
@@ -41,10 +38,10 @@ class MockKeyValueBackingStore(dict, KeyValueBackingStore):
         try:
             self._check_if_crashed()
             return super().__getitem__(key)
-        except KeyError as e:
+        except KeyError:
             if self._ddtype:
                 return self._ddtype()
-            raise e
+            raise
 
 
 @serializable()

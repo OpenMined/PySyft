@@ -1,17 +1,20 @@
 # stdlib
 import warnings
+from typing import NoReturn
 
 # third party
 from packaging import version
 
 # relative
-from . import CollectionInvalid
-from . import InvalidName
-from . import OperationFailure
+from . import (
+    CollectionInvalid,
+    InvalidName,
+    OperationFailure,
+    helpers,
+    read_preferences,
+    store,
+)
 from . import codec_options as mongomock_codec_options
-from . import helpers
-from . import read_preferences
-from . import store
 from .collection import Collection
 from .filtering import filter_applies
 
@@ -33,20 +36,18 @@ except ImportError:
 _LIST_COLLECTION_FILTER_ALLOWED_OPERATORS = frozenset(["$regex", "$eq", "$ne"])
 
 
-def _verify_list_collection_supported_op(keys):
+def _verify_list_collection_supported_op(keys) -> None:
     if set(keys) - _LIST_COLLECTION_FILTER_ALLOWED_OPERATORS:
         msg = (
-            "list collection names filter operator {0} is not implemented yet in mongomock "
-            "allowed operators are {1}".format(
-                keys, _LIST_COLLECTION_FILTER_ALLOWED_OPERATORS,
-            )
+            f"list collection names filter operator {keys} is not implemented yet in mongomock "
+            f"allowed operators are {_LIST_COLLECTION_FILTER_ALLOWED_OPERATORS}"
         )
         raise NotImplementedError(
             msg,
         )
 
 
-class Database(object):
+class Database:
     def __init__(
         self,
         client,
@@ -55,7 +56,7 @@ class Database(object):
         read_preference=None,
         codec_options=None,
         read_concern=None,
-    ):
+    ) -> None:
         self.name = name
         self._client = client
         self._collection_accesses = {}
@@ -75,14 +76,14 @@ class Database(object):
 
     def __getattr__(self, attr):
         if attr.startswith("_"):
+            msg = f"{self.__class__.__name__} has no attribute '{attr}'. To access the {attr} collection, use database['{attr}']."
             raise AttributeError(
-                "%s has no attribute '%s'. To access the %s collection, use database['%s']."
-                % (self.__class__.__name__, attr, attr, attr),
+                msg,
             )
         return self[attr]
 
-    def __repr__(self):
-        return "Database({0}, '{1}')".format(self._client, self.name)
+    def __repr__(self) -> str:
+        return f"Database({self._client}, '{self.name}')"
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -123,7 +124,7 @@ class Database(object):
                 return list(self._get_created_collections())
             return self.list_collection_names(session=session)
 
-    def list_collections(self, filter=None, session=None, nameOnly=False):
+    def list_collections(self, filter=None, session=None, nameOnly=False) -> NoReturn:
         msg = (
             "list_collections is a valid method of Database but has not been implemented in "
             "mongomock yet."
@@ -133,7 +134,7 @@ class Database(object):
         )
 
     def list_collection_names(self, filter=None, session=None):
-        """filter: only name field type with eq,ne or regex operator
+        """filter: only name field type with eq,ne or regex operator.
 
         session: not supported
         for supported operator please see _LIST_COLLECTION_FILTER_ALLOWED_OPERATORS
@@ -147,8 +148,8 @@ class Database(object):
         if filter:
             if not filter.get("name"):
                 msg = (
-                    "list collection {0} might be valid but is not "
-                    "implemented yet in mongomock".format(filter)
+                    f"list collection {filter} might be valid but is not "
+                    "implemented yet in mongomock"
                 )
                 raise NotImplementedError(
                     msg,
@@ -208,7 +209,7 @@ class Database(object):
             )
             return collection
 
-    def drop_collection(self, name_or_collection, session=None):
+    def drop_collection(self, name_or_collection, session=None) -> None:
         if session:
             msg = "Mongomock does not handle sessions yet"
             raise NotImplementedError(msg)
@@ -217,7 +218,7 @@ class Database(object):
         else:
             self._store[name_or_collection].drop()
 
-    def _ensure_valid_collection_name(self, name):
+    def _ensure_valid_collection_name(self, name) -> None:
         # These are the same checks that are done in pymongo.
         if not isinstance(name, str):
             msg = "name must be an instance of str"
@@ -238,7 +239,8 @@ class Database(object):
     def create_collection(self, name, **kwargs):
         self._ensure_valid_collection_name(name)
         if name in self.list_collection_names():
-            raise CollectionInvalid("collection %s already exists" % name)
+            msg = f"collection {name} already exists"
+            raise CollectionInvalid(msg)
 
         if kwargs:
             msg = "Special options not supported"
@@ -254,7 +256,7 @@ class Database(object):
         # Reference for server implementation:
         # https://docs.mongodb.com/manual/reference/command/renameCollection/
         if not self._store[name].is_created:
-            msg = 'The collection "{0}" does not exist.'.format(name)
+            msg = f'The collection "{name}" does not exist.'
             raise OperationFailure(
                 msg, 10026,
             )
@@ -262,7 +264,7 @@ class Database(object):
             if dropTarget:
                 self.drop_collection(new_name)
             else:
-                msg = 'The target collection "{0}" already exists'.format(new_name)
+                msg = f'The target collection "{new_name}" already exists'
                 raise OperationFailure(
                     msg, 10027,
                 )
@@ -275,11 +277,15 @@ class Database(object):
             raise NotImplementedError(msg)
 
         if not hasattr(dbref, "collection") or not hasattr(dbref, "id"):
-            raise TypeError("cannot dereference a %s" % type(dbref))
+            msg = f"cannot dereference a {type(dbref)}"
+            raise TypeError(msg)
         if dbref.database is not None and dbref.database != self.name:
-            raise ValueError(
+            msg = (
                 "trying to dereference a DBRef that points to "
-                "another database (%r not %r)" % (dbref.database, self.name),
+                f"another database ({dbref.database!r} not {self.name!r})"
+            )
+            raise ValueError(
+                msg,
             )
         return self[dbref.collection].find_one({"_id": dbref.id})
 

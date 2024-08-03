@@ -1,6 +1,5 @@
 # third party
-from setuptools import find_packages
-from setuptools import setup
+from setuptools import find_packages, setup
 
 __version__ = "0.1.11"
 
@@ -16,7 +15,7 @@ build_packages = [
     "pyinstaller==5.13.0",
 ]
 
-dev_packages = ["pytest"] + build_packages
+dev_packages = ["pytest", *build_packages]
 
 setup(
     name="syftcli",

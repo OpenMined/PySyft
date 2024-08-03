@@ -1,21 +1,16 @@
 # stdlib
-from collections.abc import Callable
-from collections.abc import Iterator
-from datetime import datetime
-from datetime import timedelta
 import mimetypes
-from pathlib import Path
-from queue import Queue
 import sys
 import threading
+from collections.abc import Callable, Iterator
+from datetime import datetime, timedelta
+from pathlib import Path
+from queue import Queue
 from time import sleep
-from typing import Any
-from typing import ClassVar
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, ClassVar
 
 # third party
-from azure.storage.blob import BlobSasPermissions
-from azure.storage.blob import generate_blob_sas
+from azure.storage.blob import BlobSasPermissions, generate_blob_sas
 from botocore.client import ClientError as BotoClientError
 from typing_extensions import Self
 
@@ -25,25 +20,23 @@ from ..client.client import SyftClient
 from ..serde import serialize
 from ..serde.serializable import serializable
 from ..server.credentials import SyftVerifyKey
-from ..service.action.action_object import ActionObject
-from ..service.action.action_object import ActionObjectPointer
-from ..service.action.action_object import BASE_PASSTHROUGH_ATTRS
+from ..service.action.action_object import (
+    BASE_PASSTHROUGH_ATTRS,
+    ActionObject,
+    ActionObjectPointer,
+)
 from ..service.action.action_types import action_types
-from ..service.response import SyftError
-from ..service.response import SyftException
+from ..service.response import SyftError, SyftException
 from ..service.service import from_api_or_context
 from ..types.server_url import ServerURL
-from ..types.transforms import keep
-from ..types.transforms import transform
+from ..types.transforms import keep, transform
 from .datetime import DateTime
-from .syft_object import SYFT_OBJECT_VERSION_1
-from .syft_object import SyftObject
+from .syft_object import SYFT_OBJECT_VERSION_1, SyftObject
 from .uid import UID
 
 if TYPE_CHECKING:
     # relative
-    from ..store.blob_storage import BlobRetrievalByURL
-    from ..store.blob_storage import BlobStorageConnection
+    from ..store.blob_storage import BlobRetrievalByURL, BlobStorageConnection
 
 
 READ_EXPIRATION_TIME = 1800  # seconds
@@ -118,7 +111,8 @@ class BlobFile(SyftObject):
     def _iter_lines(self, chunk_size: int = DEFAULT_CHUNK_SIZE) -> Iterator[bytes]:
         """Synchronous version of the async iter_lines. This implementation
         is also optimized in terms of splitting chunks, making it faster for
-        larger lines"""
+        larger lines.
+        """
         pending = None
         for chunk in self.read(stream=True, chunk_size=chunk_size):
             if b"\n" in chunk:

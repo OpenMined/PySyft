@@ -2,15 +2,15 @@
 from collections.abc import Callable
 from time import time
 
-# third party
-from pydantic import BaseModel
-
 # syft absolute
 import syft as sy
+
+# third party
+from pydantic import BaseModel
 from syft.serde.serializable import serializable
 
 
-def get_fqn_for_class(cls):
+def get_fqn_for_class(cls) -> str:
     return f"{cls.__module__}.{cls.__name__}"
 
 
@@ -27,11 +27,11 @@ class AbstractBase:
     version=1,
 )
 class Base(AbstractBase):
-    """Serialize: uid, value"""
+    """Serialize: uid, value."""
 
     value: int
 
-    def __init__(self, uid: str, value: int):
+    def __init__(self, uid: str, value: int) -> None:
         self.uid = uid
         self.value = value
 
@@ -42,7 +42,7 @@ class Base(AbstractBase):
     version=1,
 )
 class Derived(Base):
-    """Serialize: uid, value, status"""
+    """Serialize: uid, value, status."""
 
     status: int
 
@@ -58,7 +58,7 @@ class Derived(Base):
     version=1,
 )
 class DerivedWithoutAttrs(Base):
-    """Serialize: value, status"""
+    """Serialize: value, status."""
 
     status: int
 
@@ -74,7 +74,7 @@ class DerivedWithoutAttrs(Base):
     version=1,
 )
 class DerivedNoInherit(Base):
-    """Serialize: status"""
+    """Serialize: status."""
 
     status: int
 
@@ -90,11 +90,11 @@ class DerivedNoInherit(Base):
     version=1,
 )
 class BaseAttrsNonInheritable(AbstractBase):
-    """Serialize: uid, value (Derived cannot inherit base attrs)"""
+    """Serialize: uid, value (Derived cannot inherit base attrs)."""
 
     value: int | None
 
-    def __init__(self, uid: str = None, value: int = None):
+    def __init__(self, uid: str | None = None, value: int | None = None) -> None:
         self.uid = uid
         self.value = value
 
@@ -105,11 +105,11 @@ class BaseAttrsNonInheritable(AbstractBase):
     version=1,
 )
 class DerivedWithoutBaseAttrs(BaseAttrsNonInheritable):
-    """Serialize: status (Dervied cannot inherit base attrs)"""
+    """Serialize: status (Dervied cannot inherit base attrs)."""
 
     status: int
 
-    def __init__(self, uid: str, value: int, status: int):
+    def __init__(self, uid: str, value: int, status: int) -> None:
         super().__init__(uid, value)
 
         self.uid = uid
@@ -117,7 +117,7 @@ class DerivedWithoutBaseAttrs(BaseAttrsNonInheritable):
         self.status = status
 
 
-def test_base_attrs():
+def test_base_attrs() -> None:
     data = Base(uid=str(time()), value=2)
 
     ser = sy.serialize(data, to_bytes=True)
@@ -132,7 +132,7 @@ def test_base_attrs():
     ), "Deserialized values do not match"
 
 
-def test_base_non_inheritable_attrs():
+def test_base_non_inheritable_attrs() -> None:
     data = BaseAttrsNonInheritable(uid=str(time()), value=2)
 
     ser = sy.serialize(data, to_bytes=True)
@@ -141,7 +141,7 @@ def test_base_non_inheritable_attrs():
     assert "__syft_serializable__" not in data.__dict__
 
 
-def test_derived():
+def test_derived() -> None:
     data = Derived(uid=str(time()), value=2, status=1)
 
     ser = sy.serialize(data, to_bytes=True)
@@ -157,7 +157,7 @@ def test_derived():
     ), "Deserialized values do not match"
 
 
-def test_derived_without_attrs():
+def test_derived_without_attrs() -> None:
     data = DerivedWithoutAttrs(uid=str(time()), value=2, status=1)
 
     ser = sy.serialize(data, to_bytes=True)
@@ -168,7 +168,7 @@ def test_derived_without_attrs():
     assert "status" in data.__syft_serializable__
 
 
-def test_derived_without_inherit():
+def test_derived_without_inherit() -> None:
     data = DerivedNoInherit(uid=str(time()), value=2, status=1)
 
     ser = sy.serialize(data, to_bytes=True)
@@ -179,7 +179,7 @@ def test_derived_without_inherit():
     assert de.status == data.status
 
 
-def test_derived_without_base_attrs():
+def test_derived_without_base_attrs() -> None:
     data = DerivedWithoutBaseAttrs(uid=str(time()), value=2, status=1)
 
     ser = sy.serialize(data, to_bytes=True)
@@ -200,7 +200,7 @@ def test_derived_without_base_attrs():
     version=1,
 )
 class PydBase(BaseModel):
-    """Serialize: uid, value, flag"""
+    """Serialize: uid, value, flag."""
 
     uid: str | None = None
     value: int | None = None
@@ -212,7 +212,7 @@ class PydBase(BaseModel):
     version=1,
 )
 class PydDerived(PydBase):
-    """Serialize: uid, value, flag, source, target"""
+    """Serialize: uid, value, flag, source, target."""
 
     source: str
     target: str
@@ -224,9 +224,8 @@ class PydDerived(PydBase):
     version=1,
 )
 class PydDerivedWithoutAttr(PydBase):
-    """
-    Serialize: value, flag, source, target
-    `without=` will only work with Optional attributes due to pydantic's validation
+    """Serialize: value, flag, source, target
+    `without=` will only work with Optional attributes due to pydantic's validation.
     """
 
     source: str
@@ -239,9 +238,8 @@ class PydDerivedWithoutAttr(PydBase):
     version=1,
 )
 class PydDerivedWithoutAttrs(PydBase):
-    """
-    Serialize: value, source, target
-    `without=` will only work with Optional attributes due to pydantic's validation
+    """Serialize: value, source, target
+    `without=` will only work with Optional attributes due to pydantic's validation.
     """
 
     source: str
@@ -255,16 +253,14 @@ class PydDerivedWithoutAttrs(PydBase):
     version=1,
 )
 class PydDerivedOnly(PydBase):
-    """
-    Serialize: source, target
-    """
+    """Serialize: source, target."""
 
     source: str
     target: str
-    callback: Callable | None = lambda: None  # noqa: E731
+    callback: Callable | None = lambda: None
 
 
-def test_pydantic():
+def test_pydantic() -> None:
     data = PydBase(uid=str(time()), value=2, flag=True)
 
     ser = sy.serialize(data, to_bytes=True)
@@ -273,7 +269,7 @@ def test_pydantic():
     assert (data.uid, data.value, data.flag) == (de.uid, de.value, de.flag)
 
 
-def test_pydantic_derived():
+def test_pydantic_derived() -> None:
     data = PydDerived(
         uid=str(time()),
         value=2,
@@ -293,7 +289,7 @@ def test_pydantic_derived():
     )
 
 
-def test_pydantic_derived_without_attr():
+def test_pydantic_derived_without_attr() -> None:
     data = PydDerivedWithoutAttr(
         uid=str(time()),
         value=2,
@@ -314,7 +310,7 @@ def test_pydantic_derived_without_attr():
     )
 
 
-def test_pydantic_derived_without_attrs():
+def test_pydantic_derived_without_attrs() -> None:
     data = PydDerivedWithoutAttrs(
         uid=str(time()),
         value=2,
@@ -335,7 +331,7 @@ def test_pydantic_derived_without_attrs():
     )
 
 
-def test_pydantic_derived_only():
+def test_pydantic_derived_only() -> None:
     data = PydDerivedOnly(
         uid=str(time()),
         value=2,

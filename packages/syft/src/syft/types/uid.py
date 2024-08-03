@@ -4,8 +4,8 @@ from __future__ import annotations
 # stdlib
 import hashlib
 import logging
-from typing import Any, TYPE_CHECKING
 import uuid
+from typing import TYPE_CHECKING, Any
 from uuid import UUID as uuid_type
 
 # third party
@@ -15,8 +15,7 @@ from typing_extensions import Self
 from ..serde.serializable import serializable
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-    from collections.abc import Callable
+    from collections.abc import Callable, Sequence
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +45,7 @@ class UID:
     __slots__ = "value"
     value: uuid_type
 
-    def __init__(self, value: Self | uuid_type | str | bytes | None = None):
+    def __init__(self, value: Self | uuid_type | str | bytes | None = None) -> None:
         """Initializes the internal id using the uuid package.
 
         This initializes the object. Normal use for this object is
@@ -85,7 +84,7 @@ class UID:
             return UID(value=uuid.UUID(value))
         except ValueError as e:
             logger.critical(f"Unable to convert {value} to UUID. {e}")
-            raise e
+            raise
 
     @staticmethod
     def with_seed(value: str) -> UID:
@@ -99,7 +98,7 @@ class UID:
         return self.no_dash
 
     def __hash__(self) -> int:
-        """Hashes the UID for use in dictionaries and sets
+        """Hashes the UID for use in dictionaries and sets.
 
         A very common use of UID objects is as a key in a dictionary
         or database. The object must be able to be hashed in order to
@@ -117,11 +116,10 @@ class UID:
             Note that we assume that any collisions will be very rare and
             detected by the ObjectStore class in Syft.
         """
-
         return self.value.int
 
-    def __eq__(self, other: Any) -> bool:
-        """Checks to see if two UIDs are the same using the internal object
+    def __eq__(self, other: object) -> bool:
+        """Checks to see if two UIDs are the same using the internal object.
 
         This checks to see whether this UID is equal to another UID by
         comparing whether they have the same .value objects. These objects
@@ -132,7 +130,6 @@ class UID:
         :return: returns True/False based on whether the objects are the same
         :rtype: bool
         """
-
         try:
             return self.value == other.value
         except Exception:
@@ -157,12 +154,12 @@ class UID:
         return str(self.value).replace("-", "")
 
     def __repr__(self) -> str:
-        """Returns a human-readable version of the ID
+        """Returns a human-readable version of the ID.
 
         Return a human-readable representation of the UID with brackets
         so that it can be easily spotted when nested inside of the human-
-        readable representations of other objects."""
-
+        readable representations of other objects.
+        """
         return f"<{type(self).__name__}: {self.no_dash}>"
 
     def char_emoji(self, hex_chars: str) -> str:
@@ -186,12 +183,12 @@ class UID:
         return f"<UID:{self.string_emoji(string=str(self.value), length=8, chunk=4)}>"
 
     def short(self) -> str:
-        """Returns a SHORT human-readable version of the ID
+        """Returns a SHORT human-readable version of the ID.
 
         Return a SHORT human-readable version of the ID which
         makes it print nicer when embedded (often alongside other
-        UID objects) within other object __repr__ methods."""
-
+        UID objects) within other object __repr__ methods.
+        """
         return str(self.value)[:8]
 
     @property
@@ -223,7 +220,7 @@ class LineageID(UID):
         self,
         value: Self | UID | uuid_type | str | bytes | None = None,
         syft_history_hash: int | None = None,
-    ):
+    ) -> None:
         if isinstance(value, LineageID):
             syft_history_hash = value.syft_history_hash
             value = value.value
@@ -241,7 +238,7 @@ class LineageID(UID):
     def __hash__(self) -> int:
         return hash((self.syft_history_hash, self.value))
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if isinstance(other, LineageID):
             return (
                 self.id == other.id

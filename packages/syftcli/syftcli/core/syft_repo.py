@@ -1,7 +1,7 @@
 # stdlib
+import shutil
 from functools import cache
 from pathlib import Path
-import shutil
 from typing import Any
 
 # third party
@@ -50,13 +50,13 @@ class SyftRepo:
     @staticmethod
     @cache
     def get_manifest(rel_ver: str) -> dict:
-        """
-        Returns the manifest_template.yml for a given release version
+        """Returns the manifest_template.yml for a given release version.
 
         Args:
+        ----
             rel_ver: str - OpenMined/Syft github release version. Must start with "v"
-        """
 
+        """
         results = SyftRepo.get_asset(rel_ver, SyftRepo.Assets.MANIFEST)
         return yaml.safe_load(results.text)
 
