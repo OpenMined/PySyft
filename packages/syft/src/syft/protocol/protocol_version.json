@@ -1,5 +1,11 @@
 {
   "1": {
     "release_name": "0.8.7.json"
+  },
+  "2": {
+    "release_name": "0.8.8.json"
+  },
+  "3": {
+    "release_name": "0.9.0.json"
   }
 }

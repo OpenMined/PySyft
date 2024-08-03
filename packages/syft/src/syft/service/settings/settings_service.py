@@ -20,6 +20,7 @@ from ...util.schema import DS_COMMANDS
 from ...util.schema import GUEST_COMMANDS
 from ..context import AuthedServiceContext
 from ..context import UnauthedServiceContext
+from ..notifier.notifier_enums import EMAIL_TYPES
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -68,7 +69,12 @@ class SettingsService(AbstractService):
         else:
             return SyftError(message=result.err())
 
-    @service_method(path="settings.update", name="update", autosplat=["settings"])
+    @service_method(
+        path="settings.update",
+        name="update",
+        autosplat=["settings"],
+        roles=ADMIN_ROLE_LEVEL,
+    )
     def update(
         self, context: AuthedServiceContext, settings: ServerSettingsUpdate
     ) -> Result[SyftSuccess, SyftError]:
@@ -118,6 +124,23 @@ class SettingsService(AbstractService):
                 new_settings = current_settings[0].model_copy(
                     update=settings.to_dict(exclude_empty=True)
                 )
+                notifier_service = context.server.get_service("notifierservice")
+
+                # If notifications_enabled is present in the update, we need to update the notifier settings
+                if settings.notifications_enabled is True:
+                    if not notifier_service.settings(context):
+                        return SyftError(
+                            message="Create notification settings using enable_notifications from user_service"
+                        )
+                    notifier_service = context.server.get_service("notifierservice")
+                    result = notifier_service.set_notifier_active_to_true(context)
+                elif settings.notifications_enabled is False:
+                    if not notifier_service.settings(context):
+                        return SyftError(
+                            message="Create notification settings using enable_notifications from user_service"
+                        )
+                    notifier_service = context.server.get_service("notifierservice")
+                    result = notifier_service.set_notifier_active_to_false(context)
                 update_result = self.stash.update(context.credentials, new_settings)
                 return update_result
             else:
@@ -216,12 +239,13 @@ class SettingsService(AbstractService):
         message = "enabled" if enable else "disabled"
         return SyftSuccess(message=f"Registration feature successfully {message}")
 
-    @service_method(
-        path="settings.enable_eager_execution",
-        name="enable_eager_execution",
-        roles=ADMIN_ROLE_LEVEL,
-        warning=HighSideCRUDWarning(confirmation=True),
-    )
+    # NOTE: This service is disabled until we bring back Eager Execution
+    # @service_method(
+    #     path="settings.enable_eager_execution",
+    #     name="enable_eager_execution",
+    #     roles=ADMIN_ROLE_LEVEL,
+    #     warning=HighSideCRUDWarning(confirmation=True),
+    # )
     def enable_eager_execution(
         self, context: AuthedServiceContext, enable: bool
     ) -> SyftSuccess | SyftError:
@@ -235,6 +259,13 @@ class SettingsService(AbstractService):
 
         message = "enabled" if enable else "disabled"
         return SyftSuccess(message=f"Eager execution {message}")
+
+    @service_method(path="settings.set_email_rate_limit", name="set_email_rate_limit")
+    def set_email_rate_limit(
+        self, context: AuthedServiceContext, email_type: EMAIL_TYPES, daily_limit: int
+    ) -> SyftSuccess | SyftError:
+        notifier_service = context.server.get_service("notifierservice")
+        return notifier_service.set_email_rate_limit(context, email_type, daily_limit)
 
     @service_method(
         path="settings.allow_association_request_auto_approval",

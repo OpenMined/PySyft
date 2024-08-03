@@ -419,7 +419,6 @@ jobs:
           k3d registry delete k3d-registry.localhost || true
 
   pr-tests-migrations:
-    if: false
     strategy:
       max-parallel: 99
       matrix:
