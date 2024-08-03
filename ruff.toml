@@ -10,16 +10,19 @@ extend-exclude = ["*.gypi"]
 # https://beta.ruff.rs/docs/configuration/#using-rufftoml
 [lint]
 select = [
-    "E",    # pycodestyle
-    "F",    # pyflake
-    "B",    # flake8-bugbear
-    "C4",   # flake8-comprehensions
+    "A",     # flake8-builtins 
+    "E",     # pycodestyle
+    "F",     # pyflake
+    "B",     # flake8-bugbear
+    "C4",    # flake8-comprehensions
     # "PERF", # perflint
-    "UP",   # pyupgrade
+    "R",     # Refactor 
+    "UP",    # pyupgrade
 ]
 ignore = [
     "B904",  # check for raise statements in exception handlers that lack a from clause
     "B905",  # zip() without an explicit strict= parameter
+    "E721",  # Use `is` and `is not` for type comparisons, or `isinstance()` for isinstance checks
 ]
 
 [lint.per-file-ignores]
