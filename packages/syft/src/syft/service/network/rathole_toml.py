@@ -42,7 +42,6 @@ class RatholeClientToml(RatholeBaseToml):
 
     def set_remote_addr(self, remote_host: str) -> None:
         """Add a new remote address to the client toml file."""
-
         toml = self.read()
 
         # Add the new remote address
@@ -55,7 +54,6 @@ class RatholeClientToml(RatholeBaseToml):
 
     def clear_remote_addr(self) -> None:
         """Clear the remote address from the client toml file."""
-
         toml = self.read()
 
         # Clear the remote address
@@ -68,7 +66,6 @@ class RatholeClientToml(RatholeBaseToml):
 
     def add_config(self, config: RatholeConfig) -> None:
         """Add a new config to the toml file."""
-
         toml = self.read()
 
         # Add the new config
@@ -87,7 +84,6 @@ class RatholeClientToml(RatholeBaseToml):
 
     def remove_config(self, uuid: str) -> None:
         """Remove a config from the toml file."""
-
         toml = self.read()
 
         # Remove the config
@@ -103,7 +99,6 @@ class RatholeClientToml(RatholeBaseToml):
 
     def update_config(self, config: RatholeConfig) -> None:
         """Update a config in the toml file."""
-
         toml = self.read()
 
         # Update the config
@@ -122,7 +117,6 @@ class RatholeClientToml(RatholeBaseToml):
 
     def get_config(self, uuid: str) -> RatholeConfig | None:
         """Get a config from the toml file."""
-
         toml = self.read()
 
         # Get the config
@@ -162,7 +156,6 @@ class RatholeServerToml(RatholeBaseToml):
 
     def set_rathole_listener_addr(self, bind_addr: str) -> None:
         """Set the bind address in the server toml file."""
-
         toml = self.read()
 
         # Set the bind address
@@ -172,14 +165,12 @@ class RatholeServerToml(RatholeBaseToml):
 
     def get_rathole_listener_addr(self) -> str:
         """Get the bind address from the server toml file."""
-
         toml = self.read()
 
         return toml["server"]["bind_addr"]
 
     def add_config(self, config: RatholeConfig) -> None:
         """Add a new config to the toml file."""
-
         toml = self.read()
 
         # Add the new config
@@ -198,7 +189,6 @@ class RatholeServerToml(RatholeBaseToml):
 
     def remove_config(self, uuid: str) -> None:
         """Remove a config from the toml file."""
-
         toml = self.read()
 
         # Remove the config
@@ -214,7 +204,6 @@ class RatholeServerToml(RatholeBaseToml):
 
     def update_config(self, config: RatholeConfig) -> None:
         """Update a config in the toml file."""
-
         toml = self.read()
 
         # Update the config

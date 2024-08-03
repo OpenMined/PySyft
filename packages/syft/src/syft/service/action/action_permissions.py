@@ -43,7 +43,7 @@ class ActionObjectPermission:
 
     @classmethod
     def from_permission_string(
-        cls, uid: UID, permission_string: str
+        cls, uid: UID, permission_string: str,
     ) -> "ActionObjectPermission":
         if permission_string.startswith("ALL_"):
             permission = ActionPermission[permission_string]

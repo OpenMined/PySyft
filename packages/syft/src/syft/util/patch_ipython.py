@@ -24,18 +24,13 @@ def _patch_ipython_sanitization() -> None:
     from importlib import resources
 
     # relative
-    from .assets import load_css
-    from .assets import load_js
-    from .notebook_ui.components.sync import ALERT_CSS
-    from .notebook_ui.components.sync import COPY_CSS
-    from .notebook_ui.styles import CSS_CODE
-    from .notebook_ui.styles import FONT_CSS
-    from .notebook_ui.styles import ITABLES_CSS
-    from .notebook_ui.styles import JS_DOWNLOAD_FONTS
+    from .assets import load_css, load_js
+    from .notebook_ui.components.sync import ALERT_CSS, COPY_CSS
+    from .notebook_ui.styles import CSS_CODE, FONT_CSS, ITABLES_CSS, JS_DOWNLOAD_FONTS
 
     tabulator_js = load_js("tabulator.min.js")
     tabulator_js = tabulator_js.replace(
-        "define(t)", "define('tabulator-tables', [], t)"
+        "define(t)", "define('tabulator-tables', [], t)",
     )
 
     SKIP_SANITIZE = [
@@ -96,13 +91,13 @@ def _patch_ipython_sanitization() -> None:
         return None
 
     ip.display_formatter.formatters["text/html"].for_type(
-        SyftObject, display_sanitized_html
+        SyftObject, display_sanitized_html,
     )
     ip.display_formatter.formatters["text/html"].for_type(
-        DictTuple, display_sanitized_html
+        DictTuple, display_sanitized_html,
     )
     ip.display_formatter.formatters["text/markdown"].for_type(
-        SyftObject, display_sanitized_md
+        SyftObject, display_sanitized_md,
     )
 
 
@@ -128,7 +123,7 @@ def _patch_ipython_autocompletion() -> None:
             [
                 ("syft.client.api", "APIModule"),
                 ("syft.client.api", "SyftAPI"),
-            ]
+            ],
         )
         original_can_get_attr = policy.can_get_attr
 
@@ -176,7 +171,7 @@ def _patch_ipython_autocompletion() -> None:
                 return res
 
         ipython.Completer.attr_matches = MethodType(
-            patched_attr_matches, ipython.Completer
+            patched_attr_matches, ipython.Completer,
         )
     except Exception:
         print("Failed to patch syft autocompletion for __syft_dir__")

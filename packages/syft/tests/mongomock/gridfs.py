@@ -1,10 +1,11 @@
 # stdlib
 from unittest import mock
 
+from ..collection import Cursor as MongoMockCursor
+
 # relative
 from . import Collection as MongoMockCollection
 from . import Database as MongoMockDatabase
-from ..collection import Cursor as MongoMockCursor
 
 try:
     # third party
@@ -29,16 +30,16 @@ class _MongoMockGridOutCursor(MongoMockCursor):
     def next(self):
         next_file = super(_MongoMockGridOutCursor, self).next()
         return PyMongoGridOut(
-            self.__root_collection, file_document=next_file, session=self.session
+            self.__root_collection, file_document=next_file, session=self.session,
         )
 
     __next__ = next
 
     def add_option(self, *args, **kwargs):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def remove_option(self, *args, **kwargs):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def _clone_base(self, session):
         return _MongoMockGridOutCursor(self.__root_collection, session=session)
@@ -57,12 +58,11 @@ def enable_gridfs_integration():
     are valid `pymongo.Database/Collection` so we monkey patch those types in the gridfs modules
     (luckily in the modules they are used, they are only used with isinstance).
     """
-
     if not _HAVE_PYMONGO:
         raise NotImplementedError("gridfs mocking requires pymongo to work")
 
     mock.patch("gridfs.Database", (PyMongoDatabase, MongoMockDatabase)).start()
     mock.patch(
-        "gridfs.grid_file.Collection", (PyMongoCollection, MongoMockCollection)
+        "gridfs.grid_file.Collection", (PyMongoCollection, MongoMockCollection),
     ).start()
     mock.patch("gridfs.GridOutCursor", _create_grid_out_cursor).start()

@@ -3,13 +3,10 @@
 
 # stdlib
 import asyncio
+import inspect
 from collections.abc import Callable
 from functools import wraps
-import inspect
-from typing import Any
-from typing import ClassVar
-from typing import TypeVar
-from typing import cast
+from typing import Any, ClassVar, TypeVar, cast
 
 # third party
 from opentelemetry import trace
@@ -53,8 +50,7 @@ def instrument(
     existing_tracer: Tracer | None = None,
     ignore: bool = False,
 ) -> T:
-    """
-    A decorator to instrument a class or function with an OTEL tracing span.
+    """A decorator to instrument a class or function with an OTEL tracing span.
     :param cls: internal, used to specify scope of instrumentation
     :param _func_or_class: The function or span to instrument, this is automatically assigned
     :param span_name: Specify the span name explicitly, rather than use the naming convention.
@@ -82,7 +78,7 @@ def instrument(
                                 record_exception=record_exception,
                                 attributes=attributes,
                                 existing_tracer=existing_tracer,
-                            )
+                            ),
                         ),
                     )
                 else:
@@ -127,7 +123,7 @@ def instrument(
             span.set_attribute(SpanAttributes.CODE_LINENO, func.__code__.co_firstlineno)
 
         def _set_attributes(
-            span: Span, attributes_dict: dict[str, str] | None = None
+            span: Span, attributes_dict: dict[str, str] | None = None,
         ) -> None:
             if attributes_dict is not None:
                 for att in attributes_dict:
@@ -137,7 +133,7 @@ def instrument(
         def wrap_with_span_sync(*args: Any, **kwargs: Any) -> Any:
             name = span_name or TracingDecoratorOptions.naming_scheme(func_or_class)
             with tracer.start_as_current_span(
-                name, record_exception=record_exception
+                name, record_exception=record_exception,
             ) as span:
                 _set_semantic_attributes(span, func_or_class)
                 _set_attributes(span, TracingDecoratorOptions.default_attributes)
@@ -148,7 +144,7 @@ def instrument(
         async def wrap_with_span_async(*args: Any, **kwargs: Any) -> Callable:
             name = span_name or TracingDecoratorOptions.naming_scheme(func_or_class)
             with tracer.start_as_current_span(
-                name, record_exception=record_exception
+                name, record_exception=record_exception,
             ) as span:
                 _set_semantic_attributes(span, func_or_class)
                 _set_attributes(span, TracingDecoratorOptions.default_attributes)

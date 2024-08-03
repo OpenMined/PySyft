@@ -2,9 +2,7 @@
 from string import Template
 
 # third party
-from result import Err
-from result import Ok
-from result import Result
+from result import Err, Ok, Result
 
 # relative
 from ...abstract_server import ServerSideType
@@ -12,25 +10,16 @@ from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...util.assets import load_png_base64
 from ...util.experimental_flags import flags
-from ...util.misc_objs import HTMLObject
-from ...util.misc_objs import MarkdownDescription
+from ...util.misc_objs import HTMLObject, MarkdownDescription
 from ...util.notebook_ui.styles import FONT_CSS
-from ...util.schema import DO_COMMANDS
-from ...util.schema import DS_COMMANDS
-from ...util.schema import GUEST_COMMANDS
-from ..context import AuthedServiceContext
-from ..context import UnauthedServiceContext
+from ...util.schema import DO_COMMANDS, DS_COMMANDS, GUEST_COMMANDS
+from ..context import AuthedServiceContext, UnauthedServiceContext
 from ..notifier.notifier_enums import EMAIL_TYPES
-from ..response import SyftError
-from ..response import SyftSuccess
-from ..service import AbstractService
-from ..service import service_method
-from ..user.user_roles import ADMIN_ROLE_LEVEL
-from ..user.user_roles import GUEST_ROLE_LEVEL
-from ..user.user_roles import ServiceRole
+from ..response import SyftError, SyftSuccess
+from ..service import AbstractService, service_method
+from ..user.user_roles import ADMIN_ROLE_LEVEL, GUEST_ROLE_LEVEL, ServiceRole
 from ..warnings import HighSideCRUDWarning
-from .settings import ServerSettings
-from .settings import ServerSettingsUpdate
+from .settings import ServerSettings, ServerSettingsUpdate
 from .settings_stash import SettingsStash
 
 
@@ -46,7 +35,6 @@ class SettingsService(AbstractService):
     @service_method(path="settings.get", name="get")
     def get(self, context: UnauthedServiceContext) -> Result[Ok, Err]:
         """Get Settings"""
-
         result = self.stash.get_all(context.server.signing_key.verify_key)
         if result.is_ok():
             settings = result.ok()
@@ -60,7 +48,7 @@ class SettingsService(AbstractService):
 
     @service_method(path="settings.set", name="set")
     def set(
-        self, context: AuthedServiceContext, settings: ServerSettings
+        self, context: AuthedServiceContext, settings: ServerSettings,
     ) -> Result[Ok, Err]:
         """Set a new the Server Settings"""
         result = self.stash.set(context.credentials, settings)
@@ -76,7 +64,7 @@ class SettingsService(AbstractService):
         roles=ADMIN_ROLE_LEVEL,
     )
     def update(
-        self, context: AuthedServiceContext, settings: ServerSettingsUpdate
+        self, context: AuthedServiceContext, settings: ServerSettingsUpdate,
     ) -> Result[SyftSuccess, SyftError]:
         res = self._update(context, settings)
         if res.is_ok():
@@ -84,18 +72,18 @@ class SettingsService(AbstractService):
                 message=(
                     "Settings updated successfully. "
                     + "You must call <client>.refresh() to sync your client with the changes."
-                )
+                ),
             )
         else:
             return SyftError(message=res.err())
 
     def _update(
-        self, context: AuthedServiceContext, settings: ServerSettingsUpdate
+        self, context: AuthedServiceContext, settings: ServerSettingsUpdate,
     ) -> Result[Ok, Err]:
-        """
-        Update the Server Settings using the provided values.
+        """Update the Server Settings using the provided values.
 
         Args:
+        ----
             name: Optional[str]
                 Server name
             organization: Optional[str]
@@ -111,18 +99,21 @@ class SettingsService(AbstractService):
             association_request_auto_approval: Optional[bool]
 
         Returns:
+        -------
             Result[SyftSuccess, SyftError]: A result indicating the success or failure of the update operation.
 
         Example:
+        -------
         >>> server_client.update(name='foo', organization='bar', description='baz', signup_enabled=True)
         SyftSuccess: Settings updated successfully.
+
         """
         result = self.stash.get_all(context.credentials)
         if result.is_ok():
             current_settings = result.ok()
             if len(current_settings) > 0:
                 new_settings = current_settings[0].model_copy(
-                    update=settings.to_dict(exclude_empty=True)
+                    update=settings.to_dict(exclude_empty=True),
                 )
                 notifier_service = context.server.get_service("notifierservice")
 
@@ -130,14 +121,14 @@ class SettingsService(AbstractService):
                 if settings.notifications_enabled is True:
                     if not notifier_service.settings(context):
                         return SyftError(
-                            message="Create notification settings using enable_notifications from user_service"
+                            message="Create notification settings using enable_notifications from user_service",
                         )
                     notifier_service = context.server.get_service("notifierservice")
                     result = notifier_service.set_notifier_active_to_true(context)
                 elif settings.notifications_enabled is False:
                     if not notifier_service.settings(context):
                         return SyftError(
-                            message="Create notification settings using enable_notifications from user_service"
+                            message="Create notification settings using enable_notifications from user_service",
                         )
                     notifier_service = context.server.get_service("notifierservice")
                     result = notifier_service.set_notifier_active_to_false(context)
@@ -154,12 +145,12 @@ class SettingsService(AbstractService):
         roles=ADMIN_ROLE_LEVEL,
     )
     def set_server_side_type_dangerous(
-        self, context: AuthedServiceContext, server_side_type: str
+        self, context: AuthedServiceContext, server_side_type: str,
     ) -> Result[SyftSuccess, SyftError]:
         side_type_options = [e.value for e in ServerSideType]
         if server_side_type not in side_type_options:
             return SyftError(
-                message=f"Not a valid server_side_type, please use one of the options from: {side_type_options}"
+                message=f"Not a valid server_side_type, please use one of the options from: {side_type_options}",
             )
 
         result = self.stash.get_all(context.credentials)
@@ -174,7 +165,7 @@ class SettingsService(AbstractService):
                         message=(
                             "Settings updated successfully. "
                             + "You must call <client>.refresh() to sync your client with the changes."
-                        )
+                        ),
                     )
                 else:
                     return SyftError(message=update_result.err())
@@ -225,7 +216,7 @@ class SettingsService(AbstractService):
         warning=HighSideCRUDWarning(confirmation=True),
     )
     def allow_guest_signup(
-        self, context: AuthedServiceContext, enable: bool
+        self, context: AuthedServiceContext, enable: bool,
     ) -> SyftSuccess | SyftError:
         """Enable/Disable Registration for Data Scientist or Guest Users."""
         flags.CAN_REGISTER = enable
@@ -247,7 +238,7 @@ class SettingsService(AbstractService):
     #     warning=HighSideCRUDWarning(confirmation=True),
     # )
     def enable_eager_execution(
-        self, context: AuthedServiceContext, enable: bool
+        self, context: AuthedServiceContext, enable: bool,
     ) -> SyftSuccess | SyftError:
         """Enable/Disable eager execution."""
         settings = ServerSettingsUpdate(eager_execution_enabled=enable)
@@ -262,7 +253,7 @@ class SettingsService(AbstractService):
 
     @service_method(path="settings.set_email_rate_limit", name="set_email_rate_limit")
     def set_email_rate_limit(
-        self, context: AuthedServiceContext, email_type: EMAIL_TYPES, daily_limit: int
+        self, context: AuthedServiceContext, email_type: EMAIL_TYPES, daily_limit: int,
     ) -> SyftSuccess | SyftError:
         notifier_service = context.server.get_service("notifierservice")
         return notifier_service.set_email_rate_limit(context, email_type, daily_limit)
@@ -272,7 +263,7 @@ class SettingsService(AbstractService):
         name="allow_association_request_auto_approval",
     )
     def allow_association_request_auto_approval(
-        self, context: AuthedServiceContext, enable: bool
+        self, context: AuthedServiceContext, enable: bool,
     ) -> SyftSuccess | SyftError:
         new_settings = ServerSettingsUpdate(association_request_auto_approval=enable)
         result = self._update(context, settings=new_settings)
@@ -281,7 +272,7 @@ class SettingsService(AbstractService):
 
         message = "enabled" if enable else "disabled"
         return SyftSuccess(
-            message="Association request auto-approval successfully " + message
+            message="Association request auto-approval successfully " + message,
         )
 
     @service_method(
@@ -296,7 +287,7 @@ class SettingsService(AbstractService):
     ) -> MarkdownDescription | HTMLObject | SyftError:
         if not markdown and not html or markdown and html:
             return SyftError(
-                message="Invalid markdown/html fields. You must set one of them."
+                message="Invalid markdown/html fields. You must set one of them.",
             )
 
         welcome_msg = None
@@ -319,7 +310,7 @@ class SettingsService(AbstractService):
     ) -> SyftSuccess | SyftError:
         if not markdown and not html or markdown and html:
             return SyftError(
-                message="Invalid markdown/html fields. You must set one of them."
+                message="Invalid markdown/html fields. You must set one of them.",
             )
 
         welcome_msg = None

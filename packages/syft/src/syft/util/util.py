@@ -1,47 +1,44 @@
 # stdlib
 import asyncio
-from asyncio.selector_events import BaseSelectorEventLoop
-from collections.abc import Callable
-from collections.abc import Iterator
-from collections.abc import Sequence
-from concurrent.futures import ProcessPoolExecutor
-from concurrent.futures import ThreadPoolExecutor
-from contextlib import contextmanager
-from copy import deepcopy
-from datetime import datetime
 import functools
 import hashlib
-from itertools import repeat
 import json
 import logging
 import multiprocessing
 import multiprocessing as mp
-from multiprocessing import set_start_method
-from multiprocessing.synchronize import Event as EventClass
-from multiprocessing.synchronize import Lock as LockBase
 import operator
 import os
-from pathlib import Path
 import platform
 import random
 import re
 import secrets
-from secrets import randbelow
 import socket
 import sys
 import threading
 import time
 import types
+from asyncio.selector_events import BaseSelectorEventLoop
+from collections.abc import Callable, Iterator, Sequence
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+from contextlib import contextmanager
+from copy import deepcopy
+from datetime import datetime
+from itertools import repeat
+from multiprocessing import set_start_method
+from multiprocessing.synchronize import Event as EventClass
+from multiprocessing.synchronize import Lock as LockBase
+from pathlib import Path
+from secrets import randbelow
 from types import ModuleType
 from typing import Any
 
-# third party
-from IPython.display import display
-from forbiddenfruit import curse
-from nacl.signing import SigningKey
-from nacl.signing import VerifyKey
 import nh3
 import requests
+from forbiddenfruit import curse
+
+# third party
+from IPython.display import display
+from nacl.signing import SigningKey, VerifyKey
 
 # relative
 from ..serde.serialize import _serialize as serialize
@@ -145,13 +142,14 @@ def get_fully_qualified_name(obj: object) -> str:
     using periods.
 
     Args:
+    ----
         obj: the object we want to get the name of
 
     Returns:
+    -------
         the full path and name of the object
 
     """
-
     fqn = obj.__class__.__module__
 
     try:
@@ -165,6 +163,7 @@ def aggressive_set_attr(obj: object, name: str, attr: object) -> None:
     """Different objects prefer different types of monkeypatching - try them all
 
     Args:
+    ----
         obj: object whose attribute has to be set
         name: attribute name
         attr: value given to the attribute
@@ -183,7 +182,6 @@ def key_emoji(key: object) -> str:
             return char_emoji(hex_chars=hex_chars)
     except Exception as e:
         logger.error(f"Fail to get key emoji: {e}")
-        pass
     return "ALL"
 
 
@@ -296,8 +294,7 @@ def print_process(  # type: ignore
 def print_dynamic_log(
     message: str,
 ) -> tuple[EventClass, EventClass]:
-    """
-    Prints a dynamic log message that will change its color (to green or red) when some process is done.
+    """Prints a dynamic log message that will change its color (to green or red) when some process is done.
 
     message: str = Message to be printed.
 
@@ -312,13 +309,13 @@ def print_dynamic_log(
         set_start_method("fork", force=True)
 
     multiprocessing.Process(
-        target=print_process, args=(message, finish, success, lock)
+        target=print_process, args=(message, finish, success, lock),
     ).start()
     return (finish, success)
 
 
 def find_available_port(
-    host: str, port: int | None = None, search: bool = False
+    host: str, port: int | None = None, search: bool = False,
 ) -> int:
     if port is None:
         port = random.randint(1500, 65000)  # nosec
@@ -331,11 +328,10 @@ def find_available_port(
             if result_of_check != 0:
                 port_available = True
                 break
+            elif search:
+                port += 1
             else:
-                if search:
-                    port += 1
-                else:
-                    break
+                break
             sock.close()
 
         except Exception as e:
@@ -357,6 +353,7 @@ def get_random_available_port() -> int:
     Returns
     -------
     int: Available port number.
+
     """
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as soc:
         soc.bind(("localhost", 0))
@@ -380,13 +377,14 @@ def get_subclasses(obj_type: type) -> list[type]:
     hierarchy.
 
     Args:
+    ----
         obj_type: the type we want to look for sub-classes of
 
     Returns:
+    -------
         the list of subclasses of obj_type
 
     """
-
     classes = []
     for sc in obj_type.__subclasses__():
         classes.append(sc)
@@ -401,14 +399,15 @@ def index_modules(a_dict: object, keys: list[str]) -> object:
     See that method for a full description.
 
     Args:
+    ----
         a_dict: a module we're traversing
         keys: the list of string attributes we're using to traverse the module
 
     Returns:
+    -------
         a reference to the final object
 
     """
-
     if len(keys) == 0:
         return a_dict
     return index_modules(a_dict=a_dict.__dict__[keys[0]], keys=keys[1:])
@@ -424,13 +423,14 @@ def index_syft_by_module_name(fully_qualified_name: str) -> object:
     representation of the specific object it is meant to deserialize to.
 
     Args:
+    ----
         fully_qualified_name: the name in str of a module, class, or function
 
     Returns:
+    -------
         a reference to the actual object at that string path
 
     """
-
     # @Tudor this needs fixing during the serde refactor
     # we should probably just support the native type names as lookups for serde
     if fully_qualified_name == "builtins.NoneType":
@@ -454,7 +454,7 @@ def obj2pointer_type(obj: object | None = None, fqn: str | None = None) -> type:
             # sometimes the object doesn't have a __module__ so you need to use the type
             # like: collections.OrderedDict
             logger.debug(
-                f"Unable to get get_fully_qualified_name of {type(obj)} trying type. {e}"
+                f"Unable to get get_fully_qualified_name of {type(obj)} trying type. {e}",
             )
             fqn = get_fully_qualified_name(obj=type(obj))
 
@@ -700,7 +700,7 @@ def inherit_tags(
 
 
 def autocache(
-    url: str, extension: str | None = None, cache: bool = True
+    url: str, extension: str | None = None, cache: bool = True,
 ) -> Path | None:
     try:
         data_path = get_root_data_path()
@@ -732,7 +732,9 @@ def parallel_execution(
     cpu_bound: bool = False,
 ) -> Callable[..., list[Any]]:
     """Wrap a function such that it can be run in parallel at multiple parties.
+
     Args:
+    ----
         fn (Callable): The function to run.
         parties (Union[None, List[Any]]): Clients from syft. If this is set, then the
             function should be run remotely. Defaults to None.
@@ -742,6 +744,7 @@ def parallel_execution(
             it makes sense to use threads since there is no bottleneck on the CPU side
     Returns:
         Callable[..., List[Any]]: A Callable that returns a list of results.
+
     """
 
     @functools.wraps(fn)
@@ -750,11 +753,16 @@ def parallel_execution(
         kwargs: dict[Any, dict[Any, Any]] | None = None,
     ) -> list[Any]:
         """Wrap sanity checks and checks what executor should be used.
+
         Args:
+        ----
             args (List[List[Any]]): Args.
             kwargs (Optional[Dict[Any, Dict[Any, Any]]]): Kwargs. Default to None.
+
         Returns:
+        -------
             List[Any]: Results from the parties
+
         """
         if args is None or len(args) == 0:
             raise Exception("Parallel execution requires more than 0 args")
@@ -786,7 +794,7 @@ def parallel_execution(
         futures = []
 
         with executor(
-            max_workers=nr_parties, initializer=initializer, initargs=(loop,)
+            max_workers=nr_parties, initializer=initializer, initargs=(loop,),
         ) as executor:
             for i in range(nr_parties):
                 _args = args[i]
@@ -913,7 +921,6 @@ def set_klass_module_to_syft(klass: type, module_name: str) -> None:
 
 def get_queue_address(port: int) -> str:
     """Get queue address based on container host name."""
-
     container_host = os.getenv("CONTAINER_HOST", None)
     if container_host == "k8s":
         return f"tcp://backend:{port}"

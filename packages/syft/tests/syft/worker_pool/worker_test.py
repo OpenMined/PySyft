@@ -17,14 +17,13 @@ def get_docker_config():
 
 
 def test_syft_worker(worker: Worker):
-    """
-    Test the functionalities of `SyftWorkerImageService.build`,
+    """Test the functionalities of `SyftWorkerImageService.build`,
     `SyftWorkerPoolService.launch`, and the `SyftWorker` class
     """
     root_client = worker.root_client
     docker_config = get_docker_config()
     submit_result = root_client.api.services.worker_image.submit(
-        worker_config=docker_config
+        worker_config=docker_config,
     )
     assert isinstance(submit_result, SyftSuccess)
 

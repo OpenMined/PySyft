@@ -1,9 +1,9 @@
 # third party
-from pydantic import ValidationError
 import pytest
 
 # syft absolute
 import syft as sy
+from pydantic import ValidationError
 from syft.service.project.project import Project
 
 
@@ -20,7 +20,7 @@ def test_project_creation(worker):
     ds_client = sy.login(server=worker, email="sheldon@caltech.edu", password="bazinga")
 
     new_project = sy.Project(
-        name="My Cool Project", description="My Cool Description", members=[ds_client]
+        name="My Cool Project", description="My Cool Description", members=[ds_client],
     )
 
     project = new_project.send()
@@ -44,7 +44,7 @@ def test_error_data_owner_project_creation(worker):
     )
 
     new_project = sy.Project(
-        name="My Cool Project", description="My Cool Description", members=[root_client]
+        name="My Cool Project", description="My Cool Description", members=[root_client],
     )
 
     project = new_project.send()
@@ -71,11 +71,11 @@ def test_exception_different_email(worker):
     )
 
     ds_sheldon = sy.login(
-        server=worker, email="sheldon@caltech.edu", password="bazinga"
+        server=worker, email="sheldon@caltech.edu", password="bazinga",
     )
 
     ds_leonard = sy.login(
-        server=worker, email="leonard@princeton.edu", password="penny"
+        server=worker, email="leonard@princeton.edu", password="penny",
     )
 
     with pytest.raises(ValidationError):
@@ -97,7 +97,7 @@ def test_project_serde(worker):
     )
 
     new_project = sy.Project(
-        name="My Cool Project", description="My Cool Description", members=[root_client]
+        name="My Cool Project", description="My Cool Description", members=[root_client],
     )
 
     project = new_project.send()

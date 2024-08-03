@@ -1,7 +1,6 @@
 # stdlib
 from datetime import timedelta
-from typing import Any
-from typing import Optional
+from typing import Any, Optional
 
 # third party
 from pydantic import Field
@@ -11,16 +10,13 @@ from ...abstract_server import ServerSideType
 from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject
 from ...types.syncable_object import SyncableSyftObject
-from ...types.uid import LineageID
-from ...types.uid import UID
+from ...types.uid import UID, LineageID
 from ...util import options
 from ...util.colors import SURFACE
 from ...util.notebook_ui.components.sync import SyncTableObject
-from ...util.notebook_ui.styles import FONT_CSS
-from ...util.notebook_ui.styles import ITABLES_CSS
+from ...util.notebook_ui.styles import FONT_CSS, ITABLES_CSS
 from ..context import AuthedServiceContext
 
 
@@ -70,7 +66,7 @@ class SyncStateRow(SyftObject):
         if self.last_sync_date is not None:
             last_sync_date = self.last_sync_date
             last_sync_delta = timedelta(
-                seconds=DateTime.now().utc_timestamp - last_sync_date.utc_timestamp
+                seconds=DateTime.now().utc_timestamp - last_sync_date.utc_timestamp,
             )
             last_sync_delta_str = td_format(last_sync_delta)
             last_sync_html = (
@@ -152,7 +148,7 @@ class SyncState(SyftObject):
             syft_client_verify_key=self.syft_client_verify_key,
         )
         self._previous_state_diff = ServerDiff.from_sync_state(
-            previous_state, self, _include_server_status=False, direction=None
+            previous_state, self, _include_server_status=False, direction=None,
         )
 
     def get_previous_state_diff(self) -> Any:
@@ -182,7 +178,7 @@ class SyncState(SyftObject):
         return diff.status
 
     def add_objects(
-        self, objects: list[SyncableSyftObject], context: AuthedServiceContext
+        self, objects: list[SyncableSyftObject], context: AuthedServiceContext,
     ) -> None:
         for obj in objects:
             if isinstance(obj.id, LineageID):
@@ -251,7 +247,7 @@ class SyncState(SyftObject):
             previous_state = self.previous_state_link.resolve
             delta = timedelta(
                 seconds=self.created_at.utc_timestamp
-                - previous_state.created_at.utc_timestamp
+                - previous_state.created_at.utc_timestamp,
             )
             val = f"{td_format(delta)} ago"
             date_html = prop_template.format("last sync", val)

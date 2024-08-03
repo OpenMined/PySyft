@@ -4,19 +4,19 @@ from enum import Enum
 from typing import cast
 
 # relative
-from ...client.api import APIRegistry
-from ...client.api import SyftAPI
+from ...client.api import APIRegistry, SyftAPI
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
-from ...types.transforms import TransformContext
-from ...types.transforms import add_credentials_for_key
-from ...types.transforms import add_server_uid_for_key
-from ...types.transforms import generate_id
-from ...types.transforms import transform
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject
+from ...types.transforms import (
+    TransformContext,
+    add_credentials_for_key,
+    add_server_uid_for_key,
+    generate_id,
+    transform,
+)
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
@@ -110,7 +110,7 @@ class Notification(SyftObject):
         api: SyftAPI = cast(
             SyftAPI,
             APIRegistry.api_for(
-                self.server_uid, user_verify_key=self.syft_client_verify_key
+                self.server_uid, user_verify_key=self.syft_client_verify_key,
             ),
         )
         return api.services.notifications.mark_as_read(uid=self.id)
@@ -119,7 +119,7 @@ class Notification(SyftObject):
         api: SyftAPI = cast(
             SyftAPI,
             APIRegistry.api_for(
-                self.server_uid, user_verify_key=self.syft_client_verify_key
+                self.server_uid, user_verify_key=self.syft_client_verify_key,
             ),
         )
         return api.services.notifications.mark_as_unread(uid=self.id)

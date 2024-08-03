@@ -6,24 +6,20 @@ import warnings
 from packaging import version
 
 # relative
-from . import ConfigurationError
+from . import ConfigurationError, helpers, read_preferences
 from . import codec_options as mongomock_codec_options
-from . import helpers
-from . import read_preferences
 from .database import Database
 from .store import ServerStore
 
 try:
     # third party
     from pymongo import ReadPreference
-    from pymongo.uri_parser import parse_uri
-    from pymongo.uri_parser import split_hosts
+    from pymongo.uri_parser import parse_uri, split_hosts
 
     _READ_PREFERENCE_PRIMARY = ReadPreference.PRIMARY
 except ImportError:
     # relative
-    from .helpers import parse_uri
-    from .helpers import split_hosts
+    from .helpers import parse_uri, split_hosts
 
     _READ_PREFERENCE_PRIMARY = read_preferences.PRIMARY
 
@@ -33,7 +29,7 @@ def _convert_version_to_list(version_str):
     return pieces + [0] * (4 - len(pieces))
 
 
-class MongoClient(object):
+class MongoClient:
     HOST = "localhost"
     PORT = 27017
     _CONNECTION_ID = itertools.count()
@@ -69,7 +65,7 @@ class MongoClient(object):
         self._document_class = document_class
         if read_preference is not None:
             read_preferences.ensure_read_preference_type(
-                "read_preference", read_preference
+                "read_preference", read_preference,
             )
         self._read_preference = read_preference or _READ_PREFERENCE_PRIMARY
 
@@ -101,14 +97,14 @@ class MongoClient(object):
         self.close()
 
     def __repr__(self):
-        return "mongomock.MongoClient('{0}', {1})".format(self.host, self.port)
+        return f"mongomock.MongoClient('{self.host}', {self.port})"
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             return self.address == other.address
         return NotImplemented
 
-    if helpers.PYMONGO_VERSION >= version.parse("3.12"):
+    if version.parse("3.12") <= helpers.PYMONGO_VERSION:
 
         def __hash__(self):
             return hash(self.address)
@@ -147,11 +143,11 @@ class MongoClient(object):
             "ok": 1,
         }
 
-    if helpers.PYMONGO_VERSION < version.parse("4.0"):
+    if version.parse("4.0") > helpers.PYMONGO_VERSION:
 
         def database_names(self):
             warnings.warn(
-                "database_names is deprecated. Use list_database_names instead."
+                "database_names is deprecated. Use list_database_names instead.",
             )
             return self.list_database_names()
 

@@ -1,6 +1,6 @@
 # stdlib
-from collections import OrderedDict
 import sys
+from collections import OrderedDict
 
 # third party
 import numpy as np
@@ -21,7 +21,7 @@ def test_local_execution(worker):
                 name="local_test",
                 data=np.array([1, 2, 3]),
                 mock=np.array([1, 1, 1]),
-            )
+            ),
         ],
     )
     root_datasite_client.upload_dataset(dataset)

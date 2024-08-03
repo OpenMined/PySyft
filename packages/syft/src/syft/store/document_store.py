@@ -1,47 +1,48 @@
 # future
 from __future__ import annotations
 
-# stdlib
-from collections.abc import Callable
 import types
 import typing
+
+# stdlib
+from collections.abc import Callable
 from typing import Any
 
 # third party
-from pydantic import BaseModel
-from pydantic import Field
-from result import Err
-from result import Ok
-from result import Result
+from pydantic import BaseModel, Field
+from result import Err, Ok, Result
 from typeguard import check_type
 
 # relative
 from ..serde.serializable import serializable
-from ..server.credentials import SyftSigningKey
-from ..server.credentials import SyftVerifyKey
-from ..service.action.action_permissions import ActionObjectPermission
-from ..service.action.action_permissions import StoragePermission
+from ..server.credentials import SyftSigningKey, SyftVerifyKey
+from ..service.action.action_permissions import (
+    ActionObjectPermission,
+    StoragePermission,
+)
 from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
 from ..types.base import SyftBaseModel
-from ..types.syft_object import BaseDateTime
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
-from ..types.syft_object import SyftBaseObject
-from ..types.syft_object import SyftObject
+from ..types.syft_object import (
+    SYFT_OBJECT_VERSION_1,
+    BaseDateTime,
+    SyftBaseObject,
+    SyftObject,
+)
 from ..types.uid import UID
 from ..util.telemetry import instrument
-from .locks import LockingConfig
-from .locks import NoLockingConfig
-from .locks import SyftLock
+from .locks import LockingConfig, NoLockingConfig, SyftLock
 
 
 @serializable(canonical_name="BasePartitionSettings", version=1)
 class BasePartitionSettings(SyftBaseModel):
     """Basic Partition Settings
 
-    Parameters:
+    Parameters
+    ----------
         name: str
             Identifier to be used as prefix by stores and for partitioning
+
     """
 
     name: str
@@ -60,7 +61,6 @@ def is_generic_alias(t: type) -> bool:
 class StoreClientConfig(BaseModel):
     """Base Client specific configuration"""
 
-    pass
 
 
 @serializable(canonical_name="PartitionKey", version=1)
@@ -68,7 +68,7 @@ class PartitionKey(BaseModel):
     key: str
     type_: type | object
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         return (
             type(other) == type(self)
             and self.key == other.key
@@ -87,7 +87,7 @@ class PartitionKey(BaseModel):
                     obj = obj()
 
             if not isinstance(obj, list) and isinstance(
-                obj, typing.get_args(self.type_)
+                obj, typing.get_args(self.type_),
             ):
                 # still not a list but the right type
                 obj = [obj]
@@ -131,7 +131,7 @@ class PartitionKeys(BaseModel):
 class QueryKey(PartitionKey):
     value: Any = None
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         return (
             type(other) == type(self)
             and self.key == other.key
@@ -165,7 +165,7 @@ class QueryKey(PartitionKey):
 
             if pk_value and not isinstance(pk_value, pk_type):
                 raise Exception(
-                    f"PartitionKey {pk_value} of type {type(pk_value)} must be {pk_type}."
+                    f"PartitionKey {pk_value} of type {type(pk_value)} must be {pk_type}.",
                 )
         return QueryKey(key=pk_key, type_=pk_type, value=pk_value)
 
@@ -219,11 +219,10 @@ class QueryKeys(SyftBaseModel):
                 pk_value = pk_value()
             if partition_key.type_list:
                 pk_value = partition_key.extract_list(obj)
-            else:
-                if pk_value and not isinstance(pk_value, pk_type):
-                    raise Exception(
-                        f"PartitionKey {pk_value} of type {type(pk_value)} must be {pk_type}."
-                    )
+            elif pk_value and not isinstance(pk_value, pk_type):
+                raise Exception(
+                    f"PartitionKey {pk_value} of type {type(pk_value)} must be {pk_type}.",
+                )
             qk = QueryKey(key=pk_key, type_=pk_type, value=pk_value)
             qks.append(qk)
         return QueryKeys(qks=qks)
@@ -236,7 +235,7 @@ class QueryKeys(SyftBaseModel):
             pk_type = partition_key.type_
             if not isinstance(pk_value, pk_type):
                 raise Exception(
-                    f"PartitionKey {pk_value} of type {type(pk_value)} must be {pk_type}."
+                    f"PartitionKey {pk_value} of type {type(pk_value)} must be {pk_type}.",
                 )
             qk = QueryKey(key=pk_key, type_=pk_type, value=pk_value)
             qks.append(qk)
@@ -301,11 +300,13 @@ class PartitionSettings(BasePartitionSettings):
 class StorePartition:
     """Base StorePartition
 
-    Parameters:
+    Parameters
+    ----------
         settings: PartitionSettings
             PySyft specific settings
         store_config: StoreConfig
             Backend specific configuration
+
     """
 
     def __init__(
@@ -326,7 +327,7 @@ class StorePartition:
         res = self.init_store()
         if res.is_err():
             raise RuntimeError(
-                f"Something went wrong initializing the store: {res.err()}"
+                f"Something went wrong initializing the store: {res.err()}",
             )
 
         store_config.locking_config.lock_name = f"StorePartition-{settings.name}"
@@ -358,7 +359,7 @@ class StorePartition:
         locked = self.lock.acquire(blocking=True)
         if not locked:
             return Err(
-                f"Failed to acquire lock for the operation {self.lock.lock_name} ({self.lock._lock})"
+                f"Failed to acquire lock for the operation {self.lock.lock_name} ({self.lock._lock})",
             )
 
         try:
@@ -447,14 +448,14 @@ class StorePartition:
         order_by: PartitionKey | None = None,
     ) -> Result[list[SyftObject], str]:
         return self._thread_safe_cbk(
-            self._get_all_from_store, credentials, qks, order_by
+            self._get_all_from_store, credentials, qks, order_by,
         )
 
     def delete(
-        self, credentials: SyftVerifyKey, qk: QueryKey, has_permission: bool = False
+        self, credentials: SyftVerifyKey, qk: QueryKey, has_permission: bool = False,
     ) -> Result[SyftSuccess, Err]:
         return self._thread_safe_cbk(
-            self._delete, credentials, qk, has_permission=has_permission
+            self._delete, credentials, qk, has_permission=has_permission,
         )
 
     def all(
@@ -472,7 +473,7 @@ class StorePartition:
         has_permission: bool | None = False,
     ) -> Result[bool, str]:
         return self._thread_safe_cbk(
-            self._migrate_data, to_klass, context, has_permission
+            self._migrate_data, to_klass, context, has_permission,
         )
 
     # Potentially thread-unsafe methods.
@@ -510,7 +511,7 @@ class StorePartition:
         raise NotImplementedError
 
     def _delete(
-        self, credentials: SyftVerifyKey, qk: QueryKey, has_permission: bool = False
+        self, credentials: SyftVerifyKey, qk: QueryKey, has_permission: bool = False,
     ) -> Result[SyftSuccess, Err]:
         raise NotImplementedError
 
@@ -572,9 +573,11 @@ class StorePartition:
 class DocumentStore:
     """Base Document Store
 
-    Parameters:
+    Parameters
+    ----------
         store_config: StoreConfig
             Store specific configuration.
+
     """
 
     partitions: dict[str, StorePartition]
@@ -594,7 +597,7 @@ class DocumentStore:
         self.root_verify_key = root_verify_key
 
     def __has_admin_permissions(
-        self, settings: PartitionSettings
+        self, settings: PartitionSettings,
     ) -> Callable[[SyftVerifyKey], bool]:
         # relative
         from ..service.user.user import User
@@ -725,7 +728,7 @@ class BaseStash:
                 searchable_keys.append(qk)
             else:
                 return Err(
-                    f"{qk} not in {type(self.partition)} unique or searchable keys"
+                    f"{qk} not in {type(self.partition)} unique or searchable keys",
                 )
 
         index_qks = QueryKeys(qks=unique_keys)
@@ -757,7 +760,7 @@ class BaseStash:
         order_by: PartitionKey | None = None,
     ) -> Result[BaseStash.object_type | None, str]:
         return self.query_all(
-            credentials=credentials, qks=qks, order_by=order_by
+            credentials=credentials, qks=qks, order_by=order_by,
         ).and_then(first_or_none)
 
     def query_one_kwargs(
@@ -768,17 +771,17 @@ class BaseStash:
         return self.query_all_kwargs(credentials, **kwargs).and_then(first_or_none)
 
     def find_all(
-        self, credentials: SyftVerifyKey, **kwargs: dict[str, Any]
+        self, credentials: SyftVerifyKey, **kwargs: dict[str, Any],
     ) -> Result[list[BaseStash.object_type], str]:
         return self.query_all_kwargs(credentials=credentials, **kwargs)
 
     def find_one(
-        self, credentials: SyftVerifyKey, **kwargs: dict[str, Any]
+        self, credentials: SyftVerifyKey, **kwargs: dict[str, Any],
     ) -> Result[BaseStash.object_type | None, str]:
         return self.query_one_kwargs(credentials=credentials, **kwargs)
 
     def find_and_delete(
-        self, credentials: SyftVerifyKey, **kwargs: dict[str, Any]
+        self, credentials: SyftVerifyKey, **kwargs: dict[str, Any],
     ) -> Result[SyftSuccess, Err]:
         obj = self.query_one_kwargs(credentials=credentials, **kwargs)
         if obj.is_err():
@@ -792,10 +795,10 @@ class BaseStash:
         return self.delete(credentials=credentials, qk=qk)
 
     def delete(
-        self, credentials: SyftVerifyKey, qk: QueryKey, has_permission: bool = False
+        self, credentials: SyftVerifyKey, qk: QueryKey, has_permission: bool = False,
     ) -> Result[SyftSuccess, Err]:
         return self.partition.delete(
-            credentials=credentials, qk=qk, has_permission=has_permission
+            credentials=credentials, qk=qk, has_permission=has_permission,
         )
 
     def update(
@@ -807,12 +810,12 @@ class BaseStash:
         obj.updated_date = BaseDateTime.now()
         qk = self.partition.store_query_key(obj)
         res = self.partition.update(
-            credentials=credentials, qk=qk, obj=obj, has_permission=has_permission
+            credentials=credentials, qk=qk, obj=obj, has_permission=has_permission,
         )
         return res
 
     def delete_by_uid(
-        self, credentials: SyftVerifyKey, uid: UID
+        self, credentials: SyftVerifyKey, uid: UID,
     ) -> Result[SyftSuccess, str]:
         qk = UIDPartitionKey.with_obj(uid)
         result = self.delete(credentials=credentials, qk=qk)
@@ -821,7 +824,7 @@ class BaseStash:
         return result
 
     def get_by_uid(
-        self, credentials: SyftVerifyKey, uid: UID
+        self, credentials: SyftVerifyKey, uid: UID,
     ) -> Result[BaseStash.object_type | None, str]:
         res = self.partition.get(credentials=credentials, uid=uid)
 
@@ -840,7 +843,8 @@ class BaseUIDStoreStash(BaseStash):
 class StoreConfig(SyftBaseObject):
     """Base Store configuration
 
-    Parameters:
+    Parameters
+    ----------
         store_type: Type
             Document Store type
         client_config: Optional[StoreClientConfig]
@@ -850,6 +854,7 @@ class StoreConfig(SyftBaseObject):
                 * NoLockingConfig: no locking, ideal for single-thread stores.
                 * ThreadingLockingConfig: threading-based locking, ideal for same-process in-memory stores.
             Defaults to NoLockingConfig.
+
     """
 
     __canonical_name__ = "StoreConfig"

@@ -1,22 +1,19 @@
 # stdlib
+import logging
+import textwrap
 from collections.abc import Callable
 from datetime import datetime
 from enum import Enum
-import logging
-import textwrap
 from typing import Any
 
-# third party
-from IPython.display import display
 import itables
 import markdown
 import pandas as pd
-from pydantic import ConfigDict
-from pydantic import field_validator
-from pydantic import model_validator
-from result import Err
-from result import Ok
-from result import Result
+
+# third party
+from IPython.display import display
+from pydantic import ConfigDict, field_validator, model_validator
+from result import Err, Ok, Result
 from typing_extensions import Self
 
 # relative
@@ -25,33 +22,26 @@ from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
-from ...types.syft_object import PartialSyftObject
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
-from ...types.transforms import TransformContext
-from ...types.transforms import generate_id
-from ...types.transforms import make_set_default
-from ...types.transforms import transform
-from ...types.transforms import validate_url
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, PartialSyftObject, SyftObject
+from ...types.transforms import (
+    TransformContext,
+    generate_id,
+    make_set_default,
+    transform,
+    validate_url,
+)
 from ...types.uid import UID
 from ...util import options
-from ...util.colors import ON_SURFACE_HIGHEST
-from ...util.colors import SURFACE
-from ...util.colors import SURFACE_SURFACE
+from ...util.colors import ON_SURFACE_HIGHEST, SURFACE, SURFACE_SURFACE
 from ...util.markdown import as_markdown_python_code
 from ...util.misc_objs import MarkdownDescription
 from ...util.notebook_ui.icons import Icon
-from ...util.notebook_ui.styles import FONT_CSS
-from ...util.notebook_ui.styles import ITABLES_CSS
+from ...util.notebook_ui.styles import FONT_CSS, ITABLES_CSS
 from ..action.action_data_empty import ActionDataEmpty
 from ..action.action_object import ActionObject
-from ..data_subject.data_subject import DataSubject
-from ..data_subject.data_subject import DataSubjectCreate
+from ..data_subject.data_subject import DataSubject, DataSubjectCreate
 from ..data_subject.data_subject_service import DataSubjectService
-from ..response import SyftError
-from ..response import SyftException
-from ..response import SyftSuccess
-from ..response import SyftWarning
+from ..response import SyftError, SyftException, SyftSuccess, SyftWarning
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
 logger = logging.getLogger(__name__)
@@ -151,18 +141,18 @@ class Asset(SyftObject):
             private_data_obj = private_data_res.ok_value
             if isinstance(private_data_obj, ActionObject):
                 data_table_line = itables.to_html_datatable(
-                    df=self.data.syft_action_data, css=itables_css
+                    df=self.data.syft_action_data, css=itables_css,
                 )
             elif isinstance(private_data_obj, pd.DataFrame):
                 data_table_line = itables.to_html_datatable(
-                    df=private_data_obj, css=itables_css
+                    df=private_data_obj, css=itables_css,
                 )
             else:
                 data_table_line = private_data_res.ok_value
 
         if isinstance(self.mock, ActionObject):
             mock_table_line = itables.to_html_datatable(
-                df=self.mock.syft_action_data, css=itables_css
+                df=self.mock.syft_action_data, css=itables_css,
             )
         elif isinstance(self.mock, pd.DataFrame):
             mock_table_line = itables.to_html_datatable(df=self.mock, css=itables_css)
@@ -286,12 +276,13 @@ class Asset(SyftObject):
         )
 
     def _private_data(self) -> Result[Any, str]:
-        """
-        Retrieves the private data associated with this asset.
+        """Retrieves the private data associated with this asset.
 
-        Returns:
+        Returns
+        -------
             Result[Any, str]: A Result object containing the private data if the user has permission
             otherwise an Err object with the message "You do not have permission to access private data."
+
         """
         api = APIRegistry.api_for(
             server_uid=self.server_uid,
@@ -373,11 +364,11 @@ class CreateAsset(SyftObject):
 
     def contains_empty(self) -> bool:
         if isinstance(self.mock, ActionObject) and isinstance(
-            self.mock.syft_action_data_cache, ActionDataEmpty
+            self.mock.syft_action_data_cache, ActionDataEmpty,
         ):
             return True
         if isinstance(self.data, ActionObject) and isinstance(
-            self.data.syft_action_data_cache, ActionDataEmpty
+            self.data.syft_action_data_cache, ActionDataEmpty,
         ):
             return True
         return False
@@ -396,16 +387,16 @@ class CreateAsset(SyftObject):
         try:
             _role_str = role.value if isinstance(role, Enum) else role
             contributor = Contributor(
-                name=name, role=_role_str, email=email, phone=phone, note=note
+                name=name, role=_role_str, email=email, phone=phone, note=note,
             )
             if contributor in self.contributors:
                 return SyftError(
-                    message=f"Contributor with email: '{email}' already exists in '{self.name}' Asset."
+                    message=f"Contributor with email: '{email}' already exists in '{self.name}' Asset.",
                 )
             self.contributors.add(contributor)
 
             return SyftSuccess(
-                message=f"Contributor '{name}' added to '{self.name}' Asset."
+                message=f"Contributor '{name}' added to '{self.name}' Asset.",
             )
         except Exception as e:
             return SyftError(message=f"Failed to add contributor. Error: {e}")
@@ -440,7 +431,7 @@ class CreateAsset(SyftObject):
     def check(self) -> SyftSuccess | SyftError:
         if not check_mock(self.data, self.mock):
             return SyftError(
-                message=f"set_obj type {type(self.data)} must match set_mock type {type(self.mock)}"
+                message=f"set_obj type {type(self.data)} must match set_mock type {type(self.mock)}",
             )
         # if not _is_action_data_empty(self.mock):
         #     data_shape = get_shape_or_len(self.data)
@@ -580,7 +571,7 @@ class Dataset(SyftObject):
         for asset in self.asset_list:
             if asset.description is not None:
                 description_text = textwrap.shorten(
-                    asset.description.text, width=100, placeholder="..."
+                    asset.description.text, width=100, placeholder="...",
                 )
                 _repr_str += f"\t{asset.name}: {description_text}\n\n"
             else:
@@ -601,7 +592,7 @@ class Dataset(SyftObject):
         client = SyftClientSessionCache.get_client_for_server_uid(self.server_uid)
         if client is None:
             return SyftError(
-                message=f"No clients for {self.server_uid} in memory. Please login with sy.login"
+                message=f"No clients for {self.server_uid} in memory. Please login with sy.login",
             )
         return client
 
@@ -613,7 +604,7 @@ _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE: str = "".join(
         "You can create an asset without a mock with `sy.Asset(..., mock=sy.ActionObject.empty())` or\n"
         "set the mock of an existing asset to be empty with `asset.no_mock()` or ",
         "`asset.mock = sy.ActionObject.empty()`.",
-    ]
+    ],
 )
 
 
@@ -627,8 +618,8 @@ def _check_asset_must_contain_mock(asset_list: list[CreateAsset]) -> None:
                     *[f"{asset}\n" for asset in assets_without_mock],
                     "\n",
                     _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE,
-                ]
-            )
+                ],
+            ),
         )
 
 
@@ -660,7 +651,7 @@ class CreateDataset(Dataset):
     @field_validator("asset_list")
     @classmethod
     def __assets_must_contain_mock(
-        cls, asset_list: list[CreateAsset]
+        cls, asset_list: list[CreateAsset],
     ) -> list[CreateAsset]:
         _check_asset_must_contain_mock(asset_list)
         return asset_list
@@ -695,21 +686,21 @@ class CreateDataset(Dataset):
         try:
             _role_str = role.value if isinstance(role, Enum) else role
             contributor = Contributor(
-                name=name, role=_role_str, email=email, phone=phone, note=note
+                name=name, role=_role_str, email=email, phone=phone, note=note,
             )
             if contributor in self.contributors:
                 return SyftError(
-                    message=f"Contributor with email: '{email}' already exists in '{self.name}' Dataset."
+                    message=f"Contributor with email: '{email}' already exists in '{self.name}' Dataset.",
                 )
             self.contributors.add(contributor)
             return SyftSuccess(
-                message=f"Contributor '{name}' added to '{self.name}' Dataset."
+                message=f"Contributor '{name}' added to '{self.name}' Dataset.",
             )
         except Exception as e:
             return SyftError(message=f"Failed to add contributor. Error: {e}")
 
     def add_asset(
-        self, asset: CreateAsset, force_replace: bool = False
+        self, asset: CreateAsset, force_replace: bool = False,
     ) -> SyftSuccess | SyftError:
         if asset.mock is None:
             raise ValueError(_ASSET_WITH_NONE_MOCK_ERROR_MESSAGE)
@@ -719,18 +710,18 @@ class CreateDataset(Dataset):
                 if not force_replace:
                     return SyftError(
                         message=f"""Asset "{asset.name}" already exists in '{self.name}' Dataset."""
-                        """ Use add_asset(asset, force_replace=True) to replace."""
+                        """ Use add_asset(asset, force_replace=True) to replace.""",
                     )
                 else:
                     self.asset_list[i] = asset
                     return SyftSuccess(
-                        message=f"Asset {asset.name} has been successfully replaced."
+                        message=f"Asset {asset.name} has been successfully replaced.",
                     )
 
         self.asset_list.append(asset)
 
         return SyftSuccess(
-            message=f"Asset '{asset.name}' added to '{self.name}' Dataset."
+            message=f"Asset '{asset.name}' added to '{self.name}' Dataset.",
         )
 
     def replace_asset(self, asset: CreateAsset) -> SyftSuccess | SyftError:
@@ -747,7 +738,7 @@ class CreateDataset(Dataset):
             return SyftError(message=f"No asset exists with name: {name}")
         self.asset_list.remove(asset_to_remove)
         return SyftSuccess(
-            message=f"Asset '{self.name}' removed from '{self.name}' Dataset."
+            message=f"Asset '{self.name}' removed from '{self.name}' Dataset.",
         )
 
     def check(self) -> Result[SyftSuccess, list[SyftError]]:
@@ -791,7 +782,7 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
         # TODO, upload to blob storage here
         if context.server is None:
             raise ValueError(
-                "f{context}'s server is None, please log in. No trasformation happened"
+                "f{context}'s server is None, please log in. No trasformation happened",
             )
         action_service = context.server.get_service("actionservice")
         result = action_service._set(
@@ -823,7 +814,7 @@ def set_data_subjects(context: TransformContext) -> TransformContext | SyftError
         raise ValueError(f"{context}'s output is None. No transformation happened")
     if context.server is None:
         return SyftError(
-            "f{context}'s server is None, please log in. No trasformation happened"
+            "f{context}'s server is None, please log in. No trasformation happened",
         )
     data_subjects = context.output["data_subjects"]
     get_data_subject = context.server.get_service_method(DataSubjectService.get_by_name)

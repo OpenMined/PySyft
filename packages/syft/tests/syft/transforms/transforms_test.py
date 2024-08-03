@@ -1,6 +1,6 @@
 # stdlib
-from collections.abc import Callable
 import inspect
+from collections.abc import Callable
 
 # third party
 import pytest
@@ -9,8 +9,7 @@ import pytest
 from syft.types import transforms
 from syft.types.syft_object import SyftBaseObject
 from syft.types.syft_object_registry import SyftObjectRegistry
-from syft.types.transforms import TransformContext
-from syft.types.transforms import validate_klass_and_version
+from syft.types.transforms import TransformContext, validate_klass_and_version
 
 
 class MockObjectFromSyftBaseObj(SyftBaseObject):
@@ -69,7 +68,7 @@ def test_validate_klass_and_version(
             ),
         )
         result = validate_klass_and_version(
-            klass_from, klass_to, version_from, version_to
+            klass_from, klass_to, version_from, version_to,
         )
 
         assert result == expected_result
@@ -167,7 +166,7 @@ def test_transform_method(monkeypatch):
     assert mock_syft_transform_registry[mapping_key]() == mock_method()
 
     def mock_generate_transform_wrapper(
-        klass_from: type, klass_to: type, transforms: list[Callable]
+        klass_from: type, klass_to: type, transforms: list[Callable],
     ):
         return mock_wrapper
 

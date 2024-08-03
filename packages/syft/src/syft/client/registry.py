@@ -1,11 +1,12 @@
 # future
 from __future__ import annotations
 
-# stdlib
-from concurrent import futures
 import json
 import logging
 import os
+
+# stdlib
+from concurrent import futures
 from typing import Any
 
 # third party
@@ -14,8 +15,7 @@ import requests
 
 # relative
 from ..service.metadata.server_metadata import ServerMetadataJSON
-from ..service.network.server_peer import ServerPeer
-from ..service.network.server_peer import ServerPeerConnectionStatus
+from ..service.network.server_peer import ServerPeer, ServerPeerConnectionStatus
 from ..service.response import SyftException
 from ..types.server_url import ServerURL
 from ..util.constants import DEFAULT_TIMEOUT
@@ -40,11 +40,11 @@ class NetworkRegistry:
         try:
             network_json = self.load_network_registry_json()
             self.all_networks = _get_all_networks(
-                network_json=network_json, version="2.0.0"
+                network_json=network_json, version="2.0.0",
             )
         except Exception as e:
             logger.warning(
-                f"Failed to get Network Registry, go checkout: {NETWORK_REGISTRY_REPO}. Exception: {e}"
+                f"Failed to get Network Registry, go checkout: {NETWORK_REGISTRY_REPO}. Exception: {e}",
             )
 
     @staticmethod
@@ -65,7 +65,7 @@ class NetworkRegistry:
 
         except Exception as e:
             logger.warning(
-                f"Failed to get Network Registry from {NETWORK_REGISTRY_REPO}. Exception: {e}"
+                f"Failed to get Network Registry from {NETWORK_REGISTRY_REPO}. Exception: {e}",
             )
             return {}
 
@@ -91,7 +91,7 @@ class NetworkRegistry:
                     online = False
 
             if online:
-                version = network.get("version", None)
+                version = network.get("version")
                 # Check if syft version was described in NetworkRegistry
                 # If it's unknown, try to update it to an available version.
                 if not version or version == "unknown":
@@ -112,7 +112,7 @@ class NetworkRegistry:
         with futures.ThreadPoolExecutor(max_workers=20) as executor:
             # map
             _online_networks = list(
-                executor.map(lambda network: check_network(network), networks)
+                executor.map(lambda network: check_network(network), networks),
             )
 
         return [network for network in _online_networks if network is not None]
@@ -125,9 +125,9 @@ class NetworkRegistry:
         total_df = pd.DataFrame(
             [
                 [
-                    f"{len(on)} / {len(self.all_networks)} (online networks / all networks)"
+                    f"{len(on)} / {len(self.all_networks)} (online networks / all networks)",
                 ]
-                + [""] * (len(df.columns) - 1)
+                + [""] * (len(df.columns) - 1),
             ],
             columns=df.columns,
             index=["Total"],
@@ -143,9 +143,9 @@ class NetworkRegistry:
         total_df = pd.DataFrame(
             [
                 [
-                    f"{len(on)} / {len(self.all_networks)} (online networks / all networks)"
+                    f"{len(on)} / {len(self.all_networks)} (online networks / all networks)",
                 ]
-                + [""] * (len(df.columns) - 1)
+                + [""] * (len(df.columns) - 1),
             ],
             columns=df.columns,
             index=["Total"],
@@ -189,12 +189,12 @@ class DatasiteRegistry:
         try:
             network_json = NetworkRegistry.load_network_registry_json()
             self.all_networks = _get_all_networks(
-                network_json=network_json, version="2.0.0"
+                network_json=network_json, version="2.0.0",
             )
             self._get_all_datasites()
         except Exception as e:
             logger.warning(
-                f"Failed to get Network Registry, go checkout: {NETWORK_REGISTRY_REPO}. {e}"
+                f"Failed to get Network Registry, go checkout: {NETWORK_REGISTRY_REPO}. {e}",
             )
 
     def _get_all_datasites(self) -> None:
@@ -226,7 +226,7 @@ class DatasiteRegistry:
                     online = False
 
             if online:
-                version = network.get("version", None)
+                version = network.get("version")
                 # Check if syft version was described in NetworkRegistry
                 # If it's unknown, try to update it to an available version.
                 if not version or version == "unknown":
@@ -248,7 +248,7 @@ class DatasiteRegistry:
         with futures.ThreadPoolExecutor(max_workers=20) as executor:
             # map
             _online_networks = list(
-                executor.map(lambda network: check_network(network), networks)
+                executor.map(lambda network: check_network(network), networks),
             )
 
         return [network for network in _online_networks if network is not None]
@@ -305,9 +305,9 @@ class DatasiteRegistry:
         total_df = pd.DataFrame(
             [
                 [
-                    f"{len(on)} / {len(self.all_datasites)} (online datasites / all datasites)"
+                    f"{len(on)} / {len(self.all_datasites)} (online datasites / all datasites)",
                 ]
-                + [""] * (len(df.columns) - 1)
+                + [""] * (len(df.columns) - 1),
             ],
             columns=df.columns,
             index=["Total"],
@@ -323,9 +323,9 @@ class DatasiteRegistry:
         total_df = pd.DataFrame(
             [
                 [
-                    f"{len(on)} / {len(self.all_datasites)} (online datasites / all datasites)"
+                    f"{len(on)} / {len(self.all_datasites)} (online datasites / all datasites)",
                 ]
-                + [""] * (len(df.columns) - 1)
+                + [""] * (len(df.columns) - 1),
             ],
             columns=df.columns,
             index=["Total"],
@@ -367,7 +367,7 @@ class EnclaveRegistry:
             self.all_enclaves = enclaves_json["2.0.0"]["enclaves"]
         except Exception as e:
             logger.warning(
-                f"Failed to get Enclave Registry, go checkout: {ENCLAVE_REGISTRY_REPO}. {e}"
+                f"Failed to get Enclave Registry, go checkout: {ENCLAVE_REGISTRY_REPO}. {e}",
             )
 
     @property
@@ -383,7 +383,7 @@ class EnclaveRegistry:
                 online = False
 
             if online:
-                version = enclave.get("version", None)
+                version = enclave.get("version")
                 # Check if syft version was described in EnclaveRegistry
                 # If it's unknown, try to update it to an available version.
                 if not version or version == "unknown":
@@ -404,7 +404,7 @@ class EnclaveRegistry:
         with futures.ThreadPoolExecutor(max_workers=20) as executor:
             # map
             _online_enclaves = list(
-                executor.map(lambda enclave: check_enclave(enclave), enclaves)
+                executor.map(lambda enclave: check_enclave(enclave), enclaves),
             )
 
         online_enclaves = [each for each in _online_enclaves if each is not None]

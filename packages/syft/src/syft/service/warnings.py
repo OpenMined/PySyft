@@ -1,5 +1,4 @@
 # stdlib
-from typing import Any
 from typing import cast
 
 # third party
@@ -8,9 +7,7 @@ from rich.prompt import Confirm
 from typing_extensions import Self
 
 # relative
-from ..abstract_server import AbstractServer
-from ..abstract_server import ServerSideType
-from ..abstract_server import ServerType
+from ..abstract_server import AbstractServer, ServerSideType, ServerType
 from ..serde.serializable import serializable
 from ..server.credentials import SyftCredentials
 from ..types.base import SyftBaseModel
@@ -32,7 +29,7 @@ class APIEndpointWarning(SyftBaseModel):
     message: str | None = None
     enabled: bool = True
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if isinstance(other, APIEndpointWarning):
             return self.message == other.message and self._bool == other._bool
         return self._bool == other

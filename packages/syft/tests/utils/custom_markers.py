@@ -1,6 +1,6 @@
 # stdlib
-from functools import partial
 import sys
+from functools import partial
 
 # third party
 import pytest

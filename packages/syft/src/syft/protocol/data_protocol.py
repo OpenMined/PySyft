@@ -1,30 +1,25 @@
 # stdlib
-from collections import defaultdict
-from collections.abc import Iterable
-from collections.abc import MutableMapping
-from collections.abc import MutableSequence
-from functools import cache
 import hashlib
 import json
-from operator import itemgetter
 import os
-from pathlib import Path
 import re
-from types import UnionType
 import typing
-from typing import Any
 import warnings
+from collections import defaultdict
+from collections.abc import Iterable, MutableMapping, MutableSequence
+from functools import cache
+from operator import itemgetter
+from pathlib import Path
+from types import UnionType
+from typing import Any
 
 # third party
 from packaging.version import parse
-from result import OkErr
-from result import Result
+from result import OkErr, Result
 
 # relative
 from .. import __version__
-from ..service.response import SyftError
-from ..service.response import SyftException
-from ..service.response import SyftSuccess
+from ..service.response import SyftError, SyftException, SyftSuccess
 from ..types.dicttuple import DictTuple
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object_registry import SyftObjectRegistry
@@ -118,7 +113,7 @@ class DataProtocol:
         field_data = {
             field: handle_annotation_repr_(field_info.rebuild_annotation())
             for field, field_info in sorted(
-                klass.model_fields.items(), key=itemgetter(0)
+                klass.model_fields.items(), key=itemgetter(0),
             )
         }
         obj_meta_info = {
@@ -156,7 +151,7 @@ class DataProtocol:
             for file_path in protocol_release_dir().iterdir():
                 for version in self.read_json(file_path):
                     # Skip adding file if the version is not part of the history
-                    if version not in history.keys():
+                    if version not in history:
                         continue
                     history[version] = {"release_name": file_path.name}
         self.file_path.write_text(json.dumps(history, indent=2) + "\n")
@@ -189,14 +184,14 @@ class DataProtocol:
                         or hash_str in state_version_hashes
                     ):
                         raise Exception(
-                            f"Can't add {object_metadata} already in state {versions}"
+                            f"Can't add {object_metadata} already in state {versions}",
                         )
                     if action == "remove" and (
                         str(version) not in state_versions.keys()
                         and hash_str not in state_version_hashes
                     ):
                         raise Exception(
-                            f"Can't remove {object_metadata} missing from state {versions} for object {canonical_name}."
+                            f"Can't remove {object_metadata} missing from state {versions} for object {canonical_name}.",
                         )
                     if action == "add":
                         state_dict[canonical_name][str(version)] = (
@@ -231,7 +226,7 @@ class DataProtocol:
             if issubclass(cls, SyftBaseObject):
                 canonical_name = cls.__canonical_name__
                 if canonical_name in IGNORE_TYPES or canonical_name.startswith(
-                    "MockSyftObject_"
+                    "MockSyftObject_",
                 ):
                     continue
 
@@ -325,7 +320,7 @@ with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
 
             # Sort the version dict
             object_versions[canonical_name] = sort_dict_naturally(
-                object_versions.get(canonical_name, {})
+                object_versions.get(canonical_name, {}),
             )
 
         current_history["dev"]["object_versions"] = object_versions
@@ -341,7 +336,7 @@ with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
     def bump_protocol_version(self) -> Result[SyftSuccess, SyftError]:
         if len(self.diff):
             raise Exception(
-                "You can't bump the protocol version with unstaged changes."
+                "You can't bump the protocol version with unstaged changes.",
             )
 
         keys = self.protocol_history.keys()
@@ -349,7 +344,7 @@ with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
             self.validate_release()
             print("You can't bump the protocol if there are no staged changes.")
             return SyftError(
-                message="Failed to bump version as there are no staged changes."
+                message="Failed to bump version as there are no staged changes.",
             )
 
         highest_protocol = 0
@@ -369,7 +364,6 @@ with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
     @staticmethod
     def freeze_release(protocol_history: dict, latest_protocol: str) -> None:
         """Freezes latest release as a separate release file."""
-
         # Get release history
         release_history = protocol_history[latest_protocol]
 
@@ -380,7 +374,7 @@ with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
 
         # Save the new released version
         release_file.write_text(
-            json.dumps({latest_protocol: release_history}, indent=2)
+            json.dumps({latest_protocol: release_history}, indent=2),
         )
 
     def validate_release(self) -> None:
@@ -411,7 +405,7 @@ with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
 
         # Update release name to latest beta, stable or post based on current syft version
         print(
-            f"Current release {release_name} will be updated to {current_syft_version}"
+            f"Current release {release_name} will be updated to {current_syft_version}",
         )
 
         # Get latest protocol file path
@@ -436,7 +430,6 @@ with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
 
     def revert_latest_protocol(self) -> Result[SyftSuccess, SyftError]:
         """Revert latest protocol changes to dev"""
-
         # Get current protocol history
         protocol_history = self.read_json(self.file_path)
 

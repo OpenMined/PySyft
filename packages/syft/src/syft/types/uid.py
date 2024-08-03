@@ -1,13 +1,13 @@
 # future
 from __future__ import annotations
 
-# stdlib
-from collections.abc import Callable
-from collections.abc import Sequence
 import hashlib
 import logging
-from typing import Any
 import uuid
+
+# stdlib
+from collections.abc import Callable, Sequence
+from typing import Any
 from uuid import UUID as uuid_type
 
 # third party
@@ -38,7 +38,7 @@ class UID:
     """
 
     __serde_overrides__: dict[str, Sequence[Callable]] = {
-        "value": (lambda x: x.bytes, lambda x: uuid.UUID(bytes=bytes(x)))
+        "value": (lambda x: x.bytes, lambda x: uuid.UUID(bytes=bytes(x))),
     }
 
     __slots__ = "value"
@@ -115,10 +115,9 @@ class UID:
             Note that we assume that any collisions will be very rare and
             detected by the ObjectStore class in Syft.
         """
-
         return self.value.int
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         """Checks to see if two UIDs are the same using the internal object
 
         This checks to see whether this UID is equal to another UID by
@@ -130,7 +129,6 @@ class UID:
         :return: returns True/False based on whether the objects are the same
         :rtype: bool
         """
-
         try:
             return self.value == other.value
         except Exception:
@@ -159,8 +157,8 @@ class UID:
 
         Return a human-readable representation of the UID with brackets
         so that it can be easily spotted when nested inside of the human-
-        readable representations of other objects."""
-
+        readable representations of other objects.
+        """
         return f"<{type(self).__name__}: {self.no_dash}>"
 
     def char_emoji(self, hex_chars: str) -> str:
@@ -188,8 +186,8 @@ class UID:
 
         Return a SHORT human-readable version of the ID which
         makes it print nicer when embedded (often alongside other
-        UID objects) within other object __repr__ methods."""
-
+        UID objects) within other object __repr__ methods.
+        """
         return str(self.value)[:8]
 
     @property
@@ -207,7 +205,7 @@ class UID:
         else:
             # Ask @Madhava , can we check for  invalid types , even though type annotation is specified.
             return ValueError(  # type: ignore
-                f"Incorrect value,type:{value,type(value)} for conversion to UID, expected str | uuid.UUID | Self"
+                f"Incorrect value,type:{value,type(value)} for conversion to UID, expected str | uuid.UUID | Self",
             )
 
 
@@ -239,7 +237,7 @@ class LineageID(UID):
     def __hash__(self) -> int:
         return hash((self.syft_history_hash, self.value))
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if isinstance(other, LineageID):
             return (
                 self.id == other.id

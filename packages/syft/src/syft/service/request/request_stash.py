@@ -1,23 +1,24 @@
 # stdlib
 
 # third party
-from result import Ok
-from result import Result
+from result import Ok, Result
 
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import BaseUIDStoreStash
-from ...store.document_store import PartitionKey
-from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
+from ...store.document_store import (
+    BaseUIDStoreStash,
+    PartitionKey,
+    PartitionSettings,
+    QueryKeys,
+)
 from ...types.datetime import DateTime
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from .request import Request
 
 RequestingUserVerifyKeyPartitionKey = PartitionKey(
-    key="requesting_user_verify_key", type_=SyftVerifyKey
+    key="requesting_user_verify_key", type_=SyftVerifyKey,
 )
 
 OrderByRequestTimeStampPartitionKey = PartitionKey(key="request_time", type_=DateTime)
@@ -28,7 +29,7 @@ OrderByRequestTimeStampPartitionKey = PartitionKey(key="request_time", type_=Dat
 class RequestStash(BaseUIDStoreStash):
     object_type = Request
     settings: PartitionSettings = PartitionSettings(
-        name=Request.__canonical_name__, object_type=Request
+        name=Request.__canonical_name__, object_type=Request,
     )
 
     def get_all_for_verify_key(
@@ -46,7 +47,7 @@ class RequestStash(BaseUIDStoreStash):
         )
 
     def get_by_usercode_id(
-        self, credentials: SyftVerifyKey, user_code_id: UID
+        self, credentials: SyftVerifyKey, user_code_id: UID,
     ) -> Result[list[Request], str]:
         query = self.get_all(credentials=credentials)
         if query.is_err():

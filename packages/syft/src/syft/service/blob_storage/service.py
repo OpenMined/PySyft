@@ -11,25 +11,21 @@ from ...service.action.action_object import ActionObject
 from ...store.blob_storage import BlobRetrieval
 from ...store.blob_storage.on_disk import OnDiskBlobDeposit
 from ...store.blob_storage.seaweedfs import SeaweedFSBlobDeposit
-from ...store.document_store import DocumentStore
-from ...store.document_store import UIDPartitionKey
-from ...types.blob_storage import AzureSecureFilePathLocation
-from ...types.blob_storage import BlobFileType
-from ...types.blob_storage import BlobStorageEntry
-from ...types.blob_storage import BlobStorageMetadata
-from ...types.blob_storage import CreateBlobStorageEntry
-from ...types.blob_storage import SeaweedSecureFilePathLocation
+from ...store.document_store import DocumentStore, UIDPartitionKey
+from ...types.blob_storage import (
+    AzureSecureFilePathLocation,
+    BlobFileType,
+    BlobStorageEntry,
+    BlobStorageMetadata,
+    CreateBlobStorageEntry,
+    SeaweedSecureFilePathLocation,
+)
 from ...types.uid import UID
 from ..context import AuthedServiceContext
-from ..response import SyftError
-from ..response import SyftSuccess
-from ..service import AbstractService
-from ..service import TYPE_TO_SERVICE
-from ..service import service_method
-from ..user.user_roles import ADMIN_ROLE_LEVEL
-from ..user.user_roles import GUEST_ROLE_LEVEL
-from .remote_profile import AzureRemoteProfile
-from .remote_profile import RemoteProfileStash
+from ..response import SyftError, SyftSuccess
+from ..service import TYPE_TO_SERVICE, AbstractService, service_method
+from ..user.user_roles import ADMIN_ROLE_LEVEL, GUEST_ROLE_LEVEL
+from .remote_profile import AzureRemoteProfile, RemoteProfileStash
 from .stash import BlobStorageStash
 
 BlobDepositType = OnDiskBlobDeposit | SeaweedFSBlobDeposit
@@ -48,7 +44,7 @@ class BlobStorageService(AbstractService):
 
     @service_method(path="blob_storage.get_all", name="get_all")
     def get_all_blob_storage_entries(
-        self, context: AuthedServiceContext
+        self, context: AuthedServiceContext,
     ) -> list[BlobStorageEntry] | SyftError:
         result = self.stash.get_all(context.credentials)
         if result.is_ok():
@@ -99,7 +95,7 @@ class BlobStorageService(AbstractService):
         print(init_request.content)
         # TODO check return code
         res = context.server.blob_storage_client.connect().client.list_objects(
-            Bucket=bucket_name
+            Bucket=bucket_name,
         )
         # stdlib
         objects = res["Contents"]
@@ -135,10 +131,10 @@ class BlobStorageService(AbstractService):
         return SyftSuccess(message="Mounting Azure Successful!")
 
     @service_method(
-        path="blob_storage.get_files_from_bucket", name="get_files_from_bucket"
+        path="blob_storage.get_files_from_bucket", name="get_files_from_bucket",
     )
     def get_files_from_bucket(
-        self, context: AuthedServiceContext, bucket_name: str
+        self, context: AuthedServiceContext, bucket_name: str,
     ) -> list | SyftError:
         result = self.stash.find_all(context.credentials, bucket_name=bucket_name)
         if result.is_err():
@@ -168,7 +164,7 @@ class BlobStorageService(AbstractService):
 
     @service_method(path="blob_storage.get_by_uid", name="get_by_uid")
     def get_blob_storage_entry_by_uid(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID,
     ) -> BlobStorageEntry | SyftError:
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
@@ -177,7 +173,7 @@ class BlobStorageService(AbstractService):
 
     @service_method(path="blob_storage.get_metadata", name="get_metadata")
     def get_blob_storage_metadata_by_uid(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID,
     ) -> BlobStorageEntry | SyftError:
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
@@ -192,19 +188,19 @@ class BlobStorageService(AbstractService):
         roles=GUEST_ROLE_LEVEL,
     )
     def read(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID,
     ) -> BlobRetrieval | SyftError:
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
             obj: BlobStorageEntry | None = result.ok()
             if obj is None:
                 return SyftError(
-                    message=f"No blob storage entry exists for uid: {uid}, or you have no permissions to read it"
+                    message=f"No blob storage entry exists for uid: {uid}, or you have no permissions to read it",
                 )
 
             with context.server.blob_storage_client.connect() as conn:
                 res: BlobRetrieval = conn.read(
-                    obj.location, obj.type_, bucket_name=obj.bucket_name
+                    obj.location, obj.type_, bucket_name=obj.bucket_name,
                 )
                 res.syft_blob_storage_entry_id = uid
                 res.file_size = obj.file_size
@@ -217,12 +213,12 @@ class BlobStorageService(AbstractService):
         obj: CreateBlobStorageEntry,
         uploaded_by: SyftVerifyKey | None = None,
     ) -> BlobDepositType | SyftError:
-        """
-        Allocate a secure location for the blob storage entry.
+        """Allocate a secure location for the blob storage entry.
 
         If uploaded_by is None, the credentials of the context will be used.
 
         Args:
+        ----
             context (AuthedServiceContext): context
             obj (CreateBlobStorageEntry): create blob parameters
             uploaded_by (SyftVerifyKey | None, optional): Uploader credentials.
@@ -230,7 +226,9 @@ class BlobStorageService(AbstractService):
                 Defaults to None.
 
         Returns:
+        -------
             BlobDepositType | SyftError: Blob deposit
+
         """
         upload_credentials = uploaded_by or context.credentials
 
@@ -264,7 +262,7 @@ class BlobStorageService(AbstractService):
         roles=GUEST_ROLE_LEVEL,
     )
     def allocate(
-        self, context: AuthedServiceContext, obj: CreateBlobStorageEntry
+        self, context: AuthedServiceContext, obj: CreateBlobStorageEntry,
     ) -> BlobDepositType | SyftError:
         return self._allocate(context, obj)
 
@@ -287,7 +285,7 @@ class BlobStorageService(AbstractService):
         roles=GUEST_ROLE_LEVEL,
     )
     def write_to_disk(
-        self, context: AuthedServiceContext, uid: UID, data: bytes
+        self, context: AuthedServiceContext, uid: UID, data: bytes,
     ) -> SyftSuccess | SyftError:
         result = self.stash.get_by_uid(
             credentials=context.credentials,
@@ -300,7 +298,7 @@ class BlobStorageService(AbstractService):
 
         if obj is None:
             return SyftError(
-                message=f"No blob storage entry exists for uid: {uid}, or you have no permissions to read it"
+                message=f"No blob storage entry exists for uid: {uid}, or you have no permissions to read it",
             )
 
         try:
@@ -332,7 +330,7 @@ class BlobStorageService(AbstractService):
 
         if obj is None:
             return SyftError(
-                message=f"No blob storage entry exists for uid: {uid}, or you have no permissions to read it"
+                message=f"No blob storage entry exists for uid: {uid}, or you have no permissions to read it",
             )
 
         obj.no_lines = no_lines
@@ -350,7 +348,7 @@ class BlobStorageService(AbstractService):
 
     @service_method(path="blob_storage.delete", name="delete")
     def delete(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID,
     ) -> SyftSuccess | SyftError:
         get_res = self.stash.get_by_uid(context.credentials, uid=uid)
         if get_res.is_err():
@@ -360,7 +358,7 @@ class BlobStorageService(AbstractService):
         if obj is None:
             return SyftError(
                 message=f"No blob storage entry exists for uid: {uid}, "
-                f"or you have no permissions to read it"
+                f"or you have no permissions to read it",
             )
 
         try:
@@ -370,17 +368,17 @@ class BlobStorageService(AbstractService):
                     return file_unlinked_result
         except Exception as e:
             return SyftError(
-                message=f"Failed to delete blob file with id '{uid}'. Error: {e}"
+                message=f"Failed to delete blob file with id '{uid}'. Error: {e}",
             )
 
         blob_entry_delete_res = self.stash.delete(
-            context.credentials, UIDPartitionKey.with_obj(uid), has_permission=True
+            context.credentials, UIDPartitionKey.with_obj(uid), has_permission=True,
         )
         if blob_entry_delete_res.is_err():
             return SyftError(message=blob_entry_delete_res.err())
 
         return SyftSuccess(
-            message=f"Blob storage entry with id '{uid}' deleted successfully."
+            message=f"Blob storage entry with id '{uid}' deleted successfully.",
         )
 
 

@@ -3,8 +3,7 @@ from typing import Any
 
 # relative
 from ...serde.serializable import serializable
-from ...store.document_store import SYFT_OBJECT_VERSION_1
-from ...store.document_store import SyftObject
+from ...store.document_store import SYFT_OBJECT_VERSION_1, SyftObject
 from ...types.datetime import DateTime
 
 

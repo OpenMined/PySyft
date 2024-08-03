@@ -67,7 +67,7 @@ def test_plan(worker):
 
     # guest cannot access result
     assert not isinstance(
-        guest_client.api.services.action.get(res_ptr.id), ActionObject
+        guest_client.api.services.action.get(res_ptr.id), ActionObject,
     )
 
     # root can access result
@@ -81,7 +81,7 @@ def test_plan(worker):
 
     # root approves result
     root_datasite_client.api.services.request[-1].approve_with_client(
-        root_datasite_client
+        root_datasite_client,
     )
 
     assert res_ptr.get_from(guest_client) == 729
@@ -130,7 +130,7 @@ def test_plan_with_object_instantiation(worker, guest_client):
     plan_ptr = my_plan.send(guest_client)
 
     input_obj = TwinObject(
-        private_obj=np.array([1, 2, 3, 4, 5, 6]), mock_obj=np.array([1, 1, 1, 1, 1, 1])
+        private_obj=np.array([1, 2, 3, 4, 5, 6]), mock_obj=np.array([1, 1, 1, 1, 1, 1]),
     )
 
     _id = input_obj.send(root_datasite_client).id
@@ -140,7 +140,7 @@ def test_plan_with_object_instantiation(worker, guest_client):
 
     assert all(
         root_datasite_client.api.services.action.get(res_ptr.id).syft_action_data
-        == np.array([2, 3, 4, 5, 6, 7])
+        == np.array([2, 3, 4, 5, 6, 7]),
     )
 
 
@@ -226,7 +226,7 @@ def test_eager_method(worker, guest_client):
     # check result
     assert all(
         root_datasite_client.api.services.action.get(flat_pointer.id)
-        == np.array([1, 2, 3, 4, 5, 6])
+        == np.array([1, 2, 3, 4, 5, 6]),
     )
 
 
@@ -250,5 +250,5 @@ def test_eager_dunder_method(worker, guest_client):
     # check result
     assert all(
         root_datasite_client.api.services.action.get(first_row_pointer.id)
-        == np.array([1, 2, 3])
+        == np.array([1, 2, 3]),
     )

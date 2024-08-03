@@ -1,22 +1,20 @@
 # stdlib
 from secrets import token_hex
 
-# third party
-from faker import Faker
 import pytest
 
 # syft absolute
 import syft as sy
-from syft import SyftError
-from syft import SyftSuccess
+
+# third party
+from faker import Faker
+from syft import SyftError, SyftSuccess
 from syft.client.api import SyftAPICall
 from syft.client.datasite_client import DatasiteClient
 from syft.server.server import get_default_root_email
 from syft.server.worker import Worker
 from syft.service.context import AuthedServiceContext
-from syft.service.user.user import ServiceRole
-from syft.service.user.user import UserCreate
-from syft.service.user.user import UserView
+from syft.service.user.user import ServiceRole, UserCreate, UserView
 
 GUEST_ROLES = [ServiceRole.GUEST]
 DS_ROLES = [ServiceRole.GUEST, ServiceRole.DATA_SCIENTIST]
@@ -31,7 +29,7 @@ ADMIN_ROLES = [
 
 def get_users(worker):
     return worker.get_service("UserService").get_all(
-        AuthedServiceContext(server=worker, credentials=worker.signing_key.verify_key)
+        AuthedServiceContext(server=worker, credentials=worker.signing_key.verify_key),
     )
 
 
@@ -42,7 +40,7 @@ def get_mock_client(root_client, role) -> DatasiteClient:
     name = Faker().name()
     password = "pw"
     user = root_client.register(
-        name=name, email=mail, password=password, password_verify=password
+        name=name, email=mail, password=password, password_verify=password,
     )
     assert user
     user_id = [u for u in get_users(worker) if u.email == mail][0].id
@@ -67,24 +65,24 @@ def manually_call_service(worker, client, service, args=None, kwargs=None):
     return result
 
 
-@pytest.fixture
+@pytest.fixture()
 def guest_client(worker) -> DatasiteClient:
     return get_mock_client(worker.root_client, ServiceRole.GUEST)
 
 
-@pytest.fixture
+@pytest.fixture()
 def ds_client(worker) -> DatasiteClient:
     return get_mock_client(worker.root_client, ServiceRole.DATA_SCIENTIST)
 
 
-@pytest.fixture
+@pytest.fixture()
 def do_client(worker) -> DatasiteClient:
     return get_mock_client(worker.root_client, ServiceRole.DATA_OWNER)
 
 
 # this shadows the normal conftests.py/root_client, but I am experiencing a lot of problems
 # with that fixture
-@pytest.fixture
+@pytest.fixture()
 def root_client(worker):
     return get_mock_client(worker.root_client, ServiceRole.DATA_OWNER)
 
@@ -111,10 +109,10 @@ def test_user_create(worker, do_client, guest_client, ds_client, root_client):
         assert not manually_call_service(worker, client, "user.create")
     for client in [do_client, root_client]:
         user_create = UserCreate(
-            email=Faker().email(), name="z", password="pw", password_verify="pw"
+            email=Faker().email(), name="z", password="pw", password_verify="pw",
         )
         res = manually_call_service(
-            worker, client, "user.create", args=[], kwargs={**user_create}
+            worker, client, "user.create", args=[], kwargs={**user_create},
         )
         assert isinstance(res, UserView)
 
@@ -127,7 +125,7 @@ def test_user_delete(do_client, guest_client, ds_client, worker, root_client):
 
     # admins can delete other admins
     assert worker.root_client.api.services.user.delete(
-        get_mock_client(root_client, ServiceRole.ADMIN).user_id
+        get_mock_client(root_client, ServiceRole.ADMIN).user_id,
     )
     admin_client3 = get_mock_client(root_client, ServiceRole.ADMIN)
 
@@ -162,14 +160,14 @@ def test_user_update_roles(do_client, guest_client, ds_client, root_client, work
     clients = [get_mock_client(root_client, role) for role in DO_ROLES]
     for _c in clients:
         assert worker.root_client.api.services.user.update(
-            uid=_c.user_id, role=ServiceRole.ADMIN
+            uid=_c.user_id, role=ServiceRole.ADMIN,
         )
 
     # DOs can update the roles of lower roles
     clients = [get_mock_client(root_client, role) for role in DS_ROLES]
     for _c in clients:
         assert do_client.api.services.user.update(
-            uid=_c.user_id, role=ServiceRole.DATA_SCIENTIST
+            uid=_c.user_id, role=ServiceRole.DATA_SCIENTIST,
         )
 
     clients = [get_mock_client(root_client, role) for role in ADMIN_ROLES]
@@ -178,7 +176,7 @@ def test_user_update_roles(do_client, guest_client, ds_client, root_client, work
     for _c in clients:
         for target_role in [ServiceRole.DATA_OWNER, ServiceRole.ADMIN]:
             assert not do_client.api.services.user.update(
-                uid=_c.user_id, role=target_role
+                uid=_c.user_id, role=target_role,
             )
 
     # DOs cannot downgrade higher roles to lower levels
@@ -190,7 +188,7 @@ def test_user_update_roles(do_client, guest_client, ds_client, root_client, work
         for target_role in DO_ROLES:
             if target_role < _c.role:
                 assert not do_client.api.services.user.update(
-                    uid=_c.user_id, role=target_role
+                    uid=_c.user_id, role=target_role,
                 )
 
     # DSs cannot update any roles
@@ -198,7 +196,7 @@ def test_user_update_roles(do_client, guest_client, ds_client, root_client, work
     for _c in clients:
         for target_role in ADMIN_ROLES:
             assert not ds_client.api.services.user.update(
-                uid=_c.user_id, role=target_role
+                uid=_c.user_id, role=target_role,
             )
 
     # Guests cannot update any roles
@@ -206,7 +204,7 @@ def test_user_update_roles(do_client, guest_client, ds_client, root_client, work
     for _c in clients:
         for target_role in ADMIN_ROLES:
             assert not guest_client.api.services.user.update(
-                uid=_c.user_id, role=target_role
+                uid=_c.user_id, role=target_role,
             )
 
 
@@ -218,16 +216,16 @@ def test_user_update(root_client):
         for target_client in target_clients:
             if executing_client.role != ServiceRole.ADMIN:
                 assert not executing_client.api.services.user.update(
-                    uid=target_client.user_id, name="abc"
+                    uid=target_client.user_id, name="abc",
                 )
             else:
                 assert executing_client.api.services.user.update(
-                    uid=target_client.user_id, name="abc"
+                    uid=target_client.user_id, name="abc",
                 )
 
         # you can update yourself
         assert executing_client.api.services.user.update(
-            uid=executing_client.user_id, name=Faker().name()
+            uid=executing_client.user_id, name=Faker().name(),
         )
 
 
@@ -240,7 +238,7 @@ def test_guest_user_update_to_root_email_failed(
     default_root_email: str = get_default_root_email()
     for client in [root_client, do_client, guest_client, ds_client]:
         res = client.api.services.user.update(
-            uid=client.account.id, email=default_root_email
+            uid=client.account.id, email=default_root_email,
         )
         assert isinstance(res, SyftError)
         assert res.message == "User already exists"
@@ -262,7 +260,7 @@ def test_user_view_set_password(worker: Worker, root_client: DatasiteClient) -> 
     ["syft", "syft.com", "syft@.com"],
 )
 def test_user_view_set_invalid_email(
-    root_client: DatasiteClient, invalid_email: str
+    root_client: DatasiteClient, invalid_email: str,
 ) -> None:
     result = root_client.account.set_email(invalid_email)
     assert isinstance(result, SyftError)
@@ -288,7 +286,7 @@ def test_user_view_set_email_success(
 
 
 def test_user_view_set_default_admin_email_failed(
-    ds_client: DatasiteClient, guest_client: DatasiteClient
+    ds_client: DatasiteClient, guest_client: DatasiteClient,
 ) -> None:
     default_root_email = get_default_root_email()
     result = ds_client.account.set_email(default_root_email)
@@ -301,7 +299,7 @@ def test_user_view_set_default_admin_email_failed(
 
 
 def test_user_view_set_duplicated_email(
-    root_client: DatasiteClient, ds_client: DatasiteClient, guest_client: DatasiteClient
+    root_client: DatasiteClient, ds_client: DatasiteClient, guest_client: DatasiteClient,
 ) -> None:
     result = ds_client.account.set_email(root_client.account.email)
     result2 = guest_client.account.set_email(root_client.account.email)
@@ -322,7 +320,7 @@ def test_user_view_update_name_institution_website(
     guest_client: DatasiteClient,
 ) -> None:
     result = root_client.account.update(
-        name="syft", institution="OpenMined", website="https://syft.org"
+        name="syft", institution="OpenMined", website="https://syft.org",
     )
     assert isinstance(result, SyftSuccess)
     assert root_client.account.name == "syft"

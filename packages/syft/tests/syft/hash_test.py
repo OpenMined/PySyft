@@ -3,9 +3,11 @@ from uuid import uuid4
 
 # syft absolute
 from syft.serde.serializable import serializable
-from syft.types.syft_object import SYFT_OBJECT_VERSION_1
-from syft.types.syft_object import SyftBaseObject
-from syft.types.syft_object import SyftHashableObject
+from syft.types.syft_object import (
+    SYFT_OBJECT_VERSION_1,
+    SyftBaseObject,
+    SyftHashableObject,
+)
 
 
 @serializable(

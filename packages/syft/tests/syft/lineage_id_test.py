@@ -3,8 +3,7 @@ import numpy as np
 
 # syft absolute
 import syft as sy
-from syft.types.uid import LineageID
-from syft.types.uid import UID
+from syft.types.uid import UID, LineageID
 
 
 def test_lineage_id() -> None:

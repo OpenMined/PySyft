@@ -4,12 +4,7 @@ from pathlib import Path
 from secrets import token_hex
 
 # first party
-from src.buckets import AzureBucket
-from src.buckets import AzureCreds
-from src.buckets import GCSBucket
-from src.buckets import GCSCreds
-from src.buckets import S3Bucket
-from src.buckets import S3Creds
+from src.buckets import AzureBucket, AzureCreds, GCSBucket, GCSCreds, S3Bucket, S3Creds
 from src.mount_options import MountOptions
 
 
@@ -20,14 +15,11 @@ def test_mount_options_s3(random_path: Path) -> None:
         "aws_secret_access_key": token_hex(8),
     }
     opts = MountOptions(
-        **{
-            "local_bucket": token_hex(8),
-            "remote_bucket": {
+        local_bucket=token_hex(8), remote_bucket={
                 "type": "s3",
                 "bucket_name": token_hex(8),
                 "creds": creds_obj,
             },
-        }
     )
 
     assert isinstance(opts.remote_bucket, S3Bucket)
@@ -36,14 +28,11 @@ def test_mount_options_s3(random_path: Path) -> None:
     # test creds as path
     random_path.write_text(json.dumps(creds_obj))
     opts = MountOptions(
-        **{
-            "local_bucket": token_hex(8),
-            "remote_bucket": {
+        local_bucket=token_hex(8), remote_bucket={
                 "type": "s3",
                 "bucket_name": token_hex(8),
                 "creds": str(random_path),
             },
-        }
     )
 
     assert isinstance(opts.remote_bucket, S3Bucket)
@@ -62,14 +51,11 @@ def test_mount_options_gcs(random_path: Path) -> None:
         "universe_domain": "googleapis.com",
     }
     opts = MountOptions(
-        **{
-            "local_bucket": token_hex(8),
-            "remote_bucket": {
+        local_bucket=token_hex(8), remote_bucket={
                 "type": "gcs",
                 "bucket_name": token_hex(8),
                 "creds": creds_obj,
             },
-        }
     )
 
     assert isinstance(opts.remote_bucket, GCSBucket)
@@ -78,14 +64,11 @@ def test_mount_options_gcs(random_path: Path) -> None:
     # test creds as path
     random_path.write_text(json.dumps(creds_obj))
     opts = MountOptions(
-        **{
-            "local_bucket": token_hex(8),
-            "remote_bucket": {
+        local_bucket=token_hex(8), remote_bucket={
                 "type": "gcs",
                 "bucket_name": token_hex(8),
                 "creds": random_path,
             },
-        }
     )
 
     assert isinstance(opts.remote_bucket, GCSBucket)
@@ -99,14 +82,11 @@ def test_mount_options_azure(random_path: Path) -> None:
         "azure_account_key": token_hex(8),
     }
     opts = MountOptions(
-        **{
-            "local_bucket": token_hex(8),
-            "remote_bucket": {
+        local_bucket=token_hex(8), remote_bucket={
                 "type": "azure",
                 "container_name": token_hex(8),
                 "creds": creds_obj,
             },
-        }
     )
     assert isinstance(opts.remote_bucket, AzureBucket)
     assert isinstance(opts.remote_bucket.creds, AzureCreds)
@@ -114,14 +94,11 @@ def test_mount_options_azure(random_path: Path) -> None:
     # test creds as path
     random_path.write_text(json.dumps(creds_obj))
     opts = MountOptions(
-        **{
-            "local_bucket": token_hex(8),
-            "remote_bucket": {
+        local_bucket=token_hex(8), remote_bucket={
                 "type": "azure",
                 "container_name": token_hex(8),
                 "creds": random_path,
             },
-        }
     )
     assert isinstance(opts.remote_bucket, AzureBucket)
     assert isinstance(opts.remote_bucket.creds, AzureCreds)

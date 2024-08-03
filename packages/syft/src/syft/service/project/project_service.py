@@ -9,21 +9,20 @@ from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
 from ..notification.notification_service import NotificationService
 from ..notification.notifications import CreateNotification
-from ..response import SyftError
-from ..response import SyftNotReady
-from ..response import SyftSuccess
-from ..service import AbstractService
-from ..service import SERVICE_TO_TYPES
-from ..service import TYPE_TO_SERVICE
-from ..service import service_method
-from ..user.user_roles import GUEST_ROLE_LEVEL
-from ..user.user_roles import ONLY_DATA_SCIENTIST_ROLE_LEVEL
-from ..user.user_roles import ServiceRole
-from .project import Project
-from .project import ProjectEvent
-from .project import ProjectRequest
-from .project import ProjectSubmit
-from .project import create_project_hash
+from ..response import SyftError, SyftNotReady, SyftSuccess
+from ..service import SERVICE_TO_TYPES, TYPE_TO_SERVICE, AbstractService, service_method
+from ..user.user_roles import (
+    GUEST_ROLE_LEVEL,
+    ONLY_DATA_SCIENTIST_ROLE_LEVEL,
+    ServiceRole,
+)
+from .project import (
+    Project,
+    ProjectEvent,
+    ProjectRequest,
+    ProjectSubmit,
+    create_project_hash,
+)
 from .project_stash import ProjectStash
 
 
@@ -55,10 +54,9 @@ class ProjectService(AbstractService):
         roles=ONLY_DATA_SCIENTIST_ROLE_LEVEL,
     )
     def create_project(
-        self, context: AuthedServiceContext, project: ProjectSubmit
+        self, context: AuthedServiceContext, project: ProjectSubmit,
     ) -> SyftSuccess | SyftError:
         """Start a Project"""
-
         check_role = self.can_create_project(context)
         if isinstance(check_role, SyftError):
             return check_role
@@ -66,7 +64,7 @@ class ProjectService(AbstractService):
         try:
             # Check if the project with given id already exists
             project_id_check = self.stash.get_by_uid(
-                credentials=context.server.verify_key, uid=project.id
+                credentials=context.server.verify_key, uid=project.id,
             )
 
             if project_id_check.is_err():
@@ -74,7 +72,7 @@ class ProjectService(AbstractService):
 
             if project_id_check.ok() is not None:
                 return SyftError(
-                    message=f"Project with id: {project.id} already exists."
+                    message=f"Project with id: {project.id} already exists.",
                 )
 
             project_obj: Project = project.to(Project, context=context)
@@ -103,23 +101,19 @@ class ProjectService(AbstractService):
                         message=(
                             f"Leader Server(id={leader_server.id.short()}) is not a "
                             f"peer of this Server(id={this_server_id})"
-                        )
+                        ),
                     )
                 leader_server_peer = peer.ok()
+            elif project.leader_server_route is not None:
+                leader_server_peer = (
+                    project.leader_server_route.validate_with_context(
+                        context=context,
+                    )
+                )
             else:
-                # for the leader server, as it does not have route information to itself
-                # we rely on the data scientist to provide the route
-                # the route is then validated by the leader
-                if project.leader_server_route is not None:
-                    leader_server_peer = (
-                        project.leader_server_route.validate_with_context(
-                            context=context
-                        )
-                    )
-                else:
-                    return SyftError(
-                        message=f"project {project}'s leader_server_route is None"
-                    )
+                return SyftError(
+                    message=f"project {project}'s leader_server_route is None",
+                )
 
             project_obj.leader_server_peer = leader_server_peer
 
@@ -132,7 +126,7 @@ class ProjectService(AbstractService):
 
             project_obj_store = result.ok()
             project_obj_store = self.add_signing_key_to_project(
-                context, project_obj_store
+                context, project_obj_store,
             )
 
             return project_obj_store
@@ -147,15 +141,14 @@ class ProjectService(AbstractService):
         roles=GUEST_ROLE_LEVEL,
     )
     def add_event(
-        self, context: AuthedServiceContext, project_event: ProjectEvent
+        self, context: AuthedServiceContext, project_event: ProjectEvent,
     ) -> SyftSuccess | SyftError:
         """To add events to a projects"""
-
         # Event object should be received from the leader of the project
 
         # retrieve the project object by server verify key
         project_obj = self.stash.get_by_uid(
-            context.server.verify_key, uid=project_event.project_id
+            context.server.verify_key, uid=project_event.project_id,
         )
         if project_obj.is_err():
             return SyftError(message=str(project_obj.err()))
@@ -163,7 +156,7 @@ class ProjectService(AbstractService):
         project: Project = project_obj.ok()
         if project.state_sync_leader.verify_key == context.server.verify_key:
             return SyftError(
-                message="Project Events should be passed to leader by broadcast endpoint"
+                message="Project Events should be passed to leader by broadcast endpoint",
             )
         if context.credentials != project.state_sync_leader.verify_key:
             return SyftError(message="Only the leader of the project can add events")
@@ -181,7 +174,7 @@ class ProjectService(AbstractService):
         if result.is_err():
             return SyftError(message=str(result.err()))
         return SyftSuccess(
-            message=f"Project event {project_event.id} added successfully "
+            message=f"Project event {project_event.id} added successfully ",
         )
 
     @service_method(
@@ -190,7 +183,7 @@ class ProjectService(AbstractService):
         roles=GUEST_ROLE_LEVEL,
     )
     def broadcast_event(
-        self, context: AuthedServiceContext, project_event: ProjectEvent
+        self, context: AuthedServiceContext, project_event: ProjectEvent,
     ) -> SyftSuccess | SyftError:
         """To add events to a projects"""
         # Only the leader of the project could add events to the projects
@@ -198,7 +191,7 @@ class ProjectService(AbstractService):
         # The leader broadcasts the event to all the members of the project
 
         project_obj = self.stash.get_by_uid(
-            context.server.verify_key, uid=project_event.project_id
+            context.server.verify_key, uid=project_event.project_id,
         )
 
         if project_obj.is_err():
@@ -210,7 +203,7 @@ class ProjectService(AbstractService):
 
         if project.state_sync_leader.verify_key != context.server.verify_key:
             return SyftError(
-                message="Only the leader of the project can broadcast events"
+                message="Only the leader of the project can broadcast events",
             )
 
         if project_event.seq_no is None:
@@ -240,19 +233,19 @@ class ProjectService(AbstractService):
                 if peer.is_err():
                     return SyftError(
                         message=f"Leader server does not have peer {member.name}-{member.id.short()}"
-                        + " Kindly exchange routes with the peer"
+                        + " Kindly exchange routes with the peer",
                     )
                 peer = peer.ok()
                 remote_client = peer.client_with_context(context=context)
                 if remote_client.is_err():
                     return SyftError(
                         message=f"Failed to create remote client for peer: "
-                        f"{peer.id}. Error: {remote_client.err()}"
+                        f"{peer.id}. Error: {remote_client.err()}",
                     )
                 remote_client = remote_client.ok()
 
                 event_result = remote_client.api.services.project.add_event(
-                    project_event
+                    project_event,
                 )
                 if isinstance(event_result, SyftError):
                     return event_result
@@ -269,10 +262,9 @@ class ProjectService(AbstractService):
         roles=GUEST_ROLE_LEVEL,
     )
     def sync(
-        self, context: AuthedServiceContext, project_id: UID, seq_no: int
+        self, context: AuthedServiceContext, project_id: UID, seq_no: int,
     ) -> list[ProjectEvent] | SyftError:
         """To fetch unsynced events from the project"""
-
         # Event object should be received from the leader of the project
 
         # retrieve the project object by server verify key
@@ -283,7 +275,7 @@ class ProjectService(AbstractService):
         project: Project = project_obj.ok()
         if project.state_sync_leader.verify_key != context.server.verify_key:
             return SyftError(
-                message="Project Events should be synced only with the leader"
+                message="Project Events should be synced only with the leader",
             )
 
         if not project.has_permission(context.credentials):
@@ -319,7 +311,7 @@ class ProjectService(AbstractService):
         roles=GUEST_ROLE_LEVEL,
     )
     def get_by_name(
-        self, context: AuthedServiceContext, name: str
+        self, context: AuthedServiceContext, name: str,
     ) -> Project | SyftError:
         result = self.stash.get_by_name(context.credentials, project_name=name)
         if result.is_err():
@@ -335,7 +327,7 @@ class ProjectService(AbstractService):
         roles=GUEST_ROLE_LEVEL,
     )
     def get_by_uid(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID,
     ) -> Project | SyftError:
         result = self.stash.get_by_uid(
             credentials=context.server.verify_key,
@@ -348,14 +340,14 @@ class ProjectService(AbstractService):
         return SyftError(message=f'Project(id="{uid}") does not exist')
 
     def add_signing_key_to_project(
-        self, context: AuthedServiceContext, project: Project
+        self, context: AuthedServiceContext, project: Project,
     ) -> Project | SyftError:
         # Automatically infuse signing key of user
         # requesting get_all() or creating the project object
 
         user_service = context.server.get_service("userservice")
         user = user_service.stash.get_by_verify_key(
-            credentials=context.credentials, verify_key=context.credentials
+            credentials=context.credentials, verify_key=context.credentials,
         )
         if user.is_err():
             return SyftError(message=str(user.err()))
@@ -377,14 +369,16 @@ class ProjectService(AbstractService):
         """To check for project request event and create a message for the root user
 
         Args:
+        ----
             project (Project): Project object
             project_event (ProjectEvent): Project event object
             context (AuthedServiceContext): Context of the server
 
         Returns:
+        -------
             Union[SyftSuccess, SyftError]: SyftSuccess if message is created else SyftError
-        """
 
+        """
         if (
             isinstance(project_event, ProjectRequest)
             and project_event.linked_request.server_uid == context.server.id

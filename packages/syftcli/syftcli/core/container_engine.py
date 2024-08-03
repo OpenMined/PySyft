@@ -1,14 +1,11 @@
 # stdlib
-from abc import ABC
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
 # third party
 from rich.progress import track
 
 # relative
-from .proc import CalledProcessError
-from .proc import CompletedProcess
-from .proc import run_command
+from .proc import CalledProcessError, CompletedProcess, run_command
 
 
 class ContainerEngineError(CalledProcessError):
@@ -18,19 +15,19 @@ class ContainerEngineError(CalledProcessError):
 class ContainerEngine(ABC):
     @abstractmethod
     def is_available(self) -> bool:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @abstractmethod
     def pull(
-        self, images: list[str], dryrun: bool, stream_output: dict | None
+        self, images: list[str], dryrun: bool, stream_output: dict | None,
     ) -> list[CompletedProcess]:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @abstractmethod
     def save(
-        self, images: list[str], archive_path: str, dryrun: bool
+        self, images: list[str], archive_path: str, dryrun: bool,
     ) -> CompletedProcess:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def check_returncode(self, result: CompletedProcess) -> None:
         try:

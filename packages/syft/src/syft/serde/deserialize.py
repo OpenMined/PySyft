@@ -11,8 +11,7 @@ def _deserialize(
     from_bytes: bool = False,
 ) -> Any:
     # relative
-    from .recursive import rs_bytes2object
-    from .recursive import rs_proto2object
+    from .recursive import rs_bytes2object, rs_proto2object
 
     if (
         (from_bytes and not isinstance(blob, bytes))

@@ -1,20 +1,19 @@
-"""
-Capture stdout, stderr and stdin streams
+"""Capture stdout, stderr and stdin streams
 
-References:
+References
+----------
 - https://github.com/OpenMined/PySyft/pull/8560
 - https://github.com/pytest-dev/py/blob/master/py/_io/capture.py
+
 """
 
 # stdlib
-from collections.abc import Callable
-from collections.abc import Generator
 import contextlib
 import os
 import sys
 import tempfile
-from typing import Any
-from typing import cast
+from collections.abc import Callable, Generator
+from typing import Any, cast
 
 patchsysdict = {0: "stdin", 1: "stdout", 2: "stderr"}
 
@@ -55,7 +54,7 @@ class DontReadFromInput:
 class Capture:
     @classmethod
     def call(cls, func: Callable, *args: Any, **kwargs: Any) -> tuple[Any, str, str]:
-        """return a (res, out, err) tuple where
+        """Return a (res, out, err) tuple where
         out and err represent the output/error output
         during function execution.
         call the given function with args/kwargs
@@ -69,7 +68,7 @@ class Capture:
         return res, out, err
 
     def reset(self) -> tuple[str, str]:
-        """reset sys.stdout/stderr and return captured output as strings."""
+        """Reset sys.stdout/stderr and return captured output as strings."""
         if hasattr(self, "_reset"):
             raise ValueError("was already reset")
         self._reset = True
@@ -84,7 +83,7 @@ class Capture:
         return out, err
 
     def suspend(self) -> tuple[str, str]:
-        """return current snapshot captures, memorize tempfiles."""
+        """Return current snapshot captures, memorize tempfiles."""
         outerr = self.readouterr()
         outfile, errfile = self.done()
         return outerr
@@ -100,7 +99,7 @@ class FDCapture:
         now: bool = True,
         patchsys: bool = False,
     ) -> None:
-        """save targetfd descriptor, and open a new
+        """Save targetfd descriptor, and open a new
         temporary file there.  If no tmpfile is
         specified a tempfile.Tempfile() will be opened
         in text mode.
@@ -122,7 +121,7 @@ class FDCapture:
             os.fstat(self._savefd)
         except OSError:
             raise ValueError(
-                "saved filedescriptor not valid, " "did you call start() twice?"
+                "saved filedescriptor not valid, did you call start() twice?",
             )
         if self.targetfd == 0 and not self.tmpfile:
             fd = os.open(devnullpath, os.O_RDONLY)
@@ -136,7 +135,7 @@ class FDCapture:
                 setattr(sys, patchsysdict[self.targetfd], self.tmpfile)
 
     def done(self) -> Any:
-        """unpatch and clean up, returns the self.tmpfile (file object)"""
+        """Unpatch and clean up, returns the self.tmpfile (file object)"""
         os.dup2(self._savefd, self.targetfd)
         os.close(self._savefd)
         if self.targetfd != 0:
@@ -146,7 +145,7 @@ class FDCapture:
         return self.tmpfile
 
     def writeorg(self, data: bytes) -> None:
-        """write a string to the original file descriptor"""
+        """Write a string to the original file descriptor"""
         tempfp = tempfile.TemporaryFile()
         try:
             os.dup2(self._savefd, tempfp.fileno())
@@ -225,11 +224,11 @@ class StdCaptureFD(Capture):
             self.err.start()
 
     def resume(self) -> None:
-        """resume capturing with original temp files."""
+        """Resume capturing with original temp files."""
         self.startall()
 
     def done(self, save: bool = True) -> tuple[Any | None, Any | None]:
-        """return (outfile, errfile) and stop capturing."""
+        """Return (outfile, errfile) and stop capturing."""
         outfile = errfile = None
         if hasattr(self, "out") and not self.out.tmpfile.closed:
             outfile = self.out.done()
@@ -242,7 +241,7 @@ class StdCaptureFD(Capture):
         return outfile, errfile
 
     def readouterr(self) -> tuple[str, str]:
-        """return snapshot value of stdout/stderr capturings."""
+        """Return snapshot value of stdout/stderr capturings."""
         if hasattr(self, "out"):
             out = self._readsnapshot(self.out.tmpfile)
         else:
@@ -260,10 +259,9 @@ class StdCaptureFD(Capture):
         if enc:
 
             def _totext(
-                obj: Any, encoding: str | None = None, errors: str | None = None
+                obj: Any, encoding: str | None = None, errors: str | None = None,
             ) -> str:
-                """
-                Source: https://github.com/pytest-dev/py/blob/master/py/_builtin.py
+                """Source: https://github.com/pytest-dev/py/blob/master/py/_builtin.py
                 """
                 if isinstance(obj, bytes):
                     if errors is None:
@@ -287,7 +285,7 @@ def dupfile(
     raising: bool = False,
     encoding: str | None = None,
 ) -> Any:
-    """return a new open file object that's a duplicate of f
+    """Return a new open file object that's a duplicate of f
 
     mode is duplicated if not given, 'buffering' controls
     buffer size (defaulting to no buffering) and 'raising'

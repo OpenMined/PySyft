@@ -1,10 +1,7 @@
 # relative
 from ...serde.serializable import serializable
-from ...store.document_store import BaseUIDStoreStash
-from ...store.document_store import DocumentStore
-from ...store.document_store import PartitionSettings
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
+from ...store.document_store import BaseUIDStoreStash, DocumentStore, PartitionSettings
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject
 
 
 @serializable()
@@ -28,7 +25,7 @@ class AzureRemoteProfile(RemoteProfile):
 class RemoteProfileStash(BaseUIDStoreStash):
     object_type = RemoteProfile
     settings: PartitionSettings = PartitionSettings(
-        name=RemoteProfile.__canonical_name__, object_type=RemoteProfile
+        name=RemoteProfile.__canonical_name__, object_type=RemoteProfile,
     )
 
     def __init__(self, store: DocumentStore) -> None:

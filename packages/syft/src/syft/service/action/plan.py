@@ -1,17 +1,14 @@
 # stdlib
-from collections.abc import Callable
 import inspect
+from collections.abc import Callable
 from typing import Any
 
 # relative
-from ... import ActionObject
-from ... import Worker
+from ... import ActionObject, Worker
 from ...client.client import SyftClient
 from ...serde.recursive import recursive_serde_register
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
-from .action_object import Action
-from .action_object import TraceResultRegistry
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject
+from .action_object import Action, TraceResultRegistry
 
 
 class Plan(SyftObject):
@@ -37,7 +34,7 @@ class Plan(SyftObject):
 
         inp_str = "Inputs:\n"
         inp_str += "\n".join(
-            [f"\t\t{k}: {v.__class__.__name__}" for k, v in self.inputs.items()]
+            [f"\t\t{k}: {v.__class__.__name__}" for k, v in self.inputs.items()],
         )
 
         act_str = f"Actions:\n\t\t{len(self.actions)} Actions"
@@ -92,7 +89,7 @@ def planify(func: Callable) -> ActionObject:
 
 
 def build_plan_inputs(
-    forward_func: Callable, client: SyftClient
+    forward_func: Callable, client: SyftClient,
 ) -> dict[str, ActionObject]:
     signature = inspect.signature(forward_func)
     res = {}
@@ -104,7 +101,7 @@ def build_plan_inputs(
             res[k] = default_value.send(client)
         else:
             raise ValueError(
-                f"arg {k} has no placeholder as default value (required for @make_plan functions)"
+                f"arg {k} has no placeholder as default value (required for @make_plan functions)",
             )
     return res
 

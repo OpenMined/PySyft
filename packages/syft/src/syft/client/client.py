@@ -3,66 +3,51 @@ from __future__ import annotations
 
 # stdlib
 import base64
-from collections.abc import Callable
-from collections.abc import Generator
-from collections.abc import Iterable
-from enum import Enum
-from getpass import getpass
 import json
 import logging
-from typing import Any
-from typing import TYPE_CHECKING
-from typing import cast
+from collections.abc import Callable, Generator, Iterable
+from enum import Enum
+from getpass import getpass
+from typing import TYPE_CHECKING, Any, cast
+
+import requests
 
 # third party
 from argon2 import PasswordHasher
-from cachetools import TTLCache
-from cachetools import cached
+from cachetools import TTLCache, cached
 from pydantic import field_validator
-import requests
-from requests import Response
-from requests import Session
+from requests import Response, Session
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry  # type: ignore[import-untyped]
 from typing_extensions import Self
 
 # relative
 from .. import __version__
-from ..abstract_server import AbstractServer
-from ..abstract_server import ServerSideType
-from ..abstract_server import ServerType
-from ..protocol.data_protocol import DataProtocol
-from ..protocol.data_protocol import PROTOCOL_TYPE
-from ..protocol.data_protocol import get_data_protocol
+from ..abstract_server import AbstractServer, ServerSideType, ServerType
+from ..protocol.data_protocol import PROTOCOL_TYPE, DataProtocol, get_data_protocol
 from ..serde.deserialize import _deserialize
 from ..serde.serializable import serializable
 from ..serde.serialize import _serialize
-from ..server.credentials import SyftSigningKey
-from ..server.credentials import SyftVerifyKey
-from ..server.credentials import UserLoginCredentials
+from ..server.credentials import SyftSigningKey, SyftVerifyKey, UserLoginCredentials
 from ..service.context import ServerServiceContext
-from ..service.metadata.server_metadata import ServerMetadata
-from ..service.metadata.server_metadata import ServerMetadataJSON
-from ..service.response import SyftError
-from ..service.response import SyftSuccess
-from ..service.user.user import UserCreate
-from ..service.user.user import UserPrivateKey
-from ..service.user.user import UserView
+from ..service.metadata.server_metadata import ServerMetadata, ServerMetadataJSON
+from ..service.response import SyftError, SyftSuccess
+from ..service.user.user import UserCreate, UserPrivateKey, UserView
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..types.server_url import ServerURL
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.uid import UID
 from ..util.telemetry import instrument
-from ..util.util import prompt_warning_message
-from ..util.util import thread_ident
-from ..util.util import verify_tls
-from .api import APIModule
-from .api import APIRegistry
-from .api import SignedSyftAPICall
-from .api import SyftAPI
-from .api import SyftAPICall
-from .api import debox_signed_syftapicall_response
+from ..util.util import prompt_warning_message, thread_ident, verify_tls
+from .api import (
+    APIModule,
+    APIRegistry,
+    SignedSyftAPICall,
+    SyftAPI,
+    SyftAPICall,
+    debox_signed_syftapicall_response,
+)
 from .connection import ServerConnection
 from .protocol import SyftProtocol
 
@@ -193,7 +178,7 @@ class HTTPConnection(ServerConnection):
         return self.session_cache
 
     def _make_get(
-        self, path: str, params: dict | None = None, stream: bool = False
+        self, path: str, params: dict | None = None, stream: bool = False,
     ) -> bytes | Iterable:
         if params is None:
             return self._make_get_no_params(path, stream=stream)
@@ -217,7 +202,7 @@ class HTTPConnection(ServerConnection):
         )
         if response.status_code != 200:
             raise requests.ConnectionError(
-                f"Failed to fetch {url}. Response returned with code {response.status_code}"
+                f"Failed to fetch {url}. Response returned with code {response.status_code}",
             )
 
         # upgrade to tls if available
@@ -245,7 +230,7 @@ class HTTPConnection(ServerConnection):
         )
         if response.status_code != 200:
             raise requests.ConnectionError(
-                f"Failed to fetch {url}. Response returned with code {response.status_code}"
+                f"Failed to fetch {url}. Response returned with code {response.status_code}",
             )
 
         # upgrade to tls if available
@@ -257,7 +242,7 @@ class HTTPConnection(ServerConnection):
         return response.content
 
     def _make_put(
-        self, path: str, data: bytes | Generator, stream: bool = False
+        self, path: str, data: bytes | Generator, stream: bool = False,
     ) -> Response:
         url = self.url
 
@@ -277,7 +262,7 @@ class HTTPConnection(ServerConnection):
         )
         if response.status_code != 200:
             raise requests.ConnectionError(
-                f"Failed to fetch {url}. Response returned with code {response.status_code}"
+                f"Failed to fetch {url}. Response returned with code {response.status_code}",
             )
 
         # upgrade to tls if available
@@ -309,7 +294,7 @@ class HTTPConnection(ServerConnection):
         )
         if response.status_code != 200:
             raise requests.ConnectionError(
-                f"Failed to fetch {url}. Response returned with code {response.status_code}"
+                f"Failed to fetch {url}. Response returned with code {response.status_code}",
             )
 
         # upgrade to tls if available
@@ -320,12 +305,12 @@ class HTTPConnection(ServerConnection):
     def stream_data(self, credentials: SyftSigningKey) -> Response:
         url = self.url.with_path(self.routes.STREAM.value)
         response = self.session.get(
-            str(url), verify=verify_tls(), proxies={}, stream=True, headers=self.headers
+            str(url), verify=verify_tls(), proxies={}, stream=True, headers=self.headers,
         )
         return response
 
     def get_server_metadata(
-        self, credentials: SyftSigningKey
+        self, credentials: SyftSigningKey,
     ) -> ServerMetadataJSON | SyftError:
         if self.proxy_target_uid:
             response = forward_message_to_proxy(
@@ -424,7 +409,7 @@ class HTTPConnection(ServerConnection):
 
         if response.status_code != 200:
             raise requests.ConnectionError(
-                f"Failed to fetch metadata. Response returned with code {response.status_code}"
+                f"Failed to fetch metadata. Response returned with code {response.status_code}",
             )
 
         result = _deserialize(response.content, from_bytes=True)
@@ -471,7 +456,7 @@ class PythonConnection(ServerConnection):
         return PythonConnection(server=self.server, proxy_target_uid=proxy_target_uid)
 
     def get_server_metadata(
-        self, credentials: SyftSigningKey
+        self, credentials: SyftSigningKey,
     ) -> ServerMetadataJSON | SyftError:
         if self.proxy_target_uid:
             response = forward_message_to_proxy(
@@ -497,7 +482,7 @@ class PythonConnection(ServerConnection):
         communication_protocol: int,
         metadata: ServerMetadataJSON | None = None,
     ) -> SyftAPI:
-        # todo: its a bit odd to identify a user by its verify key maybe?
+        # TODO: its a bit odd to identify a user by its verify key maybe?
         if self.proxy_target_uid:
             obj = forward_message_to_proxy(
                 self.make_call,
@@ -527,10 +512,10 @@ class PythonConnection(ServerConnection):
 
     def exchange_credentials(self, email: str, password: str) -> UserPrivateKey | None:
         context = self.server.get_unauthed_context(
-            login_credentials=UserLoginCredentials(email=email, password=password)
+            login_credentials=UserLoginCredentials(email=email, password=password),
         )
         method = self.server.get_method_with_context(
-            UserService.exchange_credentials, context
+            UserService.exchange_credentials, context,
         )
         result = method()
         return result
@@ -638,7 +623,7 @@ class SyftClient:
             self._fetch_server_metadata(self.credentials)
         self.metadata = cast(ServerMetadataJSON, self.metadata)
         self.communication_protocol = self._get_communication_protocol(
-            self.metadata.supported_protocols
+            self.metadata.supported_protocols,
         )
 
     def set_headers(self, headers: dict[str, str]) -> None | SyftError:
@@ -647,11 +632,11 @@ class SyftClient:
             return None
         return SyftError(  # type: ignore
             message="Incompatible connection type."
-            + f"Expected HTTPConnection, got {type(self.connection)}"
+            + f"Expected HTTPConnection, got {type(self.connection)}",
         )
 
     def _get_communication_protocol(
-        self, protocols_supported_by_server: list
+        self, protocols_supported_by_server: list,
     ) -> int | str:
         data_protocol: DataProtocol = get_data_protocol()
         protocols_supported_by_client: list[PROTOCOL_TYPE] = (
@@ -660,12 +645,12 @@ class SyftClient:
 
         self.current_protocol = data_protocol.latest_version
         common_protocols = set(protocols_supported_by_client).intersection(
-            protocols_supported_by_server
+            protocols_supported_by_server,
         )
 
         if len(common_protocols) == 0:
             raise Exception(
-                "No common communication protocol found between the client and the server."
+                "No common communication protocol found between the client and the server.",
             )
 
         if "dev" in common_protocols:
@@ -673,7 +658,7 @@ class SyftClient:
         return max(common_protocols)
 
     def create_project(
-        self, name: str, description: str, user_email_address: str
+        self, name: str, description: str, user_email_address: str,
     ) -> Any:
         # relative
         from ..service.project.project import ProjectSubmit
@@ -778,7 +763,7 @@ class SyftClient:
             )
         else:
             raise ValueError(
-                f"Invalid Route Exchange SyftProtocol: {protocol}.Supported protocols are {SyftProtocol.all()}"
+                f"Invalid Route Exchange SyftProtocol: {protocol}.Supported protocols are {SyftProtocol.all()}",
             )
 
     @property
@@ -841,7 +826,7 @@ class SyftClient:
         if self.metadata is not None:
             print(
                 f"Logged into <{self.name}: {self.metadata.server_side_type.capitalize()}-side "
-                f"{self.metadata.server_type.capitalize()}> as GUEST"
+                f"{self.metadata.server_type.capitalize()}> as GUEST",
             )
 
         return _guest_client
@@ -853,7 +838,7 @@ class SyftClient:
         if self.metadata is not None:
             print(
                 f"Logged into <{self.name}: {self.metadata.server_side_type.capitalize()}-side "
-                f"{self.metadata.server_type.capitalize()}> as {email}"
+                f"{self.metadata.server_type.capitalize()}> as {email}",
             )
 
         return self.__class__(
@@ -877,7 +862,7 @@ class SyftClient:
 
         if register:
             self.register(
-                email=email, password=password, password_verify=password, **kwargs
+                email=email, password=password, password_verify=password, **kwargs,
             )
 
         user_private_key = self.connection.login(email=email, password=password)
@@ -901,7 +886,7 @@ class SyftClient:
         if signing_key is not None and client.metadata is not None:
             print(
                 f"Logged into <{client.name}: {client.metadata.server_side_type.capitalize()} side "
-                f"{client.metadata.server_type.capitalize()}> as <{email}>"
+                f"{client.metadata.server_type.capitalize()}> as <{email}>",
             )
             # relative
             from ..server.server import get_default_root_password
@@ -992,7 +977,7 @@ class SyftClient:
                 "host datasets with private information."
             )
             if self.metadata.show_warnings and not prompt_warning_message(
-                message=message
+                message=message,
             ):
                 return None
 
@@ -1004,7 +989,7 @@ class SyftClient:
     def __hash__(self) -> int:
         return hash(self.id) + hash(self.connection)
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, SyftClient):
             return False
         return (
@@ -1121,7 +1106,7 @@ def login_as_guest(
     if verbose and _client.metadata is not None:
         print(
             f"Logged into <{_client.name}: {_client.metadata.server_side_type.capitalize()}-"
-            f"side {_client.metadata.server_type.capitalize()}> as GUEST"
+            f"side {_client.metadata.server_type.capitalize()}> as GUEST",
         )
 
     return _client.guest()
@@ -1163,7 +1148,7 @@ def login(
         )
         if _client_cache:
             print(
-                f"Using cached client for {_client.name} as <{login_credentials.email}>"
+                f"Using cached client for {_client.name} as <{login_credentials.email}>",
             )
             _client = _client_cache
 
@@ -1185,7 +1170,7 @@ class SyftClientSessionCache:
     @classmethod
     def _get_key(cls, email: str, password: str, connection: str) -> str:
         key = cls.__cache_key_format__.format(
-            email=email, password=password, connection=connection
+            email=email, password=password, connection=connection,
         )
         ph = PasswordHasher()
         return ph.hash(key)
@@ -1214,14 +1199,14 @@ class SyftClientSessionCache:
 
     @classmethod
     def get_client_by_uid_and_verify_key(
-        cls, verify_key: SyftVerifyKey, server_uid: UID
+        cls, verify_key: SyftVerifyKey, server_uid: UID,
     ) -> SyftClient | None:
         hash_key = str(server_uid) + str(verify_key)
         return cls.__client_cache__.get(hash_key, None)
 
     @classmethod
     def get_client(
-        cls, email: str, password: str, connection: ServerConnection
+        cls, email: str, password: str, connection: ServerConnection,
     ) -> SyftClient | None:
         # we have some bugs here so lets disable until they are fixed.
         return None

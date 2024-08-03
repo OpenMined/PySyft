@@ -6,21 +6,25 @@ from typing import Any
 # third party
 from typing_extensions import Self
 
-# relative
-from . import BlobDeposit
-from . import BlobRetrieval
-from . import BlobStorageClient
-from . import BlobStorageClientConfig
-from . import BlobStorageConfig
-from . import BlobStorageConnection
-from . import SyftObjectRetrieval
 from ...serde.serializable import serializable
-from ...service.response import SyftError
-from ...service.response import SyftSuccess
-from ...types.blob_storage import BlobStorageEntry
-from ...types.blob_storage import CreateBlobStorageEntry
-from ...types.blob_storage import SecureFilePathLocation
+from ...service.response import SyftError, SyftSuccess
+from ...types.blob_storage import (
+    BlobStorageEntry,
+    CreateBlobStorageEntry,
+    SecureFilePathLocation,
+)
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+
+# relative
+from . import (
+    BlobDeposit,
+    BlobRetrieval,
+    BlobStorageClient,
+    BlobStorageClientConfig,
+    BlobStorageConfig,
+    BlobStorageConnection,
+    SyftObjectRetrieval,
+)
 
 
 @serializable()
@@ -51,11 +55,11 @@ class OnDiskBlobStorageConnection(BlobStorageConnection):
     def __enter__(self) -> Self:
         return self
 
-    def __exit__(self, *exc: Any) -> None:
+    def __exit__(self, *exc: object) -> None:
         pass
 
     def read(
-        self, fp: SecureFilePathLocation, type_: type | None, **kwargs: Any
+        self, fp: SecureFilePathLocation, type_: type | None, **kwargs: Any,
     ) -> BlobRetrieval:
         file_path = self._base_directory / fp.path
         return SyftObjectRetrieval(
@@ -65,11 +69,11 @@ class OnDiskBlobStorageConnection(BlobStorageConnection):
         )
 
     def allocate(
-        self, obj: CreateBlobStorageEntry
+        self, obj: CreateBlobStorageEntry,
     ) -> SecureFilePathLocation | SyftError:
         try:
             return SecureFilePathLocation(
-                path=str((self._base_directory / obj.file_name).absolute())
+                path=str((self._base_directory / obj.file_name).absolute()),
             )
         except Exception as e:
             return SyftError(message=f"Failed to allocate: {e}")

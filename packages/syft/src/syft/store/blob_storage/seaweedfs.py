@@ -1,46 +1,46 @@
 # stdlib
-from collections.abc import Generator
-from io import BytesIO
 import logging
 import math
-from queue import Queue
 import threading
-from typing import Any
+from collections.abc import Generator
+from io import BytesIO
+from queue import Queue
 
 # third party
 import boto3
+import requests
 from botocore.client import BaseClient as S3BaseClient
 from botocore.client import ClientError as BotoClientError
 from botocore.client import Config
 from botocore.exceptions import ConnectionError
-import requests
-from tenacity import retry
-from tenacity import retry_if_exception_type
-from tenacity import stop_after_delay
-from tenacity import wait_fixed
+from tenacity import retry, retry_if_exception_type, stop_after_delay, wait_fixed
 from tqdm import tqdm
 from typing_extensions import Self
 
-# relative
-from . import BlobDeposit
-from . import BlobRetrieval
-from . import BlobStorageClient
-from . import BlobStorageClientConfig
-from . import BlobStorageConfig
-from . import BlobStorageConnection
 from ...serde.serializable import serializable
 from ...service.blob_storage.remote_profile import AzureRemoteProfile
-from ...service.response import SyftError
-from ...service.response import SyftSuccess
+from ...service.response import SyftError, SyftSuccess
 from ...service.service import from_api_or_context
-from ...types.blob_storage import BlobStorageEntry
-from ...types.blob_storage import CreateBlobStorageEntry
-from ...types.blob_storage import SeaweedSecureFilePathLocation
-from ...types.blob_storage import SecureFilePathLocation
+from ...types.blob_storage import (
+    BlobStorageEntry,
+    CreateBlobStorageEntry,
+    SeaweedSecureFilePathLocation,
+    SecureFilePathLocation,
+)
 from ...types.server_url import ServerURL
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.uid import UID
 from ...util.constants import DEFAULT_TIMEOUT
+
+# relative
+from . import (
+    BlobDeposit,
+    BlobRetrieval,
+    BlobStorageClient,
+    BlobStorageClientConfig,
+    BlobStorageConfig,
+    BlobStorageConnection,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -94,11 +94,11 @@ class SeaweedFSBlobDeposit(BlobDeposit):
                     if api is not None and api.connection is not None:
                         if self.proxy_server_uid is None:
                             blob_url = api.connection.to_blob_route(
-                                url.url_path, host=url.host_or_ip
+                                url.url_path, host=url.host_or_ip,
                             )
                         else:
                             blob_url = api.connection.stream_via(
-                                self.proxy_server_uid, url.url_path
+                                self.proxy_server_uid, url.url_path,
                             )
                     else:
                         blob_url = url
@@ -109,7 +109,7 @@ class SeaweedFSBlobDeposit(BlobDeposit):
                             self.no_lines = 0
 
                         def async_generator(
-                            self, chunk_size: int = DEFAULT_UPLOAD_CHUNK_SIZE
+                            self, chunk_size: int = DEFAULT_UPLOAD_CHUNK_SIZE,
                         ) -> Generator:
                             item_queue: Queue = Queue(maxsize=MAX_QUEUE_SIZE)
                             threading.Thread(
@@ -170,7 +170,7 @@ class SeaweedFSBlobDeposit(BlobDeposit):
         if mark_write_complete_method is None:
             return SyftError(message="mark_write_complete_method is None")
         return mark_write_complete_method(
-            etags=etags, uid=self.blob_storage_entry_id, no_lines=no_lines
+            etags=etags, uid=self.blob_storage_entry_id, no_lines=no_lines,
         )
 
 
@@ -237,7 +237,7 @@ class SeaweedFSConnection(BlobStorageConnection):
     def __enter__(self) -> Self:
         return self
 
-    def __exit__(self, *exc: Any) -> None:
+    def __exit__(self, *exc: object) -> None:
         self.client.close()
 
     @retry(
@@ -261,7 +261,7 @@ class SeaweedFSConnection(BlobStorageConnection):
         return fp.generate_url(self, type_, bucket_name)
 
     def allocate(
-        self, obj: CreateBlobStorageEntry
+        self, obj: CreateBlobStorageEntry,
     ) -> SecureFilePathLocation | SyftError:
         try:
             file_name = obj.file_name
@@ -273,7 +273,7 @@ class SeaweedFSConnection(BlobStorageConnection):
             return SeaweedSecureFilePathLocation(upload_id=upload_id, path=file_name)
         except BotoClientError as e:
             return SyftError(
-                message=f"Failed to allocate space for {obj} with error: {e}"
+                message=f"Failed to allocate space for {obj} with error: {e}",
             )
 
     def write(self, obj: BlobStorageEntry) -> BlobDeposit:
@@ -290,12 +290,12 @@ class SeaweedFSConnection(BlobStorageConnection):
                         "PartNumber": i + 1,
                     },
                     ExpiresIn=WRITE_EXPIRATION_TIME,
-                )
+                ),
             )
             for i in range(total_parts)
         ]
         return SeaweedFSBlobDeposit(
-            blob_storage_entry_id=obj.id, urls=urls, size=obj.file_size
+            blob_storage_entry_id=obj.id, urls=urls, size=obj.file_size,
         )
 
     def complete_multipart_upload(

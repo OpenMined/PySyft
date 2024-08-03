@@ -1,37 +1,32 @@
 # stdlib
 import ast
-from collections.abc import Callable
 import inspect
-from inspect import Signature
 import keyword
 import linecache
 import re
 import textwrap
-from typing import Any
-from typing import cast
+from collections.abc import Callable
+from inspect import Signature
+from typing import Any, cast
 
 # third party
-from pydantic import ValidationError
-from pydantic import field_validator
-from pydantic import model_validator
-from result import Err
-from result import Ok
-from result import Result
+from pydantic import ValidationError, field_validator, model_validator
+from result import Err, Ok, Result
 
 # relative
 from ...abstract_server import AbstractServer
 from ...client.client import SyftClient
 from ...serde.serializable import serializable
 from ...serde.signature import signature_remove_context
-from ...types.syft_object import PartialSyftObject
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, PartialSyftObject, SyftObject
 from ...types.syncable_object import SyncableSyftObject
-from ...types.transforms import TransformContext
-from ...types.transforms import generate_action_object_id
-from ...types.transforms import generate_id
-from ...types.transforms import keep
-from ...types.transforms import transform
+from ...types.transforms import (
+    TransformContext,
+    generate_action_object_id,
+    generate_id,
+    keep,
+    transform,
+)
 from ...types.uid import UID
 from ...util.misc_objs import MarkdownDescription
 from ..context import AuthedServiceContext
@@ -79,8 +74,9 @@ def get_signature(func: Callable) -> Signature:
 
 
 def register_fn_in_linecache(fname: str, src: str) -> None:
-    """adds a function to linecache, such that inspect.getsource works for functions nested in this function.
-    This only works if the same function is compiled under the same filename"""
+    """Adds a function to linecache, such that inspect.getsource works for functions nested in this function.
+    This only works if the same function is compiled under the same filename
+    """
     lines = [
         line + "\n" for line in src.splitlines()
     ]  # use same splitting method same as linecache 112 (py3.12)
@@ -197,7 +193,7 @@ class Endpoint(SyftObject):
     @field_validator("settings", check_fields=False)
     @classmethod
     def validate_settings(
-        cls, settings: dict[str, Any] | None
+        cls, settings: dict[str, Any] | None,
     ) -> dict[str, Any] | None:
         return settings
 
@@ -247,12 +243,12 @@ class Endpoint(SyftObject):
         from ..context import AuthedServiceContext
 
         mock_context = AuthedServiceContext(
-            server=AbstractServer(), credentials=SyftSigningKey.generate().verify_key
+            server=AbstractServer(), credentials=SyftSigningKey.generate().verify_key,
         )
         return self.call_locally(mock_context, *args, **kwargs)
 
     def call_locally(
-        self, context: AuthedServiceContext, *args: Any, **kwargs: Any
+        self, context: AuthedServiceContext, *args: Any, **kwargs: Any,
     ) -> Any:
         inner_function = ast.parse(self.api_code).body[0]
         inner_function.decorator_list = []
@@ -304,7 +300,7 @@ class BaseTwinAPIEndpoint(SyftObject):
         # Add none check
         if private_function and private_function.signature != mock_function.signature:
             raise ValueError(
-                "Mock and Private API Endpoints must have the same signature."
+                "Mock and Private API Endpoints must have the same signature.",
             )
 
         return data
@@ -328,7 +324,7 @@ class BaseTwinAPIEndpoint(SyftObject):
     @field_validator("private_function", check_fields=False)
     @classmethod
     def validate_private_function(
-        cls, private_function: PrivateAPIEndpoint | None
+        cls, private_function: PrivateAPIEndpoint | None,
     ) -> PrivateAPIEndpoint | None:
         # TODO: what kind of validation should we do here?
 
@@ -337,7 +333,7 @@ class BaseTwinAPIEndpoint(SyftObject):
     @field_validator("mock_function", check_fields=False)
     @classmethod
     def validate_mock_function(
-        cls, mock_function: PublicAPIEndpoint
+        cls, mock_function: PublicAPIEndpoint,
     ) -> PublicAPIEndpoint:
         # TODO: what kind of validation should we do here?
         return mock_function
@@ -371,7 +367,7 @@ class CreateTwinAPIEndpoint(BaseTwinAPIEndpoint):
     endpoint_timeout: int = 60
 
     def __init__(
-        self, description: str | MarkdownDescription | None = "", **kwargs: Any
+        self, description: str | MarkdownDescription | None = "", **kwargs: Any,
     ) -> None:
         if isinstance(description, str):
             description = MarkdownDescription(text=description)
@@ -418,9 +414,13 @@ class TwinAPIEndpoint(SyncableSyftObject):
         """Check if the user has permission to access the endpoint.
 
         Args:
+        ----
             context: The context of the user requesting the code.
+
         Returns:
+        -------
             bool: True if the user has permission to access the endpoint, False otherwise.
+
         """
         if context.role.value == 128:
             return True
@@ -430,9 +430,13 @@ class TwinAPIEndpoint(SyncableSyftObject):
         """Select the code to execute based on the user's permissions and public code availability.
 
         Args:
+        ----
             context: The context of the user requesting the code.
+
         Returns:
+        -------
             Result[Ok, Err]: The selected code to execute.
+
         """
         if self.has_permission(context) and self.private_function:
             return Ok(self.private_function)
@@ -442,11 +446,13 @@ class TwinAPIEndpoint(SyncableSyftObject):
         """Execute the code based on the user's permissions and public code availability.
 
         Args:
+        ----
             context: The context of the user requesting the code.
             *args: Any
             **kwargs: Any
         Returns:
             Any: The result of the executed code.
+
         """
         result = self.select_code(context)
         if result.is_err():
@@ -456,7 +462,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
         return self.exec_code(selected_code, context, *args, **kwargs)
 
     def exec_mock_function(
-        self, context: AuthedServiceContext, *args: Any, **kwargs: Any
+        self, context: AuthedServiceContext, *args: Any, **kwargs: Any,
     ) -> Any:
         """Execute the public code if it exists."""
         if self.mock_function:
@@ -465,16 +471,18 @@ class TwinAPIEndpoint(SyncableSyftObject):
         return SyftError(message="No public code available")
 
     def exec_private_function(
-        self, context: AuthedServiceContext, *args: Any, **kwargs: Any
+        self, context: AuthedServiceContext, *args: Any, **kwargs: Any,
     ) -> Any:
         """Execute the private code if user is has the proper permissions.
 
         Args:
+        ----
             context: The context of the user requesting the code.
             *args: Any
             **kwargs: Any
         Returns:
             Any: The result of the executed code.
+
         """
         if self.private_function is None:
             return SyftError(message="No private code available")
@@ -489,10 +497,10 @@ class TwinAPIEndpoint(SyncableSyftObject):
         guest_client = context.server.get_guest_client()
         user_client = guest_client
         signing_key_for_verify_key = context.server.get_service_method(
-            UserService.signing_key_for_verify_key
+            UserService.signing_key_for_verify_key,
         )
         private_key = signing_key_for_verify_key(
-            context=context, verify_key=context.credentials
+            context=context, verify_key=context.credentials,
         )
         signing_key = private_key.signing_key
         user_client.credentials = signing_key
@@ -524,7 +532,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
             exec(raw_byte_code)  # nosec
 
             internal_context = code.build_internal_context(
-                context=context, admin_client=admin_client, user_client=user_client
+                context=context, admin_client=admin_client, user_client=user_client,
             )
 
             # execute it
@@ -541,7 +549,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
 
             api_service = context.server.get_service("apiservice")
             upsert_result = api_service.stash.upsert(
-                context.server.get_service("userservice").admin_verify_key(), self
+                context.server.get_service("userservice").admin_verify_key(), self,
             )
 
             if upsert_result.is_err():
@@ -554,11 +562,11 @@ class TwinAPIEndpoint(SyncableSyftObject):
             # TODO: cleanup typeerrors
             if context.role.value == 128 or isinstance(e, TypeError):
                 return SyftError(
-                    message=f"An error was raised during the execution of the API endpoint call: \n {str(e)}"
+                    message=f"An error was raised during the execution of the API endpoint call: \n {e!s}",
                 )
             else:
                 return SyftError(
-                    message="Ops something went wrong during this endpoint execution, please contact your admin."
+                    message="Ops something went wrong during this endpoint execution, please contact your admin.",
                 )
 
 
@@ -576,7 +584,7 @@ def check_and_cleanup_signature(context: TransformContext) -> TransformContext:
         params = dict(context.obj.signature.parameters)
         if "context" not in params:
             raise ValueError(
-                "Function Signature must include 'context' [AuthedContext] parameters."
+                "Function Signature must include 'context' [AuthedContext] parameters.",
             )
         params.pop("context", None)
         context.output["signature"] = Signature(
@@ -659,8 +667,8 @@ def endpoint_to_private_endpoint() -> list[Callable]:
                 "helper_functions",
                 "state",
                 "signature",
-            ]
-        )
+            ],
+        ),
     ]
 
 
@@ -676,8 +684,8 @@ def endpoint_to_public_endpoint() -> list[Callable]:
                 "helper_functions",
                 "state",
                 "signature",
-            ]
-        )
+            ],
+        ),
     ]
 
 

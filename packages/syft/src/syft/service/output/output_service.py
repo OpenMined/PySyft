@@ -3,19 +3,19 @@ from typing import ClassVar
 
 # third party
 from pydantic import model_validator
-from result import Err
-from result import Ok
-from result import Result
+from result import Err, Ok, Result
 
 # relative
 from ...client.api import APIRegistry
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import BaseUIDStoreStash
-from ...store.document_store import DocumentStore
-from ...store.document_store import PartitionKey
-from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
+from ...store.document_store import (
+    BaseUIDStoreStash,
+    DocumentStore,
+    PartitionKey,
+    PartitionSettings,
+    QueryKeys,
+)
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -26,11 +26,8 @@ from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectREAD
 from ..context import AuthedServiceContext
 from ..response import SyftError
-from ..service import AbstractService
-from ..service import TYPE_TO_SERVICE
-from ..service import service_method
-from ..user.user_roles import ADMIN_ROLE_LEVEL
-from ..user.user_roles import GUEST_ROLE_LEVEL
+from ..service import TYPE_TO_SERVICE, AbstractService, service_method
+from ..user.user_roles import ADMIN_ROLE_LEVEL, GUEST_ROLE_LEVEL
 
 CreatedAtPartitionKey = PartitionKey(key="created_at", type_=DateTime)
 UserCodeIdPartitionKey = PartitionKey(key="user_code_id", type_=UID)
@@ -91,10 +88,8 @@ class ExecutionOutput(SyncableSyftObject):
         input_ids: dict[str, UID] | None = None,
     ) -> "ExecutionOutput":
         # relative
-        from ..code.user_code_service import UserCode
-        from ..code.user_code_service import UserCodeService
-        from ..job.job_service import Job
-        from ..job.job_service import JobService
+        from ..code.user_code_service import UserCode, UserCodeService
+        from ..job.job_service import Job, JobService
 
         if isinstance(output_ids, UID):
             output_ids = [output_ids]
@@ -132,7 +127,7 @@ class ExecutionOutput(SyncableSyftObject):
         )
         if api is None:
             raise ValueError(
-                f"Can't access the api. Please log in to {self.syft_server_location}"
+                f"Can't access the api. Please log in to {self.syft_server_location}",
             )
         action_service = api.services.action
 
@@ -161,14 +156,16 @@ class ExecutionOutput(SyncableSyftObject):
         return []
 
     def check_input_ids(self, kwargs: dict[str, UID]) -> bool:
-        """
-        Checks the input IDs against the stored input IDs.
+        """Checks the input IDs against the stored input IDs.
 
         Args:
+        ----
             kwargs (dict[str, UID]): A dictionary containing the input IDs to be checked.
 
         Returns:
+        -------
             bool: True if the input IDs are valid, False otherwise.
+
         """
         if not self.input_ids:
             return True
@@ -194,7 +191,7 @@ class ExecutionOutput(SyncableSyftObject):
 class OutputStash(BaseUIDStoreStash):
     object_type = ExecutionOutput
     settings: PartitionSettings = PartitionSettings(
-        name=ExecutionOutput.__canonical_name__, object_type=ExecutionOutput
+        name=ExecutionOutput.__canonical_name__, object_type=ExecutionOutput,
     )
 
     def __init__(self, store: DocumentStore) -> None:
@@ -204,23 +201,23 @@ class OutputStash(BaseUIDStoreStash):
         self._object_type = self.object_type
 
     def get_by_user_code_id(
-        self, credentials: SyftVerifyKey, user_code_id: UID
+        self, credentials: SyftVerifyKey, user_code_id: UID,
     ) -> Result[list[ExecutionOutput], str]:
         qks = QueryKeys(
             qks=[UserCodeIdPartitionKey.with_obj(user_code_id)],
         )
         return self.query_all(
-            credentials=credentials, qks=qks, order_by=CreatedAtPartitionKey
+            credentials=credentials, qks=qks, order_by=CreatedAtPartitionKey,
         )
 
     def get_by_job_id(
-        self, credentials: SyftVerifyKey, user_code_id: UID
+        self, credentials: SyftVerifyKey, user_code_id: UID,
     ) -> Result[ExecutionOutput | None, str]:
         qks = QueryKeys(
             qks=[JobIdPartitionKey.with_obj(user_code_id)],
         )
         res = self.query_all(
-            credentials=credentials, qks=qks, order_by=CreatedAtPartitionKey
+            credentials=credentials, qks=qks, order_by=CreatedAtPartitionKey,
         )
         if res.is_err():
             return res
@@ -234,13 +231,13 @@ class OutputStash(BaseUIDStoreStash):
                 return Ok(res[0])
 
     def get_by_output_policy_id(
-        self, credentials: SyftVerifyKey, output_policy_id: UID
+        self, credentials: SyftVerifyKey, output_policy_id: UID,
     ) -> Result[list[ExecutionOutput], str]:
         qks = QueryKeys(
             qks=[OutputPolicyIdPartitionKey.with_obj(output_policy_id)],
         )
         return self.query_all(
-            credentials=credentials, qks=qks, order_by=CreatedAtPartitionKey
+            credentials=credentials, qks=qks, order_by=CreatedAtPartitionKey,
         )
 
 
@@ -288,7 +285,7 @@ class OutputService(AbstractService):
         roles=GUEST_ROLE_LEVEL,
     )
     def get_by_user_code_id(
-        self, context: AuthedServiceContext, user_code_id: UID
+        self, context: AuthedServiceContext, user_code_id: UID,
     ) -> list[ExecutionOutput] | SyftError:
         result = self.stash.get_by_user_code_id(
             credentials=context.server.verify_key,  # type: ignore
@@ -338,7 +335,7 @@ class OutputService(AbstractService):
         roles=ADMIN_ROLE_LEVEL,
     )
     def get_by_job_id(
-        self, context: AuthedServiceContext, user_code_id: UID
+        self, context: AuthedServiceContext, user_code_id: UID,
     ) -> ExecutionOutput | None | SyftError:
         result = self.stash.get_by_job_id(
             credentials=context.server.verify_key,  # type: ignore
@@ -354,7 +351,7 @@ class OutputService(AbstractService):
         roles=GUEST_ROLE_LEVEL,
     )
     def get_by_output_policy_id(
-        self, context: AuthedServiceContext, output_policy_id: UID
+        self, context: AuthedServiceContext, output_policy_id: UID,
     ) -> list[ExecutionOutput] | SyftError:
         result = self.stash.get_by_output_policy_id(
             credentials=context.server.verify_key,  # type: ignore
@@ -370,7 +367,7 @@ class OutputService(AbstractService):
         roles=GUEST_ROLE_LEVEL,
     )
     def get(
-        self, context: AuthedServiceContext, id: UID
+        self, context: AuthedServiceContext, id: UID,
     ) -> ExecutionOutput | SyftError:
         result = self.stash.get_by_uid(context.credentials, id)
         if result.is_ok():
@@ -379,7 +376,7 @@ class OutputService(AbstractService):
 
     @service_method(path="output.get_all", name="get_all", roles=GUEST_ROLE_LEVEL)
     def get_all(
-        self, context: AuthedServiceContext
+        self, context: AuthedServiceContext,
     ) -> list[ExecutionOutput] | SyftError:
         result = self.stash.get_all(context.credentials)
         if result.is_ok():

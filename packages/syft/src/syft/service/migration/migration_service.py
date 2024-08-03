@@ -1,34 +1,29 @@
 # stdlib
-from collections import defaultdict
 import sys
+from collections import defaultdict
 from typing import cast
 
 # third party
-from result import Err
-from result import Ok
-from result import Result
+from result import Err, Ok, Result
 
 # relative
 from ...serde.serializable import serializable
-from ...store.document_store import DocumentStore
-from ...store.document_store import StorePartition
+from ...store.document_store import DocumentStore, StorePartition
 from ...types.blob_storage import BlobStorageEntry
 from ...types.syft_object import SyftObject
-from ..action.action_object import Action
-from ..action.action_object import ActionObject
-from ..action.action_permissions import ActionObjectPermission
-from ..action.action_permissions import StoragePermission
+from ..action.action_object import Action, ActionObject
+from ..action.action_permissions import ActionObjectPermission, StoragePermission
 from ..action.action_store import KeyValueActionStore
 from ..context import AuthedServiceContext
-from ..response import SyftError
-from ..response import SyftSuccess
-from ..service import AbstractService
-from ..service import service_method
+from ..response import SyftError, SyftSuccess
+from ..service import AbstractService, service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
-from .object_migration_state import MigrationData
-from .object_migration_state import StoreMetadata
-from .object_migration_state import SyftMigrationStateStash
-from .object_migration_state import SyftObjectMigrationState
+from .object_migration_state import (
+    MigrationData,
+    StoreMetadata,
+    SyftMigrationStateStash,
+    SyftObjectMigrationState,
+)
 
 
 @serializable(canonical_name="MigrationService", version=1)
@@ -42,12 +37,11 @@ class MigrationService(AbstractService):
 
     @service_method(path="migration", name="get_version")
     def get_version(
-        self, context: AuthedServiceContext, canonical_name: str
+        self, context: AuthedServiceContext, canonical_name: str,
     ) -> int | SyftError:
         """Search for the metadata for an object."""
-
         result = self.stash.get_by_name(
-            canonical_name=canonical_name, credentials=context.credentials
+            canonical_name=canonical_name, credentials=context.credentials,
         )
 
         if result.is_err():
@@ -57,17 +51,17 @@ class MigrationService(AbstractService):
 
         if migration_state is None:
             return SyftError(
-                message=f"No migration state exists for canonical name: {canonical_name}"
+                message=f"No migration state exists for canonical name: {canonical_name}",
             )
 
         return migration_state.current_version
 
     @service_method(path="migration", name="get_state")
     def get_state(
-        self, context: AuthedServiceContext, canonical_name: str
+        self, context: AuthedServiceContext, canonical_name: str,
     ) -> bool | SyftError:
         result = self.stash.get_by_name(
-            canonical_name=canonical_name, credentials=context.credentials
+            canonical_name=canonical_name, credentials=context.credentials,
         )
 
         if result.is_err():
@@ -83,7 +77,7 @@ class MigrationService(AbstractService):
         canonical_name: str,
     ) -> SyftObjectMigrationState | SyftError:
         obj = SyftObjectMigrationState(
-            current_version=current_version, canonical_name=canonical_name
+            current_version=current_version, canonical_name=canonical_name,
         )
         result = self.stash.set(migration_state=obj, credentials=context.credentials)
 
@@ -93,7 +87,7 @@ class MigrationService(AbstractService):
         return result.ok()
 
     def _find_klasses_pending_for_migration(
-        self, context: AuthedServiceContext, object_types: list[type[SyftObject]]
+        self, context: AuthedServiceContext, object_types: list[type[SyftObject]],
     ) -> list[type[SyftObject]]:
         klasses_to_be_migrated = []
 
@@ -104,7 +98,7 @@ class MigrationService(AbstractService):
             migration_state = self.get_state(context, canonical_name)
             if isinstance(migration_state, SyftError):
                 raise Exception(
-                    f"Failed to get migration state for {canonical_name}. Error: {migration_state}"
+                    f"Failed to get migration state for {canonical_name}. Error: {migration_state}",
                 )
             if (
                 migration_state is not None
@@ -184,7 +178,7 @@ class MigrationService(AbstractService):
                 object_type=object_type,
                 permissions=permissions,
                 storage_permissions=storage_permissions,
-            )
+            ),
         )
 
     def _get_all_store_metadata(
@@ -217,7 +211,7 @@ class MigrationService(AbstractService):
         roles=ADMIN_ROLE_LEVEL,
     )
     def update_store_metadata(
-        self, context: AuthedServiceContext, store_metadata: dict[type, StoreMetadata]
+        self, context: AuthedServiceContext, store_metadata: dict[type, StoreMetadata],
     ) -> SyftSuccess | SyftError:
         res = self._update_store_metadata(context, store_metadata)
         if res.is_err():
@@ -226,7 +220,7 @@ class MigrationService(AbstractService):
             return SyftSuccess(message=res.ok())
 
     def _update_store_metadata_for_klass(
-        self, context: AuthedServiceContext, metadata: StoreMetadata
+        self, context: AuthedServiceContext, metadata: StoreMetadata,
     ) -> Result[str, str]:
         object_partition = self._get_partition_from_type(context, metadata.object_type)
         if object_partition.is_err():
@@ -251,7 +245,7 @@ class MigrationService(AbstractService):
         return Ok("success")
 
     def _update_store_metadata(
-        self, context: AuthedServiceContext, store_metadata: dict[type, StoreMetadata]
+        self, context: AuthedServiceContext, store_metadata: dict[type, StoreMetadata],
     ) -> Result[str, str]:
         print("Updating store metadata")
         for metadata in store_metadata.values():
@@ -290,7 +284,7 @@ class MigrationService(AbstractService):
             klasses_to_migrate = document_store_object_types
         else:
             klasses_to_migrate = self._find_klasses_pending_for_migration(
-                context=context, object_types=document_store_object_types
+                context=context, object_types=document_store_object_types,
             )
 
         result = defaultdict(list)
@@ -301,7 +295,7 @@ class MigrationService(AbstractService):
             if object_partition is None:
                 continue
             objects_result = object_partition.all(
-                context.credentials, has_permission=True
+                context.credentials, has_permission=True,
             )
             if objects_result.is_err():
                 return objects_result
@@ -318,7 +312,7 @@ class MigrationService(AbstractService):
         return Ok(dict(result))
 
     def _search_partition_for_object(
-        self, context: AuthedServiceContext, obj: SyftObject
+        self, context: AuthedServiceContext, obj: SyftObject,
     ) -> Result[StorePartition, str]:
         klass = type(obj)
         mro = klass.__mro__
@@ -359,7 +353,7 @@ class MigrationService(AbstractService):
     ) -> Result[str, str]:
         for migrated_object in migrated_objects:
             object_partition_or_err = self._search_partition_for_object(
-                context, migrated_object
+                context, migrated_object,
             )
             if object_partition_or_err.is_err():
                 return object_partition_or_err
@@ -373,7 +367,7 @@ class MigrationService(AbstractService):
             if result.is_err():
                 if ignore_existing and "Duplication Key Error" in result.value:
                     print(
-                        f"{type(migrated_object)} #{migrated_object.id} already exists"
+                        f"{type(migrated_object)} #{migrated_object.id} already exists",
                     )
                     continue
                 else:
@@ -387,7 +381,7 @@ class MigrationService(AbstractService):
         roles=ADMIN_ROLE_LEVEL,
     )
     def update_migrated_objects(
-        self, context: AuthedServiceContext, migrated_objects: list[SyftObject]
+        self, context: AuthedServiceContext, migrated_objects: list[SyftObject],
     ) -> SyftSuccess | SyftError:
         res = self._update_migrated_objects(context, migrated_objects)
         if res.is_err():
@@ -396,11 +390,11 @@ class MigrationService(AbstractService):
             return SyftSuccess(message=res.ok())
 
     def _update_migrated_objects(
-        self, context: AuthedServiceContext, migrated_objects: list[SyftObject]
+        self, context: AuthedServiceContext, migrated_objects: list[SyftObject],
     ) -> Result[str, str]:
         for migrated_object in migrated_objects:
             object_partition_or_err = self._search_partition_for_object(
-                context, migrated_object
+                context, migrated_object,
             )
             if object_partition_or_err.is_err():
                 return object_partition_or_err
@@ -447,7 +441,7 @@ class MigrationService(AbstractService):
 
                     print(traceback.format_exc())
                     return Err(
-                        f"Failed to migrate data to {klass} for qk {klass.__version__}: {object.id}"
+                        f"Failed to migrate data to {klass} for qk {klass.__version__}: {object.id}",
                     )
         return Ok(migrated_objects)
 
@@ -479,7 +473,7 @@ class MigrationService(AbstractService):
         # client.migration.write_migrated_values(migrated_values)
 
         migration_objects_result = self._get_migration_objects(
-            context, document_store_object_types
+            context, document_store_object_types,
         )
         if migration_objects_result.is_err():
             return migration_objects_result
@@ -491,7 +485,7 @@ class MigrationService(AbstractService):
         migrated_objects = migrated_objects_result.ok()
 
         objects_update_update_result = self._update_migrated_objects(
-            context, migrated_objects
+            context, migrated_objects,
         )
         if objects_update_update_result.is_err():
             return SyftError(message=objects_update_update_result.value)
@@ -508,7 +502,7 @@ class MigrationService(AbstractService):
         migrated_actionobjects = migrated_actionobjects.ok()
 
         actionobjects_update_update_result = self._update_migrated_actionobjects(
-            context, migrated_actionobjects
+            context, migrated_actionobjects,
         )
         if actionobjects_update_update_result.is_err():
             return SyftError(message=actionobjects_update_update_result.err())
@@ -521,7 +515,7 @@ class MigrationService(AbstractService):
         roles=ADMIN_ROLE_LEVEL,
     )
     def get_migration_actionobjects(
-        self, context: AuthedServiceContext, get_all: bool = False
+        self, context: AuthedServiceContext, get_all: bool = False,
     ) -> dict | SyftError:
         res = self._get_migration_actionobjects(context, get_all=get_all)
         if res.is_ok():
@@ -530,7 +524,7 @@ class MigrationService(AbstractService):
             return SyftError(message=res.value)
 
     def _get_migration_actionobjects(
-        self, context: AuthedServiceContext, get_all: bool = False
+        self, context: AuthedServiceContext, get_all: bool = False,
     ) -> Result[dict[type[SyftObject], list[SyftObject]], str]:
         # Track all object types from action store
         action_object_types = [Action, ActionObject]
@@ -540,12 +534,12 @@ class MigrationService(AbstractService):
         }
 
         action_object_pending_migration = self._find_klasses_pending_for_migration(
-            context=context, object_types=action_object_types
+            context=context, object_types=action_object_types,
         )
         result_dict: dict[type[SyftObject], list[SyftObject]] = defaultdict(list)
         action_store = context.server.action_store
         action_store_objects_result = action_store._all(
-            context.credentials, has_permission=True
+            context.credentials, has_permission=True,
         )
         if action_store_objects_result.is_err():
             return action_store_objects_result
@@ -563,7 +557,7 @@ class MigrationService(AbstractService):
         roles=ADMIN_ROLE_LEVEL,
     )
     def update_migrated_actionobjects(
-        self, context: AuthedServiceContext, objects: list[SyftObject]
+        self, context: AuthedServiceContext, objects: list[SyftObject],
     ) -> SyftSuccess | SyftError:
         res = self._update_migrated_actionobjects(context, objects)
         if res.is_ok():
@@ -572,13 +566,13 @@ class MigrationService(AbstractService):
             return SyftError(message=res.value)
 
     def _update_migrated_actionobjects(
-        self, context: AuthedServiceContext, objects: list[SyftObject]
+        self, context: AuthedServiceContext, objects: list[SyftObject],
     ) -> Result[str, str]:
         # Track all object types from action store
         action_store = context.server.action_store
         for obj in objects:
             res = action_store.set(
-                uid=obj.id, credentials=context.credentials, syft_object=obj
+                uid=obj.id, credentials=context.credentials, syft_object=obj,
             )
             if res.is_err():
                 return res
@@ -590,7 +584,7 @@ class MigrationService(AbstractService):
         roles=ADMIN_ROLE_LEVEL,
     )
     def get_migration_data(
-        self, context: AuthedServiceContext
+        self, context: AuthedServiceContext,
     ) -> MigrationData | SyftError:
         store_objects_result = self._get_migration_objects(context, get_all=True)
         if store_objects_result.is_err():
@@ -633,12 +627,12 @@ class MigrationService(AbstractService):
         if len(migration_data.blobs):
             return SyftError(
                 message="Blob storage migration is not supported by this endpoint, "
-                "please use 'client.load_migration_data' instead."
+                "please use 'client.load_migration_data' instead.",
             )
 
         # migrate + apply store objects
         migrated_objects_result = self._migrate_objects(
-            context, migration_data.store_objects
+            context, migration_data.store_objects,
         )
         if migrated_objects_result.is_err():
             return SyftError(message=migrated_objects_result.err())
@@ -649,13 +643,13 @@ class MigrationService(AbstractService):
 
         # migrate+apply action objects
         migrated_actionobjects = self._migrate_objects(
-            context, migration_data.action_objects
+            context, migration_data.action_objects,
         )
         if migrated_actionobjects.is_err():
             return SyftError(message=migrated_actionobjects.err())
         migrated_actionobjects = migrated_actionobjects.ok()
         action_objects_result = self._update_migrated_actionobjects(
-            context, migrated_actionobjects
+            context, migrated_actionobjects,
         )
         if action_objects_result.is_err():
             return SyftError(message=action_objects_result.err())

@@ -1,9 +1,9 @@
 # stdlib
 import argparse
-from collections.abc import Callable
 import json
 import os
 import uuid
+from collections.abc import Callable
 
 # third party
 from nacl.encoding import HexEncoder
@@ -109,10 +109,9 @@ def validate_uid(server_uid: str) -> str:
 
 
 def get_credential(
-    key: str, validation_func: Callable, generation_func: Callable
+    key: str, validation_func: Callable, generation_func: Callable,
 ) -> str:
-    """
-    This method will try to get a credential and if it isn't supplied or doesn't exist
+    """This method will try to get a credential and if it isn't supplied or doesn't exist
     it will generate one and save it. If the one supplied doesn't match the one saved
     it will raise an Exception.
     """
@@ -141,7 +140,7 @@ def get_credential(
 
 def get_private_key() -> str:
     return get_credential(
-        SERVER_PRIVATE_KEY, validate_private_key, generate_private_key
+        SERVER_PRIVATE_KEY, validate_private_key, generate_private_key,
     )
 
 
@@ -159,10 +158,10 @@ if __name__ == "__main__":
     parser.add_argument("--private_key", action="store_true", help="Get Private Key")
     parser.add_argument("--uid", action="store_true", help="Get UID")
     parser.add_argument(
-        "--file", action="store_true", help="Generate credentials as file"
+        "--file", action="store_true", help="Generate credentials as file",
     )
     parser.add_argument(
-        "--debug", action="store_true", help="Show ENV and file credentials"
+        "--debug", action="store_true", help="Show ENV and file credentials",
     )
     args = parser.parse_args()
 

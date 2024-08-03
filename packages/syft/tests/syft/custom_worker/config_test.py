@@ -1,21 +1,23 @@
 # stdlib
-from itertools import chain
-from itertools import combinations
 import json
+from itertools import chain, combinations
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-# third party
-from pydantic import BaseModel
 import pytest
-import yaml
 
 # syft absolute
 import syft as sy
-from syft.custom_worker.config import CustomBuildConfig
-from syft.custom_worker.config import CustomWorkerConfig
-from syft.custom_worker.config import DockerWorkerConfig
+import yaml
+
+# third party
+from pydantic import BaseModel
+from syft.custom_worker.config import (
+    CustomBuildConfig,
+    CustomWorkerConfig,
+    DockerWorkerConfig,
+)
 
 
 # in Pydantic v2 this would just be model.model_dump(mode='json')
@@ -30,14 +32,14 @@ DEFAULT_BUILD_CONFIG = {
     "custom_cmds": [],
 }
 # must follow the default values set in CustomBuildConfig class definition
-assert DEFAULT_BUILD_CONFIG == to_json_like_dict(CustomBuildConfig())
+assert to_json_like_dict(CustomBuildConfig()) == DEFAULT_BUILD_CONFIG
 
 
 DEFAULT_WORKER_CONFIG_VERSION = "1"
 # must be set to the default value of CustomWorkerConfig.version
 assert (
-    DEFAULT_WORKER_CONFIG_VERSION
-    == CustomWorkerConfig(build=CustomBuildConfig()).version
+    CustomWorkerConfig(build=CustomBuildConfig()).version
+    == DEFAULT_WORKER_CONFIG_VERSION
 )
 
 
@@ -52,8 +54,7 @@ CUSTOM_BUILD_CONFIG = {
 def generate_partial_custom_build_configs(
     full_config: dict[str, Any],
 ) -> list[dict[str, Any]]:
-    """
-    generate_partial_custom_build_configs({
+    """generate_partial_custom_build_configs({
         "gpu": True,
         "python_packages": ["toolz==0.12.0"],
         "system_packages": ["curl"],
@@ -88,12 +89,12 @@ def generate_partial_custom_build_configs(
 
 
 CUSTOM_BUILD_CONFIG_TEST_CASES = generate_partial_custom_build_configs(
-    CUSTOM_BUILD_CONFIG
+    CUSTOM_BUILD_CONFIG,
 )
 
 
 def get_worker_config(
-    build_config: dict[str, Any], worker_config_version: str | None = None
+    build_config: dict[str, Any], worker_config_version: str | None = None,
 ) -> dict[str, Any]:
     worker_config = {"build": build_config}
 
@@ -107,14 +108,14 @@ def get_full_build_config(build_config: dict[str, Any]) -> dict[str, Any]:
     return {**DEFAULT_BUILD_CONFIG, **build_config}
 
 
-@pytest.fixture
+@pytest.fixture()
 def worker_config(
-    build_config: dict[str, Any], worker_config_version: str | None
+    build_config: dict[str, Any], worker_config_version: str | None,
 ) -> dict[str, Any]:
-    yield get_worker_config(build_config, worker_config_version)
+    return get_worker_config(build_config, worker_config_version)
 
 
-@pytest.fixture
+@pytest.fixture()
 def worker_config_yaml(tmp_path: Path, worker_config: dict[str, Any]) -> Path:
     file_name = f"{uuid4().hex}.yaml"
     file_path = tmp_path / file_name
@@ -141,7 +142,7 @@ def test_load_custom_worker_config(
         parsed_worker_config_obj = CustomWorkerConfig.from_path(worker_config_yaml)
     elif method == "from_str":
         parsed_worker_config_obj = CustomWorkerConfig.from_str(
-            worker_config_yaml.read_text()
+            worker_config_yaml.read_text(),
         )
     elif method == "from_dict":
         with open(worker_config_yaml) as f:
@@ -171,7 +172,7 @@ DOCKER_CONFIG_OPENDP = f"""
 """
 
 
-@pytest.fixture
+@pytest.fixture()
 def dockerfile_path(tmp_path: Path) -> Path:
     file_name = f"{uuid4().hex}.Dockerfile"
     file_path = tmp_path / file_name
@@ -188,11 +189,11 @@ def test_docker_worker_config(dockerfile_path: Path, method: str) -> None:
     description = "I want to do some cool DS stuff with Syft and OpenDP"
     if method == "from_str":
         docker_config = DockerWorkerConfig(
-            dockerfile=dockerfile_path.read_text(), description=description
+            dockerfile=dockerfile_path.read_text(), description=description,
         )
     elif method == "from_path":
         docker_config = DockerWorkerConfig.from_path(
-            path=dockerfile_path, description=description
+            path=dockerfile_path, description=description,
         )
     else:
         raise ValueError(f"method must be one of {METHODS}")

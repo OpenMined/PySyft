@@ -1,6 +1,6 @@
 # stdlib
-from copy import deepcopy
 import os
+from copy import deepcopy
 from pathlib import Path
 from unittest import mock
 
@@ -9,27 +9,22 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.protocol.data_protocol import get_data_protocol
-from syft.protocol.data_protocol import protocol_release_dir
-from syft.protocol.data_protocol import stage_protocol_changes
+from syft.protocol.data_protocol import (
+    get_data_protocol,
+    protocol_release_dir,
+    stage_protocol_changes,
+)
 from syft.serde.recursive import TYPE_BANK
 from syft.serde.serializable import serializable
 from syft.server.worker import Worker
 from syft.service.context import AuthedServiceContext
 from syft.service.response import SyftError
-from syft.service.service import AbstractService
-from syft.service.service import ServiceConfigRegistry
-from syft.service.service import service_method
+from syft.service.service import AbstractService, ServiceConfigRegistry, service_method
 from syft.service.user.user_roles import GUEST_ROLE_LEVEL
-from syft.store.document_store import BaseStash
-from syft.store.document_store import DocumentStore
-from syft.store.document_store import PartitionSettings
+from syft.store.document_store import BaseStash, DocumentStore, PartitionSettings
 from syft.types.syft_migration import migrate
-from syft.types.syft_object import SYFT_OBJECT_VERSION_1
-from syft.types.syft_object import SyftBaseObject
-from syft.types.syft_object import SyftObject
-from syft.types.transforms import convert_types
-from syft.types.transforms import rename
+from syft.types.syft_object import SYFT_OBJECT_VERSION_1, SyftBaseObject, SyftObject
+from syft.types.transforms import convert_types, rename
 from syft.types.uid import UID
 from syft.util.util import index_syft_by_module_name
 
@@ -137,7 +132,7 @@ def setup_version_one(server_name: str):
 
     worker.services.append(syft_service_klass)
     worker.service_path_map[syft_service_klass.__name__.lower()] = syft_service_klass(
-        store=worker.document_store
+        store=worker.document_store,
     )
 
     return server, syft_klass_version_one
@@ -162,13 +157,13 @@ def setup_version_second(server_name: str, klass_version_one: type):
 
     worker.services.append(syft_service_klass)
     worker.service_path_map[syft_service_klass.__name__.lower()] = syft_service_klass(
-        store=worker.document_store
+        store=worker.document_store,
     )
 
     return server, syft_klass_version_second
 
 
-@pytest.fixture
+@pytest.fixture()
 def my_stage_protocol(protocol_file: Path):
     with mock.patch(
         "syft.protocol.data_protocol.PROTOCOL_STATE_FILENAME",
@@ -189,7 +184,7 @@ def my_stage_protocol(protocol_file: Path):
 
 
 @pytest.mark.skip(
-    reason="Issues running with other tests. Shared release folder causes issues."
+    reason="Issues running with other tests. Shared release folder causes issues.",
 )
 def test_client_server_running_different_protocols(my_stage_protocol):
     def patched_index_syft_by_module_name(fully_qualified_name: str):
@@ -226,10 +221,10 @@ def test_client_server_running_different_protocols(my_stage_protocol):
 
                 # Setup mock object version second
                 with mock.patch(
-                    "syft.protocol.data_protocol.__version__", mock_syft_version()
+                    "syft.protocol.data_protocol.__version__", mock_syft_version(),
                 ):
                     nh2, klass_v2 = setup_version_second(
-                        server_name, klass_version_one=klass_v1
+                        server_name, klass_version_one=klass_v1,
                     )
 
                     # Create a sample data in version second
@@ -246,7 +241,7 @@ def test_client_server_running_different_protocols(my_stage_protocol):
 
                     # Set the sample data in version second
                     service_klass = nh1.python_server.get_service(
-                        "SyftMockObjectService"
+                        "SyftMockObjectService",
                     )
                     service_klass.stash.set(
                         nh1.python_server.root_client.verify_key,

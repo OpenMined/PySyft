@@ -56,7 +56,7 @@ def client_do_2(server_2):
 @pytest.fixture(scope="function")
 def client_ds_1(server_1, client_do_1):
     client_do_1.register(
-        name="test_user", email="test@us.er", password="1234", password_verify="1234"
+        name="test_user", email="test@us.er", password="1234", password_verify="1234",
     )
     return server_1.login(email="test@us.er", password="1234")
 
@@ -76,7 +76,7 @@ def dataset_1(client_do_1):
                 data=private,
                 shape=private.shape,
                 mock_is_real=True,
-            )
+            ),
         ],
     )
 
@@ -99,7 +99,7 @@ def dataset_2(client_do_2):
                 data=private,
                 shape=private.shape,
                 mock_is_real=True,
-            )
+            ),
         ],
     )
 

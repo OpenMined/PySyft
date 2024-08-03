@@ -1,17 +1,14 @@
 # stdlib
-from datetime import datetime
-from datetime import timedelta
-from functools import total_ordering
 import re
-from typing import Any
+from datetime import datetime, timedelta
+from functools import total_ordering
 
 # third party
 from typing_extensions import Self
 
 # relative
 from ..serde.serializable import serializable
-from .syft_object import SYFT_OBJECT_VERSION_1
-from .syft_object import SyftObject
+from .syft_object import SYFT_OBJECT_VERSION_1, SyftObject
 from .uid import UID
 
 DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
@@ -51,7 +48,7 @@ class DateTime(SyftObject):
         res = self.utc_timestamp - other.utc_timestamp
         return DateTime(utc_timestamp=res)
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if other is None:
             return False
         return self.utc_timestamp == other.utc_timestamp

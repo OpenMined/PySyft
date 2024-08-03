@@ -1,9 +1,8 @@
 # stdlib
-from collections.abc import Callable
 import inspect
 import time
-from typing import Any
-from typing import cast
+from collections.abc import Callable
+from typing import Any, cast
 
 # relative
 from ...serde.serializable import serializable
@@ -12,28 +11,24 @@ from ...store.document_store import DocumentStore
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_object import ActionObject
-from ..action.action_permissions import ActionObjectPermission
-from ..action.action_permissions import ActionPermission
+from ..action.action_permissions import ActionObjectPermission, ActionPermission
 from ..code.user_code import UserCode
 from ..context import AuthedServiceContext
 from ..log.log_service import LogService
 from ..queue.queue_stash import ActionQueueItem
-from ..response import SyftError
-from ..response import SyftSuccess
-from ..service import AbstractService
-from ..service import TYPE_TO_SERVICE
-from ..service import service_method
-from ..user.user_roles import ADMIN_ROLE_LEVEL
-from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
-from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
-from ..user.user_roles import GUEST_ROLE_LEVEL
-from .job_stash import Job
-from .job_stash import JobStash
-from .job_stash import JobStatus
+from ..response import SyftError, SyftSuccess
+from ..service import TYPE_TO_SERVICE, AbstractService, service_method
+from ..user.user_roles import (
+    ADMIN_ROLE_LEVEL,
+    DATA_OWNER_ROLE_LEVEL,
+    DATA_SCIENTIST_ROLE_LEVEL,
+    GUEST_ROLE_LEVEL,
+)
+from .job_stash import Job, JobStash, JobStatus
 
 
 def wait_until(
-    predicate: Callable[[], bool], timeout: int = 10
+    predicate: Callable[[], bool], timeout: int = 10,
 ) -> SyftSuccess | SyftError:
     start = time.time()
     code_string = inspect.getsource(predicate).strip()
@@ -82,7 +77,7 @@ class JobService(AbstractService):
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_by_user_code_id(
-        self, context: AuthedServiceContext, user_code_id: UID
+        self, context: AuthedServiceContext, user_code_id: UID,
     ) -> list[Job] | SyftError:
         res = self.stash.get_by_user_code_id(context.credentials, user_code_id)
         if res.is_err():
@@ -97,7 +92,7 @@ class JobService(AbstractService):
         roles=ADMIN_ROLE_LEVEL,
     )
     def delete(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID,
     ) -> SyftSuccess | SyftError:
         res = self.stash.delete_by_uid(context.credentials, uid)
         if res.is_err():
@@ -110,7 +105,7 @@ class JobService(AbstractService):
         roles=ADMIN_ROLE_LEVEL,
     )
     def get_by_result_id(
-        self, context: AuthedServiceContext, result_id: UID
+        self, context: AuthedServiceContext, result_id: UID,
     ) -> Job | None | SyftError:
         res = self.stash.get_by_result_id(context.credentials, result_id)
         if res.is_err():
@@ -123,7 +118,7 @@ class JobService(AbstractService):
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def restart(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID,
     ) -> SyftSuccess | SyftError:
         job_or_err = self.stash.get_by_uid(context.credentials, uid=uid)
         if job_or_err.is_err():
@@ -134,12 +129,12 @@ class JobService(AbstractService):
         job = job_or_err.ok()
         if job.parent_job_id is not None:
             return SyftError(
-                message="Not possible to restart subjobs. Please restart the parent job."
+                message="Not possible to restart subjobs. Please restart the parent job.",
             )
         if job.status == JobStatus.PROCESSING:
             return SyftError(
                 message="Jobs in progress cannot be restarted. "
-                "Please wait for completion or cancel the job via .cancel() to proceed."
+                "Please wait for completion or cancel the job via .cancel() to proceed.",
             )
 
         job.status = JobStatus.CREATED
@@ -148,7 +143,7 @@ class JobService(AbstractService):
         task_uid = UID()
         worker_settings = WorkerSettings.from_server(context.server)
         worker_pool_ref = context.server.get_worker_pool_ref_by_name(
-            context.credentials
+            context.credentials,
         )
         if isinstance(worker_pool_ref, SyftError):
             return worker_pool_ref
@@ -181,7 +176,7 @@ class JobService(AbstractService):
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def update(
-        self, context: AuthedServiceContext, job: Job
+        self, context: AuthedServiceContext, job: Job,
     ) -> SyftSuccess | SyftError:
         res = self.stash.update(context.credentials, obj=job)
         if res.is_err():
@@ -214,7 +209,7 @@ class JobService(AbstractService):
         wait_until(
             lambda: all(
                 subjob.fetched_status == JobStatus.INTERRUPTED for subjob in job.subjobs
-            )
+            ),
         )
 
         return SyftSuccess(message="Job killed successfully!")
@@ -234,14 +229,14 @@ class JobService(AbstractService):
         job = job_or_err.ok()
         if job.parent_job_id is not None:
             return SyftError(
-                message="Not possible to cancel subjobs. To stop execution, please cancel the parent job."
+                message="Not possible to cancel subjobs. To stop execution, please cancel the parent job.",
             )
         if job.status != JobStatus.PROCESSING:
             return SyftError(message="Job is not running")
         if job.job_pid is None:
             return SyftError(
                 message="Job termination disabled in dev mode. "
-                "Set 'dev_mode=False' or 'thread_workers=False' to enable."
+                "Set 'dev_mode=False' or 'thread_workers=False' to enable.",
             )
 
         return self._kill(context, job)
@@ -252,7 +247,7 @@ class JobService(AbstractService):
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_subjobs(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID,
     ) -> list[Job] | SyftError:
         res = self.stash.get_by_parent_id(context.credentials, uid=uid)
         if res.is_err():
@@ -261,7 +256,7 @@ class JobService(AbstractService):
             return res.ok()
 
     @service_method(
-        path="job.get_active", name="get_active", roles=DATA_SCIENTIST_ROLE_LEVEL
+        path="job.get_active", name="get_active", roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_active(self, context: AuthedServiceContext) -> list[Job] | SyftError:
         res = self.stash.get_active(context.credentials)
@@ -275,10 +270,10 @@ class JobService(AbstractService):
         roles=DATA_OWNER_ROLE_LEVEL,
     )
     def add_read_permission_job_for_code_owner(
-        self, context: AuthedServiceContext, job: Job, user_code: UserCode
+        self, context: AuthedServiceContext, job: Job, user_code: UserCode,
     ) -> None:
         permission = ActionObjectPermission(
-            job.id, ActionPermission.READ, user_code.user_verify_key
+            job.id, ActionPermission.READ, user_code.user_verify_key,
         )
         return self.stash.add_permission(permission=permission)
 
@@ -288,14 +283,14 @@ class JobService(AbstractService):
         roles=DATA_OWNER_ROLE_LEVEL,
     )
     def add_read_permission_log_for_code_owner(
-        self, context: AuthedServiceContext, log_id: UID, user_code: UserCode
+        self, context: AuthedServiceContext, log_id: UID, user_code: UserCode,
     ) -> Any:
         log_service = context.server.get_service("logservice")
         log_service = cast(LogService, log_service)
         return log_service.stash.add_permission(
             ActionObjectPermission(
-                log_id, ActionPermission.READ, user_code.user_verify_key
-            )
+                log_id, ActionPermission.READ, user_code.user_verify_key,
+            ),
         )
 
     @service_method(

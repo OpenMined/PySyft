@@ -11,12 +11,9 @@ from pydantic import Field
 from ..serde.serializable import serializable
 from ..server.credentials import SyftVerifyKey
 from ..types import uid
-from .document_store import DocumentStore
-from .document_store import StoreConfig
-from .kv_document_store import KeyValueBackingStore
-from .kv_document_store import KeyValueStorePartition
-from .locks import LockingConfig
-from .locks import ThreadingLockingConfig
+from .document_store import DocumentStore, StoreConfig
+from .kv_document_store import KeyValueBackingStore, KeyValueStorePartition
+from .locks import LockingConfig, ThreadingLockingConfig
 
 
 @serializable(canonical_name="DictBackingStore", version=1)
@@ -42,11 +39,13 @@ class DictBackingStore(dict, KeyValueBackingStore):  # type: ignore[misc]
 class DictStorePartition(KeyValueStorePartition):
     """Dictionary-based StorePartition
 
-    Parameters:
+    Parameters
+    ----------
         `settings`: PartitionSettings
             PySyft specific settings, used for indexing and partitioning
         `store_config`: DictStoreConfig
             DictStore specific configuration
+
     """
 
     def prune(self) -> None:
@@ -58,9 +57,11 @@ class DictStorePartition(KeyValueStorePartition):
 class DictDocumentStore(DocumentStore):
     """Dictionary-based Document Store
 
-    Parameters:
+    Parameters
+    ----------
         `store_config`: DictStoreConfig
             Dictionary Store specific configuration, containing the store type and the backing store type
+
     """
 
     partition_type = DictStorePartition

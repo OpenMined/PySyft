@@ -3,27 +3,26 @@ from enum import Enum
 from typing import Any
 
 # third party
-from result import Ok
-from result import Result
+from result import Ok, Result
 
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...server.worker_settings import WorkerSettings
-from ...store.document_store import BaseStash
-from ...store.document_store import DocumentStore
-from ...store.document_store import PartitionKey
-from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
-from ...store.document_store import UIDPartitionKey
+from ...store.document_store import (
+    BaseStash,
+    DocumentStore,
+    PartitionKey,
+    PartitionSettings,
+    QueryKeys,
+    UIDPartitionKey,
+)
 from ...store.linked_obj import LinkedObject
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
-from ..response import SyftError
-from ..response import SyftSuccess
+from ..response import SyftError, SyftSuccess
 
 
 @serializable(canonical_name="Status", version=1)
@@ -100,7 +99,7 @@ class APIEndpointQueueItem(QueueItem):
 class QueueStash(BaseStash):
     object_type = QueueItem
     settings: PartitionSettings = PartitionSettings(
-        name=QueueItem.__canonical_name__, object_type=QueueItem
+        name=QueueItem.__canonical_name__, object_type=QueueItem,
     )
 
     def __init__(self, store: DocumentStore) -> None:
@@ -136,21 +135,21 @@ class QueueStash(BaseStash):
         return item
 
     def get_by_uid(
-        self, credentials: SyftVerifyKey, uid: UID
+        self, credentials: SyftVerifyKey, uid: UID,
     ) -> Result[QueueItem | None, str]:
         qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
         item = self.query_one(credentials=credentials, qks=qks)
         return item
 
     def pop(
-        self, credentials: SyftVerifyKey, uid: UID
+        self, credentials: SyftVerifyKey, uid: UID,
     ) -> Result[QueueItem | None, str]:
         item = self.get_by_uid(credentials=credentials, uid=uid)
         self.delete_by_uid(credentials=credentials, uid=uid)
         return item
 
     def pop_on_complete(
-        self, credentials: SyftVerifyKey, uid: UID
+        self, credentials: SyftVerifyKey, uid: UID,
     ) -> Result[QueueItem | None, str]:
         item = self.get_by_uid(credentials=credentials, uid=uid)
         if item.is_ok():
@@ -160,7 +159,7 @@ class QueueStash(BaseStash):
         return item
 
     def delete_by_uid(
-        self, credentials: SyftVerifyKey, uid: UID
+        self, credentials: SyftVerifyKey, uid: UID,
     ) -> Result[SyftSuccess, str]:
         qk = UIDPartitionKey.with_obj(uid)
         result = super().delete(credentials=credentials, qk=qk)
@@ -169,7 +168,7 @@ class QueueStash(BaseStash):
         return result
 
     def get_by_status(
-        self, credentials: SyftVerifyKey, status: Status
+        self, credentials: SyftVerifyKey, status: Status,
     ) -> Result[list[QueueItem], str]:
         qks = QueryKeys(qks=StatusPartitionKey.with_obj(status))
 

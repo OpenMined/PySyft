@@ -1,13 +1,11 @@
 # stdlib
+import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-import smtplib
 
 # third party
 from pydantic import BaseModel
-from result import Err
-from result import Ok
-from result import Result
+from result import Err, Ok, Result
 
 
 class SMTPClient(BaseModel):
@@ -39,7 +37,7 @@ class SMTPClient(BaseModel):
         msg.attach(MIMEText(body, "html"))
 
         with smtplib.SMTP(
-            self.server, self.port, timeout=self.SOCKET_TIMEOUT
+            self.server, self.port, timeout=self.SOCKET_TIMEOUT,
         ) as server:
             server.ehlo()
             if server.has_extn("STARTTLS"):
@@ -52,12 +50,14 @@ class SMTPClient(BaseModel):
 
     @classmethod
     def check_credentials(
-        cls, server: str, port: int, username: str, password: str
+        cls, server: str, port: int, username: str, password: str,
     ) -> Result[Ok, Err]:
         """Check if the credentials are valid.
 
-        Returns:
+        Returns
+        -------
             bool: True if the credentials are valid, False otherwise.
+
         """
         try:
             with smtplib.SMTP(server, port, timeout=cls.SOCKET_TIMEOUT) as smtp_server:

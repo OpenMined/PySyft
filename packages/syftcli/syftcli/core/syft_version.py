@@ -2,8 +2,7 @@
 from functools import cached_property
 
 # third party
-from packaging.specifiers import SpecifierSet
-from packaging.specifiers import Version
+from packaging.specifiers import SpecifierSet, Version
 from packaging.version import InvalidVersion
 
 # relative
@@ -24,7 +23,6 @@ class SyftVersion:
     @property
     def release_tag(self) -> str:
         """Returns the Github release version string (e.g. v0.8.2)"""
-
         return f"v{self.version}"
 
     @cached_property

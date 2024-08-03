@@ -5,21 +5,23 @@ from secrets import token_hex
 from typing import Any
 
 # third party
-from kr8s.objects import ConfigMap
-from kr8s.objects import Job
-from kr8s.objects import Secret
+from kr8s.objects import ConfigMap, Job, Secret
 
 # relative
-from .builder_types import BUILD_IMAGE_TIMEOUT_SEC
-from .builder_types import BuilderBase
-from .builder_types import ImageBuildResult
-from .builder_types import ImagePushResult
-from .builder_types import PUSH_IMAGE_TIMEOUT_SEC
-from .k8s import INTERNAL_REGISTRY_HOST
-from .k8s import KUBERNETES_NAMESPACE
-from .k8s import KubeUtils
-from .k8s import USE_INTERNAL_REGISTRY
-from .k8s import get_kr8s_client
+from .builder_types import (
+    BUILD_IMAGE_TIMEOUT_SEC,
+    PUSH_IMAGE_TIMEOUT_SEC,
+    BuilderBase,
+    ImageBuildResult,
+    ImagePushResult,
+)
+from .k8s import (
+    INTERNAL_REGISTRY_HOST,
+    KUBERNETES_NAMESPACE,
+    USE_INTERNAL_REGISTRY,
+    KubeUtils,
+    get_kr8s_client,
+)
 from .utils import ImageUtils
 
 __all__ = ["KubernetesBuilder"]
@@ -100,7 +102,7 @@ class KubernetesBuilder(BuilderBase):
                 raise BuildFailed(
                     "Failed to build the image. "
                     f"Kaniko exit code={exit_code}. "
-                    f"Logs={logs}"
+                    f"Logs={logs}",
                 )
 
         except Exception:
@@ -201,7 +203,7 @@ class KubernetesBuilder(BuilderBase):
                 "data": {
                     "Dockerfile": dockerfile,
                 },
-            }
+            },
         )
         return KubeUtils.create_or_get(config_map)
 
@@ -268,7 +270,7 @@ class KubernetesBuilder(BuilderBase):
                                             "mountPath": "/workspace",
                                         },
                                     ],
-                                }
+                                },
                             ],
                             "volumes": [
                                 {
@@ -278,10 +280,10 @@ class KubernetesBuilder(BuilderBase):
                                     },
                                 },
                             ],
-                        }
+                        },
                     },
                 },
-            }
+            },
         )
 
         return KubeUtils.create_or_get(job)
@@ -338,7 +340,7 @@ class KubernetesBuilder(BuilderBase):
                                             "readOnly": True,
                                         },
                                     ],
-                                }
+                                },
                             ],
                             "volumes": [
                                 {
@@ -354,10 +356,10 @@ class KubernetesBuilder(BuilderBase):
                                     },
                                 },
                             ],
-                        }
+                        },
                     },
                 },
-            }
+            },
         )
         return KubeUtils.create_or_get(job)
 

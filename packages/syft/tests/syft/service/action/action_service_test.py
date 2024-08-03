@@ -11,7 +11,7 @@ from syft.service.context import AuthedServiceContext
 
 def get_auth_ctx(worker):
     return AuthedServiceContext(
-        server=worker, credentials=worker.signing_key.verify_key
+        server=worker, credentials=worker.signing_key.verify_key,
     )
 
 

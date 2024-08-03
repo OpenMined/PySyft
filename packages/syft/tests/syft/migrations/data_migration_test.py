@@ -1,18 +1,17 @@
 # stdlib
-from contextlib import contextmanager
 import secrets
+from contextlib import contextmanager
 
 # third party
 import faker
 import numpy as np
-import yaml
 
 # syft absolute
 import syft as sy
+import yaml
 from syft.client.datasite_client import DatasiteClient
 from syft.service.migration.object_migration_state import MigrationData
-from syft.service.response import SyftError
-from syft.service.response import SyftSuccess
+from syft.service.response import SyftError, SyftSuccess
 from syft.service.user.user import User
 
 
@@ -44,7 +43,7 @@ def create_dataset(client):
                 data=private,
                 shape=private.shape,
                 mock_is_real=True,
-            )
+            ),
         ],
     )
 

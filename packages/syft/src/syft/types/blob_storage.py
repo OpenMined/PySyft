@@ -1,21 +1,16 @@
 # stdlib
-from collections.abc import Callable
-from collections.abc import Iterator
-from datetime import datetime
-from datetime import timedelta
 import mimetypes
-from pathlib import Path
-from queue import Queue
 import sys
 import threading
+from collections.abc import Callable, Iterator
+from datetime import datetime, timedelta
+from pathlib import Path
+from queue import Queue
 from time import sleep
-from typing import Any
-from typing import ClassVar
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, ClassVar
 
 # third party
-from azure.storage.blob import BlobSasPermissions
-from azure.storage.blob import generate_blob_sas
+from azure.storage.blob import BlobSasPermissions, generate_blob_sas
 from botocore.client import ClientError as BotoClientError
 from typing_extensions import Self
 
@@ -25,25 +20,23 @@ from ..client.client import SyftClient
 from ..serde import serialize
 from ..serde.serializable import serializable
 from ..server.credentials import SyftVerifyKey
-from ..service.action.action_object import ActionObject
-from ..service.action.action_object import ActionObjectPointer
-from ..service.action.action_object import BASE_PASSTHROUGH_ATTRS
+from ..service.action.action_object import (
+    BASE_PASSTHROUGH_ATTRS,
+    ActionObject,
+    ActionObjectPointer,
+)
 from ..service.action.action_types import action_types
-from ..service.response import SyftError
-from ..service.response import SyftException
+from ..service.response import SyftError, SyftException
 from ..service.service import from_api_or_context
 from ..types.server_url import ServerURL
-from ..types.transforms import keep
-from ..types.transforms import transform
+from ..types.transforms import keep, transform
 from .datetime import DateTime
-from .syft_object import SYFT_OBJECT_VERSION_1
-from .syft_object import SyftObject
+from .syft_object import SYFT_OBJECT_VERSION_1, SyftObject
 from .uid import UID
 
 if TYPE_CHECKING:
     # relative
-    from ..store.blob_storage import BlobRetrievalByURL
-    from ..store.blob_storage import BlobStorageConnection
+    from ..store.blob_storage import BlobRetrievalByURL, BlobStorageConnection
 
 
 READ_EXPIRATION_TIME = 1800  # seconds
@@ -71,12 +64,12 @@ class BlobFile(SyftObject):
     ) -> Any:
         # get blob retrieval object from api + syft_blob_storage_entry_id
         read_method = from_api_or_context(
-            "blob_storage.read", self.syft_server_location, self.syft_client_verify_key
+            "blob_storage.read", self.syft_server_location, self.syft_client_verify_key,
         )
         if read_method is not None:
             blob_retrieval_object = read_method(self.syft_blob_storage_entry_id)
             return blob_retrieval_object._read_data(
-                stream=stream, chunk_size=chunk_size, _deserialize=False
+                stream=stream, chunk_size=chunk_size, _deserialize=False,
             )
         else:
             return None
@@ -117,7 +110,8 @@ class BlobFile(SyftObject):
     def _iter_lines(self, chunk_size: int = DEFAULT_CHUNK_SIZE) -> Iterator[bytes]:
         """Synchronous version of the async iter_lines. This implementation
         is also optimized in terms of splitting chunks, making it faster for
-        larger lines"""
+        larger lines
+        """
         pending = None
         for chunk in self.read(stream=True, chunk_size=chunk_size):
             if b"\n" in chunk:
@@ -129,11 +123,10 @@ class BlobFile(SyftObject):
                 else:
                     pending = None
                 yield from lines
+            elif pending is None:
+                pending = chunk
             else:
-                if pending is None:
-                    pending = chunk
-                else:
-                    pending = pending + chunk
+                pending = pending + chunk
 
         if pending is not None:
             yield pending
@@ -164,7 +157,7 @@ class BlobFile(SyftObject):
         queue.put(0)
 
     def iter_lines(
-        self, chunk_size: int = DEFAULT_CHUNK_SIZE, progress: bool = False
+        self, chunk_size: int = DEFAULT_CHUNK_SIZE, progress: bool = False,
     ) -> Iterator[str]:
         item_queue: Queue = Queue()
         threading.Thread(
@@ -247,7 +240,7 @@ class SeaweedSecureFilePathLocation(SecureFilePathLocation):
             from ..store.blob_storage import BlobRetrievalByURL
 
             return BlobRetrievalByURL(
-                url=ServerURL.from_url(url), file_name=Path(self.path).name, type_=type_
+                url=ServerURL.from_url(url), file_name=Path(self.path).name, type_=type_,
             )
         except BotoClientError as e:
             raise SyftException(e)
@@ -263,7 +256,7 @@ class AzureSecureFilePathLocation(SecureFilePathLocation):
     bucket_name: str
 
     def generate_url(
-        self, connection: "BlobStorageConnection", type_: type | None, *args: Any
+        self, connection: "BlobStorageConnection", type_: type | None, *args: Any,
     ) -> "BlobRetrievalByURL":
         # SAS is almost the same thing as the presigned url
         config = connection.config.remote_profiles[self.azure_profile_name]
@@ -361,7 +354,7 @@ class CreateBlobStorageEntry(SyftObject):
             else:
                 raise SyftException(
                     "mimetype could not be identified.\n"
-                    "Please specify mimetype manually `from_path(..., mimetype = ...)`."
+                    "Please specify mimetype manually `from_path(..., mimetype = ...)`.",
                 )
 
         return cls(

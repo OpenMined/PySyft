@@ -1,12 +1,8 @@
 # stdlib
-from typing import Any
-from typing import TypeVar
-from typing import cast
+from typing import Any, TypeVar, cast
 
 # third party
-from result import Err
-from result import Ok
-from result import Result
+from result import Err, Ok, Result
 
 # relative
 from ...serde.serializable import serializable
@@ -18,34 +14,34 @@ from ...types.twin_object import TwinObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_object import ActionObject
-from ..action.action_permissions import ActionObjectPermission
-from ..action.action_permissions import ActionPermission
+from ..action.action_permissions import ActionObjectPermission, ActionPermission
 from ..action.action_service import ActionService
 from ..context import AuthedServiceContext
 from ..output.output_service import ExecutionOutput
 from ..policy.policy import OutputPolicy
-from ..request.request import Request
-from ..request.request import SubmitRequest
-from ..request.request import SyncedUserCodeStatusChange
-from ..request.request import UserCodeStatusChange
+from ..request.request import (
+    Request,
+    SubmitRequest,
+    SyncedUserCodeStatusChange,
+    UserCodeStatusChange,
+)
 from ..request.request_service import RequestService
-from ..response import SyftError
-from ..response import SyftNotReady
-from ..response import SyftSuccess
-from ..service import AbstractService
-from ..service import SERVICE_TO_TYPES
-from ..service import TYPE_TO_SERVICE
-from ..service import service_method
-from ..user.user_roles import ADMIN_ROLE_LEVEL
-from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
-from ..user.user_roles import GUEST_ROLE_LEVEL
-from ..user.user_roles import ServiceRole
-from .user_code import SubmitUserCode
-from .user_code import UserCode
-from .user_code import UserCodeStatus
-from .user_code import UserCodeUpdate
-from .user_code import get_code_hash
-from .user_code import load_approved_policy_code
+from ..response import SyftError, SyftNotReady, SyftSuccess
+from ..service import SERVICE_TO_TYPES, TYPE_TO_SERVICE, AbstractService, service_method
+from ..user.user_roles import (
+    ADMIN_ROLE_LEVEL,
+    DATA_SCIENTIST_ROLE_LEVEL,
+    GUEST_ROLE_LEVEL,
+    ServiceRole,
+)
+from .user_code import (
+    SubmitUserCode,
+    UserCode,
+    UserCodeStatus,
+    UserCodeUpdate,
+    get_code_hash,
+    load_approved_policy_code,
+)
 from .user_code_stash import UserCodeStash
 
 
@@ -61,7 +57,7 @@ class UserCodeService(AbstractService):
 
     @service_method(path="code.submit", name="submit", roles=GUEST_ROLE_LEVEL)
     def submit(
-        self, context: AuthedServiceContext, code: SubmitUserCode
+        self, context: AuthedServiceContext, code: SubmitUserCode,
     ) -> UserCode | SyftError:
         """Add User Code"""
         result = self._submit(context, code, exists_ok=False)
@@ -75,19 +71,21 @@ class UserCodeService(AbstractService):
         submit_code: SubmitUserCode,
         exists_ok: bool = False,
     ) -> Result[UserCode, str]:
-        """
-        Submit a UserCode.
+        """Submit a UserCode.
 
         If exists_ok is True, the function will return the existing code if it exists.
 
         Args:
+        ----
             context (AuthedServiceContext): context
             submit_code (SubmitUserCode): UserCode to submit
             exists_ok (bool, optional): If True, return the existing code if it exists.
                 If false, existing codes returns Err. Defaults to False.
 
         Returns:
+        -------
             Result[UserCode, str]: New UserCode or error
+
         """
         existing_code_or_err = self.stash.get_by_code_hash(
             context.credentials,
@@ -109,12 +107,12 @@ class UserCodeService(AbstractService):
             # if the validation fails, we should remove the user code status
             # and code version to prevent dangling status
             root_context = AuthedServiceContext(
-                credentials=context.server.verify_key, server=context.server
+                credentials=context.server.verify_key, server=context.server,
             )
 
             if code.status_link is not None:
                 _ = context.server.get_service("usercodestatusservice").remove(
-                    root_context, code.status_link.object_uid
+                    root_context, code.status_link.object_uid,
                 )
             return result
 
@@ -152,7 +150,7 @@ class UserCodeService(AbstractService):
 
     @service_method(path="code.delete", name="delete", roles=ADMIN_ROLE_LEVEL)
     def delete(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID,
     ) -> SyftSuccess | SyftError:
         """Delete User Code"""
         result = self.stash.delete_by_uid(context.credentials, uid)
@@ -166,10 +164,10 @@ class UserCodeService(AbstractService):
         roles=GUEST_ROLE_LEVEL,
     )
     def get_by_service_name(
-        self, context: AuthedServiceContext, service_func_name: str
+        self, context: AuthedServiceContext, service_func_name: str,
     ) -> list[UserCode] | SyftError:
         result = self.stash.get_by_service_func_name(
-            context.credentials, service_func_name=service_func_name
+            context.credentials, service_func_name=service_func_name,
         )
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -214,7 +212,7 @@ class UserCodeService(AbstractService):
     ) -> Request | SyftError:
         # Cannot make multiple requests for the same code
         get_by_usercode_id = context.server.get_service_method(
-            RequestService.get_by_usercode_id
+            RequestService.get_by_usercode_id,
         )
         existing_requests = get_by_usercode_id(context, user_code.id)
         if isinstance(existing_requests, SyftError):
@@ -222,7 +220,7 @@ class UserCodeService(AbstractService):
         if len(existing_requests) > 0:
             return SyftError(
                 message=f"Request {existing_requests[0].id} already exists for this UserCode. "
-                f"Please use the existing request, or submit a new UserCode to create a new request."
+                f"Please use the existing request, or submit a new UserCode to create a new request.",
             )
 
         # Users that have access to the output also have access to the code item
@@ -231,7 +229,7 @@ class UserCodeService(AbstractService):
                 [
                     ActionObjectPermission(user_code.id, ActionPermission.READ, x)
                     for x in user_code.output_readers
-                ]
+                ],
             )
 
         code_link = LinkedObject.from_obj(user_code, server_uid=context.server.id)
@@ -263,8 +261,7 @@ class UserCodeService(AbstractService):
         context: AuthedServiceContext,
         code: SubmitUserCode | UserCode,
     ) -> Result[UserCode, str]:
-        """
-        - If the code is a UserCode, check if it exists and return
+        """- If the code is a UserCode, check if it exists and return
         - If the code is a SubmitUserCode and the same code hash exists, return the existing code
         - If the code is a SubmitUserCode and the code hash does not exist, submit the code
         """
@@ -294,7 +291,6 @@ class UserCodeService(AbstractService):
         reason: str | None = "",
     ) -> Request | SyftError:
         """Request Code execution on user code"""
-
         user_code_or_err = self._get_or_submit_user_code(context, code)
         if user_code_or_err.is_err():
             return SyftError(message=user_code_or_err.err())
@@ -315,10 +311,10 @@ class UserCodeService(AbstractService):
         return SyftError(message=result.err())
 
     @service_method(
-        path="code.get_by_id", name="get_by_id", roles=DATA_SCIENTIST_ROLE_LEVEL
+        path="code.get_by_id", name="get_by_id", roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_by_uid(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID,
     ) -> UserCode | SyftError:
         """Get a User Code Item"""
         result = self.stash.get_by_uid(context.credentials, uid=uid)
@@ -340,7 +336,7 @@ class UserCodeService(AbstractService):
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_all_for_user(
-        self, context: AuthedServiceContext
+        self, context: AuthedServiceContext,
     ) -> SyftSuccess | SyftError:
         """Get All User Code Items for User's VerifyKey"""
         # TODO: replace with incoming user context and key
@@ -350,7 +346,7 @@ class UserCodeService(AbstractService):
         return SyftError(message=result.err())
 
     def update_code_state(
-        self, context: AuthedServiceContext, code_item: UserCode
+        self, context: AuthedServiceContext, code_item: UserCode,
     ) -> SyftSuccess | SyftError:
         context = context.as_root_context()
         result = self.stash.update(context.credentials, code_item)
@@ -388,7 +384,7 @@ class UserCodeService(AbstractService):
             return True
 
     def is_execution_on_owned_args_allowed(
-        self, context: AuthedServiceContext
+        self, context: AuthedServiceContext,
     ) -> bool | SyftError:
         if context.role == ServiceRole.ADMIN:
             return True
@@ -398,10 +394,9 @@ class UserCodeService(AbstractService):
         return current_user.mock_execution_permission
 
     def keep_owned_kwargs(
-        self, kwargs: dict[str, Any], context: AuthedServiceContext
+        self, kwargs: dict[str, Any], context: AuthedServiceContext,
     ) -> dict[str, Any] | SyftError:
         """Return only the kwargs that are owned by the user"""
-
         action_service = context.server.get_service("actionservice")
 
         mock_kwargs = {}
@@ -426,7 +421,7 @@ class UserCodeService(AbstractService):
     ) -> bool:
         # Check if all kwargs are owned by the user
         all_kwargs_are_owned = len(
-            self.keep_owned_kwargs(passed_kwargs, context)
+            self.keep_owned_kwargs(passed_kwargs, context),
         ) == len(passed_kwargs)
         if not all_kwargs_are_owned:
             return False
@@ -445,7 +440,7 @@ class UserCodeService(AbstractService):
 
     @service_method(path="code.call", name="call", roles=GUEST_ROLE_LEVEL)
     def call(
-        self, context: AuthedServiceContext, uid: UID, **kwargs: Any
+        self, context: AuthedServiceContext, uid: UID, **kwargs: Any,
     ) -> CachedSyftObject | ActionObject | SyftSuccess | SyftError:
         """Call a User Code Function"""
         kwargs.pop("result_id", None)
@@ -456,7 +451,7 @@ class UserCodeService(AbstractService):
             return result.ok()
 
     def valid_worker_pool_for_context(
-        self, context: AuthedServiceContext, user_code: UserCode
+        self, context: AuthedServiceContext, user_code: UserCode,
     ) -> bool:
         """This is a temporary fix that is needed until every function is always just ran as job"""
         # relative
@@ -495,7 +490,7 @@ class UserCodeService(AbstractService):
                     pass
                 else:
                     return Err(
-                        "You do not have the permissions for mock execution, please contact the admin"
+                        "You do not have the permissions for mock execution, please contact the admin",
                     )
             override_execution_permission = (
                 context.has_execute_permissions or context.role == ServiceRole.ADMIN
@@ -544,7 +539,7 @@ class UserCodeService(AbstractService):
                             if (
                                 input_policy is not None
                                 and not last_executed_output.check_input_ids(
-                                    kwargs=kwarg2id
+                                    kwargs=kwarg2id,
                                 )
                             ):
                                 inp_policy_validation = input_policy._is_valid(
@@ -572,7 +567,7 @@ class UserCodeService(AbstractService):
                                 CachedSyftObject(
                                     result=res,
                                     error_msg=output_policy_message,
-                                )
+                                ),
                             )
                         else:
                             return cast(Err, is_valid.to_result())
@@ -583,12 +578,12 @@ class UserCodeService(AbstractService):
                 return Err(
                     value="You tried to run a syft function attached to a worker pool in blocking mode,"
                     "which is currently not supported. Run your function with `blocking=False` to run"
-                    " as a job on your worker pool"
+                    " as a job on your worker pool",
                 )
             action_service: ActionService = context.server.get_service("actionservice")  # type: ignore
             result_action_object: Result[ActionObject | TwinObject, str] = (
                 action_service._user_code_execute(
-                    context, code, kwarg2id, result_id=result_id
+                    context, code, kwarg2id, result_id=result_id,
                 )
             )
             if result_action_object.is_err():
@@ -597,7 +592,7 @@ class UserCodeService(AbstractService):
                 result_action_object = result_action_object.ok()
 
             output_result = action_service.set_result_to_store(
-                result_action_object, context, code.get_output_policy(context)
+                result_action_object, context, code.get_output_policy(context),
             )
 
             if output_result.is_err():
@@ -626,7 +621,7 @@ class UserCodeService(AbstractService):
             # print(res)
 
             has_result_read_permission = action_service.has_read_permission(
-                context, result.id
+                context, result.id,
             )
 
             if isinstance(result, TwinObject):
@@ -650,14 +645,14 @@ class UserCodeService(AbstractService):
             return Err(value=f"Failed to run. {e}, {traceback.format_exc()}")
 
     def has_code_permission(
-        self, code_item: UserCode, context: AuthedServiceContext
+        self, code_item: UserCode, context: AuthedServiceContext,
     ) -> SyftSuccess | SyftError:
         if not (
             context.credentials == context.server.verify_key
             or context.credentials == code_item.user_verify_key
         ):
             return SyftError(
-                message=f"Code Execution Permission: {context.credentials} denied"
+                message=f"Code Execution Permission: {context.credentials} denied",
             )
         return SyftSuccess(message="you have permission")
 
@@ -707,7 +702,7 @@ def resolve_outputs(
             if context.server is not None:
                 action_service = context.server.get_service("actionservice")
                 result = action_service.get(
-                    context, uid=output_id, twin_mode=TwinMode.PRIVATE
+                    context, uid=output_id, twin_mode=TwinMode.PRIVATE,
                 )
                 if result.is_err():
                     return result

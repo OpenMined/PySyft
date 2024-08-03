@@ -10,8 +10,7 @@ import torch
 from syft import UID
 from syft.service.action.action_object import ActionObject
 from syft.service.user.user import User
-from syft.util.table import TABLE_INDEX_KEY
-from syft.util.table import prepare_table_data
+from syft.util.table import TABLE_INDEX_KEY, prepare_table_data
 
 
 def table_displayed(obj_to_check: Any) -> bool:

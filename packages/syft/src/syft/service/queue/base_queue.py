@@ -1,14 +1,12 @@
 # stdlib
-from typing import Any
-from typing import ClassVar
+from typing import Any, ClassVar
 
 # relative
 from ...serde.serializable import serializable
 from ...service.context import AuthedServiceContext
 from ...store.document_store import BaseStash
 from ...types.uid import UID
-from ..response import SyftError
-from ..response import SyftSuccess
+from ..response import SyftError, SyftSuccess
 from ..worker.worker_stash import WorkerStash
 
 

@@ -4,13 +4,8 @@ import secrets
 from typing import Any
 
 # third party
-from pydantic import AnyHttpUrl
-from pydantic import EmailStr
-from pydantic import HttpUrl
-from pydantic import field_validator
-from pydantic import model_validator
-from pydantic_settings import BaseSettings
-from pydantic_settings import SettingsConfigDict
+from pydantic import AnyHttpUrl, EmailStr, HttpUrl, field_validator, model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import Self
 
 _truthy = {"yes", "y", "true", "t", "on", "1"}
@@ -18,7 +13,7 @@ _falsy = {"no", "n", "false", "f", "off", "0"}
 
 
 def _distutils_strtoint(s: str) -> int:
-    """implements the deprecated distutils.util.strtoint"""
+    """Implements the deprecated distutils.util.strtoint"""
     ls = s.lower()
     if ls in _truthy:
         return 1
@@ -81,14 +76,14 @@ class Settings(BaseSettings):
 
     EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = 48
     EMAIL_TEMPLATES_DIR: str = os.path.expandvars(
-        "$HOME/app/grid/email-templates/build"
+        "$HOME/app/grid/email-templates/build",
     )
     EMAILS_ENABLED: bool = False
 
     @model_validator(mode="after")
     def get_emails_enabled(self) -> Self:
         self.EMAILS_ENABLED = bool(
-            self.SMTP_HOST and self.SMTP_PORT and self.EMAILS_FROM_EMAIL
+            self.SMTP_HOST and self.SMTP_PORT and self.EMAILS_FROM_EMAIL,
         )
 
         return self
@@ -113,7 +108,7 @@ class Settings(BaseSettings):
     S3_ROOT_PWD: str | None = os.getenv("S3_ROOT_PWD", "admin")
     S3_REGION: str = os.getenv("S3_REGION", "us-east-1")
     S3_PRESIGNED_TIMEOUT_SECS: int = int(
-        os.getenv("S3_PRESIGNED_TIMEOUT_SECS", 1800)
+        os.getenv("S3_PRESIGNED_TIMEOUT_SECS", 1800),
     )  # 30 minutes in seconds
     SEAWEED_MOUNT_PORT: int = int(os.getenv("SEAWEED_MOUNT_PORT", 4001))
 
@@ -153,11 +148,11 @@ class Settings(BaseSettings):
     )
     ASSOCIATION_TIMEOUT: int = 10
     ASSOCIATION_REQUEST_AUTO_APPROVAL: bool = str_to_bool(
-        os.getenv("ASSOCIATION_REQUEST_AUTO_APPROVAL", "False")
+        os.getenv("ASSOCIATION_REQUEST_AUTO_APPROVAL", "False"),
     )
     MIN_SIZE_BLOB_STORAGE_MB: int = int(os.getenv("MIN_SIZE_BLOB_STORAGE_MB", 1))
     REVERSE_TUNNEL_ENABLED: bool = str_to_bool(
-        os.getenv("REVERSE_TUNNEL_ENABLED", "false")
+        os.getenv("REVERSE_TUNNEL_ENABLED", "false"),
     )
     model_config = SettingsConfigDict(case_sensitive=True)
 

@@ -1,69 +1,53 @@
 # future
 from __future__ import annotations
 
+import inspect
+import types
+
 # stdlib
 from collections import OrderedDict
 from collections.abc import Callable
-import inspect
-from inspect import Parameter
-from inspect import signature
-import types
-from typing import Any
-from typing import TYPE_CHECKING
-from typing import _GenericAlias
-from typing import cast
-from typing import get_args
-from typing import get_origin
+from inspect import Parameter, signature
+from typing import TYPE_CHECKING, Any, _GenericAlias, cast, get_args, get_origin
 
 # third party
 from nacl.exceptions import BadSignatureError
-from pydantic import BaseModel
-from pydantic import ConfigDict
-from pydantic import EmailStr
-from pydantic import TypeAdapter
-from result import OkErr
-from result import Result
-from typeguard import TypeCheckError
-from typeguard import check_type
+from pydantic import BaseModel, ConfigDict, EmailStr, TypeAdapter
+from result import OkErr, Result
+from typeguard import TypeCheckError, check_type
 
 # relative
 from ..abstract_server import AbstractServer
-from ..protocol.data_protocol import PROTOCOL_TYPE
-from ..protocol.data_protocol import get_data_protocol
-from ..protocol.data_protocol import migrate_args_and_kwargs
+from ..protocol.data_protocol import (
+    PROTOCOL_TYPE,
+    get_data_protocol,
+    migrate_args_and_kwargs,
+)
 from ..serde.deserialize import _deserialize
 from ..serde.serializable import serializable
 from ..serde.serialize import _serialize
-from ..serde.signature import Signature
-from ..serde.signature import signature_remove_context
-from ..serde.signature import signature_remove_self
-from ..server.credentials import SyftSigningKey
-from ..server.credentials import SyftVerifyKey
-from ..service.context import AuthedServiceContext
-from ..service.context import ChangeContext
+from ..serde.signature import Signature, signature_remove_context, signature_remove_self
+from ..server.credentials import SyftSigningKey, SyftVerifyKey
+from ..service.context import AuthedServiceContext, ChangeContext
 from ..service.metadata.server_metadata import ServerMetadataJSON
-from ..service.response import SyftAttributeError
-from ..service.response import SyftError
-from ..service.response import SyftSuccess
-from ..service.service import UserLibConfigRegistry
-from ..service.service import UserServiceConfigRegistry
+from ..service.response import SyftAttributeError, SyftError, SyftSuccess
+from ..service.service import UserLibConfigRegistry, UserServiceConfigRegistry
 from ..service.user.user_roles import ServiceRole
-from ..service.warnings import APIEndpointWarning
-from ..service.warnings import WarningContext
+from ..service.warnings import APIEndpointWarning, WarningContext
 from ..types.cache_object import CachedSyftObject
 from ..types.identity import Identity
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
-from ..types.syft_object import SyftBaseObject
-from ..types.syft_object import SyftMigrationRegistry
-from ..types.syft_object import SyftObject
-from ..types.uid import LineageID
-from ..types.uid import UID
+from ..types.syft_object import (
+    SYFT_OBJECT_VERSION_1,
+    SyftBaseObject,
+    SyftMigrationRegistry,
+    SyftObject,
+)
+from ..types.uid import UID, LineageID
 from ..util.autoreload import autoreload_enabled
 from ..util.markdown import as_markdown_python_code
 from ..util.notebook_ui.components.tabulator_template import build_tabulator_table
 from ..util.telemetry import instrument
-from ..util.util import index_syft_by_module_name
-from ..util.util import prompt_warning_message
+from ..util.util import index_syft_by_module_name, prompt_warning_message
 from .connection import ServerConnection
 
 if TYPE_CHECKING:
@@ -185,7 +169,7 @@ class SignedSyftAPICall(SyftObject):
 
         if self.cached_deseralized_message is None:
             self.cached_deseralized_message = _deserialize(
-                blob=self.serialized_message, from_bytes=True
+                blob=self.serialized_message, from_bytes=True,
             )
 
         return self.cached_deseralized_message
@@ -194,7 +178,7 @@ class SignedSyftAPICall(SyftObject):
     def is_valid(self) -> Result[SyftSuccess, SyftError]:
         try:
             _ = self.credentials.verify_key.verify(
-                self.serialized_message, self.signature
+                self.serialized_message, self.signature,
             )
         except BadSignatureError:
             return SyftError(message="BadSignatureError")
@@ -274,7 +258,7 @@ class RemoteFunction(SyftObject):
         return self.signature
 
     def prepare_args_and_kwargs(
-        self, args: list | tuple, kwargs: dict[str, Any]
+        self, args: list | tuple, kwargs: dict[str, Any],
     ) -> SyftError | tuple[tuple, dict[str, Any]]:
         # Validate and migrate args and kwargs
         res = validate_callable_args_and_kwargs(args, kwargs, self.signature)
@@ -283,17 +267,17 @@ class RemoteFunction(SyftObject):
         args, kwargs = res
 
         args, kwargs = migrate_args_and_kwargs(
-            to_protocol=self.communication_protocol, args=args, kwargs=kwargs
+            to_protocol=self.communication_protocol, args=args, kwargs=kwargs,
         )
 
         return tuple(args), kwargs
 
     def function_call(
-        self, path: str, *args: Any, cache_result: bool = True, **kwargs: Any
+        self, path: str, *args: Any, cache_result: bool = True, **kwargs: Any,
     ) -> Any:
         if "blocking" in self.signature.parameters:
             raise Exception(
-                f"Signature {self.signature} can't have 'blocking' kwarg because it's reserved"
+                f"Signature {self.signature} can't have 'blocking' kwarg because it's reserved",
             )
 
         blocking = True
@@ -321,7 +305,7 @@ class RemoteFunction(SyftObject):
 
         allowed = self.warning.show() if self.warning else True
         if not allowed:
-            return
+            return None
         result = self.make_call(api_call=api_call, cache_result=cache_result)
 
         # TODO: annotate this on the service method decorator
@@ -332,7 +316,7 @@ class RemoteFunction(SyftObject):
                 self.refresh_api_callback()
 
         result, _ = migrate_args_and_kwargs(
-            [result], kwargs={}, to_latest_protocol=True
+            [result], kwargs={}, to_latest_protocol=True,
         )
         result = result[0]
         return result
@@ -348,7 +332,7 @@ class RemoteFunction(SyftObject):
             class PrivateCustomAPIReference:
                 def __call__(self, *args: Any, **kwargs: Any) -> Any:
                     return remote_func.function_call(
-                        "api.call_public_in_jobs", *args, **kwargs
+                        "api.call_public_in_jobs", *args, **kwargs,
                     )
 
                 @property
@@ -357,7 +341,7 @@ class RemoteFunction(SyftObject):
 
             return PrivateCustomAPIReference()
         return SyftError(
-            message="This function doesn't support mock/private calls as it's not custom."
+            message="This function doesn't support mock/private calls as it's not custom.",
         )
 
     @property
@@ -368,7 +352,7 @@ class RemoteFunction(SyftObject):
             class PrivateCustomAPIReference:
                 def __call__(self, *args: Any, **kwargs: Any) -> Any:
                     return remote_func.function_call(
-                        "api.call_private_in_jobs", *args, **kwargs
+                        "api.call_private_in_jobs", *args, **kwargs,
                     )
 
                 @property
@@ -377,7 +361,7 @@ class RemoteFunction(SyftObject):
 
             return PrivateCustomAPIReference()
         return SyftError(
-            message="This function doesn't support mock/private calls as it's not custom."
+            message="This function doesn't support mock/private calls as it's not custom.",
         )
 
     def custom_function_actionobject_id(self) -> UID | SyftError:
@@ -445,7 +429,7 @@ class RemoteUserCodeFunction(RemoteFunction):
     api: SyftAPI
 
     def prepare_args_and_kwargs(
-        self, args: list | tuple, kwargs: dict[str, Any]
+        self, args: list | tuple, kwargs: dict[str, Any],
     ) -> tuple[tuple, dict[str, Any]] | SyftError:
         # relative
         from ..service.action.action_object import convert_to_pointers
@@ -474,7 +458,7 @@ class RemoteUserCodeFunction(RemoteFunction):
         )
 
         args, kwargs = migrate_args_and_kwargs(
-            to_protocol=self.communication_protocol, args=args, kwargs=kwargs
+            to_protocol=self.communication_protocol, args=args, kwargs=kwargs,
         )
 
         return tuple(args), kwargs
@@ -512,7 +496,7 @@ def generate_remote_function(
 ) -> RemoteFunction:
     if "blocking" in signature.parameters:
         raise Exception(
-            f"Signature {signature} can't have 'blocking' kwarg because it's reserved"
+            f"Signature {signature} can't have 'blocking' kwarg because it's reserved",
         )
 
     # UserCodes are always code.call with a user_code_id
@@ -557,7 +541,7 @@ def generate_remote_lib_function(
 ) -> Any:
     if "blocking" in signature.parameters:
         raise Exception(
-            f"Signature {signature} can't have 'blocking' kwarg because its reserved"
+            f"Signature {signature} can't have 'blocking' kwarg because its reserved",
         )
 
     def wrapper(*args: Any, **kwargs: Any) -> SyftError | Any:
@@ -588,12 +572,14 @@ def generate_remote_lib_function(
             _valid_kwargs.update(pre_kwargs)
 
         # relative
-        from ..service.action.action_object import Action
-        from ..service.action.action_object import ActionType
-        from ..service.action.action_object import convert_to_pointers
+        from ..service.action.action_object import (
+            Action,
+            ActionType,
+            convert_to_pointers,
+        )
 
         action_args, action_kwargs = convert_to_pointers(
-            api, wrapper_server_uid, _valid_args, _valid_kwargs
+            api, wrapper_server_uid, _valid_args, _valid_kwargs,
         )
 
         # e.g. numpy.array -> numpy, array
@@ -664,7 +650,7 @@ class APIModule:
             return False
 
     def _add_submodule(
-        self, attr_name: str, module_or_func: Callable | APIModule
+        self, attr_name: str, module_or_func: Callable | APIModule,
     ) -> None:
         setattr(self, attr_name, module_or_func)
         self._modules.append(attr_name)
@@ -697,7 +683,7 @@ class APIModule:
             raise SyftAttributeError(
                 f"'APIModule' api{self.path} object has no submodule or method '{name}', "
                 "you may not have permission to access the module you are trying to access."
-                "If you think this is an error, try calling `client.refresh()` to update the API."
+                "If you think this is an error, try calling `client.refresh()` to update the API.",
             )
 
     def __getitem__(self, key: str | int) -> Any:
@@ -729,7 +715,7 @@ class APIModule:
                     x.path for x in children if isinstance(x, RemoteFunction)
                 ]
                 views.append(
-                    APISubModulesView(submodule=submodule_name, endpoints=child_paths)
+                    APISubModulesView(submodule=submodule_name, endpoints=child_paths),
                 )
 
             return build_tabulator_table(views)
@@ -757,7 +743,7 @@ def downgrade_signature(signature: Signature, object_versions: dict) -> Signatur
     migrated_parameters = []
     for parameter in signature.parameters.values():
         annotation = unwrap_and_migrate_annotation(
-            parameter.annotation, object_versions
+            parameter.annotation, object_versions,
         )
         migrated_parameter = Parameter(
             name=parameter.name,
@@ -768,7 +754,7 @@ def downgrade_signature(signature: Signature, object_versions: dict) -> Signatur
         migrated_parameters.append(migrated_parameter)
 
     migrated_return_annotation = unwrap_and_migrate_annotation(
-        signature.return_annotation, object_versions
+        signature.return_annotation, object_versions,
     )
 
     try:
@@ -792,7 +778,7 @@ def unwrap_and_migrate_annotation(annotation: Any, object_versions: dict) -> Any
             and annotation.__canonical_name__ in object_versions
         ):
             downgrade_to_version = int(
-                max(object_versions[annotation.__canonical_name__])
+                max(object_versions[annotation.__canonical_name__]),
             )
             downgrade_klass_name = SyftMigrationRegistry.__migration_version_registry__[
                 annotation.__canonical_name__
@@ -819,8 +805,7 @@ def unwrap_and_migrate_annotation(annotation: Any, object_versions: dict) -> Any
 
 def result_needs_api_update(api_call_result: Any) -> bool:
     # relative
-    from ..service.request.request import Request
-    from ..service.request.request import UserCodeStatusChange
+    from ..service.request.request import Request, UserCodeStatusChange
 
     if isinstance(api_call_result, Request) and any(
         isinstance(x, UserCodeStatusChange) for x in api_call_result.changes
@@ -839,7 +824,7 @@ def result_needs_api_update(api_call_result: Any) -> bool:
         "server_name",
         "lib_endpoints",
         "communication_protocol",
-    ]
+    ],
 )
 class SyftAPI(SyftObject):
     # version
@@ -879,7 +864,7 @@ class SyftAPI(SyftObject):
             raise SyftAttributeError(
                 f"'SyftAPI' object has no submodule or method '{name}', "
                 "you may not have permission to access the module you are trying to access."
-                "If you think this is an error, try calling `client.refresh()` to update the API."
+                "If you think this is an error, try calling `client.refresh()` to update the API.",
             )
 
     @staticmethod
@@ -902,7 +887,7 @@ class SyftAPI(SyftObject):
         endpoints: dict[str, APIEndpoint] = {}
         lib_endpoints: dict[str, LibEndpoint] = {}
         warning_context = WarningContext(
-            server=server, role=role, credentials=user_verify_key
+            server=server, role=role, credentials=user_verify_key,
         )
 
         # If server uses a higher protocol version than client, then
@@ -912,13 +897,13 @@ class SyftAPI(SyftObject):
             signature_needs_downgrade = True
         else:
             signature_needs_downgrade = server.current_protocol != "dev" and int(
-                server.current_protocol
+                server.current_protocol,
             ) > int(communication_protocol)
         data_protocol = get_data_protocol()
 
         if signature_needs_downgrade:
             object_version_for_protocol = data_protocol.get_object_versions(
-                communication_protocol
+                communication_protocol,
             )
 
         for (
@@ -970,7 +955,7 @@ class SyftAPI(SyftObject):
         # 🟡 TODO 35: fix root context
         context = AuthedServiceContext(server=server, credentials=user_verify_key)
         method = server.get_method_with_context(
-            UserCodeService.get_all_for_user, context
+            UserCodeService.get_all_for_user, context,
         )
         code_items = method()
 
@@ -1061,10 +1046,9 @@ class SyftAPI(SyftObject):
                 self.refresh_api_callback()
 
     def _add_route(
-        self, api_module: APIModule, endpoint: APIEndpoint, endpoint_method: Callable
+        self, api_module: APIModule, endpoint: APIEndpoint, endpoint_method: Callable,
     ) -> None:
         """Recursively create a module path to the route endpoint."""
-
         _modules = endpoint.module_path.split(".")[:-1] + [endpoint.name]
 
         _self = api_module
@@ -1078,7 +1062,7 @@ class SyftAPI(SyftObject):
                 _self._add_submodule(
                     module,
                     APIModule(
-                        path=submodule_path, refresh_callback=self.refresh_api_callback
+                        path=submodule_path, refresh_callback=self.refresh_api_callback,
                     ),
                 )
             _self = getattr(_self, module)
@@ -1086,7 +1070,7 @@ class SyftAPI(SyftObject):
 
     def generate_endpoints(self) -> None:
         def build_endpoint_tree(
-            endpoints: dict[str, LibEndpoint], communication_protocol: PROTOCOL_TYPE
+            endpoints: dict[str, LibEndpoint], communication_protocol: PROTOCOL_TYPE,
         ) -> APIModule:
             api_module = APIModule(path="", refresh_callback=self.refresh_api_callback)
             for v in endpoints.values():
@@ -1123,10 +1107,10 @@ class SyftAPI(SyftObject):
 
         if self.lib_endpoints is not None:
             self.libs = build_endpoint_tree(
-                self.lib_endpoints, self.communication_protocol
+                self.lib_endpoints, self.communication_protocol,
             )
         self.api_module = build_endpoint_tree(
-            self.endpoints, self.communication_protocol
+            self.endpoints, self.communication_protocol,
         )
 
     @property
@@ -1159,7 +1143,7 @@ class SyftAPI(SyftObject):
                     for func_name in module_or_func._modules:
                         func = getattr(module_or_func, func_name)
                         sig = getattr(
-                            func, "__ipython_inspector_signature_override__", ""
+                            func, "__ipython_inspector_signature_override__", "",
                         )
                         _repr_str += f"{module_path_str}.{func_name}{sig}\n\n"
         return _repr_str
@@ -1168,8 +1152,7 @@ class SyftAPI(SyftObject):
 # code from here:
 # https://github.com/ipython/ipython/blob/339c0d510a1f3cb2158dd8c6e7f4ac89aa4c89d8/IPython/core/oinspect.py#L370
 def _render_signature(obj_signature: Signature, obj_name: str) -> str:
-    """
-    This was mostly taken from inspect.Signature.__str__.
+    """This was mostly taken from inspect.Signature.__str__.
     Look there for the comments.
     The only change is to add linebreaks when this gets too long.
     """
@@ -1211,7 +1194,8 @@ def _render_signature(obj_signature: Signature, obj_name: str) -> str:
 def _getdef(self: Any, obj: Any, oname: str = "") -> str | None:
     """Return the call signature for any callable object.
     If any exception is generated, None is returned instead and the
-    exception is suppressed."""
+    exception is suppressed.
+    """
     try:
         return _render_signature(signature(obj), oname)
     except:  # noqa: E722
@@ -1222,7 +1206,7 @@ def monkey_patch_getdef(self: Any, obj: Any, oname: str = "") -> str | None:
     try:
         if hasattr(obj, "__ipython_inspector_signature_override__"):
             return _render_signature(
-                obj.__ipython_inspector_signature_override__, oname
+                obj.__ipython_inspector_signature_override__, oname,
             )
         return _getdef(self, obj, oname)
     except Exception:
@@ -1250,7 +1234,7 @@ class ServerIdentity(Identity):
         # stores the name root verify key of the datasite server
         if api.connection is None:
             raise ValueError(
-                "{api}'s connection is None. Can't get the server identity"
+                "{api}'s connection is None. Can't get the server identity",
             )
         server_metadata = api.connection.get_server_metadata(api.signing_key)
         return ServerIdentity(
@@ -1277,7 +1261,7 @@ class ServerIdentity(Identity):
             verify_key=server.signing_key.verify_key,
         )
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, ServerIdentity):
             return False
         return (
@@ -1294,7 +1278,7 @@ class ServerIdentity(Identity):
 
 
 def validate_callable_args_and_kwargs(
-    args: list, kwargs: dict, signature: Signature
+    args: list, kwargs: dict, signature: Signature,
 ) -> tuple[list, dict] | SyftError:
     _valid_kwargs = {}
     if "kwargs" in signature.parameters:
@@ -1303,7 +1287,7 @@ def validate_callable_args_and_kwargs(
         for key, value in kwargs.items():
             if key not in signature.parameters:
                 return SyftError(
-                    message=f"""Invalid parameter: `{key}`. Valid Parameters: {list(signature.parameters)}"""
+                    message=f"""Invalid parameter: `{key}`. Valid Parameters: {list(signature.parameters)}""",
                 )
             param = signature.parameters[key]
             if isinstance(param.annotation, str):
@@ -1329,7 +1313,7 @@ def validate_callable_args_and_kwargs(
                 except Exception:
                     _type_str = getattr(t, "__name__", str(t))
                     return SyftError(
-                        message=f"`{key}` must be of type `{_type_str}` not `{type(value).__name__}`"
+                        message=f"`{key}` must be of type `{_type_str}` not `{type(value).__name__}`",
                     )
 
             _valid_kwargs[key] = value

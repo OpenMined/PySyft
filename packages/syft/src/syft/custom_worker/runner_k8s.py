@@ -2,15 +2,10 @@
 from typing import Any
 
 # third party
-from kr8s.objects import Pod
-from kr8s.objects import Secret
-from kr8s.objects import StatefulSet
+from kr8s.objects import Pod, Secret, StatefulSet
 
 # relative
-from .k8s import KUBERNETES_NAMESPACE
-from .k8s import KubeUtils
-from .k8s import PodStatus
-from .k8s import get_kr8s_client
+from .k8s import KUBERNETES_NAMESPACE, KubeUtils, PodStatus, get_kr8s_client
 
 JSONPATH_AVAILABLE_REPLICAS = "{.status.availableReplicas}"
 CREATE_POOL_TIMEOUT_SEC = 180
@@ -156,7 +151,6 @@ class KubernetesRunner:
         **kwargs: Any,
     ) -> StatefulSet:
         """Create a stateful set for a pool"""
-
         volumes = []
         volume_mounts = []
         pull_secret_obj = None
@@ -170,7 +164,7 @@ class KubernetesRunner:
                         "secret": {
                             "secretName": secret_name,
                         },
-                    }
+                    },
                 )
                 volume_mounts.append(
                     {
@@ -178,14 +172,14 @@ class KubernetesRunner:
                         "mountPath": mount_opts.get("mountPath"),
                         "subPath": mount_opts.get("subPath"),
                         "readOnly": True,
-                    }
+                    },
                 )
 
         if pull_secret:
             pull_secret_obj = [
                 {
                     "name": pull_secret.name,
-                }
+                },
             ]
 
         default_pod_labels = {
@@ -213,7 +207,7 @@ class KubernetesRunner:
                     "selector": {
                         "matchLabels": {
                             "app.kubernetes.io/component": pool_name,
-                        }
+                        },
                     },
                     "template": {
                         "metadata": {
@@ -247,13 +241,13 @@ class KubernetesRunner:
                                         "failureThreshold": 30,
                                         "periodSeconds": 10,
                                     },
-                                }
+                                },
                             ],
                             "volumes": volumes,
                             "imagePullSecrets": pull_secret_obj,
                         },
                     },
                 },
-            }
+            },
         )
         return KubeUtils.create_or_get(stateful_set)

@@ -1,29 +1,28 @@
 # stdlib
 
 # third party
-from result import Err
-from result import Ok
-from result import Result
+from result import Err, Ok, Result
 
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import BaseUIDStoreStash
-from ...store.document_store import PartitionKey
-from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
+from ...store.document_store import (
+    BaseUIDStoreStash,
+    PartitionKey,
+    PartitionSettings,
+    QueryKeys,
+)
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.uid import UID
 from ...util.telemetry import instrument
-from .notifications import Notification
-from .notifications import NotificationStatus
+from .notifications import Notification, NotificationStatus
 
 FromUserVerifyKeyPartitionKey = PartitionKey(
-    key="from_user_verify_key", type_=SyftVerifyKey
+    key="from_user_verify_key", type_=SyftVerifyKey,
 )
 ToUserVerifyKeyPartitionKey = PartitionKey(
-    key="to_user_verify_key", type_=SyftVerifyKey
+    key="to_user_verify_key", type_=SyftVerifyKey,
 )
 StatusPartitionKey = PartitionKey(key="status", type_=NotificationStatus)
 
@@ -42,29 +41,29 @@ class NotificationStash(BaseUIDStoreStash):
     )
 
     def get_all_inbox_for_verify_key(
-        self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
+        self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey,
     ) -> Result[list[Notification], str]:
         qks = QueryKeys(
             qks=[
                 ToUserVerifyKeyPartitionKey.with_obj(verify_key),
-            ]
+            ],
         )
         return self.get_all_for_verify_key(
-            credentials=credentials, verify_key=verify_key, qks=qks
+            credentials=credentials, verify_key=verify_key, qks=qks,
         )
 
     def get_all_sent_for_verify_key(
-        self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
+        self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey,
     ) -> Result[list[Notification], str]:
         qks = QueryKeys(
             qks=[
                 FromUserVerifyKeyPartitionKey.with_obj(verify_key),
-            ]
+            ],
         )
         return self.get_all_for_verify_key(credentials, verify_key=verify_key, qks=qks)
 
     def get_all_for_verify_key(
-        self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey, qks: QueryKeys
+        self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey, qks: QueryKeys,
     ) -> Result[list[Notification], str]:
         if isinstance(verify_key, str):
             verify_key = SyftVerifyKey.from_string(verify_key)
@@ -84,7 +83,7 @@ class NotificationStash(BaseUIDStoreStash):
             qks=[
                 ToUserVerifyKeyPartitionKey.with_obj(verify_key),
                 StatusPartitionKey.with_obj(status),
-            ]
+            ],
         )
         return self.query_all(
             credentials,
@@ -100,12 +99,12 @@ class NotificationStash(BaseUIDStoreStash):
         qks = QueryKeys(
             qks=[
                 LinkedObjectPartitionKey.with_obj(linked_obj),
-            ]
+            ],
         )
         return self.query_one(credentials=credentials, qks=qks)
 
     def update_notification_status(
-        self, credentials: SyftVerifyKey, uid: UID, status: NotificationStatus
+        self, credentials: SyftVerifyKey, uid: UID, status: NotificationStatus,
     ) -> Result[Notification, str]:
         result = self.get_by_uid(credentials, uid=uid)
         if result.is_err():
@@ -118,7 +117,7 @@ class NotificationStash(BaseUIDStoreStash):
         return self.update(credentials, obj=notification)
 
     def delete_all_for_verify_key(
-        self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
+        self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey,
     ) -> Result[bool, str]:
         result = self.get_all_inbox_for_verify_key(
             credentials,

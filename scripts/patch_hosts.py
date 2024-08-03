@@ -1,11 +1,11 @@
 # stdlib
 import argparse
-from functools import cached_property
 import os
-from pathlib import Path
 import platform
 import re
 import sys
+from functools import cached_property
+from pathlib import Path
 
 
 class Platform:
@@ -49,7 +49,7 @@ class Hosts:
             old_hosts = "/private/etc/hosts"
             p = new_hosts if os.path.exists(new_hosts) else old_hosts
         elif Platform.windows():
-            p = "C:\Windows\System32\drivers\etc\hosts"
+            p = r"C:\Windows\System32\drivers\etc\hosts"
         else:
             raise Exception(f"Unsupported OS: {Platform.system}")
 
@@ -61,7 +61,7 @@ class Hosts:
         return self.path.read_text()
 
     def get(self, datasite: str) -> list[str]:
-        return re.findall(f"(.+)\s+{datasite}", self.content)
+        return re.findall(rf"(.+)\s+{datasite}", self.content)
 
     def add(self, ip: str, datasite: str) -> None:
         if self.get(datasite):
@@ -74,7 +74,7 @@ class Hosts:
         if not self.get(datasite):
             return
 
-        self.content = re.sub(f"(.+)\s+{datasite}\n", "", self.content)
+        self.content = re.sub(rf"(.+)\s+{datasite}\n", "", self.content)
         self.__write()
 
     def update(self, ip: str, datasite: str) -> None:
@@ -83,7 +83,7 @@ class Hosts:
 
         # inplace
         self.content = re.sub(
-            f"(.+)\s+{datasite}\n", f"{ip}\t{datasite}\n", self.content
+            rf"(.+)\s+{datasite}\n", f"{ip}\t{datasite}\n", self.content,
         )
         self.__write()
 
@@ -167,7 +167,7 @@ def main():
 
     if not args.hosts and not running_as_root():
         print(
-            "ERROR: This script must be run as root since it will modify system hosts file"
+            "ERROR: This script must be run as root since it will modify system hosts file",
         )
         sys.exit(1)
 

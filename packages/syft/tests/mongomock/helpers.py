@@ -1,13 +1,10 @@
 # stdlib
-from collections import OrderedDict
-from collections import abc
-from datetime import datetime
-from datetime import timedelta
-from datetime import tzinfo
 import re
 import time
-from urllib.parse import unquote_plus
 import warnings
+from collections import OrderedDict, abc
+from datetime import datetime, timedelta, tzinfo
+from urllib.parse import unquote_plus
 
 # third party
 from packaging import version
@@ -19,8 +16,10 @@ from . import InvalidURI
 # in this module but is made available for callers of this module.
 try:
     # third party
-    from bson import ObjectId  # pylint: disable=unused-import
-    from bson import Timestamp
+    from bson import (
+        ObjectId,  # pylint: disable=unused-import
+        Timestamp,
+    )
     from pymongo import version as pymongo_version
 
     PYMONGO_VERSION = version.parse(pymongo_version)
@@ -102,14 +101,13 @@ def create_index_list(key_or_list, direction=None):
         return [(key_or_list, direction or ASCENDING)]
     if not isinstance(key_or_list, (list, tuple, abc.Iterable)):
         raise TypeError(
-            "if no direction is specified, " "key_or_list must be an instance of list"
+            "if no direction is specified, key_or_list must be an instance of list",
         )
     return key_or_list
 
 
 def gen_index_name(index_list):
     """Generate an index name based on the list of keys with directions."""
-
     return "_".join(["%s_%s" % item for item in index_list])
 
 
@@ -152,7 +150,7 @@ class hashdict(dict):
         return "{0}({1})".format(
             self.__class__.__name__,
             ", ".join(
-                "{0}={1}".format(str(i[0]), repr(i[1])) for i in sorted(self.__key())
+                f"{i[0]!s}={i[1]!r}" for i in sorted(self.__key())
             ),
         )
 
@@ -161,37 +159,37 @@ class hashdict(dict):
 
     def __setitem__(self, key, value):
         raise TypeError(
-            "{0} does not support item assignment".format(self.__class__.__name__)
+            f"{self.__class__.__name__} does not support item assignment",
         )
 
     def __delitem__(self, key):
         raise TypeError(
-            "{0} does not support item assignment".format(self.__class__.__name__)
+            f"{self.__class__.__name__} does not support item assignment",
         )
 
     def clear(self):
         raise TypeError(
-            "{0} does not support item assignment".format(self.__class__.__name__)
+            f"{self.__class__.__name__} does not support item assignment",
         )
 
     def pop(self, *args, **kwargs):
         raise TypeError(
-            "{0} does not support item assignment".format(self.__class__.__name__)
+            f"{self.__class__.__name__} does not support item assignment",
         )
 
     def popitem(self, *args, **kwargs):
         raise TypeError(
-            "{0} does not support item assignment".format(self.__class__.__name__)
+            f"{self.__class__.__name__} does not support item assignment",
         )
 
     def setdefault(self, *args, **kwargs):
         raise TypeError(
-            "{0} does not support item assignment".format(self.__class__.__name__)
+            f"{self.__class__.__name__} does not support item assignment",
         )
 
     def update(self, *args, **kwargs):
         raise TypeError(
-            "{0} does not support item assignment".format(self.__class__.__name__)
+            f"{self.__class__.__name__} does not support item assignment",
         )
 
     def __add__(self, right):
@@ -213,7 +211,7 @@ def fields_list_to_dict(fields):
     for field in fields:
         if not isinstance(field, str):
             raise TypeError(
-                "fields must be a list of key names, each an instance of str"
+                "fields must be a list of key names, each an instance of str",
             )
         as_dict[field] = 1
     return as_dict
@@ -239,7 +237,7 @@ def parse_uri(uri, default_port=27017, warn=False):
     SCHEME = "mongodb://"
 
     if not uri.startswith(SCHEME):
-        raise InvalidURI("Invalid URI scheme: URI " "must begin with '%s'" % (SCHEME,))
+        raise InvalidURI("Invalid URI scheme: URI must begin with '%s'" % (SCHEME,))
 
     scheme_free = uri[len(SCHEME) :]
 
@@ -256,14 +254,14 @@ def parse_uri(uri, default_port=27017, warn=False):
             path_part = ""
         if "/" in host_part:
             raise InvalidURI(
-                "Any '/' in a unix domain socket must be" " URL encoded: %s" % host_part
+                "Any '/' in a unix domain socket must be URL encoded: %s" % host_part,
             )
         path_part = unquote_plus(path_part)
     else:
         host_part, _, path_part = scheme_free.partition("/")
 
     if not path_part and "?" in host_part:
-        raise InvalidURI("A '/' is required between " "the host list and any options.")
+        raise InvalidURI("A '/' is required between the host list and any options.")
 
     nodelist = []
     if "," in host_part:
@@ -276,7 +274,7 @@ def parse_uri(uri, default_port=27017, warn=False):
             raise ValueError(
                 "Reserved characters such as ':' must be escaped according RFC "
                 "2396. An IPv6 address literal must be enclosed in '[' and ']' "
-                "according to RFC 2732."
+                "according to RFC 2732.",
             )
         host = match.group(2)
         if host.startswith("[") and host.endswith("]"):
@@ -287,10 +285,10 @@ def parse_uri(uri, default_port=27017, warn=False):
             try:
                 port = int(port)
                 if port < 0 or port > 65535:
-                    raise ValueError()
+                    raise ValueError
             except ValueError as err:
                 raise ValueError(
-                    "Port must be an integer between 0 and 65535:", port
+                    "Port must be an integer between 0 and 65535:", port,
                 ) from err
         else:
             port = default_port
@@ -310,7 +308,6 @@ def parse_uri(uri, default_port=27017, warn=False):
 
 def split_hosts(hosts, default_port=27017):
     """Split the entity into a list of tuples of host and port."""
-
     nodelist = []
     for entity in hosts.split(","):
         port = default_port
@@ -322,7 +319,7 @@ def split_hosts(hosts, default_port=27017):
             raise ValueError(
                 "Reserved characters such as ':' must be escaped according RFC "
                 "2396. An IPv6 address literal must be enclosed in '[' and ']' "
-                "according to RFC 2732."
+                "according to RFC 2732.",
             )
         host = match.group(1)
         if host.startswith("[") and host.endswith("]"):
@@ -332,10 +329,10 @@ def split_hosts(hosts, default_port=27017):
             try:
                 port = int(match.group(3))
                 if port < 0 or port > 65535:
-                    raise ValueError()
+                    raise ValueError
             except ValueError as err:
                 raise ValueError(
-                    "Port must be an integer between 0 and 65535:", port
+                    "Port must be an integer between 0 and 65535:", port,
                 ) from err
 
         nodelist.append((host, port))
@@ -350,7 +347,7 @@ def get_current_timestamp():
     """Get the current timestamp as a bson Timestamp object."""
     if not Timestamp:
         raise NotImplementedError(
-            "timestamp is not supported. Import pymongo to use it."
+            "timestamp is not supported. Import pymongo to use it.",
         )
     now = int(time.time())
     if _LAST_TIMESTAMP_INC and _LAST_TIMESTAMP_INC[0] == now:
@@ -378,7 +375,7 @@ def patch_datetime_awareness_in_document(value):
         mongo_us = (value.microsecond // 1000) * 1000
         if value.tzinfo:
             return (value - value.utcoffset()).replace(
-                tzinfo=None, microsecond=mongo_us
+                tzinfo=None, microsecond=mongo_us,
             )
         return value.replace(microsecond=mongo_us)
     if Timestamp and isinstance(value, Timestamp) and not value.time and not value.inc:
@@ -444,9 +441,9 @@ def set_value_by_dot(doc, key, value):
         try:
             parent[int(child_key)] = value
         except (ValueError, IndexError) as err:
-            raise KeyError() from err
+            raise KeyError from err
     else:
-        raise KeyError()
+        raise KeyError
 
     return doc
 
@@ -470,5 +467,4 @@ def delete_value_by_dot(doc, key):
 
 def mongodb_to_bool(value):
     """Converts any value to bool the way MongoDB does it"""
-
     return value not in [False, None, 0]

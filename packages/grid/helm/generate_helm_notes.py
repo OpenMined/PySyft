@@ -1,13 +1,12 @@
 # stdlib
 import json
 import os
-from pathlib import Path
 import sys
+from pathlib import Path
 
 
 def add_notes(helm_chart_template_dir: str) -> None:
     """Add notes or information post helm install or upgrade."""
-
     notes = """
     Thank you for installing {{ .Chart.Name }}.
     Your release is named {{ .Release.Name }}.
@@ -37,15 +36,15 @@ def get_protocol_changes() -> str:
                 "../../",
                 "syft/src/syft/protocol",
                 "protocol_version.json",
-            )
-        )
+            ),
+        ),
     )
 
     protocol_changes = ""
     if protocol_path.exists():
         dev_protocol_changes = json.loads(protocol_path.read_text()).get("dev", {})
         protocol_changes = json.dumps(
-            dev_protocol_changes.get("object_versions", {}), indent=4
+            dev_protocol_changes.get("object_versions", {}), indent=4,
         )
 
     protocol_changelog = f"""

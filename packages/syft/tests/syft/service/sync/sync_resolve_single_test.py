@@ -8,18 +8,16 @@ import syft
 import syft as sy
 from syft.client.datasite_client import DatasiteClient
 from syft.client.sync_decision import SyncDecision
-from syft.client.syncing import compare_clients
-from syft.client.syncing import resolve
+from syft.client.syncing import compare_clients, resolve
 from syft.server.worker import Worker
 from syft.service.job.job_stash import Job
 from syft.service.request.request import RequestStatus
-from syft.service.response import SyftError
-from syft.service.response import SyftSuccess
+from syft.service.response import SyftError, SyftSuccess
 from syft.service.sync.resolve_widget import ResolveWidget
 
 
 def handle_decision(
-    widget: ResolveWidget, decision: SyncDecision
+    widget: ResolveWidget, decision: SyncDecision,
 ) -> SyftSuccess | SyftError:
     if decision == SyncDecision.IGNORE:
         # ignore not yet implemented on the widget
@@ -78,7 +76,7 @@ def create_dataset(client):
                 data=private,
                 shape=private.shape,
                 mock_is_real=True,
-            )
+            ),
         ],
     )
 
@@ -113,7 +111,7 @@ def test_diff_state(low_worker, high_worker):
     _ = client_low_ds.code.request_code_execution(compute)
 
     diff_state_before, diff_state_after = compare_and_resolve(
-        from_client=low_client, to_client=high_client
+        from_client=low_client, to_client=high_client,
     )
 
     assert not diff_state_before.is_same
@@ -122,7 +120,7 @@ def test_diff_state(low_worker, high_worker):
 
     run_and_deposit_result(high_client)
     diff_state_before, diff_state_after = compare_and_resolve(
-        from_client=high_client, to_client=low_client
+        from_client=high_client, to_client=low_client,
     )
 
     # high_state = high_client.get_sync_state()
@@ -151,11 +149,11 @@ def test_diff_state_with_dataset(low_worker: Worker, high_worker: Worker):
 
     result = client_low_ds.code.compute_mean(blocking=False)
     assert isinstance(
-        result, SyftError
+        result, SyftError,
     ), "DS cannot start a job on low side since the data was not passed as an argument"
 
     diff_state_before, diff_state_after = compare_and_resolve(
-        from_client=low_client, to_client=high_client
+        from_client=low_client, to_client=high_client,
     )
 
     assert not diff_state_before.is_same
@@ -169,12 +167,12 @@ def test_diff_state_with_dataset(low_worker: Worker, high_worker: Worker):
 
     # the high side client delete the dataset after depositing the result
     dataset_del_res = high_client.api.services.dataset.delete(
-        uid=high_client.datasets[0].id
+        uid=high_client.datasets[0].id,
     )
     assert isinstance(dataset_del_res, SyftSuccess)
 
     diff_state_before, diff_state_after = compare_and_resolve(
-        from_client=high_client, to_client=low_client
+        from_client=high_client, to_client=low_client,
     )
 
     # high_state = high_client.get_sync_state()
@@ -207,7 +205,7 @@ def test_sync_with_error(low_worker, high_worker):
     _ = client_low_ds.code.request_code_execution(compute)
 
     diff_state_before, diff_state_after = compare_and_resolve(
-        from_client=low_client, to_client=high_client
+        from_client=low_client, to_client=high_client,
     )
 
     assert not diff_state_before.is_same
@@ -216,7 +214,7 @@ def test_sync_with_error(low_worker, high_worker):
 
     run_and_deposit_result(high_client)
     diff_state_before, diff_state_after = compare_and_resolve(
-        from_client=high_client, to_client=low_client
+        from_client=high_client, to_client=low_client,
     )
 
     assert not diff_state_before.is_same
@@ -283,7 +281,7 @@ def test_request_code_execution_multiple(low_worker, high_worker):
     _ = client_low_ds.code.request_code_execution(compute_twice)
 
     diff_before, diff_after = compare_and_resolve(
-        from_client=low_client, to_client=high_client
+        from_client=low_client, to_client=high_client,
     )
 
     assert not diff_before.is_same
@@ -292,7 +290,7 @@ def test_request_code_execution_multiple(low_worker, high_worker):
     _ = client_low_ds.code.request_code_execution(compute_thrice)
 
     diff_before, diff_after = compare_and_resolve(
-        from_client=low_client, to_client=high_client
+        from_client=low_client, to_client=high_client,
     )
 
     assert not diff_before.is_same
@@ -317,7 +315,7 @@ def test_approve_request_on_sync_blocking(low_worker, high_worker):
 
     # Sync request to high side
     diff_before, diff_after = compare_and_resolve(
-        from_client=low_client, to_client=high_client
+        from_client=low_client, to_client=high_client,
     )
 
     assert not diff_before.is_same
@@ -331,7 +329,7 @@ def test_approve_request_on_sync_blocking(low_worker, high_worker):
 
     # Sync back to low side, share private data
     diff_before, diff_after = compare_and_resolve(
-        from_client=high_client, to_client=low_client, share_private_data=True
+        from_client=high_client, to_client=low_client, share_private_data=True,
     )
     assert len(diff_before.batches) == 1 and diff_before.batches[0].root_type is Job
     assert low_client.requests[0].status == RequestStatus.APPROVED
@@ -370,7 +368,7 @@ def test_deny_and_sync(low_worker, high_worker):
 
     # Sync request to high side
     diff_before, diff_after = compare_and_resolve(
-        from_client=low_client, to_client=high_client
+        from_client=low_client, to_client=high_client,
     )
 
     assert not diff_before.is_same
@@ -381,7 +379,7 @@ def test_deny_and_sync(low_worker, high_worker):
     assert high_client.requests[0].status == RequestStatus.REJECTED
 
     diff_before, diff_after = compare_and_resolve(
-        from_client=high_client, to_client=low_client
+        from_client=high_client, to_client=low_client,
     )
 
     assert diff_after.is_same

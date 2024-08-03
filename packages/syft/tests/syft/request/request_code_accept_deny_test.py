@@ -4,15 +4,15 @@ from syft.client.client import SyftClient
 from syft.server.worker import Worker
 from syft.service.action.action_object import ActionObject
 from syft.service.action.action_permissions import ActionPermission
-from syft.service.code.user_code import UserCode
-from syft.service.code.user_code import UserCodeStatus
+from syft.service.code.user_code import UserCode, UserCodeStatus
 from syft.service.context import ChangeContext
-from syft.service.request.request import ActionStoreChange
-from syft.service.request.request import ObjectMutation
-from syft.service.request.request import RequestStatus
-from syft.service.request.request import UserCodeStatusChange
-from syft.service.response import SyftError
-from syft.service.response import SyftSuccess
+from syft.service.request.request import (
+    ActionStoreChange,
+    ObjectMutation,
+    RequestStatus,
+    UserCodeStatusChange,
+)
+from syft.service.response import SyftError, SyftSuccess
 from syft.service.settings.settings_service import SettingsService
 from syft.store.linked_obj import LinkedObject
 
@@ -60,7 +60,7 @@ def test_action_store_change(worker: Worker, ds_client: SyftClient):
     assert action_obj.get() == dummy_data
 
     action_object_link = LinkedObject.from_obj(
-        action_obj, server_uid=action_obj.syft_server_uid
+        action_obj, server_uid=action_obj.syft_server_uid,
     )
     permission_change = ActionStoreChange(
         linked_obj=action_object_link,

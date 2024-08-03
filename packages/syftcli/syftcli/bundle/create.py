@@ -1,26 +1,23 @@
 # stdlib
+import tarfile
 from enum import Enum
 from pathlib import Path
 from shutil import rmtree
-import tarfile
 from typing import Annotated
 
 # third party
-from typer import Exit
-from typer import Option
+from typer import Exit, Option
 
 # relative
-from ..core.console import debug
-from ..core.console import error
-from ..core.console import info
-from ..core.console import success
-from ..core.container_engine import ContainerEngine
-from ..core.container_engine import ContainerEngineError
-from ..core.container_engine import Docker
-from ..core.container_engine import Podman
+from ..core.console import debug, error, info, success
+from ..core.container_engine import (
+    ContainerEngine,
+    ContainerEngineError,
+    Docker,
+    Podman,
+)
 from ..core.syft_repo import SyftRepo
-from ..core.syft_version import InvalidVersion
-from ..core.syft_version import SyftVersion
+from ..core.syft_version import InvalidVersion, SyftVersion
 
 __all__ = "create"
 
@@ -36,7 +33,7 @@ VersionOpts = Annotated[str, Option("--version", "-v")]
 EngineOpts = Annotated[Engine, Option("--engine", "-e")]
 DryrunOpts = Annotated[bool, Option("--dryrun")]
 OutdirOpts = Annotated[
-    Path, Option("--outdir", "-d", dir_okay=True, file_okay=False, writable=True)
+    Path, Option("--outdir", "-d", dir_okay=True, file_okay=False, writable=True),
 ]
 
 
@@ -47,7 +44,6 @@ def create(
     dryrun: DryrunOpts = False,
 ) -> None:
     """Create an offline deployment bundle for Syft."""
-
     # Validate Syft version. Fails if version is not valid.
     ver = validate_version(version)
 
@@ -115,7 +111,7 @@ def get_container_engine(engine_name: Engine, dryrun: bool = False) -> Container
     if not dryrun and not engine.is_available():
         error(
             f"Error: '{engine_name}' is unavailable. "
-            "Make sure it is installed and running."
+            "Make sure it is installed and running.",
         )
         raise Exit(1)
 
@@ -213,7 +209,7 @@ def create_syft_bundle(
         debug(
             f"Bundle: {bundle_path}\n"
             f"+ Image: {archive_path}\n"
-            f"+ Deployment Config: {config_path}\n"
+            f"+ Deployment Config: {config_path}\n",
         )
         return
 

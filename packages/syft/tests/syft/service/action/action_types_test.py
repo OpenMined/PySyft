@@ -8,8 +8,7 @@ import pytest
 
 # syft absolute
 from syft.service.action.action_data_empty import ActionDataEmpty
-from syft.service.action.action_types import action_type_for_type
-from syft.service.action.action_types import action_types
+from syft.service.action.action_types import action_type_for_type, action_types
 
 
 @pytest.mark.parametrize(

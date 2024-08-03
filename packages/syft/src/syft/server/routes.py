@@ -1,21 +1,16 @@
 # stdlib
 import base64
 import binascii
-from collections.abc import AsyncGenerator
 import logging
+from collections.abc import AsyncGenerator
 from typing import Annotated
 
-# third party
-from fastapi import APIRouter
-from fastapi import Body
-from fastapi import Depends
-from fastapi import HTTPException
-from fastapi import Request
-from fastapi import Response
-from fastapi.responses import JSONResponse
-from fastapi.responses import StreamingResponse
-from pydantic import ValidationError
 import requests
+
+# third party
+from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response
+from fastapi.responses import JSONResponse, StreamingResponse
+from pydantic import ValidationError
 
 # relative
 from ..abstract_server import AbstractServer
@@ -23,17 +18,14 @@ from ..client.connection import ServerConnection
 from ..protocol.data_protocol import PROTOCOL_TYPE
 from ..serde.deserialize import _deserialize as deserialize
 from ..serde.serialize import _serialize as serialize
-from ..service.context import ServerServiceContext
-from ..service.context import UnauthedServiceContext
+from ..service.context import ServerServiceContext, UnauthedServiceContext
 from ..service.metadata.server_metadata import ServerMetadataJSON
 from ..service.response import SyftError
-from ..service.user.user import UserCreate
-from ..service.user.user import UserPrivateKey
+from ..service.user.user import UserCreate, UserPrivateKey
 from ..service.user.user_service import UserService
 from ..types.uid import UID
 from ..util.telemetry import TRACE_MODE
-from .credentials import SyftVerifyKey
-from .credentials import UserLoginCredentials
+from .credentials import SyftVerifyKey, UserLoginCredentials
 from .worker import Worker
 
 logger = logging.getLogger(__name__)
@@ -121,8 +113,7 @@ def make_routes(worker: Worker) -> APIRouter:
         response_class=JSONResponse,
     )
     def root() -> dict[str, str]:
-        """
-        Currently, all service backends must satisfy either of the following requirements to
+        """Currently, all service backends must satisfy either of the following requirements to
         pass the HTTP health checks sent to it from the GCE loadbalancer: 1. Respond with a
         200 on '/'. The content does not matter. 2. Expose an arbitrary url as a readiness
         probe on the pods backing the Service.
@@ -143,11 +134,11 @@ def make_routes(worker: Worker) -> APIRouter:
         )
 
     def handle_syft_new_api(
-        user_verify_key: SyftVerifyKey, communication_protocol: PROTOCOL_TYPE
+        user_verify_key: SyftVerifyKey, communication_protocol: PROTOCOL_TYPE,
     ) -> Response:
         return Response(
             serialize(
-                worker.get_api(user_verify_key, communication_protocol), to_bytes=True
+                worker.get_api(user_verify_key, communication_protocol), to_bytes=True,
             ),
             media_type="application/octet-stream",
         )
@@ -155,7 +146,7 @@ def make_routes(worker: Worker) -> APIRouter:
     # get the SyftAPI object
     @router.get("/api")
     def syft_new_api(
-        request: Request, verify_key: str, communication_protocol: PROTOCOL_TYPE
+        request: Request, verify_key: str, communication_protocol: PROTOCOL_TYPE,
     ) -> Response:
         user_verify_key: SyftVerifyKey = SyftVerifyKey.from_string(verify_key)
         if TRACE_MODE:
@@ -179,7 +170,7 @@ def make_routes(worker: Worker) -> APIRouter:
     # make a request to the SyftAPI
     @router.post("/api_call")
     def syft_new_api_call(
-        request: Request, data: Annotated[bytes, Depends(get_body)]
+        request: Request, data: Annotated[bytes, Depends(get_body)],
     ) -> Response:
         if TRACE_MODE:
             with trace.get_tracer(syft_new_api_call.__module__).start_as_current_span(
@@ -199,7 +190,7 @@ def make_routes(worker: Worker) -> APIRouter:
 
         method = server.get_service_method(UserService.exchange_credentials)
         context = UnauthedServiceContext(
-            server=server, login_credentials=login_credentials
+            server=server, login_credentials=login_credentials,
         )
         result = method(context=context)
 
@@ -230,7 +221,7 @@ def make_routes(worker: Worker) -> APIRouter:
 
         if isinstance(result, SyftError):
             logger.error(
-                f"Register Error: {result.message}. user={user_create.model_dump()}"
+                f"Register Error: {result.message}. user={user_create.model_dump()}",
             )
             response = SyftError(message=f"{result.message}")
         else:
@@ -260,7 +251,7 @@ def make_routes(worker: Worker) -> APIRouter:
 
     @router.post("/register", name="register", status_code=200)
     def register(
-        request: Request, data: Annotated[bytes, Depends(get_body)]
+        request: Request, data: Annotated[bytes, Depends(get_body)],
     ) -> Response:
         if TRACE_MODE:
             with trace.get_tracer(register.__module__).start_as_current_span(

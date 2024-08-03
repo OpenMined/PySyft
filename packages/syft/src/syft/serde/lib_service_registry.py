@@ -1,10 +1,8 @@
 # stdlib
-from collections.abc import Callable
-from collections.abc import Sequence
 import importlib
 import inspect
-from inspect import Signature
-from inspect import _signature_fromstr
+from collections.abc import Callable, Sequence
+from inspect import Signature, _signature_fromstr
 from types import BuiltinFunctionType
 from typing import Any
 
@@ -13,9 +11,7 @@ import numpy
 from typing_extensions import Self
 
 # relative
-from .lib_permissions import ALL_EXECUTE
-from .lib_permissions import CMPPermission
-from .lib_permissions import NONE_EXECUTE
+from .lib_permissions import ALL_EXECUTE, NONE_EXECUTE, CMPPermission
 from .signature import get_signature
 
 LIB_IGNORE_ATTRIBUTES = {
@@ -71,7 +67,7 @@ class CMPBase:
 
         if text_signature is not None:
             self.signature = _signature_fromstr(
-                inspect.Signature, obj, text_signature, True
+                inspect.Signature, obj, text_signature, True,
             )
 
         self.is_built = False
@@ -123,12 +119,15 @@ class CMPBase:
         """Get the child of parent as a CMPBase object
 
         Args:
+        ----
             parent_obj (_type_): parent object
             child_path (_type_): _description_
             child_obj (_type_): _description_
 
         Returns:
+        -------
             _type_: _description_
+
         """
         parent_is_parent_module = CMPBase.parent_is_parent_module(parent_obj, child_obj)
         if CMPBase.isfunction(child_obj) and parent_is_parent_module:
@@ -139,7 +138,7 @@ class CMPBase:
                 absolute_path=absolute_path,
             )  # type: ignore
         elif inspect.ismodule(child_obj) and CMPBase.is_submodule(
-            parent_obj, child_obj
+            parent_obj, child_obj,
         ):
             ## TODO, we could register modules and functions in 2 ways:
             # A) as numpy.float32 (what we are doing now)
@@ -204,7 +203,7 @@ class CMPBase:
         )
 
     def __repr__(
-        self, indent: int = 0, is_last: bool = False, parent_path: str = ""
+        self, indent: int = 0, is_last: bool = False, parent_path: str = "",
     ) -> str:
         """Visualize the tree, e.g.:
         ├───numpy (ALL_EXECUTE)
@@ -222,12 +221,15 @@ class CMPBase:
         │    │    ├───_clean_args (ALL_EXECUTE)
 
         Args:
+        ----
             indent (int, optional): indentation level. Defaults to 0.
             is_last (bool, optional): is last item of collection. Defaults to False.
             parent_path (str, optional): path of the parent obj. Defaults to "".
 
         Returns:
+        -------
             str: representation of the CMP
+
         """
         last_idx, c_indent = len(self.children) - 1, indent + 1
         children_string = "".join(
@@ -237,9 +239,9 @@ class CMPBase:
                     sorted(
                         self.children.values(),
                         key=lambda x: x.permissions.permission_string,  # type: ignore
-                    )
+                    ),
                 )
-            ]
+            ],
         )
         tree_prefix = "└───" if is_last else "├───"
         indent_str = "│    " * indent + tree_prefix
@@ -351,5 +353,5 @@ action_execute_registry_libs = CMPTree(
                 CMPModule("testing", permissions=NONE_EXECUTE),
             ],
         ),
-    ]
+    ],
 ).build()

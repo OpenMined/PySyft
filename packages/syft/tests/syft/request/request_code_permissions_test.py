@@ -8,7 +8,7 @@ from syft.service.response import SyftSuccess
 
 
 def test_code_request_submitted_by_admin_only_admin_can_view(
-    worker: Worker, ds_client: SyftClient
+    worker: Worker, ds_client: SyftClient,
 ):
     root_client = worker.root_client
     dummy_data = [1, 2, 3]
@@ -38,7 +38,7 @@ def test_code_request_submitted_by_admin_only_admin_can_view(
 
 
 def test_code_request_submitted_by_ds_root_and_ds_can_view(
-    worker: Worker, ds_client: SyftClient
+    worker: Worker, ds_client: SyftClient,
 ):
     root_client = worker.root_client
     dummy_data = [1, 2, 3]

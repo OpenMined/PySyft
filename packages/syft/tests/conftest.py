@@ -1,45 +1,50 @@
 # stdlib
-from functools import cache
 import os
-from pathlib import Path
-from secrets import token_hex
 import shutil
 import sys
+from functools import cache
+from pathlib import Path
+from secrets import token_hex
 from tempfile import gettempdir
 from unittest import mock
 
-# third party
-from faker import Faker
 import numpy as np
 import pytest
 
 # syft absolute
 import syft as sy
+
+# third party
+from faker import Faker
 from syft import Dataset
 from syft.abstract_server import ServerSideType
 from syft.client.datasite_client import DatasiteClient
-from syft.protocol.data_protocol import get_data_protocol
-from syft.protocol.data_protocol import protocol_release_dir
-from syft.protocol.data_protocol import stage_protocol_changes
+from syft.protocol.data_protocol import (
+    get_data_protocol,
+    protocol_release_dir,
+    stage_protocol_changes,
+)
 from syft.server.worker import Worker
 from syft.service.user import user
 
 # relative
 # our version of mongomock that has a fix for CodecOptions and custom TypeRegistry Support
 from .mongomock.mongo_client import MongoClient
-from .syft.stores.store_fixtures_test import dict_action_store
-from .syft.stores.store_fixtures_test import dict_document_store
-from .syft.stores.store_fixtures_test import dict_queue_stash
-from .syft.stores.store_fixtures_test import dict_store_partition
-from .syft.stores.store_fixtures_test import mongo_action_store
-from .syft.stores.store_fixtures_test import mongo_document_store
-from .syft.stores.store_fixtures_test import mongo_queue_stash
-from .syft.stores.store_fixtures_test import mongo_store_partition
-from .syft.stores.store_fixtures_test import sqlite_action_store
-from .syft.stores.store_fixtures_test import sqlite_document_store
-from .syft.stores.store_fixtures_test import sqlite_queue_stash
-from .syft.stores.store_fixtures_test import sqlite_store_partition
-from .syft.stores.store_fixtures_test import sqlite_workspace
+from .syft.stores.store_fixtures_test import (
+    dict_action_store,
+    dict_document_store,
+    dict_queue_stash,
+    dict_store_partition,
+    mongo_action_store,
+    mongo_document_store,
+    mongo_queue_stash,
+    mongo_store_partition,
+    sqlite_action_store,
+    sqlite_document_store,
+    sqlite_queue_stash,
+    sqlite_store_partition,
+    sqlite_workspace,
+)
 
 
 def patch_protocol_file(filepath: Path):
@@ -69,7 +74,6 @@ def pytest_configure(config):
 
 def is_vscode_discover():
     """Check if the test is being run from VSCode discover test runner."""
-
     cmd = " ".join(sys.argv)
     return "ms-python.python" in cmd and "discover" in cmd
 
@@ -122,9 +126,9 @@ def stage_protocol(protocol_file: Path):
                         _file_path.unlink()
 
 
-@pytest.fixture
+@pytest.fixture()
 def faker():
-    yield Faker()
+    return Faker()
 
 
 @pytest.fixture(scope="function")
@@ -147,7 +151,7 @@ def second_worker() -> Worker:
 @pytest.fixture(scope="function")
 def high_worker() -> Worker:
     worker = sy.Worker.named(
-        name=token_hex(8), server_side_type=ServerSideType.HIGH_SIDE
+        name=token_hex(8), server_side_type=ServerSideType.HIGH_SIDE,
     )
     yield worker
     worker.cleanup()
@@ -157,41 +161,41 @@ def high_worker() -> Worker:
 @pytest.fixture(scope="function")
 def low_worker() -> Worker:
     worker = sy.Worker.named(
-        name=token_hex(8), server_side_type=ServerSideType.LOW_SIDE
+        name=token_hex(8), server_side_type=ServerSideType.LOW_SIDE,
     )
     yield worker
     worker.cleanup()
     del worker
 
 
-@pytest.fixture
+@pytest.fixture()
 def root_datasite_client(worker) -> DatasiteClient:
-    yield worker.root_client
+    return worker.root_client
 
 
-@pytest.fixture
+@pytest.fixture()
 def root_verify_key(worker):
-    yield worker.root_client.credentials.verify_key
+    return worker.root_client.credentials.verify_key
 
 
-@pytest.fixture
+@pytest.fixture()
 def guest_client(worker) -> DatasiteClient:
-    yield worker.guest_client
+    return worker.guest_client
 
 
-@pytest.fixture
+@pytest.fixture()
 def guest_verify_key(worker):
-    yield worker.guest_client.credentials.verify_key
+    return worker.guest_client.credentials.verify_key
 
 
-@pytest.fixture
+@pytest.fixture()
 def guest_datasite_client(root_datasite_client) -> DatasiteClient:
-    yield root_datasite_client.guest()
+    return root_datasite_client.guest()
 
 
-@pytest.fixture
+@pytest.fixture()
 def ds_client(
-    faker: Faker, root_datasite_client: DatasiteClient, guest_client: DatasiteClient
+    faker: Faker, root_datasite_client: DatasiteClient, guest_client: DatasiteClient,
 ):
     guest_email = faker.email()
     password = "mysecretpassword"
@@ -202,29 +206,28 @@ def ds_client(
         password_verify=password,
     )
     ds_client = guest_client.login(email=guest_email, password=password)
-    yield ds_client
+    return ds_client
 
 
-@pytest.fixture
+@pytest.fixture()
 def ds_verify_key(ds_client: DatasiteClient):
-    yield ds_client.credentials.verify_key
+    return ds_client.credentials.verify_key
 
 
-@pytest.fixture
+@pytest.fixture()
 def document_store(worker):
     yield worker.document_store
     worker.document_store.reset()
 
 
-@pytest.fixture
+@pytest.fixture()
 def action_store(worker):
-    yield worker.action_store
+    return worker.action_store
 
 
 @pytest.fixture(scope="session")
 def mongo_client(testrun_uid):
-    """
-    A race-free fixture that starts a MongoDB server for an entire pytest session.
+    """A race-free fixture that starts a MongoDB server for an entire pytest session.
     Cleans up the server when the session ends, or when the last client disconnects.
     """
     db_name = f"pytest_mongo_{testrun_uid}"
@@ -236,7 +239,7 @@ def mongo_client(testrun_uid):
     client = MongoClient(conn_str)
     assert client.server_info().get("ok") == 1.0
 
-    yield client
+    return client
 
     # stop_mongo_server(db_name)
 
@@ -274,7 +277,7 @@ def patched_user(monkeypatch):
     )
 
 
-@pytest.fixture
+@pytest.fixture()
 def small_dataset() -> Dataset:
     dataset = Dataset(
         name="small_dataset",
@@ -283,13 +286,13 @@ def small_dataset() -> Dataset:
                 name="small_dataset",
                 data=np.array([1, 2, 3]),
                 mock=np.array([1, 1, 1]),
-            )
+            ),
         ],
     )
-    yield dataset
+    return dataset
 
 
-@pytest.fixture
+@pytest.fixture()
 def big_dataset() -> Dataset:
     num_elements = 20 * 1024 * 1024
     data_big = np.random.randint(0, 100, size=num_elements)
@@ -301,10 +304,10 @@ def big_dataset() -> Dataset:
                 name="big_dataset",
                 data=data_big,
                 mock=mock_big,
-            )
+            ),
         ],
     )
-    yield dataset
+    return dataset
 
 
 __all__ = [

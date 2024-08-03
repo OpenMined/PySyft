@@ -1,6 +1,5 @@
 # stdlib
-from typing import Any
-from typing import final
+from typing import Any, final
 
 # third party
 from pydantic import BaseModel

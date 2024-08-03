@@ -2,14 +2,12 @@
 from __future__ import annotations
 
 # stdlib
-from enum import Enum
-from enum import auto
+from enum import Enum, auto
 from typing import Any
 
 # relative
 from ...serde.serializable import serializable
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject
 from ...types.uid import UID
 from ..context import AuthedServiceContext
 
@@ -54,7 +52,7 @@ class CustomEndpointActionObject(SyftObject):
         )
 
     def __call_function(
-        self, call_mode: EXECUTION_MODE, *args: Any, **kwargs: Any
+        self, call_mode: EXECUTION_MODE, *args: Any, **kwargs: Any,
     ) -> Any:
         self.context = self.__check_context()
         endpoint_service = self.context.server.get_service("apiservice")
@@ -69,7 +67,7 @@ class CustomEndpointActionObject(SyftObject):
             __endpoint_mode = endpoint_service.execute_server_side_endpoint_by_id
 
         return __endpoint_mode(
-            *args, context=self.context, endpoint_uid=self.endpoint_id, **kwargs
+            *args, context=self.context, endpoint_uid=self.endpoint_id, **kwargs,
         )
 
     def __check_context(self) -> AuthedServiceContext:

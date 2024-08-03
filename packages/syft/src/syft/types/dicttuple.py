@@ -1,16 +1,8 @@
 # stdlib
-from collections import OrderedDict
-from collections import deque
-from collections.abc import Callable
-from collections.abc import Collection
-from collections.abc import Iterable
-from collections.abc import KeysView
-from collections.abc import Mapping
+from collections import OrderedDict, deque
+from collections.abc import Callable, Collection, Iterable, KeysView, Mapping
 from types import MappingProxyType
-from typing import Generic
-from typing import SupportsIndex
-from typing import TypeVar
-from typing import overload
+from typing import Generic, SupportsIndex, TypeVar, overload
 
 # third party
 from typing_extensions import Self
@@ -52,12 +44,12 @@ class _Meta(type):
 
     @overload
     def __call__(
-        cls: type[_T], __value: Iterable[_VT], __key: Collection[_KT]
+        cls: type[_T], __value: Iterable[_VT], __key: Collection[_KT],
     ) -> _T: ...
 
     @overload
     def __call__(
-        cls: type[_T], __value: Iterable[_VT], __key: Callable[[_VT], _KT]
+        cls: type[_T], __value: Iterable[_VT], __key: Callable[[_VT], _KT],
     ) -> _T: ...
 
     def __call__(
@@ -124,8 +116,7 @@ class _Meta(type):
 
 
 class DictTuple(tuple[_VT, ...], Generic[_KT, _VT], metaclass=_Meta):
-    """
-    OVERVIEW
+    """OVERVIEW
 
         tuple with support for dict-like __getitem__(key)
 
@@ -186,11 +177,11 @@ class DictTuple(tuple[_VT, ...], Generic[_KT, _VT], metaclass=_Meta):
             self.__mapping = MappingProxyType(__value)
         elif isinstance(__value, Iterable):
             self.__mapping = MappingProxyType(
-                OrderedDict((k, i) for i, k in enumerate(__value))
+                OrderedDict((k, i) for i, k in enumerate(__value)),
             )
         elif isinstance(__value, Callable):
             self.__mapping = MappingProxyType(
-                OrderedDict((__value(v), i) for i, v in enumerate(self))
+                OrderedDict((__value(v), i) for i, v in enumerate(self)),
             )
 
         super().__init__()
@@ -201,7 +192,7 @@ class DictTuple(tuple[_VT, ...], Generic[_KT, _VT], metaclass=_Meta):
         if any(isinstance(k, SupportsIndex) for k in self.__mapping.keys()):
             raise ValueError(
                 "values of `__keys` should not have type `int`, "
-                "or implement `__index__()`"
+                "or implement `__index__()`",
             )
 
     @overload

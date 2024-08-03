@@ -2,8 +2,7 @@
 from typing import Any
 
 # third party
-from rich import get_console
-from rich import print
+from rich import get_console, print
 
 __all__ = ["console", "info", "warn", "success", "error", "debug", "print"]
 

@@ -1,21 +1,20 @@
 # stdlib
 
 # third party
-from result import Err
-from result import Result
+from result import Err, Result
 
 # relative
-from ...custom_worker.config import DockerWorkerConfig
-from ...custom_worker.config import WorkerConfig
+from ...custom_worker.config import DockerWorkerConfig, WorkerConfig
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import BaseUIDStoreStash
-from ...store.document_store import DocumentStore
-from ...store.document_store import PartitionKey
-from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
-from ..action.action_permissions import ActionObjectPermission
-from ..action.action_permissions import ActionPermission
+from ...store.document_store import (
+    BaseUIDStoreStash,
+    DocumentStore,
+    PartitionKey,
+    PartitionSettings,
+    QueryKeys,
+)
+from ..action.action_permissions import ActionObjectPermission, ActionPermission
 from .worker_image import SyftWorkerImage
 
 WorkerConfigPK = PartitionKey(key="config", type_=WorkerConfig)
@@ -44,12 +43,12 @@ class SyftWorkerImageStash(BaseUIDStoreStash):
 
         # By default syft images have all read permission
         add_permissions.append(
-            ActionObjectPermission(uid=obj.id, permission=ActionPermission.ALL_READ)
+            ActionObjectPermission(uid=obj.id, permission=ActionPermission.ALL_READ),
         )
 
         if isinstance(obj.config, DockerWorkerConfig):
             result = self.get_by_worker_config(
-                credentials=credentials, config=obj.config
+                credentials=credentials, config=obj.config,
             )
             if result.is_ok() and result.ok() is not None:
                 return Err(f"Image already exists for: {obj.config}")
@@ -63,7 +62,7 @@ class SyftWorkerImageStash(BaseUIDStoreStash):
         )
 
     def get_by_worker_config(
-        self, credentials: SyftVerifyKey, config: WorkerConfig
+        self, credentials: SyftVerifyKey, config: WorkerConfig,
     ) -> Result[SyftWorkerImage | None, str]:
         qks = QueryKeys(qks=[WorkerConfigPK.with_obj(config)])
         return self.query_one(credentials=credentials, qks=qks)

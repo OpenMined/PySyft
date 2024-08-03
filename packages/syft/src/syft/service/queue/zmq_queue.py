@@ -1,23 +1,22 @@
 # stdlib
-from binascii import hexlify
-from collections import defaultdict
 import itertools
 import logging
 import socketserver
 import sys
 import threading
-from threading import Event
 import time
+from binascii import hexlify
+from collections import defaultdict
+from threading import Event
 from time import sleep
-from typing import Any
-from typing import cast
+from typing import Any, cast
+
+import zmq
 
 # third party
 from pydantic import field_validator
 from result import Result
-import zmq
-from zmq import Frame
-from zmq import LINGER
+from zmq import LINGER, Frame
 from zmq.error import ContextTerminated
 
 # relative
@@ -28,25 +27,22 @@ from ...server.credentials import SyftVerifyKey
 from ...service.action.action_object import ActionObject
 from ...service.context import AuthedServiceContext
 from ...types.base import SyftBaseModel
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject
 from ...types.uid import UID
 from ...util.util import get_queue_address
-from ..response import SyftError
-from ..response import SyftSuccess
+from ..response import SyftError, SyftSuccess
 from ..service import AbstractService
-from ..worker.worker_pool import ConsumerState
-from ..worker.worker_pool import SyftWorker
+from ..worker.worker_pool import ConsumerState, SyftWorker
 from ..worker.worker_stash import WorkerStash
-from .base_queue import AbstractMessageHandler
-from .base_queue import QueueClient
-from .base_queue import QueueClientConfig
-from .base_queue import QueueConfig
-from .base_queue import QueueConsumer
-from .base_queue import QueueProducer
-from .queue_stash import ActionQueueItem
-from .queue_stash import QueueStash
-from .queue_stash import Status
+from .base_queue import (
+    AbstractMessageHandler,
+    QueueClient,
+    QueueClientConfig,
+    QueueConfig,
+    QueueConsumer,
+    QueueProducer,
+)
+from .queue_stash import ActionQueueItem, QueueStash, Status
 
 # Producer/Consumer heartbeat interval (in seconds)
 HEARTBEAT_INTERVAL_SEC = 2
@@ -134,7 +130,7 @@ class Worker(SyftBaseModel):
         self.expiry_t.reset()
 
     def _syft_worker(
-        self, stash: WorkerStash, credentials: SyftVerifyKey
+        self, stash: WorkerStash, credentials: SyftVerifyKey,
     ) -> Result[SyftWorker | None, str]:
         return stash.get_by_uid(credentials=credentials, uid=self.syft_worker_id)
 
@@ -173,7 +169,6 @@ class ZMQProducer(QueueProducer):
 
     def post_init(self) -> None:
         """Initialize producer state."""
-
         self.services: dict[str, Service] = {}
         self.workers: dict[bytes, Worker] = {}
         self.waiting: list[Worker] = []
@@ -196,7 +191,7 @@ class ZMQProducer(QueueProducer):
                 if self.thread.is_alive():
                     logger.error(
                         f"ZMQProducer message sending thread join timed out during closing. "
-                        f"Queue name {self.queue_name}, "
+                        f"Queue name {self.queue_name}, ",
                     )
                 self.thread = None
 
@@ -205,7 +200,7 @@ class ZMQProducer(QueueProducer):
                 if self.producer_thread.is_alive():
                     logger.error(
                         f"ZMQProducer queue thread join timed out during closing. "
-                        f"Queue name {self.queue_name}, "
+                        f"Queue name {self.queue_name}, ",
                     )
                 self.producer_thread = None
 
@@ -226,7 +221,7 @@ class ZMQProducer(QueueProducer):
             raise Exception(f"{self.auth_context} does not have a server.")
 
     def contains_unresolved_action_objects(self, arg: Any, recursion: int = 0) -> bool:
-        """recursively check collections for unresolved action objects"""
+        """Recursively check collections for unresolved action objects"""
         if isinstance(arg, UID):
             arg = self.action_service.get(self.auth_context, arg).ok()
             return self.contains_unresolved_action_objects(arg, recursion=recursion + 1)
@@ -245,14 +240,14 @@ class ZMQProducer(QueueProducer):
             if isinstance(arg, list):
                 for elem in arg:
                     value = self.contains_unresolved_action_objects(
-                        elem, recursion=recursion + 1
+                        elem, recursion=recursion + 1,
                     )
                     if value:
                         return True
             if isinstance(arg, dict):
                 for elem in arg.values():
                     value = self.contains_unresolved_action_objects(
-                        elem, recursion=recursion + 1
+                        elem, recursion=recursion + 1,
                     )
                     if value:
                         return True
@@ -290,13 +285,13 @@ class ZMQProducer(QueueProducer):
                         if isinstance(item, ActionQueueItem):
                             action = item.kwargs["action"]
                             if self.contains_unresolved_action_objects(
-                                action.args
+                                action.args,
                             ) or self.contains_unresolved_action_objects(action.kwargs):
                                 continue
 
                         msg_bytes = serialize(item, to_bytes=True)
                         worker_pool = item.worker_pool.resolve_with_context(
-                            self.auth_context
+                            self.auth_context,
                         )
                         worker_pool = worker_pool.ok()
                         service_name = worker_pool.name
@@ -316,7 +311,7 @@ class ZMQProducer(QueueProducer):
                         res = self.queue_stash.update(item.syft_client_verify_key, item)
                         if res.is_err():
                             logger.error(
-                                f"Failed to update queue item={item} error={res.err()}"
+                                f"Failed to update queue item={item} error={res.err()}",
                             )
                     elif item.status == Status.PROCESSING:
                         # Evaluate Retry condition here
@@ -331,7 +326,7 @@ class ZMQProducer(QueueProducer):
                 res = self.queue_stash.update(item.syft_client_verify_key, item)
                 if res.is_err():
                     logger.error(
-                        f"Failed to update queue item={item} error={res.err()}"
+                        f"Failed to update queue item={item} error={res.err()}",
                     )
 
     def run(self) -> None:
@@ -377,16 +372,16 @@ class ZMQProducer(QueueProducer):
                 from ...service.worker.worker_service import WorkerService
 
                 worker_service = cast(
-                    WorkerService, self.auth_context.server.get_service(WorkerService)
+                    WorkerService, self.auth_context.server.get_service(WorkerService),
                 )
                 worker_service._delete(self.auth_context, syft_worker)
 
     def update_consumer_state_for_worker(
-        self, syft_worker_id: UID, consumer_state: ConsumerState
+        self, syft_worker_id: UID, consumer_state: ConsumerState,
     ) -> None:
         if self.worker_stash is None:
             logger.error(  # type: ignore[unreachable]
-                f"ZMQProducer worker stash not defined for {self.queue_name} - {self.id}"
+                f"ZMQProducer worker stash not defined for {self.queue_name} - {self.id}",
             )
             return
 
@@ -449,7 +444,6 @@ class ZMQProducer(QueueProducer):
 
         If message is provided, sends that message.
         """
-
         if self.socket.closed:
             logger.warning("Socket is closed. Cannot send message.")
             return
@@ -527,7 +521,7 @@ class ZMQProducer(QueueProducer):
         worker_ready = hexlify(address) in self.workers
         worker = self.require_worker(address)
 
-        if QueueMsgProtocol.W_READY == command:
+        if command == QueueMsgProtocol.W_READY:
             service_name = data.pop(0).decode()
             syft_worker_id = data.pop(0).decode()
             if worker_ready:
@@ -549,7 +543,7 @@ class ZMQProducer(QueueProducer):
                 worker.syft_worker_id = UID(syft_worker_id)
                 self.worker_waiting(worker)
 
-        elif QueueMsgProtocol.W_HEARTBEAT == command:
+        elif command == QueueMsgProtocol.W_HEARTBEAT:
             if worker_ready:
                 # If worker is ready then reset expiry
                 # and add it to worker waiting list
@@ -558,7 +552,7 @@ class ZMQProducer(QueueProducer):
             else:
                 logger.info(f"Got heartbeat, but worker not ready. {worker}")
                 self.delete_worker(worker, True)
-        elif QueueMsgProtocol.W_DISCONNECT == command:
+        elif command == QueueMsgProtocol.W_DISCONNECT:
             logger.info(f"Removing disconnected worker: {worker}")
             self.delete_worker(worker, False)
         else:
@@ -579,7 +573,7 @@ class ZMQProducer(QueueProducer):
 
         if worker.syft_worker_id is not None:
             self.update_consumer_state_for_worker(
-                worker.syft_worker_id, ConsumerState.DETACHED
+                worker.syft_worker_id, ConsumerState.DETACHED,
             )
 
     @property
@@ -651,7 +645,7 @@ class ZMQConsumer(QueueConsumer):
                     logger.error(
                         f"ZMQConsumer thread join timed out during closing. "
                         f"SyftWorker id {self.syft_worker_id}, "
-                        f"service name {self.service_name}."
+                        f"service name {self.service_name}.",
                     )
                 self.thread = None
             self.poller.unregister(self.socket)
@@ -747,11 +741,10 @@ class ZMQConsumer(QueueConsumer):
                         self.reconnect_to_producer()
                     else:
                         logger.error(f"ZMQConsumer invalid command: {command}")
-                else:
-                    if not self.is_producer_alive():
-                        logger.info("Producer check-alive timed out. Reconnecting.")
-                        self.reconnect_to_producer()
-                        self.set_producer_alive()
+                elif not self.is_producer_alive():
+                    logger.info("Producer check-alive timed out. Reconnecting.")
+                    self.reconnect_to_producer()
+                    self.set_producer_alive()
 
                 if not self._stop.is_set():
                     self.send_heartbeat()
@@ -802,7 +795,7 @@ class ZMQConsumer(QueueConsumer):
             )
             if res.is_err():
                 logger.error(
-                    f"Failed to update consumer state for {self.service_name}-{self.id}, error={res.err()}"
+                    f"Failed to update consumer state for {self.service_name}-{self.id}, error={res.err()}",
                 )
 
     @property
@@ -857,7 +850,6 @@ class ZMQClient(QueueClient):
 
         A queue can have at most one producer attached to it.
         """
-
         if port is None:
             if self.config.queue_port is None:
                 self.config.queue_port = self._get_free_tcp_port(self.host)
@@ -889,7 +881,6 @@ class ZMQClient(QueueClient):
         A queue should have at least one producer attached to the group.
 
         """
-
         if address is None:
             address = get_queue_address(self.config.queue_port)
 
@@ -914,14 +905,14 @@ class ZMQClient(QueueClient):
         producer = self.producers.get(queue_name)
         if producer is None:
             return SyftError(
-                message=f"No producer attached for queue: {queue_name}. Please add a producer for it."
+                message=f"No producer attached for queue: {queue_name}. Please add a producer for it.",
             )
         try:
             producer.send(message=message, worker=worker)
         except Exception as e:
             # stdlib
             return SyftError(
-                message=f"Failed to send message to: {queue_name} with error: {e}"
+                message=f"Failed to send message to: {queue_name} with error: {e}",
             )
         return SyftSuccess(
             message=f"Successfully queued message to : {queue_name}",

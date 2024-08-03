@@ -1,19 +1,19 @@
 # stdlib
 
 # third party
-from result import Ok
-from result import Result
+from result import Ok, Result
 
 # relative
 from ...serde.serializable import serializable
-from ...server.credentials import SyftSigningKey
-from ...server.credentials import SyftVerifyKey
-from ...store.document_store import BaseStash
-from ...store.document_store import DocumentStore
-from ...store.document_store import PartitionKey
-from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
-from ...store.document_store import UIDPartitionKey
+from ...server.credentials import SyftSigningKey, SyftVerifyKey
+from ...store.document_store import (
+    BaseStash,
+    DocumentStore,
+    PartitionKey,
+    PartitionSettings,
+    QueryKeys,
+    UIDPartitionKey,
+)
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
@@ -66,23 +66,23 @@ class UserStash(BaseStash):
 
     def admin_user(self) -> Result[User | None, str]:
         return self.get_by_role(
-            credentials=self.admin_verify_key().ok(), role=ServiceRole.ADMIN
+            credentials=self.admin_verify_key().ok(), role=ServiceRole.ADMIN,
         )
 
     def get_by_uid(
-        self, credentials: SyftVerifyKey, uid: UID
+        self, credentials: SyftVerifyKey, uid: UID,
     ) -> Result[User | None, str]:
         qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
         return self.query_one(credentials=credentials, qks=qks)
 
     def get_by_reset_token(
-        self, credentials: SyftVerifyKey, token: str
+        self, credentials: SyftVerifyKey, token: str,
     ) -> Result[User | None, str]:
         qks = QueryKeys(qks=[PasswordResetTokenPartitionKey.with_obj(token)])
         return self.query_one(credentials=credentials, qks=qks)
 
     def get_by_email(
-        self, credentials: SyftVerifyKey, email: str
+        self, credentials: SyftVerifyKey, email: str,
     ) -> Result[User | None, str]:
         qks = QueryKeys(qks=[EmailPartitionKey.with_obj(email)])
         return self.query_one(credentials=credentials, qks=qks)
@@ -95,13 +95,13 @@ class UserStash(BaseStash):
             return True
 
     def get_by_role(
-        self, credentials: SyftVerifyKey, role: ServiceRole
+        self, credentials: SyftVerifyKey, role: ServiceRole,
     ) -> Result[User | None, str]:
         qks = QueryKeys(qks=[RolePartitionKey.with_obj(role)])
         return self.query_one(credentials=credentials, qks=qks)
 
     def get_by_signing_key(
-        self, credentials: SyftVerifyKey, signing_key: SyftSigningKey
+        self, credentials: SyftVerifyKey, signing_key: SyftSigningKey,
     ) -> Result[User | None, str]:
         if isinstance(signing_key, str):
             signing_key = SyftSigningKey.from_string(signing_key)
@@ -109,7 +109,7 @@ class UserStash(BaseStash):
         return self.query_one(credentials=credentials, qks=qks)
 
     def get_by_verify_key(
-        self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
+        self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey,
     ) -> Result[User | None, str]:
         if isinstance(verify_key, str):
             verify_key = SyftVerifyKey.from_string(verify_key)
@@ -117,23 +117,23 @@ class UserStash(BaseStash):
         return self.query_one(credentials=credentials, qks=qks)
 
     def delete_by_uid(
-        self, credentials: SyftVerifyKey, uid: UID, has_permission: bool = False
+        self, credentials: SyftVerifyKey, uid: UID, has_permission: bool = False,
     ) -> Result[SyftSuccess, str]:
         qk = UIDPartitionKey.with_obj(uid)
         result = super().delete(
-            credentials=credentials, qk=qk, has_permission=has_permission
+            credentials=credentials, qk=qk, has_permission=has_permission,
         )
         if result.is_ok():
             return Ok(SyftSuccess(message=f"ID: {uid} deleted"))
         return result
 
     def update(
-        self, credentials: SyftVerifyKey, user: User, has_permission: bool = False
+        self, credentials: SyftVerifyKey, user: User, has_permission: bool = False,
     ) -> Result[User, str]:
         res = self.check_type(user, self.object_type)
         # we dont use and_then logic here as it is hard because of the order of the arguments
         if res.is_err():
             return res
         return super().update(
-            credentials=credentials, obj=res.ok(), has_permission=has_permission
+            credentials=credentials, obj=res.ok(), has_permission=has_permission,
         )

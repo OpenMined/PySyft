@@ -1,11 +1,8 @@
 # stdlib
-from collections.abc import Callable
 import inspect
-from inspect import Parameter
-from inspect import Signature
-from inspect import _ParameterKind
-from inspect import _signature_fromstr
 import re
+from collections.abc import Callable
+from inspect import Parameter, Signature, _ParameterKind, _signature_fromstr
 
 # relative
 from .deserialize import _deserialize
@@ -74,7 +71,7 @@ def signature_remove_self(signature: Signature) -> Signature:
     params = dict(signature.parameters)
     params.pop("self", None)
     return Signature(
-        list(params.values()), return_annotation=signature.return_annotation
+        list(params.values()), return_annotation=signature.return_annotation,
     )
 
 
@@ -82,7 +79,7 @@ def signature_remove_context(signature: Signature) -> Signature:
     params = dict(signature.parameters)
     params.pop("context", None)
     return Signature(
-        list(params.values()), return_annotation=signature.return_annotation
+        list(params.values()), return_annotation=signature.return_annotation,
     )
 
 
@@ -109,7 +106,7 @@ def get_str_signature_from_docstring(doc: str, callable_name: str) -> str | None
 
                 if re.search(rf"(?<={params[-1]})\],", signature_str):
                     signature_str = signature_str.replace(
-                        f"[{params[-1]}],", params[-1]
+                        f"[{params[-1]}],", params[-1],
                     )
                 else:
                     signature_str = signature_str.replace(

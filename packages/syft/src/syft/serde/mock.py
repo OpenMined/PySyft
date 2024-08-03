@@ -1,6 +1,6 @@
 # stdlib
-from collections import defaultdict
 import secrets
+from collections import defaultdict
 from typing import Any
 
 # third party

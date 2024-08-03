@@ -1,10 +1,8 @@
 # stdlib
-from collections.abc import Callable
-from dataclasses import dataclass
-from dataclasses import field
 import typing
-from typing import Any
-from typing import TYPE_CHECKING
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any
 
 # relative
 from ..serde.serializable import serializable
@@ -82,7 +80,7 @@ class ServiceRegistry:
 
     services: list[AbstractService] = field(default_factory=list, init=False)
     service_path_map: dict[str, AbstractService] = field(
-        default_factory=dict, init=False
+        default_factory=dict, init=False,
     )
 
     @classmethod

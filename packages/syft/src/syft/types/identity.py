@@ -38,4 +38,3 @@ class Identity(SyftBaseModel):
 class UserIdentity(Identity):
     """This class is used to identify the data scientist users of the server"""
 
-    pass

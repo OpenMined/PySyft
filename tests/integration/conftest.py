@@ -3,11 +3,11 @@ from secrets import token_hex
 
 # third party
 import _pytest
-from faker import Faker
 import pytest
 
 # syft absolute
 import syft as sy
+from faker import Faker
 from syft.abstract_server import ServerSideType
 from syft.server.worker import Worker
 
@@ -16,27 +16,27 @@ def pytest_configure(config: _pytest.config.Config) -> None:
     config.addinivalue_line("markers", "frontend: frontend integration tests")
     config.addinivalue_line("markers", "network: network integration tests")
     config.addinivalue_line(
-        "markers", "container_workload: container workload integration tests"
+        "markers", "container_workload: container workload integration tests",
     )
     config.addinivalue_line("markers", "local_server: local server integration tests")
 
 
-@pytest.fixture
+@pytest.fixture()
 def gateway_port() -> int:
     return 9081
 
 
-@pytest.fixture
+@pytest.fixture()
 def datasite_1_port() -> int:
     return 9082
 
 
-@pytest.fixture
+@pytest.fixture()
 def datasite_2_port() -> int:
     return 9083
 
 
-@pytest.fixture
+@pytest.fixture()
 def faker():
     return Faker()
 

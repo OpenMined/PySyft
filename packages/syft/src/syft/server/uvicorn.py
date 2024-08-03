@@ -1,25 +1,24 @@
 # stdlib
-from collections.abc import Callable
 import logging
 import multiprocessing
 import multiprocessing.synchronize
 import os
-from pathlib import Path
 import platform
 import signal
 import subprocess  # nosec
 import sys
 import time
+from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
-# third party
-from fastapi import APIRouter
-from fastapi import FastAPI
-from pydantic_settings import BaseSettings
-from pydantic_settings import SettingsConfigDict
 import requests
-from starlette.middleware.cors import CORSMiddleware
 import uvicorn
+
+# third party
+from fastapi import APIRouter, FastAPI
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from starlette.middleware.cors import CORSMiddleware
 
 # relative
 from ..abstract_server import ServerSideType
@@ -32,8 +31,7 @@ from .enclave import Enclave
 from .gateway import Gateway
 from .routes import make_routes
 from .server import ServerType
-from .utils import get_named_server_uid
-from .utils import remove_temp_dir_for_server
+from .utils import get_named_server_uid, remove_temp_dir_for_server
 
 if os_name() == "macOS":
     # needed on MacOS to prevent [__NSCFConstantString initialize] may have been in
@@ -71,7 +69,7 @@ def app_factory() -> FastAPI:
     }
     if settings.server_type not in worker_classes:
         raise NotImplementedError(
-            f"server_type: {settings.server_type} is not supported"
+            f"server_type: {settings.server_type} is not supported",
         )
     worker_class = worker_classes[settings.server_type]
 
@@ -79,7 +77,7 @@ def app_factory() -> FastAPI:
     if settings.dev_mode:
         print(
             f"WARN: private key is based on server name: {settings.name} in dev_mode. "
-            "Don't run this in production."
+            "Don't run this in production.",
         )
         worker = worker_class.named(**kwargs)
     else:

@@ -6,18 +6,15 @@ from threading import Thread
 import pytest
 
 # syft absolute
-from syft.store.document_store import PartitionSettings
-from syft.store.document_store import QueryKeys
+from syft.store.document_store import PartitionSettings, QueryKeys
 from syft.store.kv_document_store import KeyValueStorePartition
 from syft.types.uid import UID
 
 # relative
-from .store_mocks_test import MockObjectType
-from .store_mocks_test import MockStoreConfig
-from .store_mocks_test import MockSyftObject
+from .store_mocks_test import MockObjectType, MockStoreConfig, MockSyftObject
 
 
-@pytest.fixture
+@pytest.fixture()
 def kv_store_partition(worker):
     store_config = MockStoreConfig()
     settings = PartitionSettings(name="test", object_type=MockObjectType)
@@ -31,7 +28,7 @@ def kv_store_partition(worker):
     res = store.init_store()
     assert res.is_ok()
 
-    yield store
+    return store
 
 
 def test_kv_store_partition_sanity(kv_store_partition: KeyValueStorePartition) -> None:
@@ -46,12 +43,12 @@ def test_kv_store_partition_init_failed(root_verify_key) -> None:
 
     with pytest.raises(RuntimeError):
         KeyValueStorePartition(
-            UID(), root_verify_key, settings=settings, store_config=store_config
+            UID(), root_verify_key, settings=settings, store_config=store_config,
         )
 
 
 def test_kv_store_partition_set(
-    root_verify_key, kv_store_partition: KeyValueStorePartition
+    root_verify_key, kv_store_partition: KeyValueStorePartition,
 ) -> None:
     obj = MockSyftObject(data=1)
     res = kv_store_partition.set(root_verify_key, obj, ignore_duplicates=False)
@@ -81,12 +78,12 @@ def test_kv_store_partition_set_backend_fail(root_verify_key) -> None:
 
     with pytest.raises(RuntimeError):
         KeyValueStorePartition(
-            UID(), root_verify_key, settings=settings, store_config=store_config
+            UID(), root_verify_key, settings=settings, store_config=store_config,
         )
 
 
 def test_kv_store_partition_delete(
-    root_verify_key, worker, kv_store_partition: KeyValueStorePartition
+    root_verify_key, worker, kv_store_partition: KeyValueStorePartition,
 ) -> None:
     objs = []
     for v in range(10):
@@ -129,7 +126,7 @@ def test_kv_store_partition_delete(
 
 
 def test_kv_store_partition_delete_and_recreate(
-    root_verify_key, worker, kv_store_partition: KeyValueStorePartition
+    root_verify_key, worker, kv_store_partition: KeyValueStorePartition,
 ) -> None:
     obj = MockSyftObject(data="bogus")
     repeats = 5
@@ -152,7 +149,7 @@ def test_kv_store_partition_delete_and_recreate(
 
 
 def test_kv_store_partition_update(
-    root_verify_key, kv_store_partition: KeyValueStorePartition
+    root_verify_key, kv_store_partition: KeyValueStorePartition,
 ) -> None:
     # add item
     obj = MockSyftObject(data=1)
@@ -181,7 +178,7 @@ def test_kv_store_partition_update(
         assert kv_store_partition.all(root_verify_key).ok()[0].data == v
 
         stored = kv_store_partition.get_all_from_store(
-            root_verify_key, QueryKeys(qks=[key])
+            root_verify_key, QueryKeys(qks=[key]),
         )
         assert stored.ok()[0].data == v
 
@@ -201,7 +198,7 @@ def test_kv_store_partition_set_multithreaded(
 
             for _ in range(10):
                 res = kv_store_partition.set(
-                    root_verify_key, obj, ignore_duplicates=False
+                    root_verify_key, obj, ignore_duplicates=False,
                 )
                 if res.is_ok():
                     break
@@ -281,7 +278,7 @@ def test_kv_store_partition_set_delete_multithreaded(
 
             for _ in range(10):
                 res = kv_store_partition.set(
-                    root_verify_key, obj, ignore_duplicates=False
+                    root_verify_key, obj, ignore_duplicates=False,
                 )
                 if res.is_ok():
                     break

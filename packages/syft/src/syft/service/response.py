@@ -38,13 +38,13 @@ class SyftResponseMessage(SyftBaseModel):
             return super().__getattr__(name)
         display(self)
         raise AttributeError(
-            f"You have tried accessing `{name}` on a {type(self).__name__} with message: {self.message}"
+            f"You have tried accessing `{name}` on a {type(self).__name__} with message: {self.message}",
         )
 
     def __bool__(self) -> bool:
         return self._bool
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if isinstance(other, SyftResponseMessage):
             return (
                 self.message == other.message
@@ -155,10 +155,10 @@ class SyftException(Exception):
 
 
 def syft_exception_handler(
-    shell: Any, etype: Any, evalue: Any, tb: Any, tb_offset: Any = None
+    shell: Any, etype: Any, evalue: Any, tb: Any, tb_offset: Any = None,
 ) -> None:
     template = evalue.format_traceback(
-        etype=etype, evalue=evalue, tb=tb, tb_offset=tb_offset
+        etype=etype, evalue=evalue, tb=tb, tb_offset=tb_offset,
     )
     sys.stderr.write(template)
 
@@ -167,7 +167,7 @@ try:
     # third party
     from IPython import get_ipython
 
-    get_ipython().set_custom_exc((SyftException,), syft_exception_handler)  # noqa: F821
+    get_ipython().set_custom_exc((SyftException,), syft_exception_handler)
 except Exception:
     pass  # nosec
 

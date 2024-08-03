@@ -1,6 +1,5 @@
 # third party
-from setuptools import find_packages
-from setuptools import setup
+from setuptools import find_packages, setup
 
 __version__ = "0.1.11"
 
@@ -35,6 +34,6 @@ setup(
             "syft-cli = syftcli.cli:app",
             "syftcli = syftcli.cli:app",
             "syftctl = syftcli.cli:app",
-        ]
+        ],
     },
 )

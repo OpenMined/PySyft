@@ -1,38 +1,38 @@
 # stdlib
 import contextlib
-from typing import Any
-from typing import cast
+from typing import Any, cast
 
 # third party
 import docker
 from docker.models.containers import Container
 
 # relative
-from ...custom_worker.k8s import IN_KUBERNETES
-from ...custom_worker.k8s import PodStatus
+from ...custom_worker.k8s import IN_KUBERNETES, PodStatus
 from ...custom_worker.runner_k8s import KubernetesRunner
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import DocumentStore
-from ...store.document_store import SyftSuccess
+from ...store.document_store import DocumentStore, SyftSuccess
 from ...types.uid import UID
 from ...util.telemetry import instrument
-from ..service import AbstractService
-from ..service import AuthedServiceContext
-from ..service import SyftError
-from ..service import service_method
-from ..user.user_roles import ADMIN_ROLE_LEVEL
-from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
-from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
-from .utils import DEFAULT_WORKER_POOL_NAME
-from .utils import _get_healthcheck_based_on_status
-from .utils import map_pod_to_worker_status
-from .worker_pool import ContainerSpawnStatus
-from .worker_pool import SyftWorker
-from .worker_pool import WorkerHealth
-from .worker_pool import WorkerStatus
-from .worker_pool import _get_worker_container
-from .worker_pool import _get_worker_container_status
+from ..service import AbstractService, AuthedServiceContext, SyftError, service_method
+from ..user.user_roles import (
+    ADMIN_ROLE_LEVEL,
+    DATA_OWNER_ROLE_LEVEL,
+    DATA_SCIENTIST_ROLE_LEVEL,
+)
+from .utils import (
+    DEFAULT_WORKER_POOL_NAME,
+    _get_healthcheck_based_on_status,
+    map_pod_to_worker_status,
+)
+from .worker_pool import (
+    ContainerSpawnStatus,
+    SyftWorker,
+    WorkerHealth,
+    WorkerStatus,
+    _get_worker_container,
+    _get_worker_container_status,
+)
 from .worker_stash import WorkerStash
 
 
@@ -52,17 +52,16 @@ class WorkerService(AbstractService):
         roles=ADMIN_ROLE_LEVEL,
     )
     def start_workers(
-        self, context: AuthedServiceContext, n: int = 1
+        self, context: AuthedServiceContext, n: int = 1,
     ) -> list[ContainerSpawnStatus] | SyftError:
         """Add a Container Image."""
-
         worker_pool_service = context.server.get_service("SyftWorkerPoolService")
         return worker_pool_service.add_workers(
-            context, number=n, pool_name=DEFAULT_WORKER_POOL_NAME
+            context, number=n, pool_name=DEFAULT_WORKER_POOL_NAME,
         )
 
     @service_method(
-        path="worker.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL
+        path="worker.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def list(self, context: AuthedServiceContext) -> list[SyftWorker] | SyftError:
         """List all the workers."""
@@ -82,7 +81,7 @@ class WorkerService(AbstractService):
         return workers
 
     @service_method(
-        path="worker.status", name="status", roles=DATA_SCIENTIST_ROLE_LEVEL
+        path="worker.status", name="status", roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def status(
         self,
@@ -141,13 +140,13 @@ class WorkerService(AbstractService):
                     logs = cast(bytes, docker_container.logs())
                 except docker.errors.APIError as e:
                     return SyftError(
-                        f"Failed to get worker {worker.id} container logs. Error {e}"
+                        f"Failed to get worker {worker.id} container logs. Error {e}",
                     )
 
         return logs if raw else logs.decode(errors="ignore")
 
     def _delete(
-        self, context: AuthedServiceContext, worker: SyftWorker, force: bool = False
+        self, context: AuthedServiceContext, worker: SyftWorker, force: bool = False,
     ) -> SyftSuccess | SyftError:
         uid = worker.id
         worker_pool_name = worker.worker_pool_name
@@ -161,28 +160,28 @@ class WorkerService(AbstractService):
             res = job_service.kill(context=context, id=worker.job_id)
             if isinstance(res, SyftError):
                 return SyftError(
-                    message=f"Failed to terminate the job associated with worker {uid}: {res.message}"
+                    message=f"Failed to terminate the job associated with worker {uid}: {res.message}",
                 )
 
         worker_pool_service = cast(
-            SyftWorkerPoolService, context.server.get_service(SyftWorkerPoolService)
+            SyftWorkerPoolService, context.server.get_service(SyftWorkerPoolService),
         )
         worker_pool_stash = worker_pool_service.stash
         result = worker_pool_stash.get_by_name(
-            credentials=context.credentials, pool_name=worker.worker_pool_name
+            credentials=context.credentials, pool_name=worker.worker_pool_name,
         )
 
         if result.is_err():
             return SyftError(
                 f"Failed to retrieved WorkerPool {worker_pool_name} "
-                f"associated with SyftWorker {uid}"
+                f"associated with SyftWorker {uid}",
             )
 
         worker_pool = result.ok()
         if worker_pool is None:
             return SyftError(
                 f"Failed to retrieved WorkerPool {worker_pool_name} "
-                f"associated with SyftWorker {uid}"
+                f"associated with SyftWorker {uid}",
             )
 
         if IN_KUBERNETES:
@@ -194,7 +193,7 @@ class WorkerService(AbstractService):
                 message=(
                     "Worker deletion is not supported in Kubernetes. "
                     f"Removing and re-creating worker id={worker.id}"
-                )
+                ),
             )
         elif not context.server.in_memory_workers:
             # delete the worker using docker client sdk
@@ -230,7 +229,7 @@ class WorkerService(AbstractService):
             return SyftError(message=f"Failed to update worker pool: {result.err()}")
 
         return SyftSuccess(
-            message=f"Worker with id: {uid} deleted successfully from pool: {worker_pool.name}"
+            message=f"Worker with id: {uid} deleted successfully from pool: {worker_pool.name}",
         )
 
     @service_method(
@@ -258,7 +257,7 @@ class WorkerService(AbstractService):
         return self._delete(context, worker, force=True)
 
     def _get_worker(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID,
     ) -> SyftWorker | SyftError:
         result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
         if result.is_err():
@@ -291,7 +290,7 @@ def refresh_worker_status(
         )
         if stash_result.is_err():
             return SyftError(
-                message=f"Failed to update status for worker: {worker.id}. Error: {stash_result.err()}"
+                message=f"Failed to update status for worker: {worker.id}. Error: {stash_result.err()}",
             )
 
     return result
@@ -340,7 +339,7 @@ def _stop_worker_container(
         return None
     except Exception as e:
         return SyftError(
-            message=f"Failed to delete worker with id: {worker.id}. Error: {e}"
+            message=f"Failed to delete worker with id: {worker.id}. Error: {e}",
         )
 
 

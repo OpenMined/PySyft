@@ -6,10 +6,12 @@ from result import Result
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import BaseUIDStoreStash
-from ...store.document_store import DocumentStore
-from ...store.document_store import PartitionKey
-from ...store.document_store import PartitionSettings
+from ...store.document_store import (
+    BaseUIDStoreStash,
+    DocumentStore,
+    PartitionKey,
+    PartitionSettings,
+)
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
@@ -24,7 +26,7 @@ ActionIDsPartitionKey = PartitionKey(key="action_ids", type_=list[UID])
 class SettingsStash(BaseUIDStoreStash):
     object_type = ServerSettings
     settings: PartitionSettings = PartitionSettings(
-        name=ServerSettings.__canonical_name__, object_type=ServerSettings
+        name=ServerSettings.__canonical_name__, object_type=ServerSettings,
     )
 
     def __init__(self, store: DocumentStore) -> None:

@@ -1,15 +1,14 @@
 # stdlib
 import logging
-from multiprocessing import Process
 import threading
-from threading import Thread
 import time
+from multiprocessing import Process
+from threading import Thread
 from typing import Any
 
 # third party
 import psutil
-from result import Err
-from result import Ok
+from result import Err, Ok
 
 # relative
 from ...serde.deserialize import _deserialize as deserialize
@@ -20,18 +19,17 @@ from ...service.context import AuthedServiceContext
 from ...store.document_store import BaseStash
 from ...types.datetime import DateTime
 from ...types.uid import UID
-from ..job.job_stash import Job
-from ..job.job_stash import JobStatus
-from ..response import SyftError
-from ..response import SyftSuccess
+from ..job.job_stash import Job, JobStatus
+from ..response import SyftError, SyftSuccess
 from ..worker.worker_stash import WorkerStash
-from .base_queue import AbstractMessageHandler
-from .base_queue import BaseQueueManager
-from .base_queue import QueueConfig
-from .base_queue import QueueConsumer
-from .base_queue import QueueProducer
-from .queue_stash import QueueItem
-from .queue_stash import Status
+from .base_queue import (
+    AbstractMessageHandler,
+    BaseQueueManager,
+    QueueConfig,
+    QueueConsumer,
+    QueueProducer,
+)
+from .queue_stash import QueueItem, Status
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +57,7 @@ class MonitorThread(threading.Thread):
     def monitor(self) -> None:
         # Implement the monitoring logic here
         job = self.worker.job_stash.get_by_uid(
-            self.credentials, self.queue_item.job_id
+            self.credentials, self.queue_item.job_id,
         ).ok()
         if job and job.status == JobStatus.TERMINATING:
             self.terminate(job)
@@ -210,7 +208,7 @@ def handle_message_multiprocessing(
         if isinstance(result, Ok):
             result = result.ok()
             if hasattr(result, "syft_action_data") and isinstance(
-                result.syft_action_data, Err
+                result.syft_action_data, Err,
             ):
                 status = Status.ERRORED
                 job_status = JobStatus.ERRORED
@@ -307,7 +305,7 @@ class APICallMessageHandler(AbstractMessageHandler):
         logger.info(
             f"Handling queue item: id={queue_item.id}, method={queue_item.method} "
             f"args={queue_item.args}, kwargs={queue_item.kwargs} "
-            f"service={queue_item.service}, as_thread={queue_config.thread_workers}"
+            f"service={queue_item.service}, as_thread={queue_config.thread_workers}",
         )
 
         if queue_config.thread_workers:

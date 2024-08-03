@@ -6,7 +6,7 @@ from syft import SyftError
 from syft.client.api import SyftAPICall
 
 
-@pytest.fixture
+@pytest.fixture()
 def guest_mock_user(root_verify_key, user_stash, guest_user):
     result = user_stash.partition.set(root_verify_key, guest_user)
     assert result.is_ok()
@@ -14,7 +14,7 @@ def guest_mock_user(root_verify_key, user_stash, guest_user):
     user = result.ok()
     assert user is not None
 
-    yield user
+    return user
 
 
 def test_call_service_syftapi_with_permission(worker, guest_mock_user, update_user):
@@ -46,7 +46,7 @@ def test_directly_call_service_with_permission(worker, guest_mock_user, update_u
 
 def test_directly_call_service_no_permission(guest_datasite_client):
     api_call = SyftAPICall(
-        server_uid=guest_datasite_client.id, path="user.get_all", args=[], kwargs={}
+        server_uid=guest_datasite_client.id, path="user.get_all", args=[], kwargs={},
     )
     signed_call = api_call.sign(guest_datasite_client.api.signing_key)
     signed_result = guest_datasite_client.api.connection.make_call(signed_call)

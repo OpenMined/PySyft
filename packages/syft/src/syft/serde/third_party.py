@@ -1,41 +1,37 @@
 # stdlib
-from datetime import date
-from datetime import datetime
-from datetime import time
 import functools
+from datetime import date, datetime, time
 from importlib.util import find_spec
 from io import BytesIO
 
-# third party
-from dateutil import parser
-from nacl.signing import SigningKey
-from nacl.signing import VerifyKey
 import numpy as np
-from pandas import DataFrame
-from pandas import Series
-from pandas._libs.tslibs.timestamps import Timestamp
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pydantic
+
+# third party
+from dateutil import parser
+from nacl.signing import SigningKey, VerifyKey
+from pandas import DataFrame, Series
+from pandas._libs.tslibs.timestamps import Timestamp
 from pydantic._internal._model_construction import ModelMetaclass
 from pymongo.collection import Collection
-from result import Err
-from result import Ok
+from result import Err, Ok
 
 # relative
 from ..types.dicttuple import DictTuple
 from ..types.dicttuple import _Meta as _DictTupleMetaClass
-from ..types.syft_metaclass import EmptyType
-from ..types.syft_metaclass import PartialModelMetaclass
-from .array import numpy_deserialize
-from .array import numpy_serialize
+from ..types.syft_metaclass import EmptyType, PartialModelMetaclass
+from .array import numpy_deserialize, numpy_serialize
 from .deserialize import _deserialize as deserialize
-from .recursive_primitives import _serialize_kv_pairs
-from .recursive_primitives import deserialize_kv
-from .recursive_primitives import deserialize_type
-from .recursive_primitives import recursive_serde_register
-from .recursive_primitives import recursive_serde_register_type
-from .recursive_primitives import serialize_type
+from .recursive_primitives import (
+    _serialize_kv_pairs,
+    deserialize_kv,
+    deserialize_type,
+    recursive_serde_register,
+    recursive_serde_register_type,
+    serialize_type,
+)
 from .serialize import _serialize as serialize
 
 recursive_serde_register(
@@ -57,10 +53,10 @@ recursive_serde_register(
 
 # result Ok and Err
 recursive_serde_register(
-    Ok, serialize_attrs=["_value"], canonical_name="result_Ok", version=1
+    Ok, serialize_attrs=["_value"], canonical_name="result_Ok", version=1,
 )
 recursive_serde_register(
-    Err, serialize_attrs=["_value"], canonical_name="result_Err", version=1
+    Err, serialize_attrs=["_value"], canonical_name="result_Err", version=1,
 )
 
 # exceptions
@@ -68,7 +64,7 @@ recursive_serde_register(cls=TypeError, canonical_name="TypeError", version=1)
 
 # mongo collection
 recursive_serde_register_type(
-    Collection, canonical_name="pymongo_collection", version=1
+    Collection, canonical_name="pymongo_collection", version=1,
 )
 
 
@@ -180,10 +176,10 @@ recursive_serde_register(
 
 
 recursive_serde_register_type(
-    ModelMetaclass, canonical_name="pydantic_model_metaclass", version=1
+    ModelMetaclass, canonical_name="pydantic_model_metaclass", version=1,
 )
 recursive_serde_register_type(
-    PartialModelMetaclass, canonical_name="partial_model_metaclass", version=1
+    PartialModelMetaclass, canonical_name="partial_model_metaclass", version=1,
 )
 
 
@@ -216,10 +212,10 @@ try:
     from torch._C import _TensorMeta
 
     recursive_serde_register_type(
-        _TensorMeta, canonical_name="torch_tensor_meta", version=1
+        _TensorMeta, canonical_name="torch_tensor_meta", version=1,
     )
     recursive_serde_register_type(
-        torch.Tensor, canonical_name="torch_tensor", version=1
+        torch.Tensor, canonical_name="torch_tensor", version=1,
     )
 
     def torch_serialize(tensor: torch.Tensor) -> bytes:

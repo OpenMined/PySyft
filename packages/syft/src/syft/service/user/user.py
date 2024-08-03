@@ -1,40 +1,38 @@
 # stdlib
+import re
 from collections.abc import Callable
 from datetime import datetime
 from getpass import getpass
-import re
 from typing import Any
 
 # third party
-from bcrypt import checkpw
-from bcrypt import gensalt
-from bcrypt import hashpw
-from pydantic import EmailStr
-from pydantic import ValidationError
-from pydantic import field_validator
+from bcrypt import checkpw, gensalt, hashpw
+from pydantic import EmailStr, ValidationError, field_validator
 
 # relative
 from ...client.api import APIRegistry
 from ...serde.serializable import serializable
-from ...server.credentials import SyftSigningKey
-from ...server.credentials import SyftVerifyKey
+from ...server.credentials import SyftSigningKey, SyftVerifyKey
 from ...types.syft_metaclass import Empty
 from ...types.syft_migration import migrate
-from ...types.syft_object import PartialSyftObject
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SyftObject
-from ...types.transforms import TransformContext
-from ...types.transforms import drop
-from ...types.transforms import generate_id
-from ...types.transforms import keep
-from ...types.transforms import make_set_default
-from ...types.transforms import transform
-from ...types.transforms import validate_email
+from ...types.syft_object import (
+    SYFT_OBJECT_VERSION_1,
+    SYFT_OBJECT_VERSION_2,
+    PartialSyftObject,
+    SyftObject,
+)
+from ...types.transforms import (
+    TransformContext,
+    drop,
+    generate_id,
+    keep,
+    make_set_default,
+    transform,
+    validate_email,
+)
 from ...types.uid import UID
 from ..notifier.notifier_enums import NOTIFIERS
-from ..response import SyftError
-from ..response import SyftSuccess
+from ..response import SyftError, SyftSuccess
 from .user_roles import ServiceRole
 
 
@@ -127,7 +125,7 @@ def migrate_server_user_downgrade_current_v1() -> list[Callable]:
         drop("reset_token_date"),
         drop("__attr_searchable__"),
         make_set_default(
-            "__attr_searchable__", ["name", "email", "verify_key", "role"]
+            "__attr_searchable__", ["name", "email", "verify_key", "role"],
         ),
     ]
 
@@ -287,11 +285,11 @@ class UserView(SyftObject):
         api.services.user.update(uid=self.id, password=new_password)
         return SyftSuccess(
             message=f"Successfully updated password for "
-            f"user '{self.name}' with email '{self.email}'."
+            f"user '{self.name}' with email '{self.email}'.",
         )
 
     def set_password(
-        self, new_password: str | None = None, confirm: bool = True
+        self, new_password: str | None = None, confirm: bool = True,
     ) -> SyftError | SyftSuccess:
         """Set a new password interactively with confirmed password from user input"""
         # TODO: Add password validation for special characters
@@ -326,7 +324,7 @@ class UserView(SyftObject):
         self.email = email
         return SyftSuccess(
             message=f"Successfully updated email for the user "
-            f"'{self.name}' to '{self.email}'."
+            f"'{self.name}' to '{self.email}'.",
         )
 
     def update(
@@ -409,8 +407,8 @@ def userv1_to_view_user() -> list[Callable]:
                 "website",
                 "mock_execution_permission",
                 "notifications_enabled",
-            ]
-        )
+            ],
+        ),
     ]
 
 
@@ -427,8 +425,8 @@ def user_to_view_user() -> list[Callable]:
                 "website",
                 "mock_execution_permission",
                 "notifications_enabled",
-            ]
-        )
+            ],
+        ),
     ]
 
 

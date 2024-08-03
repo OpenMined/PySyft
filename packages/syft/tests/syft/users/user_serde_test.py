@@ -2,10 +2,10 @@
 
 # third party
 import pytest
-from pytest import FixtureRequest
 
 # syft absolute
 import syft as sy
+from pytest import FixtureRequest
 
 
 @pytest.mark.parametrize(

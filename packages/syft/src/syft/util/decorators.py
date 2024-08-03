@@ -1,16 +1,15 @@
 # stdlib
-from collections.abc import Callable
 import functools
-from typing import Any
 import warnings
+from collections.abc import Callable
+from typing import Any
 
 # relative
 from ..service.response import SyftError
 
 
 def singleton(cls: Any) -> Callable:
-    """
-    Handy decorator for creating a singleton class
+    """Handy decorator for creating a singleton class
     Description:
         - Decorate your class with this decorator
         - If you happen to create another instance of the same class, it will return the previously created one
@@ -38,8 +37,8 @@ def singleton(cls: Any) -> Callable:
 
     @functools.wraps(cls)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
-        if cls in previous_instances and previous_instances.get(cls, None).get(
-            "args"
+        if cls in previous_instances and previous_instances.get(cls).get(
+            "args",
         ) == (args, kwargs):
             return previous_instances[cls].get("instance")
         else:

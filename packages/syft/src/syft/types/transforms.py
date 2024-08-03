@@ -9,11 +9,9 @@ from typing_extensions import Self
 # relative
 from ..abstract_server import AbstractServer
 from ..server.credentials import SyftVerifyKey
-from ..service.context import AuthedServiceContext
-from ..service.context import ServerServiceContext
+from ..service.context import AuthedServiceContext, ServerServiceContext
 from .server_url import ServerURL
-from .syft_object import Context
-from .syft_object import SyftBaseObject
+from .syft_object import Context, SyftBaseObject
 from .syft_object_registry import SyftObjectRegistry
 from .uid import UID
 
@@ -47,7 +45,7 @@ class TransformContext(Context):
     def to_server_context(self) -> ServerServiceContext:
         if self.credentials:
             return AuthedServiceContext(
-                server=self.server, credentials=self.credentials
+                server=self.server, credentials=self.credentials,
             )
         if self.server:
             return ServerServiceContext(server=self.server)
@@ -55,7 +53,7 @@ class TransformContext(Context):
 
 
 def geteitherattr(
-    _self: Any, output: dict, key: str, default: Any = NotNone
+    _self: Any, output: dict, key: str, default: Any = NotNone,
 ) -> Any | None:
     if key in output:
         return output[key]
@@ -88,7 +86,7 @@ def rename(old_key: str, new_key: str) -> Callable:
     def drop_keys(context: TransformContext) -> TransformContext:
         if context.output:
             context.output[new_key] = geteitherattr(
-                context.obj, context.output, old_key
+                context.obj, context.output, old_key,
             )
             if old_key in context.output:
                 del context.output[old_key]
@@ -118,7 +116,7 @@ def keep(list_keys: list[str]) -> Callable:
 
 
 def convert_types(
-    list_keys: list[str], types: type | list[type]
+    list_keys: list[str], types: type | list[type],
 ) -> Callable[[TransformContext], TransformContext]:
     if not isinstance(types, list):
         types = [types] * len(list_keys)
@@ -130,7 +128,7 @@ def convert_types(
         if context.output:
             for key, _type in zip(list_keys, types):
                 context.output[key] = _type(
-                    geteitherattr(context.obj, context.output, key)
+                    geteitherattr(context.obj, context.output, key),
                 )
         return context
 
@@ -149,7 +147,7 @@ def generate_action_object_id(context: TransformContext) -> TransformContext:
     if context.output is None:
         return context
     if "action_object_id" not in context.output or not isinstance(
-        context.output["action_object_id"], UID
+        context.output["action_object_id"], UID,
     ):
         context.output["action_object_id"] = UID()
     return context
@@ -194,7 +192,7 @@ def add_server_uid_for_key(key: str) -> Callable:
 
 
 def generate_transform_wrapper(
-    klass_from: type, klass_to: type, transforms: list[Callable]
+    klass_from: type, klass_to: type, transforms: list[Callable],
 ) -> Callable:
     def wrapper(
         self: klass_from,
@@ -216,7 +214,7 @@ def validate_klass_and_version(
 ) -> tuple[str, int | None, str, int | None]:
     if not isinstance(klass_from, type | str):
         raise NotImplementedError(
-            "Arguments to `klass_from` should be either of `Type` or `str` type."
+            "Arguments to `klass_from` should be either of `Type` or `str` type.",
         )
 
     if isinstance(klass_from, str):
@@ -230,7 +228,7 @@ def validate_klass_and_version(
 
     if not isinstance(klass_to, type | str):
         raise NotImplementedError(
-            "Arguments to `klass_to` should be either of `Type` or `str` type."
+            "Arguments to `klass_to` should be either of `Type` or `str` type.",
         )
 
     if isinstance(klass_to, str):
@@ -299,7 +297,7 @@ def transform(
         transforms = function()
 
         wrapper = generate_transform_wrapper(
-            klass_from=klass_from, klass_to=klass_to, transforms=transforms
+            klass_from=klass_from, klass_to=klass_to, transforms=transforms,
         )
 
         SyftObjectRegistry.add_transform(

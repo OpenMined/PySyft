@@ -3,24 +3,27 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from types import FunctionType
 
+import pytest
+
 # third party
 from pydantic import EmailStr
 from pydantic_core import PydanticCustomError
-import pytest
 
 # syft absolute
-from syft.types.transforms import NotNone
-from syft.types.transforms import TransformContext
-from syft.types.transforms import add_credentials_for_key
-from syft.types.transforms import add_server_uid_for_key
-from syft.types.transforms import drop
-from syft.types.transforms import generate_id
-from syft.types.transforms import geteitherattr
-from syft.types.transforms import keep
-from syft.types.transforms import make_set_default
-from syft.types.transforms import rename
-from syft.types.transforms import validate_email
-from syft.types.transforms import validate_url
+from syft.types.transforms import (
+    NotNone,
+    TransformContext,
+    add_credentials_for_key,
+    add_server_uid_for_key,
+    drop,
+    generate_id,
+    geteitherattr,
+    keep,
+    make_set_default,
+    rename,
+    validate_email,
+    validate_url,
+)
 from syft.types.uid import UID
 
 
@@ -106,7 +109,7 @@ def test_make_set_default(faker, key, value, server_context):
     mock_obj = MockObject(obj_key=faker.name())
 
     transform_context = TransformContext.from_context(
-        obj=mock_obj, context=server_context
+        obj=mock_obj, context=server_context,
     )
 
     resultant_context = result(transform_context)
@@ -146,7 +149,7 @@ def test_drop(faker, server_context):
     assert isinstance(result, Callable)
 
     transform_context = TransformContext.from_context(
-        obj=mock_obj, context=server_context
+        obj=mock_obj, context=server_context,
     )
 
     expected_output = dict(mock_obj).copy()
@@ -187,7 +190,7 @@ def test_keep(faker, server_context):
     assert isinstance(result, Callable)
 
     transform_context = TransformContext.from_context(
-        obj=mock_obj, context=server_context
+        obj=mock_obj, context=server_context,
     )
 
     mock_obj_dict = dict(mock_obj)
@@ -230,7 +233,7 @@ def test_rename(faker, server_context):
     assert isinstance(result, Callable)
 
     transform_context = TransformContext.from_context(
-        obj=mock_obj, context=server_context
+        obj=mock_obj, context=server_context,
     )
 
     mock_obj_dict = dict(mock_obj)
@@ -272,7 +275,7 @@ def test_generate_id(faker, server_context):
     )
 
     transform_context = TransformContext.from_context(
-        obj=mock_obj, context=server_context
+        obj=mock_obj, context=server_context,
     )
 
     result = generate_id(context=transform_context)
@@ -288,7 +291,7 @@ def test_generate_id(faker, server_context):
     )
 
     transform_context = TransformContext.from_context(
-        obj=mock_obj, context=server_context
+        obj=mock_obj, context=server_context,
     )
 
     result = generate_id(context=transform_context)
@@ -305,7 +308,7 @@ def test_generate_id(faker, server_context):
     )
 
     transform_context = TransformContext.from_context(
-        obj=mock_obj, context=server_context
+        obj=mock_obj, context=server_context,
     )
 
     result = generate_id(context=transform_context)
@@ -327,7 +330,7 @@ def test_add_credentials_for_key(faker, authed_context):
     )
 
     transform_context = TransformContext.from_context(
-        obj=mock_obj, context=authed_context
+        obj=mock_obj, context=authed_context,
     )
 
     key = "random_key"
@@ -353,7 +356,7 @@ def test_add_server_uid_for_key(faker, server_context):
     )
 
     transform_context = TransformContext.from_context(
-        obj=mock_obj, context=server_context
+        obj=mock_obj, context=server_context,
     )
 
     key = "random_uid_key"
@@ -377,7 +380,7 @@ def test_validate_url(faker, server_context):
     mock_obj = MockObject(url=None)
 
     transform_context = TransformContext.from_context(
-        obj=mock_obj, context=server_context
+        obj=mock_obj, context=server_context,
     )
 
     # no change in context if url is None
@@ -390,7 +393,7 @@ def test_validate_url(faker, server_context):
     mock_obj = MockObject(url=url_with_port)
 
     transform_context = TransformContext.from_context(
-        obj=mock_obj, context=server_context
+        obj=mock_obj, context=server_context,
     )
 
     result = validate_url(transform_context)
@@ -408,7 +411,7 @@ def test_validate_email(faker, server_context):
 
     mock_obj = MockObject(email=None)
     transform_context = TransformContext.from_context(
-        obj=mock_obj, context=server_context
+        obj=mock_obj, context=server_context,
     )
     result = validate_email(transform_context)
     assert isinstance(result, TransformContext)
@@ -416,7 +419,7 @@ def test_validate_email(faker, server_context):
 
     mock_obj = MockObject(email=faker.email())
     transform_context = TransformContext.from_context(
-        obj=mock_obj, context=server_context
+        obj=mock_obj, context=server_context,
     )
     result = validate_email(transform_context)
     assert isinstance(result, TransformContext)
@@ -425,7 +428,7 @@ def test_validate_email(faker, server_context):
 
     mock_obj = MockObject(email=faker.name())
     transform_context = TransformContext.from_context(
-        obj=mock_obj, context=server_context
+        obj=mock_obj, context=server_context,
     )
 
     with pytest.raises(PydanticCustomError):

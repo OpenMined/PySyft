@@ -3,12 +3,11 @@ from __future__ import annotations
 
 # stdlib
 import logging
-from pathlib import Path
 import re
-from string import Template
 import traceback
-from typing import TYPE_CHECKING
-from typing import cast
+from pathlib import Path
+from string import Template
+from typing import TYPE_CHECKING, cast
 
 # third party
 import markdown
@@ -19,15 +18,13 @@ from tqdm import tqdm
 from ..abstract_server import ServerSideType
 from ..serde.serializable import serializable
 from ..service.action.action_object import ActionObject
-from ..service.code_history.code_history import CodeHistoriesDict
-from ..service.code_history.code_history import UsersCodeHistoriesDict
-from ..service.dataset.dataset import Contributor
-from ..service.dataset.dataset import CreateAsset
-from ..service.dataset.dataset import CreateDataset
+from ..service.code_history.code_history import (
+    CodeHistoriesDict,
+    UsersCodeHistoriesDict,
+)
+from ..service.dataset.dataset import Contributor, CreateAsset, CreateDataset
 from ..service.migration.object_migration_state import MigrationData
-from ..service.response import SyftError
-from ..service.response import SyftSuccess
-from ..service.response import SyftWarning
+from ..service.response import SyftError, SyftSuccess, SyftWarning
 from ..service.sync.diff_state import ResolvedSyncState
 from ..service.sync.sync_state import SyncState
 from ..service.user.roles import Roles
@@ -35,12 +32,9 @@ from ..service.user.user import UserView
 from ..types.blob_storage import BlobFile
 from ..types.uid import UID
 from ..util.misc_objs import HTMLObject
-from ..util.util import get_mb_size
-from ..util.util import prompt_warning_message
+from ..util.util import get_mb_size, prompt_warning_message
 from .api import APIModule
-from .client import SyftClient
-from .client import login
-from .client import login_as_guest
+from .client import SyftClient, login, login_as_guest
 from .connection import ServerConnection
 from .protocol import SyftProtocol
 
@@ -70,7 +64,7 @@ def _contains_subdir(dir: Path) -> bool:
 
 
 def add_default_uploader(
-    user: UserView, obj: CreateDataset | CreateAsset
+    user: UserView, obj: CreateDataset | CreateAsset,
 ) -> CreateDataset | CreateAsset:
     uploader = None
     for contributor in obj.contributors:
@@ -129,7 +123,7 @@ class DatasiteClient(SyftClient):
             prompt_warning_message(message=message, confirm=True)
 
         with tqdm(
-            total=len(dataset.asset_list), colour="green", desc="Uploading"
+            total=len(dataset.asset_list), colour="green", desc="Uploading",
         ) as pbar:
             for asset in dataset.asset_list:
                 try:
@@ -150,7 +144,7 @@ class DatasiteClient(SyftClient):
                 if isinstance(res, SyftWarning):
                     logger.debug(res.message)
                 response = self.api.services.action.set(
-                    twin, ignore_detached_objs=contains_empty
+                    twin, ignore_detached_objs=contains_empty,
                 )
                 if isinstance(response, SyftError):
                     tqdm.write(f"Failed to upload asset: {asset.name}")
@@ -242,10 +236,10 @@ class DatasiteClient(SyftClient):
             elif path.is_dir():
                 if not allow_recursive and _contains_subdir(path):
                     res = input(
-                        f"Do you want to include all files recursively in {path.absolute()}? [y/n]: "
+                        f"Do you want to include all files recursively in {path.absolute()}? [y/n]: ",
                     ).lower()
                     print(
-                        f'{"Recursively uploading all files" if res == "y" else "Uploading files"} in {path.absolute()}'
+                        f'{"Recursively uploading all files" if res == "y" else "Uploading files"} in {path.absolute()}',
                     )
                     allow_recursive = res == "y"
                 expanded_file_list.extend(_get_files_from_dir(path, allow_recursive))
@@ -256,7 +250,7 @@ class DatasiteClient(SyftClient):
             return SyftError(message="No files to upload were found")
 
         print(
-            f"Uploading {len(expanded_file_list)} {'file' if len(expanded_file_list) == 1 else 'files'}:"
+            f"Uploading {len(expanded_file_list)} {'file' if len(expanded_file_list) == 1 else 'files'}:",
         )
 
         if show_files:
@@ -279,7 +273,7 @@ class DatasiteClient(SyftClient):
             return ActionObject.from_obj(result).send(self)
         except Exception as err:
             return SyftError(
-                message=f"Failed to upload files: {err}.\n{traceback.format_exc()}"
+                message=f"Failed to upload files: {err}.\n{traceback.format_exc()}",
             )
 
     def connect_to_gateway(
@@ -287,7 +281,7 @@ class DatasiteClient(SyftClient):
         via_client: SyftClient | None = None,
         url: str | None = None,
         port: int | None = None,
-        handle: ServerHandle | None = None,  # noqa: F821
+        handle: ServerHandle | None = None,
         email: str | None = None,
         password: str | None = None,
         protocol: str | SyftProtocol = SyftProtocol.HTTP,
@@ -321,7 +315,7 @@ class DatasiteClient(SyftClient):
                         f"Connected {self.metadata.server_type} "
                         f"'{self.metadata.name}' to gateway '{client.name}'. "
                         f"{res.message}"
-                    )
+                    ),
                 )
             else:
                 return SyftSuccess(message=f"Connected to '{client.name}' gateway")
@@ -334,10 +328,10 @@ class DatasiteClient(SyftClient):
         return None
 
     def set_server_side_type_dangerous(
-        self, server_side_type: str
+        self, server_side_type: str,
     ) -> Result[SyftSuccess, SyftError]:
         return self.api.services.settings.set_server_side_type_dangerous(
-            server_side_type
+            server_side_type,
         )
 
     @property
@@ -405,7 +399,7 @@ class DatasiteClient(SyftClient):
         return self._get_service_by_name_if_exists("migration")
 
     def get_migration_data(
-        self, include_blobs: bool = True
+        self, include_blobs: bool = True,
     ) -> MigrationData | SyftError:
         res = self.api.services.migration.get_migration_data()
         if isinstance(res, SyftError):
@@ -425,12 +419,12 @@ class DatasiteClient(SyftClient):
         if self.id != migration_data.server_uid:
             return SyftError(
                 message=f"This Migration data is not for this server. Expected server id {self.id}, "
-                f"got {migration_data.server_uid}"
+                f"got {migration_data.server_uid}",
             )
 
         if migration_data.signing_key.verify_key != self.verify_key:
             return SyftError(
-                message="Root verify key in migration data does not match this client's verify key"
+                message="Root verify key in migration data does not match this client's verify key",
             )
 
         res = migration_data.migrate_and_upload_blobs()
@@ -439,7 +433,7 @@ class DatasiteClient(SyftClient):
 
         migration_data_without_blobs = migration_data.copy_without_blobs()
         return self.api.services.migration.apply_migration_data(
-            migration_data_without_blobs
+            migration_data_without_blobs,
         )
 
     def get_project(
@@ -448,7 +442,6 @@ class DatasiteClient(SyftClient):
         uid: UID | None = None,
     ) -> Project | None:
         """Get project by name or UID"""
-
         if not self.api.has_service("project"):
             return None
 
@@ -465,7 +458,7 @@ class DatasiteClient(SyftClient):
         if isinstance(obj, SyftError):
             return obj.message
         updated_template_str = Template(obj.text).safe_substitute(
-            server_url=getattr(self.connection, "url", None)
+            server_url=getattr(self.connection, "url", None),
         )
         # If it's a markdown structured file
         if not isinstance(obj, HTMLObject):

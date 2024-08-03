@@ -12,8 +12,7 @@ from .image_registry import SyftImageRegistry
 
 @serializable(canonical_name="SyftWorkerImageIdentifier", version=1)
 class SyftWorkerImageIdentifier(SyftBaseModel):
-    """
-    Class to identify syft worker images.
+    """Class to identify syft worker images.
     If a user provides an image's identifier with
     "docker.io/openmined/test-nginx:0.7.8", the convention we use for
     image name, tag and repo for now is
@@ -23,8 +22,10 @@ class SyftWorkerImageIdentifier(SyftBaseModel):
         full_name = docker.io/openmined/test-nginx
         full_name_with_tag = docker.io/openmined/test-nginx:0.7.8
 
-    References:
+    References
+    ----------
         https://docs.docker.com/engine/reference/commandline/tag/#tag-an-image-referenced-by-name-and-tag
+
     """
 
     registry: SyftImageRegistry | str | None = None

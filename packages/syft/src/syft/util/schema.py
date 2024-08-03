@@ -1,7 +1,7 @@
 # stdlib
-from collections import defaultdict
 import json
 import os
+from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
@@ -124,7 +124,7 @@ def get_types(cls: type, keys: list[str]) -> dict[str, type] | None:
 
 
 def convert_attribute_types(
-    cls: type, attribute_list: list[str], attribute_types: list[type]
+    cls: type, attribute_list: list[str], attribute_types: list[type],
 ) -> dict[str, Any]:
     jsonschema: dict[str, Any] = {}
     jsonschema["title"] = cls.__name__
@@ -191,16 +191,13 @@ def resolve_references(json_mappings: dict[str, dict]) -> dict[str, dict]:
                 if _type_str in primitive_mapping.values():
                     # no issue with primitive types
                     continue
-                else:
-                    # if we don't have a type yet its because its not supported
-                    # lets create an empty type to satisfy the generation process
-                    if _type_str not in json_mappings.keys():
-                        reference = make_fake_type(_type_str)
-                        new_types[_type_str] = reference
+                elif _type_str not in json_mappings:
+                    reference = make_fake_type(_type_str)
+                    new_types[_type_str] = reference
 
                 # if the type is a reference we need to replace its type entry after
                 replace_types[attribute] = {
-                    "$ref": f"./{SCHEMA_FOLDER}/{_type_str}.json"
+                    "$ref": f"./{SCHEMA_FOLDER}/{_type_str}.json",
                 }
         # replace any referenced types
         for k, v in replace_types.items():

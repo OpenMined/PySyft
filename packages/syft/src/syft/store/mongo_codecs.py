@@ -3,10 +3,8 @@ from typing import Any
 
 # third party
 from bson import CodecOptions
-from bson.binary import Binary
-from bson.binary import USER_DEFINED_SUBTYPE
-from bson.codec_options import TypeDecoder
-from bson.codec_options import TypeRegistry
+from bson.binary import USER_DEFINED_SUBTYPE, Binary
+from bson.codec_options import TypeDecoder, TypeRegistry
 
 # relative
 from ..serde.deserialize import _deserialize

@@ -5,31 +5,27 @@ from __future__ import annotations
 import threading
 
 # third party
-from result import Err
-from result import Ok
-from result import Result
+from result import Err, Ok, Result
 
 # relative
 from ...serde.serializable import serializable
-from ...server.credentials import SyftSigningKey
-from ...server.credentials import SyftVerifyKey
+from ...server.credentials import SyftSigningKey, SyftVerifyKey
 from ...store.dict_document_store import DictStoreConfig
-from ...store.document_store import BasePartitionSettings
-from ...store.document_store import DocumentStore
-from ...store.document_store import StoreConfig
+from ...store.document_store import BasePartitionSettings, DocumentStore, StoreConfig
 from ...types.syft_object import SyftObject
 from ...types.twin_object import TwinObject
-from ...types.uid import LineageID
-from ...types.uid import UID
+from ...types.uid import UID, LineageID
 from ..response import SyftSuccess
 from .action_object import is_action_data_empty
-from .action_permissions import ActionObjectEXECUTE
-from .action_permissions import ActionObjectOWNER
-from .action_permissions import ActionObjectPermission
-from .action_permissions import ActionObjectREAD
-from .action_permissions import ActionObjectWRITE
-from .action_permissions import ActionPermission
-from .action_permissions import StoragePermission
+from .action_permissions import (
+    ActionObjectEXECUTE,
+    ActionObjectOWNER,
+    ActionObjectPermission,
+    ActionObjectREAD,
+    ActionObjectWRITE,
+    ActionPermission,
+    StoragePermission,
+)
 
 lock = threading.RLock()
 
@@ -42,11 +38,13 @@ class ActionStore:
 class KeyValueActionStore(ActionStore):
     """Generic Key-Value Action store.
 
-    Parameters:
+    Parameters
+    ----------
         store_config: StoreConfig
             Backend specific configuration, including connection configuration, database name, or client class type.
         root_verify_key: Optional[SyftVerifyKey]
             Signature verification key, used for checking access permissions.
+
     """
 
     def __init__(
@@ -60,13 +58,13 @@ class KeyValueActionStore(ActionStore):
         self.store_config = store_config
         self.settings = BasePartitionSettings(name="Action")
         self.data = self.store_config.backing_store(
-            "data", self.settings, self.store_config
+            "data", self.settings, self.store_config,
         )
         self.permissions = self.store_config.backing_store(
-            "permissions", self.settings, self.store_config, ddtype=set
+            "permissions", self.settings, self.store_config, ddtype=set,
         )
         self.storage_permissions = self.store_config.backing_store(
-            "storage_permissions", self.settings, self.store_config, ddtype=set
+            "storage_permissions", self.settings, self.store_config, ddtype=set,
         )
 
         if root_verify_key is None:
@@ -81,7 +79,7 @@ class KeyValueActionStore(ActionStore):
             self.__user_stash = UserStash(store=document_store)
 
     def get(
-        self, uid: UID, credentials: SyftVerifyKey, has_permission: bool = False
+        self, uid: UID, credentials: SyftVerifyKey, has_permission: bool = False,
     ) -> Result[SyftObject, str]:
         uid = uid.id  # We only need the UID from LineageID or UID
 
@@ -106,7 +104,7 @@ class KeyValueActionStore(ActionStore):
         try:
             syft_object = self.data[uid]
             if isinstance(syft_object, TwinObject) and not is_action_data_empty(
-                syft_object.mock
+                syft_object.mock,
             ):
                 return Ok(syft_object.mock)
             return Err("No mock")
@@ -170,7 +168,7 @@ class KeyValueActionStore(ActionStore):
             else:
                 # root takes owneship, but you can still write
                 ownership_result = self.take_ownership(
-                    uid=uid, credentials=self.root_verify_key
+                    uid=uid, credentials=self.root_verify_key,
                 )
                 can_write = True if ownership_result.is_ok() else False
 
@@ -186,7 +184,7 @@ class KeyValueActionStore(ActionStore):
                     [
                         ActionObjectWRITE(uid=uid, credentials=credentials),
                         ActionObjectEXECUTE(uid=uid, credentials=credentials),
-                    ]
+                    ],
                 )
 
             if uid not in self.storage_permissions:
@@ -194,14 +192,14 @@ class KeyValueActionStore(ActionStore):
                 self.storage_permissions[uid] = set()
             if add_storage_permission:
                 self.add_storage_permission(
-                    StoragePermission(uid=uid, server_uid=self.server_uid)
+                    StoragePermission(uid=uid, server_uid=self.server_uid),
                 )
 
             return Ok(SyftSuccess(message=f"Set for ID: {uid}"))
         return Err(f"Permission: {write_permission} denied")
 
     def take_ownership(
-        self, uid: UID, credentials: SyftVerifyKey
+        self, uid: UID, credentials: SyftVerifyKey,
     ) -> Result[SyftSuccess, str]:
         uid = uid.id  # We only need the UID from LineageID or UID
 
@@ -213,7 +211,7 @@ class KeyValueActionStore(ActionStore):
                     ActionObjectWRITE(uid=uid, credentials=credentials),
                     ActionObjectREAD(uid=uid, credentials=credentials),
                     ActionObjectEXECUTE(uid=uid, credentials=credentials),
-                ]
+                ],
             )
             return Ok(SyftSuccess(message=f"Ownership of ID: {uid} taken."))
         return Err(f"UID: {uid} already owned.")
@@ -266,13 +264,7 @@ class KeyValueActionStore(ActionStore):
             return True
 
         # 🟡 TODO 14: add ALL_READ, ALL_EXECUTE etc
-        if permission.permission == ActionPermission.OWNER:
-            pass
-        elif permission.permission == ActionPermission.READ:
-            pass
-        elif permission.permission == ActionPermission.WRITE:
-            pass
-        elif permission.permission == ActionPermission.EXECUTE:
+        if permission.permission == ActionPermission.OWNER or permission.permission == ActionPermission.READ or (permission.permission == ActionPermission.WRITE or permission.permission == ActionPermission.EXECUTE):
             pass
 
         return False
@@ -343,7 +335,7 @@ class KeyValueActionStore(ActionStore):
         return Ok(result)
 
     def migrate_data(
-        self, to_klass: SyftObject, credentials: SyftVerifyKey
+        self, to_klass: SyftObject, credentials: SyftVerifyKey,
     ) -> Result[bool, str]:
         has_root_permission = credentials == self.root_verify_key
 
@@ -355,7 +347,7 @@ class KeyValueActionStore(ActionStore):
                     migrated_value = value.migrate_to(to_klass.__version__)
                 except Exception as e:
                     return Err(
-                        f"Failed to migrate data to {to_klass} {to_klass.__version__} for qk: {key}. Exception: {e}"
+                        f"Failed to migrate data to {to_klass} {to_klass.__version__} for qk: {key}. Exception: {e}",
                     )
                 result = self.set(
                     uid=key,
@@ -375,11 +367,13 @@ class KeyValueActionStore(ActionStore):
 class DictActionStore(KeyValueActionStore):
     """Dictionary-Based Key-Value Action store.
 
-    Parameters:
+    Parameters
+    ----------
         store_config: StoreConfig
             Backend specific configuration, including client class type.
         root_verify_key: Optional[SyftVerifyKey]
             Signature verification key, used for checking access permissions.
+
     """
 
     def __init__(
@@ -402,25 +396,27 @@ class DictActionStore(KeyValueActionStore):
 class SQLiteActionStore(KeyValueActionStore):
     """SQLite-Based Key-Value Action store.
 
-    Parameters:
+    Parameters
+    ----------
         store_config: StoreConfig
             SQLite specific configuration, including connection settings or client class type.
         root_verify_key: Optional[SyftVerifyKey]
             Signature verification key, used for checking access permissions.
+
     """
 
-    pass
 
 
 @serializable(canonical_name="MongoActionStore", version=1)
 class MongoActionStore(KeyValueActionStore):
     """Mongo-Based  Action store.
 
-    Parameters:
+    Parameters
+    ----------
         store_config: StoreConfig
             Mongo specific configuration.
         root_verify_key: Optional[SyftVerifyKey]
             Signature verification key, used for checking access permissions.
+
     """
 
-    pass

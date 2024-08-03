@@ -1,9 +1,9 @@
 # stdlib
-from collections.abc import Callable
-from enum import Enum
 import inspect
 import math
 import sys
+from collections.abc import Callable
+from enum import Enum
 from typing import Any
 
 # third party
@@ -13,21 +13,21 @@ import pytest
 
 # syft absolute
 from syft.service.action.action_data_empty import ActionDataEmpty
-from syft.service.action.action_object import Action
-from syft.service.action.action_object import ActionObject
-from syft.service.action.action_object import ActionType
-from syft.service.action.action_object import HOOK_ALWAYS
-from syft.service.action.action_object import HOOK_ON_POINTERS
-from syft.service.action.action_object import PreHookContext
-from syft.service.action.action_object import make_action_side_effect
-from syft.service.action.action_object import propagate_server_uid
-from syft.service.action.action_object import send_action_side_effect
+from syft.service.action.action_object import (
+    HOOK_ALWAYS,
+    HOOK_ON_POINTERS,
+    Action,
+    ActionObject,
+    ActionType,
+    PreHookContext,
+    make_action_side_effect,
+    propagate_server_uid,
+    send_action_side_effect,
+)
 from syft.service.action.action_types import action_type_for_type
-from syft.service.response import SyftError
-from syft.service.response import SyftSuccess
+from syft.service.response import SyftError, SyftSuccess
 from syft.store.blob_storage import SyftObjectRetrieval
-from syft.types.uid import LineageID
-from syft.types.uid import UID
+from syft.types.uid import UID, LineageID
 
 
 def helper_make_action_obj(orig_obj: Any):
@@ -123,7 +123,7 @@ def test_actionobject_make_empty_sanity(dtype: type):
     syft_type = action_type_for_type(dtype)
 
     obj = ActionObject.empty(
-        syft_internal_type=syft_type, id=None, syft_lineage_id=None
+        syft_internal_type=syft_type, id=None, syft_lineage_id=None,
     )
     assert obj.id is not None
     assert obj.syft_history_hash is not None
@@ -138,7 +138,7 @@ def test_actionobject_make_empty_sanity(dtype: type):
     obj_id = UID()
     lin_obj_id = LineageID(obj_id)
     obj = ActionObject.empty(
-        syft_internal_type=syft_type, id=obj_id, syft_lineage_id=lin_obj_id
+        syft_internal_type=syft_type, id=obj_id, syft_lineage_id=lin_obj_id,
     )
     assert obj.id == obj_id
     assert obj.syft_history_hash == lin_obj_id.syft_history_hash
@@ -233,7 +233,7 @@ def test_actionobject_hooks_send_action_side_effect_err_invalid_args(worker):
 
     obj = helper_make_action_obj(orig_obj)
     obj_pointer, args_pointers, kwargs_pointers = helper_make_action_pointers(
-        worker, obj, *args, **kwargs
+        worker, obj, *args, **kwargs,
     )
 
     context = PreHookContext(obj=obj_pointer, op_name=op)
@@ -254,7 +254,7 @@ def test_actionobject_hooks_send_action_side_effect_err_invalid_args(worker):
     ],
 )
 def test_actionobject_hooks_send_action_side_effect_ignore_op(
-    root_datasite_client, orig_obj_op
+    root_datasite_client, orig_obj_op,
 ):
     orig_obj, op, args, kwargs = orig_obj_op
 
@@ -291,7 +291,7 @@ def test_actionobject_hooks_send_action_side_effect_ok(worker, orig_obj_op):
     obj = helper_make_action_obj(orig_obj)
 
     obj_pointer, args_pointers, kwargs_pointers = helper_make_action_pointers(
-        worker, obj, *args, **kwargs
+        worker, obj, *args, **kwargs,
     )
 
     context = PreHookContext(obj=obj_pointer, op_name=op, action_type=ActionType.METHOD)
@@ -358,7 +358,7 @@ def test_actionobject_syft_execute_ok(worker, testcase):
     obj = helper_make_action_obj(orig_obj)
 
     obj_pointer, args_pointers, kwargs_pointers = helper_make_action_pointers(
-        worker, obj, *args, **kwargs
+        worker, obj, *args, **kwargs,
     )
 
     context = PreHookContext(obj=obj_pointer, op_name=op, action_type=ActionType.METHOD)
@@ -394,7 +394,7 @@ def test_actionobject_syft_make_action(worker, testcase):
 
     obj = helper_make_action_obj(orig_obj)
     obj_pointer, args_pointers, kwargs_pointers = helper_make_action_pointers(
-        worker, obj, *args, **kwargs
+        worker, obj, *args, **kwargs,
     )
 
     path = str(type(orig_obj))
@@ -426,11 +426,11 @@ def test_actionobject_syft_make_action_with_self(worker, testcase):
 
     obj = helper_make_action_obj(orig_obj)
     obj_pointer, args_pointers, kwargs_pointers = helper_make_action_pointers(
-        worker, obj, *args, **kwargs
+        worker, obj, *args, **kwargs,
     )
 
     action = obj.syft_make_action_with_self(
-        op, args=args_pointers, kwargs=kwargs_pointers
+        op, args=args_pointers, kwargs=kwargs_pointers,
     )
 
     assert action.full_path.endswith("." + op)
@@ -459,7 +459,7 @@ def test_actionobject_syft_make_remote_method_action(worker, testcase):
 
     obj = helper_make_action_obj(orig_obj)
     obj_pointer, args_pointers, kwargs_pointers = helper_make_action_pointers(
-        worker, obj, *args, **kwargs
+        worker, obj, *args, **kwargs,
     )
 
     remote_cbk = obj.syft_remote_method(op)
@@ -594,14 +594,14 @@ def test_actionobject_syft_execute_hooks(worker, testcase):
     obj = helper_make_action_obj(orig_obj)
 
     obj_pointer, args_pointers, kwargs_pointers = helper_make_action_pointers(
-        worker, obj, *args, **kwargs
+        worker, obj, *args, **kwargs,
     )
     obj_pointer.syft_point_to(client.id)
 
     context = PreHookContext(obj=obj_pointer, op_name=op, action_type=ActionType.METHOD)
 
     context, result_args, result_kwargs = obj_pointer._syft_run_pre_hooks__(
-        context, name=op, args=args_pointers, kwargs=kwargs_pointers
+        context, name=op, args=args_pointers, kwargs=kwargs_pointers,
     )
     assert context.result_id is not None
 
@@ -708,7 +708,7 @@ def helper_prepare_obj_for_scenario(scenario: AttrScenario, worker, obj: ActionO
     if scenario == AttrScenario.AS_OBJ:
         return obj
     elif scenario == AttrScenario.AS_PTR:
-        obj, _, _ = helper_make_action_pointers(worker, obj, *[], **{})
+        obj, _, _ = helper_make_action_pointers(worker, obj, *[])
         return obj
     else:
         raise ValueError(scenario)
@@ -738,7 +738,7 @@ def test_actionobject_syft_getattr_str(worker, scenario):
     assert obj < "zzzz"
     for idx, c in enumerate(obj):
         assert c == orig_obj[idx]
-        assert obj[idx] == orig_obj[idx]
+        assert c == orig_obj[idx]
     for idx, c in enumerate(orig_obj):
         assert c == obj[idx]
 
@@ -1030,8 +1030,7 @@ def test_actionobject_syft_getattr_pandas(worker):
 
 
 def test_actionobject_delete(worker):
-    """
-    Test deleting action objects and their corresponding blob storage entries
+    """Test deleting action objects and their corresponding blob storage entries
     """
     root_client = worker.root_client
 
@@ -1050,12 +1049,12 @@ def test_actionobject_delete(worker):
     action_obj_2.send(root_client)
     assert isinstance(action_obj_2.syft_blob_storage_entry_id, UID)
     read_res = root_client.api.services.blob_storage.read(
-        action_obj_2.syft_blob_storage_entry_id
+        action_obj_2.syft_blob_storage_entry_id,
     )
     assert isinstance(read_res, SyftObjectRetrieval)
     del_res = root_client.api.services.action.delete(uid=action_obj_2.id)
     assert isinstance(del_res, SyftSuccess)
     read_res = root_client.api.services.blob_storage.read(
-        action_obj_2.syft_blob_storage_entry_id
+        action_obj_2.syft_blob_storage_entry_id,
     )
     assert isinstance(read_res, SyftError)

@@ -1,7 +1,7 @@
 # stdlib
 import base64
-from functools import lru_cache
 import importlib.resources
+from functools import lru_cache
 
 IMAGE_ASSETS = "syft.assets.img"
 SVG_ASSETS = "syft.assets.svg"

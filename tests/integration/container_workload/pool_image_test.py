@@ -9,14 +9,11 @@ import pytest
 # syft absolute
 import syft as sy
 from syft.client.datasite_client import DatasiteClient
-from syft.custom_worker.config import DockerWorkerConfig
-from syft.custom_worker.config import PrebuiltWorkerConfig
+from syft.custom_worker.config import DockerWorkerConfig, PrebuiltWorkerConfig
 from syft.service.request.request import Request
-from syft.service.response import SyftError
-from syft.service.response import SyftSuccess
+from syft.service.response import SyftError, SyftSuccess
 from syft.service.worker.worker_image import SyftWorkerImage
-from syft.service.worker.worker_pool import SyftWorker
-from syft.service.worker.worker_pool import WorkerPool
+from syft.service.worker.worker_pool import SyftWorker, WorkerPool
 from syft.types.uid import UID
 from syft.util.util import get_latest_tag
 
@@ -33,10 +30,10 @@ external_registry_username = os.getenv("EXTERNAL_REGISTRY_USERNAME", None)
 external_registry_password = os.getenv("EXTERNAL_REGISTRY_PASSWORD", None)
 
 
-@pytest.fixture
+@pytest.fixture()
 def external_registry_uid(datasite_1_port: int) -> UID:
     datasite_client: DatasiteClient = sy.login(
-        port=datasite_1_port, email="info@openmined.org", password="changethis"
+        port=datasite_1_port, email="info@openmined.org", password="changethis",
     )
     image_registry_list = datasite_client.api.services.image_registry.get_all()
     if len(image_registry_list) > 1:
@@ -49,7 +46,7 @@ def external_registry_uid(datasite_1_port: int) -> UID:
         return image_registry_list[0].id
     else:
         registry_add_result = datasite_client.api.services.image_registry.add(
-            external_registry
+            external_registry,
         )
 
         assert isinstance(registry_add_result, sy.SyftSuccess), str(registry_add_result)
@@ -61,22 +58,22 @@ def external_registry_uid(datasite_1_port: int) -> UID:
 def make_docker_config_test_case(pkg: str) -> tuple[str, str]:
     return (
         DockerWorkerConfig(
-            dockerfile=(f"FROM {registry}/{repo}:{tag}\nRUN pip install {pkg}\n")
+            dockerfile=(f"FROM {registry}/{repo}:{tag}\nRUN pip install {pkg}\n"),
         ),
         f"openmined/custom-worker-{pkg}:latest",
     )
 
 
-@pytest.mark.container_workload
+@pytest.mark.container_workload()
 def test_image_build(datasite_1_port: int, external_registry_uid: UID) -> None:
     datasite_client: DatasiteClient = sy.login(
-        port=datasite_1_port, email="info@openmined.org", password="changethis"
+        port=datasite_1_port, email="info@openmined.org", password="changethis",
     )
 
     docker_config, docker_tag = make_docker_config_test_case("recordlinkage")
 
     submit_result = datasite_client.api.services.worker_image.submit(
-        worker_config=docker_config
+        worker_config=docker_config,
     )
     assert isinstance(submit_result, SyftSuccess)
     assert len(datasite_client.images.get_all()) == 2
@@ -103,14 +100,14 @@ def test_image_build(datasite_1_port: int, external_registry_uid: UID) -> None:
     assert workerimage.image_hash is not None
 
 
-@pytest.mark.container_workload
+@pytest.mark.container_workload()
 # @pytest.mark.parametrize("prebuilt", [True, False])
 @pytest.mark.parametrize("prebuilt", [False])
 def test_pool_launch(
-    datasite_1_port: int, external_registry_uid: UID, prebuilt: bool
+    datasite_1_port: int, external_registry_uid: UID, prebuilt: bool,
 ) -> None:
     datasite_client: DatasiteClient = sy.login(
-        port=datasite_1_port, email="info@openmined.org", password="changethis"
+        port=datasite_1_port, email="info@openmined.org", password="changethis",
     )
 
     # Submit Worker Image
@@ -121,12 +118,12 @@ def test_pool_launch(
         else make_docker_config_test_case("opendp")
     )
     submit_result = datasite_client.api.services.worker_image.submit(
-        worker_config=worker_config
+        worker_config=worker_config,
     )
     assert isinstance(submit_result, SyftSuccess)
 
     worker_image = datasite_client.api.services.worker_image.get_by_config(
-        worker_config
+        worker_config,
     )
     assert not isinstance(worker_image, sy.SyftError)
     assert worker_image is not None
@@ -204,19 +201,18 @@ def test_pool_launch(
     # TODO: delete the launched pool
 
 
-@pytest.mark.container_workload
+@pytest.mark.container_workload()
 @pytest.mark.parametrize("prebuilt", [True, False])
 def test_pool_image_creation_job_requests(
-    datasite_1_port: int, external_registry_uid: UID, prebuilt: bool
+    datasite_1_port: int, external_registry_uid: UID, prebuilt: bool,
 ) -> None:
-    """
-    Test register ds client, ds requests to create an image and pool creation,
+    """Test register ds client, ds requests to create an image and pool creation,
     do approves, then ds creates a function attached to the worker pool, then creates another
     request. DO approves and runs the function
     """
     # construct a root client and data scientist client for the test datasite
     datasite_client: DatasiteClient = sy.login(
-        port=datasite_1_port, email="info@openmined.org", password="changethis"
+        port=datasite_1_port, email="info@openmined.org", password="changethis",
     )
     ds_username = uuid4().hex[:8]
     ds_email = ds_username + "@example.com"

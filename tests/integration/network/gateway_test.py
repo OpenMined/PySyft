@@ -11,8 +11,7 @@ import pytest
 # syft absolute
 import syft as sy
 from syft.abstract_server import ServerType
-from syft.client.client import HTTPConnection
-from syft.client.client import SyftClient
+from syft.client.client import HTTPConnection, SyftClient
 from syft.client.datasite_client import DatasiteClient
 from syft.client.gateway_client import GatewayClient
 from syft.client.registry import NetworkRegistry
@@ -20,14 +19,11 @@ from syft.client.search import SearchResults
 from syft.service.dataset.dataset import Dataset
 from syft.service.network.association_request import AssociationRequestChange
 from syft.service.network.network_service import ServerPeerAssociationStatus
-from syft.service.network.routes import HTTPServerRoute
-from syft.service.network.routes import ServerRouteType
-from syft.service.network.server_peer import ServerPeer
-from syft.service.network.server_peer import ServerPeerConnectionStatus
+from syft.service.network.routes import HTTPServerRoute, ServerRouteType
+from syft.service.network.server_peer import ServerPeer, ServerPeerConnectionStatus
 from syft.service.network.utils import PeerHealthCheckTask
 from syft.service.request.request import Request
-from syft.service.response import SyftError
-from syft.service.response import SyftSuccess
+from syft.service.response import SyftError, SyftSuccess
 from syft.service.user.user_roles import ServiceRole
 
 
@@ -84,7 +80,7 @@ def test_network_registry_from_url() -> None:
     assert len(sy.gateways.all_networks) == len(sy.gateways.online_networks) == 1
 
 
-@pytest.mark.network
+@pytest.mark.network()
 def test_network_registry_env_var(set_env_var) -> None:
     assert isinstance(sy.gateways, NetworkRegistry)
     assert len(sy.gateways.all_networks) == len(sy.gateways.online_networks) == 1
@@ -92,9 +88,9 @@ def test_network_registry_env_var(set_env_var) -> None:
     assert isinstance(sy.gateways[0].connection, HTTPConnection)
 
 
-@pytest.mark.network
+@pytest.mark.network()
 def test_datasite_connect_to_gateway(
-    set_env_var, datasite_1_port: int, gateway_port: int
+    set_env_var, datasite_1_port: int, gateway_port: int,
 ) -> None:
     # check if we can see the online gateways
     assert isinstance(sy.gateways, NetworkRegistry)
@@ -102,10 +98,10 @@ def test_datasite_connect_to_gateway(
 
     # login to the datasite and gateway
     gateway_client: GatewayClient = sy.login(
-        port=gateway_port, email="info@openmined.org", password="changethis"
+        port=gateway_port, email="info@openmined.org", password="changethis",
     )
     datasite_client: DatasiteClient = sy.login(
-        port=datasite_1_port, email="info@openmined.org", password="changethis"
+        port=datasite_1_port, email="info@openmined.org", password="changethis",
     )
 
     # Try removing existing peers just to make sure
@@ -125,7 +121,7 @@ def test_datasite_connect_to_gateway(
     assert len(gateway_client.peers) == 0
 
     gateway_client_root = gateway_client.login(
-        email="info@openmined.org", password="changethis"
+        email="info@openmined.org", password="changethis",
     )
     res = gateway_client_root.api.services.request.get_all()[-1].approve()
     assert not isinstance(res, SyftError)
@@ -156,10 +152,10 @@ def test_datasite_connect_to_gateway(
     assert proxy_datasite_client.user_role == ServiceRole.NONE
 
     datasite_client = datasite_client.login(
-        email="info@openmined.org", password="changethis"
+        email="info@openmined.org", password="changethis",
     )
     proxy_datasite_client = proxy_datasite_client.login(
-        email="info@openmined.org", password="changethis"
+        email="info@openmined.org", password="changethis",
     )
 
     assert proxy_datasite_client.logged_in_user == "info@openmined.org"
@@ -175,19 +171,18 @@ def test_datasite_connect_to_gateway(
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
-@pytest.mark.network
+@pytest.mark.network()
 def test_dataset_search(set_env_var, gateway_port: int, datasite_1_port: int) -> None:
-    """
-    Scenario: Connecting a datasite server to a gateway server. The datasite
-        client then upload a dataset, which should be searchable by the syft network.
-        People who install syft can see the mock data and metadata of the uploaded datasets
+    """Scenario: Connecting a datasite server to a gateway server. The datasite
+    client then upload a dataset, which should be searchable by the syft network.
+    People who install syft can see the mock data and metadata of the uploaded datasets
     """
     # login to the datasite and gateway
     gateway_client: GatewayClient = sy.login(
-        port=gateway_port, email="info@openmined.org", password="changethis"
+        port=gateway_port, email="info@openmined.org", password="changethis",
     )
     datasite_client: DatasiteClient = sy.login(
-        port=datasite_1_port, email="info@openmined.org", password="changethis"
+        port=datasite_1_port, email="info@openmined.org", password="changethis",
     )
 
     # Try removing existing peers just to make sure
@@ -237,16 +232,16 @@ def test_dataset_search(set_env_var, gateway_port: int, datasite_1_port: int) ->
 
 
 @pytest.mark.skip(reason="Possible bug")
-@pytest.mark.network
+@pytest.mark.network()
 def test_datasite_gateway_user_code(
-    set_env_var, datasite_1_port: int, gateway_port: int
+    set_env_var, datasite_1_port: int, gateway_port: int,
 ) -> None:
     # login to the datasite and gateway
     gateway_client: GatewayClient = sy.login(
-        port=gateway_port, email="info@openmined.org", password="changethis"
+        port=gateway_port, email="info@openmined.org", password="changethis",
     )
     datasite_client: DatasiteClient = sy.login(
-        port=datasite_1_port, email="info@openmined.org", password="changethis"
+        port=datasite_1_port, email="info@openmined.org", password="changethis",
     )
 
     # Try removing existing peers just to make sure
@@ -318,14 +313,14 @@ def test_datasite_gateway_user_code(
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
-@pytest.mark.network
+@pytest.mark.network()
 def test_deleting_peers(set_env_var, datasite_1_port: int, gateway_port: int) -> None:
     # login to the datasite and gateway
     gateway_client: GatewayClient = sy.login(
-        port=gateway_port, email="info@openmined.org", password="changethis"
+        port=gateway_port, email="info@openmined.org", password="changethis",
     )
     datasite_client: DatasiteClient = sy.login(
-        port=datasite_1_port, email="info@openmined.org", password="changethis"
+        port=datasite_1_port, email="info@openmined.org", password="changethis",
     )
 
     # clean up before test
@@ -369,10 +364,9 @@ def test_deleting_peers(set_env_var, datasite_1_port: int, gateway_port: int) ->
     assert len(gateway_client.peers) == 0
 
 
-@pytest.mark.network
+@pytest.mark.network()
 def test_add_route(set_env_var, gateway_port: int, datasite_1_port: int) -> None:
-    """
-    Test the network service's `add_route` functionalities to add routes directly
+    """Test the network service's `add_route` functionalities to add routes directly
     for a self datasite.
     Scenario: Connect a datasite to a gateway. The gateway adds 2 new routes to the datasite
     and check their priorities get updated.
@@ -381,10 +375,10 @@ def test_add_route(set_env_var, gateway_port: int, datasite_1_port: int) -> None
     """
     # login to the datasite and gateway
     gateway_client: GatewayClient = sy.login(
-        port=gateway_port, email="info@openmined.org", password="changethis"
+        port=gateway_port, email="info@openmined.org", password="changethis",
     )
     datasite_client: DatasiteClient = sy.login(
-        port=datasite_1_port, email="info@openmined.org", password="changethis"
+        port=datasite_1_port, email="info@openmined.org", password="changethis",
     )
 
     # Try removing existing peers just to make sure
@@ -405,7 +399,7 @@ def test_add_route(set_env_var, gateway_port: int, datasite_1_port: int) -> None
     new_route = HTTPServerRoute(host_or_ip="localhost", port=10000)
     datasite_peer: ServerPeer = gateway_client.api.services.network.get_all_peers()[0]
     res = gateway_client.api.services.network.add_route(
-        peer_verify_key=datasite_peer.verify_key, route=new_route
+        peer_verify_key=datasite_peer.verify_key, route=new_route,
     )
     assert isinstance(res, SyftSuccess)
     datasite_peer = gateway_client.api.services.network.get_all_peers()[0]
@@ -415,7 +409,7 @@ def test_add_route(set_env_var, gateway_port: int, datasite_1_port: int) -> None
     # adding another route to the datasite
     new_route2 = HTTPServerRoute(host_or_ip="localhost", port=10001)
     res = gateway_client.api.services.network.add_route(
-        peer_verify_key=datasite_peer.verify_key, route=new_route2
+        peer_verify_key=datasite_peer.verify_key, route=new_route2,
     )
     assert isinstance(res, SyftSuccess)
     datasite_peer = gateway_client.api.services.network.get_all_peers()[0]
@@ -425,7 +419,7 @@ def test_add_route(set_env_var, gateway_port: int, datasite_1_port: int) -> None
 
     # add an existed route to the datasite. Its priority should not be updated
     res = gateway_client.api.services.network.add_route(
-        peer_verify_key=datasite_peer.verify_key, route=datasite_peer.server_routes[0]
+        peer_verify_key=datasite_peer.verify_key, route=datasite_peer.server_routes[0],
     )
     assert "route already exists" in res.message
     assert isinstance(res, SyftSuccess)
@@ -448,19 +442,18 @@ def test_add_route(set_env_var, gateway_port: int, datasite_1_port: int) -> None
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
-@pytest.mark.network
+@pytest.mark.network()
 def test_delete_route(set_env_var, gateway_port: int, datasite_1_port: int) -> None:
-    """
-    Scenario:
+    """Scenario:
     Connect a datasite to a gateway. The gateway adds a new route to the datasite
     and then deletes it.
     """
     # login to the datasite and gateway
     gateway_client: GatewayClient = sy.login(
-        port=gateway_port, email="info@openmined.org", password="changethis"
+        port=gateway_port, email="info@openmined.org", password="changethis",
     )
     datasite_client: DatasiteClient = sy.login(
-        port=datasite_1_port, email="info@openmined.org", password="changethis"
+        port=datasite_1_port, email="info@openmined.org", password="changethis",
     )
 
     # Try removing existing peers just to make sure
@@ -481,7 +474,7 @@ def test_delete_route(set_env_var, gateway_port: int, datasite_1_port: int) -> N
     new_route = HTTPServerRoute(host_or_ip="localhost", port=10000)
     datasite_peer: ServerPeer = gateway_client.api.services.network.get_all_peers()[0]
     res = gateway_client.api.services.network.add_route(
-        peer_verify_key=datasite_peer.verify_key, route=new_route
+        peer_verify_key=datasite_peer.verify_key, route=new_route,
     )
     assert isinstance(res, SyftSuccess)
     datasite_peer = gateway_client.api.services.network.get_all_peers()[0]
@@ -490,7 +483,7 @@ def test_delete_route(set_env_var, gateway_port: int, datasite_1_port: int) -> N
 
     # delete the added route
     res = gateway_client.api.services.network.delete_route(
-        peer_verify_key=datasite_peer.verify_key, route=new_route
+        peer_verify_key=datasite_peer.verify_key, route=new_route,
     )
     assert isinstance(res, SyftSuccess)
     datasite_peer = gateway_client.api.services.network.get_all_peers()[0]
@@ -502,22 +495,21 @@ def test_delete_route(set_env_var, gateway_port: int, datasite_1_port: int) -> N
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
-@pytest.mark.network
+@pytest.mark.network()
 def test_add_route_on_peer(
-    set_env_var, gateway_port: int, datasite_1_port: int
+    set_env_var, gateway_port: int, datasite_1_port: int,
 ) -> None:
-    """
-    Test the `add_route_on_peer` of network service.
+    """Test the `add_route_on_peer` of network service.
     Connect a datasite to a gateway.
     The gateway adds 2 new routes for itself remotely on the datasite and check their priorities.
     Then the datasite adds a route to itself for the gateway.
     """
     # login to the datasite and gateway
     gateway_client: GatewayClient = sy.login(
-        port=gateway_port, email="info@openmined.org", password="changethis"
+        port=gateway_port, email="info@openmined.org", password="changethis",
     )
     datasite_client: DatasiteClient = sy.login(
-        port=datasite_1_port, email="info@openmined.org", password="changethis"
+        port=datasite_1_port, email="info@openmined.org", password="changethis",
     )
 
     # Remove existing peers
@@ -541,7 +533,7 @@ def test_add_route_on_peer(
     new_route = HTTPServerRoute(host_or_ip="localhost", port=10000)
     datasite_peer: ServerPeer = gateway_client.api.services.network.get_all_peers()[0]
     res = gateway_client.api.services.network.add_route_on_peer(
-        peer=datasite_peer, route=new_route
+        peer=datasite_peer, route=new_route,
     )
     assert isinstance(res, SyftSuccess)
     gateway_peer = datasite_client.api.services.network.get_all_peers()[0]
@@ -552,7 +544,7 @@ def test_add_route_on_peer(
     # adding another route for the datasite
     new_route2 = HTTPServerRoute(host_or_ip="localhost", port=10001)
     res = gateway_client.api.services.network.add_route_on_peer(
-        peer=datasite_peer, route=new_route2
+        peer=datasite_peer, route=new_route2,
     )
     assert isinstance(res, SyftSuccess)
     gateway_peer = datasite_client.api.services.network.get_all_peers()[0]
@@ -563,7 +555,7 @@ def test_add_route_on_peer(
     # the datasite calls `add_route_on_peer` to to add a route to itself for the gateway
     assert len(datasite_peer.server_routes) == 1
     res = datasite_client.api.services.network.add_route_on_peer(
-        peer=datasite_client.peers[0], route=new_route
+        peer=datasite_client.peers[0], route=new_route,
     )
     assert isinstance(res, SyftSuccess)
     datasite_peer = gateway_client.api.services.network.get_all_peers()[0]
@@ -575,21 +567,20 @@ def test_add_route_on_peer(
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
-@pytest.mark.network
+@pytest.mark.network()
 @pytest.mark.flaky(reruns=2, reruns_delay=2)
 def test_delete_route_on_peer(
-    set_env_var, gateway_port: int, datasite_1_port: int
+    set_env_var, gateway_port: int, datasite_1_port: int,
 ) -> None:
-    """
-    Connect a datasite to a gateway, the gateway adds 2 new routes for the datasite
+    """Connect a datasite to a gateway, the gateway adds 2 new routes for the datasite
     , then delete them.
     """
     # login to the datasite and gateway
     gateway_client: GatewayClient = sy.login(
-        port=gateway_port, email="info@openmined.org", password="changethis"
+        port=gateway_port, email="info@openmined.org", password="changethis",
     )
     datasite_client: DatasiteClient = sy.login(
-        port=datasite_1_port, email="info@openmined.org", password="changethis"
+        port=datasite_1_port, email="info@openmined.org", password="changethis",
     )
 
     # Remove existing peers
@@ -609,11 +600,11 @@ def test_delete_route_on_peer(
     new_route2 = HTTPServerRoute(host_or_ip="localhost", port=10001)
     datasite_peer: ServerPeer = gateway_client.api.services.network.get_all_peers()[0]
     res = gateway_client.api.services.network.add_route_on_peer(
-        peer=datasite_peer, route=new_route
+        peer=datasite_peer, route=new_route,
     )
     assert isinstance(res, SyftSuccess)
     res = gateway_client.api.services.network.add_route_on_peer(
-        peer=datasite_peer, route=new_route2
+        peer=datasite_peer, route=new_route2,
     )
     assert isinstance(res, SyftSuccess)
 
@@ -622,14 +613,14 @@ def test_delete_route_on_peer(
 
     # gateway delete the routes for the datasite
     res = gateway_client.api.services.network.delete_route_on_peer(
-        peer=datasite_peer, route=new_route
+        peer=datasite_peer, route=new_route,
     )
     assert isinstance(res, SyftSuccess)
     gateway_peer = datasite_client.peers[0]
     assert len(gateway_peer.server_routes) == 2
 
     res = gateway_client.api.services.network.delete_route_on_peer(
-        peer=datasite_peer, route=new_route2
+        peer=datasite_peer, route=new_route2,
     )
     assert isinstance(res, SyftSuccess)
     gateway_peer = datasite_client.peers[0]
@@ -638,7 +629,7 @@ def test_delete_route_on_peer(
     # gateway deletes the last the route to it for the datasite
     last_route: ServerRouteType = gateway_peer.server_routes[0]
     res = gateway_client.api.services.network.delete_route_on_peer(
-        peer=datasite_peer, route=last_route
+        peer=datasite_peer, route=last_route,
     )
     assert isinstance(res, SyftSuccess)
     assert "There is no routes left" in res.message
@@ -650,16 +641,16 @@ def test_delete_route_on_peer(
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
-@pytest.mark.network
+@pytest.mark.network()
 def test_update_route_priority(
-    set_env_var, gateway_port: int, datasite_1_port: int
+    set_env_var, gateway_port: int, datasite_1_port: int,
 ) -> None:
     # login to the datasite and gateway
     gateway_client: GatewayClient = sy.login(
-        port=gateway_port, email="info@openmined.org", password="changethis"
+        port=gateway_port, email="info@openmined.org", password="changethis",
     )
     datasite_client: DatasiteClient = sy.login(
-        port=datasite_1_port, email="info@openmined.org", password="changethis"
+        port=datasite_1_port, email="info@openmined.org", password="changethis",
     )
 
     # Try remove existing peers
@@ -679,11 +670,11 @@ def test_update_route_priority(
     new_route2 = HTTPServerRoute(host_or_ip="localhost", port=10001)
     datasite_peer: ServerPeer = gateway_client.api.services.network.get_all_peers()[0]
     res = gateway_client.api.services.network.add_route(
-        peer_verify_key=datasite_peer.verify_key, route=new_route
+        peer_verify_key=datasite_peer.verify_key, route=new_route,
     )
     assert isinstance(res, SyftSuccess)
     res = gateway_client.api.services.network.add_route(
-        peer_verify_key=datasite_peer.verify_key, route=new_route2
+        peer_verify_key=datasite_peer.verify_key, route=new_route2,
     )
     assert isinstance(res, SyftSuccess)
 
@@ -698,7 +689,7 @@ def test_update_route_priority(
 
     # update the priorities for the routes
     res = gateway_client.api.services.network.update_route_priority(
-        peer_verify_key=datasite_peer.verify_key, route=new_route, priority=5
+        peer_verify_key=datasite_peer.verify_key, route=new_route, priority=5,
     )
     assert isinstance(res, SyftSuccess)
     datasite_peer = gateway_client.api.services.network.get_all_peers()[0]
@@ -710,7 +701,7 @@ def test_update_route_priority(
     # if we don't specify `priority`, the route will be automatically updated
     # to have the biggest priority value among all routes
     res = gateway_client.api.services.network.update_route_priority(
-        peer_verify_key=datasite_peer.verify_key, route=new_route2
+        peer_verify_key=datasite_peer.verify_key, route=new_route2,
     )
     assert isinstance(res, SyftSuccess)
     datasite_peer = gateway_client.api.services.network.get_all_peers()[0]
@@ -724,16 +715,16 @@ def test_update_route_priority(
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
-@pytest.mark.network
+@pytest.mark.network()
 def test_update_route_priority_on_peer(
-    set_env_var, gateway_port: int, datasite_1_port: int
+    set_env_var, gateway_port: int, datasite_1_port: int,
 ) -> None:
     # login to the datasite and gateway
     gateway_client: GatewayClient = sy.login(
-        port=gateway_port, email="info@openmined.org", password="changethis"
+        port=gateway_port, email="info@openmined.org", password="changethis",
     )
     datasite_client: DatasiteClient = sy.login(
-        port=datasite_1_port, email="info@openmined.org", password="changethis"
+        port=datasite_1_port, email="info@openmined.org", password="changethis",
     )
 
     # Remove existing peers
@@ -752,13 +743,13 @@ def test_update_route_priority_on_peer(
     datasite_peer: ServerPeer = gateway_client.api.services.network.get_all_peers()[0]
     new_route = HTTPServerRoute(host_or_ip="localhost", port=10000)
     res = gateway_client.api.services.network.add_route_on_peer(
-        peer=datasite_peer, route=new_route
+        peer=datasite_peer, route=new_route,
     )
     assert isinstance(res, SyftSuccess)
 
     new_route2 = HTTPServerRoute(host_or_ip="localhost", port=10001)
     res = gateway_client.api.services.network.add_route_on_peer(
-        peer=datasite_peer, route=new_route2
+        peer=datasite_peer, route=new_route2,
     )
     assert isinstance(res, SyftSuccess)
 
@@ -773,11 +764,11 @@ def test_update_route_priority_on_peer(
 
     # gateway updates the route priorities for the datasite remotely
     res = gateway_client.api.services.network.update_route_priority_on_peer(
-        peer=datasite_peer, route=new_route, priority=5
+        peer=datasite_peer, route=new_route, priority=5,
     )
     assert isinstance(res, SyftSuccess)
     res = gateway_client.api.services.network.update_route_priority_on_peer(
-        peer=datasite_peer, route=new_route2
+        peer=datasite_peer, route=new_route2,
     )
     assert isinstance(res, SyftSuccess)
 
@@ -793,19 +784,18 @@ def test_update_route_priority_on_peer(
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
-@pytest.mark.network
+@pytest.mark.network()
 def test_dataset_stream(set_env_var, gateway_port: int, datasite_1_port: int) -> None:
-    """
-    Scenario: Connecting a datasite server to a gateway server. The datasite
-        client then upload a dataset, which should be searchable by the syft network.
-        People who install syft can see the mock data and metadata of the uploaded datasets
+    """Scenario: Connecting a datasite server to a gateway server. The datasite
+    client then upload a dataset, which should be searchable by the syft network.
+    People who install syft can see the mock data and metadata of the uploaded datasets
     """
     # login to the datasite and gateway
     gateway_client: GatewayClient = sy.login(
-        port=gateway_port, email="info@openmined.org", password="changethis"
+        port=gateway_port, email="info@openmined.org", password="changethis",
     )
     datasite_client: DatasiteClient = sy.login(
-        port=datasite_1_port, email="info@openmined.org", password="changethis"
+        port=datasite_1_port, email="info@openmined.org", password="changethis",
     )
 
     # Remove existing peers just to make sure
@@ -835,7 +825,7 @@ def test_dataset_stream(set_env_var, gateway_port: int, datasite_1_port: int) ->
         if gateway_client.datasites[i].name == datasite_client.name
     )
     root_proxy_client = datasite_proxy_client.login(
-        email="info@openmined.org", password="changethis"
+        email="info@openmined.org", password="changethis",
     )
     retrieved_dataset = root_proxy_client.datasets[dataset_name]
     retrieved_asset = retrieved_dataset.assets[asset_name]
@@ -849,21 +839,20 @@ def test_dataset_stream(set_env_var, gateway_port: int, datasite_1_port: int) ->
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
-@pytest.mark.network
+@pytest.mark.network()
 def test_peer_health_check(
-    set_env_var, gateway_port: int, datasite_1_port: int
+    set_env_var, gateway_port: int, datasite_1_port: int,
 ) -> None:
-    """
-    Scenario: Connecting a datasite server to a gateway server.
+    """Scenario: Connecting a datasite server to a gateway server.
     The gateway client approves the association request.
     The gateway client checks that the datasite peer is associated
     """
     # login to the datasite and gateway
     gateway_client: GatewayClient = sy.login(
-        port=gateway_port, email="info@openmined.org", password="changethis"
+        port=gateway_port, email="info@openmined.org", password="changethis",
     )
     datasite_client: DatasiteClient = sy.login(
-        port=datasite_1_port, email="info@openmined.org", password="changethis"
+        port=datasite_1_port, email="info@openmined.org", password="changethis",
     )
 
     res = gateway_client.settings.allow_association_request_auto_approval(enable=False)
@@ -875,7 +864,7 @@ def test_peer_health_check(
 
     # gateway checks that the datasite is not yet associated
     res = gateway_client.api.services.network.check_peer_association(
-        peer_id=datasite_client.id
+        peer_id=datasite_client.id,
     )
     assert isinstance(res, ServerPeerAssociationStatus)
     assert res.value == "PEER_NOT_FOUND"
@@ -887,7 +876,7 @@ def test_peer_health_check(
 
     # check that the peer's association request is pending
     res = gateway_client.api.services.network.check_peer_association(
-        peer_id=datasite_client.id
+        peer_id=datasite_client.id,
     )
     assert isinstance(res, ServerPeerAssociationStatus)
     assert res.value == "PEER_ASSOCIATION_PENDING"
@@ -900,7 +889,7 @@ def test_peer_health_check(
 
     # check again that the peer's association request is still pending
     res = gateway_client.api.services.network.check_peer_association(
-        peer_id=datasite_client.id
+        peer_id=datasite_client.id,
     )
     assert isinstance(res, ServerPeerAssociationStatus)
     assert res.value == "PEER_ASSOCIATION_PENDING"
@@ -912,7 +901,7 @@ def test_peer_health_check(
 
     # the gateway client checks that the peer is associated
     res = gateway_client.api.services.network.check_peer_association(
-        peer_id=datasite_client.id
+        peer_id=datasite_client.id,
     )
     assert isinstance(res, ServerPeerAssociationStatus)
     assert res.value == "PEER_ASSOCIATED"
@@ -926,15 +915,15 @@ def test_peer_health_check(
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
-@pytest.mark.network
+@pytest.mark.network()
 def test_reverse_tunnel_connection(datasite_1_port: int, gateway_port: int):
     # login to the datasite and gateway
 
     gateway_client: GatewayClient = sy.login(
-        port=gateway_port, email="info@openmined.org", password="changethis"
+        port=gateway_port, email="info@openmined.org", password="changethis",
     )
     datasite_client: DatasiteClient = sy.login(
-        port=datasite_1_port, email="info@openmined.org", password="changethis"
+        port=datasite_1_port, email="info@openmined.org", password="changethis",
     )
 
     res = gateway_client.settings.allow_association_request_auto_approval(enable=False)
@@ -958,7 +947,7 @@ def test_reverse_tunnel_connection(datasite_1_port: int, gateway_port: int):
     assert len(gateway_client.peers) == 0
 
     gateway_client_root = gateway_client.login(
-        email="info@openmined.org", password="changethis"
+        email="info@openmined.org", password="changethis",
     )
     res = gateway_client_root.api.services.request.get_all()[-1].approve()
     assert not isinstance(res, SyftError)

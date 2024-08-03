@@ -6,11 +6,13 @@ from result import Result
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import BaseUIDStoreStash
-from ...store.document_store import PartitionKey
-from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
-from ...store.document_store import UIDPartitionKey
+from ...store.document_store import (
+    BaseUIDStoreStash,
+    PartitionKey,
+    PartitionSettings,
+    QueryKeys,
+    UIDPartitionKey,
+)
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..request.request import Request
@@ -26,11 +28,11 @@ NamePartitionKey = PartitionKey(key="name", type_=str)
 class ProjectStash(BaseUIDStoreStash):
     object_type = Project
     settings: PartitionSettings = PartitionSettings(
-        name=Project.__canonical_name__, object_type=Project
+        name=Project.__canonical_name__, object_type=Project,
     )
 
     def get_all_for_verify_key(
-        self, credentials: SyftVerifyKey, verify_key: VerifyKeyPartitionKey
+        self, credentials: SyftVerifyKey, verify_key: VerifyKeyPartitionKey,
     ) -> Result[list[Request], SyftError]:
         if isinstance(verify_key, str):
             verify_key = SyftVerifyKey.from_string(verify_key)
@@ -41,13 +43,13 @@ class ProjectStash(BaseUIDStoreStash):
         )
 
     def get_by_uid(
-        self, credentials: SyftVerifyKey, uid: UID
+        self, credentials: SyftVerifyKey, uid: UID,
     ) -> Result[Project | None, str]:
         qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
         return self.query_one(credentials=credentials, qks=qks)
 
     def get_by_name(
-        self, credentials: SyftVerifyKey, project_name: str
+        self, credentials: SyftVerifyKey, project_name: str,
     ) -> Result[Project | None, str]:
         qks = QueryKeys(qks=[NamePartitionKey.with_obj(project_name)])
         return self.query_one(credentials=credentials, qks=qks)

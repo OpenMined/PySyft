@@ -1,21 +1,20 @@
 # stdlib
 import contextlib
-from hashlib import sha256
 import io
+from hashlib import sha256
 from pathlib import Path
 from typing import Any
 
 # third party
 import docker
+import yaml
 from packaging import version
 from pydantic import field_validator
 from typing_extensions import Self
-import yaml
 
 # relative
 from ..serde.serializable import serializable
-from ..service.response import SyftError
-from ..service.response import SyftSuccess
+from ..service.response import SyftError, SyftSuccess
 from ..types.base import SyftBaseModel
 from .utils import iterator_to_string
 
@@ -173,7 +172,7 @@ class DockerWorkerConfig(WorkerConfig):
             with contextlib.closing(docker.from_env()) as client:
                 if not client.ping():
                     return SyftError(
-                        "Cannot reach docker server. Please check if docker is running."
+                        "Cannot reach docker server. Please check if docker is running.",
                     )
 
                 kwargs["fileobj"] = io.BytesIO(self.dockerfile.encode("utf-8"))

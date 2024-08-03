@@ -13,30 +13,28 @@ from typing import TypeVar
 
 # third party
 from pydantic import BaseModel
-from result import Err
-from result import Ok
-from result import Result
+from result import Err, Ok, Result
 
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...types.syft_migration import migrate
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SyftObject
-from ...types.transforms import drop
-from ...types.transforms import make_set_default
+from ...types.syft_object import (
+    SYFT_OBJECT_VERSION_1,
+    SYFT_OBJECT_VERSION_2,
+    SyftObject,
+)
+from ...types.transforms import drop, make_set_default
 from ..context import AuthedServiceContext
 from ..notification.notifications import Notification
-from ..response import SyftError
-from ..response import SyftSuccess
+from ..response import SyftError, SyftSuccess
 from .notifier_enums import NOTIFIERS
 from .smtp_client import SMTPClient
 
 
 class BaseNotifier(BaseModel):
     def send(
-        self, target: SyftVerifyKey, notification: Notification
+        self, target: SyftVerifyKey, notification: Notification,
     ) -> SyftSuccess | SyftError:
         return SyftError(message="Not implemented")
 
@@ -89,7 +87,7 @@ class EmailNotifier(BaseNotifier):
         )
 
     def send(
-        self, context: AuthedServiceContext, notification: Notification
+        self, context: AuthedServiceContext, notification: Notification,
     ) -> Result[Ok, Err]:
         try:
             user_service = context.server.get_service("userservice")
@@ -98,17 +96,17 @@ class EmailNotifier(BaseNotifier):
 
             if not receiver.notifications_enabled[NOTIFIERS.EMAIL]:
                 return Ok(
-                    "Email notifications are disabled for this user."
+                    "Email notifications are disabled for this user.",
                 )  # TODO: Should we return an error here?
 
             receiver_email = receiver.email
 
             if notification.email_template:
                 subject = notification.email_template.email_title(
-                    notification, context=context
+                    notification, context=context,
                 )
                 body = notification.email_template.email_body(
-                    notification, context=context
+                    notification, context=context,
                 )
             else:
                 subject = notification.subject
@@ -118,12 +116,12 @@ class EmailNotifier(BaseNotifier):
                 receiver_email = [receiver_email]
 
             self.smtp_client.send(
-                sender=self.sender, receiver=receiver_email, subject=subject, body=body
+                sender=self.sender, receiver=receiver_email, subject=subject, body=body,
             )
             return Ok("Email sent successfully!")
         except Exception:
             return Err(
-                "Some notifications failed to be delivered. Please check the health of the mailing server."
+                "Some notifications failed to be delivered. Please check the health of the mailing server.",
             )
 
 
@@ -251,13 +249,14 @@ class NotifierSettings(SyftObject):
         return Ok("Notification sent successfully!")
 
     def select_notifiers(self, notification: Notification) -> list[BaseNotifier]:
-        """
-        Return a list of the notifiers enabled for the given notification"
+        """Return a list of the notifiers enabled for the given notification"
 
         Args:
+        ----
             notification (Notification): The notification object
         Returns:
             List[BaseNotifier]: A list of enabled notifier objects
+
         """
         notifier_objs = []
         for notifier_type in notification.notifier_types:
@@ -274,7 +273,7 @@ class NotifierSettings(SyftObject):
                             password=self.email_password,
                             sender=self.email_sender,
                             server=self.email_server,
-                        )
+                        ),
                     )
                 # If notifier is not email, we just create the notifier object
                 # TODO: Add the other notifiers, and its auth methods

@@ -6,9 +6,7 @@ from typing import Any
 from ...client.api import APIRegistry
 from ...serde.serializable import serializable
 from ...service.user.user_roles import ServiceRole
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
-from ...types.syft_object import SyftVerifyKey
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject, SyftVerifyKey
 from ...types.uid import UID
 from ...util.notebook_ui.components.tabulator_template import (
     build_tabulator_table_with_data,
@@ -74,11 +72,11 @@ class CodeHistoryView(SyftObject):
         if isinstance(index, str):
             raise TypeError(f"index {index} must be an integer, not a string")
         api = APIRegistry.api_for(
-            self.syft_server_location, self.syft_client_verify_key
+            self.syft_server_location, self.syft_client_verify_key,
         )
         if api is None:
             return SyftError(
-                message=f"Can't access the api. You must login to {self.server_uid}"
+                message=f"Can't access the api. You must login to {self.server_uid}",
             )
         if (
             api.user.get_current_user().role.value >= ServiceRole.DATA_OWNER.value
@@ -87,7 +85,7 @@ class CodeHistoryView(SyftObject):
             # negative index would dynamically resolve to a different version
             return SyftError(
                 message="For security concerns we do not allow negative indexing. \
-                Try using absolute values when indexing"
+                Try using absolute values when indexing",
             )
         return self.user_code_history[index]
 
@@ -141,7 +139,7 @@ class UsersCodeHistoriesDict(SyftObject):
         api = APIRegistry.api_for(self.server_uid, self.syft_client_verify_key)
         if api is None:
             return SyftError(
-                message=f"Can't access the api. You must login to {self.server_uid}"
+                message=f"Can't access the api. You must login to {self.server_uid}",
             )
         return api.services.code_history.get_history_for_user(key)
 

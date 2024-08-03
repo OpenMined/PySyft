@@ -3,22 +3,22 @@
 # future
 from __future__ import annotations
 
-# stdlib
-from collections.abc import Callable
-from enum import Enum
 import getpass
 import inspect
 import logging
 import os
 import sys
+
+# stdlib
+from collections.abc import Callable
+from enum import Enum
 from typing import Any
 
 # third party
 from IPython.display import display
 
 # relative
-from .abstract_server import ServerSideType
-from .abstract_server import ServerType
+from .abstract_server import ServerSideType, ServerType
 from .client.client import login as sy_login
 from .client.client import login_as_guest as sy_login_as_guest
 from .protocol.data_protocol import stage_protocol_changes
@@ -26,8 +26,7 @@ from .server.datasite import Datasite
 from .server.enclave import Enclave
 from .server.gateway import Gateway
 from .server.uvicorn import serve_server
-from .service.response import SyftError
-from .service.response import SyftInfo
+from .service.response import SyftError, SyftInfo
 from .util.util import get_random_available_port
 
 logger = logging.getLogger(__name__)
@@ -51,14 +50,14 @@ def get_server_type(server_type: str | ServerType | None) -> ServerType | None:
 def get_deployment_type(deployment_type: str | None) -> DeploymentType | None:
     if deployment_type is None:
         deployment_type = os.environ.get(
-            "ORCHESTRA_DEPLOYMENT_TYPE", DeploymentType.PYTHON
+            "ORCHESTRA_DEPLOYMENT_TYPE", DeploymentType.PYTHON,
         )
 
     try:
         return DeploymentType(deployment_type)
     except ValueError:
         print(
-            f"deployment_type: {deployment_type} is not a valid DeploymentType: {DeploymentType}"
+            f"deployment_type: {deployment_type} is not a valid DeploymentType: {DeploymentType}",
         )
     return None
 
@@ -99,14 +98,14 @@ class ServerHandle:
             return self.python_server.get_guest_client(verbose=False)  # type: ignore
         else:
             raise NotImplementedError(
-                f"client not implemented for the deployment type:{self.deployment_type}"
+                f"client not implemented for the deployment type:{self.deployment_type}",
             )
 
     def login_as_guest(self, **kwargs: Any) -> ClientAlias:
         return self.client.login_as_guest(**kwargs)
 
     def login(
-        self, email: str | None = None, password: str | None = None, **kwargs: Any
+        self, email: str | None = None, password: str | None = None, **kwargs: Any,
     ) -> ClientAlias:
         if not email:
             email = input("Email: ")
@@ -116,14 +115,14 @@ class ServerHandle:
 
         if self.port:
             return sy_login(
-                email=email, password=password, url=self.url, port=self.port
+                email=email, password=password, url=self.url, port=self.port,
             )  # type: ignore
         elif self.deployment_type == DeploymentType.PYTHON:
             guest_client = self.python_server.get_guest_client(verbose=False)  # type: ignore
             return guest_client.login(email=email, password=password, **kwargs)  # type: ignore
         else:
             raise NotImplementedError(
-                f"client not implemented for the deployment type:{self.deployment_type}"
+                f"client not implemented for the deployment type:{self.deployment_type}",
             )
 
     def register(
@@ -226,7 +225,7 @@ def deploy_to_python(
                 port = int(port)
             except ValueError:
                 raise ValueError(
-                    f"port must be either 'auto' or a valid int not: {port}"
+                    f"port must be either 'auto' or a valid int not: {port}",
                 )
         kwargs["port"] = port
 
@@ -256,7 +255,7 @@ def deploy_to_python(
             worker = worker_class.named(**supported_kwargs)
         else:
             raise NotImplementedError(
-                f"server_type: {server_type_enum} is not supported"
+                f"server_type: {server_type_enum} is not supported",
             )
 
         def stop() -> None:
@@ -338,7 +337,7 @@ class Orchestra:
         )
 
         deployment_type_enum: DeploymentType | None = get_deployment_type(
-            deployment_type=deploy_to
+            deployment_type=deploy_to,
         )
 
         if deployment_type_enum == DeploymentType.PYTHON:
@@ -367,8 +366,8 @@ class Orchestra:
             display(
                 SyftInfo(
                     message=f"You have launched a development server at http://{host}:{server_handle.port}."
-                    + "It is intended only for local use."
-                )
+                    + "It is intended only for local use.",
+                ),
             )
             return server_handle
         elif deployment_type_enum == DeploymentType.REMOTE:
@@ -382,5 +381,5 @@ class Orchestra:
                 migrate=migrate,
             )
         raise NotImplementedError(
-            f"deployment_type: {deployment_type_enum} is not supported"
+            f"deployment_type: {deployment_type_enum} is not supported",
         )

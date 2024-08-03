@@ -1,6 +1,6 @@
 # stdlib
-from pathlib import Path
 import tarfile
+from pathlib import Path
 
 # third party
 import yaml

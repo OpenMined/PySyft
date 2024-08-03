@@ -3,23 +3,18 @@ from __future__ import annotations
 
 # stdlib
 import logging
-from typing import Any
-from typing import ClassVar
+from typing import Any, ClassVar
 
 # third party
-from pydantic import field_validator
-from pydantic import model_validator
+from pydantic import field_validator, model_validator
 from typing_extensions import Self
 
 # relative
 from ..client.client import SyftClient
 from ..serde.serializable import serializable
-from ..service.action.action_object import ActionObject
-from ..service.action.action_object import TwinMode
+from ..service.action.action_object import ActionObject, TwinMode
 from ..service.action.action_types import action_types
-from ..service.response import SyftError
-from ..service.response import SyftSuccess
-from ..service.response import SyftWarning
+from ..service.response import SyftError, SyftSuccess, SyftWarning
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftObject
 from .uid import UID
@@ -88,7 +83,7 @@ class TwinObject(SyftObject):
         return mock
 
     def _save_to_blob_storage(
-        self, allow_empty: bool = False
+        self, allow_empty: bool = False,
     ) -> SyftError | SyftSuccess | SyftWarning:
         # Set server location and verify key
         self.private_obj._set_obj_location_(

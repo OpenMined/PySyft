@@ -1,4 +1,4 @@
-class _Primary(object):
+class _Primary:
     @property
     def mongos_mode(self):
         return "primary"
@@ -34,8 +34,8 @@ def ensure_read_preference_type(key, value):
         if not hasattr(value, attr):
             raise TypeError(
                 "{} must be an instance of {}".format(
-                    key, "pymongo.read_preference.ReadPreference"
-                )
+                    key, "pymongo.read_preference.ReadPreference",
+                ),
             )
 
 

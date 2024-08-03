@@ -1,6 +1,6 @@
 # stdlib
-from collections.abc import Iterable
 import json
+from collections.abc import Iterable
 
 
 def iterator_to_string(iterator: Iterable) -> str:

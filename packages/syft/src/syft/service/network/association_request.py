@@ -3,9 +3,7 @@ import secrets
 from typing import cast
 
 # third party
-from result import Err
-from result import Ok
-from result import Result
+from result import Err, Ok, Result
 
 # relative
 from ...client.client import SyftClient
@@ -13,8 +11,7 @@ from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ..context import ChangeContext
 from ..request.request import Change
-from ..response import SyftError
-from ..response import SyftSuccess
+from ..response import SyftError, SyftSuccess
 from .routes import ServerRoute
 from .server_peer import ServerPeer
 
@@ -31,17 +28,19 @@ class AssociationRequestChange(Change):
     __repr_attrs__ = ["self_server_route", "remote_peer"]
 
     def _run(
-        self, context: ChangeContext, apply: bool
+        self, context: ChangeContext, apply: bool,
     ) -> Result[tuple[bytes, ServerPeer], SyftError]:
-        """
-        Executes the association request.
+        """Executes the association request.
 
         Args:
+        ----
             context (ChangeContext): The change context.
             apply (bool): A flag indicating whether to apply the association request.
 
         Returns:
+        -------
             Result[tuple[bytes, ServerPeer], SyftError]: The result of the association request.
+
         """
         # relative
         from .network_service import NetworkService
@@ -49,13 +48,13 @@ class AssociationRequestChange(Change):
         if not apply:
             # TODO: implement undo for AssociationRequestChange
             return Err(
-                SyftError(message="Undo not supported for AssociationRequestChange")
+                SyftError(message="Undo not supported for AssociationRequestChange"),
             )
 
         # Get the network service
         service_ctx = context.to_service_ctx()
         network_service = cast(
-            NetworkService, service_ctx.server.get_service(NetworkService)
+            NetworkService, service_ctx.server.get_service(NetworkService),
         )
         network_stash = network_service.stash
 
@@ -76,17 +75,17 @@ class AssociationRequestChange(Change):
             # Pinging the remote peer to verify the connection
             try:
                 remote_client: SyftClient = self.remote_peer.client_with_context(
-                    context=service_ctx
+                    context=service_ctx,
                 )
                 if remote_client.is_err():
                     return SyftError(
                         message=f"Failed to create remote client for peer: "
-                        f"{self.remote_peer.id}. Error: {remote_client.err()}"
+                        f"{self.remote_peer.id}. Error: {remote_client.err()}",
                     )
                 remote_client = remote_client.ok()
                 random_challenge = secrets.token_bytes(16)
                 remote_res = remote_client.api.services.network.ping(
-                    challenge=random_challenge
+                    challenge=random_challenge,
                 )
             except Exception as e:
                 return SyftError(message="Remote Peer cannot ping peer:" + str(e))
@@ -99,14 +98,14 @@ class AssociationRequestChange(Change):
             # Verifying if the challenge is valid
             try:
                 self.remote_peer.verify_key.verify_key.verify(
-                    random_challenge, challenge_signature
+                    random_challenge, challenge_signature,
                 )
             except Exception as e:
                 return Err(SyftError(message=str(e)))
 
         # Adding the remote peer to the network stash
         result = network_stash.create_or_update_peer(
-            service_ctx.server.verify_key, self.remote_peer
+            service_ctx.server.verify_key, self.remote_peer,
         )
 
         if result.is_err():
@@ -115,7 +114,7 @@ class AssociationRequestChange(Change):
         # this way they can match up who we are with who they think we are
         # Sending a signed messages for the peer to verify
         self_server_peer = self.self_server_route.validate_with_context(
-            context=service_ctx
+            context=service_ctx,
         )
 
         if isinstance(self_server_peer, SyftError):
@@ -123,8 +122,8 @@ class AssociationRequestChange(Change):
 
         return Ok(
             SyftSuccess(
-                message=f"Routes successfully added for peer: {self.remote_peer.name}"
-            )
+                message=f"Routes successfully added for peer: {self.remote_peer.name}",
+            ),
         )
 
     def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:

@@ -6,15 +6,16 @@
 import threading
 
 # third party
-from result import Ok
-from result import Result
+from result import Ok, Result
 
 # relative
 from ...serde.serializable import serializable
-from ...store.document_store import BaseUIDStoreStash
-from ...store.document_store import DocumentStore
-from ...store.document_store import PartitionKey
-from ...store.document_store import PartitionSettings
+from ...store.document_store import (
+    BaseUIDStoreStash,
+    DocumentStore,
+    PartitionKey,
+    PartitionSettings,
+)
 from ...types.datetime import DateTime
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
@@ -40,7 +41,7 @@ class SyncStash(BaseUIDStoreStash):
         self.last_state: SyncState | None = None
 
     def get_latest(
-        self, context: AuthedServiceContext
+        self, context: AuthedServiceContext,
     ) -> Result[SyncState | None, str]:
         # print("SyncStash.get_latest called")
         if self.last_state is not None:

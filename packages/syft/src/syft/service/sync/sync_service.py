@@ -1,18 +1,15 @@
 # stdlib
-from collections import defaultdict
 import logging
+from collections import defaultdict
 from typing import Any
 
 # third party
-from result import Err
-from result import Ok
-from result import Result
+from result import Err, Ok, Result
 
 # relative
 from ...client.api import ServerIdentity
 from ...serde.serializable import serializable
-from ...store.document_store import BaseStash
-from ...store.document_store import DocumentStore
+from ...store.document_store import BaseStash, DocumentStore
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.syft_object import SyftObject
@@ -20,19 +17,18 @@ from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_object import ActionObject
-from ..action.action_permissions import ActionObjectPermission
-from ..action.action_permissions import ActionPermission
-from ..action.action_permissions import StoragePermission
+from ..action.action_permissions import (
+    ActionObjectPermission,
+    ActionPermission,
+    StoragePermission,
+)
 from ..api.api import TwinAPIEndpoint
 from ..api.api_service import APIService
 from ..code.user_code import UserCodeStatusCollection
 from ..context import AuthedServiceContext
 from ..job.job_stash import Job
-from ..response import SyftError
-from ..response import SyftSuccess
-from ..service import AbstractService
-from ..service import TYPE_TO_SERVICE
-from ..service import service_method
+from ..response import SyftError, SyftSuccess
+from ..service import TYPE_TO_SERVICE, AbstractService, service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from .sync_stash import SyncStash
 from .sync_state import SyncState
@@ -72,7 +68,7 @@ class SyncService(AbstractService):
         blob_id = action_object.syft_blob_storage_entry_id
         if blob_id:
             store_to_blob = context.server.get_service(
-                "blobstorageservice"
+                "blobstorageservice",
             ).stash.partition  # type: ignore
             for permission in new_permissions:
                 if permission.permission == ActionPermission.READ:
@@ -108,7 +104,7 @@ class SyncService(AbstractService):
             identity = ServerIdentity.from_server(context.server)
             res = {}
             for key in item.status_dict.keys():
-                # todo, check if they are actually only two servers
+                # TODO, check if they are actually only two servers
                 res[identity] = item.status_dict[key]
             item.status_dict = res
 
@@ -116,7 +112,7 @@ class SyncService(AbstractService):
         return item
 
     def get_stash_for_item(
-        self, context: AuthedServiceContext, item: SyftObject
+        self, context: AuthedServiceContext, item: SyftObject,
     ) -> BaseStash:
         services = list(context.server.service_path_map.values())  # type: ignore
 
@@ -152,7 +148,7 @@ class SyncService(AbstractService):
         store.add_storage_permissions(new_permissions)
 
     def set_object(
-        self, context: AuthedServiceContext, item: SyncableSyftObject
+        self, context: AuthedServiceContext, item: SyncableSyftObject,
     ) -> Result[SyftObject, str]:
         stash = self.get_stash_for_item(context, item)
         creds = context.credentials
@@ -210,7 +206,7 @@ class SyncService(AbstractService):
             if isinstance(item, ActionObject):
                 self.add_actionobject_read_permissions(context, item, new_permissions)
                 self.add_storage_permissions_for_item(
-                    context, item, new_storage_permissions
+                    context, item, new_storage_permissions,
                 )
             else:
                 item = self.transform_item(context, item)  # type: ignore[unreachable]
@@ -219,7 +215,7 @@ class SyncService(AbstractService):
                 if res.is_ok():
                     self.add_permissions_for_item(context, item, new_permissions)
                     self.add_storage_permissions_for_item(
-                        context, item, new_storage_permissions
+                        context, item, new_storage_permissions,
                     )
                 else:
                     return SyftError(message=f"Failed to sync {res.err()}")
@@ -280,8 +276,7 @@ class SyncService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> Result[tuple[list[SyncableSyftObject], dict[UID, str]], str]:
-        """
-        Returns all Jobs, along with their Logs, ExecutionOutputs and ActionObjects
+        """Returns all Jobs, along with their Logs, ExecutionOutputs and ActionObjects
         """
         items_for_jobs = []
         errors = {}
@@ -295,7 +290,7 @@ class SyncService(AbstractService):
             job_items_result = self._get_job_batch(context, job)
             if job_items_result.is_err():
                 logger.info(
-                    f"Job {job.id} could not be added to SyncState: {job_items_result.err()}"
+                    f"Job {job.id} could not be added to SyncState: {job_items_result.err()}",
                 )
                 errors[job.id] = job_items_result.err()
                 continue
@@ -304,7 +299,7 @@ class SyncService(AbstractService):
         return Ok((items_for_jobs, errors))
 
     def _get_job_batch(
-        self, context: AuthedServiceContext, job: Job
+        self, context: AuthedServiceContext, job: Job,
     ) -> Result[list[SyncableSyftObject], str]:
         job_batch = [job]
 
@@ -338,7 +333,7 @@ class SyncService(AbstractService):
         return Ok(job_batch)
 
     def get_all_syncable_items(
-        self, context: AuthedServiceContext
+        self, context: AuthedServiceContext,
     ) -> Result[tuple[list[SyncableSyftObject], dict[UID, str]], str]:
         all_items: list[SyncableSyftObject] = []
 

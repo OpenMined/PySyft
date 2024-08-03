@@ -2,9 +2,7 @@
 import pytest
 
 # syft absolute
-from syft.util.assets import load_css
-from syft.util.assets import load_png_base64
-from syft.util.assets import load_svg
+from syft.util.assets import load_css, load_png_base64, load_svg
 from syft.util.notebook_ui.icons import Icon
 
 

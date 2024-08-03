@@ -33,13 +33,13 @@ def make_ast_args(args: list[str]) -> ast.arguments:
 
 
 def make_ast_func(
-    name: str, input_kwargs: list[str], output_arg: str, body: list[ast.AST]
+    name: str, input_kwargs: list[str], output_arg: str, body: list[ast.AST],
 ) -> ast.FunctionDef:
     args = make_ast_args(input_kwargs)
     r = make_return(output_arg)
     new_body = body + [r]
     f = ast.FunctionDef(
-        name=name, args=args, body=new_body, decorator_list=[], lineno=0
+        name=name, args=args, body=new_body, decorator_list=[], lineno=0,
     )
     return f
 

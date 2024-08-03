@@ -1,6 +1,6 @@
 # stdlib
-from enum import Enum
 import os
+from enum import Enum
 
 # relative
 from .util import str_to_bool
@@ -24,7 +24,7 @@ class ExperimentalFlags:
             os.getenv(
                 "ENABLE_SIGNUP",
                 "False",
-            )
+            ),
         )
 
     @property

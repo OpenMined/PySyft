@@ -4,9 +4,11 @@ import pytest
 # syft absolute
 import syft as sy
 from syft.client.client import SyftClient
-from syft.custom_worker.config import DockerWorkerConfig
-from syft.custom_worker.config import PrebuiltWorkerConfig
-from syft.custom_worker.config import WorkerConfig
+from syft.custom_worker.config import (
+    DockerWorkerConfig,
+    PrebuiltWorkerConfig,
+    WorkerConfig,
+)
 from syft.server.worker import Worker
 from syft.service.request.request import CreateCustomWorkerPoolChange
 from syft.service.response import SyftSuccess
@@ -45,8 +47,7 @@ def test_create_image_and_pool_request_accept(
     worker_config: WorkerConfig,
     ds_client: SyftClient,
 ) -> None:
-    """
-    Test the functionality of `SyftWorkerPoolService.create_image_and_pool_request`
+    """Test the functionality of `SyftWorkerPoolService.create_image_and_pool_request`
     when the request is accepted
     """
     # construct a root client and data scientist client for a datasite
@@ -99,8 +100,7 @@ def test_create_pool_request_accept(
     n_images: int,
     ds_client: SyftClient,
 ) -> None:
-    """
-    Test the functionality of `SyftWorkerPoolService.create_pool_request`
+    """Test the functionality of `SyftWorkerPoolService.create_pool_request`
     when the request is accepted
     """
     # construct a root client and data scientist client for a datasite
@@ -109,14 +109,14 @@ def test_create_pool_request_accept(
 
     # the DO submits the docker config to build an image
     submit_result = root_client.api.services.worker_image.submit(
-        worker_config=worker_config
+        worker_config=worker_config,
     )
     assert isinstance(submit_result, SyftSuccess)
     assert len(root_client.images.get_all()) == n_images
 
     # The root client builds the image
     worker_image: SyftWorkerImage = root_client.api.services.worker_image.get_by_config(
-        worker_config
+        worker_config,
     )
     if not worker_image.is_prebuilt:
         docker_build_result = root_client.api.services.worker_image.build(
@@ -132,7 +132,7 @@ def test_create_pool_request_accept(
 
     # The DS client submits a request to create a pool from an existing image
     request = ds_client.api.services.worker_pool.pool_creation_request(
-        pool_name="opendp-pool", num_workers=3, image_uid=worker_image.id
+        pool_name="opendp-pool", num_workers=3, image_uid=worker_image.id,
     )
     assert len(request.changes) == 1
     change = request.changes[0]

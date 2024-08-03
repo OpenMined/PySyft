@@ -1,38 +1,37 @@
 # stdlib
-from collections import defaultdict
-from collections.abc import Callable
-from collections.abc import Generator
-from collections.abc import Iterable
-from collections.abc import KeysView
-from collections.abc import Mapping
-from collections.abc import Sequence
-from collections.abc import Set
-from datetime import datetime
-from functools import cache
-from functools import total_ordering
-from hashlib import sha256
 import inspect
-from inspect import Signature
 import logging
 import types
-from types import NoneType
-from types import UnionType
 import typing
-from typing import Any
-from typing import ClassVar
-from typing import Optional
-from typing import TYPE_CHECKING
-from typing import TypeVar
-from typing import Union
-from typing import get_args
-from typing import get_origin
+from collections import defaultdict
+from collections.abc import (
+    Callable,
+    Generator,
+    Iterable,
+    KeysView,
+    Mapping,
+    Sequence,
+    Set,
+)
+from datetime import datetime
+from functools import cache, total_ordering
+from hashlib import sha256
+from inspect import Signature
+from types import NoneType, UnionType
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Optional,
+    TypeVar,
+    Union,
+    get_args,
+    get_origin,
+)
 
 # third party
 import pydantic
-from pydantic import ConfigDict
-from pydantic import EmailStr
-from pydantic import Field
-from pydantic import model_validator
+from pydantic import ConfigDict, EmailStr, Field, model_validator
 from pydantic.fields import PydanticUndefined
 from result import OkErr
 from typeguard import check_type
@@ -46,11 +45,8 @@ from ..service.response import SyftError
 from ..util.autoreload import autoreload_enabled
 from ..util.markdown import as_markdown_python_code
 from ..util.notebook_ui.components.tabulator_template import build_tabulator_table
-from ..util.util import aggressive_set_attr
-from ..util.util import full_name_with_qualname
-from ..util.util import get_qualname_for
-from .syft_metaclass import Empty
-from .syft_metaclass import PartialModelMetaclass
+from ..util.util import aggressive_set_attr, full_name_with_qualname, get_qualname_for
+from .syft_metaclass import Empty, PartialModelMetaclass
 from .syft_object_registry import SyftObjectRegistry
 from .uid import UID
 
@@ -148,7 +144,6 @@ class Context(SyftBaseObject):
     __canonical_name__ = "Context"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    pass
 
 
 @cache
@@ -161,8 +156,7 @@ class SyftMigrationRegistry:
     __migration_function_registry__: dict[str, dict[str, Callable]] = {}
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
-        """
-        Populate the `__migration_version_registry__` dictionary with format
+        """Populate the `__migration_version_registry__` dictionary with format
         __migration_version_registry__ = {
             "canonical_name": {version_number: "klass_name"}
         }
@@ -192,7 +186,7 @@ class SyftMigrationRegistry:
             else:
                 # only if the cls has not been registered do we want to register it
                 cls.__migration_version_registry__[mapping_string] = {
-                    klass_version: fqn
+                    klass_version: fqn,
                 }
 
     # @classmethod
@@ -205,10 +199,9 @@ class SyftMigrationRegistry:
 
     @classmethod
     def register_migration_function(
-        cls, klass_type_str: str, version_from: int, version_to: int, method: Callable
+        cls, klass_type_str: str, version_from: int, version_to: int, method: Callable,
     ) -> None:
-        """
-        Populate the __migration_transform_registry__ dictionary with format
+        """Populate the __migration_transform_registry__ dictionary with format
         __migration_version_registry__ = {
             "canonical_name": {"version_from x version_to": <function transform_function>}
         }
@@ -233,12 +226,12 @@ class SyftMigrationRegistry:
         else:
             raise Exception(
                 f"Available versions for {klass_type_str} are: {available_versions}."
-                f"You're trying to add a transform from version: {version_from} to version: {version_to}"
+                f"You're trying to add a transform from version: {version_from} to version: {version_to}",
             )
 
     @classmethod
     def get_migration(
-        cls, type_from: type[SyftBaseObject], type_to: type[SyftBaseObject]
+        cls, type_from: type[SyftBaseObject], type_to: type[SyftBaseObject],
     ) -> Callable:
         for type_from_mro in type_from.mro():
             if (
@@ -267,12 +260,12 @@ class SyftMigrationRegistry:
                             ]
         raise ValueError(
             f"No migration found for class type: {type_from} to "
-            f"type: {type_to} in the migration registry."
+            f"type: {type_to} in the migration registry.",
         )
 
     @classmethod
     def get_migration_for_version(
-        cls, type_from: type[SyftBaseObject], version_to: int
+        cls, type_from: type[SyftBaseObject], version_to: int,
     ) -> Callable:
         canonical_name = type_from.__canonical_name__
         for type_from_mro in type_from.mro():
@@ -295,7 +288,7 @@ class SyftMigrationRegistry:
 
         raise Exception(
             f"No migration found for class type: {type_from} to "
-            f"version: {version_to} in the migration registry."
+            f"version: {version_to} in the migration registry.",
         )
 
 
@@ -337,7 +330,7 @@ class BaseDateTime(SyftObjectVersioned):
         res = self.utc_timestamp - other.utc_timestamp
         return BaseDateTime(utc_timestamp=res)
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if other is None:
             return False
         return self.utc_timestamp == other.utc_timestamp
@@ -379,7 +372,7 @@ class SyftObject(SyftObjectVersioned):
     __attr_unique__: ClassVar[list[str]] = []
     # the unique keys for the particular Collection the objects will be stored in
     __serde_overrides__: dict[
-        str, Sequence[Callable]
+        str, Sequence[Callable],
     ] = {}  # List of attributes names which require a serde override.
     __owner__: str
 
@@ -511,7 +504,7 @@ class SyftObject(SyftObjectVersioned):
         return transform(self, context)
 
     def to_dict(
-        self, exclude_none: bool = False, exclude_empty: bool = False
+        self, exclude_none: bool = False, exclude_empty: bool = False,
     ) -> dict[str, Any]:
         new_dict = {}
         for k, v in dict(self).items():
@@ -542,11 +535,10 @@ class SyftObject(SyftObjectVersioned):
                     # Otherwise validate value against the variable annotation
                     check_type(value, var_annotation)
                 setattr(self, attr, value)
-            else:
-                if not _is_optional(var_annotation):
-                    raise ValueError(
-                        f"{attr}\n field required (type=value_error.missing)"
-                    )
+            elif not _is_optional(var_annotation):
+                raise ValueError(
+                    f"{attr}\n field required (type=value_error.missing)",
+                )
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
@@ -594,7 +586,7 @@ class SyftObject(SyftObjectVersioned):
     def migrate_to(self, version: int, context: Context | None = None) -> Any:
         if self.__version__ != version:
             migration_transform = SyftMigrationRegistry.get_migration_for_version(
-                type_from=type(self), version_to=version
+                type_from=type(self), version_to=version,
             )
             return migration_transform(
                 self,
@@ -623,8 +615,7 @@ class SyftObject(SyftObjectVersioned):
     def syft_get_diffs(self, ext_obj: Self) -> list["AttrDiff"]:
         # self is low, ext is high
         # relative
-        from ..service.sync.diff_state import AttrDiff
-        from ..service.sync.diff_state import ListDiff
+        from ..service.sync.diff_state import AttrDiff, ListDiff
 
         diff_attrs = []
 
@@ -652,7 +643,7 @@ class SyftObject(SyftObjectVersioned):
                     diff_attrs.append(diff_attr)
                 if isinstance(obj_attr, list) and isinstance(ext_obj_attr, list):
                     list_diff = ListDiff.from_lists(
-                        attr_name=attr, low_list=obj_attr, high_list=ext_obj_attr
+                        attr_name=attr, low_list=obj_attr, high_list=ext_obj_attr,
                     )
                     if not list_diff.is_empty:
                         diff_attrs.append(list_diff)
@@ -677,11 +668,11 @@ class SyftObject(SyftObjectVersioned):
         from ..client.api import APIRegistry
 
         api = APIRegistry.api_for(
-            self.syft_server_location, self.syft_client_verify_key
+            self.syft_server_location, self.syft_client_verify_key,
         )
         if api is None:
             return SyftError(
-                f"Can't access the api. You must login to {self.server_uid}"
+                f"Can't access the api. You must login to {self.server_uid}",
             )
         return api
 
@@ -704,7 +695,7 @@ class SyftObject(SyftObjectVersioned):
                     return self.__pydantic_private__[item]  # type: ignore
                 except KeyError as exc:
                     raise AttributeError(
-                        f"{type(self).__name__!r} object has no attribute {item!r}"
+                        f"{type(self).__name__!r} object has no attribute {item!r}",
                     ) from exc
             else:
                 # `__pydantic_extra__` can fail to be set if the model is not yet fully initialized.
@@ -719,18 +710,17 @@ class SyftObject(SyftObjectVersioned):
                         return pydantic_extra[item]
                     except KeyError as exc:
                         raise AttributeError(
-                            f"{type(self).__name__!r} object has no attribute {item!r}"
+                            f"{type(self).__name__!r} object has no attribute {item!r}",
                         ) from exc
+                elif hasattr(self.__class__, item):
+                    return self.__getattribute__(
+                        item,
+                    )  # Raises AttributeError if appropriate
                 else:
-                    if hasattr(self.__class__, item):
-                        return self.__getattribute__(
-                            item
-                        )  # Raises AttributeError if appropriate
-                    else:
-                        # this is the current error
-                        raise AttributeError(
-                            f"{type(self).__name__!r} object has no attribute {item!r}"
-                        )
+                    # this is the current error
+                    raise AttributeError(
+                        f"{type(self).__name__!r} object has no attribute {item!r}",
+                    )
 
 
 def short_qual_name(name: str) -> str:

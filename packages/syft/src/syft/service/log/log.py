@@ -1,6 +1,5 @@
 # stdlib
-from typing import Any
-from typing import ClassVar
+from typing import Any, ClassVar
 
 # relative
 from ...serde.serializable import serializable
@@ -37,6 +36,6 @@ class SyftLog(SyncableSyftObject):
         self.stdout = ""
 
     def get_sync_dependencies(
-        self, context: AuthedServiceContext, **kwargs: dict
+        self, context: AuthedServiceContext, **kwargs: dict,
     ) -> list[UID]:  # type: ignore
         return [self.job_id]

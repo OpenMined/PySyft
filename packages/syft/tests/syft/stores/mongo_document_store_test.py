@@ -8,27 +8,27 @@ from result import Err
 
 # syft absolute
 from syft.server.credentials import SyftVerifyKey
-from syft.service.action.action_permissions import ActionObjectPermission
-from syft.service.action.action_permissions import ActionPermission
-from syft.service.action.action_permissions import StoragePermission
-from syft.service.action.action_store import ActionObjectEXECUTE
-from syft.service.action.action_store import ActionObjectOWNER
-from syft.service.action.action_store import ActionObjectREAD
-from syft.service.action.action_store import ActionObjectWRITE
-from syft.store.document_store import PartitionSettings
-from syft.store.document_store import QueryKey
-from syft.store.document_store import QueryKeys
+from syft.service.action.action_permissions import (
+    ActionObjectPermission,
+    ActionPermission,
+    StoragePermission,
+)
+from syft.service.action.action_store import (
+    ActionObjectEXECUTE,
+    ActionObjectOWNER,
+    ActionObjectREAD,
+    ActionObjectWRITE,
+)
+from syft.store.document_store import PartitionSettings, QueryKey, QueryKeys
 from syft.store.mongo_client import MongoStoreClientConfig
-from syft.store.mongo_document_store import MongoStoreConfig
-from syft.store.mongo_document_store import MongoStorePartition
+from syft.store.mongo_document_store import MongoStoreConfig, MongoStorePartition
 from syft.types.uid import UID
 
 # relative
 from ...mongomock.collection import Collection as MongoCollection
 from .store_constants_test import TEST_VERIFY_KEY_STRING_HACKER
 from .store_fixtures_test import mongo_store_partition_fn
-from .store_mocks_test import MockObjectType
-from .store_mocks_test import MockSyftObject
+from .store_mocks_test import MockObjectType, MockSyftObject
 
 PERMISSIONS = [
     ActionObjectOWNER,
@@ -60,7 +60,7 @@ def test_mongo_store_partition_init_failed(root_verify_key) -> None:
     settings = PartitionSettings(name="test", object_type=MockObjectType)
 
     store = MongoStorePartition(
-        UID(), root_verify_key, settings=settings, store_config=store_config
+        UID(), root_verify_key, settings=settings, store_config=store_config,
     )
 
     res = store.init_store()
@@ -68,7 +68,7 @@ def test_mongo_store_partition_init_failed(root_verify_key) -> None:
 
 
 def test_mongo_store_partition_set(
-    root_verify_key, mongo_store_partition: MongoStorePartition
+    root_verify_key, mongo_store_partition: MongoStorePartition,
 ) -> None:
     res = mongo_store_partition.init_store()
     assert res.is_ok()
@@ -83,7 +83,7 @@ def test_mongo_store_partition_set(
         len(
             mongo_store_partition.all(
                 root_verify_key,
-            ).ok()
+            ).ok(),
         )
         == 1
     )
@@ -94,7 +94,7 @@ def test_mongo_store_partition_set(
         len(
             mongo_store_partition.all(
                 root_verify_key,
-            ).ok()
+            ).ok(),
         )
         == 1
     )
@@ -105,7 +105,7 @@ def test_mongo_store_partition_set(
         len(
             mongo_store_partition.all(
                 root_verify_key,
-            ).ok()
+            ).ok(),
         )
         == 1
     )
@@ -118,7 +118,7 @@ def test_mongo_store_partition_set(
         len(
             mongo_store_partition.all(
                 root_verify_key,
-            ).ok()
+            ).ok(),
         )
         == 2
     )
@@ -132,7 +132,7 @@ def test_mongo_store_partition_set(
             len(
                 mongo_store_partition.all(
                     root_verify_key,
-                ).ok()
+                ).ok(),
             )
             == 3 + idx
         )
@@ -155,7 +155,7 @@ def test_mongo_store_partition_delete(
     assert len(
         mongo_store_partition.all(
             root_verify_key,
-        ).ok()
+        ).ok(),
     ) == len(objs)
 
     # random object
@@ -166,7 +166,7 @@ def test_mongo_store_partition_delete(
     assert len(
         mongo_store_partition.all(
             root_verify_key,
-        ).ok()
+        ).ok(),
     ) == len(objs)
 
     # cleanup store
@@ -178,7 +178,7 @@ def test_mongo_store_partition_delete(
             len(
                 mongo_store_partition.all(
                     root_verify_key,
-                ).ok()
+                ).ok(),
             )
             == len(objs) - idx - 1
         )
@@ -189,7 +189,7 @@ def test_mongo_store_partition_delete(
             len(
                 mongo_store_partition.all(
                     root_verify_key,
-                ).ok()
+                ).ok(),
             )
             == len(objs) - idx - 1
         )
@@ -198,7 +198,7 @@ def test_mongo_store_partition_delete(
         len(
             mongo_store_partition.all(
                 root_verify_key,
-            ).ok()
+            ).ok(),
         )
         == 0
     )
@@ -217,7 +217,7 @@ def test_mongo_store_partition_update(
         len(
             mongo_store_partition.all(
                 root_verify_key,
-            ).ok()
+            ).ok(),
         )
         == 1
     )
@@ -242,7 +242,7 @@ def test_mongo_store_partition_update(
             len(
                 mongo_store_partition.all(
                     root_verify_key,
-                ).ok()
+                ).ok(),
             )
             == 1
         )
@@ -272,7 +272,7 @@ def test_mongo_store_partition_update(
         )
 
         stored = mongo_store_partition.get_all_from_store(
-            root_verify_key, QueryKeys(qks=[key])
+            root_verify_key, QueryKeys(qks=[key]),
         )
         assert stored.ok()[0].data == v
 
@@ -297,7 +297,7 @@ def test_mongo_store_partition_set_threading(root_verify_key, mongo_client) -> N
 
             for _ in range(10):
                 res = mongo_store_partition.set(
-                    root_verify_key, obj, ignore_duplicates=False
+                    root_verify_key, obj, ignore_duplicates=False,
                 )
                 if res.is_ok():
                     break
@@ -328,7 +328,7 @@ def test_mongo_store_partition_set_threading(root_verify_key, mongo_client) -> N
     stored_cnt = len(
         mongo_store_partition.all(
             root_verify_key,
-        ).ok()
+        ).ok(),
     )
     assert stored_cnt == thread_cnt * repeats
 
@@ -503,7 +503,7 @@ def test_mongo_store_partition_set_delete_threading(
 
             for _ in range(10):
                 res = mongo_store_partition.set(
-                    root_verify_key, obj, ignore_duplicates=False
+                    root_verify_key, obj, ignore_duplicates=False,
                 )
                 if res.is_ok():
                     break
@@ -539,7 +539,7 @@ def test_mongo_store_partition_set_delete_threading(
     stored_cnt = len(
         mongo_store_partition.all(
             root_verify_key,
-        ).ok()
+        ).ok(),
     )
     assert stored_cnt == 0
 
@@ -609,10 +609,9 @@ def test_mongo_store_partition_permissions_collection(
 
 
 def test_mongo_store_partition_add_remove_permission(
-    root_verify_key: SyftVerifyKey, mongo_store_partition: MongoStorePartition
+    root_verify_key: SyftVerifyKey, mongo_store_partition: MongoStorePartition,
 ) -> None:
-    """
-    Test the add_permission and remove_permission functions of MongoStorePartition
+    """Test the add_permission and remove_permission functions of MongoStorePartition
     """
     # setting up
     res = mongo_store_partition.init_store()
@@ -622,7 +621,7 @@ def test_mongo_store_partition_add_remove_permission(
 
     # add the first permission
     obj_read_permission = ActionObjectPermission(
-        uid=obj.id, permission=ActionPermission.READ, credentials=root_verify_key
+        uid=obj.id, permission=ActionPermission.READ, credentials=root_verify_key,
     )
     mongo_store_partition.add_permission(obj_read_permission)
     find_res_1 = permissions_collection.find_one({"_id": obj_read_permission.uid})
@@ -634,7 +633,7 @@ def test_mongo_store_partition_add_remove_permission(
 
     # add the second permission
     obj_write_permission = ActionObjectPermission(
-        uid=obj.id, permission=ActionPermission.WRITE, credentials=root_verify_key
+        uid=obj.id, permission=ActionPermission.WRITE, credentials=root_verify_key,
     )
     mongo_store_partition.add_permission(obj_write_permission)
 
@@ -663,8 +662,8 @@ def test_mongo_store_partition_add_remove_permission(
     # remove a non-existent permission
     remove_res = mongo_store_partition.remove_permission(
         ActionObjectPermission(
-            uid=obj.id, permission=ActionPermission.OWNER, credentials=root_verify_key
-        )
+            uid=obj.id, permission=ActionPermission.OWNER, credentials=root_verify_key,
+        ),
     )
     assert isinstance(remove_res, Err)
     find_res_5 = permissions_collection.find_one({"_id": obj.id})
@@ -701,10 +700,8 @@ def test_mongo_store_partition_add_remove_storage_permission(
     root_verify_key: SyftVerifyKey,
     mongo_store_partition: MongoStorePartition,
 ) -> None:
+    """Test the add_storage_permission and remove_storage_permission functions of MongoStorePartition
     """
-    Test the add_storage_permission and remove_storage_permission functions of MongoStorePartition
-    """
-
     obj = MockSyftObject(data=1)
 
     storage_permission = StoragePermission(
@@ -720,14 +717,14 @@ def test_mongo_store_partition_add_remove_storage_permission(
     obj2 = MockSyftObject(data=1)
     mongo_store_partition.set(root_verify_key, obj2, add_storage_permission=False)
     storage_permission3 = StoragePermission(
-        uid=obj2.id, server_uid=mongo_store_partition.server_uid
+        uid=obj2.id, server_uid=mongo_store_partition.server_uid,
     )
     assert not mongo_store_partition.has_storage_permission(storage_permission3)
 
     obj3 = MockSyftObject(data=1)
     mongo_store_partition.set(root_verify_key, obj3, add_storage_permission=True)
     storage_permission4 = StoragePermission(
-        uid=obj3.id, server_uid=mongo_store_partition.server_uid
+        uid=obj3.id, server_uid=mongo_store_partition.server_uid,
     )
     assert mongo_store_partition.has_storage_permission(storage_permission4)
 
@@ -744,13 +741,13 @@ def test_mongo_store_partition_add_permissions(
 
     # add multiple permissions for the first object
     permission_1 = ActionObjectPermission(
-        uid=obj.id, permission=ActionPermission.WRITE, credentials=root_verify_key
+        uid=obj.id, permission=ActionPermission.WRITE, credentials=root_verify_key,
     )
     permission_2 = ActionObjectPermission(
-        uid=obj.id, permission=ActionPermission.OWNER, credentials=root_verify_key
+        uid=obj.id, permission=ActionPermission.OWNER, credentials=root_verify_key,
     )
     permission_3 = ActionObjectPermission(
-        uid=obj.id, permission=ActionPermission.READ, credentials=guest_verify_key
+        uid=obj.id, permission=ActionPermission.READ, credentials=guest_verify_key,
     )
     permissions: list[ActionObjectPermission] = [
         permission_1,
@@ -768,10 +765,10 @@ def test_mongo_store_partition_add_permissions(
     # add permissions for the second object
     obj_2 = MockSyftObject(data=2)
     permission_4 = ActionObjectPermission(
-        uid=obj_2.id, permission=ActionPermission.READ, credentials=root_verify_key
+        uid=obj_2.id, permission=ActionPermission.READ, credentials=root_verify_key,
     )
     permission_5 = ActionObjectPermission(
-        uid=obj_2.id, permission=ActionPermission.WRITE, credentials=root_verify_key
+        uid=obj_2.id, permission=ActionPermission.WRITE, credentials=root_verify_key,
     )
     mongo_store_partition.add_permissions([permission_4, permission_5])
 
@@ -843,22 +840,22 @@ def test_mongo_store_partition_take_ownership(
     # the guest client takes ownership of obj
     mongo_store_partition.take_ownership(uid=obj.id, credentials=guest_verify_key)
     assert mongo_store_partition.has_permission(
-        permission(uid=obj.id, credentials=guest_verify_key)
+        permission(uid=obj.id, credentials=guest_verify_key),
     )
     # the root client will also has the permission
     assert mongo_store_partition.has_permission(
-        permission(uid=obj.id, credentials=root_verify_key)
+        permission(uid=obj.id, credentials=root_verify_key),
     )
     assert not mongo_store_partition.has_permission(
-        permission(uid=obj.id, credentials=hacker_verify_key)
+        permission(uid=obj.id, credentials=hacker_verify_key),
     )
 
     # hacker or root try to take ownership of the obj and will fail
     res = mongo_store_partition.take_ownership(
-        uid=obj.id, credentials=hacker_verify_key
+        uid=obj.id, credentials=hacker_verify_key,
     )
     res_2 = mongo_store_partition.take_ownership(
-        uid=obj.id, credentials=root_verify_key
+        uid=obj.id, credentials=root_verify_key,
     )
     assert res.is_err()
     assert res_2.is_err()
@@ -869,13 +866,13 @@ def test_mongo_store_partition_take_ownership(
     # root client takes ownership
     mongo_store_partition.take_ownership(uid=obj_2.id, credentials=root_verify_key)
     assert mongo_store_partition.has_permission(
-        permission(uid=obj_2.id, credentials=root_verify_key)
+        permission(uid=obj_2.id, credentials=root_verify_key),
     )
     assert not mongo_store_partition.has_permission(
-        permission(uid=obj_2.id, credentials=guest_verify_key)
+        permission(uid=obj_2.id, credentials=guest_verify_key),
     )
     assert not mongo_store_partition.has_permission(
-        permission(uid=obj_2.id, credentials=hacker_verify_key)
+        permission(uid=obj_2.id, credentials=hacker_verify_key),
     )
 
 
@@ -884,8 +881,7 @@ def test_mongo_store_partition_permissions_set(
     guest_verify_key: SyftVerifyKey,
     mongo_store_partition: MongoStorePartition,
 ) -> None:
-    """
-    Test the permissions functionalities when using MongoStorePartition._set function
+    """Test the permissions functionalities when using MongoStorePartition._set function
     """
     hacker_verify_key = SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_HACKER)
     res = mongo_store_partition.init_store()
@@ -907,7 +903,7 @@ def test_mongo_store_partition_permissions_set(
     assert len(permissions["permissions"]) == 4
     for permission in PERMISSIONS:
         assert mongo_store_partition.has_permission(
-            permission(uid=obj.id, credentials=root_verify_key)
+            permission(uid=obj.id, credentials=root_verify_key),
         )
 
     # the hacker tries to set duplicated object but should not be able to claim it
@@ -915,10 +911,10 @@ def test_mongo_store_partition_permissions_set(
     assert res_2.is_ok()
     for permission in PERMISSIONS:
         assert not mongo_store_partition.has_permission(
-            permission(uid=obj.id, credentials=hacker_verify_key)
+            permission(uid=obj.id, credentials=hacker_verify_key),
         )
         assert mongo_store_partition.has_permission(
-            permission(uid=obj.id, credentials=root_verify_key)
+            permission(uid=obj.id, credentials=root_verify_key),
         )
 
 
@@ -936,12 +932,12 @@ def test_mongo_store_partition_permissions_get_all(
     for i in range(num_root_objects):
         obj = MockSyftObject(data=i)
         mongo_store_partition.set(
-            credentials=root_verify_key, obj=obj, ignore_duplicates=False
+            credentials=root_verify_key, obj=obj, ignore_duplicates=False,
         )
     for i in range(num_guest_objects):
         obj = MockSyftObject(data=i)
         mongo_store_partition.set(
-            credentials=guest_verify_key, obj=obj, ignore_duplicates=False
+            credentials=guest_verify_key, obj=obj, ignore_duplicates=False,
         )
 
     assert (
@@ -966,7 +962,7 @@ def test_mongo_store_partition_permissions_delete(
     # the root client set an object
     obj = MockSyftObject(data=1)
     mongo_store_partition.set(
-        credentials=root_verify_key, obj=obj, ignore_duplicates=False
+        credentials=root_verify_key, obj=obj, ignore_duplicates=False,
     )
     qk: QueryKey = mongo_store_partition.settings.store_key.with_obj(obj)
     # guest or hacker can't delete it
@@ -981,7 +977,7 @@ def test_mongo_store_partition_permissions_delete(
     # the guest client set an object
     obj_2 = MockSyftObject(data=2)
     mongo_store_partition.set(
-        credentials=guest_verify_key, obj=obj_2, ignore_duplicates=False
+        credentials=guest_verify_key, obj=obj_2, ignore_duplicates=False,
     )
     qk_2: QueryKey = mongo_store_partition.settings.store_key.with_obj(obj_2)
     # the hacker can't delete it
@@ -994,7 +990,7 @@ def test_mongo_store_partition_permissions_delete(
     # the guest client set another object
     obj_3 = MockSyftObject(data=3)
     mongo_store_partition.set(
-        credentials=guest_verify_key, obj=obj_3, ignore_duplicates=False
+        credentials=guest_verify_key, obj=obj_3, ignore_duplicates=False,
     )
     qk_3: QueryKey = mongo_store_partition.settings.store_key.with_obj(obj_3)
     # the root client also has the permission to delete it
@@ -1013,7 +1009,7 @@ def test_mongo_store_partition_permissions_update(
     # the root client set an object
     obj = MockSyftObject(data=1)
     mongo_store_partition.set(
-        credentials=root_verify_key, obj=obj, ignore_duplicates=False
+        credentials=root_verify_key, obj=obj, ignore_duplicates=False,
     )
     assert len(mongo_store_partition.all(credentials=root_verify_key).ok()) == 1
 
@@ -1025,12 +1021,12 @@ def test_mongo_store_partition_permissions_update(
         # the guest client should not have permission to update obj
         obj_new = MockSyftObject(data=v)
         res = mongo_store_partition.update(
-            credentials=guest_verify_key, qk=qk, obj=obj_new
+            credentials=guest_verify_key, qk=qk, obj=obj_new,
         )
         assert res.is_err()
         # the root client has the permission to update obj
         res = mongo_store_partition.update(
-            credentials=root_verify_key, qk=qk, obj=obj_new
+            credentials=root_verify_key, qk=qk, obj=obj_new,
         )
         assert res.is_ok()
         # the id of the object in the permission collection should not be changed

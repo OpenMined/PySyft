@@ -18,11 +18,11 @@ class ReverseTunnelService:
         if not rathole_route:
             raise Exception(
                 "Failed to exchange routes via . "
-                + f"Peer: {self_server_peer} has no rathole route: {rathole_route}"
+                + f"Peer: {self_server_peer} has no rathole route: {rathole_route}",
             )
 
         remote_url = ServerURL(
-            host_or_ip=remote_server_route.host_or_ip, port=remote_server_route.port
+            host_or_ip=remote_server_route.host_or_ip, port=remote_server_route.port,
         )
         rathole_remote_addr = remote_url.as_container_host()
 
@@ -44,5 +44,5 @@ class ReverseTunnelService:
 
     def clear_server_config(self, remote_peer: ServerPeer) -> None:
         self.builder.remove_host_from_server(
-            str(remote_peer.id), server_name=remote_peer.name
+            str(remote_peer.id), server_name=remote_peer.name,
         )

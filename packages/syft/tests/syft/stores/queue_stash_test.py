@@ -1,7 +1,7 @@
 # stdlib
 import threading
-from threading import Thread
 import time
+from threading import Thread
 from typing import Any
 
 # third party
@@ -15,8 +15,7 @@ from syft.store.linked_obj import LinkedObject
 from syft.types.uid import UID
 
 # relative
-from .store_fixtures_test import mongo_queue_stash_fn
-from .store_fixtures_test import sqlite_queue_stash_fn
+from .store_fixtures_test import mongo_queue_stash_fn, sqlite_queue_stash_fn
 
 
 def mock_queue_object():

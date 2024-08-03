@@ -3,7 +3,6 @@ from __future__ import annotations
 
 # stdlib
 import secrets
-from typing import Any
 from typing import TYPE_CHECKING
 
 # third party
@@ -11,18 +10,18 @@ from typing_extensions import Self
 
 # relative
 from ...abstract_server import AbstractServer
-from ...client.client import HTTPConnection
-from ...client.client import PythonConnection
-from ...client.client import ServerConnection
-from ...client.client import SyftClient
+from ...client.client import (
+    HTTPConnection,
+    PythonConnection,
+    ServerConnection,
+    SyftClient,
+)
 from ...serde.serializable import serializable
 from ...server.worker_settings import WorkerSettings
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject
 from ...types.transforms import TransformContext
 from ...types.uid import UID
-from ..context import AuthedServiceContext
-from ..context import ServerServiceContext
+from ..context import AuthedServiceContext, ServerServiceContext
 from ..response import SyftError
 
 if TYPE_CHECKING:
@@ -33,29 +32,31 @@ if TYPE_CHECKING:
 @serializable(canonical_name="ServerRoute", version=1)
 class ServerRoute:
     def client_with_context(
-        self, context: ServerServiceContext
+        self, context: ServerServiceContext,
     ) -> SyftClient | SyftError:
-        """
-        Convert the current route (self) to a connection (either HTTP, Veilid or Python)
+        """Convert the current route (self) to a connection (either HTTP, Veilid or Python)
         and create a SyftClient from the connection.
 
         Args:
+        ----
             context (ServerServiceContext): The ServerServiceContext containing the server information.
 
         Returns:
+        -------
             SyftClient | SyftError: Returns the created SyftClient, or SyftError
                 if the client type is not valid or if the context's server is None.
+
         """
         connection = route_to_connection(route=self, context=context)
         client_type = connection.get_client_type()
         if isinstance(client_type, SyftError):
             return client_type
         return client_type(
-            connection=connection, credentials=context.server.signing_key
+            connection=connection, credentials=context.server.signing_key,
         )
 
     def validate_with_context(
-        self, context: AuthedServiceContext
+        self, context: AuthedServiceContext,
     ) -> ServerPeer | SyftError:
         # relative
         from .server_peer import ServerPeer
@@ -74,7 +75,7 @@ class ServerRoute:
         try:
             # Verifying if the challenge is valid
             context.server.verify_key.verify_key.verify(
-                random_challenge, challenge_signature
+                random_challenge, challenge_signature,
             )
         except Exception:
             return SyftError(message="Signature Verification Failed in ping")
@@ -100,7 +101,7 @@ class HTTPServerRoute(SyftObject, ServerRoute):
     priority: int = 1
     rtunnel_token: str | None = None
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, HTTPServerRoute):
             return False
         return hash(self) == hash(other)
@@ -150,7 +151,7 @@ class PythonServerRoute(SyftObject, ServerRoute):
         worker_settings = WorkerSettings.from_server(server)
         return cls(id=worker_settings.id, worker_settings=worker_settings)
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, PythonServerRoute):
             return False
         return hash(self) == hash(other)
@@ -177,7 +178,7 @@ class VeilidServerRoute(SyftObject, ServerRoute):
     proxy_target_uid: UID | None = None
     priority: int = 1
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, VeilidServerRoute):
             return False
         return hash(self) == hash(other)
@@ -191,7 +192,7 @@ ServerRouteType = HTTPServerRoute | PythonServerRoute
 
 
 def route_to_connection(
-    route: ServerRoute, context: TransformContext | None = None
+    route: ServerRoute, context: TransformContext | None = None,
 ) -> ServerConnection:
     if isinstance(route, HTTPServerRoute):
         return route.to(HTTPConnection, context=context)

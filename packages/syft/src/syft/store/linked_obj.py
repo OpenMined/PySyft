@@ -6,13 +6,9 @@ from typing_extensions import Self
 
 # relative
 from ..serde.serializable import serializable
-from ..service.context import AuthedServiceContext
-from ..service.context import ChangeContext
-from ..service.context import ServerServiceContext
-from ..service.response import SyftError
-from ..service.response import SyftSuccess
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
-from ..types.syft_object import SyftObject
+from ..service.context import AuthedServiceContext, ChangeContext, ServerServiceContext
+from ..service.response import SyftError, SyftSuccess
+from ..types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject
 from ..types.uid import UID
 
 
@@ -56,11 +52,11 @@ class LinkedObject(SyftObject):
         if context.server is None:
             raise ValueError(f"context {context}'s server is None")
         return context.server.get_service(self.service_type).resolve_link(
-            context=context, linked_obj=self
+            context=context, linked_obj=self,
         )
 
     def update_with_context(
-        self, context: ServerServiceContext | ChangeContext | Any, obj: Any
+        self, context: ServerServiceContext | ChangeContext | Any, obj: Any,
     ) -> SyftSuccess | SyftError:
         if isinstance(context, AuthedServiceContext):
             credentials = context.credentials

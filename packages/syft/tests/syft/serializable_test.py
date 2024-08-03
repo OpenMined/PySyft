@@ -2,11 +2,11 @@
 from collections.abc import Callable
 from time import time
 
-# third party
-from pydantic import BaseModel
-
 # syft absolute
 import syft as sy
+
+# third party
+from pydantic import BaseModel
 from syft.serde.serializable import serializable
 
 
@@ -224,8 +224,7 @@ class PydDerived(PydBase):
     version=1,
 )
 class PydDerivedWithoutAttr(PydBase):
-    """
-    Serialize: value, flag, source, target
+    """Serialize: value, flag, source, target
     `without=` will only work with Optional attributes due to pydantic's validation
     """
 
@@ -239,8 +238,7 @@ class PydDerivedWithoutAttr(PydBase):
     version=1,
 )
 class PydDerivedWithoutAttrs(PydBase):
-    """
-    Serialize: value, source, target
+    """Serialize: value, source, target
     `without=` will only work with Optional attributes due to pydantic's validation
     """
 
@@ -255,13 +253,12 @@ class PydDerivedWithoutAttrs(PydBase):
     version=1,
 )
 class PydDerivedOnly(PydBase):
-    """
-    Serialize: source, target
+    """Serialize: source, target
     """
 
     source: str
     target: str
-    callback: Callable | None = lambda: None  # noqa: E731
+    callback: Callable | None = lambda: None
 
 
 def test_pydantic():

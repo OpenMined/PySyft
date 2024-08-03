@@ -1,26 +1,21 @@
 # stdlib
 
 # stdlib
-from collections.abc import Collection
 import logging
+from collections.abc import Collection
 
 # relative
 from ..abstract_server import ServerSideType
 from ..server.credentials import SyftVerifyKey
-from ..service.response import SyftError
-from ..service.response import SyftSuccess
-from ..service.sync.diff_state import ObjectDiffBatch
-from ..service.sync.diff_state import ServerDiff
-from ..service.sync.diff_state import SyncInstruction
-from ..service.sync.resolve_widget import PaginatedResolveWidget
-from ..service.sync.resolve_widget import ResolveWidget
+from ..service.response import SyftError, SyftSuccess
+from ..service.sync.diff_state import ObjectDiffBatch, ServerDiff, SyncInstruction
+from ..service.sync.resolve_widget import PaginatedResolveWidget, ResolveWidget
 from ..service.sync.sync_state import SyncState
 from ..types.uid import UID
 from ..util.decorators import deprecated
 from ..util.util import prompt_warning_message
 from .datasite_client import DatasiteClient
-from .sync_decision import SyncDecision
-from .sync_decision import SyncDirection
+from .sync_decision import SyncDecision, SyncDirection
 
 logger = logging.getLogger(__name__)
 
@@ -78,13 +73,13 @@ def compare_states(
         direction = SyncDirection.HIGH_TO_LOW
     else:
         return SyftError(
-            "Invalid server side types: can only compare a high and low server"
+            "Invalid server side types: can only compare a high and low server",
         )
 
     if hide_usercode:
         prompt_warning_message(
             "UserCodes are hidden by default, and are part of the Requests."
-            " If you want to include them as separate objects, set `hide_usercode=False`"
+            " If you want to include them as separate objects, set `hide_usercode=False`",
         )
         exclude_types = exclude_types or []
         exclude_types.append("usercode")
@@ -136,7 +131,7 @@ def resolve(
 ) -> ResolveWidget | PaginatedResolveWidget | SyftSuccess | SyftError:
     if not isinstance(obj, ObjectDiffBatch | ServerDiff):
         raise ValueError(
-            f"Invalid type: could not resolve object with type {type(obj).__qualname__}"
+            f"Invalid type: could not resolve object with type {type(obj).__qualname__}",
         )
     return obj.resolve()
 
@@ -157,7 +152,7 @@ def handle_sync_batch(
     sync_direction = obj_diff_batch.sync_direction
     if sync_direction is None:
         return SyftError(
-            message="Cannot sync an object without a specified sync direction."
+            message="Cannot sync an object without a specified sync direction.",
         )
 
     decision = sync_direction.to_sync_decision()
@@ -169,11 +164,11 @@ def handle_sync_batch(
         return SyftSuccess(message="No changes to sync")
     elif obj_diff_batch.decision is SyncDecision.IGNORE:
         return SyftError(
-            message="Attempted to sync an ignored object, please unignore first"
+            message="Attempted to sync an ignored object, please unignore first",
         )
     elif obj_diff_batch.decision is not None:
         return SyftError(
-            message="Attempted to sync an object that has already been synced"
+            message="Attempted to sync an object that has already been synced",
         )
 
     src_client = obj_diff_batch.source_client
@@ -226,7 +221,7 @@ def handle_ignore_batch(
         return SyftSuccess(message="This batch is already ignored")
     elif obj_diff_batch.decision is not None:
         return SyftError(
-            message="Attempted to sync an object that has already been synced"
+            message="Attempted to sync an object that has already been synced",
         )
 
     obj_diff_batch.decision = SyncDecision.IGNORE

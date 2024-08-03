@@ -18,7 +18,7 @@ except ImportError:
     _UUID_REPRESENTATIONS = None
 
 
-class TypeRegistry(object):
+class TypeRegistry:
     pass
 
 
@@ -30,13 +30,13 @@ _FIELDS = (
     "tzinfo",
 )
 
-if codec_options and helpers.PYMONGO_VERSION >= version.parse("3.8"):
+if codec_options and version.parse("3.8") <= helpers.PYMONGO_VERSION:
     _DEFAULT_TYPE_REGISTRY = codec_options.TypeRegistry()
     _FIELDS = _FIELDS + ("type_registry",)
 else:
     _DEFAULT_TYPE_REGISTRY = TypeRegistry()
 
-if codec_options and helpers.PYMONGO_VERSION >= version.parse("4.3.0"):
+if codec_options and version.parse("4.3.0") <= helpers.PYMONGO_VERSION:
     _DATETIME_CONVERSION_VALUES = codec_options.DatetimeConversion._value2member_map_
     _DATETIME_CONVERSION_DEFAULT_VALUE = codec_options.DatetimeConversion.DATETIME
     _FIELDS = _FIELDS + ("datetime_conversion",)
@@ -46,7 +46,7 @@ else:
 
 # New default in Pymongo v4:
 # https://pymongo.readthedocs.io/en/stable/examples/uuid.html#unspecified
-if helpers.PYMONGO_VERSION >= version.parse("4.0"):
+if version.parse("4.0") <= helpers.PYMONGO_VERSION:
     _DEFAULT_UUID_REPRESENTATION = 0
 else:
     _DEFAULT_UUID_REPRESENTATION = 3
@@ -66,7 +66,7 @@ class CodecOptions(collections.namedtuple("CodecOptions", _FIELDS)):
         if document_class != dict:
             raise NotImplementedError(
                 "Mongomock does not implement custom document_class yet: %r"
-                % document_class
+                % document_class,
             )
 
         if not isinstance(tz_aware, bool):
@@ -77,7 +77,7 @@ class CodecOptions(collections.namedtuple("CodecOptions", _FIELDS)):
 
         if unicode_decode_error_handler not in ("strict", None):
             raise NotImplementedError(
-                "Mongomock does not handle custom unicode_decode_error_handler yet"
+                "Mongomock does not handle custom unicode_decode_error_handler yet",
             )
 
         if tzinfo:
@@ -102,7 +102,7 @@ class CodecOptions(collections.namedtuple("CodecOptions", _FIELDS)):
                 and datetime_conversion not in _DATETIME_CONVERSION_VALUES
             ):
                 raise TypeError(
-                    "datetime_conversion must be member of DatetimeConversion"
+                    "datetime_conversion must be member of DatetimeConversion",
                 )
             values = values + (datetime_conversion,)
 

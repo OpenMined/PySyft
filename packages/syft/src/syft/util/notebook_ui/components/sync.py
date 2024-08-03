@@ -12,10 +12,8 @@ from ....service.job.job_stash import Job
 from ....service.request.request import Request
 from ....service.response import SyftError
 from ....service.user.user import UserView
-from ....types.datetime import DateTime
-from ....types.datetime import format_timedelta_human_readable
-from ....types.syft_object import SYFT_OBJECT_VERSION_1
-from ....types.syft_object import SyftObject
+from ....types.datetime import DateTime, format_timedelta_human_readable
+from ....types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject
 from ..icons import Icon
 from ..styles import CSS_CODE
 from .base import HTMLComponentBase
@@ -149,7 +147,7 @@ class SyncTableObject(HTMLComponentBase):
         type_html = TypeLabel(object=self.object).to_html()
         description_html = MainDescription(object=self.object).to_html()
         copy_id_button = CopyIDButton(
-            copy_text=str(self.object.id.id), max_width=60
+            copy_text=str(self.object.id.id), max_width=60,
         ).to_html()
 
         updated_delta_str = self.get_updated_delta_str()
@@ -252,9 +250,7 @@ class TypeLabel(Label):
 
     @staticmethod
     def type_label_class(obj: Any) -> str:
-        if isinstance(obj, UserCode):
-            return "label-light-blue"
-        elif isinstance(obj, Job):  # type: ignore
+        if isinstance(obj, UserCode) or isinstance(obj, Job):
             return "label-light-blue"
         elif isinstance(obj, Request):  # type: ignore
             # TODO: handle other requests
@@ -307,7 +303,7 @@ class SyncWidgetHeader(SyncTableObject):
         type_html = TypeLabel(object=self.object).to_html()
         description_html = MainDescription(object=self.object).to_html()
         copy_id_button = CopyIDButton(
-            copy_text=str(self.object.id.id), max_width=60
+            copy_text=str(self.object.id.id), max_width=60,
         ).to_html()
 
         second_line_html = f"""
@@ -317,7 +313,7 @@ class SyncWidgetHeader(SyncTableObject):
             </div>
             {copy_id_button}
             </div>
-        """  # noqa: E501
+        """
 
         num_diffs = len(self.diff_batch.get_dependencies(include_roots=True))
         if self.diff_batch.sync_direction == SyncDirection.HIGH_TO_LOW:

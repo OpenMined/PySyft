@@ -9,11 +9,8 @@ from ...serde.serializable import serializable
 from ...types.datetime import DateTime
 from ..context import AuthedServiceContext
 from ..response import SyftError
-from .network_service import NetworkService
-from .network_service import ServerPeerAssociationStatus
-from .server_peer import ServerPeer
-from .server_peer import ServerPeerConnectionStatus
-from .server_peer import ServerPeerUpdate
+from .network_service import NetworkService, ServerPeerAssociationStatus
+from .server_peer import ServerPeer, ServerPeerConnectionStatus, ServerPeerUpdate
 
 logger = logging.getLogger(__name__)
 
@@ -28,20 +25,21 @@ class PeerHealthCheckTask:
         self._stop = False
 
     def peer_route_heathcheck(self, context: AuthedServiceContext) -> SyftError | None:
-        """
-        Perform a health check on the peers in the network stash.
+        """Perform a health check on the peers in the network stash.
         - If peer is accessible, ping the peer.
         - Peer is connected to the network.
 
         Args:
+        ----
             context (AuthedServiceContext): The authenticated service context.
 
         Returns:
+        -------
             None
-        """
 
+        """
         network_service = cast(
-            NetworkService, context.server.get_service(NetworkService)
+            NetworkService, context.server.get_service(NetworkService),
         )
         network_stash = network_service.stash
 
@@ -60,7 +58,7 @@ class PeerHealthCheckTask:
                 peer_client = peer.client_with_context(context=context)
                 if peer_client.is_err():
                     logger.error(
-                        f"Failed to create client for peer: {peer}: {peer_client.err()}"
+                        f"Failed to create client for peer: {peer}: {peer_client.err()}",
                     )
                     peer_update.ping_status = ServerPeerConnectionStatus.TIMEOUT
                     peer_client = None
@@ -73,7 +71,7 @@ class PeerHealthCheckTask:
             if peer_client is not None:
                 peer_client = peer_client.ok()
                 peer_status = peer_client.api.services.network.check_peer_association(
-                    peer_id=context.server.id
+                    peer_id=context.server.id,
                 )
                 peer_update.ping_status = (
                     ServerPeerConnectionStatus.ACTIVE
@@ -113,13 +111,13 @@ class PeerHealthCheckTask:
         if self.thread is not None:
             logger.info(
                 f"Peer health check task is already running in thread "
-                f"{self.thread.name} with ID: {self.thread.ident}."
+                f"{self.thread.name} with ID: {self.thread.ident}.",
             )
         else:
             self.thread = threading.Thread(target=self._run, args=(context,))
             logger.info(
                 f"Start running peers health check in thread "
-                f"{self.thread.name} with ID: {self.thread.ident}."
+                f"{self.thread.name} with ID: {self.thread.ident}.",
             )
             self.thread.start()
 

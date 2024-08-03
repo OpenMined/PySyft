@@ -1,18 +1,14 @@
 # stdlib
-from functools import cached_property
 import os.path
+from functools import cached_property
 from pathlib import Path
 from typing import Any
 
 # relative
 from .builder_docker import DockerBuilder
 from .builder_k8s import KubernetesBuilder
-from .builder_types import BuilderBase
-from .builder_types import ImageBuildResult
-from .builder_types import ImagePushResult
-from .config import CustomWorkerConfig
-from .config import DockerWorkerConfig
-from .config import WorkerConfig
+from .builder_types import BuilderBase, ImageBuildResult, ImagePushResult
+from .config import CustomWorkerConfig, DockerWorkerConfig, WorkerConfig
 from .k8s import IN_KUBERNETES
 
 __all__ = ["CustomWorkerBuilder"]
@@ -42,13 +38,14 @@ class CustomWorkerBuilder:
         tag: str | None = None,
         **kwargs: Any,
     ) -> ImageBuildResult:
-        """
-        Builds a Docker image from the given configuration.
+        """Builds a Docker image from the given configuration.
+
         Args:
+        ----
             config (WorkerConfig): The configuration for building the Docker image.
             tag (str): The tag to use for the image.
-        """
 
+        """
         if isinstance(config, DockerWorkerConfig):
             return self._build_dockerfile(config, tag, **kwargs)
         elif isinstance(config, CustomWorkerConfig):
@@ -64,13 +61,14 @@ class CustomWorkerBuilder:
         password: str,
         **kwargs: Any,
     ) -> ImagePushResult:
-        """
-        Pushes a Docker image to the given repo.
+        """Pushes a Docker image to the given repo.
+
         Args:
+        ----
             repo (str): The repo to push the image to.
             tag (str): The tag to use for the image.
-        """
 
+        """
         return self.builder.push_image(
             tag=tag,
             username=username,
@@ -120,16 +118,19 @@ class CustomWorkerBuilder:
         )
 
     def find_worker_image(self, type: str) -> Path:
-        """
-        Find the Worker Dockerfile and it's context path
+        """Find the Worker Dockerfile and it's context path
         - PROD will be in `$APPDIR/grid/`
         - DEV will be in `packages/grid/backend/grid/images`
         - In both the cases context dir does not matter (unless we're calling COPY)
 
         Args:
+        ----
             type (str): The type of worker.
+
         Returns:
+        -------
             Path: The path to the Dockerfile.
+
         """
         filename = f"worker_{type}.dockerfile"
         lookup_paths = [

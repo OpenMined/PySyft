@@ -7,11 +7,9 @@ from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
 from ..response import SyftError
-from ..service import AbstractService
-from ..service import service_method
+from ..service import AbstractService, service_method
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
-from .queue_stash import QueueItem
-from .queue_stash import QueueStash
+from .queue_stash import QueueItem, QueueStash
 
 
 @instrument
@@ -30,7 +28,7 @@ class QueueService(AbstractService):
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_subjobs(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID,
     ) -> list[QueueItem] | SyftError:
         res = self.stash.get_by_parent_id(context.credentials, uid=uid)
         if res.is_err():

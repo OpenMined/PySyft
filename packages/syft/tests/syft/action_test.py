@@ -1,10 +1,11 @@
 # stdlib
 import uuid
 
-# third party
-from faker import Faker
 import numpy as np
 import pytest
+
+# third party
+from faker import Faker
 
 # syft absolute
 from syft import ActionObject
@@ -43,7 +44,7 @@ def test_new_admin_has_action_object_permission(
     email = uuid.uuid4().hex[:6] + faker.email()  # avoid collision
     pw = uuid.uuid4().hex
     root_client.register(
-        name=faker.name(), email=email, password=pw, password_verify=pw
+        name=faker.name(), email=email, password=pw, password_verify=pw,
     )
     ds_client = root_client.login(email=email, password=pw)
 
@@ -53,7 +54,7 @@ def test_new_admin_has_action_object_permission(
     email = faker.email()
     pw = uuid.uuid4().hex
     root_client.register(
-        name=faker.name(), email=email, password=pw, password_verify=pw
+        name=faker.name(), email=email, password=pw, password_verify=pw,
     )
 
     admin = root_client.login(email=email, password=pw)
@@ -106,7 +107,7 @@ def test_call_lib_wo_permission(worker):
     )
     kwargs = {"action": action}
     api_call = SyftAPICall(
-        server_uid=worker.id, path="action.execute", args=[], kwargs=kwargs
+        server_uid=worker.id, path="action.execute", args=[], kwargs=kwargs,
     )
     res = root_datasite_client.api.make_call(api_call)
     assert isinstance(res, SyftError)
@@ -117,9 +118,9 @@ def test_call_lib_custom_signature(worker):
     # concatenate has a manually set signature
     assert all(
         root_datasite_client.api.lib.numpy.concatenate(
-            ([1, 2, 3], [4, 5, 6])
+            ([1, 2, 3], [4, 5, 6]),
         ).syft_action_data
-        == np.array([1, 2, 3, 4, 5, 6])
+        == np.array([1, 2, 3, 4, 5, 6]),
     )
 
 

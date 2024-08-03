@@ -6,26 +6,20 @@ from collections.abc import Callable
 
 # third party
 from packaging import version
-from pydantic import BaseModel
-from pydantic import model_validator
+from pydantic import BaseModel, model_validator
 
 # relative
 from ...abstract_server import ServerType
 from ...protocol.data_protocol import get_data_protocol
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import StorableObjectType
-from ...types.syft_object import SyftObject
-from ...types.transforms import convert_types
-from ...types.transforms import drop
-from ...types.transforms import rename
-from ...types.transforms import transform
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, StorableObjectType, SyftObject
+from ...types.transforms import convert_types, drop, rename, transform
 from ...types.uid import UID
 
 
 def check_version(
-    client_version: str, server_version: str, server_name: str, silent: bool = False
+    client_version: str, server_version: str, server_name: str, silent: bool = False,
 ) -> bool:
     client_syft_version = version.parse(client_version)
     server_syft_version = version.parse(server_version)

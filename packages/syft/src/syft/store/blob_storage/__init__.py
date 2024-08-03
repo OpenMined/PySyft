@@ -41,35 +41,34 @@ Read/retrieve SyftObject from blob storage
 """
 
 # stdlib
-from collections.abc import Callable
-from collections.abc import Generator
-from io import BytesIO
 import logging
+from collections.abc import Callable, Generator
+from io import BytesIO
 from typing import Any
+
+import requests
 
 # third party
 from pydantic import BaseModel
-import requests
 from typing_extensions import Self
 
 # relative
 from ...serde.deserialize import _deserialize as deserialize
 from ...serde.serializable import serializable
-from ...service.response import SyftError
-from ...service.response import SyftSuccess
+from ...service.response import SyftError, SyftSuccess
 from ...types.base import SyftBaseModel
-from ...types.blob_storage import BlobFile
-from ...types.blob_storage import BlobFileType
-from ...types.blob_storage import BlobStorageEntry
-from ...types.blob_storage import CreateBlobStorageEntry
-from ...types.blob_storage import DEFAULT_CHUNK_SIZE
-from ...types.blob_storage import SecureFilePathLocation
+from ...types.blob_storage import (
+    DEFAULT_CHUNK_SIZE,
+    BlobFile,
+    BlobFileType,
+    BlobStorageEntry,
+    CreateBlobStorageEntry,
+    SecureFilePathLocation,
+)
 from ...types.server_url import ServerURL
 from ...types.syft_migration import migrate
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
-from ...types.transforms import drop
-from ...types.transforms import make_set_default
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject
+from ...types.transforms import drop, make_set_default
 from ...types.uid import UID
 
 logger = logging.getLogger(__name__)
@@ -97,7 +96,7 @@ class SyftObjectRetrieval(BlobRetrieval):
     syft_object: bytes
 
     def _read_data(
-        self, stream: bool = False, _deserialize: bool = True, **kwargs: Any
+        self, stream: bool = False, _deserialize: bool = True, **kwargs: Any,
     ) -> Any:
         # development setup, we can access the same filesystem
         if not _deserialize:
@@ -127,11 +126,11 @@ def syft_iter_content(
         headers = {"Range": f"bytes={current_byte}-"}
         try:
             with requests.get(
-                str(blob_url), stream=True, headers=headers, timeout=(timeout, timeout)
+                str(blob_url), stream=True, headers=headers, timeout=(timeout, timeout),
             ) as response:
                 response.raise_for_status()
                 for chunk in response.iter_content(
-                    chunk_size=chunk_size, decode_unicode=False
+                    chunk_size=chunk_size, decode_unicode=False,
                 ):
                     current_byte += len(chunk)
                     yield chunk
@@ -139,7 +138,7 @@ def syft_iter_content(
         except requests.exceptions.RequestException as e:
             if attempt < max_retries:
                 logger.debug(
-                    f"Attempt {attempt}/{max_retries} failed: {e} at byte {current_byte}. Retrying..."
+                    f"Attempt {attempt}/{max_retries} failed: {e} at byte {current_byte}. Retrying...",
                 )
             else:
                 logger.error(f"Max retries reached - {e}")
@@ -184,11 +183,11 @@ class BlobRetrievalByURL(BlobRetrieval):
         if api and api.connection and isinstance(self.url, ServerURL):
             if self.proxy_server_uid is None:
                 blob_url = api.connection.to_blob_route(
-                    self.url.url_path, host=self.url.host_or_ip
+                    self.url.url_path, host=self.url.host_or_ip,
                 )
             else:
                 blob_url = api.connection.stream_via(
-                    self.proxy_server_uid, self.url.url_path
+                    self.proxy_server_uid, self.url.url_path,
                 )
                 stream = True
         else:
@@ -196,7 +195,7 @@ class BlobRetrievalByURL(BlobRetrieval):
 
         try:
             is_blob_file = self.type_ is not None and issubclass(
-                self.type_, BlobFileType
+                self.type_, BlobFileType,
             )
             if is_blob_file and stream:
                 return syft_iter_content(blob_url, chunk_size)
@@ -234,14 +233,14 @@ class BlobStorageConnection:
     def __enter__(self) -> Self:
         raise NotImplementedError
 
-    def __exit__(self, *exc: Any) -> None:
+    def __exit__(self, *exc: object) -> None:
         raise NotImplementedError
 
     def read(self, fp: SecureFilePathLocation, type_: type | None) -> BlobRetrieval:
         raise NotImplementedError
 
     def allocate(
-        self, obj: CreateBlobStorageEntry
+        self, obj: CreateBlobStorageEntry,
     ) -> SecureFilePathLocation | SyftError:
         raise NotImplementedError
 

@@ -3,24 +3,20 @@ from copy import deepcopy
 from datetime import datetime
 from unittest import mock
 
+# syft absolute
+import syft
+
 # third party
 from faker import Faker
 from pytest import MonkeyPatch
-from result import Err
-from result import Ok
-
-# syft absolute
-import syft
+from result import Err, Ok
 from syft.abstract_server import ServerSideType
-from syft.server.credentials import SyftSigningKey
-from syft.server.credentials import SyftVerifyKey
+from syft.server.credentials import SyftSigningKey, SyftVerifyKey
 from syft.service.context import AuthedServiceContext
 from syft.service.notifier.notifier import NotifierSettings
 from syft.service.notifier.notifier_stash import NotifierStash
-from syft.service.response import SyftError
-from syft.service.response import SyftSuccess
-from syft.service.settings.settings import ServerSettings
-from syft.service.settings.settings import ServerSettingsUpdate
+from syft.service.response import SyftError, SyftSuccess
+from syft.service.settings.settings import ServerSettings, ServerSettingsUpdate
 from syft.service.settings.settings_service import SettingsService
 from syft.service.settings.settings_stash import SettingsStash
 from syft.service.user.user import UserCreate
@@ -133,7 +129,7 @@ def test_settingsservice_update_success(
 ) -> None:
     # add a mock settings to the stash
     mock_settings = add_mock_settings(
-        authed_context.credentials, settings_stash, settings
+        authed_context.credentials, settings_stash, settings,
     )
 
     # get a new settings according to update_settings
@@ -265,7 +261,7 @@ def test_settingsservice_update_fail(
 
 
 def test_settings_allow_guest_registration(
-    monkeypatch: MonkeyPatch, faker: Faker
+    monkeypatch: MonkeyPatch, faker: Faker,
 ) -> None:
     # Create a new worker
 
@@ -298,7 +294,7 @@ def test_settings_allow_guest_registration(
         email2 = faker.email()
 
         response_1 = root_datasite_client.register(
-            email=email1, password="joker123", password_verify="joker123", name="Joker"
+            email=email1, password="joker123", password_verify="joker123", name="Joker",
         )
         assert isinstance(response_1, SyftSuccess)
 
@@ -352,7 +348,7 @@ def test_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker):
 
         guest_client = root_client.guest()
         return guest_client.login(
-            email=user_create.email, password=user_create.password
+            email=user_create.email, password=user_create.password,
         )
 
     verify_key = SyftSigningKey.generate().verify_key
@@ -393,7 +389,7 @@ def test_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker):
             emails_added.append(email)
 
         ds_client = get_mock_client(
-            faker=faker, root_client=root_client, role=ServiceRole.DATA_SCIENTIST
+            faker=faker, root_client=root_client, role=ServiceRole.DATA_SCIENTIST,
         )
 
         response = ds_client.register(
@@ -405,6 +401,6 @@ def test_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker):
         assert isinstance(response, SyftError)
 
         users_created_count = sum(
-            [u.email in emails_added for u in root_client.users.get_all()]
+            [u.email in emails_added for u in root_client.users.get_all()],
         )
         assert users_created_count == len(emails_added)

@@ -1,11 +1,10 @@
 # stdlib
 import logging
-from pathlib import Path
 import subprocess
+from pathlib import Path
 
 # third party
-from fastapi import FastAPI
-from fastapi import HTTPException
+from fastapi import FastAPI, HTTPException
 
 # first party
 from src.automount import automount
@@ -49,7 +48,7 @@ def mount(opts: MountOptions, overwrite: bool = False) -> dict:
         raise HTTPException(status_code=400, detail=str(e))
     except subprocess.CalledProcessError as e:
         logger.error(
-            f"Mount error: code={e.returncode} stdout={e.stdout} stderr={e.stderr}"
+            f"Mount error: code={e.returncode} stdout={e.stdout} stderr={e.stderr}",
         )
         raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
@@ -66,7 +65,7 @@ def configure_azure(first_res: dict) -> str:
     bucket_name = first_res["bucket_name"]
 
     logger.info(
-        f"Configuring azure bucket name={bucket_name} remote={remote_name} container={container_name}"
+        f"Configuring azure bucket name={bucket_name} remote={remote_name} container={container_name}",
     )
 
     # popen a daemon process
@@ -79,6 +78,6 @@ def configure_azure(first_res: dict) -> str:
             bucket_name,
             container_name,
             account_key,
-        ]
+        ], check=False,
     )
     return str(res.returncode)

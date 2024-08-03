@@ -1,39 +1,34 @@
 # stdlib
-from abc import ABCMeta
-from collections import OrderedDict
-from collections import defaultdict
-from collections.abc import Collection
-from collections.abc import Iterable
-from collections.abc import Mapping
-from enum import Enum
-from enum import EnumMeta
 import functools
 import inspect
 import pathlib
-from pathlib import PurePath
 import sys
 import tempfile
-from types import MappingProxyType
-from types import UnionType
 import typing
-from typing import Any
-from typing import GenericAlias
-from typing import Optional
-from typing import TypeVar
-from typing import Union
-from typing import _GenericAlias
-from typing import _SpecialForm
-from typing import _SpecialGenericAlias
-from typing import _UnionGenericAlias
-from typing import cast
 import weakref
+from abc import ABCMeta
+from collections import OrderedDict, defaultdict
+from collections.abc import Collection, Iterable, Mapping
+from enum import Enum, EnumMeta
+from pathlib import PurePath
+from types import MappingProxyType, UnionType
+from typing import (
+    Any,
+    GenericAlias,
+    Optional,
+    TypeVar,
+    Union,
+    _GenericAlias,
+    _SpecialForm,
+    _SpecialGenericAlias,
+    _UnionGenericAlias,
+    cast,
+)
 
 # relative
 from ..types.syft_object_registry import SyftObjectRegistry
 from .capnp import get_capnp_schema
-from .recursive import chunk_bytes
-from .recursive import combine_bytes
-from .recursive import recursive_serde_register
+from .recursive import chunk_bytes, combine_bytes, recursive_serde_register
 from .util import compatible_with_large_file_writes_capnp
 
 iterable_schema = get_capnp_schema("iterable.capnp").Iterable
@@ -73,7 +68,7 @@ def deserialize_iterable(iterable_type: type, blob: bytes) -> Collection:
     MAX_TRAVERSAL_LIMIT = 2**64 - 1
 
     with iterable_schema.from_bytes(
-        blob, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
+        blob, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT,
     ) as msg:
         values = [
             _deserialize(combine_bytes(element), from_bytes=True)
@@ -116,14 +111,14 @@ def get_deserialized_kv_pairs(blob: bytes) -> list[Any]:
     pairs = []
 
     with kv_iterable_schema.from_bytes(
-        blob, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
+        blob, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT,
     ) as msg:
         for key, value in zip(msg.keys, msg.values):
             pairs.append(
                 (
                     _deserialize(key, from_bytes=True),
                     _deserialize(combine_bytes(value), from_bytes=True),
-                )
+                ),
             )
     return pairs
 
@@ -176,7 +171,7 @@ def serialize_type(_type_to_serialize: type) -> bytes:
     # relative
     type_to_serialize = typing.get_origin(_type_to_serialize) or _type_to_serialize
     canonical_name, version = SyftObjectRegistry.get_identifier_for_type(
-        type_to_serialize
+        type_to_serialize,
     )
     return f"{canonical_name}:{version}".encode()
 
@@ -449,7 +444,7 @@ def recursive_serde_register_type(
     # former case is for instance for _GerericAlias itself or UnionGenericAlias
     # Latter case is true for for instance List[str], which is currently not used
     if (isinstance(t, type) and issubclass(t, _GenericAlias)) or issubclass(
-        type(t), _GenericAlias
+        type(t), _GenericAlias,
     ):
         recursive_serde_register(
             t,
@@ -557,7 +552,7 @@ recursive_serde_register_type(
     version=1,
 )
 recursive_serde_register_type(
-    _SpecialGenericAlias, canonical_name="_SpecialGenericAlias", version=1
+    _SpecialGenericAlias, canonical_name="_SpecialGenericAlias", version=1,
 )
 recursive_serde_register_type(GenericAlias, canonical_name="GenericAlias", version=1)
 

@@ -1,18 +1,20 @@
 # stdlib
+import tempfile
+import time
 from pathlib import Path
 from secrets import token_hex
-import tempfile
 from threading import Thread
-import time
 
 # third party
 import pytest
 
 # syft absolute
-from syft.store.locks import LockingConfig
-from syft.store.locks import NoLockingConfig
-from syft.store.locks import SyftLock
-from syft.store.locks import ThreadingLockingConfig
+from syft.store.locks import (
+    LockingConfig,
+    NoLockingConfig,
+    SyftLock,
+    ThreadingLockingConfig,
+)
 
 def_params = {
     "lock_name": "testing_lock",
@@ -25,13 +27,13 @@ def_params = {
 @pytest.fixture(scope="function")
 def locks_nop_config(request):
     def_params["lock_name"] = token_hex(8)
-    yield NoLockingConfig(**def_params)
+    return NoLockingConfig(**def_params)
 
 
 @pytest.fixture(scope="function")
 def locks_threading_config(request):
     def_params["lock_name"] = token_hex(8)
-    yield ThreadingLockingConfig(**def_params)
+    return ThreadingLockingConfig(**def_params)
 
 
 @pytest.mark.parametrize(

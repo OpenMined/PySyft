@@ -1,21 +1,19 @@
 # future
 from __future__ import annotations
 
+import logging
+import sqlite3
+import tempfile
+
 # stdlib
 from collections import defaultdict
 from copy import deepcopy
-import logging
 from pathlib import Path
-import sqlite3
-import tempfile
 from typing import Any
 
 # third party
-from pydantic import Field
-from pydantic import field_validator
-from result import Err
-from result import Ok
-from result import Result
+from pydantic import Field, field_validator
+from result import Err, Ok, Result
 from typing_extensions import Self
 
 # relative
@@ -24,15 +22,14 @@ from ..serde.serializable import serializable
 from ..serde.serialize import _serialize
 from ..types.uid import UID
 from ..util.util import thread_ident
-from .document_store import DocumentStore
-from .document_store import PartitionSettings
-from .document_store import StoreClientConfig
-from .document_store import StoreConfig
-from .kv_document_store import KeyValueBackingStore
-from .kv_document_store import KeyValueStorePartition
-from .locks import LockingConfig
-from .locks import NoLockingConfig
-from .locks import SyftLock
+from .document_store import (
+    DocumentStore,
+    PartitionSettings,
+    StoreClientConfig,
+    StoreConfig,
+)
+from .kv_document_store import KeyValueBackingStore, KeyValueStorePartition
+from .locks import LockingConfig, NoLockingConfig, SyftLock
 
 logger = logging.getLogger(__name__)
 
@@ -58,13 +55,13 @@ def _repr_debug_(value: Any) -> str:
 
 def raise_exception(table_name: str, e: Exception) -> None:
     if "disk I/O error" in str(e):
-        message = f"Error usually related to concurrent writes. {str(e)}"
+        message = f"Error usually related to concurrent writes. {e!s}"
         raise Exception(message)
 
     if "Cannot operate on a closed database" in str(e):
         message = (
             "Error usually related to calling self.db.close()"
-            + f"before last SQLiteBackingStore.__del__ gets called. {str(e)}"
+            + f"before last SQLiteBackingStore.__del__ gets called. {e!s}"
         )
         raise Exception(message)
 
@@ -81,7 +78,8 @@ def raise_exception(table_name: str, e: Exception) -> None:
 class SQLiteBackingStore(KeyValueBackingStore):
     """Core Store logic for the SQLite stores.
 
-    Parameters:
+    Parameters
+    ----------
         `index_name`: str
             Index name
         `settings`: PartitionSettings
@@ -90,6 +88,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
             Connection Configuration
         `ddtype`: Type
             Class used as fallback on `get` errors
+
     """
 
     def __init__(
@@ -147,7 +146,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
                 self.cur.execute(
                     f"create table {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
                     + "repr TEXT NOT NULL, value BLOB NOT NULL, "  # nosec
-                    + "sqltime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL)"  # nosec
+                    + "sqltime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL)",  # nosec
                 )
                 self.db.commit()
         except Exception as e:
@@ -187,7 +186,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         self.db.commit()
 
     def _execute(
-        self, sql: str, *args: list[Any] | None
+        self, sql: str, *args: list[Any] | None,
     ) -> Result[Ok[sqlite3.Cursor], Err[str]]:
         with self.lock:
             cursor: sqlite3.Cursor | None = None
@@ -369,11 +368,13 @@ class SQLiteBackingStore(KeyValueBackingStore):
 class SQLiteStorePartition(KeyValueStorePartition):
     """SQLite StorePartition
 
-    Parameters:
+    Parameters
+    ----------
         `settings`: PartitionSettings
             PySyft specific settings, used for indexing and partitioning
         `store_config`: SQLiteStoreConfig
             SQLite specific configuration
+
     """
 
     def close(self) -> None:
@@ -404,9 +405,11 @@ class SQLiteStorePartition(KeyValueStorePartition):
 class SQLiteDocumentStore(DocumentStore):
     """SQLite Document Store
 
-    Parameters:
+    Parameters
+    ----------
         `store_config`: StoreConfig
             SQLite specific configuration, including connection details and client class type.
+
     """
 
     partition_type = SQLiteStorePartition
@@ -416,7 +419,8 @@ class SQLiteDocumentStore(DocumentStore):
 class SQLiteStoreClientConfig(StoreClientConfig):
     """SQLite connection config
 
-    Parameters:
+    Parameters
+    ----------
         `filename` : str
             Database name
         `path` : Path or str
@@ -430,6 +434,7 @@ class SQLiteStoreClientConfig(StoreClientConfig):
             How many seconds the connection should wait before raising an exception, if the database
             is locked by another connection. If another connection opens a transaction to modify the
             database, it will be locked until that transaction is committed. Default five seconds.
+
     """
 
     filename: str = "syftdb.sqlite"

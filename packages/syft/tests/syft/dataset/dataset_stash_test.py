@@ -2,14 +2,13 @@
 
 # third party
 import pytest
-from typeguard import TypeCheckError
 
 # syft absolute
 from syft.service.dataset.dataset import Dataset
-from syft.service.dataset.dataset_stash import ActionIDsPartitionKey
-from syft.service.dataset.dataset_stash import NamePartitionKey
+from syft.service.dataset.dataset_stash import ActionIDsPartitionKey, NamePartitionKey
 from syft.store.document_store import QueryKey
 from syft.types.uid import UID
+from typeguard import TypeCheckError
 
 
 def test_dataset_namepartitionkey() -> None:

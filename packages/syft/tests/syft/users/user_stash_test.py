@@ -4,8 +4,7 @@ from faker import Faker
 # syft absolute
 from syft.server.credentials import SyftSigningKey
 from syft.service.response import SyftSuccess
-from syft.service.user.user import User
-from syft.service.user.user import UserUpdate
+from syft.service.user.user import User, UserUpdate
 from syft.service.user.user_roles import ServiceRole
 from syft.service.user.user_stash import UserStash
 from syft.types.uid import UID
@@ -23,7 +22,7 @@ def add_mock_user(root_datasite_client, user_stash: UserStash, user: User) -> Us
 
 
 def test_userstash_set(
-    root_datasite_client, user_stash: UserStash, guest_user: User
+    root_datasite_client, user_stash: UserStash, guest_user: User,
 ) -> None:
     result = user_stash.set(root_datasite_client.credentials.verify_key, guest_user)
     assert result.is_ok()
@@ -35,7 +34,7 @@ def test_userstash_set(
 
 
 def test_userstash_set_duplicate(
-    root_datasite_client, user_stash: UserStash, guest_user: User
+    root_datasite_client, user_stash: UserStash, guest_user: User,
 ) -> None:
     result = user_stash.set(root_datasite_client.credentials.verify_key, guest_user)
     assert result.is_ok()
@@ -51,13 +50,13 @@ def test_userstash_set_duplicate(
 
 
 def test_userstash_get_by_uid(
-    root_datasite_client, user_stash: UserStash, guest_user: User
+    root_datasite_client, user_stash: UserStash, guest_user: User,
 ) -> None:
     # prepare: add mock data
     user = add_mock_user(root_datasite_client, user_stash, guest_user)
 
     result = user_stash.get_by_uid(
-        root_datasite_client.credentials.verify_key, uid=user.id
+        root_datasite_client.credentials.verify_key, uid=user.id,
     )
     assert result.is_ok()
 
@@ -67,7 +66,7 @@ def test_userstash_get_by_uid(
 
     random_uid = UID()
     result = user_stash.get_by_uid(
-        root_datasite_client.credentials.verify_key, uid=random_uid
+        root_datasite_client.credentials.verify_key, uid=random_uid,
     )
     assert result.is_ok()
 
@@ -76,13 +75,13 @@ def test_userstash_get_by_uid(
 
 
 def test_userstash_get_by_email(
-    root_datasite_client, faker: Faker, user_stash: UserStash, guest_user: User
+    root_datasite_client, faker: Faker, user_stash: UserStash, guest_user: User,
 ) -> None:
     # prepare: add mock data
     user = add_mock_user(root_datasite_client, user_stash, guest_user)
 
     result = user_stash.get_by_email(
-        root_datasite_client.credentials.verify_key, email=user.email
+        root_datasite_client.credentials.verify_key, email=user.email,
     )
     assert result.is_ok()
     searched_user = result.ok()
@@ -90,7 +89,7 @@ def test_userstash_get_by_email(
 
     random_email = faker.email()
     result = user_stash.get_by_email(
-        root_datasite_client.credentials.verify_key, email=random_email
+        root_datasite_client.credentials.verify_key, email=random_email,
     )
     searched_user = result.ok()
     assert result.is_ok()
@@ -98,13 +97,13 @@ def test_userstash_get_by_email(
 
 
 def test_userstash_get_by_signing_key(
-    root_datasite_client, user_stash: UserStash, guest_user: User
+    root_datasite_client, user_stash: UserStash, guest_user: User,
 ) -> None:
     # prepare: add mock data
     user = add_mock_user(root_datasite_client, user_stash, guest_user)
 
     result = user_stash.get_by_signing_key(
-        root_datasite_client.credentials.verify_key, signing_key=user.signing_key
+        root_datasite_client.credentials.verify_key, signing_key=user.signing_key,
     )
     assert result.is_ok()
     searched_user = result.ok()
@@ -112,7 +111,7 @@ def test_userstash_get_by_signing_key(
 
     signing_key_as_str = str(user.signing_key)
     result = user_stash.get_by_signing_key(
-        root_datasite_client.credentials.verify_key, signing_key=signing_key_as_str
+        root_datasite_client.credentials.verify_key, signing_key=signing_key_as_str,
     )
     assert result.is_ok()
     searched_user = result.ok()
@@ -120,7 +119,7 @@ def test_userstash_get_by_signing_key(
 
     random_singing_key = SyftSigningKey.generate()
     result = user_stash.get_by_signing_key(
-        root_datasite_client.credentials.verify_key, signing_key=random_singing_key
+        root_datasite_client.credentials.verify_key, signing_key=random_singing_key,
     )
     searched_user = result.ok()
     assert result.is_ok()
@@ -128,13 +127,13 @@ def test_userstash_get_by_signing_key(
 
 
 def test_userstash_get_by_verify_key(
-    root_datasite_client, user_stash: UserStash, guest_user: User
+    root_datasite_client, user_stash: UserStash, guest_user: User,
 ) -> None:
     # prepare: add mock data
     user = add_mock_user(root_datasite_client, user_stash, guest_user)
 
     result = user_stash.get_by_verify_key(
-        root_datasite_client.credentials.verify_key, verify_key=user.verify_key
+        root_datasite_client.credentials.verify_key, verify_key=user.verify_key,
     )
     assert result.is_ok()
     searched_user = result.ok()
@@ -142,7 +141,7 @@ def test_userstash_get_by_verify_key(
 
     verify_key_as_str = str(user.verify_key)
     result = user_stash.get_by_verify_key(
-        root_datasite_client.credentials.verify_key, verify_key=verify_key_as_str
+        root_datasite_client.credentials.verify_key, verify_key=verify_key_as_str,
     )
     assert result.is_ok()
     searched_user = result.ok()
@@ -150,7 +149,7 @@ def test_userstash_get_by_verify_key(
 
     random_verify_key = SyftSigningKey.generate().verify_key
     result = user_stash.get_by_verify_key(
-        root_datasite_client.credentials.verify_key, verify_key=random_verify_key
+        root_datasite_client.credentials.verify_key, verify_key=random_verify_key,
     )
     searched_user = result.ok()
     assert result.is_ok()
@@ -158,13 +157,13 @@ def test_userstash_get_by_verify_key(
 
 
 def test_userstash_get_by_role(
-    root_datasite_client, user_stash: UserStash, guest_user: User
+    root_datasite_client, user_stash: UserStash, guest_user: User,
 ) -> None:
     # prepare: add mock data
     user = add_mock_user(root_datasite_client, user_stash, guest_user)
 
     result = user_stash.get_by_role(
-        root_datasite_client.credentials.verify_key, role=ServiceRole.GUEST
+        root_datasite_client.credentials.verify_key, role=ServiceRole.GUEST,
     )
     assert result.is_ok()
     searched_user = result.ok()
@@ -172,13 +171,13 @@ def test_userstash_get_by_role(
 
 
 def test_userstash_delete_by_uid(
-    root_datasite_client, user_stash: UserStash, guest_user: User
+    root_datasite_client, user_stash: UserStash, guest_user: User,
 ) -> None:
     # prepare: add mock data
     user = add_mock_user(root_datasite_client, user_stash, guest_user)
 
     result = user_stash.delete_by_uid(
-        root_datasite_client.credentials.verify_key, uid=user.id
+        root_datasite_client.credentials.verify_key, uid=user.id,
     )
     assert result.is_ok()
     response = result.ok()
@@ -186,7 +185,7 @@ def test_userstash_delete_by_uid(
     assert str(user.id) in response.message
 
     result = user_stash.get_by_uid(
-        root_datasite_client.credentials.verify_key, uid=user.id
+        root_datasite_client.credentials.verify_key, uid=user.id,
     )
     assert result.is_ok()
     searched_user = result.ok()

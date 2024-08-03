@@ -1,49 +1,47 @@
 # future
 from __future__ import annotations
 
+import functools
+import inspect
+import logging
+
 # stdlib
 from collections import defaultdict
 from collections.abc import Callable
 from copy import deepcopy
-import functools
 from functools import partial
-import inspect
 from inspect import Parameter
-import logging
-from typing import Any
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 # third party
-from result import Ok
-from result import OkErr
+from result import Ok, OkErr
 from typing_extensions import Self
 
 # relative
 from ..abstract_server import AbstractServer
 from ..protocol.data_protocol import migrate_args_and_kwargs
-from ..serde.lib_permissions import CMPCRUDPermission
-from ..serde.lib_permissions import CMPPermission
-from ..serde.lib_service_registry import CMPBase
-from ..serde.lib_service_registry import CMPClass
-from ..serde.lib_service_registry import CMPFunction
-from ..serde.lib_service_registry import action_execute_registry_libs
+from ..serde.lib_permissions import CMPCRUDPermission, CMPPermission
+from ..serde.lib_service_registry import (
+    CMPBase,
+    CMPClass,
+    CMPFunction,
+    action_execute_registry_libs,
+)
 from ..serde.serializable import serializable
-from ..serde.signature import Signature
-from ..serde.signature import signature_remove_context
-from ..serde.signature import signature_remove_self
+from ..serde.signature import Signature, signature_remove_context, signature_remove_self
 from ..server.credentials import SyftVerifyKey
 from ..store.document_store import DocumentStore
 from ..store.linked_obj import LinkedObject
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
-from ..types.syft_object import SyftBaseObject
-from ..types.syft_object import SyftObject
-from ..types.syft_object import attach_attribute_to_syft_object
+from ..types.syft_object import (
+    SYFT_OBJECT_VERSION_1,
+    SyftBaseObject,
+    SyftObject,
+    attach_attribute_to_syft_object,
+)
 from ..types.uid import UID
-from .context import AuthedServiceContext
-from .context import ChangeContext
+from .context import AuthedServiceContext, ChangeContext
 from .response import SyftError
-from .user.user_roles import DATA_OWNER_ROLE_LEVEL
-from .user.user_roles import ServiceRole
+from .user.user_roles import DATA_OWNER_ROLE_LEVEL, ServiceRole
 from .warnings import APIEndpointWarning
 
 logger = logging.getLogger(__name__)
@@ -175,7 +173,7 @@ class UserLibConfigRegistry:
                 k: lib_config
                 for k, lib_config in LibConfigRegistry.get_registered_configs().items()
                 if lib_config.has_permission(credentials)
-            }
+            },
         )
 
     def __contains__(self, path: str) -> bool:
@@ -201,7 +199,7 @@ class UserServiceConfigRegistry:
                 k: service_config
                 for k, service_config in ServiceConfigRegistry.get_registered_configs().items()
                 if service_config.has_permission(user_service_role)
-            }
+            },
         )
 
     def __contains__(self, path: str) -> bool:
@@ -250,7 +248,7 @@ def deconstruct_param(param: inspect.Parameter) -> dict[str, Any]:
     param_type = param.annotation
     if not hasattr(param_type, "__signature__"):
         raise Exception(
-            f"Type {param_type} needs __signature__. Or code changed to support backup init"
+            f"Type {param_type} needs __signature__. Or code changed to support backup init",
         )
     signature = param_type.__signature__
     sub_mapping = {}
@@ -326,10 +324,7 @@ def expand_signature(signature: Signature, autosplat: list[str]) -> Signature:
     )
 
     return Signature(
-        **{
-            "parameters": new_params,
-            "return_annotation": signature.return_annotation,
-        }
+        parameters=new_params, return_annotation=signature.return_annotation,
     )
 
 
@@ -360,7 +355,7 @@ def service_method(
 
             if communication_protocol:
                 args, kwargs = migrate_args_and_kwargs(
-                    args=args, kwargs=kwargs, to_latest_protocol=True
+                    args=args, kwargs=kwargs, to_latest_protocol=True,
                 )
             if autosplat is not None and len(autosplat) > 0:
                 args, kwargs = reconstruct_args_kwargs(
@@ -439,7 +434,7 @@ class SyftServiceRegistry:
 
     @classmethod
     def get_transform(
-        cls, type_from: type[SyftObject], type_to: type[SyftObject]
+        cls, type_from: type[SyftObject], type_to: type[SyftObject],
     ) -> Callable:
         klass_from = type_from.__canonical_name__
         version_from = type_from.__version__
@@ -485,11 +480,11 @@ def from_api_or_context(
         if func_or_path not in user_config_registry:
             if ServiceConfigRegistry.path_exists(func_or_path):
                 return SyftError(
-                    message=f"As a `{server_context.role}` you have has no access to: {func_or_path}"
+                    message=f"As a `{server_context.role}` you have has no access to: {func_or_path}",
                 )
             else:
                 return SyftError(
-                    message=f"API call not in registered services: {func_or_path}"
+                    message=f"API call not in registered services: {func_or_path}",
                 )
 
         _private_api_path = user_config_registry.private_path_for(func_or_path)

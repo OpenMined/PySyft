@@ -15,20 +15,17 @@ import re
 import sys
 import warnings
 
-# third party
-from packaging import version
 import pytz
 
+# third party
+from packaging import version
+
 # relative
-from . import OperationFailure
-from . import command_cursor
-from . import filtering
-from . import helpers
+from . import OperationFailure, command_cursor, filtering, helpers
 
 try:
     # third party
-    from bson import Regex
-    from bson import decimal128
+    from bson import Regex, decimal128
     from bson.errors import InvalidDocument
 
     decimal_support = True
@@ -231,7 +228,7 @@ _GROUPING_OPERATOR_MAP = {
 }
 
 
-class _Parser(object):
+class _Parser:
     """Helper to parse expressions within the aggregate pipeline."""
 
     def __init__(self, doc_dict, user_vars=None, ignore_missing_keys=False):
@@ -249,7 +246,7 @@ class _Parser(object):
             raise OperationFailure(
                 "an expression specification must contain exactly one field, "
                 "the name of the expression. Found %d fields in %s"
-                % (len(expression), expression)
+                % (len(expression), expression),
             )
 
         value_dict = {}
@@ -283,7 +280,7 @@ class _Parser(object):
             if k in text_search_operators + projection_operators + object_operators:
                 raise NotImplementedError(
                     "'%s' is a valid operation but it is not supported by Mongomock yet."
-                    % k
+                    % k,
                 )
             if k.startswith("$"):
                 raise OperationFailure("Unrecognized expression '%s'" % k)
@@ -336,7 +333,7 @@ class _Parser(object):
                     can_generate_array=True,
                 )
             return helpers.get_value_by_dot(
-                self._doc_dict, expression[1:], can_generate_array=True
+                self._doc_dict, expression[1:], can_generate_array=True,
             )
         return expression
 
@@ -351,7 +348,7 @@ class _Parser(object):
         raise NotImplementedError(  # pragma: no cover
             "Although '%s' is a valid boolean operator for the "
             "aggregation pipeline, it is currently not implemented"
-            " in Mongomock." % operator
+            " in Mongomock." % operator,
         )
 
     def _handle_arithmetic_operator(self, operator, values):
@@ -365,7 +362,7 @@ class _Parser(object):
             if not isinstance(number, numbers.Number):
                 raise OperationFailure(
                     "Parameter to %s must evaluate to a number, got '%s'"
-                    % (operator, type(number))
+                    % (operator, type(number)),
                 )
 
             if operator == "$abs":
@@ -389,7 +386,7 @@ class _Parser(object):
             if not isinstance(values, (tuple, list)):
                 raise OperationFailure(
                     "Parameter to %s must evaluate to a list, got '%s'"
-                    % (operator, type(values))
+                    % (operator, type(values)),
                 )
 
             if len(values) != 2:
@@ -408,7 +405,7 @@ class _Parser(object):
                 return math.pow(number_0, number_1)
             if operator == "$subtract":
                 if isinstance(number_0, datetime.datetime) and isinstance(
-                    number_1, (int, float)
+                    number_1, (int, float),
                 ):
                     number_1 = datetime.timedelta(milliseconds=number_1)
                 res = number_0 - number_1
@@ -438,7 +435,7 @@ class _Parser(object):
         # This should never happen: it is only a safe fallback if something went wrong.
         raise NotImplementedError(  # pragma: no cover
             "Although '%s' is a valid aritmetic operator for the aggregation "
-            "pipeline, it is currently not implemented  in Mongomock." % operator
+            "pipeline, it is currently not implemented  in Mongomock." % operator,
         )
 
     def _handle_project_operator(self, operator, values):
@@ -461,7 +458,7 @@ class _Parser(object):
         raise NotImplementedError(
             "Although '%s' is a valid project operator for the "
             "aggregation pipeline, it is currently not implemented "
-            "in Mongomock." % operator
+            "in Mongomock." % operator,
         )
 
     def _handle_projection_operator(self, operator, value):
@@ -473,7 +470,7 @@ class _Parser(object):
             for field in ("vars", "in"):
                 if field not in value:
                     raise OperationFailure(
-                        "Missing '{}' parameter to $let".format(field)
+                        f"Missing '{field}' parameter to $let",
                     )
             if not isinstance(value["vars"], dict):
                 raise OperationFailure("invalid parameter: expected an object (vars)")
@@ -489,7 +486,7 @@ class _Parser(object):
         raise NotImplementedError(
             "Although '%s' is a valid project operator for the "
             "aggregation pipeline, it is currently not implemented "
-            "in Mongomock." % operator
+            "in Mongomock." % operator,
         )
 
     def _handle_comparison_operator(self, operator, values):
@@ -502,12 +499,12 @@ class _Parser(object):
             return a != b
         if operator in filtering.SORTING_OPERATOR_MAP:
             return filtering.bson_compare(
-                filtering.SORTING_OPERATOR_MAP[operator], a, b
+                filtering.SORTING_OPERATOR_MAP[operator], a, b,
             )
         raise NotImplementedError(
             "Although '%s' is a valid comparison operator for the "
             "aggregation pipeline, it is currently not implemented "
-            " in Mongomock." % operator
+            " in Mongomock." % operator,
         )
 
     def _handle_string_operator(self, operator, values):
@@ -549,13 +546,13 @@ class _Parser(object):
             if first < 0:
                 warnings.warn(
                     "Negative starting point given to $substr is accepted only until "
-                    "MongoDB 3.7. This behavior will change in the future."
+                    "MongoDB 3.7. This behavior will change in the future.",
                 )
                 return ""
             if length < 0:
                 warnings.warn(
                     "Negative length given to $substr is accepted only until "
-                    "MongoDB 3.7. This behavior will change in the future."
+                    "MongoDB 3.7. This behavior will change in the future.",
                 )
             second = len(string) if length < 0 else first + length
             return string[first:second]
@@ -568,17 +565,17 @@ class _Parser(object):
             if not isinstance(values, dict):
                 raise OperationFailure(
                     "$regexMatch expects an object of named arguments but found: %s"
-                    % type(values)
+                    % type(values),
                 )
             for field in ("input", "regex"):
                 if field not in values:
                     raise OperationFailure(
-                        "$regexMatch requires '%s' parameter" % field
+                        "$regexMatch requires '%s' parameter" % field,
                     )
             unknown_args = set(values) - {"input", "regex", "options"}
             if unknown_args:
                 raise OperationFailure(
-                    "$regexMatch found an unknown argument: %s" % list(unknown_args)[0]
+                    "$regexMatch found an unknown argument: %s" % list(unknown_args)[0],
                 )
 
             try:
@@ -596,7 +593,7 @@ class _Parser(object):
             for option in values.get("options", ""):
                 if option not in "imxs":
                     raise OperationFailure(
-                        "$regexMatch invalid flag in regex options: %s" % option
+                        "$regexMatch invalid flag in regex options: %s" % option,
                     )
                 re_option = getattr(re, option.upper())
                 if options is None:
@@ -610,29 +607,29 @@ class _Parser(object):
                     regex = re.compile(regex_val, options)
             elif "options" in values and regex_val.flags:
                 raise OperationFailure(
-                    "$regexMatch: regex option(s) specified in both 'regex' and 'option' fields"
+                    "$regexMatch: regex option(s) specified in both 'regex' and 'option' fields",
                 )
             elif isinstance(regex_val, helpers.RE_TYPE):
                 if options and not regex_val.flags:
                     regex = re.compile(regex_val.pattern, options)
-                elif regex_val.flags & ~(re.I | re.M | re.X | re.S):
+                elif regex_val.flags & ~(re.IGNORECASE | re.MULTILINE | re.VERBOSE | re.DOTALL):
                     raise OperationFailure(
                         "$regexMatch invalid flag in regex options: %s"
-                        % regex_val.flags
+                        % regex_val.flags,
                     )
                 else:
                     regex = regex_val
             elif isinstance(regex_val, _RE_TYPES):
                 # bson.Regex
-                if regex_val.flags & ~(re.I | re.M | re.X | re.S):
+                if regex_val.flags & ~(re.IGNORECASE | re.MULTILINE | re.VERBOSE | re.DOTALL):
                     raise OperationFailure(
                         "$regexMatch invalid flag in regex options: %s"
-                        % regex_val.flags
+                        % regex_val.flags,
                     )
                 regex = re.compile(regex_val.pattern, regex_val.flags or options)
             else:
                 raise OperationFailure(
-                    "$regexMatch needs 'regex' to be of type string or regex"
+                    "$regexMatch needs 'regex' to be of type string or regex",
                 )
 
             return bool(regex.search(input_value))
@@ -640,7 +637,7 @@ class _Parser(object):
         # This should never happen: it is only a safe fallback if something went wrong.
         raise NotImplementedError(  # pragma: no cover
             "Although '%s' is a valid string operator for the aggregation "
-            "pipeline, it is currently not implemented  in Mongomock." % operator
+            "pipeline, it is currently not implemented  in Mongomock." % operator,
         )
 
     def _handle_date_operator(self, operator, values):
@@ -675,49 +672,49 @@ class _Parser(object):
             if not isinstance(values, dict):
                 raise OperationFailure(
                     "$dateToString operator must correspond a dict"
-                    'that has "format" and "date" field.'
+                    'that has "format" and "date" field.',
                 )
             if not isinstance(values, dict) or not {"format", "date"} <= set(values):
                 raise OperationFailure(
                     "$dateToString operator must correspond a dict"
-                    'that has "format" and "date" field.'
+                    'that has "format" and "date" field.',
                 )
             if "%L" in out_value["format"]:
                 raise NotImplementedError(
                     "Although %L is a valid date format for the "
                     "$dateToString operator, it is currently not implemented "
-                    " in Mongomock."
+                    " in Mongomock.",
                 )
             if "onNull" in values:
                 raise NotImplementedError(
                     "Although onNull is a valid field for the "
                     "$dateToString operator, it is currently not implemented "
-                    " in Mongomock."
+                    " in Mongomock.",
                 )
             if "timezone" in values.keys():
                 raise NotImplementedError(
                     "Although timezone is a valid field for the "
                     "$dateToString operator, it is currently not implemented "
-                    " in Mongomock."
+                    " in Mongomock.",
                 )
             return out_value["date"].strftime(out_value["format"])
         if operator == "$dateFromParts":
             if not isinstance(out_value, dict):
                 raise OperationFailure(
                     f"{operator} operator must correspond a dict "
-                    'that has "year" or "isoWeekYear" field.'
+                    'that has "year" or "isoWeekYear" field.',
                 )
             if len(set(out_value) & {"year", "isoWeekYear"}) != 1:
                 raise OperationFailure(
                     f"{operator} operator must correspond a dict "
-                    'that has "year" or "isoWeekYear" field.'
+                    'that has "year" or "isoWeekYear" field.',
                 )
             for field in ("isoWeekYear", "isoWeek", "isoDayOfWeek", "timezone"):
                 if field in out_value:
                     raise NotImplementedError(
                         f"Although {field} is a valid field for the "
                         f"{operator} operator, it is currently not implemented "
-                        "in Mongomock."
+                        "in Mongomock.",
                     )
 
             year = out_value["year"]
@@ -741,7 +738,7 @@ class _Parser(object):
         raise NotImplementedError(
             "Although '%s' is a valid date operator for the "
             "aggregation pipeline, it is currently not implemented "
-            " in Mongomock." % operator
+            " in Mongomock." % operator,
         )
 
     def _handle_array_operator(self, operator, value):
@@ -752,12 +749,10 @@ class _Parser(object):
             parsed_list = list(self.parse_many(value))
             for parsed_item in parsed_list:
                 if parsed_item is not None and not isinstance(
-                    parsed_item, (list, tuple)
+                    parsed_item, (list, tuple),
                 ):
                     raise OperationFailure(
-                        "$concatArrays only supports arrays, not {}".format(
-                            type(parsed_item)
-                        )
+                        f"$concatArrays only supports arrays, not {type(parsed_item)}",
                     )
 
             return (
@@ -791,7 +786,7 @@ class _Parser(object):
 
             if not isinstance(input_array, (list, tuple)):
                 raise OperationFailure(
-                    "input to $map must be an array not %s" % type(input_array)
+                    "input to $map must be an array not %s" % type(input_array),
                 )
 
             fieldname = value.get("as", "this")
@@ -810,31 +805,31 @@ class _Parser(object):
                 if len(value) != 1:
                     raise OperationFailure(
                         "Expression $size takes exactly 1 arguments. "
-                        "%d were passed in." % len(value)
+                        "%d were passed in." % len(value),
                     )
                 value = value[0]
             array_value = self._parse_or_None(value)
             if not isinstance(array_value, (list, tuple)):
                 raise OperationFailure(
                     "The argument to $size must be an array, but was of type: %s"
-                    % ("missing" if array_value is None else type(array_value))
+                    % ("missing" if array_value is None else type(array_value)),
                 )
             return len(array_value)
 
         if operator == "$filter":
             if not isinstance(value, dict):
                 raise OperationFailure(
-                    "$filter only supports an object as its argument"
+                    "$filter only supports an object as its argument",
                 )
             extra_params = set(value) - {"input", "cond", "as"}
             if extra_params:
                 raise OperationFailure(
-                    "Unrecognized parameter to $filter: %s" % extra_params.pop()
+                    "Unrecognized parameter to $filter: %s" % extra_params.pop(),
                 )
             missing_params = {"input", "cond"} - set(value)
             if missing_params:
                 raise OperationFailure(
-                    "Missing '%s' parameter to $filter" % missing_params.pop()
+                    "Missing '%s' parameter to $filter" % missing_params.pop(),
                 )
 
             input_array = self.parse(value["input"])
@@ -855,25 +850,21 @@ class _Parser(object):
             if len(value) < 2 or len(value) > 3:
                 raise OperationFailure(
                     "Expression $slice takes at least 2 arguments, and at most "
-                    "3, but {} were passed in".format(len(value))
+                    f"3, but {len(value)} were passed in",
                 )
             array_value = self.parse(value[0])
             if not isinstance(array_value, list):
                 raise OperationFailure(
-                    "First argument to $slice must be an array, but is of type: {}".format(
-                        type(array_value)
-                    )
+                    f"First argument to $slice must be an array, but is of type: {type(array_value)}",
                 )
             for num, v in zip(("Second", "Third"), value[1:]):
                 if not isinstance(v, int):
                     raise OperationFailure(
-                        "{} argument to $slice must be numeric, but is of type: {}".format(
-                            num, type(v)
-                        )
+                        f"{num} argument to $slice must be numeric, but is of type: {type(v)}",
                     )
             if len(value) > 2 and value[2] <= 0:
                 raise OperationFailure(
-                    "Third argument to $slice must be " "positive: {}".format(value[2])
+                    f"Third argument to $slice must be positive: {value[2]}",
                 )
 
             start = value[1]
@@ -892,7 +883,7 @@ class _Parser(object):
         raise NotImplementedError(
             "Although '%s' is a valid array operator for the "
             "aggregation pipeline, it is currently not implemented "
-            "in Mongomock." % operator
+            "in Mongomock." % operator,
         )
 
     def _handle_type_convertion_operator(self, operator, values):
@@ -917,7 +908,7 @@ class _Parser(object):
                     return int(parsed.to_decimal())
                 return int(parsed)
             raise NotImplementedError(
-                "You need to import the pymongo library to support decimal128 type."
+                "You need to import the pymongo library to support decimal128 type.",
             )
 
         if operator == "$toLong":
@@ -930,14 +921,14 @@ class _Parser(object):
                     return int(parsed.to_decimal())
                 return int(parsed)
             raise NotImplementedError(
-                "You need to import the pymongo library to support decimal128 type."
+                "You need to import the pymongo library to support decimal128 type.",
             )
 
         # Document: https://docs.mongodb.com/manual/reference/operator/aggregation/toDecimal/
         if operator == "$toDecimal":
             if not decimal_support:
                 raise NotImplementedError(
-                    "You need to import the pymongo library to support decimal128 type."
+                    "You need to import the pymongo library to support decimal128 type.",
                 )
             try:
                 parsed = self.parse(values)
@@ -960,12 +951,12 @@ class _Parser(object):
                 except decimal.InvalidOperation as err:
                     raise OperationFailure(
                         "Failed to parse number '%s' in $convert with no onError value:"
-                        "Failed to parse string to decimal" % parsed
+                        "Failed to parse string to decimal" % parsed,
                     ) from err
             elif isinstance(parsed, datetime.datetime):
                 epoch = datetime.datetime.utcfromtimestamp(0)
                 string_micro_seconds = str(
-                    (parsed - epoch).total_seconds() * 1000
+                    (parsed - epoch).total_seconds() * 1000,
                 ).split(".", 1)[0]
                 decimal_value = decimal128.Decimal128(string_micro_seconds)
             else:
@@ -984,9 +975,7 @@ class _Parser(object):
 
             if not isinstance(parsed, (list, tuple)):
                 raise OperationFailure(
-                    "$arrayToObject requires an array input, found: {}".format(
-                        type(parsed)
-                    )
+                    f"$arrayToObject requires an array input, found: {type(parsed)}",
                 )
 
             if all(isinstance(x, dict) and set(x.keys()) == {"k", "v"} for x in parsed):
@@ -997,7 +986,7 @@ class _Parser(object):
 
             raise OperationFailure(
                 "arrays used with $arrayToObject must contain documents "
-                "with k and v fields or two-element arrays"
+                "with k and v fields or two-element arrays",
             )
 
         # Document: https://docs.mongodb.com/manual/reference/operator/aggregation/objectToArray/
@@ -1012,15 +1001,13 @@ class _Parser(object):
 
             if not isinstance(parsed, (dict, collections.OrderedDict)):
                 raise OperationFailure(
-                    "$objectToArray requires an object input, found: {}".format(
-                        type(parsed)
-                    )
+                    f"$objectToArray requires an object input, found: {type(parsed)}",
                 )
 
             if len(parsed) > 1 and sys.version_info < (3, 6):
                 raise NotImplementedError(
                     "Although '%s' is a valid type conversion, it is not implemented for Python 2 "
-                    "and Python 3.5 in Mongomock yet." % operator
+                    "and Python 3.5 in Mongomock yet." % operator,
                 )
 
             return [{"k": k, "v": v} for k, v in parsed.items()]
@@ -1028,7 +1015,7 @@ class _Parser(object):
         raise NotImplementedError(
             "Although '%s' is a valid type conversion operator for the "
             "aggregation pipeline, it is currently not implemented "
-            "in Mongomock." % operator
+            "in Mongomock." % operator,
         )
 
     def _handle_type_operator(self, operator, values):
@@ -1054,7 +1041,7 @@ class _Parser(object):
 
         raise NotImplementedError(  # pragma: no cover
             "Although '%s' is a valid type operator for the aggregation pipeline, it is currently "
-            "not implemented in Mongomock." % operator
+            "not implemented in Mongomock." % operator,
         )
 
     def _handle_conditional_operator(self, operator, values):
@@ -1064,11 +1051,11 @@ class _Parser(object):
         if operator == "$ifNull":
             fields = values[:-1]
             if len(fields) > 1 and version.parse(SERVER_VERSION) <= version.parse(
-                "4.4"
+                "4.4",
             ):
                 raise OperationFailure(
                     "$ifNull supports only one input expression "
-                    " in MongoDB v4.4 and lower"
+                    " in MongoDB v4.4 and lower",
                 )
             fallback = values[-1]
             for field in fields:
@@ -1093,7 +1080,7 @@ class _Parser(object):
         raise NotImplementedError(  # pragma: no cover
             "Although '%s' is a valid conditional operator for the "
             "aggregation pipeline, it is currently not implemented "
-            " in Mongomock." % operator
+            " in Mongomock." % operator,
         )
 
     def _handle_control_flow_operator(self, operator, values):
@@ -1101,14 +1088,14 @@ class _Parser(object):
             if not isinstance(values, dict):
                 raise OperationFailure(
                     "$switch requires an object as an argument, "
-                    "found: %s" % type(values)
+                    "found: %s" % type(values),
                 )
 
             branches = values.get("branches", [])
             if not isinstance(branches, (list, tuple)):
                 raise OperationFailure(
                     "$switch expected an array for 'branches', "
-                    "found: %s" % type(branches)
+                    "found: %s" % type(branches),
                 )
             if not branches:
                 raise OperationFailure("$switch requires at least one branch.")
@@ -1117,15 +1104,15 @@ class _Parser(object):
                 if not isinstance(branch, dict):
                     raise OperationFailure(
                         "$switch expected each branch to be an object, "
-                        "found: %s" % type(branch)
+                        "found: %s" % type(branch),
                     )
                 if "case" not in branch:
                     raise OperationFailure(
-                        "$switch requires each branch have a 'case' expression"
+                        "$switch requires each branch have a 'case' expression",
                     )
                 if "then" not in branch:
                     raise OperationFailure(
-                        "$switch requires each branch have a 'then' expression."
+                        "$switch requires each branch have a 'then' expression.",
                     )
 
             for branch in branches:
@@ -1135,7 +1122,7 @@ class _Parser(object):
             if "default" not in values:
                 raise OperationFailure(
                     "$switch could not find a matching branch for an input, "
-                    "and no default was specified."
+                    "and no default was specified.",
                 )
             return self.parse(values["default"])
 
@@ -1143,7 +1130,7 @@ class _Parser(object):
         raise NotImplementedError(  # pragma: no cover
             "Although '%s' is a valid control flow operator for the "
             "aggregation pipeline, it is currently not implemented "
-            "in Mongomock." % operator
+            "in Mongomock." % operator,
         )
 
     def _handle_set_operator(self, operator, values):
@@ -1165,7 +1152,7 @@ class _Parser(object):
             return True
         raise NotImplementedError(
             "Although '%s' is a valid set operator for the aggregation "
-            "pipeline, it is currently not implemented in Mongomock." % operator
+            "pipeline, it is currently not implemented in Mongomock." % operator,
         )
 
 
@@ -1173,11 +1160,13 @@ def _parse_expression(expression, doc_dict, ignore_missing_keys=False):
     """Parse an expression.
 
     Args:
+    ----
         expression: an Aggregate Expression, see
             https://docs.mongodb.com/manual/meta/aggregation-quick-reference/#aggregation-expressions.
         doc_dict: the document on which to evaluate the expression.
         ignore_missing_keys: if True, missing keys evaluated by the expression are ignored silently
             if it is possible.
+
     """
     return _Parser(doc_dict, ignore_missing_keys=ignore_missing_keys).parse(expression)
 
@@ -1216,14 +1205,14 @@ def _accumulate_group(output_fields, group_list):
                 raise NotImplementedError(
                     "Although %s is a valid group operator for the "
                     "aggregation pipeline, it is currently not implemented "
-                    "in Mongomock." % operator
+                    "in Mongomock." % operator,
                 )
             else:
                 raise NotImplementedError(
                     "%s is not a valid group operator for the aggregation "
                     "pipeline. See http://docs.mongodb.org/manual/meta/"
                     "aggregation-quick-reference/ for a complete list of "
-                    "valid operators." % operator
+                    "valid operators." % operator,
                 )
     return doc_dict
 
@@ -1245,7 +1234,7 @@ def _handle_lookup_stage(in_collection, database, options):
             raise NotImplementedError(
                 "Although '%s' is a valid lookup operator for the "
                 "aggregation pipeline, it is currently not "
-                "implemented in Mongomock." % operator
+                "implemented in Mongomock." % operator,
             )
     for operator in ("from", "localField", "foreignField", "as"):
         if operator not in options:
@@ -1260,7 +1249,7 @@ def _handle_lookup_stage(in_collection, database, options):
             raise NotImplementedError(
                 "Although '.' is valid in the 'as' "
                 "parameters for the lookup stage of the aggregation "
-                "pipeline, it is currently not implemented in Mongomock."
+                "pipeline, it is currently not implemented in Mongomock.",
             )
 
     foreign_name = options["from"]
@@ -1305,7 +1294,7 @@ def _handle_graph_lookup_stage(in_collection, database, options):
         raise OperationFailure("Argument 'maxDepth' to $graphLookup must be a number")
     if not isinstance(options.get("restrictSearchWithMatch", {}), dict):
         raise OperationFailure(
-            "Argument 'restrictSearchWithMatch' to $graphLookup must be a Dictionary"
+            "Argument 'restrictSearchWithMatch' to $graphLookup must be a Dictionary",
         )
     if not isinstance(options.get("depthField", ""), str):
         raise OperationFailure("Argument 'depthField' to $graphlookup must be a string")
@@ -1314,11 +1303,11 @@ def _handle_graph_lookup_stage(in_collection, database, options):
     for operator in ("as", "connectFromField", "connectToField", "from"):
         if operator not in options:
             raise OperationFailure(
-                "Must specify '%s' field for a $graphLookup" % operator
+                "Must specify '%s' field for a $graphLookup" % operator,
             )
         if not isinstance(options[operator], str):
             raise OperationFailure(
-                "Argument '%s' to $graphLookup must be string" % operator
+                "Argument '%s' to $graphLookup must be string" % operator,
             )
         if options[operator].startswith("$"):
             raise OperationFailure("FieldPath field names may not start with '$'")
@@ -1326,7 +1315,7 @@ def _handle_graph_lookup_stage(in_collection, database, options):
             raise NotImplementedError(
                 "Although '.' is valid in the '%s' "
                 "parameter for the $graphLookup stage of the aggregation "
-                "pipeline, it is currently not implemented in Mongomock." % operator
+                "pipeline, it is currently not implemented in Mongomock." % operator,
             )
 
     foreign_name = options["from"]
@@ -1352,7 +1341,7 @@ def _handle_graph_lookup_stage(in_collection, database, options):
             ):
                 if depth_field is not None:
                     new_match = collections.OrderedDict(
-                        new_match, **{depth_field: depth}
+                        new_match, **{depth_field: depth},
                     )
                 new_matches.append(new_match)
                 found_items.add(new_match["_id"])
@@ -1412,27 +1401,27 @@ def _handle_bucket_stage(in_collection, unused_database, options):
     unknown_options = set(options) - {"groupBy", "boundaries", "output", "default"}
     if unknown_options:
         raise OperationFailure(
-            "Unrecognized option to $bucket: %s." % unknown_options.pop()
+            "Unrecognized option to $bucket: %s." % unknown_options.pop(),
         )
     if "groupBy" not in options or "boundaries" not in options:
         raise OperationFailure(
-            "$bucket requires 'groupBy' and 'boundaries' to be specified."
+            "$bucket requires 'groupBy' and 'boundaries' to be specified.",
         )
     group_by = options["groupBy"]
     boundaries = options["boundaries"]
     if not isinstance(boundaries, list):
         raise OperationFailure(
             "The $bucket 'boundaries' field must be an array, but found type: %s"
-            % type(boundaries)
+            % type(boundaries),
         )
     if len(boundaries) < 2:
         raise OperationFailure(
             "The $bucket 'boundaries' field must have at least 2 values, but "
-            "found %d value(s)." % len(boundaries)
+            "found %d value(s)." % len(boundaries),
         )
     if sorted(boundaries) != boundaries:
         raise OperationFailure(
-            "The 'boundaries' option to $bucket must be sorted in ascending order"
+            "The 'boundaries' option to $bucket must be sorted in ascending order",
         )
     output_fields = options.get("output", {"count": {"$sum": 1}})
     default_value = options.get("default", None)
@@ -1447,7 +1436,7 @@ def _handle_bucket_stage(in_collection, unused_database, options):
         except KeyError as err:
             raise OperationFailure(
                 "$bucket could not find a matching branch for "
-                "an input, and no default was specified."
+                "an input, and no default was specified.",
             ) from err
 
     def _get_bucket_id(doc):
@@ -1487,7 +1476,7 @@ def _handle_sample_stage(in_collection, unused_database, options):
         raise OperationFailure("$sample stage must specify a size")
     if options:
         raise OperationFailure(
-            "unrecognized option to $sample: %s" % set(options).pop()
+            "unrecognized option to $sample: %s" % set(options).pop(),
         )
     shuffled = list(in_collection)
     _random.shuffle(shuffled)
@@ -1514,7 +1503,7 @@ def _handle_unwind_stage(in_collection, unused_database, options):
     if not isinstance(path, str) or path[0] != "$":
         raise ValueError(
             "$unwind failed: exception: field path references must be prefixed "
-            "with a '$' '%s'" % path
+            "with a '$' '%s'" % path,
         )
     path = path[1:]
     should_preserve_null_and_empty = options.get("preserveNullAndEmptyArrays")
@@ -1572,7 +1561,7 @@ def _combine_projection_spec(filter_list, original_filter, prefix=""):
                 raise OperationFailure(
                     "Invalid $project :: caused by :: specification contains two conflicting paths."
                     " Cannot specify both %s and %s: %s"
-                    % (repr(prefix + field), repr(prefix + other_key), original_filter)
+                    % (repr(prefix + field), repr(prefix + other_key), original_filter),
                 )
             filter_dict[field] = 1
             continue
@@ -1580,7 +1569,7 @@ def _combine_projection_spec(filter_list, original_filter, prefix=""):
             raise OperationFailure(
                 "Invalid $project :: caused by :: specification contains two conflicting paths."
                 " Cannot specify both %s and %s: %s"
-                % (repr(prefix + field), repr(prefix + key), original_filter)
+                % (repr(prefix + field), repr(prefix + key), original_filter),
             )
         filter_dict[field] = filter_dict.get(field, []) + [subkey]
 
@@ -1620,7 +1609,7 @@ def _project_by_spec(doc, proj_spec, is_include):
 def _handle_replace_root_stage(in_collection, unused_database, options):
     if "newRoot" not in options:
         raise OperationFailure(
-            "Parameter 'newRoot' is missing for $replaceRoot operation."
+            "Parameter 'newRoot' is missing for $replaceRoot operation.",
         )
     new_root = options["newRoot"]
     out_collection = []
@@ -1631,9 +1620,7 @@ def _handle_replace_root_stage(in_collection, unused_database, options):
             new_doc = None
         if not isinstance(new_doc, dict):
             raise OperationFailure(
-                "'newRoot' expression must evaluate to an object, but resulting value was: {}".format(
-                    new_doc
-                )
+                f"'newRoot' expression must evaluate to an object, but resulting value was: {new_doc}",
             )
         out_collection.append(new_doc)
     return out_collection
@@ -1652,12 +1639,12 @@ def _handle_project_stage(in_collection, unused_database, options):
         elif method == "include" and not value and field != "_id":
             raise OperationFailure(
                 "Bad projection specification, cannot exclude fields "
-                "other than '_id' in an inclusion projection: %s" % options
+                "other than '_id' in an inclusion projection: %s" % options,
             )
         elif method == "exclude" and value:
             raise OperationFailure(
                 "Bad projection specification, cannot include fields "
-                "or add computed fields during an exclusion projection: %s" % options
+                "or add computed fields during an exclusion projection: %s" % options,
             )
         if value in (0, 1, True, False):
             if field != "_id":
@@ -1669,7 +1656,7 @@ def _handle_project_stage(in_collection, unused_database, options):
         for in_doc, out_doc in zip(in_collection, new_fields_collection):
             try:
                 out_doc[field] = _parse_expression(
-                    value, in_doc, ignore_missing_keys=True
+                    value, in_doc, ignore_missing_keys=True,
                 )
             except KeyError:
                 # Ignore missing key.
@@ -1694,7 +1681,7 @@ def _handle_project_stage(in_collection, unused_database, options):
 def _handle_add_fields_stage(in_collection, unused_database, options):
     if not options:
         raise OperationFailure(
-            "Invalid $addFields :: caused by :: specification must have at least one field"
+            "Invalid $addFields :: caused by :: specification must have at least one field",
         )
     out_collection = [dict(doc) for doc in in_collection]
     for field, value in options.items():
@@ -1737,7 +1724,7 @@ def _handle_facet_stage(in_collection, database, options):
     out_collection_by_pipeline = {}
     for pipeline_title, pipeline in options.items():
         out_collection_by_pipeline[pipeline_title] = list(
-            process_pipeline(in_collection, database, pipeline, None)
+            process_pipeline(in_collection, database, pipeline, None),
         )
     return [out_collection_by_pipeline]
 
@@ -1748,7 +1735,7 @@ def _handle_match_stage(in_collection, database, options):
         doc
         for doc in in_collection
         if filtering.filter_applies(
-            spec, helpers.patch_datetime_awareness_in_document(doc)
+            spec, helpers.patch_datetime_awareness_in_document(doc),
         )
     ]
 
@@ -1799,12 +1786,12 @@ def process_pipeline(collection, database, pipeline, session):
                 raise NotImplementedError(
                     "%s is not a valid operator for the aggregation pipeline. "
                     "See http://docs.mongodb.org/manual/meta/aggregation-quick-reference/ "
-                    "for a complete list of valid operators." % operator
+                    "for a complete list of valid operators." % operator,
                 ) from err
             if not handler:
                 raise NotImplementedError(
                     "Although '%s' is a valid operator for the aggregation pipeline, it is "
-                    "currently not implemented in Mongomock." % operator
+                    "currently not implemented in Mongomock." % operator,
                 )
             collection = handler(collection, database, options)
 

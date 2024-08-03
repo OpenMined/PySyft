@@ -34,9 +34,7 @@ class SearchResults:
                     if dataset.id == key:
                         return dataset
                 elif isinstance(key, str):
-                    if dataset.name == key:
-                        return dataset
-                    elif str(dataset.id) == key:
+                    if dataset.name == key or str(dataset.id) == key:
                         return dataset
         raise KeyError
 
@@ -65,7 +63,7 @@ class Search:
 
     @staticmethod
     def __search_one_server(
-        peer_tuple: tuple[ServerPeer, ServerMetadataJSON], name: str
+        peer_tuple: tuple[ServerPeer, ServerMetadataJSON], name: str,
     ) -> tuple[SyftClient | None, list[Dataset]]:
         try:
             peer, server_metadata = peer_tuple
@@ -74,7 +72,7 @@ class Search:
             return (client, results)
         except Exception as e:  # noqa
             warning = SyftWarning(
-                message=f"Got exception {e} at server {server_metadata.name}"
+                message=f"Got exception {e} at server {server_metadata.name}",
             )
             display(warning)
             return (None, [])
@@ -88,7 +86,7 @@ class Search:
                 executor.map(
                     lambda peer_tuple: self.__search_one_server(peer_tuple, name),
                     self.datasites,
-                )
+                ),
             )
         # filter out SyftError
         filtered = [(client, result) for client, result in results if client and result]
@@ -96,13 +94,15 @@ class Search:
         return filtered
 
     def search(self, name: str) -> SearchResults:
-        """
-        Searches for a specific dataset by name.
+        """Searches for a specific dataset by name.
 
         Args:
+        ----
             name (str): The name of the dataset to search for.
 
         Returns:
+        -------
             SearchResults: An object containing the search results.
+
         """
         return SearchResults(self.__search(name))

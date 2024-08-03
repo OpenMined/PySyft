@@ -7,9 +7,7 @@ import numpy as np
 import pandas as pd
 
 # relative
-from ..response import SyftError
-from ..response import SyftResponseMessage
-from ..response import SyftSuccess
+from ..response import SyftError, SyftResponseMessage, SyftSuccess
 from .action_object import ActionObject
 
 
@@ -29,15 +27,15 @@ def verify_result(
         # Manual type casting for now, to automate later
         if isinstance(asset.syft_action_data, np.ndarray):
             trace_assets.append(
-                ActionObject(id=asset.id, syft_result_obj=np.ndarray([]))
+                ActionObject(id=asset.id, syft_result_obj=np.ndarray([])),
             )
         elif isinstance(asset.syft_action_data, pd.DataFrame):
             trace_assets.append(
-                ActionObject(id=asset.id, syft_result_obj=pd.DataFrame())
+                ActionObject(id=asset.id, syft_result_obj=pd.DataFrame()),
             )
         else:
             raise NotImplementedError(
-                f"Trace mode not yet automated for type: {type(asset.syft_action_data)}"
+                f"Trace mode not yet automated for type: {type(asset.syft_action_data)}",
             )
 
     print("Code Verification in progress.")
@@ -86,20 +84,20 @@ def code_verification(func: Callable) -> Callable:
         for asset in args:
             if not isinstance(asset, ActionObject):
                 raise Exception(
-                    f"ActionObject expected, instead received: {type(asset)}"
+                    f"ActionObject expected, instead received: {type(asset)}",
                 )
             # Manual type casting for now, to automate later
             if isinstance(asset.syft_action_data, np.ndarray):
                 trace_assets.append(
-                    ActionObject(id=asset.id, syft_result_obj=np.ndarray([]))
+                    ActionObject(id=asset.id, syft_result_obj=np.ndarray([])),
                 )
             elif isinstance(asset.syft_action_data, pd.DataFrame):
                 trace_assets.append(
-                    ActionObject(id=asset.id, syft_result_obj=pd.DataFrame())
+                    ActionObject(id=asset.id, syft_result_obj=pd.DataFrame()),
                 )
             else:
                 raise NotImplementedError(
-                    f"Trace mode not yet automated for type: {type(asset.syft_action_data)}"
+                    f"Trace mode not yet automated for type: {type(asset.syft_action_data)}",
                 )
 
         print("Evaluating function normally to obtain history hash")

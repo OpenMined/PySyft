@@ -8,7 +8,7 @@ from .helpers import utcnow
 from .thread import RWLock
 
 
-class ServerStore(object):
+class ServerStore:
     """Object holding the data for a whole server (many databases)."""
 
     def __init__(self):
@@ -28,7 +28,7 @@ class ServerStore(object):
         return [name for name, db in self._databases.items() if db.is_created]
 
 
-class DatabaseStore(object):
+class DatabaseStore:
     """Object holding the data for a database (many collections)."""
 
     def __init__(self):
@@ -62,7 +62,7 @@ class DatabaseStore(object):
         return any(col.is_created for col in self._collections.values())
 
 
-class CollectionStore(object):
+class CollectionStore:
     """Object holding the data for a collection."""
 
     def __init__(self, name):
@@ -186,6 +186,6 @@ def _get_min_datetime_from_value(val):
 
 def _min_dt(dt1, dt2):
     try:
-        return dt1 if dt1 < dt2 else dt2
+        return min(dt2, dt1)
     except TypeError:
         return dt1

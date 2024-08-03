@@ -1,128 +1,133 @@
 # future
 from __future__ import annotations
 
-# stdlib
-from collections import OrderedDict
-from collections.abc import Callable
-from datetime import MINYEAR
-from datetime import datetime
-from functools import partial
 import hashlib
 import json
 import logging
 import os
-from pathlib import Path
 import subprocess  # nosec
 import sys
-from time import sleep
 import traceback
-from typing import Any
-from typing import cast
+
+# stdlib
+from collections import OrderedDict
+from collections.abc import Callable
+from datetime import MINYEAR, datetime
+from functools import partial
+from pathlib import Path
+from time import sleep
+from typing import Any, cast
 
 # third party
 from nacl.signing import SigningKey
-from result import Err
-from result import Result
+from result import Err, Result
 
 # relative
 from .. import __version__
-from ..abstract_server import AbstractServer
-from ..abstract_server import ServerSideType
-from ..abstract_server import ServerType
-from ..client.api import SignedSyftAPICall
-from ..client.api import SyftAPI
-from ..client.api import SyftAPICall
-from ..client.api import SyftAPIData
-from ..client.api import debox_signed_syftapicall_response
+from ..abstract_server import AbstractServer, ServerSideType, ServerType
+from ..client.api import (
+    SignedSyftAPICall,
+    SyftAPI,
+    SyftAPICall,
+    SyftAPIData,
+    debox_signed_syftapicall_response,
+)
 from ..client.client import SyftClient
 from ..exceptions.exception import PySyftException
-from ..protocol.data_protocol import PROTOCOL_TYPE
-from ..protocol.data_protocol import get_data_protocol
-from ..service.action.action_object import Action
-from ..service.action.action_object import ActionObject
-from ..service.action.action_store import ActionStore
-from ..service.action.action_store import DictActionStore
-from ..service.action.action_store import MongoActionStore
-from ..service.action.action_store import SQLiteActionStore
+from ..protocol.data_protocol import PROTOCOL_TYPE, get_data_protocol
+from ..service.action.action_object import Action, ActionObject
+from ..service.action.action_store import (
+    ActionStore,
+    DictActionStore,
+    MongoActionStore,
+    SQLiteActionStore,
+)
 from ..service.blob_storage.service import BlobStorageService
 from ..service.code.user_code_service import UserCodeService
 from ..service.code.user_code_stash import UserCodeStash
-from ..service.context import AuthedServiceContext
-from ..service.context import ServerServiceContext
-from ..service.context import UnauthedServiceContext
-from ..service.context import UserLoginCredentials
-from ..service.job.job_stash import Job
-from ..service.job.job_stash import JobStash
-from ..service.job.job_stash import JobStatus
-from ..service.job.job_stash import JobType
+from ..service.context import (
+    AuthedServiceContext,
+    ServerServiceContext,
+    UnauthedServiceContext,
+    UserLoginCredentials,
+)
+from ..service.job.job_stash import Job, JobStash, JobStatus, JobType
 from ..service.metadata.server_metadata import ServerMetadata
 from ..service.network.network_service import NetworkService
 from ..service.network.utils import PeerHealthCheckTask
 from ..service.notifier.notifier_service import NotifierService
-from ..service.queue.base_queue import AbstractMessageHandler
-from ..service.queue.base_queue import QueueConsumer
-from ..service.queue.base_queue import QueueProducer
-from ..service.queue.queue import APICallMessageHandler
-from ..service.queue.queue import QueueManager
-from ..service.queue.queue_stash import APIEndpointQueueItem
-from ..service.queue.queue_stash import ActionQueueItem
-from ..service.queue.queue_stash import QueueItem
-from ..service.queue.queue_stash import QueueStash
-from ..service.queue.zmq_queue import QueueConfig
-from ..service.queue.zmq_queue import ZMQClientConfig
-from ..service.queue.zmq_queue import ZMQQueueConfig
+from ..service.queue.base_queue import (
+    AbstractMessageHandler,
+    QueueConsumer,
+    QueueProducer,
+)
+from ..service.queue.queue import APICallMessageHandler, QueueManager
+from ..service.queue.queue_stash import (
+    ActionQueueItem,
+    APIEndpointQueueItem,
+    QueueItem,
+    QueueStash,
+)
+from ..service.queue.zmq_queue import QueueConfig, ZMQClientConfig, ZMQQueueConfig
 from ..service.response import SyftError
-from ..service.service import AbstractService
-from ..service.service import ServiceConfigRegistry
-from ..service.service import UserServiceConfigRegistry
-from ..service.settings.settings import ServerSettings
-from ..service.settings.settings import ServerSettingsUpdate
+from ..service.service import (
+    AbstractService,
+    ServiceConfigRegistry,
+    UserServiceConfigRegistry,
+)
+from ..service.settings.settings import ServerSettings, ServerSettingsUpdate
 from ..service.settings.settings_stash import SettingsStash
-from ..service.user.user import User
-from ..service.user.user import UserCreate
-from ..service.user.user import UserView
+from ..service.user.user import User, UserCreate, UserView
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..service.user.user_stash import UserStash
-from ..service.worker.utils import DEFAULT_WORKER_IMAGE_TAG
-from ..service.worker.utils import DEFAULT_WORKER_POOL_NAME
-from ..service.worker.utils import create_default_image
+from ..service.worker.utils import (
+    DEFAULT_WORKER_IMAGE_TAG,
+    DEFAULT_WORKER_POOL_NAME,
+    create_default_image,
+)
 from ..service.worker.worker_image_service import SyftWorkerImageService
 from ..service.worker.worker_pool import WorkerPool
 from ..service.worker.worker_pool_service import SyftWorkerPoolService
 from ..service.worker.worker_pool_stash import SyftWorkerPoolStash
 from ..service.worker.worker_stash import WorkerStash
 from ..store.blob_storage import BlobStorageConfig
-from ..store.blob_storage.on_disk import OnDiskBlobStorageClientConfig
-from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
+from ..store.blob_storage.on_disk import (
+    OnDiskBlobStorageClientConfig,
+    OnDiskBlobStorageConfig,
+)
 from ..store.blob_storage.seaweedfs import SeaweedFSBlobDeposit
 from ..store.dict_document_store import DictStoreConfig
 from ..store.document_store import StoreConfig
 from ..store.linked_obj import LinkedObject
 from ..store.mongo_document_store import MongoStoreConfig
-from ..store.sqlite_document_store import SQLiteStoreClientConfig
-from ..store.sqlite_document_store import SQLiteStoreConfig
+from ..store.sqlite_document_store import SQLiteStoreClientConfig, SQLiteStoreConfig
 from ..types.datetime import DATETIME_FORMAT
 from ..types.syft_metaclass import Empty
-from ..types.syft_object import Context
-from ..types.syft_object import PartialSyftObject
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
-from ..types.syft_object import SyftObject
+from ..types.syft_object import (
+    SYFT_OBJECT_VERSION_1,
+    Context,
+    PartialSyftObject,
+    SyftObject,
+)
 from ..types.uid import UID
 from ..util.experimental_flags import flags
 from ..util.telemetry import instrument
-from ..util.util import get_dev_mode
-from ..util.util import get_env
-from ..util.util import get_queue_address
-from ..util.util import random_name
-from ..util.util import str_to_bool
-from ..util.util import thread_ident
-from .credentials import SyftSigningKey
-from .credentials import SyftVerifyKey
+from ..util.util import (
+    get_dev_mode,
+    get_env,
+    get_queue_address,
+    random_name,
+    str_to_bool,
+    thread_ident,
+)
+from .credentials import SyftSigningKey, SyftVerifyKey
 from .service_registry import ServiceRegistry
-from .utils import get_named_server_uid
-from .utils import get_temp_dir_for_server
-from .utils import remove_temp_dir_for_server
+from .utils import (
+    get_named_server_uid,
+    get_temp_dir_for_server,
+    remove_temp_dir_for_server,
+)
 from .worker_settings import WorkerSettings
 
 logger = logging.getLogger(__name__)
@@ -200,8 +205,8 @@ def get_default_bucket_name() -> str:
 def get_default_worker_pool_count(server: Server) -> int:
     return int(
         get_env(
-            "DEFAULT_WORKER_POOL_COUNT", server.queue_config.client_config.n_consumers
-        )
+            "DEFAULT_WORKER_POOL_COUNT", server.queue_config.client_config.n_consumers,
+        ),
     )
 
 
@@ -460,14 +465,14 @@ class Server(AbstractServer):
                 client_config=SQLiteStoreClientConfig(
                     filename=file_name,
                     path=path,
-                )
+                ),
             )
         return DictStoreConfig()
 
     def init_blob_storage(self, config: BlobStorageConfig | None = None) -> None:
         if config is None:
             client_config = OnDiskBlobStorageClientConfig(
-                base_directory=self.get_temp_dir("blob")
+                base_directory=self.get_temp_dir("blob"),
             )
             config_ = OnDiskBlobStorageConfig(
                 client_config=client_config,
@@ -484,7 +489,7 @@ class Server(AbstractServer):
         if isinstance(config, SeaweedFSConfig) and self.signing_key:
             blob_storage_service = self.get_service(BlobStorageService)
             remote_profiles = blob_storage_service.remote_profile_stash.get_all(
-                credentials=self.signing_key.verify_key, has_permission=True
+                credentials=self.signing_key.verify_key, has_permission=True,
             ).ok()
             for remote_profile in remote_profiles:
                 self.blob_store_config.client_config.remote_profiles[
@@ -499,7 +504,7 @@ class Server(AbstractServer):
                 )
             logger.debug(
                 f"Minimum object size to be saved to the blob storage: "
-                f"{self.blob_store_config.min_blob_size} (MB)."
+                f"{self.blob_store_config.min_blob_size} (MB).",
             )
 
     def run_peer_health_checks(self, context: AuthedServiceContext) -> None:
@@ -540,7 +545,7 @@ class Server(AbstractServer):
             queue_config_ = queue_config
         elif queue_port is not None or n_consumers > 0 or create_producer:
             if not create_producer and queue_port is None:
-                logger.warn("No queue port defined to bind consumers.")
+                logger.warning("No queue port defined to bind consumers.")
             queue_config_ = ZMQQueueConfig(
                 client_config=ZMQClientConfig(
                     create_producer=create_producer,
@@ -557,7 +562,7 @@ class Server(AbstractServer):
     def init_queue_manager(self, queue_config: QueueConfig) -> None:
         MessageHandlers = [APICallMessageHandler]
         if self.is_subprocess:
-            return None
+            return
 
         self.queue_manager = QueueManager(config=queue_config)
         for message_handler in MessageHandlers:
@@ -596,7 +601,7 @@ class Server(AbstractServer):
                 # Create consumer for given worker pool
                 syft_worker_uid = get_syft_worker_uid()
                 logger.info(
-                    f"Running as consumer with uid={syft_worker_uid} service={service_name}"
+                    f"Running as consumer with uid={syft_worker_uid} service={service_name}",
                 )
 
                 if syft_worker_uid:
@@ -704,7 +709,7 @@ class Server(AbstractServer):
         return root_client
 
     def _find_klasses_pending_for_migration(
-        self, object_types: list[SyftObject]
+        self, object_types: list[SyftObject],
     ) -> list[SyftObject]:
         context = AuthedServiceContext(
             server=self,
@@ -722,7 +727,7 @@ class Server(AbstractServer):
             migration_state = migration_state_service.get_state(context, canonical_name)
             if isinstance(migration_state, SyftError):
                 raise Exception(
-                    f"Failed to get migration state for {canonical_name}. Error: {migration_state}"
+                    f"Failed to get migration state for {canonical_name}. Error: {migration_state}",
                 )
             if (
                 migration_state is not None
@@ -739,7 +744,7 @@ class Server(AbstractServer):
         return klasses_to_be_migrated
 
     def find_and_migrate_data(
-        self, document_store_object_types: list[type[SyftObject]] | None = None
+        self, document_store_object_types: list[type[SyftObject]] | None = None,
     ) -> None:
         context = AuthedServiceContext(
             server=self,
@@ -776,7 +781,7 @@ class Server(AbstractServer):
             return client_type
 
         guest_client = client_type(
-            connection=connection, credentials=SyftSigningKey.generate()
+            connection=connection, credentials=SyftSigningKey.generate(),
         )
         if guest_client.api.refresh_api_callback is not None:
             guest_client.api.refresh_api_callback()
@@ -792,10 +797,10 @@ class Server(AbstractServer):
 
     def post_init(self) -> None:
         context = AuthedServiceContext(
-            server=self, credentials=self.verify_key, role=ServiceRole.ADMIN
+            server=self, credentials=self.verify_key, role=ServiceRole.ADMIN,
         )
         AuthServerContextRegistry.set_server_context(
-            server_uid=self.id, user_verify_key=self.verify_key, context=context
+            server_uid=self.id, user_verify_key=self.verify_key, context=context,
         )
 
         if "usercodeservice" in self.service_path_map:
@@ -890,15 +895,13 @@ class Server(AbstractServer):
         return getattr(service_obj, method_name)
 
     def get_temp_dir(self, dir_name: str = "") -> Path:
-        """
-        Get a temporary directory unique to the server.
+        """Get a temporary directory unique to the server.
         Provide all dbs, blob dirs, and locks using this directory.
         """
         return get_temp_dir_for_server(self.id, dir_name)
 
     def remove_temp_dir(self) -> None:
-        """
-        Remove the temporary directory for this server.
+        """Remove the temporary directory for this server.
         """
         remove_temp_dir_for_server(self.id)
 
@@ -920,7 +923,7 @@ class Server(AbstractServer):
         settings = settings_stash.get_all(self.signing_key.verify_key)
         if settings.is_err():
             raise ValueError(
-                f"Cannot get server settings for '{self.name}'. Error: {settings.err()}"
+                f"Cannot get server settings for '{self.name}'. Error: {settings.err()}",
             )
         if settings.is_ok() and len(settings.ok()) > 0:
             settings = settings.ok()[0]
@@ -974,7 +977,7 @@ class Server(AbstractServer):
     def __hash__(self) -> int:
         return hash(self.id)
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, type(self)):
             return False
 
@@ -984,7 +987,7 @@ class Server(AbstractServer):
         return True
 
     def await_future(
-        self, credentials: SyftVerifyKey, uid: UID
+        self, credentials: SyftVerifyKey, uid: UID,
     ) -> QueueItem | None | SyftError:
         # stdlib
 
@@ -1002,7 +1005,7 @@ class Server(AbstractServer):
             sleep(0.1)
 
     def resolve_future(
-        self, credentials: SyftVerifyKey, uid: UID
+        self, credentials: SyftVerifyKey, uid: UID,
     ) -> QueueItem | None | SyftError:
         result = self.queue_stash.pop_on_complete(credentials, uid)
 
@@ -1016,7 +1019,7 @@ class Server(AbstractServer):
         return result.err()
 
     def forward_message(
-        self, api_call: SyftAPICall | SignedSyftAPICall
+        self, api_call: SyftAPICall | SignedSyftAPICall,
     ) -> Result | QueueItem | SyftObject | SyftError | Any:
         server_uid = api_call.message.server_uid
         if "networkservice" not in self.service_path_map:
@@ -1024,7 +1027,7 @@ class Server(AbstractServer):
                 message=(
                     "Server has no network service so we can't "
                     f"forward this message to {server_uid}"
-                )
+                ),
             )
 
         client = None
@@ -1042,14 +1045,14 @@ class Server(AbstractServer):
                 client = self.peer_client_cache[peer_cache_key]
             else:
                 context = AuthedServiceContext(
-                    server=self, credentials=api_call.credentials
+                    server=self, credentials=api_call.credentials,
                 )
 
                 client = peer.client_with_context(context=context)
                 if client.is_err():
                     return SyftError(
                         message=f"Failed to create remote client for peer: "
-                        f"{peer.id}. Error: {client.err()}"
+                        f"{peer.id}. Error: {client.err()}",
                     )
                 client = client.ok()
 
@@ -1081,7 +1084,7 @@ class Server(AbstractServer):
 
     def get_role_for_credentials(self, credentials: SyftVerifyKey) -> ServiceRole:
         role = self.get_service("userservice").get_role_for_credentials(
-            credentials=credentials
+            credentials=credentials,
         )
         return role
 
@@ -1093,7 +1096,7 @@ class Server(AbstractServer):
     ) -> Result[SignedSyftAPICall, Err]:
         # Get the result
         result = self.handle_api_call_with_unsigned_result(
-            api_call, job_id=job_id, check_call_location=check_call_location
+            api_call, job_id=job_id, check_call_location=check_call_location,
         )
         # Sign the result
         signed_result = SyftAPIData(data=result).sign(self.signing_key)
@@ -1108,18 +1111,17 @@ class Server(AbstractServer):
     ) -> Result | QueueItem | SyftObject | SyftError:
         if self.required_signed_calls and isinstance(api_call, SyftAPICall):
             return SyftError(
-                message=f"You sent a {type(api_call)}. This server requires SignedSyftAPICall."
+                message=f"You sent a {type(api_call)}. This server requires SignedSyftAPICall.",
             )
-        else:
-            if not api_call.is_valid:
-                return SyftError(message="Your message signature is invalid")
+        elif not api_call.is_valid:
+            return SyftError(message="Your message signature is invalid")
 
         if api_call.message.server_uid != self.id and check_call_location:
             return self.forward_message(api_call=api_call)
 
         if api_call.message.path == "queue":
             return self.resolve_future(
-                credentials=api_call.credentials, uid=api_call.message.kwargs["uid"]
+                credentials=api_call.credentials, uid=api_call.message.kwargs["uid"],
             )
 
         if api_call.message.path == "metadata":
@@ -1148,11 +1150,11 @@ class Server(AbstractServer):
                 if ServiceConfigRegistry.path_exists(api_call.path):
                     return SyftError(
                         message=f"As a `{role}`, "
-                        f"you have no access to: {api_call.path}"
+                        f"you have no access to: {api_call.path}",
                     )
                 else:
                     return SyftError(
-                        message=f"API call not in registered services: {api_call.path}"
+                        message=f"API call not in registered services: {api_call.path}",
                     )
 
             _private_api_path = user_config_registry.private_path_for(api_call.path)
@@ -1164,7 +1166,7 @@ class Server(AbstractServer):
                 return e.handle()
             except Exception:
                 result = SyftError(
-                    message=f"Exception calling {api_call.path}. {traceback.format_exc()}"
+                    message=f"Exception calling {api_call.path}. {traceback.format_exc()}",
                 )
         else:
             return self.add_api_call_to_queue(api_call)
@@ -1222,7 +1224,7 @@ class Server(AbstractServer):
         )
 
     def get_worker_pool_ref_by_name(
-        self, credentials: SyftVerifyKey, worker_pool_name: str | None = None
+        self, credentials: SyftVerifyKey, worker_pool_name: str | None = None,
     ) -> LinkedObject | SyftError:
         # If worker pool id is not set, then use default worker pool
         # Else, get the worker pool for given uid
@@ -1257,7 +1259,7 @@ class Server(AbstractServer):
         # Extract worker pool id from user code
         if action.user_code_id is not None:
             result = self.user_code_stash.get_by_uid(
-                credentials=credentials, uid=action.user_code_id
+                credentials=credentials, uid=action.user_code_id,
             )
 
             # If result is Ok, then user code object exists
@@ -1266,7 +1268,7 @@ class Server(AbstractServer):
                 worker_pool_name = user_code.worker_pool_name
 
         worker_pool_ref = self.get_worker_pool_ref_by_name(
-            credentials, worker_pool_name
+            credentials, worker_pool_name,
         )
         if isinstance(worker_pool_ref, SyftError):
             return worker_pool_ref
@@ -1283,7 +1285,7 @@ class Server(AbstractServer):
             worker_pool=worker_pool_ref,  # set worker pool reference as part of queue item
         )
         user_id = self.get_service("UserService").get_user_id_for_credentials(
-            credentials
+            credentials,
         )
 
         return self.add_queueitem_to_queue(
@@ -1369,11 +1371,11 @@ class Server(AbstractServer):
         return jobs
 
     def _get_existing_user_code_jobs(
-        self, context: AuthedServiceContext, user_code_id: UID
+        self, context: AuthedServiceContext, user_code_id: UID,
     ) -> list[Job] | SyftError:
         job_service = self.get_service("jobservice")
         jobs = job_service.get_by_user_code_id(
-            context=context, user_code_id=user_code_id
+            context=context, user_code_id=user_code_id,
         )
 
         if isinstance(jobs, SyftError):
@@ -1391,11 +1393,11 @@ class Server(AbstractServer):
             return False
         user_code_service = self.get_service("usercodeservice")
         return user_code_service.is_execution_on_owned_args(
-            context, user_code_id, api_call.kwargs
+            context, user_code_id, api_call.kwargs,
         )
 
     def add_api_call_to_queue(
-        self, api_call: SyftAPICall, parent_job_id: UID | None = None
+        self, api_call: SyftAPICall, parent_job_id: UID | None = None,
     ) -> Job | SyftError:
         unsigned_call = api_call
         if isinstance(api_call, SignedSyftAPICall):
@@ -1426,7 +1428,7 @@ class Server(AbstractServer):
                 user.mock_execution_permission or context.role == ServiceRole.ADMIN
             )
             is_usercode_call_on_owned_kwargs = self._is_usercode_call_on_owned_kwargs(
-                context, unsigned_call, user_code_id
+                context, unsigned_call, user_code_id,
             )
             # Low side does not execute jobs, unless this is a mock execution
             if (
@@ -1442,12 +1444,12 @@ class Server(AbstractServer):
                     from ..util.util import prompt_warning_message
 
                     prompt_warning_message(
-                        "There are existing jobs for this user code, returning the latest one"
+                        "There are existing jobs for this user code, returning the latest one",
                     )
                     return existing_jobs[-1]
                 else:
                     return SyftError(
-                        message="Please wait for the admin to allow the execution of this code"
+                        message="Please wait for the admin to allow the execution of this code",
                     )
 
             elif (
@@ -1455,11 +1457,11 @@ class Server(AbstractServer):
                 and not is_execution_on_owned_kwargs_allowed
             ):
                 return SyftError(
-                    message="You do not have the permissions for mock execution, please contact the admin"
+                    message="You do not have the permissions for mock execution, please contact the admin",
                 )
 
             return self.add_action_to_queue(
-                action, api_call.credentials, parent_job_id=parent_job_id
+                action, api_call.credentials, parent_job_id=parent_job_id,
             )
 
         else:
@@ -1508,7 +1510,7 @@ class Server(AbstractServer):
 
     def get_worker_pool_by_name(self, name: str) -> WorkerPool | None | SyftError:
         result = self.pool_stash.get_by_name(
-            credentials=self.verify_key, pool_name=name
+            credentials=self.verify_key, pool_name=name,
         )
         if result.is_err():
             return SyftError(message=f"{result.err()}")
@@ -1527,13 +1529,13 @@ class Server(AbstractServer):
         )
 
     def get_method_with_context(
-        self, function: Callable, context: ServerServiceContext
+        self, function: Callable, context: ServerServiceContext,
     ) -> Callable:
         method = self.get_service_method(function)
         return partial(method, context=context)
 
     def get_unauthed_context(
-        self, login_credentials: UserLoginCredentials
+        self, login_credentials: UserLoginCredentials,
     ) -> ServerServiceContext:
         return UnauthedServiceContext(server=self, login_credentials=login_credentials)
 
@@ -1542,7 +1544,7 @@ class Server(AbstractServer):
             settings_stash = SettingsStash(store=self.document_store)
             if self.signing_key is None:
                 logger.debug(
-                    "create_initial_settings failed as there is no signing key"
+                    "create_initial_settings failed as there is no signing key",
                 )
                 return None
             settings_exists = settings_stash.get_all(self.signing_key.verify_key).ok()
@@ -1551,15 +1553,15 @@ class Server(AbstractServer):
                 if server_settings.__version__ != ServerSettings.__version__:
                     context = Context()
                     server_settings = server_settings.migrate_to(
-                        ServerSettings.__version__, context
+                        ServerSettings.__version__, context,
                     )
                     res = settings_stash.delete_by_uid(
-                        self.signing_key.verify_key, server_settings.id
+                        self.signing_key.verify_key, server_settings.id,
                     )
                     if res.is_err():
                         raise Exception(res.value)
                     res = settings_stash.set(
-                        self.signing_key.verify_key, server_settings
+                        self.signing_key.verify_key, server_settings,
                     )
                     if res.is_err():
                         raise Exception(res.value)
@@ -1588,7 +1590,7 @@ class Server(AbstractServer):
                     notifications_enabled=False,
                 )
                 result = settings_stash.set(
-                    credentials=self.signing_key.verify_key, settings=new_settings
+                    credentials=self.signing_key.verify_key, settings=new_settings,
                 )
                 if result.is_ok():
                     return result.ok()
@@ -1607,7 +1609,7 @@ def create_admin_new(
     try:
         user_stash = UserStash(store=server.document_store)
         row_exists = user_stash.get_by_email(
-            credentials=server.signing_key.verify_key, email=email
+            credentials=server.signing_key.verify_key, email=email,
         ).ok()
         if row_exists:
             return None
@@ -1695,7 +1697,7 @@ def create_default_worker_pool(server: Server) -> SyftError | None:
     if isinstance(default_worker_pool, SyftError):
         logger.error(
             f"Failed to get default worker pool {default_pool_name}. "
-            f"Error: {default_worker_pool.message}"
+            f"Error: {default_worker_pool.message}",
         )
         return default_worker_pool
 
@@ -1732,7 +1734,7 @@ def create_default_worker_pool(server: Server) -> SyftError | None:
         f"name={default_pool_name} "
         f"workers={worker_count} "
         f"image_uid={default_image.id} "
-        f"in_memory={server.in_memory_workers}. "
+        f"in_memory={server.in_memory_workers}. ",
     )
     if default_worker_pool is None:
         worker_to_add_ = worker_count
@@ -1748,11 +1750,11 @@ def create_default_worker_pool(server: Server) -> SyftError | None:
     else:
         # Else add a worker to existing worker pool
         worker_to_add_ = max(default_worker_pool.max_count, worker_count) - len(
-            default_worker_pool.worker_list
+            default_worker_pool.worker_list,
         )
         if worker_to_add_ > 0:
             add_worker_method = server.get_service_method(
-                SyftWorkerPoolService.add_workers
+                SyftWorkerPoolService.add_workers,
             )
             result = add_worker_method(
                 context=context,
@@ -1771,7 +1773,7 @@ def create_default_worker_pool(server: Server) -> SyftError | None:
         if container_status.error:
             logger.error(
                 f"Failed to create container: Worker: {container_status.worker},"
-                f"Error: {container_status.error}"
+                f"Error: {container_status.error}",
             )
             return None
 

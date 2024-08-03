@@ -55,7 +55,7 @@ except ImportError:
     class BulkWriteError(OperationFailure):
         def __init__(self, results):
             super(BulkWriteError, self).__init__(
-                "batch op errors occurred", 65, results
+                "batch op errors occurred", 65, results,
             )
 
 
@@ -127,8 +127,7 @@ __all__ = [
 from .collection import Collection
 from .database import Database
 from .mongo_client import MongoClient
-from .not_implemented import ignore_feature
-from .not_implemented import warn_on_feature
+from .not_implemented import ignore_feature, warn_on_feature
 from .patch import patch
 from .write_concern import WriteConcern
 

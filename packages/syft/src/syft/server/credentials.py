@@ -6,8 +6,7 @@ from typing import Any
 
 # third party
 from nacl.encoding import HexEncoder
-from nacl.signing import SigningKey
-from nacl.signing import VerifyKey
+from nacl.signing import SigningKey, VerifyKey
 from pydantic import field_validator
 
 # relative
@@ -37,7 +36,7 @@ class SyftVerifyKey(SyftBaseModel):
     def verify(self) -> str:
         return str(self)
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, SyftVerifyKey):
             return False
         return self.verify_key == other.verify_key
@@ -88,7 +87,7 @@ class SyftSigningKey(SyftBaseModel):
     def __hash__(self) -> int:
         return hash(self.signing_key)
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, SyftSigningKey):
             return False
         return self.signing_key == other.signing_key

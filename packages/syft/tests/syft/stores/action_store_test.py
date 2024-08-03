@@ -7,17 +7,21 @@ import pytest
 
 # syft absolute
 from syft.server.credentials import SyftVerifyKey
-from syft.service.action.action_store import ActionObjectEXECUTE
-from syft.service.action.action_store import ActionObjectOWNER
-from syft.service.action.action_store import ActionObjectREAD
-from syft.service.action.action_store import ActionObjectWRITE
+from syft.service.action.action_store import (
+    ActionObjectEXECUTE,
+    ActionObjectOWNER,
+    ActionObjectREAD,
+    ActionObjectWRITE,
+)
 from syft.types.uid import UID
 
 # relative
-from .store_constants_test import TEST_VERIFY_KEY_NEW_ADMIN
-from .store_constants_test import TEST_VERIFY_KEY_STRING_CLIENT
-from .store_constants_test import TEST_VERIFY_KEY_STRING_HACKER
-from .store_constants_test import TEST_VERIFY_KEY_STRING_ROOT
+from .store_constants_test import (
+    TEST_VERIFY_KEY_NEW_ADMIN,
+    TEST_VERIFY_KEY_STRING_CLIENT,
+    TEST_VERIFY_KEY_STRING_HACKER,
+    TEST_VERIFY_KEY_STRING_ROOT,
+)
 from .store_mocks_test import MockSyftObject
 
 permissions = [

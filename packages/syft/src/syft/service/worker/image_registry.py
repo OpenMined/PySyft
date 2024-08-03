@@ -7,15 +7,14 @@ from typing_extensions import Self
 
 # relative
 from ...serde.serializable import serializable
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject
 
 # Checks for
 # - localhost:[port]
 # - (sub.)*.name.tld
 # - (sub.)*.name.tld:[port]
 REGX_DATASITE = re.compile(
-    r"^(localhost|([a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*))(\:\d{1,5})?"
+    r"^(localhost|([a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*))(\:\d{1,5})?",
 )
 
 

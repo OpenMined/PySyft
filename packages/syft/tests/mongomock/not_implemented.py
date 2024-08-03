@@ -13,7 +13,7 @@ def _ensure_ignorable_feature(feature):
         raise KeyError(
             "%s is not an error that can be ignored: maybe it has been implemented in Mongomock. "
             "Here is the list of features that can be ignored: %s"
-            % (feature, _IGNORED_FEATURES.keys())
+            % (feature, _IGNORED_FEATURES.keys()),
         )
 
 

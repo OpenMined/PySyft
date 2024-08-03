@@ -1,54 +1,47 @@
 # stdlib
-from datetime import datetime
-from datetime import timedelta
 import secrets
 import string
+from datetime import datetime, timedelta
 
 # relative
 from ...abstract_server import ServerType
 from ...exceptions.user import UserAlreadyExistsException
 from ...serde.serializable import serializable
-from ...server.credentials import SyftSigningKey
-from ...server.credentials import SyftVerifyKey
+from ...server.credentials import SyftSigningKey, SyftVerifyKey
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
 from ...types.syft_metaclass import Empty
 from ...types.uid import UID
 from ...util.telemetry import instrument
-from ..action.action_permissions import ActionObjectPermission
-from ..action.action_permissions import ActionPermission
-from ..context import AuthedServiceContext
-from ..context import ServerServiceContext
-from ..context import UnauthedServiceContext
-from ..notification.email_templates import OnBoardEmailTemplate
-from ..notification.email_templates import PasswordResetTemplate
-from ..notification.notification_service import CreateNotification
-from ..notification.notification_service import NotificationService
+from ..action.action_permissions import ActionObjectPermission, ActionPermission
+from ..context import AuthedServiceContext, ServerServiceContext, UnauthedServiceContext
+from ..notification.email_templates import OnBoardEmailTemplate, PasswordResetTemplate
+from ..notification.notification_service import CreateNotification, NotificationService
 from ..notifier.notifier_enums import NOTIFIERS
-from ..response import SyftError
-from ..response import SyftSuccess
-from ..service import AbstractService
-from ..service import SERVICE_TO_TYPES
-from ..service import TYPE_TO_SERVICE
-from ..service import service_method
+from ..response import SyftError, SyftSuccess
+from ..service import SERVICE_TO_TYPES, TYPE_TO_SERVICE, AbstractService, service_method
 from ..settings.settings import PwdTokenResetConfig
 from ..settings.settings_stash import SettingsStash
-from .user import User
-from .user import UserCreate
-from .user import UserPrivateKey
-from .user import UserSearch
-from .user import UserUpdate
-from .user import UserView
-from .user import UserViewPage
-from .user import check_pwd
-from .user import salt_and_hash_password
-from .user import validate_password
-from .user_roles import ADMIN_ROLE_LEVEL
-from .user_roles import DATA_OWNER_ROLE_LEVEL
-from .user_roles import DATA_SCIENTIST_ROLE_LEVEL
-from .user_roles import GUEST_ROLE_LEVEL
-from .user_roles import ServiceRole
-from .user_roles import ServiceRoleCapability
+from .user import (
+    User,
+    UserCreate,
+    UserPrivateKey,
+    UserSearch,
+    UserUpdate,
+    UserView,
+    UserViewPage,
+    check_pwd,
+    salt_and_hash_password,
+    validate_password,
+)
+from .user_roles import (
+    ADMIN_ROLE_LEVEL,
+    DATA_OWNER_ROLE_LEVEL,
+    DATA_SCIENTIST_ROLE_LEVEL,
+    GUEST_ROLE_LEVEL,
+    ServiceRole,
+    ServiceRoleCapability,
+)
 from .user_stash import UserStash
 
 
@@ -64,12 +57,12 @@ class UserService(AbstractService):
 
     @service_method(path="user.create", name="create", autosplat="user_create")
     def create(
-        self, context: AuthedServiceContext, user_create: UserCreate
+        self, context: AuthedServiceContext, user_create: UserCreate,
     ) -> UserView | SyftError:
         """Create a new user"""
         user = user_create.to(User)
         result = self.stash.get_by_email(
-            credentials=context.credentials, email=user.email
+            credentials=context.credentials, email=user.email,
         )
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -82,7 +75,7 @@ class UserService(AbstractService):
             user=user,
             add_permissions=[
                 ActionObjectPermission(
-                    uid=user.id, permission=ActionPermission.ALL_READ
+                    uid=user.id, permission=ActionPermission.ALL_READ,
                 ),
             ],
         )
@@ -92,10 +85,10 @@ class UserService(AbstractService):
         return user.to(UserView)
 
     @service_method(
-        path="user.forgot_password", name="forgot_password", roles=GUEST_ROLE_LEVEL
+        path="user.forgot_password", name="forgot_password", roles=GUEST_ROLE_LEVEL,
     )
     def forgot_password(
-        self, context: AuthedServiceContext, email: str
+        self, context: AuthedServiceContext, email: str,
     ) -> SyftSuccess | SyftError:
         success_msg = (
             "If the email is valid, we sent a password "
@@ -110,7 +103,7 @@ class UserService(AbstractService):
         user_role = self.get_role_for_credentials(user.verify_key)
         if user_role == ServiceRole.ADMIN:
             return SyftError(
-                message="You can't request password reset for an Admin user."
+                message="You can't request password reset for an Admin user.",
             )
 
         # Email is valid
@@ -185,14 +178,14 @@ class UserService(AbstractService):
         roles=ADMIN_ROLE_LEVEL,
     )
     def request_password_reset(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID,
     ) -> str | SyftError:
         result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
         if result.is_err():
             return SyftError(
                 message=(
-                    f"Failed to retrieve user with UID: {uid}. Error: {str(result.err())}"
-                )
+                    f"Failed to retrieve user with UID: {uid}. Error: {result.err()!s}"
+                ),
             )
         user = result.ok()
         if user is None:
@@ -201,38 +194,38 @@ class UserService(AbstractService):
         user_role = self.get_role_for_credentials(user.verify_key)
         if user_role == ServiceRole.ADMIN:
             return SyftError(
-                message="You can't request password reset for an Admin user."
+                message="You can't request password reset for an Admin user.",
             )
 
         user.reset_token = self.generate_new_password_reset_token(
-            context.server.settings.pwd_token_config
+            context.server.settings.pwd_token_config,
         )
         user.reset_token_date = datetime.now()
 
         result = self.stash.update(
-            credentials=context.credentials, user=user, has_permission=True
+            credentials=context.credentials, user=user, has_permission=True,
         )
         if result.is_err():
             return SyftError(
                 message=(
-                    f"Failed to update user with UID: {uid}. Error: {str(result.err())}"
-                )
+                    f"Failed to update user with UID: {uid}. Error: {result.err()!s}"
+                ),
             )
 
         return user.reset_token
 
     @service_method(
-        path="user.reset_password", name="reset_password", roles=GUEST_ROLE_LEVEL
+        path="user.reset_password", name="reset_password", roles=GUEST_ROLE_LEVEL,
     )
     def reset_password(
-        self, context: AuthedServiceContext, token: str, new_password: str
+        self, context: AuthedServiceContext, token: str, new_password: str,
     ) -> SyftSuccess | SyftError:
         """Resets a certain user password using a temporary token."""
         result = self.stash.get_by_reset_token(
-            credentials=context.credentials, token=token
+            credentials=context.credentials, token=token,
         )
         invalid_token_error = SyftError(
-            message=("Failed to reset user password. Token is invalid or expired!")
+            message=("Failed to reset user password. Token is invalid or expired!"),
         )
 
         if result.is_err():
@@ -256,7 +249,7 @@ class UserService(AbstractService):
             return SyftError(
                 message="Your new password must have at least 8 \
                 characters, Upper case and lower case characters\
-                and at least one number."
+                and at least one number.",
             )
 
         salt, hashed = salt_and_hash_password(new_password, 12)
@@ -267,16 +260,16 @@ class UserService(AbstractService):
         user.reset_token_date = None
 
         result = self.stash.update(
-            credentials=context.credentials, user=user, has_permission=True
+            credentials=context.credentials, user=user, has_permission=True,
         )
         if result.is_err():
             return SyftError(
-                message=(f"Failed to update user password.  Error: {str(result.err())}")
+                message=(f"Failed to update user password.  Error: {result.err()!s}"),
             )
         return SyftSuccess(message="User Password updated successfully!")
 
     def generate_new_password_reset_token(
-        self, token_config: PwdTokenResetConfig
+        self, token_config: PwdTokenResetConfig,
     ) -> str:
         valid_characters = ""
         if token_config.ascii:
@@ -293,7 +286,7 @@ class UserService(AbstractService):
 
     @service_method(path="user.view", name="view", roles=DATA_SCIENTIST_ROLE_LEVEL)
     def view(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID,
     ) -> UserView | None | SyftError:
         """Get user for given uid"""
         result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
@@ -341,10 +334,10 @@ class UserService(AbstractService):
         return SyftError(message="No users exists")
 
     def signing_key_for_verify_key(
-        self, context: AuthedServiceContext, verify_key: SyftVerifyKey
+        self, context: AuthedServiceContext, verify_key: SyftVerifyKey,
     ) -> UserPrivateKey | SyftError:
         result = self.stash.get_by_verify_key(
-            credentials=self.admin_verify_key(), verify_key=verify_key
+            credentials=self.admin_verify_key(), verify_key=verify_key,
         )
         if result.is_ok():
             user = result.ok()
@@ -354,20 +347,20 @@ class UserService(AbstractService):
             return SyftError(message=f"No user exists with {verify_key}.")
 
         return SyftError(
-            message=f"Failed to retrieve user with {verify_key} with error: {result.err()}"
+            message=f"Failed to retrieve user with {verify_key} with error: {result.err()}",
         )
 
     def get_role_for_credentials(
-        self, credentials: SyftVerifyKey | SyftSigningKey
+        self, credentials: SyftVerifyKey | SyftSigningKey,
     ) -> ServiceRole | None | SyftError:
         # they could be different
         if isinstance(credentials, SyftVerifyKey):
             result = self.stash.get_by_verify_key(
-                credentials=credentials, verify_key=credentials
+                credentials=credentials, verify_key=credentials,
             )
         else:
             result = self.stash.get_by_signing_key(
-                credentials=credentials, signing_key=credentials
+                credentials=credentials, signing_key=credentials,
             )
         if result.is_ok():
             # this seems weird that we get back None as Ok(None)
@@ -392,7 +385,7 @@ class UserService(AbstractService):
             valid_search_params = list(UserSearch.__fields__.keys())
             return SyftError(
                 message=f"Invalid Search parameters. \
-                Allowed params: {valid_search_params}"
+                Allowed params: {valid_search_params}",
             )
         result = self.stash.find_all(credentials=context.credentials, **kwargs)
 
@@ -425,10 +418,10 @@ class UserService(AbstractService):
     #     return SyftError(message=str(result.err()))
 
     def get_user_id_for_credentials(
-        self, credentials: SyftVerifyKey
+        self, credentials: SyftVerifyKey,
     ) -> UID | SyftError:
         result = self.stash.get_by_verify_key(
-            credentials=credentials, verify_key=credentials
+            credentials=credentials, verify_key=credentials,
         )
         if result.is_ok():
             user = result.ok()
@@ -439,11 +432,11 @@ class UserService(AbstractService):
         return SyftError(message=str(result.err()))
 
     @service_method(
-        path="user.get_current_user", name="get_current_user", roles=GUEST_ROLE_LEVEL
+        path="user.get_current_user", name="get_current_user", roles=GUEST_ROLE_LEVEL,
     )
     def get_current_user(self, context: AuthedServiceContext) -> UserView | SyftError:
         result = self.stash.get_by_verify_key(
-            credentials=context.credentials, verify_key=context.credentials
+            credentials=context.credentials, verify_key=context.credentials,
         )
         if result.is_ok():
             user = result.ok()
@@ -454,13 +447,13 @@ class UserService(AbstractService):
         return SyftError(message=str(result.err()))
 
     @service_method(
-        path="user.get_by_verify_key", name="get_by_verify_key", roles=ADMIN_ROLE_LEVEL
+        path="user.get_by_verify_key", name="get_by_verify_key", roles=ADMIN_ROLE_LEVEL,
     )
     def get_by_verify_key_endpoint(
-        self, context: AuthedServiceContext, verify_key: SyftVerifyKey
+        self, context: AuthedServiceContext, verify_key: SyftVerifyKey,
     ) -> UserView | SyftError:
         result = self.stash.get_by_verify_key(
-            credentials=context.credentials, verify_key=verify_key
+            credentials=context.credentials, verify_key=verify_key,
         )
         if result.is_ok():
             user = result.ok()
@@ -477,7 +470,7 @@ class UserService(AbstractService):
         autosplat="user_update",
     )
     def update(
-        self, context: AuthedServiceContext, uid: UID, user_update: UserUpdate
+        self, context: AuthedServiceContext, uid: UID, user_update: UserUpdate,
     ) -> UserView | SyftError:
         updates_role = user_update.role is not Empty  # type: ignore[comparison-overlap]
         can_edit_roles = ServiceRoleCapability.CAN_EDIT_ROLES in context.capabilities()
@@ -486,7 +479,7 @@ class UserService(AbstractService):
             return SyftError(message=f"{context.role} is not allowed to edit roles")
         if (user_update.mock_execution_permission is not Empty) and not can_edit_roles:  # type: ignore[comparison-overlap]
             return SyftError(
-                message=f"{context.role} is not allowed to update permissions"
+                message=f"{context.role} is not allowed to update permissions",
             )
 
         # Get user to be updated by its UID
@@ -494,13 +487,13 @@ class UserService(AbstractService):
 
         immutable_fields = {"created_date", "updated_date", "deleted_date"}
         updated_fields = user_update.to_dict(
-            exclude_none=True, exclude_empty=True
+            exclude_none=True, exclude_empty=True,
         ).keys()
 
         for field_name in immutable_fields:
             if field_name in updated_fields:
                 return SyftError(
-                    message=f"You are not allowed to modify '{field_name}'."
+                    message=f"You are not allowed to modify '{field_name}'.",
                 )
 
         if user_update.name is not Empty and user_update.name.strip() == "":  # type: ignore[comparison-overlap]
@@ -509,14 +502,14 @@ class UserService(AbstractService):
         # check if the email already exists (with root's key)
         if user_update.email is not Empty:
             user_with_email_exists: bool = self.stash.email_exists(
-                email=user_update.email
+                email=user_update.email,
             )
             if user_with_email_exists:
                 raise UserAlreadyExistsException.raise_with_context(context=context)
 
         if result.is_err():
             error_msg = (
-                f"Failed to find user with UID: {uid}. Error: {str(result.err())}"
+                f"Failed to find user with UID: {uid}. Error: {result.err()!s}"
             )
             return SyftError(message=error_msg)
 
@@ -538,7 +531,7 @@ class UserService(AbstractService):
                 pass
             else:
                 return SyftError(
-                    message=f"As a {context.role}, you are not allowed to edit {user.role} to {user_update.role}"
+                    message=f"As a {context.role}, you are not allowed to edit {user.role} to {user_update.role}",
                 )
 
         edits_non_role_attrs = any(
@@ -552,7 +545,7 @@ class UserService(AbstractService):
             and ServiceRoleCapability.CAN_MANAGE_USERS not in context.capabilities()
         ):
             return SyftError(
-                message=f"As a {context.role}, you are not allowed to edit users"
+                message=f"As a {context.role}, you are not allowed to edit users",
             )
 
         # Fill User Update fields that will not be changed by replacing it
@@ -566,12 +559,12 @@ class UserService(AbstractService):
                 setattr(user, name, value)
 
         result = self.stash.update(
-            credentials=context.credentials, user=user, has_permission=True
+            credentials=context.credentials, user=user, has_permission=True,
         )
 
         if result.is_err():
             error_msg = (
-                f"Failed to update user with UID: {uid}. Error: {str(result.err())}"
+                f"Failed to update user with UID: {uid}. Error: {result.err()!s}"
             )
             return SyftError(message=error_msg)
 
@@ -583,13 +576,13 @@ class UserService(AbstractService):
                 settings_data = settings.ok()[0]
                 settings_data.admin_email = user.email
                 settings_stash.update(
-                    credentials=context.credentials, settings=settings_data
+                    credentials=context.credentials, settings=settings_data,
                 )
 
         return user.to(UserView)
 
     def get_target_object(
-        self, credentials: SyftVerifyKey, uid: UID
+        self, credentials: SyftVerifyKey, uid: UID,
     ) -> User | SyftError:
         user_result = self.stash.get_by_uid(credentials=credentials, uid=uid)
         if user_result.is_err():
@@ -609,21 +602,19 @@ class UserService(AbstractService):
 
         permission_error = SyftError(
             message=str(
-                f"As a {context.role} you have no permission to delete user with {user.role} permission"
-            )
+                f"As a {context.role} you have no permission to delete user with {user.role} permission",
+            ),
         )
         if context.role == ServiceRole.DATA_OWNER and user.role in [
             ServiceRole.GUEST,
             ServiceRole.DATA_SCIENTIST,
-        ]:
-            pass
-        elif context.role == ServiceRole.ADMIN:
+        ] or context.role == ServiceRole.ADMIN:
             pass
         else:
             return permission_error
 
         result = self.stash.delete_by_uid(
-            credentials=context.credentials, uid=uid, has_permission=True
+            credentials=context.credentials, uid=uid, has_permission=True,
         )
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -633,13 +624,13 @@ class UserService(AbstractService):
         return result.ok()
 
     def exchange_credentials(
-        self, context: UnauthedServiceContext
+        self, context: UnauthedServiceContext,
     ) -> UserPrivateKey | SyftError:
         """Verify user
         TODO: We might want to use a SyftObject instead
         """
         result = self.stash.get_by_email(
-            credentials=self.admin_verify_key(), email=context.login_credentials.email
+            credentials=self.admin_verify_key(), email=context.login_credentials.email,
         )
         if result.is_ok():
             user = result.ok()
@@ -654,18 +645,18 @@ class UserService(AbstractService):
                 ):
                     return SyftError(
                         message="Admins are not allowed to login to Enclaves."
-                        "\n Kindly register a new data scientist account by your_client.register."
+                        "\n Kindly register a new data scientist account by your_client.register.",
                     )
                 return user.to(UserPrivateKey)
 
             return SyftError(
                 message="No user exists with "
-                f"{context.login_credentials.email} and supplied password."
+                f"{context.login_credentials.email} and supplied password.",
             )
 
         return SyftError(
             message="Failed to retrieve user with "
-            f"{context.login_credentials.email} with error: {result.err()}"
+            f"{context.login_credentials.email} with error: {result.err()}",
         )
 
     def admin_verify_key(self) -> SyftVerifyKey | SyftError:
@@ -680,10 +671,9 @@ class UserService(AbstractService):
             return SyftError(message=str(e))
 
     def register(
-        self, context: ServerServiceContext, new_user: UserCreate
+        self, context: ServerServiceContext, new_user: UserCreate,
     ) -> tuple[SyftSuccess, UserPrivateKey] | SyftError:
         """Register new user"""
-
         request_user_role = (
             ServiceRole.GUEST
             if new_user.created_by is None
@@ -698,7 +688,7 @@ class UserService(AbstractService):
         if not can_user_register:
             return SyftError(
                 message=f"You don't have permission to create an account "
-                f"on the datasite: {context.server.name}. Please contact the Datasite Owner."
+                f"on the datasite: {context.server.name}. Please contact the Datasite Owner.",
             )
 
         user = new_user.to(User)
@@ -715,7 +705,7 @@ class UserService(AbstractService):
             user=user,
             add_permissions=[
                 ActionObjectPermission(
-                    uid=user.id, permission=ActionPermission.ALL_READ
+                    uid=user.id, permission=ActionPermission.ALL_READ,
                 ),
             ],
         )
@@ -764,7 +754,7 @@ class UserService(AbstractService):
         # we are bypassing permissions here, so dont use to return a result directly to the user
         credentials = self.admin_verify_key()
         result = self.stash.get_by_verify_key(
-            credentials=credentials, verify_key=verify_key
+            credentials=credentials, verify_key=verify_key,
         )
         if result.is_ok():
             return result.ok()
@@ -780,7 +770,7 @@ class UserService(AbstractService):
         verify_key: SyftVerifyKey,
     ) -> SyftError | None:
         result = self.stash.get_by_verify_key(
-            credentials=verify_key, verify_key=verify_key
+            credentials=verify_key, verify_key=verify_key,
         )
         if result.is_ok():
             # this seems weird that we get back None as Ok(None)
@@ -800,7 +790,7 @@ class UserService(AbstractService):
             return None
 
     def enable_notifications(
-        self, context: AuthedServiceContext, notifier_type: NOTIFIERS
+        self, context: AuthedServiceContext, notifier_type: NOTIFIERS,
     ) -> SyftSuccess | SyftError:
         result = self._set_notification_status(notifier_type, True, context.credentials)
         if result is not None:
@@ -809,10 +799,10 @@ class UserService(AbstractService):
             return SyftSuccess(message="Notifications enabled successfully!")
 
     def disable_notifications(
-        self, context: AuthedServiceContext, notifier_type: NOTIFIERS
+        self, context: AuthedServiceContext, notifier_type: NOTIFIERS,
     ) -> SyftSuccess | SyftError:
         result = self._set_notification_status(
-            notifier_type, False, context.credentials
+            notifier_type, False, context.credentials,
         )
         if result is not None:
             return result

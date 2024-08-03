@@ -29,7 +29,7 @@ def attest_gpu() -> tuple[str, str]:
     logger.info("[RemoteGPUTest] server name : {}", client.get_name())
 
     client.add_verifier(
-        attestation.Devices.GPU, attestation.Environment.REMOTE, NRAS_URL, ""
+        attestation.Devices.GPU, attestation.Environment.REMOTE, NRAS_URL, "",
     )
 
     # Step 1: Redirect stdout

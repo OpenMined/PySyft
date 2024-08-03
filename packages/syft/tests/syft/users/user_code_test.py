@@ -1,22 +1,21 @@
 # stdlib
 import uuid
 
-# third party
-from faker import Faker
 import numpy as np
-from pydantic import ValidationError
 import pytest
 
 # syft absolute
 import syft as sy
+
+# third party
+from faker import Faker
+from pydantic import ValidationError
 from syft.client.datasite_client import DatasiteClient
 from syft.server.worker import Worker
 from syft.service.action.action_data_empty import ActionDataEmpty
 from syft.service.action.action_object import ActionObject
-from syft.service.request.request import Request
-from syft.service.request.request import UserCodeStatusChange
-from syft.service.response import SyftError
-from syft.service.response import SyftSuccess
+from syft.service.request.request import Request, UserCodeStatusChange
+from syft.service.response import SyftError, SyftSuccess
 from syft.service.user.user import User
 from syft.service.user.user_roles import ServiceRole
 
@@ -27,14 +26,14 @@ ds_client = ds_client_fixture  # work around some ruff quirks
 
 
 @sy.syft_function(
-    input_policy=sy.ExactMatch(), output_policy=sy.SingleExecutionExactOutput()
+    input_policy=sy.ExactMatch(), output_policy=sy.SingleExecutionExactOutput(),
 )
 def mock_syft_func():
     return 1
 
 
 @sy.syft_function(
-    input_policy=sy.ExactMatch(), output_policy=sy.SingleExecutionExactOutput()
+    input_policy=sy.ExactMatch(), output_policy=sy.SingleExecutionExactOutput(),
 )
 def mock_syft_func_2():
     return 1
@@ -62,7 +61,7 @@ def test_new_admin_can_list_user_code(
     email = faker.email()
     pw = uuid.uuid4().hex
     root_client.register(
-        name=faker.name(), email=email, password=pw, password_verify=pw
+        name=faker.name(), email=email, password=pw, password_verify=pw,
     )
 
     admin = root_client.login(email=email, password=pw)
@@ -171,7 +170,7 @@ def random_hash() -> str:
 def test_scientist_can_list_code_assets(worker: sy.Worker, faker: Faker) -> None:
     asset_name = random_hash()
     asset = sy.Asset(
-        name=asset_name, data=np.array([1, 2, 3]), mock=sy.ActionObject.empty()
+        name=asset_name, data=np.array([1, 2, 3]), mock=sy.ActionObject.empty(),
     )
     dataset_name = random_hash()
     dataset = sy.Dataset(name=dataset_name, asset_list=[asset])
@@ -208,7 +207,7 @@ def test_scientist_can_list_code_assets(worker: sy.Worker, faker: Faker) -> None
     )
 
     assert status_change.code.assets[0].model_dump(
-        mode="json"
+        mode="json",
     ) == asset_input.model_dump(mode="json")
 
 
@@ -218,7 +217,7 @@ def mock_inner_func():
 
 
 @sy.syft_function(
-    input_policy=sy.ExactMatch(), output_policy=sy.SingleExecutionExactOutput()
+    input_policy=sy.ExactMatch(), output_policy=sy.SingleExecutionExactOutput(),
 )
 def mock_outer_func(datasite):
     job = datasite.launch_job(mock_inner_func)
@@ -242,7 +241,7 @@ def test_nested_requests(worker, guest_client: User):
     (linked_obj, server) = request.code.nested_codes["mock_inner_func"]
     assert server == {}
     resolved = root_datasite_client.api.services.notifications.resolve_object(
-        linked_obj
+        linked_obj,
     )
     assert resolved.id == inner.id
     assert outer.status.approved
@@ -272,7 +271,7 @@ def test_user_code_mock_execution(worker) -> None:
                 name="numpy-data",
                 data=np.array([0, 1, 2, 3, 4]),
                 mock=np.array([5, 6, 7, 8, 9]),
-            )
+            ),
         ],
     )
     root_datasite_client.upload_dataset(dataset)
@@ -327,7 +326,7 @@ def test_mock_multiple_arguments(worker) -> None:
                 name="numpy-data",
                 data=np.array([0, 1, 2, 3, 4]),
                 mock=np.array([5, 6, 7, 8, 9]),
-            )
+            ),
         ],
     )
     root_datasite_client.upload_dataset(dataset)
@@ -441,7 +440,7 @@ def test_submit_invalid_name(worker) -> None:
 
 def test_submit_code_with_global_var(guest_client: DatasiteClient) -> None:
     @sy.syft_function(
-        input_policy=sy.ExactMatch(), output_policy=sy.SingleExecutionExactOutput()
+        input_policy=sy.ExactMatch(), output_policy=sy.SingleExecutionExactOutput(),
     )
     def mock_syft_func_with_global():
         global x

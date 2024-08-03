@@ -7,9 +7,11 @@ import pydantic
 from result import OkErr
 
 # relative
-from ...custom_worker.config import DockerWorkerConfig
-from ...custom_worker.config import PrebuiltWorkerConfig
-from ...custom_worker.config import WorkerConfig
+from ...custom_worker.config import (
+    DockerWorkerConfig,
+    PrebuiltWorkerConfig,
+    WorkerConfig,
+)
 from ...custom_worker.k8s import IN_KUBERNETES
 from ...custom_worker.runner_k8s import KubernetesRunner
 from ...serde.serializable import serializable
@@ -18,30 +20,28 @@ from ...store.linked_obj import LinkedObject
 from ...types.dicttuple import DictTuple
 from ...types.uid import UID
 from ..context import AuthedServiceContext
-from ..request.request import Change
-from ..request.request import CreateCustomImageChange
-from ..request.request import CreateCustomWorkerPoolChange
-from ..request.request import Request
-from ..request.request import SubmitRequest
+from ..request.request import (
+    Change,
+    CreateCustomImageChange,
+    CreateCustomWorkerPoolChange,
+    Request,
+    SubmitRequest,
+)
 from ..request.request_service import RequestService
-from ..response import SyftError
-from ..response import SyftSuccess
-from ..service import AbstractService
-from ..service import SERVICE_TO_TYPES
-from ..service import TYPE_TO_SERVICE
-from ..service import service_method
-from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
-from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
+from ..response import SyftError, SyftSuccess
+from ..service import SERVICE_TO_TYPES, TYPE_TO_SERVICE, AbstractService, service_method
+from ..user.user_roles import DATA_OWNER_ROLE_LEVEL, DATA_SCIENTIST_ROLE_LEVEL
 from .image_identifier import SyftWorkerImageIdentifier
-from .utils import DEFAULT_WORKER_POOL_NAME
-from .utils import get_orchestration_type
-from .utils import run_containers
-from .utils import run_workers_in_threads
-from .utils import scale_kubernetes_pool
+from .utils import (
+    DEFAULT_WORKER_POOL_NAME,
+    get_orchestration_type,
+    run_containers,
+    run_workers_in_threads,
+    scale_kubernetes_pool,
+)
 from .worker_image import SyftWorkerImage
 from .worker_image_stash import SyftWorkerImageStash
-from .worker_pool import ContainerSpawnStatus
-from .worker_pool import WorkerPool
+from .worker_pool import ContainerSpawnStatus, WorkerPool
 from .worker_pool_stash import SyftWorkerPoolStash
 from .worker_service import WorkerService
 from .worker_stash import WorkerStash
@@ -83,12 +83,13 @@ class SyftWorkerPoolService(AbstractService):
         - Creates a SyftWorkerPool object
 
         Args:
+        ----
             context (AuthedServiceContext): context passed to the service
             name (str): name of the pool
             image_id (UID): UID of the SyftWorkerImage against which the pool should be created
             num_workers (int): the number of SyftWorker that needs to be created in the pool
-        """
 
+        """
         result = self.stash.get_by_name(context.credentials, pool_name=pool_name)
 
         if result.is_err():
@@ -96,25 +97,25 @@ class SyftWorkerPoolService(AbstractService):
 
         if result.ok() is not None:
             return SyftError(
-                message=f"Worker Pool with name: {pool_name} already exists !!"
+                message=f"Worker Pool with name: {pool_name} already exists !!",
             )
 
         # If image uid is not passed, then use the default worker image
         # to create the worker pool
         if image_uid is None:
             result = self.stash.get_by_name(
-                context.credentials, pool_name=DEFAULT_WORKER_POOL_NAME
+                context.credentials, pool_name=DEFAULT_WORKER_POOL_NAME,
             )
             default_worker_pool = result.ok()
             image_uid = default_worker_pool.image_id
 
         # Get the image object for the given image id
         result = self.image_stash.get_by_uid(
-            credentials=context.credentials, uid=image_uid
+            credentials=context.credentials, uid=image_uid,
         )
         if result.is_err():
             return SyftError(
-                message=f"Failed to retrieve Worker Image with id: {image_uid}. Error: {result.err()}"
+                message=f"Failed to retrieve Worker Image with id: {image_uid}. Error: {result.err()}",
             )
 
         worker_image: SyftWorkerImage = result.ok()
@@ -173,21 +174,21 @@ class SyftWorkerPoolService(AbstractService):
         pod_annotations: dict[str, str] | None = None,
         pod_labels: dict[str, str] | None = None,
     ) -> SyftError | SyftSuccess:
-        """
-        Create a request to launch the worker pool based on a built image.
+        """Create a request to launch the worker pool based on a built image.
 
         Args:
+        ----
             context (AuthedServiceContext): The authenticated service context.
             pool_name (str): The name of the worker pool.
             num_workers (int): The number of workers in the pool.
             image_uid (Optional[UID]): The UID of the built image.
             reason (Optional[str], optional): The reason for creating the
                 worker pool. Defaults to "".
-        """
 
+        """
         # Check if image exists for the given image id
         search_result = self.image_stash.get_by_uid(
-            credentials=context.credentials, uid=image_uid
+            credentials=context.credentials, uid=image_uid,
         )
 
         if search_result.is_err():
@@ -198,7 +199,7 @@ class SyftWorkerPoolService(AbstractService):
         # Raise error if worker image doesn't exists
         if worker_image is None:
             return SyftError(
-                message=f"No image exists for given image uid : {image_uid}"
+                message=f"No image exists for given image uid : {image_uid}",
             )
 
         # Check if pool already exists for the given pool name
@@ -211,7 +212,7 @@ class SyftWorkerPoolService(AbstractService):
 
         if worker_pool is not None:
             return SyftError(
-                message=f"Worker pool already exists for given pool name: {pool_name}"
+                message=f"Worker pool already exists for given pool name: {pool_name}",
             )
 
         # If no worker pool exists for given pool name
@@ -254,10 +255,10 @@ class SyftWorkerPoolService(AbstractService):
         pod_annotations: dict[str, str] | None = None,
         pod_labels: dict[str, str] | None = None,
     ) -> SyftError | SyftSuccess:
-        """
-        Create a request to launch the worker pool based on a built image.
+        """Create a request to launch the worker pool based on a built image.
 
         Args:
+        ----
             context (AuthedServiceContext): The authenticated service context.
             pool_name (str): The name of the worker pool.
             num_workers (int): The number of workers in the pool.
@@ -266,11 +267,11 @@ class SyftWorkerPoolService(AbstractService):
                 a human-readable manifest identifier that is typically a specific version or variant of an image,
                 only needed for `DockerWorkerConfig` to tag the image after it is built.
             reason (str | None, optional): The reason for creating the worker image and pool. Defaults to "".
-        """
 
+        """
         if not isinstance(config, DockerWorkerConfig | PrebuiltWorkerConfig):
             return SyftError(
-                message="We only support either `DockerWorkerConfig` or `PrebuiltWorkerConfig`."
+                message="We only support either `DockerWorkerConfig` or `PrebuiltWorkerConfig`.",
             )
 
         if isinstance(config, DockerWorkerConfig):
@@ -285,12 +286,12 @@ class SyftWorkerPoolService(AbstractService):
 
             if IN_KUBERNETES and registry_uid is None:
                 return SyftError(
-                    message="`registry_uid` is required in Kubernetes mode for `DockerWorkerConfig`."
+                    message="`registry_uid` is required in Kubernetes mode for `DockerWorkerConfig`.",
                 )
 
         # Check if an image already exists for given docker config
         search_result = self.image_stash.get_by_worker_config(
-            credentials=context.credentials, config=config
+            credentials=context.credentials, config=config,
         )
 
         if search_result.is_err():
@@ -301,7 +302,7 @@ class SyftWorkerPoolService(AbstractService):
         if worker_image is not None:
             return SyftError(
                 message="Image already exists for given config. \
-                    Please use `worker_pool.create_pool_request` to request pool creation."
+                    Please use `worker_pool.create_pool_request` to request pool creation.",
             )
 
         # create a list of Change objects and submit a
@@ -327,7 +328,7 @@ class SyftWorkerPoolService(AbstractService):
         if result.ok() is not None:
             return SyftError(
                 message=f"Worker Pool with name: {pool_name} already "
-                f"exists. Please choose another name!"
+                f"exists. Please choose another name!",
             )
 
         # Add create worker pool change
@@ -356,7 +357,7 @@ class SyftWorkerPoolService(AbstractService):
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_all(
-        self, context: AuthedServiceContext
+        self, context: AuthedServiceContext,
     ) -> DictTuple[str, WorkerPool] | SyftError:
         # TODO: During get_all, we should dynamically make a call to docker to get the status of the containers
         # and update the status of the workers in the pool.
@@ -387,15 +388,17 @@ class SyftWorkerPoolService(AbstractService):
         Worker pool is fetched either using the unique pool id or pool name.
 
         Args:
+        ----
             context (AuthedServiceContext): _description_
             number (int): number of workers to add
             pool_id (Optional[UID], optional): Unique UID of the pool. Defaults to None.
             pool_name (Optional[str], optional): Unique name of the pool. Defaults to None.
 
         Returns:
+        -------
             Union[List[ContainerSpawnStatus], SyftError]: List of spawned workers with their status and error if any.
-        """
 
+        """
         if number <= 0:
             return SyftError(message=f"Invalid number of workers: {number}")
 
@@ -422,7 +425,7 @@ class SyftWorkerPoolService(AbstractService):
 
         if result.is_err():
             return SyftError(
-                message=f"Failed to retrieve image for worker pool: {worker_pool.name}"
+                message=f"Failed to retrieve image for worker pool: {worker_pool.name}",
             )
 
         worker_image: SyftWorkerImage = result.ok()
@@ -451,11 +454,11 @@ class SyftWorkerPoolService(AbstractService):
         worker_pool.max_count = existing_worker_cnt + number
 
         update_result = self.stash.update(
-            credentials=context.credentials, obj=worker_pool
+            credentials=context.credentials, obj=worker_pool,
         )
         if update_result.is_err():
             return SyftError(
-                message=f"Failed update worker pool: {worker_pool.name} with err: {result.err()}"
+                message=f"Failed update worker pool: {worker_pool.name} with err: {result.err()}",
             )
 
         return container_statuses
@@ -472,11 +475,9 @@ class SyftWorkerPoolService(AbstractService):
         pool_id: UID | None = None,
         pool_name: str | None = None,
     ) -> SyftError | SyftSuccess:
-        """
-        Scale the worker pool to the given number of workers in Kubernetes.
+        """Scale the worker pool to the given number of workers in Kubernetes.
         Allows both scaling up and down the worker pool.
         """
-
         if not IN_KUBERNETES:
             return SyftError(message="Scaling is only supported in Kubernetes mode")
         elif number < 0:
@@ -545,7 +546,7 @@ class SyftWorkerPoolService(AbstractService):
                     message=(
                         f"Pool {worker_pool.name} was scaled down, "
                         f"but failed update the stash with err: {update_result.err()}"
-                    )
+                    ),
                 )
 
         return SyftSuccess(message=f"Worker pool scaled to {number} workers")
@@ -556,7 +557,7 @@ class SyftWorkerPoolService(AbstractService):
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def filter_by_image_id(
-        self, context: AuthedServiceContext, image_uid: UID
+        self, context: AuthedServiceContext, image_uid: UID,
     ) -> list[WorkerPool] | SyftError:
         result = self.stash.get_by_image_uid(context.credentials, image_uid)
 
@@ -571,13 +572,13 @@ class SyftWorkerPoolService(AbstractService):
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_by_name(
-        self, context: AuthedServiceContext, pool_name: str
+        self, context: AuthedServiceContext, pool_name: str,
     ) -> list[WorkerPool] | SyftError:
         result = self.stash.get_by_name(context.credentials, pool_name)
 
         if result.is_err():
             return SyftError(
-                message=f"Failed to get worker pool with name: {pool_name}"
+                message=f"Failed to get worker pool with name: {pool_name}",
             )
 
         return result.ok()
@@ -593,13 +594,12 @@ class SyftWorkerPoolService(AbstractService):
         request: Request,
     ) -> SyftSuccess | SyftError:
         """Re-submit request from a different server"""
-
         num_of_changes = len(request.changes)
         pool_name, num_workers, config, image_uid, tag = None, None, None, None, None
 
         if num_of_changes > 2:
             return SyftError(
-                message=f"Invalid pool request object. Only pool request changes allowed. {request.changes}"
+                message=f"Invalid pool request object. Only pool request changes allowed. {request.changes}",
             )
 
         for change in request.changes:
@@ -634,7 +634,7 @@ class SyftWorkerPoolService(AbstractService):
             )
         else:
             return SyftError(
-                message=f"Invalid request object. Invalid image uid or config in the request changes. {request.changes}"
+                message=f"Invalid request object. Invalid image uid or config in the request changes. {request.changes}",
             )
 
     def _get_worker_pool(
@@ -661,7 +661,7 @@ class SyftWorkerPoolService(AbstractService):
 
         return (
             SyftError(
-                message=f"worker pool : {pool_id if pool_id else pool_name} does not exist"
+                message=f"worker pool : {pool_id if pool_id else pool_name} does not exist",
             )
             if worker_pool is None
             else worker_pool

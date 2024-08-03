@@ -16,7 +16,7 @@ class CMPCRUDPermission(Enum):
 class CMPPermission:
     @property
     def permissions_string(self) -> str:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def __repr__(self) -> str:
         return self.permission_string

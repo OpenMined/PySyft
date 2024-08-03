@@ -8,25 +8,23 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft import syft_function
-from syft import syft_function_single_use
+from syft import syft_function, syft_function_single_use
 from syft.service.job.job_service import wait_until
 from syft.service.job.job_stash import JobStatus
-from syft.service.response import SyftError
-from syft.service.response import SyftSuccess
+from syft.service.response import SyftError, SyftSuccess
 
 
-@pytest.mark.local_server
+@pytest.mark.local_server()
 def test_job_restart(job) -> None:
     job.wait(timeout=2)
 
     assert wait_until(
-        lambda: job.fetched_status == JobStatus.PROCESSING
+        lambda: job.fetched_status == JobStatus.PROCESSING,
     ), "Job not started"
     assert wait_until(
         lambda: all(
             subjob.fetched_status == JobStatus.PROCESSING for subjob in job.subjobs
-        )
+        ),
     ), "Subjobs not started"
 
     result = job.subjobs[0].restart()
@@ -45,7 +43,7 @@ def test_job_restart(job) -> None:
     job.wait(timeout=10)
 
     assert wait_until(
-        lambda: job.fetched_status == JobStatus.PROCESSING
+        lambda: job.fetched_status == JobStatus.PROCESSING,
     ), "Job not restarted"
     assert wait_until(
         lambda: len(
@@ -53,13 +51,13 @@ def test_job_restart(job) -> None:
                 subjob.fetched_status == JobStatus.PROCESSING
                 for subjob in job.subjobs
                 if subjob.fetched_status != JobStatus.INTERRUPTED
-            ]
+            ],
         )
-        == 2
+        == 2,
     ), "Subjobs not restarted"
 
 
-@pytest.fixture
+@pytest.fixture()
 def server():
     server = sy.orchestra.launch(
         name=token_hex(8),
@@ -77,7 +75,7 @@ def server():
         server.land()
 
 
-@pytest.fixture
+@pytest.fixture()
 def job(server):
     client = server.login(email="info@openmined.org", password="changethis")
     _ = client.register(name="a", email="aa@b.org", password="c", password_verify="c")
@@ -114,16 +112,16 @@ def job(server):
         job.kill()
 
 
-@pytest.mark.local_server
+@pytest.mark.local_server()
 def test_job_kill(job) -> None:
     job.wait(timeout=2)
     assert wait_until(
-        lambda: job.fetched_status == JobStatus.PROCESSING
+        lambda: job.fetched_status == JobStatus.PROCESSING,
     ), "Job not started"
     assert wait_until(
         lambda: all(
             subjob.fetched_status == JobStatus.PROCESSING for subjob in job.subjobs
-        )
+        ),
     ), "Subjobs not started"
 
     result = job.subjobs[0].kill()

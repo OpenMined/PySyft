@@ -1,18 +1,18 @@
 # stdlib
 
 # third party
-from result import Err
-from result import Ok
-from result import Result
+from result import Err, Ok, Result
 
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...service.response import SyftError
-from ...store.document_store import BaseStash
-from ...store.document_store import DocumentStore
-from ...store.document_store import PartitionKey
-from ...store.document_store import PartitionSettings
+from ...store.document_store import (
+    BaseStash,
+    DocumentStore,
+    PartitionKey,
+    PartitionSettings,
+)
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
@@ -27,7 +27,7 @@ ActionIDsPartitionKey = PartitionKey(key="action_ids", type_=list[UID])
 class NotifierStash(BaseStash):
     object_type = NotifierSettings
     settings: PartitionSettings = PartitionSettings(
-        name=NotifierSettings.__canonical_name__, object_type=NotifierSettings
+        name=NotifierSettings.__canonical_name__, object_type=NotifierSettings,
     )
 
     def __init__(self, store: DocumentStore) -> None:
@@ -44,7 +44,7 @@ class NotifierStash(BaseStash):
             settings = result.ok()
             if len(settings) == 0:
                 return Ok(
-                    None
+                    None,
                 )  # TODO: Stash shouldn't be empty after init. Return Err instead?
             result = settings[
                 0
@@ -66,7 +66,7 @@ class NotifierStash(BaseStash):
         if result.is_err():
             return Err(SyftError(message=result.err()))
         return super().set(
-            credentials=credentials, obj=result.ok()
+            credentials=credentials, obj=result.ok(),
         )  # TODO check if result isInstance(Ok)
 
     def update(
@@ -80,5 +80,5 @@ class NotifierStash(BaseStash):
         if result.is_err():
             return Err(SyftError(message=result.err()))
         return super().update(
-            credentials=credentials, obj=result.ok()
+            credentials=credentials, obj=result.ok(),
         )  # TODO check if result isInstance(Ok)

@@ -1,18 +1,17 @@
 # stdlib
-from collections.abc import Callable
-from enum import Enum
-from enum import EnumMeta
 import os
 import tempfile
 import types
+from collections.abc import Callable
+from enum import Enum, EnumMeta
 from typing import Any
+
+# syft absolute
+import syft as sy
 
 # third party
 from capnp.lib.capnp import _DynamicStructBuilder
 from pydantic import BaseModel
-
-# syft absolute
-import syft as sy
 
 # relative
 from ..types.syft_object_registry import SyftObjectRegistry
@@ -79,7 +78,7 @@ def check_fqn_alias(cls: object | type) -> tuple[str, ...] | None:
 
 
 def has_canonical_name_version(
-    cls: type, cannonical_name: str | None, version: int | None
+    cls: type, cannonical_name: str | None, version: int | None,
 ) -> bool:
     cls_canonical_name = getattr(cls, "__canonical_name__", None)
     cls_version = getattr(cls, "__version__", None)
@@ -87,25 +86,25 @@ def has_canonical_name_version(
 
 
 def validate_cannonical_name_version(
-    cls: type, canonical_name: str | None, version: int | None
+    cls: type, canonical_name: str | None, version: int | None,
 ) -> tuple[str, int]:
     cls_canonical_name = getattr(cls, "__canonical_name__", None)
     cls_version = getattr(cls, "__version__", None)
     if cls_canonical_name and canonical_name:
         raise ValueError(
-            "Cannot specify both __canonical_name__ attribute and cannonical_name argument."
+            "Cannot specify both __canonical_name__ attribute and cannonical_name argument.",
         )
     if cls_version and version:
         raise ValueError(
-            "Cannot specify both __version__ attribute and version argument."
+            "Cannot specify both __version__ attribute and version argument.",
         )
     if cls_canonical_name is None and canonical_name is None:
         raise ValueError(
-            "Must specify either __canonical_name__ attribute or cannonical_name argument."
+            "Must specify either __canonical_name__ attribute or cannonical_name argument.",
         )
     if cls_version is None and version is None:
         raise ValueError(
-            "Must specify either __version__ attribute or version argument."
+            "Must specify either __version__ attribute or version argument.",
         )
 
     canonical_name = canonical_name or cls_canonical_name
@@ -114,14 +113,12 @@ def validate_cannonical_name_version(
 
 
 def skip_unregistered_class(
-    cls: type, canonical_name: str | None, version: str | None
+    cls: type, canonical_name: str | None, version: str | None,
 ) -> bool:
-    """
-    Used to gather all classes that are missing canonical_name and version for development.
+    """Used to gather all classes that are missing canonical_name and version for development.
 
     Returns True if the class should be skipped, False otherwise.
     """
-
     search_unregistered_classes = (
         os.getenv("SYFT_SEARCH_MISSING_CANONICAL_NAME", False) == "true"
     )
@@ -155,7 +152,7 @@ def recursive_serde_register(
         return
 
     canonical_name, version = validate_cannonical_name_version(
-        cls, canonical_name, version
+        cls, canonical_name, version,
     )
 
     nonrecursive = bool(serialize and deserialize)
@@ -280,13 +277,13 @@ def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuild
 
     msg = recursive_scheme.new_message()
 
-    # todo: rewrite and make sure every object has a canonical name and version
+    # TODO: rewrite and make sure every object has a canonical name and version
     canonical_name, version = SyftObjectRegistry.get_canonical_name_version(self)
 
     if not SyftObjectRegistry.has_serde_class(canonical_name, version):
         # third party
         raise Exception(
-            f"obj2proto: {canonical_name} version {version} not in SyftObjectRegistry"
+            f"obj2proto: {canonical_name} version {version} not in SyftObjectRegistry",
         )
 
     msg.canonicalName = canonical_name
@@ -308,7 +305,7 @@ def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuild
     if nonrecursive or is_type:
         if serialize is None:
             raise Exception(
-                f"Cant serialize {type(self)} nonrecursive without serialize."
+                f"Cant serialize {type(self)} nonrecursive without serialize.",
             )
         chunk_bytes(self, serialize, "nonrecursiveBlob", msg)
         return msg
@@ -331,7 +328,7 @@ def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuild
     for idx, attr_name in enumerate(sorted(attribute_list)):
         if not hasattr(self, attr_name):
             raise ValueError(
-                f"{attr_name} on {type(self)} does not exist, serialization aborted!"
+                f"{attr_name} on {type(self)} does not exist, serialization aborted!",
             )
 
         field_obj = getattr(self, attr_name)
@@ -358,14 +355,15 @@ def rs_bytes2object(blob: bytes) -> Any:
     MAX_TRAVERSAL_LIMIT = 2**64 - 1
 
     with recursive_scheme.from_bytes(
-        blob, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
+        blob, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT,
     ) as msg:
         return rs_proto2object(msg)
 
 
 def map_fqns_for_backward_compatibility(fqn: str) -> str:
-    """for backwards compatibility with 0.8.6. Sometimes classes where moved to another file. Which is
-    exactly why we are implementing it differently"""
+    """For backwards compatibility with 0.8.6. Sometimes classes where moved to another file. Which is
+    exactly why we are implementing it differently
+    """
     mapping = {
         "syft.service.dataset.dataset.MarkdownDescription": "syft.util.misc_objs.MarkdownDescription",
         "syft.service.object_search.object_migration_state.SyftObjectMigrationState": "syft.service.migration.object_migration_state.SyftObjectMigrationState",  # noqa: E501
@@ -394,7 +392,7 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
         # third party
         if not SyftObjectRegistry.has_serde_class(canonical_name, version):
             raise Exception(
-                f"proto2obj: {canonical_name} version {version} not in SyftObjectRegistry"
+                f"proto2obj: {canonical_name} version {version} not in SyftObjectRegistry",
             )
 
     # TODO: 🐉 sort this out, basically sometimes the syft.user classes are not in the
@@ -420,7 +418,7 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
     if nonrecursive:
         if deserialize is None:
             raise Exception(
-                f"Cant serialize {type(proto)} nonrecursive without serialize."
+                f"Cant serialize {type(proto)} nonrecursive without serialize.",
             )
 
         return deserialize(combine_bytes(proto.nonrecursiveBlob))

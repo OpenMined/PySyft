@@ -1,15 +1,12 @@
 # stdlib
-from datetime import datetime
-from datetime import timedelta
-from datetime import timezone
+from datetime import datetime, timedelta, timezone
 
 # third party
 import pytest
 
 # syft absolute
 import syft as sy
-from syft.service.job.job_stash import Job
-from syft.service.job.job_stash import JobStatus
+from syft.service.job.job_stash import Job, JobStatus
 from syft.types.uid import UID
 
 

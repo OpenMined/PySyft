@@ -6,16 +6,15 @@ from typing_extensions import Self
 
 # relative
 from ..abstract_server import AbstractServer
-from ..server.credentials import SyftVerifyKey
-from ..server.credentials import UserLoginCredentials
-from ..types.syft_object import Context
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
-from ..types.syft_object import SyftBaseObject
-from ..types.syft_object import SyftObject
+from ..server.credentials import SyftVerifyKey, UserLoginCredentials
+from ..types.syft_object import (
+    SYFT_OBJECT_VERSION_1,
+    Context,
+    SyftBaseObject,
+    SyftObject,
+)
 from ..types.uid import UID
-from .user.user_roles import ROLE_TO_CAPABILITIES
-from .user.user_roles import ServiceRole
-from .user.user_roles import ServiceRoleCapability
+from .user.user_roles import ROLE_TO_CAPABILITIES, ServiceRole, ServiceRoleCapability
 
 
 class ServerServiceContext(Context, SyftObject):
@@ -46,7 +45,7 @@ class AuthedServiceContext(ServerServiceContext):
 
     def with_credentials(self, credentials: SyftVerifyKey, role: ServiceRole) -> Self:
         return AuthedServiceContext(
-            credentials=credentials, role=role, server=self.server
+            credentials=credentials, role=role, server=self.server,
         )
 
     def as_root_context(self) -> Self:

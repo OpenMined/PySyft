@@ -1,42 +1,39 @@
 # stdlib
-from collections.abc import Callable
-from enum import Enum
-from enum import auto
-from functools import partial
 import html
 import secrets
+from collections.abc import Callable
+from enum import Enum, auto
+from functools import partial
 from typing import Any
 from uuid import uuid4
 
+import ipywidgets as widgets
+
 # third party
 from IPython import display
-import ipywidgets as widgets
-from ipywidgets import Button
-from ipywidgets import Checkbox
-from ipywidgets import HBox
-from ipywidgets import HTML
-from ipywidgets import Layout
-from ipywidgets import VBox
+from ipywidgets import HTML, Button, Checkbox, HBox, Layout, VBox
 
 # relative
 from ...client.sync_decision import SyncDirection
 from ...types.uid import UID
-from ...util.notebook_ui.components.sync import Alert
-from ...util.notebook_ui.components.sync import CopyIDButton
-from ...util.notebook_ui.components.sync import MainDescription
-from ...util.notebook_ui.components.sync import SyncWidgetHeader
-from ...util.notebook_ui.components.sync import TypeLabel
-from ...util.notebook_ui.components.tabulator_template import build_tabulator_table
-from ...util.notebook_ui.components.tabulator_template import highlight_single_row
-from ...util.notebook_ui.components.tabulator_template import update_table_cell
+from ...util.notebook_ui.components.sync import (
+    Alert,
+    CopyIDButton,
+    MainDescription,
+    SyncWidgetHeader,
+    TypeLabel,
+)
+from ...util.notebook_ui.components.tabulator_template import (
+    build_tabulator_table,
+    highlight_single_row,
+    update_table_cell,
+)
 from ...util.notebook_ui.styles import CSS_CODE
 from ..action.action_object import ActionObject
 from ..api.api import TwinAPIEndpoint
 from ..log.log import SyftLog
-from ..response import SyftError
-from ..response import SyftSuccess
-from .diff_state import ObjectDiff
-from .diff_state import ObjectDiffBatch
+from ..response import SyftError, SyftSuccess
+from .diff_state import ObjectDiff, ObjectDiffBatch
 
 # Standard div Jupyter Lab uses for notebook outputs
 # This is needed to use alert styles from SyftSuccess and SyftError
@@ -175,17 +172,17 @@ class MainObjectDiffWidget:
             target_side = "Low side"
 
         html_from = create_diff_html(
-            f"From <i>{source_side}</i> (new values)", from_properties, self.statuses
+            f"From <i>{source_side}</i> (new values)", from_properties, self.statuses,
         )
         html_to = create_diff_html(
-            f"To <i>{target_side}</i> (old values)", to_properties, self.statuses
+            f"To <i>{target_side}</i> (old values)", to_properties, self.statuses,
         )
 
         widget_from = widgets.HTML(
-            value=html_from, layout=widgets.Layout(width="50%", overflow="auto")
+            value=html_from, layout=widgets.Layout(width="50%", overflow="auto"),
         )
         widget_to = widgets.HTML(
-            value=html_to, layout=widgets.Layout(width="50%", overflow="auto")
+            value=html_to, layout=widgets.Layout(width="50%", overflow="auto"),
         )
         css_accordion = """
             <style>
@@ -221,7 +218,7 @@ class CollapsableObjectDiffWidget:
         self.sync: bool = False
         self.is_main_widget: bool = False
         self.has_private_data = isinstance(
-            self.diff.non_empty_object, SyftLog | ActionObject | TwinAPIEndpoint
+            self.diff.non_empty_object, SyftLog | ActionObject | TwinAPIEndpoint,
         )
         self.widget = self.build()
         self.set_and_disable_sync()
@@ -264,7 +261,7 @@ class CollapsableObjectDiffWidget:
             </div>
             {copy_id_button.to_html()}
             </div>
-        """  # noqa: E501
+        """
         return second_line_html
 
     def set_and_disable_sync(self) -> None:
@@ -299,13 +296,13 @@ class CollapsableObjectDiffWidget:
 
         self._share_private_checkbox = share_private_checkbox
         self._share_private_checkbox.observe(
-            self._on_share_private_data_change, "value"
+            self._on_share_private_data_change, "value",
         )
 
         return accordion
 
     def create_accordion_css(
-        self, header_id: str, body_id: str, class_name: str
+        self, header_id: str, body_id: str, class_name: str,
     ) -> str:
         css_accordion = f"""
             <style>
@@ -388,7 +385,7 @@ class CollapsableObjectDiffWidget:
             layout=Layout(width="auto", margin="0 2px 0 0"),
         )
         sync_checkbox = Checkbox(
-            description="Sync", layout=Layout(width="auto", margin="0 2px 0 0")
+            description="Sync", layout=Layout(width="auto", margin="0 2px 0 0"),
         )
 
         checkboxes = []
@@ -430,13 +427,13 @@ class ResolveWidget:
         self.build_state = build_state
         self.obj_diff_batch: ObjectDiffBatch = obj_diff_batch
         self.id2widget: dict[
-            UID, CollapsableObjectDiffWidget | MainObjectDiffWidget
+            UID, CollapsableObjectDiffWidget | MainObjectDiffWidget,
         ] = {}
         self.on_sync_callback = on_sync_callback
         self.main_widget = self.build()
         self.result_widget = VBox()  # Placeholder for SyftSuccess / SyftError
         self.widget = VBox(
-            [self.build_css_widget(), self.main_widget, self.result_widget]
+            [self.build_css_widget(), self.main_widget, self.result_widget],
         )
         self.is_synced = False
         self.hide_result_widget()
@@ -475,7 +472,7 @@ class ResolveWidget:
 
         if self.is_synced:
             return SyftError(
-                message="The changes in this widget have already been synced."
+                message="The changes in this widget have already been synced.",
             )
 
         res = handle_sync_batch(
@@ -492,7 +489,7 @@ class ResolveWidget:
     @property
     def batch_diff_widgets(self) -> list[CollapsableObjectDiffWidget]:
         dependents = self.obj_diff_batch.get_dependents(
-            include_roots=False, include_batch_root=False
+            include_roots=False, include_batch_root=False,
         )
         dependent_diff_widgets = [
             CollapsableObjectDiffWidget(
@@ -507,7 +504,7 @@ class ResolveWidget:
     @property
     def dependent_root_diff_widgets(self) -> list[CollapsableObjectDiffWidget]:
         dependencies = self.obj_diff_batch.get_dependencies(
-            include_roots=True, include_batch_root=False
+            include_roots=True, include_batch_root=False,
         )
         other_roots = [
             d for d in dependencies if d.object_id in self.obj_diff_batch.global_roots
@@ -589,7 +586,7 @@ class ResolveWidget:
                 dependency_items,
                 self.spacer(8),
                 self.sync_button(),
-            ]
+            ],
         )
         return full_widget
 
@@ -644,7 +641,7 @@ class PaginationControl:
                 self.previous_button,
                 self.next_button,
                 self.last_button,
-            ]
+            ],
         )
         self.update_buttons()
         self.update_index_callback()
@@ -687,13 +684,13 @@ class PaginationControl:
 
     def build(self) -> widgets.VBox:
         return widgets.VBox(
-            [widgets.HBox([self.buttons, self.index_label]), self.output]
+            [widgets.HBox([self.buttons, self.index_label]), self.output],
         )
 
 
 class PaginatedWidget:
     def __init__(
-        self, children: list, on_paginate_callback: Callable[[int], None] | None = None
+        self, children: list, on_paginate_callback: Callable[[int], None] | None = None,
     ):
         # on_paginate_callback is an optional secondary callback,
         # called after updating the page index and displaying the new widget
@@ -720,13 +717,12 @@ class PaginatedWidget:
 
     def build(self) -> widgets.VBox:
         return widgets.VBox(
-            [self.pagination_control.build(), self.spacer(8), self.container]
+            [self.pagination_control.build(), self.spacer(8), self.container],
         )
 
 
 class PaginatedResolveWidget:
-    """
-    PaginatedResolveWidget is a widget that displays
+    """PaginatedResolveWidget is a widget that displays
     a ResolveWidget for each ObjectDiffBatch,
     paginated by a PaginationControl widget.
     """
@@ -763,7 +759,7 @@ class PaginatedResolveWidget:
         with self.table_output:
             display.display(display.HTML(self.batch_table))
             highlight_single_row(
-                self.table_uid, self.paginated_widget.current_index, jump_to_row=True
+                self.table_uid, self.paginated_widget.current_index, jump_to_row=True,
             )
 
         self.widget = self.build()

@@ -4,8 +4,7 @@ from numpy import frombuffer
 
 # relative
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
-from .arrow import numpy_deserialize
-from .arrow import numpy_serialize
+from .arrow import numpy_deserialize, numpy_serialize
 from .recursive import recursive_serde_register
 
 SUPPORTED_BOOL_TYPES = [np.bool_]

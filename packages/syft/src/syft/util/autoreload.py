@@ -7,7 +7,7 @@ def enable_autoreload() -> None:
         # third party
         from IPython import get_ipython
 
-        ipython = get_ipython()  # noqa: F821
+        ipython = get_ipython()
         ipython.run_line_magic("load_ext", "autoreload")
         ipython.run_line_magic("autoreload", "2")
         AUTORELOAD_ENABLED = True
@@ -23,7 +23,7 @@ def disable_autoreload() -> None:
         # third party
         from IPython import get_ipython
 
-        ipython = get_ipython()  # noqa: F821
+        ipython = get_ipython()
         ipython.run_line_magic("autoreload", "0")
         AUTORELOAD_ENABLED = False
         print("Autoreload disabled.")

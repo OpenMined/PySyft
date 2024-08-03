@@ -12,7 +12,7 @@ try:
 except ImportError:
     try:
         # third party
-        import mock
+        from unittest import mock
 
         _IMPORT_MOCK_ERROR = None
     except ImportError as error:
@@ -21,14 +21,12 @@ except ImportError:
 try:
     # third party
     import pymongo
-    from pymongo.uri_parser import parse_uri
-    from pymongo.uri_parser import split_hosts
+    from pymongo.uri_parser import parse_uri, split_hosts
 
     _IMPORT_PYMONGO_ERROR = None
 except ImportError as error:
     # relative
-    from .helpers import parse_uri
-    from .helpers import split_hosts
+    from .helpers import parse_uri, split_hosts
 
     _IMPORT_PYMONGO_ERROR = error
 
@@ -59,6 +57,7 @@ def patch(servers="localhost", on_new="error"):
     The data is persisted as long as the patch lives.
 
     Args:
+    ----
         on_new: Behavior when accessing a new server (not in servers):
             'create': mock a new empty server, accept any client connection.
             'error': raise a ValueError immediately when trying to access.
@@ -66,8 +65,8 @@ def patch(servers="localhost", on_new="error"):
                 error after a timeout.
             'pymongo': use an actual pymongo client.
         servers: a list of server that are avaiable.
-    """
 
+    """
     if _IMPORT_MOCK_ERROR:
         raise _IMPORT_MOCK_ERROR  # pylint: disable=raising-bad-type
 
@@ -102,7 +101,7 @@ def patch(servers="localhost", on_new="error"):
             # TODO(pcorpet): Only wait when trying to access the server's data.
             time.sleep(kwargs.get("serverSelectionTimeoutMS", 30000))
             raise pymongo.errors.ServerSelectionTimeoutError(
-                "%s:%d: [Errno 111] Connection refused" % client.address
+                "%s:%d: [Errno 111] Connection refused" % client.address,
             )
 
         if on_new == "pymongo":
@@ -110,7 +109,7 @@ def patch(servers="localhost", on_new="error"):
 
         raise ValueError(
             "MongoDB server %s:%d does not exist.\n" % client.address
-            + "%s" % parsed_servers
+            + "%s" % parsed_servers,
         )
 
     class _PersistentClient:

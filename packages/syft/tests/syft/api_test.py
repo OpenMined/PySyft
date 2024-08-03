@@ -21,7 +21,7 @@ def test_api_cache_invalidation(worker):
                 data=np.array([1, 2, 3]),
                 mock=np.array([1, 1, 1]),
                 mock_is_real=False,
-            )
+            ),
         ],
     )
     root_datasite_client.upload_dataset(dataset)
@@ -43,7 +43,7 @@ def test_api_cache_invalidation_login(root_verify_key, worker):
     guest_client = worker.guest_client
     worker.root_client.settings.allow_guest_signup(enable=True)
     assert guest_client.register(
-        name="q", email="a@b.org", password="aaa", password_verify="aaa"
+        name="q", email="a@b.org", password="aaa", password_verify="aaa",
     )
     guest_client = guest_client.login(email="a@b.org", password="aaa")
     user_id = worker.document_store.partitions["User"].all(root_verify_key).value[-1].id
@@ -64,7 +64,7 @@ def test_api_cache_invalidation_login(root_verify_key, worker):
     assert guest_client.api.services.user.update(uid=user_id, name="abcdef")
 
     assert worker.root_client.api.services.user.update(
-        uid=user_id, role=ServiceRole.DATA_OWNER
+        uid=user_id, role=ServiceRole.DATA_OWNER,
     )
 
     assert get_role(guest_client.credentials.verify_key) == ServiceRole.DATA_OWNER
