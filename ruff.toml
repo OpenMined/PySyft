@@ -10,13 +10,13 @@ extend-exclude = ["*.gypi"]
 # https://beta.ruff.rs/docs/configuration/#using-rufftoml
 [lint]
 select = [
-    "A",     # flake8-builtins 
+    "A",     # flake8-builtins
     "E",     # pycodestyle
     "F",     # pyflake
     "B",     # flake8-bugbear
     "C4",    # flake8-comprehensions
     # "PERF", # perflint
-    "R",     # Refactor 
+    "R",     # Refactor
     "UP",    # pyupgrade
 ]
 ignore = [
