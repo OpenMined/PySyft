@@ -1,14 +1,20 @@
 # stdlib
+from enum import Enum
+import itertools
 import logging
 import threading
 import time
 from typing import cast
 
 # relative
+from ...client.client import SyftClient
 from ...serde.serializable import serializable
 from ...types.datetime import DateTime
 from ..context import AuthedServiceContext
+from ..request.request import Request
 from ..response import SyftError
+from ..response import SyftSuccess
+from ..user.user_roles import ServiceRole
 from .network_service import NetworkService
 from .network_service import ServerPeerAssociationStatus
 from .server_peer import ServerPeer
@@ -130,3 +136,85 @@ class PeerHealthCheckTask:
             self.thread = None
             self.started_time = None
         logger.info("Peer health check task stopped.")
+
+
+def exchange_routes(
+    clients: list[SyftClient], auto_approve: bool = False
+) -> SyftSuccess | SyftError:
+    """Exchange routes between a list of clients."""
+    if auto_approve:
+        # Check that all clients are admin clients
+        for client in clients:
+            if not client.user_role == ServiceRole.ADMIN:
+                return SyftError(
+                    message=f"Client {client} is not an admin client. "
+                    "Only admin clients can auto-approve connection requests."
+                )
+
+    for client1, client2 in itertools.combinations(clients, 2):
+        peer1 = ServerPeer.from_client(client1)
+        peer2 = ServerPeer.from_client(client2)
+
+        client1_connection_request = client1.api.services.network.add_peer(peer2)
+        if isinstance(client1_connection_request, SyftError):
+            return SyftError(
+                message=f"Failed to add peer {peer2} to {client1}: {client1_connection_request}"
+            )
+
+        client2_connection_request = client2.api.services.network.add_peer(peer1)
+        if isinstance(client2_connection_request, SyftError):
+            return SyftError(
+                message=f"Failed to add peer {peer1} to {client2}: {client2_connection_request}"
+            )
+
+        if auto_approve:
+            if isinstance(client1_connection_request, Request):
+                res1 = client1_connection_request.approve()
+                if isinstance(res1, SyftError):
+                    return SyftError(
+                        message=f"Failed to approve connection request between {client1} and {client2}: {res1}"
+                    )
+            if isinstance(client2_connection_request, Request):
+                res2 = client2_connection_request.approve()
+                if isinstance(res2, SyftError):
+                    return SyftError(
+                        message=f"Failed to approve connection request between {client2} and {client1}: {res2}"
+                    )
+            logger.info(f"Exchanged routes between {client1} and {client2}")
+        else:
+            logger.info(f"Connection requests sent between {client1} and {client2}.")
+
+    return SyftSuccess(message="Routes exchanged successfully.")
+
+
+class NetworkTopology(Enum):
+    STAR = "STAR"
+    MESH = "MESH"
+    HYBRID = "HYBRID"
+
+
+def check_route_reachability(
+    clients: list[SyftClient], topology: NetworkTopology = NetworkTopology.MESH
+) -> SyftSuccess | SyftError:
+    if topology == NetworkTopology.STAR:
+        return SyftError(message="STAR topology is not supported yet")
+    elif topology == NetworkTopology.MESH:
+        return check_mesh_topology(clients)
+    else:
+        return SyftError(message=f"Invalid topology: {topology}")
+
+
+def check_mesh_topology(clients: list[SyftClient]) -> SyftSuccess | SyftError:
+    for client in clients:
+        for other_client in clients:
+            if client == other_client:
+                continue
+            result = client.api.services.network.ping_peer(
+                verify_key=other_client.root_verify_key
+            )
+            if isinstance(result, SyftError):
+                return SyftError(
+                    message=f"{client.name}-<{client.id}> - cannot reach"
+                    + f"{other_client.name}-<{other_client.id} - {result.message}"
+                )
+    return SyftSuccess(message="All clients are reachable")
