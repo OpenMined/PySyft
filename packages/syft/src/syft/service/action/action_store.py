@@ -113,6 +113,20 @@ class KeyValueActionStore(ActionStore):
         except Exception as e:
             return Err(f"Could not find item with uid {uid}, {e}")
 
+    def get_model_code(self, uid: UID) -> Result[SyftObject, str]:
+        # relative
+        from ..model.model import SubmitModelCode
+
+        uid = uid.id  # We only need the UID from LineageID or UID
+
+        try:
+            syft_object = self.data[uid]
+            if isinstance(syft_object, SubmitModelCode):
+                return Ok(syft_object)
+            return Err("No SubmitModelCode in Store")
+        except Exception as e:
+            return Err(f"Could not find item with uid {uid}, {e}")
+
     def get_pointer(
         self,
         uid: UID,
