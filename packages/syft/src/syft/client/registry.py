@@ -193,6 +193,7 @@ class Datasite(SyftObject):
 
     name: str
     host_or_ip: str
+    version: str
     protocol: str
     admin_email: str
     website: str
@@ -202,32 +203,35 @@ class Datasite(SyftObject):
     __attr_searchable__ = [
         "name",
         "host_or_ip",
-        "protocol",
+        "version",
         "port",
         "admin_email",
         "website",
         "slack",
         "slack_channel",
+        "protocol",
     ]
     __attr_unique__ = [
         "name",
         "host_or_ip",
-        "protocol",
+        "version",
         "port",
         "admin_email",
         "website",
         "slack",
         "slack_channel",
+        "protocol",
     ]
     __repr_attrs__ = [
         "name",
         "host_or_ip",
-        "protocol",
+        "version",
         "port",
         "admin_email",
         "website",
         "slack",
         "slack_channel",
+        "protocol",
     ]
     __table_sort_attr__ = "name"
 
