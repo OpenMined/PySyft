@@ -27,6 +27,7 @@ NETWORK_REGISTRY_URL = (
 )
 
 NETWORK_REGISTRY_REPO = "https://github.com/OpenMined/NetworkRegistry"
+
 DATASITE_REGISTRY_URL = "https://raw.githubusercontent.com/OpenMined/NetworkRegistry/main/datasites.json"
 
 def _get_all_networks(network_json: dict, version: str) -> list[dict]:
