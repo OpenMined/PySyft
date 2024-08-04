@@ -28,6 +28,10 @@ NETWORK_REGISTRY_URL = (
 
 NETWORK_REGISTRY_REPO = "https://github.com/OpenMined/NetworkRegistry"
 
+DATASITE_REGISTRY_URL = (
+    "https://raw.githubusercontent.com/OpenMined/NetworkRegistry/main/datasites.json"
+)
+
 
 def _get_all_networks(network_json: dict, version: str) -> list[dict]:
     return network_json.get(version, {}).get("gateways", [])
@@ -183,6 +187,95 @@ class NetworkRegistry:
 
 
 class DatasiteRegistry:
+    def __init__(self) -> None:
+        self.all_datasites: list[dict] = []
+        try:
+            response = requests.get(DATASITE_REGISTRY_URL)  # nosec
+            datasites_json = response.json()
+            self.all_datasites = datasites_json["datasites"]
+        except Exception as e:
+            logger.warning(
+                f"Failed to get Datasite Registry, go checkout: {DATASITE_REGISTRY_URL}. {e}"
+            )
+
+    @property
+    def online_datasites(self) -> list[dict]:
+        datasites = self.all_datasites
+
+        def check_datasite(datasite: dict) -> dict[Any, Any] | None:
+            url = "http://" + datasite["host_or_ip"] + ":" + str(datasite["port"]) + "/"
+            try:
+                res = requests.get(url, timeout=DEFAULT_TIMEOUT)  # nosec
+                if "status" in res.json():
+                    online = res.json()["status"] == "ok"
+                elif "detail" in res.json():
+                    online = True
+            except Exception as e:
+                print(e)
+                online = False
+            if online:
+                version = datasite.get("version", None)
+                # Check if syft version was described in DatasiteRegistry
+                # If it's unknown, try to update it to an available version.
+                if not version or version == "unknown":
+                    # If not defined, try to ask in /syft/version endpoint (supported by 0.7.0)
+                    try:
+                        version_url = url + "api/v2/metadata"
+                        res = requests.get(version_url, timeout=DEFAULT_TIMEOUT)  # nosec
+                        if res.status_code == 200:
+                            datasite["version"] = res.json()["syft_version"]
+                        else:
+                            datasite["version"] = "unknown"
+                    except Exception:
+                        datasite["version"] = "unknown"
+                return datasite
+            return None
+
+        # We can use a with statement to ensure threads are cleaned up promptly
+        with futures.ThreadPoolExecutor(max_workers=20) as executor:
+            # map
+            _online_datasites = list(
+                executor.map(lambda datasite: check_datasite(datasite), datasites)
+            )
+
+        online_datasites = [each for each in _online_datasites if each is not None]
+        return online_datasites
+
+    def _repr_html_(self) -> str:
+        on = self.online_datasites
+        if len(on) == 0:
+            return "(no gateways online - try syft.gateways.all_networks to see offline gateways)"
+        df = pd.DataFrame(on)
+
+        return df._repr_html_()  # type: ignore
+
+    @staticmethod
+    def create_client(datasite: dict[str, Any]) -> Client:
+        # relative
+        from .client import connect
+
+        try:
+            port = int(datasite["port"])
+            protocol = datasite["protocol"]
+            host_or_ip = datasite["host_or_ip"]
+            server_url = ServerURL(port=port, protocol=protocol, host_or_ip=host_or_ip)
+            client = connect(url=str(server_url))
+            return client.guest()
+        except Exception as e:
+            raise SyftException(f"Failed to login with: {datasite}. {e}")
+
+    def __getitem__(self, key: str | int) -> Client:
+        if isinstance(key, int):
+            return self.create_client(datasite=self.online_datasites[key])
+        else:
+            on = self.online_datasites
+            for datasite in on:
+                if datasite["name"] == key:
+                    return self.create_client(datasite=datasite)
+        raise KeyError(f"Invalid key: {key} for {on}")
+
+
+class NetworksOfDatasitesRegistry:
     def __init__(self) -> None:
         self.all_networks: list[dict] = []
         self.all_datasites: dict[str, ServerPeer] = {}
