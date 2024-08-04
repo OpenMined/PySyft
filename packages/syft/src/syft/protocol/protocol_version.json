@@ -7,5 +7,16 @@
   },
   "3": {
     "release_name": "0.9.0.json"
+  },
+  "dev": {
+    "object_versions": {
+      "EnclaveMetadata": {
+        "1": {
+          "version": 1,
+          "hash": "8d2dfafa01ec909c080a790cf15a8fc78e00382d3bfe6207098ceb25a60b9c53",
+          "action": "add"
+        }
+      }
+    }
   }
 }

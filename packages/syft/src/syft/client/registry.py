@@ -18,6 +18,7 @@ from ..service.network.server_peer import ServerPeer
 from ..service.network.server_peer import ServerPeerConnectionStatus
 from ..service.response import SyftException
 from ..types.server_url import ServerURL
+from ..types.syft_object import SyftObject
 from ..util.constants import DEFAULT_TIMEOUT
 from .client import SyftClient as Client
 
@@ -186,6 +187,51 @@ class NetworkRegistry:
         raise KeyError(f"Invalid key: {key} for {on}")
 
 
+class Datasite(SyftObject):
+    __canonical_name__ = "ServerMetadata"
+    # __version__ = SYFT_OBJECT_VERSION_1
+
+    name: str
+    host_or_ip: str
+    protocol: str
+    admin_email: str
+    website: str
+    slack: str
+    slack_channel: str
+
+    __attr_searchable__ = [
+        "name",
+        "host_or_ip",
+        "protocol",
+        "port",
+        "admin_email",
+        "website",
+        "slack",
+        "slack_channel",
+    ]
+    __attr_unique__ = [
+        "name",
+        "host_or_ip",
+        "protocol",
+        "port",
+        "admin_email",
+        "website",
+        "slack",
+        "slack_channel",
+    ]
+    __repr_attrs__ = [
+        "name",
+        "host_or_ip",
+        "protocol",
+        "port",
+        "admin_email",
+        "website",
+        "slack",
+        "slack_channel",
+    ]
+    __table_sort_attr__ = "name"
+
+
 class DatasiteRegistry:
     def __init__(self) -> None:
         self.all_datasites: list[dict] = []
@@ -244,11 +290,13 @@ class DatasiteRegistry:
         on = self.online_datasites
         if len(on) == 0:
             return "(no gateways online - try syft.gateways.all_networks to see offline gateways)"
-        df = pd.DataFrame(on)
+
+        # df = pd.DataFrame(on)
         print(
             "Add your datasite to this list: https://github.com/OpenMined/NetworkRegistry/"
         )
-        return df._repr_html_()  # type: ignore
+        # return df._repr_html_()  # type: ignore
+        return ([Datasite(**ds) for ds in on])._repr_html_()
 
     @staticmethod
     def create_client(datasite: dict[str, Any]) -> Client:
