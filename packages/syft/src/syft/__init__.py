@@ -62,6 +62,8 @@ from .service.model.model import CreateModel as Model
 from .service.model.model import CreateModelAsset as ModelAsset
 from .service.model.model import SyftModelClass
 from .service.model.model import syft_model
+from .service.network.utils import check_route_reachability  # noqa: F401
+from .service.network.utils import exchange_routes  # noqa: F401
 from .service.notification.notifications import NotificationStatus
 from .service.policy.policy import CreatePolicyRuleConstant as Constant
 from .service.policy.policy import CustomInputPolicy
