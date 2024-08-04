@@ -796,10 +796,9 @@ def unwrap_and_migrate_annotation(annotation: Any, object_versions: dict) -> Any
             downgrade_klass_name = SyftMigrationRegistry.__migration_version_registry__[
                 annotation.__canonical_name__
             ][downgrade_to_version]
-            new_arg = index_syft_by_module_name(downgrade_klass_name)
-            return new_arg
-        else:
-            return annotation
+            return index_syft_by_module_name(downgrade_klass_name)
+            
+        return annotation
 
     migrated_annotations = []
     for arg in args:
