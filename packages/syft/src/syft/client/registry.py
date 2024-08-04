@@ -193,6 +193,7 @@ class Datasite(SyftObject):
 
     name: str
     host_or_ip: str
+    port: str
     version: str
     protocol: str
     admin_email: str
