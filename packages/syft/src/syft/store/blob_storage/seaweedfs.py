@@ -14,11 +14,14 @@ from botocore.client import ClientError as BotoClientError
 from botocore.client import Config
 from botocore.exceptions import ConnectionError
 import requests
+from rich.progress import BarColumn
+from rich.progress import Progress
+from rich.progress import SpinnerColumn
+from rich.progress import TextColumn
 from tenacity import retry
 from tenacity import retry_if_exception_type
 from tenacity import stop_after_delay
 from tenacity import wait_fixed
-from tqdm import tqdm
 from typing_extensions import Self
 
 # relative
@@ -82,11 +85,16 @@ class SeaweedFSBlobDeposit(BlobDeposit):
             # this is the total nr of chunks in all parts
             total_iterations = math.ceil(part_size / chunk_size) * len(self.urls)
 
-            with tqdm(
-                total=total_iterations,
-                desc=f"Uploading progress",  # noqa
-                colour="green",
-            ) as pbar:
+            with Progress(
+                SpinnerColumn(),
+                "[progress.description]{task.description}",
+                TextColumn("[progress.remaining]{task.completed}/{task.total}"),
+                BarColumn(),
+                "[progress.percentage]{task.percentage:>3.0f}%",
+            ) as progress:
+                task = progress.add_task(
+                    "Uploading to Blob Storage ...", total=total_iterations
+                )
                 for part_no, url in enumerate(
                     self.urls,
                     start=1,
@@ -120,7 +128,7 @@ class SeaweedFSBlobDeposit(BlobDeposit):
                             item = item_queue.get()
                             while item != 0:
                                 yield item
-                                pbar.update(1)
+                                progress.update(task, advance=1)
                                 item = item_queue.get()
 
                         def add_chunks_to_queue(
