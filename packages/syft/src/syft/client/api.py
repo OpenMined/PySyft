@@ -621,8 +621,7 @@ def generate_remote_lib_function(
             blocking=blocking,
         )
 
-        result = wrapper_make_call(api_call=api_call)
-        return result
+        return wrapper_make_call(api_call=api_call)
 
     wrapper.__ipython_inspector_signature_override__ = signature
     return wrapper
