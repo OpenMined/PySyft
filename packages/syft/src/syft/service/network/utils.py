@@ -6,6 +6,12 @@ import threading
 import time
 from typing import cast
 
+# third party
+from rich.box import DOUBLE_EDGE
+from rich.console import Console
+from rich.table import Table
+from rich.text import Text
+
 # relative
 from ...client.client import SyftClient
 from ...serde.serializable import serializable
@@ -138,10 +144,18 @@ class PeerHealthCheckTask:
         logger.info("Peer health check task stopped.")
 
 
-def exchange_routes(
-    clients: list[SyftClient], auto_approve: bool = False
-) -> SyftSuccess | SyftError:
+def exchange_routes(clients: list[SyftClient], auto_approve: bool = False) -> None:
     """Exchange routes between a list of clients."""
+    # Rich Table
+    console = Console()
+
+    table = Table(
+        show_header=True, header_style="bold magenta", box=DOUBLE_EDGE, pad_edge=False
+    )
+    table.add_column("Connect To", style="black", width=25, overflow="fold")
+    table.add_column("Connect From", style="black", width=25, overflow="fold")
+    table.add_column("Status", style="black", width=25, overflow="fold")
+
     if auto_approve:
         # Check that all clients are admin clients
         for client in clients:
@@ -180,11 +194,39 @@ def exchange_routes(
                     return SyftError(
                         message=f"Failed to approve connection request between {client2} and {client1}: {res2}"
                     )
-            logger.info(f"Exchanged routes between {client1} and {client2}")
+            table.add_row(
+                Text(f"{client1.name}-{client1.id.short()}", no_wrap=False),
+                f"{client2.name}-{client2.id.short()}",
+                "Connected ✅",
+            )
+            table.add_row(
+                f"{client2.name}-{client2.id.short()}",
+                f"{client1.name}-{client1.id.short()}",
+                "Connected ✅",
+            )
         else:
-            logger.info(f"Connection requests sent between {client1} and {client2}.")
+            client1_res = (
+                "Connected ✅"
+                if isinstance(client1_connection_request, SyftSuccess)
+                else "Request Sent 📨"
+            )
+            client2_res = (
+                "Connected ✅"
+                if isinstance(client2_connection_request, SyftSuccess)
+                else "Request Sent 📨"
+            )
+            table.add_row(
+                Text(f"{client1.name}-{client1.id.short()}", no_wrap=False),
+                Text(f"{client2.name}-{client2.id.short()}", no_wrap=False),
+                client1_res,
+            )
+            table.add_row(
+                Text(f"{client2.name}-{client2.id.short()}", no_wrap=False),
+                Text(f"{client1.name}-{client1.id.short()}", no_wrap=False),
+                client2_res,
+            )
 
-    return SyftSuccess(message="Routes exchanged successfully.")
+    console.print(table)
 
 
 class NetworkTopology(Enum):
