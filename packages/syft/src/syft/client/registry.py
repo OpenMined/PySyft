@@ -210,8 +210,7 @@ class DatasiteRegistry:
                     online = res.json()["status"] == "ok"
                 elif "detail" in res.json():
                     online = True
-            except Exception as e:
-                print(e)
+            except Exception:
                 online = False
             if online:
                 version = datasite.get("version", None)
@@ -246,7 +245,9 @@ class DatasiteRegistry:
         if len(on) == 0:
             return "(no gateways online - try syft.gateways.all_networks to see offline gateways)"
         df = pd.DataFrame(on)
-
+        print(
+            "Add your datasite to this list: https://github.com/OpenMined/NetworkRegistry/"
+        )
         return df._repr_html_()  # type: ignore
 
     @staticmethod
