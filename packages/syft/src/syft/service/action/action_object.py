@@ -884,6 +884,7 @@ class ActionObject(SyncableSyftObject):
                 serialized = serialize(data, to_bytes=True)
                 size = sys.getsizeof(serialized)
                 storage_entry = CreateBlobStorageEntry.from_obj(data, file_size=size)
+                print("storage entry id", storage_entry.id)
                 if not TraceResultRegistry.current_thread_is_tracing():
                     self.syft_action_data_cache = self.as_empty_data()
                 if self.syft_blob_storage_entry_id is not None:

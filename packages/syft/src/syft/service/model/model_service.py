@@ -82,6 +82,8 @@ class ModelService(AbstractService):
         """Add a model"""
         model = model.to(Model, context=context)
 
+        print("got model", model)
+
         result = self.stash.set(
             context.credentials,
             model,

@@ -6,7 +6,6 @@ import logging
 from pathlib import Path
 import re
 from string import Template
-import time
 import traceback
 from typing import TYPE_CHECKING
 from typing import cast
@@ -14,11 +13,7 @@ from typing import cast
 # third party
 import markdown
 from result import Result
-from rich.console import Console
-from rich.progress import BarColumn
-from rich.progress import Progress
-from rich.progress import SpinnerColumn
-from rich.progress import TextColumn
+from tqdm import tqdm
 
 # relative
 from ..abstract_server import ServerSideType
@@ -124,24 +119,19 @@ class DatasiteClient(SyftClient):
         model.code_action_id = model_code_res.id
         model_ref_action_ids.append(model_code_res.id)
 
-        console = Console()
         # Step 2. Upload Model Assets to Action Store
-        model_size: float = 0.0
-        with Progress(
-            SpinnerColumn(),
-            "[progress.description]{task.description}",
-            TextColumn("[progress.remaining]{task.completed}/{task.total}"),
-            BarColumn(),
-            "[progress.percentage]{task.percentage:>3.0f}%",
-        ) as progress:
-            task = progress.add_task("Uploading...", total=len(model.asset_list))
 
+        model_size: float = 0.0
+        with tqdm(
+            total=len(model.asset_list), colour="green", desc="Uploading"
+        ) as pbar:
             for asset in model.asset_list:
                 try:
                     contains_empty: bool = asset.contains_empty()
-                    # TODO: Add mock model weights
                     twin = TwinObject(
-                        private_obj=ActionObject.from_obj(asset.data),
+                        private_obj=ActionObject.from_obj(
+                            asset.data
+                        ),  # same on both for now
                         mock_obj=ActionObject.from_obj(asset.data),
                         syft_server_location=self.id,
                         syft_client_verify_key=self.verify_key,
@@ -150,23 +140,19 @@ class DatasiteClient(SyftClient):
                     if isinstance(res, SyftError):
                         return res
                 except Exception as e:
-                    console.print(
-                        f"Failed to create twin for {asset.name}. {e}", style="bold red"
-                    )
+                    tqdm.write(f"Failed to create twin for {asset.name}. {e}")
                     return SyftError(message=f"Failed to create twin. {e}")
 
                 if isinstance(res, SyftWarning):
                     logger.debug(res.message)
-
+                # Clear Cache before saving
                 twin.private_obj._clear_cache()
                 twin.mock_obj._clear_cache()
                 response = self.api.services.action.set(
                     twin, ignore_detached_objs=contains_empty
                 )
                 if isinstance(response, SyftError):
-                    console.print(
-                        f"Failed to upload asset: {asset.name}", style="bold red"
-                    )
+                    tqdm.write(f"Failed to upload asset: {asset.name}")
                     return response
 
                 asset.action_id = twin.id
@@ -178,12 +164,9 @@ class DatasiteClient(SyftClient):
                 asset.data = None
                 asset.mock = None
 
-                progress.update(
-                    task, advance=1, description=f"Uploading : {asset.name}"
-                )
-                # When the last asset is uploaded, the progress bar is not updated
-                # so add a small delay to ensure the progress bar is updated
-                time.sleep(0.1)
+                # Update the progress bar and set the dynamic description
+                pbar.set_description(f"Uploading: {asset.name}")
+                pbar.update(1)
 
         # Step 3. Upload Model Ref to Action Store
         # Model Ref is a reference to the model code and assets
@@ -242,16 +225,9 @@ class DatasiteClient(SyftClient):
             )
             prompt_warning_message(message=message, confirm=True)
 
-        console = Console()
-        with Progress(
-            SpinnerColumn(),
-            "[progress.description]{task.description}",
-            TextColumn("[progress.remaining]{task.completed}/{task.total}"),
-            BarColumn(),
-            "[progress.percentage]{task.percentage:>3.0f}%",
-        ) as progress:
-            task = progress.add_task("Uploading...", total=len(dataset.asset_list))
-
+        with tqdm(
+            total=len(dataset.asset_list), colour="green", desc="Uploading"
+        ) as pbar:
             for asset in dataset.asset_list:
                 try:
                     contains_empty: bool = asset.contains_empty()
@@ -265,9 +241,7 @@ class DatasiteClient(SyftClient):
                     if isinstance(res, SyftError):
                         return res
                 except Exception as e:
-                    console.print(
-                        f"Failed to create twin for {asset.name}. {e}", style="bold red"
-                    )
+                    tqdm.write(f"Failed to create twin for {asset.name}. {e}")
                     return SyftError(message=f"Failed to create twin. {e}")
 
                 if isinstance(res, SyftWarning):
@@ -276,9 +250,7 @@ class DatasiteClient(SyftClient):
                     twin, ignore_detached_objs=contains_empty
                 )
                 if isinstance(response, SyftError):
-                    console.print(
-                        f"Failed to upload asset: {asset.name}", style="bold red"
-                    )
+                    tqdm.write(f"Failed to upload asset: {asset.name}")
                     return response
 
                 asset.action_id = twin.id
@@ -286,12 +258,8 @@ class DatasiteClient(SyftClient):
                 dataset_size += get_mb_size(asset.data)
 
                 # Update the progress bar and set the dynamic description
-                progress.update(
-                    task, advance=1, description=f"Uploading : {asset.name}"
-                )
-                # When the last asset is uploaded, the progress bar is not updated
-                # so add a small delay to ensure the progress bar is updated
-                time.sleep(0.1)
+                pbar.set_description(f"Uploading: {asset.name}")
+                pbar.update(1)
 
         dataset.mb_size = dataset_size
         valid = dataset.check()
