@@ -1,5 +1,4 @@
 # stdlib
-from typing import Dict
 
 # relative
 from ...util.notebook_ui.styles import CSS_CODE
@@ -36,7 +35,7 @@ header_line_html = (
 )  # noqa: E501
 
 
-def generate_attr_html(attrs: Dict[str, str]):
+def generate_attr_html(attrs: dict[str, str]) -> str:
     attrs_html = (
         """<div style="display: table-row; padding: 0px, 0px, 12px, 0px; gap:8px">"""
     )
@@ -223,7 +222,7 @@ ${attrs_html}
 <!-- End attrs_html -->
 """
     )
-    + f"""
+    + """
 <div style='height: 16px;'></div>
 </div>
 <!-- End model_repr_template -->

@@ -98,12 +98,15 @@ class ModelAsset(SyftObject):
             description = MarkdownDescription(text=description)
         super().__init__(**kwargs, description=description)
 
-    def _ipython_display_(self):
-        string = f"""<details>
-    <summary>Show Asset Description:</summary>
-    {self.description._repr_markdown_()}
-</details>"""
-        display(HTML(self._repr_html_()), Markdown(string))
+    def _ipython_display_(self) -> None:
+        if self.description:
+            string = f"""<details>
+        <summary>Show Asset Description:</summary>
+        {self.description._repr_markdown_()}
+    </details>"""
+            display(HTML(self._repr_html_()), Markdown(string))
+        else:
+            display(HTML(self._repr_html_()))
 
     def _repr_html_(self) -> Any:
         identifier = random.randint(1, 2**32)  # nosec
@@ -315,12 +318,14 @@ class CreateModelAsset(SyftObject):
             return True
         return False
 
-    def _ipython_display_(self):
-        string = f"""<details>
-    <summary>Show Asset Description:</summary>
-    {self.description._repr_markdown_()}
-</details>"""
-        display(HTML(self._repr_html_()), Markdown(string))
+    def _ipython_display_(self) -> None:
+        display(HTML(self._repr_html_()))
+        if self.description:
+            string = f"""<details>
+        <summary>Show Asset Description:</summary>
+        {self.description._repr_markdown_()}
+    </details>"""
+            display(Markdown(string))
 
     def _repr_html_(self) -> Any:
         identifier = random.randint(1, 2**32)  # nosec
@@ -432,15 +437,21 @@ class Model(SyftObject):
             "created at": str(self.created_at),
         }
 
-    def _ipython_display_(self):
-        model_card_string = f"""<details>
-    <summary>Show model card:</summary>
-    {self.model_card._repr_markdown_()}
-</details>"""
-        show_string = "For more information, `.assets` reveals the resources used by the model and `.model_code` will show the model code."
-        display(
-            HTML(self._repr_html_()), Markdown(model_card_string), Markdown(show_string)
-        )
+    def _ipython_display_(self) -> None:
+        show_string = "For more information, `.assets` reveals the resources \
+            used by the model and `.model_code` will show the model code."
+        if self.model_card:
+            model_card_string = f"""<details>
+        <summary>Show model card:</summary>
+        {self.model_card._repr_markdown_()}
+    </details>"""
+            display(
+                HTML(self._repr_html_()),
+                Markdown(model_card_string),
+                Markdown(show_string),
+            )
+        else:
+            display(HTML(self._repr_html_()), Markdown(show_string))
 
     def _repr_html_(self) -> Any:
         # TODO: Improve Repr
@@ -462,27 +473,6 @@ class Model(SyftObject):
             "Model Hash": self.syft_model_hash,
         }
         attrs_html = generate_attr_html(attrs)
-        # third party
-        import markdown
-        from pygments.formatters import HtmlFormatter
-
-        formatter = HtmlFormatter()
-        html = markdown.markdown(
-            self.model_card._repr_markdown_(),
-            extensions=[
-                "extra",
-                "codehilite",
-                "tables",
-                "smarty",
-                "attr_list",
-                "admonition",
-            ],
-        )
-        # print(html)
-        # html = ""
-        styles = formatter.get_style_defs(".codehilite")
-        html += f"<style>{styles}</style>"
-        html = ""
         template = Template(model_repr_template)
         return template.substitute(
             model_object_type=model_object_type,
@@ -493,8 +483,6 @@ class Model(SyftObject):
             identifier=identifier,
             result_tab_id=result_tab_id,
             logs_tab_id=logs_tab_id,
-            result=None,
-            model_card=html,
         )
 
     @property
@@ -600,7 +588,7 @@ class CreateModel(Model):
     asset_list: list[Any] = []
     created_at: DateTime | None = None  # type: ignore[assignment]
     model_config = ConfigDict(validate_assignment=True)
-    server_uid: UID | None = None
+    server_uid: UID | None = None  # type: ignore[assignment]
 
     def set_model_card(self, model_card: str) -> None:
         self.model_card = MarkdownDescription(text=model_card)
@@ -790,7 +778,8 @@ def add_model_hash(context: TransformContext) -> TransformContext:
 def add_server_uid(context: TransformContext) -> TransformContext:
     if context.output is None:
         return context
-    context.output["server_uid"] = context.server.id
+    if context.server:
+        context.output["server_uid"] = context.server.id
     return context
 
 
