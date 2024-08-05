@@ -22,6 +22,7 @@ from typing import cast
 # third party
 from nacl.signing import SigningKey
 from result import Err
+from result import Ok
 from result import Result
 
 # relative
@@ -926,7 +927,7 @@ class Server(AbstractServer):
             )
         if settings.is_ok() and len(settings.ok()) > 0:
             settings = settings.ok()[0]
-        self.update_self(settings)
+            self.update_self(settings)
         return settings
 
     @property
@@ -1135,7 +1136,13 @@ class Server(AbstractServer):
             api_call = api_call.message
 
             role = self.get_role_for_credentials(credentials=credentials)
-            if not self.settings.enable_guest_sessions and role == ServiceRole.GUEST:
+            # TODO: This instance check should be removed once we can ensure that
+            # self.settings will always return a ServerSettings object.
+            if (
+                not isinstance(self.settings, Ok)
+                and not self.settings.enable_guest_sessions
+                and role == ServiceRole.GUEST
+            ):
                 return SyftError(message="Server doesn't allow guest sessions.")
             context = AuthedServiceContext(
                 server=self,
