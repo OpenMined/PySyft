@@ -498,5 +498,9 @@ def from_api_or_context(
         )
         return partial(service_method, server_context)
     else:
-        logger.error("Could not get method from api or context")
+        logger.error(
+            f"Could not get method: {func_or_path} from api or context"
+            + f"for server id: {syft_server_location} and "
+            + f"user verify key: {syft_client_verify_key}"
+        )
         return None

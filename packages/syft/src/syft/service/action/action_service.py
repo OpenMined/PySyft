@@ -368,6 +368,21 @@ class ActionService(AbstractService):
             return result.ok()
         return SyftError(message=result.err())
 
+    # TODO: fix this Tech Debt, currently , we do not have a way to add
+    # ActionPermission.ALL_READ to the permissions
+    # Like we have for stashes (document store)
+    # This is a temporary fix to allow the user to get the model code
+    @service_method(
+        path="action.get_model_code", name="get_model_code", roles=GUEST_ROLE_LEVEL
+    )
+    def get_model_code(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Result[SyftError, SyftObject]:
+        result = self.store.get_model_code(uid=uid)
+        if result.is_ok():
+            return result.ok()
+        return SyftError(message=result.err())
+
     @service_method(
         path="action.has_storage_permission",
         name="has_storage_permission",

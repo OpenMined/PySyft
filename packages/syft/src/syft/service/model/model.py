@@ -178,6 +178,27 @@ class ModelAsset(SyftObject):
             display(warning)
             return None
 
+    @property
+    def mock(self) -> SyftError | Any:
+        # relative
+        from ...client.api import APIRegistry
+
+        api = APIRegistry.api_for(
+            server_uid=self.syft_server_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None:
+            raise ValueError(f"api is None. You must login to {self.syft_server_uid}")
+        result = api.services.action.get_mock(self.action_id)
+        if isinstance(result, SyftError):
+            return result
+        try:
+            if isinstance(result, SyftObject):
+                return result.syft_action_data
+            return result
+        except Exception as e:
+            return SyftError(message=f"Failed to get mock. {e}")
+
     # def __call__(self, *args, **kwargs) -> Any:
     #     endpoint = self.endpoint
     #     result = endpoint.__call__(*args, **kwargs)
@@ -418,7 +439,7 @@ class Model(SyftObject):
         )
         if api is None or api.services is None:
             return None
-        res = api.services.action.get(self.code_action_id)
+        res = api.services.action.get_model_code(self.code_action_id)
         if has_permission(res):
             return res
         else:
@@ -427,6 +448,14 @@ class Model(SyftObject):
             )
             display(warning)
             return None
+
+    @property
+    def mock(self) -> SyftModelClass:
+        model_code = self.model_code
+        if model_code is None:
+            raise ValueError("[Model.mock] Cannot access model code")
+        mock_assets = [asset.mock for asset in self.asset_list]
+        return model_code(assets=mock_assets)
 
     def _coll_repr_(self) -> dict[str, Any]:
         return {
@@ -918,6 +947,14 @@ class ModelRef(ActionObject):
                     action_object._clear_cache()
                 if isinstance(blob_res, SyftError):
                     return blob_res
+                # TODO: fix Tech Debt
+                # Currently, Setting the Location of the object to the remote client
+                # As this is later used by the enclave to fetch the syft_action_data
+                # in reload_cache method of action object
+                # This is a quick fix to address the same
+                action_object._set_obj_location_(
+                    remote_client.id, context.server.signing_key.verify_key
+                )
             asset_list.append(action_data if unwrap_action_data else action_object)
 
         loaded_data = [model] + asset_list
