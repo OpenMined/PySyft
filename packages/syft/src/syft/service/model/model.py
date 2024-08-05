@@ -382,7 +382,7 @@ class Model(SyftObject):
     __canonical_name__: str = "Model"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    __attr_searchable__ = ["name", "citation", "url", "model_card"]
+    __attr_searchable__ = ["name", "citation", "url", "card"]
     __attr_unique__ = ["name"]
     __repr_attrs__ = ["name", "url", "created_at"]
 
@@ -392,7 +392,7 @@ class Model(SyftObject):
     contributors: set[Contributor] = set()
     citation: str | None = None
     url: str | None = None
-    model_card: MarkdownDescription | None = None
+    card: MarkdownDescription | None = None
     updated_at: str | None = None
     created_at: DateTime = DateTime.now()
     show_code: bool = False
@@ -417,12 +417,12 @@ class Model(SyftObject):
 
     def __init__(
         self,
-        model_card: str | MarkdownDescription | None = "",
+        card: str | MarkdownDescription | None = "",
         **kwargs: Any,
     ) -> None:
-        if isinstance(model_card, str):
-            model_card = MarkdownDescription(text=model_card)
-        super().__init__(**kwargs, model_card=model_card)
+        if isinstance(card, str):
+            card = MarkdownDescription(text=card)
+        super().__init__(**kwargs, card=card)
 
     @property
     def icon(self) -> str:
@@ -469,14 +469,14 @@ class Model(SyftObject):
     def _ipython_display_(self) -> None:
         show_string = "For more information, `.assets` reveals the resources \
             used by the model and `.model_code` will show the model code."
-        if self.model_card:
-            model_card_string = f"""<details>
+        if self.card:
+            card_string = f"""<details>
         <summary>Show model card:</summary>
-        {self.model_card._repr_markdown_()}
+        {self.card._repr_markdown_()}
     </details>"""
             display(
                 HTML(self._repr_html_()),
-                Markdown(model_card_string),
+                Markdown(card_string),
                 Markdown(show_string),
             )
         else:
@@ -530,8 +530,8 @@ class Model(SyftObject):
             _repr_str += f"Citation: {self.citation}\n"
         if self.url:
             _repr_str += f"URL: {self.url}\n"
-        if self.model_card:
-            _repr_str += f"model_card:\n{self.model_card.text}\n"
+        if self.card:
+            _repr_str += f"card:\n{self.card.text}\n"
         return as_markdown_python_code(_repr_str)
 
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
@@ -550,8 +550,8 @@ class Model(SyftObject):
             _repr_str += f"Citation: {self.citation}\n\n"
         if self.url:
             _repr_str += f"URL: {self.url}\n\n"
-        if self.model_card:
-            _repr_str += f"model_card: \n\n{self.model_card.text}\n\n"
+        if self.card:
+            _repr_str += f"card: \n\n{self.card.text}\n\n"
         if self.example_text:
             _repr_str += f"Example: \n\n{self.example_text}\n\n"
         return _repr_str
@@ -619,8 +619,8 @@ class CreateModel(Model):
     model_config = ConfigDict(validate_assignment=True)
     server_uid: UID | None = None  # type: ignore[assignment]
 
-    def set_model_card(self, model_card: str) -> None:
-        self.model_card = MarkdownDescription(text=model_card)
+    def set_card(self, card: str) -> None:
+        self.card = MarkdownDescription(text=card)
 
     def add_citation(self, citation: str) -> None:
         self.citation = citation

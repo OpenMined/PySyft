@@ -184,12 +184,7 @@ ${attrs_html}
 <!-- End attrs_html -->
 """
     )
-    + f"""
-
-
-<!-- Start JS_DOWNLOAD_FONTS -->
-{model_card_html}
-<!-- End JS_DOWNLOAD_FONTS -->
+    + """
 
 <div style='height: 16px;'></div>
 </div>
