@@ -1215,6 +1215,12 @@ class ServerDiff(SyftObject):
                 low_status = "NEW"
                 high_status = "NEW"
 
+            # We don't support deletion of objects yet.
+            # So, skip if the object is not present on the *source* side
+            source_obj = low_obj if direction == SyncDirection.LOW_TO_HIGH else high_obj
+            if source_obj is None:
+                continue
+
             diff = ObjectDiff.from_objects(
                 low_obj=low_obj,
                 high_obj=high_obj,
