@@ -214,9 +214,10 @@ def handle_message_multiprocessing(
             ):
                 status = Status.ERRORED
                 job_status = JobStatus.ERRORED
-        elif isinstance(result, SyftError) or isinstance(result, Err):
+        elif isinstance(result, SyftError | Err):
             status = Status.ERRORED
             job_status = JobStatus.ERRORED
+            result = result
 
         else:
             raise Exception(f"Unknown result type: {type(result)}")
@@ -224,6 +225,7 @@ def handle_message_multiprocessing(
         status = Status.ERRORED
         job_status = JobStatus.ERRORED
         logger.error("Unhandled error in handle_message_multiprocessing", exc_info=e)
+        result = SyftError(f"Unhandled error: {e}")
 
     queue_item.result = result
     queue_item.resolved = True

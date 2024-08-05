@@ -21,7 +21,8 @@ from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import EmailStr
 from pydantic import TypeAdapter
-from result import OkErr
+from result import Err
+from result import Ok
 from result import Result
 from typeguard import TypeCheckError
 from typeguard import check_type
@@ -298,6 +299,11 @@ class RemoteFunction(SyftObject):
 
         blocking = True
         if "blocking" in kwargs:
+            if path == "api.call_public_in_jobs":
+                return SyftError(
+                    message="The 'blocking' parameter is not allowed for this function"
+                )
+
             blocking = bool(kwargs["blocking"])
             del kwargs["blocking"]
 
@@ -1045,11 +1051,11 @@ class SyftAPI(SyftObject):
             if cache_result:
                 result = result.result
 
-        if isinstance(result, OkErr):
-            if result.is_ok():
-                result = result.ok()
-            else:
-                result = result.err()
+        if isinstance(result, Err):
+            # return early if we have an error
+            return result
+        elif isinstance(result, Ok):
+            result = result.ok()
         # we update the api when we create objects that change it
         self.update_api(result)
         return result
