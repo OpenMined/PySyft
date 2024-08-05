@@ -70,14 +70,14 @@
       "Model": {
         "1": {
           "version": 1,
-          "hash": "b32cfc037b89f28af88d6a363dcf8a9e9f05c4b8e0b2c5d4cc1b3da19c6f59d3",
+          "hash": "cf3c34dee61079b2fe3e143410401306bcf0444572773dc9624a192d0ba90a90",
           "action": "add"
         }
       },
       "CreateModel": {
         "1": {
           "version": 1,
-          "hash": "c9e57e0189513e6668add50a5d0252c8d61f9b6051ddb9aec403ced660d534e8",
+          "hash": "3f7c40e3e44b15b5e907f80558f750671ec4ea3338ed21eadbee8d6c289b39cf",
           "action": "add"
         }
       },
