@@ -1,4 +1,4 @@
 fastapi==0.112.0
 pyyaml==6.0.1
 supervisor==4.2.5
-uvicorn==0.30.4
+uvicorn==0.30.5
