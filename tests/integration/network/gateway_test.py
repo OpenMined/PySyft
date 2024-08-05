@@ -132,11 +132,6 @@ def test_datasite_connect_to_gateway(
 
     time.sleep(PeerHealthCheckTask.repeat_time * 2 + 1)
 
-    # this is the wrong test — sy.datasites checks the gateway registry
-    # check that the datasite is online on the network
-    # assert len(sy.datasites.all_datasites) == 1
-    # assert len(sy.datasites.online_datasites) == 1
-
     proxy_datasite_client = gateway_client.peers[0]
     datasite_peer = datasite_client.peers[0]
 
@@ -176,6 +171,7 @@ def test_datasite_connect_to_gateway(
 
 
 @pytest.mark.network
+@pytest.mark.skip(reason="Disabled since the dataset search functionality was removed")
 def test_dataset_search(set_env_var, gateway_port: int, datasite_1_port: int) -> None:
     """
     Scenario: Connecting a datasite server to a gateway server. The datasite
@@ -213,7 +209,7 @@ def test_dataset_search(set_env_var, gateway_port: int, datasite_1_port: int) ->
 
     # since dataset search is done by checking from the online datasites,
     # we need to wait to make sure peers health check is done
-    time.sleep(PeerHealthCheckTask.repeat_time * 2 + 1)
+    # time.sleep(PeerHealthCheckTask.repeat_time * 2 + 1)
     # test if the dataset can be searched by the syft network
     # right_search = sy.search(dataset_name)
     # assert isinstance(right_search, SearchResults)
@@ -348,12 +344,6 @@ def test_deleting_peers(set_env_var, datasite_1_port: int, gateway_port: int) ->
     # check that removing peers work as expected
     assert len(datasite_client.peers) == 0
     assert len(gateway_client.peers) == 0
-
-    # check that the online datasites and gateways are updated
-    time.sleep(PeerHealthCheckTask.repeat_time * 2 + 1)
-    assert len(sy.gateways.all_networks) == 1
-    # assert len(sy.datasites.all_datasites) == 0
-    # assert len(sy.datasites.online_datasites) == 0
 
     # reconnect the datasite to the gateway
     result = datasite_client.connect_to_gateway(gateway_client)
