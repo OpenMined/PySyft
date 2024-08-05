@@ -1,3 +1,3 @@
 fastapi==0.112.0
 loguru==0.7.2
-uvicorn[standard]==0.30.4
+uvicorn[standard]==0.30.5
