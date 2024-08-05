@@ -126,7 +126,7 @@ class ServerSettingsUpdate(PartialSyftObject):
     eager_execution_enabled: bool
     notifications_enabled: bool
     pwd_token_config: PwdTokenResetConfig
-    enable_guest_sessions: bool
+    allow_guest_sessions: bool
 
 
 @serializable()
@@ -264,7 +264,7 @@ class ServerSettings(SyftObject):
     )
     notifications_enabled: bool
     pwd_token_config: PwdTokenResetConfig = PwdTokenResetConfig()
-    enable_guest_sessions: bool = True
+    allow_guest_sessions: bool = True
 
     def _repr_html_(self) -> Any:
         # .api.services.notifications.settings() is how the server itself would dispatch notifications.
@@ -312,7 +312,7 @@ class ServerSettings(SyftObject):
                 <p><strong>Signup enabled: </strong>{self.signup_enabled}</p>
                 <p><strong>Notifications enabled: </strong>{notification_print_str}</p>
                 <p><strong>Admin email: </strong>{self.admin_email}</p>
-                <p><strong>Enable guest sessions: </strong>{self.enable_guest_sessions}</p>
+                <p><strong>Enable guest sessions: </strong>{self.allow_guest_sessions}</p>
             </div>
 
             """
@@ -334,7 +334,7 @@ def migrate_server_settings_v2_to_v3() -> list[Callable]:
 
 @migrate(ServerSettingsV3, ServerSettings)
 def migrate_server_settings_v3_to_current() -> list[Callable]:
-    return [make_set_default("enable_guest_sessions", False)]
+    return [make_set_default("allow_guest_sessions", False)]
 
 
 # drop
@@ -353,7 +353,7 @@ def migrate_server_settings_v3_to_v2() -> list[Callable]:
 @migrate(ServerSettings, ServerSettingsV3)
 def migrate_server_settings_current_to_v3() -> list[Callable]:
     # Use drop function on "notifications_enabled" attrubute
-    return [drop(["enable_guest_sessions"])]
+    return [drop(["allow_guest_sessions"])]
 
 
 # Server Settings Update Migration
@@ -372,7 +372,7 @@ def migrate_server_settings_update_v2_to_v3() -> list[Callable]:
 
 @migrate(ServerSettingsUpdateV3, ServerSettingsUpdate)
 def migrate_server_settings_update_v3_to_current() -> list[Callable]:
-    return [make_set_default("enable_guest_sessions", False)]
+    return [make_set_default("allow_guest_sessions", False)]
 
 
 # drop
@@ -388,4 +388,4 @@ def migrate_server_settings_update_current_to_v2() -> list[Callable]:
 
 @migrate(ServerSettingsUpdate, ServerSettingsUpdateV3)
 def migrate_server_settings_update_current_to_v3() -> list[Callable]:
-    return [drop(["enable_guest_sessions"])]
+    return [drop(["allow_guest_sessions"])]

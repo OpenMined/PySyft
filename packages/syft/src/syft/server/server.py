@@ -1140,7 +1140,7 @@ class Server(AbstractServer):
             # self.settings will always return a ServerSettings object.
             if (
                 not isinstance(self.settings, Ok)
-                and not self.settings.enable_guest_sessions
+                and not self.settings.allow_guest_sessions
                 and role == ServiceRole.GUEST
             ):
                 return SyftError(message="Server doesn't allow guest sessions.")
