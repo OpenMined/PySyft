@@ -18,6 +18,7 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ...util.markdown import as_markdown_python_code
+from ...util.util import get_qualname_for
 
 
 @serializable(canonical_name="EnclaveStatus", version=1)
@@ -42,7 +43,7 @@ class EnclaveInstance(SyftObject):
     metadata: ServerMetadataJSON | None = None
 
     __attr_searchable__ = ["name", "route", "status"]
-    __repr_attrs__ = ["name", "route", "status", "metadata"]
+    __repr_attrs__ = ["name", "route", "status"]
     __attr_unique__ = ["name"]
 
     @model_validator(mode="before")
@@ -95,8 +96,27 @@ class EnclaveInstance(SyftObject):
         return f"<Enclave: {self.name}>"
 
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
-        _repr_str = f"Enclave: {self.name}\n"
-        _repr_str += f"Route: {self.route}\n"
-        _repr_str += f"Status: {self.status}\n"
-        _repr_str += f"Metadata: {self.metadata}\n"
+        s_indent = " " * indent * 2
+        class_name = get_qualname_for(type(self))
+        _repr_dict = {
+            "id": self.metadata.id if self.metadata else "",
+            "name": self.name,
+            "route": self.route,
+            "status": str(self.status),
+            "verify_key": self.metadata.verify_key if self.metadata else "",
+            "syft_version": self.metadata.syft_version if self.metadata else "",
+            "server_type": self.metadata.server_type if self.metadata else "",
+            "organization": self.metadata.organization if self.metadata else "",
+            "admin_email": self.metadata.admin_email if self.metadata else "",
+            "server_side_type": self.metadata.server_side_type if self.metadata else "",
+        }
+
+        blank_string = '""'
+        _repr_str = f"{s_indent}class {class_name}:\n" + "".join(
+            [
+                f"{s_indent}  {key} = {value or blank_string}\n"
+                for key, value in _repr_dict.items()
+            ]
+        )
+
         return as_markdown_python_code(_repr_str) if wrap_as_python else _repr_str
