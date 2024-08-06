@@ -81,9 +81,13 @@ class JobService(AbstractService):
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_index(
-        self, context: AuthedServiceContext, index: int, order_by: str, descending: bool
+        self,
+        context: AuthedServiceContext,
+        index: int,
+        order_by: str = "created_at",
+        descending: bool = False,
     ) -> Job | SyftError:
-        res = self.stash.get_index(context.credentials, index, order_by, descending)
+        res = self.stash.get_index(context, index, order_by, descending)
         if res.is_err():
             return SyftError(message=res.err())
         else:
@@ -180,7 +184,7 @@ class JobService(AbstractService):
         )
 
         context.server.queue_stash.set_placeholder(context.credentials, queue_item)
-        context.server.job_stash.set(context.credentials, job)
+        self.stash.set(context.credentials, job)
 
         log_service = context.server.get_service("logservice")
         result = log_service.restart(context, job.log_id)
