@@ -5,6 +5,9 @@ import builtins
 import contextlib
 from re import I
 import threading
+from typing import Any, Generic
+from syft.types.syft_object import SyftObject
+from typing_extensions import TypeVar
 
 # third party
 from result import Ok, Err
@@ -35,10 +38,6 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, or_, and_, join
 
 
-def get_permission_from():
-    return join(JobPermissionDB, JobDB.id == JobPermissionDB.object_id)
-
-
 def get_permission_where(user_id):
     return or_(
         JobPermissionDB.user_id == user_id,
@@ -51,13 +50,7 @@ def get_permission_where(user_id):
     )
 
 
-@serializable(canonical_name="JobStashSQL", version=1)
-class JobStashSQL:
-    object_type = Job
-    settings: PartitionSettings = PartitionSettings(
-        name=Job.__canonical_name__, object_type=Job
-    )
-
+class SQLiteDBManager:
     def __init__(self, server_uid) -> None:
         self.server_uid = server_uid
         self.engine = create_engine(f"sqlite:////tmp/{server_uid}.db")
@@ -76,6 +69,91 @@ class JobStashSQL:
         session = self.get_session()
         yield session
 
+    @property
+    def session(self):
+        return self.get_session()
+
+
+ObjectT = TypeVar("ObjectT", bound=SyftObject)
+SchemaT = TypeVar("SchemaT", bound=Base)
+PermissionT = TypeVar("PermissionT", bound=Base)
+
+
+class BaseStashSQL(Generic[ObjectT, SchemaT, PermissionT]):
+    def __init__(self, server_uid: str) -> None:
+        self.server_uid = server_uid
+        self.schema_type = SchemaT
+
+        # temporary, this should be an external dependency
+        self.db = SQLiteDBManager(server_uid)
+
+    @property
+    def session(self):
+        return self.db.session
+
+    def get_one_by_property(
+        self,
+        context,
+        property_name: str,
+        property_value: Any,
+    ) -> Result[ObjectT, str]:
+        try:
+            obj_db = (
+                self.session.query(self.schema_type)
+                .filter(getattr(self.schema_type, property_name) == property_value)
+                .first()
+            )
+            if obj_db:
+                return Ok(obj_db.to_obj())
+            return Err(f"Object with {property_name} {property_value} not found")
+        except Exception as e:
+            return Err(str(e))
+
+    def get_many_by_property(
+        self,
+        context,
+        property_name: str,
+        property_value: Any,
+    ) -> Result[list[ObjectT], str]:
+        try:
+            obj_dbs = (
+                self.session.query(self.schema_type)
+                .filter(getattr(self.schema_type, property_name) == property_value)
+                .all()
+            )
+            if obj_dbs:
+                return Ok([obj_db.to_obj() for obj_db in obj_dbs])
+            return Err(f"Object with {property_name} {property_value} not found")
+        except Exception as e:
+            return Err(str(e))
+
+    def get_index(
+        self, context, index: int, order_by: str = "created_at", descending: bool = True
+    ) -> Result[ObjectT, str]:
+        obj = (
+            self.session.query(self.schema_type)
+            .order_by(
+                getattr(self.schema_type, order_by).desc() if descending else None
+            )
+            .offset(index)
+            .first()
+        )
+        if obj is None:
+            return Err("Object not found")
+        return Ok(obj.to_obj())
+
+
+@serializable(canonical_name="JobStashSQL", version=1)
+class JobStashSQL(BaseStashSQL):
+    object_type = Job
+    settings: PartitionSettings = PartitionSettings(
+        name=Job.__canonical_name__, object_type=Job
+    )
+
+    def __init__(self, server_uid: str) -> None:
+        super().__init__(server_uid)
+        self.schema_type = JobDB
+
     def set_result(
         self,
         credentials: SyftVerifyKey,
@@ -89,22 +167,13 @@ class JobStashSQL:
         credentials: SyftVerifyKey,
         result_id: UID,
     ) -> Result[Job | None, str]:
-        with self.session_context() as session:
-            job_db = (
-                session.query(JobDB).filter_by(result_id=unwrap_uid(result_id)).first()
-            )
-            if job_db is None:
-                return Ok(None)
-            return Ok(job_db.to_obj())
-
-    def get_index(
-        self, index: int, order_by: str = "created_at", descending: bool = True
-    ) -> Result[Job, str]:
-        with self.session_context() as session:
-            job = session.query(JobDB).order_by(order_by).offset(index).first()
-            if job is None:
-                return Err("Job not found")
-            return Ok(job.to_obj())
+        job_db = self.get_by_property(
+            "result_id",
+            unwrap_uid(result_id),
+        )
+        if job_db is None:
+            return Ok(None)
+        return Ok(job_db.to_obj())
 
     def get_by_parent_id(
         self, credentials: SyftVerifyKey, uid: UID
@@ -129,15 +198,8 @@ class JobStashSQL:
                 return str(e)
 
     def get_active(self, credentials: SyftVerifyKey) -> Result[list[Job], str]:
-        with self.session_context() as session:
-            jobs = (
-                session.query(JobDB)
-                .join(JobPermissionDB, JobDB.id == JobPermissionDB.object_id)
-                .where(get_permission_where(str(credentials.verify_key)))
-                .filter_by(status=JobStatus.PROCESSING)
-                .all()
-            )
-            return Ok([job.to_obj() for job in jobs])
+        jobs = self.get_many_by_property("status", JobStatus.ACTIVE)
+        return jobs
 
     def get_by_worker(
         self, credentials: SyftVerifyKey, worker_id: str
@@ -147,7 +209,7 @@ class JobStashSQL:
                 session.query(JobDB)
                 .join(JobPermissionDB, JobDB.id == JobPermissionDB.object_id)
                 .where(get_permission_where(str(credentials.verify_key)))
-                .filter_by(worker_id=unwrap_uid(worker_id))
+                .filter_by(worker_id=worker_id)
                 .all()
             )
             return Ok([job.to_obj() for job in jobs])
@@ -212,23 +274,13 @@ class JobStashSQL:
                 for permission in add_permissions
             }
 
-        with self.session_context() as session:
-            session.add(job_db)
-            session.commit()
-            return Ok(job_db.to_obj())
+        self.session.add(job_db)
+        self.session.commit()
+        return Ok(job_db.to_obj())
 
     def get_by_uid(self, credentials: SyftVerifyKey, uid: UID) -> Result[Job, str]:
-        with self.session_context() as session:
-            job_db = (
-                session.query(JobDB)
-                .join(JobPermissionDB, JobDB.id == JobPermissionDB.object_id)
-                .where(get_permission_where(str(credentials.verify_key)))
-                .filter_by(id=unwrap_uid(uid))
-                .first()
-            )
-            if job_db is None:
-                return Ok(None)
-            return Ok(job_db.to_obj())
+        job_db = self.get_by_property("id", unwrap_uid(uid))
+        return job_db
 
     def update(
         self,

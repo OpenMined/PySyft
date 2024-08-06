@@ -121,14 +121,10 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
 
     def upsert(self, session: Session, obj: ObjectT) -> Result[ObjectT, str]:
         try:
-            obj_db = session.query(self.schema_type).filter_by(id=obj.id).first()
-            if obj_db:
-                obj_db.update_obj(obj)
-            else:
-                obj_db = self.schema_type.from_obj(obj)
-                session.add(obj_db)
+            # Use merge to handle upsert
+            obj_db = session.merge(self.schema_type.from_obj(obj))
             session.commit()
-            return Ok(obj)
+            return Ok(obj_db)
         except Exception as e:
             session.rollback()
             return Err(str(e))
