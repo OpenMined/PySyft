@@ -11,6 +11,9 @@ from collections.abc import Callable
 from datetime import datetime
 from typing import TypeVar
 
+# third party
+from pydantic import BaseModel
+
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
@@ -29,8 +32,11 @@ from .notifier_enums import NOTIFIERS
 from .smtp_client import SMTPClient
 
 
-class BaseNotifier:
-    def send(self, target: SyftVerifyKey, notification: Notification) -> SyftSuccess:
+class BaseNotifier(BaseModel):
+    @as_result(SyftException)
+    def send(
+        self, target: SyftVerifyKey, notification: Notification
+    ) -> SyftSuccess:
         raise SyftException(public_message="Not implemented")
 
 
@@ -48,7 +54,7 @@ class UserNotificationActivity(SyftObject):
 @serializable(canonical_name="EmailNotifier", version=1)
 class EmailNotifier(BaseNotifier):
     smtp_client: SMTPClient
-    sender = ""
+    sender: str = ""
 
     def __init__(
         self,

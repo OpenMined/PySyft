@@ -206,11 +206,11 @@ def handle_message_multiprocessing(
         result = call_method(context, *queue_item.args, **queue_item.kwargs)
         status = Status.COMPLETED
         job_status = JobStatus.COMPLETED
-
     except Exception as e:
         status = Status.ERRORED
         job_status = JobStatus.ERRORED
         logger.error("Unhandled error in handle_message_multiprocessing", exc_info=e)
+        result = SyftError(f"Unhandled error: {e}")
 
     queue_item.result = result
     queue_item.resolved = True

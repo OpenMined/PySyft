@@ -133,6 +133,20 @@ def test_diff_state(low_worker, high_worker):
     assert res == compute(syft_no_server=True)
 
 
+def test_skip_deletion(low_worker, high_worker):
+    low_client: DatasiteClient = low_worker.root_client
+    high_client: DatasiteClient = high_worker.root_client
+
+    @sy.syft_function_single_use()
+    def compute() -> int:
+        return 42
+
+    _ = low_client.code.request_code_execution(compute)
+
+    w = sy.sync(high_client, low_client)
+    assert isinstance(w, SyftSuccess), f"Expected empty diff, got {w}"
+
+
 def test_diff_state_with_dataset(low_worker: Worker, high_worker: Worker):
     low_client: DatasiteClient = low_worker.root_client
     client_low_ds = get_ds_client(low_client)

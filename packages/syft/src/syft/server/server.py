@@ -782,7 +782,9 @@ class Server(AbstractServer):
     def __repr__(self) -> str:
         service_string = ""
         if not self.is_subprocess:
-            services = [service.__class__.__name__ for service in self.initialized_services]
+            services = [
+                service.__class__.__name__ for service in self.initialized_services
+            ]
             service_string = ", ".join(sorted(services))
             service_string = f"\n\nServices:\n{service_string}"
         return f"{type(self).__name__}: {self.name} - {self.id} - {self.server_type}{service_string}"
