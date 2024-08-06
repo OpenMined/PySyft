@@ -17,18 +17,6 @@ class MarkdownDescription(SyftObject):
     text: str
 
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
-        style = """
-        <style>
-            .jp-RenderedHTMLCommon pre {
-                background-color: #282c34;
-            }
-            .jp-RenderedHTMLCommon pre code {
-                background-color: #282c34;  /* Set the background color for the text in the code block */
-                color: #abb2bf;  /* Set text color */
-            }
-        </style>
-        """
-        display(HTML(style))
         return self.text
 
 @serializable()
