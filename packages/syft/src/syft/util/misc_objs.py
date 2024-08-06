@@ -20,18 +20,17 @@ class MarkdownDescription(SyftObject):
         style = """
         <style>
             .jp-RenderedHTMLCommon pre {
-                background-color: #282c34 !important;
+                background-color: #282c34;
                 padding: 10px 10px 10px;
             }
             .jp-RenderedHTMLCommon pre code {
-                background-color: #282c34 !important;  /* Set the background color for the text in the code block */
-                color: #abb2bf !important;  /* Set text color */
+                background-color: #282c34;  /* Set the background color for the text in the code block */
+                color: #abb2bf;  /* Set text color */
             }
         </style>
         """
         display(HTML(style))
         return self.text
-
 
 @serializable()
 class HTMLObject(SyftObject):
