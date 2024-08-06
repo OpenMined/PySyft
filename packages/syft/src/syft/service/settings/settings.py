@@ -23,8 +23,6 @@ from ...types.syft_object import SyftObject
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
 from ...types.uid import UID
-from ...util import options
-from ...util.colors import SURFACE
 from ...util.misc_objs import HTMLObject
 from ...util.misc_objs import MarkdownDescription
 from ...util.schema import DEFAULT_WELCOME_MSG
@@ -243,9 +241,6 @@ class ServerSettings(SyftObject):
                 notification_print_str = "Disabled"
 
         return f"""
-            <style>
-            .syft-settings {{color: {SURFACE[options.color_theme]};}}
-            </style>
             <div class='syft-settings'>
                 <h3>Settings</h3>
                 <p><strong>Id: </strong>{self.id}</p>
