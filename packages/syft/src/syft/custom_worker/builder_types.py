@@ -29,6 +29,10 @@ class ImagePushResult(BaseModel):
     logs: str
     exit_code: int
 
+    @property
+    def has_failed(self) -> bool:
+        return self.exit_code != 0
+
 
 class BuilderBase(ABC):
     @abstractmethod

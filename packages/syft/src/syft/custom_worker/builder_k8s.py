@@ -173,17 +173,17 @@ class KubernetesBuilder(BuilderBase):
         return sha256(tag.encode()).hexdigest()
 
     def _get_image_digest(self, job: Job) -> str | None:
-        selector = {"batch.kubernetes.io/job-name": job.metadata.name}
+        selector = {"job-name": job.metadata.name}
         pods = self.client.get("pods", label_selector=selector)
         return KubeUtils.get_container_exit_message(pods)
 
     def _get_exit_code(self, job: Job) -> list[int]:
-        selector = {"batch.kubernetes.io/job-name": job.metadata.name}
+        selector = {"job-name": job.metadata.name}
         pods = self.client.get("pods", label_selector=selector)
         return KubeUtils.get_container_exit_code(pods)
 
     def _get_logs(self, job: Job) -> str:
-        selector = {"batch.kubernetes.io/job-name": job.metadata.name}
+        selector = {"job-name": job.metadata.name}
         pods = self.client.get("pods", label_selector=selector)
         return KubeUtils.get_logs(pods)
 
