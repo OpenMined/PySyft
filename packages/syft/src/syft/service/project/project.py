@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections.abc import Callable
 from collections.abc import Iterable
 import copy
-from enum import Enum
 import hashlib
 import textwrap
 import time
@@ -56,6 +55,7 @@ from ..enclave.enclave import EnclaveInstance
 from ..network.network_service import ServerPeer
 from ..network.routes import ServerRoute
 from ..network.routes import connection_to_route
+from ..network.utils import check_route_reachability
 from ..request.request import Request
 from ..request.request import RequestStatus
 from ..response import SyftError
@@ -553,6 +553,8 @@ class ProjectCode(ProjectEventAddObject):
             if attestation_type == AttestationType.CPU
             else client.api.services.attestation.get_gpu_attestation(raw_token=True)
         )
+        if isinstance(raw_jwt_report, SyftError):
+            return raw_jwt_report
         print(
             f"Got encrypted attestation report of {len(raw_jwt_report)} bytes. Verifying it...",
             flush=True,
@@ -1707,36 +1709,3 @@ def create_project_event_hash(project_event: ProjectEvent) -> tuple[bytes, str]:
             hash_object(project_event.creator_verify_key)[1],
         ]
     )
-
-
-class NetworkTopology(Enum):
-    STAR = "STAR"
-    MESH = "MESH"
-    HYBRID = "HYBRID"
-
-
-def check_route_reachability(
-    clients: list[SyftClient], topology: NetworkTopology = NetworkTopology.MESH
-) -> SyftSuccess | SyftError:
-    if topology == NetworkTopology.STAR:
-        return SyftError("STAR topology is not supported yet")
-    elif topology == NetworkTopology.MESH:
-        return check_mesh_topology(clients)
-    else:
-        return SyftError(message=f"Invalid topology: {topology}")
-
-
-def check_mesh_topology(clients: list[SyftClient]) -> SyftSuccess | SyftError:
-    for client in clients:
-        for other_client in clients:
-            if client == other_client:
-                continue
-            result = client.api.services.network.ping_peer(
-                verify_key=other_client.root_verify_key
-            )
-            if isinstance(result, SyftError):
-                return SyftError(
-                    message=f"{client.name}-<{client.id}> - cannot reach"
-                    + f"{other_client.name}-<{other_client.id} - {result.message}"
-                )
-    return SyftSuccess(message="All clients are reachable")

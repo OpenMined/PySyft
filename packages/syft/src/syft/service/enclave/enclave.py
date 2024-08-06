@@ -49,7 +49,6 @@ class EnclaveInstance(SyftObject):
     @classmethod
     def initialize_values(cls, values: dict[str, Any]) -> dict[str, Any]:
         is_being_created = "id" not in values
-
         if is_being_created and "route" in values:
             connection = route_to_connection(values["route"])
             metadata = connection.get_server_metadata(credentials=None)

@@ -6,6 +6,7 @@ from typing import cast
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
+from ...types.server_url import ServerURL
 from ...types.uid import UID
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
@@ -13,7 +14,7 @@ from ..action.action_permissions import ActionPermission
 from ..code.user_code import UserCode
 from ..context import AuthedServiceContext
 from ..model.model import ModelRef
-from ..network.routes import ServerRouteType
+from ..network.routes import HTTPServerRoute
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -41,9 +42,22 @@ class DatasiteEnclaveService(AbstractService):
         roles=ADMIN_ROLE_LEVEL,
     )
     def add(
-        self, context: AuthedServiceContext, route: ServerRouteType
+        self,
+        context: AuthedServiceContext,
+        route: HTTPServerRoute | None = None,
+        url: str | None = None,
     ) -> SyftSuccess | SyftError:
         """Add an Enclave to the network."""
+        if route is None and url is None:
+            return SyftError(message="Either route or url must be provided.")
+        if url:
+            parsed_url = ServerURL.from_url(url)
+            route = HTTPServerRoute(
+                host_or_ip=parsed_url.host_or_ip,
+                port=parsed_url.port,
+                protocol=parsed_url.protocol,
+            )
+
         enclave = EnclaveInstance(route=route)
         result = self.stash.set(
             credentials=context.credentials,

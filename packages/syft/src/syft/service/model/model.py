@@ -3,12 +3,16 @@ from collections.abc import Callable
 from datetime import datetime
 from enum import Enum
 import hashlib
+import random
+from string import Template
 from textwrap import dedent
 from typing import Any
 from typing import ClassVar
 from typing import cast
 
 # third party
+from IPython.display import HTML
+from IPython.display import Markdown
 from IPython.display import display
 from pydantic import ConfigDict
 from result import Err
@@ -17,6 +21,7 @@ from result import OkErr
 from result import Result
 
 # relative
+from ...client.api import APIRegistry
 from ...client.client import SyftClient
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize as serialize
@@ -30,6 +35,7 @@ from ...types.transforms import transform
 from ...types.transforms import validate_url
 from ...types.uid import UID
 from ...util.markdown import as_markdown_python_code
+from ...util.notebook_ui.components.sync import CopyIDButton
 from ..action.action_object import ActionDataEmpty
 from ..action.action_object import ActionObject
 from ..action.action_object import BASE_PASSTHROUGH_ATTRS
@@ -41,6 +47,9 @@ from ..policy.policy import get_code_from_class
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..response import SyftWarning
+from .model_html_template import asset_repr_template
+from .model_html_template import generate_attr_html
+from .model_html_template import model_repr_template
 
 
 def has_permission(data_result: Any) -> bool:
@@ -78,7 +87,7 @@ class ModelAsset(SyftObject):
     created_at: DateTime = DateTime.now()
     asset_hash: str
 
-    __repr_attrs__ = ["name", "endpoint_path"]
+    __repr_attrs__ = ["name", "created_at", "asset_hash"]
 
     def __init__(
         self,
@@ -89,8 +98,45 @@ class ModelAsset(SyftObject):
             description = MarkdownDescription(text=description)
         super().__init__(**kwargs, description=description)
 
+    def _ipython_display_(self) -> None:
+        if self.description:
+            string = f"""<details>
+        <summary>Show Asset Description:</summary>
+        {self.description._repr_markdown_()}
+    </details>"""
+            display(HTML(self._repr_html_()), Markdown(string))
+        else:
+            display(HTML(self._repr_html_()))
+
     def _repr_html_(self) -> Any:
-        return f"Asset Hash: {self.asset_hash}"
+        identifier = random.randint(1, 2**32)  # nosec
+        result_tab_id = f"Result_{identifier}"
+        logs_tab_id = f"Logs_{identifier}"
+        model_object_type = "Asset"
+        api_header = "model_assets/"
+        model_name = f"{self.name}"
+        button_html = CopyIDButton(copy_text=str(self.id), max_width=60).to_html()
+
+        attrs = {
+            "Created at": str(self.created_at),
+            "Action ID": str(self.action_id),
+            "Server ID": str(self.server_uid),
+            "Asset Hash": str(self.asset_hash),
+        }
+        attrs_html = generate_attr_html(attrs)
+
+        template = Template(asset_repr_template)
+        return template.substitute(
+            model_object_type=model_object_type,
+            api_header=api_header,
+            model_name=model_name,
+            button_html=button_html,
+            attrs_html=attrs_html,
+            identifier=identifier,
+            result_tab_id=result_tab_id,
+            logs_tab_id=logs_tab_id,
+            result=None,
+        )
 
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         _repr_str = f"Asset: {self.name}\n"
@@ -131,6 +177,27 @@ class ModelAsset(SyftObject):
             )
             display(warning)
             return None
+
+    @property
+    def mock(self) -> SyftError | Any:
+        # relative
+        from ...client.api import APIRegistry
+
+        api = APIRegistry.api_for(
+            server_uid=self.syft_server_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None:
+            raise ValueError(f"api is None. You must login to {self.syft_server_uid}")
+        result = api.services.action.get_mock(self.action_id)
+        if isinstance(result, SyftError):
+            return result
+        try:
+            if isinstance(result, SyftObject):
+                return result.syft_action_data
+            return result
+        except Exception as e:
+            return SyftError(message=f"Failed to get mock. {e}")
 
     # def __call__(self, *args, **kwargs) -> Any:
     #     endpoint = self.endpoint
@@ -189,6 +256,9 @@ class SubmitModelCode(ActionObject):
     @property
     def code(self) -> str:
         return self.syft_action_data
+
+    def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
+        return as_markdown_python_code(self.code)
 
     def __call__(self, **kwargs: dict) -> Any:
         # Load Class
@@ -269,6 +339,42 @@ class CreateModelAsset(SyftObject):
             return True
         return False
 
+    def _ipython_display_(self) -> None:
+        display(HTML(self._repr_html_()))
+        if self.description:
+            string = f"""<details>
+        <summary>Show Asset Description:</summary>
+        {self.description._repr_markdown_()}
+    </details>"""
+            display(Markdown(string))
+
+    def _repr_html_(self) -> Any:
+        identifier = random.randint(1, 2**32)  # nosec
+        result_tab_id = f"Result_{identifier}"
+        logs_tab_id = f"Logs_{identifier}"
+        model_object_type = "Asset"
+        api_header = "model_assets/"
+        model_name = f"{self.name}"
+        button_html = CopyIDButton(copy_text=str(self.id), max_width=60).to_html()
+
+        attrs = {
+            "Created at": str(self.created_at),
+        }
+        attrs_html = generate_attr_html(attrs)
+
+        template = Template(asset_repr_template)
+        return template.substitute(
+            model_object_type=model_object_type,
+            api_header=api_header,
+            model_name=model_name,
+            button_html=button_html,
+            attrs_html=attrs_html,
+            identifier=identifier,
+            result_tab_id=result_tab_id,
+            logs_tab_id=logs_tab_id,
+            result=None,
+        )
+
 
 @serializable()
 class Model(SyftObject):
@@ -276,16 +382,17 @@ class Model(SyftObject):
     __canonical_name__: str = "Model"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    __attr_searchable__ = ["name", "citation", "url", "description"]
+    __attr_searchable__ = ["name", "citation", "url", "card"]
     __attr_unique__ = ["name"]
     __repr_attrs__ = ["name", "url", "created_at"]
 
     name: str
     asset_list: list[ModelAsset] = []
+    server_uid: UID
     contributors: set[Contributor] = set()
     citation: str | None = None
     url: str | None = None
-    description: MarkdownDescription | None = None
+    card: MarkdownDescription | None = None
     updated_at: str | None = None
     created_at: DateTime = DateTime.now()
     show_code: bool = False
@@ -295,14 +402,27 @@ class Model(SyftObject):
     code_action_id: UID | None = None
     syft_model_hash: str | None = None
 
+    @property
+    def server_name(self) -> str | SyftError | None:
+        api = APIRegistry.api_for(
+            server_uid=self.syft_server_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None:
+            # return "SyftError(
+            #     message=f"Can't access Syft API. You must login to {self.syft_server_location}"
+            # )"
+            return "unknown"
+        return api.server_name
+
     def __init__(
         self,
-        description: str | MarkdownDescription | None = "",
+        card: str | MarkdownDescription | None = "",
         **kwargs: Any,
     ) -> None:
-        if isinstance(description, str):
-            description = MarkdownDescription(text=description)
-        super().__init__(**kwargs, description=description)
+        if isinstance(card, str):
+            card = MarkdownDescription(text=card)
+        super().__init__(**kwargs, card=card)
 
     @property
     def icon(self) -> str:
@@ -319,7 +439,7 @@ class Model(SyftObject):
         )
         if api is None or api.services is None:
             return None
-        res = api.services.action.get(self.code_action_id)
+        res = api.services.action.get_model_code(self.code_action_id)
         if has_permission(res):
             return res
         else:
@@ -328,6 +448,14 @@ class Model(SyftObject):
             )
             display(warning)
             return None
+
+    @property
+    def mock(self) -> SyftModelClass:
+        model_code = self.model_code
+        if model_code is None:
+            raise ValueError("[Model.mock] Cannot access model code")
+        mock_assets = [asset.mock for asset in self.asset_list]
+        return model_code(assets=mock_assets)
 
     def _coll_repr_(self) -> dict[str, Any]:
         return {
@@ -338,9 +466,53 @@ class Model(SyftObject):
             "created at": str(self.created_at),
         }
 
+    def _ipython_display_(self) -> None:
+        show_string = "For more information, `.assets` reveals the resources \
+            used by the model and `.model_code` will show the model code."
+        if self.card:
+            card_string = f"""<details>
+        <summary>Show model card:</summary>
+        {self.card._repr_markdown_()}
+    </details>"""
+            display(
+                HTML(self._repr_html_()),
+                Markdown(card_string),
+                Markdown(show_string),
+            )
+        else:
+            display(HTML(self._repr_html_()), Markdown(show_string))
+
     def _repr_html_(self) -> Any:
         # TODO: Improve Repr
-        return f"Model Hash: {self.syft_model_hash}"
+        # return f"Model Hash: {self.syft_model_hash}"
+        identifier = random.randint(1, 2**32)  # nosec
+        result_tab_id = f"Result_{identifier}"
+        logs_tab_id = f"Logs_{identifier}"
+        model_object_type = "Model"
+        api_header = f"{self.server_name}/models/"
+        model_name = f"{self.name}"
+        button_html = CopyIDButton(copy_text=str(self.id), max_width=60).to_html()
+
+        attrs = {
+            "Mb Size": str(self.mb_size),
+            "URL": str(self.url),
+            "Created at": str(self.created_at),
+            "Updated at": self.updated_at,
+            "Citation": self.citation,
+            "Model Hash": self.syft_model_hash,
+        }
+        attrs_html = generate_attr_html(attrs)
+        template = Template(model_repr_template)
+        return template.substitute(
+            model_object_type=model_object_type,
+            api_header=api_header,
+            model_name=model_name,
+            button_html=button_html,
+            attrs_html=attrs_html,
+            identifier=identifier,
+            result_tab_id=result_tab_id,
+            logs_tab_id=logs_tab_id,
+        )
 
     @property
     def assets(self) -> DictTuple[str, ModelAsset]:
@@ -358,8 +530,8 @@ class Model(SyftObject):
             _repr_str += f"Citation: {self.citation}\n"
         if self.url:
             _repr_str += f"URL: {self.url}\n"
-        if self.description:
-            _repr_str += f"Description:\n{self.description.text}\n"
+        if self.card:
+            _repr_str += f"card:\n{self.card.text}\n"
         return as_markdown_python_code(_repr_str)
 
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
@@ -378,8 +550,8 @@ class Model(SyftObject):
             _repr_str += f"Citation: {self.citation}\n\n"
         if self.url:
             _repr_str += f"URL: {self.url}\n\n"
-        if self.description:
-            _repr_str += f"Description: \n\n{self.description.text}\n\n"
+        if self.card:
+            _repr_str += f"card: \n\n{self.card.text}\n\n"
         if self.example_text:
             _repr_str += f"Example: \n\n{self.example_text}\n\n"
         return _repr_str
@@ -445,9 +617,10 @@ class CreateModel(Model):
     asset_list: list[Any] = []
     created_at: DateTime | None = None  # type: ignore[assignment]
     model_config = ConfigDict(validate_assignment=True)
+    server_uid: UID | None = None  # type: ignore[assignment]
 
-    def set_description(self, description: str) -> None:
-        self.description = MarkdownDescription(text=description)
+    def set_card(self, card: str) -> None:
+        self.card = MarkdownDescription(text=card)
 
     def add_citation(self, citation: str) -> None:
         self.citation = citation
@@ -631,6 +804,14 @@ def add_model_hash(context: TransformContext) -> TransformContext:
     return context
 
 
+def add_server_uid(context: TransformContext) -> TransformContext:
+    if context.output is None:
+        return context
+    if context.server:
+        context.output["server_uid"] = context.server.id
+    return context
+
+
 @transform(CreateModel, Model)
 def createmodel_to_model() -> list[Callable]:
     return [
@@ -640,6 +821,7 @@ def createmodel_to_model() -> list[Callable]:
         convert_asset,
         add_current_date,
         add_model_hash,
+        add_server_uid,
     ]
 
 

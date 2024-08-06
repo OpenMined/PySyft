@@ -123,7 +123,7 @@ class DatasiteClient(SyftClient):
 
         model_size: float = 0.0
         with tqdm(
-            total=len(model.asset_list), colour="green", desc="Uploading"
+            total=len(model.asset_list), colour="green", desc="Uploading assets"
         ) as pbar:
             for asset in model.asset_list:
                 try:
@@ -165,7 +165,7 @@ class DatasiteClient(SyftClient):
                 asset.mock = None
 
                 # Update the progress bar and set the dynamic description
-                pbar.set_description(f"Uploading: {asset.name}")
+                pbar.set_description(f"Uploading: {asset.name} asset")
                 pbar.update(1)
 
         # Step 3. Upload Model Ref to Action Store
@@ -226,7 +226,7 @@ class DatasiteClient(SyftClient):
             prompt_warning_message(message=message, confirm=True)
 
         with tqdm(
-            total=len(dataset.asset_list), colour="green", desc="Uploading"
+            total=len(dataset.asset_list), colour="green", desc="Uploading assets"
         ) as pbar:
             for asset in dataset.asset_list:
                 try:
@@ -258,7 +258,7 @@ class DatasiteClient(SyftClient):
                 dataset_size += get_mb_size(asset.data)
 
                 # Update the progress bar and set the dynamic description
-                pbar.set_description(f"Uploading: {asset.name}")
+                pbar.set_description(f"Uploading: {asset.name} asset")
                 pbar.update(1)
 
         dataset.mb_size = dataset_size
