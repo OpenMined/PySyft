@@ -151,6 +151,18 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
 
         return query
 
+    def get_all(self, credentials: SyftVerifyKey) -> Result[list[ObjectT], str]:
+        try:
+            obj_dbs = self._get_with_permissions(
+                credentials,
+                None,
+                None,
+                ActionPermission.READ,
+            ).all()
+            return Ok([obj_db.to_obj() for obj_db in obj_dbs])
+        except Exception as e:
+            return Err(str(e))
+
     def get_one_by_property(
         self,
         credentials: SyftVerifyKey,
@@ -256,14 +268,14 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
 
     def update(self, credentials: SyftVerifyKey, obj: ObjectT) -> Result[ObjectT, str]:
         try:
-            obj_db = self._get_with_permissions(
+            obj_db: SchemaT | None = self._get_with_permissions(
                 credentials,
                 "id",
                 obj.id,
                 ActionPermission.WRITE,
-            ).first()
+            ).one_or_none()
 
-            if obj_db:
+            if obj_db is not None:
                 obj_db.update_obj(obj)
                 self.session.commit()
                 return Ok(obj)
@@ -273,6 +285,7 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
             return Err(str(e))
 
     def delete(self, credentials: SyftVerifyKey, uid: UID) -> Result[UID, str]:
+        # TODO cascade delete permissions
         try:
             obj_db = self._get_with_permissions(
                 credentials,
@@ -290,6 +303,10 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
 
         except Exception as e:
             return Err(str(e))
+
+    def delete_by_uid(self, credentials: SyftVerifyKey, uid: UID) -> Result[UID, str]:
+        # TODO rename to delete
+        return self.delete(credentials, uid)
 
 
 @serializable(canonical_name="JobStashSQL", version=1)
@@ -329,15 +346,6 @@ class JobStashSQL(ObjectStash[Job, JobDB]):
         subjobs = self.get_many_by_property(credentials, "parent_id", unwrap_uid(uid))
         return subjobs
 
-    def delete_by_uid(self, credentials: SyftVerifyKey, uid: UID) -> Result[Ok, str]:
-        with self.session_context() as session:
-            try:
-                session.query(JobDB).filter_by(id=unwrap_uid(uid)).delete()
-                session.commit()
-                return Ok(SyftSuccess(message=f"ID: {uid} deleted"))
-            except IntegrityError as e:
-                return str(e)
-
     def get_active(self, credentials: SyftVerifyKey) -> Result[list[Job], str]:
         jobs = self.get_many_by_property(credentials, "status", JobStatus.CREATED)
         return jobs
@@ -345,39 +353,14 @@ class JobStashSQL(ObjectStash[Job, JobDB]):
     def get_by_worker(
         self, credentials: SyftVerifyKey, worker_id: str
     ) -> Result[list[Job], str]:
-        with self.session_context() as session:
-            jobs = (
-                session.query(JobDB)
-                .join(JobPermissionDB, JobDB.id == JobPermissionDB.object_id)
-                .where(get_permission_where(str(credentials.verify_key)))
-                .filter_by(worker_id=worker_id)
-                .all()
-            )
-            return Ok([job.to_obj() for job in jobs])
+        jobs = self.get_many_by_property(credentials, "worker_id", worker_id)
+        return jobs
 
     def get_by_user_code_id(
         self, credentials: SyftVerifyKey, user_code_id: UID
     ) -> Result[list[Job], str]:
-        with self.session_context() as session:
-            jobs = (
-                session.query(JobDB)
-                .join(JobPermissionDB, JobDB.id == JobPermissionDB.object_id)
-                .where(get_permission_where(str(credentials.verify_key)))
-                .filter_by(user_code_id=unwrap_uid(user_code_id))
-                .all()
-            )
-            return Ok([job.to_obj() for job in jobs])
-
-    def get_all(self, credentials: SyftVerifyKey) -> Result[list[Job], str]:
-        user_id = str(credentials.verify_key)
-
-        with self.session_context() as session:
-            jobs = session.execute(
-                select(JobDB)
-                .join(JobPermissionDB, JobDB.id == JobPermissionDB.object_id)
-                .where(get_permission_where(str(credentials.verify_key)))
-            ).scalars()
-            return Ok([job.to_obj() for job in jobs])
+        jobs = self.get_many_by_property(credentials, "user_code_id", user_code_id)
+        return jobs
 
     def set(
         self,
@@ -414,31 +397,14 @@ class JobStashSQL(ObjectStash[Job, JobDB]):
             and item.result.syft_blob_storage_entry_id is not None
         ):
             item.result._clear_cache()
-        with self.session_context() as session:
-            # TODO we need to check write permissions here
-            updated_job_db = JobDB.from_obj(item)
-            job_db = (
-                session.query(JobDB)
-                .join(JobPermissionDB, JobDB.id == JobPermissionDB.object_id)
-                .where(get_permission_where(str(credentials.verify_key)))
-                .filter_by(id=unwrap_uid(item.id))
-                .first()
-            )
-
-            if job_db is None:
-                return Err("Job not found")
-
-            for key, value in updated_job_db.to_dict().items():
-                setattr(job_db, key, value)
-
-            # session.add(job_db)
-            session.commit()
-            return Ok(job_db.to_obj())
+        return super().update(credentials, item)
 
     def has_permission(self, *args, **kwargs) -> bool:
+        # TODO
         return True
 
     def _get_permissions_for_uid(self, uid: UID) -> Result[builtins.set[str], str]:
+        # TODO
         return Ok(
             {
                 ActionPermission.ALL_READ.name,
@@ -450,11 +416,12 @@ class JobStashSQL(ObjectStash[Job, JobDB]):
     def _get_storage_permissions_for_uid(
         self, uid: UID
     ) -> Result[builtins.set[str], str]:
+        # TODO
         return Ok(
             {
                 self.server_uid,
             }
         )
 
-    def add_permission(self, *args, **kwargs): ...
-    def add_storage_permissions(self, *args, **kwargs): ...
+    def add_permission(self, *args, **kwargs): ...  # TODO
+    def add_storage_permissions(self, *args, **kwargs): ...  # TODO

@@ -47,6 +47,10 @@ class Base(DeclarativeBase):
             if column.name not in ignore_fields
         }
 
+    def update(self, other: type[Self]) -> None:
+        for key, value in other.to_dict().items():
+            setattr(self, key, value)
+
 
 class CommonMixin:
     @declared_attr.directive
