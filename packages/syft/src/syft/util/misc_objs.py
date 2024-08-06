@@ -21,7 +21,6 @@ class MarkdownDescription(SyftObject):
         <style>
             .jp-RenderedHTMLCommon pre {
                 background-color: #282c34;
-                padding: 10px 10px 10px;
             }
             .jp-RenderedHTMLCommon pre code {
                 background-color: #282c34;  /* Set the background color for the text in the code block */
