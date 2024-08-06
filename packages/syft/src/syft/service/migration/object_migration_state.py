@@ -10,11 +10,11 @@ from typing_extensions import Self
 import yaml
 
 # relative
-from ...node.credentials import SyftSigningKey
-from ...node.credentials import SyftVerifyKey
 from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
+from ...server.credentials import SyftSigningKey
+from ...server.credentials import SyftVerifyKey
 from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
@@ -23,7 +23,6 @@ from ...types.blob_storage import BlobStorageEntry
 from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.syft_object import Context
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftBaseObject
 from ...types.syft_object import SyftObject
 from ...types.syft_object_registry import SyftObjectRegistry
@@ -37,7 +36,7 @@ from ..response import SyftSuccess
 @serializable()
 class SyftObjectMigrationState(SyftObject):
     __canonical_name__ = "SyftObjectMigrationState"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     __attr_unique__ = ["canonical_name"]
 
@@ -62,7 +61,7 @@ class SyftObjectMigrationState(SyftObject):
 KlassNamePartitionKey = PartitionKey(key="canonical_name", type_=str)
 
 
-@serializable()
+@serializable(canonical_name="SyftMigrationStateStash", version=1)
 class SyftMigrationStateStash(BaseStash):
     object_type = SyftObjectMigrationState
     settings: PartitionSettings = PartitionSettings(
@@ -115,7 +114,7 @@ class MigrationData(SyftObject):
     __canonical_name__ = "MigrationData"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    node_uid: UID
+    server_uid: UID
     signing_key: SyftSigningKey
     store_objects: dict[type[SyftObject], list[SyftObject]]
     metadata: dict[type[SyftObject], StoreMetadata]
@@ -124,7 +123,7 @@ class MigrationData(SyftObject):
     blobs: dict[UID, Any] = {}
 
     __repr_attrs__ = [
-        "node_uid",
+        "server_uid",
         "root_verify_key",
         "num_objects",
         "num_action_objects",
@@ -149,13 +148,13 @@ class MigrationData(SyftObject):
         return set(self.blobs.keys()) == set(blob_ids)
 
     def make_migration_config(self) -> dict[str, Any]:
-        node_uid = self.node_uid.to_string()
-        node_private_key = str(self.signing_key)
+        server_uid = self.server_uid.to_string()
+        server_private_key = str(self.signing_key)
         migration_config = {
-            "node": {
+            "server": {
                 "env": [
-                    {"name": "NODE_UID", "value": node_uid},
-                    {"name": "NODE_PRIVATE_KEY", "value": node_private_key},
+                    {"name": "SERVER_UID", "value": server_uid},
+                    {"name": "SERVER_PRIVATE_KEY", "value": server_private_key},
                 ]
             }
         }
@@ -245,7 +244,7 @@ class MigrationData(SyftObject):
         # Create a shallow copy of the MigrationData instance, removing blob-related data
         # This is required for sending the MigrationData to the backend.
         copy_data = self.__class__(
-            node_uid=self.node_uid,
+            server_uid=self.server_uid,
             signing_key=self.signing_key,
             store_objects=self.store_objects.copy(),
             metadata=self.metadata.copy(),

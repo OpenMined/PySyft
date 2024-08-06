@@ -5,13 +5,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # relative
-from ..abstract_node import NodeSideType
+from ..abstract_server import ServerSideType
 from ..serde.serializable import serializable
-from ..service.metadata.node_metadata import NodeMetadataJSON
-from ..service.network.routes import NodeRouteType
+from ..service.metadata.server_metadata import ServerMetadataJSON
+from ..service.network.routes import ServerRouteType
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
-from ..types.syft_object import SYFT_OBJECT_VERSION_3
+from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftObject
 from ..util.assets import load_png_base64
 from ..util.notebook_ui.styles import FONT_CSS
@@ -23,35 +23,20 @@ from .protocol import SyftProtocol
 
 if TYPE_CHECKING:
     # relative
-    from ..orchestra import NodeHandle
+    from ..orchestra import ServerHandle
 
 
 @serializable()
 class EnclaveMetadata(SyftObject):
     __canonical_name__ = "EnclaveMetadata"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
-    route: NodeRouteType
+    route: ServerRouteType
 
 
-@serializable()
+@serializable(canonical_name="EnclaveClient", version=1)
 class EnclaveClient(SyftClient):
     # TODO: add widget repr for enclave client
-
-    __api_patched = False
-
-    @property
-    def code(self) -> APIModule | None:
-        if self.api.has_service("code"):
-            res = self.api.services.code
-            # the order is important here
-            # its also important that patching only happens once
-            if not self.__api_patched:
-                self._request_code_execution = res.request_code_execution
-                self.__api_patched = True
-            res.request_code_execution = self.request_code_execution
-            return res
-        return None
 
     @property
     def requests(self) -> APIModule | None:
@@ -64,7 +49,7 @@ class EnclaveClient(SyftClient):
         via_client: SyftClient | None = None,
         url: str | None = None,
         port: int | None = None,
-        handle: NodeHandle | None = None,  # noqa: F821
+        handle: ServerHandle | None = None,  # noqa: F821
         email: str | None = None,
         password: str | None = None,
         protocol: str | SyftProtocol = SyftProtocol.HTTP,
@@ -85,14 +70,14 @@ class EnclaveClient(SyftClient):
             if isinstance(client, SyftError):
                 return client
 
-        self.metadata: NodeMetadataJSON = self.metadata
+        self.metadata: ServerMetadataJSON = self.metadata
         res = self.exchange_route(client, protocol=protocol)
 
         if isinstance(res, SyftSuccess):
             if self.metadata:
                 return SyftSuccess(
                     message=(
-                        f"Connected {self.metadata.node_type} "
+                        f"Connected {self.metadata.server_type} "
                         f"'{self.metadata.name}' to gateway '{client.name}'. "
                         f"{res.message}"
                     )
@@ -117,19 +102,21 @@ class EnclaveClient(SyftClient):
         </ul>
         """
 
-        small_grid_symbol_logo = load_png_base64("small-grid-symbol-logo.png")
+        small_server_symbol_logo = load_png_base64("small-syft-symbol-logo.png")
 
         url = getattr(self.connection, "url", None)
-        node_details = f"<strong>URL:</strong> {url}<br />" if url else ""
+        server_details = f"<strong>URL:</strong> {url}<br />" if url else ""
         if self.metadata:
-            node_details += f"<strong>Node Type:</strong> {self.metadata.node_type.capitalize()}<br />"
-            node_side_type = (
+            server_details += f"<strong>Server Type:</strong> {self.metadata.server_type.capitalize()}<br />"
+            server_side_type = (
                 "Low Side"
-                if self.metadata.node_side_type == NodeSideType.LOW_SIDE.value
+                if self.metadata.server_side_type == ServerSideType.LOW_SIDE.value
                 else "High Side"
             )
-            node_details += f"<strong>Node Side Type:</strong> {node_side_type}<br />"
-            node_details += (
+            server_details += (
+                f"<strong>Server Side Type:</strong> {server_side_type}<br />"
+            )
+            server_details += (
                 f"<strong>Syft Version:</strong> {self.metadata.syft_version}<br />"
             )
 
@@ -158,15 +145,15 @@ class EnclaveClient(SyftClient):
             }}
         </style>
         <div class="syft-client syft-container">
-            <img src="{small_grid_symbol_logo}" alt="Logo"
+            <img src="{small_server_symbol_logo}" alt="Logo"
             style="width:48px;height:48px;padding:3px;">
             <h2>Welcome to {self.name}</h2>
             <div class="syft-space">
-                {node_details}
+                {server_details}
             </div>
             <div class='syft-alert-info syft-space'>
                 &#9432;&nbsp;
-                This node is run by the library PySyft to learn more about how it works visit
+                This server is run by the library PySyft to learn more about how it works visit
                 <a href="https://github.com/OpenMined/PySyft">github.com/OpenMined/PySyft</a>.
             </div>
             <h4>Commands to Get Started</h4>

@@ -2,14 +2,14 @@
 from typing import Any
 
 # relative
-from ..types.syft_object import SYFT_OBJECT_VERSION_3
+from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
 
 
-class NodeConnection(SyftObject):
-    __canonical_name__ = "NodeConnection"
-    __version__ = SYFT_OBJECT_VERSION_3
+class ServerConnection(SyftObject):
+    __canonical_name__ = "ServerConnection"
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID | None = None  # type: ignore
 

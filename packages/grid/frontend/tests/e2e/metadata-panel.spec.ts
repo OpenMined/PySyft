@@ -1,8 +1,8 @@
 import { test, expect } from "@playwright/test"
 
-test("should display domain metadata, has a valid id", async ({ page }) => {
+test("should display datasite metadata, has a valid id", async ({ page }) => {
   await page.goto("/login")
-  const metadataPanel = page.getByTestId("domain-metadata-panel")
+  const metadataPanel = page.getByTestId("datasite-metadata-panel")
   expect(await metadataPanel.isVisible()).toBe(true)
 
   // check if id is shown

@@ -7,7 +7,7 @@ from .enclave import EnclaveInstance
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="EnclaveInstanceStash", version=1)
 class EnclaveInstanceStash(BaseUIDStoreStash):
     object_type = EnclaveInstance
     settings: PartitionSettings = PartitionSettings(

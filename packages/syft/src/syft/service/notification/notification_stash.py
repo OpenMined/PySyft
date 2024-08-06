@@ -6,8 +6,8 @@ from result import Ok
 from result import Result
 
 # relative
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
 from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
@@ -33,7 +33,7 @@ LinkedObjectPartitionKey = PartitionKey(key="linked_obj", type_=LinkedObject)
 
 
 @instrument
-@serializable()
+@serializable(canonical_name="NotificationStash", version=1)
 class NotificationStash(BaseUIDStoreStash):
     object_type = Notification
     settings: PartitionSettings = PartitionSettings(

@@ -9,10 +9,9 @@ import pytest
 # syft absolute
 from syft import ActionObject
 from syft.client.api import SyftAPICall
-from syft.node.worker import Worker
+from syft.server.worker import Worker
 from syft.service.action.action_object import Action
 from syft.service.response import SyftError
-from syft.service.user.user import UserUpdate
 from syft.service.user.user_roles import ServiceRole
 from syft.types.uid import LineageID
 
@@ -20,12 +19,13 @@ from syft.types.uid import LineageID
 from ..utils.custom_markers import currently_fail_on_python_3_12
 
 
+@pytest.mark.skip(reason="Disabled until we bring back eager execution")
 def test_actionobject_method(worker):
-    root_domain_client = worker.root_client
-    assert root_domain_client.settings.enable_eager_execution(enable=True)
+    root_datasite_client = worker.root_client
+    assert root_datasite_client.settings.enable_eager_execution(enable=True)
     action_store = worker.get_service("actionservice").store
     obj = ActionObject.from_obj("abc")
-    pointer = obj.send(root_domain_client)
+    pointer = obj.send(root_datasite_client)
     assert len(action_store.data) == 1
     res = pointer.capitalize()
     assert len(action_store.data) == 2
@@ -58,12 +58,10 @@ def test_new_admin_has_action_object_permission(
 
     admin = root_client.login(email=email, password=pw)
 
-    root_client.api.services.user.update(
-        admin.me.id, UserUpdate(role=ServiceRole.ADMIN)
-    )
+    root_client.api.services.user.update(uid=admin.account.id, role=ServiceRole.ADMIN)
 
     if delete_original_admin:
-        res = root_client.api.services.user.delete(root_client.me.id)
+        res = root_client.api.services.user.delete(root_client.account.id)
         assert not isinstance(res, SyftError)
 
     assert admin.api.services.action.get(obj.id) == obj
@@ -71,8 +69,8 @@ def test_new_admin_has_action_object_permission(
 
 @currently_fail_on_python_3_12(raises=AttributeError)
 def test_lib_function_action(worker):
-    root_domain_client = worker.root_client
-    numpy_client = root_domain_client.api.lib.numpy
+    root_datasite_client = worker.root_client
+    numpy_client = root_datasite_client.api.lib.numpy
     res = numpy_client.zeros_like([1, 2, 3])
 
     assert isinstance(res, ActionObject)
@@ -81,13 +79,13 @@ def test_lib_function_action(worker):
 
 
 def test_call_lib_function_action2(worker):
-    root_domain_client = worker.root_client
-    assert root_domain_client.api.lib.numpy.add(1, 2) == 3
+    root_datasite_client = worker.root_client
+    assert root_datasite_client.api.lib.numpy.add(1, 2) == 3
 
 
 def test_lib_class_init_action(worker):
-    root_domain_client = worker.root_client
-    numpy_client = root_domain_client.api.lib.numpy
+    root_datasite_client = worker.root_client
+    numpy_client = root_datasite_client.api.lib.numpy
     res = numpy_client.float32(4.0)
 
     assert isinstance(res, ActionObject)
@@ -96,9 +94,9 @@ def test_lib_class_init_action(worker):
 
 
 def test_call_lib_wo_permission(worker):
-    root_domain_client = worker.root_client
+    root_datasite_client = worker.root_client
     fname = ActionObject.from_obj("my_fake_file")
-    obj1_pointer = fname.send(root_domain_client)
+    obj1_pointer = fname.send(root_datasite_client)
     action = Action(
         path="numpy",
         op="fromfile",
@@ -108,17 +106,17 @@ def test_call_lib_wo_permission(worker):
     )
     kwargs = {"action": action}
     api_call = SyftAPICall(
-        node_uid=worker.id, path="action.execute", args=[], kwargs=kwargs
+        server_uid=worker.id, path="action.execute", args=[], kwargs=kwargs
     )
-    res = root_domain_client.api.make_call(api_call)
+    res = root_datasite_client.api.make_call(api_call)
     assert isinstance(res, SyftError)
 
 
 def test_call_lib_custom_signature(worker):
-    root_domain_client = worker.root_client
+    root_datasite_client = worker.root_client
     # concatenate has a manually set signature
     assert all(
-        root_domain_client.api.lib.numpy.concatenate(
+        root_datasite_client.api.lib.numpy.concatenate(
             ([1, 2, 3], [4, 5, 6])
         ).syft_action_data
         == np.array([1, 2, 3, 4, 5, 6])
@@ -159,7 +157,7 @@ def test_call_lib_custom_signature(worker):
 #         return action_service_execute_method(context, action)
 
 #     with mock.patch(
-#         "syft.core.node.new.action_object.ActionObjectPointer.execute_action", mock_func
+#         "syft.core.server.new.action_object.ActionObjectPointer.execute_action", mock_func
 #     ):
 #         result = pointer1 + pointer2
 

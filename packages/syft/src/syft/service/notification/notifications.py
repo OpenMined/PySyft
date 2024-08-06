@@ -6,15 +6,15 @@ from typing import cast
 # relative
 from ...client.api import APIRegistry
 from ...client.api import SyftAPI
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...server.credentials import SyftVerifyKey
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import add_credentials_for_key
-from ...types.transforms import add_node_uid_for_key
+from ...types.transforms import add_server_uid_for_key
 from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.uid import UID
@@ -24,13 +24,13 @@ from ..notifier.notifier_enums import NOTIFIERS
 from .email_templates import EmailTemplate
 
 
-@serializable()
+@serializable(canonical_name="NotificationStatus", version=1)
 class NotificationStatus(Enum):
     UNREAD = 0
     READ = 1
 
 
-@serializable()
+@serializable(canonical_name="NotificationRequestStatus", version=1)
 class NotificationRequestStatus(Enum):
     NO_ACTION = 0
 
@@ -43,7 +43,7 @@ class NotificationExpiryStatus(Enum):
 @serializable()
 class ReplyNotification(SyftObject):
     __canonical_name__ = "ReplyNotification"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     text: str
     target_msg: UID
@@ -54,10 +54,10 @@ class ReplyNotification(SyftObject):
 @serializable()
 class Notification(SyftObject):
     __canonical_name__ = "Notification"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     subject: str
-    node_uid: UID
+    server_uid: UID
     from_user_verify_key: SyftVerifyKey
     to_user_verify_key: SyftVerifyKey
     created_at: DateTime
@@ -110,7 +110,7 @@ class Notification(SyftObject):
         api: SyftAPI = cast(
             SyftAPI,
             APIRegistry.api_for(
-                self.node_uid, user_verify_key=self.syft_client_verify_key
+                self.server_uid, user_verify_key=self.syft_client_verify_key
             ),
         )
         return api.services.notifications.mark_as_read(uid=self.id)
@@ -119,7 +119,7 @@ class Notification(SyftObject):
         api: SyftAPI = cast(
             SyftAPI,
             APIRegistry.api_for(
-                self.node_uid, user_verify_key=self.syft_client_verify_key
+                self.server_uid, user_verify_key=self.syft_client_verify_key
             ),
         )
         return api.services.notifications.mark_as_unread(uid=self.id)
@@ -138,7 +138,7 @@ class Notification(SyftObject):
 @serializable()
 class CreateNotification(SyftObject):
     __canonical_name__ = "CreateNotification"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     subject: str
     from_user_verify_key: SyftVerifyKey | None = None  # type: ignore[assignment]
@@ -162,5 +162,5 @@ def createnotification_to_notification() -> list[Callable]:
         generate_id,
         add_msg_creation_time,
         add_credentials_for_key("from_user_verify_key"),
-        add_node_uid_for_key("node_uid"),
+        add_server_uid_for_key("server_uid"),
     ]

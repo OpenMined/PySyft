@@ -8,7 +8,7 @@
   import UserNewModal from "$lib/components/Users/UserNewModal.svelte"
   import UserCreateModal from "$lib/components/Users/UserCreateModal.svelte"
   import { throwIfError } from "$lib/api/syft_error_handler"
-  import type { UserListView } from "../../../types/domain/users"
+  import type { UserListView } from "../../../types/datasite/users"
   import type { PageData } from "./$types"
 
   export let data: PageData

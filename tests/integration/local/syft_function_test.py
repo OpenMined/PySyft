@@ -10,13 +10,14 @@ import syft as sy
 from syft import ActionObject
 from syft import syft_function
 from syft import syft_function_single_use
+from syft.service.job.job_stash import Job
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 
 
 @pytest.fixture
-def node():
-    _node = sy.orchestra.launch(
+def server():
+    _server = sy.orchestra.launch(
         name=token_hex(8),
         dev_mode=True,
         reset=True,
@@ -26,24 +27,37 @@ def node():
         local_db=False,
     )
     # startup code here
-    yield _node
+    yield _server
     # Cleanup code
-    _node.python_node.cleanup()
-    _node.land()
+    _server.python_server.cleanup()
+    _server.land()
 
 
 # @pytest.mark.flaky(reruns=3, reruns_delay=3)
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
-def test_nested_jobs(node):
-    client = node.login(email="info@openmined.org", password="changethis")
+@pytest.mark.local_server
+def test_nested_jobs(server):
+    client = server.login(email="info@openmined.org", password="changethis")
 
-    res = client.register(name="a", email="aa@b.org", password="c", password_verify="c")
+    new_user_email = "aa@b.org"
+    res = client.register(
+        name="a", email=new_user_email, password="c", password_verify="c"
+    )
     assert isinstance(res, SyftSuccess)
-    ds_client = node.login(email="aa@b.org", password="c")
+
     ## Dataset
 
     x = ActionObject.from_obj([1, 2])
     x_ptr = x.send(client)
+
+    search_result = [u for u in client.users.get_all() if u.email == new_user_email]
+    assert len(search_result) == 1
+
+    new_ds_user = search_result[0]
+    new_ds_user.allow_mock_execution()
+
+    # Login as data scientist
+    ds_client = server.login(email=new_user_email, password="c")
 
     ## aggregate function
     @sy.syft_function()
@@ -64,13 +78,13 @@ def test_nested_jobs(node):
     ## Main function
 
     @syft_function_single_use(x=x_ptr)
-    def process_all(domain, x):
+    def process_all(datasite, x):
         job_results = []
         for elem in x:
-            batch_job = domain.launch_job(process_batch, batch=elem)
+            batch_job = datasite.launch_job(process_batch, batch=elem)
             job_results += [batch_job.result]
 
-        job = domain.launch_job(aggregate_job, job_results=job_results)
+        job = datasite.launch_job(aggregate_job, job_results=job_results)
         return job.result
 
     assert process_all.worker_pool_name is None
@@ -85,7 +99,9 @@ def test_nested_jobs(node):
 
     job = ds_client.code.process_all(x=x_ptr, blocking=False)
 
-    job.wait(timeout=0)
+    assert isinstance(job, Job)
+
+    job.wait(timeout=5)
 
     assert len(job.subjobs) == 3
 

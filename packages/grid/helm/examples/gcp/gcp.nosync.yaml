@@ -1,14 +1,14 @@
 # =================================================================================
 # Syft on GKE Cluster
 #
-# Node side  : high
+# Server side  : high
 # Automount  : NO
 # Ingress    : gce
 # Extras:
 #  - BackendConfig for increased timeout
 # =================================================================================
 
-node:
+server:
   name: syft-gcp
   side: high
 

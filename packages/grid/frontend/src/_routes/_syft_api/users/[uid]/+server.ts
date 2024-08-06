@@ -7,12 +7,12 @@ export const GET: RequestHandler = async ({ cookies, params }) => {
   try {
     const requested_uid = params.uid
 
-    const { signing_key, node_id } = unload_cookies(cookies)
+    const { signing_key, server_id } = unload_cookies(cookies)
 
     const user = await jsSyftCall({
       path: "user.view",
       payload: { uid: { value: requested_uid, fqn: "syft.types.uid.UID" } },
-      node_id,
+      server_id,
       signing_key,
     })
 
@@ -34,7 +34,7 @@ export const GET: RequestHandler = async ({ cookies, params }) => {
 
 export const PUT: RequestHandler = async ({ cookies, params, request }) => {
   try {
-    const { signing_key, node_id } = unload_cookies(cookies)
+    const { signing_key, server_id } = unload_cookies(cookies)
     const requested_uid = params.uid
 
     const body = await request.json()
@@ -54,7 +54,7 @@ export const PUT: RequestHandler = async ({ cookies, params, request }) => {
           fqn: "syft.service.user.user.UserUpdate",
         },
       },
-      node_id,
+      server_id,
       signing_key,
     })
 

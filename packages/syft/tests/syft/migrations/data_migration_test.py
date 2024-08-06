@@ -9,7 +9,7 @@ import yaml
 
 # syft absolute
 import syft as sy
-from syft.client.domain_client import DomainClient
+from syft.client.datasite_client import DatasiteClient
 from syft.service.migration.object_migration_state import MigrationData
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
@@ -52,7 +52,7 @@ def create_dataset(client):
     return dataset
 
 
-def make_request(client: DomainClient) -> DomainClient:
+def make_request(client: DatasiteClient) -> DatasiteClient:
     @sy.syft_function_single_use()
     def compute() -> int:
         return 42
@@ -60,7 +60,7 @@ def make_request(client: DomainClient) -> DomainClient:
     _ = client.code.request_code_execution(compute)
 
 
-def prepare_data(client: DomainClient) -> None:
+def prepare_data(client: DatasiteClient) -> None:
     # Create DS, upload dataset, create + approve + execute single request
     ds_client = register_ds(client)
     create_dataset(client)
@@ -124,12 +124,12 @@ def named_worker_context(name):
 
 
 def test_data_migration_same_version(tmp_path):
-    node_name = secrets.token_hex(8)
+    server_name = secrets.token_hex(8)
     blob_path = tmp_path / "migration.blob"
     yaml_path = tmp_path / "migration.yaml"
 
     # Setup + save migration data
-    with named_worker_context(node_name) as first_worker:
+    with named_worker_context(server_name) as first_worker:
         prepare_data(first_worker.root_client)
         first_migration_data = first_worker.root_client.get_migration_data()
         first_migration_data.save(blob_path, yaml_path)
@@ -140,15 +140,15 @@ def test_data_migration_same_version(tmp_path):
         assert isinstance(result, SyftError)
 
     # Load migration data on correct worker
-    # NOTE worker is correct because admin keys and node id are derived from node name,
+    # NOTE worker is correct because admin keys and server id are derived from server name,
     # so they match the first worker
-    with named_worker_context(node_name) as migration_worker:
+    with named_worker_context(server_name) as migration_worker:
         client = migration_worker.root_client
 
         # DB is new, no DS registered yet
         assert len(client.users.get_all()) == 1
 
-        assert migration_worker.id == first_migration_data.node_uid
+        assert migration_worker.id == first_migration_data.server_uid
         assert migration_worker.verify_key == first_migration_data.root_verify_key
 
         result = migration_worker.root_client.load_migration_data(blob_path)

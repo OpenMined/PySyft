@@ -1,7 +1,7 @@
 # syft absolute
 import syft as sy
 from syft.custom_worker.config import DockerWorkerConfig
-from syft.node.worker import Worker
+from syft.server.worker import Worker
 from syft.service.response import SyftSuccess
 from syft.service.worker.worker_image import SyftWorkerImage
 from syft.types.datetime import DateTime
@@ -10,7 +10,7 @@ from syft.types.datetime import DateTime
 def get_docker_config():
     # the DS makes a request to create an image and a pool based on the image
     custom_dockerfile = f"""
-        FROM openmined/grid-backend:{sy.__version__}
+        FROM openmined/syft-backend:{sy.__version__}
         RUN pip install recordlinkage
     """
     return DockerWorkerConfig(dockerfile=custom_dockerfile)

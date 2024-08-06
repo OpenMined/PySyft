@@ -2,6 +2,7 @@
 from collections.abc import Generator
 from collections.abc import Iterable
 from itertools import product
+import operator
 from secrets import token_hex
 import time
 from typing import Any
@@ -12,22 +13,22 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.orchestra import NodeHandle
+from syft.orchestra import ServerHandle
 from syft.service.job.job_stash import JobStatus
 from syft.service.response import SyftError
 
 # equivalent to adding this mark to every test in this file
-pytestmark = pytest.mark.local_node
+pytestmark = pytest.mark.local_server
 
 
 @pytest.fixture()
-def node_args() -> dict[str, Any]:
+def server_args() -> dict[str, Any]:
     return {}
 
 
 @pytest.fixture
-def node(node_args: dict[str, Any]) -> Generator[NodeHandle, None, None]:
-    _node = sy.orchestra.launch(
+def server(server_args: dict[str, Any]) -> Generator[ServerHandle, None, None]:
+    _server = sy.orchestra.launch(
         **{
             "name": token_hex(8),
             "dev_mode": True,
@@ -36,14 +37,14 @@ def node(node_args: dict[str, Any]) -> Generator[NodeHandle, None, None]:
             "create_producer": True,
             "queue_port": None,
             "local_db": False,
-            **node_args,
+            **server_args,
         }
     )
     # startup code here
-    yield _node
+    yield _server
     # Cleanup code
-    _node.python_node.cleanup()
-    _node.land()
+    _server.python_server.cleanup()
+    _server.land()
 
 
 def matrix(
@@ -67,37 +68,66 @@ def matrix(
     return [dict(kvs) for kvs in args]
 
 
-NODE_ARGS_TEST_CASES = matrix(
-    n_consumers=[1],
-    dev_mode=[True, False],
-    thread_workers=[True, False],
+SERVER_ARGS_TEST_CASES = {
+    "n_consumers": [1],
+    "dev_mode": [True, False],
+    "thread_workers": [True, False],
+}
+
+
+class FlakyMark(RuntimeError):
+    """To mark a flaky part of a test to use with @pytest.mark.flaky"""
+
+    pass
+
+
+@pytest.mark.flaky(reruns=3, rerun_delay=1, only_rerun=["FlakyMark"])
+@pytest.mark.parametrize(
+    "server_args",
+    matrix(
+        **{**SERVER_ARGS_TEST_CASES, "n_consumers": [3]},
+    ),
 )
-
-
-@pytest.mark.parametrize("node_args", NODE_ARGS_TEST_CASES)
 @pytest.mark.parametrize("force", [True, False])
-def test_delete_idle_worker(node: NodeHandle, force: bool) -> None:
-    client = node.login(email="info@openmined.org", password="changethis")
-    worker = client.worker.get_all()[0]
+def test_delete_idle_worker(
+    server: ServerHandle, force: bool, server_args: dict[str, Any]
+) -> None:
+    client = server.login(email="info@openmined.org", password="changethis")
 
-    res = client.worker.delete(worker.id, force=force)
+    original_workers = client.worker.get_all()
+    worker_to_delete = max(original_workers, key=operator.attrgetter("name"))
+
+    res = client.worker.delete(worker_to_delete.id, force=force)
     assert not isinstance(res, SyftError)
 
     if force:
-        assert len(client.worker.get_all()) == 0
+        assert (
+            len(workers := client.worker.get_all()) == len(original_workers) - 1
+            and all(w.id != worker_to_delete.id for w in workers)
+        ), f"{workers.message=} {server_args=} {[(w.id, w.name) for w in original_workers]}"
+        return
 
     start = time.time()
     while True:
-        if len(client.worker.get_all()) == 0:
+        workers = client.worker.get_all()
+        if isinstance(workers, SyftError):
+            raise FlakyMark(
+                f"`workers = client.worker.get_all()` failed.\n"
+                f"{workers.message=} {server_args=} {[(w.id, w.name) for w in original_workers]}"
+            )
+
+        if len(workers) == len(original_workers) - 1 and all(
+            w.id != worker_to_delete.id for w in workers
+        ):
             break
         if time.time() - start > 3:
             raise TimeoutError("Worker did not get removed from stash.")
 
 
-@pytest.mark.parametrize("node_args", NODE_ARGS_TEST_CASES)
+@pytest.mark.parametrize("server_args", matrix(**SERVER_ARGS_TEST_CASES))
 @pytest.mark.parametrize("force", [True, False])
-def test_delete_worker(node: NodeHandle, force: bool) -> None:
-    client = node.login(email="info@openmined.org", password="changethis")
+def test_delete_worker(server: ServerHandle, force: bool) -> None:
+    client = server.login(email="info@openmined.org", password="changethis")
 
     data = np.array([1, 2, 3])
     data_action_obj = sy.ActionObject.from_obj(data)
