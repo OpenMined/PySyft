@@ -22,7 +22,6 @@ from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...store.document_store import PartitionSettings
 from ...types.uid import UID
-from ..action.action_object import ActionObject
 from ..action.action_permissions import (
     COMPOUND_ACTION_PERMISSION,
     ActionObjectPermission,
@@ -134,13 +133,43 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
 
         return query
 
-    def get_all(self, credentials: SyftVerifyKey) -> Result[list[ObjectT], str]:
-        obj_dbs = self._get_with_permissions(
-            credentials,
-            None,
-            None,
-            ActionPermission.READ,
-        ).all()
+    def _get_as_admin(
+        self,
+        property_name: str = None,
+        property_value: Any = None,
+    ) -> Query:
+        query = self.session.query(self.schema_type)
+        if property_name:
+            query = query.filter(
+                getattr(self.schema_type, property_name) == property_value
+            )
+        return query
+
+    def get_one_as_admin(
+        self,
+        property_name: str,
+        property_value: Any,
+    ) -> Result[ObjectT, str]:
+        obj = self._get_as_admin(property_name, property_value).first()
+        if obj is None:
+            return Ok(None)
+        return Ok(obj.to_obj())
+
+    def get_all(
+        self, credentials: SyftVerifyKey, has_permission: bool = False
+    ) -> Result[list[ObjectT], str]:
+        if has_permission:
+            obj_dbs = self._get_as_admin(
+                property_name=None,
+                property_value=None,
+            ).all()
+        else:
+            obj_dbs = self._get_with_permissions(
+                credentials,
+                None,
+                None,
+                ActionPermission.READ,
+            ).all()
         return Ok([obj_db.to_obj() for obj_db in obj_dbs])
 
     def get_one_by_property(
@@ -376,6 +405,8 @@ class JobStashSQL(ObjectStash[Job, JobDB]):
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> Result[Job, str]:
+        from ..action.action_object import ActionObject
+
         # Ensure we never save cached result data in the database,
         # as they can be arbitrarily large
         if (
@@ -392,6 +423,8 @@ class JobStashSQL(ObjectStash[Job, JobDB]):
         item: Job,
         **kwargs,
     ) -> Result[Job, str]:
+        from ..action.action_object import ActionObject
+
         # Ensure we never save cached result data in the database,
         # as they can be arbitrarily large
         if (

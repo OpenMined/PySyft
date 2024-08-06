@@ -1626,7 +1626,7 @@ def create_admin_new(
             user.verify_key = user.signing_key.verify_key
             result = user_stash.set(
                 credentials=server.signing_key.verify_key,
-                user=user,
+                item=user,
                 ignore_duplicates=True,
             )
             if result.is_ok():

@@ -294,45 +294,6 @@ class ActionDB(CommonMixin, Base):
         )
 
 
-# class ActionObject(SyncableSyftObject):
-#     """Action object for remote execution."""
-
-#     __canonical_name__ = "ActionObject"
-#     __version__ = SYFT_OBJECT_VERSION_1
-#     __private_sync_attr_mocks__: ClassVar[dict[str, Any]] = {
-#         "syft_action_data_cache": None,
-#         "syft_blob_storage_entry_id": None,
-#     }
-
-#     __attr_searchable__: list[str] = []  # type: ignore[misc]
-#     syft_action_data_cache: Any | None = None
-#     syft_blob_storage_entry_id: UID | None = None
-#     syft_pointer_type: ClassVar[type[ActionObjectPointer]]
-
-#     # Help with calculating history hash for code verification
-#     syft_parent_hashes: int | list[int] | None = None
-#     syft_parent_op: str | None = None
-#     syft_parent_args: Any | None = None
-#     syft_parent_kwargs: Any | None = None
-#     syft_history_hash: int | None = None
-#     syft_internal_type: ClassVar[type[Any]]
-#     syft_server_uid: UID | None = None
-#     syft_pre_hooks__: dict[str, list] = {}
-#     syft_post_hooks__: dict[str, list] = {}
-#     syft_twin_type: TwinMode = TwinMode.NONE
-#     syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
-#     syft_action_data_type: type | None = None
-#     syft_action_data_repr_: str | None = None
-#     syft_action_data_str_: str | None = None
-#     syft_has_bool_attr: bool | None = None
-#     syft_resolve_data: bool | None = None
-#     syft_created_at: DateTime | None = None
-#     syft_resolved: bool = True
-#     syft_action_data_server_id: UID | None = None
-#     syft_action_saved_to_blob_store: bool = True
-#     # syft_dont_wrap_attrs = ["shape"]
-
-
 class ActionObjectDB(CommonMixin, Base):
     id: Mapped[uuid.UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid.uuid4)
     syft_blob_storage_entry_id: Mapped[uuid.UUID | None] = mapped_column(default=None)

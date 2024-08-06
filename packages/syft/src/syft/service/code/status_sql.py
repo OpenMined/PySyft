@@ -45,18 +45,21 @@ class UserCodeStatusCollectionDB(CommonMixin, Base, PermissionMixin):
         sa.Uuid, ForeignKey("user_codes.id"), nullable=True
     )
     user_code = relationship("UserCodeDB", back_populates="status_collection")
+    user_code_link: Mapped[bytes]
 
     @classmethod
     def from_obj(cls, obj: UserCodeStatusCollection) -> "UserCodeStatusCollectionDB":
         return cls(
             id=unwrap_uid(obj.id),
             status_dict=sy.serialize(obj.status_dict, to_bytes=True),
+            user_code_link=sy.serialize(obj.user_code_link, to_bytes=True),
         )
 
     def to_obj(self) -> UserCodeStatusCollection:
         return UserCodeStatusCollection(
             id=wrap_uid(self.id),
             status_dict=sy.deserialize(self.status_dict, from_bytes=True),
+            user_code_link=sy.deserialize(self.user_code_link, from_bytes=True),
         )
 
 

@@ -1,6 +1,7 @@
 # stdlib
 
 # relative
+from typing import Any
 from ...abstract_server import ServerType
 from ...exceptions.user import UserAlreadyExistsException
 from ...serde.serializable import serializable
@@ -42,16 +43,16 @@ from .user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from .user_roles import GUEST_ROLE_LEVEL
 from .user_roles import ServiceRole
 from .user_roles import ServiceRoleCapability
-from .user_stash import UserStash
 
 
 @instrument
 @serializable(canonical_name="UserService", version=1)
 class UserService(AbstractService):
     store: DocumentStore
-    stash: UserStash
 
     def __init__(self, store: DocumentStore) -> None:
+        from .user_stash import UserStash
+
         self.store = store
         self.stash = UserStash(store=store)
 
@@ -156,11 +157,11 @@ class UserService(AbstractService):
         # they could be different
         if isinstance(credentials, SyftVerifyKey):
             result = self.stash.get_by_verify_key(
-                credentials=credentials, verify_key=credentials
+                credentials=credentials, verify_key=str(credentials)
             )
         else:
             result = self.stash.get_by_signing_key(
-                credentials=credentials, signing_key=credentials
+                credentials=credentials, signing_key=str(credentials)
             )
         if result.is_ok():
             # this seems weird that we get back None as Ok(None)
@@ -417,8 +418,8 @@ class UserService(AbstractService):
         """Verify user
         TODO: We might want to use a SyftObject instead
         """
-        result = self.stash.get_by_email(
-            credentials=self.admin_verify_key(), email=context.login_credentials.email
+        result = self.stash.get_one_as_admin(
+            property_name="email", property_value=context.login_credentials.email
         )
         if result.is_ok():
             user = result.ok()
@@ -491,7 +492,7 @@ class UserService(AbstractService):
 
         result = self.stash.set(
             credentials=user.verify_key,
-            user=user,
+            item=user,
             add_permissions=[
                 ActionObjectPermission(
                     uid=user.id, permission=ActionPermission.ALL_READ
