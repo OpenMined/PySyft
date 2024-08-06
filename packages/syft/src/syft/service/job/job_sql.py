@@ -1,10 +1,10 @@
 # stdlib
 from datetime import datetime
-from enum import Enum
 from turtle import back
 from typing import Any, Generic
 import uu
 import uuid
+from sqlalchemy.types import Enum
 
 # third party
 from attr import dataclass
@@ -122,19 +122,45 @@ _tablename_ = "jobs"
 _job_permissions_tablename_ = "job_permissions"
 
 
-class JobDB(CommonMixin, Base):
-    __tablename__ = _tablename_
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Table
+from sqlalchemy.orm import relationship, declarative_base, sessionmaker
+from sqlalchemy.ext.declarative import declared_attr
 
-    class JobPermission(Base):
-        __tablename__ = _job_permissions_tablename_
-        id: Mapped[uuid.UUID] = mapped_column(
-            sa.Uuid, primary_key=True, default=uuid.uuid4
+
+class PermissionMixin:
+    @declared_attr
+    def permissions_table(cls):
+        return Table(
+            f"{cls.__tablename__}_permissions",
+            Base.metadata,
+            Column("id", sa.Uuid, primary_key=True, default=uuid.uuid4),
+            Column("object_id", sa.Uuid, ForeignKey(f"{cls.__tablename__}.id")),
+            Column("user_id", String, default=None),
+            Column("permission", Enum(ActionPermission)),
         )
-        object_id: Mapped[uuid.UUID] = mapped_column(ForeignKey(f"{_tablename_}.id"))
-        user_id: Mapped[str | None] = mapped_column(default=None)
-        permission: Mapped[ActionPermission]
 
-    _permission_cls = JobPermission
+    @declared_attr
+    def permissions(cls):
+        return relationship(
+            "Permission",
+            primaryjoin=f"{cls.__tablename__}.id == {cls.__tablename__}_permissions.c.object_id",
+            foreign_keys=f"{cls.__tablename__}_permissions.c.object_id",
+            # viewonly=True,
+        )
+
+
+class Permission(Base):
+    __tablename__ = "permissions"
+    id: Mapped[uuid.UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid.uuid4)
+    object_id: Mapped[uuid.UUID] = mapped_column(ForeignKey(f"{_tablename_}.id"))
+    user_id: Mapped[str | None] = mapped_column(default=None)
+    permission: Mapped[ActionPermission]
+
+
+class JobDB(CommonMixin, Base, PermissionMixin):
+    __tablename__ = "jobs"
+
+    _permission_cls = Permission
 
     id: Mapped[uuid.UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid.uuid4)
     server_uid: Mapped[uuid.UUID | None] = mapped_column(default=None)
@@ -173,9 +199,9 @@ class JobDB(CommonMixin, Base):
     requested_by: Mapped[uuid.UUID | None] = mapped_column(default=None)
     job_type: Mapped[JobType] = mapped_column(default=JobType.JOB)
 
-    permissions: Mapped[set[JobPermission]] = relationship(
-        "JobPermission", lazy="joined"
-    )
+    # permissions: Mapped[set[JobPermission]] = relationship(
+    #     "JobPermission", lazy="joined"
+    # )
 
     @classmethod
     def from_obj(cls, obj: "Job") -> "JobDB":

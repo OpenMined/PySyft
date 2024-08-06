@@ -39,7 +39,6 @@ from ..action.action_permissions import ActionPermission
 from ..action.action_permissions import COMPOUND_ACTION_PERMISSION
 from ..response import SyftSuccess
 from .job_sql import Base
-from .job_sql import JobDB
 from .job_sql import unwrap_uid
 from .job_stash import Job
 from .job_stash import JobStatus
@@ -120,8 +119,3 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
             return Ok([obj.to_obj() for obj in query.all()])
         except Exception as e:
             return Err(str(e))
-
-
-class JobStash(ObjectStash[Job, JobDB]):
-    def __init__(self) -> None:
-        super().__init__(Job, JobDB)
