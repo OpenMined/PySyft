@@ -17,6 +17,8 @@ from ..user.user_roles import GUEST_ROLE_LEVEL
 from .attestation_constants import ATTESTATION_SERVICE_URL
 from .attestation_constants import ATTEST_CPU_ENDPOINT
 from .attestation_constants import ATTEST_GPU_ENDPOINT
+from .attestation_mock_cpu_report import CPU_MOCK_REPORT
+from .attestation_mock_gpu_report import GPU_MOCK_REPORT
 
 
 @serializable(canonical_name="AttestationService", version=1)
@@ -51,8 +53,10 @@ class AttestationService(AbstractService):
         roles=GUEST_ROLE_LEVEL,
     )
     def get_cpu_attestation(
-        self, context: AuthedServiceContext, raw_token: bool = False
+        self, context: AuthedServiceContext, raw_token: bool = False, mock: bool = False
     ) -> str | SyftError | SyftSuccess:
+        if mock:
+            return CPU_MOCK_REPORT
         return self.perform_request(requests.get, ATTEST_CPU_ENDPOINT, raw_token)
 
     @service_method(
@@ -61,6 +65,8 @@ class AttestationService(AbstractService):
         roles=GUEST_ROLE_LEVEL,
     )
     def get_gpu_attestation(
-        self, context: AuthedServiceContext, raw_token: bool = False
+        self, context: AuthedServiceContext, raw_token: bool = False, mock: bool = False
     ) -> str | SyftError | SyftSuccess:
+        if mock:
+            return GPU_MOCK_REPORT
         return self.perform_request(requests.get, ATTEST_GPU_ENDPOINT, raw_token)
