@@ -22,19 +22,24 @@ class VerifiableOutput(SyftObject):
 
     @property
     def inputs(self) -> list[dict[str, str]]:
+        inputs = []
         code_init_kwargs = (
-            self.code.input_policy_init_kwargs.values()
+            self.code.input_policy_init_kwargs
             if self.code.input_policy_init_kwargs is not None
             else []
         )
-        code_kwargs_uid_to_name = {
-            uid: name for d in code_init_kwargs for name, uid in d.items()
-        }
+
         code_kwargs_uid_to_hash = self.code.input_id2hash
-        inputs = [
-            {"id": str(uid), "name": name, "hash": code_kwargs_uid_to_hash[uid]}
-            for uid, name in code_kwargs_uid_to_name.items()
-        ]
+        for server_identity, asset_id_map in code_init_kwargs.items():
+            for asset_name, asset_id in asset_id_map.items():
+                inputs.append(
+                    {
+                        "id": str(asset_id),
+                        "name": asset_name,
+                        "hash": code_kwargs_uid_to_hash[asset_id],
+                        "datasite": server_identity.server_name,
+                    }
+                )
         return inputs
 
     @property
@@ -59,8 +64,9 @@ class VerifiableOutput(SyftObject):
             "\n".join(
                 [
                     f'{s_indent}    - id: UID = {i["id"]}\n'
+                    f'{s_indent}      datasite: str = "{i["datasite"]}"\n'
                     f'{s_indent}      name: str = "{i["name"]}"\n'
-                    f'{s_indent}      hash: str = "{i["hash"]}"'
+                    f'{s_indent}      hash: str = "{i["hash"]}"\n'
                     for i in self.inputs
                 ]
             )
