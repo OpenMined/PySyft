@@ -7,6 +7,7 @@ from typing import cast
 from result import Err
 from result import Ok
 from result import Result
+from syft.service.code.user_code_sql_stash import UserCodeStashSQL as UserCodeStash
 
 # relative
 from ...serde.serializable import serializable
@@ -46,7 +47,6 @@ from .user_code import UserCodeStatus
 from .user_code import UserCodeUpdate
 from .user_code import get_code_hash
 from .user_code import load_approved_policy_code
-from .user_code_stash import UserCodeStash
 
 
 @instrument
@@ -57,7 +57,7 @@ class UserCodeService(AbstractService):
 
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
-        self.stash = UserCodeStash(store=store)
+        self.stash = UserCodeStash(server_uid=store.server_uid)
 
     @service_method(path="code.submit", name="submit", roles=GUEST_ROLE_LEVEL)
     def submit(
@@ -89,9 +89,11 @@ class UserCodeService(AbstractService):
         Returns:
             Result[UserCode, str]: New UserCode or error
         """
-        existing_code_or_err = self.stash.get_by_code_hash(
+
+        existing_code_or_err = self.stash.get_one_by_property(
             context.credentials,
-            code_hash=get_code_hash(submit_code.code, context.credentials),
+            "code_hash",
+            get_code_hash(submit_code.code, context.credentials),
         )
 
         if existing_code_or_err.is_err():
@@ -168,9 +170,12 @@ class UserCodeService(AbstractService):
     def get_by_service_name(
         self, context: AuthedServiceContext, service_func_name: str
     ) -> list[UserCode] | SyftError:
-        result = self.stash.get_by_service_func_name(
-            context.credentials, service_func_name=service_func_name
+        result = self.stash.get_many_by_property(
+            context.credentials,
+            "service_func_name",
+            service_func_name,
         )
+
         if result.is_err():
             return SyftError(message=str(result.err()))
         return result.ok()

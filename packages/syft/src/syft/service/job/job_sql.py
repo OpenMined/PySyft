@@ -125,7 +125,7 @@ _job_permissions_tablename_ = "job_permissions"
 class JobDB(CommonMixin, Base):
     __tablename__ = _tablename_
 
-    class Permission(Base):
+    class JobPermission(Base):
         __tablename__ = _job_permissions_tablename_
         id: Mapped[uuid.UUID] = mapped_column(
             sa.Uuid, primary_key=True, default=uuid.uuid4
@@ -133,6 +133,8 @@ class JobDB(CommonMixin, Base):
         object_id: Mapped[uuid.UUID] = mapped_column(ForeignKey(f"{_tablename_}.id"))
         user_id: Mapped[str | None] = mapped_column(default=None)
         permission: Mapped[ActionPermission]
+
+    _permission_cls = JobPermission
 
     id: Mapped[uuid.UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid.uuid4)
     server_uid: Mapped[uuid.UUID | None] = mapped_column(default=None)
@@ -171,7 +173,9 @@ class JobDB(CommonMixin, Base):
     requested_by: Mapped[uuid.UUID | None] = mapped_column(default=None)
     job_type: Mapped[JobType] = mapped_column(default=JobType.JOB)
 
-    permissions: Mapped[set[Permission]] = relationship("Permission", lazy="joined")
+    permissions: Mapped[set[JobPermission]] = relationship(
+        "JobPermission", lazy="joined"
+    )
 
     @classmethod
     def from_obj(cls, obj: "Job") -> "JobDB":
@@ -223,9 +227,6 @@ class JobDB(CommonMixin, Base):
             requested_by=wrap_uid(self.requested_by),
             job_type=self.job_type,
         )
-
-
-JobPermissionDB = JobDB.Permission
 
 
 class ActionDB(CommonMixin, Base):

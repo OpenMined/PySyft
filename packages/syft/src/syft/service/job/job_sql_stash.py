@@ -29,7 +29,7 @@ from ..action.action_permissions import (
 )
 from ..action.action_permissions import ActionPermission
 from ..response import SyftSuccess
-from .job_sql import Base, JobPermissionDB, ObjectT, SchemaT
+from .job_sql import Base, ObjectT, SchemaT
 from .job_sql import JobDB
 from .job_sql import unwrap_uid
 from .job_stash import Job
@@ -37,18 +37,6 @@ from .job_stash import JobStatus
 from sqlalchemy.orm import Session
 from sqlalchemy import select, or_, and_, join
 from sqlalchemy.orm import Query
-
-
-def get_permission_where(user_id):
-    return or_(
-        JobPermissionDB.user_id == user_id,
-        and_(
-            JobPermissionDB.user_id is None,
-            JobPermissionDB.permission.in_(
-                COMPOUND_ACTION_PERMISSION,
-            ),
-        ),
-    )
 
 
 class SQLiteDBManager:
@@ -88,7 +76,7 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
 
     def __init__(self, server_uid: str) -> None:
         self.server_uid = server_uid
-        self.schema_type = SchemaT
+        # self.schema_type = type(self)
 
         # temporary, this should be an external dependency
         self.db = SQLiteDBManager(server_uid)
@@ -102,7 +90,7 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
 
     @property
     def permission_cls(self):
-        return self.schema_type.Permission
+        return self.schema_type._permission_cls
 
     def _get_permissions_where(
         self, credentials: SyftVerifyKey, permission: ActionPermission
@@ -179,7 +167,7 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
 
             if obj_db is not None:
                 return Ok(obj_db.to_obj())
-            return Err(f"Object with {property_name} {property_value} not found")
+            return Ok(None)
 
         except Exception as e:
             return Err(str(e))
@@ -237,7 +225,7 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
     ) -> Result[ObjectT, str]:
         try:
             db_obj = self.schema_type.from_obj(item)
-            Permission = self.schema_type.Permission
+            Permission = self.schema_type._permission_cls  # type: ignore
 
             # TODO fix autocomplete and type checking
             db_obj.permissions = {
@@ -308,6 +296,35 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
         # TODO rename to delete
         return self.delete(credentials, uid)
 
+    def get_by_uid(self, credentials: SyftVerifyKey, uid: UID) -> Result[ObjectT, str]:
+        obj = self.get_one_by_property(credentials, "id", unwrap_uid(uid))
+        return obj
+
+    def has_permission(self, *args, **kwargs) -> bool:
+        return True
+
+    def _get_permissions_for_uid(self, uid: UID) -> Result[builtins.set[str], str]:
+        return Ok(
+            {
+                ActionPermission.ALL_READ.name,
+                ActionPermission.ALL_WRITE.name,
+                ActionPermission.ALL_EXECUTE.name,
+            }
+        )
+
+    def _get_storage_permissions_for_uid(
+        self, uid: UID
+    ) -> Result[builtins.set[str], str]:
+        return Ok(
+            {
+                self.server_uid,
+            }
+        )
+
+    def add_permissions(self, *args, **kwargs): ...
+    def add_permission(self, *args, **kwargs): ...
+    def add_storage_permissions(self, *args, **kwargs): ...
+
 
 @serializable(canonical_name="JobStashSQL", version=1)
 class JobStashSQL(ObjectStash[Job, JobDB]):
@@ -318,7 +335,6 @@ class JobStashSQL(ObjectStash[Job, JobDB]):
 
     def __init__(self, server_uid: str) -> None:
         super().__init__(server_uid)
-        self.schema_type = JobDB
 
     def set_result(
         self,
@@ -380,10 +396,6 @@ class JobStashSQL(ObjectStash[Job, JobDB]):
         obj_db = super().set(credentials, item, add_permissions, add_storage_permission)
         return obj_db
 
-    def get_by_uid(self, credentials: SyftVerifyKey, uid: UID) -> Result[Job, str]:
-        job_db = self.get_one_by_property(credentials, "id", unwrap_uid(uid))
-        return job_db
-
     def update(
         self,
         credentials: SyftVerifyKey,
@@ -398,30 +410,3 @@ class JobStashSQL(ObjectStash[Job, JobDB]):
         ):
             item.result._clear_cache()
         return super().update(credentials, item)
-
-    def has_permission(self, *args, **kwargs) -> bool:
-        # TODO
-        return True
-
-    def _get_permissions_for_uid(self, uid: UID) -> Result[builtins.set[str], str]:
-        # TODO
-        return Ok(
-            {
-                ActionPermission.ALL_READ.name,
-                ActionPermission.ALL_WRITE.name,
-                ActionPermission.ALL_EXECUTE.name,
-            }
-        )
-
-    def _get_storage_permissions_for_uid(
-        self, uid: UID
-    ) -> Result[builtins.set[str], str]:
-        # TODO
-        return Ok(
-            {
-                self.server_uid,
-            }
-        )
-
-    def add_permission(self, *args, **kwargs): ...  # TODO
-    def add_storage_permissions(self, *args, **kwargs): ...  # TODO
