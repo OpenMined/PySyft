@@ -494,7 +494,7 @@ class Model(SyftObject):
         button_html = CopyIDButton(copy_text=str(self.id), max_width=60).to_html()
 
         attrs = {
-            "Mb Size": str(self.mb_size),
+            "Size": f"{self.mb_size:.2f} (MB)",
             "URL": str(self.url),
             "Created at": str(self.created_at),
             "Updated at": self.updated_at,
