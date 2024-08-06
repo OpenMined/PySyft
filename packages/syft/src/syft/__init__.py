@@ -1,4 +1,4 @@
-__version__ = "0.9.1-beta.2"
+__version__ = "0.9.1-beta.3"
 
 # stdlib
 from collections.abc import Callable
