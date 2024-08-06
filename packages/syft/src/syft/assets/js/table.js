@@ -76,6 +76,10 @@ function buildTable(
     return;
   }
 
+  if (!rowHeader?.field) {
+    rowHeader = false;
+  }
+
   const table = new Tabulator(`#${tableId}`, {
     data: data,
     columns: columns,

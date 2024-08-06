@@ -35,6 +35,7 @@ def create_tabulator_columns(
 
     columns = []
     row_header = {}
+
     if TABLE_INDEX_KEY in column_names:
         row_header = {
             "field": TABLE_INDEX_KEY,
