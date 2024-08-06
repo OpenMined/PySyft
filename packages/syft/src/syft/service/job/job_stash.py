@@ -691,7 +691,9 @@ class Job(SyncableSyftObject):
                 result_obj = api.services.action.get(  # type: ignore[unreachable]
                     self.result.id, resolve_nested=False
                 )
-                if result_obj.is_link and job_only:
+                if isinstance(result_obj, SyftError | Err):
+                    return result_obj
+                if result_obj.is_link and job_only:  # type: ignore[unreachable]
                     print(
                         "You're trying to wait on a job that has a link as a result."
                         "This means that the job may be ready but the linked result may not."
