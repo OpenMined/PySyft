@@ -74,7 +74,7 @@ def test_new_admin_can_list_user_code(
         assert not isinstance(res, SyftError)
 
     user_code_stash = worker.get_service("usercodeservice").stash
-    user_code = user_code_stash.get_all(user_code_stash.store.root_verify_key).ok()
+    user_code = user_code_stash.get_all(root_client.verify_key).ok()
 
     assert len(user_code) == len(admin.code.get_all())
     assert {c.id for c in user_code} == {c.id for c in admin.code}

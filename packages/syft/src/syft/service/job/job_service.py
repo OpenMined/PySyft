@@ -88,7 +88,7 @@ class JobService(AbstractService):
         descending: bool = False,
     ) -> Job | SyftError:
         if isinstance(index, int):
-            res = self.stash.get_index(context, index, order_by, descending)
+            res = self.stash.get_index(context.credentials, index, order_by, descending)
         else:
             res = self.stash.get_by_uid(context.credentials, uid=index)
         if res.is_err():

@@ -127,6 +127,11 @@ from sqlalchemy.orm import relationship, declarative_base, sessionmaker
 from sqlalchemy.ext.declarative import declared_attr
 
 
+def init(self, *args, **kwargs):
+    for k, v in kwargs.items():
+        setattr(self, k, v)
+
+
 class PermissionMixin:
     @declared_attr
     def permissions_table(cls):
@@ -144,7 +149,7 @@ class PermissionMixin:
         return type(
             f"{cls.__tablename__}PermissionModel",
             (object,),
-            {"object_id": None, "user_id": None, "permission": None},
+            {"object_id": None, "user_id": None, "permission": None, "__init__": init},
         )
 
     @classmethod

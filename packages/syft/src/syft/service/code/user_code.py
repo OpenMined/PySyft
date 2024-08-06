@@ -52,7 +52,7 @@ from ...store.document_store import PartitionKey
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
-from ...types.syft_object import PartialSyftObject
+from ...types.syft_object import SYFT_OBJECT_VERSION_2, PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
@@ -132,10 +132,11 @@ class UserCodeStatus(Enum):
 @serializable()
 class UserCodeStatusCollection(SyncableSyftObject):
     __canonical_name__ = "UserCodeStatusCollection"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     __repr_attrs__ = ["approved", "status_dict"]
     status_dict: dict[ServerIdentity, tuple[UserCodeStatus, str]] = {}
+    user_code: UserCode | None = None
     user_code_link: LinkedObject
 
     def syft_get_diffs(self, ext_obj: Any) -> list[AttrDiff]:

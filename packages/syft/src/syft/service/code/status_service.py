@@ -2,6 +2,8 @@
 
 # third party
 from result import Result
+from syft.service.code.status_sql import UserCodeStatusCollectionDB
+from syft.service.job.job_sql_stash import ObjectStash
 
 # relative
 from ...serde.serializable import serializable
@@ -25,36 +27,29 @@ from .user_code import UserCodeStatusCollection
 
 
 @instrument
-@serializable(canonical_name="StatusStash", version=1)
-class StatusStash(BaseUIDStoreStash):
+@serializable(canonical_name="StatusStashSQL", version=1)
+class StatusStashSQL(ObjectStash):
     object_type = UserCodeStatusCollection
     settings: PartitionSettings = PartitionSettings(
         name=UserCodeStatusCollection.__canonical_name__,
         object_type=UserCodeStatusCollection,
     )
 
-    def __init__(self, store: DocumentStore) -> None:
-        super().__init__(store)
-        self.store = store
-        self.settings = self.settings
-        self._object_type = self.object_type
-
-    def get_by_uid(
-        self, credentials: SyftVerifyKey, uid: UID
-    ) -> Result[UserCodeStatusCollection, str]:
-        qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
-        return self.query_one(credentials=credentials, qks=qks)
+    def __init__(self, server_uid) -> None:
+        super().__init__(
+            server_uid, UserCodeStatusCollection, UserCodeStatusCollectionDB
+        )
 
 
 @instrument
 @serializable(canonical_name="UserCodeStatusService", version=1)
 class UserCodeStatusService(AbstractService):
     store: DocumentStore
-    stash: StatusStash
+    stash: StatusStashSQL
 
     def __init__(self, store: DocumentStore):
         self.store = store
-        self.stash = StatusStash(store=store)
+        self.stash = StatusStashSQL(server_uid=store.server_uid)
 
     @service_method(path="code_status.create", name="create", roles=ADMIN_ROLE_LEVEL)
     def create(
@@ -64,7 +59,7 @@ class UserCodeStatusService(AbstractService):
     ) -> UserCodeStatusCollection | SyftError:
         result = self.stash.set(
             credentials=context.credentials,
-            obj=status,
+            item=status,
         )
         if result.is_ok():
             return result.ok()

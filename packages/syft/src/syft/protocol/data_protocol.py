@@ -267,11 +267,8 @@ If the class has changed you will need to define a new class with the changes, \
 with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
 """
 
-                    if get_dev_mode() or self.raise_exception:
-                        raise Exception(error_msg)
-                    else:
-                        warnings.warn(error_msg, stacklevel=1, category=UserWarning)
-                        break
+                    warnings.warn(error_msg, stacklevel=1, category=UserWarning)
+                    break
                 else:
                     # new object so its an add
                     obj_to_add = self.obj_json(int(version), hash_str)
