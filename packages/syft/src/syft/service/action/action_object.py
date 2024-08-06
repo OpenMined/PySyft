@@ -19,6 +19,7 @@ from typing import ClassVar
 from typing import TYPE_CHECKING
 
 # third party
+from IPython.display import display
 from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import field_validator
@@ -46,6 +47,7 @@ from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftBaseObject
 from ...types.syft_object import SyftObject
+from ...types.syft_object_registry import SyftObjectRegistry
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
@@ -1409,6 +1411,25 @@ class ActionObject(SyncableSyftObject):
         """
         if id is not None and syft_lineage_id is not None and id != syft_lineage_id.id:
             raise ValueError("UID and LineageID should match")
+
+        # check if the object's type is supported
+        try:
+            canonical_name, version = SyftObjectRegistry.get_canonical_name_version(
+                syft_action_data
+            )
+        except Exception:
+            obj_type = type(syft_action_data)
+            raise SyftException(
+                f"Error when creating action object for {syft_action_data}.\n"
+                f"Unsupported data type: '{obj_type.__module__}.{obj_type.__name__}'"
+            )
+        can_be_serialized = SyftObjectRegistry.has_serde_class(canonical_name, version)
+        if not can_be_serialized:
+            warning = SyftWarning(
+                message=f"Object of type '{obj_type.__module__}.{obj_type.__name__}' "
+                f"is not supported by Syft serialization."
+            )
+            display(warning)
 
         action_type = action_type_for_object(syft_action_data)
         action_object = action_type(syft_action_data_cache=syft_action_data)
