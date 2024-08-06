@@ -83,11 +83,14 @@ class JobService(AbstractService):
     def get_index(
         self,
         context: AuthedServiceContext,
-        index: int,
+        index: int | str | UID,
         order_by: str = "created_at",
         descending: bool = False,
     ) -> Job | SyftError:
-        res = self.stash.get_index(context, index, order_by, descending)
+        if isinstance(index, int):
+            res = self.stash.get_index(context, index, order_by, descending)
+        else:
+            res = self.stash.get_by_uid(context.credentials, uid=index)
         if res.is_err():
             return SyftError(message=res.err())
         else:

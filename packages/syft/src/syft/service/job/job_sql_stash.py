@@ -96,15 +96,38 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
     def session(self):
         return self.db.session
 
+    def get(self, credentials, obj_id: UID) -> Result[ObjectT, str]:
+        return self.get_one_by_property(credentials, "id", unwrap_uid(obj_id))
+
+    @property
+    def permission_cls(self):
+        return self.schema_type.Permission
+
     def get_one_by_property(
         self,
-        context,
+        credentials: SyftVerifyKey,
         property_name: str,
         property_value: Any,
     ) -> Result[ObjectT, str]:
         try:
             obj_db: SchemaT = (
                 self.session.query(self.schema_type)
+                .join(
+                    self.permission_cls,
+                    self.schema_type.id == self.permission_cls.object_id,
+                )
+                .where(
+                    or_(
+                        and_(
+                            self.permission_cls.user_id == str(credentials.verify_key),
+                            self.permission_cls.permission == ActionPermission.READ,
+                        ),
+                        and_(
+                            self.permission_cls.user_id is None,
+                            self.permission_cls.permission == ActionPermission.ALL_READ,
+                        ),
+                    )
+                )
                 .filter(getattr(self.schema_type, property_name) == property_value)
                 .first()
             )
@@ -116,7 +139,7 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
 
     def get_many_by_property(
         self,
-        context,
+        credentials: SyftVerifyKey,
         property_name: str,
         property_value: Any,
     ) -> Result[list[ObjectT], str]:
@@ -126,9 +149,7 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
                 .filter(getattr(self.schema_type, property_name) == property_value)
                 .all()
             )
-            if obj_dbs:
-                return Ok([obj_db.to_obj() for obj_db in obj_dbs])
-            return Err(f"Object with {property_name} {property_value} not found")
+            return Ok([obj_db.to_obj() for obj_db in obj_dbs])
         except Exception as e:
             return Err(str(e))
 
@@ -158,6 +179,8 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
         try:
             db_obj = self.schema_type.from_obj(item)
             Permission = self.schema_type.Permission
+
+            # TODO fix autocomplete and type checking
             db_obj.permissions = {
                 Permission(
                     id=db_obj.id,
@@ -182,6 +205,28 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
             return Ok(db_obj.to_obj())
         except Exception as e:
             self.session.rollback()
+            return Err(str(e))
+
+    def update(self, session: Session, obj: ObjectT) -> Result[ObjectT, str]:
+        try:
+            obj_db = session.query(self.schema_type).filter_by(id=obj.id).first()
+            if obj_db:
+                obj_db.update_obj(obj)
+                session.commit()
+                return Ok(obj)
+            return Err(f"Object with id {obj.id} not found")
+        except Exception as e:
+            session.rollback()
+            return Err(str(e))
+
+    def upsert(self, session: Session, obj: ObjectT) -> Result[ObjectT, str]:
+        try:
+            # Use merge to handle upsert
+            obj_db = session.merge(self.schema_type.from_obj(obj))
+            session.commit()
+            return Ok(obj_db)
+        except Exception as e:
+            session.rollback()
             return Err(str(e))
 
 
@@ -210,25 +255,17 @@ class JobStashSQL(ObjectStash[Job, JobDB]):
         result_id: UID,
     ) -> Result[Job | None, str]:
         job_db = self.get_one_by_property(
+            credentials,
             "result_id",
             unwrap_uid(result_id),
         )
-        if job_db is None:
-            return Ok(None)
-        return Ok(job_db.to_obj())
+        return job_db
 
     def get_by_parent_id(
         self, credentials: SyftVerifyKey, uid: UID
     ) -> Result[Job | None, str]:
-        with self.session_context() as session:
-            subjobs = (
-                session.query(JobDB)
-                .join(JobPermissionDB, JobDB.id == JobPermissionDB.object_id)
-                .where(get_permission_where(str(credentials.verify_key)))
-                .filter_by(parent_id=unwrap_uid(uid))
-                .all()
-            )
-            return Ok([job.to_obj() for job in subjobs])
+        subjobs = self.get_many_by_property(credentials, "parent_id", unwrap_uid(uid))
+        return subjobs
 
     def delete_by_uid(self, credentials: SyftVerifyKey, uid: UID) -> Result[Ok, str]:
         with self.session_context() as session:
@@ -240,7 +277,7 @@ class JobStashSQL(ObjectStash[Job, JobDB]):
                 return str(e)
 
     def get_active(self, credentials: SyftVerifyKey) -> Result[list[Job], str]:
-        jobs = self.get_many_by_property("status", JobStatus.ACTIVE)
+        jobs = self.get_many_by_property(credentials, "status", JobStatus.ACTIVE)
         return jobs
 
     def get_by_worker(
@@ -299,7 +336,7 @@ class JobStashSQL(ObjectStash[Job, JobDB]):
         return obj_db
 
     def get_by_uid(self, credentials: SyftVerifyKey, uid: UID) -> Result[Job, str]:
-        job_db = self.get_by_property("id", unwrap_uid(uid))
+        job_db = self.get_one_by_property(credentials, "id", unwrap_uid(uid))
         return job_db
 
     def update(

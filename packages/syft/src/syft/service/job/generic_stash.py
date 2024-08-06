@@ -67,34 +67,6 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
         cls.object_type = get_args(cls.__orig_bases__[0])[0]
         cls.schema_type = get_args(cls.__orig_bases__[0])[1]
 
-    def set(
-        self,
-        credentials: SyftVerifyKey,
-        session: Session,
-        obj: ObjectT,
-    ) -> Result[ObjectT, str]:
-        try:
-            obj_db = self.schema_type.from_obj(obj)
-            session.add(obj_db)
-            session.commit()
-            return Ok(obj)
-        except Exception as e:
-            session.rollback()
-            return Err(str(e))
-
-    def get(
-        self,
-        session: Session,
-        uid: UID,
-    ) -> Result[ObjectT, str]:
-        try:
-            obj_db = session.query(self.schema_type).filter_by(id=uid).first()
-            if obj_db:
-                return Ok(obj_db.to_obj())
-            return Err(f"Object with id {uid} not found")
-        except Exception as e:
-            return Err(str(e))
-
     def delete(self, session: Session, obj_id: UID) -> Result[None, str]:
         try:
             obj_db = session.query(self.schema_type).filter_by(id=obj_id).first()
@@ -127,24 +99,6 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
             return Ok(obj_db)
         except Exception as e:
             session.rollback()
-            return Err(str(e))
-
-    def get_by_property(
-        self,
-        session: Session,
-        property_name: str,
-        property_value: Any,
-    ) -> Result[ObjectT, str]:
-        try:
-            obj_db = (
-                session.query(self.schema_type)
-                .filter(getattr(self.schema_type, property_name) == property_value)
-                .first()
-            )
-            if obj_db:
-                return Ok(obj_db.to_obj())
-            return Err(f"Object with {property_name} {property_value} not found")
-        except Exception as e:
             return Err(str(e))
 
     def search(
