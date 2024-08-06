@@ -1,13 +1,10 @@
 # stdlib
 from datetime import datetime
-from turtle import back
 from typing import Any, Generic
-import uu
 import uuid
 from sqlalchemy.types import Enum
 
 # third party
-from attr import dataclass
 from result import Err
 import sqlalchemy as sa
 from sqlalchemy import Column, ForeignKey, String, Table
@@ -15,7 +12,7 @@ from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import declared_attr
 from sqlalchemy.orm import mapped_column
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, mapper
 from sqlalchemy.types import JSON
 from syft.service.action.action_permissions import ActionPermission
 from syft.types.syft_object import SyftObject
@@ -36,6 +33,9 @@ from ..action.action_object import TwinMode
 from .job_stash import Job
 from .job_stash import JobStatus
 from .job_stash import JobType
+from sqlalchemy.orm import registry
+
+mapper_registry = registry()
 
 
 class Base(DeclarativeBase):
@@ -57,7 +57,7 @@ class CommonMixin:
     def __tablename__(cls) -> str:
         return cls.__name__.lower()
 
-    id: Mapped[uuid.UUID] = mapped_column(sa.Uuid, default=uuid.uuid4)
+    # id: Mapped[uuid.UUID] = mapped_column(sa.Uuid, default=uuid.uuid4)
     created_at: Mapped[datetime] = mapped_column(server_default=sa.func.now())
     modified_at: Mapped[datetime] = mapped_column(
         server_default=sa.func.now(), server_onupdate=sa.func.now()
@@ -140,29 +140,25 @@ class PermissionMixin:
         )
 
     @declared_attr
-    def permissions(cls):
-        return relationship(
-            "Permission",
-            primaryjoin=f"{cls.__tablename__}.id == {cls.__tablename__}_permissions.c.object_id",
-            foreign_keys=f"{cls.__tablename__}_permissions.c.object_id",
-            # viewonly=True,
+    def PermissionModel(cls):
+        return type(
+            f"{cls.__tablename__}PermissionModel",
+            (object,),
+            {"object_id": None, "user_id": None, "permission": None},
         )
 
-
-class Permission(Base):
-    __tablename__ = "permissions"
-    id: Mapped[uuid.UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid.uuid4)
-    object_id: Mapped[uuid.UUID] = mapped_column(ForeignKey(f"{_tablename_}.id"))
-    user_id: Mapped[str | None] = mapped_column(default=None)
-    permission: Mapped[ActionPermission]
+    @classmethod
+    def _init_perms(cls):
+        mapper_registry.map_imperatively(cls.PermissionModel, cls.permissions_table)
+        cls.permissions: Mapped[list[cls.PermissionModel]] = relationship(
+            cls.PermissionModel, lazy="joined"
+        )
 
 
 class JobDB(CommonMixin, Base, PermissionMixin):
     __tablename__ = "jobs"
-
-    _permission_cls = Permission
-
     id: Mapped[uuid.UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid.uuid4)
+
     server_uid: Mapped[uuid.UUID | None] = mapped_column(default=None)
     result_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("actionobjectdb.id"), default=None
@@ -198,10 +194,6 @@ class JobDB(CommonMixin, Base, PermissionMixin):
     user_code_id: Mapped[uuid.UUID | None] = mapped_column(default=None)
     requested_by: Mapped[uuid.UUID | None] = mapped_column(default=None)
     job_type: Mapped[JobType] = mapped_column(default=JobType.JOB)
-
-    # permissions: Mapped[set[JobPermission]] = relationship(
-    #     "JobPermission", lazy="joined"
-    # )
 
     @classmethod
     def from_obj(cls, obj: "Job") -> "JobDB":
@@ -253,6 +245,9 @@ class JobDB(CommonMixin, Base, PermissionMixin):
             requested_by=wrap_uid(self.requested_by),
             job_type=self.job_type,
         )
+
+
+JobDB._init_perms()
 
 
 class ActionDB(CommonMixin, Base):

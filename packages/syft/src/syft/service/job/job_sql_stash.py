@@ -66,17 +66,12 @@ class SQLiteDBManager:
 
 
 class ObjectStash(Generic[ObjectT, SchemaT]):
-    object_type: ClassVar[type[ObjectT]]
-    schema_type: ClassVar[type[SchemaT]]
-
-    def __init_subclass__(cls) -> None:
-        super().__init_subclass__()
-        cls.object_type = get_args(cls.__orig_bases__[0])[0]
-        cls.schema_type = get_args(cls.__orig_bases__[0])[1]
-
-    def __init__(self, server_uid: str) -> None:
+    def __init__(self, server_uid: str, ObjectT, SchemaT) -> None:
         self.server_uid = server_uid
         # self.schema_type = type(self)
+
+        self.schema_type = SchemaT
+        self.object_type = ObjectT
 
         # temporary, this should be an external dependency
         self.db = SQLiteDBManager(server_uid)
@@ -90,7 +85,7 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
 
     @property
     def permission_cls(self):
-        return self.schema_type._permission_cls
+        return self.schema_type.PermissionModel
 
     def _get_permissions_where(
         self, credentials: SyftVerifyKey, permission: ActionPermission
@@ -140,16 +135,13 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
         return query
 
     def get_all(self, credentials: SyftVerifyKey) -> Result[list[ObjectT], str]:
-        try:
-            obj_dbs = self._get_with_permissions(
-                credentials,
-                None,
-                None,
-                ActionPermission.READ,
-            ).all()
-            return Ok([obj_db.to_obj() for obj_db in obj_dbs])
-        except Exception as e:
-            return Err(str(e))
+        obj_dbs = self._get_with_permissions(
+            credentials,
+            None,
+            None,
+            ActionPermission.READ,
+        ).all()
+        return Ok([obj_db.to_obj() for obj_db in obj_dbs])
 
     def get_one_by_property(
         self,
@@ -223,20 +215,20 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> Result[ObjectT, str]:
-        try:
-            db_obj = self.schema_type.from_obj(item)
-            Permission = self.schema_type._permission_cls  # type: ignore
+        db_obj = self.schema_type.from_obj(item)
+        Permission = self.permission_cls  # type: ignore
 
-            # TODO fix autocomplete and type checking
-            db_obj.permissions = {
-                Permission(
-                    id=db_obj.id,
-                    permission=ActionPermission.READ,
-                    user_id=str(credentials.verify_key),
-                )
-            }
-            if add_permissions:
-                db_obj.permissions |= {
+        # TODO fix autocomplete and type checking
+        db_obj.permissions = [
+            Permission(
+                id=db_obj.id,
+                permission=ActionPermission.READ,
+                user_id=str(credentials.verify_key),
+            )
+        ]
+        if add_permissions:
+            db_obj.permissions.extend(
+                [
                     Permission(
                         uid=db_obj.id,
                         permission=permission.permission,
@@ -245,14 +237,12 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
                         else None,
                     )
                     for permission in add_permissions
-                }
+                ]
+            )
 
-            self.session.add(db_obj)
-            self.session.commit()
-            return Ok(db_obj.to_obj())
-        except Exception as e:
-            self.session.rollback()
-            return Err(str(e))
+        self.session.add(db_obj)
+        self.session.commit()
+        return Ok(db_obj.to_obj())
 
     def update(self, credentials: SyftVerifyKey, obj: ObjectT) -> Result[ObjectT, str]:
         try:
@@ -334,7 +324,7 @@ class JobStashSQL(ObjectStash[Job, JobDB]):
     )
 
     def __init__(self, server_uid: str) -> None:
-        super().__init__(server_uid)
+        super().__init__(server_uid, Job, JobDB)
 
     def set_result(
         self,

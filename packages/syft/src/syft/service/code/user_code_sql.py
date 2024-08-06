@@ -12,6 +12,20 @@ from syft.service.action.action_permissions import ActionPermission
 from syft.service.code.user_code import UserCode
 from sqlalchemy.orm import relationship
 
+# third party
+from result import Err
+import sqlalchemy as sa
+from sqlalchemy import Column, Enum, ForeignKey, String, Table
+from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import declared_attr
+from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import relationship
+from sqlalchemy.types import JSON
+from syft.service.action.action_permissions import ActionPermission
+from syft.types.syft_object import SyftObject
+from typing_extensions import Self, TypeVar
+
 # syft absolute
 import syft as sy
 from syft.service.job.job_sql import (
@@ -24,23 +38,9 @@ from syft.service.job.job_sql import (
 from syft.types.datetime import DateTime
 from syft.types.uid import UID
 
-_tablename_ = "user_code"
-_permissions_tablename_ = "user_code_permissions"
-
 
 class UserCodeDB(CommonMixin, Base, PermissionMixin):  # noqa: F821
     __tablename__ = "user_codes"
-
-    # class UserCodePermission(Base):
-    #     __tablename__ = _permissions_tablename_
-    #     id: Mapped[uuid.UUID] = mapped_column(
-    #         sa.Uuid, primary_key=True, default=uuid.uuid4
-    #     )
-    #     object_id: Mapped[uuid.UUID] = mapped_column(sa.ForeignKey(f"{_tablename_}.id"))
-    #     user_id: Mapped[str | None] = mapped_column(default=None)
-    #     permission: Mapped[ActionPermission]
-
-    # _permission_cls = UserCodePermission
 
     id: Mapped[uuid.UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid.uuid4)
     server_uid: Mapped[uuid.UUID | None] = mapped_column(default=None)
@@ -65,9 +65,6 @@ class UserCodeDB(CommonMixin, Base, PermissionMixin):  # noqa: F821
     worker_pool_name: Mapped[str | None] = mapped_column(default=None)
     origin_server_side_type: Mapped[ServerSideType]
     l0_deny_reason: Mapped[str | None] = mapped_column(default=None)
-    # permissions: Mapped[set[UserCodePermission]] = relationship(
-    #     "UserCodePermission", lazy="joined"
-    # )
 
     @classmethod
     def from_obj(cls, obj: UserCode) -> "UserCodeDB":
@@ -133,3 +130,6 @@ class UserCodeDB(CommonMixin, Base, PermissionMixin):  # noqa: F821
             origin_server_side_type=self.origin_server_side_type,
             l0_deny_reason=self.l0_deny_reason,
         )
+
+
+UserCodeDB._init_perms()

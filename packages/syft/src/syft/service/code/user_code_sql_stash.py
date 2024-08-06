@@ -15,4 +15,4 @@ class UserCodeStashSQL(ObjectStash[UserCode, UserCodeDB]):
     )
 
     def __init__(self, server_uid) -> None:
-        super().__init__(server_uid=server_uid)
+        super().__init__(server_uid, UserCode, UserCodeDB)
