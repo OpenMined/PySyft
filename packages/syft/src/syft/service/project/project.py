@@ -553,6 +553,8 @@ class ProjectCode(ProjectEventAddObject):
             if attestation_type == AttestationType.CPU
             else client.api.services.attestation.get_gpu_attestation(raw_token=True)
         )
+        if isinstance(raw_jwt_report, SyftError):
+            return raw_jwt_report
         print(
             f"Got encrypted attestation report of {len(raw_jwt_report)} bytes. Verifying it...",
             flush=True,
