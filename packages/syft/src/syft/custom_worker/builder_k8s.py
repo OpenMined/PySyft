@@ -16,6 +16,7 @@ from .builder_types import ImageBuildResult
 from .builder_types import ImagePushResult
 from .builder_types import PUSH_IMAGE_TIMEOUT_SEC
 from .k8s import INTERNAL_REGISTRY_HOST
+from .k8s import KANIKO_VERSION
 from .k8s import KUBERNETES_NAMESPACE
 from .k8s import KubeUtils
 from .k8s import USE_INTERNAL_REGISTRY
@@ -241,7 +242,7 @@ class KubernetesBuilder(BuilderBase):
                             "containers": [
                                 {
                                     "name": "kaniko",
-                                    "image": "gcr.io/kaniko-project/executor:latest",
+                                    "image": f"gcr.io/kaniko-project/executor:{KANIKO_VERSION}",
                                     "args": [
                                         "--dockerfile=Dockerfile",
                                         "--context=dir:///workspace",
