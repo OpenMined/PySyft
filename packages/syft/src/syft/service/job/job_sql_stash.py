@@ -36,6 +36,7 @@ from .job_stash import Job
 from .job_stash import JobStatus
 from sqlalchemy.orm import Session
 from sqlalchemy import select, or_, and_, join
+from sqlalchemy.orm import Query
 
 
 def get_permission_where(user_id):
@@ -103,6 +104,53 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
     def permission_cls(self):
         return self.schema_type.Permission
 
+    def _get_permissions_where(
+        self, credentials: SyftVerifyKey, permission: ActionPermission
+    ) -> Any:
+        if permission == ActionPermission.READ:
+            compound_permission = ActionPermission.ALL_READ
+        elif permission == ActionPermission.WRITE:
+            compound_permission = ActionPermission.ALL_WRITE
+        else:
+            raise ValueError(f"Permission type {permission} not supported")
+
+        return or_(
+            and_(
+                self.permission_cls.user_id == str(credentials.verify_key),
+                self.permission_cls.permission == permission,
+            ),
+            and_(
+                self.permission_cls.user_id is None,
+                self.permission_cls.permission == compound_permission,
+            ),
+        )
+
+    # TODO typing
+    def _get_with_permissions(
+        self,
+        credentials: SyftVerifyKey,
+        property_name: str,
+        property_value: Any,
+        permission: ActionPermission,
+    ) -> Query:
+        query = (
+            self.session.query(self.schema_type)
+            .join(
+                self.permission_cls,
+                self.schema_type.id == self.permission_cls.object_id,
+            )
+            .where(
+                self._get_permissions_where(credentials, permission),
+            )
+        )
+
+        if property_name:
+            query = query.filter(
+                getattr(self.schema_type, property_name) == property_value
+            )
+
+        return query
+
     def get_one_by_property(
         self,
         credentials: SyftVerifyKey,
@@ -110,30 +158,17 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
         property_value: Any,
     ) -> Result[ObjectT, str]:
         try:
-            obj_db: SchemaT = (
-                self.session.query(self.schema_type)
-                .join(
-                    self.permission_cls,
-                    self.schema_type.id == self.permission_cls.object_id,
-                )
-                .where(
-                    or_(
-                        and_(
-                            self.permission_cls.user_id == str(credentials.verify_key),
-                            self.permission_cls.permission == ActionPermission.READ,
-                        ),
-                        and_(
-                            self.permission_cls.user_id is None,
-                            self.permission_cls.permission == ActionPermission.ALL_READ,
-                        ),
-                    )
-                )
-                .filter(getattr(self.schema_type, property_name) == property_value)
-                .first()
-            )
-            if obj_db:
+            obj_db: SchemaT | None = self._get_with_permissions(
+                credentials,
+                property_name,
+                property_value,
+                ActionPermission.READ,
+            ).first()
+
+            if obj_db is not None:
                 return Ok(obj_db.to_obj())
             return Err(f"Object with {property_name} {property_value} not found")
+
         except Exception as e:
             return Err(str(e))
 
@@ -144,20 +179,32 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
         property_value: Any,
     ) -> Result[list[ObjectT], str]:
         try:
-            obj_dbs = (
-                self.session.query(self.schema_type)
-                .filter(getattr(self.schema_type, property_name) == property_value)
-                .all()
-            )
+            obj_dbs = self._get_with_permissions(
+                credentials,
+                property_name,
+                property_value,
+                ActionPermission.READ,
+            ).all()
             return Ok([obj_db.to_obj() for obj_db in obj_dbs])
         except Exception as e:
             return Err(str(e))
 
     def get_index(
-        self, context, index: int, order_by: str = "created_at", descending: bool = True
+        self,
+        credentials: SyftVerifyKey,
+        index: int,
+        order_by: str = "created_at",
+        descending: bool = True,
     ) -> Result[ObjectT, str]:
         obj: SchemaT | None = (
             self.session.query(self.schema_type)
+            .join(
+                self.permission_cls,
+                self.schema_type.id == self.permission_cls.object_id,
+            )
+            .where(
+                self._get_permissions_where(credentials, ActionPermission.READ),
+            )
             .order_by(
                 getattr(self.schema_type, order_by).desc() if descending else None
             )
@@ -207,26 +254,41 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
             self.session.rollback()
             return Err(str(e))
 
-    def update(self, session: Session, obj: ObjectT) -> Result[ObjectT, str]:
+    def update(self, credentials: SyftVerifyKey, obj: ObjectT) -> Result[ObjectT, str]:
         try:
-            obj_db = session.query(self.schema_type).filter_by(id=obj.id).first()
+            obj_db = self._get_with_permissions(
+                credentials,
+                "id",
+                obj.id,
+                ActionPermission.WRITE,
+            ).first()
+
             if obj_db:
                 obj_db.update_obj(obj)
-                session.commit()
+                self.session.commit()
                 return Ok(obj)
             return Err(f"Object with id {obj.id} not found")
         except Exception as e:
-            session.rollback()
+            self.session.rollback()
             return Err(str(e))
 
-    def upsert(self, session: Session, obj: ObjectT) -> Result[ObjectT, str]:
+    def delete(self, credentials: SyftVerifyKey, uid: UID) -> Result[UID, str]:
         try:
-            # Use merge to handle upsert
-            obj_db = session.merge(self.schema_type.from_obj(obj))
-            session.commit()
-            return Ok(obj_db)
+            obj_db = self._get_with_permissions(
+                credentials,
+                "id",
+                unwrap_uid(uid),
+                ActionPermission.WRITE,
+            ).first()
+
+            if obj_db:
+                self.session.delete(obj_db)
+                self.session.commit()
+                return Ok(uid)
+
+            return Err(f"Object with id {uid} not found")
+
         except Exception as e:
-            session.rollback()
             return Err(str(e))
 
 
@@ -277,7 +339,7 @@ class JobStashSQL(ObjectStash[Job, JobDB]):
                 return str(e)
 
     def get_active(self, credentials: SyftVerifyKey) -> Result[list[Job], str]:
-        jobs = self.get_many_by_property(credentials, "status", JobStatus.ACTIVE)
+        jobs = self.get_many_by_property(credentials, "status", JobStatus.CREATED)
         return jobs
 
     def get_by_worker(

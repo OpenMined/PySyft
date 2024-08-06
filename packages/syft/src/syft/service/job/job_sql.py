@@ -126,9 +126,7 @@ class JobDB(CommonMixin, Base):
         id: Mapped[uuid.UUID] = mapped_column(
             sa.Uuid, primary_key=True, default=uuid.uuid4
         )
-        object_id: Mapped[uuid.UUID] = mapped_column(
-            ForeignKey(f"{_tablename_}.id"), back_populates="permissions"
-        )
+        object_id: Mapped[uuid.UUID] = mapped_column(ForeignKey(f"{_tablename_}.id"))
         user_id: Mapped[str | None] = mapped_column(default=None)
         permission: Mapped[ActionPermission]
 
