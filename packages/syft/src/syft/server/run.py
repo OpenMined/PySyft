@@ -24,7 +24,7 @@ def run() -> ServerHandle | None:
         "--server-type",
         help="server type",
         type=str,
-        default="python",
+        default="datasite",
         dest="server_type",
     )
     parser.add_argument(
@@ -82,7 +82,7 @@ def run() -> ServerHandle | None:
     args.reset = str_to_bool(args.reset)
     args.local_db = str_to_bool(args.local_db)
     args.tail = str_to_bool(args.tail)
-    args.cmd = str_to_bool(args.cmd)
+    # args.cmd = str_to_bool(args.cmd)
 
     server = Orchestra.launch(
         name=args.name,
