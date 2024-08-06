@@ -1,12 +1,16 @@
 # stdlib
 from datetime import datetime
+from enum import Enum
 from turtle import back
+from typing import Any, Generic
+import uu
 import uuid
 
 # third party
+from attr import dataclass
 from result import Err
 import sqlalchemy as sa
-from sqlalchemy import ForeignKey
+from sqlalchemy import Column, ForeignKey, String, Table
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import declared_attr
@@ -14,7 +18,8 @@ from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import JSON
 from syft.service.action.action_permissions import ActionPermission
-from typing_extensions import Self
+from syft.types.syft_object import SyftObject
+from typing_extensions import Self, TypeVar
 
 # syft absolute
 import syft as sy
@@ -93,7 +98,40 @@ def wrap_lineage_id(uid: uuid.UUID | None) -> LineageID | None:
     return LineageID(value=uid)
 
 
+ObjectT = TypeVar("ObjectT", bound=SyftObject)
+PermissionT = TypeVar("PermissionT", bound=Base)
+
+
+class BaseSchema(Generic[ObjectT, PermissionT]):
+    def to_obj(self) -> ObjectT:
+        raise NotImplementedError
+
+    @classmethod
+    def from_obj(cls, obj: ObjectT) -> Self:
+        raise NotImplementedError
+
+
+SchemaT = TypeVar("SchemaT", bound=BaseSchema)
+
+
+_tablename_ = "jobs"
+_job_permissions_tablename_ = "job_permissions"
+
+
 class JobDB(CommonMixin, Base):
+    __tablename__ = _tablename_
+
+    class Permission(Base):
+        __tablename__ = _job_permissions_tablename_
+        id: Mapped[uuid.UUID] = mapped_column(
+            sa.Uuid, primary_key=True, default=uuid.uuid4
+        )
+        object_id: Mapped[uuid.UUID] = mapped_column(
+            ForeignKey(f"{_tablename_}.id"), back_populates="permissions"
+        )
+        user_id: Mapped[str | None] = mapped_column(default=None)
+        permission: Mapped[ActionPermission]
+
     id: Mapped[uuid.UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid.uuid4)
     server_uid: Mapped[uuid.UUID | None] = mapped_column(default=None)
     result_id: Mapped[uuid.UUID | None] = mapped_column(
@@ -113,7 +151,7 @@ class JobDB(CommonMixin, Base):
     action: Mapped["ActionDB | None"] = relationship("ActionDB", lazy="joined")
 
     parent_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("jobdb.id"), default=None
+        ForeignKey(f"{__tablename__}.id"), default=None
     )
     children: Mapped[list["JobDB"]] = relationship(
         "JobDB",
@@ -131,9 +169,7 @@ class JobDB(CommonMixin, Base):
     requested_by: Mapped[uuid.UUID | None] = mapped_column(default=None)
     job_type: Mapped[JobType] = mapped_column(default=JobType.JOB)
 
-    permissions: Mapped[set["JobPermissionDB"]] = relationship(
-        "JobPermissionDB", lazy="joined"
-    )
+    permissions: Mapped[set[Permission]] = relationship("Permission", lazy="joined")
 
     @classmethod
     def from_obj(cls, obj: "Job") -> "JobDB":
@@ -187,13 +223,7 @@ class JobDB(CommonMixin, Base):
         )
 
 
-class JobPermissionDB(CommonMixin, Base):
-    id: Mapped[uuid.UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid.uuid4)
-    object_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("jobdb.id"), back_populates="permissions"
-    )
-    user_id: Mapped[str | None] = mapped_column(default=None)
-    permission: Mapped[ActionPermission]
+JobPermissionDB = JobDB.Permission
 
 
 class ActionDB(CommonMixin, Base):

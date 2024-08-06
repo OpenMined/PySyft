@@ -5,7 +5,7 @@ import builtins
 import contextlib
 from re import I
 import threading
-from typing import Any, Generic
+from typing import Any, ClassVar, Generic, get_args
 from syft.types.syft_object import SyftObject
 from typing_extensions import TypeVar
 
@@ -29,7 +29,7 @@ from ..action.action_permissions import (
 )
 from ..action.action_permissions import ActionPermission
 from ..response import SyftSuccess
-from .job_sql import Base, JobPermissionDB
+from .job_sql import Base, JobPermissionDB, ObjectT, SchemaT
 from .job_sql import JobDB
 from .job_sql import unwrap_uid
 from .job_stash import Job
@@ -53,7 +53,9 @@ def get_permission_where(user_id):
 class SQLiteDBManager:
     def __init__(self, server_uid) -> None:
         self.server_uid = server_uid
-        self.engine = create_engine(f"sqlite:////tmp/{server_uid}.db")
+        self.path = f"sqlite:////tmp/{server_uid}.db"
+        self.engine = create_engine(self.path)
+        print(f"Connecting to {self.path}")
         self.SessionFactory = sessionmaker(bind=self.engine)
         self.thread_local = threading.local()
 
@@ -74,12 +76,15 @@ class SQLiteDBManager:
         return self.get_session()
 
 
-ObjectT = TypeVar("ObjectT", bound=SyftObject)
-SchemaT = TypeVar("SchemaT", bound=Base)
-PermissionT = TypeVar("PermissionT", bound=Base)
+class ObjectStash(Generic[ObjectT, SchemaT]):
+    object_type: ClassVar[type[ObjectT]]
+    schema_type: ClassVar[type[SchemaT]]
 
+    def __init_subclass__(cls) -> None:
+        super().__init_subclass__()
+        cls.object_type = get_args(cls.__orig_bases__[0])[0]
+        cls.schema_type = get_args(cls.__orig_bases__[0])[1]
 
-class BaseStashSQL(Generic[ObjectT, SchemaT, PermissionT]):
     def __init__(self, server_uid: str) -> None:
         self.server_uid = server_uid
         self.schema_type = SchemaT
@@ -98,7 +103,7 @@ class BaseStashSQL(Generic[ObjectT, SchemaT, PermissionT]):
         property_value: Any,
     ) -> Result[ObjectT, str]:
         try:
-            obj_db = (
+            obj_db: SchemaT = (
                 self.session.query(self.schema_type)
                 .filter(getattr(self.schema_type, property_name) == property_value)
                 .first()
@@ -130,7 +135,7 @@ class BaseStashSQL(Generic[ObjectT, SchemaT, PermissionT]):
     def get_index(
         self, context, index: int, order_by: str = "created_at", descending: bool = True
     ) -> Result[ObjectT, str]:
-        obj = (
+        obj: SchemaT | None = (
             self.session.query(self.schema_type)
             .order_by(
                 getattr(self.schema_type, order_by).desc() if descending else None
@@ -142,9 +147,46 @@ class BaseStashSQL(Generic[ObjectT, SchemaT, PermissionT]):
             return Err("Object not found")
         return Ok(obj.to_obj())
 
+    def set(
+        self,
+        credentials: SyftVerifyKey,
+        item: ObjectT,
+        add_permissions: list[ActionObjectPermission] | None = None,
+        add_storage_permission: bool = True,
+        ignore_duplicates: bool = False,
+    ) -> Result[ObjectT, str]:
+        try:
+            db_obj = self.schema_type.from_obj(item)
+            Permission = self.schema_type.Permission
+            db_obj.permissions = {
+                Permission(
+                    id=db_obj.id,
+                    permission=ActionPermission.READ,
+                    user_id=str(credentials.verify_key),
+                )
+            }
+            if add_permissions:
+                db_obj.permissions |= {
+                    Permission(
+                        uid=db_obj.id,
+                        permission=permission.permission,
+                        user_id=str(permission.credentials)
+                        if permission.credentials
+                        else None,
+                    )
+                    for permission in add_permissions
+                }
+
+            self.session.add(db_obj)
+            self.session.commit()
+            return Ok(db_obj.to_obj())
+        except Exception as e:
+            self.session.rollback()
+            return Err(str(e))
+
 
 @serializable(canonical_name="JobStashSQL", version=1)
-class JobStashSQL(BaseStashSQL):
+class JobStashSQL(ObjectStash[Job, JobDB]):
     object_type = Job
     settings: PartitionSettings = PartitionSettings(
         name=Job.__canonical_name__, object_type=Job
@@ -167,7 +209,7 @@ class JobStashSQL(BaseStashSQL):
         credentials: SyftVerifyKey,
         result_id: UID,
     ) -> Result[Job | None, str]:
-        job_db = self.get_by_property(
+        job_db = self.get_one_by_property(
             "result_id",
             unwrap_uid(result_id),
         )
@@ -253,30 +295,8 @@ class JobStashSQL(BaseStashSQL):
             and item.result.syft_blob_storage_entry_id is not None
         ):
             item.result._clear_cache()
-        job_db = JobDB.from_obj(item)
-
-        job_db.permissions = {
-            JobPermissionDB(
-                id=job_db.id,
-                permission=ActionPermission.READ,
-                user_id=str(credentials.verify_key),
-            )
-        }
-        if add_permissions:
-            job_db.permissions |= {
-                JobPermissionDB(
-                    uid=job_db.id,
-                    permission=permission.permission,
-                    user_id=str(permission.credentials)
-                    if permission.credentials
-                    else None,
-                )
-                for permission in add_permissions
-            }
-
-        self.session.add(job_db)
-        self.session.commit()
-        return Ok(job_db.to_obj())
+        obj_db = super().set(credentials, item, add_permissions, add_storage_permission)
+        return obj_db
 
     def get_by_uid(self, credentials: SyftVerifyKey, uid: UID) -> Result[Job, str]:
         job_db = self.get_by_property("id", unwrap_uid(uid))
