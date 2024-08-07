@@ -1164,7 +1164,8 @@ class UserCodeStatusChange(Change):
             return codes
 
         codes = [self.code]
-        codes.extend(recursive_code(self.code.nested_codes))
+        if self.code.nested_codes:
+            codes.extend(recursive_code(self.code.nested_codes))
         return codes
 
     def nested_repr(self, server: Any | None = None, level: int = 0) -> str:

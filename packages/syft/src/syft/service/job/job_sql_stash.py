@@ -3,19 +3,19 @@
 # stdlib
 import builtins
 import contextlib
-from re import I
+
 import threading
 from typing import Any, ClassVar, Generic, get_args
-from syft.types.syft_object import SyftObject
-from typing_extensions import TypeVar
+
 
 # third party
 from result import Ok, Err
 from result import Result
-from sqlalchemy import create_engine
+from sqlalchemy import Column, String, Table, create_engine
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import sessionmaker
+from syft.service.user.user_roles import ServiceRole
 
 # relative
 from ...serde.serializable import serializable
@@ -28,7 +28,7 @@ from ..action.action_permissions import (
 )
 from ..action.action_permissions import ActionPermission
 from ..response import SyftSuccess
-from .job_sql import Base, ObjectT, SchemaT
+from .job_sql import Base, ObjectT, SchemaT, wrap_uid
 from .job_sql import JobDB
 from .job_sql import unwrap_uid
 from .job_stash import Job
@@ -98,12 +98,15 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
 
         return or_(
             and_(
-                self.permission_cls.user_id == str(credentials.verify_key),
+                self.permission_cls.user_id == str(credentials),
                 self.permission_cls.permission == permission,
             ),
             and_(
-                self.permission_cls.user_id is None,
+                self.permission_cls.user_id.is_(None),
                 self.permission_cls.permission == compound_permission,
+            ),
+            and_(
+                self.permission_cls.user_id.is_(None),
             ),
         )
 
@@ -115,16 +118,27 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
         property_value: Any,
         permission: ActionPermission,
     ) -> Query:
-        query = (
-            self.session.query(self.schema_type)
-            .join(
+        is_admin = (
+            self.session.query(
+                Table(
+                    "users",
+                    Base.metadata,
+                )
+            )
+            .filter_by(verify_key=str(credentials), role=ServiceRole.ADMIN)
+            .first()
+        )
+
+        base_query = self.session.query(self.schema_type)
+        if is_admin:
+            query = base_query
+        else:
+            query = base_query.join(
                 self.permission_cls,
                 self.schema_type.id == self.permission_cls.object_id,
-            )
-            .where(
+            ).where(
                 self._get_permissions_where(credentials, permission),
             )
-        )
 
         if property_name:
             query = query.filter(
@@ -252,7 +266,7 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
             Permission(
                 id=db_obj.id,
                 permission=ActionPermission.READ,
-                user_id=str(credentials.verify_key),
+                user_id=str(credentials),
             )
         ]
         if add_permissions:
@@ -273,23 +287,28 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
         self.session.commit()
         return Ok(db_obj.to_obj())
 
-    def update(self, credentials: SyftVerifyKey, obj: ObjectT) -> Result[ObjectT, str]:
-        try:
+    def update(
+        self, credentials: SyftVerifyKey, obj: ObjectT, has_permission=False
+    ) -> Result[ObjectT, str]:
+        if has_permission:
+            obj_db: SchemaT | None = self._get_as_admin(
+                "id",
+                unwrap_uid(obj.id),
+            ).one_or_none()
+        else:
             obj_db: SchemaT | None = self._get_with_permissions(
                 credentials,
                 "id",
-                obj.id,
+                unwrap_uid(obj.id),
                 ActionPermission.WRITE,
             ).one_or_none()
 
-            if obj_db is not None:
-                obj_db.update_obj(obj)
-                self.session.commit()
-                return Ok(obj)
-            return Err(f"Object with id {obj.id} not found")
-        except Exception as e:
-            self.session.rollback()
-            return Err(str(e))
+        if obj_db is not None:
+            new_obj = self.schema_type.from_obj(obj)
+            obj_db.update_obj(new_obj)
+            self.session.commit()
+            return Ok(obj)
+        return Err(f"Object with id {obj.id} not found")
 
     def delete(self, credentials: SyftVerifyKey, uid: UID) -> Result[UID, str]:
         # TODO cascade delete permissions

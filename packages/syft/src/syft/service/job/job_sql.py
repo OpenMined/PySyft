@@ -39,17 +39,19 @@ mapper_registry = registry()
 
 
 class Base(DeclarativeBase):
+    ignore_fields = ["created_at", "modified_at", "modified_by"]
+
     def to_dict(self):
-        ignore_fields = ["created_at", "modified_at", "modified_by"]
         return {
             column.name: getattr(self, column.name)
             for column in self.__table__.columns
-            if column.name not in ignore_fields
+            if column.name not in self.ignore_fields
         }
 
-    def update(self, other: type[Self]) -> None:
+    def update_obj(self, other: type[Self]) -> None:
         for key, value in other.to_dict().items():
-            setattr(self, key, value)
+            if key not in self.ignore_fields:
+                setattr(self, key, value)
 
 
 class CommonMixin:

@@ -346,7 +346,7 @@ class UserService(AbstractService):
                 setattr(user, name, value)
 
         result = self.stash.update(
-            credentials=context.credentials, user=user, has_permission=True
+            credentials=context.credentials, obj=user, has_permission=True
         )
 
         if result.is_err():
