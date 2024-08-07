@@ -76,8 +76,12 @@ def test_new_admin_can_list_user_code(
     user_code_stash = worker.get_service("usercodeservice").stash
     user_code = user_code_stash.get_all(root_client.verify_key).ok()
 
-    assert len(user_code) == len(admin.code.get_all())
-    assert {c.id for c in user_code} == {c.id for c in admin.code}
+    if delete_original_admin:
+        assert len(admin.code.get_all()) == 1
+        assert len(user_code) == 0
+    else:
+        assert len(user_code) == len(admin.code.get_all())
+        assert {c.id for c in user_code} == {c.id for c in admin.code}
 
 
 def test_user_code(worker) -> None:

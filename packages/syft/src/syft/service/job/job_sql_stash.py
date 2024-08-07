@@ -110,14 +110,7 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
             ),
         )
 
-    # TODO typing
-    def _get_with_permissions(
-        self,
-        credentials: SyftVerifyKey,
-        property_name: str,
-        property_value: Any,
-        permission: ActionPermission,
-    ) -> Query:
+    def check_is_admin(self, credentials: SyftVerifyKey) -> bool:
         is_admin = (
             self.session.query(
                 Table(
@@ -128,6 +121,17 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
             .filter_by(verify_key=str(credentials), role=ServiceRole.ADMIN)
             .first()
         )
+        return is_admin
+
+    # TODO typing
+    def _get_with_permissions(
+        self,
+        credentials: SyftVerifyKey,
+        property_name: str,
+        property_value: Any,
+        permission: ActionPermission,
+    ) -> Query:
+        is_admin = self.check_is_admin(credentials)
 
         base_query = self.session.query(self.schema_type)
         if is_admin:
@@ -172,7 +176,8 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
     def get_all(
         self, credentials: SyftVerifyKey, has_permission: bool = False
     ) -> Result[list[ObjectT], str]:
-        if has_permission:
+        is_admin = self.check_is_admin(credentials)
+        if has_permission or is_admin:
             obj_dbs = self._get_as_admin(
                 property_name=None,
                 property_value=None,
@@ -310,27 +315,27 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
             return Ok(obj)
         return Err(f"Object with id {obj.id} not found")
 
-    def delete(self, credentials: SyftVerifyKey, uid: UID) -> Result[UID, str]:
+    def delete(
+        self, credentials: SyftVerifyKey, uid: UID, has_permission: bool = False
+    ) -> Result[UID, str]:
         # TODO cascade delete permissions
-        try:
-            obj_db = self._get_with_permissions(
-                credentials,
-                "id",
-                unwrap_uid(uid),
-                ActionPermission.WRITE,
-            ).first()
+        obj_db = self._get_with_permissions(
+            credentials,
+            "id",
+            unwrap_uid(uid),
+            ActionPermission.WRITE,
+        ).first()
 
-            if obj_db:
-                self.session.delete(obj_db)
-                self.session.commit()
-                return Ok(uid)
+        if obj_db:
+            self.session.delete(obj_db)
+            self.session.commit()
+            return Ok(uid)
 
-            return Err(f"Object with id {uid} not found")
+        return Err(f"Object with id {uid} not found")
 
-        except Exception as e:
-            return Err(str(e))
-
-    def delete_by_uid(self, credentials: SyftVerifyKey, uid: UID) -> Result[UID, str]:
+    def delete_by_uid(
+        self, credentials: SyftVerifyKey, uid: UID, has_permission: bool = False
+    ) -> Result[UID, str]:
         # TODO rename to delete
         return self.delete(credentials, uid)
 

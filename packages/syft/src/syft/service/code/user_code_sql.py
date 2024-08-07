@@ -101,7 +101,7 @@ class UserCodeDB(CommonMixin, Base, PermissionMixin):  # noqa: F821
             origin_server_side_type=obj.origin_server_side_type,
             l0_deny_reason=obj.l0_deny_reason,
             nested_codes=sy.serialize(obj.nested_codes, to_bytes=True)
-            if obj.nested_codes
+            if obj.nested_codes is not None
             else b"",
         )
 
@@ -137,7 +137,7 @@ class UserCodeDB(CommonMixin, Base, PermissionMixin):  # noqa: F821
             origin_server_side_type=self.origin_server_side_type,
             l0_deny_reason=self.l0_deny_reason,
             nested_codes=sy.deserialize(self.nested_codes, from_bytes=True)
-            if self.nested_codes
+            if self.nested_codes is not None
             else None,
         )
 
