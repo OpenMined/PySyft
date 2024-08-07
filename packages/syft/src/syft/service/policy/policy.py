@@ -354,6 +354,36 @@ def retrieve_item_from_db(id: UID, context: AuthedServiceContext) -> ActionObjec
         return value.ok()
 
 
+class PolicyCondition(SyftObject):
+    __canonical_name__: str = "PolicyCondition"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+
+class InitCondition(PolicyCondition):
+    __canonical_name__: str = "InitCondition"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    manual_init: bool = True
+
+
+class RunCondition(PolicyCondition):
+    __canonical_name__: str = "RunCondition"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    manual_start: bool = True
+    manual_asset_transfer: bool = True
+    requester_can_start: bool = True
+
+
+class StopCondition(PolicyCondition):
+    __canonical_name__: str = "StopCondition"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    results_downloaded: bool = True
+    requester_access_only: bool = False
+    timeout_minutes: int = 60
+
+
 class InputPolicy(Policy):
     __canonical_name__ = "InputPolicy"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -824,6 +854,76 @@ class RunOnEnclave(RuntimePolicy):
     __version__ = SYFT_OBJECT_VERSION_1
 
     provider: EnclaveInstance
+    image: str = "default-pool"
+    workers_num: int = 1
+    init_condition: InitCondition = InitCondition()
+    run_condition: RunCondition = RunCondition()
+    stop_condition: StopCondition = StopCondition()
+
+    @field_validator("image", mode="before")
+    @classmethod
+    def validate_image(cls, v: str) -> str:
+        if v != "default-pool":
+            raise ValueError(
+                'Only the default-pool image is supported. Set image="default-pool" to continue.'
+            )
+        return v
+
+    @field_validator("workers_num", mode="before")
+    @classmethod
+    def validate_workers_num(cls, v: int) -> int:
+        if v != 1:
+            raise NotImplementedError(
+                "Currently only one worker is supported. Set workers_num=1 to proceed."
+            )
+        return v
+
+    @field_validator("init_condition", mode="before")
+    @classmethod
+    def validate_init_condition(cls, v: InitCondition) -> InitCondition:
+        if not v.manual_init:
+            raise NotImplementedError(
+                "Only manual init is supported. Set manual_init=True to proceed."
+            )
+        return v
+
+    @field_validator("run_condition", mode="before")
+    @classmethod
+    def validate_run_condition(cls, v: RunCondition) -> RunCondition:
+        if not v.manual_start:
+            raise NotImplementedError(
+                "Only manual start is supported. Set manual_start=True to proceed."
+            )
+        if not v.manual_asset_transfer:
+            raise NotImplementedError(
+                "Only manual asset transfer to the Enclave is supported. Set manual_asset_transfer=True to proceed."
+            )
+        if not v.requester_can_start:
+            raise NotImplementedError(
+                "Only the requester can currently start the Enclave code execution."
+                " Set requester_can_start=True to proceed."
+            )
+        return v
+
+    @field_validator("stop_condition", mode="before")
+    @classmethod
+    def validate_stop_condition(cls, v: StopCondition) -> StopCondition:
+        if not v.results_downloaded:
+            raise NotImplementedError(
+                "The Enclave can currently only shut down once results are downloaded."
+                " Set results_downloaded=True to proceed."
+            )
+        if v.requester_access_only:
+            raise NotImplementedError(
+                "Currently we only support results sharing by all the parties."
+                " Set requester_access_only=False to proceed."
+            )
+        if v.timeout_minutes != 60:
+            raise NotImplementedError(
+                "Currently we only support a timeout of 60 minutes."
+                " Set timeout_minutes=60 to proceed."
+            )
+        return v
 
     def is_valid(self, *args: list, **kwargs: dict) -> SyftSuccess | SyftError:  # type: ignore
         # TODO verify validitity of the enclave instance
