@@ -22,7 +22,7 @@ class SMTPClient(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def check_user_and_password(cls, values: dict) -> dict:
-        if values.get("username", None) and values.get("password"):
+        if not (values.get("username", None) and values.get("password")):
             raise ValueError("Both username and password must be provided")
         return values
 
