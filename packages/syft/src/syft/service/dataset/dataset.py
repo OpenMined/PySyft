@@ -515,7 +515,7 @@ class DatasetV1(SyftObject):
 @serializable()
 class Dataset(SyftObject):
     # version
-    __canonical_name__ = "Dataset"
+    __canonical_name__: str = "Dataset"
     __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
