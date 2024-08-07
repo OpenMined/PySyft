@@ -486,12 +486,14 @@ class Job(SyncableSyftObject):
         return summary_html
 
     def _coll_repr_(self) -> dict[str, Any]:
-        logs = self.logs(_print=False, stderr=False)
-        if logs is not None:
-            log_lines = logs.split("\n")
+        # [Note]: Disable logs in table, to improve performance
+        # logs = self.logs(_print=False, stderr=False)
+        # if logs is not None:
+        #     log_lines = logs.split("\n")
+        # if len(log_lines) > 2:
+        #     logs = f"... ({len(log_lines)} lines)\n" + "\n".join(log_lines[-2:])
+
         subjobs = self.subjobs
-        if len(log_lines) > 2:
-            logs = f"... ({len(log_lines)} lines)\n" + "\n".join(log_lines[-2:])
 
         def default_value(value: str) -> str:
             return value if value else "--"
@@ -502,7 +504,6 @@ class Job(SyncableSyftObject):
             "# Subjobs": default_value(len(subjobs)),
             "Progress": default_value(self.progress),
             "ETA": default_value(self.eta_string),
-            "Logs": default_value(logs),
         }
 
     @property
