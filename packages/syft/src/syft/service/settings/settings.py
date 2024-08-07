@@ -240,6 +240,7 @@ class ServerSettings(SyftObject):
         "deployed_on",
         "signup_enabled",
         "admin_email",
+        "allow_guest_sessions",
     ]
 
     id: UID
