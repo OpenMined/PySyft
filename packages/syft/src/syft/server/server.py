@@ -1160,7 +1160,7 @@ class Server(AbstractServer):
             # TODO: This instance check should be removed once we can ensure that
             # self.settings will always return a ServerSettings object.
             if (
-                settings
+                settings is not None
                 and not isinstance(settings, Ok)
                 and not self.settings.allow_guest_sessions
                 and role == ServiceRole.GUEST
