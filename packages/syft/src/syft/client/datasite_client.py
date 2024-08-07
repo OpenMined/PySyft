@@ -173,6 +173,12 @@ class DatasiteClient(SyftClient):
             return valid
         return self.api.services.dataset.add(dataset=dataset)
 
+    def forgot_password(self, email: str) -> SyftSuccess | SyftError:
+        return self.connection.forgot_password(email=email)
+
+    def reset_password(self, token: str, new_password: str) -> SyftSuccess | SyftError:
+        return self.connection.reset_password(token=token, new_password=new_password)
+
     def refresh(self) -> None:
         if self.credentials:
             self._fetch_server_metadata(self.credentials)
