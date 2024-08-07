@@ -915,26 +915,6 @@ class Server(AbstractServer):
             if attr is not Empty:
                 setattr(self, attr_name, attr)
 
-    # NOTE: Some workflows currently expect the settings to be available,
-    # even though they might not be defined yet. Because of this, we need to check
-    # if the settings table is already defined. This function is basically a copy
-    # of the settings property but ignoring stash error in case settings doesn't exist yeat.
-    # it should be removed once the settings are refactored
-    # refactored and the inconsistencies between settings
-    # and services are resolved.
-    def get_settings(self) -> ServerSettings | None:
-        settings_stash = SettingsStash(store=self.document_store)
-        if self.signing_key is None:
-            raise ValueError(f"{self} has no signing key")
-
-        settings = settings_stash.get_all(self.signing_key.verify_key)
-        if settings.is_err():
-            return None
-        if settings.is_ok() and len(settings.ok()) > 0:
-            settings = settings.ok()[0]
-            self.update_self(settings)
-        return settings
-
     @property
     def settings(self) -> ServerSettings:
         settings_stash = SettingsStash(store=self.document_store)
@@ -1156,13 +1136,10 @@ class Server(AbstractServer):
             api_call = api_call.message
 
             role = self.get_role_for_credentials(credentials=credentials)
-
-            settings = self.get_settings()
             # TODO: This instance check should be removed once we can ensure that
             # self.settings will always return a ServerSettings object.
             if (
-                settings
-                and not isinstance(settings, Ok)
+                not isinstance(self.settings, Ok)
                 and not self.settings.allow_guest_sessions
                 and role == ServiceRole.GUEST
             ):
