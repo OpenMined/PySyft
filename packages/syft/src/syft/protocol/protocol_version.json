@@ -13,14 +13,14 @@
       "ServerSettingsUpdate": {
         "4": {
           "version": 4,
-          "hash": "33e5f00a7193521bd5e395f4a21bf634c4875daaa31741fb57c6e15a0a4e5a57",
+          "hash": "8d7a41992c39c287fcb46383bed429ce75d3c9524ced8c86b88c26dd0232e2fe",
           "action": "add"
         }
       },
       "ServerSettings": {
         "4": {
           "version": 4,
-          "hash": "c105b05d3822f01e73eb4256d8aa3d5a1a3977022423627c0e7bd90088036b11",
+          "hash": "cf6c1cb55d569af9823d8541ca038806bd350450a919345244ed4f432a099f34",
           "action": "add"
         }
       }
