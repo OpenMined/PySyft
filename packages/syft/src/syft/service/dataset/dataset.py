@@ -522,7 +522,7 @@ def get_shape_or_len(obj: Any) -> tuple[int, ...] | int | None:
 @serializable()
 class DatasetV1(SyftObject):
     # version
-    __canonical_name__ = "Dataset"
+    __canonical_name__: str = "Dataset"
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
@@ -1029,3 +1029,39 @@ def migrate_create_asset_v2_to_v1() -> list[Callable]:
     return [
         drop(["mock_blob_storage_entry_id", "data_blob_storage_entry_id"]),
     ]
+
+
+def migrate_assets_v1_to_v2_for_dataset() -> Callable:
+    def transform(context: TransformContext) -> TransformContext:
+        if context.output and "asset_list" in context.output:
+            context.output["asset_list"] = [
+                migrate_asset_v1_to_v2_transform(asset)
+                for asset in context.output["asset_list"]
+            ]
+        return context
+
+    return transform
+
+
+def migrate_asset_v1_to_v2_transform(
+    asset: AssetV1, context: TransformContext | None = None
+) -> Asset:
+    asset_context = TransformContext.from_context(asset, context)
+    transforms = migrate_asset_v1_to_v2()  # Get the list of transforms
+    for transform_func in transforms:
+        asset_context = transform_func(asset_context)
+    return Asset(
+        **asset_context.output
+    )  # Convert the transformed output back to an Asset object
+
+
+@migrate(DatasetV1, Dataset)
+def migrate_dataset_v1_to_v2() -> list[Callable]:
+    return [
+        migrate_assets_v1_to_v2_for_dataset(),
+    ]
+
+
+@migrate(Dataset, DatasetV1)
+def migrate_dataset_v2_to_v1() -> list[Callable]:
+    return []
