@@ -520,10 +520,33 @@ def get_shape_or_len(obj: Any) -> tuple[int, ...] | int | None:
 
 
 @serializable()
+class DatasetV1(SyftObject):
+    # version
+    __canonical_name__ = "Dataset"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: UID
+    name: str
+    server_uid: UID | None = None
+    asset_list: list[AssetV1] = []
+    contributors: set[Contributor] = set()
+    citation: str | None = None
+    url: str | None = None
+    description: MarkdownDescription | None = None
+    updated_at: str | None = None
+    requests: int | None = 0
+    mb_size: float | None = None
+    created_at: DateTime = DateTime.now()
+    uploader: Contributor
+    summary: str | None = None
+    to_be_deleted: bool = False
+
+
+@serializable()
 class Dataset(SyftObject):
     # version
-    __canonical_name__: str = "Dataset"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __canonical_name__ = "Dataset"
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
     name: str
