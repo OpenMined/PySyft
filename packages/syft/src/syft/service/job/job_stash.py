@@ -107,6 +107,8 @@ class Job(SyncableSyftObject):
     user_code_id: UID | None = None
     requested_by: UID | None = None
     job_type: JobType = JobType.JOB
+    # used by JobType.TWINAPIJOB
+    endpoint: str | None = None
 
     __attr_searchable__ = [
         "parent_job_id",
@@ -452,9 +454,8 @@ class Job(SyncableSyftObject):
 
         try:
             # type_html = f'<div class="label {self.type_badge_class()}">{self.object_type_name.upper()}</div>'
-            description_html = (
-                f"<span class='syncstate-description'>{self.user_code_name}</span>"
-            )
+            job_name = self.user_code_name or self.endpoint or "Job"
+            description_html = f"<span class='syncstate-description'>{job_name}</span>"
             worker_summary = ""
             if self.job_worker_id:
                 worker_copy_button = CopyIDButton(
