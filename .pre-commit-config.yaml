@@ -173,7 +173,7 @@ repos:
     rev: 0.7.1
     hooks:
       - id: nbstripout
-        files: "^notebooks/(api|tutorials|admin)"
+        files: "^notebooks/(api|tutorials|admin|scenarios)"
 
   - repo: https://github.com/pre-commit/mirrors-prettier # This repository has been archived by the owner on Apr 11, 2024. It is now read-only.
     rev: "v3.0.0-alpha.9-for-vscode"

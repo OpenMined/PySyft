@@ -35,8 +35,6 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import UID
-from ...util import options
-from ...util.colors import SURFACE
 from ...util.markdown import as_markdown_code
 from ...util.telemetry import instrument
 from ...util.util import prompt_warning_message
@@ -691,7 +689,9 @@ class Job(SyncableSyftObject):
                 result_obj = api.services.action.get(  # type: ignore[unreachable]
                     self.result.id, resolve_nested=False
                 )
-                if result_obj.is_link and job_only:
+                if isinstance(result_obj, SyftError | Err):
+                    return result_obj
+                if result_obj.is_link and job_only:  # type: ignore[unreachable]
                     print(
                         "You're trying to wait on a job that has a link as a result."
                         "This means that the job may be ready but the linked result may not."
@@ -801,9 +801,6 @@ class JobInfo(SyftObject):
             result_str += "<p style='margin-left: 10px;'><i>No result included</i></p>"
 
         return f"""
-            <style>
-            .job-info {{color: {SURFACE[options.color_theme]};}}
-            </style>
             <div class='job-info'>
                 <h3>JobInfo</h3>
                 {metadata_str}
