@@ -31,6 +31,7 @@ from ..service.response import SyftWarning
 from ..service.sync.diff_state import ResolvedSyncState
 from ..service.sync.sync_state import SyncState
 from ..service.user.roles import Roles
+from ..service.user.user import ServiceRole
 from ..service.user.user import UserView
 from ..types.blob_storage import BlobFile
 from ..types.uid import UID
@@ -103,6 +104,8 @@ class DatasiteClient(SyftClient):
             return SyftError(f"can't get user service for {self}")
 
         user = self.users.get_current_user()
+        if user.role not in [ServiceRole.DATA_OWNER, ServiceRole.ADMIN]:
+            return SyftError(message="You don't have permission to upload datasets.")
         dataset = add_default_uploader(user, dataset)
         for i in range(len(dataset.asset_list)):
             asset = dataset.asset_list[i]
