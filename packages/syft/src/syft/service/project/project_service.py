@@ -24,18 +24,18 @@ from .project import ProjectEvent
 from .project import ProjectRequest
 from .project import ProjectSubmit
 from .project import create_project_hash
-from .project_stash import ProjectStash
+from .project_stash import ProjectStashSQL
 
 
 @instrument
 @serializable(canonical_name="ProjectService", version=1)
 class ProjectService(AbstractService):
     store: DocumentStore
-    stash: ProjectStash
+    stash: ProjectStashSQL
 
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
-        self.stash = ProjectStash(store=store)
+        self.stash = ProjectStashSQL(store=store)
 
     @service_method(
         path="project.can_create_project",

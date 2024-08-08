@@ -1002,7 +1002,7 @@ class SyftClient:
         return response
 
     def __hash__(self) -> int:
-        return hash(self.id) + hash(self.connection)
+        return hash(self.id)
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, SyftClient):

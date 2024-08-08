@@ -1,7 +1,10 @@
 # stdlib
 
 # third party
+from git import Object
 from result import Result
+from syft.service.job.job_sql_stash import ObjectStash
+from syft.service.project.project_sql import ProjectDB
 
 # relative
 from ...serde.serializable import serializable
@@ -22,32 +25,29 @@ NamePartitionKey = PartitionKey(key="name", type_=str)
 
 
 @instrument
-@serializable(canonical_name="ProjectStash", version=1)
-class ProjectStash(BaseUIDStoreStash):
+@serializable(canonical_name="ProjectStashSQL", version=1)
+class ProjectStashSQL(ObjectStash[Project, ProjectDB]):
     object_type = Project
     settings: PartitionSettings = PartitionSettings(
         name=Project.__canonical_name__, object_type=Project
     )
 
     def get_all_for_verify_key(
-        self, credentials: SyftVerifyKey, verify_key: VerifyKeyPartitionKey
+        self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
     ) -> Result[list[Request], SyftError]:
         if isinstance(verify_key, str):
             verify_key = SyftVerifyKey.from_string(verify_key)
-        qks = QueryKeys(qks=[VerifyKeyPartitionKey.with_obj(verify_key)])
-        return self.query_all(
+        return self.get_many_by_property(
             credentials=credentials,
-            qks=qks,
+            property_name="user_verify_key",
+            property_value=verify_key,
         )
-
-    def get_by_uid(
-        self, credentials: SyftVerifyKey, uid: UID
-    ) -> Result[Project | None, str]:
-        qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
-        return self.query_one(credentials=credentials, qks=qks)
 
     def get_by_name(
         self, credentials: SyftVerifyKey, project_name: str
     ) -> Result[Project | None, str]:
-        qks = QueryKeys(qks=[NamePartitionKey.with_obj(project_name)])
-        return self.query_one(credentials=credentials, qks=qks)
+        return self.get_one_by_property(
+            credentials=credentials,
+            property_name="name",
+            property_value=project_name,
+        )

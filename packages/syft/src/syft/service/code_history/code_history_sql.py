@@ -22,10 +22,6 @@ if TYPE_CHECKING:
     from ..job.job_sql import JobDB
     from syft.service.output.execution_output_sql import ExecutionOutputDB
 
-    user_code_history: list[UID] = []
-    service_func_name: str
-    comment_history: list[str] = []
-
 
 class CodeHistoryDB(CommonMixin, Base, PermissionMixin):
     __tablename__ = "code_histories"
