@@ -23,6 +23,13 @@
           "hash": "cf6c1cb55d569af9823d8541ca038806bd350450a919345244ed4f432a099f34",
           "action": "add"
         }
+      },
+      "DatasetPageView": {
+        "2": {
+          "version": 2,
+          "hash": "be1ca6dcd0b3aa0481ce5dce737e78432d06a78ad0c701aaf136be407c798352",
+          "action": "add"
+        }
       }
     }
   }
