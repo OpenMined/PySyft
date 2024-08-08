@@ -511,6 +511,18 @@ class DatasetV1(SyftObject):
     summary: str | None = None
     to_be_deleted: bool = False
 
+    __attr_searchable__ = [
+        "name",
+        "citation",
+        "url",
+        "description",
+        "action_ids",
+        "summary",
+    ]
+    __attr_unique__ = ["name"]
+    __repr_attrs__ = ["name", "summary", "url", "created_at"]
+    __table_sort_attr__ = "Created at"
+
 
 @serializable()
 class Dataset(SyftObject):
