@@ -32,6 +32,7 @@ class SyftLogDB(CommonMixin, Base, PermissionMixin):
     @classmethod
     def from_obj(cls, obj: SyftLog) -> Self:
         return cls(
+            id=obj.id,
             stdout=obj.stdout,
             stderr=obj.stderr,
             job_id=obj.job_id,
@@ -39,6 +40,7 @@ class SyftLogDB(CommonMixin, Base, PermissionMixin):
 
     def to_obj(self) -> SyftLog:
         return SyftLog(
+            id=self.id,
             stdout=self.stdout,
             stderr=self.stderr,
             job_id=self.job.id,

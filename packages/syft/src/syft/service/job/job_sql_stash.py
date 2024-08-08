@@ -298,6 +298,7 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
     def update(
         self, credentials: SyftVerifyKey, obj: ObjectT, has_permission=False
     ) -> Result[ObjectT, str]:
+        # _get_with_permissions checks for admin
         if has_permission:
             obj_db: SchemaT | None = self._get_as_admin(
                 "id",
