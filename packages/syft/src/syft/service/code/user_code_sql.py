@@ -1,5 +1,6 @@
 # stdlib
 from datetime import datetime
+from typing import TYPE_CHECKING
 import uuid
 
 # third party
@@ -22,13 +23,14 @@ from ..job.job_sql import PermissionMixin
 from ..job.job_sql import UIDTypeDecorator
 from .user_code import UserCode
 
+if TYPE_CHECKING:
+    from ..job.job_sql import JobDB
+    from syft.service.output.execution_output_sql import ExecutionOutputDB
+
 
 class UserCodeDB(CommonMixin, Base, PermissionMixin):  # noqa: F821
     __tablename__ = "user_codes"
 
-    id: Mapped[UID] = mapped_column(
-        UIDTypeDecorator, primary_key=True, default=uuid.uuid4
-    )
     server_uid: Mapped[UID | None] = mapped_column(UIDTypeDecorator, default=None)
     user_verify_key: Mapped[str]
     raw_code: Mapped[str]
@@ -55,6 +57,15 @@ class UserCodeDB(CommonMixin, Base, PermissionMixin):  # noqa: F821
     status_collection = relationship(
         "UserCodeStatusCollectionDB", back_populates="user_code"
     )
+
+    execution_output: Mapped["ExecutionOutputDB"] = relationship(
+        back_populates="user_code", uselist=False
+    )
+
+    # job_id: Mapped[UID | None] = mapped_column(
+    #     UIDTypeDecorator, sa.ForeignKey("jobs.id")
+    # )
+    job: Mapped["JobDB"] = relationship(back_populates="user_code", uselist=False)
 
     @classmethod
     def from_obj(cls, obj: UserCode) -> "UserCodeDB":

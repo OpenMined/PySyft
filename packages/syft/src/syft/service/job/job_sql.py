@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Generic
 import uuid
 
 # third party
+from colorama import Fore
 from result import Err
 import sqlalchemy as sa
 from sqlalchemy import Column
@@ -20,6 +21,7 @@ from sqlalchemy.orm import registry
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import Enum
 from sqlalchemy.types import JSON
+from syft.store.linked_obj import LinkedObject
 from typing_extensions import Self
 from typing_extensions import TypeVar
 
@@ -44,6 +46,8 @@ from .job_stash import JobType
 
 if TYPE_CHECKING:
     from syft.service.log.log_sql import SyftLogDB
+    from syft.service.code.user_code_sql import UserCodeDB
+    from syft.service.output.execution_output_sql import ExecutionOutputDB
 
 
 mapper_registry = registry()
@@ -246,18 +250,23 @@ class JobDB(CommonMixin, Base, PermissionMixin):
     job_pid: Mapped[int | None] = mapped_column(UIDTypeDecorator, default=None)
     job_worker_id: Mapped[UID | None] = mapped_column(UIDTypeDecorator, default=None)
 
-    # log_id: Mapped[UID | None] = mapped_column(
-    #     UIDTypeDecorator, ForeignKey("syft_logs.id"), default=None
-    # )
-    log: Mapped["SyftLogDB"] = relationship(back_populates="job", uselist=False)
-
-    # @declared_attr
-    # def log(cls) -> Mapped["SyftLogDB"]:
-    #     return relationship(back_populates="job")
-
-    user_code_id: Mapped[UID | None] = mapped_column(UIDTypeDecorator, default=None)
+    log: Mapped["SyftLogDB"] = relationship(
+        back_populates="job", uselist=True, lazy="joined"
+    )
+    user_code_id: Mapped[UID | None] = mapped_column(
+        UIDTypeDecorator,
+        ForeignKey("user_codes.id"),
+        default=None,
+    )
+    user_code: Mapped["UserCodeDB"] = relationship(
+        "UserCodeDB", uselist=True, lazy="joined"
+    )
     requested_by: Mapped[UID | None] = mapped_column(UIDTypeDecorator, default=None)
     job_type: Mapped[JobType] = mapped_column(default=JobType.JOB)
+
+    execution_output: Mapped["ExecutionOutputDB"] = relationship(
+        "ExecutionOutputDB", uselist=True, lazy="joined"
+    )
 
     @classmethod
     def from_obj(cls, obj: "Job") -> "JobDB":
@@ -306,7 +315,7 @@ class JobDB(CommonMixin, Base, PermissionMixin):
             job_pid=self.job_pid,
             job_worker_id=self.job_worker_id,
             log_id=self.log.id if self.log is not None else None,
-            user_code_id=self.user_code_id,
+            user_code_id=self.user_code.id if self.user_code is not None else None,
             requested_by=self.requested_by,
             job_type=self.job_type,
         )
