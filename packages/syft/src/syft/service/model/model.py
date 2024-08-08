@@ -3,6 +3,7 @@ from collections.abc import Callable
 from datetime import datetime
 from enum import Enum
 import hashlib
+import os
 import random
 from string import Template
 from textwrap import dedent
@@ -19,8 +20,11 @@ from result import Err
 from result import Ok
 from result import OkErr
 from result import Result
+from transformers import AutoModelForCausalLM
+from transformers import AutoTokenizer
 
 # relative
+from ...types.file import SyftFolder
 from ...client.api import APIRegistry
 from ...client.client import SyftClient
 from ...serde.serializable import serializable
@@ -204,40 +208,6 @@ class ModelAsset(SyftObject):
     #     result = endpoint.__call__(*args, **kwargs)
     #     return result
 
-
-@serializable(canonical_name="SyftModelClass", version=1)
-class SyftModelClass:
-    def __init__(self, assets: list[ModelAsset]) -> None:
-        self.__user_init__(assets)
-
-    def __user_init__(self, assets: list[ModelAsset]) -> None:
-        pass
-
-    def inference(self) -> Any:
-        pass
-
-
-def syft_model(
-    name: str | None = None,
-) -> Callable:
-    def decorator(cls: Any) -> Callable:
-        try:
-            code = dedent(get_code_from_class(cls))
-            code = f"import syft as sy\n{code}"
-            class_name = cls.__name__
-            res = SubmitModelCode(syft_action_data_cache=code, class_name=class_name)
-        except Exception as e:
-            raise e
-
-        success_message = SyftSuccess(
-            message=f"Syft Model Class '{cls.__name__}' successfully created. "
-        )
-        display(success_message)
-        return res
-
-    return decorator
-
-
 @serializable()
 class SubmitModelCode(ActionObject):
     # version
@@ -273,6 +243,119 @@ class SubmitModelCode(ActionObject):
     __repr_attrs__ = ["class_name", "code"]
 
 
+@serializable(canonical_name="SyftModelClass", version=1)
+class SyftModelClass:
+    def __init__(self, assets: list[ModelAsset]) -> None:
+        self.__user_init__(assets)
+
+    def __user_init__(self, assets: list[ModelAsset]) -> None:
+        pass
+
+    def inference(self) -> Any:
+        pass
+    
+    def generate_mock_assets(self) -> Any:
+        pass
+
+@serializable(canonical_name="HFModelClass", version=1)
+class HFModelClass(SyftModelClass):
+    repo_id: str = None
+    
+    def __user_init__(self, assets: list) -> None:
+        model_folder = assets[0]
+        model_folder = str(model_folder.model_folder)
+        print(model_folder, type(model_folder))
+        self.model = AutoModelForCausalLM.from_pretrained(model_folder)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_folder)
+
+    def __call__(self, prompt: str, raw=False, **kwargs) -> str:
+        # Makes the model callable for direct predictions.
+        input_ids = self.tokenizer(prompt, return_tensors="pt").input_ids
+        gen_tokens = self.model.generate(
+            input_ids,
+            do_sample=True,
+            temperature=0.9,
+            max_length=100,
+            **kwargs,
+        )
+        if raw:
+            return gen_tokens
+        else:
+            gen_text = self.tokenizer.batch_decode(gen_tokens)[0]
+            return gen_text
+
+    def inference(self, prompt: str, raw=False, **kwargs) -> str:
+        input_ids = self.tokenizer(prompt, return_tensors="pt").input_ids
+        gen_tokens = self.model.generate(
+            input_ids,
+            do_sample=True,
+            temperature=0.9,
+            max_length=100,
+            **kwargs,
+        )
+        if raw:
+            return gen_tokens
+        else:
+            gen_text = self.tokenizer.batch_decode(gen_tokens)[0]
+            return gen_text
+
+    def inference_dump(self, prompt: str):
+        encoded_input = self.tokenizer(prompt, return_tensors="pt")
+        return self.model(**encoded_input)
+    
+    def generate_mock_assets(self):
+        mock_model = AutoModelForCausalLM.from_config(self.model.config_class())
+        mock_model.save_pretrained("/tmp/mock_weights")
+        self.tokenizer.save_pretrained("/tmp/mock_weights")
+        mock_folder = SyftFolder.from_dir(name="mock", path="/tmp/mock_weights")
+        return mock_folder
+        
+
+    # Exposes the HF well-known API
+    def tokenize(text):
+        # Tokenizes a given text.
+        pass
+
+    def decode(token_ids):
+        # Converts token IDs back to text.
+        pass
+
+    def train():
+        # Puts the model in training mode.
+        pass
+
+    def eval():
+        # Puts the model in evaluation mode.
+        pass
+
+    def forward(input_ids, attention_mask, labels=None):
+        # Defines the forward pass for the model.
+        pass
+
+# @syft_model(name="gpt2")
+# class GPT2ModelClass(HFModelClass):
+#     repo_id = "openai-community/gpt2"
+    
+def syft_model(
+    name: str | None = None,
+) -> Callable:
+    def decorator(cls: Any) -> Callable:
+        try:
+            code = dedent(get_code_from_class(cls))
+            code = f"import syft as sy\n{code}"
+            class_name = cls.__name__
+            res = SubmitModelCode(syft_action_data_cache=code, class_name=class_name)
+        except Exception as e:
+            raise e
+
+        success_message = SyftSuccess(
+            message=f"Syft Model Class '{cls.__name__}' successfully created. "
+        )
+        display(success_message)
+        return res
+
+    return decorator
+
 @serializable()
 class CreateModelAsset(SyftObject):
     # version
@@ -293,6 +376,16 @@ class CreateModelAsset(SyftObject):
     model_config = ConfigDict(validate_assignment=True)
 
     def __init__(self, description: str | None = "", **kwargs: Any) -> None:
+        if 'data' in kwargs:
+            if isinstance(kwargs['data'], str) and os.path.exists(os.path.dirname(kwargs['data'])):
+                model_folder = SyftFolder.from_dir(name=kwargs['name']+"_data", path=kwargs['data'])
+                kwargs['data'] = model_folder
+
+        if 'mock' in kwargs:
+            if isinstance(kwargs['mock'], str) and os.path.exists(os.path.dirname(kwargs['mock'])):
+                model_folder = SyftFolder.from_dir(name=kwargs['name']+"_mock", path=kwargs['mock'])
+                kwargs['mock'] = model_folder
+
         super().__init__(
             **kwargs, description=MarkdownDescription(text=str(description))
         )
@@ -401,6 +494,7 @@ class Model(SyftObject):
     mb_size: float | None = None
     code_action_id: UID | None = None
     syft_model_hash: str | None = None
+    autogenerate_mock: bool = False
 
     @property
     def server_name(self) -> str | SyftError | None:
@@ -456,6 +550,14 @@ class Model(SyftObject):
             raise ValueError("[Model.mock] Cannot access model code")
         mock_assets = [asset.mock for asset in self.asset_list]
         return model_code(assets=mock_assets)
+
+    @property
+    def data(self) -> SyftModelClass:
+        model_code = self.model_code
+        if model_code is None:
+            raise ValueError("[Model.mock] Cannot access model code")
+        data_assets = [asset.data for asset in self.asset_list]
+        return model_code(assets=data_assets)
 
     def _coll_repr_(self) -> dict[str, Any]:
         return {
@@ -618,6 +720,15 @@ class CreateModel(Model):
     created_at: DateTime | None = None  # type: ignore[assignment]
     model_config = ConfigDict(validate_assignment=True)
     server_uid: UID | None = None  # type: ignore[assignment]
+
+    def __init__(
+        self,
+        code: type | SubmitModelCode,
+        **kwargs: Any,
+    ) -> None:
+        if isinstance(code, type) and issubclass(code, SyftModelClass):
+            code = syft_model(name='test')(code)
+        super().__init__(**kwargs, code=code)
 
     def set_card(self, card: str) -> None:
         self.card = MarkdownDescription(text=card)
@@ -818,6 +929,7 @@ def createmodel_to_model() -> list[Callable]:
         generate_id,
         add_msg_creation_time,
         validate_url,
+        # generate_mock,
         convert_asset,
         add_current_date,
         add_model_hash,
