@@ -1826,7 +1826,10 @@ def execute_byte_code(
                 new_str = sep.join(new_args) + end
                 if context.server is not None:
                     log_service = context.server.get_service("LogService")
-                    log_service.append(context=context, uid=log_id, new_str=new_str)
+                    res = log_service.append(
+                        context=context, uid=log_id, new_str=new_str
+                    )
+                    assert res, res
                 time = datetime.datetime.now().strftime("%d/%m/%y %H:%M:%S")
                 return __builtin__.print(
                     f"{time} FUNCTION LOG ({job_id}):",

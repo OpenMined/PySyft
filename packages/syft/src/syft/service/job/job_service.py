@@ -51,7 +51,7 @@ class JobService(AbstractService):
 
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
-        self.stash = JobStashSQL(self.store.server_uid)
+        self.stash = JobStashSQL(self.store)
 
     @service_method(
         path="job.get",

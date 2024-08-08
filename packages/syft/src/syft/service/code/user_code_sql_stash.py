@@ -13,5 +13,5 @@ class UserCodeStashSQL(ObjectStash[UserCode, UserCodeDB]):
         name=UserCode.__canonical_name__, object_type=UserCode
     )
 
-    def __init__(self, server_uid) -> None:
-        super().__init__(server_uid, UserCode, UserCodeDB)
+    def __init__(self, store) -> None:
+        super().__init__(store=store)

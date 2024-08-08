@@ -26,7 +26,7 @@ VerifyKeyPartitionKey = PartitionKey(key="verify_key", type_=SyftVerifyKey)
 
 @instrument
 @serializable(canonical_name="UserStashSQL", version=1)
-class UserStash(ObjectStash):
+class UserStash(ObjectStash[User, UserDB]):
     object_type = User
     settings: PartitionSettings = PartitionSettings(
         name=User.__canonical_name__,
@@ -34,7 +34,7 @@ class UserStash(ObjectStash):
     )
 
     def __init__(self, store: DocumentStore) -> None:
-        super().__init__(server_uid=store.server_uid, ObjectT=User, SchemaT=UserDB)
+        super().__init__(store=store)
         self.root_verify_key = store.root_verify_key
 
     def admin_verify_key(self) -> Result[SyftVerifyKey | None, str]:

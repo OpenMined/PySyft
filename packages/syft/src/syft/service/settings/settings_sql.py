@@ -48,11 +48,11 @@ class ServerSettingsDB(CommonMixin, Base, PermissionMixin):
         custom_converters = {
             "welcome_markdown": lambda x: sy.serialize(x, to_bytes=True) if x else None,
         }
-        exclude = {"syft_server_location", "syft_client_verify_key"}
         kwargs = {}
-        for key, value in obj.__dict__.items():
-            if key in exclude:
+        for key in obj.__annotations__.keys():
+            if key.startswith("_"):
                 continue
+            value = getattr(obj, key)
             if key in custom_converters:
                 value = custom_converters[key](value)
             if key in custom_mapping:
@@ -73,6 +73,8 @@ class ServerSettingsDB(CommonMixin, Base, PermissionMixin):
         }
         kwargs = {}
         for key in ServerSettings.__annotations__:
+            if key.startswith("_"):
+                continue
             value = getattr(self, key)
 
             if key in custom_converters:

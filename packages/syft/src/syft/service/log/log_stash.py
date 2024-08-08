@@ -1,4 +1,6 @@
 # relative
+from syft.service.job.job_sql_stash import ObjectStash
+from syft.service.log.log_sql import SyftLogDB
 from ...serde.serializable import serializable
 from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
@@ -8,12 +10,9 @@ from .log import SyftLog
 
 
 @instrument
-@serializable(canonical_name="LogStash", version=1)
-class LogStash(BaseUIDStoreStash):
+@serializable(canonical_name="LogStashSQL", version=1)
+class LogStashSQL(ObjectStash[SyftLog, SyftLogDB]):
     object_type = SyftLog
     settings: PartitionSettings = PartitionSettings(
         name=SyftLog.__canonical_name__, object_type=SyftLog
     )
-
-    def __init__(self, store: DocumentStore) -> None:
-        super().__init__(store=store)

@@ -57,7 +57,7 @@ class UserCodeService(AbstractService):
 
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
-        self.stash = UserCodeStash(server_uid=store.server_uid)
+        self.stash = UserCodeStash(store=store)
 
     @service_method(path="code.submit", name="submit", roles=GUEST_ROLE_LEVEL)
     def submit(

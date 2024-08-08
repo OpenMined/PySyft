@@ -23,17 +23,15 @@ from .user_code import UserCodeStatusCollection
 
 @instrument
 @serializable(canonical_name="StatusStashSQL", version=1)
-class StatusStashSQL(ObjectStash):
+class StatusStashSQL(ObjectStash[UserCodeStatusCollection, UserCodeStatusCollectionDB]):
     object_type = UserCodeStatusCollection
     settings: PartitionSettings = PartitionSettings(
         name=UserCodeStatusCollection.__canonical_name__,
         object_type=UserCodeStatusCollection,
     )
 
-    def __init__(self, server_uid) -> None:
-        super().__init__(
-            server_uid, UserCodeStatusCollection, UserCodeStatusCollectionDB
-        )
+    def __init__(self, store) -> None:
+        super().__init__(store)
 
 
 @instrument
@@ -44,7 +42,7 @@ class UserCodeStatusService(AbstractService):
 
     def __init__(self, store: DocumentStore):
         self.store = store
-        self.stash = StatusStashSQL(server_uid=store.server_uid)
+        self.stash = StatusStashSQL(store=store)
 
     @service_method(path="code_status.create", name="create", roles=ADMIN_ROLE_LEVEL)
     def create(

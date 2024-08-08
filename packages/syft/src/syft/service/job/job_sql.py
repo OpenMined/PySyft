@@ -1,5 +1,6 @@
 # stdlib
-from typing import Generic
+from re import T
+from typing import TYPE_CHECKING, Generic
 import uuid
 
 # third party
@@ -40,6 +41,10 @@ from ..action.action_permissions import ActionPermission
 from .job_stash import Job
 from .job_stash import JobStatus
 from .job_stash import JobType
+
+if TYPE_CHECKING:
+    from syft.service.log.log_sql import SyftLogDB
+
 
 mapper_registry = registry()
 
@@ -90,7 +95,7 @@ class DateTimeTypeDecorator(TypeDecorator):
 
 
 class Base(DeclarativeBase):
-    ignore_fields = ["created_at", "modified_at", "modified_by"]
+    ignore_fields = ["created_at", "modified_by", "updated_at"]
 
     def to_dict(self):
         return {
@@ -240,7 +245,16 @@ class JobDB(CommonMixin, Base, PermissionMixin):
 
     job_pid: Mapped[int | None] = mapped_column(UIDTypeDecorator, default=None)
     job_worker_id: Mapped[UID | None] = mapped_column(UIDTypeDecorator, default=None)
-    log_id: Mapped[UID | None] = mapped_column(UIDTypeDecorator, default=None)
+
+    # log_id: Mapped[UID | None] = mapped_column(
+    #     UIDTypeDecorator, ForeignKey("syft_logs.id"), default=None
+    # )
+    log: Mapped["SyftLogDB"] = relationship(back_populates="job", uselist=False)
+
+    # @declared_attr
+    # def log(cls) -> Mapped["SyftLogDB"]:
+    #     return relationship(back_populates="job")
+
     user_code_id: Mapped[UID | None] = mapped_column(UIDTypeDecorator, default=None)
     requested_by: Mapped[UID | None] = mapped_column(UIDTypeDecorator, default=None)
     job_type: Mapped[JobType] = mapped_column(default=JobType.JOB)
@@ -263,7 +277,8 @@ class JobDB(CommonMixin, Base, PermissionMixin):
             parent_id=obj.parent_job_id,
             job_pid=obj.job_pid,
             job_worker_id=obj.job_worker_id,
-            log_id=obj.log_id,
+            # log_id=obj.log_id,
+            # log=SyftLogDB.from_obj(obj.log) if obj.log is not None else None,
             user_code_id=obj.user_code_id,
             requested_by=obj.requested_by,
             job_type=obj.job_type,
@@ -290,7 +305,7 @@ class JobDB(CommonMixin, Base, PermissionMixin):
             parent_job_id=self.parent_id,
             job_pid=self.job_pid,
             job_worker_id=self.job_worker_id,
-            log_id=self.log_id,
+            log_id=self.log.id if self.log is not None else None,
             user_code_id=self.user_code_id,
             requested_by=self.requested_by,
             job_type=self.job_type,

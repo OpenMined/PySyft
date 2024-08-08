@@ -13,18 +13,18 @@ from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from .log import SyftLog
-from .log_stash import LogStash
+from .log_stash import LogStashSQL
 
 
 @instrument
 @serializable(canonical_name="LogService", version=1)
 class LogService(AbstractService):
     store: DocumentStore
-    stash: LogStash
+    stash: LogStashSQL
 
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
-        self.stash = LogStash(store=store)
+        self.stash = LogStashSQL(store=store)
 
     @service_method(path="log.add", name="add", roles=DATA_SCIENTIST_ROLE_LEVEL)
     def add(

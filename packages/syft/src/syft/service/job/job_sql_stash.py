@@ -4,8 +4,9 @@
 import builtins
 import contextlib
 import threading
-from typing import Any
+from typing import Any, ClassVar
 from typing import Generic
+from typing_extensions import get_args
 
 # third party
 from result import Err
@@ -62,15 +63,20 @@ class SQLiteDBManager:
 
 
 class ObjectStash(Generic[ObjectT, SchemaT]):
-    def __init__(self, server_uid: str, ObjectT, SchemaT) -> None:
-        self.server_uid = server_uid
+    object_type: ClassVar[type[ObjectT]]
+    schema_type: ClassVar[type[SchemaT]]
+
+    def __init_subclass__(cls) -> None:
+        super().__init_subclass__()
+        cls.object_type = get_args(cls.__orig_bases__[0])[0]
+        cls.schema_type = get_args(cls.__orig_bases__[0])[1]
+
+    def __init__(self, store: str) -> None:
+        self.server_uid = store.server_uid
         # self.schema_type = type(self)
 
-        self.schema_type = SchemaT
-        self.object_type = ObjectT
-
         # temporary, this should be an external dependency
-        self.db = SQLiteDBManager(server_uid)
+        self.db = SQLiteDBManager(self.server_uid)
 
     @property
     def session(self):
@@ -373,8 +379,8 @@ class JobStashSQL(ObjectStash[Job, JobDB]):
         name=Job.__canonical_name__, object_type=Job
     )
 
-    def __init__(self, server_uid: str) -> None:
-        super().__init__(server_uid, Job, JobDB)
+    def __init__(self, store) -> None:
+        super().__init__(store=store)
 
     def set_result(
         self,

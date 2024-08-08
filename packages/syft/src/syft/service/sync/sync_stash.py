@@ -33,7 +33,7 @@ class SyncStash(BaseUIDStoreStash):
     )
 
     def __init__(self, store: DocumentStore):
-        super().__init__(store)
+        super().__init__(store=store)
         self.store = store
         self.settings = self.settings
         self._object_type = self.object_type

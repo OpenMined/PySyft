@@ -26,8 +26,4 @@ class SettingsStashSQL(ObjectStash[ServerSettings, ServerSettingsDB]):
     )
 
     def __init__(self, store: DocumentStore) -> None:
-        super().__init__(
-            server_uid=store.server_uid,
-            ObjectT=ServerSettings,
-            SchemaT=ServerSettingsDB,
-        )
+        super().__init__(store=store)
