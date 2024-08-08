@@ -2,6 +2,8 @@
 from collections.abc import Collection
 from collections.abc import Sequence
 
+from ..action.action_object import ActionObject
+
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
@@ -80,8 +82,21 @@ class ModelService(AbstractService):
         self, context: AuthedServiceContext, model: CreateModel
     ) -> SyftSuccess | SyftError:
         """Add a model"""
+        model_code = model.code
         model = model.to(Model, context=context)
-
+        action_service = context.server.get_service("ActionService")
+        if model.autogenerate_mock:
+            asset = model.asset_list[0]
+            action_object = action_service.get(uid=asset.action_id, context=context, twin_mode=0).ok()
+            data_assets = [action_object.private_obj]
+            model_class = model_code(assets=data_assets)
+            mock_folder = model_class.generate_mock_assets()
+            mock_folder.name = asset.name + '_mock'
+            mock_folder_obj = ActionObject.from_obj(mock_folder)
+            action_object.mock_obj = mock_folder_obj
+            action_object._save_to_blob_storage()
+            print(action_service.set(action_object=action_object, context=context))
+            
         result = self.stash.set(
             context.credentials,
             model,
