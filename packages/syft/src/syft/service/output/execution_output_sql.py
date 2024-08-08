@@ -67,8 +67,8 @@ class ExecutionOutputDB(CommonMixin, Base, PermissionMixin):  # noqa: F821
             id=self.id,
             executing_user_verify_key=self.executing_user_verify_key,
             user_code_id=self.user_code_id,
-            output_ids=sy.deserialize(self.output_ids),
-            input_ids=sy.deserialize(self.input_ids),
+            output_ids=sy.deserialize(self.output_ids, from_bytes=True),
+            input_ids=sy.deserialize(self.input_ids, from_bytes=True),
             job_id=self.job_id,
             user_code_link=sy.deserialize(self.user_code_link, from_bytes=True),
         )
