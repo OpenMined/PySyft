@@ -30,6 +30,13 @@
           "hash": "be1ca6dcd0b3aa0481ce5dce737e78432d06a78ad0c701aaf136be407c798352",
           "action": "add"
         }
+      },
+      "JobItem": {
+        "2": {
+          "version": 2,
+          "hash": "b087d0c62b7d304c6ca80e4fb0e8a7f2a444be8f8cba57490dc09aeb98033105",
+          "action": "add"
+        }
       }
     }
   }
