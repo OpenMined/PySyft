@@ -36,13 +36,9 @@ from ...types.syft_object import short_uid
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
-from ...util import options
-from ...util.colors import SURFACE
 from ...util.notebook_ui.components.sync import Label
 from ...util.notebook_ui.components.sync import SyncTableObject
 from ...util.notebook_ui.icons import Icon
-from ...util.notebook_ui.styles import FONT_CSS
-from ...util.notebook_ui.styles import ITABLES_CSS
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
@@ -461,15 +457,7 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         if self.low_obj is None and self.high_obj is None:
             return SyftError(message="Something broke")
 
-        base_str = f"""
-        <style>
-        {FONT_CSS}
-        .syft-dataset {{color: {SURFACE[options.color_theme]};}}
-        .syft-dataset h3,
-        .syft-dataset p
-            {{font-family: 'Open Sans';}}
-            {ITABLES_CSS}
-        </style>
+        base_str = """
         <div class='syft-diff'>
         """
 
@@ -1214,6 +1202,12 @@ class ServerDiff(SyftObject):
             else:
                 low_status = "NEW"
                 high_status = "NEW"
+
+            # We don't support deletion of objects yet.
+            # So, skip if the object is not present on the *source* side
+            source_obj = low_obj if direction == SyncDirection.LOW_TO_HIGH else high_obj
+            if source_obj is None:
+                continue
 
             diff = ObjectDiff.from_objects(
                 low_obj=low_obj,

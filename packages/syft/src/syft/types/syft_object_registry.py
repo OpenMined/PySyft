@@ -131,7 +131,10 @@ class SyftObjectRegistry:
                 klass_from = type_from_mro.__name__
                 version_from = None
             for type_to_mro in type_to.mro():
-                if issubclass(type_to_mro, SyftBaseObject):
+                if (
+                    issubclass(type_to_mro, SyftBaseObject)
+                    and type_to_mro != SyftBaseObject
+                ):
                     klass_to = type_to_mro.__canonical_name__
                     version_to = type_to_mro.__version__
                 else:

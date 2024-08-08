@@ -6,11 +6,14 @@
 # 2) .....settings().x_enabled
 # 2) .....user_settings().x
 
-
 # stdlib
+from collections.abc import Callable
+from datetime import datetime
+from typing import Any
 from typing import TypeVar
 
 # third party
+from pydantic import BaseModel
 from result import Err
 from result import Ok
 from result import Result
@@ -18,8 +21,12 @@ from result import Result
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
+from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
+from ...types.transforms import drop
+from ...types.transforms import make_set_default
 from ..context import AuthedServiceContext
 from ..notification.notifications import Notification
 from ..response import SyftError
@@ -28,7 +35,7 @@ from .notifier_enums import NOTIFIERS
 from .smtp_client import SMTPClient
 
 
-class BaseNotifier:
+class BaseNotifier(BaseModel):
     def send(
         self, target: SyftVerifyKey, notification: Notification
     ) -> SyftSuccess | SyftError:
@@ -38,25 +45,30 @@ class BaseNotifier:
 TBaseNotifier = TypeVar("TBaseNotifier", bound=BaseNotifier)
 
 
+@serializable()
+class UserNotificationActivity(SyftObject):
+    __canonical_name__ = "UserNotificationActivity"
+    __version__ = SYFT_OBJECT_VERSION_1
+    count: int = 1
+    date: datetime = datetime.now()
+
+
 @serializable(canonical_name="EmailNotifier", version=1)
 class EmailNotifier(BaseNotifier):
-    smtp_client: SMTPClient
-    sender = ""
+    smtp_client: SMTPClient | None = None
+    sender: str = ""
 
     def __init__(
         self,
-        username: str,
-        password: str,
-        sender: str,
-        server: str,
-        port: int = 587,
+        **data: Any,
     ) -> None:
-        self.sender = sender
+        super().__init__(**data)
+        self.sender = data.get("sender", "")
         self.smtp_client = SMTPClient(
-            server=server,
-            port=port,
-            username=username,
-            password=password,
+            server=data.get("server", ""),
+            port=int(data.get("port", 587)),
+            username=data.get("username", ""),
+            password=data.get("password", ""),
         )
 
     @classmethod
@@ -103,7 +115,7 @@ class EmailNotifier(BaseNotifier):
             if isinstance(receiver_email, str):
                 receiver_email = [receiver_email]
 
-            self.smtp_client.send(
+            self.smtp_client.send(  # type: ignore
                 sender=self.sender, receiver=receiver_email, subject=subject, body=body
             )
             return Ok("Email sent successfully!")
@@ -131,9 +143,37 @@ class NotificationPreferences(SyftObject):
 
 
 @serializable()
-class NotifierSettings(SyftObject):
+class NotifierSettingsV1(SyftObject):
     __canonical_name__ = "NotifierSettings"
     __version__ = SYFT_OBJECT_VERSION_1
+    __repr_attrs__ = [
+        "active",
+        "email_enabled",
+    ]
+    active: bool = False
+
+    notifiers: dict[NOTIFIERS, type[TBaseNotifier]] = {
+        NOTIFIERS.EMAIL: EmailNotifier,
+    }
+
+    notifiers_status: dict[NOTIFIERS, bool] = {
+        NOTIFIERS.EMAIL: True,
+        NOTIFIERS.SMS: False,
+        NOTIFIERS.SLACK: False,
+        NOTIFIERS.APP: False,
+    }
+
+    email_sender: str | None = ""
+    email_server: str | None = ""
+    email_port: int | None = 587
+    email_username: str | None = ""
+    email_password: str | None = ""
+
+
+@serializable()
+class NotifierSettings(SyftObject):
+    __canonical_name__ = "NotifierSettings"
+    __version__ = SYFT_OBJECT_VERSION_2
     __repr_attrs__ = [
         "active",
         "email_enabled",
@@ -160,6 +200,9 @@ class NotifierSettings(SyftObject):
     email_port: int | None = 587
     email_username: str | None = ""
     email_password: str | None = ""
+
+    email_activity: dict[str, dict[SyftVerifyKey, UserNotificationActivity]] = {}
+    email_rate_limit: dict[str, int] = {}
 
     @property
     def email_enabled(self) -> bool:
@@ -237,3 +280,17 @@ class NotifierSettings(SyftObject):
                     notifier_objs.append(self.notifiers[notifier_type]())  # type: ignore[misc]
 
         return notifier_objs
+
+
+@migrate(NotifierSettingsV1, NotifierSettings)
+def migrate_server_settings_v1_to_current() -> list[Callable]:
+    return [
+        make_set_default("email_activity", {}),
+        make_set_default("email_rate_limit", {}),
+    ]
+
+
+@migrate(NotifierSettings, NotifierSettingsV1)
+def migrate_server_settings_v2_to_v1() -> list[Callable]:
+    # Use drop function on "notifications_enabled" attrubute
+    return [drop(["email_activity"]), drop(["email_rate_limit"])]

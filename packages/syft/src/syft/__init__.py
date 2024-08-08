@@ -1,4 +1,4 @@
-__version__ = "0.9.0-beta.3"
+__version__ = "0.9.1-beta.3"
 
 # stdlib
 from collections.abc import Callable
@@ -19,8 +19,9 @@ from .client.gateway_client import GatewayClient
 from .client.registry import DatasiteRegistry
 from .client.registry import EnclaveRegistry
 from .client.registry import NetworkRegistry
-from .client.search import Search
-from .client.search import SearchResults
+
+# from .client.search import Search
+# from .client.search import SearchResults
 from .client.syncing import compare_clients
 from .client.syncing import compare_states
 from .client.syncing import sync
@@ -78,7 +79,6 @@ from .stable_version import LATEST_STABLE_SYFT
 from .types.twin_object import TwinObject
 from .types.uid import UID
 from .util import filterwarnings
-from .util import options
 from .util.autoreload import disable_autoreload
 from .util.autoreload import enable_autoreload
 from .util.commit import __commit__
@@ -147,5 +147,5 @@ def hello_baby() -> None:
     print("Welcome to the world. \u2764\ufe0f")
 
 
-def search(name: str) -> SearchResults:
-    return Search(_datasites()).search(name=name)
+# def search(name: str) -> SearchResults:
+#     return Search(_datasites()).search(name=name)

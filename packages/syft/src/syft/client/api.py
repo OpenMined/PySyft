@@ -313,6 +313,11 @@ class RemoteFunction(SyftObject):
 
         blocking = True
         if "blocking" in kwargs:
+            if path == "api.call_public_in_jobs":
+                return SyftError(
+                    message="The 'blocking' parameter is not allowed for this function"
+                )
+
             blocking = bool(kwargs["blocking"])
             del kwargs["blocking"]
 

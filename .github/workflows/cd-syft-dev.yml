@@ -104,7 +104,7 @@ jobs:
           tags: |
             ${{ secrets.ACR_SERVER }}/openmined/syft-backend:dev
             ${{ secrets.ACR_SERVER }}/openmined/syft-backend:dev-${{ github.sha }}
-            ${{ secrets.ACR_SERVER }}/openmined/syft-backend:${{ steps.syft.outputs.SERVER_VERSION }}
+            ${{ secrets.ACR_SERVER }}/openmined/syft-backend:${{ steps.server.outputs.SERVER_VERSION }}
 
       - name: Build and push `syft-frontend` image to registry
         uses: docker/build-push-action@v6
@@ -115,7 +115,7 @@ jobs:
           tags: |
             ${{ secrets.ACR_SERVER }}/openmined/syft-frontend:dev
             ${{ secrets.ACR_SERVER }}/openmined/syft-frontend:dev-${{ github.sha }}
-            ${{ secrets.ACR_SERVER }}/openmined/syft-frontend:${{ steps.syft.outputs.SERVER_VERSION }}
+            ${{ secrets.ACR_SERVER }}/openmined/syft-frontend:${{ steps.server.outputs.SERVER_VERSION }}
           target: syft-ui-development
 
       - name: Build and push `syft-seaweedfs` image to registry
@@ -127,7 +127,7 @@ jobs:
           tags: |
             ${{ secrets.ACR_SERVER }}/openmined/syft-seaweedfs:dev
             ${{ secrets.ACR_SERVER }}/openmined/syft-seaweedfs:dev-${{ github.sha }}
-            ${{ secrets.ACR_SERVER }}/openmined/syft-seaweedfs:${{ steps.syft.outputs.SERVER_VERSION }}
+            ${{ secrets.ACR_SERVER }}/openmined/syft-seaweedfs:${{ steps.server.outputs.SERVER_VERSION }}
 
       - name: Build and push `syft-enclave-attestation` image to registry
         uses: docker/build-push-action@v6
@@ -138,7 +138,7 @@ jobs:
           tags: |
             ${{ secrets.ACR_SERVER }}/openmined/syft-enclave-attestation:dev
             ${{ secrets.ACR_SERVER }}/openmined/syft-enclave-attestation:dev-${{ github.sha }}
-            ${{ secrets.ACR_SERVER }}/openmined/syft-enclave-attestation:${{ steps.syft.outputs.SERVER_VERSION }}
+            ${{ secrets.ACR_SERVER }}/openmined/syft-enclave-attestation:${{ steps.server.outputs.SERVER_VERSION }}
 
       - name: Build Helm Chart & Copy to infra
         if: github.ref == 'refs/heads/dev' || github.event.inputs.deploy-helm == 'true'
