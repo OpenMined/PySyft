@@ -219,11 +219,11 @@ def test_datasite_client_cannot_upload_dataset_with_non_mock(worker: Worker) -> 
     dataset.asset_list[0].mock = None
 
     root_datasite_client = worker.root_client
+    upload_res = root_datasite_client.upload_dataset(dataset)
 
-    with pytest.raises(ValueError) as excinfo:
-        root_datasite_client.upload_dataset(dataset)
+    assert isinstance(upload_res, SyftError)
 
-    assert _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE in str(excinfo.value)
+    assert _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE in upload_res.message
 
 
 def test_adding_contributors_with_duplicate_email():
