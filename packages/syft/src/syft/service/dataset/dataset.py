@@ -993,13 +993,13 @@ def migrate_create_asset_v2_to_v1() -> list[Callable]:
 
 
 def migrate_assets_v1_to_v2_for_dataset() -> Callable:
-    def transform(context: TransformContext) -> TransformContext:
-        if context.output and "asset_list" in context.output:
-            context.output["asset_list"] = [
+    def transform(transform_context: TransformContext) -> TransformContext:
+        if transform_context.output and "asset_list" in transform_context.output:
+            transform_context.output["asset_list"] = [
                 migrate_asset_v1_to_v2_transform(asset)
-                for asset in context.output["asset_list"]
+                for asset in transform_context.output["asset_list"]
             ]
-        return context
+        return transform_context
 
     return transform
 
@@ -1023,6 +1023,32 @@ def migrate_dataset_v1_to_v2() -> list[Callable]:
     ]
 
 
+def migrate_assets_v2_to_v1_for_dataset() -> Callable:
+    def transform(transform_context: TransformContext) -> TransformContext:
+        if transform_context.output and "asset_list" in transform_context.output:
+            transform_context.output["asset_list"] = [
+                migrate_asset_v2_to_v1_transform(asset)
+                for asset in transform_context.output["asset_list"]
+            ]
+        return transform_context
+
+    return transform
+
+
+def migrate_asset_v2_to_v1_transform(
+    asset: Asset, context: TransformContext | None = None
+) -> AssetV1:
+    asset_context = TransformContext.from_context(asset, context)
+    transforms = migrate_asset_v2_to_v1()  # Get the list of transforms
+    for transform_func in transforms:
+        asset_context = transform_func(asset_context)
+    return Asset(
+        **asset_context.output
+    )  # Convert the transformed output back to an Asset object
+
+
 @migrate(Dataset, DatasetV1)
 def migrate_dataset_v2_to_v1() -> list[Callable]:
-    return []
+    return [
+        migrate_assets_v2_to_v1_for_dataset(),
+    ]
