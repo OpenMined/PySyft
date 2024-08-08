@@ -1,10 +1,9 @@
-from syft.service.code.user_code import UserCode
-from syft.service.code.user_code_sql import UserCodeDB
-from syft.service.job.job_sql_stash import ObjectStash
-
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionSettings
+from ..job.job_sql_stash import ObjectStash
+from .user_code import UserCode
+from .user_code_sql import UserCodeDB
 
 
 @serializable(canonical_name="UserCodeStashSQL", version=1)

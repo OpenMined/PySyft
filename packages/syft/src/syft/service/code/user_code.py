@@ -52,8 +52,9 @@ from ...store.document_store import PartitionKey
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
-from ...types.syft_object import SYFT_OBJECT_VERSION_2, PartialSyftObject
+from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.transforms import TransformContext

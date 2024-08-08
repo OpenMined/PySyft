@@ -1,7 +1,8 @@
 # stdlib
 
+# stdlib
+
 # relative
-from typing import Any
 from ...abstract_server import ServerType
 from ...exceptions.user import UserAlreadyExistsException
 from ...serde.serializable import serializable
@@ -27,7 +28,6 @@ from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
-from ..settings.settings_stash import SettingsStash
 from .user import User
 from .user import UserCreate
 from .user import UserPrivateKey
@@ -51,6 +51,7 @@ class UserService(AbstractService):
     store: DocumentStore
 
     def __init__(self, store: DocumentStore) -> None:
+        # relative
         from .user_stash import UserStash
 
         self.store = store
@@ -357,7 +358,10 @@ class UserService(AbstractService):
 
         user = result.ok()
         if user.role == ServiceRole.ADMIN:
-            settings_stash = SettingsStash(store=self.store)
+            # relative
+            from ..settings.settings_stash import SettingsStashSQL
+
+            settings_stash = SettingsStashSQL(store=self.store)
             settings = settings_stash.get_all(context.credentials)
             if settings.is_ok() and len(settings.ok()) > 0:
                 settings_data = settings.ok()[0]

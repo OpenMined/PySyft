@@ -3,38 +3,36 @@
 # stdlib
 import builtins
 import contextlib
-
 import threading
-from typing import Any, ClassVar, Generic, get_args
-
+from typing import Any
+from typing import Generic
 
 # third party
-from result import Ok, Err
+from result import Err
+from result import Ok
 from result import Result
-from sqlalchemy import Column, String, Table, create_engine
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import Table
+from sqlalchemy import and_
+from sqlalchemy import create_engine
+from sqlalchemy import or_
+from sqlalchemy.orm import Query
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import sessionmaker
-from syft.service.user.user_roles import ServiceRole
 
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...store.document_store import PartitionSettings
 from ...types.uid import UID
-from ..action.action_permissions import (
-    COMPOUND_ACTION_PERMISSION,
-    ActionObjectPermission,
-)
+from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
-from ..response import SyftSuccess
-from .job_sql import Base, ObjectT, SchemaT
+from ..user.user_roles import ServiceRole
+from .job_sql import Base
 from .job_sql import JobDB
+from .job_sql import ObjectT
+from .job_sql import SchemaT
 from .job_stash import Job
 from .job_stash import JobStatus
-from sqlalchemy.orm import Session
-from sqlalchemy import select, or_, and_, join
-from sqlalchemy.orm import Query
 
 
 class SQLiteDBManager:
@@ -428,6 +426,7 @@ class JobStashSQL(ObjectStash[Job, JobDB]):
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> Result[Job, str]:
+        # relative
         from ..action.action_object import ActionObject
 
         # Ensure we never save cached result data in the database,
@@ -446,6 +445,7 @@ class JobStashSQL(ObjectStash[Job, JobDB]):
         item: Job,
         **kwargs,
     ) -> Result[Job, str]:
+        # relative
         from ..action.action_object import ActionObject
 
         # Ensure we never save cached result data in the database,

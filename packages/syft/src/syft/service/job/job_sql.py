@@ -1,28 +1,34 @@
 # stdlib
-from datetime import datetime
-from typing import Any, Generic
+from typing import Generic
 import uuid
-from sqlalchemy.types import Enum
 
 # third party
 from result import Err
 import sqlalchemy as sa
-from sqlalchemy import Column, ForeignKey, String, Table, TypeDecorator
+from sqlalchemy import Column
+from sqlalchemy import ForeignKey
+from sqlalchemy import String
+from sqlalchemy import Table
+from sqlalchemy import TypeDecorator
+from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import declared_attr
 from sqlalchemy.orm import mapped_column
-from sqlalchemy.orm import relationship, mapper
+from sqlalchemy.orm import registry
+from sqlalchemy.orm import relationship
+from sqlalchemy.types import Enum
 from sqlalchemy.types import JSON
-from syft.service.action.action_permissions import ActionPermission
-from syft.types.syft_object import SyftObject
-from typing_extensions import Self, TypeVar
+from typing_extensions import Self
+from typing_extensions import TypeVar
 
 # syft absolute
 import syft as sy
 
 # relative
+from ...server.credentials import SyftVerifyKey
 from ...types.datetime import DateTime
+from ...types.syft_object import SyftObject
 from ...types.syft_object_registry import SyftObjectRegistry
 from ...types.uid import LineageID
 from ...types.uid import UID
@@ -30,12 +36,57 @@ from ..action.action_object import Action
 from ..action.action_object import ActionObject
 from ..action.action_object import ActionType
 from ..action.action_object import TwinMode
+from ..action.action_permissions import ActionPermission
 from .job_stash import Job
 from .job_stash import JobStatus
 from .job_stash import JobType
-from sqlalchemy.orm import registry
 
 mapper_registry = registry()
+
+
+class UIDTypeDecorator(TypeDecorator):
+    """Converts between Syft UID and UUID."""
+
+    impl = sa.UUID
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is not None:
+            return value
+
+    def process_result_value(self, value, dialect):
+        if value is not None:
+            return UID(value)
+
+
+class VerifyKeyTypeDecorator(TypeDecorator):
+    """Converts between Syft VerifyKey and str."""
+
+    impl = sa.String
+    cache_ok = True
+
+    def process_bind_param(self, value: SyftVerifyKey, dialect):
+        if value is not None:
+            return str(value)
+
+    def process_result_value(self, value, dialect):
+        if value is not None:
+            return SyftVerifyKey(value)
+
+
+class DateTimeTypeDecorator(TypeDecorator):
+    """Converts between Syft DateTime and datetime."""
+
+    impl = sa.DateTime
+    cache_ok = True
+
+    def process_bind_param(self, value: DateTime, dialect):
+        if value is not None:
+            return value.to_datetime()
+
+    def process_result_value(self, value, dialect):
+        if value is not None:
+            return DateTime.from_datetime(value)
 
 
 class Base(DeclarativeBase):
@@ -59,12 +110,23 @@ class CommonMixin:
     def __tablename__(cls) -> str:
         return cls.__name__.lower()
 
-    # id: Mapped[uuid.UUID] = mapped_column(sa.Uuid, default=uuid.uuid4)
-    created_at: Mapped[datetime] = mapped_column(server_default=sa.func.now())
-    modified_at: Mapped[datetime] = mapped_column(
-        server_default=sa.func.now(), server_onupdate=sa.func.now()
+    id: Mapped[UID] = mapped_column(
+        UIDTypeDecorator,
+        default=uuid.uuid4,
+        primary_key=True,
     )
-    modified_by: Mapped[uuid.UUID | None] = mapped_column(sa.Uuid)
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTimeTypeDecorator, server_default=sa.func.now()
+    )
+
+    updated_at: Mapped[DateTime] = mapped_column(
+        DateTimeTypeDecorator,
+        server_default=sa.func.now(),
+        server_onupdate=sa.func.now(),
+    )
+    deleted_at: Mapped[DateTime | None] = mapped_column(
+        DateTimeTypeDecorator, default=None
+    )
 
     def __str__(self) -> str:
         return f"{self.__class__.__name__}(id={self.short_id()})"
@@ -108,15 +170,6 @@ class BaseSchema(Generic[ObjectT, PermissionT]):
 SchemaT = TypeVar("SchemaT", bound=BaseSchema)
 
 
-_tablename_ = "jobs"
-_job_permissions_tablename_ = "job_permissions"
-
-
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Table
-from sqlalchemy.orm import relationship, declarative_base, sessionmaker
-from sqlalchemy.ext.declarative import declared_attr
-
-
 def init(self, *args, **kwargs):
     for k, v in kwargs.items():
         setattr(self, k, v)
@@ -150,27 +203,8 @@ class PermissionMixin:
         )
 
 
-class UIDTypeDecorator(TypeDecorator):
-    """Converts between Syft UID and UUID."""
-
-    impl = sa.UUID
-    cache_ok = True
-
-    def process_bind_param(self, value, dialect):
-        if value is not None:
-            return value
-
-    def process_result_value(self, value, dialect):
-        if value is not None:
-            return UID(value)
-
-
 class JobDB(CommonMixin, Base, PermissionMixin):
     __tablename__ = "jobs"
-    id: Mapped[UID] = mapped_column(
-        UIDTypeDecorator, primary_key=True, default=uuid.uuid4
-    )
-
     server_uid: Mapped[UID | None] = mapped_column(UIDTypeDecorator, default=None)
     result_id: Mapped[UID | None] = mapped_column(
         UIDTypeDecorator, ForeignKey("actionobjectdb.id"), default=None
@@ -191,14 +225,18 @@ class JobDB(CommonMixin, Base, PermissionMixin):
     parent_id: Mapped[UID | None] = mapped_column(
         UIDTypeDecorator, ForeignKey(f"{__tablename__}.id"), default=None
     )
-    children: Mapped[list["JobDB"]] = relationship(
-        "JobDB",
-        back_populates="parent",
-        remote_side=[id],
-    )
+
     parent: Mapped["JobDB"] = relationship(
         back_populates="children",
     )
+
+    @declared_attr
+    def children(cls) -> Mapped[list["JobDB"]]:
+        return relationship(
+            "JobDB",
+            back_populates="parent",
+            remote_side=[cls.id],
+        )
 
     job_pid: Mapped[int | None] = mapped_column(UIDTypeDecorator, default=None)
     job_worker_id: Mapped[UID | None] = mapped_column(UIDTypeDecorator, default=None)
@@ -348,9 +386,7 @@ class ActionObjectDB(CommonMixin, Base):
             syft_action_data_str_=obj.syft_action_data_str_,
             syft_has_bool_attr=obj.syft_has_bool_attr,
             syft_resolved=obj.syft_resolved,
-            created_at=obj.syft_created_at.to_datetime()
-            if obj.syft_created_at
-            else None,
+            created_at=obj.syft_created_at,
             syft_action_data_server_id=obj.syft_action_data_server_id
             if obj.syft_action_data_server_id
             else None,
@@ -379,9 +415,7 @@ class ActionObjectDB(CommonMixin, Base):
             syft_action_data_str_=self.syft_action_data_str_,
             syft_has_bool_attr=self.syft_has_bool_attr,
             syft_resolved=self.syft_resolved,
-            created_at=DateTime.from_datetime(self.created_at)
-            if self.created_at
-            else None,
+            created_at=self.created_at if self.created_at else None,
             syft_action_data_server_id=self.syft_action_data_server_id,
             syft_action_saved_to_blob_store=self.syft_action_saved_to_blob_store,
         )

@@ -7,7 +7,6 @@ from typing import cast
 from result import Err
 from result import Ok
 from result import Result
-from syft.service.code.user_code_sql_stash import UserCodeStashSQL as UserCodeStash
 
 # relative
 from ...serde.serializable import serializable
@@ -47,6 +46,7 @@ from .user_code import UserCodeStatus
 from .user_code import UserCodeUpdate
 from .user_code import get_code_hash
 from .user_code import load_approved_policy_code
+from .user_code_sql_stash import UserCodeStashSQL as UserCodeStash
 
 
 @instrument

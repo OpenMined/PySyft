@@ -1,22 +1,24 @@
-# third party
+# stdlib
 import uuid
-import sqlalchemy as sa
 
-import syft as sy
-
+# third party
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
-from syft.server.credentials import SyftSigningKey, SyftVerifyKey
-from syft.service.job.job_sql import (
-    Base,
-    CommonMixin,
-    PermissionMixin,
-    UIDTypeDecorator,
-)
-from syft.service.notifier.notifier_enums import NOTIFIERS
-from syft.service.user.user import User
-from syft.service.user.user_roles import ServiceRole
-from syft.types.uid import UID
+
+# syft absolute
+import syft as sy
+
+# relative
+from ...server.credentials import SyftSigningKey
+from ...server.credentials import SyftVerifyKey
+from ...types.uid import UID
+from ..job.job_sql import Base
+from ..job.job_sql import CommonMixin
+from ..job.job_sql import PermissionMixin
+from ..job.job_sql import UIDTypeDecorator
+from ..notifier.notifier_enums import NOTIFIERS
+from .user import User
+from .user_roles import ServiceRole
 
 default_notifications = {
     NOTIFIERS.EMAIL: True,

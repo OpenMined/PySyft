@@ -77,7 +77,7 @@ from ..service.service import ServiceConfigRegistry
 from ..service.service import UserServiceConfigRegistry
 from ..service.settings.settings import ServerSettings
 from ..service.settings.settings import ServerSettingsUpdate
-from ..service.settings.settings_stash import SettingsStash
+from ..service.settings.settings_stash import SettingsStashSQL
 from ..service.user.user import User
 from ..service.user.user import UserCreate
 from ..service.user.user import UserView
@@ -914,10 +914,10 @@ class Server(AbstractServer):
 
     @property
     def settings(self) -> ServerSettings:
-        settings_stash = SettingsStash(store=self.document_store)
+        settings_stash = SettingsStashSQL(store=self.document_store)
         if self.signing_key is None:
             raise ValueError(f"{self} has no signing key")
-        settings = settings_stash.get_all(self.signing_key.verify_key)
+        settings = settings_stash.get_all(self.verify_key)
         if settings.is_err():
             raise ValueError(
                 f"Cannot get server settings for '{self.name}'. Error: {settings.err()}"
@@ -1539,7 +1539,7 @@ class Server(AbstractServer):
 
     def create_initial_settings(self, admin_email: str) -> ServerSettings | None:
         try:
-            settings_stash = SettingsStash(store=self.document_store)
+            settings_stash = SettingsStashSQL(store=self.document_store)
             if self.signing_key is None:
                 logger.debug(
                     "create_initial_settings failed as there is no signing key"
@@ -1588,7 +1588,7 @@ class Server(AbstractServer):
                     notifications_enabled=False,
                 )
                 result = settings_stash.set(
-                    credentials=self.signing_key.verify_key, settings=new_settings
+                    credentials=self.signing_key.verify_key, item=new_settings
                 )
                 if result.is_ok():
                     return result.ok()

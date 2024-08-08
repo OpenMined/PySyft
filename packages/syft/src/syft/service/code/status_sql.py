@@ -1,38 +1,23 @@
-# third party
+# stdlib
 import uuid
-import sqlalchemy as sa
-from sqlalchemy.orm import Mapped
-from sqlalchemy.orm import mapped_column
-from syft.abstract_server import ServerSideType
-from syft.server.credentials import SyftVerifyKey
-from syft.service.action.action_permissions import ActionPermission
-from syft.service.code.user_code import UserCode, UserCodeStatusCollection
-from sqlalchemy.orm import relationship
 
 # third party
-from result import Err
 import sqlalchemy as sa
-from sqlalchemy import Column, Enum, ForeignKey, String, Table
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped
-from sqlalchemy.orm import declared_attr
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
-from sqlalchemy.types import JSON
-from syft.service.action.action_permissions import ActionPermission
-from syft.types.syft_object import SyftObject
-from typing_extensions import Self, TypeVar
 
 # syft absolute
 import syft as sy
-from syft.service.job.job_sql import (
-    Base,
-    CommonMixin,
-    PermissionMixin,
-    UIDTypeDecorator,
-)
-from syft.types.datetime import DateTime
-from syft.types.uid import UID
+
+# relative
+from ...types.uid import UID
+from ..job.job_sql import Base
+from ..job.job_sql import CommonMixin
+from ..job.job_sql import PermissionMixin
+from ..job.job_sql import UIDTypeDecorator
+from .user_code import UserCodeStatusCollection
 
 
 class UserCodeStatusCollectionDB(CommonMixin, Base, PermissionMixin):

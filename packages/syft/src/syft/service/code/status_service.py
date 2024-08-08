@@ -1,21 +1,15 @@
 # stdlib
 
 # third party
-from result import Result
-from syft.service.code.status_sql import UserCodeStatusCollectionDB
-from syft.service.job.job_sql_stash import ObjectStash
 
 # relative
 from ...serde.serializable import serializable
-from ...server.credentials import SyftVerifyKey
-from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
-from ...store.document_store import UIDPartitionKey
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
+from ..job.job_sql_stash import ObjectStash
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -23,6 +17,7 @@ from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
+from .status_sql import UserCodeStatusCollectionDB
 from .user_code import UserCodeStatusCollection
 
 

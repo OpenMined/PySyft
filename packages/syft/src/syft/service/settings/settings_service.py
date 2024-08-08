@@ -30,17 +30,17 @@ from ..user.user_roles import ServiceRole
 from ..warnings import HighSideCRUDWarning
 from .settings import ServerSettings
 from .settings import ServerSettingsUpdate
-from .settings_stash import SettingsStash
+from .settings_stash import SettingsStashSQL
 
 
 @serializable(canonical_name="SettingsService", version=1)
 class SettingsService(AbstractService):
     store: DocumentStore
-    stash: SettingsStash
+    stash: SettingsStashSQL
 
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
-        self.stash = SettingsStash(store=store)
+        self.stash = SettingsStashSQL(store=store)
 
     @service_method(path="settings.get", name="get")
     def get(self, context: UnauthedServiceContext) -> Result[Ok, Err]:
@@ -62,7 +62,7 @@ class SettingsService(AbstractService):
         self, context: AuthedServiceContext, settings: ServerSettings
     ) -> Result[Ok, Err]:
         """Set a new the Server Settings"""
-        result = self.stash.set(context.credentials, settings)
+        result = self.stash.set(context.credentials, item=settings)
         if result.is_ok():
             return result
         else:

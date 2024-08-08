@@ -3,25 +3,19 @@
 # third party
 from result import Ok
 from result import Result
-from syft.service.job.job_sql_stash import ObjectStash
-from syft.service.user.user_sql import UserDB
 
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftSigningKey
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
-from ...store.document_store import UIDPartitionKey
-from ...types.uid import UID
 from ...util.telemetry import instrument
-from ..action.action_permissions import ActionObjectPermission
-from ..response import SyftSuccess
+from ..job.job_sql_stash import ObjectStash
 from .user import User
 from .user_roles import ServiceRole
+from .user_sql import UserDB
 
 # 🟡 TODO 27: it would be nice if these could be defined closer to the User
 EmailPartitionKey = PartitionKey(key="email", type_=str)
