@@ -52,7 +52,7 @@ class UserCodeStatusService(AbstractService):
     ) -> UserCodeStatusCollection | SyftError:
         result = self.stash.set(
             credentials=context.credentials,
-            item=status,
+            obj=status,
         )
         if result.is_ok():
             return result.ok()

@@ -1588,7 +1588,7 @@ class Server(AbstractServer):
                     notifications_enabled=False,
                 )
                 result = settings_stash.set(
-                    credentials=self.signing_key.verify_key, item=new_settings
+                    credentials=self.signing_key.verify_key, obj=new_settings
                 )
                 if result.is_ok():
                     return result.ok()
@@ -1626,7 +1626,7 @@ def create_admin_new(
             user.verify_key = user.signing_key.verify_key
             result = user_stash.set(
                 credentials=server.signing_key.verify_key,
-                item=user,
+                obj=user,
                 ignore_duplicates=True,
             )
             if result.is_ok():

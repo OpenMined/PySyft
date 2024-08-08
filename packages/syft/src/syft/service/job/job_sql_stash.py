@@ -261,12 +261,12 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
     def set(
         self,
         credentials: SyftVerifyKey,
-        item: ObjectT,
+        obj: ObjectT,
         add_permissions: list[ActionObjectPermission] | None = None,
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> Result[ObjectT, str]:
-        db_obj = self.schema_type.from_obj(item)
+        db_obj = self.schema_type.from_obj(obj)
         Permission = self.permission_cls  # type: ignore
 
         # TODO fix autocomplete and type checking

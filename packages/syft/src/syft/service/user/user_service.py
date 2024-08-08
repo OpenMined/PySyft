@@ -74,7 +74,7 @@ class UserService(AbstractService):
 
         result = self.stash.set(
             credentials=context.credentials,
-            user=user,
+            obj=user,
             add_permissions=[
                 ActionObjectPermission(
                     uid=user.id, permission=ActionPermission.ALL_READ
@@ -496,7 +496,7 @@ class UserService(AbstractService):
 
         result = self.stash.set(
             credentials=user.verify_key,
-            item=user,
+            obj=user,
             add_permissions=[
                 ActionObjectPermission(
                     uid=user.id, permission=ActionPermission.ALL_READ

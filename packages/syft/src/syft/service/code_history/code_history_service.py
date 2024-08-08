@@ -21,18 +21,18 @@ from .code_history import CodeHistoriesDict
 from .code_history import CodeHistory
 from .code_history import CodeHistoryView
 from .code_history import UsersCodeHistoriesDict
-from .code_history_stash import CodeHistoryStash
+from .code_history_stash import CodeHistoryStashSQL
 
 
 @instrument
 @serializable(canonical_name="CodeHistoryService", version=1)
 class CodeHistoryService(AbstractService):
     store: DocumentStore
-    stash: CodeHistoryStash
+    stash: CodeHistoryStashSQL
 
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
-        self.stash = CodeHistoryStash(store=store)
+        self.stash = CodeHistoryStashSQL(store=store)
 
     @service_method(
         path="code_history.submit_version",

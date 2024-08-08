@@ -62,7 +62,7 @@ class SettingsService(AbstractService):
         self, context: AuthedServiceContext, settings: ServerSettings
     ) -> Result[Ok, Err]:
         """Set a new the Server Settings"""
-        result = self.stash.set(context.credentials, item=settings)
+        result = self.stash.set(context.credentials, obj=settings)
         if result.is_ok():
             return result
         else:
