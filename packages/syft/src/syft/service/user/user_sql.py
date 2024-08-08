@@ -11,12 +11,12 @@ from syft.service.job.job_sql import (
     Base,
     CommonMixin,
     PermissionMixin,
-    unwrap_uid,
-    wrap_uid,
+    UIDTypeDecorator,
 )
 from syft.service.notifier.notifier_enums import NOTIFIERS
 from syft.service.user.user import User
 from syft.service.user.user_roles import ServiceRole
+from syft.types.uid import UID
 
 default_notifications = {
     NOTIFIERS.EMAIL: True,
@@ -28,7 +28,9 @@ default_notifications = {
 
 class UserDB(CommonMixin, Base, PermissionMixin):
     __tablename__ = "users"
-    id: Mapped[uuid.UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid.uuid4)
+    id: Mapped[UID] = mapped_column(
+        UIDTypeDecorator, primary_key=True, default=uuid.uuid4
+    )
     notifications_enabled: Mapped[bytes]
     email: Mapped[str | None]
     name: Mapped[str | None]
@@ -45,7 +47,7 @@ class UserDB(CommonMixin, Base, PermissionMixin):
     @classmethod
     def from_obj(cls, obj: "User") -> "UserDB":
         return cls(
-            id=unwrap_uid(obj.id),
+            id=obj.id,
             notifications_enabled=sy.serialize(default_notifications, to_bytes=True),
             email=obj.email,
             name=obj.name,
@@ -61,7 +63,7 @@ class UserDB(CommonMixin, Base, PermissionMixin):
 
     def to_obj(self) -> "User":
         return User(
-            id=wrap_uid(self.id),
+            id=self.id,
             notifications_enabled=sy.deserialize(
                 self.notifications_enabled, from_bytes=True
             ),

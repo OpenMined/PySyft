@@ -29,8 +29,7 @@ from syft.service.job.job_sql import (
     Base,
     CommonMixin,
     PermissionMixin,
-    unwrap_uid,
-    wrap_uid,
+    UIDTypeDecorator,
 )
 from syft.types.datetime import DateTime
 from syft.types.uid import UID
@@ -39,10 +38,12 @@ from syft.types.uid import UID
 class UserCodeStatusCollectionDB(CommonMixin, Base, PermissionMixin):
     __tablename__ = "user_code_status_collections"
 
-    id: Mapped[uuid.UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid.uuid4)
+    id: Mapped[UID] = mapped_column(
+        UIDTypeDecorator, primary_key=True, default=uuid.uuid4
+    )
     status_dict: Mapped[bytes] = mapped_column(sa.LargeBinary)
-    user_code_id: Mapped[uuid.UUID | None] = mapped_column(
-        sa.Uuid, ForeignKey("user_codes.id"), nullable=True
+    user_code_id: Mapped[UID | None] = mapped_column(
+        UIDTypeDecorator, ForeignKey("user_codes.id"), nullable=True
     )
     user_code = relationship("UserCodeDB", back_populates="status_collection")
     user_code_link: Mapped[bytes]
@@ -50,14 +51,14 @@ class UserCodeStatusCollectionDB(CommonMixin, Base, PermissionMixin):
     @classmethod
     def from_obj(cls, obj: UserCodeStatusCollection) -> "UserCodeStatusCollectionDB":
         return cls(
-            id=unwrap_uid(obj.id),
+            id=obj.id,
             status_dict=sy.serialize(obj.status_dict, to_bytes=True),
             user_code_link=sy.serialize(obj.user_code_link, to_bytes=True),
         )
 
     def to_obj(self) -> UserCodeStatusCollection:
         return UserCodeStatusCollection(
-            id=wrap_uid(self.id),
+            id=self.id,
             status_dict=sy.deserialize(self.status_dict, from_bytes=True),
             user_code_link=sy.deserialize(self.user_code_link, from_bytes=True),
         )

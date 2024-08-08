@@ -32,8 +32,7 @@ from syft.service.job.job_sql import (
     Base,
     CommonMixin,
     PermissionMixin,
-    unwrap_uid,
-    wrap_uid,
+    UIDTypeDecorator,
 )
 from syft.types.datetime import DateTime
 from syft.types.uid import UID
@@ -42,8 +41,10 @@ from syft.types.uid import UID
 class UserCodeDB(CommonMixin, Base, PermissionMixin):  # noqa: F821
     __tablename__ = "user_codes"
 
-    id: Mapped[uuid.UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid.uuid4)
-    server_uid: Mapped[uuid.UUID | None] = mapped_column(default=None)
+    id: Mapped[UID] = mapped_column(
+        UIDTypeDecorator, primary_key=True, default=uuid.uuid4
+    )
+    server_uid: Mapped[UID | None] = mapped_column(UIDTypeDecorator, default=None)
     user_verify_key: Mapped[str]
     raw_code: Mapped[str]
     input_policy_type: Mapped[bytes]
@@ -73,8 +74,8 @@ class UserCodeDB(CommonMixin, Base, PermissionMixin):  # noqa: F821
     @classmethod
     def from_obj(cls, obj: UserCode) -> "UserCodeDB":
         return cls(
-            id=unwrap_uid(obj.id),
-            server_uid=unwrap_uid(obj.server_uid),
+            id=obj.id,
+            server_uid=obj.server_uid,
             user_verify_key=str(obj.user_verify_key),
             raw_code=obj.raw_code,
             input_policy_type=sy.serialize(obj.input_policy_type, to_bytes=True),
@@ -107,8 +108,8 @@ class UserCodeDB(CommonMixin, Base, PermissionMixin):  # noqa: F821
 
     def to_obj(self) -> UserCode:
         return UserCode(
-            id=wrap_uid(self.id),
-            server_uid=wrap_uid(self.server_uid),
+            id=self.id,
+            server_uid=self.server_uid,
             user_verify_key=SyftVerifyKey(self.user_verify_key),
             raw_code=self.raw_code,
             input_policy_type=sy.deserialize(self.input_policy_type, from_bytes=True),

@@ -28,9 +28,8 @@ from ..action.action_permissions import (
 )
 from ..action.action_permissions import ActionPermission
 from ..response import SyftSuccess
-from .job_sql import Base, ObjectT, SchemaT, wrap_uid
+from .job_sql import Base, ObjectT, SchemaT
 from .job_sql import JobDB
-from .job_sql import unwrap_uid
 from .job_stash import Job
 from .job_stash import JobStatus
 from sqlalchemy.orm import Session
@@ -80,7 +79,7 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
         return self.db.session
 
     def get(self, credentials, obj_id: UID) -> Result[ObjectT, str]:
-        return self.get_one_by_property(credentials, "id", unwrap_uid(obj_id))
+        return self.get_one_by_property(credentials, "id", obj_id)
 
     @property
     def permission_cls(self):
@@ -298,13 +297,13 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
         if has_permission:
             obj_db: SchemaT | None = self._get_as_admin(
                 "id",
-                unwrap_uid(obj.id),
+                obj.id,
             ).one_or_none()
         else:
             obj_db: SchemaT | None = self._get_with_permissions(
                 credentials,
                 "id",
-                unwrap_uid(obj.id),
+                obj.id,
                 ActionPermission.WRITE,
             ).one_or_none()
 
@@ -322,7 +321,7 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
         obj_db = self._get_with_permissions(
             credentials,
             "id",
-            unwrap_uid(uid),
+            uid,
             ActionPermission.WRITE,
         ).first()
 
@@ -340,7 +339,7 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
         return self.delete(credentials, uid)
 
     def get_by_uid(self, credentials: SyftVerifyKey, uid: UID) -> Result[ObjectT, str]:
-        obj = self.get_one_by_property(credentials, "id", unwrap_uid(uid))
+        obj = self.get_one_by_property(credentials, "id", uid)
         return obj
 
     def has_permission(self, *args, **kwargs) -> bool:
@@ -395,14 +394,14 @@ class JobStashSQL(ObjectStash[Job, JobDB]):
         job_db = self.get_one_by_property(
             credentials,
             "result_id",
-            unwrap_uid(result_id),
+            result_id,
         )
         return job_db
 
     def get_by_parent_id(
         self, credentials: SyftVerifyKey, uid: UID
     ) -> Result[Job | None, str]:
-        subjobs = self.get_many_by_property(credentials, "parent_id", unwrap_uid(uid))
+        subjobs = self.get_many_by_property(credentials, "parent_id", uid)
         return subjobs
 
     def get_active(self, credentials: SyftVerifyKey) -> Result[list[Job], str]:

@@ -154,6 +154,10 @@ class UID:
     def no_dash(self) -> str:
         return str(self.value).replace("-", "")
 
+    @property
+    def hex(self) -> str:
+        return self.no_dash
+
     def __repr__(self) -> str:
         """Returns a human-readable version of the ID
 
