@@ -19,6 +19,7 @@ from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
+from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SyftObject
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
@@ -90,7 +91,7 @@ class ServerSettingsUpdateV2(PartialSyftObject):
 
 
 @serializable()
-class ServerSettingsUpdate(PartialSyftObject):
+class ServerSettingsUpdateV3(PartialSyftObject):
     __canonical_name__ = "ServerSettingsUpdate"
     __version__ = SYFT_OBJECT_VERSION_3
     id: UID
@@ -105,6 +106,25 @@ class ServerSettingsUpdate(PartialSyftObject):
     eager_execution_enabled: bool
     notifications_enabled: bool
     pwd_token_config: PwdTokenResetConfig
+
+
+@serializable()
+class ServerSettingsUpdate(PartialSyftObject):
+    __canonical_name__ = "ServerSettingsUpdate"
+    __version__ = SYFT_OBJECT_VERSION_4
+    id: UID
+    name: str
+    organization: str
+    description: str
+    on_board: bool
+    signup_enabled: bool
+    admin_email: str
+    association_request_auto_approval: bool
+    welcome_markdown: HTMLObject | MarkdownDescription
+    eager_execution_enabled: bool
+    notifications_enabled: bool
+    pwd_token_config: PwdTokenResetConfig
+    allow_guest_sessions: bool
 
 
 @serializable()
@@ -175,7 +195,7 @@ class ServerSettingsV2(SyftObject):
 
 
 @serializable()
-class ServerSettings(SyftObject):
+class ServerSettingsV3(SyftObject):
     __canonical_name__ = "ServerSettings"
     __version__ = SYFT_OBJECT_VERSION_3
     __repr_attrs__ = [
@@ -207,6 +227,43 @@ class ServerSettings(SyftObject):
     )
     notifications_enabled: bool
     pwd_token_config: PwdTokenResetConfig = PwdTokenResetConfig()
+
+
+@serializable()
+class ServerSettings(SyftObject):
+    __canonical_name__ = "ServerSettings"
+    __version__ = SYFT_OBJECT_VERSION_4
+    __repr_attrs__ = [
+        "name",
+        "organization",
+        "description",
+        "deployed_on",
+        "signup_enabled",
+        "admin_email",
+        "allow_guest_sessions",
+    ]
+
+    id: UID
+    name: str = "Server"
+    deployed_on: str
+    organization: str = "OpenMined"
+    verify_key: SyftVerifyKey
+    on_board: bool = True
+    description: str = "This is the default description for a Datasite Server."
+    server_type: ServerType = ServerType.DATASITE
+    signup_enabled: bool
+    admin_email: str
+    server_side_type: ServerSideType = ServerSideType.HIGH_SIDE
+    show_warnings: bool
+    association_request_auto_approval: bool
+    eager_execution_enabled: bool = False
+    default_worker_pool: str = DEFAULT_WORKER_POOL_NAME
+    welcome_markdown: HTMLObject | MarkdownDescription = HTMLObject(
+        text=DEFAULT_WELCOME_MSG
+    )
+    notifications_enabled: bool
+    pwd_token_config: PwdTokenResetConfig = PwdTokenResetConfig()
+    allow_guest_sessions: bool = True
 
     def _repr_html_(self) -> Any:
         # .api.services.notifications.settings() is how the server itself would dispatch notifications.
@@ -251,6 +308,7 @@ class ServerSettings(SyftObject):
                 <p><strong>Signup enabled: </strong>{self.signup_enabled}</p>
                 <p><strong>Notifications enabled: </strong>{notification_print_str}</p>
                 <p><strong>Admin email: </strong>{self.admin_email}</p>
+                <p><strong>Enable guest sessions: </strong>{self.allow_guest_sessions}</p>
             </div>
 
             """
@@ -265,9 +323,14 @@ def migrate_server_settings_v1_to_v2() -> list[Callable]:
     return [make_set_default("notifications_enabled", False)]
 
 
-@migrate(ServerSettingsV2, ServerSettings)
-def migrate_server_settings_v2_to_current() -> list[Callable]:
+@migrate(ServerSettingsV2, ServerSettingsV3)
+def migrate_server_settings_v2_to_v3() -> list[Callable]:
     return [make_set_default("pwd_token_config", PwdTokenResetConfig())]
+
+
+@migrate(ServerSettingsV3, ServerSettings)
+def migrate_server_settings_v3_to_current() -> list[Callable]:
+    return [make_set_default("allow_guest_sessions", False)]
 
 
 # drop
@@ -277,10 +340,16 @@ def migrate_server_settings_v2_to_v1() -> list[Callable]:
     return [drop(["notifications_enabled"])]
 
 
-@migrate(ServerSettings, ServerSettingsV2)
-def migrate_server_settings_current_to_v2() -> list[Callable]:
+@migrate(ServerSettingsV3, ServerSettingsV2)
+def migrate_server_settings_v3_to_v2() -> list[Callable]:
     # Use drop function on "notifications_enabled" attrubute
     return [drop(["pwd_token_config"])]
+
+
+@migrate(ServerSettings, ServerSettingsV3)
+def migrate_server_settings_current_to_v3() -> list[Callable]:
+    # Use drop function on "notifications_enabled" attrubute
+    return [drop(["allow_guest_sessions"])]
 
 
 # Server Settings Update Migration
@@ -292,9 +361,14 @@ def migrate_server_settings_update_v1_to_v2() -> list[Callable]:
     return [make_set_default("notifications_enabled", False)]
 
 
-@migrate(ServerSettingsUpdateV2, ServerSettingsUpdate)
-def migrate_server_settings_update_v2_to_current() -> list[Callable]:
+@migrate(ServerSettingsUpdateV2, ServerSettingsUpdateV3)
+def migrate_server_settings_update_v2_to_v3() -> list[Callable]:
     return [make_set_default("pwd_token_config", PwdTokenResetConfig())]
+
+
+@migrate(ServerSettingsUpdateV3, ServerSettingsUpdate)
+def migrate_server_settings_update_v3_to_current() -> list[Callable]:
+    return [make_set_default("allow_guest_sessions", False)]
 
 
 # drop
@@ -303,6 +377,11 @@ def migrate_server_settings_update_v2_to_v1() -> list[Callable]:
     return [drop(["notifications_enabled"])]
 
 
-@migrate(ServerSettingsUpdate, ServerSettingsUpdateV2)
+@migrate(ServerSettingsUpdateV3, ServerSettingsUpdateV2)
 def migrate_server_settings_update_current_to_v2() -> list[Callable]:
     return [drop(["pwd_token_config"])]
+
+
+@migrate(ServerSettingsUpdate, ServerSettingsUpdateV3)
+def migrate_server_settings_update_current_to_v3() -> list[Callable]:
+    return [drop(["allow_guest_sessions"])]
