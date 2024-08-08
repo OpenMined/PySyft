@@ -159,7 +159,10 @@ class DatasiteClient(SyftClient):
             return valid
 
         # add the dataset object to the dataset store
-        return self.api.services.dataset.add(dataset=dataset)
+        try:
+            return self.api.services.dataset.add(dataset=dataset)
+        except Exception as e:
+            return SyftError(message=f"Failed to upload dataset. {e}")
 
     def _replace_dataset(
         self, existed_dataset: Dataset, dataset: CreateDataset
@@ -175,10 +178,12 @@ class DatasiteClient(SyftClient):
         valid = dataset.check()
         if isinstance(valid, SyftError):
             return valid
-
-        return self.api.services.dataset.replace(
-            existed_dataset_uid=existed_dataset.id, dataset=dataset
-        )
+        try:
+            return self.api.services.dataset.replace(
+                existed_dataset_uid=existed_dataset.id, dataset=dataset
+            )
+        except Exception as e:
+            return SyftError(message=f"Failed to replace dataset. {e}")
 
     def upload_dataset(
         self, dataset: CreateDataset, force_replace: bool = False
@@ -225,6 +230,12 @@ class DatasiteClient(SyftClient):
                 "Please use `upload_dataset(dataset, force_replace=True)` to overwrite."
             )
         return self._replace_dataset(existed_dataset, dataset)
+
+    def forgot_password(self, email: str) -> SyftSuccess | SyftError:
+        return self.connection.forgot_password(email=email)
+
+    def reset_password(self, token: str, new_password: str) -> SyftSuccess | SyftError:
+        return self.connection.reset_password(token=token, new_password=new_password)
 
     def refresh(self) -> None:
         if self.credentials:
