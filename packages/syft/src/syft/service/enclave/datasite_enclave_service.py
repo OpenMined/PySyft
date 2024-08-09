@@ -15,6 +15,8 @@ from ..code.user_code import UserCode
 from ..context import AuthedServiceContext
 from ..model.model import ModelRef
 from ..network.routes import HTTPServerRoute
+from ..project.project import Project
+from ..project.project_service import ProjectService
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -145,6 +147,16 @@ class DatasiteEnclaveService(AbstractService):
         # Get the code
         code_service = context.server.get_service("usercodeservice")
         code: UserCode = code_service.get_by_uid(context=context, uid=user_code_id)
+        project_id = code.project_id
+        if not project_id:
+            return SyftError(
+                message=f"[request_assets_upload] Code '{code.service_func_name}' does not belong to a project."
+            )
+        project: Project = context.server.get_service(ProjectService).get_by_uid(
+            context=root_context, uid=project_id
+        )
+        if isinstance(project, SyftError):
+            return project
 
         status = code.get_status(context)
         if not status.approved:
@@ -224,6 +236,51 @@ class DatasiteEnclaveService(AbstractService):
                 enclave_client.id, current_server_credentials.verify_key
             )
 
+            # TODO: Fetch asset name
+            # Do we want the name in the function
+            # or do we want to fetch the name from the DB.
+            project_asset_res = project.add_asset_transfer(
+                asset_id=action_object.id,
+                asset_hash=action_object.hash(context=context),
+                asset_name="<Asset Name>",
+                code_id=code.id,
+            )
+            if isinstance(project_asset_res, SyftError):
+                return project_asset_res
+
+        # Fetch Attestation Report From Enclave for CPU
+        cpu_report = enclave_client.api.services.attestation.get_cpu_attestation(
+            raw_token=True
+        )
+        if not isinstance(cpu_report, (str, SyftError)):
+            return SyftError(
+                message="CPU Enclave Attestation Report should be a string or SyftError"
+            )
+
+        # Fetch Attestation Report From Enclave for GPU
+        gpu_report = enclave_client.api.services.attestation.get_gpu_attestation(
+            raw_token=True
+        )
+        if not isinstance(gpu_report, (str, SyftError)):
+            return SyftError(
+                message="GPU Enclave Attestation Report should be a string or SyftError"
+            )
+
+        # if isinstance(cpu_report, SyftError):
+        #     return SyftError(message=f"CPU Attestation Report Error: {cpu_report.message}")
+
+        # if isinstance(gpu_report, SyftError):
+        #     return SyftError(message=f"GPU Attestation Report Error: {gpu_report.message}")
+
+        project_enclave_report_res = project.add_enclave_attestation_report(
+            cpu_report=cpu_report,
+            gpu_report=gpu_report,
+            enclave_url=enclave_client.connection.url,
+        )
+
+        if isinstance(project_enclave_report_res, SyftError):
+            return project_enclave_report_res
+
         # Upload the assets to the enclave
         result = enclave_client.api.services.enclave.upload_assets(
             user_code_id=user_code_id, action_objects=action_objects
@@ -246,8 +303,23 @@ class DatasiteEnclaveService(AbstractService):
         if not context.server or not context.server.signing_key:
             return SyftError(message=f"{type(context)} has no server")
 
+        root_context = context.as_root_context()
         code_service = context.server.get_service("usercodeservice")
         code: UserCode = code_service.get_by_uid(context=context, uid=user_code_id)
+        project_id = code.project_id
+        if not project_id:
+            return SyftError(
+                message=f"[request_code_execution] Code '{code.service_func_name}' does not belong to a project."
+            )
+        project: Project = context.server.get_service(ProjectService).get_by_uid(
+            context=root_context, uid=project_id
+        )
+        if isinstance(project, SyftError):
+            return project
+
+        project_execution_res = project.add_execution_start(code_id=code.id)
+        if isinstance(project_execution_res, SyftError):
+            return project_execution_res
 
         status = code.get_status(context)
         if not status.approved:
@@ -271,4 +343,8 @@ class DatasiteEnclaveService(AbstractService):
         result = enclave_client.api.services.enclave.execute_code(
             user_code_id=user_code_id
         )
+
+        project_output_res = project.add_enclave_output(code_id=code.id, output=result)
+        if isinstance(project_output_res, SyftError):
+            return project_output_res
         return result
