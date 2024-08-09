@@ -23,7 +23,7 @@ from sqlalchemy.orm import sessionmaker
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import PartitionSettings
+from ...store.document_store import DocumentStore, PartitionSettings
 from ...types.uid import UID
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
@@ -71,8 +71,9 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
         cls.object_type = get_args(cls.__orig_bases__[0])[0]
         cls.schema_type = get_args(cls.__orig_bases__[0])[1]
 
-    def __init__(self, store: str) -> None:
+    def __init__(self, store: DocumentStore) -> None:
         self.server_uid = store.server_uid
+        self.verify_key = store.root_verify_key
         # self.schema_type = type(self)
 
         # temporary, this should be an external dependency
@@ -296,7 +297,11 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
         return Ok(db_obj.to_obj())
 
     def update(
-        self, credentials: SyftVerifyKey, obj: ObjectT, has_permission=False
+        self,
+        credentials: SyftVerifyKey,
+        obj: ObjectT,
+        has_permission=False,
+        add_permissions=None,  # TODO: implement
     ) -> Result[ObjectT, str]:
         # _get_with_permissions checks for admin
         if has_permission:
