@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 # third party
 import sqlalchemy as sa
 from sqlalchemy.orm import Mapped
-from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import mapped_column, relationship
 
 # syft absolute
 import syft as sy
@@ -21,13 +21,17 @@ from ..job.base_sql import UIDTypeDecorator
 if TYPE_CHECKING:
     from ..job.job_sql import JobDB
     from syft.service.output.execution_output_sql import ExecutionOutputDB
+    from syft.service.user.user_sql import UserDB
 
 
 class CodeHistoryDB(CommonMixin, Base, PermissionMixin):
     __tablename__ = "code_histories"
 
     server_uid: Mapped[UID] = mapped_column(UIDTypeDecorator)
-    user_verify_key: Mapped[SyftVerifyKey] = mapped_column(VerifyKeyTypeDecorator)
+    user_verify_key: Mapped[SyftVerifyKey] = mapped_column(
+        VerifyKeyTypeDecorator, sa.ForeignKey("users.verify_key")
+    )
+    user: Mapped["UserDB"] = relationship(back_populates="code_histories")
     service_func_name: Mapped[str]
     comment_history: Mapped[list[str]] = mapped_column(sa.JSON, default=[])
     user_code_history: Mapped[bytes]

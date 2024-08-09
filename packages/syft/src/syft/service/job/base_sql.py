@@ -31,7 +31,7 @@ from typing_extensions import TypeVar
 import syft as sy
 
 # relative
-from ...server.credentials import SyftVerifyKey
+from ...server.credentials import SyftSigningKey, SyftVerifyKey
 from ...types.datetime import DateTime
 from ...types.syft_object import SyftObject
 from ...types.syft_object_registry import SyftObjectRegistry
@@ -82,7 +82,22 @@ class VerifyKeyTypeDecorator(TypeDecorator):
 
     def process_result_value(self, value, dialect):
         if value is not None:
-            return SyftVerifyKey(value)
+            return SyftVerifyKey.from_string(value)
+
+
+class SigningKeyTypeDecorator(TypeDecorator):
+    """Converts between Syft VerifyKey and str."""
+
+    impl = sa.String
+    cache_ok = True
+
+    def process_bind_param(self, value: SyftSigningKey, dialect):
+        if value is not None:
+            return str(value)
+
+    def process_result_value(self, value, dialect):
+        if value is not None:
+            return SyftSigningKey.from_string(value)
 
 
 class DateTimeTypeDecorator(TypeDecorator):

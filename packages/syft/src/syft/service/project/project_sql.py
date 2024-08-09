@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 # third party
 import sqlalchemy as sa
 from sqlalchemy.orm import Mapped
-from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import mapped_column, relationship
 
 # syft absolute
 import syft as sy
@@ -12,7 +12,6 @@ from syft.service.code_history.code_history import CodeHistory
 from syft.service.project.project import Project
 
 # relative
-from ...server.credentials import SyftVerifyKey
 from ...types.uid import UID
 from ..job.base_sql import Base, VerifyKeyTypeDecorator
 from ..job.base_sql import CommonMixin

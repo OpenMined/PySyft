@@ -1,9 +1,10 @@
 # stdlib
+from typing import TYPE_CHECKING
 import uuid
 
 # third party
 from sqlalchemy.orm import Mapped
-from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import mapped_column, relationship
 
 # syft absolute
 import syft as sy
@@ -12,13 +13,17 @@ import syft as sy
 from ...server.credentials import SyftSigningKey
 from ...server.credentials import SyftVerifyKey
 from ...types.uid import UID
-from ..job.base_sql import Base
+from ..job.base_sql import Base, SigningKeyTypeDecorator, VerifyKeyTypeDecorator
 from ..job.base_sql import CommonMixin
 from ..job.base_sql import PermissionMixin
 from ..job.base_sql import UIDTypeDecorator
 from ..notifier.notifier_enums import NOTIFIERS
 from .user import User
 from .user_roles import ServiceRole
+
+if TYPE_CHECKING:
+    from syft.service.code_history.code_history_sql import CodeHistoryDB
+
 
 default_notifications = {
     NOTIFIERS.EMAIL: True,
@@ -38,12 +43,17 @@ class UserDB(CommonMixin, Base, PermissionMixin):
     name: Mapped[str | None]
     hashed_password: Mapped[str | None]
     salt: Mapped[str | None]
-    signing_key: Mapped[str | None]
-    verify_key: Mapped[str | None]
+    signing_key: Mapped[SyftSigningKey | None] = mapped_column(
+        SigningKeyTypeDecorator, nullable=True
+    )
+    verify_key: Mapped[SyftVerifyKey | None] = mapped_column(
+        VerifyKeyTypeDecorator, nullable=True
+    )
     role: Mapped[ServiceRole | None]
     institution: Mapped[str | None]
     website: Mapped[str | None]
     mock_execution_permission: Mapped[bool]
+    code_histories: Mapped["CodeHistoryDB"] = relationship(back_populates="user")
 
     @classmethod
     @classmethod
@@ -73,8 +83,8 @@ class UserDB(CommonMixin, Base, PermissionMixin):
             name=self.name,
             hashed_password=self.hashed_password,
             salt=self.salt,
-            signing_key=SyftSigningKey.from_string(self.signing_key),
-            verify_key=SyftVerifyKey.from_string(self.verify_key),
+            signing_key=self.signing_key,
+            verify_key=self.verify_key,
             role=self.role,
             institution=self.institution,
             website=self.website,
