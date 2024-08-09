@@ -16,8 +16,6 @@ from syft.client.client import SyftClient
 from syft.client.datasite_client import DatasiteClient
 from syft.client.gateway_client import GatewayClient
 from syft.client.registry import NetworkRegistry
-from syft.client.search import SearchResults
-from syft.service.dataset.dataset import Dataset
 from syft.service.network.association_request import AssociationRequestChange
 from syft.service.network.network_service import ServerPeerAssociationStatus
 from syft.service.network.routes import HTTPServerRoute
@@ -133,9 +131,6 @@ def test_datasite_connect_to_gateway(
     assert len(gateway_client.peers) == 1
 
     time.sleep(PeerHealthCheckTask.repeat_time * 2 + 1)
-    # check that the datasite is online on the network
-    assert len(sy.datasites.all_datasites) == 1
-    assert len(sy.datasites.online_datasites) == 1
 
     proxy_datasite_client = gateway_client.peers[0]
     datasite_peer = datasite_client.peers[0]
@@ -176,6 +171,7 @@ def test_datasite_connect_to_gateway(
 
 
 @pytest.mark.network
+@pytest.mark.skip(reason="Disabled since the dataset search functionality was removed")
 def test_dataset_search(set_env_var, gateway_port: int, datasite_1_port: int) -> None:
     """
     Scenario: Connecting a datasite server to a gateway server. The datasite
@@ -213,27 +209,27 @@ def test_dataset_search(set_env_var, gateway_port: int, datasite_1_port: int) ->
 
     # since dataset search is done by checking from the online datasites,
     # we need to wait to make sure peers health check is done
-    time.sleep(PeerHealthCheckTask.repeat_time * 2 + 1)
+    # time.sleep(PeerHealthCheckTask.repeat_time * 2 + 1)
     # test if the dataset can be searched by the syft network
-    right_search = sy.search(dataset_name)
-    assert isinstance(right_search, SearchResults)
-    assert len(right_search) == 1
-    dataset = right_search[0]
-    assert isinstance(dataset, Dataset)
-    assert len(dataset.assets) == 1
-    assert isinstance(dataset.assets[0].mock, np.ndarray)
-    assert dataset.assets[0].data is None
+    # right_search = sy.search(dataset_name)
+    # assert isinstance(right_search, SearchResults)
+    # assert len(right_search) == 1
+    # dataset = right_search[0]
+    # assert isinstance(dataset, Dataset)
+    # assert len(dataset.assets) == 1
+    # assert isinstance(dataset.assets[0].mock, np.ndarray)
+    # assert dataset.assets[0].data is None
 
-    # search a wrong dataset should return an empty list
-    wrong_search = sy.search(_random_hash())
-    assert len(wrong_search) == 0
+    # # search a wrong dataset should return an empty list
+    # wrong_search = sy.search(_random_hash())
+    # assert len(wrong_search) == 0
 
-    # the datasite client delete the dataset
-    datasite_client.api.services.dataset.delete(uid=dataset.id)
+    # # the datasite client delete the dataset
+    # datasite_client.api.services.dataset.delete(uid=dataset.id)
 
-    # Remove existing peers
-    assert isinstance(_remove_existing_peers(datasite_client), SyftSuccess)
-    assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
+    # # Remove existing peers
+    # assert isinstance(_remove_existing_peers(datasite_client), SyftSuccess)
+    # assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
 @pytest.mark.skip(reason="Possible bug")
@@ -348,12 +344,6 @@ def test_deleting_peers(set_env_var, datasite_1_port: int, gateway_port: int) ->
     # check that removing peers work as expected
     assert len(datasite_client.peers) == 0
     assert len(gateway_client.peers) == 0
-
-    # check that the online datasites and gateways are updated
-    time.sleep(PeerHealthCheckTask.repeat_time * 2 + 1)
-    assert len(sy.gateways.all_networks) == 1
-    assert len(sy.datasites.all_datasites) == 0
-    assert len(sy.datasites.online_datasites) == 0
 
     # reconnect the datasite to the gateway
     result = datasite_client.connect_to_gateway(gateway_client)
