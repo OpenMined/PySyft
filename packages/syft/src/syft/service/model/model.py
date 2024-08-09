@@ -9,6 +9,7 @@ from textwrap import dedent
 from typing import Any
 from typing import ClassVar
 from typing import cast
+from pydantic import model_validator
 
 # third party
 from IPython.display import HTML
@@ -19,6 +20,7 @@ from result import Err
 from result import Ok
 from result import OkErr
 from result import Result
+from syft.util.util import sanitize_html
 
 # relative
 from ...client.api import APIRegistry
@@ -71,6 +73,19 @@ class ModelPageView(SyftObject):
     total: int
 
 
+# TODO: consider unifying to card or description
+def _markdownify_variable(values: dict, varname: str) -> Any:
+    if isinstance(values, dict) and isinstance(varname, str) and varname:
+        description = values.get(varname, None)
+        if description and isinstance(description, str):
+            values[varname] = MarkdownDescription(text=description)
+
+    return values
+
+_markdownify_description = lambda values: _markdownify_variable(values, 'description')
+_markdownify_card = lambda values: _markdownify_variable(values, 'card')
+
+
 @serializable()
 class ModelAsset(SyftObject):
     # version
@@ -87,23 +102,16 @@ class ModelAsset(SyftObject):
     created_at: DateTime = DateTime.now()
     asset_hash: str
 
-    __repr_attrs__ = ["name", "created_at", "asset_hash"]
+    _description = model_validator(mode='before')(_markdownify_description)
 
-    def __init__(
-        self,
-        description: MarkdownDescription | str | None = "",
-        **kwargs: Any,
-    ):
-        if isinstance(description, str):
-            description = MarkdownDescription(text=description)
-        super().__init__(**kwargs, description=description)
+    __repr_attrs__ = ["name", "created_at", "asset_hash"]
 
     def _ipython_display_(self) -> None:
         if self.description:
             string = f"""<details>
-        <summary>Show Asset Description:</summary>
-        {self.description._repr_markdown_()}
-    </details>"""
+                <summary>Show Asset Description:</summary>
+                {self.description._repr_markdown_()}
+            """
             display(HTML(self._repr_html_()), Markdown(string))
         else:
             display(HTML(self._repr_html_()))
@@ -292,10 +300,7 @@ class CreateModelAsset(SyftObject):
 
     model_config = ConfigDict(validate_assignment=True)
 
-    def __init__(self, description: str | None = "", **kwargs: Any) -> None:
-        super().__init__(
-            **kwargs, description=MarkdownDescription(text=str(description))
-        )
+    _description = model_validator(mode='before')(_markdownify_description)
 
     def add_contributor(
         self,
@@ -344,8 +349,7 @@ class CreateModelAsset(SyftObject):
         if self.description:
             string = f"""<details>
         <summary>Show Asset Description:</summary>
-        {self.description._repr_markdown_()}
-    </details>"""
+        {self.description._repr_markdown_()}"""
             display(Markdown(string))
 
     def _repr_html_(self) -> Any:
@@ -402,6 +406,8 @@ class Model(SyftObject):
     code_action_id: UID | None = None
     syft_model_hash: str | None = None
 
+    _card = model_validator(mode='before')(_markdownify_card)
+
     @property
     def server_name(self) -> str | SyftError | None:
         api = APIRegistry.api_for(
@@ -415,18 +421,9 @@ class Model(SyftObject):
             return "unknown"
         return api.server_name
 
-    def __init__(
-        self,
-        card: str | MarkdownDescription | None = "",
-        **kwargs: Any,
-    ) -> None:
-        if isinstance(card, str):
-            card = MarkdownDescription(text=card)
-        super().__init__(**kwargs, card=card)
-
     @property
     def icon(self) -> str:
-        return "no icon"
+        return ""
 
     @property
     def model_code(self) -> SubmitModelCode | None:
