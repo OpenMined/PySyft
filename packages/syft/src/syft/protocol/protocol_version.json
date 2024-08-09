@@ -217,7 +217,35 @@
       "VerifiableOutput": {
         "1": {
           "version": 1,
-          "hash": "7cb691231c5ff4d5bd66f0d11ae8327c89390268553e33cd769db47be6cdeb59",
+          "hash": "0f4cd9f7541cfdfadc16b1192b4371001f948fb59a17f996f062039b885d52f1",
+          "action": "add"
+        }
+      },
+      "ProjectAssetTransfer": {
+        "1": {
+          "version": 1,
+          "hash": "aba31650f28cdfeee16e782e12be2b622dcd503ea3eee457552a618bd2b7994d",
+          "action": "add"
+        }
+      },
+      "ProjectAttestationReport": {
+        "1": {
+          "version": 1,
+          "hash": "b7a3fd8fdc822f71f469fa8fa196d68bb00fc7d7a3081ce2efa0d0460d158331",
+          "action": "add"
+        }
+      },
+      "ProjectExecutionStart": {
+        "1": {
+          "version": 1,
+          "hash": "fe7c3dc9a55eb8502f1974a2676850ab292127f5c9023977553ac17011102a79",
+          "action": "add"
+        }
+      },
+      "ProjectEnclaveOutput": {
+        "1": {
+          "version": 1,
+          "hash": "dba43d43031425fbb3f5534549bd9c4d162ec8fb0470a062a4ff6a3e67cf3114",
           "action": "add"
         }
       }

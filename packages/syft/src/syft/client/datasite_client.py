@@ -34,8 +34,10 @@ from ..service.sync.sync_state import SyncState
 from ..service.user.roles import Roles
 from ..service.user.user import UserView
 from ..types.blob_storage import BlobFile
+from ..types.file import SyftFolder
 from ..types.uid import UID
 from ..util.misc_objs import HTMLObject
+from ..util.util import get_mb_serialized_size
 from ..util.util import get_mb_size
 from ..util.util import prompt_warning_message
 from .api import APIModule
@@ -157,7 +159,11 @@ class DatasiteClient(SyftClient):
 
                 asset.action_id = twin.id
                 asset.server_uid = self.id
-                model_size += get_mb_size(asset.data)
+                model_size += (
+                    asset.data.size_mb
+                    if isinstance(asset.data, SyftFolder)
+                    else get_mb_serialized_size(asset.data)
+                )
                 model_ref_action_ids.append(twin.id)
 
                 # Clear the Data and Mock , as they are uploaded as twin object

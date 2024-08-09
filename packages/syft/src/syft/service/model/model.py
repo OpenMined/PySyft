@@ -564,7 +564,7 @@ class Model(SyftObject):
             "Name": self.name,
             "Assets": len(self.asset_list),
             "Url": self.url,
-            "Size": f"{self.mb_size} (MB)",
+            "Size": f"{self.mb_size:.2f} (MB)" if self.mb_size else "Unknown",
             "created at": str(self.created_at),
         }
 
@@ -596,7 +596,7 @@ class Model(SyftObject):
         button_html = CopyIDButton(copy_text=str(self.id), max_width=60).to_html()
 
         attrs = {
-            "Mb Size": str(self.mb_size),
+            "Size": f"{self.mb_size:.2f} (MB)" if self.mb_size else "Unknown",
             "URL": str(self.url),
             "Created at": str(self.created_at),
             "Updated at": self.updated_at,
