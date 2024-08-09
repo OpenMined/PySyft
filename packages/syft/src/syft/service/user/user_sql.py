@@ -12,10 +12,10 @@ import syft as sy
 from ...server.credentials import SyftSigningKey
 from ...server.credentials import SyftVerifyKey
 from ...types.uid import UID
-from ..job.job_sql import Base
-from ..job.job_sql import CommonMixin
-from ..job.job_sql import PermissionMixin
-from ..job.job_sql import UIDTypeDecorator
+from ..job.base_sql import Base
+from ..job.base_sql import CommonMixin
+from ..job.base_sql import PermissionMixin
+from ..job.base_sql import UIDTypeDecorator
 from ..notifier.notifier_enums import NOTIFIERS
 from .user import User
 from .user_roles import ServiceRole

@@ -13,10 +13,10 @@ from syft.service.code_history.code_history import CodeHistory
 # relative
 from ...server.credentials import SyftVerifyKey
 from ...types.uid import UID
-from ..job.job_sql import Base, VerifyKeyTypeDecorator
-from ..job.job_sql import CommonMixin
-from ..job.job_sql import PermissionMixin
-from ..job.job_sql import UIDTypeDecorator
+from ..job.base_sql import Base, VerifyKeyTypeDecorator
+from ..job.base_sql import CommonMixin
+from ..job.base_sql import PermissionMixin
+from ..job.base_sql import UIDTypeDecorator
 
 if TYPE_CHECKING:
     from ..job.job_sql import JobDB

@@ -34,10 +34,10 @@ from ..action.action_permissions import (
 )
 from ..action.action_permissions import ActionPermission
 from ..user.user_roles import ServiceRole
-from .job_sql import Base, PermissionMixin
+from .base_sql import Base, PermissionMixin
 from .job_sql import JobDB
-from .job_sql import ObjectT
-from .job_sql import SchemaT
+from .base_sql import ObjectT
+from .base_sql import SchemaT
 from .job_stash import Job
 from .job_stash import JobStatus
 
@@ -280,7 +280,7 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
 
         db_obj.permissions = [
             Permission(
-                uid=db_obj.id,
+                object_id=db_obj.id,
                 permission=permission.permission,
                 user_id=str(credentials),
             )

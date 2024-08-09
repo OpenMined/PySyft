@@ -14,9 +14,9 @@ from typing_extensions import Self
 import syft as sy
 
 # relative
-from ..job.job_sql import Base, UIDTypeDecorator
-from ..job.job_sql import CommonMixin
-from ..job.job_sql import PermissionMixin
+from ..job.base_sql import Base, UIDTypeDecorator
+from ..job.base_sql import CommonMixin
+from ..job.base_sql import PermissionMixin
 
 if TYPE_CHECKING:
     from ..job.job_sql import JobDB

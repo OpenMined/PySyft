@@ -12,10 +12,10 @@ import syft as sy
 from ...abstract_server import ServerSideType
 from ...abstract_server import ServerType
 from ...server.credentials import SyftVerifyKey
-from ..job.job_sql import Base
-from ..job.job_sql import CommonMixin
-from ..job.job_sql import PermissionMixin
-from ..job.job_sql import VerifyKeyTypeDecorator
+from ..job.base_sql import Base
+from ..job.base_sql import CommonMixin
+from ..job.base_sql import PermissionMixin
+from ..job.base_sql import VerifyKeyTypeDecorator
 from .settings import ServerSettings
 
 
