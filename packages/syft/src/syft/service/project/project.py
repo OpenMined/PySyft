@@ -35,6 +35,7 @@ from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.identity import Identity
 from ...types.identity import UserIdentity
+from ...types.server_url import ServerURL
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
@@ -362,6 +363,47 @@ class ProjectRequest(ProjectEventAddObject):
         # That is the final state of the request
         last_response = responses[-1]
         return last_response.response
+
+
+@serializable()
+class ProjectAssetTransfer(ProjectEventAddObject):
+    __canonical_name__ = "ProjectAssetTransfer"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    asset_id: UID
+    asset_hash: str
+    asset_name: str
+    server_identity: ServerIdentity
+    code_id: UID  # The code for which the asset is being transferred
+
+
+@serializable()
+class ProjectAttestationReport(ProjectEventAddObject):
+    __canonical_name__ = "ProjectAttestationReport"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    cpu_report: str | SyftError
+    gpu_report: str | SyftError
+    enclave_url: ServerURL
+
+
+@serializable()
+class ProjectExecutionStart(ProjectEventAddObject):
+    __canonical_name__ = "ProjectExecutionStart"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    server_identity: ServerIdentity  # the server which starts the execution
+    code_id: UID  # The code for which the execution is started
+
+
+@serializable()
+class ProjectEnclaveOutput(ProjectEventAddObject):
+    __canonical_name__ = "ProjectEnclaveOutput"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    server_identity: ServerIdentity  # the server which downloads the result
+    output: Any
+    code_id: UID
 
 
 @serializable()
@@ -1224,6 +1266,112 @@ class Project(SyftObject):
         result = self.add_event(message_event)
         if isinstance(result, SyftSuccess):
             return SyftSuccess(message="Message sent successfully")
+        return result
+
+    def add_asset_transfer(
+        self, asset_id: UID, asset_name: str, asset_hash: str, code_id: UID
+    ) -> SyftSuccess | SyftError:
+        code = self.get_events(ids=code_id)
+        if len(code) == 0:
+            return SyftError(message=f"Code id: {code_id} not found")
+        code = code[0]
+
+        asset_server_identity = None
+        for server_identity, assets in code.code.input_policy_init_kwargs.items():
+            for code_asset_id in assets.values():
+                if code_asset_id == asset_id:
+                    asset_server_identity = server_identity
+                    break
+        if not asset_server_identity:
+            return SyftError(message=f"Asset id: {asset_id} not found in the code")
+
+        asset_transfer_event = ProjectAssetTransfer(
+            asset_id=asset_id,
+            asset_name=asset_name,
+            asset_hash=asset_hash,
+            server_identity=asset_server_identity,
+            code_id=code_id,
+        )
+
+        # TODO: Add validation for asset transfer event, check if the is datasite can transfer the asset.
+        result = self.add_event(asset_transfer_event)
+        if isinstance(result, SyftSuccess):
+            return SyftSuccess(message="Asset transfer added successfully")
+        return result
+
+    def add_enclave_attestation_report(
+        self, cpu_report: str | SyftError, gpu_report: str | SyftError, enclave_url: str
+    ) -> SyftSuccess | SyftError:
+        enclave_report_event = ProjectAttestationReport(
+            cpu_report=cpu_report, gpu_report=gpu_report, enclave_url=enclave_url
+        )
+        result = self.add_event(enclave_report_event)
+        if isinstance(result, SyftSuccess):
+            return SyftSuccess(message="Enclave attestation report added successfully")
+        return result
+
+    def add_execution_start(self, code_id: UID) -> SyftSuccess | SyftError:
+        pre_execution_events = self.get_events(types=ProjectExecutionStart)
+        for event in pre_execution_events:
+            if event.code_id == code_id:
+                return SyftSuccess(
+                    message=f"Execution already started for code id: {code_id}"
+                )
+
+        code = self.get_events(ids=code_id)
+        if len(code) == 0:
+            return SyftError(message=f"Code id: {code_id} not found")
+        code = code[0]
+
+        execution_server_identity = (
+            None  # Server Identity of the current project object
+        )
+        for server_identity, _ in code.code.input_policy_init_kwargs.items():
+            if server_identity.verify_key == self.syft_client_verify_key:
+                execution_server_identity = server_identity
+                break
+
+        if not execution_server_identity:
+            return SyftError(message="Server identity not found in code input policy")
+
+        enclave_execution_start_event = ProjectExecutionStart(
+            server_identity=execution_server_identity, code_id=code_id
+        )
+
+        result = self.add_event(enclave_execution_start_event)
+        if isinstance(result, SyftSuccess):
+            return SyftSuccess(message="Execution event added to project")
+        return result
+
+    def add_enclave_output(self, code_id: UID, output: Any) -> SyftSuccess | SyftError:
+        pre_output_events = self.get_events(types=ProjectEnclaveOutput)
+        for event in pre_output_events:
+            if event.server_identity.verify_key == self.syft_client_verify_key:
+                return SyftSuccess(
+                    message=f"Enclave Output already added to code object: {code_id}"
+                )
+
+        code = self.get_events(ids=code_id)
+        if len(code) == 0:
+            return SyftError(message=f"Code id: {code_id} not found")
+        code = code[0]
+
+        current_server_identity = None  # Server Identity of the current project object
+        for server_identity, _ in code.code.input_policy_init_kwargs.items():
+            if server_identity.verify_key == self.syft_client_verify_key:
+                current_server_identity = server_identity
+                break
+
+        if not current_server_identity:
+            return SyftError(message="Server identity not found in code input policy")
+
+        enclave_output_event = ProjectEnclaveOutput(
+            server_identity=current_server_identity, output=output, code_id=code_id
+        )
+
+        result = self.add_event(enclave_output_event)
+        if isinstance(result, SyftSuccess):
+            return SyftSuccess(message="Enclave Output Saved to Project")
         return result
 
     def reply_message(
