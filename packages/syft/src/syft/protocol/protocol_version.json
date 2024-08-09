@@ -248,6 +248,34 @@
           "hash": "1e76d224e9cd6fc756b04cc3d182d35f7fbd5aab367ea9c868c87f8f7c082fbd",
           "action": "add"
         }
+      },
+      "ProjectAssetTransfer": {
+        "1": {
+          "version": 1,
+          "hash": "aba31650f28cdfeee16e782e12be2b622dcd503ea3eee457552a618bd2b7994d",
+          "action": "add"
+        }
+      },
+      "ProjectAttestationReport": {
+        "1": {
+          "version": 1,
+          "hash": "b7a3fd8fdc822f71f469fa8fa196d68bb00fc7d7a3081ce2efa0d0460d158331",
+          "action": "add"
+        }
+      },
+      "ProjectExecutionStart": {
+        "1": {
+          "version": 1,
+          "hash": "fe7c3dc9a55eb8502f1974a2676850ab292127f5c9023977553ac17011102a79",
+          "action": "add"
+        }
+      },
+      "ProjectEnclaveOutput": {
+        "1": {
+          "version": 1,
+          "hash": "dba43d43031425fbb3f5534549bd9c4d162ec8fb0470a062a4ff6a3e67cf3114",
+          "action": "add"
+        }
       }
     }
   }
