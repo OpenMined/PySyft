@@ -220,6 +220,34 @@
           "hash": "0f4cd9f7541cfdfadc16b1192b4371001f948fb59a17f996f062039b885d52f1",
           "action": "add"
         }
+      },
+      "PolicyCondition": {
+        "1": {
+          "version": 1,
+          "hash": "cafa2c59effe92d3b4c08f0c844e38c259742c26359dcac08feec943c3f53286",
+          "action": "add"
+        }
+      },
+      "InitCondition": {
+        "1": {
+          "version": 1,
+          "hash": "4188cf57775565da05045188ca0eaf22ef197fc2eff6acf06880360fe80dc2bb",
+          "action": "add"
+        }
+      },
+      "RunCondition": {
+        "1": {
+          "version": 1,
+          "hash": "8db841b73a0acbc7a720456a8077731ad3ad49118805473b8aa187e8e6904f45",
+          "action": "add"
+        }
+      },
+      "StopCondition": {
+        "1": {
+          "version": 1,
+          "hash": "1e76d224e9cd6fc756b04cc3d182d35f7fbd5aab367ea9c868c87f8f7c082fbd",
+          "action": "add"
+        }
       }
     }
   }
