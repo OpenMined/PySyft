@@ -322,9 +322,12 @@ class ProjectRequest(ProjectEventAddObject):
     ]
 
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
+        print(type(self.request))
         func_name = None
         if len(self.request.changes) > 0:
-            func_name = self.request.changes[-1].code.service_func_name
+            last_change = self.request.changes[-1]
+            if last_change.code:
+                func_name = last_change.code.service_func_name
         repr_dict = {
             "request.status": self.request.status,
             "request.changes[-1].code.service_func_name": func_name,
