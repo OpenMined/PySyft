@@ -47,7 +47,7 @@ class OutputStashSQL(ObjectStash[ExecutionOutput, ExecutionOutputDB]):
     def get_by_user_code_id(
         self, credentials: SyftVerifyKey, user_code_id: UID
     ) -> Result[list[ExecutionOutput], str]:
-        return self.get_one_by_property(
+        return self.get_many_by_property(
             credentials=credentials,
             property_name="user_code_id",
             property_value=user_code_id,
@@ -63,7 +63,7 @@ class OutputStashSQL(ObjectStash[ExecutionOutput, ExecutionOutputDB]):
     def get_by_output_policy_id(
         self, credentials: SyftVerifyKey, output_policy_id: UID
     ) -> Result[list[ExecutionOutput], str]:
-        return self.get_one_by_property(
+        return self.get_many_by_property(
             credentials=credentials,
             property_name="output_policy_id",
             property_value=output_policy_id,

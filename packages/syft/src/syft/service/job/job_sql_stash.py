@@ -25,10 +25,16 @@ from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...store.document_store import DocumentStore, PartitionSettings
 from ...types.uid import UID
-from ..action.action_permissions import ActionObjectPermission
+from ..action.action_permissions import (
+    ActionObjectEXECUTE,
+    ActionObjectOWNER,
+    ActionObjectPermission,
+    ActionObjectREAD,
+    ActionObjectWRITE,
+)
 from ..action.action_permissions import ActionPermission
 from ..user.user_roles import ServiceRole
-from .job_sql import Base
+from .job_sql import Base, PermissionMixin
 from .job_sql import JobDB
 from .job_sql import ObjectT
 from .job_sql import SchemaT
@@ -271,26 +277,15 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
         Permission = self.permission_cls  # type: ignore
 
         # TODO fix autocomplete and type checking
+
         db_obj.permissions = [
             Permission(
-                id=db_obj.id,
-                permission=ActionPermission.READ,
+                uid=db_obj.id,
+                permission=permission.permission,
                 user_id=str(credentials),
             )
+            for permission in self.get_ownership_permissions(obj.id, credentials)
         ]
-        if add_permissions:
-            db_obj.permissions.extend(
-                [
-                    Permission(
-                        uid=db_obj.id,
-                        permission=permission.permission,
-                        user_id=str(permission.credentials)
-                        if permission.credentials
-                        else None,
-                    )
-                    for permission in add_permissions
-                ]
-            )
 
         self.session.add(db_obj)
         self.session.commit()
@@ -322,7 +317,7 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
             obj_db.update_obj(new_obj)
             self.session.commit()
             return Ok(obj)
-        return Err(f"Object with id {obj.id} not found")
+        return Err(f"{self.object_type.__name__}<id={obj.id}> not found in database")
 
     def delete(
         self, credentials: SyftVerifyKey, uid: UID, has_permission: bool = False
@@ -372,6 +367,16 @@ class ObjectStash(Generic[ObjectT, SchemaT]):
                 self.server_uid,
             }
         )
+
+    def get_ownership_permissions(
+        self, uid: UID, credentials: SyftVerifyKey
+    ) -> list[ActionObjectPermission]:
+        return [
+            ActionObjectOWNER(uid=uid, credentials=credentials),
+            ActionObjectWRITE(uid=uid, credentials=credentials),
+            ActionObjectREAD(uid=uid, credentials=credentials),
+            ActionObjectEXECUTE(uid=uid, credentials=credentials),
+        ]
 
     def add_permissions(self, *args, **kwargs): ...
     def add_permission(self, *args, **kwargs): ...

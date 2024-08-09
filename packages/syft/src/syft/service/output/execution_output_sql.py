@@ -50,6 +50,8 @@ class ExecutionOutputDB(CommonMixin, Base, PermissionMixin):  # noqa: F821
         back_populates="execution_output", uselist=False
     )
 
+    output_policy_id: Mapped[UID | None] = mapped_column(UIDTypeDecorator, default=None)
+
     @classmethod
     def from_obj(cls, obj: ExecutionOutput) -> Self:
         return cls(
@@ -60,6 +62,7 @@ class ExecutionOutputDB(CommonMixin, Base, PermissionMixin):  # noqa: F821
             input_ids=sy.serialize(obj.input_ids, to_bytes=True),
             job_id=obj.job_id,
             user_code_link=sy.serialize(obj.user_code_link, to_bytes=True),
+            output_policy_id=obj.output_policy_id,
         )
 
     def to_obj(self) -> ExecutionOutput:
@@ -71,6 +74,7 @@ class ExecutionOutputDB(CommonMixin, Base, PermissionMixin):  # noqa: F821
             input_ids=sy.deserialize(self.input_ids, from_bytes=True),
             job_id=self.job_id,
             user_code_link=sy.deserialize(self.user_code_link, from_bytes=True),
+            output_policy_id=self.output_policy_id,
         )
 
 

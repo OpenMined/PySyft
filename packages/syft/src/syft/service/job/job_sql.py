@@ -168,6 +168,8 @@ PermissionT = TypeVar("PermissionT", bound=Base)
 
 
 class BaseSchema(Generic[ObjectT, PermissionT]):
+    id: UID
+
     def to_obj(self) -> ObjectT:
         raise NotImplementedError
 

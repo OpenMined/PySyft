@@ -53,4 +53,8 @@ class CodeHistoryStashSQL(ObjectStash[CodeHistory, CodeHistoryDB]):
     ) -> Result[CodeHistory | None, str]:
         if isinstance(user_verify_key, str):
             user_verify_key = SyftVerifyKey.from_string(user_verify_key)
-        return self.get_all(user_verify_key)
+        return self.get_one_by_property(
+            credentials=credentials,
+            property_name="user_verify_key",
+            property_value=user_verify_key,
+        )
