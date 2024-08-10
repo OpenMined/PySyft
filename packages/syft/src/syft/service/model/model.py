@@ -264,7 +264,6 @@ class HFModelClass(SyftModelClass):
     def __user_init__(self, assets: list) -> None:
         model_folder = assets[0]
         model_folder = str(model_folder.model_folder)
-        print(model_folder, type(model_folder))
 
         from transformers import AutoModelForCausalLM  # noqa
         from transformers import AutoTokenizer  # noqa
