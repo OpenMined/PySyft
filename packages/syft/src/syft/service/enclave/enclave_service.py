@@ -7,8 +7,6 @@ from ...service.response import SyftError
 from ...service.response import SyftSuccess
 from ...service.user.user_roles import GUEST_ROLE_LEVEL
 from ...store.document_store import DocumentStore
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
 from ..action.action_object import ActionObject
@@ -19,6 +17,7 @@ from ..context import AuthedServiceContext
 from ..model.model import ModelRef
 from ..service import AbstractService
 from ..service import service_method
+from .enclave_output import VerifiableOutput
 
 
 @serializable(canonical_name="EnclaveService", version=1)
@@ -202,46 +201,10 @@ def get_encrypted_result(context: AuthedServiceContext, result: Any) -> Any:
     return result
 
 
-@serializable()
-class VerifiableOutput(SyftObject):
-    __canonical_name__ = "VerifiableOutput"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    enclave_output: Any
-    inputs: dict
-    code: str
-    code_hash: str
-
-    __repr_attrs__ = ["inputs", "code", "code_hash"]
-
-    @property
-    def output(self) -> Any:
-        return self.enclave_output
-
-    # output_hash: str
-    # enclave_key: str
-    # enclave_signature: str
-
-    # def _html_repr_() -> str:
-    #     # pretty print the table of result and hashesh
-    #     # call result.output for real output
-
-    def __repr__(self) -> str:
-        res = "VerifiableOutput: \n"
-        res += f"inputs: {self.inputs}\n"
-        res += f"code: {self.code}\n"
-        res += f"code_hash: {self.code_hash}\n"
-        res += "To view output call .output"
-        return res
-
-
 def get_verifiable_result(result: Any, code: UserCode) -> Any:
     # TODO: Code hash includes the Verify Key of the User, for now exclude it.
     res = VerifiableOutput(
+        code=code,
         enclave_output=result,
-        inputs=code.input_id2hash,
-        code=code.raw_code,
-        code_hash=code.code_hash,
     )
-
     return res
