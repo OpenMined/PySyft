@@ -318,7 +318,6 @@ class HFModelClass(SyftModelClass):
         from transformers import AutoTokenizer  # noqa
         import tempfile  # noqa
         from pathlib import Path  # noqa
-
         # syft
         from syft import SyftFolder  # noqa
 
