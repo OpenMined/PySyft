@@ -1,10 +1,12 @@
 ARG PYTHON_VERSION="3.12"
+ARG TORCH_VERSION="2.3.1"
 
 # ==================== [BUILD STEP] Build Syft ==================== #
 
 FROM cgr.dev/chainguard/wolfi-base as syft_deps
 
 ARG PYTHON_VERSION
+ARG TORCH_VERSION
 
 ENV PATH="/root/.local/bin:$PATH"
 
@@ -14,10 +16,19 @@ RUN apk update && apk upgrade && \
     # preemptive fix for wolfi-os breaking python entrypoint
     (test -f /usr/bin/python || ln -s /usr/bin/python3.12 /usr/bin/python)
 
+# keep static deps separate to have each layer cached independently
+# if amd64 then we need to append +cpu to the torch version
+RUN --mount=type=cache,target=/root/.cache,sharing=locked \
+    ARCH=$(arch | sed s/aarch64/arm64/ | sed s/x86_64/amd64/) && \
+    if [[ "$ARCH" = "amd64" ]]; then TORCH_VERSION="$TORCH_VERSION+cpu"; fi && \
+    pip install --user torch==$TORCH_VERSION --index-url https://download.pytorch.org/whl/cpu
+
 COPY ./syft /tmp/syft
 
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
-    pip install --user jupyterlab==4.2.2 /tmp/syft
+    # remove torch because we already have the cpu version pre-installed
+    sed --in-place /torch==/d ./tmp/syft/setup.cfg && \
+    pip install --user jupyterlab==4.2.2 ./tmp/syft[data_science]
 
 # ==================== [Final] Setup Syft Client ==================== #
 
