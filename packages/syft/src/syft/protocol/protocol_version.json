@@ -221,13 +221,6 @@
           "action": "add"
         }
       },
-      "PolicyCondition": {
-        "1": {
-          "version": 1,
-          "hash": "cafa2c59effe92d3b4c08f0c844e38c259742c26359dcac08feec943c3f53286",
-          "action": "add"
-        }
-      },
       "InitCondition": {
         "1": {
           "version": 1,
@@ -274,6 +267,13 @@
         "1": {
           "version": 1,
           "hash": "dba43d43031425fbb3f5534549bd9c4d162ec8fb0470a062a4ff6a3e67cf3114",
+          "action": "add"
+        }
+      },
+      "RuntimePolicyCondition": {
+        "1": {
+          "version": 1,
+          "hash": "9a9821eed90768e26fadcb68f233507e1dbaff20e0802fb2317c2fa91f66feab",
           "action": "add"
         }
       }

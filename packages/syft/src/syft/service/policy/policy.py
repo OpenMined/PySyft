@@ -355,13 +355,13 @@ def retrieve_item_from_db(id: UID, context: AuthedServiceContext) -> ActionObjec
 
 
 @serializable()
-class PolicyCondition(SyftObject):
-    __canonical_name__: str = "PolicyCondition"
+class RuntimePolicyCondition(SyftObject):
+    __canonical_name__: str = "RuntimePolicyCondition"
     __version__ = SYFT_OBJECT_VERSION_1
 
 
 @serializable()
-class InitCondition(PolicyCondition):
+class InitCondition(RuntimePolicyCondition):
     __canonical_name__: str = "InitCondition"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -369,7 +369,7 @@ class InitCondition(PolicyCondition):
 
 
 @serializable()
-class RunCondition(PolicyCondition):
+class RunCondition(RuntimePolicyCondition):
     __canonical_name__: str = "RunCondition"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -379,7 +379,7 @@ class RunCondition(PolicyCondition):
 
 
 @serializable()
-class StopCondition(PolicyCondition):
+class StopCondition(RuntimePolicyCondition):
     __canonical_name__: str = "StopCondition"
     __version__ = SYFT_OBJECT_VERSION_1
 
