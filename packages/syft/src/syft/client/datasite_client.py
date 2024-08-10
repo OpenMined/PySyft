@@ -131,10 +131,8 @@ class DatasiteClient(SyftClient):
                 try:
                     contains_empty: bool = asset.contains_empty()
                     twin = TwinObject(
-                        private_obj=ActionObject.from_obj(
-                            asset.data
-                        ),  # same on both for now
-                        mock_obj=ActionObject.from_obj(asset.data),
+                        private_obj=ActionObject.from_obj(asset.data),
+                        mock_obj=ActionObject.from_obj(asset.mock),
                         syft_server_location=self.id,
                         syft_client_verify_key=self.verify_key,
                     )
