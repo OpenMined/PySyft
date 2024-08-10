@@ -313,11 +313,13 @@ class HFModelClass(SyftModelClass):
         encoded_input = self.tokenizer(prompt, return_tensors="pt")
         return self.model(**encoded_input)
 
-    def generate_mock_assets(self, ref_model_path: str | SyftFolder) -> SyftFolder:
+    @staticmethod
+    def generate_mock_assets(ref_model_path: str | SyftFolder) -> SyftFolder:
         from transformers import AutoModelForCausalLM  # noqa
         from transformers import AutoTokenizer  # noqa
         import tempfile  # noqa
         from pathlib import Path  # noqa
+
         # syft
         from syft import SyftFolder  # noqa
 
@@ -355,7 +357,7 @@ class HFModelClass(SyftModelClass):
         # Puts the model in evaluation mode.
         pass
 
-    def forward(self,input_ids, attention_mask, labels=None):
+    def forward(self, input_ids, attention_mask, labels=None):
         # Defines the forward pass for the model.
         pass
 
@@ -764,19 +766,16 @@ class CreateModel(Model):
         code: type | SubmitModelCode,
         **kwargs: Any,
     ) -> None:
+        # Generate mock assets if autogenerate_mock is True
+        if "autogenerate_mock" in kwargs and kwargs["autogenerate_mock"]:
+            asset_list = kwargs.get("asset_list", [])
+            for asset in asset_list:
+                if asset.mock is None and asset.data is not None:
+                    asset.mock = code.generate_mock_assets(asset.data)
+
         # Convert class to SubmitModelCode
         if isinstance(code, type) and issubclass(code, SyftModelClass):
             code = syft_model(name=code.__name__)(code)
-
-        # Generate mock assets if autogenerate_mock is True
-        if "autogenerate_mock" in kwargs and kwargs["autogenerate_mock"]:
-            for asset in self.asset_list:
-                if asset.data is None:
-                    return SyftError(
-                        message="Asset data is None. Cannot Auto generate mock."
-                    )
-                # Even if a mock is already present, we will regenerate it
-                asset.mock = code.generate_mock_assets(asset.data)
 
         super().__init__(**kwargs, code=code)
 
