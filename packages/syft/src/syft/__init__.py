@@ -70,9 +70,12 @@ from .service.policy.policy import CreatePolicyRuleConstant as Constant
 from .service.policy.policy import CustomInputPolicy
 from .service.policy.policy import CustomOutputPolicy
 from .service.policy.policy import ExactMatch
+from .service.policy.policy import InitCondition
 from .service.policy.policy import MixedInputPolicy
+from .service.policy.policy import RunCondition
 from .service.policy.policy import RunOnEnclave  # noqa: F401
 from .service.policy.policy import SingleExecutionExactOutput
+from .service.policy.policy import StopCondition
 from .service.policy.policy import UserInputPolicy
 from .service.policy.policy import UserOutputPolicy
 from .service.project.distributed_project import DistributedProject  # noqa: F401

@@ -21,7 +21,7 @@
       "RunOnEnclave": {
         "1": {
           "version": 1,
-          "hash": "661ffff19beb43978bd2d264da9b510cbb33b6547db4f6739f0bdf678cbd0b9d",
+          "hash": "cbb26a20dd62eef9e39544b4bae9c608115a188b9d6d695fd4f9a1157234dd9b",
           "action": "add"
         }
       },
@@ -221,6 +221,27 @@
           "action": "add"
         }
       },
+      "InitCondition": {
+        "1": {
+          "version": 1,
+          "hash": "4188cf57775565da05045188ca0eaf22ef197fc2eff6acf06880360fe80dc2bb",
+          "action": "add"
+        }
+      },
+      "RunCondition": {
+        "1": {
+          "version": 1,
+          "hash": "8db841b73a0acbc7a720456a8077731ad3ad49118805473b8aa187e8e6904f45",
+          "action": "add"
+        }
+      },
+      "StopCondition": {
+        "1": {
+          "version": 1,
+          "hash": "1e76d224e9cd6fc756b04cc3d182d35f7fbd5aab367ea9c868c87f8f7c082fbd",
+          "action": "add"
+        }
+      },
       "ProjectAssetTransfer": {
         "1": {
           "version": 1,
@@ -246,6 +267,13 @@
         "1": {
           "version": 1,
           "hash": "dba43d43031425fbb3f5534549bd9c4d162ec8fb0470a062a4ff6a3e67cf3114",
+          "action": "add"
+        }
+      },
+      "RuntimePolicyCondition": {
+        "1": {
+          "version": 1,
+          "hash": "9a9821eed90768e26fadcb68f233507e1dbaff20e0802fb2317c2fa91f66feab",
           "action": "add"
         }
       }
