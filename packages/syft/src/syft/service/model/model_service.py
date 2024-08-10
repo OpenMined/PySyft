@@ -2,14 +2,13 @@
 from collections.abc import Collection
 from collections.abc import Sequence
 
-from ..action.action_object import ActionObject
-
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...types.dicttuple import DictTuple
 from ...types.uid import UID
 from ...util.telemetry import instrument
+from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..context import AuthedServiceContext

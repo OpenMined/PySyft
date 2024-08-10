@@ -24,13 +24,13 @@ from transformers import AutoModelForCausalLM
 from transformers import AutoTokenizer
 
 # relative
-from ...types.file import SyftFolder
 from ...client.api import APIRegistry
 from ...client.client import SyftClient
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize as serialize
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
+from ...types.file import SyftFolder
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
