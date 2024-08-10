@@ -60,6 +60,7 @@ from .service.dataset.dataset import CreateAsset as Asset
 from .service.dataset.dataset import CreateDataset as Dataset
 from .service.model.model import CreateModel as Model
 from .service.model.model import CreateModelAsset as ModelAsset
+from .service.model.model import HFModelClass
 from .service.model.model import SyftModelClass
 from .service.model.model import syft_model
 from .service.network.utils import check_route_reachability  # noqa: F401
