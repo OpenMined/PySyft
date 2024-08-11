@@ -78,8 +78,8 @@ def _patch_ipython_sanitization() -> None:
     escaped_itable_template = re.compile(itable_template, re.DOTALL)
 
     def display_sanitized_html(obj: SyftObject | DictTuple) -> str | None:
-        if callable(getattr(obj, "_repr_html_", None)):
-            html_str = obj._repr_html_()
+        if callable(obj_repr_html_ := getattr(obj, "_repr_html_", None)):
+            html_str = obj_repr_html_()
             if html_str is not None:
                 # find matching table and jobs
                 matching_table = escaped_template.findall(html_str)

@@ -50,6 +50,7 @@ from ..job.job_stash import Job
 from ..job.job_stash import JobType
 from ..log.log import SyftLog
 from ..output.output_service import ExecutionOutput
+from ..policy.policy import Constant
 from ..request.request import Request
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -367,6 +368,14 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         for attr in repr_attrs:
             value = getattr(obj, attr)
             res[attr] = value
+
+        # if there are constants in UserCode input policy, add to repr
+        # type ignores since mypy thinks the code is unreachable for some reason
+        if isinstance(obj, UserCode) and obj.input_policy_init_kwargs is not None:  # type: ignore
+            for input_policy_kwarg in obj.input_policy_init_kwargs.values():  # type: ignore
+                for input_val in input_policy_kwarg.values():
+                    if isinstance(input_val, Constant):
+                        res[input_val.kw] = input_val.val
         return res
 
     def diff_attributes_str(self, side: str) -> str:
