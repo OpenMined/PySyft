@@ -12,13 +12,14 @@ from typing import Any
 from typing import cast
 
 # third party
-from IPython.display import HTML, JSON, Markdown
+from IPython.display import HTML
+from IPython.display import JSON
+from IPython.display import Markdown
 from IPython.display import display
 import ipywidgets as widgets
 from pydantic import Field
 from pydantic import field_validator
 from rich.progress import Progress
-from syft.util.notebook_ui.components.sync import CopyIDButton
 from typing_extensions import Self
 
 # relative
@@ -47,9 +48,12 @@ from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
 from ...util.decorators import deprecated
-from ...util.markdown import as_markdown_python_code, markdown_as_class_with_fields
-from ...util.util import full_name_with_qualname, sanitize_html
+from ...util.markdown import as_markdown_python_code
+from ...util.markdown import markdown_as_class_with_fields
+from ...util.notebook_ui.components.sync import CopyIDButton
+from ...util.util import full_name_with_qualname
 from ...util.util import human_friendly_join
+from ...util.util import sanitize_html
 from ..code.user_code import SubmitUserCode
 from ..code.user_code import UserCodeStatus
 from ..enclave.enclave import EnclaveInstance
@@ -408,7 +412,7 @@ class ProjectCode(ProjectEventAddObject):
 
         input_assets_list_items = set_policy_assets(self.code.input_policy_init_kwargs)
 
-        provider = self.code.runtime_policy_init_kwargs.get('provider')
+        provider = self.code.runtime_policy_init_kwargs.get("provider")
 
         if isinstance(provider, EnclaveInstance):
             provider_list_item = (
@@ -419,18 +423,18 @@ class ProjectCode(ProjectEventAddObject):
                 "</li>"
             )
         elif provider is None:
-            provider_list_item: f"<li>None</li>"
+            provider_list_item: "<li>None</li>"
         else:
             provider_list_item = f"<li>id={CopyIDButton(copy_text=str(provider.id), max_width=60).to_html()}</li>"
 
         def extract_class_name(class_str: str) -> str:
             if not isinstance(class_str, str):
-                return 'None'
-            
+                return "None"
+
             if class_str.startswith("<class '") and class_str.endswith("'>"):
-                return class_str.split('.')[-1][:-2]
-            
-            return 'None'
+                return class_str.split(".")[-1][:-2]
+
+            return "None"
 
         input_policy_type_str = extract_class_name(str(self.code.input_policy_type))
         output_policy_type_str = extract_class_name(str(self.code.output_policy_type))

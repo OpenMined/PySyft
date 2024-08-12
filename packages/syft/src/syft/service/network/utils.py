@@ -7,17 +7,16 @@ import time
 from typing import cast
 
 # third party
-from IPython.display import HTML, display
-from rich.box import DOUBLE_EDGE
-from rich.console import Console
-from rich.table import Table
-from rich.text import Text
-from syft.util.table import prepare_table_data
+from IPython.display import HTML
+from IPython.display import display
 
 # relative
 from ...client.client import SyftClient
 from ...serde.serializable import serializable
 from ...types.datetime import DateTime
+from ...util.notebook_ui.components.tabulator_template import (
+    build_tabulator_table_with_data,
+)
 from ..context import AuthedServiceContext
 from ..request.request import Request
 from ..response import SyftError
@@ -28,9 +27,6 @@ from .network_service import ServerPeerAssociationStatus
 from .server_peer import ServerPeer
 from .server_peer import ServerPeerConnectionStatus
 from .server_peer import ServerPeerUpdate
-from ...util.notebook_ui.components.tabulator_template import (
-    build_tabulator_table_with_data,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -149,7 +145,9 @@ class PeerHealthCheckTask:
         logger.info("Peer health check task stopped.")
 
 
-def exchange_routes(clients: list[SyftClient], auto_approve: bool = False) -> SyftError | None:
+def exchange_routes(
+    clients: list[SyftClient], auto_approve: bool = False
+) -> SyftError | None:
     metadata = {
         "name": "Connecting clients",
         "columns": ["From", "To", "Status"],
@@ -198,15 +196,15 @@ def exchange_routes(clients: list[SyftClient], auto_approve: bool = False) -> Sy
 
             rows += [
                 {
-                    'From': f"{client1.name}-{client1.id.short()}",
-                    'To': f"{client2.name}-{client2.id.short()}",
-                    'Status': "Connected ✅",
+                    "From": f"{client1.name}-{client1.id.short()}",
+                    "To": f"{client2.name}-{client2.id.short()}",
+                    "Status": "Connected ✅",
                 },
                 {
-                    'From': f"{client2.name}-{client2.id.short()}",
-                    'To': f"{client1.name}-{client1.id.short()}",
-                    'Status': "Connected ✅",
-                }
+                    "From": f"{client2.name}-{client2.id.short()}",
+                    "To": f"{client1.name}-{client1.id.short()}",
+                    "Status": "Connected ✅",
+                },
             ]
         else:
             client1_res = (
@@ -221,18 +219,19 @@ def exchange_routes(clients: list[SyftClient], auto_approve: bool = False) -> Sy
             )
             rows += [
                 {
-                    'From': f"{client1.name}-{client1.id.short()}",
-                    'To': f"{client2.name}-{client2.id.short()}",
-                    'Status': client2_res
+                    "From": f"{client1.name}-{client1.id.short()}",
+                    "To": f"{client2.name}-{client2.id.short()}",
+                    "Status": client2_res,
                 },
                 {
-                    'From': f"{client2.name}-{client2.id.short()}",
-                    'To': f"{client1.name}-{client1.id.short()}",
-                    'Status': client1_res
-                }
+                    "From": f"{client2.name}-{client2.id.short()}",
+                    "To": f"{client1.name}-{client1.id.short()}",
+                    "Status": client1_res,
+                },
             ]
 
     # Display html if ipython, otherwise return the data
+    # third party
     from IPython import get_ipython
 
     if get_ipython():

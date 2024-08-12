@@ -9,18 +9,17 @@ from textwrap import dedent
 from typing import Any
 from typing import ClassVar
 from typing import cast
-from pydantic import model_validator
 
 # third party
 from IPython.display import HTML
 from IPython.display import Markdown
 from IPython.display import display
 from pydantic import ConfigDict
+from pydantic import model_validator
 from result import Err
 from result import Ok
 from result import OkErr
 from result import Result
-from syft.util.util import sanitize_html
 
 # relative
 from ...client.api import APIRegistry
@@ -82,8 +81,9 @@ def _markdownify_variable(values: dict, varname: str) -> Any:
 
     return values
 
-_markdownify_description = lambda values: _markdownify_variable(values, 'description')
-_markdownify_card = lambda values: _markdownify_variable(values, 'card')
+
+_markdownify_description = lambda values: _markdownify_variable(values, "description")
+_markdownify_card = lambda values: _markdownify_variable(values, "card")
 
 
 @serializable()
@@ -102,7 +102,7 @@ class ModelAsset(SyftObject):
     created_at: DateTime = DateTime.now()
     asset_hash: str
 
-    _description = model_validator(mode='before')(_markdownify_description)
+    _description = model_validator(mode="before")(_markdownify_description)
 
     __repr_attrs__ = ["name", "created_at", "asset_hash"]
 
@@ -300,7 +300,7 @@ class CreateModelAsset(SyftObject):
 
     model_config = ConfigDict(validate_assignment=True)
 
-    _description = model_validator(mode='before')(_markdownify_description)
+    _description = model_validator(mode="before")(_markdownify_description)
 
     def add_contributor(
         self,
@@ -406,7 +406,7 @@ class Model(SyftObject):
     code_action_id: UID | None = None
     syft_model_hash: str | None = None
 
-    _card = model_validator(mode='before')(_markdownify_card)
+    _card = model_validator(mode="before")(_markdownify_card)
 
     @property
     def server_name(self) -> str | SyftError | None:

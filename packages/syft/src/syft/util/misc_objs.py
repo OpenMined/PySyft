@@ -1,6 +1,4 @@
 # third party
-from IPython.display import HTML
-from IPython.display import display
 
 # relative
 from ..serde.serializable import serializable
@@ -18,6 +16,7 @@ class MarkdownDescription(SyftObject):
 
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         return self.text
+
 
 @serializable()
 class HTMLObject(SyftObject):
