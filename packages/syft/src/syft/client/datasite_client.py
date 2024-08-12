@@ -26,6 +26,7 @@ from ..service.dataset.dataset import CreateAsset
 from ..service.dataset.dataset import CreateDataset
 from ..service.migration.object_migration_state import MigrationData
 from ..service.response import SyftError
+from ..service.response import SyftException
 from ..service.response import SyftSuccess
 from ..service.response import SyftWarning
 from ..service.sync.diff_state import ResolvedSyncState
@@ -146,6 +147,8 @@ class DatasiteClient(SyftClient):
                     res = twin._save_to_blob_storage(allow_empty=contains_empty)
                     if isinstance(res, SyftError):
                         return res
+                except SyftException as se:
+                    return SyftError(message=f"{se}")
                 except Exception as e:
                     tqdm.write(f"Failed to create twin for {asset.name}. {e}")
                     return SyftError(message=f"Failed to create twin. {e}")
