@@ -28,7 +28,8 @@ from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
 from ...server.credentials import SyftSigningKey
 from ...server.credentials import SyftVerifyKey
-from ...service.attestation.attestation import AttestationReport
+from ...service.attestation.attestation_cpu_report import CPUAttestationReport
+from ...service.attestation.attestation_gpu_report import GPUAttestationReport
 from ...service.attestation.utils import AttestationType
 from ...service.attestation.utils import verify_attestation_report
 from ...service.metadata.server_metadata import ServerMetadata
@@ -622,7 +623,11 @@ class ProjectCode(ProjectEventAddObject):
         report = report.ok()
         print("🔍 Verifying attestation report...", flush=True)
 
-        attestation_report = AttestationReport(report)
+        attestation_report: CPUAttestationReport | GPUAttestationReport
+        if attestation_type == AttestationType.CPU:
+            attestation_report = CPUAttestationReport(report)
+        else:
+            attestation_report = GPUAttestationReport(report)
         summary = attestation_report.generate_summary()
 
         print(summary, flush=True)
