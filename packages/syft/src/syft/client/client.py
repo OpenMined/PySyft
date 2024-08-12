@@ -127,6 +127,8 @@ class Routes(Enum):
     ROUTE_REGISTER = f"{API_PATH}/register"
     ROUTE_API_CALL = f"{API_PATH}/api_call"
     ROUTE_BLOB_STORE = "/blob"
+    ROUTE_FORGOT_PASSWORD = f"{API_PATH}/forgot_password"
+    ROUTE_RESET_PASSWORD = f"{API_PATH}/reset_password"
     STREAM = f"{API_PATH}/stream"
 
 
@@ -387,6 +389,45 @@ class HTTPConnection(ServerConnection):
             )
         else:
             response = self._make_post(self.routes.ROUTE_LOGIN.value, credentials)
+            obj = _deserialize(response, from_bytes=True)
+
+        return obj
+
+    def forgot_password(
+        self,
+        email: str,
+    ) -> SyftSigningKey | None:
+        credentials = {"email": email}
+        if self.proxy_target_uid:
+            obj = forward_message_to_proxy(
+                self.make_call,
+                proxy_target_uid=self.proxy_target_uid,
+                path="forgot_password",
+                kwargs=credentials,
+            )
+        else:
+            response = self._make_post(
+                self.routes.ROUTE_FORGOT_PASSWORD.value, credentials
+            )
+            obj = _deserialize(response, from_bytes=True)
+
+        return obj
+
+    def reset_password(
+        self,
+        token: str,
+        new_password: str,
+    ) -> SyftSigningKey | None:
+        payload = {"token": token, "new_password": new_password}
+        if self.proxy_target_uid:
+            obj = forward_message_to_proxy(
+                self.make_call,
+                proxy_target_uid=self.proxy_target_uid,
+                path="reset_password",
+                kwargs=payload,
+            )
+        else:
+            response = self._make_post(self.routes.ROUTE_RESET_PASSWORD.value, payload)
             obj = _deserialize(response, from_bytes=True)
 
         return obj
@@ -830,7 +871,7 @@ class SyftClient:
         return None
 
     @property
-    def me(self) -> UserView | SyftError | None:
+    def account(self) -> UserView | SyftError | None:
         if self.api.has_service("user"):
             return self.api.services.user.get_current_user()
         return None
@@ -909,7 +950,7 @@ class SyftClient:
             if password == get_default_root_password():
                 message = (
                     "You are using a default password. Please change the password "
-                    "using `[your_client].me.set_password([new_password])`."
+                    "using `[your_client].account.set_password([new_password])`."
                 )
                 prompt_warning_message(message)
 

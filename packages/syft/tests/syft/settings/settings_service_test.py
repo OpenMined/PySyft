@@ -2,6 +2,7 @@
 from copy import deepcopy
 from datetime import datetime
 from unittest import mock
+from uuid import uuid4
 
 # third party
 from faker import Faker
@@ -12,16 +13,19 @@ from result import Ok
 # syft absolute
 import syft
 from syft.abstract_server import ServerSideType
+from syft.client.datasite_client import DatasiteClient
 from syft.server.credentials import SyftSigningKey
 from syft.server.credentials import SyftVerifyKey
 from syft.service.context import AuthedServiceContext
+from syft.service.notifier.notifier import NotifierSettings
+from syft.service.notifier.notifier_stash import NotifierStash
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
+from syft.service.service import _SIGNATURE_ERROR_MESSAGE
 from syft.service.settings.settings import ServerSettings
 from syft.service.settings.settings import ServerSettingsUpdate
 from syft.service.settings.settings_service import SettingsService
 from syft.service.settings.settings_stash import SettingsStash
-from syft.service.user.user import UserCreate
 from syft.service.user.user_roles import ServiceRole
 
 
@@ -127,6 +131,7 @@ def test_settingsservice_update_success(
     settings: ServerSettings,
     update_settings: ServerSettingsUpdate,
     authed_context: AuthedServiceContext,
+    notifier_stash: NotifierStash,
 ) -> None:
     # add a mock settings to the stash
     mock_settings = add_mock_settings(
@@ -149,6 +154,26 @@ def test_settingsservice_update_success(
         return Ok(mock_stash_get_all_output)
 
     monkeypatch.setattr(settings_service.stash, "get_all", mock_stash_get_all)
+
+    # Mock the get_service method to return a mocked notifier_service with the notifier_stash
+    class MockNotifierService:
+        def __init__(self, stash):
+            self.stash = stash
+
+        def set_notifier_active_to_false(self, context) -> SyftSuccess:
+            return SyftSuccess(message="Notifier mocked to True")
+
+        def settings(self, context):
+            return NotifierSettings()
+
+    mock_notifier_service = MockNotifierService(stash=notifier_stash)
+
+    def mock_get_service(service_name: str):
+        if service_name == "notifierservice":
+            return mock_notifier_service
+        raise ValueError(f"Unknown service: {service_name}")
+
+    monkeypatch.setattr(authed_context.server, "get_service", mock_get_service)
 
     # update the settings in the settings stash using settings_service
     response = settings_service.update(context=authed_context, settings=update_settings)
@@ -197,6 +222,7 @@ def test_settingsservice_update_fail(
     settings_service: SettingsService,
     update_settings: ServerSettingsUpdate,
     authed_context: AuthedServiceContext,
+    notifier_stash: NotifierStash,
 ) -> None:
     # the stash has a settings but we could not update it (the stash.update() function fails)
 
@@ -213,6 +239,26 @@ def test_settingsservice_update_fail(
         return Err(mock_update_error_message)
 
     monkeypatch.setattr(settings_service.stash, "update", mock_stash_update_error)
+
+    # Mock the get_service method to return a mocked notifier_service with the notifier_stash
+    class MockNotifierService:
+        def __init__(self, stash):
+            self.stash = stash
+
+        def set_notifier_active_to_false(self, context) -> SyftSuccess:
+            return SyftSuccess(message="Notifier mocked to False")
+
+        def settings(self, context):
+            return NotifierSettings()
+
+    mock_notifier_service = MockNotifierService(stash=notifier_stash)
+
+    def mock_get_service(service_name: str):
+        if service_name == "notifierservice":
+            return mock_notifier_service
+        raise ValueError(f"Unknown service: {service_name}")
+
+    monkeypatch.setattr(authed_context.server, "get_service", mock_get_service)
 
     response = settings_service.update(context=authed_context, settings=update_settings)
 
@@ -238,6 +284,7 @@ def test_settings_allow_guest_registration(
         show_warnings=False,
         deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
         association_request_auto_approval=False,
+        notifications_enabled=False,
     )
 
     with mock.patch(
@@ -294,21 +341,22 @@ def test_settings_allow_guest_registration(
 def test_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker):
     # Mock patch this env variable to remove race conditions
     # where signup is enabled.
+
     def get_mock_client(faker, root_client, role):
-        user_create = UserCreate(
+        email = faker.email()
+        password = uuid4().hex
+
+        result = root_client.users.create(
             name=faker.name(),
-            email=faker.email(),
+            email=email,
             role=role,
-            password="password",
-            password_verify="password",
+            password=password,
+            password_verify=password,
         )
-        result = root_client.users.create(**user_create)
         assert not isinstance(result, SyftError)
 
         guest_client = root_client.guest()
-        return guest_client.login(
-            email=user_create.email, password=user_create.password
-        )
+        return guest_client.login(email=email, password=password)
 
     verify_key = SyftSigningKey.generate().verify_key
     mock_server_settings = ServerSettings(
@@ -323,6 +371,7 @@ def test_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker):
         show_warnings=False,
         deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
         association_request_auto_approval=False,
+        notifications_enabled=False,
     )
 
     with mock.patch(
@@ -362,3 +411,27 @@ def test_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker):
             [u.email in emails_added for u in root_client.users.get_all()]
         )
         assert users_created_count == len(emails_added)
+
+
+def test_invalid_args_error_message(root_datasite_client: DatasiteClient) -> None:
+    update_args = {
+        "name": uuid4().hex,
+        "organization": uuid4().hex,
+    }
+
+    update = ServerSettingsUpdate(**update_args)
+
+    res = root_datasite_client.api.services.settings.update(settings=update)
+    assert isinstance(res, SyftError)
+    assert _SIGNATURE_ERROR_MESSAGE in res.message
+
+    res = root_datasite_client.api.services.settings.update(update)
+    assert isinstance(res, SyftError)
+    assert _SIGNATURE_ERROR_MESSAGE in res.message
+
+    res = root_datasite_client.api.services.settings.update(**update_args)
+    assert not isinstance(res, SyftError)
+
+    settings = root_datasite_client.api.services.settings.get()
+    assert settings.name == update_args["name"]
+    assert settings.organization == update_args["organization"]

@@ -22,6 +22,7 @@ from typing import cast
 # third party
 from nacl.signing import SigningKey
 from result import Err
+from result import Ok
 from result import Result
 
 # relative
@@ -471,7 +472,7 @@ class Server(AbstractServer):
             )
             config_ = OnDiskBlobStorageConfig(
                 client_config=client_config,
-                min_blob_size=os.getenv("MIN_SIZE_BLOB_STORAGE_MB", 16),
+                min_blob_size=os.getenv("MIN_SIZE_BLOB_STORAGE_MB", 1),
             )
         else:
             config_ = config
@@ -785,7 +786,9 @@ class Server(AbstractServer):
     def __repr__(self) -> str:
         service_string = ""
         if not self.is_subprocess:
-            services = [service.__name__ for service in self.services]
+            services = [
+                service.__class__.__name__ for service in self.initialized_services
+            ]
             service_string = ", ".join(sorted(services))
             service_string = f"\n\nServices:\n{service_string}"
         return f"{type(self).__name__}: {self.name} - {self.id} - {self.server_type}{service_string}"
@@ -912,6 +915,26 @@ class Server(AbstractServer):
             if attr is not Empty:
                 setattr(self, attr_name, attr)
 
+    # NOTE: Some workflows currently expect the settings to be available,
+    # even though they might not be defined yet. Because of this, we need to check
+    # if the settings table is already defined. This function is basically a copy
+    # of the settings property but ignoring stash error in case settings doesn't exist yeat.
+    # it should be removed once the settings are refactored
+    # refactored and the inconsistencies between settings
+    # and services are resolved.
+    def get_settings(self) -> ServerSettings | None:
+        settings_stash = SettingsStash(store=self.document_store)
+        if self.signing_key is None:
+            raise ValueError(f"{self} has no signing key")
+
+        settings = settings_stash.get_all(self.signing_key.verify_key)
+        if settings.is_err():
+            return None
+        if settings.is_ok() and len(settings.ok()) > 0:
+            settings = settings.ok()[0]
+            self.update_self(settings)
+        return settings
+
     @property
     def settings(self) -> ServerSettings:
         settings_stash = SettingsStash(store=self.document_store)
@@ -924,7 +947,7 @@ class Server(AbstractServer):
             )
         if settings.is_ok() and len(settings.ok()) > 0:
             settings = settings.ok()[0]
-        self.update_self(settings)
+            self.update_self(settings)
         return settings
 
     @property
@@ -1133,6 +1156,16 @@ class Server(AbstractServer):
             api_call = api_call.message
 
             role = self.get_role_for_credentials(credentials=credentials)
+            settings = self.get_settings()
+            # TODO: This instance check should be removed once we can ensure that
+            # self.settings will always return a ServerSettings object.
+            if (
+                settings is not None
+                and not isinstance(settings, Ok)
+                and not settings.allow_guest_sessions
+                and role == ServiceRole.GUEST
+            ):
+                return SyftError(message="Server doesn't allow guest sessions.")
             context = AuthedServiceContext(
                 server=self,
                 credentials=credentials,
@@ -1337,6 +1370,7 @@ class Server(AbstractServer):
             action=action,
             requested_by=user_id,
             job_type=job_type,
+            endpoint=queue_item.kwargs.get("path", None),
         )
 
         # 🟡 TODO 36: Needs distributed lock
@@ -1585,6 +1619,7 @@ class Server(AbstractServer):
                     show_warnings=self.enable_warnings,
                     association_request_auto_approval=self.association_request_auto_approval,
                     default_worker_pool=get_default_worker_pool_name(),
+                    notifications_enabled=False,
                 )
                 result = settings_stash.set(
                     credentials=self.signing_key.verify_key, settings=new_settings

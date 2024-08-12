@@ -1,4 +1,5 @@
 # stdlib
+from collections.abc import Callable
 from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
@@ -31,12 +32,13 @@ from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
 from ...types.datetime import DateTime
 from ...types.datetime import format_timedelta
+from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
+from ...types.transforms import make_set_default
 from ...types.uid import UID
-from ...util import options
-from ...util.colors import SURFACE
 from ...util.markdown import as_markdown_code
 from ...util.telemetry import instrument
 from ...util.util import prompt_warning_message
@@ -88,7 +90,7 @@ class JobType(str, Enum):
 @serializable()
 class Job(SyncableSyftObject):
     __canonical_name__ = "JobItem"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
     server_uid: UID
@@ -109,8 +111,16 @@ class Job(SyncableSyftObject):
     user_code_id: UID | None = None
     requested_by: UID | None = None
     job_type: JobType = JobType.JOB
+    # used by JobType.TWINAPIJOB
+    endpoint: str | None = None
 
-    __attr_searchable__ = ["parent_job_id", "job_worker_id", "status", "user_code_id"]
+    __attr_searchable__ = [
+        "parent_job_id",
+        "job_worker_id",
+        "status",
+        "user_code_id",
+        "result_id",
+    ]
     __repr_attrs__ = [
         "id",
         "result",
@@ -143,6 +153,12 @@ class Job(SyncableSyftObject):
                 )
 
         return self
+
+    @property
+    def result_id(self) -> UID | None:
+        if self.result is None:
+            return None
+        return self.result.id.id
 
     @property
     def action_display_name(self) -> str:
@@ -442,9 +458,8 @@ class Job(SyncableSyftObject):
 
         try:
             # type_html = f'<div class="label {self.type_badge_class()}">{self.object_type_name.upper()}</div>'
-            description_html = (
-                f"<span class='syncstate-description'>{self.user_code_name}</span>"
-            )
+            job_name = self.user_code_name or self.endpoint or "Job"
+            description_html = f"<span class='syncstate-description'>{job_name}</span>"
             worker_summary = ""
             if self.job_worker_id:
                 worker_copy_button = CopyIDButton(
@@ -476,12 +491,14 @@ class Job(SyncableSyftObject):
         return summary_html
 
     def _coll_repr_(self) -> dict[str, Any]:
-        logs = self.logs(_print=False, stderr=False)
-        if logs is not None:
-            log_lines = logs.split("\n")
+        # [Note]: Disable logs in table, to improve performance
+        # logs = self.logs(_print=False, stderr=False)
+        # if logs is not None:
+        #     log_lines = logs.split("\n")
+        # if len(log_lines) > 2:
+        #     logs = f"... ({len(log_lines)} lines)\n" + "\n".join(log_lines[-2:])
+
         subjobs = self.subjobs
-        if len(log_lines) > 2:
-            logs = f"... ({len(log_lines)} lines)\n" + "\n".join(log_lines[-2:])
 
         def default_value(value: str) -> str:
             return value if value else "--"
@@ -492,7 +509,6 @@ class Job(SyncableSyftObject):
             "# Subjobs": default_value(len(subjobs)),
             "Progress": default_value(self.progress),
             "ETA": default_value(self.eta_string),
-            "Logs": default_value(logs),
         }
 
     @property
@@ -679,7 +695,9 @@ class Job(SyncableSyftObject):
                 result_obj = api.services.action.get(  # type: ignore[unreachable]
                     self.result.id, resolve_nested=False
                 )
-                if result_obj.is_link and job_only:
+                if isinstance(result_obj, SyftError | Err):
+                    return result_obj
+                if result_obj.is_link and job_only:  # type: ignore[unreachable]
                     print(
                         "You're trying to wait on a job that has a link as a result."
                         "This means that the job may be ready but the linked result may not."
@@ -789,9 +807,6 @@ class JobInfo(SyftObject):
             result_str += "<p style='margin-left: 10px;'><i>No result included</i></p>"
 
         return f"""
-            <style>
-            .job-info {{color: {SURFACE[options.color_theme]};}}
-            </style>
             <div class='job-info'>
                 <h3>JobInfo</h3>
                 {metadata_str}
@@ -846,30 +861,36 @@ class JobStash(BaseUIDStoreStash):
         valid = self.check_type(item, self.object_type)
         if valid.is_err():
             return SyftError(message=valid.err())
+
+        # Ensure we never save cached result data in the database,
+        # as they can be arbitrarily large
+        if (
+            isinstance(item.result, ActionObject)
+            and item.result.syft_blob_storage_entry_id is not None
+        ):
+            item.result._clear_cache()
+
         return super().update(credentials, item, add_permissions)
 
     def get_by_result_id(
         self,
         credentials: SyftVerifyKey,
-        res_id: UID,
+        result_id: UID,
     ) -> Result[Job | None, str]:
-        res = self.get_all(credentials)
+        qks = QueryKeys(
+            qks=[PartitionKey(key="result_id", type_=UID).with_obj(result_id)]
+        )
+        res = self.query_all(credentials=credentials, qks=qks)
         if res.is_err():
             return res
+
+        res = res.ok()
+        if len(res) == 0:
+            return Ok(None)
+        elif len(res) > 1:
+            return Err("multiple Jobs found")
         else:
-            res = res.ok()
-            # beautiful query
-            res = [
-                x
-                for x in res
-                if isinstance(x.result, ActionObject) and x.result.id.id == res_id
-            ]
-            if len(res) == 0:
-                return Ok(None)
-            elif len(res) > 1:
-                return Err("multiple Jobs found")
-            else:
-                return Ok(res[0])
+            return Ok(res[0])
 
     def get_by_parent_id(
         self, credentials: SyftVerifyKey, uid: UID
@@ -915,3 +936,36 @@ class JobStash(BaseUIDStoreStash):
         )
 
         return self.query_all(credentials=credentials, qks=qks)
+
+
+@serializable()
+class JobV1(SyncableSyftObject):
+    __canonical_name__ = "JobItem"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: UID
+    server_uid: UID
+    result: Any | None = None
+    resolved: bool = False
+    status: JobStatus = JobStatus.CREATED
+    log_id: UID | None = None
+    parent_job_id: UID | None = None
+    n_iters: int | None = 0
+    current_iter: int | None = None
+    creation_time: str | None = Field(
+        default_factory=lambda: str(datetime.now(tz=timezone.utc))
+    )
+    action: Action | None = None
+    job_pid: int | None = None
+    job_worker_id: UID | None = None
+    updated_at: DateTime | None = None
+    user_code_id: UID | None = None
+    requested_by: UID | None = None
+    job_type: JobType = JobType.JOB
+
+
+@migrate(JobV1, Job)
+def migrate_job_update_v1_current() -> list[Callable]:
+    return [
+        make_set_default("endpoint", None),
+    ]

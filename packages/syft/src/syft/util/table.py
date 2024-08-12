@@ -3,9 +3,14 @@ from collections import defaultdict
 from collections.abc import Iterable
 from collections.abc import Mapping
 from collections.abc import Set
+import json
 import logging
 import re
 from typing import Any
+
+# third party
+import itables
+import pandas as pd
 
 # relative
 from .util import full_name_with_qualname
@@ -18,7 +23,12 @@ logger = logging.getLogger(__name__)
 
 def _syft_in_mro(self: Any, item: Any) -> bool:
     if hasattr(type(item), "mro") and type(item) != type:
-        mro = type(item).mro()
+        # if unbound method, supply self
+        if hasattr(type(item).mro, "__self__"):
+            mro = type(item).mro()
+        else:
+            mro = type(item).mro(type(item))  # type: ignore
+
     elif hasattr(item, "mro") and type(item) != type:
         mro = item.mro()
     else:
@@ -55,6 +65,22 @@ def _create_table_rows(
     extra_fields: list | None = None,
     add_index: bool = True,
 ) -> list[dict[str, Any]]:
+    """
+    Creates row data for a table based on input object obj.
+
+    If valid table data cannot be created, an empty list is returned.
+
+    Args:
+        _self (Mapping | Iterable): The input data as a Mapping or Iterable.
+        is_homogenous (bool): A boolean indicating whether the data is homogenous.
+        extra_fields (list | None, optional): Additional fields to include in the table. Defaults to None.
+        add_index (bool, optional): Whether to add an index column. Defaults to True.
+
+    Returns:
+        list[dict[str, Any]]: A list of dictionaries where each dictionary represents a row in the table.
+
+    """
+
     if extra_fields is None:
         extra_fields = []
 
@@ -139,9 +165,8 @@ def _create_table_rows(
 
     col_lengths = {len(cols[col]) for col in cols.keys()}
     if len(col_lengths) != 1:
-        raise ValueError(
-            "Cannot create table for items with different number of fields."
-        )
+        logger.debug("Cannot create table for items with different number of fields.")
+        return []
 
     num_rows = col_lengths.pop()
     if add_index and TABLE_INDEX_KEY not in cols:
@@ -194,19 +219,29 @@ def prepare_table_data(
     add_index: bool = True,
 ) -> tuple[list[dict], dict]:
     """
-    Returns table_data, table_metadata
+    Creates table data and metadata for a given object.
 
-    table_data is a list of dictionaries where each dictionary represents a row in the table.
-    table_metadata is a dictionary containing metadata about the table such as name, icon, etc.
+    If a tabular representation cannot be created, an empty list and empty dict are returned instead.
+
+    Args:
+        obj (Any): The input object for which table data is prepared.
+        add_index (bool, optional): Whether to add an index column to the table. Defaults to True.
+
+    Returns:
+        tuple: A tuple (table_data, table_metadata) where table_data is a list of dictionaries
+        where each dictionary represents a row in the table and table_metadata is a dictionary
+        containing metadata about the table such as name, icon, etc.
+
     """
 
     values = _get_values_for_table_repr(obj)
     if len(values) == 0:
         return [], {}
 
+    # check first value and obj itself to see if syft in mro. If not, don't create table
     first_value = values[0]
     if not _syft_in_mro(obj, first_value):
-        raise ValueError("Cannot create table for Non-syft objects.")
+        return [], {}
 
     extra_fields = getattr(first_value, "__repr_attrs__", [])
     is_homogenous = len({type(x) for x in values}) == 1
@@ -228,6 +263,10 @@ def prepare_table_data(
         extra_fields=extra_fields,
         add_index=add_index,
     )
+    # if empty result, collection objects have no table representation
+    if not table_data:
+        return [], {}
+
     table_data = _sort_table_rows(table_data, sort_key)
 
     table_metadata = {
@@ -239,3 +278,65 @@ def prepare_table_data(
     }
 
     return table_data, table_metadata
+
+
+def itable_template_from_df(df: pd.DataFrame, itable_css: str | None = None) -> str:
+    """
+    Generate an itable template from a pandas DataFrame.
+
+    The itable template contains a JSON string that can be used to render an itable downstream
+    by the patched ipython.
+
+    Args:
+        df (pd.DataFrame): The DataFrame to generate the template from.
+        itable_css (str | None, optional): The CSS styles to apply to the itable template. Defaults to None.
+
+    Returns:
+        str: The generated itable template as a string.
+
+    """
+    itable_template = f"""<!-- Start itable_template -->
+    {json.dumps({"columns": df.columns.tolist(),
+                    "data": df.values.tolist(),
+                    "itable_css": itable_css})}
+    <!-- End itable_template -->"""
+    return itable_template
+
+
+def render_itable_template(itable_str: str) -> str:
+    """
+    Renders an itable template string into an HTML table using itables.to_html_datatable.
+
+    Args:
+        itable_str (str): The itable template string to render.
+
+    Returns:
+        str: The rendered HTML table.
+
+    """
+
+    df, itable_css = _extract_df_from_itable_template(itable_str)
+    if itable_css:
+        return itables.to_html_datatable(df=df, css=itable_css)
+    else:
+        return itables.to_html_datatable(df=df)
+
+
+def _extract_df_from_itable_template(
+    itable_str: str,
+) -> tuple[pd.DataFrame, str | None]:
+    """
+    Extracts a DataFrame and CSS styles from an itable template string.
+
+    Args:
+        itable_str (str): The itable template string to extract from.
+
+    Returns:
+        tuple[pd.DataFrame, str | None]: A tuple containing the extracted DataFrame and the CSS styles.
+            - The DataFrame is created using the columns and data from the itable template.
+            - The CSS styles are extracted from the itable template, or None if not present.
+
+    """
+    json_data = json.loads(itable_str)
+    extracted_df = pd.DataFrame(columns=json_data["columns"], data=json_data["data"])
+    return extracted_df, json_data.get("itable_css", None)

@@ -8,7 +8,6 @@ from typing import Any
 
 # third party
 from IPython.display import display
-import itables
 import markdown
 import pandas as pd
 from pydantic import ConfigDict
@@ -27,6 +26,7 @@ from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import generate_id
@@ -34,15 +34,10 @@ from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.transforms import validate_url
 from ...types.uid import UID
-from ...util import options
-from ...util.colors import ON_SURFACE_HIGHEST
-from ...util.colors import SURFACE
-from ...util.colors import SURFACE_SURFACE
 from ...util.markdown import as_markdown_python_code
 from ...util.misc_objs import MarkdownDescription
 from ...util.notebook_ui.icons import Icon
-from ...util.notebook_ui.styles import FONT_CSS
-from ...util.notebook_ui.styles import ITABLES_CSS
+from ...util.table import itable_template_from_df
 from ..action.action_data_empty import ActionDataEmpty
 from ..action.action_object import ActionObject
 from ..data_subject.data_subject import DataSubject
@@ -72,9 +67,6 @@ class Contributor(SyftObject):
 
     def _repr_html_(self) -> Any:
         return f"""
-            <style>
-            .syft-contributor {{color: {SURFACE[options.color_theme]};}}
-            </style>
             <div class='syft-contributor' style="line-height:25%">
                 <h3>Contributor</h3>
                 <p><strong>Name: </strong>{self.name}</p>
@@ -126,15 +118,6 @@ class Asset(SyftObject):
         super().__init__(**data, description=description)
 
     def _repr_html_(self) -> Any:
-        itables_css = f"""
-        .itables table {{
-            margin: 0 auto;
-            float: left;
-            color: {ON_SURFACE_HIGHEST[options.color_theme]};
-        }}
-        .itables table th {{color: {SURFACE_SURFACE[options.color_theme]};}}
-        """
-
         # relative
         from ...service.action.action_object import ActionObject
 
@@ -144,39 +127,34 @@ class Asset(SyftObject):
             else ""
         )
 
-        if isinstance(self.data, ActionObject):
-            data_table_line = itables.to_html_datatable(
-                df=self.data.syft_action_data, css=itables_css
-            )
-        elif isinstance(self.data, pd.DataFrame):
-            data_table_line = itables.to_html_datatable(df=self.data, css=itables_css)
+        private_data_res = self._private_data()
+        if private_data_res.is_err():
+            data_table_line = private_data_res.err_value
         else:
-            data_table_line = self.data
+            private_data_obj = private_data_res.ok_value
+            if isinstance(private_data_obj, ActionObject):
+                df = pd.DataFrame(self.data.syft_action_data)
+                data_table_line = itable_template_from_df(df=private_data_obj.head(5))
+
+            elif isinstance(private_data_obj, pd.DataFrame):
+                data_table_line = itable_template_from_df(df=private_data_obj.head(5))
+            else:
+                data_table_line = private_data_res.ok_value
 
         if isinstance(self.mock, ActionObject):
-            mock_table_line = itables.to_html_datatable(
-                df=self.mock.syft_action_data, css=itables_css
-            )
+            df = pd.DataFrame(self.mock.syft_action_data)
+            mock_table_line = itable_template_from_df(df=df.head(5))
         elif isinstance(self.mock, pd.DataFrame):
-            mock_table_line = itables.to_html_datatable(df=self.mock, css=itables_css)
+            mock_table_line = itable_template_from_df(df=self.mock.head(5))
         else:
             mock_table_line = self.mock
             if isinstance(mock_table_line, SyftError):
                 mock_table_line = mock_table_line.message
 
         return f"""
-            <style>
-            {FONT_CSS}
-            .syft-asset {{color: {SURFACE[options.color_theme]};}}
-            .syft-asset h3,
-            .syft-asset p
-              {{font-family: 'Open Sans'}}
-            {ITABLES_CSS}
-            </style>
-
             <div class="syft-asset">
             <h3>{self.name}</h3>
-            <p>{self.description}</p>
+            <p>{self.description or ""}</p>
             <p><strong>Asset ID: </strong>{self.id}</p>
             <p><strong>Action Object ID: </strong>{self.action_id}</p>
             {uploaded_by_line}
@@ -278,25 +256,36 @@ class Asset(SyftObject):
             and data_result.endswith("denied")
         )
 
-    @property
-    def data(self) -> Any:
-        # relative
+    def _private_data(self) -> Result[Any, str]:
+        """
+        Retrieves the private data associated with this asset.
 
+        Returns:
+            Result[Any, str]: A Result object containing the private data if the user has permission
+            otherwise an Err object with the message "You do not have permission to access private data."
+        """
         api = APIRegistry.api_for(
             server_uid=self.server_uid,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None or api.services is None:
-            return None
+            return Ok(None)
         res = api.services.action.get(self.action_id)
         if self.has_permission(res):
-            return res.syft_action_data
+            return Ok(res.syft_action_data)
         else:
-            warning = SyftError(
-                message="You do not have permission to access private data."
-            )
-            display(warning)
+            return Err("You do not have permission to access private data.")
+
+    @property
+    def data(self) -> Any:
+        # relative
+        private_data_or_error = self._private_data()
+
+        if private_data_or_error.is_err():
+            display(SyftError(message=private_data_or_error.err_value), clear=True)
             return None
+        else:
+            return private_data_or_error.ok_value
 
 
 def _is_action_data_empty(obj: Any) -> bool:
@@ -525,14 +514,6 @@ class Dataset(SyftObject):
         if self.to_be_deleted:
             return "This dataset has been marked for deletion. The underlying data may be not available."
         return f"""
-            <style>
-            {FONT_CSS}
-            .syft-dataset {{color: {SURFACE[options.color_theme]};}}
-            .syft-dataset h3,
-            .syft-dataset p
-              {{font-family: 'Open Sans';}}
-              {ITABLES_CSS}
-            </style>
             <div class='syft-dataset'>
             <h1>{self.name}</h1>
             <h2><strong><span class='pr-8'>Summary</span></strong></h2>
@@ -616,7 +597,15 @@ def _check_asset_must_contain_mock(asset_list: list[CreateAsset]) -> None:
 
 @serializable()
 class DatasetPageView(SyftObject):
-    # version
+    __canonical_name__ = "DatasetPageView"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    datasets: DictTuple[str, Dataset]
+    total: int
+
+
+@serializable()
+class DatasetPageViewV1(SyftObject):
     __canonical_name__ = "DatasetPageView"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -626,7 +615,6 @@ class DatasetPageView(SyftObject):
 
 @serializable()
 class CreateDataset(Dataset):
-    # version
     __canonical_name__ = "CreateDataset"
     __version__ = SYFT_OBJECT_VERSION_1
     asset_list: list[CreateAsset] = []
