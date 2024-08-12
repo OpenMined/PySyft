@@ -505,6 +505,9 @@ class UserCode(SyncableSyftObject):
     def status(self) -> UserCodeStatusCollection | SyftError:
         # Clientside only
 
+        if self.project_id is not None:
+            return self.get_code_status()
+
         if self.is_l0_deployment:
             if self.status_link is not None:
                 return SyftError(
@@ -576,6 +579,33 @@ class UserCode(SyncableSyftObject):
             status_list.append(
                 f"Server: {server_view.server_name}, Status: {status.value}",
             )
+        return status_list
+
+    def get_code_status(self) -> list:
+        if self.project_id is None:
+            return self.code_status
+
+        api = APIRegistry.api_for(
+            server_uid=self.syft_server_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None:
+            return SyftError(
+                message=f"Can't access Syft API. You must login to {self.syft_server_location}"
+            )
+        project = api.services.project.get_by_uid(self.project_id)
+        project_codes = [pc for pc in project.code if pc.id == self.id]
+        if not project_codes:
+            raise Exception(f"UserCode {self.id} not found in project {project.id}")
+        status_dict = project_codes[0].status(project, verbose_return=True)
+        final_status = status_dict.pop("final_status")
+
+        status_list = []
+        for server_identity, status in status_dict.items():
+            status_list.append(
+                f"Server: {server_identity.server_name}, Status: {status.value}",
+            )
+        status_list.append(f"Final Status: {final_status.value}")
         return status_list
 
     @property
@@ -933,7 +963,7 @@ class UserCode(SyncableSyftObject):
     id: UID = {self.id}
     service_func_name: str = {self.service_func_name}
     shareholders: list = {self.input_owners}
-    status: list = {self.code_status}
+    status: list = {self.get_code_status()}
     {constants_str}
     {shared_with_line}
     inputs: dict = {inputs_str}
@@ -991,7 +1021,7 @@ class UserCode(SyncableSyftObject):
     <p>{tabs}<strong>id:</strong> UID = {self.id}</p>
     <p>{tabs}<strong>service_func_name:</strong> str = {self.service_func_name}</p>
     <p>{tabs}<strong>shareholders:</strong> list = {self.input_owners}</p>
-    <p>{tabs}<strong>status:</strong> list = {self.code_status}</p>
+    <p>{tabs}<strong>status:</strong> list = {self.get_code_status()}</p>
     {tabs}{constants_str}
     {tabs}{shared_with_line}
     <p>{tabs}<strong>inputs:</strong> dict = <pre>{self._inputs_json}</pre></p>

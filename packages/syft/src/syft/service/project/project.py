@@ -550,7 +550,9 @@ class ProjectCode(ProjectEventAddObject):
 
         return code_status
 
-    def status(self, project: Project, verbose: bool = False) -> UserCodeStatus:
+    def status(
+        self, project: Project, verbose: bool = False, verbose_return: bool = False
+    ) -> UserCodeStatus | dict[ServerIdentity | str, UserCodeStatus]:
         init_kwargs = self.code.input_policy_init_kwargs or {}
         input_owner_server_identities = init_kwargs.keys()
         if len(input_owner_server_identities) == 0:
@@ -569,6 +571,9 @@ class ProjectCode(ProjectEventAddObject):
             for server_identity, status in code_status.items():
                 print(f"{server_identity.__repr__()}: {status}")
             print(f"\nFinal Status: {final_status}")
+
+        if verbose_return:
+            return {**code_status, "final_status": final_status}
 
         return final_status
 
