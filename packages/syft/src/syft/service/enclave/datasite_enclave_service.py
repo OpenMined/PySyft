@@ -13,7 +13,9 @@ from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..code.user_code import UserCode
 from ..context import AuthedServiceContext
+from ..dataset.dataset_service import DatasetService
 from ..model.model import ModelRef
+from ..model.model_service import ModelService
 from ..network.routes import HTTPServerRoute
 from ..project.project import Project
 from ..project.project_service import ProjectService
@@ -239,13 +241,19 @@ class DatasiteEnclaveService(AbstractService):
                 enclave_client.id, current_server_credentials.verify_key
             )
 
+            asset_name = self.get_asset_name(
+                context=context, action_id=action_object.id
+            )
+            if isinstance(asset_name, SyftError):
+                return asset_name
+
             # TODO: Fetch asset name
             # Do we want the name in the function
             # or do we want to fetch the name from the DB.
             project_asset_res = project.add_asset_transfer(
                 asset_id=action_object.id,
                 asset_hash=action_object.hash(context=context),
-                asset_name="<Asset Name>",
+                asset_name=asset_name,
                 code_id=code.id,
             )
             if isinstance(project_asset_res, SyftError):
@@ -298,6 +306,34 @@ class DatasiteEnclaveService(AbstractService):
         return SyftSuccess(
             message=f"Assets transferred from Datasite '{context.server.name}' to Enclave '{enclave_client.name}'"
         )
+
+    def get_asset_name(
+        self, context: AuthedServiceContext, action_id: UID
+    ) -> SyftError | str:
+        asset_name = None
+        # Find if the action_id is part of a dataset
+        dataset_service = context.server.get_service(DatasetService)
+        datasets = dataset_service.get_all(context=context)
+        for dataset in datasets:
+            for asset in dataset.asset_list:
+                if asset.action_id == action_id:
+                    asset_name = asset.name
+                    break
+            if asset_name:
+                break
+
+        if asset_name:
+            return asset_name
+
+        # Find if the action_id is part of a model
+        model_service = context.server.get_service(ModelService)
+        model = model_service.get_by_uid(context=context, uid=action_id)
+        if isinstance(model, SyftError):
+            return model
+        if model.id == action_id:
+            return model.name
+
+        return SyftError(message=f"Asset name not found for action_id: {action_id}")
 
     @service_method(
         path="enclave.request_code_execution",
