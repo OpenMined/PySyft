@@ -77,9 +77,9 @@ class ModelPageView(SyftObject):
 # TODO: consider unifying to card or description
 def _markdownify_variable(values: dict, varname: str) -> Any:
     if isinstance(values, dict) and isinstance(varname, str) and varname:
-        description = values.get(varname, None)
-        if description and isinstance(description, str):
-            values[varname] = MarkdownDescription(text=description)
+        varvalue = values.get(varname)
+        if varvalue is not None:
+            values[varname] = MarkdownDescription(text=str(varvalue))
 
     return values
 

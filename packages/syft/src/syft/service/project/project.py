@@ -487,8 +487,9 @@ class ProjectCode(ProjectEventAddObject):
         output_policy_type_str = extract_class_name(str(self.code.output_policy_type))
         runtime_policy_type_str = extract_class_name(str(self.code.runtime_policy_type))
 
+        input_assets_list_items_str = "".join(input_assets_list_items)
         input_policy_assets_str = (
-            f"<ul><strong>Input policy assets</strong>: {"".join(input_assets_list_items)}</ul>"
+            f"<ul><strong>Input policy assets</strong>: {input_assets_list_items_str}</ul>"
             if input_assets_list_items
             else ""
         )
