@@ -1,7 +1,7 @@
-FROM cgr.dev/chainguard/wolfi-base as base
+FROM cgr.dev/chainguard/wolfi-base AS base
 
 ARG BACKEND_API_BASE_URL="/api/v2/"
-ENV BACKEND_API_BASE_URL ${BACKEND_API_BASE_URL}
+ENV BACKEND_API_BASE_URL=${BACKEND_API_BASE_URL}
 
 RUN apk update && \
   apk upgrade && \
@@ -22,14 +22,14 @@ FROM base AS dependencies
 
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
-FROM dependencies as syft-ui-tests
+FROM dependencies AS syft-ui-tests
 COPY vite.config.ts ./
 COPY ./tests ./tests
 COPY ./src/ ./src
 
 CMD pnpm test:unit
 
-FROM dependencies as syft-ui-development
+FROM dependencies AS syft-ui-development
 
 ENV SERVER_ENV=development
 
@@ -47,4 +47,4 @@ ENV SERVER_ENV=production
 
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY --from=builder /app ./
-CMD pnpm preview
+CMD ["pnpm", "preview"]
