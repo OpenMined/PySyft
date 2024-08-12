@@ -21,7 +21,7 @@
       "RunOnEnclave": {
         "1": {
           "version": 1,
-          "hash": "661ffff19beb43978bd2d264da9b510cbb33b6547db4f6739f0bdf678cbd0b9d",
+          "hash": "cbb26a20dd62eef9e39544b4bae9c608115a188b9d6d695fd4f9a1157234dd9b",
           "action": "add"
         }
       },
@@ -77,7 +77,7 @@
       "CreateModel": {
         "1": {
           "version": 1,
-          "hash": "4dab75ad1710a45ddc43db7d6c6d9a4857195783634d8c30e063bdf2cc5416f3",
+          "hash": "6d45537fc735d3e02dabaca6a24a2bc29b76f9f75218cb9f9dc7ef25044058ec",
           "action": "add"
         }
       },
@@ -218,6 +218,62 @@
         "1": {
           "version": 1,
           "hash": "0f4cd9f7541cfdfadc16b1192b4371001f948fb59a17f996f062039b885d52f1",
+          "action": "add"
+        }
+      },
+      "InitCondition": {
+        "1": {
+          "version": 1,
+          "hash": "4188cf57775565da05045188ca0eaf22ef197fc2eff6acf06880360fe80dc2bb",
+          "action": "add"
+        }
+      },
+      "RunCondition": {
+        "1": {
+          "version": 1,
+          "hash": "8db841b73a0acbc7a720456a8077731ad3ad49118805473b8aa187e8e6904f45",
+          "action": "add"
+        }
+      },
+      "StopCondition": {
+        "1": {
+          "version": 1,
+          "hash": "1e76d224e9cd6fc756b04cc3d182d35f7fbd5aab367ea9c868c87f8f7c082fbd",
+          "action": "add"
+        }
+      },
+      "ProjectAssetTransfer": {
+        "1": {
+          "version": 1,
+          "hash": "aba31650f28cdfeee16e782e12be2b622dcd503ea3eee457552a618bd2b7994d",
+          "action": "add"
+        }
+      },
+      "ProjectAttestationReport": {
+        "1": {
+          "version": 1,
+          "hash": "b7a3fd8fdc822f71f469fa8fa196d68bb00fc7d7a3081ce2efa0d0460d158331",
+          "action": "add"
+        }
+      },
+      "ProjectExecutionStart": {
+        "1": {
+          "version": 1,
+          "hash": "fe7c3dc9a55eb8502f1974a2676850ab292127f5c9023977553ac17011102a79",
+          "action": "add"
+        }
+      },
+      "ProjectEnclaveOutput": {
+        "1": {
+          "version": 1,
+          "hash": "dba43d43031425fbb3f5534549bd9c4d162ec8fb0470a062a4ff6a3e67cf3114",
+          "action": "add"
+        }
+      },
+      "RuntimePolicyCondition": {
+        "1": {
+          "version": 1,
+          "hash": "9a9821eed90768e26fadcb68f233507e1dbaff20e0802fb2317c2fa91f66feab",
           "action": "add"
         }
       }

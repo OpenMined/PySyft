@@ -30,6 +30,8 @@ from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
 from ...server.credentials import SyftSigningKey
 from ...server.credentials import SyftVerifyKey
+from ...service.attestation.attestation_cpu_report import CPUAttestationReport
+from ...service.attestation.attestation_gpu_report import GPUAttestationReport
 from ...service.attestation.utils import AttestationType
 from ...service.attestation.utils import verify_attestation_report
 from ...service.metadata.server_metadata import ServerMetadata
@@ -37,6 +39,7 @@ from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.identity import Identity
 from ...types.identity import UserIdentity
+from ...types.server_url import ServerURL
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
@@ -373,6 +376,47 @@ class ProjectRequest(ProjectEventAddObject):
 
 
 @serializable()
+class ProjectAssetTransfer(ProjectEventAddObject):
+    __canonical_name__ = "ProjectAssetTransfer"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    asset_id: UID
+    asset_hash: str
+    asset_name: str
+    server_identity: ServerIdentity
+    code_id: UID  # The code for which the asset is being transferred
+
+
+@serializable()
+class ProjectAttestationReport(ProjectEventAddObject):
+    __canonical_name__ = "ProjectAttestationReport"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    cpu_report: str | SyftError
+    gpu_report: str | SyftError
+    enclave_url: ServerURL
+
+
+@serializable()
+class ProjectExecutionStart(ProjectEventAddObject):
+    __canonical_name__ = "ProjectExecutionStart"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    server_identity: ServerIdentity  # the server which starts the execution
+    code_id: UID  # The code for which the execution is started
+
+
+@serializable()
+class ProjectEnclaveOutput(ProjectEventAddObject):
+    __canonical_name__ = "ProjectEnclaveOutput"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    server_identity: ServerIdentity  # the server which downloads the result
+    output: Any
+    code_id: UID
+
+
+@serializable()
 class ProjectCode(ProjectEventAddObject):
     __canonical_name__ = "ProjectCode"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -546,7 +590,9 @@ class ProjectCode(ProjectEventAddObject):
             user_code_id=self.code.id
         )
 
-    def request_asset_transfer(self) -> SyftSuccess | SyftError:
+    def request_asset_transfer(
+        self, mock_report: bool = False
+    ) -> SyftSuccess | SyftError:
         if not self.is_enclave_code:
             return SyftError(
                 message="This method is only supported for codes with Enclave runtime provider."
@@ -567,7 +613,7 @@ class ProjectCode(ProjectEventAddObject):
             clients.add(client)
         for client in clients:
             assets_transferred = client.api.services.enclave.request_assets_upload(
-                user_code_id=self.code.id
+                user_code_id=self.code.id, mock_report=mock_report
             )
             if isinstance(assets_transferred, SyftError):
                 raise SyftException(assets_transferred.message)
@@ -616,6 +662,7 @@ class ProjectCode(ProjectEventAddObject):
         self,
         attestation_type: AttestationType | str = AttestationType.CPU,
         return_report: bool = False,
+        mock_report: bool = False,
     ) -> dict | None:
         if not self.is_enclave_code:
             return SyftError(
@@ -633,43 +680,80 @@ class ProjectCode(ProjectEventAddObject):
                 )
         runtime_policy_init_kwargs = self.code.runtime_policy_init_kwargs or {}
         provider = cast(EnclaveInstance, runtime_policy_init_kwargs.get("provider"))
+        print("Performing remote attestation", flush=True)
+        machine_type = (
+            "AMD SEV-SNP CPU"
+            if attestation_type == AttestationType.CPU
+            else "NVIDIA H100 GPU"
+        )
+
+        mock_report_prefix = "🛑 Mock" if mock_report else ""
         print(
-            f"Getting {attestation_type} attestation report from the Enclave {provider.name} at {provider.route}...",
+            f"⏳ Retrieving {mock_report_prefix} attestation token from {machine_type}"
+            + f"Enclave at {provider.route}...",
             flush=True,
         )
         client = provider.get_guest_client()
         raw_jwt_report = (
-            client.api.services.attestation.get_cpu_attestation(raw_token=True)
+            client.api.services.attestation.get_cpu_attestation(
+                raw_token=True, mock_report=mock_report
+            )
             if attestation_type == AttestationType.CPU
-            else client.api.services.attestation.get_gpu_attestation(raw_token=True)
+            else client.api.services.attestation.get_gpu_attestation(
+                raw_token=True, mock_report=mock_report
+            )
         )
         if isinstance(raw_jwt_report, SyftError):
             return raw_jwt_report
         print(
-            f"Got encrypted attestation report of {len(raw_jwt_report)} bytes. Verifying it...",
+            f"🔐 Got encrypted attestation report of {len(raw_jwt_report)} bytes",
             flush=True,
         )
+        print(
+            f"🔓 Decrypting attestation report using JWK certificates at {attestation_type.jwks_url}",
+            flush=True,
+        )
+
+        # If Mock Report is enabled, we don't need to verify the expiration
         report = verify_attestation_report(
-            token=raw_jwt_report, attestation_type=attestation_type
+            token=raw_jwt_report,
+            attestation_type=attestation_type,
+            verify_expiration=False if mock_report else True,
         )
         if report.is_err():
             print(
                 f"❌ Attestation report verification failed. {report.err()}", flush=True
             )
+        report = report.ok()
+        print("🔍 Verifying attestation report...", flush=True)
+
+        attestation_report: CPUAttestationReport | GPUAttestationReport
+        if attestation_type == AttestationType.CPU:
+            attestation_report = CPUAttestationReport(report)
+        else:
+            attestation_report = GPUAttestationReport(report)
+        summary = attestation_report.generate_summary()
+
+        print(summary, flush=True)
+
+        print("✅ Attestation report verified successfully.", flush=True)
+        if attestation_report.is_secure():
+            print("✅ Syft Enclave is currently Secure.", flush=True)
+        else:
+            print("❌ Syft Enclave is currently Insecure.", flush=True)
 
         output = widgets.Output()
 
         def display_report(_: widgets.Button) -> None:
             with output:
                 output.clear_output()
-                display(JSON(report.ok()))
+                display(JSON(report))
 
-        print("✅ Attestation report verified successfully.", flush=True)
         button = widgets.Button(description="View full report")
         button.on_click(display_report)
         display(button)
         display(output)
-        return report.ok() if return_report else None
+        return report if return_report else None
 
 
 def poll_creation_wizard() -> tuple[str, list[str]]:
@@ -1314,6 +1398,112 @@ class Project(SyftObject):
         result = self.add_event(message_event)
         if isinstance(result, SyftSuccess):
             return SyftSuccess(message="Message sent successfully")
+        return result
+
+    def add_asset_transfer(
+        self, asset_id: UID, asset_name: str, asset_hash: str, code_id: UID
+    ) -> SyftSuccess | SyftError:
+        code = self.get_events(ids=code_id)
+        if len(code) == 0:
+            return SyftError(message=f"Code id: {code_id} not found")
+        code = code[0]
+
+        asset_server_identity = None
+        for server_identity, assets in code.code.input_policy_init_kwargs.items():
+            for code_asset_id in assets.values():
+                if code_asset_id == asset_id:
+                    asset_server_identity = server_identity
+                    break
+        if not asset_server_identity:
+            return SyftError(message=f"Asset id: {asset_id} not found in the code")
+
+        asset_transfer_event = ProjectAssetTransfer(
+            asset_id=asset_id,
+            asset_name=asset_name,
+            asset_hash=asset_hash,
+            server_identity=asset_server_identity,
+            code_id=code_id,
+        )
+
+        # TODO: Add validation for asset transfer event, check if the is datasite can transfer the asset.
+        result = self.add_event(asset_transfer_event)
+        if isinstance(result, SyftSuccess):
+            return SyftSuccess(message="Asset transfer added successfully")
+        return result
+
+    def add_enclave_attestation_report(
+        self, cpu_report: str | SyftError, gpu_report: str | SyftError, enclave_url: str
+    ) -> SyftSuccess | SyftError:
+        enclave_report_event = ProjectAttestationReport(
+            cpu_report=cpu_report, gpu_report=gpu_report, enclave_url=enclave_url
+        )
+        result = self.add_event(enclave_report_event)
+        if isinstance(result, SyftSuccess):
+            return SyftSuccess(message="Enclave attestation report added successfully")
+        return result
+
+    def add_execution_start(self, code_id: UID) -> SyftSuccess | SyftError:
+        pre_execution_events = self.get_events(types=ProjectExecutionStart)
+        for event in pre_execution_events:
+            if event.code_id == code_id:
+                return SyftSuccess(
+                    message=f"Execution already started for code id: {code_id}"
+                )
+
+        code = self.get_events(ids=code_id)
+        if len(code) == 0:
+            return SyftError(message=f"Code id: {code_id} not found")
+        code = code[0]
+
+        execution_server_identity = (
+            None  # Server Identity of the current project object
+        )
+        for server_identity, _ in code.code.input_policy_init_kwargs.items():
+            if server_identity.verify_key == self.syft_client_verify_key:
+                execution_server_identity = server_identity
+                break
+
+        if not execution_server_identity:
+            return SyftError(message="Server identity not found in code input policy")
+
+        enclave_execution_start_event = ProjectExecutionStart(
+            server_identity=execution_server_identity, code_id=code_id
+        )
+
+        result = self.add_event(enclave_execution_start_event)
+        if isinstance(result, SyftSuccess):
+            return SyftSuccess(message="Execution event added to project")
+        return result
+
+    def add_enclave_output(self, code_id: UID, output: Any) -> SyftSuccess | SyftError:
+        pre_output_events = self.get_events(types=ProjectEnclaveOutput)
+        for event in pre_output_events:
+            if event.server_identity.verify_key == self.syft_client_verify_key:
+                return SyftSuccess(
+                    message=f"Enclave Output already added to code object: {code_id}"
+                )
+
+        code = self.get_events(ids=code_id)
+        if len(code) == 0:
+            return SyftError(message=f"Code id: {code_id} not found")
+        code = code[0]
+
+        current_server_identity = None  # Server Identity of the current project object
+        for server_identity, _ in code.code.input_policy_init_kwargs.items():
+            if server_identity.verify_key == self.syft_client_verify_key:
+                current_server_identity = server_identity
+                break
+
+        if not current_server_identity:
+            return SyftError(message="Server identity not found in code input policy")
+
+        enclave_output_event = ProjectEnclaveOutput(
+            server_identity=current_server_identity, output=output, code_id=code_id
+        )
+
+        result = self.add_event(enclave_output_event)
+        if isinstance(result, SyftSuccess):
+            return SyftSuccess(message="Enclave Output Saved to Project")
         return result
 
     def reply_message(

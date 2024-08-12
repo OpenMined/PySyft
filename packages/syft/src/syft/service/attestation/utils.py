@@ -30,9 +30,14 @@ class AttestationType(str, Enum):
         obj.jwks_url = JWKS_URL_MAP.get(value)
         return obj
 
+    def __str__(self) -> str:
+        return self.value
+
 
 def verify_attestation_report(
-    token: str, attestation_type: AttestationType = AttestationType.CPU
+    token: str,
+    attestation_type: AttestationType = AttestationType.CPU,
+    verify_expiration: bool = True,
 ) -> Result[Ok[dict], Err[str]]:
     """
     Verifies a JSON Web Token (JWT) using a public key obtained from a JWKS (JSON Web Key Set) endpoint,
@@ -90,7 +95,7 @@ def verify_attestation_report(
             token,
             public_key,
             algorithms=[unverified_header["alg"]],
-            options={"verify_exp": True},
+            options={"verify_exp": verify_expiration},
         )
         return Ok(payload)
     except jwt.ExpiredSignatureError:
