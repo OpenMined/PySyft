@@ -196,13 +196,13 @@ def exchange_routes(
 
             rows += [
                 {
-                    "From": f"{client1.name}-{client1.id.short()}",
-                    "To": f"{client2.name}-{client2.id.short()}",
+                    "From": f"{client1.name}-{client1.id.short()}",  # type: ignore
+                    "To": f"{client2.name}-{client2.id.short()}",  # type: ignore
                     "Status": "Connected ✅",
                 },
                 {
-                    "From": f"{client2.name}-{client2.id.short()}",
-                    "To": f"{client1.name}-{client1.id.short()}",
+                    "From": f"{client2.name}-{client2.id.short()}",  # type: ignore
+                    "To": f"{client1.name}-{client1.id.short()}",  # type: ignore
                     "Status": "Connected ✅",
                 },
             ]
@@ -219,18 +219,17 @@ def exchange_routes(
             )
             rows += [
                 {
-                    "From": f"{client1.name}-{client1.id.short()}",
-                    "To": f"{client2.name}-{client2.id.short()}",
+                    "From": f"{client1.name}-{client1.id.short()}",  # type: ignore
+                    "To": f"{client2.name}-{client2.id.short()}",  # type: ignore
                     "Status": client2_res,
                 },
                 {
-                    "From": f"{client2.name}-{client2.id.short()}",
-                    "To": f"{client1.name}-{client1.id.short()}",
+                    "From": f"{client2.name}-{client2.id.short()}",  # type: ignore
+                    "To": f"{client1.name}-{client1.id.short()}",  # type: ignore
                     "Status": client1_res,
                 },
             ]
 
-    # Display html if ipython, otherwise return the data
     # third party
     from IPython import get_ipython
 
@@ -238,6 +237,8 @@ def exchange_routes(
         display(HTML(build_tabulator_table_with_data(rows, metadata)))
     else:
         print(rows)
+
+    return None
 
 
 class NetworkTopology(Enum):

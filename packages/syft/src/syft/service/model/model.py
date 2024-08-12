@@ -84,8 +84,12 @@ def _markdownify_variable(values: dict, varname: str) -> Any:
     return values
 
 
-_markdownify_description = lambda values: _markdownify_variable(values, "description")
-_markdownify_card = lambda values: _markdownify_variable(values, "card")
+def _markdownify_description(values: dict) -> Any:
+    return _markdownify_variable(values, "description")
+
+
+def _markdownify_card(values: dict) -> Any:
+    return _markdownify_variable(values, "card")
 
 
 @serializable()
@@ -267,7 +271,7 @@ class SyftModelClass:
 
 @serializable(canonical_name="HFModelClass", version=1)
 class HFModelClass(SyftModelClass):
-    repo_id: str = None
+    repo_id: str | None = None
 
     def __user_init__(self, assets: list) -> None:
         model_folder = assets[0]
@@ -326,6 +330,7 @@ class HFModelClass(SyftModelClass):
         from transformers import AutoTokenizer  # noqa
         import tempfile  # noqa
         from pathlib import Path  # noqa
+
         # syft
         from syft import SyftFolder  # noqa
 
@@ -415,7 +420,7 @@ class CreateModelAsset(SyftObject):
 
     _description = model_validator(mode="before")(_markdownify_description)
 
-def __init__(self, description: str | None = "", **kwargs: Any) -> None:
+    def __init__(self, description: str | None = "", **kwargs: Any) -> None:
         if "data" in kwargs:
             if isinstance(kwargs["data"], str) and os.path.exists(
                 os.path.dirname(kwargs["data"])
@@ -612,9 +617,8 @@ class Model(SyftObject):
             used by the model and `.model_code` will show the model code."
         if self.card:
             card_string = f"""<details>
-        <summary>Show model card:</summary>
-        {self.card._repr_markdown_()}
-    </details>"""
+                <summary>Show model card:</summary>
+                {self.card._repr_markdown_()}"""
             display(
                 HTML(self._repr_html_()),
                 Markdown(card_string),

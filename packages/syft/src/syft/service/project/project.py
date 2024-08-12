@@ -428,7 +428,7 @@ class ProjectCode(ProjectEventAddObject):
         code_block = as_markdown_python_code(self.code.code)
         code_block = sanitize_html(code_block)
 
-        def server_identity_html(server_identity) -> str:
+        def server_identity_html(server_identity: ServerIdentity) -> str:
             return (
                 f"<em>ServerIdentity</em>"
                 f" name={server_identity.server_name},"
@@ -446,7 +446,9 @@ class ProjectCode(ProjectEventAddObject):
                 if isinstance(policy_assets, dict):
                     for asset_key, asset_value in policy_assets.items():
                         assets_strs.append(
-                            f"<li><em>Asset</em> '{asset_key}' id={CopyIDButton(copy_text=str(asset_value), max_width=60).to_html()} on {server_identity_html(server_identity)}</li>"
+                            f"<li><em>Asset</em> '{asset_key}'"
+                            f" id={CopyIDButton(copy_text=str(asset_value), max_width=60).to_html()}"
+                            f" on {server_identity_html(server_identity)}</li>"
                         )
                 else:
                     assets_strs.append(
@@ -456,7 +458,11 @@ class ProjectCode(ProjectEventAddObject):
 
         input_assets_list_items = set_policy_assets(self.code.input_policy_init_kwargs)
 
-        provider = self.code.runtime_policy_init_kwargs.get("provider")
+        provider = (
+            self.code.runtime_policy_init_kwargs.get("provider")
+            if self.code.runtime_policy_init_kwargs
+            else None
+        )
 
         if isinstance(provider, EnclaveInstance):
             provider_list_item = (
@@ -467,14 +473,11 @@ class ProjectCode(ProjectEventAddObject):
                 "</li>"
             )
         elif provider is None:
-            provider_list_item: "<li>None</li>"
+            provider_list_item = "<li>None</li>"
         else:
             provider_list_item = f"<li>id={CopyIDButton(copy_text=str(provider.id), max_width=60).to_html()}</li>"
 
         def extract_class_name(class_str: str) -> str:
-            if not isinstance(class_str, str):
-                return "None"
-
             if class_str.startswith("<class '") and class_str.endswith("'>"):
                 return class_str.split(".")[-1][:-2]
 
@@ -483,6 +486,12 @@ class ProjectCode(ProjectEventAddObject):
         input_policy_type_str = extract_class_name(str(self.code.input_policy_type))
         output_policy_type_str = extract_class_name(str(self.code.output_policy_type))
         runtime_policy_type_str = extract_class_name(str(self.code.runtime_policy_type))
+
+        input_policy_assets_str = (
+            f"<ul><strong>Input policy assets</strong>: {"".join(input_assets_list_items)}</ul>"
+            if input_assets_list_items
+            else ""
+        )
 
         html = f"""
             <h3>Project Code</h3>
@@ -496,7 +505,7 @@ class ProjectCode(ProjectEventAddObject):
             <p style="padding-left: 4px;">
                 <strong>Function name:</strong> {self.code.func_name}<br/>
                 <strong>Input policy:</strong> {input_policy_type_str}<br/>
-                {f"<ul><strong>Input policy assets</strong>: {"".join(input_assets_list_items)}</ul>" if input_assets_list_items else ""}
+                {input_policy_assets_str}
                 <strong>Output policy:</strong> {output_policy_type_str}<br>
                 <strong>Runtime policy:</strong> {runtime_policy_type_str}
                 {f"<ul><strong>Provider</strong>: {provider_list_item}</ul>" if provider else ""}
