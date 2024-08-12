@@ -12,7 +12,9 @@ from typing import Any
 from typing import cast
 
 # third party
+from IPython.display import HTML
 from IPython.display import JSON
+from IPython.display import Markdown
 from IPython.display import display
 import ipywidgets as widgets
 from pydantic import Field
@@ -49,9 +51,12 @@ from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
 from ...util.decorators import deprecated
+from ...util.markdown import as_markdown_python_code
 from ...util.markdown import markdown_as_class_with_fields
+from ...util.notebook_ui.components.sync import CopyIDButton
 from ...util.util import full_name_with_qualname
 from ...util.util import human_friendly_join
+from ...util.util import sanitize_html
 from ..code.user_code import SubmitUserCode
 from ..code.user_code import UserCodeStatus
 from ..enclave.enclave import EnclaveInstance
@@ -324,9 +329,12 @@ class ProjectRequest(ProjectEventAddObject):
     ]
 
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
+        print(type(self.request))
         func_name = None
         if len(self.request.changes) > 0:
-            func_name = self.request.changes[-1].code.service_func_name
+            last_change = self.request.changes[-1]
+            if last_change.code:
+                func_name = last_change.code.service_func_name
         repr_dict = {
             "request.status": self.request.status,
             "request.changes[-1].code.service_func_name": func_name,
@@ -415,6 +423,98 @@ class ProjectCode(ProjectEventAddObject):
 
     code: SubmitUserCode
     allowed_sub_types: list[type] = [ProjectRequest]
+
+    def _ipython_display_(self) -> None:
+        code_block = as_markdown_python_code(self.code.code)
+        code_block = sanitize_html(code_block)
+
+        def server_identity_html(server_identity: ServerIdentity) -> str:
+            return (
+                f"<em>ServerIdentity</em>"
+                f" name={server_identity.server_name},"
+                f" id={CopyIDButton(copy_text=str(server_identity.server_id), max_width=60).to_html()},"
+                f" key={str(server_identity.verify_key)[0:8]}"
+            )
+
+        def set_policy_assets(policy_kwargs: Any) -> list[str]:
+            if not isinstance(policy_kwargs, dict):
+                return []
+
+            assets_strs = []
+
+            for server_identity, policy_assets in policy_kwargs.items():
+                if isinstance(policy_assets, dict):
+                    for asset_key, asset_value in policy_assets.items():
+                        assets_strs.append(
+                            f"<li><em>Asset</em> '{asset_key}'"
+                            f" id={CopyIDButton(copy_text=str(asset_value), max_width=60).to_html()}"
+                            f" on {server_identity_html(server_identity)}</li>"
+                        )
+                else:
+                    assets_strs.append(
+                        f"<li><em>Asset</em> '{repr(policy_assets)}' on {server_identity_html(server_identity)}</li>"
+                    )
+            return assets_strs
+
+        input_assets_list_items = set_policy_assets(self.code.input_policy_init_kwargs)
+
+        provider = (
+            self.code.runtime_policy_init_kwargs.get("provider")
+            if self.code.runtime_policy_init_kwargs
+            else None
+        )
+
+        if isinstance(provider, EnclaveInstance):
+            provider_list_item = (
+                "<li>Enclave"
+                f" name={provider.name}"
+                f" id={CopyIDButton(copy_text=str(provider.id), max_width=60).to_html()}"
+                f" status={str(provider.status)}"
+                "</li>"
+            )
+        elif provider is None:
+            provider_list_item = "<li>None</li>"
+        else:
+            provider_list_item = f"<li>id={CopyIDButton(copy_text=str(provider.id), max_width=60).to_html()}</li>"
+
+        def extract_class_name(class_str: str) -> str:
+            if class_str.startswith("<class '") and class_str.endswith("'>"):
+                return class_str.split(".")[-1][:-2]
+
+            return "None"
+
+        input_policy_type_str = extract_class_name(str(self.code.input_policy_type))
+        output_policy_type_str = extract_class_name(str(self.code.output_policy_type))
+        runtime_policy_type_str = extract_class_name(str(self.code.runtime_policy_type))
+
+        input_assets_list_items_str = "".join(input_assets_list_items)
+        input_policy_assets_str = (
+            f"<ul><strong>Input policy assets</strong>: {input_assets_list_items_str}</ul>"
+            if input_assets_list_items
+            else ""
+        )
+
+        html = f"""
+            <h3>Project Code</h3>
+            <span>
+                <strong>Event ID:</strong> {CopyIDButton(copy_text=str(self.id), max_width=60).to_html()}<br>
+                <strong>Project ID:</strong> {CopyIDButton(copy_text=str(self.project_id), max_width=60).to_html()}<br>
+                <strong>Created at:</strong> {self.timestamp}
+            </span>
+
+            <h4>Code:</h4>
+            <p style="padding-left: 4px;">
+                <strong>Function name:</strong> {self.code.func_name}<br/>
+                <strong>Input policy:</strong> {input_policy_type_str}<br/>
+                {input_policy_assets_str}
+                <strong>Output policy:</strong> {output_policy_type_str}<br>
+                <strong>Runtime policy:</strong> {runtime_policy_type_str}
+                {f"<ul><strong>Provider</strong>: {provider_list_item}</ul>" if provider else ""}
+            </p>
+        """
+        html = sanitize_html(html)
+
+        display(HTML(html), Markdown(code_block))
 
     def aggregate_final_status(
         self, status_list: list[UserCodeStatus]

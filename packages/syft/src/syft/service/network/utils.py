@@ -7,15 +7,16 @@ import time
 from typing import cast
 
 # third party
-from rich.box import DOUBLE_EDGE
-from rich.console import Console
-from rich.table import Table
-from rich.text import Text
+from IPython.display import HTML
+from IPython.display import display
 
 # relative
 from ...client.client import SyftClient
 from ...serde.serializable import serializable
 from ...types.datetime import DateTime
+from ...util.notebook_ui.components.tabulator_template import (
+    build_tabulator_table_with_data,
+)
 from ..context import AuthedServiceContext
 from ..request.request import Request
 from ..response import SyftError
@@ -144,18 +145,16 @@ class PeerHealthCheckTask:
         logger.info("Peer health check task stopped.")
 
 
-def exchange_routes(clients: list[SyftClient], auto_approve: bool = False) -> None:
+def exchange_routes(
+    clients: list[SyftClient], auto_approve: bool = False
+) -> SyftError | None:
+    metadata = {
+        "name": "Connecting clients",
+        "columns": ["From", "To", "Status"],
+    }
+    rows = []
+
     """Exchange routes between a list of clients."""
-    # Rich Table
-    console = Console()
-
-    table = Table(
-        show_header=True, header_style="bold magenta", box=DOUBLE_EDGE, pad_edge=False
-    )
-    table.add_column("Connect To", style="black", width=25, overflow="fold")
-    table.add_column("Connect From", style="black", width=25, overflow="fold")
-    table.add_column("Status", style="black", width=25, overflow="fold")
-
     if auto_approve:
         # Check that all clients are admin clients
         for client in clients:
@@ -194,16 +193,19 @@ def exchange_routes(clients: list[SyftClient], auto_approve: bool = False) -> No
                     return SyftError(
                         message=f"Failed to approve connection request between {client2} and {client1}: {res2}"
                     )
-            table.add_row(
-                Text(f"{client1.name}-{client1.id.short()}", no_wrap=False),
-                f"{client2.name}-{client2.id.short()}",
-                "Connected ✅",
-            )
-            table.add_row(
-                f"{client2.name}-{client2.id.short()}",
-                f"{client1.name}-{client1.id.short()}",
-                "Connected ✅",
-            )
+
+            rows += [
+                {
+                    "From": f"{client1.name}-{client1.id.short()}",  # type: ignore
+                    "To": f"{client2.name}-{client2.id.short()}",  # type: ignore
+                    "Status": "Connected ✅",
+                },
+                {
+                    "From": f"{client2.name}-{client2.id.short()}",  # type: ignore
+                    "To": f"{client1.name}-{client1.id.short()}",  # type: ignore
+                    "Status": "Connected ✅",
+                },
+            ]
         else:
             client1_res = (
                 "Connected ✅"
@@ -215,18 +217,28 @@ def exchange_routes(clients: list[SyftClient], auto_approve: bool = False) -> No
                 if isinstance(client2_connection_request, SyftSuccess)
                 else "Request Sent 📨"
             )
-            table.add_row(
-                Text(f"{client1.name}-{client1.id.short()}", no_wrap=False),
-                Text(f"{client2.name}-{client2.id.short()}", no_wrap=False),
-                client1_res,
-            )
-            table.add_row(
-                Text(f"{client2.name}-{client2.id.short()}", no_wrap=False),
-                Text(f"{client1.name}-{client1.id.short()}", no_wrap=False),
-                client2_res,
-            )
+            rows += [
+                {
+                    "From": f"{client1.name}-{client1.id.short()}",  # type: ignore
+                    "To": f"{client2.name}-{client2.id.short()}",  # type: ignore
+                    "Status": client2_res,
+                },
+                {
+                    "From": f"{client2.name}-{client2.id.short()}",  # type: ignore
+                    "To": f"{client1.name}-{client1.id.short()}",  # type: ignore
+                    "Status": client1_res,
+                },
+            ]
 
-    console.print(table)
+    # third party
+    from IPython import get_ipython
+
+    if get_ipython():
+        display(HTML(build_tabulator_table_with_data(rows, metadata)))
+    else:
+        print(rows)
+
+    return None
 
 
 class NetworkTopology(Enum):

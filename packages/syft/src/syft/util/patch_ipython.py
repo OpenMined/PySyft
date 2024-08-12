@@ -81,6 +81,7 @@ def _patch_ipython_sanitization() -> None:
                 matching_table = escaped_template.findall(html_str)
                 matching_jobs = jobs_pattern.findall(html_str)
                 template = "\n".join(matching_table + matching_jobs)
+
                 sanitized_str = escaped_template.sub("", html_str)
                 sanitized_str = escaped_js_css.sub("", sanitized_str)
                 sanitized_str = jobs_pattern.sub("", sanitized_str)
