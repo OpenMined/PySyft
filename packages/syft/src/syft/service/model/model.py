@@ -16,6 +16,7 @@ from IPython.display import HTML
 from IPython.display import Markdown
 from IPython.display import display
 from pydantic import ConfigDict
+from pydantic import model_validator
 from result import Err
 from result import Ok
 from result import OkErr
@@ -73,6 +74,24 @@ class ModelPageView(SyftObject):
     total: int
 
 
+# TODO: consider unifying to card or description
+def _markdownify_variable(values: dict, varname: str) -> Any:
+    if isinstance(values, dict) and isinstance(varname, str) and varname:
+        varvalue = values.get(varname)
+        if varvalue is not None:
+            values[varname] = MarkdownDescription(text=str(varvalue))
+
+    return values
+
+
+def _markdownify_description(values: dict) -> Any:
+    return _markdownify_variable(values, "description")
+
+
+def _markdownify_card(values: dict) -> Any:
+    return _markdownify_variable(values, "card")
+
+
 @serializable()
 class ModelAsset(SyftObject):
     # version
@@ -89,23 +108,16 @@ class ModelAsset(SyftObject):
     created_at: DateTime = DateTime.now()
     asset_hash: str
 
-    __repr_attrs__ = ["name", "created_at", "asset_hash"]
+    _description = model_validator(mode="before")(_markdownify_description)
 
-    def __init__(
-        self,
-        description: MarkdownDescription | str | None = "",
-        **kwargs: Any,
-    ):
-        if isinstance(description, str):
-            description = MarkdownDescription(text=description)
-        super().__init__(**kwargs, description=description)
+    __repr_attrs__ = ["name", "created_at", "asset_hash"]
 
     def _ipython_display_(self) -> None:
         if self.description:
             string = f"""<details>
-        <summary>Show Asset Description:</summary>
-        {self.description._repr_markdown_()}
-    </details>"""
+                <summary>Show Asset Description:</summary>
+                {self.description._repr_markdown_()}
+            """
             display(HTML(self._repr_html_()), Markdown(string))
         else:
             display(HTML(self._repr_html_()))
@@ -259,7 +271,7 @@ class SyftModelClass:
 
 @serializable(canonical_name="HFModelClass", version=1)
 class HFModelClass(SyftModelClass):
-    repo_id: str = None
+    repo_id: str | None = None
 
     def __user_init__(self, assets: list) -> None:
         model_folder = assets[0]
@@ -318,6 +330,7 @@ class HFModelClass(SyftModelClass):
         from transformers import AutoTokenizer  # noqa
         import tempfile  # noqa
         from pathlib import Path  # noqa
+
         # syft
         from syft import SyftFolder  # noqa
 
@@ -405,6 +418,8 @@ class CreateModelAsset(SyftObject):
 
     model_config = ConfigDict(validate_assignment=True)
 
+    _description = model_validator(mode="before")(_markdownify_description)
+
     def __init__(self, description: str | None = "", **kwargs: Any) -> None:
         if "data" in kwargs:
             if isinstance(kwargs["data"], str) and os.path.exists(
@@ -475,8 +490,7 @@ class CreateModelAsset(SyftObject):
         if self.description:
             string = f"""<details>
         <summary>Show Asset Description:</summary>
-        {self.description._repr_markdown_()}
-    </details>"""
+        {self.description._repr_markdown_()}"""
             display(Markdown(string))
 
     def _repr_html_(self) -> Any:
@@ -533,6 +547,8 @@ class Model(SyftObject):
     code_action_id: UID | None = None
     syft_model_hash: str | None = None
 
+    _card = model_validator(mode="before")(_markdownify_card)
+
     @property
     def server_name(self) -> str | SyftError | None:
         api = APIRegistry.api_for(
@@ -546,18 +562,9 @@ class Model(SyftObject):
             return "unknown"
         return api.server_name
 
-    def __init__(
-        self,
-        card: str | MarkdownDescription | None = "",
-        **kwargs: Any,
-    ) -> None:
-        if isinstance(card, str):
-            card = MarkdownDescription(text=card)
-        super().__init__(**kwargs, card=card)
-
     @property
     def icon(self) -> str:
-        return "no icon"
+        return ""
 
     @property
     def model_code(self) -> SubmitModelCode | None:
@@ -610,9 +617,8 @@ class Model(SyftObject):
             used by the model and `.model_code` will show the model code."
         if self.card:
             card_string = f"""<details>
-        <summary>Show model card:</summary>
-        {self.card._repr_markdown_()}
-    </details>"""
+                <summary>Show model card:</summary>
+                {self.card._repr_markdown_()}"""
             display(
                 HTML(self._repr_html_()),
                 Markdown(card_string),
