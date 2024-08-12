@@ -19,7 +19,6 @@ from typing import ClassVar
 from typing import TYPE_CHECKING
 
 # third party
-from IPython.display import display
 from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import field_validator
@@ -1425,13 +1424,6 @@ class ActionObject(SyncableSyftObject):
                 f"Error when creating action object for {syft_action_data}.\n"
                 f"Unsupported data type: '{obj_type.__module__}.{obj_type.__name__}'"
             )
-        can_be_serialized = SyftObjectRegistry.has_serde_class(canonical_name, version)
-        if not can_be_serialized:
-            warning = SyftWarning(
-                message=f"Object of type '{obj_type.__module__}.{obj_type.__name__}' "
-                f"is not supported by Syft serialization."
-            )
-            display(warning)
 
         action_type = action_type_for_object(syft_action_data)
         action_object = action_type(syft_action_data_cache=syft_action_data)
