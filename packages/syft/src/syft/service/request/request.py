@@ -590,7 +590,7 @@ class Request(SyncableSyftObject):
         disable_warnings: bool = False,
         approve_nested: bool = False,
         **kwargs: dict,
-    ) -> Result[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         api = self._get_api()
         if isinstance(api, SyftError):
             return api
@@ -804,6 +804,7 @@ class Request(SyncableSyftObject):
         result: Any,
         log_stdout: str = "",
         log_stderr: str = "",
+        approve: bool | None = None,
     ) -> Job | SyftError:
         """
         Adds a result to this Request:
@@ -815,6 +816,8 @@ class Request(SyncableSyftObject):
         Args:
             result (Any): ActionObject or any object to be saved as an ActionObject.
             logs (str | None, optional): Optional logs to be saved with the Job. Defaults to None.
+            approve (bool | None, optional): Optional approval flag.
+                Can only be used if this is a high-side request. Defaults to None.
 
         Returns:
             Job | SyftError: Job object if successful, else SyftError.
@@ -829,11 +832,37 @@ class Request(SyncableSyftObject):
         if isinstance(code, SyftError):
             return code
 
+        # By default, do not add permissions for code owner
+        # Permissions are added:
+        # - when syncing the Job (for l0 deployments)
+        # - when depositing the result with approve=True (for high-side requests)
+        add_permissions_for_code_owner = False
+        if self.is_l0_deployment:
+            if approve is not None:
+                return SyftError(
+                    message="Approve is only available for high side code requests."
+                    "Please use request.deposit_result() without approve instead, and approve by syncing."
+                )
         if not self.is_l0_deployment:
-            return SyftError(
-                message="deposit_result is only available for low side code requests. "
-                "Please use request.approve() instead."
-            )
+            if approve is None:
+                return SyftError(
+                    message="Approve flag is required for high-side code requests."
+                )
+            if approve:
+                approve_res = self.approve()
+                if isinstance(approve_res, SyftError):
+                    return approve_res
+                add_permissions_for_code_owner = True
+            else:
+                prompt_res = prompt_warning_message(
+                    message=(
+                        "By not approving this request, the data scientist will not be able to "
+                        "access the results. Are you sure you want to continue?"
+                    ),
+                    confirm=True,
+                )
+                if not prompt_res:
+                    return SyftError(message="Result not deposited.")
 
         # Create ActionObject
         action_object = self._create_action_object_for_deposited_result(result)
