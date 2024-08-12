@@ -846,6 +846,11 @@ class Request(SyncableSyftObject):
                 return self._deposit_result_l2(result, **kwargs)
 
         # L0 request
+        if approve:
+            return SyftError(
+                message="This is a request from the low side, it can only be approved by syncing the results."
+            )
+
         api = self._get_api()
         if isinstance(api, SyftError):
             return api
