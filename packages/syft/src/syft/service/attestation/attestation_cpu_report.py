@@ -100,7 +100,9 @@ class CPUAttestationReport:
             "Issuer": self.report["iss"],
             "Remaining Time": time.strftime(
                 "%H:%M:%S", time.gmtime(self.report["exp"] - int(time.time()))
-            ),
+            )
+            if time.time() < self.report["exp"]
+            else "Expired ❌",
             "Attestation Type": self.report["x-ms-attestation-type"],
             "VM ID": self.report["x-ms-azurevm-vmid"],
             "Secure Boot": (
