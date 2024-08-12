@@ -53,9 +53,12 @@ class AttestationService(AbstractService):
         roles=GUEST_ROLE_LEVEL,
     )
     def get_cpu_attestation(
-        self, context: AuthedServiceContext, raw_token: bool = False, mock: bool = False
+        self,
+        context: AuthedServiceContext,
+        raw_token: bool = False,
+        mock_report: bool = False,
     ) -> str | SyftError | SyftSuccess:
-        if mock:
+        if mock_report:
             return CPU_MOCK_REPORT
         return self.perform_request(requests.get, ATTEST_CPU_ENDPOINT, raw_token)
 
@@ -65,8 +68,11 @@ class AttestationService(AbstractService):
         roles=GUEST_ROLE_LEVEL,
     )
     def get_gpu_attestation(
-        self, context: AuthedServiceContext, raw_token: bool = False, mock: bool = False
+        self,
+        context: AuthedServiceContext,
+        raw_token: bool = False,
+        mock_report: bool = False,
     ) -> str | SyftError | SyftSuccess:
-        if mock:
+        if mock_report:
             return GPU_MOCK_REPORT
         return self.perform_request(requests.get, ATTEST_GPU_ENDPOINT, raw_token)

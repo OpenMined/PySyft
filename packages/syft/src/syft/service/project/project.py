@@ -500,7 +500,9 @@ class ProjectCode(ProjectEventAddObject):
             user_code_id=self.code.id
         )
 
-    def request_asset_transfer(self) -> SyftSuccess | SyftError:
+    def request_asset_transfer(
+        self, mock_report: bool = False
+    ) -> SyftSuccess | SyftError:
         if not self.is_enclave_code:
             return SyftError(
                 message="This method is only supported for codes with Enclave runtime provider."
@@ -521,7 +523,7 @@ class ProjectCode(ProjectEventAddObject):
             clients.add(client)
         for client in clients:
             assets_transferred = client.api.services.enclave.request_assets_upload(
-                user_code_id=self.code.id
+                user_code_id=self.code.id, mock_report=mock_report
             )
             if isinstance(assets_transferred, SyftError):
                 raise SyftException(assets_transferred.message)
@@ -570,6 +572,7 @@ class ProjectCode(ProjectEventAddObject):
         self,
         attestation_type: AttestationType | str = AttestationType.CPU,
         return_report: bool = False,
+        mock_report: bool = False,
     ) -> dict | None:
         if not self.is_enclave_code:
             return SyftError(
@@ -593,15 +596,22 @@ class ProjectCode(ProjectEventAddObject):
             if attestation_type == AttestationType.CPU
             else "NVIDIA H100 GPU"
         )
+
+        mock_report_prefix = "🛑 Mock" if mock_report else ""
         print(
-            f"⏳ Retrieving attestation token from {machine_type} Enclave at {provider.route}...",
+            f"⏳ Retrieving {mock_report_prefix} attestation token from {machine_type}"
+            + f"Enclave at {provider.route}...",
             flush=True,
         )
         client = provider.get_guest_client()
         raw_jwt_report = (
-            client.api.services.attestation.get_cpu_attestation(raw_token=True)
+            client.api.services.attestation.get_cpu_attestation(
+                raw_token=True, mock_report=mock_report
+            )
             if attestation_type == AttestationType.CPU
-            else client.api.services.attestation.get_gpu_attestation(raw_token=True)
+            else client.api.services.attestation.get_gpu_attestation(
+                raw_token=True, mock_report=mock_report
+            )
         )
         if isinstance(raw_jwt_report, SyftError):
             return raw_jwt_report
@@ -613,8 +623,12 @@ class ProjectCode(ProjectEventAddObject):
             f"🔓 Decrypting attestation report using JWK certificates at {attestation_type.jwks_url}",
             flush=True,
         )
+
+        # If Mock Report is enabled, we don't need to verify the expiration
         report = verify_attestation_report(
-            token=raw_jwt_report, attestation_type=attestation_type
+            token=raw_jwt_report,
+            attestation_type=attestation_type,
+            verify_expiration=False if mock_report else True,
         )
         if report.is_err():
             print(

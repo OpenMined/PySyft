@@ -137,7 +137,10 @@ class DatasiteEnclaveService(AbstractService):
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def request_assets_upload(
-        self, context: AuthedServiceContext, user_code_id: UID
+        self,
+        context: AuthedServiceContext,
+        user_code_id: UID,
+        mock_report: bool = False,
     ) -> SyftSuccess | SyftError:
         if not context.server or not context.server.signing_key:
             return SyftError(message=f"{type(context)} has no server")
@@ -250,7 +253,7 @@ class DatasiteEnclaveService(AbstractService):
 
         # Fetch Attestation Report From Enclave for CPU
         cpu_report = enclave_client.api.services.attestation.get_cpu_attestation(
-            raw_token=True
+            raw_token=True, mock_report=mock_report
         )
         if not isinstance(cpu_report, (str, SyftError)):
             return SyftError(
@@ -259,18 +262,22 @@ class DatasiteEnclaveService(AbstractService):
 
         # Fetch Attestation Report From Enclave for GPU
         gpu_report = enclave_client.api.services.attestation.get_gpu_attestation(
-            raw_token=True
+            raw_token=True, mock_report=mock_report
         )
         if not isinstance(gpu_report, (str, SyftError)):
             return SyftError(
                 message="GPU Enclave Attestation Report should be a string or SyftError"
             )
 
-        # if isinstance(cpu_report, SyftError):
-        #     return SyftError(message=f"CPU Attestation Report Error: {cpu_report.message}")
+        if isinstance(cpu_report, SyftError):
+            return SyftError(
+                message=f"CPU Attestation Report Error: {cpu_report.message}"
+            )
 
-        # if isinstance(gpu_report, SyftError):
-        #     return SyftError(message=f"GPU Attestation Report Error: {gpu_report.message}")
+        if isinstance(gpu_report, SyftError):
+            return SyftError(
+                message=f"GPU Attestation Report Error: {gpu_report.message}"
+            )
 
         project_enclave_report_res = project.add_enclave_attestation_report(
             cpu_report=cpu_report,
