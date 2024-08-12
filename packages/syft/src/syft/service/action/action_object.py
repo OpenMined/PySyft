@@ -46,6 +46,7 @@ from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftBaseObject
 from ...types.syft_object import SyftObject
+from ...types.syft_object_registry import SyftObjectRegistry
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
@@ -913,21 +914,23 @@ class ActionObject(SyncableSyftObject):
 
     @model_validator(mode="before")
     @classmethod
-    def __check_action_data(cls, values: dict) -> dict:
-        v = values.get("syft_action_data_cache")
-        if values.get("syft_action_data_type", None) is None:
-            values["syft_action_data_type"] = type(v)
-        if not isinstance(v, ActionDataEmpty):
-            if inspect.isclass(v):
-                values["syft_action_data_repr_"] = truncate_str(repr_cls(v))
-            else:
-                values["syft_action_data_repr_"] = truncate_str(
-                    v._repr_markdown_()
-                    if v is not None and hasattr(v, "_repr_markdown_")
-                    else v.__repr__()
-                )
-            values["syft_action_data_str_"] = truncate_str(str(v))
-            values["syft_has_bool_attr"] = hasattr(v, "__bool__")
+    def __check_action_data(cls, values: Any) -> dict:
+        if isinstance(values, dict):
+            v = values.get("syft_action_data_cache")
+            if values.get("syft_action_data_type", None) is None:
+                values["syft_action_data_type"] = type(v)
+            if not isinstance(v, ActionDataEmpty):
+                if inspect.isclass(v):
+                    values["syft_action_data_repr_"] = truncate_str(repr_cls(v))
+                else:
+                    values["syft_action_data_repr_"] = truncate_str(
+                        v._repr_markdown_()
+                        if v is not None and hasattr(v, "_repr_markdown_")
+                        else v.__repr__()
+                    )
+                values["syft_action_data_str_"] = truncate_str(str(v))
+                values["syft_has_bool_attr"] = hasattr(v, "__bool__")
+
         return values
 
     @property
@@ -1409,6 +1412,18 @@ class ActionObject(SyncableSyftObject):
         """
         if id is not None and syft_lineage_id is not None and id != syft_lineage_id.id:
             raise ValueError("UID and LineageID should match")
+
+        # check if the object's type is supported
+        try:
+            canonical_name, version = SyftObjectRegistry.get_canonical_name_version(
+                syft_action_data
+            )
+        except Exception:
+            obj_type = type(syft_action_data)
+            raise SyftException(
+                f"Error when creating action object for {syft_action_data}.\n"
+                f"Unsupported data type: '{obj_type.__module__}.{obj_type.__name__}'"
+            )
 
         action_type = action_type_for_object(syft_action_data)
         action_object = action_type(syft_action_data_cache=syft_action_data)
