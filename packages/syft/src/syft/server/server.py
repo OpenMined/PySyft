@@ -1370,6 +1370,7 @@ class Server(AbstractServer):
             action=action,
             requested_by=user_id,
             job_type=job_type,
+            endpoint=queue_item.kwargs.get("path", None),
         )
 
         # 🟡 TODO 36: Needs distributed lock
