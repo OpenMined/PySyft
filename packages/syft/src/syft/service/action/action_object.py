@@ -915,21 +915,23 @@ class ActionObject(SyncableSyftObject):
 
     @model_validator(mode="before")
     @classmethod
-    def __check_action_data(cls, values: dict) -> dict:
-        v = values.get("syft_action_data_cache")
-        if values.get("syft_action_data_type", None) is None:
-            values["syft_action_data_type"] = type(v)
-        if not isinstance(v, ActionDataEmpty):
-            if inspect.isclass(v):
-                values["syft_action_data_repr_"] = truncate_str(repr_cls(v))
-            else:
-                values["syft_action_data_repr_"] = truncate_str(
-                    v._repr_markdown_()
-                    if v is not None and hasattr(v, "_repr_markdown_")
-                    else v.__repr__()
-                )
-            values["syft_action_data_str_"] = truncate_str(str(v))
-            values["syft_has_bool_attr"] = hasattr(v, "__bool__")
+    def __check_action_data(cls, values: Any) -> dict:
+        if isinstance(values, dict):
+            v = values.get("syft_action_data_cache")
+            if values.get("syft_action_data_type", None) is None:
+                values["syft_action_data_type"] = type(v)
+            if not isinstance(v, ActionDataEmpty):
+                if inspect.isclass(v):
+                    values["syft_action_data_repr_"] = truncate_str(repr_cls(v))
+                else:
+                    values["syft_action_data_repr_"] = truncate_str(
+                        v._repr_markdown_()
+                        if v is not None and hasattr(v, "_repr_markdown_")
+                        else v.__repr__()
+                    )
+                values["syft_action_data_str_"] = truncate_str(str(v))
+                values["syft_has_bool_attr"] = hasattr(v, "__bool__")
+
         return values
 
     @property
