@@ -49,9 +49,11 @@ from ..code.user_code import UserCodeStatus
 from ..code.user_code import UserCodeStatusCollection
 from ..context import AuthedServiceContext
 from ..context import ChangeContext
-from ..job.job_stash import Job, JobInfo
+from ..job.job_stash import Job
+from ..job.job_stash import JobInfo
 from ..job.job_stash import JobStatus
 from ..notification.notifications import Notification
+from ..policy.policy import UserPolicy
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..user.user import UserView
@@ -590,7 +592,7 @@ class Request(SyncableSyftObject):
         disable_warnings: bool = False,
         approve_nested: bool = False,
         **kwargs: dict,
-    ) -> SyftSuccess | SyftError:
+    ) -> Result[SyftSuccess, SyftError]:
         api = self._get_api()
         if isinstance(api, SyftError):
             return api
@@ -805,6 +807,7 @@ class Request(SyncableSyftObject):
         log_stdout: str = "",
         log_stderr: str = "",
         approve: bool | None = None,
+        **kwargs: dict[str, Any],
     ) -> Job | SyftError:
         """
         Adds a result to this Request:
@@ -813,56 +816,42 @@ class Request(SyncableSyftObject):
         - Create Job with new result and logs
         - Update the output history
 
+        If this is a L2 request, the old accept_by_deposit_result will be used.
+
         Args:
             result (Any): ActionObject or any object to be saved as an ActionObject.
-            logs (str | None, optional): Optional logs to be saved with the Job. Defaults to None.
-            approve (bool | None, optional): Optional approval flag.
-                Can only be used if this is a high-side request. Defaults to None.
+            log_stdout (str): stdout logs.
+            log_stderr (str): stderr logs.
+            approve (bool, optional): Only supported for L2 requests. If True, the request will be approved.
+                Defaults to None.
+
 
         Returns:
             Job | SyftError: Job object if successful, else SyftError.
         """
 
-        # TODO check if this is a low-side request. If not, SyftError
+        # L2 request
+        # TODO specify behavior and rewrite old flow
+        if not self.is_l0_deployment:
+            if approve is None:
+                approve = prompt_warning_message(
+                    "Depositing a result on this request will approve it.",
+                    confirm=True,
+                )
+            if approve is False:
+                return SyftError(
+                    message="Cannot deposit result without approving the request."
+                )
+            else:
+                return self._deposit_result_l2(result, **kwargs)
 
+        # L0 request
         api = self._get_api()
         if isinstance(api, SyftError):
             return api
         code = self.code
         if isinstance(code, SyftError):
             return code
-
-        # By default, do not add permissions for code owner
-        # Permissions are added:
-        # - when syncing the Job (for l0 deployments)
-        # - when depositing the result with approve=True (for high-side requests)
-        add_permissions_for_code_owner = False
-        if self.is_l0_deployment:
-            if approve is not None:
-                return SyftError(
-                    message="Approve is only available for high side code requests."
-                    "Please use request.deposit_result() without approve instead, and approve by syncing."
-                )
-        if not self.is_l0_deployment:
-            if approve is None:
-                return SyftError(
-                    message="Approve flag is required for high-side code requests."
-                )
-            if approve:
-                approve_res = self.approve()
-                if isinstance(approve_res, SyftError):
-                    return approve_res
-                add_permissions_for_code_owner = True
-            else:
-                prompt_res = prompt_warning_message(
-                    message=(
-                        "By not approving this request, the data scientist will not be able to "
-                        "access the results. Are you sure you want to continue?"
-                    ),
-                    confirm=True,
-                )
-                if not prompt_res:
-                    return SyftError(message="Result not deposited.")
 
         # Create ActionObject
         action_object = self._create_action_object_for_deposited_result(result)
@@ -889,9 +878,45 @@ class Request(SyncableSyftObject):
 
         return job
 
-    def accept_by_depositing_result(
-        self, result: Any, force: bool = False
-    ) -> SyftError | SyftSuccess:
+    def _get_job_from_action_object(self, action_object: ActionObject) -> Job | None:
+        api = self._get_api()
+        if isinstance(api, SyftError):
+            return None
+
+        job = api.services.job.get_by_result_id(action_object.id.id)
+        return job
+
+    def _get_latest_or_create_job(self) -> Job | SyftError:
+        """Get the latest job for this requests user_code, or creates one if no jobs exist"""
+        api = self._get_api()
+        if isinstance(api, SyftError):
+            return api
+        job_service = api.services.job
+
+        existing_jobs = job_service.get_by_user_code_id(self.code.id)
+        if isinstance(existing_jobs, SyftError):
+            return existing_jobs
+
+        if len(existing_jobs) == 0:
+            job = job_service.create_job_for_user_code_id(
+                user_code_id=self.code.id,
+                add_code_owner_read_permissions=True,
+            )
+        else:
+            job = existing_jobs[-1]
+            res = job_service.add_read_permission_job_for_code_owner(job, self.code)
+            res = job_service.add_read_permission_log_for_code_owner(
+                job.log_id, self.code
+            )
+            print(res)
+
+        return job
+
+    def _deposit_result_l2(
+        self,
+        result: Any,
+        force: bool = False,
+    ) -> Job | SyftError:
         # this code is extremely brittle because its a work around that relies on
         # the type of request being very specifically tied to code which needs approving
 
@@ -903,7 +928,7 @@ class Request(SyncableSyftObject):
                     message="JobInfo should not include result. Use sync_job instead."
                 )
             result = job_info.result
-        if isinstance(result, ActionObject):
+        elif isinstance(result, ActionObject):
             # Do not allow accepting a result produced by a Job,
             # This can cause an inconsistent Job state
             action_object_job = self._get_job_from_action_object(result)
@@ -952,10 +977,10 @@ class Request(SyncableSyftObject):
                 f"{type(user_code_status_change)}"
             )
 
-        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
+        api = APIRegistry.api_for(self.server_uid, self.syft_client_verify_key)
         if not api:
             raise Exception(
-                f"No access to Syft API. Please login to {self.node_uid} first."
+                f"No access to Syft API. Please login to {self.server_uid} first."
             )
         if api.signing_key is None:
             raise ValueError(f"{api}'s signing key is None")
@@ -984,19 +1009,19 @@ class Request(SyncableSyftObject):
                     result,
                     id=action_obj_id,
                     syft_client_verify_key=api.signing_key.verify_key,
-                    syft_node_location=api.node_uid,
+                    syft_server_location=api.server_uid,
                 )
             else:
                 action_object = result
             action_object_is_from_this_node = (
-                self.syft_node_location == action_object.syft_node_location
+                self.syft_server_location == action_object.syft_server_location
             )
             if (
                 action_object.syft_blob_storage_entry_id is None
                 or not action_object_is_from_this_node
             ):
                 action_object.reload_cache()
-                action_object.syft_node_location = self.syft_node_location
+                action_object.syft_server_location = self.syft_server_location
                 action_object.syft_client_verify_key = self.syft_client_verify_key
                 blob_store_result = action_object._save_to_blob_storage()
                 if isinstance(blob_store_result, SyftError):
@@ -1009,7 +1034,7 @@ class Request(SyncableSyftObject):
                 action_object = ActionObject.from_obj(
                     result,
                     syft_client_verify_key=api.signing_key.verify_key,
-                    syft_node_location=api.node_uid,
+                    syft_server_location=api.server_uid,
                 )
             else:
                 action_object = result
@@ -1017,14 +1042,14 @@ class Request(SyncableSyftObject):
             # TODO: proper check for if actionobject is already uploaded
             # we also need this for manualy syncing
             action_object_is_from_this_node = (
-                self.syft_node_location == action_object.syft_node_location
+                self.syft_server_location == action_object.syft_server_location
             )
             if (
                 action_object.syft_blob_storage_entry_id is None
                 or not action_object_is_from_this_node
             ):
                 action_object.reload_cache()
-                action_object.syft_node_location = self.syft_node_location
+                action_object.syft_server_location = self.syft_server_location
                 action_object.syft_client_verify_key = self.syft_client_verify_key
                 blob_store_result = action_object._save_to_blob_storage()
                 if isinstance(blob_store_result, SyftError):
@@ -1033,7 +1058,9 @@ class Request(SyncableSyftObject):
                 if isinstance(result, SyftError):
                     return result
 
-            action_object_link = LinkedObject.from_obj(result, node_uid=self.node_uid)
+            action_object_link = LinkedObject.from_obj(
+                result, server_uid=self.server_uid
+            )
             permission_change = ActionStoreChange(
                 linked_obj=action_object_link,
                 apply_permission_type=ActionPermission.READ,
@@ -1056,7 +1083,7 @@ class Request(SyncableSyftObject):
                 for inps in code.input_policy.inputs.values():
                     input_ids.update(inps)
 
-            res = api.services.code.store_as_history(
+            res = api.services.code.store_execution_output(
                 user_code_id=code.id,
                 outputs=result,
                 job_id=job.id,
@@ -1083,7 +1110,7 @@ class Request(SyncableSyftObject):
         if isinstance(res, SyftError):
             return res
 
-        return SyftSuccess(message="Request submitted for updating result.")
+        return job
 
     @deprecated(
         return_syfterror=True,
