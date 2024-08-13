@@ -6,6 +6,11 @@ global:
   # Force default secret values for development. DO NOT SET THIS TO FALSE IN PRODUCTION
   randomizedSecrets: true
 
+  # Kaniko version
+  kaniko:
+    version: "v1.23.2"
+
+
 # =================================================================================
 
 mongo:
