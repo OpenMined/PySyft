@@ -121,10 +121,7 @@ class ProjectEvent(SyftObject):
     def _coll_repr_(self) -> dict[str, str | dict]:
         return {
             "Created at": str(self.timestamp),
-            "Details": {
-                "type": "events",
-                "value": self.get_event_details()
-            }
+            "Details": {"type": "events", "value": self.get_event_details()},
         }
 
     def __repr_syft_nested__(self) -> tuple[str, str]:
@@ -787,10 +784,10 @@ class ProjectCode(ProjectEventAddObject):
             else "NVIDIA H100 GPU"
         )
 
-        mock_report_prefix = "🛑 Mock" if mock_report else ""
+        mock_report_prefix = "🛑 Mock " if mock_report else ""
         print(
-            f"⏳ Retrieving {mock_report_prefix} attestation token from {machine_type}"
-            + f"Enclave at {provider.route}...",
+            f"⏳ Retrieving {mock_report_prefix}attestation token from {machine_type}"
+            + f" Enclave at {provider.route}...",
             flush=True,
         )
         client = provider.get_guest_client()
