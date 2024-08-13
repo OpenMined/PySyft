@@ -210,7 +210,7 @@ class WorkerPool(SyftObject):
             "Created at": str(self.created_at),
         }
 
-    def _repr_html_(self) -> Any:
+    def _repr_html_(self) -> str:
         return f"""
             <div class='syft-dataset'>
             <h3>{self.name}</h3>

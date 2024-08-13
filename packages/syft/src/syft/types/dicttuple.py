@@ -238,6 +238,14 @@ class DictTuple(tuple[_VT, ...], Generic[_KT, _VT], metaclass=_Meta):
     def __repr__(self) -> str:
         return f"{self.__class__.__qualname__}{super().__repr__()}"
 
+    def _repr_html_(self) -> str:
+        super_repr_html = getattr(super(), "_repr_html_", None)
+        if super_repr_html is None:
+            return ""
+        if super_repr_html() == self.__repr__():
+            return ""
+        return super_repr_html()
+
     def keys(self) -> KeysView[_KT]:
         return self.__mapping.keys()
 
