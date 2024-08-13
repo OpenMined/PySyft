@@ -156,7 +156,7 @@ class MongoStorePartition(StorePartition):
     @as_result(SyftException)
     def _create_update_index(self) -> bool:
         """Create or update mongo database indexes"""
-        collection: MongoCollection = self.collection
+        collection: MongoCollection = self.collection.unwrap()
 
         def check_index_keys(
             current_keys: list[tuple[str, int]], new_index_keys: list[tuple[str, int]]
