@@ -39,6 +39,7 @@ from ...types.uid import UID
 from ...util.notebook_ui.components.sync import Label
 from ...util.notebook_ui.components.sync import SyncTableObject
 from ...util.notebook_ui.icons import Icon
+from ...util.util import prompt_warning_message
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
@@ -1214,8 +1215,10 @@ class ServerDiff(SyftObject):
 
             # We don't support deletion of objects yet.
             # So, skip if the object is not present on the *source* side
+            show_deletion_warning = False
             source_obj = low_obj if direction == SyncDirection.LOW_TO_HIGH else high_obj
             if source_obj is None:
+                show_deletion_warning = True
                 continue
 
             diff = ObjectDiff.from_objects(
@@ -1271,6 +1274,15 @@ class ServerDiff(SyftObject):
             exclude_types=exclude_types,
             inplace=True,
         )
+
+        if show_deletion_warning:
+            prompt_warning_message(
+                message=(
+                    "The target server contains objects that are not present on the source server. "
+                    "These differences will not be synced. Deletions on the target server must be done manually."
+                ),
+                confirm=False,
+            )
 
         return res
 
