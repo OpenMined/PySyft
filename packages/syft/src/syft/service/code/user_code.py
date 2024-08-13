@@ -337,6 +337,7 @@ class UserCode(SyncableSyftObject):
     unique_func_name: str
     user_unique_func_name: str
     code_hash: str
+    raw_code_hash: str
     signature: inspect.Signature
     status_link: LinkedObject | None = None
     input_kwargs: list[str]
@@ -1165,6 +1166,9 @@ class SubmitUserCode(SyftObject):
     def kwargs(self) -> dict[Any, Any] | None:
         return self.input_policy_init_kwargs
 
+    def get_code_hash(self) -> str:
+        return get_raw_code_hash(self.code)
+
     def __call__(
         self,
         *args: Any,
@@ -1318,6 +1322,10 @@ class SubmitUserCode(SyftObject):
 def get_code_hash(code: str, user_verify_key: SyftVerifyKey) -> str:
     full_str = f"{code}{user_verify_key}"
     return hashlib.sha256(full_str.encode()).hexdigest()
+
+
+def get_raw_code_hash(code: str) -> str:
+    return hashlib.sha256(code.encode()).hexdigest()
 
 
 def is_valid_usercode_name(func_name: str) -> Result[Any, str]:
@@ -1639,6 +1647,7 @@ def hash_code(context: TransformContext) -> TransformContext:
     context.output["raw_code"] = code
     code_hash = get_code_hash(code, context.credentials)
     context.output["code_hash"] = code_hash
+    context.output["raw_code_hash"] = get_raw_code_hash(code)
 
     return context
 
