@@ -728,17 +728,6 @@ class UserCode(SyncableSyftObject):
 
         api = self._get_api()
 
-<<<<<<< HEAD
-        # get all assets on the server
-        datasets: list[Dataset] = api.services.dataset.get_all()
-        all_assets: dict[UID, Asset] = {}
-        for dataset in datasets:
-            for asset in dataset.asset_list:
-                asset._dataset_name = dataset.name
-                all_assets[asset.action_id] = asset
-
-=======
->>>>>>> origin/dev
         # get a flat dict of all inputs
         all_inputs = {}
         inputs = self.input_policy_init_kwargs or {}
