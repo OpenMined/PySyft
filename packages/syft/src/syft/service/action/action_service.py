@@ -1170,7 +1170,6 @@ def filter_twin_kwargs(
 ) -> Any:
     filtered = {}
     for k, v in kwargs.items():
-        print(f"type: {type(v)}, {v}")
         if isinstance(v, TwinObject):
             if twin_mode == TwinMode.PRIVATE:
                 filtered[k] = v.private.syft_action_data

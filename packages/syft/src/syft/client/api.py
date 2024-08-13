@@ -89,7 +89,7 @@ IPYNB_BACKGROUND_PREFIXES = ["_ipy", "_repr", "__ipython", "__pydantic"]
 
 
 @exclude_from_traceback
-def post_process_result(result: Any, unwrap_on_success: bool = False) -> Any:
+def post_process_result(result: SyftError | SyftSuccess, unwrap_on_success: bool = False) -> Any:
     if isinstance(result, SyftError):
         raise SyftException(public_message=result.message, server_trace=result.tb)
 
@@ -168,7 +168,7 @@ class APIEndpoint(SyftObject):
     has_self: bool = False
     pre_kwargs: dict[str, Any] | None = None
     warning: APIEndpointWarning | None = None
-    unwrap_on_success: bool = False
+    unwrap_on_success: bool = True
 
 
 @serializable()
@@ -354,6 +354,7 @@ class RemoteFunction(SyftObject):
             [result], kwargs={}, to_latest_protocol=True
         )
         result = result[0]
+
         return post_process_result(result, self.unwrap_on_success)
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:

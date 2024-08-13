@@ -1149,7 +1149,7 @@ class Server(AbstractServer):
                 result = method(context, *api_call.args, **api_call.kwargs)
 
                 if isinstance(result, SyftError):
-                    raise TypeError("Don't return a SyftError, raise instead")
+                    raise TypeError("Don't return a SyftError, raise SyftException instead")
                 if not isinstance(result, SyftSuccess):
                     result = SyftSuccess(message="", value=result)
                 tb = None
@@ -1169,7 +1169,6 @@ class Server(AbstractServer):
                     logger.debug(
                         f"Exception (hidden from DS) happened on the server side:\n{tb}"
                     )
-
         else:
             try:
                 return self.add_api_call_to_queue(api_call)
