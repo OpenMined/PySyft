@@ -1436,23 +1436,30 @@ class Server(AbstractServer):
                 not is_usercode_call_on_owned_kwargs
                 and self.server_side_type == ServerSideType.LOW_SIDE
             ):
-                existing_jobs = self._get_existing_user_code_jobs(context, user_code_id)
-                if isinstance(existing_jobs, SyftError):
-                    return SyftSuccess(message="Got existing job", value=existing_jobs)
-                elif len(existing_jobs) > 0:
-                    # Print warning if there are existing jobs for this user code
-                    # relative
-                    from ..util.util import prompt_warning_message
+                try:
+                    existing_jobs = self._get_existing_user_code_jobs(context, user_code_id).unwrap()
+                    if len(existing_jobs) == 1:
+                        return SyftSuccess(message="Got existing job", value=existing_jobs[0])
+                    elif len(existing_jobs) > 1:
+                        # Print warning if there are existing jobs for this user code
+                        # relative
+                        from ..util.util import prompt_warning_message
 
-                    prompt_warning_message(
-                        "There are existing jobs for this user code, returning the latest one"
-                    )
-                    return SyftSuccess(
-                        message="Found multiple existing jobs, got last",
-                        value=existing_jobs[-1],
-                    )
-                else:
-                    raise SyftException(
+                        prompt_warning_message(
+                            "There are existing jobs for this user code, returning the latest one"
+                        )
+                        return SyftSuccess(
+                            message="Found multiple existing jobs, got last",
+                            value=existing_jobs[-1],
+                        )
+                    else:
+                        return SyftSuccess(
+                            message="No jobs found",
+                            value=None
+                        )
+                except Exception as e:
+                    raise SyftException.from_exception(
+                        e,
                         public_message="Please wait for the admin to allow the execution of this code"
                     )
 
