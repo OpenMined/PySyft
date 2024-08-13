@@ -144,8 +144,9 @@ class SQLiteBackingStore(KeyValueBackingStore):
     def create_table(self) -> None:
         try:
             with self.lock:
+                # TODO: add to backing_store an option for "if_exists_ok"
                 self.cur.execute(
-                    f"create table {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
+                    f"create table if not exists {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
                     + "repr TEXT NOT NULL, value BLOB NOT NULL, "  # nosec
                     + "sqltime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL)"  # nosec
                 )
