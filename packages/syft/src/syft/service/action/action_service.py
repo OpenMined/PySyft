@@ -282,6 +282,7 @@ class ActionService(AbstractService):
         # TODO: Is this necessary?
         if context.server is None:
             raise SyftException(public_message=f"Server not found. Context: {context}")
+        obj = result
 
         obj._set_obj_location_(
             context.server.id,

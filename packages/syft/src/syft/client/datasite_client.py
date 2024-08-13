@@ -143,7 +143,7 @@ class DatasiteClient(SyftClient):
                     res = twin._save_to_blob_storage(allow_empty=contains_empty)
                 except Exception as e:
                     tqdm.write(f"Failed to create twin for {asset.name}. {e}")
-                    raise SyftException(public_message=f"Failed to create twin. {e}")
+                    raise SyftException(public_message=f"Failed to create twin. {e}") from e
 
                 if isinstance(res, SyftWarning):
                     logger.debug(res.message)

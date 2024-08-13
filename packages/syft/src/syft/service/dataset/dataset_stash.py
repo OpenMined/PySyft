@@ -47,6 +47,6 @@ class DatasetStash(NewBaseUIDStoreStash):
     ) -> list:
         result = super().get_all(credentials, order_by, has_permission).unwrap()
         filtered_datasets = [
-            dataset for dataset in result.ok_value if not dataset.to_be_deleted
+            dataset for dataset in result if not dataset.to_be_deleted
         ]
         return filtered_datasets

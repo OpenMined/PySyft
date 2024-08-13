@@ -271,18 +271,15 @@ class Asset(SyftObject):
         api = APIRegistry.api_for(
             server_uid=self.server_uid,
             user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            raise SyftException(public_message=f"You must login to {self.server_uid}")
-        result = api.services.action.get_mock(self.action_id)
-        if isinstance(result, SyftError):
-            return result
+        ).unwrap()
         try:
+            result = api.services.action.get_mock(self.action_id)
             if isinstance(result, SyftObject):
                 return result.syft_action_data
-            return result
+            else:
+                return result
         except Exception as e:
-            raise SyftException(public_message=f"Failed to get mock. {e}")
+            raise SyftException(public_message=f"Failed to get mock. {e}") from e
 
     def has_data_permission(self) -> bool:
         return self.data is not None
@@ -303,17 +300,19 @@ class Asset(SyftObject):
             Result[Any, str]: A Result object containing the private data if the user has permission
             otherwise an Err object with the message "You do not have permission to access private data."
         """
+
+        # TODO: split this out in permission logic and existence logic
         api = APIRegistry.api_for(
             server_uid=self.server_uid,
             user_verify_key=self.syft_client_verify_key,
         )
-        if api is None or api.services is None:
+        if api.is_err():
             return Ok(None)
-        res = api.services.action.get(self.action_id)
+        res = api.unwrap().services.action.get(self.action_id)
         if self.has_permission(res):
             return Ok(res.syft_action_data)
         else:
-            return Err("You do not have permission to access private data.")
+            return Err("You do not have permission to access the private data.")
 
     @property
     def data(self) -> Any:
