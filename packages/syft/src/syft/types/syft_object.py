@@ -8,8 +8,8 @@ from collections.abc import Mapping
 from collections.abc import Sequence
 from collections.abc import Set
 from datetime import datetime
-from datetime import timezone
 from datetime import timedelta
+from datetime import timezone
 from functools import cache
 from functools import total_ordering
 from hashlib import sha256
