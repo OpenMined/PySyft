@@ -80,6 +80,8 @@ def format_dict(data: Any) -> str:
         return Label(value=data["value"], label_class=data["type"]).to_html()
     if "clipboard" in data["type"]:
         return CopyButton(copy_text=data["value"]).to_html()
+    if "events" in data["type"]:
+        return data["value"]
 
     return sanitize_html(str(data))
 

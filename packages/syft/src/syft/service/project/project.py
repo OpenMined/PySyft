@@ -74,6 +74,10 @@ from ..response import SyftSuccess
 from ..user.user import UserView
 
 
+def get_copy_id_button_html(id: UID | str | None) -> str:
+    return CopyIDButton(copy_text=str(id), max_width=60).to_html()
+
+
 @serializable(canonical_name="EventAlreadyAddedException", version=1)
 class EventAlreadyAddedException(SyftException):
     pass
@@ -114,10 +118,13 @@ class ProjectEvent(SyftObject):
     def get_event_details(self) -> str:
         return "<->"
 
-    def _coll_repr_(self) -> dict[str, str]:
+    def _coll_repr_(self) -> dict[str, str | dict]:
         return {
-            "Creation Time": str(self.timestamp),
-            "Details": self.get_event_details(),
+            "Created at": str(self.timestamp),
+            "Details": {
+                "type": "events",
+                "value": self.get_event_details()
+            }
         }
 
     def __repr_syft_nested__(self) -> tuple[str, str]:
@@ -309,8 +316,8 @@ class ProjectRequestResponse(ProjectSubEvent):
         else:
             response_output = "🟠"
 
-        res = f"Request ID: {self.parent_event_id}"
-        res += f"\n Response: {response_output}"
+        res = f"Request ID: {get_copy_id_button_html(self.parent_event_id)}<br>"
+        res += f"Response: {response_output}"
         return res
 
 
@@ -335,8 +342,8 @@ class ProjectRequest(ProjectEventAddObject):
     parent_event_id: UID
 
     def get_event_details(self) -> str:
-        res = f"Request ID: {self.id}"
-        res += f"\n Server ID: {self.linked_request.server_uid}"
+        res = f"Request ID: {get_copy_id_button_html(self.id)}<br>"
+        res += f"Server ID: {get_copy_id_button_html(self.linked_request.server_uid)}"
         return res
 
     @field_validator("linked_request", mode="before")
@@ -362,7 +369,6 @@ class ProjectRequest(ProjectEventAddObject):
     ]
 
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
-        print(type(self.request))
         func_name = None
         if len(self.request.changes) > 0:
             last_change = self.request.changes[-1]
@@ -420,11 +426,11 @@ class ProjectAssetTransfer(ProjectEventAddObject):
     code_id: UID  # The code for which the asset is being transferred
 
     def get_event_details(self) -> str:
-        res = f"Asset ID: {self.asset_id}"
-        res += f"\n Asset Name: {self.asset_name}"
-        res += f"\n Asset Hash: {self.asset_hash}"
-        res += f"\n name={self.server_identity.server_name} - id={self.server_identity.server_id.short()}... "
-        res += f"- 🔑={str(self.server_identity.verify_key)[0:8]}"
+        res = f"Asset ID: {get_copy_id_button_html(self.asset_id)}<br>"
+        res += f"Asset Name: {sanitize_html(self.asset_name)}<br>"
+        res += f"Asset Hash: {self.asset_hash}<br>"
+        res += f"name={sanitize_html(self.server_identity.server_name)} - id={get_copy_id_button_html(self.server_identity.server_id)} "
+        res += f"- 🔑={get_copy_id_button_html(self.server_identity.verify_key)}"
         return res
 
 
@@ -440,9 +446,9 @@ class ProjectAttestationReport(ProjectEventAddObject):
     def get_event_details(self) -> str:
         cpu_status = "✅" if isinstance(self.cpu_report, str) else "❌"
         gpu_status = "✅" if isinstance(self.gpu_report, str) else "❌"
-        res = f"CPU Attestation: {cpu_status}"
-        res += f"\n GPU Attestation: {gpu_status}"
-        res += f"\n Enclave URL: {self.enclave_url}"
+        res = f"CPU Attestation: {cpu_status}<br>"
+        res += f"GPU Attestation: {gpu_status}<br>"
+        res += f"Enclave URL: {self.enclave_url}"
         return res
 
 
@@ -455,9 +461,9 @@ class ProjectExecutionStart(ProjectEventAddObject):
     code_id: UID  # The code for which the execution is started
 
     def get_event_details(self) -> str:
-        res = f"Code ID: {self.code_id}"
-        res += f"\n name={self.server_identity.server_name} - id={self.server_identity.server_id.short()}... "
-        res += f"- 🔑={str(self.server_identity.verify_key)[0:8]}"
+        res = f"Code ID: {get_copy_id_button_html(self.code_id)}<br>"
+        res += f"name={sanitize_html(self.server_identity.server_name)} - id={get_copy_id_button_html(self.server_identity.server_id)} "
+        res += f"- 🔑={get_copy_id_button_html(self.server_identity.verify_key)}"
         return res
 
 
@@ -471,9 +477,9 @@ class ProjectEnclaveOutput(ProjectEventAddObject):
     code_id: UID
 
     def get_event_details(self) -> str:
-        res = f"Code ID: {self.code_id}"
-        res += f"\n name={self.server_identity.server_name} - id={self.server_identity.server_id.short()}... "
-        res += f"- 🔑={str(self.server_identity.verify_key)[0:8]}"
+        res = f"Code ID: {get_copy_id_button_html(self.code_id)}<br>"
+        res += f"name={sanitize_html(self.server_identity.server_name)} - id={get_copy_id_button_html(self.server_identity.server_id)} "
+        res += f"- 🔑={get_copy_id_button_html(self.server_identity.verify_key)}"
         return res
 
 
@@ -485,11 +491,12 @@ class ProjectCode(ProjectEventAddObject):
     code: SubmitUserCode
     allowed_sub_types: list[type] = [ProjectRequest]
 
+    # TODO: Streamline get_event_details, we're always building them "by hand".
     def get_event_details(self) -> str:
-        res = f"Submitted Code: {self.code.func_name} "
-        res += f"\n ID: {self.code.id}"
-        res += f"\n Hash: {self.code.get_code_hash()}"
-        res += "\n Servers:"
+        res = f"Submitted Code: {sanitize_html(self.code.func_name)}<br>"
+        res += f"ID: {get_copy_id_button_html(self.code.id)}<br>"
+        res += f"Hash: {self.code.get_code_hash()}<br>"
+        res += "Servers:<br>"
         input_owner_server_identities: list[ServerIdentity] = (
             []
             if self.code.input_policy_init_kwargs is None
@@ -497,8 +504,8 @@ class ProjectCode(ProjectEventAddObject):
         )
 
         for server_identity in input_owner_server_identities:
-            res += f"\n name={server_identity.server_name} - id={server_identity.server_id.short()}... "
-            res += f"- 🔑={str(server_identity.verify_key)[0:8]}"
+            res += f"name={sanitize_html(server_identity.server_name)} - id={get_copy_id_button_html(server_identity.server_id)} "
+            res += f"- 🔑={get_copy_id_button_html(server_identity.verify_key)}<br>"
         return res
 
     def _ipython_display_(self) -> None:
@@ -509,7 +516,7 @@ class ProjectCode(ProjectEventAddObject):
             return (
                 f"<em>ServerIdentity</em>"
                 f" name={server_identity.server_name},"
-                f" id={CopyIDButton(copy_text=str(server_identity.server_id), max_width=60).to_html()},"
+                f" id={get_copy_id_button_html(server_identity.server_id)},"
                 f" key={str(server_identity.verify_key)[0:8]}"
             )
 
