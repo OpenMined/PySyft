@@ -1278,8 +1278,8 @@ class ServerDiff(SyftObject):
         if show_deletion_warning:
             prompt_warning_message(
                 message=(
-                    "The target server contains objects that are not present on the source server. "
-                    "These differences will not be synced. Deletions on the target server must be done manually."
+                    "The target server has objects not found on the source server. "
+                    "These objects cannot be deleted via syncing and only manual deletion is possible."
                 ),
                 confirm=False,
             )

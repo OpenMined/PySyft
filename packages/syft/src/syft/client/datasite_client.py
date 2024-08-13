@@ -205,7 +205,7 @@ class DatasiteClient(SyftClient):
             prompt_warning_message(
                 message=(
                     "Attempted to delete objects by syncing. "
-                    "This is not supported, objects have to be deleted manually."
+                    "This is not currently supported, objects must be deleted manually."
                 )
             )
         items = resolved_state.create_objs + resolved_state.update_objs
