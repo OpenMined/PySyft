@@ -1,5 +1,7 @@
-# syft absolute
+# third party
 import pytest
+
+# syft absolute
 import syft
 from syft.client.client import SyftClient
 from syft.server.worker import Worker

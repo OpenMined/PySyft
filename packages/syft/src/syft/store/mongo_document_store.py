@@ -25,8 +25,8 @@ from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
 from ..types.errors import SyftException
 from ..types.result import as_result
-from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
+from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import StorableObjectType
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject

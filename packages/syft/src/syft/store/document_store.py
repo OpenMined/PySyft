@@ -12,10 +12,6 @@ from typing import TypeVar
 # third party
 from pydantic import BaseModel
 from pydantic import Field
-# from result import Err
-# from result import Ok
-from ..types.result import Ok
-from ..types.result import Err
 from typeguard import check_type
 
 # relative
@@ -28,10 +24,15 @@ from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
 from ..types.base import SyftBaseModel
 from ..types.errors import SyftException
+
+# from result import Err
+# from result import Ok
+from ..types.result import Err
+from ..types.result import Ok
 from ..types.result import as_result
-from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import BaseDateTime
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
+from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
 from ..types.uid import UID

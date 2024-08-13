@@ -1,5 +1,8 @@
+# syft absolute
+from syft.service.action.action_permissions import ActionObjectPermission
+from syft.service.action.action_permissions import ActionPermission
+
 # relative
-from syft.service.action.action_permissions import ActionObjectPermission, ActionPermission
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject

@@ -29,8 +29,8 @@ from ...service.context import AuthedServiceContext
 from ...types.base import SyftBaseModel
 from ...types.errors import SyftException
 from ...types.result import as_result
-from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ...util.util import get_queue_address

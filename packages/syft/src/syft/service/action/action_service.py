@@ -24,7 +24,8 @@ from ..code.user_code import execute_byte_code
 from ..context import AuthedServiceContext
 from ..policy.policy import OutputPolicy
 from ..policy.policy import retrieve_from_db
-from ..response import SyftError, SyftResponseMessage
+from ..response import SyftError
+from ..response import SyftResponseMessage
 from ..response import SyftSuccess
 from ..response import SyftWarning
 from ..service import AbstractService

@@ -441,6 +441,7 @@ class HTTPConnection(ServerConnection):
     def __hash__(self) -> int:
         return hash(self.proxy_target_uid) + hash(self.url)
 
+    @as_result(SyftException)
     def get_client_type(self) -> type[SyftClient]:
         # TODO: Rasswanth, should remove passing in credentials
         # when metadata are proxy forwarded in the server routes
@@ -893,9 +894,7 @@ class SyftClient:
                 email=email, password=password, password_verify=password, **kwargs
             ).unwrap()
 
-        user_private_key = self.connection.login(
-            email=email, password=password
-        ).unwrap()
+        user_private_key = self.connection.login(email=email, password=password)
 
         signing_key = None if user_private_key is None else user_private_key.signing_key
 

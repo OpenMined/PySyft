@@ -34,9 +34,9 @@ from ..store.document_store import DocumentStore
 from ..store.linked_obj import LinkedObject
 from ..types.errors import SyftException
 from ..types.result import as_result
-from ..types.syft_object import SYFT_OBJECT_VERSION_1, SYFT_OBJECT_VERSION_2
-from ..types.syft_object import SYFT_OBJECT_VERSION_3
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
+from ..types.syft_object import SYFT_OBJECT_VERSION_2
+from ..types.syft_object import SYFT_OBJECT_VERSION_3
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
 from ..types.syft_object import attach_attribute_to_syft_object

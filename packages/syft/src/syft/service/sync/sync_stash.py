@@ -5,8 +5,6 @@
 # stdlib
 import threading
 
-# third party
-
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore

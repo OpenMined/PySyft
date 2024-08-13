@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from ...types.errors import SyftException
 from ...types.result import as_result
 
+
 class SMTPClient(BaseModel):
     SOCKET_TIMEOUT: int = 5  # seconds
 

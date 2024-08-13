@@ -8,9 +8,9 @@ from ...serde.serializable import serializable
 from ...service.user.user_roles import ServiceRole
 from ...types.errors import SyftException
 from ...types.syft_migration import migrate
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.syft_object import SyftVerifyKey
 from ...types.uid import UID
