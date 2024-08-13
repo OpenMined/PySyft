@@ -9,6 +9,7 @@ from syft.service.user.user_roles import ServiceRole
 from syft.service.user.user_stash import UserStash
 from syft.store.document_store_errors import NotFoundException
 from syft.store.document_store_errors import StashException
+from syft.types.errors import SyftException
 from syft.types.uid import UID
 
 
@@ -45,9 +46,8 @@ def test_userstash_set_duplicate(
 
     result = user_stash.set(root_datasite_client.credentials.verify_key, guest_user)
     assert result.is_err()
-
     exc = result.err()
-    assert type(exc) == StashException
+    assert type(exc) == SyftException
     assert exc.public_message
 
     assert len(user_stash.partition.data) == original_count

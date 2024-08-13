@@ -430,6 +430,7 @@ def test_user_view_set_role(worker: Worker, guest_client: DatasiteClient) -> Non
     # now we set sheldon's role to admin. Only now he can change his role
     sheldon.update(role="admin")
     assert sheldon.role == ServiceRole.ADMIN
+
     # QA: this is different than when running in the notebook
     assert len(ds_client.users.get_all()) == len(admin_client.users.get_all())
     assert isinstance(ds_client.account.update(role="guest"), SyftSuccess)
