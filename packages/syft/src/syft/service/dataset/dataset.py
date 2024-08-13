@@ -24,13 +24,11 @@ from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
-from ...types.syft_migration import migrate
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
-from ...types.transforms import drop
 from ...types.transforms import generate_id
 from ...types.transforms import make_set_default
 from ...types.transforms import transform
@@ -89,7 +87,7 @@ class Contributor(SyftObject):
 
 
 @serializable()
-class AssetV1(SyftObject):
+class Asset(SyftObject):
     # version
     __canonical_name__ = "Asset"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -104,30 +102,6 @@ class AssetV1(SyftObject):
     shape: tuple | None = None
     created_at: DateTime = DateTime.now()
     uploader: Contributor | None = None
-    # _kwarg_name and _dataset_name are set by the UserCode.assets
-    _kwarg_name: str | None = None
-    _dataset_name: str | None = None
-    __syft_include_id_coll_repr__ = False
-
-
-@serializable()
-class Asset(SyftObject):
-    # version
-    __canonical_name__ = "Asset"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    action_id: UID
-    server_uid: UID
-    name: str
-    description: MarkdownDescription | None = None
-    contributors: set[Contributor] = set()
-    data_subjects: list[DataSubject] = []
-    mock_is_real: bool = False
-    shape: tuple | None = None
-    created_at: DateTime = DateTime.now()
-    uploader: Contributor | None = None
-    mock_blob_storage_entry_id: UID | None = None
-    data_blob_storage_entry_id: UID | None = None
     # _kwarg_name and _dataset_name are set by the UserCode.assets
     _kwarg_name: str | None = None
     _dataset_name: str | None = None
@@ -373,8 +347,6 @@ class CreateAsset(SyftObject):
     mock_is_real: bool = False
     created_at: DateTime | None = None
     uploader: Contributor | None = None
-    mock_blob_storage_entry_id: UID | None = None
-    data_blob_storage_entry_id: UID | None = None
 
     __repr_attrs__ = ["name"]
     model_config = ConfigDict(validate_assignment=True, extra="forbid")
@@ -490,45 +462,10 @@ def get_shape_or_len(obj: Any) -> tuple[int, ...] | int | None:
 
 
 @serializable()
-class DatasetV1(SyftObject):
-    # version
-    __canonical_name__: str = "Dataset"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    id: UID
-    name: str
-    server_uid: UID | None = None
-    asset_list: list[AssetV1] = []
-    contributors: set[Contributor] = set()
-    citation: str | None = None
-    url: str | None = None
-    description: MarkdownDescription | None = None
-    updated_at: str | None = None
-    requests: int | None = 0
-    mb_size: float | None = None
-    created_at: DateTime = DateTime.now()
-    uploader: Contributor
-    summary: str | None = None
-    to_be_deleted: bool = False
-
-    __attr_searchable__ = [
-        "name",
-        "citation",
-        "url",
-        "description",
-        "action_ids",
-        "summary",
-    ]
-    __attr_unique__ = ["name"]
-    __repr_attrs__ = ["name", "summary", "url", "created_at"]
-    __table_sort_attr__ = "Created at"
-
-
-@serializable()
 class Dataset(SyftObject):
     # version
     __canonical_name__: str = "Dataset"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
     name: str
@@ -979,95 +916,3 @@ class DatasetUpdate(PartialSyftObject):
     description: MarkdownDescription
     uploader: Contributor
     summary: str
-
-
-@migrate(AssetV1, Asset)
-def migrate_asset_v1_to_v2() -> list[Callable]:
-    return [
-        make_set_default("mock_blob_storage_entry_id", None),
-        make_set_default("data_blob_storage_entry_id", None),
-    ]
-
-
-@migrate(Asset, AssetV1)
-def migrate_asset_v2_to_v1() -> list[Callable]:
-    return [
-        drop(["mock_blob_storage_entry_id", "data_blob_storage_entry_id"]),
-    ]
-
-
-@migrate(CreateAssetV1, CreateAsset)
-def migrate_create_asset_v1_to_v2() -> list[Callable]:
-    return [
-        make_set_default("mock_blob_storage_entry_id", None),
-        make_set_default("data_blob_storage_entry_id", None),
-    ]
-
-
-@migrate(CreateAsset, CreateAssetV1)
-def migrate_create_asset_v2_to_v1() -> list[Callable]:
-    return [
-        drop(["mock_blob_storage_entry_id", "data_blob_storage_entry_id"]),
-    ]
-
-
-def migrate_assets_v1_to_v2_for_dataset() -> Callable:
-    def transform(transform_context: TransformContext) -> TransformContext:
-        if transform_context.output and "asset_list" in transform_context.output:
-            transform_context.output["asset_list"] = [
-                migrate_asset_v1_to_v2_transform(asset)
-                for asset in transform_context.output["asset_list"]
-            ]
-        return transform_context
-
-    return transform
-
-
-def migrate_asset_v1_to_v2_transform(
-    asset: AssetV1, context: TransformContext | None = None
-) -> Asset:
-    asset_context = TransformContext.from_context(asset, context)
-    transforms = migrate_asset_v1_to_v2()  # Get the list of transforms
-    for transform_func in transforms:
-        asset_context = transform_func(asset_context)
-    return Asset(
-        **asset_context.output
-    )  # Convert the transformed output back to an Asset object
-
-
-@migrate(DatasetV1, Dataset)
-def migrate_dataset_v1_to_v2() -> list[Callable]:
-    return [
-        migrate_assets_v1_to_v2_for_dataset(),
-    ]
-
-
-def migrate_assets_v2_to_v1_for_dataset() -> Callable:
-    def transform(transform_context: TransformContext) -> TransformContext:
-        if transform_context.output and "asset_list" in transform_context.output:
-            transform_context.output["asset_list"] = [
-                migrate_asset_v2_to_v1_transform(asset)
-                for asset in transform_context.output["asset_list"]
-            ]
-        return transform_context
-
-    return transform
-
-
-def migrate_asset_v2_to_v1_transform(
-    asset: Asset, context: TransformContext | None = None
-) -> AssetV1:
-    asset_context = TransformContext.from_context(asset, context)
-    transforms = migrate_asset_v2_to_v1()  # Get the list of transforms
-    for transform_func in transforms:
-        asset_context = transform_func(asset_context)
-    return Asset(
-        **asset_context.output
-    )  # Convert the transformed output back to an Asset object
-
-
-@migrate(Dataset, DatasetV1)
-def migrate_dataset_v2_to_v1() -> list[Callable]:
-    return [
-        migrate_assets_v2_to_v1_for_dataset(),
-    ]

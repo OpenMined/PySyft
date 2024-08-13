@@ -487,47 +487,19 @@ def test_upload_dataset_with_force_replace_big_dataset(
     assert updated_dataset.url == dataset.url
     assert all(updated_dataset.assets[0].data == dataset.assets[0].data)
     assert all(updated_dataset.assets[0].mock == dataset.assets[0].mock)
+
+    mock_obj: ActionObject = root_client.api.services.action.get(
+        updated_dataset.assets[0].action_id, TwinMode.MOCK
+    )
     retrieved_mock = root_client.api.services.blob_storage.read(
-        updated_dataset.assets[0].mock_blob_storage_entry_id
+        mock_obj.syft_blob_storage_entry_id
     ).read()
     assert np.sum(retrieved_mock - updated_mock) == 0
+
+    data_obj: ActionObject = root_client.api.services.action.get(
+        updated_dataset.assets[0].action_id, TwinMode.PRIVATE
+    )
     retrieved_data = root_client.api.services.blob_storage.read(
-        updated_dataset.assets[0].data_blob_storage_entry_id
+        data_obj.syft_blob_storage_entry_id
     ).read()
     assert np.sum(retrieved_data - updated_data) == 0
-
-
-def test_upload_big_dataset_blob_permissions(
-    worker: Worker, big_dataset: Dataset
-) -> None:
-    root_client = worker.root_client
-    assert can_upload_to_blob_storage(big_dataset, root_client.metadata)
-
-    # upload the dataset
-    upload_res = root_client.upload_dataset(big_dataset)
-    assert isinstance(upload_res, SyftSuccess)
-    uploaded_dataset = root_client.api.services.dataset.get_all()[0]
-
-    # check correctness of the uploaded data in blob storage
-    asset = uploaded_dataset.assets[0]
-    retrieved_mock = root_client.api.services.blob_storage.read(
-        asset.mock_blob_storage_entry_id
-    ).read()
-    assert np.sum(retrieved_mock - asset.mock) == 0
-    retrieved_data = root_client.api.services.blob_storage.read(
-        asset.data_blob_storage_entry_id
-    ).read()
-    assert np.sum(retrieved_data - asset.data) == 0
-
-    # check access permissions of the uploaded data in blob storage
-    guest_client = root_client.guest()
-    guest_dataset = guest_client.api.services.dataset.get_all()[0]
-    guest_asset = guest_dataset.assets[0]
-    guest_retrieved_mock = guest_client.api.services.blob_storage.read(
-        guest_asset.mock_blob_storage_entry_id
-    ).read()
-    assert np.sum(retrieved_mock - guest_retrieved_mock) == 0
-    guest_retrieved_data = guest_client.api.services.blob_storage.read(
-        guest_asset.data_blob_storage_entry_id
-    )
-    assert isinstance(guest_retrieved_data, SyftError)
