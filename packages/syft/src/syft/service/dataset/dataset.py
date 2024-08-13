@@ -259,9 +259,8 @@ class Asset(SyftObject):
         api = APIRegistry.api_for(
             server_uid=self.server_uid,
             user_verify_key=self.syft_client_verify_key,
-        )
-        if api is not None and api.services is not None:
-            return api.services.action.get_pointer(self.action_id)
+        ).unwrap()
+        return api.services.action.get_pointer(self.action_id)
 
     @property
     def mock(self) -> Any:
@@ -272,6 +271,7 @@ class Asset(SyftObject):
             server_uid=self.server_uid,
             user_verify_key=self.syft_client_verify_key,
         ).unwrap()
+
         try:
             result = api.services.action.get_mock(self.action_id)
             if isinstance(result, SyftObject):
@@ -279,7 +279,7 @@ class Asset(SyftObject):
             else:
                 return result
         except Exception as e:
-            raise SyftException(public_message=f"Failed to get mock. {e}") from e
+            raise SyftException.from_exception(e, public_message=f"Failed to get mock. {e}")
 
     def has_data_permission(self) -> bool:
         return self.data is not None
