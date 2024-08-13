@@ -575,6 +575,7 @@ class ProjectCode(ProjectEventAddObject):
             <h3>Project Code</h3>
             <span>
                 <strong>Event ID:</strong> {CopyIDButton(copy_text=str(self.id), max_width=60).to_html()}<br>
+                <strong>Code Hash:</strong> {self.code.get_code_hash()}<br>
                 <strong>Project ID:</strong> {CopyIDButton(copy_text=str(self.project_id), max_width=60).to_html()}<br>
                 <strong>Created at:</strong> {self.timestamp}
             </span>
