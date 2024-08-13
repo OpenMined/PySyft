@@ -505,8 +505,8 @@ def from_api_or_context(
         server_uid=syft_server_location,
         user_verify_key=syft_client_verify_key,
     )
-    if api is not None:
-        service_method = api.services
+    if api.is_ok():
+        service_method = api.unwrap().services
         for path in func_or_path.split("."):
             service_method = getattr(service_method, path)
         return service_method

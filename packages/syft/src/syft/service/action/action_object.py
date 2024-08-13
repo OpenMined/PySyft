@@ -1530,12 +1530,12 @@ class ActionObject(SyncableSyftObject):
 
         api = APIRegistry.api_for(
             self.syft_server_location, self.syft_client_verify_key
-        ).unwrap()
+        )
         
         eager_execution_enabled = (
-            api is not None
-            and api.metadata is not None
-            and api.metadata.eager_execution_enabled
+            api.is_ok()
+            and api.unwrap().metadata is not None
+            and api.unwrap().metadata.eager_execution_enabled
         )
 
         self._syft_add_pre_hooks__(eager_execution_enabled)
