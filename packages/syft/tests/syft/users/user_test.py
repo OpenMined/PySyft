@@ -17,7 +17,7 @@ from syft.service.user.user import ServiceRole
 from syft.service.user.user import UserCreate
 from syft.service.user.user import UserUpdate
 from syft.service.user.user import UserView
-from syft.types.errors import SyftException
+from syft.types.errors import CredentialsError, SyftException
 
 GUEST_ROLES = [ServiceRole.GUEST]
 DS_ROLES = [ServiceRole.GUEST, ServiceRole.DATA_SCIENTIST]
@@ -98,7 +98,8 @@ def root_client(worker):
 
 def test_read_user(worker, root_client, do_client, ds_client, guest_client):
     for client in [ds_client, guest_client]:
-        assert not manually_call_service(worker, client, "user.get_all")
+        with pytest.raises(SyftException):
+            manually_call_service(worker, client, "user.get_all")
 
     for client in [do_client, root_client]:
         assert manually_call_service(worker, client, "user.get_all")
@@ -115,7 +116,8 @@ def test_read_returns_view(root_client):
 
 def test_user_create(worker, do_client, guest_client, ds_client, root_client):
     for client in [ds_client, guest_client]:
-        assert not manually_call_service(worker, client, "user.create")
+        with pytest.raises(SyftException):
+            manually_call_service(worker, client, "user.create")
 
     for client in [do_client, root_client]:
         user_create = UserCreate(
@@ -262,7 +264,7 @@ def test_guest_user_update_to_root_email_failed(
     for client in [root_client, do_client, guest_client, ds_client]:
         with pytest.raises(SyftException) as exc:
             client.api.services.user.update(
-                uid=client.me.id, **user_update_to_root_email
+                uid=client.account.id, **user_update_to_root_email
             )
 
         assert exc.type == SyftException
@@ -270,17 +272,17 @@ def test_guest_user_update_to_root_email_failed(
 
 
 def test_user_view_set_password(worker: Worker, root_client: DatasiteClient) -> None:
-    change_ok = root_client.me.set_password("123", confirm=False)
+    change_ok = root_client.account.set_password("123", confirm=False)
     assert type(change_ok) == SyftSuccess
     assert "Successfully" in change_ok.message
 
-    email = root_client.me.email
+    email = root_client.account.email
 
     # log in again with the wrong password
     with pytest.raises(SyftException) as exc:
         worker.root_client.login(email=email, password="1234")
 
-    assert exc.type == SyftException
+    assert exc.type == CredentialsError
     assert exc.value.public_message == "Invalid credentials."
 
     # log in again with the right password
@@ -296,7 +298,7 @@ def test_user_view_set_invalid_email(
     root_client: DatasiteClient, invalid_email: str
 ) -> None:
     with pytest.raises(SyftException) as exc:
-        root_client.me.set_email(invalid_email)
+        root_client.account.set_email(invalid_email)
 
     assert exc.type == SyftException
     assert "Invalid email" in exc.value.public_message
@@ -318,7 +320,7 @@ def test_user_view_set_email_success(
     result = root_client.account.set_email(valid_email_root)
     assert isinstance(result, SyftSuccess)
 
-    result2 = ds_client.me.set_email(valid_email_ds)
+    result2 = ds_client.account.set_email(valid_email_ds)
     assert isinstance(result2, SyftSuccess)
 
 
@@ -329,7 +331,7 @@ def test_user_view_set_default_admin_email_failed(
     error_msg = f"User {default_root_email} already exists"
 
     with pytest.raises(SyftException) as exc:
-        ds_client.me.set_email(default_root_email)
+        ds_client.account.set_email(default_root_email)
 
     assert exc.type == SyftException
     assert exc.value.public_message == error_msg
@@ -338,26 +340,26 @@ def test_user_view_set_default_admin_email_failed(
 def test_user_view_set_duplicated_email(
     root_client: DatasiteClient, ds_client: DatasiteClient, guest_client: DatasiteClient
 ) -> None:
-    email = root_client.me.email
+    email = root_client.account.email
     error_msg = f"User {email} already exists"
 
     with pytest.raises(SyftException) as exc:
-        ds_client.me.set_email(email)
+        ds_client.account.set_email(email)
 
     assert exc.type == SyftException
     assert exc.value.public_message == error_msg
 
     with pytest.raises(SyftException) as exc:
-        guest_client.me.set_email(email)
+        guest_client.account.set_email(email)
 
     assert exc.type == SyftException
     assert exc.value.public_message == error_msg
 
-    email = ds_client.me.email
+    email = ds_client.account.email
     error_msg = f"User {email} already exists"
 
     with pytest.raises(SyftException) as exc:
-        guest_client.me.set_email(email)
+        guest_client.account.set_email(email)
 
     assert exc.type == SyftException
     assert exc.value.public_message == error_msg
@@ -368,24 +370,24 @@ def test_user_view_update_name_institution_website(
     ds_client: DatasiteClient,
     guest_client: DatasiteClient,
 ) -> None:
-    root_client.me.update(
+    root_client.account.update(
         name="syft", institution="OpenMined", website="https://syft.org"
     )
-    assert root_client.me.name == "syft"
-    assert root_client.me.institution == "OpenMined"
-    assert root_client.me.website == "https://syft.org"
+    assert root_client.account.name == "syft"
+    assert root_client.account.institution == "OpenMined"
+    assert root_client.account.website == "https://syft.org"
 
-    ds_client.me.update(name="syft2", institution="OpenMined")
-    assert ds_client.me.name == "syft2"
-    assert ds_client.me.institution == "OpenMined"
+    ds_client.account.update(name="syft2", institution="OpenMined")
+    assert ds_client.account.name == "syft2"
+    assert ds_client.account.institution == "OpenMined"
 
-    guest_client.me.update(name="syft3")
-    assert guest_client.me.name == "syft3"
+    guest_client.account.update(name="syft3")
+    assert guest_client.account.name == "syft3"
 
 
 def test_user_view_set_role(worker: Worker, guest_client: DatasiteClient) -> None:
     admin_client = get_mock_client(worker.root_client, ServiceRole.ADMIN)
-    assert admin_client.me.role == ServiceRole.ADMIN
+    assert admin_client.account.role == ServiceRole.ADMIN
 
     admin_client.register(
         name="Sheldon Cooper",
@@ -418,22 +420,22 @@ def test_user_view_set_role(worker: Worker, guest_client: DatasiteClient) -> Non
         == ds_client.verify_key
         != admin_client.verify_key
     )
-    assert ds_client.me.role == sheldon.role
-    assert ds_client.me.role == ServiceRole.DATA_OWNER
+    assert ds_client.account.role == sheldon.role
+    assert ds_client.account.role == ServiceRole.DATA_OWNER
 
     with pytest.raises(SyftException):
-        ds_client.me.update(role="guest")
-        ds_client.me.update(role="data_scientist")
+        ds_client.account.update(role="guest")
+        ds_client.account.update(role="data_scientist")
 
     # now we set sheldon's role to admin. Only now he can change his role
     sheldon.update(role="admin")
     assert sheldon.role == ServiceRole.ADMIN
     # QA: this is different than when running in the notebook
     assert len(ds_client.users.get_all()) == len(admin_client.users.get_all())
-    assert isinstance(ds_client.me.update(role="guest"), SyftSuccess)
+    assert isinstance(ds_client.account.update(role="guest"), SyftSuccess)
 
     with pytest.raises(SyftException):
-        ds_client.me.update(role="admin")
+        ds_client.account.update(role="admin")
 
 
 def test_user_view_set_role_admin(faker: Faker) -> None:
