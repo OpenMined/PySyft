@@ -1193,6 +1193,7 @@ class ServerDiff(SyftObject):
         _include_server_status: bool = False,
     ) -> "ServerDiff":
         obj_uid_to_diff = {}
+        show_deletion_warning = False
         for obj_id in set(low_state.objects.keys()) | set(high_state.objects.keys()):
             low_obj = low_state.objects.get(obj_id, None)
             high_obj = high_state.objects.get(obj_id, None)
@@ -1215,7 +1216,6 @@ class ServerDiff(SyftObject):
 
             # We don't support deletion of objects yet.
             # So, skip if the object is not present on the *source* side
-            show_deletion_warning = False
             source_obj = low_obj if direction == SyncDirection.LOW_TO_HIGH else high_obj
             if source_obj is None:
                 show_deletion_warning = True
