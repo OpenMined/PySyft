@@ -200,6 +200,44 @@ class DatasiteEnclaveService(AbstractService):
         current_server_credentials = context.server.signing_key
         enclave_client = provider.get_client(credentials=current_server_credentials)
 
+        # Attesation Checks
+        # Fetch Attestation Report From Enclave for CPU
+        cpu_report = enclave_client.api.services.attestation.get_cpu_attestation(
+            raw_token=True, mock_report=mock_report
+        )
+        if not isinstance(cpu_report, (str, SyftError)):
+            return SyftError(
+                message="CPU Enclave Attestation Report should be a string or SyftError"
+            )
+
+        # Fetch Attestation Report From Enclave for GPU
+        gpu_report = enclave_client.api.services.attestation.get_gpu_attestation(
+            raw_token=True, mock_report=mock_report
+        )
+        if not isinstance(gpu_report, (str, SyftError)):
+            return SyftError(
+                message="GPU Enclave Attestation Report should be a string or SyftError"
+            )
+
+        if isinstance(cpu_report, SyftError):
+            return SyftError(
+                message=f"CPU Attestation Report Error: {cpu_report.message}"
+            )
+
+        if isinstance(gpu_report, SyftError):
+            return SyftError(
+                message=f"GPU Attestation Report Error: {gpu_report.message}"
+            )
+
+        project_enclave_report_res = project.add_enclave_attestation_report(
+            cpu_report=cpu_report,
+            gpu_report=gpu_report,
+            enclave_url=enclave_client.connection.url,
+        )
+
+        if isinstance(project_enclave_report_res, SyftError):
+            return project_enclave_report_res
+
         # Actual data from blob storage is lazy-loaded when the `syft_action_data` property is used for the
         # first time. Let's load it now so that it can get properly transferred along with the action objects.
         for action_object in action_objects:
@@ -258,43 +296,6 @@ class DatasiteEnclaveService(AbstractService):
             )
             if isinstance(project_asset_res, SyftError):
                 return project_asset_res
-
-        # Fetch Attestation Report From Enclave for CPU
-        cpu_report = enclave_client.api.services.attestation.get_cpu_attestation(
-            raw_token=True, mock_report=mock_report
-        )
-        if not isinstance(cpu_report, (str, SyftError)):
-            return SyftError(
-                message="CPU Enclave Attestation Report should be a string or SyftError"
-            )
-
-        # Fetch Attestation Report From Enclave for GPU
-        gpu_report = enclave_client.api.services.attestation.get_gpu_attestation(
-            raw_token=True, mock_report=mock_report
-        )
-        if not isinstance(gpu_report, (str, SyftError)):
-            return SyftError(
-                message="GPU Enclave Attestation Report should be a string or SyftError"
-            )
-
-        if isinstance(cpu_report, SyftError):
-            return SyftError(
-                message=f"CPU Attestation Report Error: {cpu_report.message}"
-            )
-
-        if isinstance(gpu_report, SyftError):
-            return SyftError(
-                message=f"GPU Attestation Report Error: {gpu_report.message}"
-            )
-
-        project_enclave_report_res = project.add_enclave_attestation_report(
-            cpu_report=cpu_report,
-            gpu_report=gpu_report,
-            enclave_url=enclave_client.connection.url,
-        )
-
-        if isinstance(project_enclave_report_res, SyftError):
-            return project_enclave_report_res
 
         # Upload the assets to the enclave
         result = enclave_client.api.services.enclave.upload_assets(

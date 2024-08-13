@@ -75,7 +75,7 @@ class VerifiableOutput(SyftObject):
         _repr_str += f"{s_indent}  code: UserCode\n"
         _repr_str += f"{s_indent}    id: UID = {self.code.id}\n"
         _repr_str += f'{s_indent}    func_name: str = "{self.code.service_func_name}"\n'
-        _repr_str += f'{s_indent}    hash: str = "{self.code.code_hash}"\n'
+        _repr_str += f'{s_indent}    hash: str = "{self.code.raw_code_hash}"\n'
         _repr_str += f"{s_indent}    raw_code: str\n"
         _repr_str += "\n".join(
             [

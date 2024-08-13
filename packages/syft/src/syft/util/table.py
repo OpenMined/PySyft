@@ -240,6 +240,15 @@ def prepare_table_data(
 
     extra_fields = getattr(first_value, "__repr_attrs__", [])
     is_homogenous = len({type(x) for x in values}) == 1
+
+    # A quick hack to add type to  project events table
+    # This is for single event type tables
+    # relative
+    from ..service.project.project import ProjectEvent
+
+    if issubclass(type(first_value), ProjectEvent):
+        is_homogenous = False
+
     if is_homogenous:
         sort_key = getattr(first_value, "__table_sort_attr__", None) or "created_at"
         cls_name = first_value.__class__.__name__

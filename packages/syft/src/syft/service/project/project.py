@@ -90,6 +90,12 @@ class ProjectEvent(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     __hash_exclude_attrs__ = ["event_hash", "signature"]
+    __table_coll_widths__ = [
+        "min-content",
+        "auto",
+        "auto",
+        "auto",
+    ]
 
     # 1. Creation attrs
     id: UID
@@ -104,6 +110,15 @@ class ProjectEvent(SyftObject):
     # 3. Signature attrs
     creator_verify_key: SyftVerifyKey | None = None
     signature: bytes | None = None  # dont use in signing
+
+    def get_event_details(self) -> str:
+        return "<->"
+
+    def _coll_repr_(self) -> dict[str, str]:
+        return {
+            "Creation Time": str(self.timestamp),
+            "Details": self.get_event_details(),
+        }
 
     def __repr_syft_nested__(self) -> tuple[str, str]:
         return (
@@ -285,6 +300,19 @@ class ProjectRequestResponse(ProjectSubEvent):
 
     response: RequestStatus
 
+    def get_event_details(self) -> str:
+        response_output = None
+        if self.response == RequestStatus.APPROVED:
+            response_output = "✅"
+        elif self.response == RequestStatus.REJECTED:
+            response_output = "❌"
+        else:
+            response_output = "🟠"
+
+        res = f"Request ID: {self.parent_event_id}"
+        res += f"\n Response: {response_output}"
+        return res
+
 
 @serializable()
 class ProjectRequestV1(ProjectEventAddObject):
@@ -305,6 +333,11 @@ class ProjectRequest(ProjectEventAddObject):
     # TODO: should all events have parent_event_id by default
     # then we differentiate them by allowed sub types.
     parent_event_id: UID
+
+    def get_event_details(self) -> str:
+        res = f"Request ID: {self.id}"
+        res += f"\n Server ID: {self.linked_request.server_uid}"
+        return res
 
     @field_validator("linked_request", mode="before")
     @classmethod
@@ -386,6 +419,14 @@ class ProjectAssetTransfer(ProjectEventAddObject):
     server_identity: ServerIdentity
     code_id: UID  # The code for which the asset is being transferred
 
+    def get_event_details(self) -> str:
+        res = f"Asset ID: {self.asset_id}"
+        res += f"\n Asset Name: {self.asset_name}"
+        res += f"\n Asset Hash: {self.asset_hash}"
+        res += f"\n name={self.server_identity.server_name} - id={self.server_identity.server_id.short()}... "
+        res += f"- 🔑={str(self.server_identity.verify_key)[0:8]}"
+        return res
+
 
 @serializable()
 class ProjectAttestationReport(ProjectEventAddObject):
@@ -396,6 +437,14 @@ class ProjectAttestationReport(ProjectEventAddObject):
     gpu_report: str | SyftError
     enclave_url: ServerURL
 
+    def get_event_details(self) -> str:
+        cpu_status = "✅" if isinstance(self.cpu_report, str) else "❌"
+        gpu_status = "✅" if isinstance(self.gpu_report, str) else "❌"
+        res = f"CPU Attestation: {cpu_status}"
+        res += f"\n GPU Attestation: {gpu_status}"
+        res += f"\n Enclave URL: {self.enclave_url}"
+        return res
+
 
 @serializable()
 class ProjectExecutionStart(ProjectEventAddObject):
@@ -404,6 +453,12 @@ class ProjectExecutionStart(ProjectEventAddObject):
 
     server_identity: ServerIdentity  # the server which starts the execution
     code_id: UID  # The code for which the execution is started
+
+    def get_event_details(self) -> str:
+        res = f"Code ID: {self.code_id}"
+        res += f"\n name={self.server_identity.server_name} - id={self.server_identity.server_id.short()}... "
+        res += f"- 🔑={str(self.server_identity.verify_key)[0:8]}"
+        return res
 
 
 @serializable()
@@ -415,6 +470,12 @@ class ProjectEnclaveOutput(ProjectEventAddObject):
     output: Any
     code_id: UID
 
+    def get_event_details(self) -> str:
+        res = f"Code ID: {self.code_id}"
+        res += f"\n name={self.server_identity.server_name} - id={self.server_identity.server_id.short()}... "
+        res += f"- 🔑={str(self.server_identity.verify_key)[0:8]}"
+        return res
+
 
 @serializable()
 class ProjectCode(ProjectEventAddObject):
@@ -423,6 +484,22 @@ class ProjectCode(ProjectEventAddObject):
 
     code: SubmitUserCode
     allowed_sub_types: list[type] = [ProjectRequest]
+
+    def get_event_details(self) -> str:
+        res = f"Submitted Code: {self.code.func_name} "
+        res += f"\n ID: {self.code.id}"
+        res += f"\n Hash: {self.code.get_code_hash()}"
+        res += "\n Servers:"
+        input_owner_server_identities: list[ServerIdentity] = (
+            []
+            if self.code.input_policy_init_kwargs is None
+            else list(self.code.input_policy_init_kwargs.keys())
+        )
+
+        for server_identity in input_owner_server_identities:
+            res += f"\n name={server_identity.server_name} - id={server_identity.server_id.short()}... "
+            res += f"- 🔑={str(server_identity.verify_key)[0:8]}"
+        return res
 
     def _ipython_display_(self) -> None:
         code_block = as_markdown_python_code(self.code.code)
