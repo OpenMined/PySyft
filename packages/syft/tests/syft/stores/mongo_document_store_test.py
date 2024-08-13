@@ -862,7 +862,7 @@ def test_mongo_store_partition_take_ownership(
     )
     assert res.is_err()
     assert res_2.is_err()
-    assert res.value == res_2.value == f"UID: {obj.id} already owned."
+    assert res.value.public_message == res_2.value.public_message == f"UID: {obj.id} already owned."
 
     # another object
     obj_2 = MockSyftObject(data=2)
