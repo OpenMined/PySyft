@@ -176,12 +176,11 @@ class Job(SyncableSyftObject):
     @property
     def user_code_name(self) -> str | None:
         if self.user_code_id is not None:
-            api = APIRegistry.api_for(
-                server_uid=self.syft_server_location,
-                user_verify_key=self.syft_client_verify_key,
-            )
-            if api is None:
+            api = self.get_api_wrapped()
+            if api.is_err():
                 return None
+            else:
+                api = api.unwrap()
             user_code = api.services.code.get_by_id(self.user_code_id)
             return user_code.service_func_name
         return None
@@ -205,14 +204,7 @@ class Job(SyncableSyftObject):
 
     @property
     def worker(self) -> SyftWorker:
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            raise SyftException(
-                public_message=f"Can't access Syft API. You must login to {self.syft_server_location}"
-            )
+        api = self.get_api()
         return api.services.worker.get(self.job_worker_id)
 
     @property
@@ -278,14 +270,7 @@ class Job(SyncableSyftObject):
             self.result = info.result
 
     def restart(self, kill: bool = False) -> None:
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            raise ValueError(
-                f"Can't access Syft API. You must login to {self.syft_server_location}"
-            )
+        api = self.get_api()
         call = SyftAPICall(
             server_uid=self.server_uid,
             path="job.restart",
@@ -298,14 +283,7 @@ class Job(SyncableSyftObject):
         return res
 
     def kill(self) -> SyftSuccess:
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            raise SyftException(
-                public_message=f"Can't access Syft API. You must login to {self.syft_server_location}"
-            )
+        api = self.get_api()
         call = SyftAPICall(
             server_uid=self.server_uid,
             path="job.kill",
@@ -318,14 +296,7 @@ class Job(SyncableSyftObject):
         return res
 
     def fetch(self) -> None:
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            raise ValueError(
-                f"Can't access Syft API. You must login to {self.syft_server_location}"
-            )
+        api = self.get_api()
         job = api.job.get(self.id)
         self.resolved = job.resolved
         if job.resolved:
@@ -337,14 +308,7 @@ class Job(SyncableSyftObject):
 
     @property
     def subjobs(self) -> list["Job"]:
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            raise SyftException(
-                public_message=f"Can't access Syft API. You must login to {self.syft_server_location}"
-            )
+        api = self.get_api()
         return api.services.job.get_subjobs(self.id)
 
     def get_subjobs(self, context: AuthedServiceContext) -> list["Job"]:
@@ -353,36 +317,15 @@ class Job(SyncableSyftObject):
 
     @property
     def owner(self) -> UserView:
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            raise SyftException(
-                public_message=f"Can't access Syft API. You must login to {self.syft_server_location}"
-            )
-        return api.services.user.get_current_user(self.id)
+        return self.get_api().services.user.get_current_user(self.id)
 
     def _get_log_objs(self) -> SyftLog:
-        api = APIRegistry.api_for(
-            server_uid=self.server_uid,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            raise ValueError(f"api is None. You must login to {self.server_uid}")
-        return api.services.log.get(self.log_id)
+        return self.get_api().services.log.get(self.log_id)
 
     def logs(
         self, stdout: bool = True, stderr: bool = True, _print: bool = True
     ) -> str | None:
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            return (
-                f"Can't access Syft API. You must login to {self.syft_server_location}"
-            )
+        api = self.get_api()
 
         has_permissions = True
 
@@ -538,39 +481,15 @@ class Job(SyncableSyftObject):
 
     @property
     def requesting_user(self) -> UserView:
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            raise SyftException(
-                public_message=f"Can't access Syft API. You must login to {self.syft_server_location}"
-            )
-        return api.services.user.view(self.requested_by)
+        return self.get_api().services.user.view(self.requested_by)
 
     @property
     def server_name(self) -> str | None:
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            raise SyftException(
-                public_message=f"Can't access Syft API. You must login to {self.syft_server_location}"
-            )
-        return api.server_name
+        return self.get_api().server_name
 
     @property
     def parent(self) -> Self:
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            raise SyftException(
-                public_message=f"Can't access Syft API. You must login to {self.syft_server_location}"
-            )
-        return api.services.job.get(self.parent_job_id)
+        return self.get_api().services.job.get(self.parent_job_id)
 
     @property
     def ancestors_name_list(self) -> list[str]:
@@ -649,17 +568,7 @@ class Job(SyncableSyftObject):
         self.fetch()
         if self.resolved:
             return self.resolve
-
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-
-        if api is None:
-            raise ValueError(
-                f"Can't access Syft API. You must login to server with id '{self.syft_server_location}'"
-            )
-
+        api = self.get_api()
         workers = api.services.worker.get_all()
         if len(workers) == 0:
             raise SyftException(

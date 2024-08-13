@@ -256,11 +256,8 @@ class Asset(SyftObject):
 
     @property
     def pointer(self) -> Any:
-        api = APIRegistry.api_for(
-            server_uid=self.server_uid,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is not None and api.services is not None:
+        api = self.get_api()
+        if api.services is not None:
             return api.services.action.get_pointer(self.action_id)
 
     @property
@@ -268,10 +265,7 @@ class Asset(SyftObject):
         # relative
         from ...client.api import APIRegistry
 
-        api = APIRegistry.api_for(
-            server_uid=self.server_uid,
-            user_verify_key=self.syft_client_verify_key,
-        ).unwrap()
+        api = self.get_api()
         try:
             result = api.services.action.get_mock(self.action_id)
             if isinstance(result, SyftObject):
@@ -302,10 +296,7 @@ class Asset(SyftObject):
         """
 
         # TODO: split this out in permission logic and existence logic
-        api = APIRegistry.api_for(
-            server_uid=self.server_uid,
-            user_verify_key=self.syft_client_verify_key,
-        )
+        api = self.get_api_wrapped()
         if api.is_err():
             return Ok(None)
         res = api.unwrap().services.action.get(self.action_id)

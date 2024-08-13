@@ -26,6 +26,7 @@ from syft.service.action.action_types import action_type_for_type
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.store.blob_storage import SyftObjectRetrieval
+from syft.types.errors import SyftException
 from syft.types.uid import LineageID
 from syft.types.uid import UID
 
@@ -1053,7 +1054,7 @@ def test_actionobject_delete(worker):
     assert isinstance(read_res, SyftObjectRetrieval)
     del_res = root_client.api.services.action.delete(uid=action_obj_2.id)
     assert isinstance(del_res, SyftSuccess)
-    read_res = root_client.api.services.blob_storage.read(
-        action_obj_2.syft_blob_storage_entry_id
-    )
-    assert isinstance(read_res, SyftError)
+    with pytest.raises(SyftException):
+        read_res = root_client.api.services.blob_storage.read(
+            action_obj_2.syft_blob_storage_entry_id
+        )

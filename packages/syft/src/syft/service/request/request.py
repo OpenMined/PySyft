@@ -399,10 +399,8 @@ class Request(SyncableSyftObject):
             str_change = f"{str_change}. "
             str_changes_.append(str_change)
         str_changes = "\n".join(str_changes_)
-        api = APIRegistry.api_for(
-            self.server_uid,
-            self.syft_client_verify_key,
-        )
+
+        api = self.get_api_wrapped() 
         shared_with_line = ""
         if self.code and len(self.code.output_readers) > 0:
             # owner_names = ["canada", "US"]
@@ -415,7 +413,8 @@ class Request(SyncableSyftObject):
             )
 
         server_info = ""
-        if api is not None:
+        if api.is_ok():
+            api = api.unwrap()
             metadata = api.services.metadata.get_metadata()
             server_name = (
                 api.server_name.capitalize() if api.server_name is not None else ""

@@ -107,22 +107,10 @@ class Notification(SyftObject):
         }
 
     def mark_read(self) -> None:
-        api: SyftAPI = cast(
-            SyftAPI,
-            APIRegistry.api_for(
-                self.server_uid, user_verify_key=self.syft_client_verify_key
-            ),
-        )
-        return api.services.notifications.mark_as_read(uid=self.id)
+        return self.get_api().services.notifications.mark_as_read(uid=self.id)
 
     def mark_unread(self) -> None:
-        api: SyftAPI = cast(
-            SyftAPI,
-            APIRegistry.api_for(
-                self.server_uid, user_verify_key=self.syft_client_verify_key
-            ),
-        )
-        return api.services.notifications.mark_as_unread(uid=self.id)
+        return self.get_api().services.notifications.mark_as_unread(uid=self.id)
 
     def determine_status(self) -> Enum:
         # relative

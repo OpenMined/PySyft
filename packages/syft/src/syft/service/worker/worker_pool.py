@@ -81,24 +81,11 @@ class SyftWorker(SyftObject):
 
     @property
     def logs(self) -> str:
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            raise SyftException(public_message=f"You must login to {self.server_uid}")
-        return api.services.worker.logs(uid=self.id)
+        return self.get_api().services.worker.logs(uid=self.id)
 
     def get_job_repr(self) -> str:
         if self.job_id is not None:
-            api = APIRegistry.api_for(
-                server_uid=self.syft_server_location,
-                user_verify_key=self.syft_client_verify_key,
-            )
-            if api is None:
-                raise SyftException(
-                    public_message=f"You must login to {self.server_uid}"
-                )
+            api = self.get_api()
             job = api.services.job.get(self.job_id)
             if job.action.user_code_id is not None:
                 func_name = api.services.code.get_by_id(
@@ -111,14 +98,7 @@ class SyftWorker(SyftObject):
             return ""
 
     def refresh_status(self) -> None:
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            raise SyftException(public_message=f"You must login to {self.server_uid}")
-
-        res = api.services.worker.status(uid=self.id)
+        res = self.get_api().services.worker.status(uid=self.id)
         self.status, self.healthcheck = res
         return None
 
@@ -172,11 +152,9 @@ class WorkerPool(SyftObject):
         Get the pool's image using the worker_image service API. This way we
         get the latest state of the image from the SyftWorkerImageStash
         """
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is not None and api.services is not None:
+        api = self.get_api_wrapped()
+        if api.is_ok() and api.ok().services is not None:
+            api = api.unwrap()
             return api.services.worker_image.get_by_uid(uid=self.image_id)
         else:
             return None

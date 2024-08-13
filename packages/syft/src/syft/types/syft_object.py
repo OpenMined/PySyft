@@ -143,6 +143,23 @@ class SyftBaseObject(pydantic.BaseModel, SyftHashableObject):
         self.syft_client_verify_key = credentials
 
 
+    def get_api(self):
+        from syft.client.api import APIRegistry
+        return APIRegistry.api_for(
+            server_uid=self.syft_server_location,
+            user_verify_key=self.syft_client_verify_key,
+        ).unwrap(
+            public_message=f"Can't access Syft API using this object. You must login to {self.syft_server_location}"
+        )
+
+    def get_api_wrapped(self):
+        from syft.client.api import APIRegistry
+        return APIRegistry.api_for(
+            server_uid=self.syft_server_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+
+
 class Context(SyftBaseObject):
     __canonical_name__ = "Context"
     __version__ = SYFT_OBJECT_VERSION_1

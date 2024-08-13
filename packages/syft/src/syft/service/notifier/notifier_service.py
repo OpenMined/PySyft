@@ -261,11 +261,11 @@ class NotifierService(AbstractService):
         try:
             # Create a new NotifierStash since its a static method.
             notifier_stash = NotifierStash(store=server.document_store)
-            notifier = notifier_stash.get(server.signing_key.verify_key).unwrap()
-
             # Get the notifier
             # If notifier doesn't exist, create a new one
-            if not notifier:
+            try:
+                notifier = notifier_stash.get(server.signing_key.verify_key).unwrap()
+            except NotFoundException:
                 notifier = NotifierSettings()
                 notifier.active = False  # Default to False
 

@@ -63,12 +63,7 @@ class SeaweedFSBlobDeposit(BlobDeposit):
     @as_result(SyftException)
     def write(self, data: BytesIO) -> SyftSuccess:
         # relative
-        from ...client.api import APIRegistry
-
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
+        api = self.get_api_wrapped()
 
         etags = []
 
@@ -93,7 +88,8 @@ class SeaweedFSBlobDeposit(BlobDeposit):
                     self.urls,
                     start=1,
                 ):
-                    if api is not None and api.connection is not None:
+                    if api.is_ok() and api.ok().connection is not None:
+                        api = api.unwrap()
                         if self.proxy_server_uid is None:
                             blob_url = api.connection.to_blob_route(
                                 url.url_path, host=url.host_or_ip

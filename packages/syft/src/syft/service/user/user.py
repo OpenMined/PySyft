@@ -279,10 +279,7 @@ class UserView(SyftObject):
         }
 
     def _set_password(self, new_password: str) -> SyftSuccess:
-        client = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        ).unwrap()
+        client = self.get_api()
 
         client.services.user.update(uid=self.id, **UserUpdate(password=new_password))
 
@@ -311,13 +308,10 @@ class UserView(SyftObject):
         except ValidationError:
             raise SyftException(public_message=f"Invalid email: '{email}'.")
 
-        client = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        ).unwrap()
+        api = self.get_api()
 
         # TODO: Shouldn't this trigger an update on self?
-        result = client.services.user.update(uid=self.id, email=user_update.email)
+        result = api.services.user.update(uid=self.id, email=user_update.email)
 
         return SyftSuccess(message=f"Email updated to '{result.email}'.")
 
@@ -341,11 +335,7 @@ class UserView(SyftObject):
         except ValidationError as exc:
             raise UserUpdateError.from_exception(exc, public_message=str(exc))
 
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        ).unwrap()
-
+        api = self.get_api()
         result = api.services.user.update(uid=self.id, **user_update)
 
         for attr, val in result.to_dict(exclude_empty=True).items():

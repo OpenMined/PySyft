@@ -414,7 +414,7 @@ class Server(AbstractServer):
             email_sender=email_sender,
             smtp_port=smtp_port,
             smtp_host=smtp_host,
-        )
+        ).unwrap()
 
         self.post_init()
 

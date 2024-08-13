@@ -397,14 +397,7 @@ class UserCode(SyncableSyftObject):
 
     @property
     def user(self) -> UserView:
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            raise SyftException(
-                public_message=f"Can't access Syft API. You must login to {self.syft_server_location}"
-            )
+        api = self.get_api()
         return api.services.user.get_by_verify_key(self.user_verify_key)
 
     def _compute_status_l0(
@@ -669,13 +662,7 @@ class UserCode(SyncableSyftObject):
 
     @property
     def output_history(self) -> list[ExecutionOutput]:
-        api = APIRegistry.api_for(
-            self.syft_server_location, self.syft_client_verify_key
-        )
-        if api is None:
-            raise SyftException(
-                public_message=f"Can't access the api. You must login to {self.syft_server_location}"
-            )
+        api = self.get_api()
         return api.services.output.get_by_user_code_id(self.id)
 
     @as_result(SyftException)
@@ -1113,9 +1100,6 @@ class SubmitUserCode(SyftObject):
         )  # nosec
         self.input_policy_init_kwargs = cast(dict, self.input_policy_init_kwargs)
         for server_id, obj_dict in self.input_policy_init_kwargs.items():
-            # api = APIRegistry.api_for(
-            #     server_uid=server_id.server_id, user_verify_key=server_id.verify_key
-            # )
             api = APIRegistry.get_by_recent_server_uid(server_uid=server_id.server_id)
             if api is None:
                 raise SyftException(

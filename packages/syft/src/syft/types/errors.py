@@ -79,7 +79,7 @@ class SyftException(Exception):
         return self.public
 
     def get_tb(
-        self, context: AuthedServiceContext, overwrite_permission: bool = False
+        self, context: AuthedServiceContext | None = None, overwrite_permission: bool = False
     ) -> str | None:
         """
         Returns the error traceback as a string, if the user is able to see it.
@@ -95,7 +95,7 @@ class SyftException(Exception):
         # stdlib
         import traceback
 
-        if context.role.value >= ServiceRole.DATA_OWNER.value or overwrite_permission:
+        if overwrite_permission or context.role.value >= ServiceRole.DATA_OWNER.value:
             return "".join(traceback.format_exception(self))
         return None
 
@@ -145,7 +145,8 @@ class SyftException(Exception):
         display = "block" if self._server_trace or is_dev_mode else "none"
 
         exc = process_traceback(self)
-        _traceback_str_list = traceback.format_tb(exc.__traceback__)
+        _traceback_str_list = traceback.format_exception(exc)
+        # _traceback_str_list = traceback.format_tb(exc.__traceback__)
         traceback_str = "".join(_traceback_str_list)
 
         table_template = jinja_env.get_template("syft_exception.jinja2")

@@ -651,8 +651,8 @@ class ObjectDiffBatch(SyftObject):
     def build(self, server_uid: UID, syft_client_verify_key: SyftVerifyKey):  # type: ignore
         # relative
         from ...client.datasite_client import DatasiteClient
+        api = self.get_api()
 
-        api = APIRegistry.api_for(server_uid, syft_client_verify_key)
         client = DatasiteClient(
             api=api,
             connection=api.connection,  # type: ignore

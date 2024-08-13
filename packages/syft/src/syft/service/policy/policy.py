@@ -776,9 +776,7 @@ class OutputPolicyExecuteCount(OutputPolicy):
 
     @as_result(SyftException)
     def count(self) -> int:
-        api = APIRegistry.api_for(
-            self.syft_server_location, self.syft_client_verify_key
-        ).unwrap()
+        api = self.get_api()
         output_history = api.services.output.get_by_output_policy_id(self.id)
         return len(output_history)
 

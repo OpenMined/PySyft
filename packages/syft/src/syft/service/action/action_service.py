@@ -888,7 +888,7 @@ class ActionService(AbstractService):
         """Checks if the given object id exists in the Action Store"""
         return self.store.exists(obj_id)
 
-    @service_method(path="action.delete", name="delete", roles=ADMIN_ROLE_LEVEL)
+    @service_method(path="action.delete", name="delete", roles=ADMIN_ROLE_LEVEL, unwrap_on_success=False)
     def delete(
         self, context: AuthedServiceContext, uid: UID, soft_delete: bool = False
     ) -> SyftSuccess | SyftError:
