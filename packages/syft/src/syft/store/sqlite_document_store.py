@@ -55,21 +55,22 @@ def _repr_debug_(value: Any) -> str:
     return repr(value)
 
 
-def raise_exception(table_name: str, e: Exception) -> Exception:
+def special_exception_public_message(table_name: str, e: Exception) -> str:
     if "disk I/O error" in str(e):
         message = f"Error usually related to concurrent writes. {str(e)}"
-        return Exception(message)
+        return message
 
     if "Cannot operate on a closed database" in str(e):
         message = (
             "Error usually related to calling self.db.close()"
             + f"before last SQLiteBackingStore.__del__ gets called. {str(e)}"
         )
-        return Exception(message)
+        return message
 
-    # if its something else other than "table already exists" raise original e
-    if f"table {table_name} already exists" not in str(e):
-        return e
+    # # if its something else other than "table already exists" raise original e
+    # if f"table {table_name} already exists" not in str(e):
+    #     return e
+    return str(e)
 
 
 @serializable(
@@ -150,7 +151,8 @@ class SQLiteBackingStore(KeyValueBackingStore):
                 )
                 self.db.commit()
         except Exception as e:
-            raise SyftException.from_exception(raise_exception(self.table_name, e))
+            public_message = special_exception_public_message(self.table_name, e)
+            raise SyftException.from_exception(e, public_message=public_message)
 
     @property
     def db(self) -> sqlite3.Connection:
@@ -193,7 +195,8 @@ class SQLiteBackingStore(KeyValueBackingStore):
             try:
                 cursor = self.cur.execute(sql, *args)
             except Exception as e:
-                raise SyftException.from_exception(raise_exception(self.table_name, e))
+                public_message = special_exception_public_message(self.table_name, e)
+                raise SyftException.from_exception(e, public_message=public_message)
 
             # TODO: Which exception is safe to rollback on?
             # we should map out some more clear exceptions that can be returned

@@ -137,8 +137,7 @@ def sqlite_store_partition_fn(
         UID(), root_verify_key, settings=settings, store_config=store_config
     )
 
-    res = store.init_store()
-    assert res.is_ok()
+    store.init_store().unwrap()
 
     return store
 

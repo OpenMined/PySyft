@@ -120,10 +120,6 @@ class SyftError(SyftResponseMessage):
         tb = None
         if isinstance(exc, NewSyftException):
             error_msg = exc.get_message(context)
-            print(exc.__traceback__)
-            print("".join(traceback.format_exception(exc)))
-
-            print(f"foul {exc.get_tb(context)}")
             if include_traceback:
                 tb = exc.get_tb(context)
         else:

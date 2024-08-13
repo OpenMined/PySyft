@@ -263,8 +263,6 @@ class Asset(SyftObject):
     @property
     def mock(self) -> Any:
         # relative
-        from ...client.api import APIRegistry
-
         api = self.get_api()
         try:
             result = api.services.action.get_mock(self.action_id)
@@ -273,7 +271,7 @@ class Asset(SyftObject):
             else:
                 return result
         except Exception as e:
-            raise SyftException(public_message=f"Failed to get mock. {e}") from e
+            raise SyftException.from_exception(e, public_message=f"Failed to get mock. {e}")
 
     def has_data_permission(self) -> bool:
         return self.data is not None
