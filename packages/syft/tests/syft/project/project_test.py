@@ -96,8 +96,12 @@ def test_project_serde(worker):
         password_verify="bazinga",
     )
 
+    ds_sheldon = sy.login(
+        server=worker, email="sheldon@caltech.edu", password="bazinga"
+    )
+
     new_project = sy.Project(
-        name="My Cool Project", description="My Cool Description", members=[root_client]
+        name="My Cool Project", description="My Cool Description", members=[ds_sheldon]
     )
 
     project = new_project.send()
