@@ -975,6 +975,7 @@ class UserCode(SyncableSyftObject):
             pre_kwargs={"uid": self.id},
             warning=None,
             communication_protocol=api.communication_protocol,
+            unwrap_on_success=True # TODO: look into this
         )
         return remote_user_function(*args, **kwargs)
 
@@ -1145,6 +1146,8 @@ class SubmitUserCode(SyftObject):
         ep_client.code.request_code_execution(new_syft_func)
         ep_client.requests[-1].approve(approve_nested=True)
         func_call = getattr(ep_client.code, new_syft_func.func_name)
+        # TODO: fix properly
+        func_call.unwrap_on_success=True
         result = func_call(*args, **kwargs)
 
         def task() -> None:
