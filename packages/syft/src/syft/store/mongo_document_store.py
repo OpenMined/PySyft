@@ -648,6 +648,7 @@ class MongoStorePartition(StorePartition):
             ]
         return storage_permissions_dict
 
+    @as_result(SyftException)
     def take_ownership(self, uid: UID, credentials: SyftVerifyKey) -> SyftSuccess:
         collection_permissions: MongoCollection = self.permissions.unwrap()
         collection: MongoCollection = self.collection.unwrap()

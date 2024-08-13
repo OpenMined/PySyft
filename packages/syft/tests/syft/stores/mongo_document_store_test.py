@@ -841,7 +841,7 @@ def test_mongo_store_partition_take_ownership(
     obj = MockSyftObject(data=1)
 
     # the guest client takes ownership of obj
-    mongo_store_partition.take_ownership(uid=obj.id, credentials=guest_verify_key)
+    mongo_store_partition.take_ownership(uid=obj.id, credentials=guest_verify_key).unwrap()
     assert mongo_store_partition.has_permission(
         permission(uid=obj.id, credentials=guest_verify_key)
     )
