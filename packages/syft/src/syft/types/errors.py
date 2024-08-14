@@ -140,6 +140,19 @@ class SyftException(Exception):
     def _repr_html_class_(self) -> str:
         return "alert-danger"
 
+    def __str__(self) -> str:
+        # this assumes that we show the server side error on the client side without a jupyter notebook
+        # exc = process_traceback(self)
+        # _traceback_str_list = traceback.format_exception(exc)
+        # traceback_str = "".join(_traceback_str_list)
+        server_trace = self._server_trace
+        message=self._private_message or self.public
+
+        return f"""
+{message}
+server_trace: {server_trace}
+"""
+
     def _repr_html_(self) -> str:
         is_dev_mode = os.getenv("DEV_MODE", "false").lower() == "true"
         display = "block" if self._server_trace or is_dev_mode else "none"

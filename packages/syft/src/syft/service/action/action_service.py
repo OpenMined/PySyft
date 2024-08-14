@@ -784,6 +784,7 @@ class ActionService(AbstractService):
         its values. E.g. [[ActionObject1, ActionObject2],[ActionObject3, ActionObject4]]
         -> [[value1, value2],[value3, value4]]
         """
+
         action_object = self.get(context=context, uid=arg)
         data = action_object.syft_action_data
 
@@ -791,7 +792,11 @@ class ActionService(AbstractService):
             new_data = self.unwrap_nested_actionobjects(context, data).unwrap()
             # Update existing action object with the new flattened data
             action_object.syft_action_data_cache = new_data
+
+            # we should create this with the permissions as the old object
+            # currently its using the client verify key on the object
             action_object._save_to_blob_storage().unwrap()
+            # we should create this with the permissions of the old object
             self._set(
                 context=context,
                 action_object=action_object,
