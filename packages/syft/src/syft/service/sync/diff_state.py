@@ -39,6 +39,7 @@ from ...types.uid import UID
 from ...util.notebook_ui.components.sync import Label
 from ...util.notebook_ui.components.sync import SyncTableObject
 from ...util.notebook_ui.icons import Icon
+from ...util.util import prompt_warning_message
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
@@ -1192,6 +1193,7 @@ class ServerDiff(SyftObject):
         _include_server_status: bool = False,
     ) -> "ServerDiff":
         obj_uid_to_diff = {}
+        show_deletion_warning = False
         for obj_id in set(low_state.objects.keys()) | set(high_state.objects.keys()):
             low_obj = low_state.objects.get(obj_id, None)
             high_obj = high_state.objects.get(obj_id, None)
@@ -1216,6 +1218,7 @@ class ServerDiff(SyftObject):
             # So, skip if the object is not present on the *source* side
             source_obj = low_obj if direction == SyncDirection.LOW_TO_HIGH else high_obj
             if source_obj is None:
+                show_deletion_warning = True
                 continue
 
             diff = ObjectDiff.from_objects(
@@ -1271,6 +1274,15 @@ class ServerDiff(SyftObject):
             exclude_types=exclude_types,
             inplace=True,
         )
+
+        if show_deletion_warning:
+            prompt_warning_message(
+                message=(
+                    "The target server has objects not found on the source server. "
+                    "These objects cannot be deleted via syncing and only manual deletion is possible."
+                ),
+                confirm=False,
+            )
 
         return res
 
