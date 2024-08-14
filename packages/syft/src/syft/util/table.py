@@ -300,6 +300,7 @@ def itable_template_from_df(df: pd.DataFrame, itable_css: str | None = None) -> 
                  "data": df.to_numpy().tolist(),
                  "itable_css": itable_css})}
     <!-- End itable_template -->"""
+    return itable_template
 
 
 def render_itable_template(itable_str: str) -> str:
