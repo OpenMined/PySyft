@@ -67,7 +67,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install uv==0.2.36
           uv --version
-          python -m uv pip install tox==4.16.0 tox-uv==1.11.2 bump2version==1.0.1
+          python -m uv pip install tox==4.18.0 tox-uv==1.11.2 bump2version==1.0.1
 
       - name: Generate Release Metadata
         id: release_metadata
@@ -293,7 +293,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install uv==0.2.36
           uv --version
-          python -m uv pip instal tox==4.16.0 tox-uv==1.11.2 setuptools wheel twine bump2version PyYAML
+          python -m uv pip instal tox==4.18.0 tox-uv==1.11.2 setuptools wheel twine bump2version PyYAML
 
       - name: Bump to Final Release version
         run: |
