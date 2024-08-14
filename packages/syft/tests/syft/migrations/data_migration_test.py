@@ -5,6 +5,8 @@ import secrets
 # third party
 import faker
 import numpy as np
+import pytest
+from syft.types.errors import SyftException
 import yaml
 
 # syft absolute
@@ -136,8 +138,8 @@ def test_data_migration_same_version(tmp_path):
 
     # Load migration data on wrong worker
     with named_worker_context(secrets.token_hex(8)) as wrong_worker:
-        result = wrong_worker.root_client.load_migration_data(blob_path)
-        assert isinstance(result, SyftError)
+        with pytest.raises(SyftException):
+            result = wrong_worker.root_client.load_migration_data(blob_path)
 
     # Load migration data on correct worker
     # NOTE worker is correct because admin keys and server id are derived from server name,

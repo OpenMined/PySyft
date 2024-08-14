@@ -88,19 +88,10 @@ class MigrationService(AbstractService):
                 migration_state = self.get_state(context, canonical_name).unwrap(
                     public_message=f"Failed to get migration state for {canonical_name}."
                 )
+                if int(migration_state.current_version) != int(migration_state.latest_version):
+                    klasses_to_be_migrated.append(object_type)
             except NotFoundException:
-                migration_state = None
-            if (
-                migration_state is not None
-                and migration_state.current_version != migration_state.latest_version
-            ):
-                klasses_to_be_migrated.append(object_type)
-            else:
-                self.register_migration_state(
-                    context,
-                    current_version=object_version,
-                    canonical_name=canonical_name,
-                )
+                self.register_migration_state(context,current_version=object_version,canonical_name=canonical_name)
 
         return klasses_to_be_migrated
 
@@ -324,13 +315,15 @@ class MigrationService(AbstractService):
             # Exception from the new Error Handling pattern, no need to change
             if result.is_err():
                 if (
-                    ignore_existing and "Duplication Key Error" in result.value
+                    ignore_existing and "Duplication Key Error" in result.err()._private_message
                 ):  # TODO ERROR: does this check work?
                     print(
                         f"{type(migrated_object)} #{migrated_object.id} already exists"
                     )
                     continue
                 else:
+                    import pdb
+                    pdb.set_trace()
                     result.unwrap()  # this will raise the exception inside the wrapper
         return SyftSuccess(message="Created migrate objects!")
 
