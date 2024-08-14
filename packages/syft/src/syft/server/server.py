@@ -22,7 +22,6 @@ from typing import cast
 # third party
 from nacl.signing import SigningKey
 from result import Err
-from result import Ok
 from result import Result
 
 # relative
@@ -1156,16 +1155,18 @@ class Server(AbstractServer):
             api_call = api_call.message
 
             role = self.get_role_for_credentials(credentials=credentials)
-            settings = self.get_settings()
-            # TODO: This instance check should be removed once we can ensure that
-            # self.settings will always return a ServerSettings object.
-            if (
-                settings is not None
-                and not isinstance(settings, Ok)
-                and not settings.allow_guest_sessions
-                and role == ServiceRole.GUEST
-            ):
-                return SyftError(message="Server doesn't allow guest sessions.")
+            # NOTE: can we cache this?
+
+            # settings = self.get_settings()
+            # # TODO: This instance check should be removed once we can ensure that
+            # # self.settings will always return a ServerSettings object.
+            # if (
+            #     settings is not None
+            #     and not isinstance(settings, Ok)
+            #     and not settings.allow_guest_sessions
+            #     and role == ServiceRole.GUEST
+            # ):
+            #     return SyftError(message="Server doesn't allow guest sessions.")
             context = AuthedServiceContext(
                 server=self,
                 credentials=credentials,

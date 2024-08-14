@@ -86,14 +86,28 @@ class CommonMixin:
     json_document: Mapped[dict] = mapped_column(JSON, default={})
 
 
-def model_dump(obj: pydantic.BaseModel) -> dict:
+def should_handle_as_bytes(type_) -> bool:
     # relative
     from ...util.misc_objs import HTMLObject
     from ...util.misc_objs import MarkdownDescription
     from ..action.action_object import Action
     from ..request.request import Change
+    from ..request.request import ChangeStatus
     from ..settings.settings import PwdTokenResetConfig
 
+    return (
+        type_.annotation is LinkedObject
+        or type_.annotation == list[Change]
+        or type_.annotation == Any | None  # type: ignore
+        or type_.annotation == Action | None  # type: ignore
+        or getattr(type_.annotation, "__origin__", None) is dict
+        or type_.annotation == HTMLObject | MarkdownDescription
+        or type_.annotation == PwdTokenResetConfig
+        or type_.annotation == list[ChangeStatus]
+    )
+
+
+def model_dump(obj: pydantic.BaseModel) -> dict:
     obj_dict = obj.model_dump()
     for key, type_ in obj.model_fields.items():
         if type_.annotation is UID:
@@ -106,15 +120,7 @@ def model_dump(obj: pydantic.BaseModel) -> dict:
         ):
             attr = getattr(obj, key)
             obj_dict[key] = str(attr) if attr is not None else None
-        elif (
-            type_.annotation is LinkedObject
-            or type_.annotation == list[Change]
-            or type_.annotation == Any | None  # type: ignore
-            or type_.annotation == Action | None  # type: ignore
-            or getattr(type_.annotation, "__origin__", None) is dict
-            or type_.annotation == HTMLObject | MarkdownDescription
-            or type_.annotation == PwdTokenResetConfig
-        ):
+        elif should_handle_as_bytes(type_):
             # not very efficient as it serializes the object twice
             data = sy.serialize(getattr(obj, key), to_bytes=True)
             base64_data = base64.b64encode(data).decode("utf-8")
@@ -128,11 +134,6 @@ T = TypeVar("T", bound=pydantic.BaseModel)
 
 def model_validate(obj_type: type[T], obj_dict: dict) -> T:
     # relative
-    from ...util.misc_objs import HTMLObject
-    from ...util.misc_objs import MarkdownDescription
-    from ..action.action_object import Action
-    from ..request.request import Change
-    from ..settings.settings import PwdTokenResetConfig
 
     for key, type_ in obj_type.model_fields.items():
         if key not in obj_dict:
@@ -144,25 +145,24 @@ def model_validate(obj_type: type[T], obj_dict: dict) -> T:
             type_.annotation is SyftVerifyKey
             or type_.annotation == SyftVerifyKey | None
         ):
-            obj_dict[key] = (
-                SyftVerifyKey.from_string(obj_dict[key]) if obj_dict[key] else None
-            )
+            if obj_dict[key] is None:
+                obj_dict[key] = None
+            elif isinstance(obj_dict[key], str):
+                obj_dict[key] = SyftVerifyKey.from_string(obj_dict[key])
+            elif isinstance(obj_dict[key], SyftVerifyKey):
+                obj_dict[key] = obj_dict[key]
+
         elif (
             type_.annotation is SyftSigningKey
             or type_.annotation == SyftSigningKey | None
         ):
-            obj_dict[key] = (
-                SyftSigningKey.from_string(obj_dict[key]) if obj_dict[key] else None
-            )
-        elif (
-            type_.annotation is LinkedObject
-            or type_.annotation == list[Change]
-            or type_.annotation == Any | None
-            or type_.annotation == Action | None
-            or getattr(type_.annotation, "__origin__", None) is dict
-            or type_.annotation == HTMLObject | MarkdownDescription
-            or type_.annotation == PwdTokenResetConfig
-        ):
+            if obj_dict[key] is None:
+                obj_dict[key] = None
+            elif isinstance(obj_dict[key], str):
+                obj_dict[key] = SyftSigningKey(signing_key=obj_dict[key])
+            elif isinstance(obj_dict[key], SyftSigningKey):
+                obj_dict[key] = obj_dict[key]
+        elif should_handle_as_bytes(type_):
             data = base64.b64decode(obj_dict[key])
             obj_dict[key] = sy.deserialize(data, from_bytes=True)
 
@@ -269,19 +269,27 @@ class ObjectStash(Generic[SyftT]):
         return Ok(self.row_as_obj(result))
 
     def _get_field_filter(
-        self, field_name: str, field_value: str
+        self,
+        field_name: str,
+        field_value: str,
+        table: Table | None = None,
     ) -> sa.sql.elements.BinaryExpression:
+        table = table if table is not None else self.table
         if field_name == "id":
-            # use id column directly
-            return self.table.c.id == field_value
-        return func.json_extract(self.table.c.fields, f"$.{field_name}") == field_value
+            return table.c.id == field_value
+        return func.json_extract(table.c.fields, f"$.{field_name}") == field_value
 
     def _get_by_field(
-        self, credentials: SyftVerifyKey, field_name: str, field_value: str
+        self,
+        credentials: SyftVerifyKey,
+        field_name: str,
+        field_value: str,
+        table: Table | None = None,
     ) -> Result[Row, str]:
-        stmt = self.table.select().where(
+        table = table if table is not None else self.table
+        stmt = table.select().where(
             sa.and_(
-                self._get_field_filter(field_name, field_value),
+                self._get_field_filter(field_name, field_value, table=table),
                 self._get_permission_filter(credentials),
             )
         )
@@ -311,12 +319,9 @@ class ObjectStash(Generic[SyftT]):
         return model_validate(self.object_type, row.fields)
 
     def get_role(self, credentials: SyftVerifyKey) -> ServiceRole:
-        stmt = (
-            Table("User", Base.metadata)
-            .select()
-            .where(
-                self._get_field_filter("verify_key", str(credentials)),
-            )
+        user_table = Table("User", Base.metadata)
+        stmt = user_table.select().where(
+            self._get_field_filter("verify_key", str(credentials), table=user_table),
         )
         result = self.session.execute(stmt).first()
         if result is None:
