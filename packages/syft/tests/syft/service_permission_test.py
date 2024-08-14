@@ -4,6 +4,7 @@ import pytest
 # syft absolute
 from syft import SyftError
 from syft.client.api import SyftAPICall
+from syft.types.errors import SyftException
 
 
 @pytest.fixture
@@ -49,6 +50,5 @@ def test_directly_call_service_no_permission(guest_datasite_client):
         server_uid=guest_datasite_client.id, path="user.get_all", args=[], kwargs={}
     )
     signed_call = api_call.sign(guest_datasite_client.api.signing_key)
-    signed_result = guest_datasite_client.api.connection.make_call(signed_call)
-    result = signed_result.message.data
-    assert isinstance(result, SyftError)
+    with pytest.raises(SyftException):
+        guest_datasite_client.api.connection.make_call(signed_call)
