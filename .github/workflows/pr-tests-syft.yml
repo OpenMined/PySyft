@@ -66,7 +66,7 @@ jobs:
         if: steps.changes.outputs.syft == 'true'
         run: |
           python -m pip install --upgrade pip
-          pip install uv==0.2.17 tox tox-uv==1.9.0
+          pip install uv==0.2.17 tox==4.16.0 tox-uv==1.9.0
           uv --version
 
       - name: Get uv cache dir
@@ -157,7 +157,7 @@ jobs:
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         run: |
           python -m pip install --upgrade pip
-          pip install uv==0.2.17 tox tox-uv==1.9.0
+          pip install uv==0.2.17 tox==4.16.0 tox-uv==1.9.0
           uv --version
 
       - name: Get uv cache dir
@@ -235,7 +235,7 @@ jobs:
         if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         run: |
           python -m pip install --upgrade pip
-          pip install uv==0.2.17 tox tox-uv==1.9.0
+          pip install uv==0.2.17 tox==4.16.0 tox-uv==1.9.0
           uv --version
 
       - name: Get uv cache dir
@@ -332,7 +332,7 @@ jobs:
         if: steps.changes.outputs.syft == 'true'
         run: |
           python -m pip install --upgrade pip
-          pip install uv==0.2.17 tox tox-uv==1.9.0
+          pip install uv==0.2.17 tox==4.16.0 tox-uv==1.9.0
           uv --version
 
       - name: Get uv cache dir
