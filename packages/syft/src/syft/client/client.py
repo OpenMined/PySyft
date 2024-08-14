@@ -562,8 +562,10 @@ class PythonConnection(ServerConnection):
             )
         else:
             service_context = ServerServiceContext(server=self.server)
+            print("start")
             method = self.server.get_service_method(UserService.register)
             response = method(context=service_context, new_user=new_user)
+            print("end")
         return response
 
     def make_call(self, signed_call: SignedSyftAPICall) -> Any | SyftError:

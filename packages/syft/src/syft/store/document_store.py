@@ -345,6 +345,7 @@ class StorePartition:
         return partition_key in self.unique_cks
 
     def matches_searchable_cks(self, partition_key: PartitionKey) -> bool:
+        print("searchable cks", self.searchable_cks)
         return partition_key in self.searchable_cks
 
     def store_query_key(self, obj: Any) -> QueryKey:
@@ -719,6 +720,7 @@ class BaseStash:
 
         for qk in qks.all:
             pk = qk.partition_key
+            print("pk", pk, type(pk))
             if self.partition.matches_unique_cks(pk):
                 unique_keys.append(qk)
             elif self.partition.matches_searchable_cks(pk):
@@ -728,15 +730,21 @@ class BaseStash:
                     f"{qk} not in {type(self.partition)} unique or searchable keys"
                 )
 
+        print("unique keys", unique_keys)
+        print("searchable keys", searchable_keys)
         index_qks = QueryKeys(qks=unique_keys)
         search_qks = QueryKeys(qks=searchable_keys)
 
-        return self.partition.find_index_or_search_keys(
+        
+        res = self.partition.find_index_or_search_keys(
             credentials=credentials,
             index_qks=index_qks,
             search_qks=search_qks,
             order_by=order_by,
         )
+        print("res", res)
+
+        return res
 
     def query_all_kwargs(
         self,
@@ -756,9 +764,13 @@ class BaseStash:
         qks: QueryKey | QueryKeys,
         order_by: PartitionKey | None = None,
     ) -> Result[BaseStash.object_type | None, str]:
-        return self.query_all(
+        res = self.query_all(
             credentials=credentials, qks=qks, order_by=order_by
-        ).and_then(first_or_none)
+        )
+        print("query one res", res)
+        print("query keys", qks)
+        
+        return res.and_then(first_or_none)
 
     def query_one_kwargs(
         self,

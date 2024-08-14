@@ -162,6 +162,7 @@ class UserService(AbstractService):
             result = self.stash.get_by_signing_key(
                 credentials=credentials, signing_key=credentials
             )
+        print("result", result)
         if result.is_ok():
             # this seems weird that we get back None as Ok(None)
             user = result.ok()
@@ -473,7 +474,6 @@ class UserService(AbstractService):
             context.server.settings.signup_enabled
             or request_user_role in DATA_OWNER_ROLE_LEVEL
         )
-
         if not can_user_register:
             return SyftError(
                 message=f"You don't have permission to create an account "

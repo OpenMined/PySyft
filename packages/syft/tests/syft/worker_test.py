@@ -3,7 +3,7 @@ from secrets import token_hex
 from typing import Any
 
 # third party
-from nacl.exceptions import BadSignatureError
+from cryptography.exceptions import InvalidSignature
 import numpy as np
 import pytest
 from result import Ok
@@ -341,13 +341,13 @@ def test_worker_handle_api_response(
     assert isinstance(signed_result, SignedSyftAPICall)
 
     # validation should work with the worker key
-    root_client.credentials.verify_key.verify_key.verify(
-        signed_result.serialized_message, signed_result.signature
+    root_client.credentials.verify_key.verify(
+        message=signed_result.serialized_message,signature= signed_result.signature
     )
     # the validation should fail with the client key
-    with pytest.raises(BadSignatureError):
-        guest_client.credentials.verify_key.verify_key.verify(
-            signed_result.serialized_message, signed_result.signature
+    with pytest.raises(InvalidSignature):
+        guest_client.credentials.verify_key.verify(
+            message=signed_result.serialized_message,signature= signed_result.signature
         )
 
     # the signed result should be the same as the unsigned one

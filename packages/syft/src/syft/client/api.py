@@ -16,7 +16,7 @@ from typing import get_args
 from typing import get_origin
 
 # third party
-from nacl.exceptions import BadSignatureError
+from cryptography.exceptions import InvalidSignature
 from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import EmailStr
@@ -193,11 +193,11 @@ class SignedSyftAPICall(SyftObject):
     @property
     def is_valid(self) -> Result[SyftSuccess, SyftError]:
         try:
-            _ = self.credentials.verify_key.verify(
-                self.serialized_message, self.signature
+            _ = self.credentials.verify(
+                message=self.serialized_message,signature= self.signature
             )
-        except BadSignatureError:
-            return SyftError(message="BadSignatureError")
+        except InvalidSignature:
+            return SyftError(message="InvalidSignatureError")
 
         return SyftSuccess(message="Credentials are valid")
 
@@ -217,12 +217,13 @@ class SyftAPICall(SyftObject):
     blocking: bool = True
 
     def sign(self, credentials: SyftSigningKey) -> SignedSyftAPICall:
-        signed_message = credentials.signing_key.sign(_serialize(self, to_bytes=True))
+        message = _serialize(self, to_bytes=True)
+        signature = credentials.sign(message)
 
         return SignedSyftAPICall(
             credentials=credentials.verify_key,
-            serialized_message=signed_message.message,
-            signature=signed_message.signature,
+            serialized_message=message,
+            signature=signature,
         )
 
     def __repr__(self) -> str:
@@ -240,12 +241,13 @@ class SyftAPIData(SyftBaseObject):
     data: Any = None
 
     def sign(self, credentials: SyftSigningKey) -> SignedSyftAPICall:
-        signed_message = credentials.signing_key.sign(_serialize(self, to_bytes=True))
+        message = _serialize(self, to_bytes=True)
+        signature = credentials.sign(message)
 
         return SignedSyftAPICall(
             credentials=credentials.verify_key,
-            serialized_message=signed_message.message,
-            signature=signed_message.signature,
+            serialized_message=message,
+            signature=signature,
         )
 
 

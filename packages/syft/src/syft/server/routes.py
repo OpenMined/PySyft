@@ -267,6 +267,8 @@ def make_routes(worker: Worker, settings: ServerSettings | None = None) -> APIRo
         context = ServerServiceContext(server=server)
         method = server.get_method_with_context(UserService.register, context)
 
+        print("User Create", user_create) 
+        print("created by ", user_create.created_by, type(user_create.created_by))
         result = method(new_user=user_create)
 
         if isinstance(result, SyftError):

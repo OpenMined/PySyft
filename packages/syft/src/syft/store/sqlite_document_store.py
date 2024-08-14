@@ -270,6 +270,9 @@ class SQLiteBackingStore(KeyValueBackingStore):
         rows = cursor.fetchall()
         if rows is None:
             return {}
+        
+        for row in rows:
+            print("row",row[0])
 
         for row in rows:
             keys.append(UID(row[0]))

@@ -401,6 +401,7 @@ class KeyValueStorePartition(StorePartition):
         # third party
         if len(index_qks.all) > 0:
             index_results = self._get_keys_index(qks=index_qks)
+            print("index", index_results)
             if index_results.is_ok():
                 if ids is None:
                     ids = index_results.ok()
@@ -566,15 +567,22 @@ class KeyValueStorePartition(StorePartition):
         return Ok(SyftSuccess(message="Deleted"))
 
     def _get_keys_index(self, qks: QueryKeys) -> Result[set[Any], str]:
+        # print("unique keys [get_keys_index]", self.unique_keys._get_all())
         try:
             # match AND
             subsets: list = []
             for qk in qks.all:
                 subset: set = set()
+                # print("qk", qk)
                 pk_key, pk_value = qk.key, qk.value
+                print("type", type(pk_value))
                 if pk_key not in self.unique_keys:
+                    
                     return Err(f"Failed to query index with {qk}")
                 ck_col = self.unique_keys[pk_key]
+                print("ck col", type(ck_col), ck_col)
+                print("pk_value", pk_value)
+                print("pk_value in keys", pk_value in ck_col.keys())
                 if pk_value not in ck_col.keys():
                     # must be at least one in all query keys
                     continue

@@ -20,7 +20,7 @@ from typing import Any
 from typing import cast
 
 # third party
-from nacl.signing import SigningKey
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from result import Err
 from result import Result
 
@@ -304,7 +304,7 @@ class Server(AbstractServer):
         *,  # Trasterisk
         name: str | None = None,
         id: UID | None = None,
-        signing_key: SyftSigningKey | SigningKey | None = None,
+        signing_key: SyftSigningKey | RSAPrivateKey | None = None,
         action_store_config: StoreConfig | None = None,
         document_store_config: StoreConfig | None = None,
         root_email: str | None = default_root_email,
@@ -360,7 +360,7 @@ class Server(AbstractServer):
         skey = None
         if signing_key_env:
             skey = SyftSigningKey.from_string(signing_key_env)
-        elif isinstance(signing_key, SigningKey):
+        elif isinstance(signing_key, RSAPrivateKey):
             skey = SyftSigningKey(signing_key=signing_key)
         else:
             skey = signing_key
@@ -659,7 +659,7 @@ class Server(AbstractServer):
     ) -> Server:
         uid = get_named_server_uid(name)
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
-        key = SyftSigningKey(signing_key=SigningKey(name_hash))
+        key = SyftSigningKey.generate()
         blob_storage_config = None
 
         server_type = ServerType(server_type)

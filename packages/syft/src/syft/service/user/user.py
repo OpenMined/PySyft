@@ -63,7 +63,7 @@ class User(SyftObject):
     mock_execution_permission: bool = False
 
     # serde / storage rules
-    __attr_searchable__ = ["name", "email", "verify_key", "role"]
+    __attr_searchable__ = ["name", "email", "verify_key","signing_key", "role"]
     __attr_unique__ = ["email", "signing_key", "verify_key"]
     __repr_attrs__ = ["name", "email"]
 

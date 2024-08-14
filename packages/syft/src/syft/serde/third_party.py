@@ -8,8 +8,7 @@ from io import BytesIO
 
 # third party
 from dateutil import parser
-from nacl.signing import SigningKey
-from nacl.signing import VerifyKey
+from syft.server.credentials import SyftSigningKey, SyftVerifyKey
 import numpy as np
 from pandas import DataFrame
 from pandas import Series
@@ -38,22 +37,23 @@ from .recursive_primitives import recursive_serde_register_type
 from .recursive_primitives import serialize_type
 from .serialize import _serialize as serialize
 
+
+
 recursive_serde_register(
-    SigningKey,
+    SyftSigningKey,
     serialize=lambda x: bytes(x),
-    deserialize=lambda x: SigningKey(x),
-    canonical_name="nacl_signing_key",
+    deserialize=lambda x: SyftSigningKey(signing_key=x),
+    canonical_name="syft_signing_key",
     version=1,
 )
 
 recursive_serde_register(
-    VerifyKey,
+    SyftVerifyKey,
     serialize=lambda x: bytes(x),
-    deserialize=lambda x: VerifyKey(x),
-    canonical_name="nacl_verify_key",
+    deserialize=lambda x: SyftVerifyKey(verify_key=x),
+    canonical_name="syft_verify_key",
     version=1,
 )
-
 
 # result Ok and Err
 recursive_serde_register(

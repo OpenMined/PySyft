@@ -164,7 +164,7 @@ class ProjectEvent(SyftObject):
                 )
             if self.creator_verify_key is None:
                 return SyftError(message=f"{self}'s creator_verify_key is None")
-            self.creator_verify_key.verify_key.verify(event_hash_bytes, self.signature)
+            self.creator_verify_key.verify(signature=self.signature,message=event_hash_bytes)
             return SyftSuccess(message="Event signature is valid")
         except Exception as e:
             return SyftError(message=f"Failed to validate message. {e}")
@@ -235,8 +235,8 @@ class ProjectEvent(SyftObject):
         self.event_hash = event_hash
 
         # Sign Hash
-        signed_obj = signing_key.signing_key.sign(event_hash_bytes)
-        self.signature = signed_obj._signature
+        signature = signing_key.sign(event_hash_bytes)
+        self.signature = signature
 
     def publish(self, project: Project) -> SyftSuccess | SyftError:
         try:

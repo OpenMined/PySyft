@@ -38,8 +38,8 @@ from typing import Any
 # third party
 from IPython.display import display
 from forbiddenfruit import curse
-from nacl.signing import SigningKey
-from nacl.signing import VerifyKey
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 import nh3
 import requests
 
@@ -178,7 +178,7 @@ def aggressive_set_attr(obj: object, name: str, attr: object) -> None:
 
 def key_emoji(key: object) -> str:
     try:
-        if isinstance(key, bytes | SigningKey | VerifyKey):
+        if isinstance(key, bytes | RSAPrivateKey | RSAPublicKey):
             hex_chars = bytes(key).hex()[-8:]
             return char_emoji(hex_chars=hex_chars)
     except Exception as e:

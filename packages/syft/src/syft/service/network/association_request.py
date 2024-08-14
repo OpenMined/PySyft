@@ -107,8 +107,8 @@ class AssociationRequestChange(Change):
 
             # Verifying if the challenge is valid
             try:
-                self.remote_peer.verify_key.verify_key.verify(
-                    random_challenge, challenge_signature
+                self.remote_peer.verify_key.verify(
+                   message= random_challenge,signature= challenge_signature
                 )
             except Exception as e:
                 return Err(SyftError(message=str(e)))

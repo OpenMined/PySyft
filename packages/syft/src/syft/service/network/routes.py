@@ -75,8 +75,8 @@ class ServerRoute:
 
         try:
             # Verifying if the challenge is valid
-            context.server.verify_key.verify_key.verify(
-                random_challenge, challenge_signature
+            context.server.verify_key.verify(
+                signature=challenge_signature,message=random_challenge, 
             )
         except Exception:
             return SyftError(message="Signature Verification Failed in ping")

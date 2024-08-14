@@ -5,9 +5,6 @@ import json
 import os
 import uuid
 
-# third party
-from nacl.encoding import HexEncoder
-from nacl.signing import SigningKey
 
 # we want to bootstrap servers with persistent uids and keys and allow a variety of ways
 # to resolve these at startup

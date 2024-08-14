@@ -278,9 +278,9 @@ class NetworkService(AbstractService):
         # this way they can match up who we are with who they think we are
         # Sending a signed messages for the peer to verify
 
-        challenge_signature = context.server.signing_key.signing_key.sign(
+        challenge_signature = context.server.signing_key.sign(
             challenge
-        ).signature
+        )
 
         return challenge_signature
 
