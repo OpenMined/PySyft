@@ -892,7 +892,7 @@ class SyftClient:
         if register:
             self.register(
                 email=email, password=password, password_verify=password, **kwargs
-            ).unwrap()
+            )
 
         user_private_key = self.connection.login(email=email, password=password)
 
@@ -961,7 +961,6 @@ class SyftClient:
         user_code_items = self.code.get_all_for_user()
         load_approved_policy_code(user_code_items=user_code_items, context=None)
 
-    @as_result(SyftException)
     def register(
         self,
         name: str,
