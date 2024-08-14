@@ -385,12 +385,6 @@ class UserCodeService(AbstractService):
         except Exception:
             return IsExecutionAllowedEnum.INVALID_OUTPUT_POLICY
 
-        # policy_is_valid = (
-        #     output_policy is not None and output_policy._is_valid(context)
-        # )
-        # if not policy_is_valid:
-        #     return IsExecutionAllowedEnum.INVALID_OUTPUT_POLICY
-
         return IsExecutionAllowedEnum.ALLOWED
 
     def is_execution_on_owned_args_allowed(self, context: AuthedServiceContext) -> bool:
