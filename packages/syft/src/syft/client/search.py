@@ -50,6 +50,7 @@ class SearchResults:
     def __len__(self) -> int:
         return len(self._datasets)
 
+
 # class Search:
 #     def __init__(self, datasites: DatasiteRegistry) -> None:
 #         self.datasites: list[tuple[ServerPeer, ServerMetadataJSON | None]] = (
@@ -65,7 +66,7 @@ class SearchResults:
 #             client = peer.guest_client
 #             results = client.api.services.dataset.search(name=name)
 #             return (client, results)
-#         except Exception as e:  # noqa
+#         except Exception as e:
 #             warning = SyftWarning(
 #                 message=f"Got exception {e} at server {server_metadata.name}"
 #             )
