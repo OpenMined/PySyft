@@ -13,7 +13,6 @@ from typing import Any
 from pydantic import Field
 from pydantic import model_validator
 from result import Err
-from result import Ok
 from result import Result
 from typing_extensions import Self
 
@@ -24,12 +23,8 @@ from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...service.context import AuthedServiceContext
 from ...service.worker.worker_pool import SyftWorker
-from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
-from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
-from ...store.document_store import UIDPartitionKey
 from ...types.datetime import DateTime
 from ...types.datetime import format_timedelta
 from ...types.syft_migration import migrate
@@ -50,6 +45,7 @@ from ..response import SyftError
 from ..response import SyftNotReady
 from ..response import SyftSuccess
 from ..user.user import UserView
+from .base_stash import ObjectStash
 from .html_template import job_repr_template
 
 
@@ -842,15 +838,15 @@ class JobInfo(SyftObject):
 
 
 @instrument
-@serializable(canonical_name="JobStash", version=1)
-class JobStash(BaseUIDStoreStash):
+@serializable(canonical_name="JobStashSQL", version=1)
+class JobStash(ObjectStash[Job]):
     object_type = Job
     settings: PartitionSettings = PartitionSettings(
         name=Job.__canonical_name__, object_type=Job
     )
 
     def __init__(self, store: DocumentStore) -> None:
-        super().__init__(store=store)
+        super().__init__(store)
 
     def set_result(
         self,
@@ -858,84 +854,32 @@ class JobStash(BaseUIDStoreStash):
         item: Job,
         add_permissions: list[ActionObjectPermission] | None = None,
     ) -> Result[Job | None, str]:
-        valid = self.check_type(item, self.object_type)
-        if valid.is_err():
-            return SyftError(message=valid.err())
-
-        # Ensure we never save cached result data in the database,
-        # as they can be arbitrarily large
         if (
             isinstance(item.result, ActionObject)
             and item.result.syft_blob_storage_entry_id is not None
         ):
             item.result._clear_cache()
 
-        return super().update(credentials, item, add_permissions)
+        return self.update(credentials, item, add_permissions)
 
-    def get_by_result_id(
-        self,
-        credentials: SyftVerifyKey,
-        result_id: UID,
-    ) -> Result[Job | None, str]:
-        qks = QueryKeys(
-            qks=[PartitionKey(key="result_id", type_=UID).with_obj(result_id)]
+    def get_active(self, credentials: SyftVerifyKey) -> Result[list[Job], str]:
+        return self.get_all_by_field(
+            credentials=credentials, field_name="status", field_value=JobStatus.CREATED
         )
-        res = self.query_all(credentials=credentials, qks=qks)
-        if res.is_err():
-            return res
-
-        res = res.ok()
-        if len(res) == 0:
-            return Ok(None)
-        elif len(res) > 1:
-            return Err("multiple Jobs found")
-        else:
-            return Ok(res[0])
-
-    def get_by_parent_id(
-        self, credentials: SyftVerifyKey, uid: UID
-    ) -> Result[Job | None, str]:
-        qks = QueryKeys(
-            qks=[PartitionKey(key="parent_job_id", type_=UID).with_obj(uid)]
-        )
-        item = self.query_all(credentials=credentials, qks=qks)
-        return item
-
-    def delete_by_uid(
-        self, credentials: SyftVerifyKey, uid: UID
-    ) -> Result[SyftSuccess, str]:
-        qk = UIDPartitionKey.with_obj(uid)
-        result = super().delete(credentials=credentials, qk=qk)
-        if result.is_ok():
-            return Ok(SyftSuccess(message=f"ID: {uid} deleted"))
-        return result
-
-    def get_active(self, credentials: SyftVerifyKey) -> Result[SyftSuccess, str]:
-        qks = QueryKeys(
-            qks=[
-                PartitionKey(key="status", type_=JobStatus).with_obj(
-                    JobStatus.PROCESSING
-                )
-            ]
-        )
-        return self.query_all(credentials=credentials, qks=qks)
 
     def get_by_worker(
         self, credentials: SyftVerifyKey, worker_id: str
     ) -> Result[list[Job], str]:
-        qks = QueryKeys(
-            qks=[PartitionKey(key="job_worker_id", type_=str).with_obj(worker_id)]
+        return self.get_all_by_field(
+            credentials=credentials, field_name="worker_id", field_value=worker_id
         )
-        return self.query_all(credentials=credentials, qks=qks)
 
     def get_by_user_code_id(
         self, credentials: SyftVerifyKey, user_code_id: UID
     ) -> Result[list[Job], str]:
-        qks = QueryKeys(
-            qks=[PartitionKey(key="user_code_id", type_=UID).with_obj(user_code_id)]
+        return self.get_all_by_field(
+            credentials=credentials, field_name="user_code_id", field_value=user_code_id
         )
-
-        return self.query_all(credentials=credentials, qks=qks)
 
 
 @serializable()
