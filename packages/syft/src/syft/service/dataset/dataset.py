@@ -38,6 +38,7 @@ from ...util.markdown import as_markdown_python_code
 from ...util.misc_objs import MarkdownDescription
 from ...util.notebook_ui.icons import Icon
 from ...util.table import itable_template_from_df
+from ...util.util import repr_truncation
 from ..action.action_data_empty import ActionDataEmpty
 from ..action.action_object import ActionObject
 from ..data_subject.data_subject import DataSubject
@@ -135,9 +136,10 @@ class Asset(SyftObject):
             if isinstance(private_data_obj, ActionObject):
                 df = pd.DataFrame(self.data.syft_action_data)
                 data_table_line = itable_template_from_df(df=private_data_obj.head(5))
-
             elif isinstance(private_data_obj, pd.DataFrame):
                 data_table_line = itable_template_from_df(df=private_data_obj.head(5))
+            elif isinstance(private_data_obj, list | dict | set | str):
+                data_table_line = repr_truncation(private_data_obj)
             else:
                 data_table_line = private_data_res.ok_value
 
@@ -146,6 +148,8 @@ class Asset(SyftObject):
             mock_table_line = itable_template_from_df(df=df.head(5))
         elif isinstance(self.mock, pd.DataFrame):
             mock_table_line = itable_template_from_df(df=self.mock.head(5))
+        elif isinstance(self.mock, list | dict | set | str):
+            mock_table_line = repr_truncation(self.mock)
         else:
             mock_table_line = self.mock
             if isinstance(mock_table_line, SyftError):

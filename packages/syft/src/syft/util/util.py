@@ -1082,3 +1082,49 @@ def get_nb_secrets(defaults: dict | None = None) -> dict:
         print(f"Unable to load {filename}")
 
     return defaults
+
+
+def repr_truncation(obj: Any, max_elements: int = 10) -> str:
+    """
+    Return a truncated string representation of the object if it is too long.
+
+    Args:
+    - obj: The object to be represented (can be str, list, dict, set).
+    - max_elements: Maximum number of elements to display before truncating.
+
+    Returns:
+    - A string representation of the object, truncated if necessary.
+    """
+    if isinstance(obj, str):
+        if len(obj) <= max_elements:
+            return repr(obj)
+        return f"{repr(obj[:max_elements//2])} ... {repr(obj[-max_elements//2:])}"
+
+    elif isinstance(obj, list):
+        if len(obj) <= max_elements:
+            return repr(obj)
+        first_part = obj[: max_elements // 2]
+        last_part = obj[-(max_elements // 2) :]
+        return f'[{", ".join(map(repr, first_part))} ... {", ".join(map(repr, last_part))}]'
+
+    elif isinstance(obj, dict):
+        if len(obj) <= max_elements:
+            return repr(obj)
+        items = list(obj.items())
+        first_part = items[: max_elements // 2]
+        last_part = items[-(max_elements // 2) :]
+        first_repr = ", ".join(f"{repr(k)}: {repr(v)}" for k, v in first_part)
+        last_repr = ", ".join(f"{repr(k)}: {repr(v)}" for k, v in last_part)
+        return f"{{{first_repr} ... {last_repr}}}"
+
+    elif isinstance(obj, set):
+        if len(obj) <= max_elements:
+            return repr(obj)
+        items = list(obj)
+        first_part = items[: max_elements // 2]
+        last_part = items[-(max_elements // 2) :]
+        return f'{{{", ".join(map(repr, first_part))} ... {", ".join(map(repr, last_part))}}}'
+
+    else:
+        # Fallback for other types
+        return repr(obj)
