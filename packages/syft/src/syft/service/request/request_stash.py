@@ -1,20 +1,17 @@
 # stdlib
 
 # third party
-from result import Ok
 from result import Result
-from syft.service.job.base_stash import ObjectStash
 
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
 from ...types.datetime import DateTime
 from ...types.uid import UID
 from ...util.telemetry import instrument
+from ..job.base_stash import ObjectStash
 from .request import Request
 
 RequestingUserVerifyKeyPartitionKey = PartitionKey(
@@ -51,5 +48,5 @@ class RequestStash(ObjectStash[Request]):
         return self.get_all_by_field(
             credentials=credentials,
             field_name="code_id",
-            field_value=user_code_id,
+            field_value=str(user_code_id),
         )

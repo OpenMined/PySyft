@@ -2,6 +2,7 @@
 
 # stdlib
 import base64
+from enum import Enum
 import json
 import threading
 from typing import Any
@@ -20,6 +21,7 @@ from sqlalchemy import Row
 from sqlalchemy import Table
 from sqlalchemy import TypeDecorator
 from sqlalchemy import create_engine
+from sqlalchemy import func
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import Session
@@ -40,7 +42,6 @@ from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
-from ..action.action_object import Action
 from ..action.action_permissions import ActionObjectEXECUTE
 from ..action.action_permissions import ActionObjectOWNER
 from ..action.action_permissions import ActionObjectPermission
@@ -49,6 +50,7 @@ from ..action.action_permissions import ActionObjectWRITE
 from ..action.action_permissions import ActionPermission
 from ..action.action_permissions import StoragePermission
 from ..response import SyftSuccess
+from ..user.user_roles import ServiceRole
 
 
 class Base(DeclarativeBase):
@@ -85,21 +87,33 @@ class CommonMixin:
 
 
 def model_dump(obj: pydantic.BaseModel) -> dict:
-    from syft.service.request.request import Change
+    # relative
+    from ...util.misc_objs import HTMLObject
+    from ...util.misc_objs import MarkdownDescription
+    from ..action.action_object import Action
+    from ..request.request import Change
+    from ..settings.settings import PwdTokenResetConfig
 
     obj_dict = obj.model_dump()
     for key, type_ in obj.model_fields.items():
         if type_.annotation is UID:
             obj_dict[key] = obj_dict[key].no_dash
-        elif type_.annotation is SyftVerifyKey:
-            obj_dict[key] = str(getattr(obj, key))
-        elif type_.annotation is SyftSigningKey:
-            obj_dict[key] = str(getattr(obj, key))
+        elif (
+            type_.annotation is SyftVerifyKey
+            or type_.annotation == SyftVerifyKey | None
+            or type_.annotation is SyftSigningKey
+            or type_.annotation == SyftSigningKey | None
+        ):
+            attr = getattr(obj, key)
+            obj_dict[key] = str(attr) if attr is not None else None
         elif (
             type_.annotation is LinkedObject
             or type_.annotation == list[Change]
             or type_.annotation == Any | None  # type: ignore
             or type_.annotation == Action | None  # type: ignore
+            or getattr(type_.annotation, "__origin__", None) is dict
+            or type_.annotation == HTMLObject | MarkdownDescription
+            or type_.annotation == PwdTokenResetConfig
         ):
             # not very efficient as it serializes the object twice
             data = sy.serialize(getattr(obj, key), to_bytes=True)
@@ -113,7 +127,12 @@ T = TypeVar("T", bound=pydantic.BaseModel)
 
 
 def model_validate(obj_type: type[T], obj_dict: dict) -> T:
-    from syft.service.request.request import Change
+    # relative
+    from ...util.misc_objs import HTMLObject
+    from ...util.misc_objs import MarkdownDescription
+    from ..action.action_object import Action
+    from ..request.request import Change
+    from ..settings.settings import PwdTokenResetConfig
 
     for key, type_ in obj_type.model_fields.items():
         if key not in obj_dict:
@@ -121,15 +140,28 @@ def model_validate(obj_type: type[T], obj_dict: dict) -> T:
         # FIXME
         if type_.annotation is UID or type_.annotation == UID | None:
             obj_dict[key] = UID(obj_dict[key])
-        elif type_.annotation is SyftVerifyKey:
-            obj_dict[key] = SyftVerifyKey.from_string(obj_dict[key])
-        elif type_.annotation is SyftSigningKey:
-            obj_dict[key] = SyftSigningKey.from_string(obj_dict[key])
+        elif (
+            type_.annotation is SyftVerifyKey
+            or type_.annotation == SyftVerifyKey | None
+        ):
+            obj_dict[key] = (
+                SyftVerifyKey.from_string(obj_dict[key]) if obj_dict[key] else None
+            )
+        elif (
+            type_.annotation is SyftSigningKey
+            or type_.annotation == SyftSigningKey | None
+        ):
+            obj_dict[key] = (
+                SyftSigningKey.from_string(obj_dict[key]) if obj_dict[key] else None
+            )
         elif (
             type_.annotation is LinkedObject
             or type_.annotation == list[Change]
             or type_.annotation == Any | None
             or type_.annotation == Action | None
+            or getattr(type_.annotation, "__origin__", None) is dict
+            or type_.annotation == HTMLObject | MarkdownDescription
+            or type_.annotation == PwdTokenResetConfig
         ):
             data = base64.b64decode(obj_dict[key])
             obj_dict[key] = sy.deserialize(data, from_bytes=True)
@@ -142,7 +174,13 @@ def _default_dumps(val):  # type: ignore
         return str(val.no_dash)
     elif isinstance(val, UUID):
         return val.hex
-    # raise TypeError(f"Can't serialize {val}, type {type(val)}")
+    elif issubclass(type(val), Enum):
+        return val.name
+    elif val is None:
+        return None
+    return str(val)
+    # elif isinstance
+    raise TypeError(f"Can't serialize {val}, type {type(val)}")
 
 
 def _default_loads(val):  # type: ignore
@@ -190,7 +228,7 @@ class ObjectStash(Generic[SyftT]):
 
     def __init__(self, store: DocumentStore) -> None:
         self.server_uid = store.server_uid
-        self.verify_key = store.root_verify_key
+        self.root_verify_key = store.root_verify_key
         # is there a better way to init the table
         _ = self.table
         self.db = SQLiteDBManager(self.server_uid)
@@ -236,16 +274,25 @@ class ObjectStash(Generic[SyftT]):
         if field_name == "id":
             # use id column directly
             return self.table.c.id == field_value
-        return self.table.c.fields[field_name] == field_value
+        return func.json_extract(self.table.c.fields, f"$.{field_name}") == field_value
 
-    def get_one_by_field(
+    def _get_by_field(
         self, credentials: SyftVerifyKey, field_name: str, field_value: str
-    ) -> Result[SyftT | None, str]:
-        result = self.session.execute(
+    ) -> Result[Row, str]:
+        stmt = self.table.select().where(
             sa.and_(
                 self._get_field_filter(field_name, field_value),
                 self._get_permission_filter(credentials),
             )
+        )
+        result = self.session.execute(stmt)
+        return result
+
+    def get_one_by_field(
+        self, credentials: SyftVerifyKey, field_name: str, field_value: str
+    ) -> Result[SyftT | None, str]:
+        result = self._get_by_field(
+            credentials=credentials, field_name=field_name, field_value=field_value
         ).first()
         if result is None:
             return Ok(None)
@@ -254,33 +301,44 @@ class ObjectStash(Generic[SyftT]):
     def get_all_by_field(
         self, credentials: SyftVerifyKey, field_name: str, field_value: str
     ) -> Result[list[SyftT], str]:
-        stmt = self.table.select().where(
-            sa.and_(
-                self._get_field_filter(field_name, field_value),
-                self._get_permission_filter(credentials),
-            )
-        )
-        result = self.session.execute(stmt).all()
+        result = self._get_by_field(
+            credentials=credentials, field_name=field_name, field_value=field_value
+        ).all()
         objs = [self.row_as_obj(row) for row in result]
         return Ok(objs)
 
     def row_as_obj(self, row: Row) -> SyftT:
         return model_validate(self.object_type, row.fields)
 
+    def get_role(self, credentials: SyftVerifyKey) -> ServiceRole:
+        stmt = (
+            Table("User", Base.metadata)
+            .select()
+            .where(
+                self._get_field_filter("verify_key", str(credentials)),
+            )
+        )
+        result = self.session.execute(stmt).first()
+        if result is None:
+            return ServiceRole.GUEST
+        return ServiceRole[result.fields["role"]]
+
     def _get_permission_filter(
         self,
         credentials: SyftVerifyKey,
         permission: ActionPermission = ActionPermission.READ,
     ) -> sa.sql.elements.BinaryExpression:
-        # TODO: handle user.role in (ServiceRole.DATA_OWNER, ServiceRole.ADMIN)
-        #       after user stash is implemented
+        if self.get_role(credentials) in (ServiceRole.ADMIN, ServiceRole.DATA_OWNER):
+            return sa.literal(True)
 
-        return self.table.c.permissions.contains(
-            ActionObjectREAD(
+        per_object_permission_filter = self.table.c.permissions.contains(
+            ActionObjectPermission(
                 uid=UID(),  # dummy uid, we just need the permission string
                 credentials=credentials,
+                permission=permission,
             ).permission_string
         )
+        return per_object_permission_filter
 
     def get_all(
         self,
@@ -289,7 +347,9 @@ class ObjectStash(Generic[SyftT]):
         has_permission: bool = False,
     ) -> Result[list[SyftT], str]:
         # filter by read permission
-        stmt = self.table.select().where(self._get_permission_filter(credentials))
+        stmt = self.table.select()
+        if not has_permission:
+            stmt = stmt.where(self._get_permission_filter(credentials))
         result = self.session.execute(stmt).all()
         objs = [self.row_as_obj(row) for row in result]
         return Ok(objs)
@@ -363,7 +423,7 @@ class ObjectStash(Generic[SyftT]):
         ]
 
     def delete_by_uid(
-        self, credentials: SyftVerifyKey, uid: UID
+        self, credentials: SyftVerifyKey, uid: UID, has_permission: bool = False
     ) -> Result[SyftSuccess, str]:
         stmt = self.table.delete().where(
             sa.and_(
@@ -373,7 +433,9 @@ class ObjectStash(Generic[SyftT]):
         )
         self.session.execute(stmt)
         self.session.commit()
-        return Ok(SyftSuccess())
+        return Ok(
+            SyftSuccess(message=f"{type(self.object_type).__name__}: {uid} deleted")
+        )
 
     def add_permissions(self, permissions: list[ActionObjectPermission]) -> None:
         # TODO: should do this in a single transaction
