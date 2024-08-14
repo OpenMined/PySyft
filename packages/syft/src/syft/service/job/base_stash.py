@@ -4,8 +4,8 @@
 import base64
 import json
 import threading
-import typing
-from typing import Any, ClassVar
+from typing import Any
+from typing import ClassVar
 from typing import Generic
 import uuid
 from uuid import UUID
@@ -138,11 +138,11 @@ def _default_loads(val):  # type: ignore
     return val
 
 
-def dumps(d):
+def dumps(d: dict) -> str:
     return json.dumps(d, default=_default_dumps)
 
 
-def loads(d):
+def loads(d: str) -> dict:
     return json.loads(d, object_hook=_default_loads)
 
 
