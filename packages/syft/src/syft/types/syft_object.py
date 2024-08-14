@@ -799,6 +799,8 @@ class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
 
 def attach_attribute_to_syft_object(result: Any, attr_dict: dict[str, Any]) -> None:
     iterator: Iterable
+    if isinstance(result, bytes):
+        return
     if isinstance(result, OkErr):
         iterator = (result._value,)
     elif isinstance(result, Mapping):
