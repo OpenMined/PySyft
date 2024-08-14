@@ -32,7 +32,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install uv
           uv --version
-          python -m uv pip install tox tox-uv==1.9.1
+          python -m uv pip install tox==4.16.0 tox-uv==1.11.2
 
       - name: Get uv cache dir
         id: pip-cache
