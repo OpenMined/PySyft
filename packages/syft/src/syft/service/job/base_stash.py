@@ -41,7 +41,13 @@ from ...types.datetime import DateTime
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ..action.action_object import Action
+from ..action.action_permissions import ActionObjectEXECUTE
+from ..action.action_permissions import ActionObjectOWNER
 from ..action.action_permissions import ActionObjectPermission
+from ..action.action_permissions import ActionObjectREAD
+from ..action.action_permissions import ActionObjectWRITE
+from ..action.action_permissions import ActionPermission
+from ..action.action_permissions import StoragePermission
 from ..response import SyftSuccess
 
 
@@ -89,8 +95,8 @@ def model_dump(obj: pydantic.BaseModel) -> dict:
             obj_dict[key] = str(getattr(obj, key))
         elif (
             type_.annotation is LinkedObject
-            or type_.annotation == Any | None
-            or type_.annotation == Action | None
+            or type_.annotation == Any | None  # type: ignore
+            or type_.annotation == Action | None  # type: ignore
         ):
             # not very efficient as it serializes the object twice
             data = sy.serialize(getattr(obj, key), to_bytes=True)
@@ -195,14 +201,10 @@ class ObjectStash(Generic[SyftT]):
                 self.object_type.__canonical_name__,
                 Base.metadata,
                 Column("id", UIDTypeDecorator, primary_key=True, default=uuid.uuid4),
-                Column("created_at", sa.DateTime, server_default=sa.func.now()),
-                Column(
-                    "updated_at",
-                    sa.DateTime,
-                    server_default=sa.func.now(),
-                    server_onupdate=sa.func.now(),
-                ),
                 Column("fields", JSON, default={}),
+                Column("permissions", JSON, default=[]),
+                Column("created_at", sa.DateTime, server_default=sa.func.now()),
+                Column("updated_at", sa.DateTime, server_onupdate=sa.func.now()),
             )
         return Base.metadata.tables[table_name]
 
@@ -210,17 +212,33 @@ class ObjectStash(Generic[SyftT]):
         self, credentials: SyftVerifyKey, uid: UID
     ) -> Result[SyftT | None, str]:
         result = self.session.execute(
-            self.table.select().where(self.table.c.id == uid)
+            self.table.select().where(
+                sa.and_(
+                    self._get_field_filter("id", uid),
+                    self._get_permission_filter(credentials),
+                )
+            )
         ).first()
         if result is None:
             return Ok(None)
         return Ok(self.row_as_obj(result))
 
+    def _get_field_filter(
+        self, field_name: str, field_value: str
+    ) -> sa.sql.elements.BinaryExpression:
+        if field_name == "id":
+            # use id column directly
+            return self.table.c.id == field_value
+        return self.table.c.fields[field_name] == field_value
+
     def get_one_by_field(
         self, credentials: SyftVerifyKey, field_name: str, field_value: str
     ) -> Result[SyftT | None, str]:
         result = self.session.execute(
-            self.table.select().where(self.table.c.fields[field_name] == field_value)
+            sa.and_(
+                self._get_field_filter(field_name, field_value),
+                self._get_permission_filter(credentials),
+            )
         ).first()
         if result is None:
             return Ok(None)
@@ -229,14 +247,33 @@ class ObjectStash(Generic[SyftT]):
     def get_all_by_field(
         self, credentials: SyftVerifyKey, field_name: str, field_value: str
     ) -> Result[list[SyftT], str]:
-        result = self.session.execute(
-            self.table.select().where(self.table.c.fields[field_name] == field_value)
-        ).all()
+        stmt = self.table.select().where(
+            sa.and_(
+                self._get_field_filter(field_name, field_value),
+                self._get_permission_filter(credentials),
+            )
+        )
+        result = self.session.execute(stmt).all()
         objs = [self.row_as_obj(row) for row in result]
         return Ok(objs)
 
-    def row_as_obj(self, row: Row):
+    def row_as_obj(self, row: Row) -> SyftT:
         return model_validate(self.object_type, row.fields)
+
+    def _get_permission_filter(
+        self,
+        credentials: SyftVerifyKey,
+        permission: ActionPermission = ActionPermission.READ,
+    ) -> sa.sql.elements.BinaryExpression:
+        # TODO: handle user.role in (ServiceRole.DATA_OWNER, ServiceRole.ADMIN)
+        #       after user stash is implemented
+
+        return self.table.c.permissions.contains(
+            ActionObjectREAD(
+                uid=UID(),  # dummy uid, we just need the permission string
+                credentials=credentials,
+            ).permission_string
+        )
 
     def get_all(
         self,
@@ -244,9 +281,9 @@ class ObjectStash(Generic[SyftT]):
         order_by: PartitionKey | None = None,
         has_permission: bool = False,
     ) -> Result[list[SyftT], str]:
-        stmt = self.table.select()
+        # filter by read permission
+        stmt = self.table.select().where(self._get_permission_filter(credentials))
         result = self.session.execute(stmt).all()
-
         objs = [self.row_as_obj(row) for row in result]
         return Ok(objs)
 
@@ -258,7 +295,12 @@ class ObjectStash(Generic[SyftT]):
     ) -> Result[SyftT, str]:
         stmt = (
             self.table.update()
-            .where(self.table.c.id == obj.id)
+            .where(
+                sa.and_(
+                    self._get_field_filter("id", obj.id),
+                    self._get_permission_filter(credentials),
+                )
+            )
             .values(fields=model_dump(obj))
         )
         self.session.execute(stmt)
@@ -271,35 +313,119 @@ class ObjectStash(Generic[SyftT]):
         obj: SyftT,
         add_permissions: list[ActionObjectPermission] | None = None,
         add_storage_permission: bool = True,
-        ignore_duplicates: bool = False,
+        ignore_duplicates: bool = False,  # only used in one place, should use upsert instead
     ) -> Result[SyftT, str]:
+        # uid is unique by database constraint
+        uid = obj.id
+
+        permissions = self.get_ownership_permissions(uid, credentials)
+        if add_permissions is not None:
+            add_permission_strings = [p.permission_string for p in add_permissions]
+            permissions.extend(add_permission_strings)
+
+        storage_permissions = []
+        if add_storage_permission:
+            storage_permissions.append(
+                StoragePermission(
+                    uid=uid,
+                    server_uid=self.server_uid,
+                )
+            )
+
+            # TODO: write the storage permissions to the database
+
+        # create the object with the permissions
         stmt = self.table.insert().values(
-            id=obj.id,
+            id=uid,
             fields=model_dump(obj),
+            permissions=permissions,
+            # storage_permissions=storage_permissions,
         )
         self.session.execute(stmt)
         self.session.commit()
         return Ok(obj)
 
+    def get_ownership_permissions(
+        self, uid: UID, credentials: SyftVerifyKey
+    ) -> list[str]:
+        return [
+            ActionObjectOWNER(uid=uid, credentials=credentials).permission_string,
+            ActionObjectWRITE(uid=uid, credentials=credentials).permission_string,
+            ActionObjectREAD(uid=uid, credentials=credentials).permission_string,
+            ActionObjectEXECUTE(uid=uid, credentials=credentials).permission_string,
+        ]
+
     def delete_by_uid(
         self, credentials: SyftVerifyKey, uid: UID
     ) -> Result[SyftSuccess, str]:
-        stmt = self.table.delete().where(self.table.c.id == uid)
+        stmt = self.table.delete().where(
+            sa.and_(
+                self._get_field_filter("id", uid),
+                self._get_permission_filter(credentials),
+            )
+        )
         self.session.execute(stmt)
         self.session.commit()
         return Ok(SyftSuccess())
 
     def add_permissions(self, permissions: list[ActionObjectPermission]) -> None:
-        pass
+        # TODO: should do this in a single transaction
+        for permission in permissions:
+            self.add_permission(permission)
+        return None
 
     def add_permission(self, permission: ActionObjectPermission) -> None:
-        pass
+        stmt = (
+            self.table.update()
+            .values(
+                permissions=sa.func.array_append(
+                    self.table.c.permissions, permission.permission_string
+                )
+            )
+            .where(
+                sa.and_(
+                    self._get_field_filter("id", permission.uid),
+                    self._get_permission_filter(
+                        permission.credentials, ActionPermission.WRITE
+                    ),
+                )
+            )
+        )
+        self.session.execute(stmt)
+        self.session.commit()
+        return None
 
     def remove_permission(self, permission: ActionObjectPermission) -> None:
-        pass
+        stmt = (
+            self.table.update()
+            .values(
+                permissions=sa.func.array_remove(self.table.c.permissions, permission)
+            )
+            .where(
+                sa.and_(
+                    self._get_field_filter("id", permission.uid),
+                    self._get_permission_filter(
+                        permission.credentials,
+                        # since anyone with write permission can add permissions,
+                        # owner check doesn't make sense, it should be write
+                        ActionPermission.OWNER,
+                    ),
+                )
+            )
+        )
+        self.session.execute(stmt)
+        self.session.commit()
+        return None
 
     def has_permission(self, permission: ActionObjectPermission) -> bool:
-        return True
+        stmt = self.table.select().where(
+            sa.and_(
+                self._get_field_filter("id", permission.uid),
+                self.table.c.permissions.contains(permission.permission_string),
+            )
+        )
+        result = self.session.execute(stmt).first()
+        return result is not None
 
-    def has_storage_permission(self, permission) -> bool:
+    def has_storage_permission(self, permission: StoragePermission) -> bool:
         return True
