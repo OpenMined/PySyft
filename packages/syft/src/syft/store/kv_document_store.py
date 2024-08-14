@@ -14,7 +14,7 @@ from typing_extensions import Self
 
 # relative
 from ..serde.serializable import serializable
-from ..server.credentials import SyftVerifyKey
+from ..server.credentials import SyftSigningKey, SyftVerifyKey
 from ..service.action.action_permissions import ActionObjectEXECUTE
 from ..service.action.action_permissions import ActionObjectOWNER
 from ..service.action.action_permissions import ActionObjectPermission
@@ -271,11 +271,13 @@ class KeyValueStorePartition(StorePartition):
         if not isinstance(permission.permission, ActionPermission):
             raise Exception(f"ObjectPermission type: {permission.permission} not valid")
 
+        verify_key = permission.credentials.verify_key  if isinstance(permission.credentials, SyftSigningKey) else permission.credentials
         if (
             permission.credentials
-            and self.root_verify_key.verify == permission.credentials.verify
+            and self.root_verify_key == verify_key
         ):
             return True
+        
 
         if (
             permission.credentials
@@ -401,7 +403,6 @@ class KeyValueStorePartition(StorePartition):
         # third party
         if len(index_qks.all) > 0:
             index_results = self._get_keys_index(qks=index_qks)
-            print("index", index_results)
             if index_results.is_ok():
                 if ids is None:
                     ids = index_results.ok()
@@ -427,9 +428,10 @@ class KeyValueStorePartition(StorePartition):
             return Ok([])
 
         qks: QueryKeys = self.store_query_keys(ids)
-        return self._get_all_from_store(
+        res =  self._get_all_from_store(
             credentials=credentials, qks=qks, order_by=order_by
         )
+        return res
 
     def _update(
         self,
@@ -519,6 +521,9 @@ class KeyValueStorePartition(StorePartition):
                     ActionObjectREAD(uid=qk.value, credentials=credentials)
                 ):
                     matches.append(self.data[qk.value])
+                else:
+                    match = self.data[qk.value]
+                    print(f"Failed to read with query key {qk}, you have no permission:{match}")
         if order_by is not None:
             matches = sorted(matches, key=lambda x: getattr(x, order_by.key, ""))
         return Ok(matches)
@@ -575,14 +580,10 @@ class KeyValueStorePartition(StorePartition):
                 subset: set = set()
                 # print("qk", qk)
                 pk_key, pk_value = qk.key, qk.value
-                print("type", type(pk_value))
                 if pk_key not in self.unique_keys:
                     
                     return Err(f"Failed to query index with {qk}")
                 ck_col = self.unique_keys[pk_key]
-                print("ck col", type(ck_col), ck_col)
-                print("pk_value", pk_value)
-                print("pk_value in keys", pk_value in ck_col.keys())
                 if pk_value not in ck_col.keys():
                     # must be at least one in all query keys
                     continue

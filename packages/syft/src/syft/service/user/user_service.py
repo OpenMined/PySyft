@@ -162,7 +162,6 @@ class UserService(AbstractService):
             result = self.stash.get_by_signing_key(
                 credentials=credentials, signing_key=credentials
             )
-        print("result", result)
         if result.is_ok():
             # this seems weird that we get back None as Ok(None)
             user = result.ok()

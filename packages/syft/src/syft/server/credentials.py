@@ -133,7 +133,7 @@ class SyftSigningKey(SyftBaseModel):
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, SyftSigningKey):
             return False
-        return self.signing_key == other.signing_key
+        return self.signing_key.private_numbers() == other.signing_key.private_numbers()
 
 
 SyftCredentials = SyftVerifyKey | SyftSigningKey
