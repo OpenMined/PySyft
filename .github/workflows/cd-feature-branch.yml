@@ -65,7 +65,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install uv
+          python -m pip install uv==0.2.35
           uv --version
           python -m uv pip install tox==4.16.0 tox-uv==1.11.2 bump2version==1.0.1
 
@@ -291,7 +291,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install uv
+          python -m pip install uv==0.2.35
           uv --version
           python -m uv pip instal tox==4.16.0 tox-uv==1.11.2 setuptools wheel twine bump2version PyYAML
 
