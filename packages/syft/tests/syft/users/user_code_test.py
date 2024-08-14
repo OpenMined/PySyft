@@ -451,7 +451,7 @@ def test_submit_invalid_name(worker) -> None:
 
     valid_name_2.func_name = "get_all"
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(SyftException):
         client.code.submit(valid_name_2)
 
 
