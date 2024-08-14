@@ -778,14 +778,15 @@ class ActionService(AbstractService):
             return True
         return False
 
-    def flatten_action_arg(self, context: AuthedServiceContext, arg: UID) -> UID | None:
+    def flatten_action_arg(self, context: AuthedServiceContext, arg: UID) -> None:
         """ "If the argument is a collection (of collections) of ActionObjects,
         We want to flatten the collection and upload a new ActionObject that contains
         its values. E.g. [[ActionObject1, ActionObject2],[ActionObject3, ActionObject4]]
         -> [[value1, value2],[value3, value4]]
         """
+        root_context = context.as_root_context()
 
-        action_object = self.get(context=context, uid=arg)
+        action_object = self.get(context=root_context, uid=arg)
         data = action_object.syft_action_data
 
         if self.contains_nested_actionobjects(data):
@@ -798,9 +799,9 @@ class ActionService(AbstractService):
             action_object._save_to_blob_storage().unwrap()
             # we should create this with the permissions of the old object
             self._set(
-                context=context,
+                context=root_context,
                 action_object=action_object,
-            )
+            ).unwrap()
 
         return None
 
