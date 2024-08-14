@@ -3,19 +3,15 @@ from typing import ClassVar
 
 # third party
 from pydantic import model_validator
-from result import Err
-from result import Ok
 from result import Result
 
 # relative
 from ...client.api import APIRegistry
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -25,6 +21,7 @@ from ...util.telemetry import instrument
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectREAD
 from ..context import AuthedServiceContext
+from ..job.base_stash import ObjectStash
 from ..response import SyftError
 from ..service import AbstractService
 from ..service import TYPE_TO_SERVICE
@@ -190,8 +187,8 @@ class ExecutionOutput(SyncableSyftObject):
 
 
 @instrument
-@serializable(canonical_name="OutputStash", version=1)
-class OutputStash(BaseUIDStoreStash):
+@serializable(canonical_name="OutputStashSQL", version=1)
+class OutputStash(ObjectStash[ExecutionOutput]):
     object_type = ExecutionOutput
     settings: PartitionSettings = PartitionSettings(
         name=ExecutionOutput.__canonical_name__, object_type=ExecutionOutput
@@ -200,47 +197,32 @@ class OutputStash(BaseUIDStoreStash):
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store)
         self.store = store
-        self.settings = self.settings
-        self._object_type = self.object_type
 
     def get_by_user_code_id(
         self, credentials: SyftVerifyKey, user_code_id: UID
     ) -> Result[list[ExecutionOutput], str]:
-        qks = QueryKeys(
-            qks=[UserCodeIdPartitionKey.with_obj(user_code_id)],
-        )
-        return self.query_all(
-            credentials=credentials, qks=qks, order_by=CreatedAtPartitionKey
+        return self.get_all_by_field(
+            credentials=credentials,
+            field_name="user_code_id",
+            field_value=user_code_id,
         )
 
     def get_by_job_id(
         self, credentials: SyftVerifyKey, user_code_id: UID
     ) -> Result[ExecutionOutput | None, str]:
-        qks = QueryKeys(
-            qks=[JobIdPartitionKey.with_obj(user_code_id)],
+        return self.get_one_by_field(
+            credentials=credentials,
+            field_name="job_id",
+            field_value=user_code_id,
         )
-        res = self.query_all(
-            credentials=credentials, qks=qks, order_by=CreatedAtPartitionKey
-        )
-        if res.is_err():
-            return res
-        else:
-            res = res.ok()
-            if len(res) == 0:
-                return Ok(None)
-            elif len(res) > 1:
-                return Err(SyftError(message="Too many outputs found"))
-            else:
-                return Ok(res[0])
 
     def get_by_output_policy_id(
         self, credentials: SyftVerifyKey, output_policy_id: UID
     ) -> Result[list[ExecutionOutput], str]:
-        qks = QueryKeys(
-            qks=[OutputPolicyIdPartitionKey.with_obj(output_policy_id)],
-        )
-        return self.query_all(
-            credentials=credentials, qks=qks, order_by=CreatedAtPartitionKey
+        return self.get_all_by_field(
+            credentials=credentials,
+            field_name="output_policy_id",
+            field_value=output_policy_id,
         )
 
 
