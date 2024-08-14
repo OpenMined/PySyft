@@ -68,7 +68,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install uv==0.2.36
           uv --version
-          python -m uv pip install tox==4.16.0 tox-uv==1.11.2
+          python -m uv pip install tox==4.18.0 tox-uv==1.11.2
 
       - name: Get uv cache dir
         id: pip-cache
@@ -160,7 +160,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install uv==0.2.36
           uv --version
-          python -m uv pip install tox==4.16.0 tox-uv==1.11.2
+          python -m uv pip install tox==4.18.0 tox-uv==1.11.2
 
       - name: Get uv cache dir
         id: pip-cache
@@ -239,7 +239,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install uv==0.2.36
           uv --version
-          python -m uv pip install tox==4.16.0 tox-uv==1.11.2
+          python -m uv pip install tox==4.18.0 tox-uv==1.11.2
 
       - name: Get uv cache dir
         id: pip-cache
@@ -337,7 +337,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install uv==0.2.36
           uv --version
-          python -m uv pip install tox==4.16.0 tox-uv==1.11.2
+          python -m uv pip install tox==4.18.0 tox-uv==1.11.2
 
       - name: Get uv cache dir
         if: steps.changes.outputs.syft == 'true'
