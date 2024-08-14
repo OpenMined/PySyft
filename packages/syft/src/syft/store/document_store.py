@@ -867,23 +867,16 @@ class NewBaseStash:
         qk = self.partition.store_query_key(obj)
         return self.delete(credentials=credentials, qk=qk).unwrap()
 
-    @as_result(StashException)
+    @as_result(StashException, SyftException)
     def delete(
         self, credentials: SyftVerifyKey, qk: QueryKey, has_permission: bool = False
     ) -> Literal[True]:
+        # TODO: (error) Check return response
         return self.partition.delete(
             credentials=credentials, qk=qk, has_permission=has_permission
         ).unwrap()
 
-        # match result:
-        #     case Ok(_):
-        #         return True
-        #     case Err(err):
-        #         raise StashException(str(err))
-        #     case _:
-        #         raise StashException("Unexpected error")
-
-    @as_result(StashException)
+    @as_result(StashException, SyftException)
     def update(
         self,
         credentials: SyftVerifyKey,
@@ -894,22 +887,13 @@ class NewBaseStash:
         obj = self.check_type(obj, self.object_type).unwrap()
 
         qk = self.partition.store_query_key(obj)
-        result = self.partition.update(
+        return self.partition.update(
             credentials=credentials, qk=qk, obj=obj, has_permission=has_permission
-        )
-
-        match result:
-            case Ok(value):
-                return value
-            case Err(err):
-                raise StashException(err)
-            case _:
-                raise StashException("Unexpected error")
-
+        ).unwrap()
 
 @instrument
 class NewBaseUIDStoreStash(NewBaseStash):
-    @as_result(StashException)
+    @as_result(SyftException, StashException)
     def delete_by_uid(
         self, credentials: SyftVerifyKey, uid: UID, has_permission: bool = False
     ) -> UID:
@@ -919,7 +903,7 @@ class NewBaseUIDStoreStash(NewBaseStash):
         ).unwrap()
         return uid
 
-    @as_result(StashException, NotFoundException)
+    @as_result(SyftException, StashException, NotFoundException)
     def get_by_uid(
         self, credentials: SyftVerifyKey, uid: UID
     ) -> NewBaseUIDStoreStash.object_type:
@@ -932,7 +916,7 @@ class NewBaseUIDStoreStash(NewBaseStash):
 
         return result
 
-    @as_result(StashException)
+    @as_result(SyftException, StashException)
     def set(
         self,
         credentials: SyftVerifyKey,

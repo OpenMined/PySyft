@@ -8,6 +8,7 @@ from typing import TypeVar
 # third party
 from faker import Faker
 import pytest
+from syft.types.errors import SyftException
 from typing_extensions import ParamSpec
 
 # syft absolute
@@ -249,8 +250,9 @@ def test_basestash_get_by_uid(
     random_uid = create_unique(UID, [mock_object.id])
     bad_uid = base_stash.get_by_uid(root_verify_key, random_uid)
     assert bad_uid.is_err()
+
     # FIX: Partition should return Ok(None), now it's not consistent. We can get NotFoundException or StashException
-    assert isinstance(bad_uid.err(), StashException) or isinstance(
+    assert isinstance(bad_uid.err(), SyftException) or isinstance(bad_uid.err(), StashException) or isinstance(
         bad_uid.err(), NotFoundException
     )
 
@@ -268,8 +270,9 @@ def test_basestash_delete_by_uid(
 
     result = base_stash.get_by_uid(root_verify_key, mock_object.id)
     assert result.is_err()
+
     # FIX: partition None returns are inconsistent; here, we might get NotFoundException or StashException
-    assert isinstance(result.err(), StashException) or isinstance(
+    assert isinstance(result.err(), SyftException) or isinstance(result.err(), StashException) or isinstance(
         result.err(), NotFoundException
     )
 

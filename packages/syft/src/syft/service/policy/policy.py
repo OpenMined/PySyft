@@ -561,14 +561,11 @@ class MixedInputPolicy(InputPolicy):
         usr_input_kwargs: dict,
         code_item_id: UID,
     ) -> bool:
-        print("MixedInputPolicy _is_valid")
         filtered_input_kwargs = self.filter_kwargs(
             kwargs=usr_input_kwargs,
             context=context,
             code_item_id=code_item_id,
         ).unwrap()
-
-        print(f"filtered_input_kwargs: {type(filtered_input_kwargs)}")
 
         expected_input_kwargs = set()
         for _inp_kwargs in self.inputs.values():
@@ -677,7 +674,6 @@ class ExactMatch(InputPolicy):
         context: AuthedServiceContext,
         code_item_id: UID,
     ) -> dict[Any, Any]:
-        print("filter_kwargs for ExactMatch")
         allowed_inputs = allowed_ids_only(
             allowed_inputs=self.inputs, kwargs=kwargs, context=context
         ).unwrap()
@@ -782,15 +778,12 @@ class OutputPolicyExecuteCount(OutputPolicy):
 
     @as_result(SyftException)
     def _is_valid(self, context: AuthedServiceContext) -> SyftSuccess:
-        print("called _is_valid")
         output_service = context.server.get_service("outputservice")
         output_history = output_service.get_by_output_policy_id(
             context, self.id
         )  # raises
 
         execution_count = len(output_history)
-
-        print(f"execution_count: {execution_count}, limit: {self.limit}")
 
         if execution_count < self.limit:
             return SyftSuccess(

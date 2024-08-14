@@ -21,6 +21,7 @@ from syft.store.blob_storage import BlobDeposit
 from syft.store.blob_storage import SyftObjectRetrieval
 from syft.store.document_store_errors import StashException
 from syft.types.blob_storage import CreateBlobStorageEntry
+from syft.types.errors import SyftException
 
 raw_data = {"test": "test"}
 data = sy.serialize(raw_data, to_bytes=True)
@@ -117,7 +118,7 @@ def test_blob_storage_delete(authed_context, blob_storage):
     del_type = blob_storage.delete(authed_context, blob_deposit.blob_storage_entry_id)
     assert type(del_type) is SyftSuccess
 
-    with pytest.raises(StashException):
+    with pytest.raises(SyftException):
         blob_storage.read(authed_context, blob_deposit.blob_storage_entry_id)
 
 

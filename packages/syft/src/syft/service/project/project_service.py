@@ -23,8 +23,7 @@ from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
-from ..user.user_roles import GUEST_ROLE_LEVEL
-from ..user.user_roles import ONLY_DATA_SCIENTIST_ROLE_LEVEL
+from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL, GUEST_ROLE_LEVEL
 from ..user.user_roles import ServiceRole
 from ..user.user_service import UserService
 from .project import Project
@@ -84,7 +83,7 @@ class ProjectService(AbstractService):
             # SyftNotReady(message="Project out of sync event")
             raise SyftException(public_message="Project events are out of sync")
         if project_event.seq_no > len(project.events) + 1:
-            raise SyftException(public_message="Project events are out of order!")
+            raise SyftException(public_message="Project events are out of order")
 
     def is_project_leader(
         self, context: AuthedServiceContext, project: Project
@@ -94,7 +93,7 @@ class ProjectService(AbstractService):
     @service_method(
         path="project.can_create_project",
         name="can_create_project",
-        roles=ONLY_DATA_SCIENTIST_ROLE_LEVEL,
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def can_create_project(self, context: AuthedServiceContext) -> bool:
         user_service: UserService = context.server.get_service("userservice")  # type: ignore[assignment]
@@ -102,16 +101,15 @@ class ProjectService(AbstractService):
             credentials=context.credentials
         ).unwrap()
 
-        # FIX: Shouldn't it be role >= DATA_SCIENTIST?
-        if role == ServiceRole.DATA_SCIENTIST:
+        if role >= ServiceRole.DATA_SCIENTIST:
             return True
-        # TODO: Add Project Errors
-        raise SyftException("User cannot create projects")
+
+        raise SyftException(public_message="You do not have permission to create projects. Contact your admin.")
 
     @service_method(
         path="project.create_project",
         name="create_project",
-        roles=ONLY_DATA_SCIENTIST_ROLE_LEVEL,
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
         unwrap_on_success=False,
     )
     def create_project(
