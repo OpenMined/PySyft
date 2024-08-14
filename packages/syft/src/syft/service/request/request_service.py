@@ -58,11 +58,6 @@ class RequestService(AbstractService):
         request = self.stash.set(
             context.credentials,
             request,
-            add_permissions=[
-                ActionObjectPermission(
-                    uid=request.id, permission=ActionPermission.ALL_READ
-                ),
-            ],
         ).unwrap()
 
         link = LinkedObject.with_context(request, context=context)
