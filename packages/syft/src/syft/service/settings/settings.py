@@ -4,8 +4,7 @@ import logging
 from typing import Any
 
 # third party
-from email_validator import EmailNotValidError
-from email_validator import validate_email
+from pydantic import EmailStr
 from pydantic import field_validator
 from pydantic import model_validator
 from typing_extensions import Self
@@ -257,7 +256,7 @@ class ServerSettings(SyftObject):
     description: str = "This is the default description for a Datasite Server."
     server_type: ServerType = ServerType.DATASITE
     signup_enabled: bool
-    admin_email: str
+    admin_email: EmailStr
     server_side_type: ServerSideType = ServerSideType.HIGH_SIDE
     show_warnings: bool
     association_request_auto_approval: bool
@@ -269,14 +268,6 @@ class ServerSettings(SyftObject):
     notifications_enabled: bool
     pwd_token_config: PwdTokenResetConfig = PwdTokenResetConfig()
     allow_guest_sessions: bool = True
-
-    @field_validator("admin_email")
-    def admin_email_format(cls, v: str) -> str:
-        try:
-            validate_email(v)
-        except EmailNotValidError as e:
-            raise ValueError(f"Invalid email format: {e}")
-        return v
 
     @field_validator("organization")
     def organization_length(cls, v: str) -> str:

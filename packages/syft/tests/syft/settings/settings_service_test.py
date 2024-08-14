@@ -85,8 +85,8 @@ def test_settingsservice_set_success(
     response = settings_service.set(authed_context, settings)
 
     assert response.is_ok() is True
-    assert isinstance(response.ok(), ServerSettings)
-    assert response.ok() == settings
+    assert isinstance(response, ServerSettings)
+    assert response == settings
 
 
 def test_settingsservice_set_fail(
@@ -117,7 +117,7 @@ def add_mock_settings(
     result = settings_stash.partition.set(root_verify_key, settings)
     assert result.is_ok()
 
-    created_settings = result.ok()
+    created_settings = result
     assert created_settings is not None
 
     return created_settings
