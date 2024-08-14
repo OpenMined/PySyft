@@ -1,4 +1,5 @@
 # stdlib
+from datetime import datetime
 from typing import TYPE_CHECKING
 from typing import cast
 
@@ -20,6 +21,91 @@ class EmailTemplate:
     @staticmethod
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
         return ""
+
+
+@serializable(canonical_name="PasswordResetTemplate", version=1)
+class PasswordResetTemplate(EmailTemplate):
+    @staticmethod
+    def email_title(notification: "Notification", context: AuthedServiceContext) -> str:
+        return "Password Reset Requested"
+
+    @staticmethod
+    def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
+        user_service = context.server.get_service("userservice")
+
+        user = user_service.get_by_verify_key(notification.to_user_verify_key)
+        if not user:
+            raise Exception("User not found!")
+
+        user.reset_token = user_service.generate_new_password_reset_token(
+            context.server.settings.pwd_token_config
+        )
+        user.reset_token_date = datetime.now()
+
+        result = user_service.stash.update(
+            credentials=context.credentials, user=user, has_permission=True
+        )
+        if result.is_err():
+            raise Exception("Couldn't update the user password")
+
+        head = """<head>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    background-color: #f4f4f4;
+                    color: #333;
+                    margin: 0;
+                    padding: 0;
+                }
+                .container {
+                    max-width: 600px;
+                    margin: 50px auto;
+                    background-color: #ffffff;
+                    padding: 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                }
+                h1 {
+                    color: #333;
+                    text-align: center;
+                }
+                p {
+                    font-size: 16px;
+                    line-height: 1.5;
+                }
+                .button {
+                    display: block;
+                    width: 200px;
+                    margin: 30px auto;
+                    padding: 10px;
+                    background-color: #007BFF;
+                    color: #fff;
+                    text-align: center;
+                    text-decoration: none;
+                    border-radius: 4px;
+                }
+                .footer {
+                    text-align: center;
+                    font-size: 12px;
+                    color: #aaa;
+                    margin-top: 20px;
+                }
+            </style>
+        </head>"""
+        body = f"""<body>
+            <div class="container">
+                <h1>Password Reset</h1>
+                <p>We received a request to reset your password. Your new temporary token is:</p>
+                <h1>{user.reset_token}</h1>
+                <p> Use
+                    <code style="color: #FF8C00;background-color: #f0f0f0;font-size: 12px;">
+                        syft_client.reset_password(token='{user.reset_token}', new_password=*****)
+                    </code>.
+                to reset your password.</p>
+                <p>If you didn't request a password reset, please ignore this email.</p>
+            </div>
+        </body>"""
+        return f"""<html>{head} {body}</html>"""
 
 
 @serializable(canonical_name="OnboardEmailTemplate", version=1)

@@ -348,8 +348,8 @@ jobs:
 
       - name: Copy helm repo files from Syft Repo
         run: |
-          cp packages/grid/helm/repo/index.yaml ghpages/helm/
           cp packages/grid/helm/repo/syft-${{ needs.merge-docker-images.outputs.server_version  }}.tgz ghpages/helm/
+          cd ghpages/helm && helm repo index . --url https://openmined.github.io/PySyft/helm
 
       - name: Commit changes to gh-pages
         uses: EndBug/add-and-commit@v9

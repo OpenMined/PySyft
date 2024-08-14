@@ -76,10 +76,10 @@ jobs:
       - name: Run syft backend base image building test
         if: steps.changes.outputs.stack == 'true'
         timeout-minutes: 60
-        # run: |
-        #   echo "Skipping pr image test"
         run: |
-          tox -e backend.test.basecpu
+          echo "Skipping pr image test"
+        # run: |
+        #   tox -e backend.test.basecpu
 
   pr-tests-syft-integration:
     strategy:

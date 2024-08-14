@@ -559,8 +559,8 @@ jobs:
 
       - name: Copy helm repo files from Syft Repo
         run: |
-          cp packages/grid/helm/repo/index.yaml ghpages/helm/
           cp packages/grid/helm/repo/syft-${{ steps.release_checks.outputs.syft_version }}.tgz ghpages/helm/
+          cd ghpages/helm && helm repo index . --url https://openmined.github.io/PySyft/helm
 
       - name: Commit changes to gh-pages
         uses: EndBug/add-and-commit@v9
@@ -576,7 +576,7 @@ jobs:
       # we need to wait for PyPI to update before running the post-release tests
       - name: Wait for PyPI to update
         run: |
-          sleep 60
+          sleep 120
 
   # Can we remove the always flag from the below job?
   call-cd-post-release-tests:
