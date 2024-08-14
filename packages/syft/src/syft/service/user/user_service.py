@@ -194,7 +194,7 @@ class UserService(AbstractService):
         if result.is_err():
             return SyftError(
                 message=(
-                    f"Failed to retrieve user with UID: {uid}. Error: {str(result.err())}"
+                    f"Failed to retrieve user with UID: {uid}. Error: {result.err()!s}"
                 )
             )
         user = result.ok()
@@ -218,7 +218,7 @@ class UserService(AbstractService):
         if result.is_err():
             return SyftError(
                 message=(
-                    f"Failed to update user with UID: {uid}. Error: {str(result.err())}"
+                    f"Failed to update user with UID: {uid}. Error: {result.err()!s}"
                 )
             )
 
@@ -275,7 +275,7 @@ class UserService(AbstractService):
         )
         if result.is_err():
             return SyftError(
-                message=(f"Failed to update user password.  Error: {str(result.err())}")
+                message=(f"Failed to update user password.  Error: {result.err()!s}")
             )
         return SyftSuccess(message="User Password updated successfully!")
 
