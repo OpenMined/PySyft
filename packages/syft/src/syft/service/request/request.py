@@ -556,7 +556,6 @@ class Request(SyncableSyftObject):
     def status(self) -> RequestStatus:
         return self.get_status()
 
-    @as_result(SyftException)
     def approve(
         self,
         disable_warnings: bool = False,
