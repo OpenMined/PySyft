@@ -4,6 +4,8 @@ import logging
 from typing import Any
 
 # third party
+from email_validator import EmailNotValidError
+from email_validator import validate_email
 from pydantic import field_validator
 from pydantic import model_validator
 from typing_extensions import Self
@@ -29,6 +31,9 @@ from ...util.misc_objs import MarkdownDescription
 from ...util.schema import DEFAULT_WELCOME_MSG
 
 logger = logging.getLogger(__name__)
+
+MIN_ORG_NAME_LENGTH = 1
+MIN_SERVER_NAME_LENGTH = 1
 
 
 @serializable()
@@ -264,6 +269,30 @@ class ServerSettings(SyftObject):
     notifications_enabled: bool
     pwd_token_config: PwdTokenResetConfig = PwdTokenResetConfig()
     allow_guest_sessions: bool = True
+
+    @field_validator("admin_email")
+    def admin_email_format(cls, v: str) -> str:
+        try:
+            validate_email(v)
+        except EmailNotValidError as e:
+            raise ValueError(f"Invalid email format: {e}")
+        return v
+
+    @field_validator("organization")
+    def organization_length(cls, v: str) -> str:
+        if len(v) < MIN_ORG_NAME_LENGTH:
+            raise ValueError(
+                f"'organization' must be at least {MIN_ORG_NAME_LENGTH} characters long"
+            )
+        return v
+
+    @field_validator("name")
+    def name_length(cls, v: str) -> str:
+        if len(v) < MIN_SERVER_NAME_LENGTH:
+            raise ValueError(
+                f'"name" must be at least {MIN_SERVER_NAME_LENGTH} characters long'
+            )
+        return v
 
     def _repr_html_(self) -> Any:
         # .api.services.notifications.settings() is how the server itself would dispatch notifications.
