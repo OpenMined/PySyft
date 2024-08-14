@@ -293,7 +293,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install uv
           uv --version
-          python -m uv pip instal tox tox-uv==1.9.1 setuptools wheel twine bump2version PyYAML
+          python -m uv pip instal tox==4.16.0 tox-uv==1.11.2 setuptools wheel twine bump2version PyYAML
 
       - name: Bump to Final Release version
         run: |
