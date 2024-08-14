@@ -829,16 +829,12 @@ def unwrap_and_migrate_annotation(annotation: Any, object_versions: dict) -> Any
 
     migrated_annotations_tuple = tuple(migrated_annotations)
 
-    try:
-        if hasattr(annotation, "copy_with"):
-            return annotation.copy_with(migrated_annotations_tuple)
-        elif origin is not None:
-            return origin[migrated_annotations_tuple]
-        else:
-            return migrated_annotation[0]
-    except Exception as e:
-        print(origin)
-        raise e
+    if hasattr(annotation, "copy_with"):
+        return annotation.copy_with(migrated_annotations_tuple)
+    elif origin is not None:
+        return origin[migrated_annotations_tuple]
+    else:
+        return migrated_annotation[0]
 
 
 def result_needs_api_update(api_call_result: Any) -> bool:
