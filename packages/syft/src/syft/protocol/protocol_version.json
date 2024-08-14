@@ -38,13 +38,7 @@
           "action": "add"
         }
       },
-      "EnclaveMetadata": {
-        "1": {
-          "version": 1,
-          "hash": "8d2dfafa01ec909c080a790cf15a8fc78e00382d3bfe6207098ceb25a60b9c53",
-          "action": "add"
-        }
-      }
+      "EnclaveMetadata": {}
     }
   }
 }
