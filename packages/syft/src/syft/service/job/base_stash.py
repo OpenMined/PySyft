@@ -328,17 +328,31 @@ class ObjectStash(Generic[SyftT]):
         credentials: SyftVerifyKey,
         permission: ActionPermission = ActionPermission.READ,
     ) -> sa.sql.elements.BinaryExpression:
-        if self.get_role(credentials) in (ServiceRole.ADMIN, ServiceRole.DATA_OWNER):
+        role = self.get_role(credentials)
+        if role in (ServiceRole.ADMIN, ServiceRole.DATA_OWNER):
             return sa.literal(True)
 
-        per_object_permission_filter = self.table.c.permissions.contains(
-            ActionObjectPermission(
-                uid=UID(),  # dummy uid, we just need the permission string
-                credentials=credentials,
-                permission=permission,
-            ).permission_string
+        permission_string = ActionObjectPermission(
+            uid=UID(),  # dummy uid, we just need the permission string
+            credentials=credentials,
+            permission=permission,
+        ).permission_string
+
+        compound_permission_map = {
+            ActionPermission.READ: ActionPermission.ALL_READ,
+            ActionPermission.WRITE: ActionPermission.ALL_WRITE,
+            ActionPermission.EXECUTE: ActionPermission.ALL_EXECUTE,
+        }
+        compound_permission_string = ActionObjectPermission(
+            uid=UID(),  # dummy uid, we just need the permission string
+            credentials=None,  # no credentials for compound permissions
+            permission=compound_permission_map[permission],
+        ).permission_string
+
+        return sa.or_(
+            self.table.c.permissions.contains(permission_string),
+            self.table.c.permissions.contains(compound_permission_string),
         )
-        return per_object_permission_filter
 
     def get_all(
         self,
@@ -365,7 +379,7 @@ class ObjectStash(Generic[SyftT]):
             .where(
                 sa.and_(
                     self._get_field_filter("id", obj.id),
-                    self._get_permission_filter(credentials),
+                    self._get_permission_filter(credentials, ActionObjectWRITE),
                 )
             )
             .values(fields=model_dump(obj))
@@ -428,7 +442,7 @@ class ObjectStash(Generic[SyftT]):
         stmt = self.table.delete().where(
             sa.and_(
                 self._get_field_filter("id", uid),
-                self._get_permission_filter(credentials),
+                self._get_permission_filter(credentials, ActionPermission.OWNER),
             )
         )
         self.session.execute(stmt)
