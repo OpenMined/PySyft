@@ -25,6 +25,9 @@ IN_KUBERNETES = os.getenv("CONTAINER_HOST") == "k8s"
 # skip pushing to internal registry
 USE_INTERNAL_REGISTRY = os.getenv("USE_INTERNAL_REGISTRY", "true").lower() == "true"
 
+# Kaniko version
+KANIKO_VERSION = os.getenv("KANIKO_VERSION", "latest")
+
 # Internal registry URL
 DEFAULT_INTERNAL_REGISTRY = f"registry.{KUBERNETES_NAMESPACE}.svc.cluster.local"
 INTERNAL_REGISTRY_HOST = os.getenv("INTERNAL_REGISTRY_HOST", DEFAULT_INTERNAL_REGISTRY)

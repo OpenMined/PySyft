@@ -4,28 +4,27 @@ from email.mime.text import MIMEText
 import smtplib
 
 # third party
+from pydantic import BaseModel
+from pydantic import model_validator
 from result import Err
 from result import Ok
 from result import Result
 
+SOCKET_TIMEOUT = 5  # seconds
 
-class SMTPClient:
-    SOCKET_TIMEOUT = 5  # seconds
 
-    def __init__(
-        self,
-        server: str,
-        port: int,
-        username: str,
-        password: str,
-    ) -> None:
-        if not (username and password):
+class SMTPClient(BaseModel):
+    username: str
+    password: str
+    server: str
+    port: int
+
+    @model_validator(mode="before")
+    @classmethod
+    def check_user_and_password(cls, values: dict) -> dict:
+        if not (values.get("username", None) and values.get("password")):
             raise ValueError("Both username and password must be provided")
-
-        self.username = username
-        self.password = password
-        self.server = server
-        self.port = port
+        return values
 
     def send(self, sender: str, receiver: list[str], subject: str, body: str) -> None:
         if not (subject and body and receiver):
@@ -37,9 +36,7 @@ class SMTPClient:
         msg["Subject"] = subject
         msg.attach(MIMEText(body, "html"))
 
-        with smtplib.SMTP(
-            self.server, self.port, timeout=self.SOCKET_TIMEOUT
-        ) as server:
+        with smtplib.SMTP(self.server, self.port, timeout=SOCKET_TIMEOUT) as server:
             server.ehlo()
             if server.has_extn("STARTTLS"):
                 server.starttls()
@@ -59,7 +56,7 @@ class SMTPClient:
             bool: True if the credentials are valid, False otherwise.
         """
         try:
-            with smtplib.SMTP(server, port, timeout=cls.SOCKET_TIMEOUT) as smtp_server:
+            with smtplib.SMTP(server, port, timeout=SOCKET_TIMEOUT) as smtp_server:
                 smtp_server.ehlo()
                 if smtp_server.has_extn("STARTTLS"):
                     smtp_server.starttls()
