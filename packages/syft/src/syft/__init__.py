@@ -1,4 +1,4 @@
-__version__ = "0.9.1-beta.3"
+__version__ = "0.9.1-beta.4"
 
 # stdlib
 from collections.abc import Callable
@@ -79,7 +79,6 @@ from .stable_version import LATEST_STABLE_SYFT
 from .types.twin_object import TwinObject
 from .types.uid import UID
 from .util import filterwarnings
-from .util import options
 from .util.autoreload import disable_autoreload
 from .util.autoreload import enable_autoreload
 from .util.commit import __commit__
