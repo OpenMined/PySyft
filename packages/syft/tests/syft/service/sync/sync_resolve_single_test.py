@@ -129,8 +129,12 @@ def test_diff_state(low_worker, high_worker):
     assert diff_state_after.is_same
 
     client_low_ds.refresh()
+
+    # this result comes from the cache
     res = client_low_ds.code.compute(blocking=True)
-    assert res == compute(syft_no_server=True)
+    # FIX: Remove this when CachedSyftObject is removed
+    assert res.result.get() == 42
+    assert res.result.get() == compute(syft_no_server=True)
 
 
 def test_skip_deletion(low_worker, high_worker):
@@ -201,6 +205,10 @@ def test_diff_state_with_dataset(low_worker: Worker, high_worker: Worker):
 
     # check loading results for both blocking and non-blocking case
     res_blocking = client_low_ds.code.compute_mean(blocking=True)
+    # res_blocking result is CachedSyftObject
+    # FIX: Remove this when CachedSyftObject is removed
+    res_blocking = res_blocking.result.get()
+
     res_non_blocking = client_low_ds.code.compute_mean(blocking=False).wait()
 
     # expected_result = compute_mean(syft_no_server=True, data=)
@@ -332,7 +340,8 @@ def test_approve_request_on_sync_blocking(low_worker, high_worker):
     with pytest.raises(SyftException) as exc:
         client_low_ds.code.compute(blocking=True)
 
-    assert not exc.value.public_message
+    assert "waiting for approval" in exc.value.public_message
+    assert "PENDING" in exc.value.public_message
 
     assert low_client.requests[0].status == RequestStatus.PENDING
 
@@ -357,7 +366,8 @@ def test_approve_request_on_sync_blocking(low_worker, high_worker):
     assert len(diff_before.batches) == 1 and diff_before.batches[0].root_type is Job
     assert low_client.requests[0].status == RequestStatus.APPROVED
 
-    assert client_low_ds.code.compute().get() == 42
+    # FIX: Remove 'result' when CachedSyftObject is removed
+    assert client_low_ds.code.compute().result.get() == 42
     assert len(client_low_ds.code.compute.jobs) == 1
     # check if user retrieved from cache, instead of re-executing
     assert len(client_low_ds.requests[0].code.output_history) >= 1

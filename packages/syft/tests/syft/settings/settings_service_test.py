@@ -411,6 +411,8 @@ def test_settings_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker)
                 password="password",
                 password_verify="password",
             )
+
+            assert isinstance(result, SyftSuccess)
             assert isinstance(result.value, UserPrivateKey)
             emails_added.append(email)
 
