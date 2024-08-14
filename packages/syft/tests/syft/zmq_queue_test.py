@@ -7,6 +7,7 @@ from time import sleep
 # third party
 from faker import Faker
 import pytest
+from syft.types.errors import SyftException
 from zmq import Socket
 
 # syft absolute
@@ -34,7 +35,7 @@ def client():
     client.close()
 
 
-@pytest.mark.flaky(reruns=3, reruns_delay=3)
+# @pytest.mark.flaky(reruns=3, reruns_delay=3)
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
 def test_zmq_client(client):
     hostname = "127.0.0.1"
@@ -105,8 +106,8 @@ def test_zmq_client(client):
     assert len(received_message) == 1
 
     msg = b"My Message"
-    response = client.send_message(message=msg, queue_name="random queue")
-    assert isinstance(response, SyftError)
+    with pytest.raises(SyftException):
+        response = client.send_message(message=msg, queue_name="random queue")
 
     assert isinstance(client.close(), SyftSuccess)
     sleep(0.5)
