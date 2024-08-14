@@ -419,6 +419,8 @@ class ActionService(AbstractService):
                     real_kwargs, twin_mode=TwinMode.NONE, allow_python_types=True
                 ).unwrap()
                 exec_result = execute_byte_code(code_item, filtered_kwargs, context)
+                if exec_result.errored:
+                    raise SyftException(public_message=exec_result.safe_error_message)
 
                 if output_policy:
                     exec_result.result = output_policy.apply_to_output(
@@ -442,6 +444,8 @@ class ActionService(AbstractService):
                 private_exec_result = execute_byte_code(
                     code_item, private_kwargs, context
                 )
+                if private_exec_result.errored:
+                    raise SyftException(public_message=private_exec_result.safe_error_message)
 
                 if output_policy:
                     private_exec_result.result = output_policy.apply_to_output(
@@ -467,6 +471,10 @@ class ActionService(AbstractService):
                     mock_exec_result = execute_byte_code(
                         code_item, mock_kwargs, context
                     )
+    
+                    if mock_exec_result.errored:
+                        raise SyftException(public_message=mock_exec_result.safe_error_message)
+
                     if output_policy:
                         mock_exec_result.result = output_policy.apply_to_output(
                             context, mock_exec_result.result, update_policy=False
@@ -481,15 +489,7 @@ class ActionService(AbstractService):
                     mock_obj=result_action_object_mock,
                 )
         except Exception as e:
-            print("\n\n\nkakakkaak\n\n\n\n", str(e))
-            # stdlib
-            import traceback
-
-            traceback.format_exc()
-            # third party
-            raise SyftException.from_exception(
-                exc=e, public_message="_user_code_execute failed"
-            )
+            raise SyftException.from_exception(e)
 
         return result_action_object
 
@@ -779,7 +779,7 @@ class ActionService(AbstractService):
 
     def flatten_action_arg(self, context: AuthedServiceContext, arg: UID) -> None:
         """ "If the argument is a collection (of collections) of ActionObjects,
-        We want to flatten the collection and upload a new ActionObject that contains
+        We want to flatten the collection and upload a new ActionObject that contins
         its values. E.g. [[ActionObject1, ActionObject2],[ActionObject3, ActionObject4]]
         -> [[value1, value2],[value3, value4]]
         """

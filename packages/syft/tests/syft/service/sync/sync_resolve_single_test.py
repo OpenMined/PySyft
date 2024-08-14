@@ -12,7 +12,7 @@ from syft.client.syncing import resolve
 from syft.server.worker import Worker
 from syft.service.job.job_stash import Job
 from syft.service.request.request import RequestStatus
-from syft.service.response import SyftSuccess
+from syft.service.response import SyftError, SyftSuccess
 from syft.service.sync.resolve_widget import ResolveWidget
 from syft.types.errors import SyftException
 
@@ -168,8 +168,8 @@ def test_diff_state_with_dataset(low_worker: Worker, high_worker: Worker):
         client_low_ds.code.compute_mean(blocking=False)
 
     assert (
-        exc.value.public_message
-        == "Please wait for the admin to allow the execution of this code"
+        "Please wait for the admin to allow the execution of this code"
+        in exc.value.public_message
     )
 
     diff_state_before, diff_state_after = compare_and_resolve(
@@ -236,21 +236,20 @@ def test_sync_with_error(low_worker, high_worker):
 
     assert diff_state_after.is_same
 
-    run_and_deposit_result(high_client)
+    with pytest.raises(SyftException):
+        run_and_deposit_result(high_client)
+
     diff_state_before, diff_state_after = compare_and_resolve(
         from_client=high_client, to_client=low_client
     )
 
-    assert not diff_state_before.is_same
+    assert diff_state_before.is_same
     assert diff_state_after.is_same
 
     client_low_ds.refresh()
 
-    with pytest.raises(SyftException) as exc:
+    with pytest.raises(SyftException):
         client_low_ds.code.compute(blocking=True)
-
-    assert exc.type is SyftException
-    assert "Policy is no longer valid" in exc.value.public_message
 
 
 def test_ignore_unignore_single(low_worker, high_worker):

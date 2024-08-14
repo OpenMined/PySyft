@@ -1649,6 +1649,7 @@ class UserCodeExecutionOutput(SyftObject):
     stdout: str
     stderr: str
     result: Any = None
+    safe_error_message: str | None = None
 
 
 class SecureContext:
@@ -1834,12 +1835,15 @@ def execute_byte_code(
 
         evil_string = f"{code_item.unique_func_name}(**kwargs)"
 
+        result_message = ""
+
         try:
             result = eval(evil_string, _globals, _locals)  # nosec
             errored = False
         except Exception as e:
             errored = True
             error_msg = traceback_from_error(e, code_item)
+
             if context.job is not None:
                 time = datetime.datetime.now().strftime("%d/%m/%y %H:%M:%S")
                 original_print(
@@ -1849,6 +1853,7 @@ def execute_byte_code(
                 # for local execution
                 time = datetime.datetime.now().strftime("%d/%m/%y %H:%M:%S")
                 original_print(f"{time} EXCEPTION LOG:\n{error_msg}\n", file=sys.stderr)
+
             if (
                 context.server is not None
                 and context.job is not None
@@ -1862,6 +1867,7 @@ def execute_byte_code(
                 f"Exception encountered while running {code_item.service_func_name}"
                 ", please contact the Server Admin for more info."
             )
+
             if context.dev_mode:
                 result_message += error_msg
 
@@ -1880,8 +1886,8 @@ def execute_byte_code(
             stderr=str(stderr.getvalue()),
             result=result,
             errored=errored,
+            safe_error_message=result_message
         )
-
     except Exception as e:
         # stdlib
 
@@ -1889,6 +1895,7 @@ def execute_byte_code(
         # print("execute_byte_code failed", e, file=stderr_)
         print(traceback.format_exc())
         print("execute_byte_code failed", e)
+        raise
     finally:
         sys.stdout = stdout_
         sys.stderr = stderr_
