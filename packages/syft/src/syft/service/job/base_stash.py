@@ -85,6 +85,8 @@ class CommonMixin:
 
 
 def model_dump(obj: pydantic.BaseModel) -> dict:
+    from syft.service.request.request import Change
+
     obj_dict = obj.model_dump()
     for key, type_ in obj.model_fields.items():
         if type_.annotation is UID:
@@ -95,6 +97,7 @@ def model_dump(obj: pydantic.BaseModel) -> dict:
             obj_dict[key] = str(getattr(obj, key))
         elif (
             type_.annotation is LinkedObject
+            or type_.annotation == list[Change]
             or type_.annotation == Any | None  # type: ignore
             or type_.annotation == Action | None  # type: ignore
         ):
@@ -102,6 +105,7 @@ def model_dump(obj: pydantic.BaseModel) -> dict:
             data = sy.serialize(getattr(obj, key), to_bytes=True)
             base64_data = base64.b64encode(data).decode("utf-8")
             obj_dict[key] = base64_data
+
     return obj_dict
 
 
@@ -109,6 +113,8 @@ T = TypeVar("T", bound=pydantic.BaseModel)
 
 
 def model_validate(obj_type: type[T], obj_dict: dict) -> T:
+    from syft.service.request.request import Change
+
     for key, type_ in obj_type.model_fields.items():
         if key not in obj_dict:
             continue
@@ -121,6 +127,7 @@ def model_validate(obj_type: type[T], obj_dict: dict) -> T:
             obj_dict[key] = SyftSigningKey.from_string(obj_dict[key])
         elif (
             type_.annotation is LinkedObject
+            or type_.annotation == list[Change]
             or type_.annotation == Any | None
             or type_.annotation == Action | None
         ):

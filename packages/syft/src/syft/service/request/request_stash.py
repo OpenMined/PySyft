@@ -3,6 +3,7 @@
 # third party
 from result import Ok
 from result import Result
+from syft.service.job.base_stash import ObjectStash
 
 # relative
 from ...serde.serializable import serializable
@@ -24,8 +25,8 @@ OrderByRequestTimeStampPartitionKey = PartitionKey(key="request_time", type_=Dat
 
 
 @instrument
-@serializable(canonical_name="RequestStash", version=1)
-class RequestStash(BaseUIDStoreStash):
+@serializable(canonical_name="RequestStashSQL", version=1)
+class RequestStash(ObjectStash[Request]):
     object_type = Request
     settings: PartitionSettings = PartitionSettings(
         name=Request.__canonical_name__, object_type=Request
@@ -38,20 +39,17 @@ class RequestStash(BaseUIDStoreStash):
     ) -> Result[list[Request], str]:
         if isinstance(verify_key, str):
             verify_key = SyftVerifyKey.from_string(verify_key)
-        qks = QueryKeys(qks=[RequestingUserVerifyKeyPartitionKey.with_obj(verify_key)])
-        return self.query_all(
+        return self.get_all_by_field(
             credentials=credentials,
-            qks=qks,
-            order_by=OrderByRequestTimeStampPartitionKey,
+            field_name="requesting_user_verify_key",
+            field_value=verify_key,
         )
 
     def get_by_usercode_id(
         self, credentials: SyftVerifyKey, user_code_id: UID
     ) -> Result[list[Request], str]:
-        query = self.get_all(credentials=credentials)
-        if query.is_err():
-            return query
-
-        all_requests: list[Request] = query.ok()
-        results = [r for r in all_requests if r.code_id == user_code_id]
-        return Ok(results)
+        return self.get_all_by_field(
+            credentials=credentials,
+            field_name="code_id",
+            field_value=user_code_id,
+        )
