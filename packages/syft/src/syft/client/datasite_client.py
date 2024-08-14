@@ -20,7 +20,7 @@ from ..serde.serializable import serializable
 from ..service.action.action_object import ActionObject
 from ..service.code_history.code_history import CodeHistoriesDict
 from ..service.code_history.code_history import UsersCodeHistoriesDict
-from ..service.dataset.dataset import Contributor
+from ..service.dataset.dataset import Contributor, _check_asset_must_contain_mock
 from ..service.dataset.dataset import CreateAsset
 from ..service.dataset.dataset import CreateDataset
 from ..service.migration.object_migration_state import MigrationData
@@ -164,6 +164,7 @@ class DatasiteClient(SyftClient):
                 pbar.update(1)
 
         dataset.mb_size = dataset_size
+        _check_asset_must_contain_mock(dataset.asset_list)
         dataset.check()
         return self.api.services.dataset.add(dataset=dataset)
 
