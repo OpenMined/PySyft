@@ -346,6 +346,11 @@ class BaseDateTime(SyftObjectVersioned):
         return self.utc_timestamp < other.utc_timestamp
 
 
+EXCLUDED_FROM_SIGNATURE = set(
+    DYNAMIC_SYFT_ATTRIBUTES + ["created_date", "updated_date", "deleted_date"]
+)
+
+
 @serializable()
 class SyftObject(SyftObjectVersioned):
     __canonical_name__ = "SyftObject"

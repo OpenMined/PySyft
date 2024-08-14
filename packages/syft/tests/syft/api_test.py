@@ -3,11 +3,10 @@ from collections.abc import Callable
 
 # third party
 import numpy as np
-import pytest
 
 # syft absolute
 import syft as sy
-from syft.service.response import SyftAttributeError
+from syft.service.response import SyftError
 from syft.service.user.user_roles import ServiceRole
 
 
@@ -58,8 +57,7 @@ def test_api_cache_invalidation_login(root_verify_key, worker):
     dataset = sy.Dataset(
         name="test2",
     )
-    with pytest.raises(SyftAttributeError):
-        assert guest_client.upload_dataset(dataset)
+    assert isinstance(guest_client.upload_dataset(dataset), SyftError)
 
     assert guest_client.api.services.user.update(uid=user_id, name="abcdef")
 
