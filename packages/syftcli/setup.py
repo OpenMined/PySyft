@@ -13,7 +13,7 @@ packages = [
 ]
 
 build_packages = [
-    "pyinstaller==6.8.0",
+    "pyinstaller==6.10.0",
 ]
 
 dev_packages = ["pytest"] + build_packages
