@@ -71,7 +71,7 @@ jobs:
           python -m pip install --upgrade pip
           python -p pip install uv==0.2.36
           uv --version
-          python -m uv pip install --upgrade tox==4.16.0 tox-uv==1.11.2 setuptools wheel twine bump2version==1.0.1 PyYAML==6.0.1
+          python -m uv pip install --upgrade tox==4.18.0 tox-uv==1.11.2 setuptools wheel twine bump2version==1.0.1 PyYAML==6.0.1
 
       - name: Bump the Version
         if: ${{steps.get-hashes.outputs.current_hash != steps.get-hashes.outputs.previous_hash }}
@@ -129,7 +129,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install uv==0.2.36
           uv --version
-          python -m uv pip install tox==4.16.0 tox-uv==1.11.2
+          python -m uv pip install tox==4.18.0 tox-uv==1.11.2
 
       - name: Build syftcli
         env:
