@@ -79,7 +79,7 @@ class UserService(AbstractService):
 
         result = self.stash.set(
             credentials=context.credentials,
-            user=user,
+            obj=user,
             add_permissions=[
                 ActionObjectPermission(
                     uid=user.id, permission=ActionPermission.ALL_READ
@@ -213,7 +213,7 @@ class UserService(AbstractService):
         user.reset_token_date = datetime.now()
 
         result = self.stash.update(
-            credentials=context.credentials, user=user, has_permission=True
+            credentials=context.credentials, obj=user, has_permission=True
         )
         if result.is_err():
             return SyftError(
@@ -271,7 +271,7 @@ class UserService(AbstractService):
         user.reset_token_date = None
 
         result = self.stash.update(
-            credentials=root_context.credentials, user=user, has_permission=True
+            credentials=root_context.credentials, obj=user, has_permission=True
         )
         if result.is_err():
             return SyftError(
@@ -570,7 +570,7 @@ class UserService(AbstractService):
                 setattr(user, name, value)
 
         result = self.stash.update(
-            credentials=context.credentials, user=user, has_permission=True
+            credentials=context.credentials, obj=user, has_permission=True
         )
 
         if result.is_err():
@@ -587,7 +587,7 @@ class UserService(AbstractService):
                 settings_data = settings.ok()[0]
                 settings_data.admin_email = user.email
                 settings_stash.update(
-                    credentials=context.credentials, settings=settings_data
+                    credentials=context.credentials, obj=settings_data
                 )
 
         return user.to(UserView)
@@ -718,7 +718,7 @@ class UserService(AbstractService):
 
         result = self.stash.set(
             credentials=user.verify_key,
-            user=user,
+            obj=user,
             add_permissions=[
                 ActionObjectPermission(
                     uid=user.id, permission=ActionPermission.ALL_READ
@@ -798,7 +798,7 @@ class UserService(AbstractService):
 
         result = self.stash.update(
             credentials=user.verify_key,
-            user=user,
+            obj=user,
         )
         if result.is_err():
             return SyftError(message=str(result.err()))
