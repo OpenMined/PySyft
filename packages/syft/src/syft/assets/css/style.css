@@ -7,6 +7,7 @@ body.vscode-dark {
   --colors-black: #ffffff;
   --surface-color: #fff;
   --text-color: #ffffff;
+  --surface-highest-color: #ffffff;
 }
 
 body {
@@ -17,6 +18,7 @@ body {
   --colors-black: #17161d;
   --surface-color: #464158;
   --text-color: #2e2b3b;
+  --surface-highest-color: #534f64;
 }
 
 .header-1 {
@@ -569,6 +571,7 @@ body {
   background-color: #c2def0;
 }
 
+.syft-code,
 .syft-user_code,
 .syft-project,
 .syft-project-create,
@@ -589,7 +592,9 @@ body {
 .syft-asset h3,
 .syft-asset p,
 .syft-syncstate h3,
-.syft-syncstate p {
+.syft-syncstate p,
+.syft-code p,
+.syft-code h3 {
   font-family: "Open Sans";
 }
 
@@ -618,4 +623,22 @@ body {
 
 .syft-space {
   margin-top: 1em;
+}
+
+.itables {
+  font-family: "Consolas", monospace, sans-serif;
+}
+
+.itables table {
+  margin: 0 auto;
+  float: left;
+  color: var(--surface-highest-color);
+}
+
+.itables table th {
+  color: var(--text-color);
+}
+
+.syft-request {
+  line-height: 1;
 }

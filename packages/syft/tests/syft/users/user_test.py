@@ -3,6 +3,7 @@ from secrets import token_hex
 
 # third party
 from faker import Faker
+import pydantic
 import pytest
 
 # syft absolute
@@ -434,3 +435,21 @@ def test_user_search(
 
     for user in users:
         assert getattr(user, k) == v
+
+
+class M(pydantic.BaseModel):
+    role: ServiceRole
+
+
+@pytest.mark.parametrize("role", [x.name for x in ServiceRole])
+class TestServiceRole:
+    @staticmethod
+    def test_accept_str_in_base_model(role: str) -> None:
+        m = M(role=role)
+        assert m.role is getattr(ServiceRole, role)
+
+    @staticmethod
+    def test_accept_str(role: str) -> None:
+        assert pydantic.TypeAdapter(ServiceRole).validate_python(role) is getattr(
+            ServiceRole, role
+        )
