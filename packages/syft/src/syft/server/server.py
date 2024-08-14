@@ -1438,69 +1438,33 @@ class Server(AbstractServer):
             ):
                 try:
                     existing_jobs = self._get_existing_user_code_jobs(context, user_code_id).unwrap()
-                    if len(existing_jobs) == 1:
-                        return SyftSuccess(message="Got existing job", value=existing_jobs[0])
-                    elif len(existing_jobs) > 1:
-                        # Print warning if there are existing jobs for this user code
+
+                    if len(existing_jobs) > 0:
                         # relative
                         from ..util.util import prompt_warning_message
 
                         prompt_warning_message(
                             "There are existing jobs for this user code, returning the latest one"
                         )
-                        return SyftSuccess(
-                            message="Found multiple existing jobs, got last",
-                            value=existing_jobs[-1],
-                        )
+                        return SyftSuccess(message="Found multiple existing jobs, got last", value=existing_jobs[-1])
                     else:
-                        return SyftSuccess(
-                            message="No jobs found",
-                            value=None
+                        raise SyftException(
+                            public_message="Please wait for the admin to allow the execution of this code"
                         )
                 except Exception as e:
-                    raise SyftException.from_exception(
-                        e,
-                        public_message="Please wait for the admin to allow the execution of this code"
-                    )
-
-                # try:
-                #     existing_jobs = self._get_existing_user_code_jobs(context, user_code_id).unwrap()
-                #     if len(existing_jobs) == 1:
-                #         return SyftSuccess(message="Got existing job", value=existing_jobs[0])
-                #     elif len(existing_jobs) > 1:
-                #         # Print warning if there are existing jobs for this user code
-                #         # relative
-                #         from ..util.util import prompt_warning_message
-
-                #         prompt_warning_message(
-                #             "There are existing jobs for this user code, returning the latest one"
-                #         )
-                #         return SyftSuccess(
-                #             message="Found multiple existing jobs, got last",
-                #             value=existing_jobs[-1],
-                #         )
-                #     else:
-                #         return SyftSuccess(
-                #             message="No jobs found",
-                #             value=None
-                #         )
-                # except Exception as e:
-                #     raise SyftException.from_exception(
-                #         e,
-                #         public_message="Please wait for the admin to allow the execution of this code"
-                #     )
-
+                    raise SyftException.from_exception(e, public_message=str(e))
             elif (
                 is_usercode_call_on_owned_kwargs
                 and not is_execution_on_owned_kwargs_allowed
             ):
                 raise SyftException(
-                    message="You do not have the permissions for mock execution, please contact the admin"
+                    public_message="You do not have the permissions for mock execution, please contact the admin"
                 )
 
             job = self.add_action_to_queue(
                 action, api_call.credentials, parent_job_id=parent_job_id
             ).unwrap()
+
             return SyftSuccess(message="Succesfully queued job", value=job)
 
         else:

@@ -380,18 +380,17 @@ class ActionService(AbstractService):
                     public_message=f"No input policy defined for user code: {code_item.id}"
                 )
 
-            # Filter input kwargs based on policy
-            filtered_kwargs = input_policy.filter_kwargs(
-                kwargs=kwargs, context=context, code_item_id=code_item.id
-            ).unwrap()
-
-            print(f"filtered_kwargs #1: {filtered_kwargs}")
             # validate input policy, raises if not valid
             input_policy._is_valid(
                 context=context,
                 usr_input_kwargs=kwargs,
                 code_item_id=code_item.id,
-            ).unwrap()
+            )
+
+            # Filter input kwargs based on policy
+            filtered_kwargs = input_policy.filter_kwargs(
+                kwargs=kwargs, context=context, code_item_id=code_item.id
+            )
         else:
             filtered_kwargs = retrieve_from_db(code_item.id, kwargs, context).unwrap()
 

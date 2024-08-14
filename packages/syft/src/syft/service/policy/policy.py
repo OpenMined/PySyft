@@ -386,7 +386,7 @@ class InputPolicy(Policy):
         context: AuthedServiceContext,
         usr_input_kwargs: dict,
         code_item_id: UID,
-    ) -> InputPolicyValidEnum:
+    ) -> bool:
         raise NotImplementedError
 
     def filter_kwargs(
@@ -523,7 +523,6 @@ class MixedInputPolicy(InputPolicy):
             pass  # just grab the first one
         return matches.pop()
 
-    @as_result(SyftException)
     def filter_kwargs(  # type: ignore[override]
         self,
         kwargs: dict[str, UID],
@@ -554,7 +553,6 @@ class MixedInputPolicy(InputPolicy):
             )
         return res
 
-    @as_result(SyftException)
     def _is_valid(  # type: ignore[override]
         self,
         context: AuthedServiceContext,
@@ -565,9 +563,10 @@ class MixedInputPolicy(InputPolicy):
             kwargs=usr_input_kwargs,
             context=context,
             code_item_id=code_item_id,
-        ).unwrap()
+        )
 
         expected_input_kwargs = set()
+
         for _inp_kwargs in self.inputs.values():
             for k in _inp_kwargs.keys():
                 if k not in usr_input_kwargs:
@@ -578,10 +577,12 @@ class MixedInputPolicy(InputPolicy):
 
         permitted_input_kwargs = list(filtered_input_kwargs.keys())
         not_approved_kwargs = set(expected_input_kwargs) - set(permitted_input_kwargs)
+
         if len(not_approved_kwargs) > 0:
             raise SyftException(
                 public_message=f"Input arguments: {not_approved_kwargs} to the function are not approved yet."
             )
+
         return True
 
 
@@ -667,7 +668,6 @@ class ExactMatch(InputPolicy):
     __version__ = SYFT_OBJECT_VERSION_1
 
     # TODO: Improve exception handling here
-    @as_result(SyftException)
     def filter_kwargs(  # type: ignore
         self,
         kwargs: dict[Any, Any],
@@ -684,7 +684,6 @@ class ExactMatch(InputPolicy):
             context=context,
         ).unwrap()
 
-    @as_result(SyftException)
     def _is_valid(  # type: ignore
         self,
         context: AuthedServiceContext,
@@ -695,7 +694,7 @@ class ExactMatch(InputPolicy):
             kwargs=usr_input_kwargs,
             context=context,
             code_item_id=code_item_id,
-        ).unwrap()
+        )
 
         expected_input_kwargs = set()
         for _inp_kwargs in self.inputs.values():
@@ -776,8 +775,7 @@ class OutputPolicyExecuteCount(OutputPolicy):
         output_history = api.services.output.get_by_output_policy_id(self.id)
         return len(output_history)
 
-    @as_result(SyftException)
-    def _is_valid(self, context: AuthedServiceContext) -> SyftSuccess:
+    def _is_valid(self, context: AuthedServiceContext) -> bool:
         output_service = context.server.get_service("outputservice")
         output_history = output_service.get_by_output_policy_id(
             context, self.id
@@ -786,10 +784,7 @@ class OutputPolicyExecuteCount(OutputPolicy):
         execution_count = len(output_history)
 
         if execution_count < self.limit:
-            return SyftSuccess(
-                message=f"Policy is still valid. count: {execution_count} < limit: {self.limit}",
-                value=True,
-            )
+            return True
 
         raise SyftException(
             public_message=f"Policy is no longer valid. count: {execution_count} >= limit: {self.limit}"

@@ -88,8 +88,6 @@ def test_get_migration_data(worker, tmp_path):
     migration_data = client.get_migration_data()
     assert isinstance(migration_data, MigrationData)
 
-    print(migration_data._repr_markdown_())
-
     # Admin + data scientist
     assert len(migration_data.store_objects[User]) == 2
 
