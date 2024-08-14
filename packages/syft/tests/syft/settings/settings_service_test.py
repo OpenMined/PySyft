@@ -84,7 +84,6 @@ def test_settingsservice_set_success(
 ) -> None:
     response = settings_service.set(authed_context, settings)
 
-    assert response.is_ok() is True
     assert isinstance(response, ServerSettings)
     assert response == settings
 
