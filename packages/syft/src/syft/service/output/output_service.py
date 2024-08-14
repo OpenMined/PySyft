@@ -207,16 +207,16 @@ class OutputStash(ObjectStash[ExecutionOutput]):
         return self.get_all_by_field(
             credentials=credentials,
             field_name="user_code_id",
-            field_value=user_code_id,
+            field_value=str(user_code_id),
         )
 
     def get_by_job_id(
-        self, credentials: SyftVerifyKey, user_code_id: UID
+        self, credentials: SyftVerifyKey, job_id: UID
     ) -> Result[ExecutionOutput | None, str]:
         return self.get_one_by_field(
             credentials=credentials,
             field_name="job_id",
-            field_value=user_code_id,
+            field_value=str(job_id),
         )
 
     def get_by_output_policy_id(
@@ -225,7 +225,7 @@ class OutputStash(ObjectStash[ExecutionOutput]):
         return self.get_all_by_field(
             credentials=credentials,
             field_name="output_policy_id",
-            field_value=output_policy_id,
+            field_value=str(output_policy_id),
         )
 
 

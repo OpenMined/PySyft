@@ -166,7 +166,7 @@ class JobService(AbstractService):
         )
 
         context.server.queue_stash.set_placeholder(context.credentials, queue_item)
-        context.server.job_stash.set(context.credentials, job)
+        self.stash.set(context.credentials, job)
 
         log_service = context.server.get_service("logservice")
         result = log_service.restart(context, job.log_id)
