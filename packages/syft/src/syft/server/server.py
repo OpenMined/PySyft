@@ -865,6 +865,10 @@ class Server(AbstractServer):
         return self.get_service("jobservice").stash
 
     @property
+    def output_stash(self) -> JobStash:
+        return self.get_service("outputservice").stash
+
+    @property
     def worker_stash(self) -> WorkerStash:
         return self.get_service("workerservice").stash
 

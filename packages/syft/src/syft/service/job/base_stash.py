@@ -97,6 +97,9 @@ def should_handle_as_bytes(type_) -> bool:
 
     return (
         type_.annotation is LinkedObject
+        or type_.annotation == LinkedObject | None
+        or type_.annotation == list[UID] | dict[str, UID] | None
+        or type_.annotation == dict[str, UID] | None
         or type_.annotation == list[Change]
         or type_.annotation == Any | None  # type: ignore
         or type_.annotation == Action | None  # type: ignore
@@ -140,7 +143,10 @@ def model_validate(obj_type: type[T], obj_dict: dict) -> T:
             continue
         # FIXME
         if type_.annotation is UID or type_.annotation == UID | None:
-            obj_dict[key] = UID(obj_dict[key])
+            if obj_dict[key] is None:
+                obj_dict[key] = None
+            else:
+                obj_dict[key] = UID(obj_dict[key])
         elif (
             type_.annotation is SyftVerifyKey
             or type_.annotation == SyftVerifyKey | None
@@ -384,7 +390,7 @@ class ObjectStash(Generic[SyftT]):
             .where(
                 sa.and_(
                     self._get_field_filter("id", obj.id),
-                    self._get_permission_filter(credentials, ActionObjectWRITE),
+                    self._get_permission_filter(credentials, ActionPermission.WRITE),
                 )
             )
             .values(fields=model_dump(obj))
@@ -398,7 +404,7 @@ class ObjectStash(Generic[SyftT]):
         credentials: SyftVerifyKey,
         obj: SyftT,
         add_permissions: list[ActionObjectPermission] | None = None,
-        add_storage_permission: bool = True,
+        add_storage_permission: bool = True,  # TODO: check the default value
         ignore_duplicates: bool = False,  # only used in one place, should use upsert instead
     ) -> Result[SyftT, str]:
         # uid is unique by database constraint
