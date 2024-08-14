@@ -2,9 +2,7 @@
 from string import Template
 
 # third party
-from result import Err
-from result import Ok
-from result import Result
+from pydantic import ValidationError
 
 # relative
 from ...abstract_server import ServerSideType
@@ -44,7 +42,7 @@ class SettingsService(AbstractService):
         self.stash = SettingsStash(store=store)
 
     @service_method(path="settings.get", name="get")
-    def get(self, context: UnauthedServiceContext) -> Result[Ok, Err]:
+    def get(self, context: UnauthedServiceContext) -> ServerSettings | SyftError:
         """Get Settings"""
 
         result = self.stash.get_all(context.server.signing_key.verify_key)
@@ -54,14 +52,14 @@ class SettingsService(AbstractService):
             if len(settings) == 0:
                 return SyftError(message="No settings found")
             result = settings[0]
-            return Ok(result)
+            return result
         else:
             return SyftError(message=result.err())
 
     @service_method(path="settings.set", name="set")
     def set(
         self, context: AuthedServiceContext, settings: ServerSettings
-    ) -> Result[Ok, Err]:
+    ) -> ServerSettings | SyftError:
         """Set a new the Server Settings"""
         result = self.stash.set(context.credentials, settings)
         if result.is_ok():
@@ -77,21 +75,7 @@ class SettingsService(AbstractService):
     )
     def update(
         self, context: AuthedServiceContext, settings: ServerSettingsUpdate
-    ) -> Result[SyftSuccess, SyftError]:
-        res = self._update(context, settings)
-        if res.is_ok():
-            return SyftSuccess(
-                message=(
-                    "Settings updated successfully. "
-                    + "You must call <client>.refresh() to sync your client with the changes."
-                )
-            )
-        else:
-            return SyftError(message=res.err())
-
-    def _update(
-        self, context: AuthedServiceContext, settings: ServerSettingsUpdate
-    ) -> Result[Ok, Err]:
+    ) -> SyftSuccess | SyftError:
         """
         Update the Server Settings using the provided values.
 
@@ -111,42 +95,50 @@ class SettingsService(AbstractService):
             association_request_auto_approval: Optional[bool]
 
         Returns:
-            Result[SyftSuccess, SyftError]: A result indicating the success or failure of the update operation.
+            SyftSuccess | SyftError: A result indicating the success or failure of the update operation.
 
         Example:
         >>> server_client.update(name='foo', organization='bar', description='baz', signup_enabled=True)
         SyftSuccess: Settings updated successfully.
         """
-        result = self.stash.get_all(context.credentials)
-        if result.is_ok():
-            current_settings = result.ok()
-            if len(current_settings) > 0:
-                new_settings = current_settings[0].model_copy(
-                    update=settings.to_dict(exclude_empty=True)
-                )
-                notifier_service = context.server.get_service("notifierservice")
 
-                # If notifications_enabled is present in the update, we need to update the notifier settings
-                if settings.notifications_enabled is True:
-                    if not notifier_service.settings(context):
-                        return SyftError(
-                            message="Create notification settings using enable_notifications from user_service"
-                        )
-                    notifier_service = context.server.get_service("notifierservice")
-                    result = notifier_service.set_notifier_active_to_true(context)
-                elif settings.notifications_enabled is False:
-                    if not notifier_service.settings(context):
-                        return SyftError(
-                            message="Create notification settings using enable_notifications from user_service"
-                        )
-                    notifier_service = context.server.get_service("notifierservice")
-                    result = notifier_service.set_notifier_active_to_false(context)
-                update_result = self.stash.update(context.credentials, new_settings)
-                return update_result
-            else:
-                return Err(value="No settings found")
+        result = self.stash.get_all(context.credentials)
+        if result.is_err():
+            return SyftError(message=result.err())
+
+        current_settings = result.ok()
+        if len(current_settings) == 0:
+            return SyftError(message="No settings found")
+        try:
+            new_settings = current_settings[0].model_copy(
+                update=settings.to_dict(exclude_empty=True)
+            )
+            ServerSettings.model_validate(new_settings.to_dict())
+        except ValidationError as e:
+            return SyftError(message=str(e))
+
+        notifier_service = context.server.get_service("notifierservice")
+        if not notifier_service.settings(context):
+            return SyftError(
+                message="Create notification settings using enable_notifications from user_service"
+            )
+        # If notifications_enabled is present in the update, we need to update the notifier settings
+        if settings.notifications_enabled is True:
+            result = notifier_service.set_notifier_active_to_true(context)
+        elif settings.notifications_enabled is False:
+            result = notifier_service.set_notifier_active_to_false(context)
+
+        update_result = self.stash.update(context.credentials, new_settings)
+
+        if update_result.is_ok():
+            return SyftSuccess(
+                message=(
+                    "Settings updated successfully. "
+                    + "You must call <client>.refresh() to sync your client with the changes."
+                )
+            )
         else:
-            return result
+            return SyftError(message=update_result.err())
 
     @service_method(
         path="settings.set_server_side_type_dangerous",
@@ -155,7 +147,7 @@ class SettingsService(AbstractService):
     )
     def set_server_side_type_dangerous(
         self, context: AuthedServiceContext, server_side_type: str
-    ) -> Result[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         side_type_options = [e.value for e in ServerSideType]
         if server_side_type not in side_type_options:
             return SyftError(
@@ -231,7 +223,7 @@ class SettingsService(AbstractService):
         flags.CAN_REGISTER = enable
 
         settings = ServerSettingsUpdate(signup_enabled=enable)
-        result = self._update(context=context, settings=settings)
+        result = self.update(context=context, settings=settings)
 
         if isinstance(result, SyftError):
             return SyftError(message=f"Failed to update settings: {result.err()}")
@@ -252,9 +244,9 @@ class SettingsService(AbstractService):
         """Enable/Disable eager execution."""
         settings = ServerSettingsUpdate(eager_execution_enabled=enable)
 
-        result = self._update(context=context, settings=settings)
+        result = self.update(context=context, settings=settings)
 
-        if result.is_err():
+        if isinstance(result, SyftError):
             return SyftError(message=f"Failed to update settings: {result.err()}")
 
         message = "enabled" if enable else "disabled"
@@ -275,7 +267,7 @@ class SettingsService(AbstractService):
         self, context: AuthedServiceContext, enable: bool
     ) -> SyftSuccess | SyftError:
         new_settings = ServerSettingsUpdate(association_request_auto_approval=enable)
-        result = self._update(context, settings=new_settings)
+        result = self.update(context, settings=new_settings)
         if isinstance(result, SyftError):
             return result
 
@@ -329,7 +321,7 @@ class SettingsService(AbstractService):
             welcome_msg = HTMLObject(text=html)
 
         new_settings = ServerSettingsUpdate(welcome_markdown=welcome_msg)
-        result = self._update(context=context, settings=new_settings)
+        result = self.update(context=context, settings=new_settings)
         if isinstance(result, SyftError):
             return result
 
