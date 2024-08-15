@@ -7,11 +7,8 @@ import textwrap
 from typing import Any
 
 # third party
-<<<<<<< HEAD
 import itables
-=======
 from IPython.display import display
->>>>>>> a0de849c8bdaa7573296253cd26c9ce2aacb4a40
 import markdown
 import pandas as pd
 from pydantic import ConfigDict
@@ -33,10 +30,7 @@ from ...types.syft_migration import migrate
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
-<<<<<<< HEAD
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
-=======
->>>>>>> a0de849c8bdaa7573296253cd26c9ce2aacb4a40
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import generate_id
@@ -155,20 +149,11 @@ class Asset(SyftObject):
             else:
                 data_table_line = private_data_res.ok_value
 
-<<<<<<< HEAD
         if isinstance(mock, ActionObject):
-            mock_table_line = itables.to_html_datatable(
-                df=mock.syft_action_data, css=itables_css
-            )
-        elif isinstance(mock, pd.DataFrame):
-            mock_table_line = itables.to_html_datatable(df=mock, css=itables_css)
-=======
-        if isinstance(self.mock, ActionObject):
-            df = pd.DataFrame(self.mock.syft_action_data)
+            df = pd.DataFrame(mock.syft_action_data)
             mock_table_line = itable_template_from_df(df=df.head(5))
-        elif isinstance(self.mock, pd.DataFrame):
+        elif isinstance(mock, pd.DataFrame):
             mock_table_line = itable_template_from_df(df=self.mock.head(5))
->>>>>>> a0de849c8bdaa7573296253cd26c9ce2aacb4a40
         else:
             mock_table_line = mock
             if isinstance(mock_table_line, SyftError):

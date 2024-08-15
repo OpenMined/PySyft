@@ -19,12 +19,9 @@ from typing import Any
 from typing import TYPE_CHECKING
 
 # third party
-<<<<<<< HEAD
-=======
 from pydantic import ValidationError
 from result import Ok
 from result import OkErr
->>>>>>> a0de849c8bdaa7573296253cd26c9ce2aacb4a40
 from typing_extensions import Self
 
 # relative
@@ -43,14 +40,11 @@ from ..serde.signature import signature_remove_self
 from ..server.credentials import SyftVerifyKey
 from ..store.document_store import DocumentStore
 from ..store.linked_obj import LinkedObject
-<<<<<<< HEAD
 from ..types.errors import SyftException
 from ..types.result import as_result
-=======
 from ..types.syft_metaclass import Empty
 from ..types.syft_metaclass import EmptyType
 from ..types.syft_object import EXCLUDED_FROM_SIGNATURE
->>>>>>> a0de849c8bdaa7573296253cd26c9ce2aacb4a40
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SYFT_OBJECT_VERSION_3
