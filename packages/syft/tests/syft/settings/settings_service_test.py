@@ -36,7 +36,7 @@ def test_settingsservice_get_success(
     authed_context: AuthedServiceContext,
 ) -> None:
     mock_stash_get_all_output = [settings, settings]
-    expected_output = Ok(mock_stash_get_all_output[0])
+    expected_output = mock_stash_get_all_output[0]
 
     def mock_stash_get_all(credentials) -> Ok:
         return Ok(mock_stash_get_all_output)
