@@ -63,7 +63,7 @@ class SettingsService(AbstractService):
         """Set a new the Server Settings"""
         result = self.stash.set(context.credentials, settings)
         if result.is_ok():
-            return result
+            return result.ok()
         else:
             return SyftError(message=result.err())
 
