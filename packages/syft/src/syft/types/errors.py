@@ -30,7 +30,6 @@ class SyftException(Exception):
         private_message (str): Detailed error message intended for administrators.
         public_message (str): General error message for end-users.
     """
-
     public_message = "An error occurred. Contact the admin for more information."
 
     def __init__(
@@ -41,14 +40,14 @@ class SyftException(Exception):
         *args: Any,
         **kwargs: Any,
     ) -> None:
-        if public_message is not None:
-            if not isinstance(public_message, str):
-                raise TypeError("public message should be a string")
-        if private_message is not None:
-            if not isinstance(private_message, str):
-                raise TypeError("private message should be a string")
+        if public_message is not None and not isinstance(public_message, str):
+            raise TypeError("public message should be a string")
+        if private_message is not None and not isinstance(private_message, str):
+            raise TypeError("private message should be a string")
+
         if public_message:
             self.public_message = public_message
+
         self._private_message = private_message or ""
         self._server_trace = server_trace or ""
         super().__init__(self.public, *args, **kwargs)
@@ -95,7 +94,7 @@ class SyftException(Exception):
         # stdlib
         import traceback
 
-        if overwrite_permission or context.role.value >= ServiceRole.DATA_OWNER.value:
+        if overwrite_permission or (context and context.role.value >= ServiceRole.DATA_OWNER.value):
             return "".join(traceback.format_exception(self))
         return None
 
@@ -129,8 +128,13 @@ class SyftException(Exception):
             Self: A new instance of the class. The new instance retains the traceback
                 of the original exception.
         """
-        message = private_message if private_message is not None else str(exc)
-        new_exc = cls(message, public_message=public_message)
+        if isinstance(exc, SyftException):
+            private_message = private_message or exc._private_message
+            public_message = public_message or exc.public_message
+        elif isinstance(exc, BaseException):
+            private_message = private_message or str(exc)
+
+        new_exc = cls(private_message, public_message=public_message)
         new_exc.__traceback__ = exc.__traceback__
         new_exc.__cause__ = exc
         new_exc = process_traceback(new_exc)
@@ -142,9 +146,6 @@ class SyftException(Exception):
 
     def __str__(self) -> str:
         # this assumes that we show the server side error on the client side without a jupyter notebook
-        # exc = process_traceback(self)
-        # _traceback_str_list = traceback.format_exception(exc)
-        # traceback_str = "".join(_traceback_str_list)
         server_trace = self._server_trace
         message=self._private_message or self.public
 
@@ -159,7 +160,6 @@ server_trace: {server_trace}
 
         exc = process_traceback(self)
         _traceback_str_list = traceback.format_exception(exc)
-        # _traceback_str_list = traceback.format_tb(exc.__traceback__)
         traceback_str = "".join(_traceback_str_list)
 
         table_template = jinja_env.get_template("syft_exception.jinja2")
@@ -172,9 +172,6 @@ server_trace: {server_trace}
             display=display,
         )
         return table_html
-
-
-# third party
 
 
 class raises:

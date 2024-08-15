@@ -79,8 +79,6 @@ class UserStash(NewBaseUIDStoreStash):
 
     @as_result(StashException)
     def email_exists(self, email: str) -> bool:
-        # TODO: Delete commment below, only for remembering a remark to discuss
-        # In this function, stash
         try:
             self.get_by_email(credentials=self.admin_verify_key(), email=email).unwrap()
             return True

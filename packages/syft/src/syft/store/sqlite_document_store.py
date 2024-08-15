@@ -13,6 +13,7 @@ from typing import Any
 # third party
 from pydantic import Field
 from pydantic import field_validator
+from syft.store.document_store_errors import NotFoundException
 from typing_extensions import Self
 
 # relative
@@ -56,21 +57,20 @@ def _repr_debug_(value: Any) -> str:
 
 
 def special_exception_public_message(table_name: str, e: Exception) -> str:
-    if "disk I/O error" in str(e):
-        message = f"Error usually related to concurrent writes. {str(e)}"
+    error_msg = str(e) if not isinstance(e, SyftException) else e._private_message or e.public_message
+
+    if "disk I/O error" in error_msg:
+        message = f"Error usually related to concurrent writes. {error_msg}"
         return message
 
-    if "Cannot operate on a closed database" in str(e):
+    if "Cannot operate on a closed database" in error_msg:
         message = (
             "Error usually related to calling self.db.close()"
-            + f"before last SQLiteBackingStore.__del__ gets called. {str(e)}"
+            + f"before last SQLiteBackingStore.__del__ gets called. {error_msg}"
         )
         return message
 
-    # # if its something else other than "table already exists" raise original e
-    # if f"table {table_name} already exists" not in str(e):
-    #     return e
-    return str(e)
+    return error_msg
 
 
 @serializable(
@@ -222,9 +222,9 @@ class SQLiteBackingStore(KeyValueBackingStore):
             f"update {self.table_name} set uid = ?, repr = ?, value = ? where uid = ?"  # nosec
         )
         data = _serialize(value, to_bytes=True)
-        res = self._execute(
+        self._execute(
             insert_sql, [str(key), _repr_debug_(value), data, str(key)]
-        ).unwrap
+        ).unwrap()
 
     def _get(self, key: UID) -> Any:
         select_sql = f"select * from {self.table_name} where uid = ? order by sqltime"  # nosec

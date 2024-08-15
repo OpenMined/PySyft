@@ -26,7 +26,6 @@ from ..service.response import SyftSuccess
 from ..types.errors import SyftException
 from ..types.result import as_result
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
-from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import StorableObjectType
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
@@ -267,35 +266,35 @@ class MongoStorePartition(StorePartition):
             # we are also not writing though
             return obj
 
-        if can_write:
-            storage_obj = obj.to(self.storage_type)
-
-            collection.insert_one(storage_obj)
-
-            # adding permissions
-            read_permission = ActionObjectPermission(
-                uid=obj.id,
-                credentials=credentials,
-                permission=ActionPermission.READ,
-            )
-            self.add_permission(read_permission)
-
-            if add_permissions is not None:
-                self.add_permissions(add_permissions)
-
-            if add_storage_permission:
-                self.add_storage_permission(
-                    StoragePermission(
-                        uid=obj.id,
-                        server_uid=self.server_uid,
-                    )
-                )
-
-            return obj
-        else:
+        if not can_write:
             raise SyftException(
                 public_message=f"No permission to write object with id {obj.id}"
             )
+
+        storage_obj = obj.to(self.storage_type)
+
+        collection.insert_one(storage_obj)
+
+        # adding permissions
+        read_permission = ActionObjectPermission(
+            uid=obj.id,
+            credentials=credentials,
+            permission=ActionPermission.READ,
+        )
+        self.add_permission(read_permission)
+
+        if add_permissions is not None:
+            self.add_permissions(add_permissions)
+
+        if add_storage_permission:
+            self.add_storage_permission(
+                StoragePermission(
+                    uid=obj.id,
+                    server_uid=self.server_uid,
+                )
+            )
+
+        return obj
 
     def item_keys_exist(self, obj: SyftObject, collection: MongoCollection) -> bool:
         qks: QueryKeys = self.settings.unique_keys.with_obj(obj)
@@ -397,20 +396,17 @@ class MongoStorePartition(StorePartition):
         else:
             _default_key = "_id"
             storage_objs = collection.find(filter=qks.as_dict_mongo).sort(_default_key)
+
         syft_objs = []
         for storage_obj in storage_objs:
             obj = self.storage_type(storage_obj)
             transform_context = TransformContext(output={}, obj=obj)
-            syft_objs.append(obj.to(self.settings.object_type, transform_context))
+           
+            syft_obj = obj.to(self.settings.object_type, transform_context)
+            if has_permission or self.has_permission(ActionObjectREAD(uid=syft_obj.id, credentials=credentials)):
+                syft_objs.append(syft_obj)
 
-        # TODO: maybe do this in loop before this
-        res = [
-            s
-            for s in syft_objs
-            if has_permission
-            or self.has_permission(ActionObjectREAD(uid=s.id, credentials=credentials))
-        ]
-        return res
+        return syft_objs
 
     @as_result(SyftException)
     def _delete(
@@ -649,24 +645,26 @@ class MongoStorePartition(StorePartition):
         return storage_permissions_dict
 
     @as_result(SyftException)
-    def take_ownership(self, uid: UID, credentials: SyftVerifyKey) -> SyftSuccess:
+    def take_ownership(self, uid: UID, credentials: SyftVerifyKey) -> bool:
         collection_permissions: MongoCollection = self.permissions.unwrap()
         collection: MongoCollection = self.collection.unwrap()
         data: list[UID] | None = collection.find_one({"_id": uid})
         permissions: list[UID] | None = collection_permissions.find_one({"_id": uid})
 
+        if permissions is not None or data is not None:
+            raise SyftException(public_message=f"UID: {uid} already owned.")
+
         # first person using this UID can claim ownership
-        if permissions is None and data is None:
-            self.add_permissions(
-                [
-                    ActionObjectOWNER(uid=uid, credentials=credentials),
-                    ActionObjectWRITE(uid=uid, credentials=credentials),
-                    ActionObjectREAD(uid=uid, credentials=credentials),
-                    ActionObjectEXECUTE(uid=uid, credentials=credentials),
-                ]
-            )
-            return SyftSuccess(message=f"Ownership of ID: {uid} taken.")
-        raise SyftException(public_message=f"UID: {uid} already owned.")
+        self.add_permissions(
+            [
+                ActionObjectOWNER(uid=uid, credentials=credentials),
+                ActionObjectWRITE(uid=uid, credentials=credentials),
+                ActionObjectREAD(uid=uid, credentials=credentials),
+                ActionObjectEXECUTE(uid=uid, credentials=credentials),
+            ]
+        )
+
+        return True
 
     @as_result(SyftException)
     def _all(

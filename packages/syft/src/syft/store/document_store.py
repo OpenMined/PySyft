@@ -795,14 +795,6 @@ class NewBaseStash:
             order_by=order_by,
         ).unwrap()
 
-        # match result:
-        #     case Ok(value):
-        #         return value
-        #     case Err(err):
-        #         raise StashException(err)
-        #     case _:
-        #         raise StashException("Unexpected error")
-
     @as_result(StashException)
     def query_all_kwargs(
         self,

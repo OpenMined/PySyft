@@ -1499,7 +1499,7 @@ class Server(AbstractServer):
                             public_message="Please wait for the admin to allow the execution of this code"
                         )
                 except Exception as e:
-                    raise SyftException.from_exception(e, public_message=str(e))
+                    raise SyftException.from_exception(e)
             elif (
                 is_usercode_call_on_owned_kwargs
                 and not is_execution_on_owned_kwargs_allowed

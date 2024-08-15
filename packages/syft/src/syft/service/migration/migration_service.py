@@ -315,16 +315,15 @@ class MigrationService(AbstractService):
             )
             # Exception from the new Error Handling pattern, no need to change
             if result.is_err():
+                # TODO: subclass a DuplicationKeyError
                 if (
-                    ignore_existing and "Duplication Key Error" in result.err()._private_message
-                ):  # TODO ERROR: does this check work?
+                    ignore_existing and ("Duplication Key Error" in result.err()._private_message or "Duplication Key Error" in result.err().public_message)
+                ):
                     print(
                         f"{type(migrated_object)} #{migrated_object.id} already exists"
                     )
                     continue
                 else:
-                    import pdb
-                    pdb.set_trace()
                     result.unwrap()  # this will raise the exception inside the wrapper
         return SyftSuccess(message="Created migrate objects!")
 
