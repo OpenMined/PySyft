@@ -366,7 +366,7 @@ class SettingsService(AbstractService):
             """
             result = str_tmp.safe_substitute(
                 FONT_CSS=FONT_CSS,
-                grid_symbol=load_png_base64("small-grid-symbol-logo.png"),
+                server_symbol=load_png_base64("small-syft-symbol-logo.png"),
                 datasite_name=context.server.name,
                 description=context.server.metadata.description,
                 # server_url='http://testing:8080',
