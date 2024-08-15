@@ -1,4 +1,5 @@
 # stdlib
+from collections.abc import Callable
 from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
@@ -39,11 +40,13 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SYFT_OBJECT_VERSION_6
+from ...types.syft_migration import migrate
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
+from ...types.transforms import make_set_default
 from ...types.uid import UID
-from ...util import options
-from ...util.colors import SURFACE
 from ...util.markdown import as_markdown_code
 from ...util.telemetry import instrument
 from ...util.util import prompt_warning_message
@@ -95,7 +98,7 @@ class JobType(str, Enum):
 @serializable()
 class Job(SyncableSyftObject):
     __canonical_name__ = "JobItem"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
     server_uid: UID
@@ -116,6 +119,8 @@ class Job(SyncableSyftObject):
     user_code_id: UID | None = None
     requested_by: UID | None = None
     job_type: JobType = JobType.JOB
+    # used by JobType.TWINAPIJOB
+    endpoint: str | None = None
 
     __attr_searchable__ = [
         "parent_job_id",
@@ -395,9 +400,8 @@ class Job(SyncableSyftObject):
 
         try:
             # type_html = f'<div class="label {self.type_badge_class()}">{self.object_type_name.upper()}</div>'
-            description_html = (
-                f"<span class='syncstate-description'>{self.user_code_name}</span>"
-            )
+            job_name = self.user_code_name or self.endpoint or "Job"
+            description_html = f"<span class='syncstate-description'>{job_name}</span>"
             worker_summary = ""
             if self.job_worker_id:
                 worker_copy_button = CopyIDButton(
@@ -429,12 +433,14 @@ class Job(SyncableSyftObject):
         return summary_html
 
     def _coll_repr_(self) -> dict[str, Any]:
-        logs = self.logs(_print=False, stderr=False)
-        if logs is not None:
-            log_lines = logs.split("\n")
+        # [Note]: Disable logs in table, to improve performance
+        # logs = self.logs(_print=False, stderr=False)
+        # if logs is not None:
+        #     log_lines = logs.split("\n")
+        # if len(log_lines) > 2:
+        #     logs = f"... ({len(log_lines)} lines)\n" + "\n".join(log_lines[-2:])
+
         subjobs = self.subjobs
-        if len(log_lines) > 2:
-            logs = f"... ({len(log_lines)} lines)\n" + "\n".join(log_lines[-2:])
 
         def default_value(value: str) -> str:
             return value if value else "--"
@@ -445,7 +451,6 @@ class Job(SyncableSyftObject):
             "# Subjobs": default_value(len(subjobs)),
             "Progress": default_value(self.progress),
             "ETA": default_value(self.eta_string),
-            "Logs": default_value(logs),
         }
 
     @property
@@ -699,9 +704,6 @@ class JobInfo(SyftObject):
             result_str += "<p style='margin-left: 10px;'><i>No result included</i></p>"
 
         return f"""
-            <style>
-            .job-info {{color: {SURFACE[options.color_theme]};}}
-            </style>
             <div class='job-info'>
                 <h3>JobInfo</h3>
                 {metadata_str}

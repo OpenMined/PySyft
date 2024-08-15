@@ -11,7 +11,6 @@ from bcrypt import gensalt
 from bcrypt import hashpw
 from pydantic import EmailStr
 from pydantic import ValidationError
-from pydantic import field_validator
 
 # relative
 from ...client.api import APIRegistry
@@ -190,13 +189,6 @@ class UserUpdate(PartialSyftObject):
     __canonical_name__ = "UserUpdate"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    @field_validator("role", mode="before")
-    @classmethod
-    def str_to_role(cls, v: Any) -> Any:
-        if isinstance(v, str) and hasattr(ServiceRole, v.upper()):
-            return getattr(ServiceRole, v.upper())
-        return v
-
     email: EmailStr
     name: str
     role: ServiceRole  # make sure role cant be set without uid
@@ -324,19 +316,16 @@ class UserView(SyftObject):
         mock_execution_permission: type[Empty] | bool = Empty,
     ) -> SyftSuccess:
         """Used to update name, institution, website of a user."""
-        try:
-            user_update = UserUpdate(
-                name=name,
-                institution=institution,
-                website=website,
-                role=role,
-                mock_execution_permission=mock_execution_permission,
-            )
-        except ValidationError as exc:
-            raise UserUpdateError.from_exception(exc, public_message=str(exc))
-
         api = self.get_api()
-        result = api.services.user.update(uid=self.id, **user_update)
+
+        result = api.services.user.update(
+            uid=self.id,
+            name=name,
+            institution=institution,
+            website=website,
+            role=role,
+            mock_execution_permission=mock_execution_permission,
+        )
 
         for attr, val in result.to_dict(exclude_empty=True).items():
             setattr(self, attr, val)

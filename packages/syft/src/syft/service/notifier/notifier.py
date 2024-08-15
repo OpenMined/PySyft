@@ -9,6 +9,7 @@
 # stdlib
 from collections.abc import Callable
 from datetime import datetime
+from typing import Any
 from typing import TypeVar
 
 # third party
@@ -53,23 +54,20 @@ class UserNotificationActivity(SyftObject):
 
 @serializable(canonical_name="EmailNotifier", version=1)
 class EmailNotifier(BaseNotifier):
-    smtp_client: SMTPClient
+    smtp_client: SMTPClient | None = None
     sender: str = ""
 
     def __init__(
         self,
-        username: str,
-        password: str,
-        sender: str,
-        server: str,
-        port: int = 587,
+        **data: Any,
     ) -> None:
-        self.sender = sender
+        super().__init__(**data)
+        self.sender = data.get("sender", "")
         self.smtp_client = SMTPClient(
-            server=server,
-            port=port,
-            username=username,
-            password=password,
+            server=data.get("server", ""),
+            port=int(data.get("port", 587)),
+            username=data.get("username", ""),
+            password=data.get("password", ""),
         )
 
     @classmethod
@@ -119,7 +117,7 @@ class EmailNotifier(BaseNotifier):
             if isinstance(receiver_email, str):
                 receiver_email = [receiver_email]
 
-            self.smtp_client.send(
+            self.smtp_client.send(  # type: ignore
                 sender=self.sender, receiver=receiver_email, subject=subject, body=body
             )
             return SyftSuccess(message="Email sent successfully!")

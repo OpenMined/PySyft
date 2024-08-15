@@ -37,13 +37,10 @@ from ...types.syft_object import short_uid
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
-from ...util import options
-from ...util.colors import SURFACE
 from ...util.notebook_ui.components.sync import Label
 from ...util.notebook_ui.components.sync import SyncTableObject
 from ...util.notebook_ui.icons import Icon
-from ...util.notebook_ui.styles import FONT_CSS
-from ...util.notebook_ui.styles import ITABLES_CSS
+from ...util.util import prompt_warning_message
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
@@ -55,6 +52,7 @@ from ..job.job_stash import Job
 from ..job.job_stash import JobType
 from ..log.log import SyftLog
 from ..output.output_service import ExecutionOutput
+from ..policy.policy import Constant
 from ..request.request import Request
 from ..response import SyftSuccess
 from ..user.user import UserView
@@ -371,6 +369,14 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         for attr in repr_attrs:
             value = getattr(obj, attr)
             res[attr] = value
+
+        # if there are constants in UserCode input policy, add to repr
+        # type ignores since mypy thinks the code is unreachable for some reason
+        if isinstance(obj, UserCode) and obj.input_policy_init_kwargs is not None:  # type: ignore
+            for input_policy_kwarg in obj.input_policy_init_kwargs.values():  # type: ignore
+                for input_val in input_policy_kwarg.values():
+                    if isinstance(input_val, Constant):
+                        res[input_val.kw] = input_val.val
         return res
 
     def diff_attributes_str(self, side: str) -> str:
@@ -461,15 +467,7 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         if self.low_obj is None and self.high_obj is None:
             raise SyftException(public_message="Something broke")
 
-        base_str = f"""
-        <style>
-        {FONT_CSS}
-        .syft-dataset {{color: {SURFACE[options.color_theme]};}}
-        .syft-dataset h3,
-        .syft-dataset p
-            {{font-family: 'Open Sans';}}
-            {ITABLES_CSS}
-        </style>
+        base_str = """
         <div class='syft-diff'>
         """
 
@@ -1195,6 +1193,7 @@ class ServerDiff(SyftObject):
         _include_server_status: bool = False,
     ) -> "ServerDiff":
         obj_uid_to_diff = {}
+        show_deletion_warning = False
         for obj_id in set(low_state.objects.keys()) | set(high_state.objects.keys()):
             low_obj = low_state.objects.get(obj_id, None)
             high_obj = high_state.objects.get(obj_id, None)
@@ -1219,6 +1218,7 @@ class ServerDiff(SyftObject):
             # So, skip if the object is not present on the *source* side
             source_obj = low_obj if direction == SyncDirection.LOW_TO_HIGH else high_obj
             if source_obj is None:
+                show_deletion_warning = True
                 continue
 
             diff = ObjectDiff.from_objects(
@@ -1274,6 +1274,15 @@ class ServerDiff(SyftObject):
             exclude_types=exclude_types,
             inplace=True,
         )
+
+        if show_deletion_warning:
+            prompt_warning_message(
+                message=(
+                    "The target server has objects not found on the source server. "
+                    "These objects cannot be deleted via syncing and only manual deletion is possible."
+                ),
+                confirm=False,
+            )
 
         return res
 

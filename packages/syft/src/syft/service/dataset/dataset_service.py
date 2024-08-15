@@ -140,7 +140,7 @@ class DatasetService(AbstractService):
         name: str,
         page_size: int | None = 0,
         page_index: int | None = 0,
-    ) -> DatasetPageView:
+    ) -> DatasetPageView | DictTuple[str, Dataset]:
         """Search a Dataset by name"""
         results = self.get_all(context)
 

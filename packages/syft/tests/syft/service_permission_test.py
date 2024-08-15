@@ -5,6 +5,7 @@ import pytest
 from syft import SyftError
 from syft.client.api import SyftAPICall
 from syft.types.errors import SyftException
+from syft.types.syft_object import EXCLUDED_FROM_SIGNATURE
 
 
 @pytest.fixture
@@ -20,7 +21,10 @@ def guest_mock_user(root_verify_key, user_stash, guest_user):
 
 def test_call_service_syftapi_with_permission(worker, guest_mock_user, update_user):
     user_id = guest_mock_user.id
-    res = worker.root_client.api.services.user.update(uid=user_id, **update_user)
+    res = worker.root_client.api.services.user.update(
+        uid=user_id,
+        **{k: v for k, v in update_user if k not in EXCLUDED_FROM_SIGNATURE},
+    )
     assert res
 
 

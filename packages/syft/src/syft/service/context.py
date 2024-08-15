@@ -71,8 +71,8 @@ class UnauthedServiceContext(ServerServiceContext):
     __canonical_name__ = "UnauthedServiceContext"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    login_credentials: UserLoginCredentials
     server: AbstractServer
+    login_credentials: UserLoginCredentials | None = None
     role: ServiceRole = ServiceRole.NONE
 
 
