@@ -27,6 +27,7 @@ from pathlib import Path
 import platform
 import random
 import re
+import reprlib
 import secrets
 from secrets import randbelow
 import socket
@@ -1084,48 +1085,29 @@ def get_nb_secrets(defaults: dict | None = None) -> dict:
     return defaults
 
 
+class CustomRepr(reprlib.Repr):
+    def repr_str(self, obj: Any, level: int = 0) -> str:
+        if len(obj) <= self.maxstring:
+            return repr(obj)
+        return repr(obj[: self.maxstring] + "...")
+
+
 def repr_truncation(obj: Any, max_elements: int = 10) -> str:
     """
     Return a truncated string representation of the object if it is too long.
 
     Args:
-    - obj: The object to be represented (can be str, list, dict, set).
+    - obj: The object to be represented (can be str, list, dict, set...).
     - max_elements: Maximum number of elements to display before truncating.
 
     Returns:
     - A string representation of the object, truncated if necessary.
     """
-    if isinstance(obj, str):
-        max_elements = 100
-        if len(obj) <= max_elements:
-            return repr(obj)
-        return f"{repr(obj[:max_elements])} ..."
+    r = CustomRepr()
+    r.maxlist = max_elements  # For lists
+    r.maxdict = max_elements  # For dictionaries
+    r.maxset = max_elements  # For sets
+    r.maxstring = 100  # For strings
+    r.maxother = 100  # For other objects
 
-    elif isinstance(obj, list):
-        if len(obj) <= max_elements:
-            return repr(obj)
-        first_part = obj[: max_elements // 2]
-        last_part = obj[-(max_elements // 2) :]
-        return f'[{", ".join(map(repr, first_part))} ... {", ".join(map(repr, last_part))}]'
-
-    elif isinstance(obj, dict):
-        if len(obj) <= max_elements:
-            return repr(obj)
-        items = list(obj.items())
-        first_part = items[: max_elements // 2]
-        last_part = items[-(max_elements // 2) :]
-        first_repr = ", ".join(f"{repr(k)}: {repr(v)}" for k, v in first_part)
-        last_repr = ", ".join(f"{repr(k)}: {repr(v)}" for k, v in last_part)
-        return f"{{{first_repr} ... {last_repr}}}"
-
-    elif isinstance(obj, set):
-        if len(obj) <= max_elements:
-            return repr(obj)
-        items = list(obj)
-        first_part = items[: max_elements // 2]
-        last_part = items[-(max_elements // 2) :]
-        return f'{{{", ".join(map(repr, first_part))} ... {", ".join(map(repr, last_part))}}}'
-
-    else:
-        # Fallback for other types
-        return repr(obj)
+    return r.repr(obj)

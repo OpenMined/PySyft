@@ -138,10 +138,12 @@ class Asset(SyftObject):
                 data_table_line = itable_template_from_df(df=private_data_obj.head(5))
             elif isinstance(private_data_obj, pd.DataFrame):
                 data_table_line = itable_template_from_df(df=private_data_obj.head(5))
-            elif isinstance(private_data_obj, list | dict | set | str):
-                data_table_line = repr_truncation(private_data_obj)
             else:
-                data_table_line = private_data_res.ok_value
+                try:
+                    data_table_line = repr_truncation(private_data_obj)
+                except Exception as e:
+                    logger.debug(f"Failed to truncate private data repr. {e}")
+                    data_table_line = private_data_res.ok_value
 
         if isinstance(self.mock, ActionObject):
             df = pd.DataFrame(self.mock.syft_action_data)
@@ -151,7 +153,11 @@ class Asset(SyftObject):
         elif isinstance(self.mock, list | dict | set | str):
             mock_table_line = repr_truncation(self.mock)
         else:
-            mock_table_line = self.mock
+            try:
+                mock_table_line = repr_truncation(self.mock)
+            except Exception as e:
+                logger.debug(f"Failed to truncate mock data repr. {e}")
+                mock_table_line = self.mock
             if isinstance(mock_table_line, SyftError):
                 mock_table_line = mock_table_line.message
 
