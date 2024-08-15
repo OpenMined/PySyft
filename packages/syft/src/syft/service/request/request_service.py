@@ -78,14 +78,8 @@ class RequestService(AbstractService):
                 notifier_types=[NOTIFIERS.EMAIL],
                 email_template=RequestEmailTemplate,
             )
-            # FIX: notificationservice unwrap
             method = context.server.get_service_method(NotificationService.send)
-            result = method(context=context, notification=message)
-
-            if not isinstance(result, Notification):
-                raise SyftException(
-                    public_message=f"Failed to send notification: {result.err()}"
-                )
+            method(context=context, notification=message)
 
         return request
 

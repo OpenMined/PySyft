@@ -3,6 +3,7 @@
 # third party
 
 # relative
+from syft.types.errors import SyftException
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...store.document_store import DocumentStore
@@ -33,7 +34,7 @@ class SyftImageRegistryStash(NewBaseUIDStoreStash):
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
 
-    @as_result(StashException, NotFoundException)
+    @as_result(SyftException, StashException, NotFoundException)
     def get_by_url(
         self,
         credentials: SyftVerifyKey,
@@ -41,10 +42,10 @@ class SyftImageRegistryStash(NewBaseUIDStoreStash):
     ) -> SyftImageRegistry | None:
         qks = QueryKeys(qks=[URLPartitionKey.with_obj(url)])
         return self.query_one(credentials=credentials, qks=qks).unwrap(
-            public_message="Image Registry with url {url} not found"
+            public_message=f"Image Registry with url {url} not found"
         )
 
-    @as_result(StashException)
+    @as_result(SyftException, StashException)
     def delete_by_url(self, credentials: SyftVerifyKey, url: str) -> SyftSuccess:
         qk = URLPartitionKey.with_obj(url)
         return super().delete(credentials=credentials, qk=qk).unwrap()

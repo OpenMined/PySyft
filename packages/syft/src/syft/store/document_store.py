@@ -928,6 +928,6 @@ class NewBaseUIDStoreStash(NewBaseStash):
                 add_storage_permission=add_storage_permission,
             )
             .unwrap(
-                public_message=f"Failed ot set {self.object_type} with uid {obj.id} not found"
+                public_message=f"Failed to set {self.object_type} with uid {obj.id} not found"
             )
         )

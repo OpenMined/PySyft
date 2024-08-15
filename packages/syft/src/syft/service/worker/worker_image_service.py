@@ -100,7 +100,7 @@ class SyftWorkerImageService(AbstractService):
             image_registry_service: AbstractService = context.server.get_service(
                 SyftImageRegistryService
             )
-            registry = image_registry_service.get_by_id(context, registry_uid).unwrap()
+            registry = image_registry_service.get_by_id(context, registry_uid)
 
         try:
             if registry:

@@ -405,7 +405,6 @@ class UserCodeService(AbstractService):
         for k, v in kwargs.items():
             if isinstance(v, UID):
                 # Jobs have UID kwargs instead of ActionObject
-                # FIX: action_service will need to be unwrapped
                 v = action_service.get(context, uid=v)
             if (
                 isinstance(v, ActionObject)

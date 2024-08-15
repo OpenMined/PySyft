@@ -229,7 +229,6 @@ class CreateCustomImageChange(Change):
 
     @as_result(SyftException)
     def _run(self, context: ChangeContext, apply: bool) -> SyftSuccess:
-        # FIX: workerservice unwrap
         worker_image_service = context.server.get_service("SyftWorkerImageService")
 
         service_context = context.to_service_ctx()

@@ -48,7 +48,7 @@ class CodeHistoryService(AbstractService):
     ) -> SyftSuccess:
         user_code_service = context.server.get_service("usercodeservice")
         if isinstance(code, SubmitUserCode):
-            code = user_code_service._submit(context=context, code=code).unwrap()
+            code = user_code_service._submit(context=context, code=code)
 
         try:
             code_history = self.stash.get_by_service_func_name_and_verify_key(
@@ -196,7 +196,7 @@ class CodeHistoryService(AbstractService):
         user_id: UID,
     ) -> list[CodeHistory]:
         user_service = context.server.get_service("userservice")
-        user_verify_key = user_service.user_verify_key(user_email).unwrap()
+        user_verify_key = user_service.user_verify_key(user_email)
 
         kwargs = {
             "id": user_id,

@@ -149,7 +149,7 @@ class UserService(AbstractService):
         if user is None:
             return SyftSuccess(message=success_msg)
 
-        user_role = self.get_role_for_credentials(user.verify_key)
+        user_role = self.get_role_for_credentials(user.verify_key).unwrap()
         if user_role == ServiceRole.ADMIN:
             raise SyftException(public_message="You can't request password reset for an Admin user.")
 
