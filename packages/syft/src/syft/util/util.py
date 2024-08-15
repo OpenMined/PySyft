@@ -1096,9 +1096,10 @@ def repr_truncation(obj: Any, max_elements: int = 10) -> str:
     - A string representation of the object, truncated if necessary.
     """
     if isinstance(obj, str):
+        max_elements = 100
         if len(obj) <= max_elements:
             return repr(obj)
-        return f"{repr(obj[:max_elements//2])} ... {repr(obj[-max_elements//2:])}"
+        return f"{repr(obj[:max_elements])} ..."
 
     elif isinstance(obj, list):
         if len(obj) <= max_elements:
