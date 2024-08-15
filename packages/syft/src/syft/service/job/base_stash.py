@@ -6,13 +6,13 @@ from enum import Enum
 import json
 import threading
 from typing import Any
-from typing import ClassVar
 from typing import Generic
 import uuid
 from uuid import UUID
 
 # third party
 import pydantic
+from result import Err
 from result import Ok
 from result import Result
 import sqlalchemy as sa
@@ -242,7 +242,7 @@ SyftT = TypeVar("SyftT", bound=SyftObject)
 
 
 class ObjectStash(Generic[SyftT]):
-    object_type: ClassVar[type[SyftT]]
+    object_type: type[SyftT]
 
     def __init__(self, store: DocumentStore) -> None:
         self.server_uid = store.server_uid
@@ -270,6 +270,39 @@ class ObjectStash(Generic[SyftT]):
                 Column("updated_at", sa.DateTime, server_onupdate=sa.func.now()),
             )
         return Base.metadata.tables[table_name]
+
+    def _print_query(self, stmt: sa.sql.select) -> None:
+        print(
+            stmt.compile(
+                compile_kwargs={"literal_binds": True},
+                dialect=self.session.bind.dialect,
+            )
+        )
+
+    def is_unique(self, obj: SyftT) -> bool:
+        unique_fields = self.object_type.__attr_unique__
+        if not unique_fields:
+            return True
+        filters = []
+        for filter_name in unique_fields:
+            field_value = getattr(obj, filter_name, None)
+            if field_value is None:
+                continue
+            filt = self._get_field_filter(
+                field_name=filter_name,
+                # is the str cast correct? how to handle SyftVerifyKey?
+                field_value=str(field_value),
+            )
+            filters.append(filt)
+
+        stmt = self.table.select().where(sa.or_(*filters))
+        results = self.session.execute(stmt).all()
+        if len(results) > 1:
+            return False
+        elif len(results) == 1:
+            result = results[0]
+            return result.id == obj.id
+        return True
 
     def get_by_uid(
         self, credentials: SyftVerifyKey, uid: UID
@@ -384,6 +417,7 @@ class ObjectStash(Generic[SyftT]):
         has_permission: bool = False,
     ) -> Result[list[SyftT], str]:
         # filter by read permission
+        # join on verify_key
         stmt = self.table.select()
         if not has_permission:
             stmt = stmt.where(self._get_permission_filter(credentials))
@@ -397,6 +431,9 @@ class ObjectStash(Generic[SyftT]):
         obj: SyftT,
         has_permission: bool = False,
     ) -> Result[SyftT, str]:
+        if not self.is_unique(obj):
+            return Err(f"Some fields are not unique for {type(obj).__name__}")
+
         stmt = (
             self.table.update()
             .where(
@@ -421,6 +458,9 @@ class ObjectStash(Generic[SyftT]):
     ) -> Result[SyftT, str]:
         # uid is unique by database constraint
         uid = obj.id
+
+        if not self.is_unique(obj):
+            return Err(f"Some fields are not unique for {type(obj).__name__}")
 
         permissions = self.get_ownership_permissions(uid, credentials)
         if add_permissions is not None:
