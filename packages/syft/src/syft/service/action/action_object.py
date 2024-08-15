@@ -27,7 +27,6 @@ from result import as_result
 from typing_extensions import Self
 
 # relative
-from ...client.api import APIRegistry
 from ...client.api import SyftAPI
 from ...client.api import SyftAPICall
 from ...client.client import SyftClient
@@ -42,11 +41,7 @@ from ...types.base import SyftBaseModel
 from ...types.datetime import DateTime
 from ...types.errors import SyftException
 from ...types.result import as_result
-from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
-from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SyftBaseObject
 from ...types.syft_object import SyftObject
 from ...types.syft_object_registry import SyftObjectRegistry
@@ -330,7 +325,7 @@ passthrough_attrs = [
     "_clear_cache",
     "_set_reprs",
     "get_api",
-    "get_api_wrapped"
+    "get_api_wrapped",
 ]
 dont_wrap_output_attrs = [
     "__repr__",
@@ -357,7 +352,7 @@ dont_wrap_output_attrs = [
     "_clear_cache",
     "_set_reprs",
     "get_api",
-    "get_api_wrapped"
+    "get_api_wrapped",
 ]
 dont_make_side_effects = [
     "__repr_attrs__",
@@ -382,7 +377,7 @@ dont_make_side_effects = [
     "_clear_cache",
     "_set_reprs",
     "get_api",
-    "get_api_wrapped"
+    "get_api_wrapped",
 ]
 action_data_empty_must_run = [
     "__repr__",
@@ -666,7 +661,7 @@ BASE_PASSTHROUGH_ATTRS: list[str] = [
     "_clear_cache",
     "_set_reprs",
     "get_api",
-    "get_api_wrapped"
+    "get_api_wrapped",
 ]
 
 
@@ -768,21 +763,22 @@ class ActionObject(SyncableSyftObject):
             if blob_storage_read_method is not None:
                 blob_retrieval_object = blob_storage_read_method(
                     uid=self.syft_blob_storage_entry_id
-                ).unwrap(public_message="Could not fetch actionobject data.")
+                )
+
                 # relative
                 from ...store.blob_storage import BlobRetrieval
 
                 if isinstance(blob_retrieval_object, BlobRetrieval):
                     # TODO: This change is temporary to for gateway to be compatible with the new blob storage
                     self.syft_action_data_cache = blob_retrieval_object.read()
-                    self.syft_action_data_type = type(self.syft_action_data)
+                    self.syft_action_data_type = type(self.syft_action_data_cache)
                     return None
                 else:
                     # In the case of gateway, we directly receive the actual object
                     # TODO: The ideal solution would be to stream the object from the datasite through the gateway
                     # Currently , we are just passing the object as it is, which would be fixed later.
                     self.syft_action_data_cache = blob_retrieval_object
-                    self.syft_action_data_type = type(self.syft_action_data)
+                    self.syft_action_data_type = type(self.syft_action_data_cache)
                     return None
             else:
                 raise SyftException(
@@ -970,7 +966,6 @@ class ActionObject(SyncableSyftObject):
             )
 
         # relative
-        from ...client.api import APIRegistry
         from ...client.api import SyftAPICall
 
         api = self.get_api()
@@ -1024,7 +1019,6 @@ class ActionObject(SyncableSyftObject):
         # 3) it shouldnt send in the first place as it already exists
 
         # relative
-        from ...client.api import APIRegistry
 
         if obj.syft_server_location is None:
             obj.syft_server_location = obj.syft_server_uid
@@ -1044,8 +1038,9 @@ class ActionObject(SyncableSyftObject):
             trace_result = TraceResultRegistry.get_trace_result_for_thread()
             trace_result.result += [action]  # type: ignore
 
-        
-        api = self.get_api_wrapped().unwrap(public_message=f"failed saving {obj} to blob storage, api is None. You must login to {self.syft_server_location}")
+        api = self.get_api_wrapped().unwrap(
+            public_message=f"failed saving {obj} to blob storage, api is None. You must login to {self.syft_server_location}"
+        )
 
         obj._set_obj_location_(api.server_uid, api.signing_key.verify_key)  # type: ignore[union-attr]
 
@@ -1245,7 +1240,9 @@ class ActionObject(SyncableSyftObject):
 
     def refresh_object(self, resolve_nested: bool = True) -> ActionObject:
         # relative
-        return self.get_api().services.action.get(self.id, resolve_nested=resolve_nested)
+        return self.get_api().services.action.get(
+            self.id, resolve_nested=resolve_nested
+        )
 
     def has_storage_permission(self) -> bool:
         try:
@@ -1253,8 +1250,6 @@ class ActionObject(SyncableSyftObject):
             return api.services.action.has_storage_permission(self.id)
         except Exception:
             return False
-
-
 
     def get(self, block: bool = False) -> Any:
         """Get the object from a Syft Client"""
@@ -1419,7 +1414,6 @@ class ActionObject(SyncableSyftObject):
 
     def wait(self, timeout: int | None = None) -> ActionObject:
         # relative
-        from ...client.api import APIRegistry
 
         api = self.get_api()
         if isinstance(self.id, LineageID):
@@ -1521,7 +1515,7 @@ class ActionObject(SyncableSyftObject):
             self.syft_post_hooks__[HOOK_ON_POINTERS] = []
 
         api = self.get_api_wrapped()
-        
+
         eager_execution_enabled = (
             api.is_ok()
             and api.unwrap().metadata is not None
