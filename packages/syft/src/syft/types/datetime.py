@@ -1,6 +1,7 @@
 # stdlib
 from datetime import datetime
 from datetime import timedelta
+from datetime import timezone
 from functools import total_ordering
 import re
 from typing import Any
@@ -62,6 +63,15 @@ class DateTime(SyftObject):
     def timedelta(self, other: "DateTime") -> timedelta:
         utc_timestamp_delta = self.utc_timestamp - other.utc_timestamp
         return timedelta(seconds=utc_timestamp_delta)
+
+    @classmethod
+    def from_timestamp(cls, ts: float) -> datetime:
+        return cls(utc_timestamp=ts)
+
+    @classmethod
+    def from_datetime(cls, dt: datetime) -> "DateTime":
+        utc_datetime = dt.astimezone(timezone.utc)
+        return cls(utc_timestamp=utc_datetime.timestamp())
 
 
 def format_timedelta(local_timedelta: timedelta) -> str:

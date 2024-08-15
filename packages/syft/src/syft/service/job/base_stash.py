@@ -91,6 +91,8 @@ def should_handle_as_bytes(type_) -> bool:
     from ...util.misc_objs import HTMLObject
     from ...util.misc_objs import MarkdownDescription
     from ..action.action_object import Action
+    from ..dataset.dataset import Asset
+    from ..dataset.dataset import Contributor
     from ..request.request import Change
     from ..request.request import ChangeStatus
     from ..settings.settings import PwdTokenResetConfig
@@ -107,11 +109,15 @@ def should_handle_as_bytes(type_) -> bool:
         or type_.annotation == HTMLObject | MarkdownDescription
         or type_.annotation == PwdTokenResetConfig
         or type_.annotation == list[ChangeStatus]
+        or type_.annotation == list[Asset]
+        or type_.annotation == set[Contributor]
+        or type_.annotation == MarkdownDescription
+        or type_.annotation == Contributor
     )
 
 
 def model_dump(obj: pydantic.BaseModel) -> dict:
-    obj_dict = obj.model_dump()
+    obj_dict = dict(obj)  # obj.model_dump() does not work when
     for key, type_ in obj.model_fields.items():
         if type_.annotation is UID:
             obj_dict[key] = obj_dict[key].no_dash
@@ -123,6 +129,10 @@ def model_dump(obj: pydantic.BaseModel) -> dict:
         ):
             attr = getattr(obj, key)
             obj_dict[key] = str(attr) if attr is not None else None
+        elif type_.annotation is DateTime or type_.annotation == DateTime | None:
+            # FIXME: this is a hack, we should not be converting to string
+            if obj_dict[key] is not None:
+                obj_dict[key] = obj_dict[key].utc_timestamp
         elif should_handle_as_bytes(type_):
             # not very efficient as it serializes the object twice
             data = sy.serialize(getattr(obj, key), to_bytes=True)
@@ -157,7 +167,9 @@ def model_validate(obj_type: type[T], obj_dict: dict) -> T:
                 obj_dict[key] = SyftVerifyKey.from_string(obj_dict[key])
             elif isinstance(obj_dict[key], SyftVerifyKey):
                 obj_dict[key] = obj_dict[key]
-
+        elif type_.annotation is DateTime or type_.annotation == DateTime | None:
+            if obj_dict[key] is not None:
+                obj_dict[key] = DateTime.from_timestamp(obj_dict[key])
         elif (
             type_.annotation is SyftSigningKey
             or type_.annotation == SyftSigningKey | None
@@ -283,7 +295,7 @@ class ObjectStash(Generic[SyftT]):
         table = table if table is not None else self.table
         if field_name == "id":
             return table.c.id == field_value
-        return func.json_extract(table.c.fields, f"$.{field_name}") == field_value
+        return table.c.fields[field_name] == func.json_quote(field_value)
 
     def _get_by_field(
         self,
