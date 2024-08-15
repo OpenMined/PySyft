@@ -916,27 +916,33 @@ class Server(AbstractServer):
     # NOTE: Some workflows currently expect the settings to be available,
     # even though they might not be defined yet. Because of this, we need to check
     # if the settings table is already defined. This function is basically a copy
-    # of the settings property but ignoring stash error in case settings doesn't exist yeat.
-    # it should be removed once the settings are refactored
-    # refactored and the inconsistencies between settings
-    # and services are resolved.
+    # of the settings property but ignoring stash error in case settings doesn't exist yet.
+    # it should be removed once the settings are refactored and the inconsistencies between 
+    # settings and services are resolved.
     def get_settings(self) -> ServerSettings | None:
-        settings_stash = SettingsStash(store=self.document_store)
         if self.signing_key is None:
             raise ValueError(f"{self} has no signing key")
 
-        settings = settings_stash.get_all(self.signing_key.verify_key)
-        if settings.is_err():
+        settings_stash = SettingsStash(store=self.document_store)
+
+        try:
+            settings = settings_stash.get_all(self.signing_key.verify_key).unwrap()
+
+            if len(settings) > 0:
+                settings = settings[0]
+                self.update_self(settings)
+            else:
+                return None
+
+            return settings
+        except SyftException:
             return None
-        if settings.is_ok() and len(settings.ok()) > 0:
-            settings = settings.ok()[0]
-            self.update_self(settings)
-        return settings
 
     @property
     def settings(self) -> ServerSettings:
         if self.signing_key is None:
             raise ValueError(f"{self} has no signing key")
+
         settings_stash = SettingsStash(store=self.document_store)
         error_msg = f"Cannot get server settings for '{self.name}'"
 
@@ -1154,7 +1160,7 @@ class Server(AbstractServer):
             # self.settings will always return a ServerSettings object.
             if (
                 settings is not None
-                and not isinstance(settings, Ok)
+                and isinstance(settings, ServerSettings)
                 and not settings.allow_guest_sessions
                 and role == ServiceRole.GUEST
             ):
