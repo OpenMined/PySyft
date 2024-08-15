@@ -1591,7 +1591,8 @@ class ActionObject(SyncableSyftObject):
                     if result.is_ok():
                         context, result_args, result_kwargs = result.ok()
                     else:
-                        msg = result.err().replace("\\n", "\n")
+                        msg = str(result.err())
+                        msg = msg.replace("\\n", "\n")
                         logger.debug(f"Pre-hook failed with {msg}")
 
         if self.is_pointer:
@@ -1602,7 +1603,8 @@ class ActionObject(SyncableSyftObject):
                         if result.is_ok():
                             context, result_args, result_kwargs = result.ok()
                         else:
-                            msg = result.err().replace("\\n", "\n")
+                            msg = str(result.err())
+                            msg = msg.replace("\\n", "\n")
                             logger.debug(f"Pre-hook failed with {msg}")
 
         return context, result_args, result_kwargs
