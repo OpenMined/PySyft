@@ -273,7 +273,7 @@ class UserView(SyftObject):
     def _set_password(self, new_password: str) -> SyftSuccess:
         client = self.get_api()
 
-        client.services.user.update(uid=self.id, **UserUpdate(password=new_password))
+        client.services.user.update(uid=self.id, password=new_password)
 
         return SyftSuccess(
             message=f"Successfully updated password for user '{self.email}'."

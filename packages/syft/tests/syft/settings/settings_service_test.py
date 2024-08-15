@@ -457,6 +457,8 @@ def test_invalid_args_error_message(root_datasite_client: DatasiteClient) -> Non
     with pytest.raises(SyftException) as exc:
         root_datasite_client.api.services.settings.update(update)
 
+    assert _SIGNATURE_ERROR_MESSAGE in exc.value.public_message
+
     root_datasite_client.api.services.settings.update(**update_args)
 
     settings = root_datasite_client.api.services.settings.get()
