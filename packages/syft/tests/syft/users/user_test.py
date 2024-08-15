@@ -260,12 +260,11 @@ def test_guest_user_update_to_root_email_failed(
     ds_client: DatasiteClient,
 ) -> None:
     default_root_email: str = get_default_root_email()
-    user_update_to_root_email = UserUpdate(email=default_root_email)
 
     for client in [root_client, do_client, guest_client, ds_client]:
         with pytest.raises(SyftException) as exc:
             client.api.services.user.update(
-                uid=client.account.id, **user_update_to_root_email
+                uid=client.account.id, email=default_root_email
             )
 
         assert exc.type == SyftException

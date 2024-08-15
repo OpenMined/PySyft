@@ -375,7 +375,6 @@ def test_settings_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker)
             password=password,
             password_verify=password,
         )
-        result = root_client.users.create(**user_create)
         assert type(result) == UserView
 
         guest_client = root_client.guest()
@@ -450,16 +449,15 @@ def test_invalid_args_error_message(root_datasite_client: DatasiteClient) -> Non
 
     update = ServerSettingsUpdate(**update_args)
 
-    res = root_datasite_client.api.services.settings.update(settings=update)
-    assert isinstance(res, SyftError)
-    assert _SIGNATURE_ERROR_MESSAGE in res.message
+    with pytest.raises(SyftException) as exc:
+        root_datasite_client.api.services.settings.update(settings=update)
 
-    res = root_datasite_client.api.services.settings.update(update)
-    assert isinstance(res, SyftError)
-    assert _SIGNATURE_ERROR_MESSAGE in res.message
+    assert _SIGNATURE_ERROR_MESSAGE in exc.value.public_message 
 
-    res = root_datasite_client.api.services.settings.update(**update_args)
-    assert not isinstance(res, SyftError)
+    with pytest.raises(SyftException) as exc:
+        root_datasite_client.api.services.settings.update(update)
+
+    root_datasite_client.api.services.settings.update(**update_args)
 
     settings = root_datasite_client.api.services.settings.get()
     assert settings.name == update_args["name"]
