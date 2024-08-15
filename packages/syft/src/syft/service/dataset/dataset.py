@@ -150,8 +150,6 @@ class Asset(SyftObject):
             mock_table_line = itable_template_from_df(df=df.head(5))
         elif isinstance(self.mock, pd.DataFrame):
             mock_table_line = itable_template_from_df(df=self.mock.head(5))
-        elif isinstance(self.mock, list | dict | set | str):
-            mock_table_line = repr_truncation(self.mock)
         else:
             try:
                 mock_table_line = repr_truncation(self.mock)
