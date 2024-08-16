@@ -1365,14 +1365,16 @@ class ActionObject(SyncableSyftObject):
 
         # check if the object's type is supported
         try:
-            canonical_name, version = SyftObjectRegistry.get_canonical_name_version(
+            SyftObjectRegistry.get_canonical_name_version(
                 syft_action_data
             )
         except Exception:
             obj_type = type(syft_action_data)
             raise SyftException(
-                f"Error when creating action object for {syft_action_data}.\n"
-                f"Unsupported data type: '{obj_type.__module__}.{obj_type.__name__}'"
+                public_message=(
+                    f"Error when creating action object for {syft_action_data}.\n"
+                    f"Unsupported data type: '{obj_type.__module__}.{obj_type.__name__}'"
+                )
             )
 
         action_type = action_type_for_object(syft_action_data)

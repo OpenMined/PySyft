@@ -474,12 +474,12 @@ class TwinAPIEndpoint(SyncableSyftObject):
             Any: The result of the executed code.
         """
         if self.private_function is None:
-            return SyftError(message="No private code available")
+            raise SyftException(public_message="No private code available")
 
         if self.has_permission(context):
             return self.exec_code(self.private_function, context, *args, **kwargs)
 
-        return SyftError(message="You're not allowed to run this code.")
+        raise SyftException(public_message="You're not allowed to run this code.")
 
     def get_user_client_from_server(self, context: AuthedServiceContext) -> SyftClient:
         # get a user client

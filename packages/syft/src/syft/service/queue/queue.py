@@ -8,6 +8,7 @@ from typing import Any
 
 # third party
 import psutil
+from syft.service.action.action_object import ActionObject
 
 # relative
 from ...serde.deserialize import _deserialize as deserialize
@@ -210,8 +211,9 @@ def handle_message_multiprocessing(
     except Exception as e:
         status = Status.ERRORED
         job_status = JobStatus.ERRORED
-        logger.error("Unhandled error in handle_message_multiprocessing", exc_info=e)
-        result = SyftError(message=f"Unhandled error: {e}")
+        logger.exception("Unhandled error in handle_message_multiprocessing")
+        error_msg = e.public_message if isinstance(e, SyftException) else str(e)
+        result = ActionObject.from_obj(SyftError(message=f"Unhandled error: {error_msg}"))
 
     queue_item.result = result
     queue_item.resolved = True
@@ -315,5 +317,5 @@ class APICallMessageHandler(AbstractMessageHandler):
             )
             process.start()
             job_item.job_pid = process.pid
-            worker.job_stash.set_result(credentials, job_item)
+            worker.job_stash.set_result(credentials, job_item).unwrap()
             process.join()
