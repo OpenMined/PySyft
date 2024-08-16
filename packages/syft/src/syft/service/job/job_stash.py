@@ -862,9 +862,6 @@ class JobStash(BaseUIDStoreStash):
         if valid.is_err():
             return SyftError(message=valid.err())
 
-        # stdlib
-        import sys
-
         # Ensure we never save cached result data in the database,
         # as they can be arbitrarily large
         if (
@@ -872,11 +869,6 @@ class JobStash(BaseUIDStoreStash):
             and item.result.syft_blob_storage_entry_id is not None
         ):
             item.result._clear_cache()
-
-        print(
-            f"(CACHE CLEARED) SETTING RESULT {item.result} for job {item.id}",
-            file=sys.stderr,
-        )
 
         return super().update(credentials, item, add_permissions)
 
