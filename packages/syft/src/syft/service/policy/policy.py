@@ -275,6 +275,9 @@ class Constant(PolicyRule):
                     return Ok(obj.syft_action_data)
         return Ok(self.val)
 
+    def _get_dict_for_user_code_repr(self) -> dict[str, Any]:
+        return {"val": str(self.val), "type": self.klass.__qualname__}
+
 
 @serializable()
 class UserOwned(PolicyRule):
