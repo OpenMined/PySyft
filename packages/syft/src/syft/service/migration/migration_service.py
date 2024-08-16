@@ -444,7 +444,7 @@ class MigrationService(AbstractService):
 
         action_object_pending_migration = self._find_klasses_pending_for_migration(
             context=context, object_types=action_object_types
-        )
+        ).unwrap()
         result_dict: dict[type[SyftObject], list[SyftObject]] = defaultdict(list)
         action_store = context.server.action_store
         action_store_objects = action_store._all(

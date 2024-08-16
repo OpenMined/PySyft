@@ -261,17 +261,19 @@ class NotifierService(AbstractService):
         try:
             # Create a new NotifierStash since its a static method.
             notifier_stash = NotifierStash(store=server.document_store)
+            should_update = False
+
             # Get the notifier
             # If notifier doesn't exist, create a new one
             try:
                 notifier = notifier_stash.get(server.signing_key.verify_key).unwrap()
+                should_update = True
             except NotFoundException:
                 notifier = NotifierSettings()
                 notifier.active = False  # Default to False
 
             # TODO: this should be a method in NotifierSettings
             if email_username and email_password:
-                # TODO: rewrite with unwrap
                 validation_result = notifier.validate_email_credentials(
                     username=email_username,
                     password=email_password,
@@ -280,10 +282,9 @@ class NotifierService(AbstractService):
                 )
 
                 sender_not_set = not email_sender and not notifier.email_sender
-                if validation_result.is_err() or sender_not_set:
-                    logger.error(
-                        f"Notifier validation error - {validation_result.err()}.",
-                    )
+
+                if not validation_result or sender_not_set:
+                    logger.error("Notifier validation error")
                     notifier.active = False
                 else:
                     notifier.email_password = email_password
@@ -295,13 +296,15 @@ class NotifierService(AbstractService):
                     notifier.email_rate_limit = {PasswordResetTemplate.__name__: 3}
                     notifier.active = True
 
-            notifier_stash.set(server.signing_key.verify_key, notifier).unwrap()
-            return SyftSuccess(message="Notifier initialized successfully")
-
+            if should_update:
+                notifier_stash.update(
+                    credentials=server.signing_key.verify_key, settings=notifier
+                ).unwrap()
+            else:
+                notifier_stash.set(server.signing_key.verify_key, notifier).unwrap()
+            return SyftSuccess(message="Notifier initialized successfully", value=notifier)
         except Exception as e:
-            raise SyftException.from_exception(
-                public_message=f"Error initializing notifier.{e}", exc=e
-            )
+            raise SyftException.from_exception(e, public_message=f"Error initializing notifier. {e}")
 
     def set_email_rate_limit(
         self, context: AuthedServiceContext, email_type: EMAIL_TYPES, daily_limit: int

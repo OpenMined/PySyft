@@ -21,7 +21,7 @@ from ...types.errors import SyftException
 from ...types.uid import UID
 from ..job.job_stash import Job
 from ..job.job_stash import JobStatus
-from ..response import SyftSuccess
+from ..response import SyftError, SyftSuccess
 from ..worker.worker_stash import WorkerStash
 from .base_queue import AbstractMessageHandler
 from .base_queue import BaseQueueManager
@@ -182,6 +182,7 @@ def handle_message_multiprocessing(
 
     # in case of error
     result = None
+
     try:
         role = worker.get_role_for_credentials(credentials=credentials)
 
@@ -210,7 +211,7 @@ def handle_message_multiprocessing(
         status = Status.ERRORED
         job_status = JobStatus.ERRORED
         logger.error("Unhandled error in handle_message_multiprocessing", exc_info=e)
-        result = SyftError(f"Unhandled error: {e}")
+        result = SyftError(message=f"Unhandled error: {e}")
 
     queue_item.result = result
     queue_item.resolved = True

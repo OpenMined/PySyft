@@ -193,7 +193,7 @@ class KeyValueStorePartition(StorePartition):
             # attempt to claim it for writing
             can_write = self.take_ownership(
                 uid=uid, credentials=credentials
-            ).unwrap()  # TODO Error: this feels wrong, initially this could be None
+            ).unwrap()
         elif not ignore_duplicates:
             keys = ", ".join(f"`{key.key}`" for key in unique_query_keys.all)
             raise SyftException(

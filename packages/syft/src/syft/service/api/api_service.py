@@ -51,6 +51,7 @@ class APIService(AbstractService):
         path="api.add",
         name="add",
         roles=ADMIN_ROLE_LEVEL,
+        unwrap_on_success=False
     )
     def set(
         self,
@@ -68,7 +69,7 @@ class APIService(AbstractService):
             if new_endpoint is None:
                 raise SyftException(public_message="Invalid endpoint type.")
         except ValueError as e:
-            raise SyftException(message=str(e))
+            raise SyftException(public_message=str(e))
 
         if isinstance(endpoint, CreateTwinAPIEndpoint):
             endpoint_exists = self.stash.path_exists(
@@ -337,6 +338,7 @@ class APIService(AbstractService):
             context=context,
             endpoint_path=path,
         ).unwrap()
+
         job = context.server.add_api_endpoint_execution_to_queue(
             context.credentials,
             method,
@@ -345,6 +347,7 @@ class APIService(AbstractService):
             worker_pool=custom_endpoint.worker_pool,
             **kwargs,
         )
+
         # relative
         from ..job.job_stash import JobStatus
 
@@ -355,6 +358,7 @@ class APIService(AbstractService):
         # it's not in the stash. Then afterwards if appears again. Is this a bug?
 
         start = time.time()
+
         # TODO: what can we do here?????
         while (
             job is None
