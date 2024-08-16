@@ -276,7 +276,13 @@ class Constant(PolicyRule):
         return Ok(self.val)
 
     def _get_dict_for_user_code_repr(self) -> dict[str, Any]:
-        return {"val": str(self.val), "type": self.klass.__qualname__}
+        return self._coll_repr_()
+
+    def _coll_repr_(self) -> dict[str, Any]:
+        return {
+            "klass": self.klass.__qualname__,
+            "val": str(self.val),
+        }
 
 
 @serializable()
