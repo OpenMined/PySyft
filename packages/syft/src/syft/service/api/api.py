@@ -538,7 +538,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
                 self.private_function = code  # type: ignore
 
             api_service = context.server.get_service("apiservice")
-            upsert_result = api_service.stash.upsert(
+            api_service.stash.upsert(
                 context.server.get_service("userservice").admin_verify_key(), self
             ).unwrap()
 

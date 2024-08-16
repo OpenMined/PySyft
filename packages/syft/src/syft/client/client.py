@@ -1145,7 +1145,7 @@ def register(
         password=password,
         institution=institution,
         website=website,
-    ).unwrap()
+    )
 
 
 @instrument

@@ -344,7 +344,7 @@ class APIService(AbstractService):
             *args,
             worker_pool=custom_endpoint.worker_pool,
             **kwargs,
-        ).unwrap()
+        )
         # relative
         from ..job.job_stash import JobStatus
 

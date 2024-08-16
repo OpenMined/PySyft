@@ -1,4 +1,5 @@
 # stdlib
+import html
 import re
 from types import MethodType
 from typing import Any
@@ -116,7 +117,8 @@ def _patch_ipython_sanitization() -> None:
         if callable(getattr(obj, "_repr_markdown_", None)):
             md = obj._repr_markdown_()
             if md is not None:
-                return sanitize_html(md)
+                md_sanitized = sanitize_html(md)
+                return html.unescape(md_sanitized)
         return None
 
     ip.display_formatter.formatters["text/html"].for_type(

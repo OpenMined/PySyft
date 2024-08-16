@@ -26,7 +26,7 @@ from .server.datasite import Datasite
 from .server.enclave import Enclave
 from .server.gateway import Gateway
 from .server.uvicorn import serve_server
-from .service.response import SyftException
+from .types.errors import SyftException
 from .service.response import SyftInfo
 from .util.util import get_random_available_port
 

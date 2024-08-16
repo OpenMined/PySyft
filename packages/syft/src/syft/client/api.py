@@ -95,7 +95,7 @@ def post_process_result(result: SyftError | SyftSuccess, unwrap_on_success: bool
     if isinstance(result, SyftError):
         raise SyftException(public_message=result.message, server_trace=result.tb)
 
-    if unwrap_on_success:
+    if unwrap_on_success and isinstance(result, SyftSuccess):
         result = result.unwrap_value()
 
     return result
@@ -336,8 +336,8 @@ class RemoteFunction(SyftObject):
         blocking = True
         if "blocking" in kwargs:
             if path == "api.call_public_in_jobs":
-                return SyftError(
-                    message="The 'blocking' parameter is not allowed for this function"
+                raise SyftException(
+                    public_message="The 'blocking' parameter is not allowed for this function"
                 )
 
             blocking = bool(kwargs["blocking"])
@@ -442,7 +442,10 @@ class RemoteFunction(SyftObject):
                 args=[custom_path],
                 kwargs={},
             )
-            endpoint = self.make_call(api_call=api_call).unwrap()
+
+            endpoint = self.make_call(api_call=api_call)
+            if isinstance(endpoint, SyftSuccess):
+                endpoint = endpoint.value
 
             str_repr = "## API: " + custom_path + "\n"
             if endpoint.description is not None:

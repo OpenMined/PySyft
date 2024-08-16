@@ -16,6 +16,7 @@ from fastapi.responses import JSONResponse
 from fastapi.responses import StreamingResponse
 from pydantic import ValidationError
 import requests
+from syft.types.errors import SyftException
 
 # relative
 from ..abstract_server import AbstractServer
@@ -252,9 +253,14 @@ def make_routes(worker: Worker) -> APIRouter:
         context = ServerServiceContext(server=server)
         method = server.get_method_with_context(UserService.register, context)
 
-        response = method(new_user=user_create).unwrap(
-            public_message=f"Register Error for user={user_create.model_dump()}"
-        )
+        try:
+            response = method(new_user=user_create)
+        except SyftException as e:
+            logger.error(
+                f"Register Error: {e}. user={user_create.model_dump()}"
+            )
+            response = SyftError(message=f"{e.public_message}")
+
         return Response(
             serialize(response, to_bytes=True),
             media_type="application/octet-stream",

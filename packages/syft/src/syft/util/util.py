@@ -1002,9 +1002,9 @@ def generate_token() -> str:
     return secrets.token_hex(64)
 
 
-def sanitize_html(html_str: str, escape: bool = False) -> str:
+def sanitize_html(html_str: str) -> str:
     policy = {
-        "tags": ["svg", "strong", "rect", "path", "circle"],
+        "tags": ["svg", "strong", "rect", "path", "circle", "code", "pre"],
         "attributes": {
             "*": {"class", "style"},
             "svg": {
@@ -1032,8 +1032,6 @@ def sanitize_html(html_str: str, escape: bool = False) -> str:
     _attributes = deepcopy(nh3.ALLOWED_ATTRIBUTES)
     attributes = {**_attributes, **policy["attributes"]}  # type: ignore
 
-    if escape:
-        html_str = html.escape(html_str)
     return nh3.clean(
         html_str,
         tags=tags,
