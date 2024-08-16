@@ -14,6 +14,7 @@ from ...store.document_store import DocumentStore
 from ...store.document_store import StorePartition
 from ...types.blob_storage import BlobStorageEntry
 from ...types.syft_object import SyftObject
+from ...types.syft_object_registry import SyftObjectRegistry
 from ..action.action_object import Action
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
@@ -435,11 +436,15 @@ class MigrationService(AbstractService):
         migrated_objects = []
         for klass, objects in migration_objects.items():
             canonical_name = klass.__canonical_name__
+            latest_version = SyftObjectRegistry.get_latest_version(canonical_name)
+
             # Migrate data for objects in document store
-            print(f"Migrating data for: {canonical_name} table.")
+            print(
+                f"Migrating data for: {canonical_name} table to version {latest_version}"
+            )
             for object in objects:
                 try:
-                    migrated_value = object.migrate_to(klass.__version__, context)
+                    migrated_value = object.migrate_to(latest_version, context)
                     migrated_objects.append(migrated_value)
                 except Exception:
                     # stdlib
