@@ -592,6 +592,26 @@ class UserService(AbstractService):
 
         return user.to(UserView)
 
+    @service_method(
+        path="user.key_for_email", name="key_for_email", roles=ADMIN_ROLE_LEVEL
+    )
+    def key_for_email(
+        self, context: AuthedServiceContext, email: str
+    ) -> UserPrivateKey | SyftError:
+        result = self.stash.get_by_email(credentials=context.credentials, email=email)
+
+        if result.is_err():
+            return SyftError(
+                message=f"Failed to get user: {email}. Error: {result.err()}"
+            )
+
+        user = result.ok()
+
+        if user is None:
+            return SyftError(message=f"No user found with email: {email}")
+
+        return user.to(UserPrivateKey)
+
     def get_target_object(
         self, credentials: SyftVerifyKey, uid: UID
     ) -> User | SyftError:

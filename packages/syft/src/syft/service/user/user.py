@@ -218,7 +218,7 @@ class UserCreate(SyftObject):
 
 
 @serializable()
-class UserSearch(PartialSyftObject):
+class UserSearchV1(PartialSyftObject):
     __canonical_name__ = "UserSearch"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -226,6 +226,18 @@ class UserSearch(PartialSyftObject):
     email: EmailStr
     verify_key: SyftVerifyKey
     name: str
+
+
+@serializable()
+class UserSearch(PartialSyftObject):
+    __canonical_name__ = "UserSearch"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    id: UID
+    email: EmailStr
+    verify_key: SyftVerifyKey
+    name: str
+    role: ServiceRole
 
 
 @serializable()
@@ -443,3 +455,13 @@ def userv1_to_user_verify() -> list[Callable]:
 @transform(User, UserPrivateKey)
 def user_to_user_verify() -> list[Callable]:
     return [keep(["email", "signing_key", "id", "role"])]
+
+
+@migrate(UserSearch, UserSearchV1)
+def downgrade_user_search() -> list[Callable]:
+    return [drop("role")]
+
+
+@migrate(UserSearchV1, UserSearch)
+def upgrade_user_search() -> list[Callable]:
+    return []
