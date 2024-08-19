@@ -401,9 +401,11 @@ class MongoStorePartition(StorePartition):
         for storage_obj in storage_objs:
             obj = self.storage_type(storage_obj)
             transform_context = TransformContext(output={}, obj=obj)
-           
+
             syft_obj = obj.to(self.settings.object_type, transform_context)
-            if has_permission or self.has_permission(ActionObjectREAD(uid=syft_obj.id, credentials=credentials)):
+            if has_permission or self.has_permission(
+                ActionObjectREAD(uid=syft_obj.id, credentials=credentials)
+            ):
                 syft_objs.append(syft_obj)
 
         return syft_objs

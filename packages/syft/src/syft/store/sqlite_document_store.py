@@ -13,7 +13,6 @@ from typing import Any
 # third party
 from pydantic import Field
 from pydantic import field_validator
-from syft.store.document_store_errors import NotFoundException
 from typing_extensions import Self
 
 # relative
@@ -57,7 +56,11 @@ def _repr_debug_(value: Any) -> str:
 
 
 def special_exception_public_message(table_name: str, e: Exception) -> str:
-    error_msg = str(e) if not isinstance(e, SyftException) else e._private_message or e.public_message
+    error_msg = (
+        str(e)
+        if not isinstance(e, SyftException)
+        else e._private_message or e.public_message
+    )
 
     if "disk I/O error" in error_msg:
         message = f"Error usually related to concurrent writes. {error_msg}"

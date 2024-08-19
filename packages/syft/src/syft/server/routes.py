@@ -16,7 +16,6 @@ from fastapi.responses import JSONResponse
 from fastapi.responses import StreamingResponse
 from pydantic import ValidationError
 import requests
-from syft.types.errors import SyftException
 
 # relative
 from ..abstract_server import AbstractServer
@@ -31,6 +30,7 @@ from ..service.response import SyftError
 from ..service.user.user import UserCreate
 from ..service.user.user import UserPrivateKey
 from ..service.user.user_service import UserService
+from ..types.errors import SyftException
 from ..types.uid import UID
 from ..util.telemetry import TRACE_MODE
 from .credentials import SyftVerifyKey
@@ -256,9 +256,7 @@ def make_routes(worker: Worker) -> APIRouter:
         try:
             response = method(new_user=user_create)
         except SyftException as e:
-            logger.error(
-                f"Register Error: {e}. user={user_create.model_dump()}"
-            )
+            logger.error(f"Register Error: {e}. user={user_create.model_dump()}")
             response = SyftError(message=f"{e.public_message}")
 
         return Response(

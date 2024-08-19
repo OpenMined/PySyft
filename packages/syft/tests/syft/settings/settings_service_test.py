@@ -20,14 +20,12 @@ from syft.server.credentials import SyftVerifyKey
 from syft.service.context import AuthedServiceContext
 from syft.service.notifier.notifier import NotifierSettings
 from syft.service.notifier.notifier_stash import NotifierStash
-from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.service import _SIGNATURE_ERROR_MESSAGE
 from syft.service.settings.settings import ServerSettings
 from syft.service.settings.settings import ServerSettingsUpdate
 from syft.service.settings.settings_service import SettingsService
 from syft.service.settings.settings_stash import SettingsStash
-from syft.service.user.user import UserCreate
 from syft.service.user.user import UserPrivateKey
 from syft.service.user.user import UserView
 from syft.service.user.user_roles import ServiceRole
@@ -280,9 +278,9 @@ def test_settingsservice_update_fail(
 
     monkeypatch.setattr(authed_context.server, "get_service", mock_get_service)
 
-
     with pytest.raises(StashException) as exc:
         settings_service.update(context=authed_context, settings=update_settings)
+
 
 def test_settings_allow_guest_registration(
     monkeypatch: MonkeyPatch, faker: Faker
@@ -452,7 +450,7 @@ def test_invalid_args_error_message(root_datasite_client: DatasiteClient) -> Non
     with pytest.raises(SyftException) as exc:
         root_datasite_client.api.services.settings.update(settings=update)
 
-    assert _SIGNATURE_ERROR_MESSAGE in exc.value.public_message 
+    assert _SIGNATURE_ERROR_MESSAGE in exc.value.public_message
 
     with pytest.raises(SyftException) as exc:
         root_datasite_client.api.services.settings.update(update)

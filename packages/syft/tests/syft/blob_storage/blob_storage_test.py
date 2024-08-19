@@ -19,7 +19,6 @@ from syft.service.response import SyftSuccess
 from syft.service.user.user import UserCreate
 from syft.store.blob_storage import BlobDeposit
 from syft.store.blob_storage import SyftObjectRetrieval
-from syft.store.document_store_errors import StashException
 from syft.types.blob_storage import CreateBlobStorageEntry
 from syft.types.errors import SyftException
 

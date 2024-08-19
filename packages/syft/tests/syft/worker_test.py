@@ -20,7 +20,6 @@ from syft.service.action.action_object import ActionObject
 from syft.service.action.action_store import DictActionStore
 from syft.service.context import AuthedServiceContext
 from syft.service.queue.queue_stash import QueueItem
-from syft.service.response import SyftAttributeError
 from syft.service.response import SyftError
 from syft.service.user.user import User
 from syft.service.user.user import UserCreate

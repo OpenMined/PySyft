@@ -35,9 +35,7 @@ from .smtp_client import SMTPClient
 
 class BaseNotifier(BaseModel):
     @as_result(SyftException)
-    def send(
-        self, target: SyftVerifyKey, notification: Notification
-    ) -> SyftSuccess:
+    def send(self, target: SyftVerifyKey, notification: Notification) -> SyftSuccess:
         raise SyftException(public_message="Not implemented")
 
 

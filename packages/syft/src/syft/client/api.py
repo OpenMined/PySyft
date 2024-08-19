@@ -19,10 +19,6 @@ from nacl.exceptions import BadSignatureError
 from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import TypeAdapter
-from typeguard import TypeCheckError
-from typeguard import check_type
-from result import OkErr
-from result import Result
 
 # relative
 from ..abstract_server import AbstractServer
@@ -91,7 +87,9 @@ IPYNB_BACKGROUND_PREFIXES = ["_ipy", "_repr", "__ipython", "__pydantic"]
 
 
 @exclude_from_traceback
-def post_process_result(result: SyftError | SyftSuccess, unwrap_on_success: bool = False) -> Any:
+def post_process_result(
+    result: SyftError | SyftSuccess, unwrap_on_success: bool = False
+) -> Any:
     if isinstance(result, SyftError):
         raise SyftException(public_message=result.message, server_trace=result.tb)
 

@@ -22,7 +22,6 @@ from ...types.blob_storage import SecureFilePathLocation
 from ...types.errors import SyftException
 from ...types.result import as_result
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
 
 
 @serializable()

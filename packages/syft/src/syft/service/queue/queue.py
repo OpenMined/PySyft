@@ -8,7 +8,6 @@ from typing import Any
 
 # third party
 import psutil
-from syft.service.action.action_object import ActionObject
 
 # relative
 from ...serde.deserialize import _deserialize as deserialize
@@ -20,9 +19,11 @@ from ...store.document_store import NewBaseStash
 from ...types.datetime import DateTime
 from ...types.errors import SyftException
 from ...types.uid import UID
+from ..action.action_object import ActionObject
 from ..job.job_stash import Job
 from ..job.job_stash import JobStatus
-from ..response import SyftError, SyftSuccess
+from ..response import SyftError
+from ..response import SyftSuccess
 from ..worker.worker_stash import WorkerStash
 from .base_queue import AbstractMessageHandler
 from .base_queue import BaseQueueManager
@@ -213,7 +214,9 @@ def handle_message_multiprocessing(
         job_status = JobStatus.ERRORED
         logger.exception("Unhandled error in handle_message_multiprocessing")
         error_msg = e.public_message if isinstance(e, SyftException) else str(e)
-        result = ActionObject.from_obj(SyftError(message=f"Unhandled error: {error_msg}"))
+        result = ActionObject.from_obj(
+            SyftError(message=f"Unhandled error: {error_msg}")
+        )
 
     queue_item.result = result
     queue_item.resolved = True

@@ -13,7 +13,6 @@ from pydantic import EmailStr
 from pydantic import ValidationError
 
 # relative
-from ...client.api import APIRegistry
 from ...serde.serializable import serializable
 from ...server.credentials import SyftSigningKey
 from ...server.credentials import SyftVerifyKey
@@ -35,7 +34,6 @@ from ...types.uid import UID
 from ..notifier.notifier_enums import NOTIFIERS
 from ..response import SyftSuccess
 from .errors import UserPasswordMismatchError
-from .errors import UserUpdateError
 from .user_roles import ServiceRole
 
 

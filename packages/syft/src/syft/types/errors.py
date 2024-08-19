@@ -30,6 +30,7 @@ class SyftException(Exception):
         private_message (str): Detailed error message intended for administrators.
         public_message (str): General error message for end-users.
     """
+
     public_message = "An error occurred. Contact the admin for more information."
 
     def __init__(
@@ -78,7 +79,9 @@ class SyftException(Exception):
         return self.public
 
     def get_tb(
-        self, context: AuthedServiceContext | None = None, overwrite_permission: bool = False
+        self,
+        context: AuthedServiceContext | None = None,
+        overwrite_permission: bool = False,
     ) -> str | None:
         """
         Returns the error traceback as a string, if the user is able to see it.
@@ -94,7 +97,9 @@ class SyftException(Exception):
         # stdlib
         import traceback
 
-        if overwrite_permission or (context and context.role.value >= ServiceRole.DATA_OWNER.value):
+        if overwrite_permission or (
+            context and context.role.value >= ServiceRole.DATA_OWNER.value
+        ):
             return "".join(traceback.format_exception(self))
         return None
 
@@ -147,7 +152,7 @@ class SyftException(Exception):
     def __str__(self) -> str:
         # this assumes that we show the server side error on the client side without a jupyter notebook
         server_trace = self._server_trace
-        message=self._private_message or self.public
+        message = self._private_message or self.public
 
         return f"""
 {message}

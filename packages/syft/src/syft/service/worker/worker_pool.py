@@ -8,21 +8,16 @@ import docker
 from docker.models.containers import Container
 
 # relative
-from ...client.api import APIRegistry
 from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
 from ...types.base import SyftBaseModel
 from ...types.datetime import DateTime
 from ...types.errors import SyftException
 from ...types.result import as_result
-from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.syft_object import short_uid
 from ...types.uid import UID
-from ...util.notebook_ui.styles import FONT_CSS
 from ..response import SyftError
 from .worker_image import SyftWorkerImage
 

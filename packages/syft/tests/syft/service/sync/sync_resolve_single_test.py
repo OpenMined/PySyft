@@ -12,7 +12,7 @@ from syft.client.syncing import resolve
 from syft.server.worker import Worker
 from syft.service.job.job_stash import Job
 from syft.service.request.request import RequestStatus
-from syft.service.response import SyftError, SyftSuccess
+from syft.service.response import SyftSuccess
 from syft.service.sync.resolve_widget import ResolveWidget
 from syft.types.errors import SyftException
 

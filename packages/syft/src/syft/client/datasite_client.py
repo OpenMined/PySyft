@@ -20,14 +20,14 @@ from ..serde.serializable import serializable
 from ..service.action.action_object import ActionObject
 from ..service.code_history.code_history import CodeHistoriesDict
 from ..service.code_history.code_history import UsersCodeHistoriesDict
-from ..service.dataset.dataset import Contributor, _check_asset_must_contain_mock
+from ..service.dataset.dataset import Contributor
 from ..service.dataset.dataset import CreateAsset
 from ..service.dataset.dataset import CreateDataset
+from ..service.dataset.dataset import _check_asset_must_contain_mock
 from ..service.migration.object_migration_state import MigrationData
 from ..service.response import SyftError
 from ..service.response import SyftException
 from ..service.response import SyftSuccess
-from ..service.response import SyftWarning
 from ..service.sync.diff_state import ResolvedSyncState
 from ..service.sync.sync_state import SyncState
 from ..service.user.roles import Roles
@@ -145,10 +145,14 @@ class DatasiteClient(SyftClient):
                         syft_server_location=self.id,
                         syft_client_verify_key=self.verify_key,
                     )
-                    res = twin._save_to_blob_storage(allow_empty=contains_empty).unwrap()
+                    res = twin._save_to_blob_storage(
+                        allow_empty=contains_empty
+                    ).unwrap()
                 except Exception as e:
                     tqdm.write(f"Failed to create twin for {asset.name}. {e}")
-                    raise SyftException(public_message=f"Failed to create twin. {e}") from e
+                    raise SyftException(
+                        public_message=f"Failed to create twin. {e}"
+                    ) from e
 
                 try:
                     self.api.services.action.set(

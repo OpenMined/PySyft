@@ -1365,9 +1365,7 @@ class ActionObject(SyncableSyftObject):
 
         # check if the object's type is supported
         try:
-            SyftObjectRegistry.get_canonical_name_version(
-                syft_action_data
-            )
+            SyftObjectRegistry.get_canonical_name_version(syft_action_data)
         except Exception:
             obj_type = type(syft_action_data)
             raise SyftException(

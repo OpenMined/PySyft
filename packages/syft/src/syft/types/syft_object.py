@@ -142,15 +142,20 @@ class SyftBaseObject(pydantic.BaseModel, SyftHashableObject):
         self.syft_server_location = server_uid
         self.syft_client_verify_key = credentials
 
-
-    def get_api(self, server_uid: UID | None = None, user_verify_key: SyftVerifyKey | None = None):
+    def get_api(
+        self,
+        server_uid: UID | None = None,
+        user_verify_key: SyftVerifyKey | None = None,
+    ):
         if server_uid is None:
             server_uid = self.syft_server_location
 
         if user_verify_key is None:
             user_verify_key = self.syft_client_verify_key
 
-        from syft.client.api import APIRegistry
+        # relative
+        from ..client.api import APIRegistry
+
         return APIRegistry.api_for(
             server_uid=server_uid,
             user_verify_key=user_verify_key,
@@ -159,7 +164,9 @@ class SyftBaseObject(pydantic.BaseModel, SyftHashableObject):
         )
 
     def get_api_wrapped(self):
-        from syft.client.api import APIRegistry
+        # relative
+        from ..client.api import APIRegistry
+
         return APIRegistry.api_for(
             server_uid=self.syft_server_location,
             user_verify_key=self.syft_client_verify_key,

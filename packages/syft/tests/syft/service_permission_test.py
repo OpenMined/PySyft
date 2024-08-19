@@ -2,7 +2,6 @@
 import pytest
 
 # syft absolute
-from syft import SyftError
 from syft.client.api import SyftAPICall
 from syft.types.errors import SyftException
 from syft.types.syft_object import EXCLUDED_FROM_SIGNATURE

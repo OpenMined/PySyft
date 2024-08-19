@@ -12,7 +12,6 @@ from copy import deepcopy
 from datetime import datetime
 import functools
 import hashlib
-import html
 from itertools import chain
 from itertools import repeat
 import json

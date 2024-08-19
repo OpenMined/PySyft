@@ -23,7 +23,8 @@ from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
-from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL, GUEST_ROLE_LEVEL
+from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
+from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_roles import ServiceRole
 from ..user.user_service import UserService
 from .project import Project
@@ -104,7 +105,9 @@ class ProjectService(AbstractService):
         if role >= ServiceRole.DATA_SCIENTIST:
             return True
 
-        raise SyftException(public_message="You do not have permission to create projects. Contact your admin.")
+        raise SyftException(
+            public_message="You do not have permission to create projects. Contact your admin."
+        )
 
     @service_method(
         path="project.create_project",

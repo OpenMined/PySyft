@@ -20,8 +20,6 @@ from typing import TYPE_CHECKING
 
 # third party
 from pydantic import ValidationError
-from result import Ok
-from result import OkErr
 from typing_extensions import Self
 
 # relative
@@ -47,7 +45,6 @@ from ..types.syft_metaclass import EmptyType
 from ..types.syft_object import EXCLUDED_FROM_SIGNATURE
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
-from ..types.syft_object import SYFT_OBJECT_VERSION_3
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
 from ..types.syft_object import attach_attribute_to_syft_object
@@ -117,6 +114,7 @@ class BaseConfigV1(SyftBaseObject):
     is_from_lib: bool = False
     warning: APIEndpointWarning | None = None
 
+
 @serializable()
 class BaseConfig(SyftBaseObject):
     __canonical_name__ = "BaseConfig"
@@ -141,6 +139,7 @@ class ServiceConfigV1(BaseConfigV1):
     permissions: list
     roles: list[ServiceRole]
 
+
 @serializable()
 class ServiceConfig(BaseConfig):
     __canonical_name__ = "ServiceConfig"
@@ -152,11 +151,13 @@ class ServiceConfig(BaseConfig):
     def has_permission(self, user_service_role: ServiceRole) -> bool:
         return user_service_role in self.roles
 
+
 @serializable()
 class LibConfigV1(BaseConfigV1):
     __canonical_name__ = "LibConfig"
     __version__ = SYFT_OBJECT_VERSION_1
     permissions: set[CMPPermission]
+
 
 @serializable()
 class LibConfig(BaseConfig):

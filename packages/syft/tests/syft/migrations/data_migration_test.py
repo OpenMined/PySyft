@@ -6,16 +6,15 @@ import secrets
 import faker
 import numpy as np
 import pytest
-from syft.types.errors import SyftException
 import yaml
 
 # syft absolute
 import syft as sy
 from syft.client.datasite_client import DatasiteClient
 from syft.service.migration.object_migration_state import MigrationData
-from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.user.user import User
+from syft.types.errors import SyftException
 
 
 def register_ds(client):

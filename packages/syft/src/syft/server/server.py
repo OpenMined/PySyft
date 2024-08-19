@@ -21,8 +21,6 @@ from typing import cast
 
 # third party
 from nacl.signing import SigningKey
-from result import Err
-from result import Ok
 from result import Result
 
 # relative
@@ -917,7 +915,7 @@ class Server(AbstractServer):
     # even though they might not be defined yet. Because of this, we need to check
     # if the settings table is already defined. This function is basically a copy
     # of the settings property but ignoring stash error in case settings doesn't exist yet.
-    # it should be removed once the settings are refactored and the inconsistencies between 
+    # it should be removed once the settings are refactored and the inconsistencies between
     # settings and services are resolved.
     def get_settings(self) -> ServerSettings | None:
         if self.signing_key is None:
@@ -1164,7 +1162,9 @@ class Server(AbstractServer):
                 and not settings.allow_guest_sessions
                 and role == ServiceRole.GUEST
             ):
-                raise SyftException(public_message="Server doesn't allow guest sessions.")
+                raise SyftException(
+                    public_message="Server doesn't allow guest sessions."
+                )
             context = AuthedServiceContext(
                 server=self,
                 credentials=credentials,
@@ -1195,7 +1195,9 @@ class Server(AbstractServer):
                 result = method(context, *api_call.args, **api_call.kwargs)
 
                 if isinstance(result, SyftError):
-                    raise TypeError("Don't return a SyftError, raise SyftException instead")
+                    raise TypeError(
+                        "Don't return a SyftError, raise SyftException instead"
+                    )
                 if not isinstance(result, SyftSuccess):
                     result = SyftSuccess(message="", value=result)
                 tb = None
@@ -1484,7 +1486,9 @@ class Server(AbstractServer):
                 and self.server_side_type == ServerSideType.LOW_SIDE
             ):
                 try:
-                    existing_jobs = self._get_existing_user_code_jobs(context, user_code_id).unwrap()
+                    existing_jobs = self._get_existing_user_code_jobs(
+                        context, user_code_id
+                    ).unwrap()
 
                     if len(existing_jobs) > 0:
                         # relative
@@ -1493,7 +1497,10 @@ class Server(AbstractServer):
                         prompt_warning_message(
                             "There are existing jobs for this user code, returning the latest one"
                         )
-                        return SyftSuccess(message="Found multiple existing jobs, got last", value=existing_jobs[-1])
+                        return SyftSuccess(
+                            message="Found multiple existing jobs, got last",
+                            value=existing_jobs[-1],
+                        )
                     else:
                         raise SyftException(
                             public_message="Please wait for the admin to allow the execution of this code"

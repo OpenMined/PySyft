@@ -4,7 +4,6 @@ import uuid
 # third party
 from faker import Faker
 import numpy as np
-from pydantic import ValidationError
 import pytest
 
 # syft absolute

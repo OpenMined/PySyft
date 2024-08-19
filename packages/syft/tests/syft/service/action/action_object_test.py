@@ -23,7 +23,6 @@ from syft.service.action.action_object import make_action_side_effect
 from syft.service.action.action_object import propagate_server_uid
 from syft.service.action.action_object import send_action_side_effect
 from syft.service.action.action_types import action_type_for_type
-from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.store.blob_storage import SyftObjectRetrieval
 from syft.types.errors import SyftException

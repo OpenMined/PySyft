@@ -89,10 +89,16 @@ class MigrationService(AbstractService):
                 migration_state = self.get_state(context, canonical_name).unwrap(
                     public_message=f"Failed to get migration state for {canonical_name}."
                 )
-                if int(migration_state.current_version) != int(migration_state.latest_version):
+                if int(migration_state.current_version) != int(
+                    migration_state.latest_version
+                ):
                     klasses_to_be_migrated.append(object_type)
             except NotFoundException:
-                self.register_migration_state(context,current_version=object_version,canonical_name=canonical_name)
+                self.register_migration_state(
+                    context,
+                    current_version=object_version,
+                    canonical_name=canonical_name,
+                )
 
         return klasses_to_be_migrated
 
@@ -316,8 +322,9 @@ class MigrationService(AbstractService):
             # Exception from the new Error Handling pattern, no need to change
             if result.is_err():
                 # TODO: subclass a DuplicationKeyError
-                if (
-                    ignore_existing and ("Duplication Key Error" in result.err()._private_message or "Duplication Key Error" in result.err().public_message)
+                if ignore_existing and (
+                    "Duplication Key Error" in result.err()._private_message
+                    or "Duplication Key Error" in result.err().public_message
                 ):
                     print(
                         f"{type(migrated_object)} #{migrated_object.id} already exists"

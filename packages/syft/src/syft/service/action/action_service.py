@@ -445,7 +445,9 @@ class ActionService(AbstractService):
                     code_item, private_kwargs, context
                 )
                 if private_exec_result.errored:
-                    raise SyftException(public_message=private_exec_result.safe_error_message)
+                    raise SyftException(
+                        public_message=private_exec_result.safe_error_message
+                    )
 
                 if output_policy:
                     private_exec_result.result = output_policy.apply_to_output(
@@ -471,9 +473,11 @@ class ActionService(AbstractService):
                     mock_exec_result = execute_byte_code(
                         code_item, mock_kwargs, context
                     )
-    
+
                     if mock_exec_result.errored:
-                        raise SyftException(public_message=mock_exec_result.safe_error_message)
+                        raise SyftException(
+                            public_message=mock_exec_result.safe_error_message
+                        )
 
                     if output_policy:
                         mock_exec_result.result = output_policy.apply_to_output(
@@ -723,20 +727,23 @@ class ActionService(AbstractService):
             return execute_object(self, context, resolved_self, action).unwrap()  # type:ignore[unreachable]
 
     as_result(SyftException)
+
     def unwrap_nested_actionobjects(
         self, context: AuthedServiceContext, data: Any
     ) -> Any:
         """recursively unwraps nested action objects"""
 
         if isinstance(data, list):
-            return [self.unwrap_nested_actionobjects(context, obj).unwrap() for obj in data]
-        
+            return [
+                self.unwrap_nested_actionobjects(context, obj).unwrap() for obj in data
+            ]
+
         if isinstance(data, dict):
             return {
                 key: self.unwrap_nested_actionobjects(context, obj).unwrap()
                 for key, obj in data.items()
             }
-        
+
         if isinstance(data, ActionObject):
             res = self.get(context=context, uid=data.id)
 
@@ -895,7 +902,12 @@ class ActionService(AbstractService):
         """Checks if the given object id exists in the Action Store"""
         return self.store.exists(obj_id)
 
-    @service_method(path="action.delete", name="delete", roles=ADMIN_ROLE_LEVEL, unwrap_on_success=False)
+    @service_method(
+        path="action.delete",
+        name="delete",
+        roles=ADMIN_ROLE_LEVEL,
+        unwrap_on_success=False,
+    )
     def delete(
         self, context: AuthedServiceContext, uid: UID, soft_delete: bool = False
     ) -> SyftSuccess:
@@ -904,7 +916,9 @@ class ActionService(AbstractService):
         return_msg = []
 
         # delete any associated blob storage entry object to the action object
-        blob_del_res = self._delete_blob_storage_entry(context=context, obj=obj).unwrap()
+        blob_del_res = self._delete_blob_storage_entry(
+            context=context, obj=obj
+        ).unwrap()
         return_msg.append(blob_del_res.message)
 
         # delete the action object from the action store
@@ -923,19 +937,27 @@ class ActionService(AbstractService):
     ) -> SyftSuccess:
         deleted_blob_ids = []
 
-        blob_store_service = cast(BlobStorageService, context.server.get_service(BlobStorageService))
+        blob_store_service = cast(
+            BlobStorageService, context.server.get_service(BlobStorageService)
+        )
 
         if isinstance(obj, ActionObject) and obj.syft_blob_storage_entry_id:
-            blob_store_service.delete(context=context, uid=obj.syft_blob_storage_entry_id)
+            blob_store_service.delete(
+                context=context, uid=obj.syft_blob_storage_entry_id
+            )
             deleted_blob_ids.append(obj.syft_blob_storage_entry_id)
 
         if isinstance(obj, TwinObject):
             if obj.private.syft_blob_storage_entry_id:
-                blob_store_service.delete( context=context, uid=obj.private.syft_blob_storage_entry_id)
+                blob_store_service.delete(
+                    context=context, uid=obj.private.syft_blob_storage_entry_id
+                )
                 deleted_blob_ids.append(obj.private.syft_blob_storage_entry_id)
 
             if obj.mock.syft_blob_storage_entry_id:
-                blob_store_service.delete(context=context, uid=obj.mock.syft_blob_storage_entry_id)
+                blob_store_service.delete(
+                    context=context, uid=obj.mock.syft_blob_storage_entry_id
+                )
                 deleted_blob_ids.append(obj.mock.syft_blob_storage_entry_id)
 
         message = f"Deleted blob storage entries: {', '.join(str(blob_id) for blob_id in deleted_blob_ids)}"
@@ -955,7 +977,9 @@ class ActionService(AbstractService):
                 self._soft_delete_action_obj(
                     context=context, action_obj=obj.private
                 ).unwrap()
-                self._soft_delete_action_obj(context=context, action_obj=obj.mock).unwrap()
+                self._soft_delete_action_obj(
+                    context=context, action_obj=obj.mock
+                ).unwrap()
 
             if isinstance(obj, ActionObject):
                 self._soft_delete_action_obj(context=context, action_obj=obj).unwrap()
@@ -974,6 +998,7 @@ class ActionService(AbstractService):
             context=context,
             action_object=action_obj,
         ).unwrap()
+
 
 @as_result(SyftException)
 def resolve_action_args(

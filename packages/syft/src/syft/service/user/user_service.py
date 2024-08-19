@@ -151,7 +151,9 @@ class UserService(AbstractService):
 
         user_role = self.get_role_for_credentials(user.verify_key).unwrap()
         if user_role == ServiceRole.ADMIN:
-            raise SyftException(public_message="You can't request password reset for an Admin user.")
+            raise SyftException(
+                public_message="You can't request password reset for an Admin user."
+            )
 
         # Email is valid
         # Notifications disabled
@@ -218,14 +220,14 @@ class UserService(AbstractService):
         name="request_password_reset",
         roles=ADMIN_ROLE_LEVEL,
     )
-    def request_password_reset(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> str:
+    def request_password_reset(self, context: AuthedServiceContext, uid: UID) -> str:
         user = self.stash.get_by_uid(credentials=context.credentials, uid=uid).unwrap()
         user_role = self.get_role_for_credentials(user.verify_key)
 
         if user_role == ServiceRole.ADMIN:
-            raise SyftException( public_message="You can't request password reset for an Admin user.")
+            raise SyftException(
+                public_message="You can't request password reset for an Admin user."
+            )
 
         user.reset_token = self.generate_new_password_reset_token(
             context.server.settings.pwd_token_config
@@ -235,7 +237,7 @@ class UserService(AbstractService):
         self.stash.update(
             credentials=context.credentials, obj=user, has_permission=True
         ).unwrap()
-        
+
         return user.reset_token
 
     def reset_password(
@@ -250,18 +252,23 @@ class UserService(AbstractService):
                 credentials=root_context.credentials, token=token
             ).unwrap()
         except NotFoundException:
-            raise SyftException(public_message="Failed to reset user password. Token is invalid or expired.")
+            raise SyftException(
+                public_message="Failed to reset user password. Token is invalid or expired."
+            )
         #
         if user is None:
-            raise SyftException(public_message="Failed to reset user password. Token is invalid or expired!"
-                                )
+            raise SyftException(
+                public_message="Failed to reset user password. Token is invalid or expired!"
+            )
         now = datetime.now()
         time_difference = now - user.reset_token_date
 
         # If token expired
         expiration_time = root_context.server.settings.pwd_token_config.token_exp_min
         if time_difference > timedelta(minutes=expiration_time):
-            raise SyftException(public_message="Failed to reset user password. Token is invalid or expired.")
+            raise SyftException(
+                public_message="Failed to reset user password. Token is invalid or expired."
+            )
 
         if not validate_password(new_password):
             raise SyftException(

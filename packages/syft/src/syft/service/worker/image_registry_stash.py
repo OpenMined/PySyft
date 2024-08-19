@@ -3,7 +3,6 @@
 # third party
 
 # relative
-from syft.types.errors import SyftException
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...store.document_store import DocumentStore
@@ -13,6 +12,7 @@ from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
+from ...types.errors import SyftException
 from ...types.result import as_result
 from ..response import SyftSuccess
 from .image_registry import SyftImageRegistry

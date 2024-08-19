@@ -24,10 +24,7 @@ from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.errors import SyftException
 from ...types.result import as_result
-from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.transforms import TransformContext
@@ -399,7 +396,7 @@ class Request(SyncableSyftObject):
             str_changes_.append(str_change)
         str_changes = "\n".join(str_changes_)
 
-        api = self.get_api_wrapped() 
+        api = self.get_api_wrapped()
         shared_with_line = ""
         if self.code and len(self.code.output_readers) > 0:
             # owner_names = ["canada", "US"]

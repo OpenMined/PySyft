@@ -8,7 +8,6 @@ from syft.service.user.user import UserUpdate
 from syft.service.user.user_roles import ServiceRole
 from syft.service.user.user_stash import UserStash
 from syft.store.document_store_errors import NotFoundException
-from syft.store.document_store_errors import StashException
 from syft.types.errors import SyftException
 from syft.types.uid import UID
 

@@ -307,9 +307,7 @@ class BlobStorageService(AbstractService):
         return result
 
     @service_method(path="blob_storage.delete", name="delete")
-    def delete(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> SyftSuccess:
+    def delete(self, context: AuthedServiceContext, uid: UID) -> SyftSuccess:
         obj = self.stash.get_by_uid(context.credentials, uid=uid).unwrap()
 
         try:
@@ -317,15 +315,21 @@ class BlobStorageService(AbstractService):
                 try:
                     conn.delete(obj.location)
                 except Exception as e:
-                    raise SyftException( public_message=f"Failed to delete blob file with id '{uid}'. Error: {e}")
+                    raise SyftException(
+                        public_message=f"Failed to delete blob file with id '{uid}'. Error: {e}"
+                    )
 
             self.stash.delete(
                 context.credentials, UIDPartitionKey.with_obj(uid), has_permission=True
             ).unwrap()
         except Exception as e:
-            raise SyftException( public_message=f"Failed to delete blob file with id '{uid}'. Error: {e}")
+            raise SyftException(
+                public_message=f"Failed to delete blob file with id '{uid}'. Error: {e}"
+            )
 
-        return SyftSuccess(message=f"Blob storage entry with id '{uid}' deleted successfully.")
+        return SyftSuccess(
+            message=f"Blob storage entry with id '{uid}' deleted successfully."
+        )
 
 
 TYPE_TO_SERVICE[BlobStorageEntry] = BlobStorageEntry

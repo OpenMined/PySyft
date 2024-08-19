@@ -7,7 +7,6 @@ import textwrap
 from typing import Any
 
 # third party
-import itables
 from IPython.display import display
 import markdown
 import pandas as pd
@@ -20,17 +19,14 @@ from result import Result
 from typing_extensions import Self
 
 # relative
-from ...client.api import APIRegistry
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
 from ...types.errors import SyftException
-from ...types.syft_migration import migrate
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import generate_id
@@ -71,12 +67,12 @@ class Contributor(SyftObject):
 
     def _repr_html_(self) -> Any:
         return f"""
-            
+
                 Contributor
                 Name: {self.name}
                 Role: {self.role}
                 Email: {self.email}
-            
+
             """
 
     def __eq__(self, value: object) -> bool:
@@ -252,7 +248,9 @@ class Asset(SyftObject):
             else:
                 return result
         except Exception as e:
-            raise SyftException.from_exception(e, public_message=f"Failed to get mock. {e}")
+            raise SyftException.from_exception(
+                e, public_message=f"Failed to get mock. {e}"
+            )
 
     def has_data_permission(self) -> bool:
         return self.data is not None

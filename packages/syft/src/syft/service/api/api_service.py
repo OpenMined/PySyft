@@ -48,10 +48,7 @@ class APIService(AbstractService):
         self.stash = TwinAPIEndpointStash(store=store)
 
     @service_method(
-        path="api.add",
-        name="add",
-        roles=ADMIN_ROLE_LEVEL,
-        unwrap_on_success=False
+        path="api.add", name="add", roles=ADMIN_ROLE_LEVEL, unwrap_on_success=False
     )
     def set(
         self,

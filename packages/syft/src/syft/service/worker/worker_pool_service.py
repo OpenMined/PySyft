@@ -422,7 +422,9 @@ class SyftWorkerPoolService(AbstractService):
         """
 
         if not IN_KUBERNETES:
-            raise SyftException(public_message="Scaling is only supported in Kubernetes mode")
+            raise SyftException(
+                public_message="Scaling is only supported in Kubernetes mode"
+            )
         elif number < 0:
             # zero is a valid scale down
             raise SyftException(public_message=f"Invalid number of workers: {number}")

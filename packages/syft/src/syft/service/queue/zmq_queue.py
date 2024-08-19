@@ -14,7 +14,6 @@ from typing import cast
 
 # third party
 from pydantic import field_validator
-from syft.store.document_store_errors import NotFoundException
 import zmq
 from zmq import Frame
 from zmq import LINGER
@@ -31,7 +30,6 @@ from ...types.base import SyftBaseModel
 from ...types.errors import SyftException
 from ...types.result import as_result
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ...util.util import get_queue_address
@@ -398,7 +396,7 @@ class ZMQProducer(QueueProducer):
                     credentials=self.worker_stash.partition.root_verify_key,
                     uid=syft_worker_id,
                 ).unwrap()
-            except Exception as e:
+            except Exception:
                 return None
 
             self.worker_stash.update_consumer_state(
@@ -406,7 +404,7 @@ class ZMQProducer(QueueProducer):
                 worker_uid=syft_worker_id,
                 consumer_state=consumer_state,
             ).unwrap()
-        except Exception as e:
+        except Exception:
             logger.exception(
                 f"Failed to update consumer state for worker id: {syft_worker_id} to state {consumer_state}",
             )
@@ -466,7 +464,7 @@ class ZMQProducer(QueueProducer):
         with ZMQ_SOCKET_LOCK:
             try:
                 self.socket.send_multipart(msg)
-            except zmq.ZMQError as e:
+            except zmq.ZMQError:
                 logger.exception("ZMQProducer send error")
 
     def _run(self) -> None:

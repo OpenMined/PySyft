@@ -1,12 +1,7 @@
-# syft absolute
-from syft.service.action.action_permissions import ActionObjectPermission
-from syft.service.action.action_permissions import ActionPermission
-
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
-from ...types.errors import SyftException
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
@@ -14,7 +9,6 @@ from ..notification.email_templates import RequestEmailTemplate
 from ..notification.email_templates import RequestUpdateEmailTemplate
 from ..notification.notification_service import CreateNotification
 from ..notification.notification_service import NotificationService
-from ..notification.notifications import Notification
 from ..notifier.notifier_enums import NOTIFIERS
 from ..response import SyftSuccess
 from ..service import AbstractService

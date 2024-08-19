@@ -67,10 +67,10 @@ class NotifierService(AbstractService):
             app=notifications[NOTIFIERS.APP],
         )
 
-    def set_notifier_active_to_true(
-        self, context: AuthedServiceContext
-    ) -> SyftSuccess:
-        notifier = self.stash.get(credentials=context.credentials).unwrap(public_message="Notifier settings not found.")
+    def set_notifier_active_to_true(self, context: AuthedServiceContext) -> SyftSuccess:
+        notifier = self.stash.get(credentials=context.credentials).unwrap(
+            public_message="Notifier settings not found."
+        )
         notifier.active = True
         self.stash.update(credentials=context.credentials, settings=notifier).unwrap()
         return SyftSuccess(message="notifier.active set to true.")
@@ -302,9 +302,13 @@ class NotifierService(AbstractService):
                 ).unwrap()
             else:
                 notifier_stash.set(server.signing_key.verify_key, notifier).unwrap()
-            return SyftSuccess(message="Notifier initialized successfully", value=notifier)
+            return SyftSuccess(
+                message="Notifier initialized successfully", value=notifier
+            )
         except Exception as e:
-            raise SyftException.from_exception(e, public_message=f"Error initializing notifier. {e}")
+            raise SyftException.from_exception(
+                e, public_message=f"Error initializing notifier. {e}"
+            )
 
     def set_email_rate_limit(
         self, context: AuthedServiceContext, email_type: EMAIL_TYPES, daily_limit: int

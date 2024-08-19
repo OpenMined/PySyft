@@ -245,7 +245,7 @@ class DatasetService(AbstractService):
             id=uid, name=f"_deleted_{dataset.name}_{uid}", to_be_deleted=True
         )
         self.stash.update(context.credentials, dataset_update).unwrap()
-        
+
         return_msg.append(f"Dataset with id '{uid}' successfully deleted.")
         return SyftSuccess(message="\n".join(return_msg))
 

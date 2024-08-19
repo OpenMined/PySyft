@@ -1251,7 +1251,9 @@ class ProjectSubmit(SyftObject):
             for client in clients:
                 client.api.services.project.can_create_project()
         except Exception:
-            raise SyftException(public_message="Only Data Scientists can create projects")
+            raise SyftException(
+                public_message="Only Data Scientists can create projects"
+            )
 
         return True
 

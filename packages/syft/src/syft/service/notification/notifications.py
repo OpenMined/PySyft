@@ -4,8 +4,6 @@ from enum import Enum
 from typing import cast
 
 # relative
-from ...client.api import APIRegistry
-from ...client.api import SyftAPI
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...store.linked_obj import LinkedObject

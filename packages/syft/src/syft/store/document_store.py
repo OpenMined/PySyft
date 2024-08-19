@@ -27,12 +27,10 @@ from ..types.errors import SyftException
 
 # from result import Err
 # from result import Ok
-from ..types.result import Err
 from ..types.result import Ok
 from ..types.result import as_result
 from ..types.syft_object import BaseDateTime
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
-from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
@@ -882,6 +880,7 @@ class NewBaseStash:
         return self.partition.update(
             credentials=credentials, qk=qk, obj=obj, has_permission=has_permission
         ).unwrap()
+
 
 @instrument
 class NewBaseUIDStoreStash(NewBaseStash):

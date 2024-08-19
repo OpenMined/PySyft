@@ -24,7 +24,6 @@ from rich.panel import Panel
 from typing_extensions import Self
 
 # relative
-from ...client.api import APIRegistry
 from ...client.client import SyftClient
 from ...client.sync_decision import SyncDecision
 from ...client.sync_decision import SyncDirection
@@ -649,6 +648,7 @@ class ObjectDiffBatch(SyftObject):
     def build(self, server_uid: UID, syft_client_verify_key: SyftVerifyKey):  # type: ignore
         # relative
         from ...client.datasite_client import DatasiteClient
+
         api = self.get_api(server_uid, syft_client_verify_key)
 
         client = DatasiteClient(

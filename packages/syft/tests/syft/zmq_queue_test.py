@@ -7,7 +7,6 @@ from time import sleep
 # third party
 from faker import Faker
 import pytest
-from syft.types.errors import SyftException
 from zmq import Socket
 
 # syft absolute
@@ -19,8 +18,8 @@ from syft.service.queue.zmq_queue import ZMQClientConfig
 from syft.service.queue.zmq_queue import ZMQConsumer
 from syft.service.queue.zmq_queue import ZMQProducer
 from syft.service.queue.zmq_queue import ZMQQueueConfig
-from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
+from syft.types.errors import SyftException
 from syft.util.util import get_queue_address
 from syft.util.util import get_random_available_port
 

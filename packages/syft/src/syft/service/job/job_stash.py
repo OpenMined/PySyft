@@ -1,5 +1,4 @@
 # stdlib
-from collections.abc import Callable
 from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
@@ -16,7 +15,6 @@ from result import Err
 from typing_extensions import Self
 
 # relative
-from ...client.api import APIRegistry
 from ...client.api import SyftAPICall
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
@@ -35,17 +33,10 @@ from ...types.datetime import DateTime
 from ...types.datetime import format_timedelta
 from ...types.errors import SyftException
 from ...types.result import as_result
-from ...types.syft_migration import migrate
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_4
-from ...types.syft_object import SYFT_OBJECT_VERSION_6
-from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
-from ...types.transforms import make_set_default
 from ...types.uid import UID
 from ...util.markdown import as_markdown_code
 from ...util.telemetry import instrument

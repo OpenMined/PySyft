@@ -5,14 +5,11 @@ import smtplib
 
 # third party
 from pydantic import BaseModel
+from pydantic import model_validator
 
 # relative
 from ...types.errors import SyftException
 from ...types.result import as_result
-from pydantic import model_validator
-from result import Err
-from result import Ok
-from result import Result
 
 SOCKET_TIMEOUT = 5  # seconds
 

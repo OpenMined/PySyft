@@ -51,7 +51,6 @@ from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
 from ...types.errors import SyftException
 from ...types.result import as_result
-from ...types.syft_migration import migrate
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
@@ -995,7 +994,7 @@ class UserCode(SyncableSyftObject):
             pre_kwargs={"uid": self.id},
             warning=None,
             communication_protocol=api.communication_protocol,
-            unwrap_on_success=True # TODO: look into this
+            unwrap_on_success=True,  # TODO: look into this
         )
         return remote_user_function(*args, **kwargs)
 
@@ -1167,7 +1166,7 @@ class SubmitUserCode(SyftObject):
         ep_client.requests[-1].approve(approve_nested=True)
         func_call = getattr(ep_client.code, new_syft_func.func_name)
         # TODO: fix properly
-        func_call.unwrap_on_success=True
+        func_call.unwrap_on_success = True
         result = func_call(*args, **kwargs)
 
         def task() -> None:
@@ -1645,6 +1644,7 @@ class UserCodeExecutionResult(SyftObject):
     stderr: str
     result: Any = None
 
+
 @serializable()
 class UserCodeExecutionOutputV1(SyftObject):
     # version
@@ -1656,6 +1656,7 @@ class UserCodeExecutionOutputV1(SyftObject):
     stdout: str
     stderr: str
     result: Any = None
+
 
 @serializable()
 class UserCodeExecutionOutput(SyftObject):
@@ -1906,7 +1907,7 @@ def execute_byte_code(
             stderr=str(stderr.getvalue()),
             result=result,
             errored=errored,
-            safe_error_message=result_message
+            safe_error_message=result_message,
         )
     except Exception as e:
         # stdlib
