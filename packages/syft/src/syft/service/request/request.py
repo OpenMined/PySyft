@@ -745,6 +745,9 @@ class Request(SyncableSyftObject):
         if input_policy is not None:
             for input_ in input_policy.inputs.values():
                 input_ids.update(input_)
+
+        input_ids = {k: v for k, v in input_ids.items() if isinstance(v, UID)}
+
         return api.services.code.store_execution_output(
             user_code_id=code.id,
             outputs=result,
@@ -1030,6 +1033,7 @@ class Request(SyncableSyftObject):
                 for inps in code.input_policy.inputs.values():
                     input_ids.update(inps)
 
+            input_ids = {k: v for k, v in input_ids.items() if isinstance(v, UID)}
             res = api.services.code.store_execution_output(
                 user_code_id=code.id,
                 outputs=result,
@@ -1046,7 +1050,13 @@ class Request(SyncableSyftObject):
             else JobStatus.COMPLETED
         )
 
-        existing_result = job.result.id if job.result is not None else None
+        existing_result = None
+        if isinstance(job.result, ActionObject):
+            existing_result = job.result.id
+        elif isinstance(job.result, Err):
+            existing_result = job.result
+        else:
+            existing_result = job.result
         print(
             f"Job({job.id}) Setting new result {existing_result} -> {job_info.result.id}"
         )

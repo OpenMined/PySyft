@@ -116,6 +116,9 @@ class ExecutionOutput(SyncableSyftObject):
             )
         else:
             job_link = None
+
+        if input_ids is not None:
+            input_ids = {k: v for k, v in input_ids.items() if isinstance(v, UID)}
         return cls(
             output_ids=output_ids,
             user_code_link=user_code_link,
