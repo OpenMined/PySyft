@@ -236,15 +236,14 @@ class DictTuple(tuple[_VT, ...], Generic[_KT, _VT], metaclass=_Meta):
         return super().__getitem__(self.__mapping[__key])
 
     def __repr__(self) -> str:
-        # return f"{self.__class__.__qualname__}{super().__repr__()}"
-        return "[]"
+        return f"{self.__class__.__qualname__}{super().__repr__()}"
 
     def _repr_html_(self) -> str:
         super_repr_html = getattr(super(), "_repr_html_", None)
         if super_repr_html is None:
             return super().__repr__()
-        if super_repr_html() == self.__repr__():  # empty DictTuple
-            return "[]"
+        if len(self) == 0:  # empty DictTuple
+            return "0 records"
         return super_repr_html()
 
     def keys(self) -> KeysView[_KT]:
