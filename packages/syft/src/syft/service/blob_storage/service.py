@@ -23,7 +23,8 @@ from ...types.errors import SyftException
 from ...types.result import as_result
 from ...types.uid import UID
 from ..context import AuthedServiceContext
-from ..response import SyftError, SyftSuccess
+from ..response import SyftError
+from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method

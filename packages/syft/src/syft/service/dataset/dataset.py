@@ -7,13 +7,16 @@ import textwrap
 from typing import Any
 
 # third party
+from IPython import display
 import itables
 import markdown
 import pandas as pd
 from pydantic import ConfigDict
 from pydantic import field_validator
 from pydantic import model_validator
-from result import Err, Ok, Result
+from result import Err
+from result import Ok
+from result import Result
 from typing_extensions import Self
 
 # relative
@@ -23,9 +26,6 @@ from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
 from ...types.errors import SyftException
-from ...types.syft_migration import migrate
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
@@ -143,10 +143,6 @@ class Asset(SyftObject):
             if self.uploader
             else ""
         )
-        try:
-            data = self.data
-        except SyftException:
-            data = None
 
         mock = self.mock
         private_data_res = self._private_data()

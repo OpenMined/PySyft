@@ -18,7 +18,6 @@ from syft.server.credentials import SyftVerifyKey
 from syft.service.context import AuthedServiceContext
 from syft.service.notifier.notifier import NotifierSettings
 from syft.service.notifier.notifier_stash import NotifierStash
-from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.settings.settings import ServerSettings
 from syft.service.settings.settings import ServerSettingsUpdate
@@ -277,9 +276,9 @@ def test_settingsservice_update_fail(
 
     monkeypatch.setattr(authed_context.server, "get_service", mock_get_service)
 
-
-    with pytest.raises(StashException) as exc:
+    with pytest.raises(StashException) as _:
         settings_service.update(context=authed_context, settings=update_settings)
+
 
 def test_settings_allow_guest_registration(
     monkeypatch: MonkeyPatch, faker: Faker

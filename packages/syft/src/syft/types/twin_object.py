@@ -19,10 +19,9 @@ from ..service.action.action_object import TwinMode
 from ..service.action.action_types import action_types
 from ..service.response import SyftSuccess
 from ..service.response import SyftWarning
-from ..types.syft_object import SYFT_OBJECT_VERSION_2
+from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from .errors import SyftException
 from .result import as_result
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftObject
 from .uid import UID
 

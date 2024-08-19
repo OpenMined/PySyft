@@ -235,7 +235,7 @@ def test_user_update(root_client):
     for executing_client in executing_clients:
         for target_client in target_clients:
             if executing_client.role != ServiceRole.ADMIN:
-                with pytest.raises(SyftException) as exc:
+                with pytest.raises(SyftException) as _:
                     assert not executing_client.api.services.user.update(
                         uid=target_client.user_id, name="abc"
                     )

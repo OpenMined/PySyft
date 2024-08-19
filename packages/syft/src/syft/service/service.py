@@ -34,9 +34,8 @@ from ..store.document_store import DocumentStore
 from ..store.linked_obj import LinkedObject
 from ..types.errors import SyftException
 from ..types.result import as_result
-from ..types.syft_object import SYFT_OBJECT_VERSION_1, SYFT_OBJECT_VERSION_2
-from ..types.syft_object import SYFT_OBJECT_VERSION_3
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
+from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
 from ..types.syft_object import attach_attribute_to_syft_object
@@ -106,6 +105,7 @@ class BaseConfigV1(SyftBaseObject):
     is_from_lib: bool = False
     warning: APIEndpointWarning | None = None
 
+
 @serializable()
 class BaseConfig(SyftBaseObject):
     __canonical_name__ = "BaseConfig"
@@ -130,6 +130,7 @@ class ServiceConfigV1(BaseConfigV1):
     permissions: list
     roles: list[ServiceRole]
 
+
 @serializable()
 class ServiceConfig(BaseConfig):
     __canonical_name__ = "ServiceConfig"
@@ -141,11 +142,13 @@ class ServiceConfig(BaseConfig):
     def has_permission(self, user_service_role: ServiceRole) -> bool:
         return user_service_role in self.roles
 
+
 @serializable()
 class LibConfigV1(BaseConfigV1):
     __canonical_name__ = "LibConfig"
     __version__ = SYFT_OBJECT_VERSION_1
     permissions: set[CMPPermission]
+
 
 @serializable()
 class LibConfig(BaseConfig):

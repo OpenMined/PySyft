@@ -8,7 +8,7 @@ from ..serde.serializable import serializable
 from ..server.credentials import SyftSigningKey
 from ..service.metadata.server_metadata import ServerMetadataJSON
 from ..service.network.server_peer import ServerPeer
-from ..service.response import SyftException
+from ..types.errors import SyftException
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftObject
 from ..util.assets import load_png_base64
@@ -167,7 +167,7 @@ class ProxyClient(SyftObject):
             return self.routing_client.api.services.network.get_all_peers()
         else:
             raise SyftException(
-                f"Unknown server type {self.server_type} to retrieve proxy client"
+                public_message=f"Unknown server type {self.server_type} to retrieve proxy client"
             )
 
     def _repr_html_(self) -> str:
@@ -178,11 +178,13 @@ class ProxyClient(SyftObject):
 
     def __getitem__(self, key: int | str) -> SyftClient:
         if not isinstance(key, int):
-            raise SyftException(f"Key: {key} must be an integer")
+            raise SyftException(public_message=f"Key: {key} must be an integer")
 
         servers = self.retrieve_servers()
 
         if key >= len(servers):
-            raise SyftException(f"Index {key} out of range for retrieved servers")
+            raise SyftException(
+                public_message=f"Index {key} out of range for retrieved servers"
+            )
 
         return self.routing_client.proxy_to(servers[key])

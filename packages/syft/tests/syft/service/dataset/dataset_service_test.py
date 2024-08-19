@@ -19,9 +19,9 @@ from syft.service.blob_storage.util import can_upload_to_blob_storage
 from syft.service.dataset.dataset import CreateAsset as Asset
 from syft.service.dataset.dataset import CreateDataset as Dataset
 from syft.service.dataset.dataset import _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE
+from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.types.errors import SyftException
-from syft.types.twin_object import TwinMode
 
 
 def random_hash() -> str:

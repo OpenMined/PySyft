@@ -93,8 +93,10 @@ def test_delete_idle_worker(
     server: ServerHandle, force: bool, server_args: dict[str, Any]
 ) -> None:
     client = server.login(email="info@openmined.org", password="changethis")
+    original_workers = client.worker.get_all()
+    worker_to_delete = max(original_workers, key=operator.attrgetter("name"))
 
-    res = client.worker.delete(worker.id, force=force)
+    _ = client.worker.delete(worker_to_delete.id, force=force)
 
     if force:
         assert (

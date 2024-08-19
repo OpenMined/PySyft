@@ -106,7 +106,8 @@ class EmailNotifier(BaseNotifier):
             return SyftSuccess(message="Email sent successfully!")
         except Exception:
             raise SyftException(
-                public_message="Some notifications failed to be delivered. Please check the health of the mailing server."
+                public_message="Some notifications failed to be delivered. \
+                    Please check the health of the mailing server."
             )
 
 

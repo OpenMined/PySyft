@@ -15,13 +15,13 @@ from ...store.document_store import UIDPartitionKey
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...store.linked_obj import LinkedObject
+from ...types.errors import SyftException
 from ...types.result import as_result
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
-from ..response import SyftException
 
 
 @serializable(canonical_name="Status", version=1)

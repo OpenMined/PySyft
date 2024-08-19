@@ -12,10 +12,6 @@ from typing import TypeVar
 # third party
 from pydantic import BaseModel
 from pydantic import Field
-# from result import Err
-# from result import Ok
-from ..types.result import Ok
-from ..types.result import Err
 from typeguard import check_type
 
 # relative
@@ -28,8 +24,12 @@ from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
 from ..types.base import SyftBaseModel
 from ..types.errors import SyftException
+
+# from result import Err
+# from result import Ok
+from ..types.result import Err
+from ..types.result import Ok
 from ..types.result import as_result
-from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import BaseDateTime
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftBaseObject
@@ -341,7 +341,7 @@ class StorePartition:
         self.settings = settings
         self.store_config = store_config
         self.has_admin_permissions = has_admin_permissions
-        res = self.init_store().unwrap(
+        _ = self.init_store().unwrap(
             public_message="Something went wrong initializing the store"
         )
         store_config.locking_config.lock_name = f"StorePartition-{settings.name}"

@@ -29,8 +29,8 @@ from ..service.action.action_object import ActionObject
 from ..service.action.action_object import ActionObjectPointer
 from ..service.action.action_object import BASE_PASSTHROUGH_ATTRS
 from ..service.action.action_types import action_types
-from ..service.response import SyftException
 from ..service.service import from_api_or_context
+from ..types.errors import SyftException
 from ..types.server_url import ServerURL
 from ..types.transforms import keep
 from ..types.transforms import transform

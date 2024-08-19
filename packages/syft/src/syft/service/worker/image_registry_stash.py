@@ -2,6 +2,9 @@
 
 # third party
 
+# stdlib
+from typing import Literal
+
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
@@ -13,7 +16,6 @@ from ...store.document_store import QueryKeys
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.result import as_result
-from ..response import SyftSuccess
 from .image_registry import SyftImageRegistry
 
 __all__ = ["SyftImageRegistryStash"]
@@ -45,6 +47,6 @@ class SyftImageRegistryStash(NewBaseUIDStoreStash):
         )
 
     @as_result(StashException)
-    def delete_by_url(self, credentials: SyftVerifyKey, url: str) -> SyftSuccess:
+    def delete_by_url(self, credentials: SyftVerifyKey, url: str) -> Literal[True]:
         qk = URLPartitionKey.with_obj(url)
         return super().delete(credentials=credentials, qk=qk).unwrap()

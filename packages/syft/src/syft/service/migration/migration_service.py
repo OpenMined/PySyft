@@ -8,6 +8,7 @@ from ...store.document_store import DocumentStore
 from ...store.document_store import StorePartition
 from ...store.document_store_errors import NotFoundException
 from ...types.blob_storage import BlobStorageEntry
+from ...types.errors import SyftException
 from ...types.result import as_result
 from ...types.syft_object import SyftObject
 from ..action.action_object import Action
@@ -16,7 +17,6 @@ from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import StoragePermission
 from ..action.action_store import KeyValueActionStore
 from ..context import AuthedServiceContext
-from ..response import SyftException
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method

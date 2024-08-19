@@ -24,7 +24,8 @@ from ..code.user_code import execute_byte_code
 from ..context import AuthedServiceContext
 from ..policy.policy import OutputPolicy
 from ..policy.policy import retrieve_from_db
-from ..response import SyftError, SyftResponseMessage
+from ..response import SyftError
+from ..response import SyftResponseMessage
 from ..response import SyftSuccess
 from ..response import SyftWarning
 from ..service import AbstractService
@@ -274,7 +275,7 @@ class ActionService(AbstractService):
         resolve_nested: bool = True,
     ) -> ActionObject | TwinObject:
         """Get an object from the action store"""
-        result = self.store.get(
+        obj = self.store.get(
             uid=uid, credentials=context.credentials, has_permission=has_permission
         ).unwrap()
 
@@ -958,12 +959,16 @@ class ActionService(AbstractService):
         soft_delete: bool = False,
     ) -> SyftSuccess | SyftError:
         if soft_delete:
-            obj: ActionObject | TwinObject = self.store.get(uid=uid, credentials=context.credentials).unwrap()
+            obj: ActionObject | TwinObject = self.store.get(
+                uid=uid, credentials=context.credentials
+            ).unwrap()
             if isinstance(obj, TwinObject):
                 self._soft_delete_action_obj(
                     context=context, action_obj=obj.private
                 ).unwrap()
-                self._soft_delete_action_obj(context=context, action_obj=obj.mock).unwrap()
+                self._soft_delete_action_obj(
+                    context=context, action_obj=obj.mock
+                ).unwrap()
             if isinstance(obj, ActionObject):
                 self._soft_delete_action_obj(context=context, action_obj=obj).unwrap()
         else:

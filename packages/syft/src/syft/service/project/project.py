@@ -27,6 +27,7 @@ from ...server.credentials import SyftVerifyKey
 from ...service.metadata.server_metadata import ServerMetadata
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
+from ...types.errors import SyftException
 from ...types.identity import Identity
 from ...types.identity import UserIdentity
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -47,7 +48,6 @@ from ..network.routes import ServerRoute
 from ..network.routes import connection_to_route
 from ..request.request import Request
 from ..request.request import RequestStatus
-from ..response import SyftException
 from ..response import SyftInfo
 from ..response import SyftNotReady
 from ..response import SyftSuccess
@@ -1262,7 +1262,7 @@ class ProjectSubmit(SyftObject):
         try:
             # Check if the user can create projects
             for client in clients:
-                result = client.api.services.project.can_create_project()
+                _ = client.api.services.project.can_create_project()
         except Exception:
             raise SyftException("Only Data Scientists can create projects")
 

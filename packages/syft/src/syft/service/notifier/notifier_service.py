@@ -63,10 +63,10 @@ class NotifierService(AbstractService):
             app=notifications[NOTIFIERS.APP],
         )
 
-    def set_notifier_active_to_true(
-        self, context: AuthedServiceContext
-    ) -> SyftSuccess:
-        notifier = self.stash.get(credentials=context.credentials).unwrap(public_message="Notifier settings not found.")
+    def set_notifier_active_to_true(self, context: AuthedServiceContext) -> SyftSuccess:
+        notifier = self.stash.get(credentials=context.credentials).unwrap(
+            public_message="Notifier settings not found."
+        )
         notifier.active = True
         self.stash.update(credentials=context.credentials, settings=notifier).unwrap()
         return SyftSuccess(message="notifier.active set to true.")

@@ -23,7 +23,6 @@ from pydantic import Field
 from pydantic import field_validator
 from pydantic import model_validator
 from result import Err
-from result import as_result
 from typing_extensions import Self
 
 # relative
@@ -42,10 +41,6 @@ from ...types.base import SyftBaseModel
 from ...types.datetime import DateTime
 from ...types.errors import SyftException
 from ...types.result import as_result
-from ...types.syft_migration import migrate
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
-from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftBaseObject
 from ...types.syft_object import SyftObject
@@ -1053,7 +1048,7 @@ class ActionObject(SyncableSyftObject):
             obj._set_obj_location_(api.server_uid, api.signing_key.verify_key)  # type: ignore[union-attr]
 
         try:
-            res = api.services.action.execute(action)
+            _ = api.services.action.execute(action)
         except Exception as e:
             print(f"Failed to to store (arg) {obj} to store, {e}")
 

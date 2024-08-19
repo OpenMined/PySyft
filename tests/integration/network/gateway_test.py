@@ -935,7 +935,7 @@ def test_reverse_tunnel_connection(datasite_1_port: int, gateway_port: int):
         port=datasite_1_port, email="info@openmined.org", password="changethis"
     )
 
-    res = gateway_client.settings.allow_association_request_auto_approval(enable=False)
+    _ = gateway_client.settings.allow_association_request_auto_approval(enable=False)
 
     # Try removing existing peers just to make sure
     _remove_existing_peers(datasite_client)
@@ -958,7 +958,7 @@ def test_reverse_tunnel_connection(datasite_1_port: int, gateway_port: int):
     gateway_client_root = gateway_client.login(
         email="info@openmined.org", password="changethis"
     )
-    res = gateway_client_root.api.services.request.get_all()[-1].approve()
+    _ = gateway_client_root.api.services.request.get_all()[-1].approve()
     time.sleep(90)
 
     gateway_peers = gateway_client.api.services.network.get_all_peers()

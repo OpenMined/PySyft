@@ -25,7 +25,6 @@ from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
 from ..types.errors import SyftException
 from ..types.result import as_result
-from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import StorableObjectType
 from ..types.syft_object import SyftBaseObject
@@ -190,7 +189,8 @@ class MongoStorePartition(StorePartition):
                 collection.drop_index(index_or_name=index_name)
             except Exception:
                 raise SyftException(
-                    public_message=f"Failed to drop index for object: {object_name} with index keys: {current_index_keys}"
+                    public_message=f"Failed to drop index for object: {object_name} \
+                        with index keys: {current_index_keys}"
                 )
 
         # If no new indexes, then skip index creation
@@ -616,7 +616,8 @@ class MongoStorePartition(StorePartition):
             )
         else:
             raise SyftException(
-                public_message=f"the server_uid {storage_permission.server_uid} does not exist in the storage permission!"
+                public_message=f"the server_uid {storage_permission.server_uid} \
+                    does not exist in the storage permission!"
             )
 
     def _get_storage_permissions_for_uid(self, uid: UID) -> Set[UID]:  # noqa: UP006

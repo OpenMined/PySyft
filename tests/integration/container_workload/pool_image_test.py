@@ -182,7 +182,7 @@ def test_pool_launch(
         first_worker = workers[0]
 
         # Check worker Logs
-        logs = datasite_client.api.services.worker.logs(uid=first_worker.id)
+        _ = datasite_client.api.services.worker.logs(uid=first_worker.id)
 
         # Check for worker status
         status_res = datasite_client.api.services.worker.status(uid=first_worker.id)

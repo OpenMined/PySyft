@@ -51,9 +51,9 @@ from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
 from ...types.errors import SyftException
 from ...types.result import as_result
-from ...types.syft_migration import migrate
-from ...types.syft_object import SYFT_OBJECT_VERSION_2, PartialSyftObject
+from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.transforms import TransformContext
@@ -1210,7 +1210,8 @@ def is_valid_usercode_name(func_name: str) -> Any:
     service_method_path = f"code.{func_name}"
     if ServiceConfigRegistry.path_exists(service_method_path):
         raise SyftException(
-            public_message=f"Could not create syft function with name {func_name}: a service with the same name already exists"
+            public_message=f"Could not create syft function with name {func_name}:\
+                a service with the same name already exists"
         )
     return True
 
@@ -1643,6 +1644,7 @@ class UserCodeExecutionResult(SyftObject):
     stderr: str
     result: Any = None
 
+
 @serializable()
 class UserCodeExecutionOutputV1(SyftObject):
     # version
@@ -1654,6 +1656,7 @@ class UserCodeExecutionOutputV1(SyftObject):
     stdout: str
     stderr: str
     result: Any = None
+
 
 @serializable()
 class UserCodeExecutionOutput(SyftObject):

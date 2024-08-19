@@ -19,7 +19,6 @@ from ...store.document_store_errors import TooManyItemsFoundException
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.result import as_result
-from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import UID

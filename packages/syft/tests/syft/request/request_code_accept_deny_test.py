@@ -1,5 +1,7 @@
-# syft absolute
+# third party
 import pytest
+
+# syft absolute
 import syft
 from syft.client.client import SyftClient
 from syft.server.worker import Worker
@@ -12,7 +14,6 @@ from syft.service.request.request import ActionStoreChange
 from syft.service.request.request import ObjectMutation
 from syft.service.request.request import RequestStatus
 from syft.service.request.request import UserCodeStatusChange
-from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.settings.settings_service import SettingsService
 from syft.store.linked_obj import LinkedObject

@@ -15,9 +15,6 @@ from ...types.base import SyftBaseModel
 from ...types.datetime import DateTime
 from ...types.errors import SyftException
 from ...types.result import as_result
-from ...types.syft_migration import migrate
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.syft_object import short_uid
@@ -26,6 +23,7 @@ from ...util import options
 from ...util.colors import SURFACE
 from ...util.notebook_ui.styles import FONT_CSS
 from ...util.notebook_ui.styles import ITABLES_CSS
+from ..service.response import SyftError
 from .worker_image import SyftWorkerImage
 
 

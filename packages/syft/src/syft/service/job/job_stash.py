@@ -34,10 +34,6 @@ from ...types.datetime import DateTime
 from ...types.datetime import format_timedelta
 from ...types.errors import SyftException
 from ...types.result import as_result
-from ...types.syft_migration import migrate
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_4
-from ...types.syft_object import SYFT_OBJECT_VERSION_6
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject

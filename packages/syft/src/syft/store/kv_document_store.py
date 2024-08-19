@@ -185,7 +185,7 @@ class KeyValueStorePartition(StorePartition):
 
         ck_check = self._check_partition_keys_unique(
             unique_query_keys=unique_query_keys
-        )
+        ).unwrap()
 
         if not store_key_exists and ck_check == UniqueKeyCheck.EMPTY:
             # attempt to claim it for writing
@@ -230,9 +230,7 @@ class KeyValueStorePartition(StorePartition):
                 )
             return obj
         else:
-            raise SyftException(
-                public_message=f"Permission: {write_permission} denied"
-            )
+            raise SyftException(public_message=f"Permission: {write_permission} denied")
 
     @as_result(SyftException)
     def take_ownership(self, uid: UID, credentials: SyftVerifyKey) -> SyftSuccess:
@@ -313,7 +311,7 @@ class KeyValueStorePartition(StorePartition):
 
     @as_result(SyftException)
     def get_all_permissions(self) -> dict[UID, set[str]]:
-        return dict(self.permissions.items())
+        return self.permissions
 
     def add_storage_permission(self, permission: StoragePermission) -> None:
         permissions = self.storage_permissions[permission.uid]
@@ -347,7 +345,7 @@ class KeyValueStorePartition(StorePartition):
 
     @as_result(SyftException)
     def get_all_storage_permissions(self) -> dict[UID, set[UID]]:
-        return dict(self.storage_permissions.items())
+        return self.storage_permissions
 
     # TODO ERROR:
     @as_result(SyftException)
@@ -356,7 +354,7 @@ class KeyValueStorePartition(StorePartition):
         credentials: SyftVerifyKey,
         order_by: PartitionKey | None = None,
         has_permission: bool | None = False,
-    ) -> list[NewBaseStash.object_type]:
+    ) -> list[NewBaseStash.object_type]:  # type: ignore
         # this checks permissions
         res = [self._get(uid, credentials, has_permission) for uid in self.data.keys()]
         result = [x.ok() for x in res if x.is_ok()]
@@ -409,7 +407,7 @@ class KeyValueStorePartition(StorePartition):
             index_results = self._get_keys_index(qks=index_qks)
             if index_results.is_ok():
                 if ids is None:
-                    ids = index_results.ok()
+                    ids = index_results.ok() if index_results.ok() else {}
                 ids = ids.intersection(index_results.ok())
             else:
                 errors.append(index_results.err())
@@ -420,7 +418,7 @@ class KeyValueStorePartition(StorePartition):
 
             if search_results.is_ok():
                 if ids is None:
-                    ids = search_results.ok()
+                    ids = search_results.ok() if search_results.ok() else {}
                 ids = ids.intersection(search_results.ok())
             else:
                 errors.append(search_results.err())

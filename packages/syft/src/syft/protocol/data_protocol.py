@@ -21,9 +21,9 @@ from result import OkErr
 
 # relative
 from .. import __version__
-from ..service.response import SyftException
 from ..service.response import SyftSuccess
 from ..types.dicttuple import DictTuple
+from ..types.errors import SyftException
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object_registry import SyftObjectRegistry
 from ..util.util import get_dev_mode

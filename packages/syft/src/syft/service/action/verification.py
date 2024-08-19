@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 # relative
-from ..response import SyftException
+from ...types.errors import SyftException
 from ..response import SyftResponseMessage
 from ..response import SyftSuccess
 from .action_object import ActionObject

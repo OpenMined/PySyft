@@ -71,6 +71,8 @@ def raise_exception(table_name: str, e: Exception) -> Exception:
     if f"table {table_name} already exists" not in str(e):
         return e
 
+    return Exception("Table exception")
+
 
 @serializable(
     attrs=["index_name", "settings", "store_config"],
@@ -218,7 +220,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
             f"update {self.table_name} set uid = ?, repr = ?, value = ? where uid = ?"  # nosec
         )
         data = _serialize(value, to_bytes=True)
-        res = self._execute(
+        _ = self._execute(
             insert_sql, [str(key), _repr_debug_(value), data, str(key)]
         ).unwrap
 
@@ -241,7 +243,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
             return False
         cursor = res.ok()
 
-        row = cursor.fetchone()
+        row = cursor.fetchone()  # type: ignore
         if row is None:
             return False
 
@@ -257,7 +259,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
             return {}
         cursor = res.ok()
 
-        rows = cursor.fetchall()
+        rows = cursor.fetchall()  # type: ignore
         if rows is None:
             return {}
 
@@ -274,7 +276,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
             return []
         cursor = res.ok()
 
-        rows = cursor.fetchall()
+        rows = cursor.fetchall()  # type: ignore
         if rows is None:
             return []
 
