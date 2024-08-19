@@ -1,17 +1,14 @@
 # stdlib
 
 # stdlib
-import base64
 from enum import Enum
 import json
 import threading
-from typing import Any
 from typing import Generic
 import uuid
 from uuid import UUID
 
 # third party
-import pydantic
 from result import Err
 from result import Ok
 from result import Result
@@ -30,15 +27,10 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.types import JSON
 from typing_extensions import TypeVar
 
-# syft absolute
-import syft as sy
-
 # relative
-from ...server.credentials import SyftSigningKey
 from ...server.credentials import SyftVerifyKey
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
-from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
@@ -51,6 +43,8 @@ from ..action.action_permissions import ActionPermission
 from ..action.action_permissions import StoragePermission
 from ..response import SyftSuccess
 from ..user.user_roles import ServiceRole
+from .model_dump import model_dump
+from .model_dump import model_validate
 
 
 class Base(DeclarativeBase):
@@ -84,107 +78,6 @@ class CommonMixin:
         server_onupdate=sa.func.now(),
     )
     json_document: Mapped[dict] = mapped_column(JSON, default={})
-
-
-def should_handle_as_bytes(type_) -> bool:
-    # relative
-    from ...util.misc_objs import HTMLObject
-    from ...util.misc_objs import MarkdownDescription
-    from ..action.action_object import Action
-    from ..dataset.dataset import Asset
-    from ..dataset.dataset import Contributor
-    from ..request.request import Change
-    from ..request.request import ChangeStatus
-    from ..settings.settings import PwdTokenResetConfig
-
-    return (
-        type_.annotation is LinkedObject
-        or type_.annotation == LinkedObject | None
-        or type_.annotation == list[UID] | dict[str, UID] | None
-        or type_.annotation == dict[str, UID] | None
-        or type_.annotation == list[Change]
-        or type_.annotation == Any | None  # type: ignore
-        or type_.annotation == Action | None  # type: ignore
-        or getattr(type_.annotation, "__origin__", None) is dict
-        or type_.annotation == HTMLObject | MarkdownDescription
-        or type_.annotation == PwdTokenResetConfig
-        or type_.annotation == list[ChangeStatus]
-        or type_.annotation == list[Asset]
-        or type_.annotation == set[Contributor]
-        or type_.annotation == MarkdownDescription
-        or type_.annotation == Contributor
-    )
-
-
-def model_dump(obj: pydantic.BaseModel) -> dict:
-    obj_dict = dict(obj)  # obj.model_dump() does not work when
-    for key, type_ in obj.model_fields.items():
-        if type_.annotation is UID:
-            obj_dict[key] = obj_dict[key].no_dash
-        elif (
-            type_.annotation is SyftVerifyKey
-            or type_.annotation == SyftVerifyKey | None
-            or type_.annotation is SyftSigningKey
-            or type_.annotation == SyftSigningKey | None
-        ):
-            attr = getattr(obj, key)
-            obj_dict[key] = str(attr) if attr is not None else None
-        elif type_.annotation is DateTime or type_.annotation == DateTime | None:
-            # FIXME: this is a hack, we should not be converting to string
-            if obj_dict[key] is not None:
-                obj_dict[key] = obj_dict[key].utc_timestamp
-        elif should_handle_as_bytes(type_):
-            # not very efficient as it serializes the object twice
-            data = sy.serialize(getattr(obj, key), to_bytes=True)
-            base64_data = base64.b64encode(data).decode("utf-8")
-            obj_dict[key] = base64_data
-
-    return obj_dict
-
-
-T = TypeVar("T", bound=pydantic.BaseModel)
-
-
-def model_validate(obj_type: type[T], obj_dict: dict) -> T:
-    # relative
-
-    for key, type_ in obj_type.model_fields.items():
-        if key not in obj_dict:
-            continue
-        # FIXME
-        if type_.annotation is UID or type_.annotation == UID | None:
-            if obj_dict[key] is None:
-                obj_dict[key] = None
-            else:
-                obj_dict[key] = UID(obj_dict[key])
-        elif (
-            type_.annotation is SyftVerifyKey
-            or type_.annotation == SyftVerifyKey | None
-        ):
-            if obj_dict[key] is None:
-                obj_dict[key] = None
-            elif isinstance(obj_dict[key], str):
-                obj_dict[key] = SyftVerifyKey.from_string(obj_dict[key])
-            elif isinstance(obj_dict[key], SyftVerifyKey):
-                obj_dict[key] = obj_dict[key]
-        elif type_.annotation is DateTime or type_.annotation == DateTime | None:
-            if obj_dict[key] is not None:
-                obj_dict[key] = DateTime.from_timestamp(obj_dict[key])
-        elif (
-            type_.annotation is SyftSigningKey
-            or type_.annotation == SyftSigningKey | None
-        ):
-            if obj_dict[key] is None:
-                obj_dict[key] = None
-            elif isinstance(obj_dict[key], str):
-                obj_dict[key] = SyftSigningKey(signing_key=obj_dict[key])
-            elif isinstance(obj_dict[key], SyftSigningKey):
-                obj_dict[key] = obj_dict[key]
-        elif should_handle_as_bytes(type_):
-            data = base64.b64decode(obj_dict[key])
-            obj_dict[key] = sy.deserialize(data, from_bytes=True)
-
-    return obj_type.model_validate(obj_dict)
 
 
 def _default_dumps(val):  # type: ignore
