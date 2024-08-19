@@ -258,8 +258,7 @@ class ProjectService(AbstractService):
                     + ". Please exchange routes with the peer."
                 )
                 remote_client = peer.client_with_context(context=context).unwrap(
-                    public_message=f"Failed to create remote client for peer: "
-                    f"{peer.id}. Error: {remote_client.err()}"
+                    public_message=f"Failed to create remote client for peer: {peer.id}."
                 )
                 remote_client.api.services.project.add_event(project_event)
 

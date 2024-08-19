@@ -1211,7 +1211,10 @@ def is_valid_usercode_name(func_name: str) -> Any:
     service_method_path = f"code.{func_name}"
     if ServiceConfigRegistry.path_exists(service_method_path):
         raise SyftException(
-            public_message=f"Could not create syft function with name {func_name}: a service with the same name already exists"
+            public_message=(
+                f"Could not create syft function with name {func_name}:"
+                f" a service with the same name already exists"
+            )
         )
     return True
 

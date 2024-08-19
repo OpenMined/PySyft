@@ -226,7 +226,7 @@ class SettingsService(AbstractService):
         flags.CAN_REGISTER = enable
 
         settings = ServerSettingsUpdate(signup_enabled=enable)
-        result = self._update(context=context, settings=settings).unwrap()
+        self._update(context=context, settings=settings).unwrap()
         message = "enabled" if enable else "disabled"
         return SyftSuccess(
             message=f"Registration feature successfully {message}", value=message

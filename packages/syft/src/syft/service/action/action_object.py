@@ -22,8 +22,6 @@ from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import field_validator
 from pydantic import model_validator
-from result import Err
-from result import as_result
 from typing_extensions import Self
 
 # relative
@@ -40,6 +38,7 @@ from ...store.linked_obj import LinkedObject
 from ...types.base import SyftBaseModel
 from ...types.datetime import DateTime
 from ...types.errors import SyftException
+from ...types.result import Err
 from ...types.result import as_result
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftBaseObject
@@ -1039,13 +1038,16 @@ class ActionObject(SyncableSyftObject):
             trace_result.result += [action]  # type: ignore
 
         api = self.get_api_wrapped().unwrap(
-            public_message=f"failed saving {obj} to blob storage, api is None. You must login to {self.syft_server_location}"
+            public_message=(
+                f"Failed saving {obj} to blob storage, api is None."
+                f" You must login to {self.syft_server_location}."
+            )
         )
 
         obj._set_obj_location_(api.server_uid, api.signing_key.verify_key)  # type: ignore[union-attr]
 
         try:
-            res = api.services.action.execute(action)
+            api.services.action.execute(action)
         except Exception as e:
             print(f"Failed to to store (arg) {obj} to store, {e}")
 

@@ -126,10 +126,6 @@ class Asset(SyftObject):
             if self.uploader
             else ""
         )
-        try:
-            data = self.data
-        except SyftException:
-            data = None
 
         mock = self.mock
         private_data_res = self._private_data()

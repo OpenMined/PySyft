@@ -340,7 +340,7 @@ class StorePartition:
         self.settings = settings
         self.store_config = store_config
         self.has_admin_permissions = has_admin_permissions
-        res = self.init_store().unwrap(
+        self.init_store().unwrap(
             public_message="Something went wrong initializing the store"
         )
         store_config.locking_config.lock_name = f"StorePartition-{settings.name}"

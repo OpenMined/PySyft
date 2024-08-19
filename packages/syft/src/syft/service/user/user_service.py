@@ -438,12 +438,12 @@ class UserService(AbstractService):
 
         for field_name in immutable_fields:
             if field_name in updated_fields:
-                return SyftError(
-                    message=f"You are not allowed to modify '{field_name}'."
+                raise SyftException(
+                    public_message=f"You are not allowed to modify '{field_name}'."
                 )
 
         if user_update.name is not Empty and user_update.name.strip() == "":  # type: ignore[comparison-overlap]
-            return SyftError(message="Name can't be an empty string.")
+            raise SyftException(public_message="Name can't be an empty string.")
 
         # check if the email already exists (with root's key)
         if user_update.email is not Empty:
