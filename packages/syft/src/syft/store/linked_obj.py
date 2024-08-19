@@ -40,16 +40,7 @@ class LinkedObject(SyftObject):
     @property
     def resolve(self) -> SyftObject:
         # relative
-        from ..client.api import APIRegistry
-
-        api = APIRegistry.api_for(
-            server_uid=self.server_uid,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            raise ValueError(f"api is None. You must login to {self.server_uid}")
-
-        resolve: SyftObject = api.services.notifications.resolve_object(self)
+        resolve: SyftObject = self.get_api().services.notifications.resolve_object(self)
         self._resolve_cache = resolve
         return resolve
 

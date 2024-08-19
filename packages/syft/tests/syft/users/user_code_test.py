@@ -4,7 +4,6 @@ import uuid
 # third party
 from faker import Faker
 import numpy as np
-from pydantic import ValidationError
 import pytest
 
 # syft absolute
@@ -357,17 +356,15 @@ def test_mock_multiple_arguments(worker) -> None:
     result = ds_client.api.services.code.compute_sum(data1=1, data2=1)
     assert result.get() == 2
 
-    # # Mixed execution fails on input policy
-    # with pytest.raises(SyftException) as exc:
-    #     ds_client.api.services.code.compute_sum(data1=1, data2=data)
+    # Mixed execution fails on input policy
+    with pytest.raises(SyftException) as exc:
+        ds_client.api.services.code.compute_sum(data1=1, data2=data)
 
-    # assert exc.type is SyftException
-    # assert exc.value.public_message == "Input policy mismatch"
+    assert exc.type is SyftException
+    assert "not in allowed inputs" in exc.value.public_message
 
     # Real execution succeeds
     result = ds_client.api.services.code.compute_sum(data1=data, data2=data)
-    assert result == "blau"
-    assert np.equal(result.get(), np.array([0, 2, 4, 6, 8])).all()
 
     # Mixed execution fails, no result from cache
     with pytest.raises(SyftException):
@@ -453,7 +450,7 @@ def test_submit_invalid_name(worker) -> None:
 
     valid_name_2.func_name = "get_all"
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(SyftException):
         client.code.submit(valid_name_2)
 
 

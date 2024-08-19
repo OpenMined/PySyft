@@ -8,7 +8,6 @@ from typing_extensions import Self
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
-from ...types.errors import SyftException
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
@@ -35,13 +34,7 @@ class DataSubject(SyftObject):
     @property
     def members(self) -> list:
         # relative
-        from ...client.api import APIRegistry
-
-        api = APIRegistry.api_for(self.server_uid, self.syft_client_verify_key)
-        if api is None:
-            raise SyftException(public_message=f"You must login to {self.server_uid}")
-        members = api.services.data_subject.members_for(self.name)
-        return members
+        return self.get_api().services.data_subject.members_for(self.name)
 
     __attr_searchable__ = ["name", "description"]
     __repr_attrs__ = ["name", "description"]

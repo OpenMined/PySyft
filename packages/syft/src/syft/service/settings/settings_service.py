@@ -19,6 +19,7 @@ from ...util.schema import DS_COMMANDS
 from ...util.schema import GUEST_COMMANDS
 from ..context import AuthedServiceContext
 from ..context import UnauthedServiceContext
+from ..notifier.notifier_enums import EMAIL_TYPES
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
@@ -64,6 +65,7 @@ class SettingsService(AbstractService):
         name="update",
         autosplat=["settings"],
         unwrap_on_success=False,
+        roles=ADMIN_ROLE_LEVEL,
     )
     def update(
         self, context: AuthedServiceContext, settings: ServerSettingsUpdate
@@ -224,7 +226,7 @@ class SettingsService(AbstractService):
         flags.CAN_REGISTER = enable
 
         settings = ServerSettingsUpdate(signup_enabled=enable)
-        _ = self._update(context=context, settings=settings).unwrap()
+        self._update(context=context, settings=settings).unwrap()
         message = "enabled" if enable else "disabled"
         return SyftSuccess(
             message=f"Registration feature successfully {message}", value=message
@@ -245,6 +247,13 @@ class SettingsService(AbstractService):
         self._update(context=context, settings=settings).unwrap()
         message = "enabled" if enable else "disabled"
         return SyftSuccess(message=f"Eager execution {message}", value=message)
+
+    @service_method(path="settings.set_email_rate_limit", name="set_email_rate_limit")
+    def set_email_rate_limit(
+        self, context: AuthedServiceContext, email_type: EMAIL_TYPES, daily_limit: int
+    ) -> SyftSuccess:
+        notifier_service = context.server.get_service("notifierservice")
+        return notifier_service.set_email_rate_limit(context, email_type, daily_limit)
 
     @service_method(
         path="settings.allow_association_request_auto_approval",
@@ -357,7 +366,7 @@ class SettingsService(AbstractService):
             """
             result = str_tmp.safe_substitute(
                 FONT_CSS=FONT_CSS,
-                grid_symbol=load_png_base64("small-grid-symbol-logo.png"),
+                server_symbol=load_png_base64("small-syft-symbol-logo.png"),
                 datasite_name=context.server.name,
                 description=context.server.metadata.description,
                 # server_url='http://testing:8080',

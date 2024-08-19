@@ -110,6 +110,7 @@ class KeyValueStorePartition(StorePartition):
             self.searchable_keys = self.store_config.backing_store(
                 "searchable_keys", self.settings, self.store_config
             )
+
             # uid -> set['<uid>_permission']
             self.permissions: dict[UID, set[str]] = self.store_config.backing_store(
                 "permissions", self.settings, self.store_config, ddtype=set
@@ -178,7 +179,6 @@ class KeyValueStorePartition(StorePartition):
         store_query_key: QueryKey = self.settings.store_key.with_obj(obj)
         uid = store_query_key.value
         write_permission = ActionObjectWRITE(uid=uid, credentials=credentials)
-        can_write = self.has_permission(write_permission)
         unique_query_keys: QueryKeys = self.settings.unique_keys.with_obj(obj)
         store_key_exists = store_query_key.value in self.data
         searchable_query_keys = self.settings.searchable_keys.with_obj(obj)
@@ -187,11 +187,11 @@ class KeyValueStorePartition(StorePartition):
             unique_query_keys=unique_query_keys
         ).unwrap()
 
+        can_write = self.has_permission(write_permission)
+
         if not store_key_exists and ck_check == UniqueKeyCheck.EMPTY:
             # attempt to claim it for writing
-            self.take_ownership(
-                uid=uid, credentials=credentials
-            ).unwrap()  # TODO Error: this feels wrong, initially this could be None
+            can_write = self.take_ownership(uid=uid, credentials=credentials).unwrap()
         elif not ignore_duplicates:
             keys = ", ".join(f"`{key.key}`" for key in unique_query_keys.all)
             raise SyftException(
@@ -203,49 +203,54 @@ class KeyValueStorePartition(StorePartition):
             # we are also not writing though
             return obj
 
-        if can_write:
-            self._set_data_and_keys(
-                store_query_key=store_query_key,
-                unique_query_keys=unique_query_keys,
-                searchable_query_keys=searchable_query_keys,
-                obj=obj,
-            )
-            self.data[uid] = obj
-
-            # Add default permissions
-            if uid not in self.permissions:
-                self.permissions[uid] = set()
-            self.add_permission(ActionObjectREAD(uid=uid, credentials=credentials))
-            if add_permissions is not None:
-                self.add_permissions(add_permissions)
-
-            if uid not in self.storage_permissions:
-                self.storage_permissions[uid] = set()
-            if add_storage_permission:
-                self.add_storage_permission(
-                    StoragePermission(
-                        uid=uid,
-                        server_uid=self.server_uid,
-                    )
-                )
-            return obj
-        else:
+        if not can_write:
             raise SyftException(public_message=f"Permission: {write_permission} denied")
 
-    @as_result(SyftException)
-    def take_ownership(self, uid: UID, credentials: SyftVerifyKey) -> SyftSuccess:
-        # first person using this UID can claim ownership
-        if uid not in self.permissions and uid not in self.data:
-            self.add_permissions(
-                [
-                    ActionObjectOWNER(uid=uid, credentials=credentials),
-                    ActionObjectWRITE(uid=uid, credentials=credentials),
-                    ActionObjectREAD(uid=uid, credentials=credentials),
-                    ActionObjectEXECUTE(uid=uid, credentials=credentials),
-                ]
+        self._set_data_and_keys(
+            store_query_key=store_query_key,
+            unique_query_keys=unique_query_keys,
+            searchable_query_keys=searchable_query_keys,
+            obj=obj,
+        )
+        self.data[uid] = obj
+
+        # Add default permissions
+        if uid not in self.permissions:
+            self.permissions[uid] = set()
+
+        self.add_permission(ActionObjectREAD(uid=uid, credentials=credentials))
+
+        if add_permissions is not None:
+            self.add_permissions(add_permissions)
+
+        if uid not in self.storage_permissions:
+            self.storage_permissions[uid] = set()
+
+        if add_storage_permission:
+            self.add_storage_permission(
+                StoragePermission(
+                    uid=uid,
+                    server_uid=self.server_uid,
+                )
             )
-            return SyftSuccess(message=f"Ownership of ID: {uid} taken.")
-        raise SyftException(public_message=f"UID: {uid} already owned.")
+        return obj
+
+    @as_result(SyftException)
+    def take_ownership(self, uid: UID, credentials: SyftVerifyKey) -> bool:
+        if uid in self.permissions or uid in self.data:
+            raise SyftException(public_message=f"UID: {uid} already owned.")
+
+        # The first person using this UID can claim ownership
+        self.add_permissions(
+            [
+                ActionObjectOWNER(uid=uid, credentials=credentials),
+                ActionObjectWRITE(uid=uid, credentials=credentials),
+                ActionObjectREAD(uid=uid, credentials=credentials),
+                ActionObjectEXECUTE(uid=uid, credentials=credentials),
+            ]
+        )
+
+        return True
 
     def add_permission(self, permission: ActionObjectPermission) -> None:
         permissions = self.permissions[permission.uid]
@@ -347,7 +352,6 @@ class KeyValueStorePartition(StorePartition):
     def get_all_storage_permissions(self) -> dict[UID, set[UID]]:
         return self.storage_permissions
 
-    # TODO ERROR:
     @as_result(SyftException)
     def _all(
         self,

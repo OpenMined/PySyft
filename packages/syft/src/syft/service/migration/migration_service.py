@@ -11,6 +11,7 @@ from ...types.blob_storage import BlobStorageEntry
 from ...types.errors import SyftException
 from ...types.result import as_result
 from ...types.syft_object import SyftObject
+from ...types.syft_object_registry import SyftObjectRegistry
 from ..action.action_object import Action
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
@@ -88,14 +89,11 @@ class MigrationService(AbstractService):
                 migration_state = self.get_state(context, canonical_name).unwrap(
                     public_message=f"Failed to get migration state for {canonical_name}."
                 )
+                if int(migration_state.current_version) != int(
+                    migration_state.latest_version
+                ):
+                    klasses_to_be_migrated.append(object_type)
             except NotFoundException:
-                migration_state = None
-            if (
-                migration_state is not None
-                and migration_state.current_version != migration_state.latest_version
-            ):
-                klasses_to_be_migrated.append(object_type)
-            else:
                 self.register_migration_state(
                     context,
                     current_version=object_version,
@@ -323,9 +321,11 @@ class MigrationService(AbstractService):
             )
             # Exception from the new Error Handling pattern, no need to change
             if result.is_err():
-                if (
-                    ignore_existing and "Duplication Key Error" in result.value
-                ):  # TODO ERROR: does this check work?
+                # TODO: subclass a DuplicationKeyError
+                if ignore_existing and (
+                    "Duplication Key Error" in result.err()._private_message
+                    or "Duplication Key Error" in result.err().public_message
+                ):
                     print(
                         f"{type(migrated_object)} #{migrated_object.id} already exists"
                     )
@@ -373,11 +373,15 @@ class MigrationService(AbstractService):
         migrated_objects = []
         for klass, objects in migration_objects.items():
             canonical_name = klass.__canonical_name__
+            latest_version = SyftObjectRegistry.get_latest_version(canonical_name)
+
             # Migrate data for objects in document store
-            print(f"Migrating data for: {canonical_name} table.")
+            print(
+                f"Migrating data for: {canonical_name} table to version {latest_version}"
+            )
             for object in objects:
                 try:
-                    migrated_value = object.migrate_to(klass.__version__, context)
+                    migrated_value = object.migrate_to(latest_version, context)
                     migrated_objects.append(migrated_value)
                 except Exception:
                     raise SyftException(
@@ -447,7 +451,7 @@ class MigrationService(AbstractService):
 
         action_object_pending_migration = self._find_klasses_pending_for_migration(
             context=context, object_types=action_object_types
-        )
+        ).unwrap()
         result_dict: dict[type[SyftObject], list[SyftObject]] = defaultdict(list)
         action_store = context.server.action_store
         action_store_objects = action_store._all(

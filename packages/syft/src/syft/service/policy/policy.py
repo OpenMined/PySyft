@@ -298,6 +298,15 @@ class Constant(PolicyRule):
                 return obj.syft_action_data
         return self.val
 
+    def _get_dict_for_user_code_repr(self) -> dict[str, Any]:
+        return self._coll_repr_()
+
+    def _coll_repr_(self) -> dict[str, Any]:
+        return {
+            "klass": self.klass.__qualname__,
+            "val": str(self.val),
+        }
+
 
 @serializable()
 class UserOwned(PolicyRule):
@@ -386,7 +395,7 @@ class InputPolicy(Policy):
         context: AuthedServiceContext,
         usr_input_kwargs: dict,
         code_item_id: UID,
-    ) -> InputPolicyValidEnum:
+    ) -> bool:
         raise NotImplementedError
 
     def filter_kwargs(
@@ -523,7 +532,6 @@ class MixedInputPolicy(InputPolicy):
             pass  # just grab the first one
         return matches.pop()
 
-    @as_result(SyftException)
     def filter_kwargs(  # type: ignore[override]
         self,
         kwargs: dict[str, UID],
@@ -554,23 +562,20 @@ class MixedInputPolicy(InputPolicy):
             )
         return res
 
-    @as_result(SyftException)
     def _is_valid(  # type: ignore[override]
         self,
         context: AuthedServiceContext,
         usr_input_kwargs: dict,
         code_item_id: UID,
     ) -> bool:
-        print("MixedInputPolicy _is_valid")
         filtered_input_kwargs = self.filter_kwargs(
             kwargs=usr_input_kwargs,
             context=context,
             code_item_id=code_item_id,
-        ).unwrap()
-
-        print(f"filtered_input_kwargs: {type(filtered_input_kwargs)}")
+        )
 
         expected_input_kwargs = set()
+
         for _inp_kwargs in self.inputs.values():
             for k in _inp_kwargs.keys():
                 if k not in usr_input_kwargs:
@@ -581,10 +586,12 @@ class MixedInputPolicy(InputPolicy):
 
         permitted_input_kwargs = list(filtered_input_kwargs.keys())
         not_approved_kwargs = set(expected_input_kwargs) - set(permitted_input_kwargs)
+
         if len(not_approved_kwargs) > 0:
             raise SyftException(
                 public_message=f"Input arguments: {not_approved_kwargs} to the function are not approved yet."
             )
+
         return True
 
 
@@ -670,14 +677,12 @@ class ExactMatch(InputPolicy):
     __version__ = SYFT_OBJECT_VERSION_1
 
     # TODO: Improve exception handling here
-    @as_result(SyftException)
     def filter_kwargs(  # type: ignore
         self,
         kwargs: dict[Any, Any],
         context: AuthedServiceContext,
         code_item_id: UID,
     ) -> dict[Any, Any]:
-        print("filter_kwargs for ExactMatch")
         allowed_inputs = allowed_ids_only(
             allowed_inputs=self.inputs, kwargs=kwargs, context=context
         ).unwrap()
@@ -688,7 +693,6 @@ class ExactMatch(InputPolicy):
             context=context,
         ).unwrap()
 
-    @as_result(SyftException)
     def _is_valid(  # type: ignore
         self,
         context: AuthedServiceContext,
@@ -699,7 +703,7 @@ class ExactMatch(InputPolicy):
             kwargs=usr_input_kwargs,
             context=context,
             code_item_id=code_item_id,
-        ).unwrap()
+        )
 
         expected_input_kwargs = set()
         for _inp_kwargs in self.inputs.values():
@@ -776,15 +780,11 @@ class OutputPolicyExecuteCount(OutputPolicy):
 
     @as_result(SyftException)
     def count(self) -> int:
-        api = APIRegistry._api_for(
-            self.syft_server_location, self.syft_client_verify_key
-        ).unwrap()
+        api = self.get_api()
         output_history = api.services.output.get_by_output_policy_id(self.id)
         return len(output_history)
 
-    @as_result(SyftException)
-    def _is_valid(self, context: AuthedServiceContext) -> SyftSuccess:
-        print("called _is_valid")
+    def _is_valid(self, context: AuthedServiceContext) -> bool:
         output_service = context.server.get_service("outputservice")
         output_history = output_service.get_by_output_policy_id(
             context, self.id
@@ -792,13 +792,8 @@ class OutputPolicyExecuteCount(OutputPolicy):
 
         execution_count = len(output_history)
 
-        print(f"execution_count: {execution_count}, limit: {self.limit}")
-
         if execution_count < self.limit:
-            return SyftSuccess(
-                message=f"Policy is still valid. count: {execution_count} < limit: {self.limit}",
-                value=True,
-            )
+            return True
 
         raise SyftException(
             public_message=f"Policy is no longer valid. count: {execution_count} >= limit: {self.limit}"

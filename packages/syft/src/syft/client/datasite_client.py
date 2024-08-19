@@ -23,12 +23,14 @@ from ..service.code_history.code_history import UsersCodeHistoriesDict
 from ..service.dataset.dataset import Contributor
 from ..service.dataset.dataset import CreateAsset
 from ..service.dataset.dataset import CreateDataset
+from ..service.dataset.dataset import _check_asset_must_contain_mock
 from ..service.migration.object_migration_state import MigrationData
+from ..service.response import SyftError
 from ..service.response import SyftSuccess
-from ..service.response import SyftWarning
 from ..service.sync.diff_state import ResolvedSyncState
 from ..service.sync.sync_state import SyncState
 from ..service.user.roles import Roles
+from ..service.user.user import ServiceRole
 from ..service.user.user import UserView
 from ..types.blob_storage import BlobFile
 from ..types.errors import SyftException
@@ -102,6 +104,8 @@ class DatasiteClient(SyftClient):
             raise SyftException(public_message=f"can't get user service for {self}")
 
         user = self.users.get_current_user()
+        if user.role not in [ServiceRole.DATA_OWNER, ServiceRole.ADMIN]:
+            return SyftError(message="You don't have permission to upload datasets.")
         dataset = add_default_uploader(user, dataset)
 
         for i in range(len(dataset.asset_list)):
@@ -140,13 +144,13 @@ class DatasiteClient(SyftClient):
                         syft_server_location=self.id,
                         syft_client_verify_key=self.verify_key,
                     )
-                    res = twin._save_to_blob_storage(allow_empty=contains_empty)
+                    twin._save_to_blob_storage(allow_empty=contains_empty).unwrap()
                 except Exception as e:
                     tqdm.write(f"Failed to create twin for {asset.name}. {e}")
-                    raise SyftException(public_message=f"Failed to create twin. {e}")
+                    raise SyftException(
+                        public_message=f"Failed to create twin. {e}"
+                    ) from e
 
-                if isinstance(res, SyftWarning):
-                    logger.debug(res.message)
                 try:
                     self.api.services.action.set(
                         twin, ignore_detached_objs=contains_empty
@@ -164,8 +168,15 @@ class DatasiteClient(SyftClient):
                 pbar.update(1)
 
         dataset.mb_size = dataset_size
+        _check_asset_must_contain_mock(dataset.asset_list)
         dataset.check()
         return self.api.services.dataset.add(dataset=dataset)
+
+    def forgot_password(self, email: str) -> SyftSuccess | SyftError:
+        return self.connection.forgot_password(email=email)
+
+    def reset_password(self, token: str, new_password: str) -> SyftSuccess | SyftError:
+        return self.connection.reset_password(token=token, new_password=new_password)
 
     def refresh(self) -> None:
         if self.credentials:
@@ -184,7 +195,12 @@ class DatasiteClient(SyftClient):
 
     def apply_state(self, resolved_state: ResolvedSyncState) -> SyftSuccess:
         if len(resolved_state.delete_objs):
-            raise NotImplementedError("TODO implement delete")
+            prompt_warning_message(
+                message=(
+                    "Attempted to delete objects by syncing. "
+                    "This is not currently supported, objects must be deleted manually."
+                )
+            )
         items = resolved_state.create_objs + resolved_state.update_objs
 
         action_objects = [x for x in items if isinstance(x, ActionObject)]

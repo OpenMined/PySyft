@@ -34,7 +34,7 @@ class SyftWorkerImageStash(NewBaseUIDStoreStash):
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
 
-    @as_result(StashException, NotFoundException)
+    @as_result(SyftException, StashException, NotFoundException)
     def set(  # type: ignore
         self,
         credentials: SyftVerifyKey,

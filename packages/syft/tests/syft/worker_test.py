@@ -20,7 +20,6 @@ from syft.service.action.action_object import ActionObject
 from syft.service.action.action_store import DictActionStore
 from syft.service.context import AuthedServiceContext
 from syft.service.queue.queue_stash import QueueItem
-from syft.service.response import SyftAttributeError
 from syft.service.response import SyftError
 from syft.service.user.user import User
 from syft.service.user.user import UserCreate
@@ -275,26 +274,24 @@ def test_worker_handle_api_request(
         server_uid=server_uid, path=path, args=[], kwargs=kwargs, blocking=blocking
     )
     # should fail on unsigned requests
-    result = worker_with_proc.handle_api_call(api_call).message.data
-    assert isinstance(result, SyftError)
+    with pytest.raises(SyftException):
+        result = worker_with_proc.handle_api_call(api_call).message.data
 
     signed_api_call = api_call.sign(root_client.api.signing_key)
 
     # should work on signed api calls
     result = worker_with_proc.handle_api_call(signed_api_call).message.data
-    assert not isinstance(result, SyftError)
 
     # Guest client should not have access to the APIs
     guest_signed_api_call = api_call.sign(root_client.api.signing_key)
     result = worker_with_proc.handle_api_call(guest_signed_api_call).message
-    assert not isinstance(result, SyftAttributeError)
 
     # should fail on altered requests
     bogus_api_call = signed_api_call
     bogus_api_call.serialized_message += b"hacked"
 
-    result = worker_with_proc.handle_api_call(bogus_api_call).message.data
-    assert isinstance(result, SyftError)
+    with pytest.raises(SyftException):
+        result = worker_with_proc.handle_api_call(bogus_api_call).message.data
 
 
 @pytest.mark.parametrize(

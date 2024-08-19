@@ -68,7 +68,7 @@ class LogService(AbstractService):
 
     @service_method(path="log.get_stderr", name="get_stderr", roles=ADMIN_ROLE_LEVEL)
     def get_stderr(self, context: AuthedServiceContext, uid: UID) -> str:
-        result = self.get(context, uid).unwrap()
+        result = self.get(context, uid)
         return result.stderr
 
     @service_method(path="log.restart", name="restart", roles=DATA_SCIENTIST_ROLE_LEVEL)

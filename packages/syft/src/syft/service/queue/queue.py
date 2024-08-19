@@ -19,8 +19,10 @@ from ...store.document_store import NewBaseStash
 from ...types.datetime import DateTime
 from ...types.errors import SyftException
 from ...types.uid import UID
+from ..action.action_object import ActionObject
 from ..job.job_stash import Job
 from ..job.job_stash import JobStatus
+from ..response import SyftError
 from ..response import SyftSuccess
 from ..worker.worker_stash import WorkerStash
 from .base_queue import AbstractMessageHandler
@@ -182,6 +184,7 @@ def handle_message_multiprocessing(
 
     # in case of error
     result = None
+
     try:
         role = worker.get_role_for_credentials(credentials=credentials)
 
@@ -206,11 +209,14 @@ def handle_message_multiprocessing(
         result = call_method(context, *queue_item.args, **queue_item.kwargs)
         status = Status.COMPLETED
         job_status = JobStatus.COMPLETED
-
     except Exception as e:
         status = Status.ERRORED
         job_status = JobStatus.ERRORED
-        logger.error("Unhandled error in handle_message_multiprocessing", exc_info=e)
+        logger.exception("Unhandled error in handle_message_multiprocessing")
+        error_msg = e.public_message if isinstance(e, SyftException) else str(e)
+        result = ActionObject.from_obj(
+            SyftError(message=f"Unhandled error: {error_msg}")
+        )
 
     queue_item.result = result
     queue_item.resolved = True
@@ -314,5 +320,5 @@ class APICallMessageHandler(AbstractMessageHandler):
             )
             process.start()
             job_item.job_pid = process.pid
-            worker.job_stash.set_result(credentials, job_item)
+            worker.job_stash.set_result(credentials, job_item).unwrap()
             process.join()

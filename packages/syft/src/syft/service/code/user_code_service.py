@@ -60,6 +60,7 @@ class IsExecutionAllowedEnum(str, Enum):
     ALLOWED = "Execution allowed"
     NO_PERMISSION = "Execution denied: You do not have permission to execute code"
     NOT_APPROVED = "Execution denied: Your code is waiting for approval"
+    OUTPUT_POLICY_NONE = "Execution denied: Output policy is not set"
     INVALID_OUTPUT_POLICY = "Execution denied: Output policy is not valid"
     OUTPUT_POLICY_NOT_APPROVED = "Execution denied: Output policy not approved"
 
@@ -376,10 +377,12 @@ class UserCodeService(AbstractService):
         elif not code.is_output_policy_approved(context):
             return IsExecutionAllowedEnum.OUTPUT_POLICY_NOT_APPROVED
 
-        policy_is_valid = (
-            output_policy is not None and output_policy._is_valid(context).unwrap()
-        )
-        if not policy_is_valid:
+        if output_policy is None:
+            return IsExecutionAllowedEnum.OUTPUT_POLICY_NONE
+
+        try:
+            output_policy._is_valid(context)
+        except Exception:
             return IsExecutionAllowedEnum.INVALID_OUTPUT_POLICY
 
         return IsExecutionAllowedEnum.ALLOWED
@@ -402,7 +405,6 @@ class UserCodeService(AbstractService):
         for k, v in kwargs.items():
             if isinstance(v, UID):
                 # Jobs have UID kwargs instead of ActionObject
-                # FIX: action_service will need to be unwrapped
                 v = action_service.get(context, uid=v)
             if (
                 isinstance(v, ActionObject)
@@ -518,16 +520,16 @@ class UserCodeService(AbstractService):
                 if not status.approved:
                     raise SyftException(public_message=status.get_status_message())
 
-                output_policy_is_valid = (
-                    output_policy._is_valid(context).unwrap()
-                    if output_policy
-                    else OutputPolicyValidEnum.NOT_APPROVED
-                )
+                try:
+                    output_policy_is_valid = (
+                        output_policy._is_valid(context)
+                        if output_policy
+                        else OutputPolicyValidEnum.NOT_APPROVED
+                    )
+                except Exception:
+                    output_policy_is_valid = False
 
-                if (
-                    output_policy_is_valid is not OutputPolicyValidEnum.VALID
-                    or code.is_l0_deployment
-                ):
+                if output_policy_is_valid or code.is_l0_deployment:
                     if len(output_history) > 0 and not skip_read_cache:
                         last_executed_output = output_history[-1]
                         # Check if the inputs of the last executed output match
@@ -542,9 +544,9 @@ class UserCodeService(AbstractService):
                                 context,
                                 usr_input_kwargs=kwarg2id,
                                 code_item_id=code.id,
-                            ).unwrap()
+                            )
 
-                            if inp_policy_validation is InputPolicyValidEnum.INVALID:
+                            if not inp_policy_validation:
                                 raise SyftException(
                                     # TODO: Print what's inside
                                     public_message=InputPolicyValidEnum.INVALID
@@ -564,6 +566,7 @@ class UserCodeService(AbstractService):
                             # Skip output policy warning in L0 setup;
                             # admin overrides policy checks.
                             output_policy_message = output_policy_is_valid.value
+
                         return CachedSyftObject(
                             result=outputs,
                             error_msg=output_policy_message,
@@ -585,6 +588,7 @@ class UserCodeService(AbstractService):
         action_obj: ActionObject | TwinObject = action_service._user_code_execute(
             context, code, kwarg2id, result_id
         ).unwrap()
+
         result = action_service.set_result_to_store(
             action_obj, context, code.get_output_policy(context)
         ).unwrap()

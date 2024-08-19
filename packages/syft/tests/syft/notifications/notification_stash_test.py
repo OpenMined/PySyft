@@ -20,6 +20,7 @@ from syft.service.notification.notifications import NotificationExpiryStatus
 from syft.service.notification.notifications import NotificationStatus
 from syft.store.document_store_errors import StashException
 from syft.types.datetime import DateTime
+from syft.types.errors import SyftException
 from syft.types.result import as_result
 from syft.types.uid import UID
 
@@ -282,12 +283,12 @@ def test_update_notification_status(root_verify_key, document_store) -> None:
     random_verify_key = SyftSigningKey.generate().verify_key
     test_stash = NotificationStash(store=document_store)
 
-    with pytest.raises(StashException) as exc:
+    with pytest.raises(SyftException) as exc:
         test_stash.update_notification_status(
             root_verify_key, uid=random_uid, status=NotificationStatus.READ
         ).unwrap()
 
-    assert exc.type is StashException
+    assert exc.type is SyftException
     assert exc.value.public_message
 
     mock_notification = add_mock_notification(
@@ -306,14 +307,14 @@ def test_update_notification_status(root_verify_key, document_store) -> None:
     assert result.status == NotificationStatus.READ
 
     notification_expiry_status_auto = NotificationExpiryStatus(0)
-    with pytest.raises(StashException) as exc:
+    with pytest.raises(SyftException) as exc:
         test_stash.update_notification_status(
             root_verify_key,
             uid=mock_notification.id,
             status=notification_expiry_status_auto,
         ).unwrap()
 
-    assert exc.type is StashException
+    assert exc.type is SyftException
     assert exc.value.public_message
 
 

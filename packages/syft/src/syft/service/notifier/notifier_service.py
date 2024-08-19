@@ -1,4 +1,5 @@
 # stdlib
+from datetime import datetime
 import logging
 
 # third party
@@ -13,11 +14,14 @@ from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
 from ...types.result import as_result
 from ..context import AuthedServiceContext
+from ..notification.email_templates import PasswordResetTemplate
 from ..notification.notifications import Notification
 from ..response import SyftSuccess
 from ..service import AbstractService
 from .notifier import NotificationPreferences
 from .notifier import NotifierSettings
+from .notifier import UserNotificationActivity
+from .notifier_enums import EMAIL_TYPES
 from .notifier_enums import NOTIFIERS
 from .notifier_stash import NotifierStash
 
@@ -167,6 +171,10 @@ class NotifierService(AbstractService):
                 public_message="You must provide a sender email address to enable notifications."
             )
 
+        # If email_rate_limit isn't defined yet.
+        if not notifier.email_rate_limit:
+            notifier.email_rate_limit = {PasswordResetTemplate.__name__: 3}
+
         if email_sender:
             try:
                 EmailStr._validate(email_sender)
@@ -253,17 +261,19 @@ class NotifierService(AbstractService):
         try:
             # Create a new NotifierStash since its a static method.
             notifier_stash = NotifierStash(store=server.document_store)
-            notifier = notifier_stash.get(server.signing_key.verify_key).unwrap()
+            should_update = False
 
             # Get the notifier
             # If notifier doesn't exist, create a new one
-            if not notifier:
+            try:
+                notifier = notifier_stash.get(server.signing_key.verify_key).unwrap()
+                should_update = True
+            except NotFoundException:
                 notifier = NotifierSettings()
                 notifier.active = False  # Default to False
 
             # TODO: this should be a method in NotifierSettings
             if email_username and email_password:
-                # TODO: rewrite with unwrap
                 validation_result = notifier.validate_email_credentials(
                     username=email_username,
                     password=email_password,
@@ -272,10 +282,9 @@ class NotifierService(AbstractService):
                 )
 
                 sender_not_set = not email_sender and not notifier.email_sender
-                if validation_result.is_err() or sender_not_set:
-                    logger.error(
-                        f"Notifier validation error - {validation_result.err()}.",
-                    )
+
+                if not validation_result or sender_not_set:
+                    logger.error("Notifier validation error")
                     notifier.active = False
                 else:
                     notifier.email_password = email_password
@@ -283,15 +292,38 @@ class NotifierService(AbstractService):
                     notifier.email_sender = email_sender
                     notifier.email_server = smtp_host
                     notifier.email_port = smtp_port
+                    # Default daily email rate limit per user
+                    notifier.email_rate_limit = {PasswordResetTemplate.__name__: 3}
                     notifier.active = True
 
-            notifier_stash.set(server.signing_key.verify_key, notifier).unwrap()
-            return SyftSuccess(message="Notifier initialized successfully")
-
+            if should_update:
+                notifier_stash.update(
+                    credentials=server.signing_key.verify_key, settings=notifier
+                ).unwrap()
+            else:
+                notifier_stash.set(server.signing_key.verify_key, notifier).unwrap()
+            return SyftSuccess(
+                message="Notifier initialized successfully", value=notifier
+            )
         except Exception as e:
             raise SyftException.from_exception(
-                public_message=f"Error initializing notifier.{e}", exc=e
+                e, public_message=f"Error initializing notifier. {e}"
             )
+
+    def set_email_rate_limit(
+        self, context: AuthedServiceContext, email_type: EMAIL_TYPES, daily_limit: int
+    ) -> SyftSuccess:
+        notifier = self.stash.get(context.credentials)
+
+        if notifier.is_err():
+            raise SyftException(public_message="Couldn't set the email rate limit.")
+
+        notifier = notifier.ok()
+
+        notifier.email_rate_limit[email_type.value] = daily_limit
+        self.stash.update(credentials=context.credentials, settings=notifier)
+
+        return SyftSuccess(message="Email rate limit updated!")
 
     # This is not a public API.
     # This method is used by other services to dispatch notifications internally
@@ -319,7 +351,49 @@ class NotifierService(AbstractService):
             )
 
         # If notifier is active
-        if notifier.active:
+        if notifier.active and notification.email_template is not None:
+            logging.debug("Checking user email activity")
+            if notifier.email_activity.get(notification.email_template.__name__, None):
+                user_activity = notifier.email_activity[
+                    notification.email_template.__name__
+                ].get(notification.to_user_verify_key, None)
+                # If there's no user activity
+                if user_activity is None:
+                    notifier.email_activity[notification.email_template.__name__][
+                        notification.to_user_verify_key, None
+                    ] = UserNotificationActivity(count=1, date=datetime.now())
+                else:  # If there's a previous user activity
+                    current_state: UserNotificationActivity = notifier.email_activity[
+                        notification.email_template.__name__
+                    ][notification.to_user_verify_key]
+                    date_refresh = abs(datetime.now() - current_state.date).days > 1
+
+                    limit = notifier.email_rate_limit.get(
+                        notification.email_template.__name__, 0
+                    )
+                    still_in_limit = current_state.count < limit
+                    # Time interval reseted.
+                    if date_refresh:
+                        current_state.count = 1
+                        current_state.date = datetime.now()
+                    # Time interval didn't reset yet.
+                    elif still_in_limit or not limit:
+                        current_state.count += 1
+                        current_state.date = datetime.now()
+                    else:
+                        raise SyftException(
+                            public_message="Couldn't send the email. You have surpassed the"
+                            + " email threshold limit. Please try again later."
+                        )
+            else:
+                notifier.email_activity[notification.email_template.__name__] = {
+                    notification.to_user_verify_key: UserNotificationActivity(
+                        count=1, date=datetime.now()
+                    )
+                }
+
+            self.stash.update(credentials=admin_key, settings=notifier).unwrap()
+
             notifier.send_notifications(
                 context=context, notification=notification
             ).unwrap()

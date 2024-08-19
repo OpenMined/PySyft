@@ -142,6 +142,36 @@ class SyftBaseObject(pydantic.BaseModel, SyftHashableObject):
         self.syft_server_location = server_uid
         self.syft_client_verify_key = credentials
 
+    def get_api(
+        self,
+        server_uid: UID | None = None,
+        user_verify_key: SyftVerifyKey | None = None,
+    ):
+        if server_uid is None:
+            server_uid = self.syft_server_location
+
+        if user_verify_key is None:
+            user_verify_key = self.syft_client_verify_key
+
+        # relative
+        from ..client.api import APIRegistry
+
+        return APIRegistry.api_for(
+            server_uid=server_uid,
+            user_verify_key=user_verify_key,
+        ).unwrap(
+            public_message=f"Can't access Syft API using this object. You must login to {self.syft_server_location}"
+        )
+
+    def get_api_wrapped(self):
+        # relative
+        from ..client.api import APIRegistry
+
+        return APIRegistry.api_for(
+            server_uid=self.syft_server_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+
 
 class Context(SyftBaseObject):
     __canonical_name__ = "Context"
@@ -343,6 +373,11 @@ class BaseDateTime(SyftObjectVersioned):
 
     def __lt__(self, other: Self) -> bool:
         return self.utc_timestamp < other.utc_timestamp
+
+
+EXCLUDED_FROM_SIGNATURE = set(
+    DYNAMIC_SYFT_ATTRIBUTES + ["created_date", "updated_date", "deleted_date"]
+)
 
 
 @serializable()
@@ -676,7 +711,7 @@ class SyftObject(SyftObjectVersioned):
         # relative
         from ..client.api import APIRegistry
 
-        return APIRegistry._api_for(
+        return APIRegistry.api_for(
             self.syft_server_location, self.syft_client_verify_key
         ).unwrap()
 
@@ -776,6 +811,7 @@ class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
 
 def attach_attribute_to_syft_object(result: Any, attr_dict: dict[str, Any]) -> None:
     iterator: Iterable
+
     if isinstance(result, OkErr):
         iterator = (result._value,)
     elif isinstance(result, Mapping):

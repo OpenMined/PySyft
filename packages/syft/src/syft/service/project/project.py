@@ -37,8 +37,6 @@ from ...types.transforms import TransformContext
 from ...types.transforms import rename
 from ...types.transforms import transform
 from ...types.uid import UID
-from ...util import options
-from ...util.colors import SURFACE
 from ...util.decorators import deprecated
 from ...util.markdown import markdown_as_class_with_fields
 from ...util.util import full_name_with_qualname
@@ -701,12 +699,7 @@ class Project(SyftObject):
 
     def _repr_html_(self) -> Any:
         return (
-            f"""
-            <style>
-            .syft-project {{color: {SURFACE[options.color_theme]};}}
-            </style>
-            """
-            + "<div class='syft-project'>"
+            "<div class='syft-project'>"
             + f"<h3>{self.name}</h3>"
             + f"<p>{self.description}</p>"
             + f"<p><strong>Created by: </strong>{self.username} ({self.created_by})</p>"
@@ -1174,12 +1167,7 @@ class ProjectSubmit(SyftObject):
 
     def _repr_html_(self) -> Any:
         return (
-            f"""
-            <style>
-            .syft-project-create {{color: {SURFACE[options.color_theme]};}}
-            </style>
-            """
-            + "<div class='syft-project-create'>"
+            "<div class='syft-project-create'>"
             + f"<h3>{self.name}</h3>"
             + f"<p>{self.description}</p>"
             + f"<p><strong>Created by: </strong>{self.username} ({self.created_by})</p>"
@@ -1260,11 +1248,12 @@ class ProjectSubmit(SyftObject):
 
     def _pre_submit_checks(self, clients: list[SyftClient]) -> bool:
         try:
-            # Check if the user can create projects
             for client in clients:
-                _ = client.api.services.project.can_create_project()
+                client.api.services.project.can_create_project()
         except Exception:
-            raise SyftException("Only Data Scientists can create projects")
+            raise SyftException(
+                public_message="Only Data Scientists can create projects"
+            )
 
         return True
 

@@ -474,12 +474,12 @@ class TwinAPIEndpoint(SyncableSyftObject):
             Any: The result of the executed code.
         """
         if self.private_function is None:
-            return SyftError(message="No private code available")
+            raise SyftException(public_message="No private code available")
 
         if self.has_permission(context):
             return self.exec_code(self.private_function, context, *args, **kwargs)
 
-        return SyftError(message="You're not allowed to run this code.")
+        raise SyftException(public_message="You're not allowed to run this code.")
 
     def get_user_client_from_server(self, context: AuthedServiceContext) -> SyftClient:
         # get a user client
@@ -488,9 +488,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
         signing_key_for_verify_key = context.server.get_service_method(
             UserService.signing_key_for_verify_key
         )
-        private_key = signing_key_for_verify_key(
-            context=context, verify_key=context.credentials
-        )
+        private_key = signing_key_for_verify_key(context.credentials)
         signing_key = private_key.signing_key
         user_client.credentials = signing_key
         return user_client
@@ -538,7 +536,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
                 self.private_function = code  # type: ignore
 
             api_service = context.server.get_service("apiservice")
-            upsert_result = api_service.stash.upsert(
+            api_service.stash.upsert(
                 context.server.get_service("userservice").admin_verify_key(), self
             ).unwrap()
 

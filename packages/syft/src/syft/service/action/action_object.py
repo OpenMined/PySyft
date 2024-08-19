@@ -22,11 +22,9 @@ from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import field_validator
 from pydantic import model_validator
-from result import Err
 from typing_extensions import Self
 
 # relative
-from ...client.api import APIRegistry
 from ...client.api import SyftAPI
 from ...client.api import SyftAPICall
 from ...client.client import SyftClient
@@ -40,10 +38,12 @@ from ...store.linked_obj import LinkedObject
 from ...types.base import SyftBaseModel
 from ...types.datetime import DateTime
 from ...types.errors import SyftException
+from ...types.result import Err
 from ...types.result import as_result
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftBaseObject
 from ...types.syft_object import SyftObject
+from ...types.syft_object_registry import SyftObjectRegistry
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
@@ -135,11 +135,8 @@ class Action(SyftObject):
 
     @property
     def job_display_name(self) -> str:
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if self.user_code_id is not None and api is not None:
+        if self.user_code_id is not None:
+            api = self.get_api()
             user_code = api.services.code.get_by_id(self.user_code_id)
             return user_code.service_func_name
         else:
@@ -326,6 +323,8 @@ passthrough_attrs = [
     "__table_coll_widths__",
     "_clear_cache",
     "_set_reprs",
+    "get_api",
+    "get_api_wrapped",
 ]
 dont_wrap_output_attrs = [
     "__repr__",
@@ -351,6 +350,8 @@ dont_wrap_output_attrs = [
     "__table_coll_widths__",
     "_clear_cache",
     "_set_reprs",
+    "get_api",
+    "get_api_wrapped",
 ]
 dont_make_side_effects = [
     "__repr_attrs__",
@@ -374,6 +375,8 @@ dont_make_side_effects = [
     "__table_coll_widths__",
     "_clear_cache",
     "_set_reprs",
+    "get_api",
+    "get_api_wrapped",
 ]
 action_data_empty_must_run = [
     "__repr__",
@@ -449,8 +452,8 @@ def make_action_side_effect(
             action_type=context.action_type,
         )
         context.action = action
-    except Exception:
-        raise SyftException(public_message="make_action_side_effect failed")
+    except Exception as e:
+        raise SyftException(public_message=f"make_action_side_effect failed {e}") from e
 
     return context, args, kwargs
 
@@ -553,8 +556,9 @@ def send_action_side_effect(
             context.server_uid = action_result.syft_server_uid
             context.result_id = action_result.id
             context.result_twin_type = action_result.syft_twin_type
-    except Exception as _:
-        raise SyftException(public_message="send_action_side_effect failed")
+    except Exception as e:
+        # print(e)
+        raise SyftException(public_message=f"send_action_side_effect failed {e}") from e
     return context, args, kwargs
 
 
@@ -655,6 +659,8 @@ BASE_PASSTHROUGH_ATTRS: list[str] = [
     "__table_coll_widths__",
     "_clear_cache",
     "_set_reprs",
+    "get_api",
+    "get_api_wrapped",
 ]
 
 
@@ -756,21 +762,22 @@ class ActionObject(SyncableSyftObject):
             if blob_storage_read_method is not None:
                 blob_retrieval_object = blob_storage_read_method(
                     uid=self.syft_blob_storage_entry_id
-                ).unwrap(public_message="Could not fetch actionobject data.")
+                )
+
                 # relative
                 from ...store.blob_storage import BlobRetrieval
 
                 if isinstance(blob_retrieval_object, BlobRetrieval):
                     # TODO: This change is temporary to for gateway to be compatible with the new blob storage
                     self.syft_action_data_cache = blob_retrieval_object.read()
-                    self.syft_action_data_type = type(self.syft_action_data)
+                    self.syft_action_data_type = type(self.syft_action_data_cache)
                     return None
                 else:
                     # In the case of gateway, we directly receive the actual object
                     # TODO: The ideal solution would be to stream the object from the datasite through the gateway
                     # Currently , we are just passing the object as it is, which would be fixed later.
                     self.syft_action_data_cache = blob_retrieval_object
-                    self.syft_action_data_type = type(self.syft_action_data)
+                    self.syft_action_data_type = type(self.syft_action_data_cache)
                     return None
             else:
                 raise SyftException(
@@ -787,9 +794,7 @@ class ActionObject(SyncableSyftObject):
         if not isinstance(data, ActionDataEmpty):
             if isinstance(data, BlobFile):
                 if not data.uploaded:
-                    api = APIRegistry.api_for(
-                        self.syft_server_location, self.syft_client_verify_key
-                    )
+                    api = self.get_api()
                     data._upload_to_blobstorage_from_api(api)
             else:
                 get_metadata = from_api_or_context(
@@ -887,21 +892,23 @@ class ActionObject(SyncableSyftObject):
 
     @model_validator(mode="before")
     @classmethod
-    def __check_action_data(cls, values: dict) -> dict:
-        v = values.get("syft_action_data_cache")
-        if values.get("syft_action_data_type", None) is None:
-            values["syft_action_data_type"] = type(v)
-        if not isinstance(v, ActionDataEmpty):
-            if inspect.isclass(v):
-                values["syft_action_data_repr_"] = truncate_str(repr_cls(v))
-            else:
-                values["syft_action_data_repr_"] = truncate_str(
-                    v._repr_markdown_()
-                    if v is not None and hasattr(v, "_repr_markdown_")
-                    else v.__repr__()
-                )
-            values["syft_action_data_str_"] = truncate_str(str(v))
-            values["syft_has_bool_attr"] = hasattr(v, "__bool__")
+    def __check_action_data(cls, values: Any) -> dict:
+        if isinstance(values, dict):
+            v = values.get("syft_action_data_cache")
+            if values.get("syft_action_data_type", None) is None:
+                values["syft_action_data_type"] = type(v)
+            if not isinstance(v, ActionDataEmpty):
+                if inspect.isclass(v):
+                    values["syft_action_data_repr_"] = truncate_str(repr_cls(v))
+                else:
+                    values["syft_action_data_repr_"] = truncate_str(
+                        v._repr_markdown_()
+                        if v is not None and hasattr(v, "_repr_markdown_")
+                        else v.__repr__()
+                    )
+                values["syft_action_data_str_"] = truncate_str(str(v))
+                values["syft_has_bool_attr"] = hasattr(v, "__bool__")
+
         return values
 
     @property
@@ -958,15 +965,11 @@ class ActionObject(SyncableSyftObject):
             )
 
         # relative
-        from ...client.api import APIRegistry
         from ...client.api import SyftAPICall
 
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_uid,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            raise ValueError(f"api is None. You must login to {self.syft_server_uid}")
+        api = self.get_api()
+        # if api is None:
+        #     raise ValueError(f"api is None. You must login to {self.syft_server_uid}")
         kwargs = {"action": action}
         api_call = SyftAPICall(
             server_uid=self.syft_server_uid,
@@ -1015,7 +1018,6 @@ class ActionObject(SyncableSyftObject):
         # 3) it shouldnt send in the first place as it already exists
 
         # relative
-        from ...client.api import APIRegistry
 
         if obj.syft_server_location is None:
             obj.syft_server_location = obj.syft_server_uid
@@ -1035,20 +1037,17 @@ class ActionObject(SyncableSyftObject):
             trace_result = TraceResultRegistry.get_trace_result_for_thread()
             trace_result.result += [action]  # type: ignore
 
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            print(
-                f"failed saving {obj} to blob storage, api is None. You must login to {self.syft_server_location}"
+        api = self.get_api_wrapped().unwrap(
+            public_message=(
+                f"Failed saving {obj} to blob storage, api is None."
+                f" You must login to {self.syft_server_location}."
             )
-            return
-        else:
-            obj._set_obj_location_(api.server_uid, api.signing_key.verify_key)  # type: ignore[union-attr]
+        )
+
+        obj._set_obj_location_(api.server_uid, api.signing_key.verify_key)  # type: ignore[union-attr]
 
         try:
-            _ = api.services.action.execute(action)
+            api.services.action.execute(action)
         except Exception as e:
             print(f"Failed to to store (arg) {obj} to store, {e}")
 
@@ -1243,30 +1242,16 @@ class ActionObject(SyncableSyftObject):
 
     def refresh_object(self, resolve_nested: bool = True) -> ActionObject:
         # relative
-        from ...client.api import APIRegistry
-
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
+        return self.get_api().services.action.get(
+            self.id, resolve_nested=resolve_nested
         )
-        if api is None:
-            raise SyftException(
-                public_message=f"api is None. You must login to {self.syft_server_location}"
-            )
-
-        res = api.services.action.get(self.id, resolve_nested=resolve_nested)
-        return res
 
     def has_storage_permission(self) -> bool:
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-
-        if api is None:
+        try:
+            api = self.get_api()
+            return api.services.action.has_storage_permission(self.id)
+        except Exception:
             return False
-
-        return api.services.action.has_storage_permission(self.id)
 
     def get(self, block: bool = False) -> Any:
         """Get the object from a Syft Client"""
@@ -1380,6 +1365,18 @@ class ActionObject(SyncableSyftObject):
         if id is not None and syft_lineage_id is not None and id != syft_lineage_id.id:
             raise ValueError("UID and LineageID should match")
 
+        # check if the object's type is supported
+        try:
+            SyftObjectRegistry.get_canonical_name_version(syft_action_data)
+        except Exception:
+            obj_type = type(syft_action_data)
+            raise SyftException(
+                public_message=(
+                    f"Error when creating action object for {syft_action_data}.\n"
+                    f"Unsupported data type: '{obj_type.__module__}.{obj_type.__name__}'"
+                )
+            )
+
         action_type = action_type_for_object(syft_action_data)
         action_object = action_type(syft_action_data_cache=syft_action_data)
         action_object.syft_blob_storage_entry_id = syft_blob_storage_entry_id
@@ -1419,12 +1416,8 @@ class ActionObject(SyncableSyftObject):
 
     def wait(self, timeout: int | None = None) -> ActionObject:
         # relative
-        from ...client.api import APIRegistry
 
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
+        api = self.get_api()
         if isinstance(self.id, LineageID):
             obj_id = self.id.id
         else:
@@ -1523,13 +1516,12 @@ class ActionObject(SyncableSyftObject):
         if HOOK_ON_POINTERS not in self.syft_post_hooks__:
             self.syft_post_hooks__[HOOK_ON_POINTERS] = []
 
-        api = APIRegistry.api_for(
-            self.syft_server_location, self.syft_client_verify_key
-        )
+        api = self.get_api_wrapped()
+
         eager_execution_enabled = (
-            api is not None
-            and api.metadata is not None
-            and api.metadata.eager_execution_enabled
+            api.is_ok()
+            and api.unwrap().metadata is not None
+            and api.unwrap().metadata.eager_execution_enabled
         )
 
         self._syft_add_pre_hooks__(eager_execution_enabled)
@@ -1595,7 +1587,8 @@ class ActionObject(SyncableSyftObject):
                     if result.is_ok():
                         context, result_args, result_kwargs = result.ok()
                     else:
-                        msg = result.err().replace("\\n", "\n")
+                        msg = str(result.err())
+                        msg = msg.replace("\\n", "\n")
                         logger.debug(f"Pre-hook failed with {msg}")
 
         if self.is_pointer:
@@ -1606,7 +1599,8 @@ class ActionObject(SyncableSyftObject):
                         if result.is_ok():
                             context, result_args, result_kwargs = result.ok()
                         else:
-                            msg = result.err().replace("\\n", "\n")
+                            msg = str(result.err())
+                            msg = msg.replace("\\n", "\n")
                             logger.debug(f"Pre-hook failed with {msg}")
 
         return context, result_args, result_kwargs

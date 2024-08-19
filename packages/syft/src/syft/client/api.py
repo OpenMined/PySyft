@@ -10,7 +10,6 @@ from inspect import signature
 import types
 from typing import Any
 from typing import TYPE_CHECKING
-from typing import _GenericAlias
 from typing import cast
 from typing import get_args
 from typing import get_origin
@@ -19,10 +18,7 @@ from typing import get_origin
 from nacl.exceptions import BadSignatureError
 from pydantic import BaseModel
 from pydantic import ConfigDict
-from pydantic import EmailStr
 from pydantic import TypeAdapter
-from typeguard import TypeCheckError
-from typeguard import check_type
 
 # relative
 from ..abstract_server import AbstractServer
@@ -45,6 +41,8 @@ from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.service import UserLibConfigRegistry
 from ..service.service import UserServiceConfigRegistry
+from ..service.service import _format_signature
+from ..service.service import _signature_error_message
 from ..service.user.user_roles import ServiceRole
 from ..service.warnings import APIEndpointWarning
 from ..service.warnings import WarningContext
@@ -89,11 +87,13 @@ IPYNB_BACKGROUND_PREFIXES = ["_ipy", "_repr", "__ipython", "__pydantic"]
 
 
 @exclude_from_traceback
-def post_process_result(result: Any, unwrap_on_success: bool = False) -> Any:
+def post_process_result(
+    result: SyftError | SyftSuccess, unwrap_on_success: bool = False
+) -> Any:
     if isinstance(result, SyftError):
         raise SyftException(public_message=result.message, server_trace=result.tb)
 
-    if unwrap_on_success:
+    if unwrap_on_success and isinstance(result, SyftSuccess):
         result = result.unwrap_value()
 
     return result
@@ -107,6 +107,23 @@ def _has_config_dict(t: Any) -> bool:
         (hasattr(t, "__mro__") and BaseModel in t.__mro__)
         or hasattr(t, "__pydantic_config__")
     )
+
+
+_config_dict = ConfigDict(arbitrary_types_allowed=True)
+
+
+def _check_type(v: object, t: Any) -> Any:
+    # TypeAdapter only accepts `config` arg if `t` does not
+    # already contain a ConfigDict
+    # i.e model_config in BaseModel and __pydantic_config__ in
+    # other types.
+    type_adapter = (
+        TypeAdapter(t, config=_config_dict)
+        if not _has_config_dict(t)
+        else TypeAdapter(t)
+    )
+
+    return type_adapter.validate_python(v)
 
 
 class APIRegistry:
@@ -130,13 +147,8 @@ class APIRegistry:
         cls.__api_registry__[key] = api
 
     @classmethod
-    def api_for(cls, server_uid: UID, user_verify_key: SyftVerifyKey) -> SyftAPI | None:
-        key = (server_uid, user_verify_key)
-        return cls.__api_registry__.get(key, None)
-
-    @classmethod
     @as_result(SyftException)
-    def _api_for(cls, server_uid: UID, user_verify_key: SyftVerifyKey) -> SyftAPI:
+    def api_for(cls, server_uid: UID, user_verify_key: SyftVerifyKey) -> SyftAPI:
         key = (server_uid, user_verify_key)
         api_instance = cls.__api_registry__.get(key, None)
 
@@ -173,6 +185,8 @@ class APIEndpoint(SyftObject):
     has_self: bool = False
     pre_kwargs: dict[str, Any] | None = None
     warning: APIEndpointWarning | None = None
+    unwrap_on_success: bool = True
+
 
 
 @serializable()
@@ -320,6 +334,11 @@ class RemoteFunction(SyftObject):
 
         blocking = True
         if "blocking" in kwargs:
+            if path == "api.call_public_in_jobs":
+                raise SyftException(
+                    public_message="The 'blocking' parameter is not allowed for this function"
+                )
+
             blocking = bool(kwargs["blocking"])
             del kwargs["blocking"]
 
@@ -353,6 +372,7 @@ class RemoteFunction(SyftObject):
             [result], kwargs={}, to_latest_protocol=True
         )
         result = result[0]
+
         return post_process_result(result, self.unwrap_on_success)
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
@@ -421,7 +441,10 @@ class RemoteFunction(SyftObject):
                 args=[custom_path],
                 kwargs={},
             )
-            endpoint = self.make_call(api_call=api_call).unwrap()
+
+            endpoint = self.make_call(api_call=api_call)
+            if isinstance(endpoint, SyftSuccess):
+                endpoint = endpoint.value
 
             str_repr = "## API: " + custom_path + "\n"
             if endpoint.description is not None:
@@ -769,6 +792,7 @@ def debox_signed_syftapicall_response(
 
     if not signed_result.is_valid:
         raise SyftException(public_message="The result signature is invalid")
+
     return signed_result.message.data
 
 
@@ -1320,7 +1344,9 @@ def validate_callable_args_and_kwargs(
         for key, value in kwargs.items():
             if key not in signature.parameters:
                 raise SyftException(
-                    public_message=f"""Invalid parameter: `{key}`. Valid Parameters: {list(signature.parameters)}"""
+                    public_message=f"""Invalid parameter: `{key}`. Valid Parameters: {list(signature.parameters)}
+                    f"{_signature_error_message(_format_signature(signature))}"
+"""
                 )
             param = signature.parameters[key]
             if isinstance(param.annotation, str):
@@ -1332,21 +1358,12 @@ def validate_callable_args_and_kwargs(
 
             if t is not inspect.Parameter.empty:
                 try:
-                    config_kw = (
-                        {"config": ConfigDict(arbitrary_types_allowed=True)}
-                        if not _has_config_dict(t)
-                        else {}
-                    )
-
-                    # TypeAdapter only accepts `config` arg if `t` does not
-                    # already contain a ConfigDict
-                    # i.e model_config in BaseModel and __pydantic_config__ in
-                    # other types.
-                    TypeAdapter(t, **config_kw).validate_python(value)
-                except Exception:
+                    _check_type(value, t)
+                except ValueError:
                     _type_str = getattr(t, "__name__", str(t))
                     raise SyftException(
                         public_message=f"`{key}` must be of type `{_type_str}` not `{type(value).__name__}`"
+                        f"{_signature_error_message(_format_signature(signature))}"
                     )
 
             _valid_kwargs[key] = value
@@ -1365,15 +1382,8 @@ def validate_callable_args_and_kwargs(
             msg = None
             try:
                 if t is not inspect.Parameter.empty:
-                    if isinstance(t, _GenericAlias) and type(None) in t.__args__:
-                        for v in t.__args__:
-                            if issubclass(v, EmailStr):
-                                v = str
-                            check_type(arg, v)  # raises Exception
-                            break  # only need one to match
-                    else:
-                        check_type(arg, t)  # raises Exception
-            except TypeCheckError:
+                    _check_type(arg, t)
+            except ValueError:
                 t_arg = type(arg)
                 if (
                     autoreload_enabled()
@@ -1384,7 +1394,11 @@ def validate_callable_args_and_kwargs(
                     pass
                 else:
                     _type_str = getattr(t, "__name__", str(t))
-                    msg = f"Arg is `{arg}`. \nIt must be of type `{_type_str}`, not `{type(arg).__name__}`"
+
+                    msg = (
+                        f"Arg is `{arg}`. \nIt must be of type `{_type_str}`, not `{type(arg).__name__}`\n"
+                        f"{_signature_error_message(_format_signature(signature))}"
+                    )
 
             if msg:
                 raise SyftException(public_message=msg)

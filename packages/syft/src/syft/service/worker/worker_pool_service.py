@@ -422,10 +422,12 @@ class SyftWorkerPoolService(AbstractService):
         """
 
         if not IN_KUBERNETES:
-            raise SyftException(message="Scaling is only supported in Kubernetes mode")
+            raise SyftException(
+                public_message="Scaling is only supported in Kubernetes mode"
+            )
         elif number < 0:
             # zero is a valid scale down
-            raise SyftException(message=f"Invalid number of workers: {number}")
+            raise SyftException(public_message=f"Invalid number of workers: {number}")
 
         worker_pool: Any = self._get_worker_pool(context, pool_id, pool_name).unwrap()
         current_worker_count = len(worker_pool.worker_list)

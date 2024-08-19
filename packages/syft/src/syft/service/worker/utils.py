@@ -651,7 +651,7 @@ def image_push(
                 password=password,
             )
 
-            if "error" in result.logs.lower() or result.exit_code:
+            if "error" in result.logs.lower() or result.has_failed:
                 raise SyftException(
                     public_message=f"Failed to push {full_tag}. "
                     f"Exit code: {result.exit_code}. "

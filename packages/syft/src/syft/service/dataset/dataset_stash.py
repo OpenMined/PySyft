@@ -12,6 +12,7 @@ from ...types.result import as_result
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from .dataset import Dataset
+from .dataset import DatasetUpdate
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
 ActionIDsPartitionKey = PartitionKey(key="action_ids", type_=list[UID])
@@ -46,7 +47,20 @@ class DatasetStash(NewBaseUIDStoreStash):
         has_permission: bool = False,
     ) -> list:
         result = super().get_all(credentials, order_by, has_permission).unwrap()
-        filtered_datasets = [
-            dataset for dataset in result.ok_value if not dataset.to_be_deleted
-        ]
+        filtered_datasets = [dataset for dataset in result if not dataset.to_be_deleted]
         return filtered_datasets
+
+    # FIX: This shouldn't be the update method, it just marks the dataset for deletion
+    @as_result(StashException)
+    def update(
+        self,
+        credentials: SyftVerifyKey,
+        obj: DatasetUpdate,
+        has_permission: bool = False,
+    ) -> Dataset:
+        _obj = self.check_type(obj, DatasetUpdate).unwrap()
+        # FIX: This method needs a revamp
+        qk = self.partition.store_query_key(obj)
+        return self.partition.update(
+            credentials=credentials, qk=qk, obj=_obj, has_permission=has_permission
+        ).unwrap()

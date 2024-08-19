@@ -55,21 +55,25 @@ def _repr_debug_(value: Any) -> str:
     return repr(value)
 
 
-def raise_exception(table_name: str, e: Exception) -> Exception:
-    if "disk I/O error" in str(e):
-        message = f"Error usually related to concurrent writes. {str(e)}"
-        return Exception(message)
+def special_exception_public_message(table_name: str, e: Exception) -> str:
+    error_msg = (
+        str(e)
+        if not isinstance(e, SyftException)
+        else e._private_message or e.public_message
+    )
 
-    if "Cannot operate on a closed database" in str(e):
+    if "disk I/O error" in error_msg:
+        message = f"Error usually related to concurrent writes. {error_msg}"
+        return message
+
+    if "Cannot operate on a closed database" in error_msg:
         message = (
             "Error usually related to calling self.db.close()"
-            + f"before last SQLiteBackingStore.__del__ gets called. {str(e)}"
+            + f"before last SQLiteBackingStore.__del__ gets called. {error_msg}"
         )
-        return Exception(message)
+        return message
 
-    # if its something else other than "table already exists" raise original e
-    if f"table {table_name} already exists" not in str(e):
-        return e
+    return error_msg
 
     return Exception("Table exception")
 
@@ -145,14 +149,16 @@ class SQLiteBackingStore(KeyValueBackingStore):
     def create_table(self) -> None:
         try:
             with self.lock:
+                # TODO: add to backing_store an option for "if_exists_ok"
                 self.cur.execute(
-                    f"create table {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
+                    f"create table if not exists {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
                     + "repr TEXT NOT NULL, value BLOB NOT NULL, "  # nosec
                     + "sqltime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL)"  # nosec
                 )
                 self.db.commit()
         except Exception as e:
-            raise SyftException.from_exception(raise_exception(self.table_name, e))
+            public_message = special_exception_public_message(self.table_name, e)
+            raise SyftException.from_exception(e, public_message=public_message)
 
     @property
     def db(self) -> sqlite3.Connection:
@@ -195,7 +201,8 @@ class SQLiteBackingStore(KeyValueBackingStore):
             try:
                 cursor = self.cur.execute(sql, *args)
             except Exception as e:
-                raise SyftException.from_exception(raise_exception(self.table_name, e))
+                public_message = special_exception_public_message(self.table_name, e)
+                raise SyftException.from_exception(e, public_message=public_message)
 
             # TODO: Which exception is safe to rollback on?
             # we should map out some more clear exceptions that can be returned
@@ -220,9 +227,9 @@ class SQLiteBackingStore(KeyValueBackingStore):
             f"update {self.table_name} set uid = ?, repr = ?, value = ? where uid = ?"  # nosec
         )
         data = _serialize(value, to_bytes=True)
-        _ = self._execute(
+        self._execute(
             insert_sql, [str(key), _repr_debug_(value), data, str(key)]
-        ).unwrap
+        ).unwrap()
 
     def _get(self, key: UID) -> Any:
         select_sql = f"select * from {self.table_name} where uid = ? order by sqltime"  # nosec

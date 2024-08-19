@@ -355,7 +355,7 @@ def test_userservice_update_no_user_exists(
         user_service.update(authed_context, uid=random_uid, **update_user)
 
     assert exc.type == NotFoundException
-    assert str(exc.value) == expected_error_msg
+    assert exc.value.public_message == expected_error_msg
 
 
 def test_userservice_update_success(
@@ -467,7 +467,7 @@ def test_userservice_delete_failure(
         user_service.delete(context=authed_context, uid=id_to_delete)
 
     assert exc.type == user_errors.UserDeleteError
-    assert str(exc.value) == expected_error_msg
+    assert exc.value.public_message == expected_error_msg
 
 
 def test_userservice_delete_success(
@@ -607,7 +607,6 @@ def test_userservice_register_error_on_get_email(
         with pytest.raises(StashException) as exc:
             user_service.register(server_context, guest_create_user)
 
-        assert str(exc.value) == error_msg
         assert exc.value.public == error_msg
 
 

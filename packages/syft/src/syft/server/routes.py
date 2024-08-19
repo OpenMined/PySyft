@@ -30,6 +30,7 @@ from ..service.response import SyftError
 from ..service.user.user import UserCreate
 from ..service.user.user import UserPrivateKey
 from ..service.user.user_service import UserService
+from ..types.errors import SyftException
 from ..types.uid import UID
 from ..util.telemetry import TRACE_MODE
 from .credentials import SyftVerifyKey
@@ -191,6 +192,32 @@ def make_routes(worker: Worker) -> APIRouter:
         else:
             return handle_new_api_call(data)
 
+    def handle_forgot_password(email: str, server: AbstractServer) -> Response:
+        method = server.get_service_method(UserService.forgot_password)
+        context = UnauthedServiceContext(server=server)
+        result = method(context=context, email=email)
+
+        if isinstance(result, SyftError):
+            logger.error(f"Forgot Password Error: {result.message}. user={email}")
+
+        response = result
+        return Response(
+            serialize(response, to_bytes=True),
+            media_type="application/octet-stream",
+        )
+
+    def handle_reset_password(
+        token: str, new_password: str, server: AbstractServer
+    ) -> Response:
+        method = server.get_service_method(UserService.reset_password)
+        context = UnauthedServiceContext(server=server)
+        result = method(context=context, token=token, new_password=new_password)
+
+        return Response(
+            serialize(result, to_bytes=True),
+            media_type="application/octet-stream",
+        )
+
     def handle_login(email: str, password: str, server: AbstractServer) -> Response:
         try:
             login_credentials = UserLoginCredentials(email=email, password=password)
@@ -226,9 +253,12 @@ def make_routes(worker: Worker) -> APIRouter:
         context = ServerServiceContext(server=server)
         method = server.get_method_with_context(UserService.register, context)
 
-        response = method(new_user=user_create).unwrap(
-            public_message=f"Register Error for user={user_create.model_dump()}"
-        )
+        try:
+            response = method(new_user=user_create)
+        except SyftException as e:
+            logger.error(f"Register Error: {e}. user={user_create.model_dump()}")
+            response = SyftError(message=f"{e.public_message}")
+
         return Response(
             serialize(response, to_bytes=True),
             media_type="application/octet-stream",
@@ -250,6 +280,36 @@ def make_routes(worker: Worker) -> APIRouter:
                 return handle_login(email, password, worker)
         else:
             return handle_login(email, password, worker)
+
+    @router.post("/reset_password", name="reset_password", status_code=200)
+    def reset_password(
+        request: Request,
+        token: Annotated[str, Body(...)],
+        new_password: Annotated[str, Body(...)],
+    ) -> Response:
+        if TRACE_MODE:
+            with trace.get_tracer(reset_password.__module__).start_as_current_span(
+                reset_password.__qualname__,
+                context=extract(request.headers),
+                kind=trace.SpanKind.SERVER,
+            ):
+                return handle_reset_password(token, new_password, worker)
+        else:
+            return handle_reset_password(token, new_password, worker)
+
+    @router.post("/forgot_password", name="forgot_password", status_code=200)
+    def forgot_password(
+        request: Request, email: str = Body(..., embed=True)
+    ) -> Response:
+        if TRACE_MODE:
+            with trace.get_tracer(forgot_password.__module__).start_as_current_span(
+                forgot_password.__qualname__,
+                context=extract(request.headers),
+                kind=trace.SpanKind.SERVER,
+            ):
+                return handle_forgot_password(email, worker)
+        else:
+            return handle_forgot_password(email, worker)
 
     @router.post("/register", name="register", status_code=200)
     def register(

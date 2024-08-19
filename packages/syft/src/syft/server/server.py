@@ -414,7 +414,7 @@ class Server(AbstractServer):
             email_sender=email_sender,
             smtp_port=smtp_port,
             smtp_host=smtp_host,
-        )
+        ).unwrap()
 
         self.post_init()
 
@@ -700,8 +700,10 @@ class Server(AbstractServer):
         connection = PythonConnection(server=self)
         client_type = connection.get_client_type().unwrap()
         root_client = client_type(connection=connection, credentials=self.signing_key)
+
         if root_client.api.refresh_api_callback is not None:
             root_client.api.refresh_api_callback()
+
         return root_client
 
     def _find_klasses_pending_for_migration(
@@ -780,7 +782,9 @@ class Server(AbstractServer):
     def __repr__(self) -> str:
         service_string = ""
         if not self.is_subprocess:
-            services = [service.__name__ for service in self.initialized_services]
+            services = [
+                service.__class__.__name__ for service in self.initialized_services
+            ]
             service_string = ", ".join(sorted(services))
             service_string = f"\n\nServices:\n{service_string}"
         return f"{type(self).__name__}: {self.name} - {self.id} - {self.server_type}{service_string}"
@@ -906,6 +910,31 @@ class Server(AbstractServer):
             attr = getattr(settings, attr_name)
             if attr is not Empty:
                 setattr(self, attr_name, attr)
+
+    # NOTE: Some workflows currently expect the settings to be available,
+    # even though they might not be defined yet. Because of this, we need to check
+    # if the settings table is already defined. This function is basically a copy
+    # of the settings property but ignoring stash error in case settings doesn't exist yet.
+    # it should be removed once the settings are refactored and the inconsistencies between
+    # settings and services are resolved.
+    def get_settings(self) -> ServerSettings | None:
+        if self.signing_key is None:
+            raise ValueError(f"{self} has no signing key")
+
+        settings_stash = SettingsStash(store=self.document_store)
+
+        try:
+            settings = settings_stash.get_all(self.signing_key.verify_key).unwrap()
+
+            if len(settings) > 0:
+                settings = settings[0]
+                self.update_self(settings)
+            else:
+                return None
+
+            return settings
+        except SyftException:
+            return None
 
     @property
     def settings(self) -> ServerSettings:
@@ -1123,6 +1152,27 @@ class Server(AbstractServer):
         if is_blocking or self.is_subprocess:
             api_call = api_call.message
 
+            role = self.get_role_for_credentials(credentials=credentials)
+            settings = self.get_settings()
+            # TODO: This instance check should be removed once we can ensure that
+            # self.settings will always return a ServerSettings object.
+            if (
+                settings is not None
+                and isinstance(settings, ServerSettings)
+                and not settings.allow_guest_sessions
+                and role == ServiceRole.GUEST
+            ):
+                raise SyftException(
+                    public_message="Server doesn't allow guest sessions."
+                )
+            context = AuthedServiceContext(
+                server=self,
+                credentials=credentials,
+                role=role,
+                job_id=job_id,
+                is_blocking_api_call=is_blocking,
+            )
+
             AuthServerContextRegistry.set_server_context(self.id, context, credentials)
 
             user_config_registry = UserServiceConfigRegistry.from_role(role)
@@ -1145,7 +1195,9 @@ class Server(AbstractServer):
                 result = method(context, *api_call.args, **api_call.kwargs)
 
                 if isinstance(result, SyftError):
-                    raise TypeError("Don't return a SyftError, raise instead")
+                    raise TypeError(
+                        "Don't return a SyftError, raise SyftException instead"
+                    )
                 if not isinstance(result, SyftSuccess):
                     result = SyftSuccess(message="", value=result)
                 tb = None
@@ -1165,7 +1217,6 @@ class Server(AbstractServer):
                     logger.debug(
                         f"Exception (hidden from DS) happened on the server side:\n{tb}"
                     )
-
         else:
             try:
                 return self.add_api_call_to_queue(api_call)
@@ -1347,6 +1398,7 @@ class Server(AbstractServer):
             action=action,
             requested_by=user_id,
             job_type=job_type,
+            endpoint=queue_item.kwargs.get("path", None),
         )
 
         # 🟡 TODO 36: Needs distributed lock
@@ -1433,37 +1485,40 @@ class Server(AbstractServer):
                 not is_usercode_call_on_owned_kwargs
                 and self.server_side_type == ServerSideType.LOW_SIDE
             ):
-                existing_jobs = self._get_existing_user_code_jobs(context, user_code_id)
-                if isinstance(existing_jobs, SyftError):
-                    return SyftSuccess(message="Got existing job", value=existing_jobs)
-                elif len(existing_jobs) > 0:
-                    # Print warning if there are existing jobs for this user code
-                    # relative
-                    from ..util.util import prompt_warning_message
+                try:
+                    existing_jobs = self._get_existing_user_code_jobs(
+                        context, user_code_id
+                    ).unwrap()
 
-                    prompt_warning_message(
-                        "There are existing jobs for this user code, returning the latest one"
-                    )
-                    return SyftSuccess(
-                        message="Found multiple existing jobs, got last",
-                        value=existing_jobs[-1],
-                    )
-                else:
-                    raise SyftException(
-                        public_message="Please wait for the admin to allow the execution of this code"
-                    )
+                    if len(existing_jobs) > 0:
+                        # relative
+                        from ..util.util import prompt_warning_message
 
+                        prompt_warning_message(
+                            "There are existing jobs for this user code, returning the latest one"
+                        )
+                        return SyftSuccess(
+                            message="Found multiple existing jobs, got last",
+                            value=existing_jobs[-1],
+                        )
+                    else:
+                        raise SyftException(
+                            public_message="Please wait for the admin to allow the execution of this code"
+                        )
+                except Exception as e:
+                    raise SyftException.from_exception(e)
             elif (
                 is_usercode_call_on_owned_kwargs
                 and not is_execution_on_owned_kwargs_allowed
             ):
                 raise SyftException(
-                    message="You do not have the permissions for mock execution, please contact the admin"
+                    public_message="You do not have the permissions for mock execution, please contact the admin"
                 )
 
             job = self.add_action_to_queue(
                 action, api_call.credentials, parent_job_id=parent_job_id
             ).unwrap()
+
             return SyftSuccess(message="Succesfully queued job", value=job)
 
         else:

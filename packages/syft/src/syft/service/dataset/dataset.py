@@ -7,8 +7,7 @@ import textwrap
 from typing import Any
 
 # third party
-from IPython import display
-import itables
+from IPython.display import display
 import markdown
 import pandas as pd
 from pydantic import ConfigDict
@@ -20,7 +19,6 @@ from result import Result
 from typing_extensions import Self
 
 # relative
-from ...client.api import APIRegistry
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
@@ -28,6 +26,7 @@ from ...types.dicttuple import DictTuple
 from ...types.errors import SyftException
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import generate_id
@@ -35,15 +34,11 @@ from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.transforms import validate_url
 from ...types.uid import UID
-from ...util import options
-from ...util.colors import ON_SURFACE_HIGHEST
-from ...util.colors import SURFACE
-from ...util.colors import SURFACE_SURFACE
 from ...util.markdown import as_markdown_python_code
 from ...util.misc_objs import MarkdownDescription
 from ...util.notebook_ui.icons import Icon
-from ...util.notebook_ui.styles import FONT_CSS
-from ...util.notebook_ui.styles import ITABLES_CSS
+from ...util.table import itable_template_from_df
+from ...util.util import repr_truncation
 from ..action.action_data_empty import ActionDataEmpty
 from ..action.action_object import ActionObject
 from ..data_subject.data_subject import DataSubject
@@ -72,15 +67,12 @@ class Contributor(SyftObject):
 
     def _repr_html_(self) -> Any:
         return f"""
-            <style>
-            .syft-contributor {{color: {SURFACE[options.color_theme]};}}
-            </style>
-            <div class='syft-contributor' style="line-height:25%">
-                <h3>Contributor</h3>
-                <p><strong>Name: </strong>{self.name}</p>
-                <p><strong>Role: </strong>{self.role}</p>
-                <p><strong>Email: </strong>{self.email}</p>
-            </div>
+
+                Contributor
+                Name: {self.name}
+                Role: {self.role}
+                Email: {self.email}
+
             """
 
     def __eq__(self, value: object) -> bool:
@@ -126,20 +118,11 @@ class Asset(SyftObject):
         super().__init__(**data, description=description)
 
     def _repr_html_(self) -> Any:
-        itables_css = f"""
-        .itables table {{
-            margin: 0 auto;
-            float: left;
-            color: {ON_SURFACE_HIGHEST[options.color_theme]};
-        }}
-        .itables table th {{color: {SURFACE_SURFACE[options.color_theme]};}}
-        """
-
         # relative
         from ...service.action.action_object import ActionObject
 
         uploaded_by_line = (
-            f"<p><strong>Uploaded by: </strong>{self.uploader.name} ({self.uploader.email})</p>"
+            f"Uploaded by: {self.uploader.name} ({self.uploader.email})"
             if self.uploader
             else ""
         )
@@ -151,37 +134,33 @@ class Asset(SyftObject):
         else:
             private_data_obj = private_data_res.ok_value
             if isinstance(private_data_obj, ActionObject):
-                data_table_line = itables.to_html_datatable(
-                    df=self.data.syft_action_data, css=itables_css
-                )
+                df = pd.DataFrame(self.data.syft_action_data)
+                data_table_line = itable_template_from_df(df=private_data_obj.head(5))
             elif isinstance(private_data_obj, pd.DataFrame):
-                data_table_line = itables.to_html_datatable(
-                    df=private_data_obj, css=itables_css
-                )
+                data_table_line = itable_template_from_df(df=private_data_obj.head(5))
             else:
-                data_table_line = private_data_res.ok_value
+                try:
+                    data_table_line = repr_truncation(private_data_obj)
+                except Exception as e:
+                    logger.debug(f"Failed to truncate private data repr. {e}")
+                    data_table_line = private_data_res.ok_value
 
         if isinstance(mock, ActionObject):
-            mock_table_line = itables.to_html_datatable(
-                df=mock.syft_action_data, css=itables_css
-            )
+            df = pd.DataFrame(mock.syft_action_data)
+            mock_table_line = itable_template_from_df(df=df.head(5))
         elif isinstance(mock, pd.DataFrame):
-            mock_table_line = itables.to_html_datatable(df=mock, css=itables_css)
+            mock_table_line = itable_template_from_df(df=self.mock.head(5))
         else:
-            mock_table_line = mock
+            try:
+                mock_table_line = repr_truncation(self.mock)
+            except Exception as e:
+                logger.debug(f"Failed to truncate mock data repr. {e}")
+                mock_table_line = self.mock
+
             if isinstance(mock_table_line, SyftError):
                 mock_table_line = mock_table_line.message
 
         return f"""
-            <style>
-            {FONT_CSS}
-            .syft-asset {{color: {SURFACE[options.color_theme]};}}
-            .syft-asset h3,
-            .syft-asset p
-              {{font-family: 'Open Sans'}}
-            {ITABLES_CSS}
-            </style>
-
             <div class="syft-asset">
             <h3>{self.name}</h3>
             <p>{self.description or ""}</p>
@@ -250,33 +229,24 @@ class Asset(SyftObject):
 
     @property
     def pointer(self) -> Any:
-        api = APIRegistry.api_for(
-            server_uid=self.server_uid,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is not None and api.services is not None:
+        api = self.get_api()
+        if api.services is not None:
             return api.services.action.get_pointer(self.action_id)
 
     @property
     def mock(self) -> Any:
         # relative
-        from ...client.api import APIRegistry
-
-        api = APIRegistry.api_for(
-            server_uid=self.server_uid,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            raise SyftException(public_message=f"You must login to {self.server_uid}")
-        result = api.services.action.get_mock(self.action_id)
-        if isinstance(result, SyftError):
-            return result
+        api = self.get_api()
         try:
+            result = api.services.action.get_mock(self.action_id)
             if isinstance(result, SyftObject):
                 return result.syft_action_data
-            return result
+            else:
+                return result
         except Exception as e:
-            raise SyftException(public_message=f"Failed to get mock. {e}")
+            raise SyftException.from_exception(
+                e, public_message=f"Failed to get mock. {e}"
+            )
 
     def has_data_permission(self) -> bool:
         return self.data is not None
@@ -297,17 +267,16 @@ class Asset(SyftObject):
             Result[Any, str]: A Result object containing the private data if the user has permission
             otherwise an Err object with the message "You do not have permission to access private data."
         """
-        api = APIRegistry.api_for(
-            server_uid=self.server_uid,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None or api.services is None:
+
+        # TODO: split this out in permission logic and existence logic
+        api = self.get_api_wrapped()
+        if api.is_err():
             return Ok(None)
-        res = api.services.action.get(self.action_id)
+        res = api.unwrap().services.action.get(self.action_id)
         if self.has_permission(res):
             return Ok(res.syft_action_data)
         else:
-            return Err("You do not have permission to access private data.")
+            return Err("You do not have permission to access the private data.")
 
     @property
     def data(self) -> Any:
@@ -542,14 +511,6 @@ class Dataset(SyftObject):
         if self.to_be_deleted:
             return "This dataset has been marked for deletion. The underlying data may be not available."
         return f"""
-            <style>
-            {FONT_CSS}
-            .syft-dataset {{color: {SURFACE[options.color_theme]};}}
-            .syft-dataset h3,
-            .syft-dataset p
-              {{font-family: 'Open Sans';}}
-              {ITABLES_CSS}
-            </style>
             <div class='syft-dataset'>
             <h1>{self.name}</h1>
             <h2><strong><span class='pr-8'>Summary</span></strong></h2>
@@ -633,7 +594,15 @@ def _check_asset_must_contain_mock(asset_list: list[CreateAsset]) -> None:
 
 @serializable()
 class DatasetPageView(SyftObject):
-    # version
+    __canonical_name__ = "DatasetPageView"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    datasets: DictTuple[str, Dataset]
+    total: int
+
+
+@serializable()
+class DatasetPageViewV1(SyftObject):
     __canonical_name__ = "DatasetPageView"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -643,7 +612,6 @@ class DatasetPageView(SyftObject):
 
 @serializable()
 class CreateDataset(Dataset):
-    # version
     __canonical_name__ = "CreateDataset"
     __version__ = SYFT_OBJECT_VERSION_1
     asset_list: list[CreateAsset] = []

@@ -27,7 +27,6 @@ from ..types.errors import SyftException
 
 # from result import Err
 # from result import Ok
-from ..types.result import Err
 from ..types.result import Ok
 from ..types.result import as_result
 from ..types.syft_object import BaseDateTime
@@ -341,7 +340,7 @@ class StorePartition:
         self.settings = settings
         self.store_config = store_config
         self.has_admin_permissions = has_admin_permissions
-        _ = self.init_store().unwrap(
+        self.init_store().unwrap(
             public_message="Something went wrong initializing the store"
         )
         store_config.locking_config.lock_name = f"StorePartition-{settings.name}"
@@ -794,14 +793,6 @@ class NewBaseStash:
             order_by=order_by,
         ).unwrap()
 
-        # match result:
-        #     case Ok(value):
-        #         return value
-        #     case Err(err):
-        #         raise StashException(err)
-        #     case _:
-        #         raise StashException("Unexpected error")
-
     @as_result(StashException)
     def query_all_kwargs(
         self,
@@ -866,23 +857,16 @@ class NewBaseStash:
         qk = self.partition.store_query_key(obj)
         return self.delete(credentials=credentials, qk=qk).unwrap()
 
-    @as_result(StashException)
+    @as_result(StashException, SyftException)
     def delete(
         self, credentials: SyftVerifyKey, qk: QueryKey, has_permission: bool = False
     ) -> Literal[True]:
+        # TODO: (error) Check return response
         return self.partition.delete(
             credentials=credentials, qk=qk, has_permission=has_permission
         ).unwrap()
 
-        # match result:
-        #     case Ok(_):
-        #         return True
-        #     case Err(err):
-        #         raise StashException(str(err))
-        #     case _:
-        #         raise StashException("Unexpected error")
-
-    @as_result(StashException)
+    @as_result(StashException, SyftException)
     def update(
         self,
         credentials: SyftVerifyKey,
@@ -893,22 +877,14 @@ class NewBaseStash:
         obj = self.check_type(obj, self.object_type).unwrap()
 
         qk = self.partition.store_query_key(obj)
-        result = self.partition.update(
+        return self.partition.update(
             credentials=credentials, qk=qk, obj=obj, has_permission=has_permission
-        )
-
-        match result:
-            case Ok(value):
-                return value
-            case Err(err):
-                raise StashException(err)
-            case _:
-                raise StashException("Unexpected error")
+        ).unwrap()
 
 
 @instrument
 class NewBaseUIDStoreStash(NewBaseStash):
-    @as_result(StashException)
+    @as_result(SyftException, StashException)
     def delete_by_uid(
         self, credentials: SyftVerifyKey, uid: UID, has_permission: bool = False
     ) -> UID:
@@ -918,7 +894,7 @@ class NewBaseUIDStoreStash(NewBaseStash):
         ).unwrap()
         return uid
 
-    @as_result(StashException, NotFoundException)
+    @as_result(SyftException, StashException, NotFoundException)
     def get_by_uid(
         self, credentials: SyftVerifyKey, uid: UID
     ) -> NewBaseUIDStoreStash.object_type:
@@ -931,7 +907,7 @@ class NewBaseUIDStoreStash(NewBaseStash):
 
         return result
 
-    @as_result(StashException)
+    @as_result(SyftException, StashException)
     def set(
         self,
         credentials: SyftVerifyKey,
@@ -951,6 +927,6 @@ class NewBaseUIDStoreStash(NewBaseStash):
                 add_storage_permission=add_storage_permission,
             )
             .unwrap(
-                public_message=f"Failed ot set {self.object_type} with uid {obj.id} not found"
+                public_message=f"Failed to set {self.object_type} with uid {obj.id} not found"
             )
         )

@@ -4,16 +4,22 @@ from __future__ import annotations
 # stdlib
 from collections import defaultdict
 from collections.abc import Callable
+from collections.abc import Iterable
 from copy import deepcopy
 import functools
 from functools import partial
+from functools import reduce
 import inspect
 from inspect import Parameter
 import logging
+import operator
+import types
+import typing
 from typing import Any
 from typing import TYPE_CHECKING
 
 # third party
+from pydantic import ValidationError
 from typing_extensions import Self
 
 # relative
@@ -34,6 +40,9 @@ from ..store.document_store import DocumentStore
 from ..store.linked_obj import LinkedObject
 from ..types.errors import SyftException
 from ..types.result import as_result
+from ..types.syft_metaclass import Empty
+from ..types.syft_metaclass import EmptyType
+from ..types.syft_object import EXCLUDED_FROM_SIGNATURE
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftBaseObject
@@ -298,16 +307,59 @@ def deconstruct_param(param: inspect.Parameter) -> dict[str, Any]:
 
 
 def types_for_autosplat(signature: Signature, autosplat: list[str]) -> dict[str, type]:
-    autosplat_types = {}
-    for k, v in signature.parameters.items():
-        if k in autosplat:
-            autosplat_types[k] = v.annotation
-    return autosplat_types
+    return {k: v.annotation for k, v in signature.parameters.items() if k in autosplat}
+
+
+def _check_empty_union(x: Any) -> bool:
+    return isinstance(
+        x, typing._UnionGenericAlias | types.UnionType
+    ) and EmptyType in typing.get_args(x)
+
+
+def _check_empty_parameter(p: Parameter) -> bool:
+    return _check_empty_union(p.annotation) and p.default is Empty
+
+
+def _make_union_type(args: Iterable) -> types.UnionType:
+    return reduce(operator.or_, args)
+
+
+def _replace_empty_parameter(p: Parameter) -> Parameter:
+    return Parameter(
+        name=p.name,
+        default="optional",
+        annotation=_make_union_type(
+            t for t in typing.get_args(p.annotation) if t is not EmptyType
+        ),
+        kind=p.kind,
+    )
+
+
+def _format_signature(s: inspect.Signature) -> inspect.Signature:
+    params = (
+        (_replace_empty_parameter(p) if _check_empty_parameter(p) else p)
+        for p in s.parameters.values()
+    )
+
+    return inspect.Signature(
+        parameters=params,
+        return_annotation=inspect.Signature.empty,
+    )
+
+
+_SIGNATURE_ERROR_MESSAGE = (
+    "Please provide the correct arguments to the method according to this signature"
+)
+
+
+def _signature_error_message(s: inspect.Signature) -> str:
+    return f"{_SIGNATURE_ERROR_MESSAGE}\n{s}"
 
 
 def reconstruct_args_kwargs(
     signature: Signature,
     autosplat: list[str],
+    expanded_signature: Signature,
     args: tuple[Any, ...],
     kwargs: dict[Any, str],
 ) -> tuple[tuple[Any, ...], dict[str, Any]]:
@@ -320,7 +372,13 @@ def reconstruct_args_kwargs(
         for key in keys:
             if key in kwargs:
                 init_kwargs[key] = kwargs.pop(key)
-        autosplat_objs[autosplat_key] = autosplat_type(**init_kwargs)
+        try:
+            autosplat_objs[autosplat_key] = autosplat_type(**init_kwargs)
+        except ValidationError:
+            raise TypeError(
+                f"Invalid argument(s) provided. "
+                f"{_signature_error_message(_format_signature(expanded_signature))}"
+            )
 
     final_kwargs = {}
     for param_key, param in signature.parameters.items():
@@ -331,7 +389,10 @@ def reconstruct_args_kwargs(
         elif not isinstance(param.default, type(Parameter.empty)):
             final_kwargs[param_key] = param.default
         else:
-            raise Exception(f"Missing {param_key} not in kwargs.")
+            raise TypeError(
+                f"Missing argument {param_key}."
+                f"{_signature_error_message(_format_signature(expanded_signature))}"
+            )
 
     if "context" in kwargs:
         final_kwargs["context"] = kwargs["context"]
@@ -358,7 +419,7 @@ def expand_signature(signature: Signature, autosplat: list[str]) -> Signature:
 
     # Reorder the parameter based on if they have default value or not
     new_params = sorted(
-        new_mapping.values(),
+        (v for k, v in new_mapping.items() if k not in EXCLUDED_FROM_SIGNATURE),
         key=lambda param: param.default is param.empty,
         reverse=True,
     )
@@ -393,6 +454,9 @@ def service_method(
 
         input_signature = deepcopy(signature)
 
+        if autosplat is not None and len(autosplat) > 0:
+            signature = expand_signature(signature=input_signature, autosplat=autosplat)
+
         @functools.wraps(func)
         def _decorator(self: Any, *args: Any, **kwargs: Any) -> Callable:
             communication_protocol = kwargs.pop("communication_protocol", None)
@@ -405,6 +469,7 @@ def service_method(
                 args, kwargs = reconstruct_args_kwargs(
                     signature=input_signature,
                     autosplat=autosplat,
+                    expanded_signature=signature,
                     args=args,
                     kwargs=kwargs,
                 )
@@ -424,9 +489,6 @@ def service_method(
             }
             attach_attribute_to_syft_object(result=result, attr_dict=attrs_to_attach)
             return result
-
-        if autosplat is not None and len(autosplat) > 0:
-            signature = expand_signature(signature=input_signature, autosplat=autosplat)
 
         config = ServiceConfig(
             public_path=_path if path is None else path,
@@ -508,8 +570,8 @@ def from_api_or_context(
         server_uid=syft_server_location,
         user_verify_key=syft_client_verify_key,
     )
-    if api is not None:
-        service_method = api.services
+    if api.is_ok():
+        service_method = api.unwrap().services
         for path in func_or_path.split("."):
             service_method = getattr(service_method, path)
         return service_method

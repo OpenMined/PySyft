@@ -1,4 +1,8 @@
 # stdlib
+from datetime import datetime
+from datetime import timedelta
+import secrets
+import string
 from typing import TypeVar
 from typing import cast
 
@@ -23,6 +27,7 @@ from ..context import AuthedServiceContext
 from ..context import ServerServiceContext
 from ..context import UnauthedServiceContext
 from ..notification.email_templates import OnBoardEmailTemplate
+from ..notification.email_templates import PasswordResetTemplate
 from ..notification.notification_service import CreateNotification
 from ..notification.notification_service import NotificationService
 from ..notifier.notifier_enums import NOTIFIERS
@@ -31,6 +36,7 @@ from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
+from ..settings.settings import PwdTokenResetConfig
 from ..settings.settings_stash import SettingsStash
 from .errors import UserEnclaveAdminLoginError
 from .errors import UserError
@@ -44,6 +50,7 @@ from .user import UserUpdate
 from .user import UserView
 from .user import check_pwd
 from .user import salt_and_hash_password
+from .user import validate_password
 from .user_roles import ADMIN_ROLE_LEVEL
 from .user_roles import DATA_OWNER_ROLE_LEVEL
 from .user_roles import DATA_SCIENTIST_ROLE_LEVEL
@@ -120,6 +127,184 @@ class UserService(AbstractService):
 
         new_user = self._add_user(context.credentials, user).unwrap()
         return new_user.to(UserView)
+
+    def forgot_password(
+        self, context: UnauthedServiceContext, email: str
+    ) -> SyftSuccess:
+        success_msg = (
+            "If the email is valid, we sent a password "
+            + "reset token to your email or a password request to the admin."
+        )
+        root_key = self.admin_verify_key()
+
+        root_context = AuthedServiceContext(server=context.server, credentials=root_key)
+
+        result = self.stash.get_by_email(credentials=root_key, email=email)
+
+        # Isn't a valid email
+        if result.is_err():
+            return SyftSuccess(message=success_msg)
+        user = result.ok()
+
+        if user is None:
+            return SyftSuccess(message=success_msg)
+
+        user_role = self.get_role_for_credentials(user.verify_key).unwrap()
+        if user_role == ServiceRole.ADMIN:
+            raise SyftException(
+                public_message="You can't request password reset for an Admin user."
+            )
+
+        # Email is valid
+        # Notifications disabled
+        # We should just sent a notification to the admin/user about password reset
+        # Notifications Enabled
+        # Instead of changing the password here, we would change it in email template generation.
+        link = LinkedObject.with_context(user, context=root_context)
+        notifier_service = root_context.server.get_service("notifierservice")
+        # Notifier is active
+        notifier = notifier_service.settings(context=root_context)
+        notification_is_enabled = notifier.active
+        # Email is enabled
+        email_is_enabled = notifier.email_enabled
+        # User Preferences allow email notification
+        user_allow_email_notifications = user.notifications_enabled[NOTIFIERS.EMAIL]
+
+        # This checks if the user will safely receive the email reset.
+        not_receive_emails = (
+            not notification_is_enabled
+            or not email_is_enabled
+            or not user_allow_email_notifications
+        )
+
+        # If notifier service is not enabled.
+        if not_receive_emails:
+            message = CreateNotification(
+                subject="You requested password reset.",
+                from_user_verify_key=root_key,
+                to_user_verify_key=user.verify_key,
+                linked_obj=link,
+            )
+
+            method = root_context.server.get_service_method(NotificationService.send)
+            result = method(context=root_context, notification=message)
+
+            message = CreateNotification(
+                subject="User requested password reset.",
+                from_user_verify_key=user.verify_key,
+                to_user_verify_key=root_key,
+                linked_obj=link,
+            )
+
+            result = method(context=root_context, notification=message)
+        else:
+            # Email notification is Enabled
+            # Therefore, we can directly send a message to the
+            # user with its new password.
+            message = CreateNotification(
+                subject="You requested a password reset.",
+                from_user_verify_key=root_key,
+                to_user_verify_key=user.verify_key,
+                linked_obj=link,
+                notifier_types=[NOTIFIERS.EMAIL],
+                email_template=PasswordResetTemplate,
+            )
+
+            method = root_context.server.get_service_method(NotificationService.send)
+            result = method(context=root_context, notification=message)
+
+        return SyftSuccess(message=success_msg)
+
+    @service_method(
+        path="user.request_password_reset",
+        name="request_password_reset",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def request_password_reset(self, context: AuthedServiceContext, uid: UID) -> str:
+        user = self.stash.get_by_uid(credentials=context.credentials, uid=uid).unwrap()
+        user_role = self.get_role_for_credentials(user.verify_key)
+
+        if user_role == ServiceRole.ADMIN:
+            raise SyftException(
+                public_message="You can't request password reset for an Admin user."
+            )
+
+        user.reset_token = self.generate_new_password_reset_token(
+            context.server.settings.pwd_token_config
+        )
+        user.reset_token_date = datetime.now()
+
+        self.stash.update(
+            credentials=context.credentials, obj=user, has_permission=True
+        ).unwrap()
+
+        return user.reset_token
+
+    def reset_password(
+        self, context: UnauthedServiceContext, token: str, new_password: str
+    ) -> SyftSuccess:
+        """Resets a certain user password using a temporary token."""
+        root_key = self.admin_verify_key()
+
+        root_context = AuthedServiceContext(server=context.server, credentials=root_key)
+        try:
+            user = self.stash.get_by_reset_token(
+                credentials=root_context.credentials, token=token
+            ).unwrap()
+        except NotFoundException:
+            raise SyftException(
+                public_message="Failed to reset user password. Token is invalid or expired."
+            )
+        #
+        if user is None:
+            raise SyftException(
+                public_message="Failed to reset user password. Token is invalid or expired!"
+            )
+        now = datetime.now()
+        time_difference = now - user.reset_token_date
+
+        # If token expired
+        expiration_time = root_context.server.settings.pwd_token_config.token_exp_min
+        if time_difference > timedelta(minutes=expiration_time):
+            raise SyftException(
+                public_message="Failed to reset user password. Token is invalid or expired."
+            )
+
+        if not validate_password(new_password):
+            raise SyftException(
+                public_message="Your new password must have at least 8 \
+                characters, Upper case and lower case characters\
+                and at least one number."
+            )
+
+        salt, hashed = salt_and_hash_password(new_password, 12)
+        user.hashed_password = hashed
+        user.salt = salt
+
+        user.reset_token = None
+        user.reset_token_date = None
+
+        self.stash.update(
+            credentials=root_context.credentials, obj=user, has_permission=True
+        ).unwrap()
+
+        return SyftSuccess(message="User Password updated successfully!")
+
+    def generate_new_password_reset_token(
+        self, token_config: PwdTokenResetConfig
+    ) -> str:
+        valid_characters = ""
+        if token_config.ascii:
+            valid_characters += string.ascii_letters
+
+        if token_config.numbers:
+            valid_characters += string.digits
+
+        generated_token = "".join(
+            secrets.choice(valid_characters) for _ in range(token_config.token_len)
+        )
+
+        return generated_token
 
     @service_method(path="user.view", name="view", roles=DATA_SCIENTIST_ROLE_LEVEL)
     def view(self, context: AuthedServiceContext, uid: UID) -> UserView:
@@ -246,6 +431,20 @@ class UserService(AbstractService):
         # Get user to be updated by its UID
         user = self.stash.get_by_uid(credentials=context.credentials, uid=uid).unwrap()
 
+        immutable_fields = {"created_date", "updated_date", "deleted_date"}
+        updated_fields = user_update.to_dict(
+            exclude_none=True, exclude_empty=True
+        ).keys()
+
+        for field_name in immutable_fields:
+            if field_name in updated_fields:
+                raise SyftException(
+                    public_message=f"You are not allowed to modify '{field_name}'."
+                )
+
+        if user_update.name is not Empty and user_update.name.strip() == "":  # type: ignore[comparison-overlap]
+            raise SyftException(public_message="Name can't be an empty string.")
+
         # check if the email already exists (with root's key)
         if user_update.email is not Empty:
             user_exists = self.stash.email_exists(email=user_update.email).unwrap()
@@ -345,6 +544,10 @@ class UserService(AbstractService):
         """Verify user
         TODO: We might want to use a SyftObject instead
         """
+
+        if context.login_credentials is None:
+            raise SyftException(public_message="Invalid login credentials")
+
         user = self.stash.get_by_email(
             credentials=self.admin_verify_key(), email=context.login_credentials.email
         ).unwrap()

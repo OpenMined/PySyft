@@ -2,7 +2,6 @@
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
-from ...types.errors import SyftException
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
@@ -12,7 +11,6 @@ from ..notification.email_templates import RequestEmailTemplate
 from ..notification.email_templates import RequestUpdateEmailTemplate
 from ..notification.notification_service import CreateNotification
 from ..notification.notification_service import NotificationService
-from ..notification.notifications import Notification
 from ..notifier.notifier_enums import NOTIFIERS
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -56,11 +54,6 @@ class RequestService(AbstractService):
         request = self.stash.set(
             context.credentials,
             request,
-            add_permissions=[
-                ActionObjectPermission(
-                    uid=request.id, permission=ActionPermission.ALL_READ
-                ),
-            ],
         ).unwrap()
 
         link = LinkedObject.with_context(request, context=context)
@@ -81,14 +74,8 @@ class RequestService(AbstractService):
                 notifier_types=[NOTIFIERS.EMAIL],
                 email_template=RequestEmailTemplate,
             )
-            # FIX: notificationservice unwrap
             method = context.server.get_service_method(NotificationService.send)
-            result = method(context=context, notification=message)
-
-            if not isinstance(result, Notification):
-                raise SyftException(
-                    public_message=f"Failed to send notification: {result.err()}"
-                )
+            method(context=context, notification=message)
 
         return request
 

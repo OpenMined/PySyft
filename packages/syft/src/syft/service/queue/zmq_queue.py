@@ -391,26 +391,22 @@ class ZMQProducer(QueueProducer):
             return
 
         try:
-            # Check if worker is present in the database
-            worker = self.worker_stash.get_by_uid(
-                credentials=self.worker_stash.partition.root_verify_key,
-                uid=syft_worker_id,
-            )
-            if worker.is_ok() and worker.ok() is None:
-                return
+            try:
+                self.worker_stash.get_by_uid(
+                    credentials=self.worker_stash.partition.root_verify_key,
+                    uid=syft_worker_id,
+                ).unwrap()
+            except Exception:
+                return None
 
             self.worker_stash.update_consumer_state(
                 credentials=self.worker_stash.partition.root_verify_key,
                 worker_uid=syft_worker_id,
                 consumer_state=consumer_state,
-            ).unwrap(
-                f"Failed to update consumer state for worker id={syft_worker_id} "
-                f"to state: {consumer_state}",
-            )
-        except Exception as e:
-            logger.error(
+            ).unwrap()
+        except Exception:
+            logger.exception(
                 f"Failed to update consumer state for worker id: {syft_worker_id} to state {consumer_state}",
-                exc_info=e,
             )
 
     def worker_waiting(self, worker: Worker) -> None:
@@ -468,8 +464,8 @@ class ZMQProducer(QueueProducer):
         with ZMQ_SOCKET_LOCK:
             try:
                 self.socket.send_multipart(msg)
-            except zmq.ZMQError as e:
-                logger.error("ZMQProducer send error", exc_info=e)
+            except zmq.ZMQError:
+                logger.exception("ZMQProducer send error")
 
     def _run(self) -> None:
         try:
@@ -653,8 +649,8 @@ class ZMQConsumer(QueueConsumer):
                     )
                 self.thread = None
             self.poller.unregister(self.socket)
-        except Exception as e:
-            logger.error("Failed to unregister worker.", exc_info=e)
+        except Exception:
+            logger.exception("Failed to unregister worker.")
         finally:
             self.socket.close()
             self.context.destroy()
@@ -688,8 +684,8 @@ class ZMQConsumer(QueueConsumer):
         with ZMQ_SOCKET_LOCK:
             try:
                 self.socket.send_multipart(msg)
-            except zmq.ZMQError as e:
-                logger.error("ZMQConsumer send error", exc_info=e)
+            except zmq.ZMQError:
+                logger.exception("ZMQConsumer send error")
 
     def _run(self) -> None:
         """Send reply, if any, to producer and wait for next request."""
@@ -793,14 +789,15 @@ class ZMQConsumer(QueueConsumer):
             consumer_state = (
                 ConsumerState.IDLE if job_id is None else ConsumerState.CONSUMING
             )
-            res = self.worker_stash.update_consumer_state(
-                credentials=self.worker_stash.partition.root_verify_key,
-                worker_uid=self.syft_worker_id,
-                consumer_state=consumer_state,
-            )
-            if res.is_err():
+            try:
+                self.worker_stash.update_consumer_state(
+                    credentials=self.worker_stash.partition.root_verify_key,
+                    worker_uid=self.syft_worker_id,
+                    consumer_state=consumer_state,
+                ).unwrap()
+            except SyftException as exc:
                 logger.error(
-                    f"Failed to update consumer state for {self.service_name}-{self.id}, error={res.err()}"
+                    f"Failed to update consumer state for {self.service_name}-{self.id}, error={exc.public}"
                 )
 
     @property

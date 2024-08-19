@@ -145,6 +145,7 @@ def test_create_pool_request_accept(
     # the root client approves the request, and the worker pool should be launched
     req_result = root_client.requests[-1].approve()
     assert isinstance(req_result, SyftSuccess)
+
     launched_pool = root_client.worker_pools["opendp-pool"]
     assert isinstance(launched_pool, WorkerPool)
     assert len(launched_pool.worker_list) == 3

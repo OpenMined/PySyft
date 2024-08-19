@@ -131,6 +131,8 @@ class Routes(Enum):
     ROUTE_REGISTER = f"{API_PATH}/register"
     ROUTE_API_CALL = f"{API_PATH}/api_call"
     ROUTE_BLOB_STORE = "/blob"
+    ROUTE_FORGOT_PASSWORD = f"{API_PATH}/forgot_password"
+    ROUTE_RESET_PASSWORD = f"{API_PATH}/reset_password"
     STREAM = f"{API_PATH}/stream"
 
 
@@ -393,6 +395,45 @@ class HTTPConnection(ServerConnection):
 
         return obj
 
+    def forgot_password(
+        self,
+        email: str,
+    ) -> SyftSigningKey | None:
+        credentials = {"email": email}
+        if self.proxy_target_uid:
+            obj = forward_message_to_proxy(
+                self.make_call,
+                proxy_target_uid=self.proxy_target_uid,
+                path="forgot_password",
+                kwargs=credentials,
+            )
+        else:
+            response = self._make_post(
+                self.routes.ROUTE_FORGOT_PASSWORD.value, credentials
+            )
+            obj = _deserialize(response, from_bytes=True)
+
+        return obj
+
+    def reset_password(
+        self,
+        token: str,
+        new_password: str,
+    ) -> SyftSigningKey | None:
+        payload = {"token": token, "new_password": new_password}
+        if self.proxy_target_uid:
+            obj = forward_message_to_proxy(
+                self.make_call,
+                proxy_target_uid=self.proxy_target_uid,
+                path="reset_password",
+                kwargs=payload,
+            )
+        else:
+            response = self._make_post(self.routes.ROUTE_RESET_PASSWORD.value, payload)
+            obj = _deserialize(response, from_bytes=True)
+
+        return obj
+
     def register(self, new_user: UserCreate) -> SyftSigningKey:
         data = _serialize(new_user, to_bytes=True)
         if self.proxy_target_uid:
@@ -441,6 +482,7 @@ class HTTPConnection(ServerConnection):
     def __hash__(self) -> int:
         return hash(self.proxy_target_uid) + hash(self.url)
 
+    @as_result(SyftException)
     def get_client_type(self) -> type[SyftClient]:
         # TODO: Rasswanth, should remove passing in credentials
         # when metadata are proxy forwarded in the server routes
@@ -891,11 +933,9 @@ class SyftClient:
         if register:
             self.register(
                 email=email, password=password, password_verify=password, **kwargs
-            ).unwrap()
+            )
 
-        user_private_key = self.connection.login(
-            email=email, password=password
-        ).unwrap()
+        user_private_key = self.connection.login(email=email, password=password)
 
         signing_key = None if user_private_key is None else user_private_key.signing_key
 
@@ -962,7 +1002,6 @@ class SyftClient:
         user_code_items = self.code.get_all_for_user()
         load_approved_policy_code(user_code_items=user_code_items, context=None)
 
-    @as_result(SyftException)
     def register(
         self,
         name: str,
@@ -1063,9 +1102,11 @@ class SyftClient:
             user_verify_key=self.credentials.verify_key,
             api=_api,
         )
+
         self._api = _api
         self._api.metadata = self.metadata
         self.services = _api.services
+
         return _api
 
 
@@ -1104,7 +1145,7 @@ def register(
         password=password,
         institution=institution,
         website=website,
-    ).unwrap()
+    )
 
 
 @instrument

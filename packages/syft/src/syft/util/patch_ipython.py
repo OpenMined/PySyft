@@ -1,4 +1,5 @@
 # stdlib
+import html
 import re
 from types import MethodType
 from typing import Any
@@ -6,6 +7,7 @@ from typing import Any
 # relative
 from ..types.dicttuple import DictTuple
 from ..types.syft_object import SyftObject
+from .table import render_itable_template
 from .util import sanitize_html
 
 
@@ -30,7 +32,6 @@ def _patch_ipython_sanitization() -> None:
     from .notebook_ui.components.sync import COPY_CSS
     from .notebook_ui.styles import CSS_CODE
     from .notebook_ui.styles import FONT_CSS
-    from .notebook_ui.styles import ITABLES_CSS
     from .notebook_ui.styles import JS_DOWNLOAD_FONTS
 
     tabulator_js = load_js("tabulator.min.js")
@@ -40,7 +41,6 @@ def _patch_ipython_sanitization() -> None:
 
     SKIP_SANITIZE = [
         FONT_CSS,
-        ITABLES_CSS,
         CSS_CODE,
         JS_DOWNLOAD_FONTS,
         tabulator_js,
@@ -50,7 +50,6 @@ def _patch_ipython_sanitization() -> None:
 
     css_reinsert = f"""
 <style>{FONT_CSS}</style>
-<style>{ITABLES_CSS}</style>
 {JS_DOWNLOAD_FONTS}
 {CSS_CODE}
 <style>{ALERT_CSS}</style>
@@ -74,17 +73,43 @@ def _patch_ipython_sanitization() -> None:
     )
     jobs_pattern = re.compile(jobs_repr_template, re.DOTALL)
 
+    itable_template = (
+        r"<!-- Start itable_template -->\s*(.*?)\s*<!-- End itable_template -->"
+    )
+    escaped_itable_template = re.compile(itable_template, re.DOTALL)
+
     def display_sanitized_html(obj: SyftObject | DictTuple) -> str | None:
-        if callable(getattr(obj, "_repr_html_", None)):
-            html_str = obj._repr_html_()
+        if callable(obj_repr_html_ := getattr(obj, "_repr_html_", None)):
+            html_str = obj_repr_html_()
             if html_str is not None:
+                # find matching table and jobs
                 matching_table = escaped_template.findall(html_str)
                 matching_jobs = jobs_pattern.findall(html_str)
+                matching_itables = escaped_itable_template.findall(html_str)
                 template = "\n".join(matching_table + matching_jobs)
+
+                # remove escaped tables from sanitized html
                 sanitized_str = escaped_template.sub("", html_str)
+                # remove escaped js/css from sanitized html
                 sanitized_str = escaped_js_css.sub("", sanitized_str)
+
+                # remove jobs from sanitized html
                 sanitized_str = jobs_pattern.sub("", sanitized_str)
+
+                # remove escaped itables from sanitized html
+                sanitized_str = escaped_itable_template.sub(
+                    "SYFT_PLACEHOLDER_ITABLE", sanitized_str
+                )
                 sanitized_str = sanitize_html(sanitized_str)
+
+                # add back css / js that skips sanitization
+
+                for matching_itable in matching_itables:
+                    sanitized_str = sanitized_str.replace(
+                        "SYFT_PLACEHOLDER_ITABLE",
+                        render_itable_template(matching_itable),
+                        1,
+                    )
                 return f"{css_reinsert} {sanitized_str} {template}"
         return None
 
@@ -92,7 +117,8 @@ def _patch_ipython_sanitization() -> None:
         if callable(getattr(obj, "_repr_markdown_", None)):
             md = obj._repr_markdown_()
             if md is not None:
-                return sanitize_html(md)
+                md_sanitized = sanitize_html(md)
+                return html.unescape(md_sanitized)
         return None
 
     ip.display_formatter.formatters["text/html"].for_type(

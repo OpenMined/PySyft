@@ -5,7 +5,6 @@ from typing import ClassVar
 from pydantic import model_validator
 
 # relative
-from ...client.api import APIRegistry
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...store.document_store import DocumentStore
@@ -115,6 +114,9 @@ class ExecutionOutput(SyncableSyftObject):
             )
         else:
             job_link = None
+
+        if input_ids is not None:
+            input_ids = {k: v for k, v in input_ids.items() if isinstance(v, UID)}
         return cls(
             output_ids=output_ids,
             user_code_link=user_code_link,
@@ -126,14 +128,7 @@ class ExecutionOutput(SyncableSyftObject):
 
     @property
     def outputs(self) -> list[ActionObject] | dict[str, ActionObject] | None:
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            raise ValueError(
-                f"Can't access the api. Please log in to {self.syft_server_location}"
-            )
+        api = self.get_api()
         action_service = api.services.action
 
         # TODO: error handling for action_service.get

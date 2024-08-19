@@ -1,5 +1,5 @@
 {
-  "1": {
+  "dev": {
     "object_versions": {
       "SyftObjectVersioned": {
         "1": {
@@ -69,12 +69,22 @@
           "version": 1,
           "hash": "10bd7566041d0f0a3aa295367785fdcc2c5bbf0ded984ac9230754f37496a6a7",
           "action": "add"
+        },
+        "2": {
+          "version": 2,
+          "hash": "890d2879ac44611db9b88ba9334a721130d0ac3aa18a303fa9e4081f14b9b8c7",
+          "action": "add"
         }
       },
       "ServiceConfig": {
         "1": {
           "version": 1,
           "hash": "28af8a296f5ff63de50438277eaa1f4380682e6aca9f2ca28320d7a444825e88",
+          "action": "add"
+        },
+        "2": {
+          "version": 2,
+          "hash": "93dfab144e0b0884c602358b3a9ce889bb29ab96e3b4adcfe3cef47a31694a9a",
           "action": "add"
         }
       },
@@ -83,12 +93,17 @@
           "version": 1,
           "hash": "ee8f0e3f6aae81948d72e30226645e8eb5d312a6770411a1edca748168c467c0",
           "action": "add"
+        },
+        "2": {
+          "version": 2,
+          "hash": "a8a78a8d726ee9e79f95614f3d0fa5b85edc6fce7be7651715208669be93e0e3",
+          "action": "add"
         }
       },
       "APIEndpoint": {
         "1": {
           "version": 1,
-          "hash": "cfa6f314481a5bf3c448c33bf2312a9c33cbcf03cdc96864ad9a108f62b09346",
+          "hash": "faa1cf9336a0d1233868c8c57745ff38c0be60399dc1acd0c0e8dd440e405dbd",
           "action": "add"
         }
       },
@@ -131,6 +146,11 @@
         "1": {
           "version": 1,
           "hash": "2df4b68182c558dba5485a8a6867acf2a5c341b249ad67373a504098aa8c4343",
+          "action": "add"
+        },
+        "2": {
+          "version": 2,
+          "hash": "af6fb5b2e1606e97838f4a60f0536ad95db606d455e94acbd1977df866608a2c",
           "action": "add"
         }
       },
@@ -204,6 +224,13 @@
           "action": "add"
         }
       },
+      "UserNotificationActivity": {
+        "1": {
+          "version": 1,
+          "hash": "422fd01c6d9af38688a9982abd34e80794a1f6ddd444cca225d77f49189847a9",
+          "action": "add"
+        }
+      },
       "NotificationPreferences": {
         "1": {
           "version": 1,
@@ -215,6 +242,11 @@
         "1": {
           "version": 1,
           "hash": "65c8ab814d35fac32f68d3000756692592cc59940f30e3af3dcdfa2328755b9d",
+          "action": "add"
+        },
+        "2": {
+          "version": 2,
+          "hash": "be8b52597fc628d1b7cd22b776ee81416e1adbb04a45188778eb0e32ed1416b4",
           "action": "add"
         }
       },
@@ -260,10 +292,27 @@
           "action": "add"
         }
       },
+      "PwdTokenResetConfig": {
+        "1": {
+          "version": 1,
+          "hash": "0415a272428f22add4896c64aa9f29c8c1d35619e2433da6564eb5f1faff39ac",
+          "action": "add"
+        }
+      },
       "ServerSettingsUpdate": {
         "1": {
           "version": 1,
           "hash": "1e4260ad879ae80728c3ffae2cd1d48759abd51f9d0960d4b25855cdbb4c506b",
+          "action": "add"
+        },
+        "2": {
+          "version": 2,
+          "hash": "23b2716e9dceca667e228408e2416c82f11821e322e5bccf1f83406f3d09abdc",
+          "action": "add"
+        },
+        "3": {
+          "version": 3,
+          "hash": "335c7946f2e52d09c7b26f511120cd340717c74c5cca9107e84f839da993c55c",
           "action": "add"
         }
       },
@@ -271,6 +320,16 @@
         "1": {
           "version": 1,
           "hash": "5a1e7470cbeaaae5b80ac9beecb743734f7e4e42d429a09ea8defa569a5ddff1",
+          "action": "add"
+        },
+        "2": {
+          "version": 2,
+          "hash": "7727ea54e494dc9deaa0d1bd38ac8a6180bc192b74eec5659adbc338a19e21f5",
+          "action": "add"
+        },
+        "3": {
+          "version": 3,
+          "hash": "997667e1cba22d151857aacc2caba6b1ca73c1648adbd03461dc74a0c0c372b3",
           "action": "add"
         }
       },
@@ -558,6 +617,11 @@
         "1": {
           "version": 1,
           "hash": "c1d53300a39dbbb437d7d5a1257bd175a067b1065f4099a0938fac7540035258",
+          "action": "add"
+        },
+        "2": {
+          "version": 2,
+          "hash": "8a4237816a5193dc8063496f3ac6c56ab6d190179bc3c71cd3937332f5ef9e07",
           "action": "add"
         }
       },

@@ -213,8 +213,8 @@ class KeyValueActionStore(ActionStore):
 
         return uid
 
-    @as_result(SyftException, StashException)
-    def take_ownership(self, uid: UID, credentials: SyftVerifyKey) -> UID:
+    @as_result(SyftException)
+    def take_ownership(self, uid: UID, credentials: SyftVerifyKey) -> bool:
         uid = uid.id  # We only need the UID from LineageID or UID
 
         # first person using this UID can claim ownership
@@ -230,7 +230,7 @@ class KeyValueActionStore(ActionStore):
             ]
         )
 
-        return uid
+        return True
 
     @as_result(StashException)
     def delete(self, uid: UID, credentials: SyftVerifyKey) -> UID:
