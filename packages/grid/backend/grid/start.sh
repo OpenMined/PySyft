@@ -8,6 +8,7 @@ LOG_LEVEL=${LOG_LEVEL:-info}
 HOST=${HOST:-0.0.0.0}
 PORT=${PORT:-80}
 SERVER_TYPE=${SERVER_TYPE:-datasite}
+SERVER_SIDE_TYPE=${SERVER_SIDE_TYPE:-high}
 APPDIR=${APPDIR:-$HOME/app}
 RELOAD=""
 DEBUG_CMD=""
@@ -29,8 +30,10 @@ export CREDENTIALS_PATH=${CREDENTIALS_PATH:-$HOME/data/creds/credentials.json}
 export SERVER_PRIVATE_KEY=$(python $APPDIR/grid/bootstrap.py --private_key)
 export SERVER_UID=$(python $APPDIR/grid/bootstrap.py --uid)
 export SERVER_TYPE=$SERVER_TYPE
+export SERVER_SIDE_TYPE=$SERVER_SIDE_TYPE
 
 echo "SERVER_UID=$SERVER_UID"
 echo "SERVER_TYPE=$SERVER_TYPE"
+echo "SERVER_SIDE_TYPE=$SERVER_SIDE_TYPE"
 
 exec $DEBUG_CMD uvicorn $RELOAD --host $HOST --port $PORT --log-config=$APPDIR/grid/logging.yaml --log-level $LOG_LEVEL "$APP_MODULE"
