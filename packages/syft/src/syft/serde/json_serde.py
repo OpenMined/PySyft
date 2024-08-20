@@ -12,7 +12,6 @@ from typing import get_origin
 
 # third party
 import pydantic
-from typing_extensions import TypeAliasType
 
 # syft absolute
 import syft as sy
@@ -32,10 +31,7 @@ JSON_VERSION_FIELD = "__version__"
 JSON_DATA_FIELD = "data"
 
 
-Json = TypeAliasType(  # type: ignore[misc]
-    "Json",
-    dict[str, "Json"] | list["Json"] | str | int | float | bool | None,  # type: ignore[misc]
-)
+Json = str | int | float | bool | None | list["Json"] | dict[str, "Json"]
 
 
 @dataclass
