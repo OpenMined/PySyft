@@ -22,6 +22,7 @@ from ..server.credentials import SyftVerifyKey
 from ..types.datetime import DateTime
 from ..types.syft_object import BaseDateTime
 from ..types.syft_object_registry import SyftObjectRegistry
+from ..types.uid import LineageID
 from ..types.uid import UID
 
 T = TypeVar("T")
@@ -80,6 +81,7 @@ register_json_serde(type(None))
 
 # Syft primitives
 register_json_serde(UID, lambda uid: uid.no_dash, lambda s: UID(s))
+register_json_serde(LineageID, lambda uid: uid.no_dash, lambda s: LineageID(s))
 register_json_serde(
     DateTime, lambda dt: dt.utc_timestamp, lambda f: DateTime(utc_timestamp=f)
 )
@@ -88,6 +90,12 @@ register_json_serde(
 )
 register_json_serde(SyftVerifyKey, lambda key: str(key), SyftVerifyKey.from_string)
 register_json_serde(SyftSigningKey, lambda key: str(key), SyftSigningKey.from_string)
+
+
+def _validate_json(value: T) -> T:
+    # Throws TypeError if value is not JSON-serializable
+    json.dumps(value)
+    return value
 
 
 def _is_optional_annotation(annotation: Any) -> Any:
@@ -109,7 +117,8 @@ def _get_nonoptional_annotation(annotation: Any) -> Any:
     return annotation
 
 
-def _annotation_is_subclass_of(annotation: Any, cls: type) -> bool:
+def _annotation_issubclass(annotation: Any, cls: type) -> bool:
+    # issubclass throws TypeError if annotation is not a valid type (eg Union)
     try:
         return issubclass(annotation, cls)
     except TypeError:
@@ -156,7 +165,7 @@ def _is_serializable_iterable(annotation: Any) -> bool:
         return False
 
     inner_type = _get_nonoptional_annotation(args[0])
-    return inner_type in JSON_SERDE_REGISTRY or _annotation_is_subclass_of(
+    return inner_type in JSON_SERDE_REGISTRY or _annotation_issubclass(
         inner_type, pydantic.BaseModel
     )
 
@@ -200,7 +209,7 @@ def _is_serializable_mapping(annotation: Any) -> bool:
 
     # check if value type is serializable
     value_type = _get_nonoptional_annotation(value_type)
-    return value_type in JSON_SERDE_REGISTRY or _annotation_is_subclass_of(
+    return value_type in JSON_SERDE_REGISTRY or _annotation_issubclass(
         value_type, pydantic.BaseModel
     )
 
@@ -276,12 +285,12 @@ def serialize_json(value: Any, annotation: Any = None, validate: bool = True) ->
     if annotation in JSON_SERDE_REGISTRY:
         result = JSON_SERDE_REGISTRY[annotation].serialize(value)
     # SyftObject, or any other Pydantic model
-    elif _annotation_is_subclass_of(annotation, pydantic.BaseModel):
+    elif _annotation_issubclass(annotation, pydantic.BaseModel):
         result = _serialize_pydantic_to_json(value)
 
-    # Recursive types
-    # NOTE only strictly annotated iterables and mappings are supported
-    # example: list[int] is supported, but not list[Union[int, str]]
+    # JSON recursive types
+    # only strictly annotated iterables and mappings are supported
+    # example: list[int] is supported, but not list[int | str]
     elif _is_serializable_iterable(annotation):
         result = _serialize_iterable_to_json(value, annotation)
     elif _is_serializable_mapping(annotation):
@@ -290,7 +299,7 @@ def serialize_json(value: Any, annotation: Any = None, validate: bool = True) ->
         result = _serialize_to_json_bytes(value)
 
     if validate:
-        _ = json.dumps(result)
+        _validate_json(result)
 
     return result
 
@@ -314,7 +323,7 @@ def deserialize_json(value: Json, annotation: Any) -> Any:
 
     if annotation in JSON_SERDE_REGISTRY:
         return JSON_SERDE_REGISTRY[annotation].deserialize(value)
-    elif _annotation_is_subclass_of(annotation, pydantic.BaseModel):
+    elif _annotation_issubclass(annotation, pydantic.BaseModel):
         return _deserialize_pydantic_from_json(value)
     elif isinstance(value, list):
         return _deserialize_iterable_from_json(value, annotation)
