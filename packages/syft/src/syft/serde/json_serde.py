@@ -2,7 +2,7 @@
 import base64
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Annotated
+import json
 from typing import Any
 from typing import Generic
 from typing import TypeVar
@@ -12,12 +12,6 @@ from typing import get_origin
 
 # third party
 import pydantic
-from pydantic import TypeAdapter
-from pydantic import ValidationError
-from pydantic import ValidationInfo
-from pydantic import ValidatorFunctionWrapHandler
-from pydantic import WrapValidator
-from pydantic_core import PydanticCustomError
 from typing_extensions import TypeAliasType
 
 # syft absolute
@@ -38,41 +32,10 @@ JSON_VERSION_FIELD = "__version__"
 JSON_DATA_FIELD = "data"
 
 
-# JSON validator from Pydantic docs
-# Source: https://docs.pydantic.dev/latest/concepts/types/#named-type-aliases
-def json_custom_error_validator(
-    value: Any, handler: ValidatorFunctionWrapHandler, _info: ValidationInfo
-) -> Any:
-    """
-    Simplify the error message to avoid a gross error stemming
-    from exhaustive checking of all union options.
-    """
-    try:
-        return handler(value)
-    except ValidationError:
-        raise PydanticCustomError(
-            "invalid_json",
-            "Input is not valid json",
-        )
-
-
-Json = TypeAliasType(  # type: ignore
+Json = TypeAliasType(  # type: ignore[misc]
     "Json",
-    Annotated[
-        dict[str, "Json"] | list["Json"] | str | int | float | bool | None,  # type: ignore
-        WrapValidator(json_custom_error_validator),
-    ],
+    dict[str, "Json"] | list["Json"] | str | int | float | bool | None,  # type: ignore[misc]
 )
-
-JSON_TYPE_ADAPTER = TypeAdapter(Json)
-
-
-def _is_valid_json(value: Any) -> bool:
-    try:
-        JSON_TYPE_ADAPTER.validate_python(value)
-        return True
-    except ValidationError:
-        return False
 
 
 @dataclass
@@ -203,7 +166,8 @@ def _is_serializable_iterable(annotation: Any) -> bool:
 
 
 def _serialize_iterable_to_json(value: Any, annotation: Any) -> Json:
-    return [serialize_json(v) for v in value]
+    # No need to validate in recursive calls
+    return [serialize_json(v, validate=False) for v in value]
 
 
 def _deserialize_iterable_from_json(value: Json, annotation: Any) -> Any:
@@ -247,7 +211,8 @@ def _is_serializable_mapping(annotation: Any) -> bool:
 
 def _serialize_mapping_to_json(value: Any, annotation: Any) -> Json:
     _, value_type = get_args(annotation)
-    return {k: serialize_json(v, value_type) for k, v in value.items()}
+    # No need to validate in recursive calls
+    return {k: serialize_json(v, value_type, validate=False) for k, v in value.items()}
 
 
 def _deserialize_mapping_from_json(value: Json, annotation: Any) -> Any:
@@ -273,7 +238,7 @@ def _deserialize_from_json_bytes(obj: str) -> Any:
     return sy.deserialize(obj_bytes, from_bytes=True)
 
 
-def serialize_json(value: Any, annotation: Any = None) -> Json:
+def serialize_json(value: Any, annotation: Any = None, validate: bool = True) -> Json:
     """
     Serialize a value to a JSON-serializable object, using the schema defined by the
     provided annotation.
@@ -313,20 +278,25 @@ def serialize_json(value: Any, annotation: Any = None) -> Json:
     annotation = _get_nonoptional_annotation(annotation)
 
     if annotation in JSON_SERDE_REGISTRY:
-        return JSON_SERDE_REGISTRY[annotation].serialize(value)
+        result = JSON_SERDE_REGISTRY[annotation].serialize(value)
     # SyftObject, or any other Pydantic model
     elif _annotation_is_subclass_of(annotation, pydantic.BaseModel):
-        return _serialize_pydantic_to_json(value)
+        result = _serialize_pydantic_to_json(value)
 
     # Recursive types
     # NOTE only strictly annotated iterables and mappings are supported
     # example: list[int] is supported, but not list[Union[int, str]]
     elif _is_serializable_iterable(annotation):
-        return _serialize_iterable_to_json(value, annotation)
+        result = _serialize_iterable_to_json(value, annotation)
     elif _is_serializable_mapping(annotation):
-        return _serialize_mapping_to_json(value, annotation)
+        result = _serialize_mapping_to_json(value, annotation)
     else:
-        return _serialize_to_json_bytes(value)
+        result = _serialize_to_json_bytes(value)
+
+    if validate:
+        _ = json.dumps(result)
+
+    return result
 
 
 def deserialize_json(value: Json, annotation: Any) -> Any:
