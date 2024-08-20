@@ -64,8 +64,15 @@ Json = TypeAliasType(  # type: ignore
     ],
 )
 
-# Used for validating JSON values
 JSON_TYPE_ADAPTER = TypeAdapter(Json)
+
+
+def _is_valid_json(value: Any) -> bool:
+    try:
+        JSON_TYPE_ADAPTER.validate_python(value)
+        return True
+    except ValidationError:
+        return False
 
 
 @dataclass
