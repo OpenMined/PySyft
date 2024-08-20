@@ -586,7 +586,7 @@ def from_api_or_context(
         )
         if func_or_path not in user_config_registry:
             if ServiceConfigRegistry.path_exists(func_or_path):
-                return SyftException(
+                raise SyftException(
                     public_message=f"As a `{server_context.role}` you have has no access to: {func_or_path}"
                 )
             else:

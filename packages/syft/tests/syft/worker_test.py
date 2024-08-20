@@ -275,23 +275,23 @@ def test_worker_handle_api_request(
     )
     # should fail on unsigned requests
     with pytest.raises(SyftException):
-        result = worker_with_proc.handle_api_call(api_call).message.data
+        _ = worker_with_proc.handle_api_call(api_call).message.data
 
     signed_api_call = api_call.sign(root_client.api.signing_key)
 
     # should work on signed api calls
-    result = worker_with_proc.handle_api_call(signed_api_call).message.data
+    _ = worker_with_proc.handle_api_call(signed_api_call).message.data
 
     # Guest client should not have access to the APIs
     guest_signed_api_call = api_call.sign(root_client.api.signing_key)
-    result = worker_with_proc.handle_api_call(guest_signed_api_call).message
+    _ = worker_with_proc.handle_api_call(guest_signed_api_call).message
 
     # should fail on altered requests
     bogus_api_call = signed_api_call
     bogus_api_call.serialized_message += b"hacked"
 
     with pytest.raises(SyftException):
-        result = worker_with_proc.handle_api_call(bogus_api_call).message.data
+        _ = worker_with_proc.handle_api_call(bogus_api_call).message.data
 
 
 @pytest.mark.parametrize(

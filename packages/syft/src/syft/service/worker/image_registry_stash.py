@@ -3,6 +3,8 @@
 # third party
 
 # stdlib
+
+# stdlib
 from typing import Literal
 
 # relative
@@ -48,6 +50,6 @@ class SyftImageRegistryStash(NewBaseUIDStoreStash):
         )
 
     @as_result(SyftException, StashException)
-    def delete_by_url(self, credentials: SyftVerifyKey, url: str) -> SyftSuccess:
+    def delete_by_url(self, credentials: SyftVerifyKey, url: str) -> Literal[True]:
         qk = URLPartitionKey.with_obj(url)
         return super().delete(credentials=credentials, qk=qk).unwrap()

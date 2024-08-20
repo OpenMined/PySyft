@@ -146,7 +146,7 @@ class SyftBaseObject(pydantic.BaseModel, SyftHashableObject):
         self,
         server_uid: UID | None = None,
         user_verify_key: SyftVerifyKey | None = None,
-    ):
+    ) -> SyftAPI:
         if server_uid is None:
             server_uid = self.syft_server_location
 
@@ -156,21 +156,25 @@ class SyftBaseObject(pydantic.BaseModel, SyftHashableObject):
         # relative
         from ..client.api import APIRegistry
 
-        return APIRegistry.api_for(
-            server_uid=server_uid,
-            user_verify_key=user_verify_key,
-        ).unwrap(
-            public_message=f"Can't access Syft API using this object. You must login to {self.syft_server_location}"
+        return (
+            APIRegistry.api_for(
+                server_uid=server_uid,
+                user_verify_key=user_verify_key,
+            )
+            .unwrap(
+                public_message=f"Can't access Syft API using this object. You must login to {self.syft_server_location}"
+            )
+            .unwrap()
         )
 
-    def get_api_wrapped(self):
+    def get_api_wrapped(self) -> SyftAPI:
         # relative
         from ..client.api import APIRegistry
 
         return APIRegistry.api_for(
             server_uid=self.syft_server_location,
             user_verify_key=self.syft_client_verify_key,
-        )
+        ).unwrap()
 
 
 class Context(SyftBaseObject):

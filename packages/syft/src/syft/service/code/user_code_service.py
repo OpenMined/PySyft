@@ -22,7 +22,6 @@ from ...util.telemetry import instrument
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
-from ..action.action_service import ActionService
 from ..context import AuthedServiceContext
 from ..output.output_service import ExecutionOutput
 from ..policy.policy import InputPolicyValidEnum
@@ -583,9 +582,9 @@ class UserCodeService(AbstractService):
                 " as a job on your worker pool"
             )
 
-        action_service: ActionService = context.server.get_service("actionservice")
+        action_service = context.server.get_service("actionservice")
 
-        action_obj: ActionObject | TwinObject = action_service._user_code_execute(
+        action_obj = action_service._user_code_execute(
             context, code, kwarg2id, result_id
         ).unwrap()
 

@@ -19,7 +19,6 @@ from syft.service.blob_storage.util import can_upload_to_blob_storage
 from syft.service.dataset.dataset import CreateAsset as Asset
 from syft.service.dataset.dataset import CreateDataset as Dataset
 from syft.service.dataset.dataset import _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE
-from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.types.errors import SyftException
 
@@ -342,7 +341,7 @@ def test_delete_small_datasets(worker: Worker, small_dataset: Dataset) -> None:
     assert isinstance(del_res, SyftSuccess)
     assert asset.data is None
     with pytest.raises(SyftException):
-        asset.mock
+        print(asset.mock)
     assert len(root_client.api.services.dataset.get_all()) == 0
 
 
@@ -382,6 +381,6 @@ def test_delete_big_datasets(worker: Worker, big_dataset: Dataset) -> None:
     assert isinstance(del_res, SyftSuccess)
     assert asset.data is None
     with pytest.raises(SyftException):
-        asset.mock
+        print(asset.mock)
     assert len(root_client.api.services.blob_storage.get_all()) == 0
     assert len(root_client.api.services.dataset.get_all()) == 0

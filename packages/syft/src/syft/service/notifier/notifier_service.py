@@ -313,13 +313,9 @@ class NotifierService(AbstractService):
     def set_email_rate_limit(
         self, context: AuthedServiceContext, email_type: EMAIL_TYPES, daily_limit: int
     ) -> SyftSuccess:
-        notifier = self.stash.get(context.credentials)
-
-        if notifier.is_err():
-            raise SyftException(public_message="Couldn't set the email rate limit.")
-
-        notifier = notifier.ok()
-
+        notifier = self.stash.get(context.credentials).unwrap(
+            public_message="Couldn't set the email rate limit."
+        )
         notifier.email_rate_limit[email_type.value] = daily_limit
         self.stash.update(credentials=context.credentials, settings=notifier)
 
@@ -360,7 +356,7 @@ class NotifierService(AbstractService):
                 # If there's no user activity
                 if user_activity is None:
                     notifier.email_activity[notification.email_template.__name__][
-                        notification.to_user_verify_key, None
+                        notification.to_user_verify_key
                     ] = UserNotificationActivity(count=1, date=datetime.now())
                 else:  # If there's a previous user activity
                     current_state: UserNotificationActivity = notifier.email_activity[

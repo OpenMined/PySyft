@@ -927,12 +927,12 @@ class Server(AbstractServer):
             settings = settings_stash.get_all(self.signing_key.verify_key).unwrap()
 
             if len(settings) > 0:
-                settings = settings[0]
-                self.update_self(settings)
+                setting = settings[0]
+                self.update_self(setting)
+                return setting
             else:
                 return None
 
-            return settings
         except SyftException:
             return None
 

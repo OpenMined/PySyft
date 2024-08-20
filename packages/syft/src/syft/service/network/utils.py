@@ -65,7 +65,7 @@ class PeerHealthCheckTask:
                         f"Failed to create client for peer: {peer}: {peer_client.err()}"
                     )
                     peer_update.ping_status = ServerPeerConnectionStatus.TIMEOUT
-                    peer_client = None
+                    peer_client = None  # type: ignore [assignment]
             except Exception as e:
                 logger.error(f"Failed to create client for peer: {peer}", exc_info=e)
 
@@ -73,8 +73,8 @@ class PeerHealthCheckTask:
                 peer_client = None
 
             if peer_client is not None:
-                peer_client = peer_client.ok()
-                peer_status = peer_client.api.services.network.check_peer_association(
+                peer_client = peer_client.ok()  # type: ignore [assignment]
+                peer_status = peer_client.api.services.network.check_peer_association(  # type: ignore [union-attr]
                     peer_id=context.server.id
                 )
                 peer_update.ping_status = (

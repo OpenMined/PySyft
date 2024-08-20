@@ -43,7 +43,7 @@ class MigrationService(AbstractService):
 
         migration_state = self.stash.get_by_name(
             canonical_name=canonical_name, credentials=context.credentials
-        ).uwnrap()
+        ).unwrap()
 
         if migration_state is None:
             raise SyftException(
@@ -112,7 +112,7 @@ class MigrationService(AbstractService):
         context: AuthedServiceContext,
         document_store_object_types: list[type[SyftObject]] | None = None,
         include_action_store: bool = True,
-    ) -> dict[str, StoreMetadata]:
+    ) -> dict[type[SyftObject], StoreMetadata]:
         return self._get_all_store_metadata(
             context,
             document_store_object_types=document_store_object_types,
@@ -160,7 +160,7 @@ class MigrationService(AbstractService):
         context: AuthedServiceContext,
         document_store_object_types: list[type[SyftObject]] | None = None,
         include_action_store: bool = True,
-    ) -> dict[str, list[str]]:
+    ) -> dict[type[SyftObject], StoreMetadata]:
         if document_store_object_types is None:
             document_store_object_types = self.store.get_partition_object_types()
 
@@ -181,7 +181,7 @@ class MigrationService(AbstractService):
     )
     def update_store_metadata(
         self, context: AuthedServiceContext, store_metadata: dict[type, StoreMetadata]
-    ) -> SyftSuccess:
+    ) -> None:
         return self._update_store_metadata(context, store_metadata).unwrap()
 
     @as_result(SyftException)
@@ -323,8 +323,8 @@ class MigrationService(AbstractService):
             if result.is_err():
                 # TODO: subclass a DuplicationKeyError
                 if ignore_existing and (
-                    "Duplication Key Error" in result.err()._private_message
-                    or "Duplication Key Error" in result.err().public_message
+                    "Duplication Key Error" in result.err()._private_message  # type: ignore
+                    or "Duplication Key Error" in result.err().public_message  # type: ignore
                 ):
                     print(
                         f"{type(migrated_object)} #{migrated_object.id} already exists"
@@ -341,7 +341,7 @@ class MigrationService(AbstractService):
     )
     def update_migrated_objects(
         self, context: AuthedServiceContext, migrated_objects: list[SyftObject]
-    ) -> SyftSuccess:
+    ) -> None:
         self._update_migrated_objects(context, migrated_objects).unwrap()
 
     @as_result(SyftException)

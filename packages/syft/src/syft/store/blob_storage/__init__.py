@@ -64,6 +64,7 @@ from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.blob_storage import DEFAULT_CHUNK_SIZE
 from ...types.blob_storage import SecureFilePathLocation
 from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.server_url import ServerURL
 from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -181,11 +182,11 @@ class BlobRetrievalByURL(BlobRetrieval):
         if api.is_ok() and api.ok().connection and isinstance(self.url, ServerURL):
             api = api.unwrap()
             if self.proxy_server_uid is None:
-                blob_url = api.connection.to_blob_route(
+                blob_url = api.connection.to_blob_route(  # type: ignore [union-attr]
                     self.url.url_path, host=self.url.host_or_ip
                 )
             else:
-                blob_url = api.connection.stream_via(
+                blob_url = api.connection.stream_via(  # type: ignore [union-attr]
                     self.proxy_server_uid, self.url.url_path
                 )
                 stream = True
@@ -219,6 +220,7 @@ class BlobDeposit(SyftObject):
 
     blob_storage_entry_id: UID
 
+    @as_result(SyftException)
     def write(self, data: BytesIO) -> SyftSuccess:
         raise NotImplementedError
 

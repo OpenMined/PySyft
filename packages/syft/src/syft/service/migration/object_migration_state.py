@@ -74,7 +74,7 @@ class SyftMigrationStateStash(NewBaseStash):
         super().__init__(store=store)
 
     @as_result(SyftException)
-    def set(
+    def set(  # type: ignore [override]
         self,
         credentials: SyftVerifyKey,
         migration_state: SyftObjectMigrationState,

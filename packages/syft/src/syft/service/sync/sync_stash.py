@@ -51,7 +51,7 @@ class SyncStash(NewBaseUIDStoreStash):
             return all_states[-1]
         return None
 
-    def unwrap_set(self, context, item):
+    def unwrap_set(self, context: AuthedServiceContext, item: SyncState) -> SyncState:
         return super().set(context, item).unwrap()
 
     @as_result(StashException)

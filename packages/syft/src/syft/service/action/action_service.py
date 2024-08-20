@@ -194,9 +194,7 @@ class ActionService(AbstractService):
             if action_object.mock_obj.syft_action_saved_to_blob_store:
                 blob_id = action_object.mock_obj.syft_blob_storage_entry_id
                 permission = ActionObjectPermission(blob_id, ActionPermission.ALL_READ)
-                blob_storage_service: BlobStorageService = context.server.get_service(
-                    BlobStorageService
-                )
+                blob_storage_service = context.server.get_service(BlobStorageService)
                 # add_permission is not resultified.
                 blob_storage_service.stash.add_permission(permission)
 
@@ -281,16 +279,14 @@ class ActionService(AbstractService):
         # TODO: Is this necessary?
         if context.server is None:
             raise SyftException(public_message=f"Server not found. Context: {context}")
-        obj = result
-
         obj._set_obj_location_(
             context.server.id,
             context.credentials,
         )
 
         # Resolve graph links
-        if not isinstance(obj, TwinObject) and resolve_nested and obj.is_link:
-            if not self.is_resolved(
+        if not isinstance(obj, TwinObject) and resolve_nested and obj.is_link:  # type: ignore [unreachable]
+            if not self.is_resolved(  # type: ignore [unreachable]
                 context, obj.syft_action_data.action_object_id.id
             ).unwrap():
                 raise SyftException(public_message="This object is not resolved yet.")
@@ -868,7 +864,7 @@ class ActionService(AbstractService):
             context.server.id,
             context.credentials,
         )
-        blob_store_result = result_action_object._save_to_blob_storage().unwrap()
+        blob_store_result = result_action_object._save_to_blob_storage().unwrap()  # type: ignore[union-attr]
         # pass permission information to the action store as extra kwargs
         context.extra_kwargs = {
             "has_result_read_permission": has_result_read_permission

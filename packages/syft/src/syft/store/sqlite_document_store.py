@@ -75,8 +75,6 @@ def special_exception_public_message(table_name: str, e: Exception) -> str:
 
     return error_msg
 
-    return Exception("Table exception")
-
 
 @serializable(
     attrs=["index_name", "settings", "store_config"],

@@ -188,7 +188,6 @@ class APIEndpoint(SyftObject):
     unwrap_on_success: bool = True
 
 
-
 @serializable()
 class LibEndpoint(SyftBaseObject):
     __canonical_name__ = "LibEndpoint"

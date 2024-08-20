@@ -847,7 +847,7 @@ class ObjectDiffBatch(SyftObject):
                 public_message=html.escape(
                     "Could not render batch, please use resolve(<batch>) instead."
                 )
-            )._repr_html_()
+            )
 
         return f"""
 <h2> ObjectBatchDiff </h2>
@@ -925,7 +925,7 @@ class ObjectDiffBatch(SyftObject):
                 public_message=html.escape(
                     "Could not render batch, please use resolve(<batch>) instead."
                 )
-            )._repr_html_()
+            )
 
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         return ""  # Turns off the _repr_markdown_ of SyftObject
@@ -1074,9 +1074,7 @@ class FilterProperty(enum.Enum):
     def from_batch(self, batch: ObjectDiffBatch) -> Any:
         if self == FilterProperty.USER:
             user = batch.user
-            if isinstance(user, UserView):
-                return user.email
-            return None
+            return user.email
         elif self == FilterProperty.TYPE:
             return batch.root_diff.obj_type.__name__.lower()
         elif self == FilterProperty.STATUS:

@@ -743,19 +743,22 @@ class Project(SyftObject):
 
         verify_key = signing_key.verify_key
 
-        leader_client = SyftClientSessionCache.get_client_by_uid_and_verify_key(
+        cached_leader_client = SyftClientSessionCache.get_client_by_uid_and_verify_key(
             verify_key=verify_key, server_uid=self.leader_server_peer.id
         )
 
-        if leader_client is None:
-            leader_client = self.leader_server_peer.client_with_key(signing_key)
+        if cached_leader_client is None:
+            leader_client: SyftClient = self.leader_server_peer.client_with_key(
+                signing_key
+            ).unwrap()
             SyftClientSessionCache.add_client_by_uid_and_verify_key(
                 verify_key=verify_key,
                 server_uid=leader_client.id,
                 syft_client=leader_client,
             )
+            return leader_client
 
-        return leader_client
+        return cached_leader_client
 
     def has_permission(self, verify_key: SyftVerifyKey) -> bool:
         # Currently the permission function, initially checks only if the

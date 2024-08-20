@@ -218,7 +218,7 @@ class ServerPeer(SyftObject):
         return self.server_routes[-1] if self.server_routes else None
 
     @as_result(SyftException)
-    def client_with_context(self, context: ServerServiceContext) -> type[SyftClient]:
+    def client_with_context(self, context: ServerServiceContext) -> SyftClient:
         # third party
 
         if len(self.server_routes) < 1:
@@ -248,7 +248,7 @@ class ServerPeer(SyftObject):
     @property
     def guest_client(self) -> SyftClient:
         guest_key = SyftSigningKey.generate()
-        return self.client_with_key(credentials=guest_key)
+        return self.client_with_key(credentials=guest_key).unwrap()
 
     def proxy_from(self, client: SyftClient) -> SyftClient:
         return client.proxy_to(self)

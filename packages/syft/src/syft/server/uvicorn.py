@@ -4,7 +4,6 @@ import logging
 import multiprocessing
 import multiprocessing.synchronize
 import os
-from pathlib import Path
 import platform
 import signal
 import subprocess  # nosec

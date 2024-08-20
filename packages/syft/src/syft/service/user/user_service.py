@@ -222,7 +222,7 @@ class UserService(AbstractService):
     )
     def request_password_reset(self, context: AuthedServiceContext, uid: UID) -> str:
         user = self.stash.get_by_uid(credentials=context.credentials, uid=uid).unwrap()
-        user_role = self.get_role_for_credentials(user.verify_key)
+        user_role = self.get_role_for_credentials(user.verify_key).unwrap()
 
         if user_role == ServiceRole.ADMIN:
             raise SyftException(
@@ -261,7 +261,12 @@ class UserService(AbstractService):
                 public_message="Failed to reset user password. Token is invalid or expired!"
             )
         now = datetime.now()
-        time_difference = now - user.reset_token_date
+        if user.reset_token_date is not None:
+            time_difference = now - user.reset_token_date
+        else:
+            raise SyftException(
+                public_message="Failed to reset user password. Reset Token Invalid!"
+            )
 
         # If token expired
         expiration_time = root_context.server.settings.pwd_token_config.token_exp_min

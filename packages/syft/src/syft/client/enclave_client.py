@@ -84,20 +84,16 @@ class EnclaveClient(SyftClient):
 
         self.metadata: ServerMetadataJSON = self.metadata
         res = self.exchange_route(client, protocol=protocol)
-
-        if isinstance(res, SyftSuccess):
-            if self.metadata:
-                return SyftSuccess(
-                    message=(
-                        f"Connected {self.metadata.server_type} "
-                        f"'{self.metadata.name}' to gateway '{client.name}'. "
-                        f"{res.message}"
-                    )
+        if self.metadata:
+            return SyftSuccess(
+                message=(
+                    f"Connected {self.metadata.server_type} "
+                    f"'{self.metadata.name}' to gateway '{client.name}'. "
+                    f"{res.message}"
                 )
-            else:
-                return SyftSuccess(message=f"Connected to '{client.name}' gateway")
-
-        return res
+            )
+        else:
+            return SyftSuccess(message=f"Connected to '{client.name}' gateway")
 
     def get_enclave_metadata(self) -> EnclaveMetadata:
         return EnclaveMetadata(route=self.connection.route)

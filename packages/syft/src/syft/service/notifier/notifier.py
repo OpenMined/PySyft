@@ -246,9 +246,7 @@ class NotifierSettings(SyftObject):
         notifier_objs: list[BaseNotifier] = self.select_notifiers(notification)
 
         for notifier in notifier_objs:
-            result = notifier.send(target=context, notification=notification)
-            if result.err():
-                raise SyftException(public_message=result.message)
+            notifier.send(target=context, notification=notification).unwrap()
 
         return len(notifier_objs)
 

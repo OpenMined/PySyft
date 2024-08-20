@@ -925,7 +925,7 @@ class Request(SyncableSyftObject):
                 f"{type(user_code_status_change)}"
             )
 
-        api = APIRegistry.api_for(self.server_uid, self.syft_client_verify_key)
+        api = APIRegistry.api_for(self.server_uid, self.syft_client_verify_key).unwrap()
         if not api:
             raise Exception(
                 f"No access to Syft API. Please login to {self.server_uid} first."
@@ -1052,7 +1052,7 @@ class Request(SyncableSyftObject):
         if isinstance(job.result, ActionObject):
             existing_result = job.result.id
         elif isinstance(job.result, Err):
-            existing_result = job.result
+            existing_result = job.result  # type: ignore [assignment]
         else:
             existing_result = job.result
         print(

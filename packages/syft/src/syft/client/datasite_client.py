@@ -319,19 +319,16 @@ class DatasiteClient(SyftClient):
             protocol=protocol,
             reverse_tunnel=reverse_tunnel,
         )
-        if isinstance(res, SyftSuccess):
-            if self.metadata:
-                return SyftSuccess(
-                    message=(
-                        f"Connected {self.metadata.server_type} "
-                        f"'{self.metadata.name}' to gateway '{client.name}'. "
-                        f"{res.message}"
-                    )
+        if self.metadata:
+            return SyftSuccess(
+                message=(
+                    f"Connected {self.metadata.server_type} "
+                    f"'{self.metadata.name}' to gateway '{client.name}'. "
+                    f"{res.message}"
                 )
-            else:
-                return SyftSuccess(message=f"Connected to '{client.name}' gateway")
-
-        return res
+            )
+        else:
+            return SyftSuccess(message=f"Connected to '{client.name}' gateway")
 
     def _get_service_by_name_if_exists(self, name: str) -> APIModule | None:
         if self.api.has_service(name):

@@ -561,6 +561,7 @@ class StorePartition:
     def has_permission(self, permission: ActionObjectPermission) -> bool:
         raise NotImplementedError
 
+    @as_result(SyftException)
     def get_all_permissions(self) -> dict[UID, set[str]]:
         raise NotImplementedError
 
@@ -582,6 +583,7 @@ class StorePartition:
     def _get_storage_permissions_for_uid(self, uid: UID) -> set[UID]:
         raise NotImplementedError
 
+    @as_result(SyftException)
     def get_all_storage_permissions(self) -> dict[UID, set[UID]]:
         raise NotImplementedError
 
@@ -908,7 +910,7 @@ class NewBaseUIDStoreStash(NewBaseStash):
         return result
 
     @as_result(SyftException, StashException)
-    def set(
+    def set(  # type: ignore [override]
         self,
         credentials: SyftVerifyKey,
         obj: NewBaseUIDStoreStash.object_type,

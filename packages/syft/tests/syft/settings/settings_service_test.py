@@ -278,7 +278,7 @@ def test_settingsservice_update_fail(
 
     monkeypatch.setattr(authed_context.server, "get_service", mock_get_service)
 
-    with pytest.raises(StashException) as exc:
+    with pytest.raises(StashException) as _:
         settings_service.update(context=authed_context, settings=update_settings)
 
 

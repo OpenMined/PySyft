@@ -113,7 +113,7 @@ def forward_message_to_proxy(
     signed_message: SignedSyftAPICall = call.sign(credentials=credentials)
     signed_result = make_call(signed_message)
     response = debox_signed_syftapicall_response(signed_result).unwrap()
-    result = post_process_result("action.execute", response, unwrap_on_success=True)
+    result = post_process_result(response, unwrap_on_success=True)
 
     return result
 
@@ -344,7 +344,7 @@ class HTTPConnection(ServerConnection):
             metadata_json = json.loads(response)
             return ServerMetadataJSON(**metadata_json)
 
-    def get_api(
+    def get_api(  # type: ignore [override]
         self,
         credentials: SyftSigningKey,
         communication_protocol: int,
@@ -535,7 +535,7 @@ class PythonConnection(ServerConnection):
         else:
             return ServerURL(port=8333).with_path(path)
 
-    def get_api(
+    def get_api(  # type: ignore [override]
         self,
         credentials: SyftSigningKey,
         communication_protocol: int,
@@ -1082,7 +1082,7 @@ class SyftClient:
             self.metadata = metadata
 
     def _fetch_api(self, credentials: SyftSigningKey) -> SyftAPI:
-        _api: SyftAPI = self.connection.get_api(
+        _api: SyftAPI = self.connection.get_api(  # type: ignore [call-arg]
             credentials=credentials,
             communication_protocol=self.communication_protocol,
             metadata=self.metadata,
