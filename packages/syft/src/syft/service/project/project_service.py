@@ -382,7 +382,7 @@ class ProjectService(AbstractService):
             context (AuthedServiceContext): Context of the server
 
         Returns:
-            Union[SyftSuccess, SyftError]: SyftSuccess if message is created else SyftError
+            SyftSuccess | SyftError: SyftSuccess if message is created else SyftError
         """
 
         if (

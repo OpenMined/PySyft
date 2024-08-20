@@ -11,11 +11,15 @@ action_types: dict = {}
 
 
 def action_type_for_type(obj_or_type: Any) -> type:
-    """Convert standard type to Syft types
+    """Convert standard type to Syft types.
 
-    Parameters:
-        obj_or_type: Union[object, type]
-            Can be an object or a class
+    Args:
+        obj_or_type (Any): Can be an object or a class. If it's an instance of
+            `ActionDataEmpty`, the internal type is used.
+
+    Returns:
+        type: Corresponding Syft type for the given object or type. If no corresponding
+        type is found, the default Syft type for `Any` is returned.
     """
     if isinstance(obj_or_type, ActionDataEmpty):
         obj_or_type = obj_or_type.syft_internal_type
@@ -31,11 +35,14 @@ def action_type_for_type(obj_or_type: Any) -> type:
 
 
 def action_type_for_object(obj: Any) -> type:
-    """Convert standard type to Syft types
+    """Convert an object's type to the corresponding Syft type.
 
-    Parameters:
-        obj_or_type: Union[object, type]
-            Can be an object or a class
+    Args:
+        obj (Any): The object to convert.
+
+    Returns:
+        type: Corresponding Syft type for the given object. If no corresponding
+        type is found, the default Syft type for `Any` is returned.
     """
     _type = type(obj)
 

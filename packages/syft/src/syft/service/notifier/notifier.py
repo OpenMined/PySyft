@@ -255,7 +255,7 @@ class NotifierSettings(SyftObject):
         Args:
             notification (Notification): The notification object
         Returns:
-            List[BaseNotifier]: A list of enabled notifier objects
+            list[BaseNotifier]: A list of enabled notifier objects
         """
         notifier_objs = []
         for notifier_type in notification.notifier_types:

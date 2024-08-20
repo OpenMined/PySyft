@@ -19,19 +19,21 @@ THREAD_FILE_LOCKS: dict[int, dict[str, int]] = defaultdict(dict)
 @serializable(canonical_name="LockingConfig", version=1)
 class LockingConfig(BaseModel):
     """
-    Locking config
+    Locking configuration.
+
+    Attributes:
+        lock_name (str): Lock name.
+        namespace (str | None): Namespace to use for setting lock keys in the backend store.
+        expire (int | None): Lock expiration time in seconds. If explicitly set to `None`, the lock will not expire.
+        timeout (int | None): Timeout to acquire lock (in seconds).
+        retry_interval (float): Retry interval to retry acquiring a lock if previous attempts failed.
 
     Args:
-        lock_name: str
-            Lock name
-        namespace: Optional[str]
-            Namespace to use for setting lock keys in the backend store.
-        expire: Optional[int]
-            Lock expiration time in seconds. If explicitly set to `None`, lock will not expire.
-        timeout: Optional[int]
-             Timeout to acquire lock(seconds)
-        retry_interval: float
-            Retry interval to retry acquiring a lock if previous attempts failed.
+        lock_name (str): Lock name.
+        namespace (str | None): Namespace to use for setting lock keys in the backend store.
+        expire (int | None): Lock expiration time in seconds. If explicitly set to `None`, the lock will not expire.
+        timeout (int | None): Timeout to acquire lock (in seconds).
+        retry_interval (float): Retry interval to retry acquiring a lock if previous attempts failed.
     """
 
     lock_name: str = "syft_lock"
@@ -44,7 +46,7 @@ class LockingConfig(BaseModel):
 @serializable(canonical_name="NoLockingConfig", version=1)
 class NoLockingConfig(LockingConfig):
     """
-    No-locking policy
+    No-locking policy.
     """
 
     pass
@@ -53,7 +55,7 @@ class NoLockingConfig(LockingConfig):
 @serializable(canonical_name="ThreadingLockingConfig", version=1)
 class ThreadingLockingConfig(LockingConfig):
     """
-    Threading-based locking policy
+    Threading-based locking policy.
     """
 
     pass
@@ -72,9 +74,10 @@ class ThreadingLock(BaseLock):
     @property
     def _locked(self) -> bool:
         """
-        Implementation of method to check if lock has been acquired. Must be
-        :returns: if the lock is acquired or not
-        :rtype: bool
+        Check if the lock has been acquired.
+
+        Returns:
+            bool: True if the lock is acquired, False otherwise.
         """
         locked = self.lock.locked()
         if (
@@ -88,9 +91,10 @@ class ThreadingLock(BaseLock):
 
     def _acquire(self) -> bool:
         """
-        Implementation of acquiring a lock in a non-blocking fashion.
-        :returns: if the lock was successfully acquired or not
-        :rtype: bool
+        Acquire the lock in a non-blocking fashion.
+
+        Returns:
+            bool: True if the lock was successfully acquired, False otherwise.
         """
         locked = self.lock.locked()
         if (
@@ -100,18 +104,15 @@ class ThreadingLock(BaseLock):
         ):
             self._release()
 
-        status = self.lock.acquire(
-            blocking=False
-        )  # timeout/retries handle in the `acquire` method
+        status = self.lock.acquire(blocking=False)
         if status:
             self.locked_timestamp = time.time()
         return status
 
     def _release(self) -> None:
         """
-        Implementation of releasing an acquired lock.
+        Release the acquired lock.
         """
-
         try:
             return self.lock.release()
         except RuntimeError:  # already unlocked
@@ -119,17 +120,23 @@ class ThreadingLock(BaseLock):
 
     def _renew(self) -> bool:
         """
-        Implementation of renewing an acquired lock.
+        Renew the acquired lock.
+
+        Returns:
+            bool: True if the lock was successfully renewed, False otherwise.
         """
         return True
 
 
 class SyftLock(BaseLock):
     """
-    Syft Lock implementations.
+    Syft Lock implementation.
 
-    Params:
-        config: Config specific to a locking strategy.
+    Args:
+        config (LockingConfig): Configuration specific to a locking strategy.
+
+    Raises:
+        ValueError: If an unsupported config type is provided.
     """
 
     def __init__(self, config: LockingConfig):
@@ -162,24 +169,25 @@ class SyftLock(BaseLock):
     @property
     def _locked(self) -> bool:
         """
-        Implementation of method to check if lock has been acquired.
+        Check if the lock has been acquired.
 
-        :returns: if the lock is acquired or not
-        :rtype: bool
+        Returns:
+            bool: True if the lock is acquired, False otherwise.
         """
         if self.passthrough:
             return False
-        return self._lock.locked() if self._lock else False
+        return self._lock._locked if self._lock else False
 
     def acquire(self, blocking: bool = True) -> bool:
         """
         Acquire a lock, blocking or non-blocking.
-        :param bool blocking: acquire a lock in a blocking or non-blocking
-                              fashion. Defaults to True.
-        :returns: if the lock was successfully acquired or not
-        :rtype: bool
-        """
 
+        Args:
+            blocking (bool): Acquire a lock in a blocking or non-blocking fashion. Defaults to True.
+
+        Returns:
+            bool: True if the lock was successfully acquired, False otherwise.
+        """
         if not blocking:
             return self._acquire()
 
@@ -195,16 +203,14 @@ class SyftLock(BaseLock):
         logger.debug(
             f"Timeout elapsed after {self.timeout} seconds while trying to acquiring lock."
         )
-        # third party
         return False
 
     def _acquire(self) -> bool:
         """
-        Implementation of acquiring a lock in a non-blocking fashion.
-        `acquire` makes use of this implementation to provide blocking and non-blocking implementations.
+        Acquire the lock in a non-blocking fashion.
 
-        :returns: if the lock was successfully acquired or not
-        :rtype: bool
+        Returns:
+            bool: True if the lock was successfully acquired, False otherwise.
         """
         if self.passthrough:
             return True
@@ -216,7 +222,10 @@ class SyftLock(BaseLock):
 
     def _release(self) -> bool | None:
         """
-        Implementation of releasing an acquired lock.
+        Release the acquired lock.
+
+        Returns:
+            bool | None: True if the lock was successfully released, None otherwise.
         """
         if self.passthrough:
             return None
@@ -229,7 +238,10 @@ class SyftLock(BaseLock):
 
     def _renew(self) -> bool:
         """
-        Implementation of renewing an acquired lock.
+        Renew the acquired lock.
+
+        Returns:
+            bool: True if the lock was successfully renewed, False otherwise.
         """
         if self.passthrough:
             return True

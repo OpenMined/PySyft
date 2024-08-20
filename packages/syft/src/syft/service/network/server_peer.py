@@ -70,20 +70,22 @@ class ServerPeer(SyftObject):
     pinged_timestamp: DateTime | None = None
 
     def existed_route(self, route: ServerRouteType) -> tuple[bool, int | None]:
-        """Check if a route exists in self.server_routes
+        """Check if a route exists in self.server_routes.
 
         Args:
-            route: the route to be checked. For now it can be either
-                HTTPServerRoute or PythonServerRoute
+            route (ServerRouteType): The route to be checked. It can be either
+                HTTPServerRoute, PythonServerRoute, or VeilidServerRoute.
 
         Returns:
-            if the route exists, returns (True, index of the existed route in self.server_routes)
-            if the route does not exist returns (False, None)
-        """
+            tuple[bool, int | None]: A tuple containing a boolean indicating whether the route exists,
+            and the index of the route if it exists, otherwise None.
 
+        Raises:
+            ValueError: If the route type is not supported.
+        """
         if route:
             if not isinstance(
-                route, HTTPServerRoute | PythonServerRoute | VeilidServerRoute
+                route, (HTTPServerRoute, PythonServerRoute, VeilidServerRoute)
             ):
                 raise ValueError(f"Unsupported route type: {type(route)}")
             for i, r in enumerate(self.server_routes):
@@ -93,33 +95,28 @@ class ServerPeer(SyftObject):
         return (False, None)
 
     def update_route_priority(self, route: ServerRoute) -> ServerRoute:
-        """
-        Assign the new_route's priority to be current max + 1
+        """Assign the new route's priority to be current max + 1.
 
         Args:
             route (ServerRoute): The new route whose priority is to be updated.
 
         Returns:
-            ServerRoute: The new route with the updated priority
+            ServerRoute: The new route with the updated priority.
         """
         current_max_priority: int = max(route.priority for route in self.server_routes)
         route.priority = current_max_priority + 1
         return route
 
     def pick_highest_priority_route(self, oldest: bool = True) -> ServerRoute:
-        """
-        Picks the route with the highest priority from the list of server routes.
+        """Pick the route with the highest priority from the list of server routes.
 
         Args:
-            oldest (bool):
-                If True, picks the oldest route to have the highest priority,
-                    meaning the route with min priority value.
-                If False, picks the most recent route with the highest priority,
-                    meaning the route with max priority value.
+            oldest (bool): If True, picks the oldest route with the highest priority
+                (lowest priority value). If False, picks the most recent route
+                with the highest priority (highest priority value).
 
         Returns:
             ServerRoute: The route with the highest priority.
-
         """
         highest_priority_route: ServerRoute = self.server_routes[-1]
         for route in self.server_routes[:-1]:
@@ -132,36 +129,30 @@ class ServerPeer(SyftObject):
         return highest_priority_route
 
     def update_route(self, route: ServerRoute) -> None:
-        """
-        Update the route for the server.
-        If the route already exists, return it.
-        If the route is new, assign it to have the priority of (current_max + 1)
+        """Update the route for the server.
+
+        If the route already exists, it updates the existing route.
+        If the route is new, it assigns it a priority of (current_max + 1).
 
         Args:
             route (ServerRoute): The new route to be added to the peer.
         """
         existed, idx = self.existed_route(route)
-        if existed:
+        if existed and idx is not None:
             self.server_routes[idx] = route  # type: ignore
         else:
             new_route = self.update_route_priority(route)
             self.server_routes.append(new_route)
 
     def update_routes(self, new_routes: list[ServerRoute]) -> None:
-        """
-        Update multiple routes of the server peer.
+        """Update multiple routes of the server peer.
 
-        This method takes a list of new routes as input.
-        It first updates the priorities of the new routes.
-        Then, for each new route, it checks if the route already exists for the server peer.
-        If it does, it updates the priority of the existing route.
-        If it doesn't, it adds the new route to the server.
+        This method updates the priorities of new routes and checks if each route
+        already exists for the server peer. If a route exists, it updates the priority;
+        otherwise, it adds the new route to the server.
 
         Args:
             new_routes (list[ServerRoute]): The new routes to be added to the server.
-
-        Returns:
-            None
         """
         for new_route in new_routes:
             self.update_route(new_route)
@@ -169,21 +160,20 @@ class ServerPeer(SyftObject):
     def update_existed_route_priority(
         self, route: ServerRoute, priority: int | None = None
     ) -> ServerRouteType | SyftError:
-        """
-        Update the priority of an existed route.
+        """Update the priority of an existing route.
 
         Args:
             route (ServerRoute): The route whose priority is to be updated.
             priority (int | None): The new priority of the route. If not given,
-                the route will be assigned with the highest priority.
+                the route will be assigned the highest priority.
 
         Returns:
-            ServerRoute: The route with updated priority if the route exists
-            SyftError: If the route does not exist or the priority is invalid
+            ServerRouteType | SyftError: The route with updated priority if the route exists,
+            otherwise a SyftError.
         """
         if priority is not None and priority <= 0:
             return SyftError(
-                message="Priority must be greater than 0. Now it is {priority}."
+                message=f"Priority must be greater than 0. Now it is {priority}."
             )
 
         existed, index = self.existed_route(route=route)
@@ -202,6 +192,17 @@ class ServerPeer(SyftObject):
 
     @staticmethod
     def from_client(client: SyftClient) -> "ServerPeer":
+        """Create a ServerPeer object from a SyftClient.
+
+        Args:
+            client (SyftClient): The SyftClient from which to create the ServerPeer.
+
+        Returns:
+            ServerPeer: The created ServerPeer object.
+
+        Raises:
+            ValueError: If the client does not have metadata.
+        """
         if not client.metadata:
             raise ValueError("Client has to have metadata first")
 
@@ -212,8 +213,7 @@ class ServerPeer(SyftObject):
 
     @property
     def latest_added_route(self) -> ServerRoute | None:
-        """
-        Returns the latest added route from the list of server routes.
+        """Get the latest added route.
 
         Returns:
             ServerRoute | None: The latest added route, or None if there are no routes.
@@ -223,11 +223,20 @@ class ServerPeer(SyftObject):
     def client_with_context(
         self, context: ServerServiceContext
     ) -> Result[type[SyftClient], str]:
-        # third party
+        """Create a SyftClient using the context of a ServerService.
 
+        Args:
+            context (ServerServiceContext): The context to use for creating the client.
+
+        Returns:
+            Result[type[SyftClient], str]: A Result object containing the SyftClient
+            type if successful, or an error message if unsuccessful.
+
+        Raises:
+            ValueError: If there are no routes to the peer.
+        """
         if len(self.server_routes) < 1:
             raise ValueError(f"No routes to peer: {self}")
-        # select the route with highest priority to connect to the peer
         final_route: ServerRoute = self.pick_highest_priority_route()
         connection: ServerConnection = route_to_connection(route=final_route)
         try:
@@ -243,6 +252,17 @@ class ServerPeer(SyftObject):
         )
 
     def client_with_key(self, credentials: SyftSigningKey) -> SyftClient | SyftError:
+        """Create a SyftClient using a signing key.
+
+        Args:
+            credentials (SyftSigningKey): The signing key to use for creating the client.
+
+        Returns:
+            SyftClient | SyftError: The created SyftClient, or a SyftError if unsuccessful.
+
+        Raises:
+            ValueError: If there are no routes to the peer.
+        """
         if len(self.server_routes) < 1:
             raise ValueError(f"No routes to peer: {self}")
 
@@ -257,28 +277,44 @@ class ServerPeer(SyftObject):
 
     @property
     def guest_client(self) -> SyftClient:
+        """Create a guest SyftClient with a randomly generated signing key.
+
+        Returns:
+            SyftClient: The created guest SyftClient.
+        """
         guest_key = SyftSigningKey.generate()
         return self.client_with_key(credentials=guest_key)
 
     def proxy_from(self, client: SyftClient) -> SyftClient:
+        """Create a proxy SyftClient from an existing client.
+
+        Args:
+            client (SyftClient): The existing SyftClient to proxy from.
+
+        Returns:
+            SyftClient: The created proxy SyftClient.
+        """
         return client.proxy_to(self)
 
     def get_rtunnel_route(self) -> HTTPServerRoute | None:
+        """Get the HTTPServerRoute with an rtunnel token.
+
+        Returns:
+            HTTPServerRoute | None: The route with the rtunnel token, or None if not found.
+        """
         for route in self.server_routes:
             if hasattr(route, "rtunnel_token") and route.rtunnel_token:
                 return route
         return None
 
     def delete_route(self, route: ServerRouteType) -> SyftError | None:
-        """
-        Deletes a route from the peer's route list.
-        Takes O(n) where is n is the number of routes in self.server_routes.
+        """Delete a route from the peer's route list.
 
         Args:
-            route (ServerRouteType): The route to be deleted;
+            route (ServerRouteType): The route to be deleted.
 
         Returns:
-            SyftError: If failing to delete server route
+            SyftError | None: A SyftError if the deletion fails, or None if successful.
         """
         if route:
             try:
@@ -306,6 +342,12 @@ class ServerPeerUpdate(PartialSyftObject):
 
 
 def drop_veilid_route() -> Callable:
+    """Drop VeilidServerRoute from the server routes in the context output.
+
+    Returns:
+        Callable: The function that drops VeilidServerRoute from the context output.
+    """
+
     def _drop_veilid_route(context: TransformContext) -> TransformContext:
         if context.output:
             server_routes = context.output["server_routes"]

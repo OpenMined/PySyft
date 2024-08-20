@@ -418,7 +418,8 @@ class TwinAPIEndpoint(SyncableSyftObject):
         """Check if the user has permission to access the endpoint.
 
         Args:
-            context: The context of the user requesting the code.
+            context (AuthedServiceContext): The context of the user requesting the code.
+
         Returns:
             bool: True if the user has permission to access the endpoint, False otherwise.
         """
@@ -430,7 +431,8 @@ class TwinAPIEndpoint(SyncableSyftObject):
         """Select the code to execute based on the user's permissions and public code availability.
 
         Args:
-            context: The context of the user requesting the code.
+            context (AuthedServiceContext): The context of the user requesting the code.
+
         Returns:
             Result[Ok, Err]: The selected code to execute.
         """
@@ -442,9 +444,10 @@ class TwinAPIEndpoint(SyncableSyftObject):
         """Execute the code based on the user's permissions and public code availability.
 
         Args:
-            context: The context of the user requesting the code.
-            *args: Any
-            **kwargs: Any
+            context (AuthedServiceContext): The context of the user requesting the code.
+            *args (Any): Additional arguments to pass to the code.
+            **kwargs (Any): Additional keyword arguments to pass to the code.
+
         Returns:
             Any: The result of the executed code.
         """
@@ -458,7 +461,16 @@ class TwinAPIEndpoint(SyncableSyftObject):
     def exec_mock_function(
         self, context: AuthedServiceContext, *args: Any, **kwargs: Any
     ) -> Any:
-        """Execute the public code if it exists."""
+        """Execute the public code if it exists.
+
+        Args:
+            context (AuthedServiceContext): The context of the user requesting the code.
+            *args (Any): Additional arguments to pass to the code.
+            **kwargs (Any): Additional keyword arguments to pass to the code.
+
+        Returns:
+            Any: The result of the executed public code or an error if no public code is available.
+        """
         if self.mock_function:
             return self.exec_code(self.mock_function, context, *args, **kwargs)
 
@@ -467,14 +479,15 @@ class TwinAPIEndpoint(SyncableSyftObject):
     def exec_private_function(
         self, context: AuthedServiceContext, *args: Any, **kwargs: Any
     ) -> Any:
-        """Execute the private code if user is has the proper permissions.
+        """Execute the private code if the user has the proper permissions.
 
         Args:
-            context: The context of the user requesting the code.
-            *args: Any
-            **kwargs: Any
+            context (AuthedServiceContext): The context of the user requesting the code.
+            *args (Any): Additional arguments to pass to the code.
+            **kwargs (Any): Additional keyword arguments to pass to the code.
+
         Returns:
-            Any: The result of the executed code.
+            Any: The result of the executed code or an error message if the user does not have permission.
         """
         if self.private_function is None:
             return SyftError(message="No private code available")

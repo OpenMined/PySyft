@@ -38,16 +38,17 @@ class NotifierService(AbstractService):
         self.store = store
         self.stash = NotifierStash(store=store)
 
-    def settings(  # Maybe just notifier.settings
+    def settings(
         self,
         context: AuthedServiceContext,
     ) -> NotifierSettings | SyftError:
-        """Get Notifier Settings
+        """Get Notifier Settings.
 
         Args:
-            context: The request context
+            context (AuthedServiceContext): The request context.
+
         Returns:
-            Union[NotifierSettings, SyftError]: Notifier Settings or SyftError
+            NotifierSettings | SyftError: Notifier Settings or SyftError if an error occurs.
         """
         result = self.stash.get(credentials=context.credentials)
         if result.is_err():
@@ -87,7 +88,7 @@ class NotifierService(AbstractService):
 
     def set_notifier_active_to_false(
         self, context: AuthedServiceContext
-    ) -> SyftSuccess:
+    ) -> SyftSuccess | SyftError:
         """
         Essentially a duplicate of turn_off method.
         """
@@ -117,17 +118,16 @@ class NotifierService(AbstractService):
         """Turn on email notifications.
 
         Args:
-            email_username (Optional[str]): Email server username. Defaults to None.
-            email_password (Optional[str]): Email email server password. Defaults to None.
-            sender_email (Optional[str]): Email sender email. Defaults to None.
+            context (AuthedServiceContext): The request context.
+            email_username (str | None): Email server username. Defaults to None.
+            email_password (str | None): Email server password. Defaults to None.
+            email_sender (str | None): Email sender address. Defaults to None.
+            email_server (str | None): Email server address. Defaults to None.
+            email_port (int | None): Email server port. Defaults to 587.
+
         Returns:
-            Union[SyftSuccess, SyftError]: A union type representing the success or error response.
-
-        Raises:
-            None
-
+            SyftSuccess | SyftError: SyftSuccess if successful, SyftError otherwise.
         """
-
         result = self.stash.get(credentials=context.credentials)
 
         # 1 -  If something went wrong at db level, return the error
@@ -228,8 +228,13 @@ class NotifierService(AbstractService):
         """
         Turn off email notifications service.
         PySyft notifications will still work.
-        """
 
+        Args:
+            context (AuthedServiceContext): The request context.
+
+        Returns:
+            SyftSuccess | SyftError: SyftSuccess if successful, SyftError otherwise.
+        """
         result = self.stash.get(credentials=context.credentials)
 
         if result.is_err():
@@ -254,18 +259,30 @@ class NotifierService(AbstractService):
         """
         Activate email notifications for the authenticated user.
         This will only work if the datasite owner has enabled notifications.
-        """
 
+        Args:
+            context (AuthedServiceContext): The request context.
+            notifier_type (NOTIFIERS): The notifier type to activate. Defaults to NOTIFIERS.EMAIL.
+
+        Returns:
+            SyftSuccess | SyftError: SyftSuccess if successful, SyftError otherwise.
+        """
         user_service = context.server.get_service("userservice")
         return user_service.enable_notifications(context, notifier_type=notifier_type)
 
     def deactivate(
         self, context: AuthedServiceContext, notifier_type: NOTIFIERS = NOTIFIERS.EMAIL
     ) -> SyftSuccess | SyftError:
-        """Deactivate email notifications for the authenticated user
+        """Deactivate email notifications for the authenticated user.
         This will only work if the datasite owner has enabled notifications.
-        """
 
+        Args:
+            context (AuthedServiceContext): The request context.
+            notifier_type (NOTIFIERS): The notifier type to deactivate. Defaults to NOTIFIERS.EMAIL.
+
+        Returns:
+            SyftSuccess | SyftError: SyftSuccess if successful, SyftError otherwise.
+        """
         user_service = context.server.get_service("userservice")
         return user_service.disable_notifications(context, notifier_type=notifier_type)
 
@@ -279,18 +296,23 @@ class NotifierService(AbstractService):
         smtp_host: str | None = None,
     ) -> Result[Ok, Err]:
         """Initialize Notifier settings for a Server.
+
         If settings already exist, it will use the existing one.
         If not, it will create a new one.
 
         Args:
-            server: Server to initialize the notifier
-            active: If notifier should be active
-            email_username: Email username to send notifications
-            email_password: Email password to send notifications
-        Raises:
-            Exception: If something went wrong
+            server (AbstractServer): Server to initialize the notifier.
+            email_username (str | None): Email username to send notifications. Defaults to None.
+            email_password (str | None): Email password to send notifications. Defaults to None.
+            email_sender (str | None): Email sender address. Defaults to None.
+            smtp_port (int | None): SMTP server port. Defaults to None.
+            smtp_host (str | None): SMTP server host. Defaults to None.
+
         Returns:
-            Union: SyftSuccess or SyftError
+            Result[Ok, Err]: Ok if successful, Err otherwise.
+
+        Raises:
+            Exception: Error in creating or initializing notifier
         """
         try:
             # Create a new NotifierStash since its a static method.
@@ -341,6 +363,16 @@ class NotifierService(AbstractService):
     def set_email_rate_limit(
         self, context: AuthedServiceContext, email_type: EMAIL_TYPES, daily_limit: int
     ) -> SyftSuccess | SyftError:
+        """Set the email rate limit for a specific email type.
+
+        Args:
+            context (AuthedServiceContext): The request context.
+            email_type (EMAIL_TYPES): The type of email for which to set the rate limit.
+            daily_limit (int): The daily limit for the specified email type.
+
+        Returns:
+            SyftSuccess | SyftError: SyftSuccess if successful, SyftError otherwise.
+        """
         notifier = self.stash.get(context.credentials)
         if notifier.is_err():
             return SyftError(message="Couldn't set the email rate limit.")
@@ -358,7 +390,18 @@ class NotifierService(AbstractService):
     # This method is used by other services to dispatch notifications internally
     def dispatch_notification(
         self, context: AuthedServiceContext, notification: Notification
-    ) -> SyftError:
+    ) -> SyftError | SyftSuccess:
+        """Dispatch a notification to the user.
+
+        This method is used internally by other services to send notifications.
+
+        Args:
+            context (AuthedServiceContext): The request context.
+            notification (Notification): The notification to dispatch.
+
+        Returns:
+            SyftError | SyftSuccess: SyftSuccess if the notification was successfully dispatched, SyftError otherwise.
+        """
         admin_key = context.server.get_service("userservice").admin_verify_key()
         notifier = self.stash.get(admin_key)
         if notifier.is_err():

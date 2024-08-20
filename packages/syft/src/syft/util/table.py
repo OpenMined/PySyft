@@ -228,12 +228,10 @@ def prepare_table_data(
         add_index (bool, optional): Whether to add an index column to the table. Defaults to True.
 
     Returns:
-        tuple: A tuple (table_data, table_metadata) where table_data is a list of dictionaries
+        tuple[list[dict], dict]: A tuple (table_data, table_metadata) where table_data is a list of dictionaries
         where each dictionary represents a row in the table and table_metadata is a dictionary
         containing metadata about the table such as name, icon, etc.
-
     """
-
     values = _get_values_for_table_repr(obj)
     if len(values) == 0:
         return [], {}

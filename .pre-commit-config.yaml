@@ -187,9 +187,9 @@ repos:
         args: [
             # --config=packages/syft/pyproject.toml,
             --quiet,
-            --check-return-types=False,
+            --style=google,
+            --allow-init-docstring=true,
           ]
-        # args: [--style=google, --check-return-types=False]
 
   # - repo: meta
   #   hooks:

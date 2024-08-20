@@ -22,11 +22,23 @@ class SMTPClient(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def check_user_and_password(cls, values: dict) -> dict:
+        """Validate that both username and password are provided."""
         if not (values.get("username", None) and values.get("password")):
             raise ValueError("Both username and password must be provided")
         return values
 
     def send(self, sender: str, receiver: list[str], subject: str, body: str) -> None:
+        """Send an email using the SMTP server.
+
+        Args:
+            sender (str): The sender's email address.
+            receiver (list[str]): A list of recipient email addresses.
+            subject (str): The subject of the email.
+            body (str): The HTML body of the email.
+
+        Raises:
+            ValueError: If subject, body, or receiver is not provided.
+        """
         if not (subject and body and receiver):
             raise ValueError("Subject, body, and recipient email(s) are required")
 
@@ -50,10 +62,16 @@ class SMTPClient(BaseModel):
     def check_credentials(
         cls, server: str, port: int, username: str, password: str
     ) -> Result[Ok, Err]:
-        """Check if the credentials are valid.
+        """Check if the provided SMTP credentials are valid.
+
+        Args:
+            server (str): The SMTP server address.
+            port (int): The port number to connect to.
+            username (str): The username for the SMTP server.
+            password (str): The password for the SMTP server.
 
         Returns:
-            bool: True if the credentials are valid, False otherwise.
+            Result[Ok, Err]: Ok if the credentials are valid, Err with an exception otherwise.
         """
         try:
             with smtplib.SMTP(server, port, timeout=SOCKET_TIMEOUT) as smtp_server:

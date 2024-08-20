@@ -81,15 +81,11 @@ def raise_exception(table_name: str, e: Exception) -> None:
 class SQLiteBackingStore(KeyValueBackingStore):
     """Core Store logic for the SQLite stores.
 
-    Parameters:
-        `index_name`: str
-            Index name
-        `settings`: PartitionSettings
-            Syft specific settings
-        `store_config`: SQLiteStoreConfig
-            Connection Configuration
-        `ddtype`: Type
-            Class used as fallback on `get` errors
+    Args:
+        index_name (str): Index name.
+        settings (PartitionSettings): Syft specific settings.
+        store_config (StoreConfig): Connection configuration.
+        ddtype (type | None): Class used as fallback on `get` errors.
     """
 
     def __init__(
@@ -358,7 +354,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
     def __iter__(self) -> Any:
         return iter(self.keys())
 
-    def __del__(self) -> None:
+    def __del(self) -> None:
         try:
             self._close()
         except Exception as e:
@@ -369,11 +365,9 @@ class SQLiteBackingStore(KeyValueBackingStore):
 class SQLiteStorePartition(KeyValueStorePartition):
     """SQLite StorePartition
 
-    Parameters:
-        `settings`: PartitionSettings
-            PySyft specific settings, used for indexing and partitioning
-        `store_config`: SQLiteStoreConfig
-            SQLite specific configuration
+    Args:
+        settings (PartitionSettings): PySyft specific settings, used for indexing and partitioning.
+        store_config (SQLiteStoreConfig): SQLite specific configuration.
     """
 
     def close(self) -> None:
@@ -402,34 +396,31 @@ class SQLiteStorePartition(KeyValueStorePartition):
 # the base document store is already a dict but we can change it later
 @serializable(canonical_name="SQLiteDocumentStore", version=1)
 class SQLiteDocumentStore(DocumentStore):
-    """SQLite Document Store
-
-    Parameters:
-        `store_config`: StoreConfig
-            SQLite specific configuration, including connection details and client class type.
-    """
+    """SQLite Document Store."""
 
     partition_type = SQLiteStorePartition
 
 
 @serializable(canonical_name="SQLiteStoreClientConfig", version=1)
 class SQLiteStoreClientConfig(StoreClientConfig):
-    """SQLite connection config
+    """SQLite connection config.
 
-    Parameters:
-        `filename` : str
-            Database name
-        `path` : Path or str
-            Database folder
-        `check_same_thread`: bool
-            If True (default), ProgrammingError will be raised if the database connection is used
+    Attributes:
+        filename (str): Database name.
+        path (str | Path): Database folder.
+        check_same_thread (bool): If True (default), ProgrammingError will be raised if the database connection is used
             by a thread other than the one that created it. If False, the connection may be accessed
             in multiple threads; write operations may need to be serialized by the user to avoid
             data corruption.
-        `timeout`: int
-            How many seconds the connection should wait before raising an exception, if the database
+        timeout (int): How many seconds the connection should wait before raising an exception, if the database
             is locked by another connection. If another connection opens a transaction to modify the
             database, it will be locked until that transaction is committed. Default five seconds.
+
+    Parameters:
+        filename (str): Database name.
+        path (str | Path): Database folder.
+        check_same_thread (bool): See Attributes section.
+        timeout (int): See Attributes section.
     """
 
     filename: str = "syftdb.sqlite"
@@ -454,19 +445,15 @@ class SQLiteStoreClientConfig(StoreClientConfig):
 @serializable()
 class SQLiteStoreConfig(StoreConfig):
     __canonical_name__ = "SQLiteStoreConfig"
-    """SQLite Store config, used by SQLiteStorePartition
+    """SQLite Store config, used by SQLiteStorePartition.
 
-    Parameters:
-        `client_config`: SQLiteStoreClientConfig
-            SQLite connection configuration
-        `store_type`: DocumentStore
-            Class interacting with QueueStash. Default: SQLiteDocumentStore
-        `backing_store`: KeyValueBackingStore
-            The Store core logic. Default: SQLiteBackingStore
-        locking_config: LockingConfig
-            The config used for store locking. Available options:
-                * NoLockingConfig: no locking, ideal for single-thread stores.
-                * ThreadingLockingConfig: threading-based locking, ideal for same-process in-memory stores.
+    Args:
+        client_config (SQLiteStoreClientConfig): SQLite connection configuration.
+        store_type (type[DocumentStore]): Class interacting with QueueStash. Default: SQLiteDocumentStore.
+        backing_store (type[KeyValueBackingStore]): The Store core logic. Default: SQLiteBackingStore.
+        locking_config (LockingConfig): The config used for store locking. Available options:
+            * NoLockingConfig: no locking, ideal for single-thread stores.
+            * ThreadingLockingConfig: threading-based locking, ideal for same-process in-memory stores.
             Defaults to NoLockingConfig.
     """
 

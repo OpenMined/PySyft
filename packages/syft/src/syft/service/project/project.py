@@ -317,7 +317,7 @@ class ProjectRequest(ProjectEventAddObject):
             project (Project): Project object to check the status
 
         Returns:
-            str: Status of the request.
+            SyftInfo | SyftError | None: Status of the request.
 
         During Request  status calculation, we do not allow multiple responses
         """
@@ -562,9 +562,10 @@ class ProjectMultipleChoicePoll(ProjectEventAddObject):
 
         Args:
             project (Project): Project object to check the status
+            pretty_print (bool): Flag for pretty printing
 
         Returns:
-            str: Status of the poll
+            dict | SyftError | SyftInfo | None: Status of the poll
 
         During Poll calculation, a user would have answered the poll many times
         The status of the poll would be calculated based on the latest answer of the user
@@ -1384,7 +1385,7 @@ def hash_object(obj: Any) -> tuple[bytes, str]:
         obj (Any): Object to be hashed
 
     Returns:
-        str: Hashed value of the object
+        tuple[bytes, str]: Hashed value of the object
     """
     hash_bytes = _serialize(obj, to_bytes=True, for_hashing=True)
     hash = hashlib.sha256(hash_bytes)

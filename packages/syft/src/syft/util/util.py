@@ -63,7 +63,14 @@ def get_env(key: str, default: Any | None = None) -> str | None:
 
 
 def full_name_with_qualname(klass: type) -> str:
-    """Returns the klass module name + klass qualname."""
+    """Returns the klass module name + klass qualname.
+
+    Args:
+        klass (type): The class whose fully qualified name is needed.
+
+    Returns:
+        str: The fully qualified name of the class.
+    """
     try:
         if not hasattr(klass, "__module__"):
             return f"builtins.{get_qualname_for(klass)}"
@@ -75,7 +82,17 @@ def full_name_with_qualname(klass: type) -> str:
 
 
 def full_name_with_name(klass: type) -> str:
-    """Returns the klass module name + klass name."""
+    """Returns the klass module name + klass name.
+
+    Args:
+        klass (type): The class whose fully qualified name is needed.
+
+    Returns:
+        str: The fully qualified name of the class.
+
+    Raises:
+        Exception: If there is an error while getting the fully qualified name.
+    """
     try:
         if not hasattr(klass, "__module__"):
             return f"builtins.{get_name_for(klass)}"
@@ -86,6 +103,14 @@ def full_name_with_name(klass: type) -> str:
 
 
 def get_qualname_for(klass: type) -> str:
+    """Get the qualified name of a class.
+
+    Args:
+        klass (type): The class to get the qualified name for.
+
+    Returns:
+        str: The qualified name of the class.
+    """
     qualname = getattr(klass, "__qualname__", None) or getattr(klass, "__name__", None)
     if qualname is None:
         qualname = extract_name(klass)
@@ -93,6 +118,14 @@ def get_qualname_for(klass: type) -> str:
 
 
 def get_name_for(klass: type) -> str:
+    """Get the name of a class.
+
+    Args:
+        klass (type): The class to get the name for.
+
+    Returns:
+        str: The name of the class.
+    """
     klass_name = getattr(klass, "__name__", None)
     if klass_name is None:
         klass_name = extract_name(klass)
@@ -115,6 +148,12 @@ def get_mb_size(data: Any, handlers: dict | None = None) -> float:
     which is referenced in official sys.getsizeof documentation
     https://docs.python.org/3/library/sys.html#sys.getsizeof.
 
+    Args:
+        data (Any): The object to calculate the memory size for.
+        handlers (dict | None): Custom handlers for additional types.
+
+    Returns:
+        float: The memory size of the object in MB.
     """
 
     def dict_handler(d: dict[Any, Any]) -> Iterator[Any]:
@@ -162,6 +201,14 @@ def get_mb_size(data: Any, handlers: dict | None = None) -> float:
 
 
 def get_mb_serialized_size(data: Any) -> Ok[float] | Err[str]:
+    """Get the size of a serialized object in MB.
+
+    Args:
+        data (Any): The object to be serialized and measured.
+
+    Returns:
+        Ok[float] | Err[str]: The size of the serialized object in MB if successful, or an error message if serialization fails.
+    """
     try:
         serialized_data = serialize(data, to_bytes=True)
         return Ok(sys.getsizeof(serialized_data) / (1024 * 1024))
@@ -174,6 +221,17 @@ def get_mb_serialized_size(data: Any) -> Ok[float] | Err[str]:
 
 
 def extract_name(klass: type) -> str:
+    """Extract the name of a class from its string representation.
+
+    Args:
+        klass (type): The class to extract the name from.
+
+    Returns:
+        str: The extracted name of the class.
+
+    Raises:
+        ValueError: If the class name could not be extracted.
+    """
     name_regex = r".+class.+?([\w\._]+).+"
     regex2 = r"([\w\.]+)"
     matches = re.match(name_regex, str(klass))
@@ -195,6 +253,19 @@ def extract_name(klass: type) -> str:
 
 
 def validate_type(_object: object, _type: type, optional: bool = False) -> Any:
+    """Validate that an object is of a certain type.
+
+    Args:
+        _object (object): The object to validate.
+        _type (type): The type to validate against.
+        optional (bool): Whether the object can be None.
+
+    Returns:
+        Any: The validated object.
+
+    Raises:
+        Exception: If the object is not of the expected type.
+    """
     if isinstance(_object, _type) or (optional and (_object is None)):
         return _object
 
@@ -202,6 +273,18 @@ def validate_type(_object: object, _type: type, optional: bool = False) -> Any:
 
 
 def validate_field(_object: object, _field: str) -> Any:
+    """Validate that an object has a certain field.
+
+    Args:
+        _object (object): The object to validate.
+        _field (str): The field to validate.
+
+    Returns:
+        Any: The value of the field.
+
+    Raises:
+        Exception: If the field is not set on the object.
+    """
     object = getattr(_object, _field, None)
 
     if object is not None:
@@ -211,19 +294,17 @@ def validate_field(_object: object, _field: str) -> Any:
 
 
 def get_fully_qualified_name(obj: object) -> str:
-    """Return the full path and name of a class
+    """Return the full path and name of a class.
 
     Sometimes we want to return the entire path and name encoded
     using periods.
 
     Args:
-        obj: the object we want to get the name of
+        obj (object): The object we want to get the name of.
 
     Returns:
-        the full path and name of the object
-
+        str: The full path and name of the object.
     """
-
     fqn = obj.__class__.__module__
 
     try:
@@ -234,13 +315,12 @@ def get_fully_qualified_name(obj: object) -> str:
 
 
 def aggressive_set_attr(obj: object, name: str, attr: object) -> None:
-    """Different objects prefer different types of monkeypatching - try them all
+    """Different objects prefer different types of monkeypatching - try them all.
 
     Args:
-        obj: object whose attribute has to be set
-        name: attribute name
-        attr: value given to the attribute
-
+        obj (object): The object whose attribute has to be set.
+        name (str): The attribute name.
+        attr (object): The value given to the attribute.
     """
     try:
         setattr(obj, name, attr)
@@ -249,6 +329,14 @@ def aggressive_set_attr(obj: object, name: str, attr: object) -> None:
 
 
 def key_emoji(key: object) -> str:
+    """Generate an emoji representation of a key.
+
+    Args:
+        key (object): The key object.
+
+    Returns:
+        str: An emoji string representing the key.
+    """
     try:
         if isinstance(key, bytes | SigningKey | VerifyKey):
             hex_chars = bytes(key).hex()[-8:]
@@ -260,6 +348,14 @@ def key_emoji(key: object) -> str:
 
 
 def char_emoji(hex_chars: str) -> str:
+    """Generate an emoji based on a hexadecimal string.
+
+    Args:
+        hex_chars (str): The hexadecimal string.
+
+    Returns:
+        str: An emoji string generated from the hexadecimal string.
+    """
     base = ord("\U0001f642")
     hex_base = ord("0")
     code = 0
@@ -270,6 +366,11 @@ def char_emoji(hex_chars: str) -> str:
 
 
 def get_root_data_path() -> Path:
+    """Get the root data path for storing datasets.
+
+    Returns:
+        Path: The root data path.
+    """
     # get the PySyft / data directory to share datasets between notebooks
     # on Linux and MacOS the directory is: ~/.syft/data"
     # on Windows the directory is: C:/Users/$USER/.syft/data
@@ -281,6 +382,15 @@ def get_root_data_path() -> Path:
 
 
 def download_file(url: str, full_path: str | Path) -> Path | None:
+    """Download a file from a URL.
+
+    Args:
+        url (str): The URL of the file to download.
+        full_path (str | Path): The full path where the file should be saved.
+
+    Returns:
+        Path | None: The path to the downloaded file, or None if the download failed.
+    """
     full_path = Path(full_path)
     if not full_path.exists():
         r = requests.get(url, allow_redirects=True, verify=verify_tls())  # nosec
@@ -293,25 +403,46 @@ def download_file(url: str, full_path: str | Path) -> Path | None:
 
 
 def verify_tls() -> bool:
+    """Verify whether TLS should be used.
+
+    Returns:
+        bool: True if TLS should be used, False otherwise.
+    """
     return not str_to_bool(str(os.environ.get("IGNORE_TLS_ERRORS", "0")))
 
 
 def ssl_test() -> bool:
+    """Check if SSL is properly configured.
+
+    Returns:
+        bool: True if SSL is configured, False otherwise.
+    """
     return len(os.environ.get("REQUESTS_CA_BUNDLE", "")) > 0
 
 
 def initializer(event_loop: BaseSelectorEventLoop | None = None) -> None:
     """Set the same event loop to other threads/processes.
+
     This is needed because there are new threads/processes started with
-    the Executor and they do not have have an event loop set
+    the Executor and they do not have an event loop set.
+
     Args:
-        event_loop: The event loop.
+        event_loop (BaseSelectorEventLoop | None): The event loop to set.
     """
     if event_loop:
         asyncio.set_event_loop(event_loop)
 
 
 def split_rows(rows: Sequence, cpu_count: int) -> list:
+    """Split a sequence of rows into chunks for parallel processing.
+
+    Args:
+        rows (Sequence): The sequence of rows to split.
+        cpu_count (int): The number of chunks to split into.
+
+    Returns:
+        list: A list of row chunks.
+    """
     n = len(rows)
     a, b = divmod(n, cpu_count)
     start = 0
@@ -324,6 +455,14 @@ def split_rows(rows: Sequence, cpu_count: int) -> list:
 
 
 def list_sum(*inp_lst: list[Any]) -> Any:
+    """Sum a list of lists element-wise.
+
+    Args:
+        *inp_lst (list[Any]): The list of lists to sum.
+
+    Returns:
+        Any: The sum of the lists.
+    """
     s = inp_lst[0]
     for i in inp_lst[1:]:
         s = s + i
@@ -332,6 +471,14 @@ def list_sum(*inp_lst: list[Any]) -> Any:
 
 @contextmanager
 def concurrency_override(count: int = 1) -> Iterator:
+    """Context manager to override concurrency count.
+
+    Args:
+        count (int): The concurrency count to set. Defaults to 1.
+
+    Yields:
+        Iterator: A context manager.
+    """
     # this only effects local code so its best to use in unit tests
     try:
         os.environ["FORCE_CONCURRENCY_COUNT"] = f"{count}"
@@ -345,8 +492,17 @@ def print_process(  # type: ignore
     finish: EventClass,
     success: EventClass,
     lock: LockBase,
-    refresh_rate=0.1,
+    refresh_rate: float = 0.1,
 ) -> None:
+    """Print a dynamic process message that updates periodically.
+
+    Args:
+        message (str): The message to print.
+        finish (EventClass): Event to signal the finish of the process.
+        success (EventClass): Event to signal the success of the process.
+        lock (LockBase): A lock to synchronize the print output.
+        refresh_rate (float, optional): The refresh rate for updating the message. Defaults to 0.1.
+    """
     with lock:
         while not finish.is_set():
             print(f"{bcolors.bold(message)} .", end="\r")
@@ -368,12 +524,13 @@ def print_process(  # type: ignore
 def print_dynamic_log(
     message: str,
 ) -> tuple[EventClass, EventClass]:
-    """
-    Prints a dynamic log message that will change its color (to green or red) when some process is done.
+    """Print a dynamic log message that will change its color when some process is done.
 
-    message: str = Message to be printed.
+    Args:
+        message (str): The message to be printed.
 
-    return: tuple of events that can control the log print from the outside of this method.
+    Returns:
+        tuple[EventClass, EventClass]: Tuple of events that can control the log print from outside this method.
     """
     finish = multiprocessing.Event()
     success = multiprocessing.Event()
@@ -392,6 +549,19 @@ def print_dynamic_log(
 def find_available_port(
     host: str, port: int | None = None, search: bool = False
 ) -> int:
+    """Find an available port on the specified host.
+
+    Args:
+        host (str): The host to check for available ports.
+        port (int | None): The port to check. Defaults to a random port.
+        search (bool): Whether to search for the next available port if the given port is in use.
+
+    Returns:
+        int: The available port number.
+
+    Raises:
+        Exception: If the port is not available and search is False.
+    """
     if port is None:
         port = random.randint(1500, 65000)  # nosec
     port_available = False
@@ -426,9 +596,8 @@ def find_available_port(
 def get_random_available_port() -> int:
     """Retrieve a random available port number from the host OS.
 
-    Returns
-    -------
-    int: Available port number.
+    Returns:
+        int: Available port number.
     """
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as soc:
         soc.bind(("localhost", 0))
@@ -436,15 +605,20 @@ def get_random_available_port() -> int:
 
 
 def get_loaded_syft() -> ModuleType:
+    """Get the loaded Syft module.
+
+    Returns:
+        ModuleType: The loaded Syft module.
+    """
     return sys.modules[__name__.split(".")[0]]
 
 
 def get_subclasses(obj_type: type) -> list[type]:
-    """Recursively generate the list of all classes within the sub-tree of an object
+    """Recursively generate the list of all classes within the sub-tree of an object.
 
     As a paradigm in Syft, we often allow for something to be known about by another
     part of the codebase merely because it has subclassed a particular object. While
-    this can be a big "magicish" it also can simplify future extensions and reduce
+    this can be a bit "magicish" it also can simplify future extensions and reduce
     the likelihood of small mistakes (if done right).
 
     This is a utility function which allows us to look for sub-classes and the sub-classes
@@ -452,11 +626,10 @@ def get_subclasses(obj_type: type) -> list[type]:
     hierarchy.
 
     Args:
-        obj_type: the type we want to look for sub-classes of
+        obj_type (type): The type we want to look for sub-classes of.
 
     Returns:
-        the list of subclasses of obj_type
-
+        list[type]: The list of subclasses of obj_type.
     """
 
     classes = []
@@ -467,27 +640,25 @@ def get_subclasses(obj_type: type) -> list[type]:
 
 
 def index_modules(a_dict: object, keys: list[str]) -> object:
-    """Recursively find a syft module from its path
+    """Recursively find a Syft module from its path.
 
     This is the recursive inner function of index_syft_by_module_name.
     See that method for a full description.
 
     Args:
-        a_dict: a module we're traversing
-        keys: the list of string attributes we're using to traverse the module
+        a_dict (object): A module we're traversing.
+        keys (list[str]): The list of string attributes we're using to traverse the module.
 
     Returns:
-        a reference to the final object
-
+        object: A reference to the final object.
     """
-
     if len(keys) == 0:
         return a_dict
     return index_modules(a_dict=a_dict.__dict__[keys[0]], keys=keys[1:])
 
 
 def index_syft_by_module_name(fully_qualified_name: str) -> object:
-    """Look up a Syft class/module/function from full path and name
+    """Look up a Syft class/module/function from full path and name.
 
     Sometimes we want to use the fully qualified name (such as one
     generated from the 'get_fully_qualified_name' method below) to
@@ -496,13 +667,14 @@ def index_syft_by_module_name(fully_qualified_name: str) -> object:
     representation of the specific object it is meant to deserialize to.
 
     Args:
-        fully_qualified_name: the name in str of a module, class, or function
+        fully_qualified_name (str): The name in str of a module, class, or function.
 
     Returns:
-        a reference to the actual object at that string path
+        object: A reference to the actual object at that string path.
 
+    Raises:
+        ReferenceError: If the reference does not match expected patterns.
     """
-
     # @Tudor this needs fixing during the serde refactor
     # we should probably just support the native type names as lookups for serde
     if fully_qualified_name == "builtins.NoneType":
@@ -512,13 +684,22 @@ def index_syft_by_module_name(fully_qualified_name: str) -> object:
     if attr_list[0] != "syft":
         raise ReferenceError(f"Reference don't match: {attr_list[0]}")
 
-    # if attr_list[1] != "core" and attr_list[1] != "user":
-    #     raise ReferenceError(f"Reference don't match: {attr_list[1]}")
-
     return index_modules(a_dict=get_loaded_syft(), keys=attr_list[1:])
 
 
 def obj2pointer_type(obj: object | None = None, fqn: str | None = None) -> type:
+    """Get the pointer type for an object based on its fully qualified name.
+
+    Args:
+        obj (object | None): The object to get the pointer type for.
+        fqn (str | None): The fully qualified name of the object.
+
+    Returns:
+        type: The pointer type for the object.
+
+    Raises:
+        Exception: If the pointer type cannot be found.
+    """
     if fqn is None:
         try:
             fqn = get_fully_qualified_name(obj=obj)
@@ -543,6 +724,15 @@ def obj2pointer_type(obj: object | None = None, fqn: str | None = None) -> type:
 
 
 def prompt_warning_message(message: str, confirm: bool = False) -> bool:
+    """Prompt a warning message and optionally request user confirmation.
+
+    Args:
+        message (str): The warning message to display.
+        confirm (bool): Whether to request user confirmation.
+
+    Returns:
+        bool: True if the user confirms, False otherwise.
+    """
     # relative
     from ..service.response import SyftWarning
 
@@ -741,6 +931,11 @@ right_name = [
 
 
 def random_name() -> str:
+    """Generate a random name by combining a left and right name part.
+
+    Returns:
+        str: The generated random name.
+    """
     left_i = randbelow(len(left_name) - 1)
     right_i = randbelow(len(right_name) - 1)
     return f"{left_name[left_i].capitalize()} {right_name[right_i].capitalize()}"
@@ -750,9 +945,18 @@ def inherit_tags(
     attr_path_and_name: str,
     result: object,
     self_obj: object | None,
-    args: tuple | list,
-    kwargs: dict,
+    args: tuple[Any, ...] | list[Any],
+    kwargs: dict[str, Any],
 ) -> None:
+    """Inherit tags from input objects to the result object.
+
+    Args:
+        attr_path_and_name (str): The attribute path and name to add as a tag.
+        result (object): The result object to inherit tags.
+        self_obj (object | None): The object that might have tags.
+        args (tuple[Any, ...] | list[Any]): Arguments that might have tags.
+        kwargs (dict[str, Any]): Keyword arguments that might have tags.
+    """
     tags = []
     if self_obj is not None and hasattr(self_obj, "tags"):
         tags.extend(list(self_obj.tags))
@@ -774,6 +978,16 @@ def inherit_tags(
 def autocache(
     url: str, extension: str | None = None, cache: bool = True
 ) -> Path | None:
+    """Automatically cache a file from a URL.
+
+    Args:
+        url (str): The URL of the file to cache.
+        extension (str | None): The file extension to use.
+        cache (bool): Whether to use the cache if the file already exists.
+
+    Returns:
+        Path | None: The path to the cached file, or None if caching failed.
+    """
     try:
         data_path = get_root_data_path()
         file_hash = hashlib.sha256(url.encode("utf8")).hexdigest()
@@ -790,6 +1004,14 @@ def autocache(
 
 
 def str_to_bool(bool_str: str | None) -> bool:
+    """Convert a string to a boolean value.
+
+    Args:
+        bool_str (str | None): The string to convert.
+
+    Returns:
+        bool: The converted boolean value.
+    """
     result = False
     bool_str = str(bool_str).lower()
     if bool_str == "true" or bool_str == "1":
@@ -800,20 +1022,19 @@ def str_to_bool(bool_str: str | None) -> bool:
 # local scope functions cant be pickled so this needs to be global
 def parallel_execution(
     fn: Callable[..., Any],
-    parties: None | list[Any] = None,
+    parties: list[Any] | None = None,
     cpu_bound: bool = False,
 ) -> Callable[..., list[Any]]:
     """Wrap a function such that it can be run in parallel at multiple parties.
+
     Args:
-        fn (Callable): The function to run.
-        parties (Union[None, List[Any]]): Clients from syft. If this is set, then the
+        fn (Callable[..., Any]): The function to run.
+        parties (list[Any] | None): Clients from syft. If this is set, then the
             function should be run remotely. Defaults to None.
-        cpu_bound (bool): Because of the GIL (global interpreter lock) sometimes
-            it makes more sense to use processes than threads if it is set then
-            processes should be used since they really run in parallel if not then
-            it makes sense to use threads since there is no bottleneck on the CPU side
+        cpu_bound (bool): Whether to use processes instead of threads.
+
     Returns:
-        Callable[..., List[Any]]: A Callable that returns a list of results.
+        Callable[..., list[Any]]: A Callable that returns a list of results.
     """
 
     @functools.wraps(fn)
@@ -822,11 +1043,16 @@ def parallel_execution(
         kwargs: dict[Any, dict[Any, Any]] | None = None,
     ) -> list[Any]:
         """Wrap sanity checks and checks what executor should be used.
+
         Args:
-            args (List[List[Any]]): Args.
-            kwargs (Optional[Dict[Any, Dict[Any, Any]]]): Kwargs. Default to None.
+            args (list[list[Any]]): The list of lists of arguments.
+            kwargs (dict[Any, dict[Any, Any]] | None): The dictionary of keyword arguments.
+
         Returns:
-            List[Any]: Results from the parties
+            list[Any]: The list of results from the parties.
+
+        Raises:
+            Exception: If the arguments list is empty.
         """
         if args is None or len(args) == 0:
             raise Exception("Parallel execution requires more than 0 args")
@@ -873,6 +1099,14 @@ def parallel_execution(
 
 
 def concurrency_count(factor: float = 0.8) -> int:
+    """Get the current concurrency count based on CPU count and a factor.
+
+    Args:
+        factor (float): The factor to apply to the CPU count. Defaults to 0.8.
+
+    Returns:
+        int: The calculated concurrency count.
+    """
     force_count = int(os.environ.get("FORCE_CONCURRENCY_COUNT", 0))
     mp_count = force_count if force_count >= 1 else int(mp.cpu_count() * factor)
     return mp_count
@@ -891,18 +1125,51 @@ class bcolors:
 
     @staticmethod
     def green(message: str) -> str:
+        """Return a green-colored string.
+
+        Args:
+            message (str): The message to color.
+
+        Returns:
+            str: The green-colored message.
+        """
         return bcolors.GREEN + message + bcolors.ENDC
 
     @staticmethod
     def red(message: str) -> str:
+        """Return a red-colored string.
+
+        Args:
+            message (str): The message to color.
+
+        Returns:
+            str: The red-colored message.
+        """
         return bcolors.RED + message + bcolors.ENDC
 
     @staticmethod
     def yellow(message: str) -> str:
+        """Return a yellow-colored string.
+
+        Args:
+            message (str): The message to color.
+
+        Returns:
+            str: The yellow-colored message.
+        """
         return bcolors.YELLOW + message + bcolors.ENDC
 
     @staticmethod
     def bold(message: str, end_color: bool = False) -> str:
+        """Return a bold string.
+
+        Args:
+            message (str): The message to bold.
+            end_color (bool): Whether to reset color after the message.
+
+        Returns:
+            str: The bolded message.
+        """
         msg = bcolors.BOLD + message
         if end_color:
             msg += bcolors.ENDC
@@ -910,6 +1177,15 @@ class bcolors:
 
     @staticmethod
     def underline(message: str, end_color: bool = False) -> str:
+        """Return an underlined string.
+
+        Args:
+            message (str): The message to underline.
+            end_color (bool): Whether to reset color after the message.
+
+        Returns:
+            str: The underlined message.
+        """
         msg = bcolors.UNDERLINE + message
         if end_color:
             msg += bcolors.ENDC
@@ -917,18 +1193,47 @@ class bcolors:
 
     @staticmethod
     def warning(message: str) -> str:
+        """Return a warning-colored string.
+
+        Args:
+            message (str): The message to color.
+
+        Returns:
+            str: The warning-colored message.
+        """
         return bcolors.bold(bcolors.yellow(message))
 
     @staticmethod
     def success(message: str) -> str:
+        """Return a success-colored string.
+
+        Args:
+            message (str): The message to color.
+
+        Returns:
+            str: The success-colored message.
+        """
         return bcolors.green(message)
 
     @staticmethod
     def failure(message: str) -> str:
+        """Return a failure-colored string.
+
+        Args:
+            message (str): The message to color.
+
+        Returns:
+            str: The failure-colored message.
+        """
         return bcolors.red(message)
 
 
 def os_name() -> str:
+    """Get the name of the operating system.
+
+    Returns:
+        str: The name of the operating system.
+    """
     os_name = platform.system()
     if os_name.lower() == "darwin":
         return "macOS"
@@ -938,18 +1243,38 @@ def os_name() -> str:
 
 # Note: In the future there might be other interpreters that we want to use
 def is_interpreter_jupyter() -> bool:
+    """Check if the current interpreter is Jupyter.
+
+    Returns:
+        bool: True if the current interpreter is Jupyter, False otherwise.
+    """
     return get_interpreter_module() == "ipykernel.zmqshell"
 
 
 def is_interpreter_colab() -> bool:
+    """Check if the current interpreter is Google Colab.
+
+    Returns:
+        bool: True if the current interpreter is Google Colab, False otherwise.
+    """
     return get_interpreter_module() == "google.colab._shell"
 
 
 def is_interpreter_standard() -> bool:
+    """Check if the current interpreter is a standard Python interpreter.
+
+    Returns:
+        bool: True if the current interpreter is standard, False otherwise.
+    """
     return get_interpreter_module() == "StandardInterpreter"
 
 
 def get_interpreter_module() -> str:
+    """Get the module name of the current interpreter.
+
+    Returns:
+        str: The module name of the current interpreter.
+    """
     try:
         # third party
         from IPython import get_ipython
@@ -967,14 +1292,30 @@ if os_name() == "macOS":
 
 
 def thread_ident() -> int | None:
+    """Get the identifier of the current thread.
+
+    Returns:
+        int | None: The thread identifier, or None if not available.
+    """
     return threading.current_thread().ident
 
 
 def proc_id() -> int:
+    """Get the process ID of the current process.
+
+    Returns:
+        int: The process ID.
+    """
     return os.getpid()
 
 
 def set_klass_module_to_syft(klass: type, module_name: str) -> None:
+    """Set the module of a class to Syft.
+
+    Args:
+        klass (type): The class to set the module for.
+        module_name (str): The name of the module.
+    """
     if module_name not in sys.modules["syft"].__dict__:
         new_module = types.ModuleType(module_name)
     else:
@@ -984,8 +1325,14 @@ def set_klass_module_to_syft(klass: type, module_name: str) -> None:
 
 
 def get_queue_address(port: int) -> str:
-    """Get queue address based on container host name."""
+    """Get queue address based on container host name.
 
+    Args:
+        port (int): The port number.
+
+    Returns:
+        str: The queue address.
+    """
     container_host = os.getenv("CONTAINER_HOST", None)
     if container_host == "k8s":
         return f"tcp://backend:{port}"
@@ -995,14 +1342,32 @@ def get_queue_address(port: int) -> str:
 
 
 def get_dev_mode() -> bool:
+    """Check if the application is running in development mode.
+
+    Returns:
+        bool: True if in development mode, False otherwise.
+    """
     return str_to_bool(os.getenv("DEV_MODE", "False"))
 
 
 def generate_token() -> str:
+    """Generate a secure random token.
+
+    Returns:
+        str: The generated token.
+    """
     return secrets.token_hex(64)
 
 
 def sanitize_html(html: str) -> str:
+    """Sanitize HTML content by allowing specific tags and attributes.
+
+    Args:
+        html (str): The HTML content to sanitize.
+
+    Returns:
+        str: The sanitized HTML content.
+    """
     policy = {
         "tags": ["svg", "strong", "rect", "path", "circle"],
         "attributes": {
@@ -1041,6 +1406,14 @@ def sanitize_html(html: str) -> str:
 
 
 def parse_iso8601_date(date_string: str) -> datetime:
+    """Parse an ISO8601 date string into a datetime object.
+
+    Args:
+        date_string (str): The ISO8601 date string.
+
+    Returns:
+        datetime: The parsed datetime object.
+    """
     # Handle variable length of microseconds by trimming to 6 digits
     if "." in date_string:
         base_date, microseconds = date_string.split(".")
@@ -1051,6 +1424,15 @@ def parse_iso8601_date(date_string: str) -> datetime:
 
 
 def get_latest_tag(registry: str, repo: str) -> str | None:
+    """Get the latest tag from a Docker registry for a given repository.
+
+    Args:
+        registry (str): The Docker registry.
+        repo (str): The repository name.
+
+    Returns:
+        str | None: The latest tag, or None if no tags are found.
+    """
     repo_url = f"http://{registry}/v2/{repo}"
     res = requests.get(url=f"{repo_url}/tags/list", timeout=5)
     tags = res.json().get("tags", [])
@@ -1071,6 +1453,14 @@ def get_latest_tag(registry: str, repo: str) -> str | None:
 
 
 def get_nb_secrets(defaults: dict | None = None) -> dict:
+    """Get secrets for notebooks from a JSON file.
+
+    Args:
+        defaults (dict | None): Default values for the secrets.
+
+    Returns:
+        dict: The secrets loaded from the JSON file.
+    """
     if defaults is None:
         defaults = {}
 
@@ -1087,21 +1477,29 @@ def get_nb_secrets(defaults: dict | None = None) -> dict:
 
 class CustomRepr(reprlib.Repr):
     def repr_str(self, obj: Any, level: int = 0) -> str:
+        """Return a truncated string representation if it is too long.
+
+        Args:
+            obj (Any): The object to represent.
+            level (int): The level of detail in the representation.
+
+        Returns:
+            str: The truncated string representation.
+        """
         if len(obj) <= self.maxstring:
             return repr(obj)
         return repr(obj[: self.maxstring] + "...")
 
 
 def repr_truncation(obj: Any, max_elements: int = 10) -> str:
-    """
-    Return a truncated string representation of the object if it is too long.
+    """Return a truncated string representation of the object if it is too long.
 
     Args:
-    - obj: The object to be represented (can be str, list, dict, set...).
-    - max_elements: Maximum number of elements to display before truncating.
+        obj (Any): The object to be represented (can be str, list, dict, set...).
+        max_elements (int): Maximum number of elements to display before truncating.
 
     Returns:
-    - A string representation of the object, truncated if necessary.
+        str: A string representation of the object, truncated if necessary.
     """
     r = CustomRepr()
     r.maxlist = max_elements  # For lists

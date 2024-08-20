@@ -80,13 +80,13 @@ def numpyutf8toarray(input_index: np.ndarray) -> np.ndarray:
 
 
 def arraytonumpyutf8(string_list: str | np.ndarray) -> bytes:
-    """Encodes string Numpyarray  to utf-8 encoded numpy array.
+    """Encodes string Numpyarray to utf-8 encoded numpy array.
 
     Args:
-        string_list (np.ndarray): NumpyArray to be encoded
+        string_list (str | np.ndarray): NumpyArray or string to be encoded.
 
     Returns:
-        bytes: serialized utf-8 encoded int Numpy array
+        bytes: serialized utf-8 encoded int Numpy array.
     """
     array_shape = np.array(string_list).shape
     string_list = np.array(string_list).flatten()

@@ -638,6 +638,9 @@ class Request(SyncableSyftObject):
 
         Args:
             reason (str): Reason for which the request has been denied.
+
+        Returns:
+            SyftSuccess | SyftError: Result of the operation.
         """
         api = self._get_api()
         if isinstance(api, SyftError):
@@ -824,9 +827,9 @@ class Request(SyncableSyftObject):
             result (Any): ActionObject or any object to be saved as an ActionObject.
             log_stdout (str): stdout logs.
             log_stderr (str): stderr logs.
-            approve (bool, optional): Only supported for L2 requests. If True, the request will be approved.
+            approve (bool | None): Only supported for L2 requests. If True, the request will be approved.
                 Defaults to None.
-
+            **kwargs (dict[str, Any]): Additional arguments.
 
         Returns:
             Job | SyftError: Job object if successful, else SyftError.

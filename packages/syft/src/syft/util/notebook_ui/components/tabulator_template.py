@@ -169,8 +169,8 @@ def build_tabulator_table_with_data(
     Args:
         table_data (list[dict]): The data to populate the table.
         table_metadata (dict): The metadata for the table.
-        uid (str, optional): The unique identifier for the table. Defaults to None.
-        max_height (int, optional): The maximum height of the table. Defaults to None.
+        uid (str | None, optional): The unique identifier for the table. Defaults to None.
+        max_height (int | None, optional): The maximum height of the table. Defaults to None.
         pagination (bool, optional): Whether to enable pagination. Defaults to True.
         header_sort (bool, optional): Whether to enable header sorting. Defaults to True.
 
@@ -198,8 +198,8 @@ def build_tabulator_table(
 
     Args:
         obj (Any): The object to build the table from.
-        uid (str, optional): The unique identifier for the table. Defaults to None.
-        max_height (int, optional): The maximum height of the table. Defaults to None.
+        uid (str | None, optional): The unique identifier for the table. Defaults to None.
+        max_height (int | None, optional): The maximum height of the table. Defaults to None.
         pagination (bool, optional): Whether to enable pagination. Defaults to True.
         header_sort (bool, optional): Whether to enable header sorting. Defaults to True.
 

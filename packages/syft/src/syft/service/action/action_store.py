@@ -40,14 +40,7 @@ class ActionStore:
 
 @serializable(canonical_name="KeyValueActionStore", version=1)
 class KeyValueActionStore(ActionStore):
-    """Generic Key-Value Action store.
-
-    Parameters:
-        store_config: StoreConfig
-            Backend specific configuration, including connection configuration, database name, or client class type.
-        root_verify_key: Optional[SyftVerifyKey]
-            Signature verification key, used for checking access permissions.
-    """
+    """Generic Key-Value Action store."""
 
     def __init__(
         self,
@@ -56,6 +49,15 @@ class KeyValueActionStore(ActionStore):
         root_verify_key: SyftVerifyKey | None = None,
         document_store: DocumentStore | None = None,
     ) -> None:
+        """
+        Generic Key-Value Action store.
+
+        Args:
+            server_uid (UID): Unique identifier for the server instance.
+            store_config (StoreConfig): Backend specific configuration, including connection configuration, database name, or client class type.
+            root_verify_key (SyftVerifyKey | None): Signature verification key, used for checking access permissions.
+            document_store (DocumentStore | None): Document store used for storing user information.
+        """
         self.server_uid = server_uid
         self.store_config = store_config
         self.settings = BasePartitionSettings(name="Action")
@@ -373,14 +375,7 @@ class KeyValueActionStore(ActionStore):
 
 @serializable(canonical_name="DictActionStore", version=1)
 class DictActionStore(KeyValueActionStore):
-    """Dictionary-Based Key-Value Action store.
-
-    Parameters:
-        store_config: StoreConfig
-            Backend specific configuration, including client class type.
-        root_verify_key: Optional[SyftVerifyKey]
-            Signature verification key, used for checking access permissions.
-    """
+    """Dictionary-Based Key-Value Action store."""
 
     def __init__(
         self,
@@ -389,6 +384,15 @@ class DictActionStore(KeyValueActionStore):
         root_verify_key: SyftVerifyKey | None = None,
         document_store: DocumentStore | None = None,
     ) -> None:
+        """
+        Dictionary-Based Key-Value Action store.
+
+        Args:
+            server_uid (UID): Unique identifier for the server instance.
+            store_config (StoreConfig | None): Backend specific configuration, including connection configuration, database name, or client class type.
+            root_verify_key (SyftVerifyKey | None): Signature verification key, used for checking access permissions.
+            document_store (DocumentStore | None): Document store used for storing user information.
+        """
         store_config = store_config if store_config is not None else DictStoreConfig()
         super().__init__(
             server_uid=server_uid,
@@ -403,10 +407,14 @@ class SQLiteActionStore(KeyValueActionStore):
     """SQLite-Based Key-Value Action store.
 
     Parameters:
+        server_uid: UID
+            Unique identifier for the server instance.
         store_config: StoreConfig
             SQLite specific configuration, including connection settings or client class type.
         root_verify_key: Optional[SyftVerifyKey]
             Signature verification key, used for checking access permissions.
+        document_store: Optional[DocumentStore]
+            Document store used for storing user information.
     """
 
     pass
@@ -414,13 +422,17 @@ class SQLiteActionStore(KeyValueActionStore):
 
 @serializable(canonical_name="MongoActionStore", version=1)
 class MongoActionStore(KeyValueActionStore):
-    """Mongo-Based  Action store.
+    """Mongo-Based Action store.
 
     Parameters:
+        server_uid: UID
+            Unique identifier for the server instance.
         store_config: StoreConfig
             Mongo specific configuration.
         root_verify_key: Optional[SyftVerifyKey]
             Signature verification key, used for checking access permissions.
+        document_store: Optional[DocumentStore]
+            Document store used for storing user information.
     """
 
     pass

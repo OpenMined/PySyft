@@ -77,16 +77,18 @@ class SyftWorkerPoolService(AbstractService):
     ) -> list[ContainerSpawnStatus] | SyftError:
         """Creates a pool of workers from the given SyftWorkerImage.
 
-        - Retrieves the image for the given UID
-        - Use docker to launch containers for given image
-        - For each successful container instantiation create a SyftWorker object
-        - Creates a SyftWorkerPool object
-
         Args:
-            context (AuthedServiceContext): context passed to the service
-            name (str): name of the pool
-            image_id (UID): UID of the SyftWorkerImage against which the pool should be created
-            num_workers (int): the number of SyftWorker that needs to be created in the pool
+            context (AuthedServiceContext): Context passed to the service.
+            pool_name (str): Name of the pool.
+            image_uid (UID | None): UID of the SyftWorkerImage against which the pool should be created.
+            num_workers (int): The number of SyftWorkers that need to be created in the pool.
+            registry_username (str | None, optional): Username for the registry. Defaults to None.
+            registry_password (str | None, optional): Password for the registry. Defaults to None.
+            pod_annotations (dict[str, str] | None, optional): Annotations for the pod. Defaults to None.
+            pod_labels (dict[str, str] | None, optional): Labels for the pod. Defaults to None.
+
+        Returns:
+            list[ContainerSpawnStatus] | SyftError: List of container spawn statuses or an error.
         """
 
         result = self.stash.get_by_name(context.credentials, pool_name=pool_name)
@@ -173,16 +175,19 @@ class SyftWorkerPoolService(AbstractService):
         pod_annotations: dict[str, str] | None = None,
         pod_labels: dict[str, str] | None = None,
     ) -> SyftError | SyftSuccess:
-        """
-        Create a request to launch the worker pool based on a built image.
+        """Create a request to launch the worker pool based on a built image.
 
         Args:
             context (AuthedServiceContext): The authenticated service context.
             pool_name (str): The name of the worker pool.
             num_workers (int): The number of workers in the pool.
-            image_uid (Optional[UID]): The UID of the built image.
-            reason (Optional[str], optional): The reason for creating the
-                worker pool. Defaults to "".
+            image_uid (UID): The UID of the built image.
+            reason (str | None, optional): The reason for creating the worker pool. Defaults to "".
+            pod_annotations (dict[str, str] | None, optional): Annotations for the pod. Defaults to None.
+            pod_labels (dict[str, str] | None, optional): Labels for the pod. Defaults to None.
+
+        Returns:
+            SyftError | SyftSuccess: Success or error message.
         """
 
         # Check if image exists for the given image id
@@ -254,18 +259,22 @@ class SyftWorkerPoolService(AbstractService):
         pod_annotations: dict[str, str] | None = None,
         pod_labels: dict[str, str] | None = None,
     ) -> SyftError | SyftSuccess:
-        """
-        Create a request to launch the worker pool based on a built image.
+        """Create a request to launch the worker pool based on a built image.
 
         Args:
             context (AuthedServiceContext): The authenticated service context.
             pool_name (str): The name of the worker pool.
             num_workers (int): The number of workers in the pool.
-            config: (WorkerConfig): Config of the image to be built.
-            tag (str | None, optional):
-                a human-readable manifest identifier that is typically a specific version or variant of an image,
-                only needed for `DockerWorkerConfig` to tag the image after it is built.
+            config (WorkerConfig): Config of the image to be built.
+            tag (str | None, optional): A human-readable manifest identifier. Required for `DockerWorkerConfig`.
+            registry_uid (UID | None, optional): UID of the registry in Kubernetes mode. Required for `DockerWorkerConfig`.
             reason (str | None, optional): The reason for creating the worker image and pool. Defaults to "".
+            pull_image (bool, optional): Whether to pull the image. Defaults to True.
+            pod_annotations (dict[str, str] | None, optional): Annotations for the pod. Defaults to None.
+            pod_labels (dict[str, str] | None, optional): Labels for the pod. Defaults to None.
+
+        Returns:
+            SyftError | SyftSuccess: Success or error message.
         """
 
         if not isinstance(config, DockerWorkerConfig | PrebuiltWorkerConfig):
@@ -358,8 +367,14 @@ class SyftWorkerPoolService(AbstractService):
     def get_all(
         self, context: AuthedServiceContext
     ) -> DictTuple[str, WorkerPool] | SyftError:
-        # TODO: During get_all, we should dynamically make a call to docker to get the status of the containers
-        # and update the status of the workers in the pool.
+        """Get all worker pools.
+
+        Args:
+            context (AuthedServiceContext): The authenticated service context.
+
+        Returns:
+            DictTuple[str, WorkerPool] | SyftError: All worker pools or an error.
+        """
         result = self.stash.get_all(credentials=context.credentials)
         if result.is_err():
             return SyftError(message=f"{result.err()}")
@@ -387,13 +402,15 @@ class SyftWorkerPoolService(AbstractService):
         Worker pool is fetched either using the unique pool id or pool name.
 
         Args:
-            context (AuthedServiceContext): _description_
-            number (int): number of workers to add
-            pool_id (Optional[UID], optional): Unique UID of the pool. Defaults to None.
-            pool_name (Optional[str], optional): Unique name of the pool. Defaults to None.
+            context (AuthedServiceContext): The authenticated service context.
+            number (int): Number of workers to add.
+            pool_id (UID | None, optional): Unique UID of the pool. Defaults to None.
+            pool_name (str | None, optional): Unique name of the pool. Defaults to None.
+            registry_username (str | None, optional): Username for the registry. Defaults to None.
+            registry_password (str | None, optional): Password for the registry. Defaults to None.
 
         Returns:
-            Union[List[ContainerSpawnStatus], SyftError]: List of spawned workers with their status and error if any.
+            list[ContainerSpawnStatus] | SyftError: List of spawned workers with their status or an error.
         """
 
         if number <= 0:
@@ -472,9 +489,18 @@ class SyftWorkerPoolService(AbstractService):
         pool_id: UID | None = None,
         pool_name: str | None = None,
     ) -> SyftError | SyftSuccess:
-        """
-        Scale the worker pool to the given number of workers in Kubernetes.
+        """Scale the worker pool to the given number of workers in Kubernetes.
+
         Allows both scaling up and down the worker pool.
+
+        Args:
+            context (AuthedServiceContext): The authenticated service context.
+            number (int): Number of workers to scale to.
+            pool_id (UID | None, optional): Unique UID of the pool. Defaults to None.
+            pool_name (str | None, optional): Unique name of the pool. Defaults to None.
+
+        Returns:
+            SyftError | SyftSuccess: Success or error message.
         """
 
         if not IN_KUBERNETES:
@@ -558,6 +584,15 @@ class SyftWorkerPoolService(AbstractService):
     def filter_by_image_id(
         self, context: AuthedServiceContext, image_uid: UID
     ) -> list[WorkerPool] | SyftError:
+        """Filter worker pools by image ID.
+
+        Args:
+            context (AuthedServiceContext): The authenticated service context.
+            image_uid (UID): The UID of the image.
+
+        Returns:
+            list[WorkerPool] | SyftError: List of worker pools or an error.
+        """
         result = self.stash.get_by_image_uid(context.credentials, image_uid)
 
         if result.is_err():
@@ -573,6 +608,15 @@ class SyftWorkerPoolService(AbstractService):
     def get_by_name(
         self, context: AuthedServiceContext, pool_name: str
     ) -> list[WorkerPool] | SyftError:
+        """Get worker pool by name.
+
+        Args:
+            context (AuthedServiceContext): The authenticated service context.
+            pool_name (str): The name of the worker pool.
+
+        Returns:
+            list[WorkerPool] | SyftError: Worker pool or an error.
+        """
         result = self.stash.get_by_name(context.credentials, pool_name)
 
         if result.is_err():
@@ -592,8 +636,15 @@ class SyftWorkerPoolService(AbstractService):
         context: AuthedServiceContext,
         request: Request,
     ) -> SyftSuccess | SyftError:
-        """Re-submit request from a different server"""
+        """Re-submit request from a different server.
 
+        Args:
+            context (AuthedServiceContext): The authenticated service context.
+            request (Request): The request object.
+
+        Returns:
+            SyftSuccess | SyftError: Success or error message.
+        """
         num_of_changes = len(request.changes)
         pool_name, num_workers, config, image_uid, tag = None, None, None, None, None
 
