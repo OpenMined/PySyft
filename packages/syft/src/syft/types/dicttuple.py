@@ -241,7 +241,7 @@ class DictTuple(tuple[_VT, ...], Generic[_KT, _VT], metaclass=_Meta):
     def _repr_html_(self) -> str:
         super_repr_html = getattr(super(), "_repr_html_", None)
         if super_repr_html is None:
-            return super().__repr__()
+            return repr(self)
         if len(self) == 0:  # empty DictTuple
             return "0 records"
         return super_repr_html()
