@@ -154,8 +154,8 @@ class QueryKey(PartitionKey):
                 pk_value = obj
             else:
                 pk_value = getattr(obj, pk_key)
-                if isinstance(pk_value, types.FunctionType | types.MethodType):
-                    pk_value = pk_value()
+                if isinstance(pk_value, types.FunctionType | types.MethodType):  # type: ignore[unreachable]
+                    pk_value = pk_value()  # type: ignore[unreachable]
 
             if pk_value and not isinstance(pk_value, pk_type):
                 raise Exception(

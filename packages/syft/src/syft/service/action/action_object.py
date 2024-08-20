@@ -10,6 +10,7 @@ from io import BytesIO
 import logging
 from pathlib import Path
 import sys
+import threading
 import time
 import traceback
 import types
@@ -29,6 +30,7 @@ from typing_extensions import Self
 
 # relative
 from ...client.api import APIRegistry
+from ...client.api import SyftAPI
 from ...client.api import SyftAPICall
 from ...client.client import SyftClient
 from ...serde.serializable import serializable
@@ -39,6 +41,7 @@ from ...service.response import SyftError
 from ...service.response import SyftSuccess
 from ...service.response import SyftWarning
 from ...store.linked_obj import LinkedObject
+from ...types.base import SyftBaseModel
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftBaseObject
@@ -443,6 +446,86 @@ def make_action_side_effect(
         return Err(f"{msg} with {traceback.format_exc()}")
 
     return Ok((context, args, kwargs))
+
+
+class TraceResultRegistry:
+    __result_registry__: dict[int, TraceResult] = {}
+
+    @classmethod
+    def set_trace_result_for_current_thread(
+        cls,
+        client: SyftClient,
+    ) -> None:
+        cls.__result_registry__[threading.get_ident()] = TraceResult(
+            client=client, is_tracing=True
+        )
+
+    @classmethod
+    def get_trace_result_for_thread(cls) -> TraceResult | None:
+        return cls.__result_registry__.get(threading.get_ident(), None)
+
+    @classmethod
+    def reset_result_for_thread(cls) -> None:
+        if threading.get_ident() in cls.__result_registry__:
+            del cls.__result_registry__[threading.get_ident()]
+
+    @classmethod
+    def current_thread_is_tracing(cls) -> bool:
+        trace_result = cls.get_trace_result_for_thread()
+        if trace_result is None:
+            return False
+        else:
+            return trace_result.is_tracing
+
+
+class TraceResult(SyftBaseModel):
+    result: list = []
+    client: SyftClient
+    is_tracing: bool = False
+
+
+def trace_action_side_effect(
+    context: PreHookContext, *args: Any, **kwargs: Any
+) -> Result[Ok[tuple[PreHookContext, tuple[Any, ...], dict[str, Any]]], Err[str]]:
+    action = context.action
+    if action is not None and TraceResultRegistry.current_thread_is_tracing():
+        trace_result = TraceResultRegistry.get_trace_result_for_thread()
+        trace_result.result += [action]  # type: ignore
+    return Ok((context, args, kwargs))
+
+
+def convert_to_pointers(
+    api: SyftAPI,
+    server_uid: UID | None = None,
+    args: list | None = None,
+    kwargs: dict | None = None,
+) -> tuple[list, dict]:
+    # relative
+    from ..dataset.dataset import Asset
+
+    def process_arg(arg: ActionObject | Asset | UID | Any) -> Any:
+        if (
+            not isinstance(arg, ActionObject | Asset | UID)
+            and api.signing_key is not None  # type: ignore[unreachable]
+        ):
+            arg = ActionObject.from_obj(  # type: ignore[unreachable]
+                syft_action_data=arg,
+                syft_client_verify_key=api.signing_key.verify_key,
+                syft_server_location=api.server_uid,
+            )
+            arg.syft_server_uid = server_uid
+            r = arg._save_to_blob_storage()
+            if isinstance(r, SyftError):
+                print(r.message)
+            if isinstance(r, SyftWarning):
+                logger.debug(r.message)
+            arg = api.services.action.set(arg)
+        return arg
+
+    arg_list = [process_arg(arg) for arg in args] if args else []
+    kwarg_dict = {k: process_arg(v) for k, v in kwargs.items()} if kwargs else {}
+
+    return arg_list, kwarg_dict
 
 
 def send_action_side_effect(
@@ -1044,7 +1127,8 @@ class ActionObject(SyncableSyftObject):
             op (str): The method to be executed from the remote object.
             remote_self (UID | LineageID | None): The extended UID of the SyftObject.
             args (list[UID | LineageID | ActionObjectPointer | ActionObject | Any] | None): Operation arguments.
-            kwargs (dict[str, UID | LineageID | ActionObjectPointer | ActionObject | Any] | None): Operation keyword arguments.
+            kwargs (dict[str, UID | LineageID | ActionObjectPointer | ActionObject | Any] | None): Operation
+                keyword arguments.
             action_type (ActionType | None): The type of action being performed.
 
         Returns:

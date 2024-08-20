@@ -207,7 +207,8 @@ def get_mb_serialized_size(data: Any) -> Ok[float] | Err[str]:
         data (Any): The object to be serialized and measured.
 
     Returns:
-        Ok[float] | Err[str]: The size of the serialized object in MB if successful, or an error message if serialization fails.
+        Ok[float] | Err[str]: The size of the serialized object in MB if successful, or an error
+            message if serialization fails.
     """
     try:
         serialized_data = serialize(data, to_bytes=True)

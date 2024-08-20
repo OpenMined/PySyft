@@ -54,7 +54,8 @@ class KeyValueActionStore(ActionStore):
 
         Args:
             server_uid (UID): Unique identifier for the server instance.
-            store_config (StoreConfig): Backend specific configuration, including connection configuration, database name, or client class type.
+            store_config (StoreConfig): Backend specific configuration, including connection configuration,
+                database name, or client class type.
             root_verify_key (SyftVerifyKey | None): Signature verification key, used for checking access permissions.
             document_store (DocumentStore | None): Document store used for storing user information.
         """
@@ -389,7 +390,8 @@ class DictActionStore(KeyValueActionStore):
 
         Args:
             server_uid (UID): Unique identifier for the server instance.
-            store_config (StoreConfig | None): Backend specific configuration, including connection configuration, database name, or client class type.
+            store_config (StoreConfig | None): Backend specific configuration, including connection configuration,
+                database name, or client class type.
             root_verify_key (SyftVerifyKey | None): Signature verification key, used for checking access permissions.
             document_store (DocumentStore | None): Document store used for storing user information.
         """

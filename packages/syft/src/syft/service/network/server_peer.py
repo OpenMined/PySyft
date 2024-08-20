@@ -85,7 +85,7 @@ class ServerPeer(SyftObject):
         """
         if route:
             if not isinstance(
-                route, (HTTPServerRoute, PythonServerRoute, VeilidServerRoute)
+                route, HTTPServerRoute | PythonServerRoute | VeilidServerRoute
             ):
                 raise ValueError(f"Unsupported route type: {type(route)}")
             for i, r in enumerate(self.server_routes):

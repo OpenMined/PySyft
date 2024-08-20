@@ -267,7 +267,8 @@ class SyftWorkerPoolService(AbstractService):
             num_workers (int): The number of workers in the pool.
             config (WorkerConfig): Config of the image to be built.
             tag (str | None, optional): A human-readable manifest identifier. Required for `DockerWorkerConfig`.
-            registry_uid (UID | None, optional): UID of the registry in Kubernetes mode. Required for `DockerWorkerConfig`.
+            registry_uid (UID | None, optional): UID of the registry in Kubernetes mode. Required
+                for `DockerWorkerConfig`.
             reason (str | None, optional): The reason for creating the worker image and pool. Defaults to "".
             pull_image (bool, optional): Whether to pull the image. Defaults to True.
             pod_annotations (dict[str, str] | None, optional): Annotations for the pod. Defaults to None.
