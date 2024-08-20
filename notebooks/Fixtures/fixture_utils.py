@@ -131,7 +131,7 @@ class SyftFixture:
             asset_list=[asset],
         )
         res = self.root_client.upload_dataset(dataset)
-        assert not isinstance(res, sy.SyftError)
+        assert not isinstance(res, sy.SyftError), res
 
     def _add_datasets(self):
         for dataset_config in tqdm(self.config.dataset, desc="Datasets:", position=0):
@@ -182,7 +182,8 @@ class SyftFixture:
         user_code_to_create = (
             self.config.user_code.to_create - self.config.user_code.created
         )
-        for _ in tqdm(range(user_code_to_create), desc="User Code", position=1):
+        print(f"Creating {user_code_to_create} user code.")
+        for _ in range(user_code_to_create):
             # Randomly choose a data scientist
             ds_user = choice(ds_users)
             if ds_user.email not in user_client_map:
