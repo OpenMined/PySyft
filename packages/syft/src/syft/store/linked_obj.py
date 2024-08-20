@@ -1,5 +1,9 @@
 # stdlib
 from typing import Any
+from typing import Generic
+from typing import TypeVar
+from typing import Union
+from typing import get_args
 
 # third party
 from typing_extensions import Self
@@ -13,17 +17,20 @@ from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftObject
+from ..types.syft_object import SyftObjectVersioned
 from ..types.uid import UID
+
+T = TypeVar("T", bound=SyftObject)
 
 
 @serializable()
-class LinkedObject(SyftObject):
+class LinkedObject(SyftObjectVersioned, Generic[T]):
     __canonical_name__ = "LinkedObject"
     __version__ = SYFT_OBJECT_VERSION_1
 
     server_uid: UID
     service_type: type[Any]
-    object_type: type[SyftObject]
+    object_type: type[T]
     object_uid: UID
 
     _resolve_cache: SyftObject | None = None
@@ -35,6 +42,15 @@ class LinkedObject(SyftObject):
             type(self.resolve) if self.object_type is None else self.object_type
         )
         return f"{resolved_obj_type.__name__}: {self.object_uid} @ Server {self.server_uid}"
+
+    @classmethod
+    def get_generic_type(cls: type[Self]) -> type[T]:
+        args = cls.__pydantic_generic_metadata__["args"]
+        if len(args) != 1:
+            raise ValueError(
+                "Cannot infer LinkedObject type, generic argument not provided"
+            )
+        return args[0]  # type: ignore
 
     @property
     def resolve(self) -> SyftObject:
@@ -104,7 +120,7 @@ class LinkedObject(SyftObject):
             if server_uid is None:
                 raise Exception(f"{cls} Requires an object UID")
 
-        return LinkedObject(
+        return LinkedObject[type(obj)](
             server_uid=server_uid,
             service_type=service_type,
             object_type=type(obj),
@@ -135,7 +151,7 @@ class LinkedObject(SyftObject):
             raise ValueError(f"context {context}'s server is None")
         server_uid = context.server.id
 
-        return LinkedObject(
+        return LinkedObject[type(obj)](
             server_uid=server_uid,
             service_type=service_type,
             object_type=type(obj),
@@ -150,9 +166,44 @@ class LinkedObject(SyftObject):
         service_type: type[Any],
         server_uid: UID,
     ) -> Self:
-        return cls(
+        return cls[object_type](
             server_uid=server_uid,
             service_type=service_type,
             object_type=object_type,
             object_uid=object_uid,
         )
+
+
+def _unwrap_optional(type_: Any) -> Any:
+    try:
+        if type_ | None == type_:
+            args = get_args(type_)
+            return Union[tuple(arg for arg in args if arg != type(None))]  # noqa
+        return type_
+    except Exception:
+        return type_
+
+
+def _annotation_issubclass(type_: Any, cls: type) -> bool:
+    try:
+        return issubclass(type_, cls)
+    except Exception:
+        return False
+
+
+def find_unannotated_linked_objects():
+    # relative
+    from ..types.syft_object_registry import SyftObjectRegistry
+
+    for cls in SyftObjectRegistry.__type_to_canonical_name__.keys():
+        if not issubclass(cls, SyftObject):
+            continue
+
+        for name, field in cls.model_fields.items():
+            type_ = _unwrap_optional(field.annotation)
+            if _annotation_issubclass(type_, LinkedObject):
+                try:
+                    type_.get_generic_type()
+                    print(f"{cls.__name__}.{name} is an annotated LinkedObject")
+                except Exception:
+                    print(f"{cls.__name__}.{name} is not an annotated LinkedObject")

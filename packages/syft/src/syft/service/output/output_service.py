@@ -1,5 +1,6 @@
 # stdlib
 from typing import ClassVar
+from typing import TYPE_CHECKING
 
 # third party
 from pydantic import model_validator
@@ -38,15 +39,21 @@ JobIdPartitionKey = PartitionKey(key="job_id", type_=UID)
 OutputPolicyIdPartitionKey = PartitionKey(key="output_policy_id", type_=UID)
 
 
+if TYPE_CHECKING:
+    # relative
+    from ..code.user_code import UserCode
+    from ..job.job_stash import Job
+
+
 @serializable()
 class ExecutionOutput(SyncableSyftObject):
     __canonical_name__ = "ExecutionOutput"
     __version__ = SYFT_OBJECT_VERSION_1
 
     executing_user_verify_key: SyftVerifyKey
-    user_code_link: LinkedObject
+    user_code_link: "LinkedObject[UserCode]"
     output_ids: list[UID] | dict[str, UID] | None = None
-    job_link: LinkedObject | None = None
+    job_link: "LinkedObject[Job] | None" = None
     created_at: DateTime = DateTime.now()
     input_ids: dict[str, UID] | None = None
 
