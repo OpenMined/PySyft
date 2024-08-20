@@ -180,6 +180,17 @@ repos:
       - id: prettier
         exclude: ^(packages/grid/helm|packages/grid/frontend/pnpm-lock.yaml|packages/syft/tests/mongomock|.vscode)
 
+  - repo: https://github.com/jsh9/pydoclint
+    rev: 0.5.6
+    hooks:
+      - id: pydoclint
+        args: [
+            # --config=packages/syft/pyproject.toml,
+            --quiet,
+            --check-return-types=False,
+          ]
+        # args: [--style=google, --check-return-types=False]
+
   # - repo: meta
   #   hooks:
   #     - id: identity
