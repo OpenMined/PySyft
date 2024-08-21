@@ -179,7 +179,7 @@ class BlobRetrievalByURL(BlobRetrieval):
 
         api = self.get_api_wrapped()
 
-        if api.is_ok() and api.ok().connection and isinstance(self.url, ServerURL):
+        if api.is_ok() and api.unwrap().connection and isinstance(self.url, ServerURL):
             api = api.unwrap()
             if self.proxy_server_uid is None:
                 blob_url = api.connection.to_blob_route(  # type: ignore [union-attr]

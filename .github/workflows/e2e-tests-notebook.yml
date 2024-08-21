@@ -4,38 +4,38 @@ on:
   workflow_dispatch:
     inputs:
       syft_version:
-        description: "Syft version to test"
+        description: 'Syft version to test'
         required: true
         type: string
       server_url:
-        description: "Server URL to use"
+        description: 'Server URL to use'
         required: true
         type: string
       server_port:
-        description: "Server port"
+        description: 'Server port'
         required: true
         type: number
       exclude_notebooks:
-        description: "Notebooks to exclude ex: not 11-container-images-k8s.ipynb"
+        description: 'Notebooks to exclude ex: not 11-container-images-k8s.ipynb'
         required: false
         type: string
 
   workflow_call:
     inputs:
       syft_version:
-        description: "Syft version to test"
+        description: 'Syft version to test'
         required: true
         type: string
       server_url:
-        description: "Server URL to use"
+        description: 'Server URL to use'
         required: true
         type: string
       server_port:
-        description: "Server port"
+        description: 'Server port'
         required: true
         type: number
       exclude_notebooks:
-        description: "Notebooks to exclude ex: not 11-container-images-k8s.ipynb"
+        description: 'Notebooks to exclude ex: not 11-container-images-k8s.ipynb'
         required: false
         type: string
 
@@ -45,7 +45,7 @@ jobs:
       max-parallel: 99
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.12"]
+        python-version: ['3.12']
 
     runs-on: ${{ matrix.os }}
     steps:

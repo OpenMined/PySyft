@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections import defaultdict
 from enum import Enum
 from typing import Any
+from typing import cast
 
 # third party
 from typing_extensions import Self
@@ -412,6 +413,7 @@ class KeyValueStorePartition(StorePartition):
             if index_results.is_ok():
                 if ids is None:
                     ids = index_results.ok() if index_results.ok() else set()
+                ids = cast(set, ids)
                 ids = ids.intersection(index_results.ok())
             else:
                 errors.append(index_results.err())
@@ -423,6 +425,7 @@ class KeyValueStorePartition(StorePartition):
             if search_results.is_ok():
                 if ids is None:
                     ids = search_results.ok() if search_results.ok() else set()
+                ids = cast(set, ids)
                 ids = ids.intersection(search_results.ok())
             else:
                 errors.append(search_results.err())
@@ -536,7 +539,7 @@ class KeyValueStorePartition(StorePartition):
             matches = sorted(matches, key=lambda x: getattr(x, order_by.key, ""))
         return matches
 
-    def create(self, obj: SyftObject) -> SyftObject:
+    def create(self, obj: SyftObject) -> None:
         pass
 
     @as_result(SyftException)

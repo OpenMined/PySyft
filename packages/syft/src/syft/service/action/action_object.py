@@ -1521,7 +1521,7 @@ class ActionObject(SyncableSyftObject):
         eager_execution_enabled = (
             api.is_ok()
             and api.unwrap().metadata is not None
-            and api.unwrap().metadata.eager_execution_enabled
+            and api.unwrap().metadata.eager_execution_enabled  # type: ignore
         )
 
         self._syft_add_pre_hooks__(eager_execution_enabled)

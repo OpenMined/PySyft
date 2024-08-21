@@ -146,7 +146,7 @@ class WorkerPool(SyftObject):
         get the latest state of the image from the SyftWorkerImageStash
         """
         api = self.get_api_wrapped()
-        if api.is_ok() and api.ok().services is not None:
+        if api.is_ok() and api.unwrap().services is not None:
             api = api.unwrap()
             return api.services.worker_image.get_by_uid(uid=self.image_id)
         else:

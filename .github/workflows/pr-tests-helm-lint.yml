@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       none:
-        description: "Run Tests Manually"
+        description: 'Run Tests Manually'
         required: false
 
 concurrency:

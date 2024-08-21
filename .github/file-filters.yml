@@ -1,17 +1,17 @@
 stack:
   - .github/workflows/pr-tests-stack.yml
-  - "**.py"
-  - "**.cfg"
-  - "**.yml"
-  - "**.yaml"
-  - "**.dockerfile"
-  - "**.toml"
-  - "**.txt"
-  - "**.ini"
-  - "**.sh"
-  - "**.mako"
-  - "**.lock"
-  - "**.json"
+  - '**.py'
+  - '**.cfg'
+  - '**.yml'
+  - '**.yaml'
+  - '**.dockerfile'
+  - '**.toml'
+  - '**.txt'
+  - '**.ini'
+  - '**.sh'
+  - '**.mako'
+  - '**.lock'
+  - '**.json'
 
 backend:
   - .github/workflows/pr-tests-stack.yml
@@ -42,18 +42,18 @@ syft:
 
 frontend:
   - .github/workflows/pr-tests-frontend.yml
-  - "**.py"
-  - "**.cfg"
-  - "**.yml"
-  - "**.yaml"
-  - "**.dockerfile"
-  - "**.toml"
-  - "**.txt"
-  - "**.ini"
-  - "**.sh"
-  - "**.mako"
-  - "**.lock"
-  - "**.json"
+  - '**.py'
+  - '**.cfg'
+  - '**.yml'
+  - '**.yaml'
+  - '**.dockerfile'
+  - '**.toml'
+  - '**.txt'
+  - '**.ini'
+  - '**.sh'
+  - '**.mako'
+  - '**.lock'
+  - '**.json'
   - packages/grid/frontend/**/*.eslintrc
   - packages/grid/frontend/**/*.svelte
   - packages/grid/frontend/**/*.js

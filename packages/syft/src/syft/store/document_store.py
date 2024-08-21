@@ -507,6 +507,7 @@ class StorePartition:
     #       * Don't use self.lock here.
     #       * Do not call the public thread-safe methods here(with locking).
     # These methods are called from the public thread-safe API, and will hang the process.
+    @as_result(SyftException)
     def _set(
         self,
         credentials: SyftVerifyKey,
@@ -517,6 +518,7 @@ class StorePartition:
     ) -> SyftObject:
         raise NotImplementedError
 
+    @as_result(SyftException)
     def _update(
         self,
         credentials: SyftVerifyKey,
@@ -528,6 +530,7 @@ class StorePartition:
     ) -> SyftObject:
         raise NotImplementedError
 
+    @as_result(SyftException)
     def _get_all_from_store(
         self,
         credentials: SyftVerifyKey,
@@ -536,11 +539,13 @@ class StorePartition:
     ) -> list[SyftObject]:
         raise NotImplementedError
 
+    @as_result(SyftException)
     def _delete(
         self, credentials: SyftVerifyKey, qk: QueryKey, has_permission: bool = False
     ) -> SyftSuccess:
         raise NotImplementedError
 
+    @as_result(SyftException)
     def _all(
         self,
         credentials: SyftVerifyKey,
@@ -587,6 +592,7 @@ class StorePartition:
     def get_all_storage_permissions(self) -> dict[UID, set[UID]]:
         raise NotImplementedError
 
+    @as_result(SyftException)
     def _migrate_data(
         self,
         to_klass: SyftObject,

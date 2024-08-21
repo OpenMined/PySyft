@@ -6,19 +6,19 @@ on:
   workflow_dispatch:
     inputs:
       release_version:
-        description: "Syft Version to Release"
+        description: 'Syft Version to Release'
         required: true
         type: string
 
       release_branch:
-        description: "Branch to Release from"
+        description: 'Branch to Release from'
         required: true
         type: string
 
       release_platform:
-        description: "Release Platform"
+        description: 'Release Platform'
         required: true
-        default: "TEST_PYPI"
+        default: 'TEST_PYPI'
         type: choice
         options:
           - TEST_PYPI
@@ -28,7 +28,7 @@ on:
 # Prevents concurrent runs of the same workflow
 # while the previous run is still in progress
 concurrency:
-  group: "CD - Feature Branch"
+  group: 'CD - Feature Branch'
   cancel-in-progress: false
 
 jobs:
@@ -45,7 +45,7 @@ jobs:
       - name: Setup Python on ${{ matrix.runner }}
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: '3.12'
 
       - name: Install Git
         run: |
@@ -286,7 +286,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: '3.12'
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -354,7 +354,7 @@ jobs:
         with:
           author_name: ${{ secrets.OM_BOT_NAME }}
           author_email: ${{ secrets.OM_BOT_EMAIL }}
-          message: "Add Helm package for Syft Version: ${{ needs.merge-docker-images.outputs.server_version }}"
-          add: "helm/"
-          push: "origin gh-pages"
-          cwd: "./ghpages/"
+          message: 'Add Helm package for Syft Version: ${{ needs.merge-docker-images.outputs.server_version }}'
+          add: 'helm/'
+          push: 'origin gh-pages'
+          cwd: './ghpages/'

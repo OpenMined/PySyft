@@ -1,4 +1,4 @@
-body[data-jp-theme-light="false"],
+body[data-jp-theme-light='false'],
 body.vscode-dark {
   --primary-color: #111111;
   --secondary-color: #212121;
@@ -72,7 +72,7 @@ body {
 }
 
 .paragraph-sm {
-  font-family: "Roboto";
+  font-family: 'Roboto';
   font-style: normal;
   font-weight: 400;
   font-size: 11.62px;
@@ -83,7 +83,7 @@ body {
 }
 
 .code-text {
-  font-family: "Consolas";
+  font-family: 'Consolas';
   font-style: normal;
   font-weight: 400;
   font-size: 13px;
@@ -263,7 +263,7 @@ body {
 }
 
 .syncstate-col-footer {
-  font-family: "DejaVu Sans Mono", "Open Sans";
+  font-family: 'DejaVu Sans Mono', 'Open Sans';
   font-size: 12px;
   font-weight: 400;
   line-height: 16.8px;
@@ -313,7 +313,7 @@ body {
 }
 
 .diff-state-no-obj {
-  font-family: "DejaVu Sans Mono", "Open Sans";
+  font-family: 'DejaVu Sans Mono', 'Open Sans';
   font-size: 12px;
   font-weight: 400;
   line-height: 16.8px;
@@ -449,7 +449,7 @@ body {
   display: flex;
 }
 
-.widget-label-basic input[type="checkbox"][disabled] {
+.widget-label-basic input[type='checkbox'][disabled] {
   filter: sepia(0.3) hue-rotate(67deg) saturate(3);
 }
 
@@ -595,7 +595,7 @@ body {
 .syft-syncstate p,
 .syft-code p,
 .syft-code h3 {
-  font-family: "Open Sans";
+  font-family: 'Open Sans';
 }
 
 .diff-container {
@@ -604,7 +604,7 @@ body {
 
 .syft-container {
   padding: 5px;
-  font-family: "Open Sans";
+  font-family: 'Open Sans';
 }
 
 .syft-alert-info {
@@ -626,7 +626,7 @@ body {
 }
 
 .itables {
-  font-family: "Consolas", monospace, sans-serif;
+  font-family: 'Consolas', monospace, sans-serif;
 }
 
 .itables table {

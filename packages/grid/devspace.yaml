@@ -27,35 +27,35 @@ vars:
   DOCKER_IMAGE_SEAWEEDFS: openmined/syft-seaweedfs
   DOCKER_IMAGE_RATHOLE: openmined/syft-rathole
   DOCKER_IMAGE_ENCLAVE_ATTESTATION: openmined/syft-enclave-attestation
-  CONTAINER_REGISTRY: "docker.io"
-  VERSION: "0.9.1-beta.4"
+  CONTAINER_REGISTRY: 'docker.io'
+  VERSION: '0.9.1-beta.4'
   PLATFORM: $(uname -m | grep -q 'arm64' && echo "arm64" || echo "amd64")
 
 # This is a list of `images` that DevSpace can build for this project
 # We recommend to skip image building during development (devspace dev) as much as possible
 images:
   backend:
-    image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_BACKEND}"
+    image: '${CONTAINER_REGISTRY}/${DOCKER_IMAGE_BACKEND}'
     buildKit:
-      args: ["--platform", "linux/${PLATFORM}"]
+      args: ['--platform', 'linux/${PLATFORM}']
     dockerfile: ./backend/backend.dockerfile
-    target: "backend"
+    target: 'backend'
     context: ../
     tags:
       - dev-${DEVSPACE_TIMESTAMP}
   frontend:
-    image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_FRONTEND}"
+    image: '${CONTAINER_REGISTRY}/${DOCKER_IMAGE_FRONTEND}'
     buildKit:
-      args: ["--platform", "linux/${PLATFORM}"]
+      args: ['--platform', 'linux/${PLATFORM}']
     dockerfile: ./frontend/frontend.dockerfile
-    target: "syft-ui-production"
+    target: 'syft-ui-production'
     context: ./frontend
     tags:
       - dev-${DEVSPACE_TIMESTAMP}
   seaweedfs:
-    image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_SEAWEEDFS}"
+    image: '${CONTAINER_REGISTRY}/${DOCKER_IMAGE_SEAWEEDFS}'
     buildKit:
-      args: ["--platform", "linux/${PLATFORM}"]
+      args: ['--platform', 'linux/${PLATFORM}']
     dockerfile: ./seaweedfs/seaweedfs.dockerfile
     context: ./seaweedfs
     tags:
@@ -85,31 +85,31 @@ dev:
       app.kubernetes.io/name: syft
       app.kubernetes.io/component: mongo
     ports:
-      - port: "27017"
+      - port: '27017'
   seaweedfs:
     labelSelector:
       app.kubernetes.io/name: syft
       app.kubernetes.io/component: seaweedfs
     ports:
-      - port: "9333" # admin
-      - port: "8888" # filer
-      - port: "8333" # S3
-      - port: "4001" # mount azure
+      - port: '9333' # admin
+      - port: '8888' # filer
+      - port: '8333' # S3
+      - port: '4001' # mount azure
   backend:
     labelSelector:
       app.kubernetes.io/name: syft
       app.kubernetes.io/component: backend
     ports:
-      - port: "5678" # debugpy
+      - port: '5678' # debugpy
     containers:
       backend-container:
         env:
           - name: RELEASE
             value: development
           - name: DEV_MODE
-            value: "True"
+            value: 'True'
           - name: DEBUGGER_ENABLED
-            value: "True"
+            value: 'True'
         sync:
           - path: ./backend/grid:/root/app/grid
           - path: ../syft:/root/app/syft
@@ -118,7 +118,7 @@ dev:
 
 profiles:
   - name: datasite-low
-    description: "Deploy a low-side datasite"
+    description: 'Deploy a low-side datasite'
     patches:
       - op: add
         path: deployments.syft.helm.values.server
@@ -126,23 +126,23 @@ profiles:
           side: low
 
   - name: migrated-datasite
-    description: "Deploy a migrated datasite"
+    description: 'Deploy a migrated datasite'
     patches:
       - op: add
         path: deployments.syft.helm.valuesFiles
         value: ./helm/examples/dev/migration.yaml
 
   - name: datasite-tunnel
-    description: "Deploy a datasite with tunneling enabled"
+    description: 'Deploy a datasite with tunneling enabled'
     patches:
       # enable rathole image
       - op: add
         path: images
         value:
           rathole:
-            image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_RATHOLE}"
+            image: '${CONTAINER_REGISTRY}/${DOCKER_IMAGE_RATHOLE}'
             buildKit:
-              args: ["--platform", "linux/${PLATFORM}"]
+              args: ['--platform', 'linux/${PLATFORM}']
             dockerfile: ./rathole/rathole.dockerfile
             context: ./rathole
             tags:
@@ -153,16 +153,16 @@ profiles:
         value: ./helm/examples/dev/datasite.tunnel.yaml
 
   - name: gateway
-    description: "Deploy a Gateway Server with tunnel enabled"
+    description: 'Deploy a Gateway Server with tunnel enabled'
     patches:
       # enable rathole image
       - op: add
         path: images
         value:
           rathole:
-            image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_RATHOLE}"
+            image: '${CONTAINER_REGISTRY}/${DOCKER_IMAGE_RATHOLE}'
             buildKit:
-              args: ["--platform", "linux/${PLATFORM}"]
+              args: ['--platform', 'linux/${PLATFORM}']
             dockerfile: ./rathole/rathole.dockerfile
             context: ./rathole
             tags:
@@ -176,7 +176,7 @@ profiles:
               app.kubernetes.io/name: syft
               app.kubernetes.io/component: rathole
             ports:
-              - port: "2333"
+              - port: '2333'
       # use gateway-specific chart values
       - op: add
         path: deployments.syft.helm.valuesFiles
@@ -201,7 +201,7 @@ profiles:
         value: 2334:2333
 
   - name: gcp
-    description: "Deploy a high-side datasite on GCP"
+    description: 'Deploy a high-side datasite on GCP'
     patches:
       - op: replace
         path: deployments.syft.helm.valuesFiles
@@ -209,7 +209,7 @@ profiles:
           - ./helm/examples/gcp/gcp.high.yaml
 
   - name: gcp-low
-    description: "Deploy a low-side datasite on GCP"
+    description: 'Deploy a low-side datasite on GCP'
     patches:
       - op: replace
         path: deployments.syft.helm.valuesFiles
@@ -217,7 +217,7 @@ profiles:
           - ./helm/examples/gcp/gcp.low.yaml
 
   - name: azure
-    description: "Deploy a high-side datasite on AKS"
+    description: 'Deploy a high-side datasite on AKS'
     patches:
       - op: replace
         path: deployments.syft.helm.valuesFiles
@@ -225,16 +225,16 @@ profiles:
           - ./helm/examples/azure/azure.high.yaml
 
   - name: enclave
-    description: "Deploy an enclave server"
+    description: 'Deploy an enclave server'
     patches:
       # enable image build for enclave-attestation
       - op: add
         path: images
         value:
           enclave-attestation:
-            image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_ENCLAVE_ATTESTATION}"
+            image: '${CONTAINER_REGISTRY}/${DOCKER_IMAGE_ENCLAVE_ATTESTATION}'
             buildKit:
-              args: ["--platform", "linux/amd64"]
+              args: ['--platform', 'linux/amd64']
             dockerfile: ./enclave/attestation/attestation.dockerfile
             context: ./enclave/attestation
             tags:
@@ -262,7 +262,7 @@ profiles:
       - op: replace
         path: dev.seaweedfs.ports
         value:
-          - port: "9334:9333" # admin
-          - port: "8889:8888" # filer
-          - port: "8334:8333" # S3
-          - port: "4002:4001" # mount api
+          - port: '9334:9333' # admin
+          - port: '8889:8888' # filer
+          - port: '8334:8333' # S3
+          - port: '4002:4001' # mount api

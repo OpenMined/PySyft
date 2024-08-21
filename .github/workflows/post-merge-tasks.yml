@@ -12,7 +12,7 @@ jobs:
   post-merge-cleanup-notebooks:
     strategy:
       matrix:
-        python-version: ["3.12"]
+        python-version: ['3.12']
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -39,7 +39,7 @@ jobs:
         with:
           author_name: ${{ secrets.OM_BOT_NAME }}
           author_email: ${{ secrets.OM_BOT_EMAIL }}
-          message: "bump protocol and remove notebooks"
-          remove: "-r notebooks/Experimental/ --ignore-unmatch"
+          message: 'bump protocol and remove notebooks'
+          remove: '-r notebooks/Experimental/ --ignore-unmatch'
           add: "['packages/syft/src/syft/protocol/protocol_version.json']"
-          commit: "-a"
+          commit: '-a'

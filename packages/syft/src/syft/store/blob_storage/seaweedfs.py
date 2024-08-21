@@ -88,7 +88,7 @@ class SeaweedFSBlobDeposit(BlobDeposit):
                     self.urls,
                     start=1,
                 ):
-                    if api.is_ok() and api.ok().connection is not None:
+                    if api.is_ok() and api.unwrap().connection is not None:
                         api = api.unwrap()
                         if self.proxy_server_uid is None:
                             blob_url = api.connection.to_blob_route(  # type: ignore [union-attr]

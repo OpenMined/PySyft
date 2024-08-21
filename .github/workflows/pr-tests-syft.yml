@@ -7,12 +7,12 @@ on:
     branches:
       - dev
       - main
-      - "0.8"
+      - '0.8'
 
   workflow_dispatch:
     inputs:
       none:
-        description: "Run Tests Manually"
+        description: 'Run Tests Manually'
         required: false
 
 concurrency:
@@ -25,12 +25,12 @@ jobs:
       max-parallel: 99
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.12"]
+        python-version: ['3.12']
         include:
-          - python-version: "3.11"
-            os: "ubuntu-latest"
-          - python-version: "3.10"
-            os: "ubuntu-latest"
+          - python-version: '3.11'
+            os: 'ubuntu-latest'
+          - python-version: '3.10'
+            os: 'ubuntu-latest'
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -38,7 +38,7 @@ jobs:
       #   if: matrix.os == 'ubuntu-latest'
       #   run: |
       #     sudo chown -R $USER:$USER $HOME
-      - name: "clean .git/config"
+      - name: 'clean .git/config'
         if: matrix.os == 'windows-latest'
         continue-on-error: true
         shell: bash
@@ -104,24 +104,24 @@ jobs:
         # Disable on windows until its flakyness is reduced.
         # os: [ubuntu-latest, macos-latest, windows-latest]
         os: [ubuntu-latest, macos-latest]
-        python-version: ["3.12"]
-        deployment-type: ["python"]
-        notebook-paths: ["tutorials"]
-        bump-version: ["False"]
+        python-version: ['3.12']
+        deployment-type: ['python']
+        notebook-paths: ['tutorials']
+        bump-version: ['False']
         include:
-          - python-version: "3.11"
-            os: "ubuntu-latest"
-            deployment-type: "python"
-            notebook-paths: "tutorials"
-          - python-version: "3.10"
-            os: "ubuntu-latest"
-            deployment-type: "python"
-            notebook-paths: "tutorials"
-          - python-version: "3.12"
-            os: "ubuntu-latest"
-            deployment-type: "python"
-            notebook-paths: "tutorials"
-            bump-version: "True"
+          - python-version: '3.11'
+            os: 'ubuntu-latest'
+            deployment-type: 'python'
+            notebook-paths: 'tutorials'
+          - python-version: '3.10'
+            os: 'ubuntu-latest'
+            deployment-type: 'python'
+            notebook-paths: 'tutorials'
+          - python-version: '3.12'
+            os: 'ubuntu-latest'
+            deployment-type: 'python'
+            notebook-paths: 'tutorials'
+            bump-version: 'True'
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -129,7 +129,7 @@ jobs:
       #   if: matrix.os == 'ubuntu-latest'
       #   run: |
       #     sudo chown -R $USER:$USER $HOME
-      - name: "clean .git/config"
+      - name: 'clean .git/config'
         if: matrix.os == 'windows-latest'
         continue-on-error: true
         shell: bash
@@ -180,9 +180,9 @@ jobs:
         uses: nick-fields/retry@v3
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         env:
-          ORCHESTRA_DEPLOYMENT_TYPE: "${{ matrix.deployment-type }}"
-          TEST_NOTEBOOK_PATHS: "${{ matrix.notebook-paths }}"
-          BUMP_VERSION: "${{ matrix.bump-version }}"
+          ORCHESTRA_DEPLOYMENT_TYPE: '${{ matrix.deployment-type }}'
+          TEST_NOTEBOOK_PATHS: '${{ matrix.notebook-paths }}'
+          BUMP_VERSION: '${{ matrix.bump-version }}'
         with:
           timeout_seconds: 2400
           max_attempts: 3
@@ -193,9 +193,9 @@ jobs:
       max-parallel: 99
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.10", "3.11", "3.12"]
-        deployment-type: ["remote"]
-        notebook-paths: ["api/0.8"]
+        python-version: ['3.10', '3.11', '3.12']
+        deployment-type: ['remote']
+        notebook-paths: ['api/0.8']
       fail-fast: false
 
     runs-on: ${{matrix.os}}
@@ -292,9 +292,9 @@ jobs:
       - name: Run unit tests
         if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         env:
-          ORCHESTRA_DEPLOYMENT_TYPE: "${{ matrix.deployment-type }}"
-          DEV_MODE: "True" # force orchestra --build
-          TEST_NOTEBOOK_PATHS: "${{ matrix.notebook-paths }}"
+          ORCHESTRA_DEPLOYMENT_TYPE: '${{ matrix.deployment-type }}'
+          DEV_MODE: 'True' # force orchestra --build
+          TEST_NOTEBOOK_PATHS: '${{ matrix.notebook-paths }}'
         run: |
           tox -e single_container.launch
           tox -e stack.test.notebook
@@ -305,7 +305,7 @@ jobs:
       max-parallel: 1
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.12"]
+        python-version: ['3.12']
 
     runs-on: ${{ matrix.os }}
     steps:
