@@ -4,6 +4,9 @@
 from collections.abc import Collection
 import logging
 
+# third party
+from IPython.display import display
+
 # relative
 from ..abstract_server import ServerSideType
 from ..server.credentials import SyftVerifyKey
@@ -22,7 +25,7 @@ from ..util.util import prompt_warning_message
 from .datasite_client import DatasiteClient
 from .sync_decision import SyncDecision
 from .sync_decision import SyncDirection
-from IPython.display import display
+
 logger = logging.getLogger(__name__)
 
 
@@ -48,20 +51,25 @@ def sync(
     )
     if isinstance(diff, SyftError):
         return diff
-    
+
     if diff.low_state.errors:
-        error_list_text ="<br>".join(list(map(lambda x: "- " + x,diff.low_state.errors.values()))) 
-        warning = SyftWarning(message=
-            f"Server {from_client.name} had the following errors while trying to retrieve its sync state. Objects corresponding to these errors will be ignored in comparison.<br>{error_list_text}"
+        error_list_text = "<br>".join("- " + x for x in diff.low_state.errors.values())
+        warning = SyftWarning(
+            message=(
+                f"Server {to_client.name} had the following errors while trying to retrieve its sync state. "
+                + f"Objects corresponding to these errors will be ignored in comparison.<br>{error_list_text}"
+            )
         )
         display(warning)
     if diff.high_state.errors:
-        error_list_text ="<br>".join(list(map(lambda x: "- " + x,diff.high_state.errors.values()))) 
-        warning = SyftWarning(message=
-            f"Server {to_client.name} had the following errors while trying to retrieve its sync state. Objects corresponding to these errors will be ignored in comparison.<br>{error_list_text}"
+        error_list_text = "<br>".join("- " + x for x in diff.high_state.errors.values())
+        warning = SyftWarning(
+            message=(
+                f"Server {to_client.name} had the following errors while trying to retrieve its sync state. "
+                + f"Objects corresponding to these errors will be ignored in comparison.<br>{error_list_text}"
+            )
         )
         display(warning)
-
 
     return diff.resolve()
 

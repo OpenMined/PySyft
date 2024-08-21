@@ -12,6 +12,7 @@ from ..serde.serializable import serializable
 from ..types.base import SyftBaseModel
 from ..util.util import sanitize_html
 
+
 class SyftResponseMessage(SyftBaseModel):
     message: str
     _bool: bool = True

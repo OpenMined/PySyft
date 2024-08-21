@@ -4,11 +4,11 @@ from types import MethodType
 from typing import Any
 
 # relative
+from ..service.response import SyftResponseMessage
 from ..types.dicttuple import DictTuple
 from ..types.syft_object import SyftObject
 from .table import render_itable_template
 from .util import sanitize_html
-from ..service.response import SyftResponseMessage
 
 
 def _patch_ipython_sanitization() -> None:
