@@ -1,5 +1,4 @@
 # stdlib
-import sys
 import traceback
 from typing import Any
 from typing import TYPE_CHECKING
@@ -171,60 +170,3 @@ class SyftInfo(SyftResponseMessage):
     @property
     def _repr_html_class_(self) -> str:
         return "alert-info"
-
-
-@serializable(canonical_name="SyftException", version=1)
-class SyftException(Exception):
-    traceback: bool = False
-    traceback_limit: int = 10
-
-    @property
-    def _repr_html_class_(self) -> str:
-        return "alert-danger"
-
-    def _repr_html_(self) -> str:
-        return (
-            f'<div class="{self._repr_html_class_}" style="padding:5px;">'
-            + f"<strong>{type(self).__name__}</strong>: {sanitize_html(self.args)}</div><br />"
-        )
-
-    @staticmethod
-    def format_traceback(etype: Any, evalue: Any, tb: Any, tb_offset: Any) -> str:
-        line = "---------------------------------------------------------------------------\n"
-        template = ""
-        template += line
-        template += f"{type(evalue).__name__}\n"
-        template += line
-        template += f"Exception: {evalue}\n"
-
-        if evalue.traceback:
-            template += line
-            template += "Traceback:\n"
-            tb_lines = "".join(traceback.format_tb(tb, evalue.traceback_limit)) + "\n"
-            template += tb_lines
-            template += line
-
-        return template
-
-
-def syft_exception_handler(
-    shell: Any, etype: Any, evalue: Any, tb: Any, tb_offset: Any = None
-) -> None:
-    template = evalue.format_traceback(
-        etype=etype, evalue=evalue, tb=tb, tb_offset=tb_offset
-    )
-    sys.stderr.write(template)
-
-
-try:
-    # third party
-    from IPython import get_ipython
-
-    get_ipython().set_custom_exc((SyftException,), syft_exception_handler)  # noqa: F821
-except Exception:
-    pass  # nosec
-
-
-@serializable(canonical_name="SyftAttributeError", version=1)
-class SyftAttributeError(AttributeError, SyftException):
-    pass
