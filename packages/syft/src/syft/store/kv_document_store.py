@@ -411,7 +411,7 @@ class KeyValueStorePartition(StorePartition):
             index_results = self._get_keys_index(qks=index_qks)
             if index_results.is_ok():
                 if ids is None:
-                    ids = index_results.ok() if index_results.ok() else {}
+                    ids = index_results.ok() if index_results.ok() else set()
                 ids = ids.intersection(index_results.ok())
             else:
                 errors.append(index_results.err())
@@ -422,7 +422,7 @@ class KeyValueStorePartition(StorePartition):
 
             if search_results.is_ok():
                 if ids is None:
-                    ids = search_results.ok() if search_results.ok() else {}
+                    ids = search_results.ok() if search_results.ok() else set()
                 ids = ids.intersection(search_results.ok())
             else:
                 errors.append(search_results.err())
