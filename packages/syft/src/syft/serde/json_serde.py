@@ -125,9 +125,9 @@ def _annotation_issubclass(annotation: Any, cls: type) -> bool:
         return False
 
 
-def _serialize_pydantic_to_json(obj: pydantic.BaseModel) -> Json:
+def _serialize_pydantic_to_json(obj: pydantic.BaseModel) -> dict[str, Json]:
     canonical_name, version = SyftObjectRegistry.get_canonical_name_version(obj)
-    result = {
+    result: dict[str, Json] = {
         JSON_CANONICAL_NAME_FIELD: canonical_name,
         JSON_VERSION_FIELD: version,
     }
