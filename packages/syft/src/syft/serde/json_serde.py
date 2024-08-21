@@ -253,11 +253,10 @@ def serialize_json(value: Any, annotation: Any = None, validate: bool = True) ->
     the JSON serialization will fall back to serializing bytes.
 
     'Strictly typed' means the annotation is unambiguous during deserialization:
-    - `int | None` is strictly typed and serialized to int (nullable)
     - `str | int` is ambiguous and serialized to bytes
     - `list[int]` is strictly typed
     - `list`, `list[str | int]`, `list[Any]` are ambiguous and serialized to bytes
-    - Optional types are treated as strictly typed if the inner type is strictly typed
+    - Optional types are serializable
 
     The function chooses the appropriate serialization method in the following order:
     1. Method registered in `JSON_SERDE_REGISTRY` for the annotation type.
@@ -329,5 +328,7 @@ def deserialize_json(value: Json, annotation: Any) -> Any:
         return _deserialize_iterable_from_json(value, annotation)
     elif isinstance(value, dict):
         return _deserialize_mapping_from_json(value, annotation)
-    else:
+    elif isinstance(value, str):
         return _deserialize_from_json_bytes(value)
+    else:
+        raise ValueError(f"Cannot deserialize {value} to {annotation}")
