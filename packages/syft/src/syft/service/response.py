@@ -12,7 +12,6 @@ from ..serde.serializable import serializable
 from ..types.base import SyftBaseModel
 from ..util.util import sanitize_html
 
-
 class SyftResponseMessage(SyftBaseModel):
     message: str
     _bool: bool = True
@@ -66,9 +65,9 @@ class SyftResponseMessage(SyftBaseModel):
 
     def _repr_html_(self) -> str:
         return (
-            f'<div class="{self._repr_html_class_}" style="padding:5px;">'
+            f'<div class="{self._repr_html_class_}">'
             f"<strong>{type(self).__name__}</strong>: "
-            f'<pre class="{self._repr_html_class_}" style="display:inline; font-family:inherit;">'
+            f'<pre class="{self._repr_html_class_}">'
             f"{sanitize_html(self.message)}</pre></div><br/>"
         )
 
