@@ -724,7 +724,8 @@ class UserCode(SyncableSyftObject):
         all_inputs = {}
         inputs = self.input_policy_init_kwargs or {}
         for vals in inputs.values():
-            all_inputs.update(vals)
+            # Only keep UIDs, filter out Constants
+            all_inputs.update({k: v for k, v in vals.items() if isinstance(v, UID)})
 
         # map the action_id to the asset
         used_assets: list[Asset] = []
@@ -753,20 +754,47 @@ class UserCode(SyncableSyftObject):
         action_objects = {
             arg_name: str(uid)
             for arg_name, uid in all_inputs.items()
-            if arg_name not in self.assets.keys()
+            if arg_name not in self.assets.keys() and isinstance(uid, UID)
         }
 
         return action_objects
 
     @property
+    def constants(self) -> dict[str, Constant]:
+        if not self.input_policy_init_kwargs:
+            return {}
+
+        all_inputs = {}
+        for vals in self.input_policy_init_kwargs.values():
+            all_inputs.update(vals)
+
+        # filter out the assets
+        constants = {
+            arg_name: item
+            for arg_name, item in all_inputs.items()
+            if isinstance(item, Constant)
+        }
+
+        return constants
+
+    @property
     def inputs(self) -> dict:
         inputs = {}
-        if self.action_objects:
-            inputs["action_objects"] = self.action_objects
-        if self.assets:
+
+        assets = self.assets
+        action_objects = self.action_objects
+        constants = self.constants
+        if action_objects:
+            inputs["action_objects"] = action_objects
+        if assets:
             inputs["assets"] = {
                 argument: asset._get_dict_for_user_code_repr()
-                for argument, asset in self.assets.items()
+                for argument, asset in assets.items()
+            }
+        if self.constants:
+            inputs["constants"] = {
+                argument: constant._get_dict_for_user_code_repr()
+                for argument, constant in constants.items()
             }
         return inputs
 

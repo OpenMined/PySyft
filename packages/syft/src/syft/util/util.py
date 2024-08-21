@@ -27,6 +27,7 @@ from pathlib import Path
 import platform
 import random
 import re
+import reprlib
 import secrets
 from secrets import randbelow
 import socket
@@ -1082,3 +1083,31 @@ def get_nb_secrets(defaults: dict | None = None) -> dict:
         print(f"Unable to load {filename}")
 
     return defaults
+
+
+class CustomRepr(reprlib.Repr):
+    def repr_str(self, obj: Any, level: int = 0) -> str:
+        if len(obj) <= self.maxstring:
+            return repr(obj)
+        return repr(obj[: self.maxstring] + "...")
+
+
+def repr_truncation(obj: Any, max_elements: int = 10) -> str:
+    """
+    Return a truncated string representation of the object if it is too long.
+
+    Args:
+    - obj: The object to be represented (can be str, list, dict, set...).
+    - max_elements: Maximum number of elements to display before truncating.
+
+    Returns:
+    - A string representation of the object, truncated if necessary.
+    """
+    r = CustomRepr()
+    r.maxlist = max_elements  # For lists
+    r.maxdict = max_elements  # For dictionaries
+    r.maxset = max_elements  # For sets
+    r.maxstring = 100  # For strings
+    r.maxother = 100  # For other objects
+
+    return r.repr(obj)
