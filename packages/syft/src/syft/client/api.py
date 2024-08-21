@@ -36,7 +36,6 @@ from ..server.credentials import SyftVerifyKey
 from ..service.context import AuthedServiceContext
 from ..service.context import ChangeContext
 from ..service.metadata.server_metadata import ServerMetadataJSON
-from ..service.response import SyftAttributeError
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.service import UserLibConfigRegistry
@@ -735,7 +734,7 @@ class APIModule:
                     return object.__getattribute__(new_current_module, name)
                 except AttributeError:
                     pass
-            raise SyftAttributeError(
+            raise AttributeError(
                 f"'APIModule' api{self.path} object has no submodule or method '{name}', "
                 "you may not have permission to access the module you are trying to access."
                 "If you think this is an error, try calling `client.refresh()` to update the API."
@@ -920,7 +919,7 @@ class SyftAPI(SyftObject):
         try:
             return getattr(self.api_module, name)
         except Exception:
-            raise SyftAttributeError(
+            raise AttributeError(
                 f"'SyftAPI' object has no submodule or method '{name}', "
                 "you may not have permission to access the module you are trying to access."
                 "If you think this is an error, try calling `client.refresh()` to update the API."
