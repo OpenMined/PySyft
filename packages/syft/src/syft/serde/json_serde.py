@@ -250,13 +250,10 @@ def serialize_json(value: Any, annotation: Any = None, validate: bool = True) ->
 
     Serialization is always done according to the annotation, as the same annotation
     is used for deserialization. If the annotation is not provided or is ambiguous,
-    the JSON serialization will fall back to serializing bytes.
-
-    'Strictly typed' means the annotation is unambiguous during deserialization:
-    - `str | int` is ambiguous and serialized to bytes
-    - `list[int]` is strictly typed
-    - `list`, `list[str | int]`, `list[Any]` are ambiguous and serialized to bytes
-    - Optional types are serializable
+    the JSON serialization will fall back to serializing bytes. Examples:
+    - int, `list[int]` are strictly typed
+    - `str | int`, `list`, `list[str | int]`, `list[Any]` are ambiguous and serialized to bytes
+    - Optional types (like int | None) are serialized to the not-None type
 
     The function chooses the appropriate serialization method in the following order:
     1. Method registered in `JSON_SERDE_REGISTRY` for the annotation type.
