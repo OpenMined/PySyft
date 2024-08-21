@@ -152,6 +152,11 @@ class Action(SyftObject):
         hashes = 0
         if self.remote_self:
             hashes += hash(self.remote_self.syft_history_hash)
+        # 🔵 TODO: resolve this
+        # if the object is ActionDataEmpty then the type might not be equal to the
+        # real thing. This is the same issue with determining the result type from
+        # a pointer operation in the past, so we should think about what we want here
+        # hashes += hash(self.path)
         hashes += hash(self.op)
         for arg in self.args:
             hashes += hash(arg.syft_history_hash)

@@ -118,7 +118,8 @@ class DictStoreConfig(StoreConfig):
         backing_store (Type[KeyValueBackingStore]): The backend type used. Default: DictBackingStore.
         locking_config (LockingConfig): The config used for store locking.
     """
-
+    __canonical_name__ = "DictStoreConfig"
+    
     store_type: type[DocumentStore] = DictDocumentStore
     backing_store: type[KeyValueBackingStore] = DictBackingStore
     locking_config: LockingConfig = Field(default_factory=ThreadingLockingConfig)

@@ -142,6 +142,11 @@ class CMPBase:
         elif inspect.ismodule(child_obj) and CMPBase.is_submodule(
             parent_obj, child_obj
         ):
+            ## TODO, we could register modules and functions in 2 ways:
+            # A) as numpy.float32 (what we are doing now)
+            # B) as numpy.core.float32 (currently not supported)
+            # only allow submodules
+
             return CMPModule(
                 child_path,
                 permissions=self.permissions,
