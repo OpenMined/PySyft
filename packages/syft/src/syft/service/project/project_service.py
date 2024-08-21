@@ -161,7 +161,7 @@ class ProjectService(AbstractService):
                 ).unwrap()
             else:
                 raise SyftException(
-                    message=f"project {project}'s leader_server_route is None"
+                    public_message=f"project {project}'s leader_server_route is None"
                 )
 
         _project.leader_server_peer = leader_server_peer

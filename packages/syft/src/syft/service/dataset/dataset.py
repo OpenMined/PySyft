@@ -13,9 +13,8 @@ import pandas as pd
 from pydantic import ConfigDict
 from pydantic import field_validator
 from pydantic import model_validator
-from result import Err
 from result import Ok
-from result import Result
+from result import as_result
 from typing_extensions import Self
 
 # relative
@@ -130,7 +129,7 @@ class Asset(SyftObject):
         mock = self.mock
         private_data_res = self._private_data()
         if private_data_res.is_err():
-            data_table_line = private_data_res.err_value
+            data_table_line = "You have no permission to the private data"
         else:
             private_data_obj = private_data_res.ok_value
             if isinstance(private_data_obj, ActionObject):
@@ -259,7 +258,8 @@ class Asset(SyftObject):
             and data_result.endswith("denied")
         )
 
-    def _private_data(self) -> Result[Any, str]:
+    @as_result(SyftException)
+    def _private_data(self) -> Any:
         """
         Retrieves the private data associated with this asset.
 
@@ -274,9 +274,9 @@ class Asset(SyftObject):
             return Ok(None)
         res = api.unwrap().services.action.get(self.action_id)
         if self.has_permission(res):
-            return Ok(res.syft_action_data)
+            return res.syft_action_data
         else:
-            return Err("You do not have permission to access the private data.")
+            raise SyftException(public_message="You have no access to the private data")
 
     @property
     def data(self) -> Any:

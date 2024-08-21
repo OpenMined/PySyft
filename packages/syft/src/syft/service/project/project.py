@@ -272,6 +272,7 @@ class ProjectRequest(ProjectEventAddObject):
     def _validate_linked_request(cls, v: Any) -> LinkedObject:
         if isinstance(v, Request):
             linked_request = LinkedObject.from_obj(v, server_uid=v.server_uid)
+            linked_request.syft_server_location = v.syft_server_location
             return linked_request
         elif isinstance(v, LinkedObject):
             return v
@@ -634,7 +635,11 @@ def add_code_request_to_project(
     submitted_req = client.api.services.code.request_code_execution(
         code=code, reason=reason
     )
-    request_event = ProjectRequest(linked_request=submitted_req)
+    request_event = ProjectRequest(
+        linked_request=submitted_req,
+        syft_client_verify_key=client.verify_key,
+        syft_server_location=client.id,
+    )
 
     if isinstance(project, ProjectSubmit) and project.bootstrap_events is not None:
         project.bootstrap_events.append(request_event)
