@@ -428,6 +428,8 @@ class RemoteFunction(SyftObject):
                 kwargs={},
             )
             endpoint = self.make_call(api_call=api_call)
+            if isinstance(endpoint, SyftSuccess):
+                endpoint = endpoint.value
             return endpoint.action_object_id
         raise SyftException(public_message="This function is not a custom function")
 
