@@ -375,7 +375,9 @@ class APIService(AbstractService):
         if job.status == JobStatus.COMPLETED:
             return job.result
         elif job.status == JobStatus.ERRORED:
-            raise SyftException(public_message=f"Function failed to complete: {job.result.message}")
+            raise SyftException(
+                public_message=f"Function failed to complete: {job.result.message}"
+            )
         else:
             raise SyftException(public_message="Function failed to complete.")
 

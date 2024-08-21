@@ -4,6 +4,7 @@ import logging
 import multiprocessing
 import multiprocessing.synchronize
 import os
+from pathlib import Path
 import platform
 import signal
 import subprocess  # nosec
@@ -14,7 +15,6 @@ from typing import Any
 # third party
 from fastapi import APIRouter
 from fastapi import FastAPI
-from pathlib import Path
 from pydantic_settings import BaseSettings
 from pydantic_settings import SettingsConfigDict
 import requests

@@ -48,7 +48,6 @@ from ..util.notebook_ui.components.tabulator_template import build_tabulator_tab
 from ..util.util import aggressive_set_attr
 from ..util.util import full_name_with_qualname
 from ..util.util import get_qualname_for
-from .result import Result
 from .syft_metaclass import Empty
 from .syft_metaclass import PartialModelMetaclass
 from .syft_object_registry import SyftObjectRegistry
@@ -147,7 +146,7 @@ class SyftBaseObject(pydantic.BaseModel, SyftHashableObject):
         self,
         server_uid: UID | None = None,
         user_verify_key: SyftVerifyKey | None = None,
-    ) -> SyftAPI:
+    ) -> "SyftAPI":
         if server_uid is None:
             server_uid = self.syft_server_location
 
@@ -164,7 +163,7 @@ class SyftBaseObject(pydantic.BaseModel, SyftHashableObject):
             public_message=f"Can't access Syft API using this object. You must login to {self.syft_server_location}"
         )
 
-    def get_api_wrapped(self) -> Result[SyftAPI, Exception]:  # type: ignore
+    def get_api_wrapped(self):  # type: ignore
         # relative
         from ..client.api import APIRegistry
 

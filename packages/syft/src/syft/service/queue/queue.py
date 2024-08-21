@@ -19,7 +19,6 @@ from ...store.document_store import NewBaseStash
 from ...types.datetime import DateTime
 from ...types.errors import SyftException
 from ...types.uid import UID
-from ..action.action_object import ActionObject
 from ..job.job_stash import Job
 from ..job.job_stash import JobStatus
 from ..response import SyftError
