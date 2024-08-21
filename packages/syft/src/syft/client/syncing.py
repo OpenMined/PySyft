@@ -9,6 +9,7 @@ from ..abstract_server import ServerSideType
 from ..server.credentials import SyftVerifyKey
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
+from ..service.response import SyftWarning
 from ..service.sync.diff_state import ObjectDiffBatch
 from ..service.sync.diff_state import ServerDiff
 from ..service.sync.diff_state import SyncInstruction
@@ -21,7 +22,7 @@ from ..util.util import prompt_warning_message
 from .datasite_client import DatasiteClient
 from .sync_decision import SyncDecision
 from .sync_decision import SyncDirection
-
+from IPython.display import display
 logger = logging.getLogger(__name__)
 
 
@@ -47,6 +48,18 @@ def sync(
     )
     if isinstance(diff, SyftError):
         return diff
+    
+    if diff.low_state.errors:
+        warning = SyftWarning(message=
+            f"Server {from_client.name} had the following errors: {diff.low_state.errors} while trying to retrieve its sync state. Objects corresponding to these errors will be ignored in comparison."
+        )
+        display(warning)
+    if diff.high_state.errors:
+        warning = SyftWarning(message=
+            f"Server {from_client.name} had the following errors: {diff.high_state.errors} while trying to retrieve its sync state. Objects corresponding to these errors will be ignored in comparison."
+        )
+        display(warning)
+
 
     return diff.resolve()
 
