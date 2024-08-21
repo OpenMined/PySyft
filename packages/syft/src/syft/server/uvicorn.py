@@ -14,7 +14,7 @@ from typing import Any
 # third party
 from fastapi import APIRouter
 from fastapi import FastAPI
-from fastapi import Path
+from pathlib import Path
 from pydantic_settings import BaseSettings
 from pydantic_settings import SettingsConfigDict
 import requests
