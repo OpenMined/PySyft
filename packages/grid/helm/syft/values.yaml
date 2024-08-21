@@ -276,7 +276,7 @@ attestation:
   env: null
 
   # Container Resource Limits
-  resourcesPreset: nano
+  resourcesPreset: xlarge
   resources: null
 
 # =================================================================================
