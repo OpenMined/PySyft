@@ -135,7 +135,7 @@ def test_action_obj_send_save_to_blob_storage(worker):
     num_elements = 20 * 1024 * 1024
     data_big = np.random.randint(0, 100, size=num_elements)  # 4 bytes per int32
     action_obj_2 = ActionObject.from_obj(data_big)
-    assert can_upload_to_blob_storage(action_obj_2, root_client.api.metadata)
+    assert can_upload_to_blob_storage(action_obj_2, root_client.api.metadata).unwrap()
     action_obj_2.send(root_client)
     assert isinstance(action_obj_2.syft_blob_storage_entry_id, sy.UID)
     # get back the object from blob storage to check if it is the same

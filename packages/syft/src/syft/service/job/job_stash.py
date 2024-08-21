@@ -11,7 +11,6 @@ from typing import Any
 # third party
 from pydantic import Field
 from pydantic import model_validator
-from result import Err
 from typing_extensions import Self
 
 # relative
@@ -32,6 +31,7 @@ from ...store.document_store_errors import TooManyItemsFoundException
 from ...types.datetime import DateTime
 from ...types.datetime import format_timedelta
 from ...types.errors import SyftException
+from ...types.result import Err
 from ...types.result import as_result
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2

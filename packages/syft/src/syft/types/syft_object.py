@@ -34,7 +34,6 @@ from pydantic import EmailStr
 from pydantic import Field
 from pydantic import model_validator
 from pydantic.fields import PydanticUndefined
-from result import OkErr
 from typeguard import check_type
 from typing_extensions import Self
 
@@ -48,6 +47,8 @@ from ..util.notebook_ui.components.tabulator_template import build_tabulator_tab
 from ..util.util import aggressive_set_attr
 from ..util.util import full_name_with_qualname
 from ..util.util import get_qualname_for
+from .result import Err
+from .result import Ok
 from .syft_metaclass import Empty
 from .syft_metaclass import PartialModelMetaclass
 from .syft_object_registry import SyftObjectRegistry
@@ -812,8 +813,10 @@ class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
 def attach_attribute_to_syft_object(result: Any, attr_dict: dict[str, Any]) -> None:
     iterator: Iterable
 
-    if isinstance(result, OkErr):
-        iterator = (result._value,)
+    if isinstance(result, Ok):
+        iterator = (result.ok(),)
+    elif isinstance(result, Err):
+        iterator = (result.err(),)
     elif isinstance(result, Mapping):
         iterator = result.values()
     elif isinstance(result, Sequence):

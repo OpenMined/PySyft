@@ -9,7 +9,6 @@ from uuid import uuid4
 from faker import Faker
 import pytest
 from pytest import MonkeyPatch
-from result import Ok
 
 # syft absolute
 import syft
@@ -32,6 +31,7 @@ from syft.service.user.user_roles import ServiceRole
 from syft.store.document_store_errors import NotFoundException
 from syft.store.document_store_errors import StashException
 from syft.types.errors import SyftException
+from syft.types.result import Ok
 from syft.types.result import as_result
 
 

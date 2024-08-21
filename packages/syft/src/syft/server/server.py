@@ -21,7 +21,6 @@ from typing import cast
 
 # third party
 from nacl.signing import SigningKey
-from result import Result
 
 # relative
 from .. import __version__
@@ -105,6 +104,7 @@ from ..store.sqlite_document_store import SQLiteStoreClientConfig
 from ..store.sqlite_document_store import SQLiteStoreConfig
 from ..types.datetime import DATETIME_FORMAT
 from ..types.errors import SyftException
+from ..types.result import Result
 from ..types.result import as_result
 from ..types.syft_metaclass import Empty
 from ..types.syft_object import Context
@@ -1023,7 +1023,7 @@ class Server(AbstractServer):
                 return result
             sleep(0.1)
 
-    def resolve_future(self, credentials: SyftVerifyKey, uid: UID) -> QueueItem | None:
+    def resolve_future(self, credentials: SyftVerifyKey, uid: UID) -> QueueItem:
         queue_obj = self.queue_stash.pop_on_complete(credentials, uid).unwrap()
         queue_obj._set_obj_location_(
             server_uid=self.id,

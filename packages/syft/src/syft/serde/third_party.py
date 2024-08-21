@@ -19,12 +19,12 @@ import pyarrow.parquet as pq
 import pydantic
 from pydantic._internal._model_construction import ModelMetaclass
 from pymongo.collection import Collection
-from result import Err
-from result import Ok
 
 # relative
 from ..types.dicttuple import DictTuple
 from ..types.dicttuple import _Meta as _DictTupleMetaClass
+from ..types.result import Err
+from ..types.result import Ok
 from ..types.syft_metaclass import EmptyType
 from ..types.syft_metaclass import PartialModelMetaclass
 from .array import numpy_deserialize
@@ -57,10 +57,10 @@ recursive_serde_register(
 
 # result Ok and Err
 recursive_serde_register(
-    Ok, serialize_attrs=["_value"], canonical_name="result_Ok", version=1
+    Ok, serialize_attrs=["value"], canonical_name="result_Ok", version=1
 )
 recursive_serde_register(
-    Err, serialize_attrs=["_value"], canonical_name="result_Err", version=1
+    Err, serialize_attrs=["value"], canonical_name="result_Err", version=1
 )
 
 # exceptions

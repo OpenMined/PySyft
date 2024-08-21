@@ -7,14 +7,11 @@ import textwrap
 from typing import Any
 
 # third party
-from IPython.display import display
 import markdown
 import pandas as pd
 from pydantic import ConfigDict
 from pydantic import field_validator
 from pydantic import model_validator
-from result import Ok
-from result import as_result
 from typing_extensions import Self
 
 # relative
@@ -23,6 +20,7 @@ from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
 from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
@@ -131,7 +129,7 @@ class Asset(SyftObject):
         if private_data_res.is_err():
             data_table_line = "You have no permission to the private data"
         else:
-            private_data_obj = private_data_res.ok_value
+            private_data_obj = private_data_res.ok()
             if isinstance(private_data_obj, ActionObject):
                 df = pd.DataFrame(self.data.syft_action_data)
                 data_table_line = itable_template_from_df(df=private_data_obj.head(5))
@@ -141,8 +139,11 @@ class Asset(SyftObject):
                 try:
                     data_table_line = repr_truncation(private_data_obj)
                 except Exception as e:
-                    logger.debug(f"Failed to truncate private data repr. {e}")
-                    data_table_line = private_data_res.ok_value
+                    error_msg = (
+                        e.public_message if isinstance(e, SyftException) else str(e)
+                    )
+                    logger.debug(f"Failed to truncate private data repr. {error_msg}")
+                    data_table_line = private_data_res.ok()  # type: ignore
 
         if isinstance(mock, ActionObject):
             df = pd.DataFrame(mock.syft_action_data)
@@ -271,7 +272,7 @@ class Asset(SyftObject):
         # TODO: split this out in permission logic and existence logic
         api = self.get_api_wrapped()
         if api.is_err():
-            return Ok(None)
+            return None
         res = api.unwrap().services.action.get(self.action_id)
         if self.has_permission(res):
             return res.syft_action_data
@@ -280,14 +281,7 @@ class Asset(SyftObject):
 
     @property
     def data(self) -> Any:
-        # relative
-        private_data_or_error = self._private_data()
-
-        if private_data_or_error.is_err():
-            display(SyftError(message=str(private_data_or_error.err_value)), clear=True)
-            return None
-        else:
-            return private_data_or_error.ok_value
+        return self._private_data().unwrap()
 
 
 def _is_action_data_empty(obj: Any) -> bool:

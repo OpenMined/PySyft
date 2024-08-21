@@ -312,7 +312,7 @@ def test_upload_dataset_with_assets_of_different_data_types(
 
 def test_delete_small_datasets(worker: Worker, small_dataset: Dataset) -> None:
     root_client = worker.root_client
-    assert not can_upload_to_blob_storage(small_dataset, root_client.metadata)
+    assert not can_upload_to_blob_storage(small_dataset, root_client.metadata).unwrap()
     upload_res = root_client.upload_dataset(small_dataset)
     assert isinstance(upload_res, SyftSuccess)
 
@@ -347,7 +347,7 @@ def test_delete_small_datasets(worker: Worker, small_dataset: Dataset) -> None:
 
 def test_delete_big_datasets(worker: Worker, big_dataset: Dataset) -> None:
     root_client = worker.root_client
-    assert can_upload_to_blob_storage(big_dataset, root_client.metadata)
+    assert can_upload_to_blob_storage(big_dataset, root_client.metadata).unwrap()
     upload_res = root_client.upload_dataset(big_dataset)
     assert isinstance(upload_res, SyftSuccess)
 

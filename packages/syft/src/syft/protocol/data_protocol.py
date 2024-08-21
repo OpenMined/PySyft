@@ -17,7 +17,10 @@ import warnings
 
 # third party
 from packaging.version import parse
-from result import OkErr
+
+# syft absolute
+from syft.types.result import Err
+from syft.types.result import Ok
 
 # relative
 from .. import __version__
@@ -553,7 +556,7 @@ def debox_arg_and_migrate(arg: Any, protocol_state: dict) -> Any:
 
     single_entity = False
 
-    if isinstance(arg, OkErr):
+    if isinstance(arg, Ok) or isinstance(arg, Err):
         constructor = type(arg)
         arg = arg.value
 

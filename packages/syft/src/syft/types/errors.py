@@ -7,6 +7,7 @@ import traceback
 from types import CodeType
 from types import TracebackType
 from typing import Any
+from typing import TYPE_CHECKING
 from typing import TypeVar
 import uuid
 
@@ -17,9 +18,12 @@ from IPython.display import display
 from typing_extensions import Self
 
 # relative
-from ..service.context import AuthedServiceContext
 from ..service.user.user_roles import ServiceRole
 from ..util.notebook_ui.components.tabulator_template import jinja_env
+
+if TYPE_CHECKING:
+    # relative
+    from ..service.context import AuthedServiceContext
 
 
 class SyftException(Exception):
@@ -63,7 +67,7 @@ class SyftException(Exception):
         """
         return self.public_message
 
-    def get_message(self, context: AuthedServiceContext) -> str:
+    def get_message(self, context: "AuthedServiceContext") -> str:
         """
         Retrieves the appropriate message based on the user's role, obtained via
         `context.role`.
@@ -80,7 +84,7 @@ class SyftException(Exception):
 
     def get_tb(
         self,
-        context: AuthedServiceContext | None = None,
+        context: "AuthedServiceContext | None" = None,
         overwrite_permission: bool = False,
     ) -> str | None:
         """

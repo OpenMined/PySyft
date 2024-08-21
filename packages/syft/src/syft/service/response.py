@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 
 # third party
 from IPython.display import display
-from result import Err
 from typing_extensions import Self
 
 # relative
@@ -93,9 +92,6 @@ class SyftError(SyftResponseMessage):
     @property
     def _repr_html_class_(self) -> str:
         return "alert-danger"
-
-    def to_result(self) -> Err:
-        return Err(value=self.message)
 
     def __bool__(self) -> bool:
         return False

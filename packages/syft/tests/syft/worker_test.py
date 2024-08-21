@@ -6,7 +6,6 @@ from typing import Any
 from nacl.exceptions import BadSignatureError
 import numpy as np
 import pytest
-from result import Ok
 
 # syft absolute
 import syft as sy
@@ -26,6 +25,7 @@ from syft.service.user.user import UserCreate
 from syft.service.user.user import UserView
 from syft.service.user.user_service import UserService
 from syft.types.errors import SyftException
+from syft.types.result import Ok
 from syft.types.uid import UID
 
 test_signing_key_string = (
