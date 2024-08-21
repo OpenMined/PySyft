@@ -50,13 +50,15 @@ def sync(
         return diff
     
     if diff.low_state.errors:
+        error_list_text ="<br>".join(list(map(lambda x: "- " + x,diff.low_state.errors.values()))) 
         warning = SyftWarning(message=
-            f"Server {from_client.name} had the following errors: {diff.low_state.errors} while trying to retrieve its sync state. Objects corresponding to these errors will be ignored in comparison."
+            f"Server {from_client.name} had the following errors while trying to retrieve its sync state. Objects corresponding to these errors will be ignored in comparison.<br>{error_list_text}"
         )
         display(warning)
     if diff.high_state.errors:
+        error_list_text ="<br>".join(list(map(lambda x: "- " + x,diff.high_state.errors.values()))) 
         warning = SyftWarning(message=
-            f"Server {from_client.name} had the following errors: {diff.high_state.errors} while trying to retrieve its sync state. Objects corresponding to these errors will be ignored in comparison."
+            f"Server {to_client.name} had the following errors while trying to retrieve its sync state. Objects corresponding to these errors will be ignored in comparison.<br>{error_list_text}"
         )
         display(warning)
 
