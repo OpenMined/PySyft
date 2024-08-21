@@ -9,6 +9,7 @@ from result import Result
 from ...client.api import APIRegistry
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
+from ...store.db.base_stash import ObjectStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
@@ -21,7 +22,6 @@ from ...util.telemetry import instrument
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectREAD
 from ..context import AuthedServiceContext
-from ..job.base_stash import ObjectStash
 from ..response import SyftError
 from ..service import AbstractService
 from ..service import TYPE_TO_SERVICE

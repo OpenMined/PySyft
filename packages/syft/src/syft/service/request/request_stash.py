@@ -6,12 +6,12 @@ from result import Result
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
+from ...store.db.base_stash import ObjectStash
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...types.datetime import DateTime
 from ...types.uid import UID
 from ...util.telemetry import instrument
-from ..job.base_stash import ObjectStash
 from .request import Request
 
 RequestingUserVerifyKeyPartitionKey = PartitionKey(

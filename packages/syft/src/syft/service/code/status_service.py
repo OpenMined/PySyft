@@ -4,12 +4,12 @@
 
 # relative
 from ...serde.serializable import serializable
+from ...store.db.base_stash import ObjectStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
-from ..job.base_stash import ObjectStash
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService

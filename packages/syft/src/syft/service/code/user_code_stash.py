@@ -6,10 +6,10 @@ from result import Result
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
+from ...store.db.base_stash import ObjectStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
 from ...util.telemetry import instrument
-from ..job.base_stash import ObjectStash
 from .user_code import UserCode
 
 

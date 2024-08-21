@@ -1,13 +1,8 @@
 # stdlib
 
 # stdlib
-from enum import Enum
-import json
-import threading
-from typing import Any
 from typing import Generic
 import uuid
-from uuid import UUID
 
 # third party
 from result import Err
@@ -17,121 +12,34 @@ import sqlalchemy as sa
 from sqlalchemy import Column
 from sqlalchemy import Row
 from sqlalchemy import Table
-from sqlalchemy import TypeDecorator
-from sqlalchemy import create_engine
 from sqlalchemy import func
-from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import Session
-from sqlalchemy.orm import mapped_column
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy.types import JSON
 from typing_extensions import TypeVar
 
 # relative
-from ...serde.json_serde import Json
 from ...serde.json_serde import deserialize_json
 from ...serde.json_serde import serialize_json
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import DocumentStore
-from ...store.document_store import PartitionKey
-from ...types.datetime import DateTime
+from ...service.action.action_permissions import ActionObjectEXECUTE
+from ...service.action.action_permissions import ActionObjectOWNER
+from ...service.action.action_permissions import ActionObjectPermission
+from ...service.action.action_permissions import ActionObjectREAD
+from ...service.action.action_permissions import ActionObjectWRITE
+from ...service.action.action_permissions import ActionPermission
+from ...service.action.action_permissions import StoragePermission
+from ...service.response import SyftSuccess
+from ...service.user.user_roles import ServiceRole
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
-from ..action.action_permissions import ActionObjectEXECUTE
-from ..action.action_permissions import ActionObjectOWNER
-from ..action.action_permissions import ActionObjectPermission
-from ..action.action_permissions import ActionObjectREAD
-from ..action.action_permissions import ActionObjectWRITE
-from ..action.action_permissions import ActionPermission
-from ..action.action_permissions import StoragePermission
-from ..response import SyftSuccess
-from ..user.user_roles import ServiceRole
-
-
-class Base(DeclarativeBase):
-    pass
-
-
-class UIDTypeDecorator(TypeDecorator):
-    """Converts between Syft UID and UUID."""
-
-    impl = sa.UUID
-    cache_ok = True
-
-    def process_bind_param(self, value, dialect):  # type: ignore
-        if value is not None:
-            return value.value
-
-    def process_result_value(self, value, dialect):  # type: ignore
-        if value is not None:
-            return UID(value)
-
-
-class CommonMixin:
-    id: Mapped[UID] = mapped_column(
-        default=uuid.uuid4,
-        primary_key=True,
-    )
-    created_at: Mapped[DateTime] = mapped_column(server_default=sa.func.now())
-
-    updated_at: Mapped[DateTime] = mapped_column(
-        server_default=sa.func.now(),
-        server_onupdate=sa.func.now(),
-    )
-    json_document: Mapped[dict] = mapped_column(JSON, default={})
-
-
-def _default_dumps(val: Any) -> Json:  # type: ignore
-    if isinstance(val, UID):
-        return str(val.no_dash)
-    elif isinstance(val, UUID):
-        return val.hex
-    elif issubclass(type(val), Enum):
-        return val.name
-    elif val is None:
-        return None
-    return str(val)
-
-
-def _default_loads(val: Any) -> Any:  # type: ignore
-    if "UID" in val:
-        return UID(val)
-    return val
-
-
-def dumps(d: Any) -> str:
-    return json.dumps(d, default=_default_dumps)
-
-
-def loads(d: str) -> Any:
-    return json.loads(d, object_hook=_default_loads)
-
-
-class SQLiteDBManager:
-    def __init__(self, server_uid: str) -> None:
-        self.server_uid = server_uid
-        self.path = f"sqlite:////tmp/{server_uid}.db"
-        self.engine = create_engine(
-            self.path, json_serializer=dumps, json_deserializer=loads
-        )
-        print(f"Connecting to {self.path}")
-        self.SessionFactory = sessionmaker(bind=self.engine)
-        self.thread_local = threading.local()
-
-        Base.metadata.create_all(self.engine)
-
-    def get_session(self) -> Session:
-        if not hasattr(self.thread_local, "session"):
-            self.thread_local.session = self.SessionFactory()
-        return self.thread_local.session
-
-    @property
-    def session(self) -> Session:
-        return self.get_session()
-
+from ..document_store import DocumentStore
+from ..document_store import PartitionKey
+from .models import Base
+from .models import UIDTypeDecorator
+from .sqlite_db import SQLiteDBManager
 
 SyftT = TypeVar("SyftT", bound=SyftObject)
+T = TypeVar("T")
 
 
 class ObjectStash(Generic[SyftT]):
@@ -143,6 +51,13 @@ class ObjectStash(Generic[SyftT]):
         # is there a better way to init the table
         _ = self.table
         self.db = SQLiteDBManager(self.server_uid)
+
+    def check_type(self, obj: T, type_: type) -> Result[T, str]:
+        return (
+            Ok(obj)
+            if isinstance(obj, type_)
+            else Err(f"{type(obj)} does not match required type: {type_}")
+        )
 
     @property
     def session(self) -> Session:
@@ -324,6 +239,7 @@ class ObjectStash(Generic[SyftT]):
         obj: SyftT,
         has_permission: bool = False,
     ) -> Result[SyftT, str]:
+        # TODO has_permission is not used
         if not self.is_unique(obj):
             return Err(f"Some fields are not unique for {type(obj).__name__}")
 
@@ -395,6 +311,7 @@ class ObjectStash(Generic[SyftT]):
     def delete_by_uid(
         self, credentials: SyftVerifyKey, uid: UID, has_permission: bool = False
     ) -> Result[SyftSuccess, str]:
+        # TODO check delete permissions
         stmt = self.table.delete().where(
             sa.and_(
                 self._get_field_filter("id", uid),
@@ -467,4 +384,5 @@ class ObjectStash(Generic[SyftT]):
         return result is not None
 
     def has_storage_permission(self, permission: StoragePermission) -> bool:
+        # TODO
         return True

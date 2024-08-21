@@ -23,6 +23,7 @@ from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...service.context import AuthedServiceContext
 from ...service.worker.worker_pool import SyftWorker
+from ...store.db.base_stash import ObjectStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
 from ...types.datetime import DateTime
@@ -45,7 +46,6 @@ from ..response import SyftError
 from ..response import SyftNotReady
 from ..response import SyftSuccess
 from ..user.user import UserView
-from .base_stash import ObjectStash
 from .html_template import job_repr_template
 
 
