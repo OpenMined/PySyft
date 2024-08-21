@@ -1,19 +1,15 @@
 # stdlib
 
 # third party
-from result import Result
 
 # relative
 from ...serde.serializable import serializable
-from ...server.credentials import SyftVerifyKey
-from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
-from ...store.document_store import UIDPartitionKey
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
+from ..job.base_stash import ObjectStash
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -25,8 +21,8 @@ from .user_code import UserCodeStatusCollection
 
 
 @instrument
-@serializable(canonical_name="StatusStash", version=1)
-class StatusStash(BaseUIDStoreStash):
+@serializable(canonical_name="StatusSQLStash", version=1)
+class StatusStash(ObjectStash[UserCodeStatusCollection]):
     object_type = UserCodeStatusCollection
     settings: PartitionSettings = PartitionSettings(
         name=UserCodeStatusCollection.__canonical_name__,
@@ -34,16 +30,7 @@ class StatusStash(BaseUIDStoreStash):
     )
 
     def __init__(self, store: DocumentStore) -> None:
-        super().__init__(store)
-        self.store = store
-        self.settings = self.settings
-        self._object_type = self.object_type
-
-    def get_by_uid(
-        self, credentials: SyftVerifyKey, uid: UID
-    ) -> Result[UserCodeStatusCollection, str]:
-        qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
-        return self.query_one(credentials=credentials, qks=qks)
+        super().__init__(store=store)
 
 
 @instrument

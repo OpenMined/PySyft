@@ -686,7 +686,7 @@ class SyftObject(SyftObjectVersioned):
         )
         if api is None:
             return SyftError(
-                f"Can't access the api. You must login to {self.server_uid}"
+                message=f"Can't access the api. You must login to {self.server_uid}"
             )
         return api
 

@@ -1,15 +1,15 @@
 # relative
 from ...serde.serializable import serializable
-from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
 from ...util.telemetry import instrument
+from ..job.base_stash import ObjectStash
 from .log import SyftLog
 
 
 @instrument
 @serializable(canonical_name="LogStash", version=1)
-class LogStash(BaseUIDStoreStash):
+class LogStash(ObjectStash[SyftLog]):
     object_type = SyftLog
     settings: PartitionSettings = PartitionSettings(
         name=SyftLog.__canonical_name__, object_type=SyftLog

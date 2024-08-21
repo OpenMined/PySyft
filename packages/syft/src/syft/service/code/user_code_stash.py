@@ -6,21 +6,16 @@ from result import Result
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
 from ...util.telemetry import instrument
-from .user_code import CodeHashPartitionKey
-from .user_code import ServiceFuncNamePartitionKey
-from .user_code import SubmitTimePartitionKey
+from ..job.base_stash import ObjectStash
 from .user_code import UserCode
-from .user_code import UserVerifyKeyPartitionKey
 
 
 @instrument
-@serializable(canonical_name="UserCodeStash", version=1)
-class UserCodeStash(BaseUIDStoreStash):
+@serializable(canonical_name="UserCodeSQLStash", version=1)
+class UserCodeStash(ObjectStash[UserCode]):
     object_type = UserCode
     settings: PartitionSettings = PartitionSettings(
         name=UserCode.__canonical_name__, object_type=UserCode
@@ -29,22 +24,20 @@ class UserCodeStash(BaseUIDStoreStash):
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
 
-    def get_all_by_user_verify_key(
-        self, credentials: SyftVerifyKey, user_verify_key: SyftVerifyKey
-    ) -> Result[list[UserCode], str]:
-        qks = QueryKeys(qks=[UserVerifyKeyPartitionKey.with_obj(user_verify_key)])
-        return self.query_one(credentials=credentials, qks=qks)
-
     def get_by_code_hash(
         self, credentials: SyftVerifyKey, code_hash: str
     ) -> Result[UserCode | None, str]:
-        qks = QueryKeys(qks=[CodeHashPartitionKey.with_obj(code_hash)])
-        return self.query_one(credentials=credentials, qks=qks)
+        return self.get_one_by_field(
+            credentials=credentials,
+            field_name="code_hash",
+            field_value=code_hash,
+        )
 
     def get_by_service_func_name(
         self, credentials: SyftVerifyKey, service_func_name: str
     ) -> Result[list[UserCode], str]:
-        qks = QueryKeys(qks=[ServiceFuncNamePartitionKey.with_obj(service_func_name)])
-        return self.query_all(
-            credentials=credentials, qks=qks, order_by=SubmitTimePartitionKey
+        return self.get_all_by_field(
+            credentials=credentials,
+            field_name="service_func_name",
+            field_value=service_func_name,
         )

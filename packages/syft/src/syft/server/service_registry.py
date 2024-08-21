@@ -133,3 +133,6 @@ class ServiceRegistry:
             return self.service_path_map[service_name.lower()]
         except KeyError:
             raise ValueError(f"Service {path} not found.")
+
+    def __iter__(self) -> typing.Iterator[AbstractService]:
+        return iter(self.services)
