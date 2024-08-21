@@ -284,7 +284,7 @@ class Asset(SyftObject):
         private_data_or_error = self._private_data()
 
         if private_data_or_error.is_err():
-            display(SyftError(message=private_data_or_error.err_value), clear=True)
+            display(SyftError(message=str(private_data_or_error.err_value)), clear=True)
             return None
         else:
             return private_data_or_error.ok_value
