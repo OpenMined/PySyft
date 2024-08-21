@@ -3,52 +3,52 @@ http:
     frontend:
       loadBalancer:
         servers:
-          - url: 'http://frontend:80'
+          - url: "http://frontend:80"
     backend:
       loadBalancer:
         servers:
-          - url: 'http://proxy:8001'
+          - url: "http://proxy:8001"
     backend-stream:
       loadBalancer:
         servers:
-          - url: 'http://proxy:8011'
+          - url: "http://proxy:8011"
     seaweedfs:
       loadBalancer:
         servers:
-          - url: 'http://seaweedfs:8333'
+          - url: "http://seaweedfs:8333"
     seaweedfsmount:
       loadBalancer:
         servers:
-          - url: 'http://seaweedfs:4001'
+          - url: "http://seaweedfs:4001"
   routers:
     frontend:
-      rule: 'PathPrefix(`/`)'
+      rule: "PathPrefix(`/`)"
       entryPoints:
         - web
-      service: 'frontend'
+      service: "frontend"
     backend:
-      rule: 'PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)'
+      rule: "PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)"
       entryPoints:
         - web
-      service: 'backend'
+      service: "backend"
     backend-stream:
-      rule: 'PathPrefix(`/api`) && PathPrefix(`/api/v1/syft/stream`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)'
+      rule: "PathPrefix(`/api`) && PathPrefix(`/api/v1/syft/stream`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)"
       entryPoints:
         - web
-      service: 'backend-stream'
+      service: "backend-stream"
     blob-storage:
-      rule: 'PathPrefix(`/blob`)'
+      rule: "PathPrefix(`/blob`)"
       entryPoints:
         - web
-      service: 'seaweedfs'
+      service: "seaweedfs"
       middlewares:
-        - 'blob-storage-url'
-        - 'blob-storage-host'
+        - "blob-storage-url"
+        - "blob-storage-host"
     ping:
-      rule: 'PathPrefix(`/ping`)'
+      rule: "PathPrefix(`/ping`)"
       entryPoints:
         - web
-      service: 'ping@internal'
+      service: "ping@internal"
 
   middlewares:
     # by rewriting the customrequestheaders.Host with the same host:port as the

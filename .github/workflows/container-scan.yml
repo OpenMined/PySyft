@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       none:
-        description: 'Run Tests Manually'
+        description: "Run Tests Manually"
         required: false
 
 jobs:
@@ -38,17 +38,17 @@ jobs:
         continue-on-error: true
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: 'backend:${{ github.sha }}'
-          format: 'template'
-          template: '@/contrib/sarif.tpl'
-          output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH'
-          timeout: '10m0s'
+          image-ref: "backend:${{ github.sha }}"
+          format: "template"
+          template: "@/contrib/sarif.tpl"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
+          timeout: "10m0s"
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: 'trivy-results.sarif'
+          sarif_file: "trivy-results.sarif"
 
   scan-backend-snyk:
     permissions:
@@ -122,17 +122,17 @@ jobs:
         continue-on-error: true
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: 'frontend:${{ github.sha }}'
-          format: 'template'
-          template: '@/contrib/sarif.tpl'
-          output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH'
-          timeout: '10m0s'
+          image-ref: "frontend:${{ github.sha }}"
+          format: "template"
+          template: "@/contrib/sarif.tpl"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
+          timeout: "10m0s"
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: 'trivy-results.sarif'
+          sarif_file: "trivy-results.sarif"
 
   scan-frontend-snyk:
     permissions:
@@ -189,7 +189,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
       #Generate SBOM
       - name: Generate SBOM
@@ -215,7 +215,7 @@ jobs:
       - name: Upload SBOM to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: 'trivy-results.sarif'
+          sarif_file: "trivy-results.sarif"
 
           #upload SBOM to github artifacts
       - name: Upload SBOM to GitHub Artifacts
@@ -238,10 +238,10 @@ jobs:
         continue-on-error: true
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: 'mongo:7.0.0'
-          format: 'cyclonedx'
-          output: 'mongo-trivy-results.sbom.json'
-          timeout: '10m0s'
+          image-ref: "mongo:7.0.0"
+          format: "cyclonedx"
+          output: "mongo-trivy-results.sbom.json"
+          timeout: "10m0s"
 
         #Upload SBOM to GitHub Artifacts
       - name: Upload SBOM to GitHub Artifacts
@@ -255,16 +255,16 @@ jobs:
         continue-on-error: true
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: 'mongo:7.0.0'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          timeout: '10m0s'
+          image-ref: "mongo:7.0.0"
+          format: "sarif"
+          output: "trivy-results.sarif"
+          timeout: "10m0s"
 
           #Upload sarif file to GitHub Security tab
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: 'trivy-results.sarif'
+          sarif_file: "trivy-results.sarif"
 
   scan-mongo-latest-snyk:
     permissions:
@@ -317,10 +317,10 @@ jobs:
         continue-on-error: true
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: 'traefik:v2.11.0'
-          format: 'cyclonedx'
-          output: 'traefik-trivy-results.sbom.json'
-          timeout: '10m0s'
+          image-ref: "traefik:v2.11.0"
+          format: "cyclonedx"
+          output: "traefik-trivy-results.sbom.json"
+          timeout: "10m0s"
           #Upload SBOM to GitHub Artifacts
       - name: Upload SBOM to GitHub Artifacts
         uses: actions/upload-artifact@v4
@@ -333,17 +333,17 @@ jobs:
         continue-on-error: true
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: 'traefik:v2.11.0'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH'
-          timeout: '10m0s'
+          image-ref: "traefik:v2.11.0"
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
+          timeout: "10m0s"
 
           #Upload sarif file to GitHub Security tab
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: 'trivy-results.sarif'
+          sarif_file: "trivy-results.sarif"
 
   scan-traefik-snyk:
     permissions:
@@ -409,17 +409,17 @@ jobs:
         continue-on-error: true
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: 'seaweedfs:${{ github.sha }}'
-          format: 'template'
-          template: '@/contrib/sarif.tpl'
-          output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH'
-          timeout: '10m0s'
+          image-ref: "seaweedfs:${{ github.sha }}"
+          format: "template"
+          template: "@/contrib/sarif.tpl"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
+          timeout: "10m0s"
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: 'trivy-results.sarif'
+          sarif_file: "trivy-results.sarif"
 
   scan-seaweedfs-snyk:
     permissions:

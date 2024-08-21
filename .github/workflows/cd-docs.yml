@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       none:
-        description: 'Deploy Syft Documentation'
+        description: "Deploy Syft Documentation"
         required: false
   # pull_request:
   #   branches: [dev]
@@ -16,7 +16,7 @@ jobs:
   cd-docs:
     strategy:
       matrix:
-        python-version: ['3.12']
+        python-version: ["3.12"]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

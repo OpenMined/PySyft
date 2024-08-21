@@ -7,7 +7,7 @@ on:
     branches:
       - dev
       - main
-      - '0.8'
+      - "0.8"
 
 concurrency:
   group: frontend-${{ github.event_name == 'pull_request' && format('{0}-{1}', github.workflow, github.event.pull_request.number) || github.workflow_ref }}
@@ -23,7 +23,7 @@ jobs:
       max-parallel: 3
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.12']
+        python-version: ["3.12"]
 
     runs-on: ubuntu-20.04 # ${{ matrix.os }}
     steps:

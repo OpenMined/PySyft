@@ -11,9 +11,9 @@ on:
   workflow_dispatch:
     inputs:
       upgrade_type:
-        description: 'Select upgrade path type'
+        description: "Select upgrade path type"
         required: false
-        default: 'BetaToDev'
+        default: "BetaToDev"
         type: choice
         options:
           - BetaToDev

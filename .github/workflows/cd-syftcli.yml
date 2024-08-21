@@ -2,14 +2,14 @@ name: CD - Syft-CLI
 
 on:
   schedule:
-    - cron: '00 10 * * */7' # At 10:00 UTC on every three days
+    - cron: "00 10 * * */7" # At 10:00 UTC on every three days
 
   workflow_dispatch:
     inputs:
       skip_tests:
-        description: 'If true, skip tests'
+        description: "If true, skip tests"
         required: false
-        default: 'false'
+        default: "false"
 
 jobs:
   call-pr-tests-linting:
@@ -60,7 +60,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
       - name: Install dependencies
         if: ${{steps.get-hashes.outputs.current_hash != steps.get-hashes.outputs.previous_hash }}
@@ -89,7 +89,7 @@ jobs:
         with:
           author_name: ${{ secrets.OM_BOT_NAME }}
           author_email: ${{ secrets.OM_BOT_EMAIL }}
-          message: '[syftcli]bump version'
+          message: "[syftcli]bump version"
           add: "['./packages/syftcli/.bumpversion.cfg','./packages/syftcli/setup.py','./packages/syftcli/syftcli/version.py', './scripts/syftcli_hash']"
 
       - name: Build and publish
@@ -117,7 +117,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
       - name: Install pip dependencies
         run: |

@@ -11,8 +11,8 @@ entryPoints:
     http:
       redirections:
         entrypoint:
-          to: 'websecure'
-          scheme: 'https'
+          to: "websecure"
+          scheme: "https"
   websecure:
     address: :$HTTPS_PORT
     http:

@@ -5,7 +5,7 @@ on:
 
   pull_request:
     branches:
-      - '**'
+      - "**"
 
 concurrency:
   group: linting-${{ github.event_name == 'pull_request' && format('{0}-{1}', github.workflow, github.event.pull_request.number) || github.workflow_ref }}
@@ -17,7 +17,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        python-version: ['3.12']
+        python-version: ["3.12"]
 
     steps:
       - uses: actions/checkout@v4
