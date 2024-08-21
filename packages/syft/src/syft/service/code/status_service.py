@@ -4,7 +4,7 @@
 
 # relative
 from ...serde.serializable import serializable
-from ...store.db.base_stash import ObjectStash
+from ...store.db.stash import ObjectStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
 from ...types.uid import UID

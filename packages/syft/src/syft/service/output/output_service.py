@@ -9,7 +9,7 @@ from result import Result
 from ...client.api import APIRegistry
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.db.base_stash import ObjectStash
+from ...store.db.stash import ObjectStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
