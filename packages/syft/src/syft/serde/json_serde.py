@@ -2,6 +2,7 @@
 import base64
 from collections.abc import Callable
 from dataclasses import dataclass
+from enum import Enum
 import json
 from typing import Any
 from typing import Generic
@@ -78,6 +79,7 @@ register_json_serde(str)
 register_json_serde(bool)
 register_json_serde(float)
 register_json_serde(type(None))
+register_json_serde(pydantic.EmailStr)
 
 # Syft primitives
 register_json_serde(UID, lambda uid: uid.no_dash, lambda s: UID(s))
@@ -140,15 +142,19 @@ def _serialize_pydantic_to_json(obj: pydantic.BaseModel) -> dict[str, Json]:
 def _deserialize_pydantic_from_json(
     obj_dict: dict[str, Json],
 ) -> pydantic.BaseModel:
-    canonical_name = obj_dict[JSON_CANONICAL_NAME_FIELD]
-    version = obj_dict[JSON_VERSION_FIELD]
-    obj_type = SyftObjectRegistry.get_serde_class(canonical_name, version)
+    try:
+        canonical_name = obj_dict[JSON_CANONICAL_NAME_FIELD]
+        version = obj_dict[JSON_VERSION_FIELD]
+        obj_type = SyftObjectRegistry.get_serde_class(canonical_name, version)
 
-    result = {}
-    for key, type_ in obj_type.model_fields.items():
-        result[key] = deserialize_json(obj_dict[key], type_.annotation)
+        result = {}
+        for key, type_ in obj_type.model_fields.items():
+            result[key] = deserialize_json(obj_dict[key], type_.annotation)
 
-    return obj_type.model_validate(result)
+        return obj_type.model_validate(result)
+    except Exception as e:
+        print(json.dumps(obj_dict, indent=2))
+        raise ValueError(f"Failed to deserialize Pydantic model: {e}")
 
 
 def _is_serializable_iterable(annotation: Any) -> bool:
@@ -280,9 +286,10 @@ def serialize_json(value: Any, annotation: Any = None, validate: bool = True) ->
 
     if annotation in JSON_SERDE_REGISTRY:
         result = JSON_SERDE_REGISTRY[annotation].serialize(value)
-    # SyftObject, or any other Pydantic model
     elif _annotation_issubclass(annotation, pydantic.BaseModel):
         result = _serialize_pydantic_to_json(value)
+    elif _annotation_issubclass(annotation, Enum):
+        result = value.name
 
     # JSON recursive types
     # only strictly annotated iterables and mappings are supported
@@ -321,6 +328,8 @@ def deserialize_json(value: Json, annotation: Any) -> Any:
         return JSON_SERDE_REGISTRY[annotation].deserialize(value)
     elif _annotation_issubclass(annotation, pydantic.BaseModel):
         return _deserialize_pydantic_from_json(value)
+    elif _annotation_issubclass(annotation, Enum):
+        return annotation[value]
     elif isinstance(value, list):
         return _deserialize_iterable_from_json(value, annotation)
     elif isinstance(value, dict):
