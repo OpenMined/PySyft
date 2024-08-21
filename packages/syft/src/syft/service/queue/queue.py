@@ -214,9 +214,7 @@ def handle_message_multiprocessing(
         job_status = JobStatus.ERRORED
         logger.exception("Unhandled error in handle_message_multiprocessing")
         error_msg = e.public_message if isinstance(e, SyftException) else str(e)
-        result = ActionObject.from_obj(
-            SyftError(message=f"Unhandled error: {error_msg}")
-        )
+        result = SyftError(message=error_msg)
 
     queue_item.result = result
     queue_item.resolved = True
