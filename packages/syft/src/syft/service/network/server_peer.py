@@ -138,7 +138,7 @@ class ServerPeer(SyftObject):
             route (ServerRoute): The new route to be added to the peer.
         """
         existed, idx = self.existed_route(route)
-        if existed and idx is not None:
+        if existed:
             self.server_routes[idx] = route  # type: ignore
         else:
             new_route = self.update_route_priority(route)

@@ -354,7 +354,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
     def __iter__(self) -> Any:
         return iter(self.keys())
 
-    def __del(self) -> None:
+    def __del__(self) -> None:
         try:
             self._close()
         except Exception as e:

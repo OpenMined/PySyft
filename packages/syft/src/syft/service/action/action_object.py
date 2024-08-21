@@ -1069,12 +1069,12 @@ class ActionObject(SyncableSyftObject):
             trace_result.result += [action]  # type: ignore
 
         api = APIRegistry.api_for(
-            server_uid=obj.syft_server_location,
+            server_uid=self.syft_server_location,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None:
             print(
-                f"failed saving {obj} to blob storage, api is None. You must login to {obj.syft_server_location}"
+                f"failed saving {obj} to blob storage, api is None. You must login to {self.syft_server_location}"
             )
             return
         else:
@@ -1155,7 +1155,7 @@ class ActionObject(SyncableSyftObject):
     def syft_make_action_with_self(
         self,
         op: str,
-        args: dict[str, UID | ActionObjectPointer] | None = None,
+        args: list[UID | ActionObjectPointer] | None = None,
         kwargs: dict[str, UID | ActionObjectPointer] | None = None,
         action_type: ActionType | None = None,
     ) -> Action:
@@ -1163,7 +1163,7 @@ class ActionObject(SyncableSyftObject):
 
         Args:
             op (str): The method to be executed from the remote object.
-            args (dict[str, UID | ActionObjectPointer] | None): Operation arguments.
+            args (list[UID | ActionObjectPointer] | None): Operation arguments.
             kwargs (dict[str, UID | ActionObjectPointer] | None): Operation keyword arguments.
             action_type (ActionType | None): The type of action being performed.
 

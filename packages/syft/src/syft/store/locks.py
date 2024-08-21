@@ -176,7 +176,7 @@ class SyftLock(BaseLock):
         """
         if self.passthrough:
             return False
-        return self._lock._locked if self._lock else False
+        return self._lock.locked() if self._lock else False
 
     def acquire(self, blocking: bool = True) -> bool:
         """
