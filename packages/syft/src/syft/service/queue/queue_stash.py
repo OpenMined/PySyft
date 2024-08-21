@@ -24,6 +24,7 @@ from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from ..response import SyftError
 from ..response import SyftSuccess
+from ..worker.worker_pool import WorkerPool
 
 
 @serializable(canonical_name="Status", version=1)
@@ -58,7 +59,7 @@ class QueueItem(SyftObject):
     job_id: UID | None = None
     worker_settings: WorkerSettings | None = None
     has_execute_permissions: bool = False
-    worker_pool: LinkedObject
+    worker_pool: LinkedObject[WorkerPool]
 
     def __repr__(self) -> str:
         return f"<QueueItem: {self.id}>: {self.status}"

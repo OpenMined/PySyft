@@ -121,7 +121,7 @@ class SyncState(SyftObject):
     objects: dict[UID, SyncableSyftObject] = {}
     dependencies: dict[UID, list[UID]] = {}
     created_at: DateTime = Field(default_factory=DateTime.now)
-    previous_state_link: LinkedObject | None = None
+    previous_state_link: "LinkedObject[SyncState] | None" = None
     permissions: dict[UID, set[str]] = {}
     storage_permissions: dict[UID, set[UID]] = {}
     ignored_batches: dict[UID, int] = {}

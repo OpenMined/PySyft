@@ -96,10 +96,10 @@ class LinkedObject(SyftObjectVersioned, Generic[T]):
     @classmethod
     def from_obj(
         cls,
-        obj: SyftObject | type[SyftObject],
+        obj: T | type[T],
         service_type: type[Any] | None = None,
         server_uid: UID | None = None,
-    ) -> Self:
+    ) -> "LinkedObject[T]":  # type: ignore
         if service_type is None:
             # relative
             from ..service.action.action_object import ActionObject
@@ -120,7 +120,7 @@ class LinkedObject(SyftObjectVersioned, Generic[T]):
             if server_uid is None:
                 raise Exception(f"{cls} Requires an object UID")
 
-        return LinkedObject[type(obj)](
+        return LinkedObject[type(obj)](  # type: ignore
             server_uid=server_uid,
             service_type=service_type,
             object_type=type(obj),
@@ -131,11 +131,11 @@ class LinkedObject(SyftObjectVersioned, Generic[T]):
     @classmethod
     def with_context(
         cls,
-        obj: SyftObject,
+        obj: T,
         context: ServerServiceContext,
         object_uid: UID | None = None,
         service_type: type[Any] | None = None,
-    ) -> Self:
+    ) -> "LinkedObject[T]":
         if service_type is None:
             # relative
             from ..service.service import TYPE_TO_SERVICE
@@ -151,7 +151,7 @@ class LinkedObject(SyftObjectVersioned, Generic[T]):
             raise ValueError(f"context {context}'s server is None")
         server_uid = context.server.id
 
-        return LinkedObject[type(obj)](
+        return LinkedObject[type(obj)](  # type: ignore
             server_uid=server_uid,
             service_type=service_type,
             object_type=type(obj),
@@ -162,11 +162,11 @@ class LinkedObject(SyftObjectVersioned, Generic[T]):
     def from_uid(
         cls,
         object_uid: UID,
-        object_type: type[SyftObject],
+        object_type: type[T],
         service_type: type[Any],
         server_uid: UID,
-    ) -> Self:
-        return cls[object_type](
+    ) -> "LinkedObject[T]":
+        return cls[object_type](  # type: ignore
             server_uid=server_uid,
             service_type=service_type,
             object_type=object_type,
@@ -191,9 +191,38 @@ def _annotation_issubclass(type_: Any, cls: type) -> bool:
         return False
 
 
-def find_unannotated_linked_objects():
+def _resolve_syftobject_forward_refs(raise_errors: bool = False) -> None:
     # relative
     from ..types.syft_object_registry import SyftObjectRegistry
+
+    type_names = [
+        t.__name__ for t in SyftObjectRegistry.__type_to_canonical_name__.keys()
+    ]
+    if len(type_names) != len(set(type_names)):
+        raise ValueError(
+            "Duplicate names in SyftObjectRegistry, cannot resolve forward references"
+        )
+
+    types_namespace = {
+        k.__name__: k for k in SyftObjectRegistry.__type_to_canonical_name__.keys()
+    }
+    syft_objects = [v for v in types_namespace.values() if issubclass(v, SyftObject)]
+
+    for so in syft_objects:
+        so.model_rebuild(raise_errors=raise_errors, _types_namespace=types_namespace)
+
+
+def find_unannotated_linked_objects() -> None:
+    # Utility method to find LinkedObjects that are not annotated with a generic type
+
+    # relative
+    from ..types.syft_object_registry import SyftObjectRegistry
+
+    # Need to resolve forward references to find LinkedObjects
+    _resolve_syftobject_forward_refs()
+
+    annotated = []
+    unannotated = []
 
     for cls in SyftObjectRegistry.__type_to_canonical_name__.keys():
         if not issubclass(cls, SyftObject):
@@ -204,6 +233,14 @@ def find_unannotated_linked_objects():
             if _annotation_issubclass(type_, LinkedObject):
                 try:
                     type_.get_generic_type()
-                    print(f"{cls.__name__}.{name} is an annotated LinkedObject")
+                    annotated.append((cls, name))
                 except Exception:
-                    print(f"{cls.__name__}.{name} is not an annotated LinkedObject")
+                    unannotated.append((cls, name))
+
+    print("Annotated LinkedObjects:")
+    for cls, name in annotated:
+        print(f"{cls.__name__}.{name}")
+
+    print("\n\nUnannotated LinkedObjects:")
+    for cls, name in unannotated:
+        print(f"{cls.__name__}.{name}")

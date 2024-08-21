@@ -262,14 +262,14 @@ class ProjectRequest(ProjectEventAddObject):
     __canonical_name__ = "ProjectRequest"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    linked_request: LinkedObject
+    linked_request: LinkedObject[Request]
     allowed_sub_types: list[type] = [ProjectRequestResponse]
 
     @field_validator("linked_request", mode="before")
     @classmethod
-    def _validate_linked_request(cls, v: Any) -> LinkedObject:
+    def _validate_linked_request(cls, v: Any) -> LinkedObject[Request]:
         if isinstance(v, Request):
-            linked_request = LinkedObject.from_obj(v, server_uid=v.server_uid)
+            linked_request = LinkedObject[Request].from_obj(v, server_uid=v.server_uid)
             return linked_request
         elif isinstance(v, LinkedObject):
             return v
@@ -1044,7 +1044,9 @@ class Project(SyftObject):
         self,
         request: Request,
     ) -> SyftSuccess | SyftError:
-        linked_request = LinkedObject.from_obj(request, server_uid=request.server_uid)
+        linked_request = LinkedObject[Request].from_obj(
+            request, server_uid=request.server_uid
+        )
         request_event = ProjectRequest(linked_request=linked_request)
         result = self.add_event(request_event)
 
