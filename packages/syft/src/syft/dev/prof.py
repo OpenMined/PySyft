@@ -1,5 +1,4 @@
 # stdlib
-from collections.abc import Generator
 import contextlib
 import os
 import signal
@@ -9,17 +8,7 @@ import time
 
 
 @contextlib.contextmanager
-def pyspy() -> Generator[subprocess.Popen, None, None]:
-    """Profile a block of code using py-spy. Intended for development purposes only.
-
-    Example:
-        with pyspy():
-            # do some work
-            a = [i for i in range(1000000)]
-
-    Yields:
-        subprocess.Popen: The process object running py-spy.
-    """
+def pyspy() -> None:  # type: ignore
     fd, fname = tempfile.mkstemp(".svg")
     os.close(fd)
 
