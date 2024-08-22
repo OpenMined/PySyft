@@ -29,7 +29,7 @@ Try out your <a href="https://docs.openmined.org/en/latest/index.html">first que
 ## Install Client
 
 ```bash
-$ pip install -U syft[data_science]
+pip install -U "syft[data_science]"
 ```
 
 More instructions are available <a href="https://docs.openmined.org/en/latest/quick_install.ipynb">here</a>.

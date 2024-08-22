@@ -202,7 +202,12 @@ class DatasiteClient(SyftClient):
 
     def apply_state(self, resolved_state: ResolvedSyncState) -> SyftSuccess | SyftError:
         if len(resolved_state.delete_objs):
-            raise NotImplementedError("TODO implement delete")
+            prompt_warning_message(
+                message=(
+                    "Attempted to delete objects by syncing. "
+                    "This is not currently supported, objects must be deleted manually."
+                )
+            )
         items = resolved_state.create_objs + resolved_state.update_objs
 
         action_objects = [x for x in items if isinstance(x, ActionObject)]
