@@ -3,9 +3,6 @@ from enum import Enum
 from typing import Any
 from typing import TypeVar
 
-# third party
-from result import Err
-
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
@@ -14,6 +11,7 @@ from ...store.document_store_errors import StashException
 from ...store.linked_obj import LinkedObject
 from ...types.cache_object import CachedSyftObject
 from ...types.errors import SyftException
+from ...types.result import Err
 from ...types.result import as_result
 from ...types.syft_metaclass import Empty
 from ...types.twin_object import TwinObject

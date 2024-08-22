@@ -24,9 +24,6 @@ from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
 from ..types.base import SyftBaseModel
 from ..types.errors import SyftException
-
-# from result import Err
-# from result import Ok
 from ..types.result import Ok
 from ..types.result import as_result
 from ..types.syft_object import BaseDateTime
@@ -758,14 +755,6 @@ class NewBaseStash:
             add_permissions=add_permissions,
             add_storage_permission=add_storage_permission,
         ).unwrap()
-
-        # match result:
-        #     case Ok(value):
-        #         return value
-        #     case Err(err):
-        #         raise StashException(err)
-        #     case _:
-        #         raise StashException("Unexpected error")
 
     @as_result(StashException)
     def query_all(

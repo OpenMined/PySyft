@@ -802,8 +802,9 @@ class ActionObject(SyncableSyftObject):
                     syft_server_location=self.syft_server_location,
                     syft_client_verify_key=self.syft_client_verify_key,
                 )
-                if get_metadata is not None and not can_upload_to_blob_storage(
-                    data, get_metadata()
+                if (
+                    get_metadata is not None
+                    and not can_upload_to_blob_storage(data, get_metadata()).unwrap()
                 ):
                     self.syft_action_saved_to_blob_store = False
                     return SyftWarning(

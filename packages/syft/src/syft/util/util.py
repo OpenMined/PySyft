@@ -46,8 +46,6 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import nh3
 import requests
-from result import Err
-from result import Ok
 
 # relative
 from ..serde.serialize import _serialize as serialize
@@ -161,15 +159,15 @@ def get_mb_size(data: Any, handlers: dict | None = None) -> float:
     return sizeof(data) / (1024.0 * 1024.0)
 
 
-def get_mb_serialized_size(data: Any) -> Ok[float] | Err[str]:
+def get_mb_serialized_size(data: Any) -> float:
     try:
         serialized_data = serialize(data, to_bytes=True)
-        return Ok(sys.getsizeof(serialized_data) / (1024 * 1024))
+        return sys.getsizeof(serialized_data) / (1024 * 1024)
     except Exception as e:
         data_type = type(data)
-        return Err(
-            f"Failed to serialize data of type '{data_type.__module__}.{data_type.__name__}'. "
-            f"Data type not supported. Detailed error: {e}"
+        raise TypeError(
+            f"Failed to serialize data of type '{data_type.__module__}.{data_type.__name__}'."
+            f" Data type not supported. Detailed error: {e}"
         )
 
 
