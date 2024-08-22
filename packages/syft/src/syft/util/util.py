@@ -24,6 +24,8 @@ from multiprocessing.synchronize import Lock as LockBase
 import operator
 import os
 from pathlib import Path
+import base64
+from dotenv import load_dotenv
 import platform
 import random
 import re
@@ -1069,21 +1071,108 @@ def get_latest_tag(registry: str, repo: str) -> str | None:
         return tag_times[0][0]
     return None
 
+def is_base64(value: str) -> bool:
+    """Check if a string is likely Base64-encoded.
+    
+    This function checks if the string length is a multiple of 4 and
+    contains only valid Base64 characters before attempting to decode it.
+    
+    Args:
+        value (str): The string to check.
+    
+    Returns:
+        bool: True if the string is Base64-encoded, False otherwise.
+    """
+    if isinstance(value, str) and len(value) % 4 == 0:
+        # Check if the string contains only valid Base64 characters
+        base64_regex = re.compile(r'^[A-Za-z0-9+/]+={0,2}$')
+        if base64_regex.match(value):
+            try:
+                decoded_value = base64.b64decode(value, validate=True)
+                # Further check if decoded value is valid UTF-8 JSON
+                decoded_value.decode('utf-8')
+                return True
+            except (base64.binascii.Error, UnicodeDecodeError):
+                return False
+    return False
 
-def get_nb_secrets(defaults: dict | None = None) -> dict:
-    if defaults is None:
-        defaults = {}
+def load_env_variables() -> dict[str, str | dict]:
+    """Load and decode environment variables from the .env file.
 
-    try:
-        filename = "./secrets.json"
-        with open(filename) as f:
-            loaded = json.loads(f.read())
-            defaults.update(loaded)
-    except Exception:
-        print(f"Unable to load {filename}")
+    This function loads all environment variables from a `.env` file located at the root
+    of the repository. If an environment variable's value is detected as Base64, it is decoded
+    and parsed as JSON.
 
-    return defaults
+    Returns:
+        dict: A dictionary containing all the environment variables and their values.
+              Values detected as Base64 are decoded to JSON.
+    """
+    # Get the current file's directory
+    current_dir = Path(__file__).resolve().parent
+    
+    # Calculate the path to the root of the repository
+    repo_root = current_dir.parents[4]  # Move up 4 levels from util.py to reach the root
+    
+    # Construct the path to the .env file
+    env_path = repo_root / '.env'
+    
+    # Load environment variables from the .env file
+    load_dotenv(env_path)
+    
+    secrets = {}
+    
+    for key in os.environ:
+        value = os.getenv(key)
+        if is_base64(value):
+            try:
+                # Decode Base64 and parse JSON
+                decoded_value = json.loads(base64.b64decode(value).decode())
+                secrets[key] = decoded_value
+            except (base64.binascii.Error, json.JSONDecodeError) as e:
+                raise ValueError(f"Failed to decode and parse JSON for key '{key}': {e}")
+        else:
+            secrets[key] = value
+    
+    return secrets
 
+def get_nb_secrets(requested_keys: list[str] | None = None) -> dict:
+    """Get requested secrets from environment variables, with automatic Base64 detection and decoding.
+
+    This function loads all environment variables using `load_env_variables`, automatically detects
+    and decodes Base64-encoded JSON values, and returns only the requested keys.
+
+    Args:
+        requested_keys (list[str] | None): A list of environment variable names that should be returned.
+            The keys should be provided in lowercase. If None, no variables are returned.
+
+    Returns:
+        dict: A dictionary containing the requested environment variables and their values.
+              Values detected as Base64 are decoded to JSON.
+    """
+    result = {}
+    
+    if requested_keys is not None:
+        secrets = load_env_variables()
+        # Convert requested keys to uppercase to match the environment variable names
+        requested_keys_upper = [key.upper() for key in requested_keys]
+        # Populate the result with either the secret value or an empty string if not found
+        result = {key.lower(): secrets.get(key, "") for key in requested_keys_upper}
+    
+    return result
+
+# def get_nb_secrets(defaults: dict | None = None) -> dict:
+#     if defaults is None:
+#         defaults = {}
+
+#     try:
+#         filename = "./secrets.json"
+#         with open(filename) as f:
+#             loaded = json.loads(f.read())
+#             defaults.update(loaded)
+#     except Exception:
+#         print(f"Unable to load {filename}")
+
+#     return defaults
 
 class CustomRepr(reprlib.Repr):
     def repr_str(self, obj: Any, level: int = 0) -> str:
