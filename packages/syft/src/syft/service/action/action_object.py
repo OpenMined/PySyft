@@ -234,6 +234,7 @@ HOOK_ALWAYS = "ALWAYS"
 HOOK_ON_POINTERS = "ON_POINTERS"
 
 passthrough_attrs = [
+    "id",
     "__dict__",  # python
     "__class__",  # python
     "__repr_name__",  # python
@@ -327,6 +328,7 @@ passthrough_attrs = [
     "get_api_wrapped",
 ]
 dont_wrap_output_attrs = [
+    "id",
     "__repr__",
     "__str__",
     "__repr_attrs__",
@@ -354,6 +356,7 @@ dont_wrap_output_attrs = [
     "get_api_wrapped",
 ]
 dont_make_side_effects = [
+    "id",
     "__repr_attrs__",
     "_repr_html_",
     "_repr_markdown_",
@@ -621,6 +624,7 @@ def debox_args_and_kwargs(args: Any, kwargs: Any) -> tuple[Any, Any]:
 
 
 BASE_PASSTHROUGH_ATTRS: list[str] = [
+    "id",
     "is_mock",
     "is_real",
     "is_twin",

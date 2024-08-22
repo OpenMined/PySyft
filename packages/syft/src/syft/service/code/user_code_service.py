@@ -391,7 +391,6 @@ class UserCodeService(AbstractService):
         current_user = user_service.get_current_user(context=context)
         return current_user.mock_execution_permission
 
-    @as_result(SyftException)
     def keep_owned_kwargs(
         self, kwargs: dict[str, Any], context: AuthedServiceContext
     ) -> dict[str, Any]:
@@ -402,7 +401,10 @@ class UserCodeService(AbstractService):
         for k, v in kwargs.items():
             if isinstance(v, UID):
                 # Jobs have UID kwargs instead of ActionObject
-                v = action_service.get(context, uid=v)
+                try:
+                    v = action_service.get(context, uid=v)
+                except Exception:
+                    pass
             if (
                 isinstance(v, ActionObject)
                 and v.syft_client_verify_key == context.credentials
@@ -418,7 +420,7 @@ class UserCodeService(AbstractService):
     ) -> bool:
         # Check if all kwargs are owned by the user
         all_kwargs_are_owned = len(
-            self.keep_owned_kwargs(passed_kwargs, context).unwrap()
+            self.keep_owned_kwargs(passed_kwargs, context)
         ) == len(passed_kwargs)
 
         if not all_kwargs_are_owned:
@@ -491,7 +493,7 @@ class UserCodeService(AbstractService):
         # Override permissions bypasses the cache, since we do not check in/out policies
         skip_fill_cache = override_execution_permission
         # We do not read from output policy cache if there are mock arguments
-        skip_read_cache = len(self.keep_owned_kwargs(kwargs, context).unwrap()) > 0
+        skip_read_cache = len(self.keep_owned_kwargs(kwargs, context)) > 0
 
         # Extract ids from kwargs
         kwarg2id = map_kwargs_to_id(kwargs)

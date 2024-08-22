@@ -22,8 +22,6 @@ from pydantic import field_validator
 from pydantic import model_validator
 import requests
 
-# syft absolute
-
 # relative
 from ...abstract_server import ServerType
 from ...client.api import APIRegistry
