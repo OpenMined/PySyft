@@ -5,6 +5,8 @@ import pytest
 # syft absolute
 import syft as sy
 from syft.service.project.project import Project
+from syft.service.project.project import _EMPTY_MEMBER_LIST_ERROR_MESSAGE
+from syft.service.response import SyftError
 
 
 def test_project_creation(worker):
@@ -110,3 +112,13 @@ def test_project_serde(worker):
     deser_data = sy.deserialize(ser_data, from_bytes=True)
     assert isinstance(deser_data, type(project))
     assert deser_data == project
+
+
+def test_submit_project_with_empty_member_list_error() -> None:
+    new_project = sy.Project(
+        name="My Cool Project", description="My Cool Description", members=[]
+    )
+
+    res = new_project.send()
+    assert isinstance(res, SyftError)
+    assert _EMPTY_MEMBER_LIST_ERROR_MESSAGE in res.message
