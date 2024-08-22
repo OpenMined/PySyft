@@ -395,7 +395,7 @@ class SyncService(AbstractService):
             permissions = {}
             storage_permissions = {}
 
-        previous_state = self.stash.get_latest(context=context)
+        previous_state = self.stash.get_latest(context.credentials)
         if previous_state.is_err():
             return previous_state
         previous_state = previous_state.ok()

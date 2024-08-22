@@ -3,7 +3,6 @@
 # stdlib
 
 # stdlib
-import threading
 
 # third party
 from result import Ok
@@ -11,13 +10,13 @@ from result import Result
 
 # relative
 from ...serde.serializable import serializable
-from ...store.document_store import BaseUIDStoreStash
+from ...server.credentials import SyftVerifyKey
+from ...store.db.stash import ObjectStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...types.datetime import DateTime
 from ...util.telemetry import instrument
-from ..context import AuthedServiceContext
 from .sync_state import SyncState
 
 OrderByDatePartitionKey = PartitionKey(key="created_at", type_=DateTime)
@@ -25,7 +24,7 @@ OrderByDatePartitionKey = PartitionKey(key="created_at", type_=DateTime)
 
 @instrument
 @serializable(canonical_name="SyncStash", version=1)
-class SyncStash(BaseUIDStoreStash):
+class SyncStash(ObjectStash[SyncState]):
     object_type = SyncState
     settings: PartitionSettings = PartitionSettings(
         name=SyncState.__canonical_name__,
@@ -35,45 +34,23 @@ class SyncStash(BaseUIDStoreStash):
     def __init__(self, store: DocumentStore):
         super().__init__(store)
         self.store = store
-        self.settings = self.settings
-        self._object_type = self.object_type
         self.last_state: SyncState | None = None
 
-    def get_latest(
-        self, context: AuthedServiceContext
-    ) -> Result[SyncState | None, str]:
-        # print("SyncStash.get_latest called")
+    def get_latest(self, credentials: SyftVerifyKey) -> Result[SyncState | None, str]:
         if self.last_state is not None:
             return Ok(self.last_state)
-        all_states = self.get_all(
-            credentials=context.server.verify_key,  # type: ignore
-            order_by=OrderByDatePartitionKey,
+
+        states_or_err = self.get_all(
+            credentials=credentials,
+            sort_order="desc",
+            limit=1,
         )
 
-        if all_states.is_err():
-            return all_states
+        if states_or_err.is_err():
+            return states_or_err
 
-        all_states = all_states.ok()
-        if len(all_states) > 0:
-            self.last_state = all_states[-1]
-            return Ok(all_states[-1])
+        last_state = states_or_err.ok()
+        if len(last_state) > 0:
+            self.last_state = last_state[0]
+            return Ok(last_state[0])
         return Ok(None)
-
-    def set(  # type: ignore
-        self,
-        context: AuthedServiceContext,
-        item: SyncState,
-        **kwargs,
-    ) -> Result[SyncState, str]:
-        self.last_state = item
-
-        # use threading
-        threading.Thread(
-            target=super().set,
-            args=(
-                context,
-                item,
-            ),
-            kwargs=kwargs,
-        ).start()
-        return Ok(item)

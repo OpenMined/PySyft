@@ -74,7 +74,9 @@ class ObjectStash(Generic[SyftT]):
                 Column("id", UIDTypeDecorator, primary_key=True, default=uuid.uuid4),
                 Column("fields", JSON, default={}),
                 Column("permissions", JSON, default=[]),
-                Column("created_at", sa.DateTime, server_default=sa.func.now()),
+                Column(
+                    "created_at", sa.DateTime, server_default=sa.func.now(), index=True
+                ),
                 Column("updated_at", sa.DateTime, server_onupdate=sa.func.now()),
             )
         return Base.metadata.tables[table_name]
