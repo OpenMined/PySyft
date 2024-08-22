@@ -117,6 +117,7 @@ class Job(SyncableSyftObject):
         "user_code_id",
         "result_id",
     ]
+
     __repr_attrs__ = [
         "id",
         "result",
@@ -125,6 +126,7 @@ class Job(SyncableSyftObject):
         "creation_time",
         "user_code_name",
     ]
+
     __exclude_sync_diff_attrs__ = ["action", "server_uid"]
     __table_coll_widths__ = [
         "min-content",

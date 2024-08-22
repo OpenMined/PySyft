@@ -538,6 +538,7 @@ class Dataset(SyftObject):
             {self.assets._repr_html_()}
             """
 
+    @property
     def action_ids(self) -> list[UID]:
         return [asset.action_id for asset in self.asset_list if asset.action_id]
 

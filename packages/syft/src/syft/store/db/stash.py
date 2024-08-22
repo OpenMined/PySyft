@@ -239,6 +239,14 @@ class ObjectStash(Generic[SyftT]):
         obj: SyftT,
         has_permission: bool = False,
     ) -> Result[SyftT, str]:
+        """
+        NOTE: We cannot do partial updates on the database,
+        because we are using computed fields that are not known to the DB or ORM:
+        - serialize_json will add computed fields to the JSON stored in the database
+        - If we update a single field in the JSON, the computed fields can get out of sync.
+        - To fix, we either need db-supported computed fields, or know in our ORM which fields should be re-computed.
+        """
+
         # TODO has_permission is not used
         if not self.is_unique(obj):
             return Err(f"Some fields are not unique for {type(obj).__name__}")

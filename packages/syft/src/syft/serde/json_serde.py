@@ -136,7 +136,60 @@ def _serialize_pydantic_to_json(obj: pydantic.BaseModel) -> dict[str, Json]:
 
     for key, type_ in obj.model_fields.items():
         result[key] = serialize_json(getattr(obj, key), type_.annotation)
+
+    result = _serialize_searchable_attrs(obj, result)
+
     return result
+
+
+def get_property_return_type(obj: Any, attr_name: str) -> Any:
+    """
+    Get the return type annotation of a @property.
+    """
+    cls = type(obj)
+    attr = getattr(cls, attr_name, None)
+
+    if isinstance(attr, property):
+        return attr.fget.__annotations__.get("return", None)
+
+    return None
+
+
+def _serialize_searchable_attrs(
+    obj: pydantic.BaseModel, obj_dict: dict[str, Json], raise_errors: bool = True
+) -> dict[str, Json]:
+    """
+    Add searchable attrs to the serialized object dict, if they are not already present.
+    Needed for adding non-field attributes (like @property)
+
+    Args:
+        obj (pydantic.BaseModel): Object to serialize.
+        obj_dict (dict[str, Json]): Serialized object dict. Should contain the object's fields.
+        raise_errors (bool, optional): Raise errors if an attribute cannot be accessed.
+            If False, the attribute will be skipped. Defaults to True.
+
+    Raises:
+        Exception: Any exception raised when accessing an attribute.
+
+    Returns:
+        dict[str, Json]: Serialized object dict including searchable attributes.
+    """
+    searchable_attrs: list[str] = getattr(obj, "__attr_searchable__", [])
+    for attr in searchable_attrs:
+        if attr not in obj_dict:
+            try:
+                value = getattr(obj, attr)
+            except Exception as e:
+                if raise_errors:
+                    raise e
+                else:
+                    continue
+            property_annotation = get_property_return_type(obj, attr)
+            obj_dict[attr] = serialize_json(
+                value, validate=False, annotation=property_annotation
+            )
+
+    return obj_dict
 
 
 def _deserialize_pydantic_from_json(
