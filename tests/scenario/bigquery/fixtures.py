@@ -189,8 +189,8 @@ class TestEvent:
 
 
 class TestEventManager:
-    def __init__(self, file_path: str = "events.json"):
-        self.file_path = file_path
+    def __init__(self, test_name: str):
+        self.file_path = f"events_{test_name}.json"
         self._load_events()
 
     def _load_events(self):
@@ -205,14 +205,12 @@ class TestEventManager:
             json.dump(self.data, f, indent=4)
 
     def reset_test_state(self):
-        """Resets the state by clearing all events and saving the empty structure."""
         self.data = {"events": {}}
         self._save_events()
 
     def register_event(self, event: TestEvent | str):
         if isinstance(event, str):
             event = TestEvent(name=event)
-        """Registers a new event, adding it to the file."""
         if event.name not in self.data["events"]:
             self.data["events"][event.name] = asdict(event)
             self._save_events()
@@ -222,21 +220,17 @@ class TestEventManager:
             )
 
     def register_event_once(self, event: TestEvent):
-        """Registers the event only if it does not already exist. Raises an error if it does."""
         if event.name in self.data["events"]:
             raise ValueError(f"Event '{event.name}' already exists.")
-        print(f"Event: {event}")
         self.register_event(event)
 
     def get_event(self, event_name: str) -> TestEvent | None:
-        """Retrieves an event by name. Returns None if it does not exist."""
         event_data = self.data["events"].get(event_name)
         if event_data:
             return TestEvent(**event_data)
         return None
 
     def get_event_or_raise(self, event_name: str) -> TestEvent:
-        """Retrieves an event by name. Returns None if it does not exist."""
         event_data = self.data["events"].get(event_name)
         if event_data:
             return TestEvent(**event_data)

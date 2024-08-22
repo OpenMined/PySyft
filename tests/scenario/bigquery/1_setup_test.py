@@ -22,17 +22,13 @@ async def hello_world():
 
 
 @pytest.mark.asyncio
-async def run_mock_dataframe_scenario(manager, set_event: bool = True):
+async def run_mock_dataframe_scenario(manager, admin, server, set_event: bool = True):
     manager.reset_test_state()
 
     USERS_CREATED = "users_created"
     MOCK_READABLE = "mock_readable"
 
     fake = Faker()
-
-    admin = make_admin()
-
-    server = make_server(admin)
 
     root_client = admin.client(server)
 
@@ -61,6 +57,7 @@ async def run_mock_dataframe_scenario(manager, set_event: bool = True):
             df = trade_flow_df_mock(trade_flow_df())
             assert df.equals(mock)
             if set_event:
+                print("REGISTERING EVENT", MOCK_READABLE)
                 manager.register_event(MOCK_READABLE)
 
     user = users[0]
@@ -75,34 +72,34 @@ async def run_mock_dataframe_scenario(manager, set_event: bool = True):
 
     asyncit(create_users, root_client=root_client, manager=manager, users=users)
 
-    server.land()
-
 
 @pytest.mark.asyncio
-async def test_can_read_mock_dataframe():
-    manager = TestEventManager()
+async def test_can_read_mock_dataframe(request):
+    manager = TestEventManager(test_name=request.node.name)
+    admin = make_admin()
+    server = make_server(admin)
     MOCK_READABLE = "mock_readable"
-    await run_mock_dataframe_scenario(manager)
-
-    async with AsyncWaitForEvent(manager, MOCK_READABLE, retry_secs=1, timeout_secs=10):
+    await run_mock_dataframe_scenario(manager, admin, server)
+    async with AsyncWaitForEvent(manager, MOCK_READABLE, retry_secs=1, timeout_secs=15):
         print("Test Complete")
         result = manager.get_event_or_raise(MOCK_READABLE)
         assert result
-
+    server.land()
     loop = asyncio.get_event_loop()
     loop.stop()
 
 
-# @pytest.mark.asyncio
-# async def test_cant_read_mock_dataframe():
-#     manager = TestEventManager()
-#     MOCK_READABLE = "mock_readable"
-#     await run_mock_dataframe_scenario(manager, set_event=False)
-
-#     async with AsyncWaitForEvent(manager, MOCK_READABLE, retry_secs=1, timeout_secs=10):
-#         print("Test Complete")
-#         with pytest.raises(Exception):
-#             result = manager.get_event_or_raise(MOCK_READABLE)
-
-#     loop = asyncio.get_event_loop()
-#     loop.stop()
+@pytest.mark.asyncio
+async def test_cant_read_mock_dataframe(request):
+    manager = TestEventManager(test_name=request.node.name)
+    admin = make_admin()
+    server = make_server(admin)
+    MOCK_READABLE = "mock_readable"
+    await run_mock_dataframe_scenario(manager, admin, server, set_event=False)
+    async with AsyncWaitForEvent(manager, MOCK_READABLE, retry_secs=1, timeout_secs=15):
+        print("Test Complete")
+        with pytest.raises(Exception):
+            result = manager.get_event_or_raise(MOCK_READABLE)
+    server.land()
+    loop = asyncio.get_event_loop()
+    loop.stop()
