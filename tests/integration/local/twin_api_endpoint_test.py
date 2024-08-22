@@ -183,9 +183,19 @@ def test_twin_api_with_custom_worker(full_high_worker):
             raise TimeoutError(f"Job did not complete in given time: {JOB_TIMEOUT}")
         time.sleep(1)
 
+    # Check if the job worker is the same as the worker pool name
+    private_func_job = high_client_ds.jobs.get(private_func_result_job.id)
+
+    assert private_func_job is not None
+
+    # Check if job is assigned to a worker
+    assert private_func_job.job_worker_id is not None
+
+    # Check if the job worker is the same as the worker pool name
+    assert private_func_job.worker.worker_pool_name == worker_pool_name
+
     # Check if the job was successful
     assert private_func_result_job.resolved
-
     private_func_result = private_func_result_job.result
 
     assert not isinstance(private_func_result, SyftError), private_func_result
