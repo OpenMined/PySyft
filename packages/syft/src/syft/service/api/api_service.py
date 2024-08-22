@@ -97,6 +97,7 @@ class APIService(AbstractService):
         path="api.update",
         name="update",
         roles=ADMIN_ROLE_LEVEL,
+        unwrap_on_success=False,
     )
     def update(
         self,
@@ -169,6 +170,7 @@ class APIService(AbstractService):
         path="api.delete",
         name="delete",
         roles=ADMIN_ROLE_LEVEL,
+        unwrap_on_success=False,
     )
     def delete(self, context: AuthedServiceContext, endpoint_path: str) -> SyftSuccess:
         """Deletes an specific API endpoint."""

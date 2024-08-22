@@ -23,8 +23,6 @@ from pymongo.collection import Collection
 # relative
 from ..types.dicttuple import DictTuple
 from ..types.dicttuple import _Meta as _DictTupleMetaClass
-from ..types.result import Err
-from ..types.result import Ok
 from ..types.syft_metaclass import EmptyType
 from ..types.syft_metaclass import PartialModelMetaclass
 from .array import numpy_deserialize
@@ -56,12 +54,6 @@ recursive_serde_register(
 
 
 # result Ok and Err
-recursive_serde_register(
-    Ok, serialize_attrs=["value"], canonical_name="result_Ok", version=1
-)
-recursive_serde_register(
-    Err, serialize_attrs=["value"], canonical_name="result_Err", version=1
-)
 
 # exceptions
 recursive_serde_register(cls=TypeError, canonical_name="TypeError", version=1)
