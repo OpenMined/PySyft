@@ -131,7 +131,7 @@ class Asset(SyftObject):
         else:
             private_data_obj = private_data_res.ok()
             if isinstance(private_data_obj, ActionObject):
-                df = pd.DataFrame(self.data.syft_action_data)
+                df = pd.DataFrame(private_data_obj)
                 data_table_line = itable_template_from_df(df=private_data_obj.head(5))
             elif isinstance(private_data_obj, pd.DataFrame):
                 data_table_line = itable_template_from_df(df=private_data_obj.head(5))
@@ -281,7 +281,11 @@ class Asset(SyftObject):
 
     @property
     def data(self) -> Any:
-        return self._private_data().unwrap()
+        try:
+            return self._private_data().unwrap()
+        except SyftException as e:
+            print(e)
+            return None
 
 
 def _is_action_data_empty(obj: Any) -> bool:
