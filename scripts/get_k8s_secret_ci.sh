@@ -37,10 +37,6 @@ if [ $? -ne 0 ] || [ -z "$SYFT_ROOT_EMAIL" ]; then
 fi
 
 
-echo "Credentials for $CLUSTER_NAME:"
-echo "SYFT_LOGIN_${CLUSTER_NAME//[^a-zA-Z0-9_]/_}_PASSWORD=$SYFT_PASSWORD"
-echo "SYFT_LOGIN_${CLUSTER_NAME//[^a-zA-Z0-9_]/_}_ROOT_EMAIL=$SYFT_ROOT_EMAIL"
-
 
 # Export the root email as an environment variable
 export SYFT_LOGIN_${CLUSTER_NAME//[^a-zA-Z0-9_]/_}_ROOT_EMAIL="$SYFT_ROOT_EMAIL"
@@ -50,3 +46,5 @@ export SYFT_LOGIN_${CLUSTER_NAME//[^a-zA-Z0-9_]/_}_PASSWORD="$SYFT_PASSWORD"
 
 
 echo "Credentials successfully exported as environment variables."
+echo "SYFT_LOGIN_${CLUSTER_NAME//[^a-zA-Z0-9_]/_}_ROOT_EMAIL=${SYFT_ROOT_EMAIL}"
+echo "SYFT_LOGIN_${CLUSTER_NAME//[^a-zA-Z0-9_]/_}_PASSWORD=${SYFT_PASSWORD}"
