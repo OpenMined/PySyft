@@ -98,7 +98,7 @@ class NotificationService(AbstractService):
         context: AuthedServiceContext,
     ) -> NotifierSettings:
         notifier_service = context.server.get_service("notifierservice")
-        result = notifier_service.settings(context)
+        result = notifier_service.settings(context).unwrap()
         return result
 
     @service_method(

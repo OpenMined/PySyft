@@ -1155,7 +1155,7 @@ def add_requesting_user_info(context: TransformContext) -> TransformContext:
         try:
             user_key = context.output["requesting_user_verify_key"]
             user_service = context.server.get_service("UserService")
-            user = user_service.get_by_verify_key(user_key)
+            user = user_service.get_by_verify_key(user_key).unwrap()
             context.output["requesting_user_name"] = user.name
             context.output["requesting_user_email"] = user.email
             context.output["requesting_user_institution"] = (

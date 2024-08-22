@@ -446,6 +446,7 @@ class HTTPConnection(ServerConnection):
         else:
             response = self._make_post(self.routes.ROUTE_REGISTER.value, data=data)
             response = _deserialize(response, from_bytes=True)
+            response = post_process_result(response, unwrap_on_success=False)
         return response
 
     def make_call(self, signed_call: SignedSyftAPICall) -> Any:
@@ -615,6 +616,7 @@ class PythonConnection(ServerConnection):
             service_context = ServerServiceContext(server=self.server)
             method = self.server.get_service_method(UserService.register)
             response = method(context=service_context, new_user=new_user)
+            response = post_process_result(response, unwrap_on_success=False)
         return response
 
     def make_call(self, signed_call: SignedSyftAPICall) -> Any:

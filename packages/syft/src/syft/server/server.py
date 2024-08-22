@@ -1192,6 +1192,7 @@ class Server(AbstractServer):
             method = self.get_service_method(_private_api_path)
             try:
                 logger.info(f"API Call: {api_call}")
+
                 result = method(context, *api_call.args, **api_call.kwargs)
 
                 if isinstance(result, SyftError):

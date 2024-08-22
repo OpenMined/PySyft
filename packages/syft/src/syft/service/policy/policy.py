@@ -22,6 +22,8 @@ from pydantic import field_validator
 from pydantic import model_validator
 import requests
 
+# syft absolute
+
 # relative
 from ...abstract_server import ServerType
 from ...client.api import APIRegistry
@@ -1036,12 +1038,12 @@ def process_class_code(raw_code: str, class_name: str) -> str:
         if isinstance(stmt, ast.FunctionDef):
             if stmt.name == "__init__":
                 stmt.name = "__user_init__"
-            if stmt.name == "_is_valid":
-                stmt.decorator_list.append(as_result_decorator)
-            if stmt.name == "filter_kwargs":
-                stmt.decorator_list.append(as_result_decorator)
-            if stmt.name == "transform_kwargs":
-                stmt.decorator_list.append(as_result_decorator)
+            # if stmt.name == "_is_valid":
+            #     stmt.decorator_list.append(as_result_decorator)
+            # if stmt.name == "filter_kwargs":
+            #     stmt.decorator_list.append(as_result_decorator)
+            # if stmt.name == "transform_kwargs":
+            #     stmt.decorator_list.append(as_result_decorator)
 
     # change the module that the code will reference
     # this is required for the @serializable to mount it in the right path for serde
@@ -1223,7 +1225,7 @@ def execute_policy_code(user_policy: UserPolicy) -> Any:
         return policy_class
 
     except Exception as e:
-        print("execute_byte_code failed", e, file=stderr_)
+        print(f"execute_byte_code of {user_policy.raw_code}\nfailed", e, file=stderr_)
 
     finally:
         sys.stdout = stdout_
