@@ -8,7 +8,7 @@ from result import Result
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import BaseUIDStoreStash
+from ...store.db.stash import ObjectStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
 from .api import TwinAPIEndpoint
@@ -16,8 +16,8 @@ from .api import TwinAPIEndpoint
 MISSING_PATH_STRING = "Endpoint path: {path} does not exist."
 
 
-@serializable(canonical_name="TwinAPIEndpointStash", version=1)
-class TwinAPIEndpointStash(BaseUIDStoreStash):
+@serializable(canonical_name="TwinAPIEndpointSQLStash", version=1)
+class TwinAPIEndpointStash(ObjectStash[TwinAPIEndpoint]):
     object_type = TwinAPIEndpoint
     settings: PartitionSettings = PartitionSettings(
         name=TwinAPIEndpoint.__canonical_name__, object_type=TwinAPIEndpoint
@@ -29,19 +29,20 @@ class TwinAPIEndpointStash(BaseUIDStoreStash):
     def get_by_path(
         self, credentials: SyftVerifyKey, path: str
     ) -> Result[TwinAPIEndpoint, str]:
-        endpoint_results = self.get_all(credentials=credentials)
-        if endpoint_results.is_err():
-            return endpoint_results
+        # TODO standardize by returning None if endpoint doesnt exist.
+        res_or_err = self.get_one_by_field(
+            credentials=credentials,
+            field_name="path",
+            field_value=path,
+        )
 
-        endpoints = []
-        if endpoint_results.is_ok():
-            endpoints = endpoint_results.ok()
+        if res_or_err.is_err():
+            return res_or_err
 
-        for endpoint in endpoints:
-            if endpoint.path == path:
-                return Ok(endpoint)
-
-        return Err(MISSING_PATH_STRING.format(path=path))
+        res = res_or_err.ok()
+        if res is None:
+            return Err(MISSING_PATH_STRING.format(path=path))
+        return Ok(res)
 
     def path_exists(self, credentials: SyftVerifyKey, path: str) -> Result[bool, str]:
         result = self.get_by_path(credentials=credentials, path=path)
@@ -60,6 +61,7 @@ class TwinAPIEndpointStash(BaseUIDStoreStash):
         has_permission: bool = False,
     ) -> Result[TwinAPIEndpoint, str]:
         """Upsert an endpoint."""
+        # TODO has_permission is not used.
         result = self.path_exists(credentials=credentials, path=endpoint.path)
 
         if result.is_err():

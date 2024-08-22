@@ -1,6 +1,7 @@
 # stdlib
 
 # stdlib
+from typing import Any
 from typing import Generic
 import uuid
 
@@ -33,7 +34,6 @@ from ...service.user.user_roles import ServiceRole
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ..document_store import DocumentStore
-from ..document_store import PartitionKey
 from .models import Base
 from .models import UIDTypeDecorator
 from .sqlite_db import SQLiteDBManager
@@ -144,6 +144,10 @@ class ObjectStash(Generic[SyftT]):
         field_name: str,
         field_value: str,
         table: Table | None = None,
+        order_by: str | None = None,
+        sort_order: str = "asc",
+        limit: int | None = None,
+        offset: int | None = None,
     ) -> Result[Row, str]:
         table = table if table is not None else self.table
         stmt = table.select().where(
@@ -152,6 +156,9 @@ class ObjectStash(Generic[SyftT]):
                 self._get_permission_filter(credentials),
             )
         )
+        stmt = self._apply_order_by(stmt, order_by, sort_order)
+        stmt = self._apply_limit_offset(stmt, limit, offset)
+
         result = self.session.execute(stmt)
         return result
 
@@ -166,10 +173,23 @@ class ObjectStash(Generic[SyftT]):
         return Ok(self.row_as_obj(result))
 
     def get_all_by_field(
-        self, credentials: SyftVerifyKey, field_name: str, field_value: str
+        self,
+        credentials: SyftVerifyKey,
+        field_name: str,
+        field_value: str,
+        order_by: str | None = None,
+        sort_order: str = "asc",
+        limit: int | None = None,
+        offset: int | None = None,
     ) -> Result[list[SyftT], str]:
         result = self._get_by_field(
-            credentials=credentials, field_name=field_name, field_value=field_value
+            credentials=credentials,
+            field_name=field_name,
+            field_value=field_value,
+            order_by=order_by,
+            sort_order=sort_order,
+            limit=limit,
+            offset=offset,
         ).all()
         objs = [self.row_as_obj(row) for row in result]
         return Ok(objs)
@@ -218,17 +238,53 @@ class ObjectStash(Generic[SyftT]):
             self.table.c.permissions.contains(compound_permission_string),
         )
 
+    def _apply_limit_offset(
+        self,
+        stmt: Any,
+        limit: int | None = None,
+        offset: int | None = None,
+    ) -> Any:
+        if offset is not None:
+            stmt = stmt.offset(offset)
+        if limit is not None:
+            stmt = stmt.limit(limit)
+        return stmt
+
+    def _apply_order_by(
+        self,
+        stmt: Any,
+        order_by: str | None = None,
+        sort_order: str = "asc",
+    ) -> Any:
+        default_order_by = self.table.c.created_at
+        default_order_by = (
+            default_order_by.desc() if sort_order == "desc" else default_order_by
+        )
+        if order_by is None:
+            return stmt.order_by(default_order_by)
+        else:
+            order_by_col = self.table.c.fields[order_by]
+            order_by = order_by_col.desc() if sort_order == "desc" else order_by_col
+            return stmt.order_by(order_by, default_order_by)
+
     def get_all(
         self,
         credentials: SyftVerifyKey,
-        order_by: PartitionKey | None = None,
         has_permission: bool = False,
+        order_by: str | None = None,
+        sort_order: str = "asc",
+        limit: int | None = None,
+        offset: int | None = None,
     ) -> Result[list[SyftT], str]:
         # filter by read permission
         # join on verify_key
         stmt = self.table.select()
         if not has_permission:
             stmt = stmt.where(self._get_permission_filter(credentials))
+
+        stmt = self._apply_order_by(stmt, order_by, sort_order)
+        stmt = self._apply_limit_offset(stmt, limit, offset)
+
         result = self.session.execute(stmt).all()
         objs = [self.row_as_obj(row) for row in result]
         return Ok(objs)
