@@ -30,6 +30,7 @@ from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
+from ...types.cache_object import CachedSyftObject
 from ...types.datetime import DateTime
 from ...types.datetime import format_timedelta
 from ...types.syft_migration import migrate
@@ -335,7 +336,11 @@ class Job(SyncableSyftObject):
             return None
         self.resolved = job.resolved
         if job.resolved:
-            self.result = job.result
+            result = job.result
+            if isinstance(result, CachedSyftObject):
+                # unwrap the cached object
+                result = result.result
+            self.result = result
 
         self.status = job.status
         self.n_iters = job.n_iters
