@@ -476,8 +476,11 @@ class Job(SyncableSyftObject):
         return self.status
 
     @property
-    def requesting_user(self) -> UserView:
-        return self.get_api().services.user.view(self.requested_by)
+    def requesting_user(self) -> UserView | None:
+        try:
+            return self.get_api().services.user.view(self.requested_by)
+        except SyftException:
+            return None
 
     @property
     def server_name(self) -> str | None:
@@ -512,15 +515,16 @@ class Job(SyncableSyftObject):
         updated_at = str(self.updated_at)[:-7] if self.updated_at else "--"
 
         user_repr = "--"
-        if self.requested_by and not isinstance(
-            requesting_user := self.requesting_user, SyftError
-        ):
+        if self.requested_by and (requesting_user := self.requesting_user) is not None:
             user_repr = f"{requesting_user.name} {requesting_user.email}"
 
         worker_attr = ""
         if self.job_worker_id:
-            worker = self.worker
-            if not isinstance(worker, SyftError):
+            try:
+                worker = self.worker
+            except SyftException:
+                worker = None
+            if worker is not None:
                 worker_pool_id_button = CopyIDButton(
                     copy_text=str(worker.worker_pool_name), max_width=60
                 )
