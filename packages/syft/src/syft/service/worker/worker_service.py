@@ -245,8 +245,15 @@ class WorkerService(AbstractService):
         force: bool = False,
     ) -> SyftSuccess | SyftError:
         worker = self._get_worker(context=context, uid=uid)
-        worker.to_be_deleted = True
+        if isinstance(worker, SyftError):
+            return SyftError(
+                message=(
+                    f"Failed to delete SyftWorker {uid}: "
+                    f"Failed to find SyftWorker {uid}: {worker.message}"
+                )
+            )
 
+        worker.to_be_deleted = True
         res = self.stash.update(context.credentials, worker)
         if isinstance(res, SyftError):
             return res

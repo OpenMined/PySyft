@@ -1,6 +1,7 @@
 # stdlib
 import logging
 from typing import Any
+from typing import cast
 
 # third party
 import pydantic
@@ -637,25 +638,152 @@ class SyftWorkerPoolService(AbstractService):
                 message=f"Invalid request object. Invalid image uid or config in the request changes. {request.changes}"
             )
 
+    @service_method(
+        path="worker_pool.delete",
+        name="delete",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
+    def delete(
+        self,
+        context: AuthedServiceContext,
+        pool_id: UID | None = None,
+        pool_name: str | None = None,
+    ) -> SyftSuccess | SyftError:
+        worker_pool = self._get_worker_pool(
+            context, pool_id=pool_id, pool_name=pool_name
+        )
+
+        if isinstance(worker_pool, SyftError):
+            return SyftError(
+                message=f"Failed to delete WorkerPool: {worker_pool.message}"
+            )
+
+        uid = worker_pool.id
+
+        # relative
+        from ..queue.queue_service import QueueService
+        from ..queue.queue_stash import Status
+
+        queue_service = cast(QueueService, context.server.get_service(QueueService))
+        res = queue_service.stash._get_by_worker_pool(
+            credentials=context.credentials,
+            worker_pool=LinkedObject.from_obj(
+                obj=worker_pool,
+                service_type=self.__class__,
+                server_uid=context.server.id,
+            ),
+        )
+        if res.is_err() or (queue_items := res.ok()) is None:
+            return SyftError(
+                message=(
+                    f"Failed to delete WorkerPool {uid}: "
+                    f"Failed to retrieved linked QueueItem's: "
+                    f"{res.err() if res.is_err() else 'list[QueueItem] is None'}"
+                )
+            )
+
+        items_to_interrupt = (
+            item
+            for item in queue_items
+            if item.status in (Status.CREATED, Status.PROCESSING)
+        )
+
+        for item in items_to_interrupt:
+            item.status = Status.INTERRUPTED
+            res = queue_service.stash.update(
+                credentials=context.credentials,
+                obj=item,
+            )
+            if isinstance(res, SyftError):
+                msg = (
+                    f"Failed to set QueueItem {item.id} status to INTERRUPTED "
+                    f"while deleting WorkerPool {uid}: {res.message}"
+                )
+                logger.error(msg)
+                return SyftError(message=msg)
+
+        worker_service = cast(
+            WorkerService, context.server.get_service("WorkerService")
+        )
+
+        if IN_KUBERNETES:
+            res = self.scale(
+                context=context,
+                number=0,
+                pool_id=uid,
+            )
+            if isinstance(res, SyftError):
+                return SyftError(
+                    message=(
+                        f"Failed to delete WorkerPool {uid}: "
+                        f"Failed to scale down workers: {res.message}"
+                    )
+                )
+        else:
+            workers = (
+                worker.resolve_with_context(context=context)
+                for worker in worker_pool.worker_list
+            )
+
+            worker_ids = []
+            for worker in workers:
+                if worker.is_err():
+                    msg = (
+                        f"Failed to resolve a SyftWorker "
+                        f"while deleting WorkerPool {uid}: {worker.err()}"
+                    )
+                    logger.error(msg=msg)
+                    return SyftError(message=msg)
+                worker_ids.append(worker.ok().id)
+
+            for id_ in worker_ids:
+                res = (
+                    worker_service.delete(
+                        context=context,
+                        uid=id_,
+                        force=True,
+                    ),
+                )
+                if isinstance(res, SyftError):
+                    msg = (
+                        f"Failed to delete SyftWorker {id_} "
+                        f"while deleting WorkerPool {uid}: {res.message}"
+                    )
+                    logger.error(msg=msg)
+                    return SyftError(message=msg)
+
+        res = self.stash.delete_by_uid(credentials=context.credentials, uid=uid)
+        if isinstance(res, SyftError):
+            return res
+
+        return SyftSuccess(message=f"Successfully deleted worker pool with id {uid}")
+
     def _get_worker_pool(
         self,
         context: AuthedServiceContext,
         pool_id: UID | None = None,
         pool_name: str | None = None,
     ) -> WorkerPool | SyftError:
-        if pool_id:
+        pool_: tuple[str, str] | tuple[str, UID]
+        if pool_id is not None:
+            pool_ = ("id", pool_id)
             result = self.stash.get_by_uid(
                 credentials=context.credentials,
                 uid=pool_id,
             )
-        else:
+        elif pool_name is not None:
+            pool_ = ("name", pool_name)
             result = self.stash.get_by_name(
                 credentials=context.credentials,
                 pool_name=pool_name,
             )
+        else:
+            return SyftError("One of `pool_id` or `pool_name` must be provided.")
 
         if result.is_err():
-            return SyftError(message=f"{result.err()}")
+            return SyftError(
+                message=f"Could not find worker pool with {pool_[0]} {pool_[1]}: {result.err()}"
+            )
 
         worker_pool = result.ok()
 
