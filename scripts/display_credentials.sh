@@ -9,9 +9,9 @@ CLIENT_NAME="client"
 
 # Determine CLIENT_NAME based on CLUSTER_NAME
 if [[ "$CLUSTER_NAME" == *"high"* ]]; then
-    CLIENT_NAME="high"
+    CLIENT_NAME="high_client"
 elif [[ "$CLUSTER_NAME" == *"low"* ]]; then
-    CLIENT_NAME="low"
+    CLIENT_NAME="low_client"
 fi
 
 # Retrieve values from the constructed variable names
