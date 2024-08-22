@@ -1223,7 +1223,10 @@ def execute_policy_code(user_policy: UserPolicy) -> Any:
         return policy_class
 
     except Exception as e:
-        print(f"execute_byte_code of {user_policy.raw_code}\nfailed", e, file=stderr_)
+        print(
+            f"execute_byte_code failed because of {e}, with the following code\n\n{user_policy.parsed_code}",
+            file=stderr_,
+        )
 
     finally:
         sys.stdout = stdout_
