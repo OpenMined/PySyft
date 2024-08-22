@@ -66,9 +66,9 @@ class SyftResponseMessage(SyftBaseModel):
 
     def _repr_html_(self) -> str:
         return (
-            f'<div class="{self._repr_html_class_}" style="padding:5px;">'
+            f'<div class="{self._repr_html_class_}">'
             f"<strong>{type(self).__name__}</strong>: "
-            f'<pre class="{self._repr_html_class_}" style="display:inline; font-family:inherit;">'
+            f'<pre class="{self._repr_html_class_}">'
             f"{sanitize_html(self.message)}</pre></div><br/>"
         )
 
