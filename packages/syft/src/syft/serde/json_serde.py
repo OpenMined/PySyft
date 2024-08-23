@@ -360,7 +360,7 @@ def serialize_json(value: Any, annotation: Any = None, validate: bool = True) ->
     return result
 
 
-def deserialize_json(value: Json, annotation: Any) -> Any:
+def deserialize_json(value: Json, annotation: Any = None) -> Any:
     """Deserialize a JSON-serializable object to a value, using the schema defined by the
     provided annotation. Inverse of `serialize_json`.
 
@@ -371,6 +371,13 @@ def deserialize_json(value: Json, annotation: Any) -> Any:
     Returns:
         Any: Deserialized value.
     """
+    if (
+        isinstance(value, dict)
+        and JSON_CANONICAL_NAME_FIELD in value
+        and JSON_VERSION_FIELD in value
+    ):
+        return _deserialize_pydantic_from_json(value)
+
     if value is None:
         return None
 
