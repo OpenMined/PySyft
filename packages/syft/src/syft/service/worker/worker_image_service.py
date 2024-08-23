@@ -204,6 +204,7 @@ class SyftWorkerImageService(AbstractService):
         path="worker_image.remove",
         name="remove",
         roles=DATA_OWNER_ROLE_LEVEL,
+        unwrap_on_success=False,
     )
     def remove(self, context: AuthedServiceContext, uid: UID) -> SyftSuccess:
         #  Delete Docker image given image tag

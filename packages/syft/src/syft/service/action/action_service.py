@@ -207,7 +207,9 @@ class ActionService(AbstractService):
 
         return action_object
 
-    @as_result(StashException, NotFoundException)
+    @service_method(
+        path="action.is_resolved", name="is_resolved", roles=GUEST_ROLE_LEVEL
+    )
     def is_resolved(
         self,
         context: AuthedServiceContext,
@@ -288,7 +290,7 @@ class ActionService(AbstractService):
         if not isinstance(obj, TwinObject) and resolve_nested and obj.is_link:  # type: ignore [unreachable]
             if not self.is_resolved(  # type: ignore [unreachable]
                 context, obj.syft_action_data.action_object_id.id
-            ).unwrap():
+            ):
                 raise SyftException(public_message="This object is not resolved yet.")
 
             return self.resolve_links(

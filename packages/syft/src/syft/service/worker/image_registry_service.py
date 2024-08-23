@@ -31,6 +31,7 @@ class SyftImageRegistryService(AbstractService):
         path="image_registry.add",
         name="add",
         roles=DATA_OWNER_ROLE_LEVEL,
+        unwrap_on_success=False,
     )
     def add(
         self,

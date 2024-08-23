@@ -200,6 +200,7 @@ class WorkerService(AbstractService):
         path="worker.delete",
         name="delete",
         roles=DATA_OWNER_ROLE_LEVEL,
+        unwrap_on_success=False,
     )
     def delete(
         self,

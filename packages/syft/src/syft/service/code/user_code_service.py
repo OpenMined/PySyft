@@ -403,7 +403,7 @@ class UserCodeService(AbstractService):
                 # Jobs have UID kwargs instead of ActionObject
                 try:
                     v = action_service.get(context, uid=v)
-                except Exception:
+                except Exception:  # nosec: we are skipping when dont find it
                     pass
             if (
                 isinstance(v, ActionObject)
