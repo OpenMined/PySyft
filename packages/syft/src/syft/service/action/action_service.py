@@ -44,7 +44,7 @@ from .action_object import TwinMode
 from .action_permissions import ActionObjectPermission
 from .action_permissions import ActionObjectREAD
 from .action_permissions import ActionPermission
-from .action_store import ActionStore
+from .action_store import ActionObjectStash
 from .action_types import action_type_for_type
 from .numpy import NumpyArrayObject
 from .pandas import PandasDataFrameObject  # noqa: F401
@@ -55,9 +55,7 @@ logger = logging.getLogger(__name__)
 
 @serializable(canonical_name="ActionService", version=1)
 class ActionService(AbstractService):
-    store_type = ActionStore
-
-    def __init__(self, store: ActionStore) -> None:
+    def __init__(self, store: ActionObjectStash) -> None:
         self.store = store
 
     @service_method(path="action.np_array", name="np_array")
@@ -352,7 +350,7 @@ class ActionService(AbstractService):
         self, context: AuthedServiceContext, uid: UID
     ) -> Result[SyftError, SyftObject]:
         """Get a pointer from the action store"""
-        result = self.store.get_mock(uid=uid)
+        result = self.store.get_mock(credentials=context.credentials, uid=uid)
         if result.is_ok():
             return result.ok()
         return SyftError(message=result.err())
@@ -935,7 +933,7 @@ class ActionService(AbstractService):
         self, context: AuthedServiceContext, obj_id: UID
     ) -> Result[SyftSuccess, SyftError]:
         """Checks if the given object id exists in the Action Store"""
-        if self.store.exists(obj_id):
+        if self.store.exists(context.credentials, obj_id):
             return SyftSuccess(message=f"Object: {obj_id} exists")
         else:
             return SyftError(message=f"Object: {obj_id} does not exist")

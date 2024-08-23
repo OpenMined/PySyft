@@ -13,7 +13,6 @@ from result import Result
 from ...serde.serializable import serializable
 from ...server.credentials import SyftSigningKey
 from ...server.credentials import SyftVerifyKey
-from ...store.dict_document_store import DictStoreConfig
 from ...store.document_store import BasePartitionSettings
 from ...store.document_store import DocumentStore
 from ...store.document_store import StoreConfig
@@ -30,81 +29,38 @@ from .action_permissions import ActionObjectREAD
 from .action_permissions import ActionObjectWRITE
 from .action_permissions import ActionPermission
 from .action_permissions import StoragePermission
-
-lock = threading.RLock()
-
-
-class ActionStore:
-    pass
+from ...store.db.stash import ObjectStash
+from .action_object import ActionObject
 
 
-@serializable(canonical_name="KeyValueActionStore", version=1)
-class KeyValueActionStore(ActionStore):
-    """Generic Key-Value Action store.
-
-    Parameters:
-        store_config: StoreConfig
-            Backend specific configuration, including connection configuration, database name, or client class type.
-        root_verify_key: Optional[SyftVerifyKey]
-            Signature verification key, used for checking access permissions.
-    """
-
-    def __init__(
-        self,
-        server_uid: UID,
-        store_config: StoreConfig,
-        root_verify_key: SyftVerifyKey | None = None,
-        document_store: DocumentStore | None = None,
-    ) -> None:
-        self.server_uid = server_uid
-        self.store_config = store_config
-        self.settings = BasePartitionSettings(name="Action")
-        self.data = self.store_config.backing_store(
-            "data", self.settings, self.store_config
-        )
-        self.permissions = self.store_config.backing_store(
-            "permissions", self.settings, self.store_config, ddtype=set
-        )
-        self.storage_permissions = self.store_config.backing_store(
-            "storage_permissions", self.settings, self.store_config, ddtype=set
-        )
-
-        if root_verify_key is None:
-            root_verify_key = SyftSigningKey.generate().verify_key
-        self.root_verify_key = root_verify_key
-
-        self.__user_stash = None
-        if document_store is not None:
-            # relative
-            from ...service.user.user_stash import UserStash
-
-            self.__user_stash = UserStash(store=document_store)
-
+@serializable(canonical_name="ActionObjectSQLStore", version=1)
+class ActionObjectStash(ObjectStash[ActionObject]):
     def get(
         self, uid: UID, credentials: SyftVerifyKey, has_permission: bool = False
-    ) -> Result[SyftObject, str]:
+    ) -> Result[ActionObject, str]:
         uid = uid.id  # We only need the UID from LineageID or UID
 
-        # if you get something you need READ permission
-        read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
-        if has_permission or self.has_permission(read_permission):
-            try:
-                if isinstance(uid, LineageID):
-                    syft_object = self.data[uid.id]
-                elif isinstance(uid, UID):
-                    syft_object = self.data[uid]
-                else:
-                    raise Exception(f"Unrecognized UID type: {type(uid)}")
-                return Ok(syft_object)
-            except Exception as e:
-                return Err(f"Could not find item with uid {uid}, {e}")
-        return Err(f"Permission: {read_permission} denied")
+        # TODO remove and use get_by_uid instead
+        result_or_err = self.get_by_uid(
+            credentials=credentials,
+            uid=uid,
+            has_permission=has_permission,
+        )
+        if result_or_err.is_err():
+            return Err(result_or_err.err())
 
-    def get_mock(self, uid: UID) -> Result[SyftObject, str]:
+        result = result_or_err.ok()
+        if result is None:
+            return Err(f"Could not find item with uid {uid}")
+        return Ok(result)
+
+    def get_mock(self, credentials: SyftVerifyKey, uid: UID) -> Result[SyftObject, str]:
         uid = uid.id  # We only need the UID from LineageID or UID
 
         try:
-            syft_object = self.data[uid]
+            syft_object = self.get_by_uid(
+                credentials=credentials, uid=uid, has_permission=True
+            )  # type: ignore
             if isinstance(syft_object, TwinObject) and not is_action_data_empty(
                 syft_object.mock
             ):
@@ -122,31 +78,37 @@ class KeyValueActionStore(ActionStore):
         uid = uid.id  # We only need the UID from LineageID or UID
 
         try:
-            if uid in self.data:
-                obj = self.data[uid]
-                read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
+            result_or_err = self.get_by_uid(
+                credentials=credentials, uid=uid, has_permission=True
+            )
+            has_permissions = self.has_permission(
+                ActionObjectREAD(uid=uid, credentials=credentials)
+            )
+            if result_or_err.is_err():
+                return Err(result_or_err.err())
 
-                # if you have permission you can have private data
-                if self.has_permission(read_permission):
-                    if isinstance(obj, TwinObject):
-                        return Ok(obj.private.syft_point_to(server_uid))
-                    return Ok(obj.syft_point_to(server_uid))
+            obj = result_or_err.ok()
+            if obj is None:
+                return Err("Permission denied")
 
-                # if its a twin with a mock anyone can have this
+            if has_permissions:
                 if isinstance(obj, TwinObject):
-                    return Ok(obj.mock.syft_point_to(server_uid))
+                    return Ok(obj.private.syft_point_to(server_uid))
+                return Ok(obj.syft_point_to(server_uid))
 
-                # finally worst case you get ActionDataEmpty so you can still trace
-                return Ok(obj.as_empty().syft_point_to(server_uid))
+            # if its a twin with a mock anyone can have this
+            if isinstance(obj, TwinObject):
+                return Ok(obj.mock.syft_point_to(server_uid))
 
-            return Err("Permission denied")
+            # finally worst case you get ActionDataEmpty so you can still trace
+            return Ok(obj.as_empty().syft_point_to(server_uid))
+
         except Exception as e:
             return Err(str(e))
 
-    def exists(self, uid: UID) -> bool:
-        uid = uid.id  # We only need the UID from LineageID or UID
-
-        return uid in self.data
+    def exists(self, credentials: SyftVerifyKey, uid: UID) -> bool:
+        uid = uid.id
+        return super().exists(credentials=credentials, uid=uid)
 
     def set(
         self,
@@ -162,7 +124,7 @@ class KeyValueActionStore(ActionStore):
         write_permission = ActionObjectWRITE(uid=uid, credentials=credentials)
         can_write = self.has_permission(write_permission)
 
-        if not self.exists(uid=uid):
+        if not self.exists(credentials=credentials, uid=uid):
             # attempt to claim it for writing
             if has_result_read_permission:
                 ownership_result = self.take_ownership(uid=uid, credentials=credentials)
@@ -233,7 +195,7 @@ class KeyValueActionStore(ActionStore):
             return Ok(SyftSuccess(message=f"ID: {uid} deleted"))
         return Err(f"Permission: {owner_permission} denied")
 
-    def has_permission(self, permission: ActionObjectPermission) -> bool:
+    def _has_permission(self, permission: ActionObjectPermission) -> bool:
         if not isinstance(permission.permission, ActionPermission):
             raise Exception(f"ObjectPermission type: {permission.permission} not valid")
 
@@ -369,58 +331,3 @@ class KeyValueActionStore(ActionStore):
             return Ok(True)
 
         return Err("You don't have permissions to migrate data.")
-
-
-@serializable(canonical_name="DictActionStore", version=1)
-class DictActionStore(KeyValueActionStore):
-    """Dictionary-Based Key-Value Action store.
-
-    Parameters:
-        store_config: StoreConfig
-            Backend specific configuration, including client class type.
-        root_verify_key: Optional[SyftVerifyKey]
-            Signature verification key, used for checking access permissions.
-    """
-
-    def __init__(
-        self,
-        server_uid: UID,
-        store_config: StoreConfig | None = None,
-        root_verify_key: SyftVerifyKey | None = None,
-        document_store: DocumentStore | None = None,
-    ) -> None:
-        store_config = store_config if store_config is not None else DictStoreConfig()
-        super().__init__(
-            server_uid=server_uid,
-            store_config=store_config,
-            root_verify_key=root_verify_key,
-            document_store=document_store,
-        )
-
-
-@serializable(canonical_name="SQLiteActionStore", version=1)
-class SQLiteActionStore(KeyValueActionStore):
-    """SQLite-Based Key-Value Action store.
-
-    Parameters:
-        store_config: StoreConfig
-            SQLite specific configuration, including connection settings or client class type.
-        root_verify_key: Optional[SyftVerifyKey]
-            Signature verification key, used for checking access permissions.
-    """
-
-    pass
-
-
-@serializable(canonical_name="MongoActionStore", version=1)
-class MongoActionStore(KeyValueActionStore):
-    """Mongo-Based  Action store.
-
-    Parameters:
-        store_config: StoreConfig
-            Mongo specific configuration.
-        root_verify_key: Optional[SyftVerifyKey]
-            Signature verification key, used for checking access permissions.
-    """
-
-    pass
