@@ -1,105 +1,55 @@
-# pip install pytest-asyncio pytest-timeout
-# stdlib
-import asyncio
-
 # third party
+from api import get_datasets
+from asserts import has
+from events import EVENT_DATASET_MOCK_READABLE
+from events import EVENT_DATASET_UPLOADED
+from events import EVENT_USER_ADMIN_CREATED
+from events import EventManager
 from faker import Faker
-from fixtures import *
+from fixtures_sync import create_dataset
+from fixtures_sync import make_admin
+from fixtures_sync import make_server
+from fixtures_sync import make_user
+from fixtures_sync import upload_dataset
+from make import create_users
+from partials import with_client
 import pytest
-
-
-# An async function that returns "Hello, World!"
-async def hello_world():
-    await asyncio.sleep(1)  # Simulate some async work
-    return "Hello, World!"
-
-
-# # An async test function using pytest-asyncio
-# @pytest.mark.asyncio
-# async def test_hello_world():
-#     result = await hello_world()
-#     assert result == "Hello, World!"
+from story import user_can_read_mock_dataset
 
 
 @pytest.mark.asyncio
-async def run_mock_dataframe_scenario(manager, admin, server, set_event: bool = True):
-    manager.reset_test_state()
+async def test_create_dataset_and_read_mock(request):
+    events = EventManager()
+    server = make_server(request)
 
-    USERS_CREATED = "users_created"
-    MOCK_READABLE = "mock_readable"
+    dataset_get_all = with_client(get_datasets, server)
+
+    assert dataset_get_all() == 0
 
     fake = Faker()
+    admin = make_admin()
+    events.register(EVENT_USER_ADMIN_CREATED)
 
     root_client = admin.client(server)
-
     dataset_name = fake.name()
     dataset = create_dataset(name=dataset_name)
 
-    result = await hello_world()
-    assert result == "Hello, World!"
-
     upload_dataset(root_client, dataset)
+
+    events.register(EVENT_DATASET_UPLOADED)
 
     users = [make_user() for i in range(2)]
 
-    def create_users(root_client, manager, users):
-        for test_user in users:
-            create_user(root_client, test_user)
-        manager.register_event(USERS_CREATED)
-
-    def user_can_read_mock_dataset(server, manager, user, dataset_name):
-        print("waiting ", USERS_CREATED)
-        with WaitForEvent(manager, USERS_CREATED, retry_secs=1):
-            print("logging in user")
-            user_client = user.client(server)
-            print("getting dataset", dataset_name)
-            mock = user_client.api.services.dataset[dataset_name].assets[0].mock
-            df = trade_flow_df_mock(trade_flow_df())
-            assert df.equals(mock)
-            if set_event:
-                print("REGISTERING EVENT", MOCK_READABLE)
-                manager.register_event(MOCK_READABLE)
-
     user = users[0]
 
-    asyncit(
-        user_can_read_mock_dataset,
-        server=server,
-        manager=manager,
-        user=user,
-        dataset_name=dataset_name,
+    user_can_read_mock_dataset(server, events, user, dataset_name)
+    create_users(root_client, events, users)
+
+    await has(
+        lambda: dataset_get_all() == 1,
+        "1 Dataset",
+        timeout=15,
+        retry=1,
     )
 
-    asyncit(create_users, root_client=root_client, manager=manager, users=users)
-
-
-@pytest.mark.asyncio
-async def test_can_read_mock_dataframe(request):
-    manager = TestEventManager(test_name=request.node.name)
-    admin = make_admin()
-    server = make_server(admin)
-    MOCK_READABLE = "mock_readable"
-    await run_mock_dataframe_scenario(manager, admin, server)
-    async with AsyncWaitForEvent(manager, MOCK_READABLE, retry_secs=1, timeout_secs=15):
-        print("Test Complete")
-        result = manager.get_event_or_raise(MOCK_READABLE)
-        assert result
-    server.land()
-    loop = asyncio.get_event_loop()
-    loop.stop()
-
-
-@pytest.mark.asyncio
-async def test_cant_read_mock_dataframe(request):
-    manager = TestEventManager(test_name=request.node.name)
-    admin = make_admin()
-    server = make_server(admin)
-    MOCK_READABLE = "mock_readable"
-    await run_mock_dataframe_scenario(manager, admin, server, set_event=False)
-    async with AsyncWaitForEvent(manager, MOCK_READABLE, retry_secs=1, timeout_secs=15):
-        print("Test Complete")
-        with pytest.raises(Exception):
-            result = manager.get_event_or_raise(MOCK_READABLE)
-    server.land()
-    loop = asyncio.get_event_loop()
-    loop.stop()
+    await events.wait_for(event_name=EVENT_DATASET_MOCK_READABLE)
