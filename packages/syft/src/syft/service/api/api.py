@@ -1,6 +1,7 @@
 # stdlib
 import ast
 from collections.abc import Callable
+import datetime
 import inspect
 from inspect import Signature
 import keyword
@@ -34,7 +35,9 @@ from ...types.transforms import keep
 from ...types.transforms import transform
 from ...types.uid import UID
 from ...util.misc_objs import MarkdownDescription
+from ..action.action_object import ActionObject
 from ..context import AuthedServiceContext
+from ..job.job_stash import Job
 from ..response import SyftError
 from ..user.user import UserView
 from ..user.user_service import UserService
@@ -438,7 +441,13 @@ class TwinAPIEndpoint(SyncableSyftObject):
             return Ok(self.private_function)
         return Ok(self.mock_function)
 
-    def exec(self, context: AuthedServiceContext, *args: Any, **kwargs: Any) -> Any:
+    def exec(
+        self,
+        context: AuthedServiceContext,
+        *args: Any,
+        log_id: UID | None = None,
+        **kwargs: Any,
+    ) -> Any:
         """Execute the code based on the user's permissions and public code availability.
 
         Args:
@@ -453,19 +462,29 @@ class TwinAPIEndpoint(SyncableSyftObject):
             return SyftError(message=result.err())
 
         selected_code = result.ok()
-        return self.exec_code(selected_code, context, *args, **kwargs)
+        return self.exec_code(selected_code, context, *args, log_id=log_id, **kwargs)
 
     def exec_mock_function(
-        self, context: AuthedServiceContext, *args: Any, **kwargs: Any
+        self,
+        context: AuthedServiceContext,
+        *args: Any,
+        log_id: UID | None = None,
+        **kwargs: Any,
     ) -> Any:
         """Execute the public code if it exists."""
         if self.mock_function:
-            return self.exec_code(self.mock_function, context, *args, **kwargs)
+            return self.exec_code(
+                self.mock_function, context, *args, log_id=log_id, **kwargs
+            )
 
         return SyftError(message="No public code available")
 
     def exec_private_function(
-        self, context: AuthedServiceContext, *args: Any, **kwargs: Any
+        self,
+        context: AuthedServiceContext,
+        *args: Any,
+        log_id: UID | None = None,
+        **kwargs: Any,
     ) -> Any:
         """Execute the private code if user is has the proper permissions.
 
@@ -480,7 +499,9 @@ class TwinAPIEndpoint(SyncableSyftObject):
             return SyftError(message="No private code available")
 
         if self.has_permission(context):
-            return self.exec_code(self.private_function, context, *args, **kwargs)
+            return self.exec_code(
+                self.private_function, context, *args, log_id=log_id, **kwargs
+            )
 
         return SyftError(message="You're not allowed to run this code.")
 
@@ -508,9 +529,48 @@ class TwinAPIEndpoint(SyncableSyftObject):
         code: PrivateAPIEndpoint | PublicAPIEndpoint,
         context: AuthedServiceContext,
         *args: Any,
+        log_id: UID | None = None,
         **kwargs: Any,
     ) -> Any:
+        # stdlib
+        import builtins as __builtin__
+
+        original_print = __builtin__.print
+        # stdlib
+        import sys
+
         try:
+            if log_id is not None:
+
+                def print(*args: Any, sep: str = " ", end: str = "\n") -> str | None:
+                    def to_str(arg: Any) -> str:
+                        if isinstance(arg, bytes):
+                            return arg.decode("utf-8")
+                        if isinstance(arg, Job):
+                            return f"JOB: {arg.id}"
+                        if isinstance(arg, SyftError):
+                            return f"JOB: {arg.message}"
+                        if isinstance(arg, ActionObject):
+                            return str(arg.syft_action_data)
+                        return str(arg)
+
+                    new_args = [to_str(arg) for arg in args]
+                    new_str = sep.join(new_args) + end
+                    if context.server is not None:
+                        log_service = context.server.get_service("LogService")
+                        log_service.append(context=context, uid=log_id, new_str=new_str)
+                    time = datetime.datetime.now().strftime("%d/%m/%y %H:%M:%S")
+                    return __builtin__.print(
+                        f"{time} FUNCTION LOG :",
+                        *new_args,
+                        end=end,
+                        sep=sep,
+                        file=sys.stderr,
+                    )
+
+            else:
+                print = original_print
+
             inner_function = ast.parse(code.api_code).body[0]
             inner_function.decorator_list = []
             # compile the function
@@ -520,16 +580,24 @@ class TwinAPIEndpoint(SyncableSyftObject):
             user_client = self.get_user_client_from_server(context)
             admin_client = self.get_admin_client_from_server(context)
 
-            # load it
-            exec(raw_byte_code)  # nosec
-
             internal_context = code.build_internal_context(
                 context=context, admin_client=admin_client, user_client=user_client
             )
 
-            # execute it
+            _locals = {
+                "args": args,
+                "kwargs": kwargs,
+                "internal_context": internal_context,
+            }
+            _globals = {}
             evil_string = f"{code.func_name}(*args, **kwargs,context=internal_context)"
-            result = eval(evil_string, None, locals())  # nosec
+            _globals["print"] = print
+
+            # load it
+            exec(raw_byte_code, _globals, _locals)  # nosec
+
+            # execute it
+            result = eval(evil_string, _globals, _locals)  # nosec
 
             # Update code context state
             code.update_state(internal_context.state)
@@ -546,6 +614,8 @@ class TwinAPIEndpoint(SyncableSyftObject):
 
             if upsert_result.is_err():
                 raise Exception(upsert_result.err())
+
+            print = original_print
 
             # return the results
             return result
