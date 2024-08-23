@@ -1345,7 +1345,7 @@ class Server(AbstractServer):
 
             action_service = self.get_service("actionservice")
 
-            if not action_service.store.exists(uid=action.result_id):
+            if not action_service.store.exists(credentials, uid=action.result_id):
                 result = action_service.set_result_to_store(
                     result_action_object=result_obj,
                     context=context,
