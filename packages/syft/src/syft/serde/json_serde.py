@@ -25,6 +25,7 @@ from ..types.syft_object import BaseDateTime
 from ..types.syft_object_registry import SyftObjectRegistry
 from ..types.uid import LineageID
 from ..types.uid import UID
+from .recursive import DEFAULT_EXCLUDE_ATTRS
 
 T = TypeVar("T")
 
@@ -129,13 +130,21 @@ def _annotation_issubclass(annotation: Any, cls: type) -> bool:
 
 def _serialize_pydantic_to_json(obj: pydantic.BaseModel) -> dict[str, Json]:
     canonical_name, version = SyftObjectRegistry.get_canonical_name_version(obj)
+    serde_attributes = SyftObjectRegistry.get_serde_properties(canonical_name, version)
+    exclude_attrs = serde_attributes[4]
+
     result: dict[str, Json] = {
         JSON_CANONICAL_NAME_FIELD: canonical_name,
         JSON_VERSION_FIELD: version,
     }
 
     for key, type_ in obj.model_fields.items():
-        result[key] = serialize_json(getattr(obj, key), type_.annotation)
+        if key in exclude_attrs or key in DEFAULT_EXCLUDE_ATTRS:
+            continue
+        try:
+            result[key] = serialize_json(getattr(obj, key), type_.annotation)
+        except Exception as e:
+            raise ValueError(f"Failed to serialize attribute {key}: {e}")
 
     result = _serialize_searchable_attrs(obj, result)
 
