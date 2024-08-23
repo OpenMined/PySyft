@@ -11,6 +11,7 @@ from result import Result
 # relative
 from ...client.api import ServerIdentity
 from ...serde.serializable import serializable
+from ...store.db.stash import ObjectStash
 from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
@@ -40,12 +41,12 @@ from .sync_state import SyncState
 logger = logging.getLogger(__name__)
 
 
-def get_store(context: AuthedServiceContext, item: SyncableSyftObject) -> Any:
+def get_store(context: AuthedServiceContext, item: SyncableSyftObject) -> ObjectStash:
     if isinstance(item, ActionObject):
         service = context.server.get_service("actionservice")  # type: ignore
         return service.store  # type: ignore
     service = context.server.get_service(TYPE_TO_SERVICE[type(item)])  # type: ignore
-    return service.stash.partition
+    return service.stash
 
 
 @instrument

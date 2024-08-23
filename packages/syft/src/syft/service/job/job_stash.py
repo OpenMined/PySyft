@@ -892,6 +892,13 @@ class JobStash(ObjectStash[Job]):
             credentials=credentials, field_name="parent_job_id", field_value=str(uid)
         )
 
+    def get_by_result_id(
+        self, credentials: SyftVerifyKey, uid: UID
+    ) -> Result[list[Job], str]:
+        return self.get_one_by_field(
+            credentials=credentials, field_name="result_id", field_value=str(uid)
+        )
+
 
 @serializable()
 class JobV1(SyncableSyftObject):

@@ -507,18 +507,22 @@ class ObjectStash(Generic[SyftT]):
         return None
 
     def _get_storage_permissions_for_uid(self, uid: UID) -> Result[set[UID], str]:
-        stmt = self.table.select(
-            self.table.c.id, self.table.c.storage_permissions
-        ).where(self.table.c.id == uid)
+        stmt = select(self.table.c.id, self.table.c.storage_permissions).where(
+            self.table.c.id == uid
+        )
         result = self.session.execute(stmt).first()
         if result is None:
             return Err(f"No storage permissions found for uid: {uid}")
-        return Ok(set(result.storage_permissions))
+        return Ok({UID(uid) for uid in result.storage_permissions})
 
     def get_all_storage_permissions(self) -> Result[dict[UID, set[UID]], str]:
-        stmt = self.table.select(self.table.c.id, self.table.c.storage_permissions)
+        stmt = select(self.table.c.id, self.table.c.storage_permissions)
         results = self.session.execute(stmt).all()
-        return Ok({row.id: set(row.storage_permissions) for row in results})
+
+        # make uid
+        return Ok(
+            {row.id: {(UID(uid) for uid in row.storage_permissions)} for row in results}
+        )
 
     def has_permission(self, permission: ActionObjectPermission) -> bool:
         return self.has_permissions([permission])

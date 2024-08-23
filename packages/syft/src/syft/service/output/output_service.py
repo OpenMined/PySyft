@@ -323,11 +323,11 @@ class OutputService(AbstractService):
         roles=ADMIN_ROLE_LEVEL,
     )
     def get_by_job_id(
-        self, context: AuthedServiceContext, user_code_id: UID
+        self, context: AuthedServiceContext, job_id: UID
     ) -> ExecutionOutput | None | SyftError:
         result = self.stash.get_by_job_id(
             credentials=context.server.verify_key,  # type: ignore
-            user_code_id=user_code_id,
+            job_id=job_id,
         )
         if result.is_ok():
             return result.ok()
