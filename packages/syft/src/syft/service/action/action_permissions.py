@@ -122,3 +122,7 @@ class StoragePermission:
             "uid": str(self.uid),
             "server_uid": str(self.server_uid),
         }
+
+    @property
+    def permission_string(self) -> str:
+        return str(self.server_uid)

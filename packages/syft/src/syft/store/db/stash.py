@@ -15,6 +15,7 @@ from sqlalchemy import Row
 from sqlalchemy import Select
 from sqlalchemy import Table
 from sqlalchemy import func
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.types import JSON
 from typing_extensions import TypeVar
@@ -75,6 +76,7 @@ class ObjectStash(Generic[SyftT]):
                 Column("id", UIDTypeDecorator, primary_key=True, default=uuid.uuid4),
                 Column("fields", JSON, default={}),
                 Column("permissions", JSON, default=[]),
+                Column("storage_permissions", JSON, default=[]),
                 Column(
                     "created_at", sa.DateTime, server_default=sa.func.now(), index=True
                 ),
@@ -444,20 +446,15 @@ class ObjectStash(Generic[SyftT]):
         storage_permissions = []
         if add_storage_permission:
             storage_permissions.append(
-                StoragePermission(
-                    uid=uid,
-                    server_uid=self.server_uid,
-                )
+                self.server_uid,
             )
-
-            # TODO: write the storage permissions to the database
 
         # create the object with the permissions
         stmt = self.table.insert().values(
             id=uid,
             fields=serialize_json(obj),
             permissions=permissions,
-            # storage_permissions=storage_permissions,
+            storage_permissions=storage_permissions,
         )
         self.session.execute(stmt)
         self.session.commit()
@@ -496,18 +493,27 @@ class ObjectStash(Generic[SyftT]):
         return None
 
     def add_permission(self, permission: ActionObjectPermission) -> None:
-        # TODO: handle duplicates
-        stmt = self.table.update(self.table.c.id == permission.uid).values(
-            permissions=sa.func.array_append(
-                self.table.c.permissions, permission.permission_string
+        # handle duplicates by removing the permission first
+        stmt = (
+            self.table.update()
+            .where(self.table.c.id == permission.uid)
+            .values(
+                permissions=func.array_append(
+                    func.array_remove(
+                        select(self.table.c.permissions)
+                        .where(self.table.c.id == permission.uid)
+                        .scalar_subquery(),
+                        permission.permission_string,
+                    ),
+                    permission.permission_string,
+                )
             )
         )
+
         self.session.execute(stmt)
         self.session.commit()
-        return None
 
     def remove_permission(self, permission: ActionObjectPermission) -> None:
-        # TODO: handle duplicates
         stmt = self.table.update(self.table.c.id == permission.uid).values(
             permissions=sa.func.array_remove(self.table.c.permissions, permission)
         )
@@ -516,23 +522,51 @@ class ObjectStash(Generic[SyftT]):
         return None
 
     def remove_storage_permission(self, permission: StoragePermission) -> None:
-        # TODO
+        stmt = self.table.update(self.table.c.id == permission.uid).values(
+            storage_permissions=sa.func.array_remove(
+                self.table.c.storage_permissions, permission.permission_string
+            )
+        )
+        self.session.execute(stmt)
+        self.session.commit()
         return None
 
     def _get_storage_permissions_for_uid(self, uid: UID) -> Result[set[UID], str]:
-        # TODO
-        return Ok(set())
+        stmt = self.table.select(
+            self.table.c.id, self.table.c.storage_permissions
+        ).where(self.table.c.id == uid)
+        result = self.session.execute(stmt).first()
+        if result is None:
+            return Err(f"No storage permissions found for uid: {uid}")
+        return Ok(set(result.storage_permissions))
 
     def get_all_storage_permissions(self) -> Result[dict[UID, set[UID]], str]:
-        # TODO
-        return Ok({})
+        stmt = self.table.select(self.table.c.id, self.table.c.storage_permissions)
+        results = self.session.execute(stmt).all()
+        return Ok({row.id: set(row.storage_permissions) for row in results})
 
     def has_permission(self, permission: ActionObjectPermission) -> bool:
         return self.has_permissions([permission])
 
     def has_storage_permission(self, permission: StoragePermission) -> bool:
-        # TODO
-        return True
+        return self.has_storage_permissions([permission])
+
+    def has_storage_permissions(self, permissions: list[StoragePermission]) -> bool:
+        permission_filters = [
+            sa.and_(
+                self._get_field_filter("id", p.uid),
+                self.table.c.storage_permissions.contains(p.server_uid),
+            )
+            for p in permissions
+        ]
+
+        stmt = self.table.select().where(
+            sa.and_(
+                *permission_filters,
+            )
+        )
+        result = self.session.execute(stmt).first()
+        return result
 
     def has_permissions(self, permissions: list[ActionObjectPermission]) -> bool:
         # NOTE: maybe we should use a permissions table to check all permissions at once
@@ -552,6 +586,30 @@ class ObjectStash(Generic[SyftT]):
         )
         result = self.session.execute(stmt).first()
         return result is not None
+
+    def add_storage_permission(self, permission: StoragePermission) -> None:
+        stmt = (
+            self.table.update()
+            .where(self.table.c.id == permission.uid)
+            .values(
+                storage_permissions=func.array_append(
+                    func.array_remove(
+                        select(self.table.c.storage_permissions)
+                        .where(self.table.c.id == permission.uid)
+                        .scalar_subquery(),
+                        permission.server_uid,
+                    ),
+                    permission.server_uid,
+                )
+            )
+        )
+        self.session.execute(stmt)
+        self.session.commit()
+        return None
+
+    def add_storage_permissions(self, permissions: list[StoragePermission]) -> None:
+        for permission in permissions:
+            self.add_storage_permission(permission)
 
     def _get_permissions_for_uid(self, uid: UID) -> Result[set[str], str]:
         stmt = self.table.select(self.table.c.id, self.table.c.permissions).where(
