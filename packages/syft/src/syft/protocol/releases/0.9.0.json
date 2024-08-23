@@ -1,0 +1,48 @@
+{
+  "3": {
+    "object_versions": {
+      "User": {
+        "2": {
+          "version": 2,
+          "hash": "af6fb5b2e1606e97838f4a60f0536ad95db606d455e94acbd1977df866608a2c",
+          "action": "add"
+        }
+      },
+      "UserNotificationActivity": {
+        "1": {
+          "version": 1,
+          "hash": "422fd01c6d9af38688a9982abd34e80794a1f6ddd444cca225d77f49189847a9",
+          "action": "add"
+        }
+      },
+      "NotifierSettings": {
+        "2": {
+          "version": 2,
+          "hash": "be8b52597fc628d1b7cd22b776ee81416e1adbb04a45188778eb0e32ed1416b4",
+          "action": "add"
+        }
+      },
+      "PwdTokenResetConfig": {
+        "1": {
+          "version": 1,
+          "hash": "0415a272428f22add4896c64aa9f29c8c1d35619e2433da6564eb5f1faff39ac",
+          "action": "add"
+        }
+      },
+      "ServerSettingsUpdate": {
+        "3": {
+          "version": 3,
+          "hash": "335c7946f2e52d09c7b26f511120cd340717c74c5cca9107e84f839da993c55c",
+          "action": "add"
+        }
+      },
+      "ServerSettings": {
+        "3": {
+          "version": 3,
+          "hash": "997667e1cba22d151857aacc2caba6b1ca73c1648adbd03461dc74a0c0c372b3",
+          "action": "add"
+        }
+      }
+    }
+  }
+}

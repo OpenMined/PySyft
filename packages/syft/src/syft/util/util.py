@@ -1,6 +1,7 @@
 # stdlib
 import asyncio
 from asyncio.selector_events import BaseSelectorEventLoop
+from collections import deque
 from collections.abc import Callable
 from collections.abc import Iterator
 from collections.abc import Sequence
@@ -11,6 +12,7 @@ from copy import deepcopy
 from datetime import datetime
 import functools
 import hashlib
+from itertools import chain
 from itertools import repeat
 import json
 import logging
@@ -25,10 +27,12 @@ from pathlib import Path
 import platform
 import random
 import re
+import reprlib
 import secrets
 from secrets import randbelow
 import socket
 import sys
+from sys import getsizeof
 import threading
 import time
 import types
@@ -42,6 +46,8 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import nh3
 import requests
+from result import Err
+from result import Ok
 
 # relative
 from ..serde.serialize import _serialize as serialize
@@ -93,12 +99,78 @@ def get_name_for(klass: type) -> str:
     return klass_name
 
 
-def get_mb_size(data: Any) -> float:
-    return sys.getsizeof(data) / (1024 * 1024)
+def get_mb_size(data: Any, handlers: dict | None = None) -> float:
+    """Returns the approximate memory footprint an object and all of its contents.
+
+    Automatically finds the contents of the following builtin containers and
+    their subclasses:  tuple, list, deque, dict, set and frozenset.
+    Otherwise, tries to read from the __slots__ or __dict__ of the object.
+    To search other containers, add handlers to iterate over their contents:
+
+        handlers = {SomeContainerClass: iter,
+                    OtherContainerClass: OtherContainerClass.get_elements}
+
+    Lightly modified from
+    https://code.activestate.com/recipes/577504-compute-memory-footprint-of-an-object-and-its-cont/
+    which is referenced in official sys.getsizeof documentation
+    https://docs.python.org/3/library/sys.html#sys.getsizeof.
+
+    """
+
+    def dict_handler(d: dict[Any, Any]) -> Iterator[Any]:
+        return chain.from_iterable(d.items())
+
+    all_handlers = {
+        tuple: iter,
+        list: iter,
+        deque: iter,
+        dict: dict_handler,
+        set: iter,
+        frozenset: iter,
+    }
+    if handlers:
+        all_handlers.update(handlers)  # user handlers take precedence
+    seen = set()  # track which object id's have already been seen
+    default_size = getsizeof(0)  # estimate sizeof object without __sizeof__
+
+    def sizeof(o: Any) -> int:
+        if id(o) in seen:  # do not double count the same object
+            return 0
+        seen.add(id(o))
+        s = getsizeof(o, default_size)
+
+        for typ, handler in all_handlers.items():
+            if isinstance(o, typ):
+                s += sum(map(sizeof, handler(o)))  # type: ignore
+                break
+        else:
+            # no __slots__ *usually* means a __dict__, but some special builtin classes
+            # (such as `type(None)`) have neither else, `o` has no attributes at all,
+            # so sys.getsizeof() actually returned the correct value
+            if not hasattr(o.__class__, "__slots__"):
+                if hasattr(o, "__dict__"):
+                    s += sizeof(o.__dict__)
+            else:
+                s += sum(
+                    sizeof(getattr(o, x))
+                    for x in o.__class__.__slots__
+                    if hasattr(o, x)
+                )
+        return s
+
+    return sizeof(data) / (1024.0 * 1024.0)
 
 
-def get_mb_serialized_size(data: Any) -> float:
-    return sys.getsizeof(serialize(data, to_bytes=True)) / (1024 * 1024)
+def get_mb_serialized_size(data: Any) -> Ok[float] | Err[str]:
+    try:
+        serialized_data = serialize(data, to_bytes=True)
+        return Ok(sys.getsizeof(serialized_data) / (1024 * 1024))
+    except Exception as e:
+        data_type = type(data)
+        return Err(
+            f"Failed to serialize data of type '{data_type.__module__}.{data_type.__name__}'. "
+            f"Data type not supported. Detailed error: {e}"
+        )
 
 
 def extract_name(klass: type) -> str:
@@ -1011,3 +1083,31 @@ def get_nb_secrets(defaults: dict | None = None) -> dict:
         print(f"Unable to load {filename}")
 
     return defaults
+
+
+class CustomRepr(reprlib.Repr):
+    def repr_str(self, obj: Any, level: int = 0) -> str:
+        if len(obj) <= self.maxstring:
+            return repr(obj)
+        return repr(obj[: self.maxstring] + "...")
+
+
+def repr_truncation(obj: Any, max_elements: int = 10) -> str:
+    """
+    Return a truncated string representation of the object if it is too long.
+
+    Args:
+    - obj: The object to be represented (can be str, list, dict, set...).
+    - max_elements: Maximum number of elements to display before truncating.
+
+    Returns:
+    - A string representation of the object, truncated if necessary.
+    """
+    r = CustomRepr()
+    r.maxlist = max_elements  # For lists
+    r.maxdict = max_elements  # For dictionaries
+    r.maxset = max_elements  # For sets
+    r.maxstring = 100  # For strings
+    r.maxother = 100  # For other objects
+
+    return r.repr(obj)

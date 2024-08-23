@@ -3,9 +3,14 @@ from collections import defaultdict
 from collections.abc import Iterable
 from collections.abc import Mapping
 from collections.abc import Set
+import json
 import logging
 import re
 from typing import Any
+
+# third party
+import itables
+import pandas as pd
 
 # relative
 from .util import full_name_with_qualname
@@ -273,3 +278,65 @@ def prepare_table_data(
     }
 
     return table_data, table_metadata
+
+
+def itable_template_from_df(df: pd.DataFrame, itable_css: str | None = None) -> str:
+    """
+    Generate an itable template from a pandas DataFrame.
+
+    The itable template contains a JSON string that can be used to render an itable downstream
+    by the patched ipython.
+
+    Args:
+        df (pd.DataFrame): The DataFrame to generate the template from.
+        itable_css (str | None, optional): The CSS styles to apply to the itable template. Defaults to None.
+
+    Returns:
+        str: The generated itable template as a string.
+
+    """
+    itable_template = f"""<!-- Start itable_template -->
+    {json.dumps({"columns": df.columns.tolist(),
+                    "data": df.values.tolist(),
+                    "itable_css": itable_css})}
+    <!-- End itable_template -->"""
+    return itable_template
+
+
+def render_itable_template(itable_str: str) -> str:
+    """
+    Renders an itable template string into an HTML table using itables.to_html_datatable.
+
+    Args:
+        itable_str (str): The itable template string to render.
+
+    Returns:
+        str: The rendered HTML table.
+
+    """
+
+    df, itable_css = _extract_df_from_itable_template(itable_str)
+    if itable_css:
+        return itables.to_html_datatable(df=df, css=itable_css)
+    else:
+        return itables.to_html_datatable(df=df)
+
+
+def _extract_df_from_itable_template(
+    itable_str: str,
+) -> tuple[pd.DataFrame, str | None]:
+    """
+    Extracts a DataFrame and CSS styles from an itable template string.
+
+    Args:
+        itable_str (str): The itable template string to extract from.
+
+    Returns:
+        tuple[pd.DataFrame, str | None]: A tuple containing the extracted DataFrame and the CSS styles.
+            - The DataFrame is created using the columns and data from the itable template.
+            - The CSS styles are extracted from the itable template, or None if not present.
+
+    """
+    json_data = json.loads(itable_str)
+    extracted_df = pd.DataFrame(columns=json_data["columns"], data=json_data["data"])
+    return extracted_df, json_data.get("itable_css", None)

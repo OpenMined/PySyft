@@ -61,8 +61,6 @@ from ...types.transforms import add_server_uid_for_key
 from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.uid import UID
-from ...util import options
-from ...util.colors import SURFACE
 from ...util.decorators import deprecated
 from ...util.markdown import CodeMarkdown
 from ...util.markdown import as_markdown_code
@@ -73,7 +71,6 @@ from ..action.action_object import Action
 from ..action.action_object import ActionObject
 from ..context import AuthedServiceContext
 from ..dataset.dataset import Asset
-from ..dataset.dataset import Dataset
 from ..job.job_stash import Job
 from ..output.output_service import ExecutionOutput
 from ..output.output_service import OutputService
@@ -159,10 +156,7 @@ class UserCodeStatusCollection(SyncableSyftObject):
         return str(self.status_dict)
 
     def _repr_html_(self) -> str:
-        string = f"""
-            <style>
-                .syft-user_code {{color: {SURFACE[options.color_theme]};}}
-                </style>
+        string = """
                 <div class='syft-user_code'>
                     <h3 style="line-height: 25%; margin-top: 25px;">User Code Status</h3>
                     <p style="margin-left: 3px;">
@@ -726,28 +720,21 @@ class UserCode(SyncableSyftObject):
         if isinstance(api, SyftError):
             return api
 
-        # get all assets on the server
-        datasets: list[Dataset] = api.services.dataset.get_all()
-        if isinstance(datasets, SyftError):
-            return datasets
-
-        all_assets: dict[UID, Asset] = {}
-        for dataset in datasets:
-            for asset in dataset.asset_list:
-                asset._dataset_name = dataset.name
-                all_assets[asset.action_id] = asset
-
         # get a flat dict of all inputs
         all_inputs = {}
         inputs = self.input_policy_init_kwargs or {}
         for vals in inputs.values():
-            all_inputs.update(vals)
+            # Only keep UIDs, filter out Constants
+            all_inputs.update({k: v for k, v in vals.items() if isinstance(v, UID)})
 
         # map the action_id to the asset
         used_assets: list[Asset] = []
         for kwarg_name, action_id in all_inputs.items():
-            asset = all_assets.get(action_id, None)
-            if asset:
+            assets = api.dataset.get_assets_by_action_id(uid=action_id)
+            if isinstance(assets, SyftError):
+                return assets
+            if assets:
+                asset = assets[0]
                 asset._kwarg_name = kwarg_name
                 used_assets.append(asset)
 
@@ -767,20 +754,47 @@ class UserCode(SyncableSyftObject):
         action_objects = {
             arg_name: str(uid)
             for arg_name, uid in all_inputs.items()
-            if arg_name not in self.assets.keys()
+            if arg_name not in self.assets.keys() and isinstance(uid, UID)
         }
 
         return action_objects
 
     @property
+    def constants(self) -> dict[str, Constant]:
+        if not self.input_policy_init_kwargs:
+            return {}
+
+        all_inputs = {}
+        for vals in self.input_policy_init_kwargs.values():
+            all_inputs.update(vals)
+
+        # filter out the assets
+        constants = {
+            arg_name: item
+            for arg_name, item in all_inputs.items()
+            if isinstance(item, Constant)
+        }
+
+        return constants
+
+    @property
     def inputs(self) -> dict:
         inputs = {}
-        if self.action_objects:
-            inputs["action_objects"] = self.action_objects
-        if self.assets:
+
+        assets = self.assets
+        action_objects = self.action_objects
+        constants = self.constants
+        if action_objects:
+            inputs["action_objects"] = action_objects
+        if assets:
             inputs["assets"] = {
                 argument: asset._get_dict_for_user_code_repr()
-                for argument, asset in self.assets.items()
+                for argument, asset in assets.items()
+            }
+        if self.constants:
+            inputs["constants"] = {
+                argument: constant._get_dict_for_user_code_repr()
+                for argument, constant in constants.items()
             }
         return inputs
 
@@ -933,9 +947,6 @@ class UserCode(SyncableSyftObject):
         repr_str = f"""
     <style>
     {FONT_CSS}
-    .syft-code {{color: {SURFACE[options.color_theme]};}}
-    .syft-code h3,
-    .syft-code p {{font-family: 'Open Sans'}}
     </style>
     <div class="syft-code">
     <h3>{tabs}UserCode</h3>

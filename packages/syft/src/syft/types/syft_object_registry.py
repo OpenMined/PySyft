@@ -39,6 +39,13 @@ class SyftObjectRegistry:
         return list(available_versions.keys())
 
     @classmethod
+    def get_latest_version(cls, canonical_name: str) -> int:
+        available_versions = cls.get_versions(canonical_name)
+        if not available_versions:
+            return 0
+        return sorted(available_versions, reverse=True)[0]
+
+    @classmethod
     def get_identifier_for_type(cls, obj: Any) -> tuple[str, int]:
         """
         This is to create the string in nonrecursiveBlob
@@ -76,7 +83,9 @@ class SyftObjectRegistry:
         obj_type = type(obj)
         if obj_type in cls.__type_to_canonical_name__:
             return cls.__type_to_canonical_name__[obj_type]
-        raise ValueError(f"Could not find canonical name for {obj}")
+        raise ValueError(
+            f"Could not find canonical name for '{obj_type.__module__}.{obj_type.__name__}'"
+        )
 
     @classmethod
     def get_serde_properties(cls, canonical_name: str, version: int) -> tuple:
@@ -131,7 +140,10 @@ class SyftObjectRegistry:
                 klass_from = type_from_mro.__name__
                 version_from = None
             for type_to_mro in type_to.mro():
-                if issubclass(type_to_mro, SyftBaseObject):
+                if (
+                    issubclass(type_to_mro, SyftBaseObject)
+                    and type_to_mro != SyftBaseObject
+                ):
                     klass_to = type_to_mro.__canonical_name__
                     version_to = type_to_mro.__version__
                 else:

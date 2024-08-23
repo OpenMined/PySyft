@@ -79,6 +79,8 @@ spec:
               value: {{ .Values.server.defaultWorkerPool.podAnnotations | toJson | quote }}
             - name: USE_INTERNAL_REGISTRY
               value: {{ .Values.server.useInternalRegistry | quote }}
+            - name: KANIKO_VERSION
+              value: {{ .Values.global.kaniko.version | quote }}
             {{- if .Values.server.defaultBucketName }}
             - name: DEFAULT_BUCKET_NAME
               value: {{ .Values.server.defaultBucketName | quote }}
