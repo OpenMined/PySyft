@@ -196,8 +196,34 @@ class ObjectStash(Generic[SyftT]):
         objs = [self.row_as_obj(row) for row in result]
         return Ok(objs)
 
+    def get_all_contains(
+        self,
+        credentials: SyftVerifyKey,
+        field_name: str,
+        field_value: str,
+        order_by: str | None = None,
+        sort_order: str = "asc",
+        limit: int | None = None,
+        offset: int | None = None,
+    ) -> Result[list[SyftT], str]:
+        # TODO write filter logic, merge with get_all
+
+        stmt = self.table.select().where(
+            sa.and_(
+                self.table.c.fields[field_name].contains(func.json_quote(field_value)),
+                self._get_permission_filter(credentials),
+            )
+        )
+
+        stmt = self._apply_order_by(stmt, order_by, sort_order)
+        stmt = self._apply_limit_offset(stmt, limit, offset)
+
+        result = self.session.execute(stmt).all()
+        objs = [self.row_as_obj(row) for row in result]
+        return Ok(objs)
+
     def row_as_obj(self, row: Row) -> SyftT:
-        return deserialize_json(row.fields, self.object_type)
+        return deserialize_json(row.fields)
 
     def get_role(self, credentials: SyftVerifyKey) -> ServiceRole:
         user_table = Table("User", Base.metadata)

@@ -1,8 +1,8 @@
 # stdlib
 
+# stdlib
+
 # third party
-from result import Err
-from result import Ok
 from result import Result
 
 # relative
@@ -10,7 +10,6 @@ from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...store.db.stash import ObjectStash
 from ...store.document_store import DocumentStore
-from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...types.uid import UID
 from ...util.telemetry import instrument
@@ -38,21 +37,28 @@ class DatasetStash(ObjectStash[Dataset]):
     def search_action_ids(
         self, credentials: SyftVerifyKey, uid: UID
     ) -> Result[list[Dataset], str]:
-        return self.get_all_by_field(
+        return self.get_all_contains(
             credentials=credentials,
             field_name="action_ids",
-            field_value=str(uid),
+            field_value=uid.no_dash,
         )
 
     def get_all(
         self,
         credentials: SyftVerifyKey,
-        order_by: PartitionKey | None = None,
         has_permission: bool = False,
-    ) -> Ok[list] | Err[str]:
+        order_by: str | None = None,
+        sort_order: str = "asc",
+        limit: int | None = None,
+        offset: int | None = None,
+    ) -> Result[list[Dataset], str]:
         result = self.get_all_by_field(
             credentials=credentials,
             field_name="to_be_deleted",
             field_value=False,
+            order_by=order_by,
+            sort_order=sort_order,
+            limit=limit,
+            offset=offset,
         )
         return result
