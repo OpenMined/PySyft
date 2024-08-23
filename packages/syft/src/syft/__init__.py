@@ -85,7 +85,6 @@ from .util.commit import __commit__
 from .util.patch_ipython import patch_ipython
 from .util.telemetry import instrument
 from .util.util import autocache
-from .util.util import get_nb_secrets
 from .util.util import get_root_data_path
 from .util.version_compare import make_requires
 
@@ -139,6 +138,14 @@ def _datasites() -> DatasiteRegistry:
 @module_property
 def _settings() -> UserSettings:
     return settings
+
+
+@module_property
+def _test_settings() -> Any:
+    # relative
+    from .util.util import test_settings
+
+    return test_settings()
 
 
 @module_property
