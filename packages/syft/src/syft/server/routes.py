@@ -2,7 +2,10 @@
 import base64
 import binascii
 from collections.abc import AsyncGenerator
+from collections.abc import Callable
+from datetime import datetime
 import logging
+from pathlib import Path
 from typing import Annotated
 
 # third party
@@ -34,12 +37,13 @@ from ..types.uid import UID
 from ..util.telemetry import TRACE_MODE
 from .credentials import SyftVerifyKey
 from .credentials import UserLoginCredentials
+from .uvicorn_settings import UvicornSettings
 from .worker import Worker
 
 logger = logging.getLogger(__name__)
 
 
-def make_routes(worker: Worker) -> APIRouter:
+def make_routes(worker: Worker, settings: UvicornSettings | None = None) -> APIRouter:
     if TRACE_MODE:
         # third party
         try:
@@ -48,6 +52,34 @@ def make_routes(worker: Worker) -> APIRouter:
             from opentelemetry.propagate import extract
         except Exception as e:
             logger.error("Failed to import opentelemetry", exc_info=e)
+
+    def _handle_profile(
+        request: Request, handler_func: Callable, *args: list, **kwargs: dict
+    ) -> Response:
+        if not settings:
+            raise Exception("Server Settings are required to enable profiling")
+        # third party
+        from pyinstrument import Profiler  # Lazy Load
+
+        profiles_dir = Path(settings.profile_dir or Path.cwd()) / "profiles"
+        profiles_dir.mkdir(parents=True, exist_ok=True)
+
+        with Profiler(
+            interval=settings.profile_interval, async_mode="enabled"
+        ) as profiler:
+            response = handler_func(*args, **kwargs)
+
+        timestamp = datetime.now().strftime("%d-%m-%Y-%H:%M:%S")
+        url_path = request.url.path.replace("/api/v2", "").replace("/", "-")
+        profile_output_path = (
+            profiles_dir / f"{settings.name}-{timestamp}{url_path}.html"
+        )
+        profiler.write_html(profile_output_path)
+
+        logger.info(
+            f"Request to {request.url.path} took {profiler.last_session.duration:.2f} seconds"
+        )
+        return response
 
     router = APIRouter()
 
@@ -165,6 +197,13 @@ def make_routes(worker: Worker) -> APIRouter:
                 kind=trace.SpanKind.SERVER,
             ):
                 return handle_syft_new_api(user_verify_key, communication_protocol)
+        elif settings and settings.profile:
+            return _handle_profile(
+                request,
+                handle_syft_new_api,
+                user_verify_key,
+                communication_protocol,
+            )
         else:
             return handle_syft_new_api(user_verify_key, communication_protocol)
 
@@ -188,6 +227,8 @@ def make_routes(worker: Worker) -> APIRouter:
                 kind=trace.SpanKind.SERVER,
             ):
                 return handle_new_api_call(data)
+        elif settings and settings.profile:
+            return _handle_profile(request, handle_new_api_call, data)
         else:
             return handle_new_api_call(data)
 
@@ -281,6 +322,8 @@ def make_routes(worker: Worker) -> APIRouter:
                 kind=trace.SpanKind.SERVER,
             ):
                 return handle_login(email, password, worker)
+        elif settings and settings.profile:
+            return _handle_profile(request, handle_login, email, password, worker)
         else:
             return handle_login(email, password, worker)
 
@@ -325,6 +368,8 @@ def make_routes(worker: Worker) -> APIRouter:
                 kind=trace.SpanKind.SERVER,
             ):
                 return handle_register(data, worker)
+        elif settings and settings.profile:
+            return _handle_profile(request, handle_register, data, worker)
         else:
             return handle_register(data, worker)
 
