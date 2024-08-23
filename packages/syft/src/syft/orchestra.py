@@ -8,10 +8,12 @@ from collections.abc import Callable
 from enum import Enum
 import getpass
 import inspect
+import json
 import logging
 import os
+from pathlib import Path
 import sys
-from typing import Any
+from typing import Any, Optional
 
 # third party
 from IPython.display import display
@@ -325,7 +327,15 @@ class Orchestra:
         background_tasks: bool = False,
         debug: bool = False,
         migrate: bool = False,
+        from_state_folder: Optional[str | Path] = None
     ) -> ServerHandle:
+        if from_state_folder is not None:
+            with open(from_state_folder+'/config.json', 'r') as f:
+                kwargs = json.load(f)
+                server_handle = Orchestra.launch(**kwargs)
+                client = server_handle.login(email="info@openmined.org", password="changethis")
+                client.load_migration_data(from_state_folder+"/migration.blob")
+                return server_handle
         if dev_mode is True:
             thread_workers = True
         os.environ["DEV_MODE"] = str(dev_mode)

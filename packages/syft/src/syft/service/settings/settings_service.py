@@ -1,10 +1,12 @@
 # stdlib
 from string import Template
+from typing import Any
 
 # third party
 from result import Err
 from result import Ok
 from result import Result
+from syft.store.sqlite_document_store import SQLiteStoreConfig
 
 # relative
 from ...abstract_server import ServerSideType
@@ -395,3 +397,39 @@ class SettingsService(AbstractService):
             return SyftError(message="There's no welcome message")
         else:
             return SyftError(message=result.err())
+
+
+    @service_method(
+        path="settings.get_server_config",
+        name="get_server_config",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def get_server_config(
+        self,
+        context: AuthedServiceContext,
+    ) -> dict[str, Any]:
+        server = context.server
+    
+        return {
+            "name": server.name, 
+            "server_type": server.server_type, 
+            # "deploy_to": server.deployment_type_enum, 
+            "server_side_type": server.server_side_type, 
+            # "port": server.port, 
+            "processes": server.processes, 
+            "local_db": isinstance(server.document_store_config, SQLiteStoreConfig), 
+            "dev_mode": server.dev_mode, 
+            "reset": True, # we should be able to get all the objects from migration data 
+            "tail": False, 
+            # "host": server.host, 
+            "enable_warnings": server.enable_warnings, 
+            "n_consumers": server.queue_config.client_config.create_producer, 
+            "thread_workers": server.queue_config.thread_workers, 
+            "create_producer": server.queue_config.client_config.create_producer, 
+            "queue_port": server.queue_config.client_config.queue_port, 
+            "association_request_auto_approval": server.association_request_auto_approval, 
+            "background_tasks": True, 
+            "debug": True, # we also want to debug 
+            "migrate": False, # I think we dont want to migrate?     
+        }
+    
