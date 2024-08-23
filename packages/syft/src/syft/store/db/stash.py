@@ -12,6 +12,7 @@ from result import Result
 import sqlalchemy as sa
 from sqlalchemy import Column
 from sqlalchemy import Row
+from sqlalchemy import Select
 from sqlalchemy import Table
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -140,11 +141,10 @@ class ObjectStash(Generic[SyftT]):
             return table.c.id == field_value
         return table.c.fields[field_name] == func.json_quote(field_value)
 
-    def _get_by_field(
+    def _get_by_fields(
         self,
         credentials: SyftVerifyKey,
-        field_name: str,
-        field_value: str,
+        fields: dict[str, str],
         table: Table | None = None,
         order_by: str | None = None,
         sort_order: str = "asc",
@@ -152,9 +152,14 @@ class ObjectStash(Generic[SyftT]):
         offset: int | None = None,
     ) -> Result[Row, str]:
         table = table if table is not None else self.table
+        filters = []
+        for field_name, field_value in fields.items():
+            filt = self._get_field_filter(field_name, field_value, table=table)
+            filters.append(filt)
+
         stmt = table.select().where(
             sa.and_(
-                self._get_field_filter(field_name, field_value, table=table),
+                sa.and_(*filters),
                 self._get_permission_filter(credentials),
             )
         )
@@ -167,12 +172,53 @@ class ObjectStash(Generic[SyftT]):
     def get_one_by_field(
         self, credentials: SyftVerifyKey, field_name: str, field_value: str
     ) -> Result[SyftT | None, str]:
-        result = self._get_by_field(
-            credentials=credentials, field_name=field_name, field_value=field_value
+        result = self._get_by_fields(
+            credentials=credentials,
+            fields={field_name: field_value},
         ).first()
         if result is None:
             return Ok(None)
         return Ok(self.row_as_obj(result))
+
+    def get_one_by_fields(
+        self,
+        credentials: SyftVerifyKey,
+        fields: dict[str, str],
+    ) -> Result[SyftT | None, str]:
+        result = self._get_by_fields(
+            credentials=credentials,
+            fields=fields,
+        ).first()
+        if result is None:
+            return Ok(None)
+        return Ok(self.row_as_obj(result))
+
+    def get_all_by_fields(
+        self,
+        credentials: SyftVerifyKey,
+        fields: dict[str, str],
+        order_by: str | None = None,
+        sort_order: str = "asc",
+        limit: int | None = None,
+        offset: int | None = None,
+    ) -> Result[list[SyftT], str]:
+        # sanity check if the field is not a list, set etc.
+        for field_name in fields:
+            if field_name not in self.object_type.__annotations__:
+                return Err(
+                    f"Field {field_name} not found in {self.object_type.__name__}"
+                )
+
+        result = self._get_by_fields(
+            credentials=credentials,
+            fields=fields,
+            order_by=order_by,
+            sort_order=sort_order,
+            limit=limit,
+            offset=offset,
+        ).all()
+        objs = [self.row_as_obj(row) for row in result]
+        return Ok(objs)
 
     def get_all_by_field(
         self,
@@ -184,10 +230,9 @@ class ObjectStash(Generic[SyftT]):
         limit: int | None = None,
         offset: int | None = None,
     ) -> Result[list[SyftT], str]:
-        result = self._get_by_field(
+        result = self._get_by_fields(
             credentials=credentials,
-            field_name=field_name,
-            field_value=field_value,
+            fields={field_name: field_value},
             order_by=order_by,
             sort_order=sort_order,
             limit=limit,
@@ -242,7 +287,7 @@ class ObjectStash(Generic[SyftT]):
 
     def _apply_limit_offset(
         self,
-        stmt: Any,
+        stmt: Select,
         limit: int | None = None,
         offset: int | None = None,
     ) -> Any:
@@ -254,7 +299,7 @@ class ObjectStash(Generic[SyftT]):
 
     def _apply_order_by(
         self,
-        stmt: Any,
+        stmt: Select,
         order_by: str | None = None,
         sort_order: str = "asc",
     ) -> Any:
@@ -269,6 +314,16 @@ class ObjectStash(Generic[SyftT]):
             order_by = order_by_col.desc() if sort_order == "desc" else order_by_col
             return stmt.order_by(order_by, default_order_by)
 
+    def _apply_permission_filter(
+        self,
+        stmt: Select,
+        credentials: SyftVerifyKey,
+        has_permission: bool = False,
+    ) -> Any:
+        if not has_permission:
+            stmt = stmt.where(self._get_permission_filter(credentials))
+        return stmt
+
     def get_all(
         self,
         credentials: SyftVerifyKey,
@@ -278,12 +333,9 @@ class ObjectStash(Generic[SyftT]):
         limit: int | None = None,
         offset: int | None = None,
     ) -> Result[list[SyftT], str]:
-        # filter by read permission
-        # join on verify_key
         stmt = self.table.select()
-        if not has_permission:
-            stmt = stmt.where(self._get_permission_filter(credentials))
 
+        stmt = self._apply_permission_filter(stmt, credentials, has_permission)
         stmt = self._apply_order_by(stmt, order_by, sort_order)
         stmt = self._apply_limit_offset(stmt, limit, offset)
 
