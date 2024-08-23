@@ -1,7 +1,7 @@
 # stdlib
 
 # stdlib
-from typing import Any
+from typing import Any, Set
 from typing import Generic
 import uuid
 
@@ -422,44 +422,6 @@ class ObjectStash(Generic[SyftT]):
         self.session.commit()
         return Ok(obj)
 
-    def set(
-        self,
-        credentials: SyftVerifyKey,
-        obj: SyftT,
-        add_permissions: list[ActionObjectPermission] | None = None,
-        add_storage_permission: bool = True,  # TODO: check the default value
-        ignore_duplicates: bool = False,
-    ) -> Result[SyftT, str]:
-        # uid is unique by database constraint
-        uid = obj.id
-
-        if self.exists(credentials, uid) or not self.is_unique(obj):
-            if ignore_duplicates:
-                return Ok(obj)
-            return Err(f"Some fields are not unique for {type(obj).__name__}")
-
-        permissions = self.get_ownership_permissions(uid, credentials)
-        if add_permissions is not None:
-            add_permission_strings = [p.permission_string for p in add_permissions]
-            permissions.extend(add_permission_strings)
-
-        storage_permissions = []
-        if add_storage_permission:
-            storage_permissions.append(
-                self.server_uid,
-            )
-
-        # create the object with the permissions
-        stmt = self.table.insert().values(
-            id=uid,
-            fields=serialize_json(obj),
-            permissions=permissions,
-            storage_permissions=storage_permissions,
-        )
-        self.session.execute(stmt)
-        self.session.commit()
-        return Ok(obj)
-
     def get_ownership_permissions(
         self, uid: UID, credentials: SyftVerifyKey
     ) -> list[str]:
@@ -531,7 +493,7 @@ class ObjectStash(Generic[SyftT]):
         self.session.commit()
         return None
 
-    def _get_storage_permissions_for_uid(self, uid: UID) -> Result[set[UID], str]:
+    def _get_storage_permissions_for_uid(self, uid: UID) -> Result[Set[UID], str]:
         stmt = self.table.select(
             self.table.c.id, self.table.c.storage_permissions
         ).where(self.table.c.id == uid)
@@ -624,3 +586,41 @@ class ObjectStash(Generic[SyftT]):
         stmt = self.table.select(self.table.c.id, self.table.c.permissions)
         results = self.session.execute(stmt).all()
         return Ok({row.id: set(row.permissions) for row in results})
+
+    def set(
+        self,
+        credentials: SyftVerifyKey,
+        obj: SyftT,
+        add_permissions: list[ActionObjectPermission] | None = None,
+        add_storage_permission: bool = True,  # TODO: check the default value
+        ignore_duplicates: bool = False,
+    ) -> Result[SyftT, str]:
+        # uid is unique by database constraint
+        uid = obj.id
+
+        if self.exists(credentials, uid) or not self.is_unique(obj):
+            if ignore_duplicates:
+                return Ok(obj)
+            return Err(f"Some fields are not unique for {type(obj).__name__}")
+
+        permissions = self.get_ownership_permissions(uid, credentials)
+        if add_permissions is not None:
+            add_permission_strings = [p.permission_string for p in add_permissions]
+            permissions.extend(add_permission_strings)
+
+        storage_permissions = []
+        if add_storage_permission:
+            storage_permissions.append(
+                self.server_uid,
+            )
+
+        # create the object with the permissions
+        stmt = self.table.insert().values(
+            id=uid,
+            fields=serialize_json(obj),
+            permissions=permissions,
+            storage_permissions=storage_permissions,
+        )
+        self.session.execute(stmt)
+        self.session.commit()
+        return Ok(obj)

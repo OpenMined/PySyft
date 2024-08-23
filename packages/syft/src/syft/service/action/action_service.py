@@ -10,6 +10,8 @@ from result import Err
 from result import Ok
 from result import Result
 
+from syft.store.document_store import DocumentStore
+
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
@@ -55,8 +57,8 @@ logger = logging.getLogger(__name__)
 
 @serializable(canonical_name="ActionService", version=1)
 class ActionService(AbstractService):
-    def __init__(self, store: ActionObjectStash) -> None:
-        self.store = store
+    def __init__(self, store: DocumentStore) -> None:
+        self.store = ActionObjectStash(store)
 
     @service_method(path="action.np_array", name="np_array")
     def np_array(self, context: AuthedServiceContext, data: Any) -> Any:

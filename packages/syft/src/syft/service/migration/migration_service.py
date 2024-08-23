@@ -20,7 +20,6 @@ from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import StoragePermission
 from ..action.action_store import ActionObjectStash
-from ..action.action_store import KeyValueActionStore
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -133,32 +132,23 @@ class MigrationService(AbstractService):
         document_store_object_types: list[type[SyftObject]] | None = None,
         include_action_store: bool = True,
     ) -> dict[str, StoreMetadata] | SyftError:
-        res = self._get_all_store_metadata(
-            context,
-            document_store_object_types=document_store_object_types,
-            include_action_store=include_action_store,
-        )
-        if res.is_err():
-            return SyftError(message=res.value)
-        else:
-            return res.ok()
+        # res = self._get_all_store_metadata(
+        #     context,
+        #     document_store_object_types=document_store_object_types,
+        #     include_action_store=include_action_store,
+        # )
+        # if res.is_err():
+        #     return SyftError(message=res.value)
+        # else:
+        #     return res.ok()
+        raise Exception("Not implemented")
 
     def _get_partition_from_type(
         self,
         context: AuthedServiceContext,
         object_type: type[SyftObject],
-    ) -> Result[KeyValueActionStore | StorePartition, str]:
-        object_partition: KeyValueActionStore | StorePartition | None = None
-        if issubclass(object_type, ActionObject):
-            object_partition = cast(KeyValueActionStore, context.server.action_store)
-        else:
-            canonical_name = object_type.__canonical_name__  # type: ignore[unreachable]
-            object_partition = self.store.partitions.get(canonical_name)
-
-        if object_partition is None:
-            return Err(f"Object partition not found for {object_type}")  # type: ignore
-
-        return Ok(object_partition)
+    ):
+        return None
 
     def _get_store_metadata(
         self,

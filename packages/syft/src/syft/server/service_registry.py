@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 # relative
 from ..serde.serializable import serializable
 from ..service.action.action_service import ActionService
-from ..service.action.action_store import ActionStore
+from ..service.action.action_store import ActionObjectStash
 from ..service.api.api_service import APIService
 from ..service.attestation.attestation_service import AttestationService
 from ..service.blob_storage.service import BlobStorageService
@@ -110,7 +110,7 @@ class ServiceRegistry:
         service_dict = {}
         for field_name, service_cls in cls.get_service_classes().items():
             svc_kwargs: dict[str, Any] = {}
-            if issubclass(service_cls.store_type, ActionStore):
+            if issubclass(service_cls.store_type, ActionObjectStash):
                 svc_kwargs["store"] = server.action_store
             else:
                 svc_kwargs["store"] = server.document_store

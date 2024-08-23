@@ -40,10 +40,7 @@ from ..protocol.data_protocol import PROTOCOL_TYPE
 from ..protocol.data_protocol import get_data_protocol
 from ..service.action.action_object import Action
 from ..service.action.action_object import ActionObject
-from ..service.action.action_store import ActionStore
-from ..service.action.action_store import DictActionStore
-from ..service.action.action_store import MongoActionStore
-from ..service.action.action_store import SQLiteActionStore
+from ..service.action.action_store import ActionObjectStash
 from ..service.blob_storage.service import BlobStorageService
 from ..service.code.user_code_service import UserCodeService
 from ..service.code.user_code_stash import UserCodeStash
@@ -831,11 +828,8 @@ class Server(AbstractServer):
         )
 
         if isinstance(action_store_config, SQLiteStoreConfig):
-            self.action_store: ActionStore = SQLiteActionStore(
-                server_uid=self.id,
-                store_config=action_store_config,
-                root_verify_key=self.verify_key,
-                document_store=self.document_store,
+            self.action_store: ActionObjectStash = ActionObjectStash(
+                store=self.document_store,
             )
         elif isinstance(action_store_config, MongoStoreConfig):
             # We add the python id of the current server in order
@@ -844,14 +838,14 @@ class Server(AbstractServer):
             # different thread through the garbage collection
             action_store_config.client_config.server_obj_python_id = id(self)
 
-            self.action_store = MongoActionStore(
+            self.action_store = ActionObjectStash(
                 server_uid=self.id,
                 root_verify_key=self.verify_key,
                 store_config=action_store_config,
                 document_store=self.document_store,
             )
         else:
-            self.action_store = DictActionStore(
+            self.action_store = ActionObjectStash(
                 server_uid=self.id,
                 root_verify_key=self.verify_key,
                 document_store=self.document_store,
