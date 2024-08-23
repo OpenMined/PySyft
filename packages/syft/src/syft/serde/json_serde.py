@@ -211,6 +211,8 @@ def _deserialize_pydantic_from_json(
 
         result = {}
         for key, type_ in obj_type.model_fields.items():
+            if key not in obj_dict:
+                continue
             result[key] = deserialize_json(obj_dict[key], type_.annotation)
 
         return obj_type.model_validate(result)
