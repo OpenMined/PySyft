@@ -172,7 +172,6 @@ def test_datasite_connect_to_gateway(
 
 @pytest.mark.network()
 @pytest.mark.skip(reason="Disabled since the dataset search functionality was removed")
-
 def test_dataset_search(set_env_var, gateway_port: int, datasite_1_port: int) -> None:
     """
     Scenario: Connecting a datasite server to a gateway server. The datasite
