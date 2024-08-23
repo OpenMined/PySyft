@@ -940,14 +940,14 @@ class MongoBackingStore(KeyValueBackingStore):
         if result is not None:
             return _deserialize(result[f"{key}"], from_bytes=True)
         else:
-            # raise KeyError(f"{key} does not exist")
-            # return an empty set which is the same with SQLiteBackingStore
-            return set()
+            raise KeyError(f"{key} does not exist")
 
     def __getitem__(self, key: Any) -> Self:
         try:
             return self._get(key)
         except KeyError as e:
+            if self.ddtype is not None:
+                return self.ddtype()
             raise e
 
     def _len(self) -> int:

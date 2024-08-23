@@ -1,5 +1,6 @@
 # stdlib
 from collections.abc import Callable
+from contextlib import asynccontextmanager
 import logging
 import multiprocessing
 import multiprocessing.synchronize
@@ -31,6 +32,7 @@ from .datasite import Datasite
 from .enclave import Enclave
 from .gateway import Gateway
 from .routes import make_routes
+from .server import Server
 from .server import ServerType
 from .utils import get_named_server_uid
 from .utils import remove_temp_dir_for_server
@@ -61,6 +63,17 @@ class AppSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="SYFT_", env_parse_none_str="None")
 
 
+def get_lifetime(worker: Server) -> Callable:
+    @asynccontextmanager
+    async def lifespan(app: FastAPI) -> Any:
+        try:
+            yield
+        finally:
+            worker.stop()
+
+    return lifespan
+
+
 def app_factory() -> FastAPI:
     settings = AppSettings()
 
@@ -85,7 +98,9 @@ def app_factory() -> FastAPI:
     else:
         worker = worker_class(**kwargs)
 
-    app = FastAPI(title=settings.name)
+    worker_lifespan = get_lifetime(worker=worker)
+
+    app = FastAPI(title=settings.name, lifespan=worker_lifespan)
     router = make_routes(worker=worker)
     api_router = APIRouter()
     api_router.include_router(router)
