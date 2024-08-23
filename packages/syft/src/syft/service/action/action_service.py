@@ -179,7 +179,7 @@ class ActionService(AbstractService):
             or has_result_read_permission
         )
 
-        result = self.store.set(
+        result = self.store.set_or_update(
             uid=action_object.id,
             credentials=context.credentials,
             syft_object=action_object,
@@ -933,7 +933,7 @@ class ActionService(AbstractService):
         self, context: AuthedServiceContext, obj_id: UID
     ) -> Result[SyftSuccess, SyftError]:
         """Checks if the given object id exists in the Action Store"""
-        if self.store.exists(context.credentials, obj_id):
+        if self.store.exists(context.credentials, obj_id.id):
             return SyftSuccess(message=f"Object: {obj_id} exists")
         else:
             return SyftError(message=f"Object: {obj_id} does not exist")
@@ -1030,7 +1030,7 @@ class ActionService(AbstractService):
                 if res.is_err():
                     return SyftError(message=res.err())
         else:
-            res = self.store.delete(credentials=context.credentials, uid=uid)
+            res = self.store.delete_by_uid(credentials=context.credentials, uid=uid.id)
             if res.is_err():
                 return SyftError(message=res.err())
 

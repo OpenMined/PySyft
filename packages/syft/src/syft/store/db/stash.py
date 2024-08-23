@@ -426,12 +426,14 @@ class ObjectStash(Generic[SyftT]):
         obj: SyftT,
         add_permissions: list[ActionObjectPermission] | None = None,
         add_storage_permission: bool = True,  # TODO: check the default value
-        ignore_duplicates: bool = False,  # only used in one place, should use upsert instead
+        ignore_duplicates: bool = False,
     ) -> Result[SyftT, str]:
         # uid is unique by database constraint
         uid = obj.id
 
-        if not self.is_unique(obj):
+        if self.exists(credentials, uid) or not self.is_unique(obj):
+            if ignore_duplicates:
+                return Ok(obj)
             return Err(f"Some fields are not unique for {type(obj).__name__}")
 
         permissions = self.get_ownership_permissions(uid, credentials)
@@ -494,20 +496,10 @@ class ObjectStash(Generic[SyftT]):
         return None
 
     def add_permission(self, permission: ActionObjectPermission) -> None:
-        stmt = (
-            self.table.update()
-            .values(
-                permissions=sa.func.array_append(
-                    self.table.c.permissions, permission.permission_string
-                )
-            )
-            .where(
-                sa.and_(
-                    self._get_field_filter("id", permission.uid),
-                    self._get_permission_filter(
-                        permission.credentials, ActionPermission.WRITE
-                    ),
-                )
+        # TODO: handle duplicates
+        stmt = self.table.update(self.table.c.id == permission.uid).values(
+            permissions=sa.func.array_append(
+                self.table.c.permissions, permission.permission_string
             )
         )
         self.session.execute(stmt)
@@ -515,38 +507,62 @@ class ObjectStash(Generic[SyftT]):
         return None
 
     def remove_permission(self, permission: ActionObjectPermission) -> None:
-        stmt = (
-            self.table.update()
-            .values(
-                permissions=sa.func.array_remove(self.table.c.permissions, permission)
-            )
-            .where(
-                sa.and_(
-                    self._get_field_filter("id", permission.uid),
-                    self._get_permission_filter(
-                        permission.credentials,
-                        # since anyone with write permission can add permissions,
-                        # owner check doesn't make sense, it should be write
-                        ActionPermission.OWNER,
-                    ),
-                )
-            )
+        # TODO: handle duplicates
+        stmt = self.table.update(self.table.c.id == permission.uid).values(
+            permissions=sa.func.array_remove(self.table.c.permissions, permission)
         )
         self.session.execute(stmt)
         self.session.commit()
         return None
 
+    def remove_storage_permission(self, permission: StoragePermission) -> None:
+        # TODO
+        return None
+
+    def _get_storage_permissions_for_uid(self, uid: UID) -> Result[set[UID], str]:
+        # TODO
+        return Ok(set())
+
+    def get_all_storage_permissions(self) -> Result[dict[UID, set[UID]], str]:
+        # TODO
+        return Ok({})
+
     def has_permission(self, permission: ActionObjectPermission) -> bool:
+        return self.has_permissions([permission])
+
+    def has_storage_permission(self, permission: StoragePermission) -> bool:
+        # TODO
+        return True
+
+    def has_permissions(self, permissions: list[ActionObjectPermission]) -> bool:
+        # NOTE: maybe we should use a permissions table to check all permissions at once
         # TODO: should check for compound permissions
+        permission_filters = [
+            sa.and_(
+                self._get_field_filter("id", p.uid),
+                self.table.c.permissions.contains(p.permission_string),
+            )
+            for p in permissions
+        ]
+
         stmt = self.table.select().where(
             sa.and_(
-                self._get_field_filter("id", permission.uid),
-                self.table.c.permissions.contains(permission.permission_string),
+                *permission_filters,
             )
         )
         result = self.session.execute(stmt).first()
         return result is not None
 
-    def has_storage_permission(self, permission: StoragePermission) -> bool:
-        # TODO
-        return True
+    def _get_permissions_for_uid(self, uid: UID) -> Result[set[str], str]:
+        stmt = self.table.select(self.table.c.id, self.table.c.permissions).where(
+            self._get_field_filter("id", uid)
+        )
+        result = self.session.execute(stmt).first()
+        if result is None:
+            return Err(f"No permissions found for uid: {uid}")
+        return Ok(set(result.permissions))
+
+    def get_all_permissions(self) -> Result[dict[UID, set[str]], str]:
+        stmt = self.table.select(self.table.c.id, self.table.c.permissions)
+        results = self.session.execute(stmt).all()
+        return Ok({row.id: set(row.permissions) for row in results})

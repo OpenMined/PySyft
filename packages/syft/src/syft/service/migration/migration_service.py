@@ -19,6 +19,7 @@ from ..action.action_object import Action
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import StoragePermission
+from ..action.action_store import ActionObjectStash
 from ..action.action_store import KeyValueActionStore
 from ..context import AuthedServiceContext
 from ..response import SyftError
@@ -549,7 +550,7 @@ class MigrationService(AbstractService):
         )
         result_dict: dict[type[SyftObject], list[SyftObject]] = defaultdict(list)
         action_store = context.server.action_store
-        action_store_objects_result = action_store._all(
+        action_store_objects_result = action_store.get_all(
             context.credentials, has_permission=True
         )
         if action_store_objects_result.is_err():
@@ -580,9 +581,9 @@ class MigrationService(AbstractService):
         self, context: AuthedServiceContext, objects: list[SyftObject]
     ) -> Result[str, str]:
         # Track all object types from action store
-        action_store = context.server.action_store
+        action_store: ActionObjectStash = context.server.action_store
         for obj in objects:
-            res = action_store.set(
+            res = action_store.set_or_update(
                 uid=obj.id, credentials=context.credentials, syft_object=obj
             )
             if res.is_err():
