@@ -49,13 +49,14 @@ class ActionObjectStash(ObjectStash[ActionObject]):
         uid = uid.id  # We only need the UID from LineageID or UID
 
         try:
-            syft_object = self.get_by_uid(
+            obj_or_err = self.get_by_uid(
                 credentials=credentials, uid=uid, has_permission=True
             )  # type: ignore
-            if isinstance(syft_object, TwinObject) and not is_action_data_empty(
-                syft_object.mock
-            ):
-                return Ok(syft_object.mock)
+            if obj_or_err.is_err():
+                return Err(obj_or_err.err())
+            obj = obj_or_err.ok()
+            if isinstance(obj, TwinObject) and not is_action_data_empty(obj.mock):
+                return Ok(obj.mock)
             return Err("No mock")
         except Exception as e:
             return Err(f"Could not find item with uid {uid}, {e}")
