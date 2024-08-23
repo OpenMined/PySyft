@@ -27,6 +27,7 @@ from ..types.errors import SyftException
 from ..types.result import Ok
 from ..types.result import as_result
 from ..types.syft_object import BaseDateTime
+from ..types.syft_object import PartialSyftObject
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
@@ -871,8 +872,13 @@ class NewBaseStash:
         has_permission: bool = False,
     ) -> NewBaseStash.object_type:
         # TODO: See what breaks:
-        obj = self.check_type(obj, self.object_type).unwrap()
+        # this is for when we pass an somelike like a UserUpdate obj
+        if isinstance(obj, PartialSyftObject):
+            current = self.find_one(credentials, id=obj.id).unwrap()
+            obj.apply(to=current)
+            obj = current
 
+        obj = self.check_type(obj, self.object_type).unwrap()
         qk = self.partition.store_query_key(obj)
         return self.partition.update(
             credentials=credentials, qk=qk, obj=obj, has_permission=has_permission

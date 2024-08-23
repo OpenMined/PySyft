@@ -132,9 +132,8 @@ def test_diff_state(low_worker, high_worker):
 
     # this result comes from the cache
     res = client_low_ds.code.compute(blocking=True)
-    # FIX: Remove this when CachedSyftObject is removed
-    assert res.result.get() == 42
-    assert res.result.get() == compute(syft_no_server=True)
+    assert res.get() == 42
+    assert res.get() == compute(syft_no_server=True)
 
 
 def test_skip_deletion(low_worker, high_worker):
@@ -205,9 +204,7 @@ def test_diff_state_with_dataset(low_worker: Worker, high_worker: Worker):
 
     # check loading results for both blocking and non-blocking case
     res_blocking = client_low_ds.code.compute_mean(blocking=True)
-    # res_blocking result is CachedSyftObject
-    # FIX: Remove this when CachedSyftObject is removed
-    res_blocking = res_blocking.result.get()
+    res_blocking = res_blocking.get()
 
     res_non_blocking = client_low_ds.code.compute_mean(blocking=False).wait()
 
@@ -365,8 +362,7 @@ def test_approve_request_on_sync_blocking(low_worker, high_worker):
     assert len(diff_before.batches) == 1 and diff_before.batches[0].root_type is Job
     assert low_client.requests[0].status == RequestStatus.APPROVED
 
-    # FIX: Remove 'result' when CachedSyftObject is removed
-    assert client_low_ds.code.compute().result.get() == 42
+    assert client_low_ds.code.compute().get() == 42
     assert len(client_low_ds.code.compute.jobs) == 1
     # check if user retrieved from cache, instead of re-executing
     assert len(client_low_ds.requests[0].code.output_history) >= 1

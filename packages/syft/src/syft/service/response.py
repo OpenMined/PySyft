@@ -1,4 +1,5 @@
 # stdlib
+from copy import deepcopy
 import traceback
 from typing import Any
 from typing import TYPE_CHECKING
@@ -21,6 +22,10 @@ class SyftResponseMessage(SyftBaseModel):
     message: str
     _bool: bool = True
     require_api_update: bool = False
+    client_warnings: list[str] = []
+
+    def add_warnings_from_context(self, context: "AuthedServiceContext") -> None:
+        self.client_warnings = deepcopy(context.client_warnings)
 
     def is_err(self) -> bool:
         return False
@@ -113,19 +118,25 @@ class SyftError(SyftResponseMessage):
         from ..types.errors import SyftException as NewSyftException
 
         tb = None
-        if isinstance(exc, NewSyftException):
-            error_msg = exc.get_message(context)
-            if include_traceback:
+
+        if include_traceback:
+            if isinstance(exc, NewSyftException):
+                error_msg = exc.get_message(context)
                 tb = exc.get_tb(context)
+            else:
+                # other exceptions
+                lines = traceback.format_exception(exc)
+                tb = "".join(lines)
+                error_msg = lines[-1]
+                print(f"Error: {tb}")
         else:
-            # by default only type
-            error_msg = f"Something unexpected happened server side {type(exc)}"
+            if isinstance(exc, NewSyftException):
+                error_msg = exc.get_message(context)
+            else:
+                # by default only type
+                error_msg = f"Something unexpected happened server side {type(exc)}"
             print(f"Error: {exc}")
             print(traceback.format_exc())
-            if include_traceback:
-                tb = traceback.format_exc()
-                # if they can see the tb, they can also see the exception message
-                error_msg = f"Something unexpected happened server side {exc}"
         return cls(message=error_msg, tb=tb)
 
 

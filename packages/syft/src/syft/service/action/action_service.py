@@ -288,10 +288,10 @@ class ActionService(AbstractService):
 
         # Resolve graph links
         if not isinstance(obj, TwinObject) and resolve_nested and obj.is_link:  # type: ignore [unreachable]
-            if not self.is_resolved(  # type: ignore [unreachable]
-                context, obj.syft_action_data.action_object_id.id
-            ):
-                raise SyftException(public_message="This object is not resolved yet.")
+            # if not self.is_resolved(  # type: ignore [unreachable]
+            #     context, obj.syft_action_data.action_object_id.id
+            # ):
+            #     raise SyftException(public_message="This object is not resolved yet.")
 
             return self.resolve_links(
                 context, obj.syft_action_data.action_object_id.id, twin_mode
@@ -732,13 +732,11 @@ class ActionService(AbstractService):
         """recursively unwraps nested action objects"""
 
         if isinstance(data, list):
-            return [
-                self.unwrap_nested_actionobjects(context, obj).unwrap() for obj in data
-            ]
+            return [self.unwrap_nested_actionobjects(context, obj) for obj in data]
 
         if isinstance(data, dict):
             return {
-                key: self.unwrap_nested_actionobjects(context, obj).unwrap()
+                key: self.unwrap_nested_actionobjects(context, obj)
                 for key, obj in data.items()
             }
 
@@ -794,7 +792,7 @@ class ActionService(AbstractService):
         data = action_object.syft_action_data
 
         if self.contains_nested_actionobjects(data):
-            new_data = self.unwrap_nested_actionobjects(context, data).unwrap()
+            new_data = self.unwrap_nested_actionobjects(context, data)
             # Update existing action object with the new flattened data
             action_object.syft_action_data_cache = new_data
 

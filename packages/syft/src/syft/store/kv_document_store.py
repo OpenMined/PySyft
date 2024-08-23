@@ -431,7 +431,7 @@ class KeyValueStorePartition(StorePartition):
                 errors.append(search_results.err())
 
         if len(errors) > 0:
-            raise SyftException(public_message=" ".join(errors))
+            raise SyftException(public_message=" ".join([str(e) for e in errors]))
 
         if ids is None:
             return []

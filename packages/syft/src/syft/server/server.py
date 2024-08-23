@@ -1201,6 +1201,7 @@ class Server(AbstractServer):
                     )
                 if not isinstance(result, SyftSuccess):
                     result = SyftSuccess(message="", value=result)
+                result.add_warnings_from_context(context)
                 tb = None
             except Exception as e:
                 include_traceback = (

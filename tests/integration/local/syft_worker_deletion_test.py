@@ -12,6 +12,7 @@ import syft as sy
 from syft.orchestra import ClientAlias
 from syft.service.job.job_stash import JobStatus
 from syft.service.response import SyftError
+from syft.types.errors import SyftException
 
 # relative
 from .conftest import matrix
@@ -48,7 +49,7 @@ def test_delete_idle_worker(
     original_workers = client.worker.get_all()
     worker_to_delete = max(original_workers, key=operator.attrgetter("name"))
 
-    client.worker.delete(worker_to_delete.id, force=force).unwrap()
+    client.worker.delete(worker_to_delete.id, force=force)
 
     if force:
         assert (
@@ -101,7 +102,7 @@ def test_delete_worker(client: ClientAlias, force: bool) -> None:
         if time.time() - start > 5:
             raise TimeoutError("Job did not get picked up by any worker.")
 
-    res = client.worker.delete(syft_worker_id, force=force)
+    client.worker.delete(syft_worker_id, force=force)
 
     if not force and len(client.worker.get_all()) > 0:
         assert client.worker.get(syft_worker_id).to_be_deleted
@@ -115,8 +116,9 @@ def test_delete_worker(client: ClientAlias, force: bool) -> None:
 
     start = time.time()
     while True:
-        res = client.worker.get(syft_worker_id)
-        if isinstance(res, SyftError):
+        try:
+            client.worker.get(syft_worker_id)
+        except SyftException:
             break
         if time.time() - start > 5:
             raise TimeoutError("Worker did not get removed from stash.")

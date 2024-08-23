@@ -49,5 +49,6 @@ def test_public_message_property():
 def test_get_message(role, private_msg, public_msg, expected_message):
     mock_context = Mock(AuthedServiceContext)
     mock_context.role = role
+    mock_context.dev_mode = False
     exception = SyftException(private_msg, public_message=public_msg)
     assert exception.get_message(mock_context) == expected_message

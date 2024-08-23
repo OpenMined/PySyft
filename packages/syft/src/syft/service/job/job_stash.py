@@ -93,7 +93,10 @@ class Job(SyncableSyftObject):
 
     id: UID
     server_uid: UID
-    result: Any | None = None
+    result: Any | None = (
+        None  # Currently result can either have the error or the result
+    )
+    # we should split this out into two different fields
     resolved: bool = False
     status: JobStatus = JobStatus.CREATED
     log_id: UID | None = None

@@ -258,6 +258,7 @@ class SettingsService(AbstractService):
     @service_method(
         path="settings.allow_association_request_auto_approval",
         name="allow_association_request_auto_approval",
+        unwrap_on_success=False,
     )
     def allow_association_request_auto_approval(
         self, context: AuthedServiceContext, enable: bool

@@ -9,7 +9,6 @@ from ...store.document_store import DocumentStore
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...store.linked_obj import LinkedObject
-from ...types.cache_object import CachedSyftObject
 from ...types.errors import SyftException
 from ...types.result import Err
 from ...types.result import as_result
@@ -441,7 +440,7 @@ class UserCodeService(AbstractService):
     @service_method(path="code.call", name="call", roles=GUEST_ROLE_LEVEL)
     def call(
         self, context: AuthedServiceContext, uid: UID, **kwargs: Any
-    ) -> CachedSyftObject | ActionObject:
+    ) -> ActionObject:
         """Call a User Code Function"""
         kwargs.pop("result_id", None)
         return self._call(context, uid, **kwargs).unwrap()
@@ -566,10 +565,9 @@ class UserCodeService(AbstractService):
                             # admin overrides policy checks.
                             output_policy_message = output_policy_is_valid.value
 
-                        return CachedSyftObject(
-                            result=outputs,
-                            error_msg=output_policy_message,
-                        )
+                        context.add_warning(output_policy_message)
+                        return outputs
+
                     else:
                         raise SyftException(public_message=output_policy_is_valid.value)
                 raise SyftException(public_message=is_execution_allowed.value)

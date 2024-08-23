@@ -1345,6 +1345,9 @@ class UserCodeStatusChange(Change):
         def recursive_code(server: Any) -> list:
             codes = []
             for obj, new_server in server.values():
+                # TODO: this fixes problems with getting the api for object
+                # we should fix this more properly though
+                obj.syft_server_location = obj.server_uid
                 codes.append(obj.resolve)
                 codes.extend(recursive_code(new_server))
             return codes

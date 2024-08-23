@@ -292,7 +292,7 @@ def test_user_code_mock_execution(worker) -> None:
     with pytest.raises(SyftException) as exc:
         guest_user.allow_mock_execution()
 
-    assert exc.value.public_message == "You are not permitted to perform this action."
+    assert "You are not permitted to perform this action." in exc.value.public_message
 
     # Mock execution fails, no permissions
     with pytest.raises(SyftException) as exc:

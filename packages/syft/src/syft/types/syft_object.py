@@ -809,6 +809,10 @@ class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
     def __iter__(self) -> TupleGenerator:
         yield from ((k, v) for k, v in super().__iter__() if v is not Empty)
 
+    def apply(self, to: SyftObject) -> None:
+        for k, v in self:
+            setattr(to, k, v)
+
 
 def attach_attribute_to_syft_object(result: Any, attr_dict: dict[str, Any]) -> None:
     iterator: Iterable

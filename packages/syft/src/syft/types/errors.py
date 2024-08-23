@@ -78,7 +78,7 @@ class SyftException(Exception):
         Returns:
             str: The private or public message based on the role.
         """
-        if context.role.value >= ServiceRole.DATA_OWNER.value:
+        if context.role.value >= ServiceRole.DATA_OWNER.value or context.dev_mode:
             return self._private_message or self.public
         return self.public
 
@@ -101,8 +101,10 @@ class SyftException(Exception):
         # stdlib
         import traceback
 
-        if overwrite_permission or (
-            context and context.role.value >= ServiceRole.DATA_OWNER.value
+        if (
+            overwrite_permission
+            or (context and context.role.value >= ServiceRole.DATA_OWNER.value)
+            or (context and context.dev_mode)
         ):
             return "".join(traceback.format_exception(self))
         return None

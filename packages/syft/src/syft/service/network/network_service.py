@@ -138,7 +138,7 @@ class NetworkStash(NewBaseUIDStoreStash):
             existing_peer: ServerPeer = self.get_by_uid(
                 credentials=credentials, uid=peer.id
             ).unwrap()
-        except NotFoundException:
+        except SyftException:
             return self.set(credentials, obj=peer).unwrap()
 
         existing_peer.update_routes(peer.server_routes)
@@ -183,6 +183,7 @@ class NetworkService(AbstractService):
         name="exchange_credentials_with",
         roles=GUEST_ROLE_LEVEL,
         warning=CRUDWarning(confirmation=True),
+        unwrap_on_success=False,
     )
     def exchange_credentials_with(
         self,
@@ -222,9 +223,14 @@ class NetworkService(AbstractService):
 
         # Step 3: Check remotely if the self server already exists as a peer
         # Update the peer if it exists, otherwise add it
-        remote_self_server_peer = remote_client.api.services.network.get_peer_by_name(
-            name=self_server_peer.name
-        )
+        try:
+            remote_self_server_peer = (
+                remote_client.api.services.network.get_peer_by_name(
+                    name=self_server_peer.name
+                )
+            )
+        except SyftException:
+            remote_self_server_peer = None
 
         association_request_approved = True
         if isinstance(remote_self_server_peer, ServerPeer):
@@ -250,8 +256,6 @@ class NetworkService(AbstractService):
                 challenge=random_challenge,
                 self_server_route=remote_server_route,
                 verify_key=remote_server_verify_key,
-            ).unwrap(
-                public_message=f"Failed to add peer to remote client: {remote_client.id}."
             )
             association_request_approved = not isinstance(remote_res, Request)
 
@@ -302,11 +306,11 @@ class NetworkService(AbstractService):
             )
 
         # check if the peer already is a server peer
-        existing_peer_res = self.stash.get_by_uid(
-            context.server.verify_key, peer.id
-        ).unwrap()
+        existing_peer_res = self.stash.get_by_uid(context.server.verify_key, peer.id)
 
-        if isinstance(existing_peer := existing_peer_res, ServerPeer):
+        if existing_peer_res.is_ok() and isinstance(
+            existing_peer := existing_peer_res.ok(), ServerPeer
+        ):
             msg = [
                 f"The peer '{peer.name}' is already associated with '{context.server.name}'"
             ]

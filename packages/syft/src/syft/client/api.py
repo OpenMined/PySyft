@@ -37,6 +37,7 @@ from ..service.context import AuthedServiceContext
 from ..service.context import ChangeContext
 from ..service.metadata.server_metadata import ServerMetadataJSON
 from ..service.response import SyftError
+from ..service.response import SyftResponseMessage
 from ..service.response import SyftSuccess
 from ..service.service import UserLibConfigRegistry
 from ..service.service import UserServiceConfigRegistry
@@ -45,7 +46,6 @@ from ..service.service import _signature_error_message
 from ..service.user.user_roles import ServiceRole
 from ..service.warnings import APIEndpointWarning
 from ..service.warnings import WarningContext
-from ..types.cache_object import CachedSyftObject
 from ..types.errors import SyftException
 from ..types.errors import exclude_from_traceback
 from ..types.identity import Identity
@@ -496,7 +496,7 @@ class RemoteUserCodeFunction(RemoteFunction):
         # We can recover the function/method pointer by its UID in server side.
         for i in range(len(args)):
             if isinstance(args[i], RemoteFunction) and args[i].custom_function:
-                args[i] = args[i].custom_function_id()
+                args[i] = args[i].custom_function_id()  # type: ignore
 
         for k, v in kwargs.items():
             if isinstance(v, RemoteFunction) and v.custom_function:
@@ -1074,20 +1074,11 @@ class SyftAPI(SyftObject):
             raise SyftException(public_message="API connection is None")
 
         result = debox_signed_syftapicall_response(signed_result=signed_result).unwrap()
-
-        if isinstance(result, CachedSyftObject):
-            if result.error_msg is not None:
-                if cache_result:
-                    msg = "Loading results from cache."
-                    if result.error_msg:
-                        msg = f"{result.error_msg}. {msg}"
-                    prompt_warning_message(
-                        message=msg,
-                    )
-                else:
-                    raise SyftException(public_message=result.error_msg)
-            if cache_result:
-                result = result.result
+        if isinstance(result, SyftResponseMessage):
+            for warning in result.client_warnings:
+                prompt_warning_message(
+                    message=warning,
+                )
         # we update the api when we create objects that change it
         self.update_api(result)
         return result

@@ -25,6 +25,7 @@ from ..service.dataset.dataset import CreateAsset
 from ..service.dataset.dataset import CreateDataset
 from ..service.dataset.dataset import _check_asset_must_contain_mock
 from ..service.migration.object_migration_state import MigrationData
+from ..service.request.request import Request
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.sync.diff_state import ResolvedSyncState
@@ -319,16 +320,19 @@ class DatasiteClient(SyftClient):
             protocol=protocol,
             reverse_tunnel=reverse_tunnel,
         )
-        if self.metadata:
-            return SyftSuccess(
-                message=(
-                    f"Connected {self.metadata.server_type} "
-                    f"'{self.metadata.name}' to gateway '{client.name}'. "
-                    f"{res.message}"
-                )
-            )
+        if isinstance(res.value, Request):
+            return res.value
         else:
-            return SyftSuccess(message=f"Connected to '{client.name}' gateway")
+            if self.metadata:
+                return SyftSuccess(
+                    message=(
+                        f"Connected {self.metadata.server_type} "
+                        f"'{self.metadata.name}' to gateway '{client.name}'. "
+                        f"{res.message}"
+                    )
+                )
+            else:
+                return SyftSuccess(message=f"Connected to '{client.name}' gateway")
 
     def _get_service_by_name_if_exists(self, name: str) -> APIModule | None:
         if self.api.has_service(name):

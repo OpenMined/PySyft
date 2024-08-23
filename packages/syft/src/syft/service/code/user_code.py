@@ -1727,7 +1727,7 @@ class SecureContext:
             for k, v in kwargs.items():
                 value = ActionObject.from_obj(v)
                 ptr = action_service.set_result_to_store(
-                    value, context, has_result_read_permissions=False
+                    value, context, has_result_read_permission=False
                 ).unwrap()
                 kw2id[k] = ptr.id
             try:
@@ -1740,7 +1740,7 @@ class SecureContext:
                     parent_job_id=context.job_id,
                     has_execute_permissions=True,
                     worker_pool_name=func.worker_pool_name,
-                )
+                ).unwrap()
                 # # set api in global scope to enable using .get(), .wait())
                 # set_api_registry()
             except Exception as e:
