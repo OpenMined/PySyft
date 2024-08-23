@@ -38,6 +38,7 @@ from ...util.markdown import as_markdown_python_code
 from ...util.misc_objs import MarkdownDescription
 from ...util.notebook_ui.icons import Icon
 from ...util.table import itable_template_from_df
+from ...util.util import repr_truncation
 from ..action.action_data_empty import ActionDataEmpty
 from ..action.action_object import ActionObject
 from ..data_subject.data_subject import DataSubject
@@ -134,11 +135,14 @@ class Asset(SyftObject):
             if isinstance(private_data_obj, ActionObject):
                 df = pd.DataFrame(self.data.syft_action_data)
                 data_table_line = itable_template_from_df(df=private_data_obj.head(5))
-
             elif isinstance(private_data_obj, pd.DataFrame):
                 data_table_line = itable_template_from_df(df=private_data_obj.head(5))
             else:
-                data_table_line = private_data_res.ok_value
+                try:
+                    data_table_line = repr_truncation(private_data_obj)
+                except Exception as e:
+                    logger.debug(f"Failed to truncate private data repr. {e}")
+                    data_table_line = private_data_res.ok_value
 
         if isinstance(self.mock, ActionObject):
             df = pd.DataFrame(self.mock.syft_action_data)
@@ -146,7 +150,11 @@ class Asset(SyftObject):
         elif isinstance(self.mock, pd.DataFrame):
             mock_table_line = itable_template_from_df(df=self.mock.head(5))
         else:
-            mock_table_line = self.mock
+            try:
+                mock_table_line = repr_truncation(self.mock)
+            except Exception as e:
+                logger.debug(f"Failed to truncate mock data repr. {e}")
+                mock_table_line = self.mock
             if isinstance(mock_table_line, SyftError):
                 mock_table_line = mock_table_line.message
 
