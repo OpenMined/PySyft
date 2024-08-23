@@ -1022,26 +1022,12 @@ def process_class_code(raw_code: str, class_name: str) -> str:
         keywords=[],
     )
 
-    as_result_name = ast.Name(id="sy.as_result", ctx=ast.Load())
-    syft_exception_name = ast.Name(id="sy.SyftException", ctx=ast.Load())
-    as_result_decorator = ast.Call(
-        func=as_result_name,
-        args=[syft_exception_name],
-        keywords=[],
-    )
-
     new_class = tree.body[0]
     # TODO add this manually
     for stmt in new_class.body:
         if isinstance(stmt, ast.FunctionDef):
             if stmt.name == "__init__":
                 stmt.name = "__user_init__"
-            # if stmt.name == "_is_valid":
-            #     stmt.decorator_list.append(as_result_decorator)
-            # if stmt.name == "filter_kwargs":
-            #     stmt.decorator_list.append(as_result_decorator)
-            # if stmt.name == "transform_kwargs":
-            #     stmt.decorator_list.append(as_result_decorator)
 
     # change the module that the code will reference
     # this is required for the @serializable to mount it in the right path for serde
