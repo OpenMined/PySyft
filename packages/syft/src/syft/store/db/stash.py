@@ -15,6 +15,7 @@ from sqlalchemy import Row
 from sqlalchemy import Select
 from sqlalchemy import Table
 from sqlalchemy import func
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.types import JSON
 from typing_extensions import TypeVar
@@ -478,8 +479,10 @@ class ObjectStash(Generic[SyftT]):
         permissions = permissions_or_err.ok()
         permissions.remove(permission.permission_string)
 
-        stmt = self.table.update(self.table.c.id == permission.uid).values(
-            permissions=list(permissions)
+        stmt = (
+            self.table.update()
+            .where(self.table.c.id == permission.uid)
+            .values(permissions=list(permissions))
         )
         self.session.execute(stmt)
         self.session.commit()
@@ -494,8 +497,10 @@ class ObjectStash(Generic[SyftT]):
         permissions = permissions_or_err.ok()
         permissions.pop(permission.permission_string)
 
-        stmt = self.table.update(self.table.c.id == permission.uid).values(
-            storage_permissions=list(permissions)
+        stmt = (
+            self.table.update()
+            .where(self.table.c.id == permission.uid)
+            .values(storage_permissions=list(permissions))
         )
         self.session.execute(stmt)
         self.session.commit()
@@ -578,16 +583,14 @@ class ObjectStash(Generic[SyftT]):
             self.add_storage_permission(permission)
 
     def _get_permissions_for_uid(self, uid: UID) -> Result[set[str], str]:
-        stmt = self.table.select(self.table.c.id, self.table.c.permissions).where(
-            self._get_field_filter("id", uid)
-        )
-        result = self.session.execute(stmt).first()
+        stmt = select(self.table.c.permissions).where(self.table.c.id == uid)
+        result = self.session.execute(stmt).scalar_one_or_none()
         if result is None:
             return Err(f"No permissions found for uid: {uid}")
-        return Ok(set(result.permissions))
+        return Ok(set(result))
 
     def get_all_permissions(self) -> Result[dict[UID, set[str]], str]:
-        stmt = self.table.select(self.table.c.id, self.table.c.permissions)
+        stmt = select(self.table.c.id, self.table.c.permissions)
         results = self.session.execute(stmt).all()
         return Ok({row.id: set(row.permissions) for row in results})
 

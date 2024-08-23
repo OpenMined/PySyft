@@ -34,12 +34,10 @@ class RequestStash(ObjectStash[Request]):
         credentials: SyftVerifyKey,
         verify_key: SyftVerifyKey,
     ) -> Result[list[Request], str]:
-        if isinstance(verify_key, str):
-            verify_key = SyftVerifyKey.from_string(verify_key)
         return self.get_all_by_field(
             credentials=credentials,
             field_name="requesting_user_verify_key",
-            field_value=verify_key,
+            field_value=str(verify_key),
         )
 
     def get_by_usercode_id(
