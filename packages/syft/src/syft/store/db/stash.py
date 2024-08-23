@@ -15,7 +15,6 @@ from sqlalchemy import Row
 from sqlalchemy import Select
 from sqlalchemy import Table
 from sqlalchemy import func
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.types import JSON
 from typing_extensions import TypeVar
@@ -455,18 +454,13 @@ class ObjectStash(Generic[SyftT]):
         return None
 
     def add_permission(self, permission: ActionObjectPermission) -> None:
-        # handle duplicates by removing the permission first
         stmt = (
             self.table.update()
             .where(self.table.c.id == permission.uid)
             .values(
-                permissions=func.array_append(
-                    func.array_remove(
-                        select(self.table.c.permissions)
-                        .where(self.table.c.id == permission.uid)
-                        .scalar_subquery(),
-                        permission.permission_string,
-                    ),
+                permissions=func.json_insert(
+                    self.table.c.permissions,
+                    "$[#]",
                     permission.permission_string,
                 )
             )
@@ -475,19 +469,33 @@ class ObjectStash(Generic[SyftT]):
         self.session.execute(stmt)
         self.session.commit()
 
-    def remove_permission(self, permission: ActionObjectPermission) -> None:
+    def remove_permission(
+        self, permission: ActionObjectPermission
+    ) -> Result[None, str]:
+        permissions_or_err = self._get_permissions_for_uid(permission.uid)
+        if permissions_or_err.is_err():
+            return permissions_or_err
+        permissions = permissions_or_err.ok()
+        permissions.remove(permission.permission_string)
+
         stmt = self.table.update(self.table.c.id == permission.uid).values(
-            permissions=sa.func.array_remove(self.table.c.permissions, permission)
+            permissions=list(permissions)
         )
         self.session.execute(stmt)
         self.session.commit()
         return None
 
-    def remove_storage_permission(self, permission: StoragePermission) -> None:
+    def remove_storage_permission(
+        self, permission: StoragePermission
+    ) -> Result[None, str]:
+        permissions_or_err = self._get_storage_permissions_for_uid(permission.uid)
+        if permissions_or_err.is_err():
+            return permissions_or_err
+        permissions = permissions_or_err.ok()
+        permissions.pop(permission.permission_string)
+
         stmt = self.table.update(self.table.c.id == permission.uid).values(
-            storage_permissions=sa.func.array_remove(
-                self.table.c.storage_permissions, permission.permission_string
-            )
+            storage_permissions=list(permissions)
         )
         self.session.execute(stmt)
         self.session.commit()
@@ -554,14 +562,10 @@ class ObjectStash(Generic[SyftT]):
             self.table.update()
             .where(self.table.c.id == permission.uid)
             .values(
-                storage_permissions=func.array_append(
-                    func.array_remove(
-                        select(self.table.c.storage_permissions)
-                        .where(self.table.c.id == permission.uid)
-                        .scalar_subquery(),
-                        permission.server_uid,
-                    ),
-                    permission.server_uid,
+                storage_permissions=func.json_insert(
+                    self.table.c.storage_permissions,
+                    "$[#]",
+                    permission.permission_string,
                 )
             )
         )
