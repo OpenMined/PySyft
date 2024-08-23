@@ -566,7 +566,7 @@ class UserCodeService(AbstractService):
                             output_policy_message = output_policy_is_valid.value
 
                         context.add_warning(output_policy_message)
-                        return outputs
+                        return outputs  # type: ignore
 
                     else:
                         raise SyftException(public_message=output_policy_is_valid.value)

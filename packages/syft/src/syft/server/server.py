@@ -621,7 +621,7 @@ class Server(AbstractServer):
             message_handler,
             address=address,
             service_name=service_name,
-            worker_stash=self.worker_stash,
+            worker_stash=self.worker_stash,  # type: ignore
             syft_worker_id=syft_worker_id,
         )
         consumer.run()

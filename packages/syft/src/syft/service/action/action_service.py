@@ -293,7 +293,7 @@ class ActionService(AbstractService):
             # ):
             #     raise SyftException(public_message="This object is not resolved yet.")
 
-            return self.resolve_links(
+            return self.resolve_links(  # type: ignore
                 context, obj.syft_action_data.action_object_id.id, twin_mode
             ).unwrap()
 
