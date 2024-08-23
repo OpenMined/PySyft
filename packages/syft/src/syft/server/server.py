@@ -608,6 +608,31 @@ class Server(AbstractServer):
                         message_handler=message_handler,
                     )
 
+            if self.in_memory_workers:
+                self.start_in_memory_workers(
+                    address=address, message_handler=message_handler
+                )
+
+    def start_in_memory_workers(
+        self, address: str, message_handler: type[AbstractMessageHandler]
+    ) -> None:
+        """Starts in-memory workers for the server."""
+
+        worker_pools = self.pool_stash.get_all(credentials=self.verify_key).ok()
+        for worker_pool in worker_pools:
+            # Skip the default worker pool
+            if worker_pool.name == DEFAULT_WORKER_POOL_NAME:
+                continue
+
+            # Create consumers for each worker pool
+            for linked_worker in worker_pool.worker_list:
+                self.add_consumer_for_service(
+                    service_name=worker_pool.name,
+                    syft_worker_id=linked_worker.object_uid,
+                    address=address,
+                    message_handler=message_handler,
+                )
+
     def add_consumer_for_service(
         self,
         service_name: str,
