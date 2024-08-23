@@ -52,10 +52,8 @@ class CodeHistoryStash(ObjectStash[CodeHistory]):
     def get_by_verify_key(
         self, credentials: SyftVerifyKey, user_verify_key: SyftVerifyKey
     ) -> Result[CodeHistory | None, str]:
-        if not isinstance(user_verify_key, str):
-            user_verify_key = str(user_verify_key)
         return self.get_all_by_field(
             credentials=credentials,
             field_name="user_verify_key",
-            field_value=user_verify_key,
+            field_value=str(user_verify_key),
         )
