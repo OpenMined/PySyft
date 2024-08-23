@@ -10,11 +10,10 @@ from result import Err
 from result import Ok
 from result import Result
 
-from syft.store.document_store import DocumentStore
-
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
+from ...store.document_store import DocumentStore
 from ...types.datetime import DateTime
 from ...types.syft_object import SyftObject
 from ...types.twin_object import TwinObject

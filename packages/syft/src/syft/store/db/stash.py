@@ -1,7 +1,7 @@
 # stdlib
 
 # stdlib
-from typing import Any, Set
+from typing import Any
 from typing import Generic
 import uuid
 
@@ -493,7 +493,7 @@ class ObjectStash(Generic[SyftT]):
         self.session.commit()
         return None
 
-    def _get_storage_permissions_for_uid(self, uid: UID) -> Result[Set[UID], str]:
+    def _get_storage_permissions_for_uid(self, uid: UID) -> Result[set[UID], str]:
         stmt = self.table.select(
             self.table.c.id, self.table.c.storage_permissions
         ).where(self.table.c.id == uid)

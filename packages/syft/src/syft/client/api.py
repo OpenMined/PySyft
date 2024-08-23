@@ -1069,7 +1069,7 @@ class SyftAPI(SyftObject):
             if result.is_ok():
                 result = result.ok()
             else:
-                result = result.err()
+                return result
         # we update the api when we create objects that change it
         self.update_api(result)
         return result

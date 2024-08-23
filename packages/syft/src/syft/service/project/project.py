@@ -1274,12 +1274,12 @@ class ProjectSubmit(SyftObject):
             projects_map = self._create_projects(self.clients)
 
             # bootstrap project with pending events on leader server's project
-            self._bootstrap_events(projects_map[leader])
+            self._bootstrap_events(projects_map[leader.id])
 
             if return_all_projects:
                 return list(projects_map.values())
 
-            return projects_map[leader]
+            return projects_map[leader.id]
         except SyftException as exp:
             return SyftError(message=str(exp))
 
@@ -1316,7 +1316,7 @@ class ProjectSubmit(SyftObject):
             result = client.api.services.project.create_project(project=self)
             if isinstance(result, SyftError):
                 raise SyftException(result.message)
-            projects[client] = result
+            projects[client.id] = result
 
         return projects
 

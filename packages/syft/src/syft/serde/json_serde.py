@@ -217,6 +217,7 @@ def _deserialize_pydantic_from_json(
 
         return obj_type.model_validate(result)
     except Exception as e:
+        print(f"Failed to deserialize Pydantic model: {e}")
         print(json.dumps(obj_dict, indent=2))
         raise ValueError(f"Failed to deserialize Pydantic model: {e}")
 

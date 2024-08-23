@@ -13,11 +13,6 @@ from result import Ok
 from result import Result
 from typing_extensions import Self
 
-from syft.service.action.action_permissions import (
-    ActionObjectPermission,
-    ActionPermission,
-)
-
 # relative
 from ...abstract_server import ServerSideType
 from ...client.api import APIRegistry
@@ -45,6 +40,8 @@ from ...util.markdown import markdown_as_class_with_fields
 from ...util.notebook_ui.icons import Icon
 from ...util.util import prompt_warning_message
 from ..action.action_object import ActionObject
+from ..action.action_permissions import ActionObjectPermission
+from ..action.action_permissions import ActionPermission
 from ..action.action_service import ActionService
 from ..blob_storage.service import BlobStorageService
 from ..code.user_code import UserCode

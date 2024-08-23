@@ -279,10 +279,10 @@ class Asset(SyftObject):
         if api is None or api.services is None:
             return Ok(None)
         res = api.services.action.get(self.action_id)
-        if self.has_permission(res):
-            return Ok(res.syft_action_data)
-        else:
+        if isinstance(res, Err):
             return Err("You do not have permission to access private data.")
+        else:
+            return Ok(res.syft_action_data)
 
     @property
     def data(self) -> Any:
