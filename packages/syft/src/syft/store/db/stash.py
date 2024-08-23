@@ -45,12 +45,13 @@ T = TypeVar("T")
 
 class ObjectStash(Generic[SyftT]):
     object_type: type[SyftT]
+    table: Table
 
     def __init__(self, store: DocumentStore) -> None:
         self.server_uid = store.server_uid
         self.root_verify_key = store.root_verify_key
         # is there a better way to init the table
-        _ = self.table
+        self.table = self._create_table()
         self.db = SQLiteDBManager(self.server_uid)
 
     def check_type(self, obj: T, type_: type) -> Result[T, str]:
@@ -64,8 +65,7 @@ class ObjectStash(Generic[SyftT]):
     def session(self) -> Session:
         return self.db.session
 
-    @property
-    def table(self) -> Table:
+    def _create_table(self) -> Table:
         # need to call Base.metadata.create_all(engine) to create the table
         table_name = self.object_type.__canonical_name__
         if table_name not in Base.metadata.tables:
@@ -115,17 +115,22 @@ class ObjectStash(Generic[SyftT]):
             return result.id == obj.id
         return True
 
+    def exists(self, credentials: SyftVerifyKey, uid: UID) -> bool:
+        # TODO needs credentials check?
+        # TODO use COUNT(*) instead of SELECT
+        stmt = self.table.select().where(self._get_field_filter("id", uid))
+        result = self.session.execute(stmt).first()
+        return result is not None
+
     def get_by_uid(
-        self, credentials: SyftVerifyKey, uid: UID
+        self, credentials: SyftVerifyKey, uid: UID, has_permission: bool = False
     ) -> Result[SyftT | None, str]:
-        result = self.session.execute(
-            self.table.select().where(
-                sa.and_(
-                    self._get_field_filter("id", uid),
-                    self._get_permission_filter(credentials),
-                )
-            )
-        ).first()
+        # TODO implement has_permission
+        stmt = self.table.select()
+        stmt = stmt.where(self._get_field_filter("id", uid))
+        stmt = self._apply_permission_filter(stmt, credentials, has_permission)
+        result = self.session.execute(stmt).first()
+
         if result is None:
             return Ok(None)
         return Ok(self.row_as_obj(result))
@@ -150,6 +155,7 @@ class ObjectStash(Generic[SyftT]):
         sort_order: str = "asc",
         limit: int | None = None,
         offset: int | None = None,
+        has_permission: bool = False,
     ) -> Result[Row, str]:
         table = table if table is not None else self.table
         filters = []
@@ -157,11 +163,10 @@ class ObjectStash(Generic[SyftT]):
             filt = self._get_field_filter(field_name, field_value, table=table)
             filters.append(filt)
 
-        stmt = table.select().where(
-            sa.and_(
-                sa.and_(*filters),
-                self._get_permission_filter(credentials),
-            )
+        stmt = table.select()
+        stmt = stmt.where(sa.and_(*filters))
+        stmt = self._apply_permission_filter(
+            stmt, credentials, has_permission=has_permission
         )
         stmt = self._apply_order_by(stmt, order_by, sort_order)
         stmt = self._apply_limit_offset(stmt, limit, offset)
@@ -170,11 +175,16 @@ class ObjectStash(Generic[SyftT]):
         return result
 
     def get_one_by_field(
-        self, credentials: SyftVerifyKey, field_name: str, field_value: str
+        self,
+        credentials: SyftVerifyKey,
+        field_name: str,
+        field_value: str,
+        has_permission: bool = False,
     ) -> Result[SyftT | None, str]:
         result = self._get_by_fields(
             credentials=credentials,
             fields={field_name: field_value},
+            has_permission=has_permission,
         ).first()
         if result is None:
             return Ok(None)
@@ -184,10 +194,12 @@ class ObjectStash(Generic[SyftT]):
         self,
         credentials: SyftVerifyKey,
         fields: dict[str, str],
+        has_permission: bool = False,
     ) -> Result[SyftT | None, str]:
         result = self._get_by_fields(
             credentials=credentials,
             fields=fields,
+            has_permission=has_permission,
         ).first()
         if result is None:
             return Ok(None)
@@ -201,6 +213,7 @@ class ObjectStash(Generic[SyftT]):
         sort_order: str = "asc",
         limit: int | None = None,
         offset: int | None = None,
+        has_permission: bool = False,
     ) -> Result[list[SyftT], str]:
         # sanity check if the field is not a list, set etc.
         for field_name in fields:
@@ -216,6 +229,7 @@ class ObjectStash(Generic[SyftT]):
             sort_order=sort_order,
             limit=limit,
             offset=offset,
+            has_permission=has_permission,
         ).all()
         objs = [self.row_as_obj(row) for row in result]
         return Ok(objs)
@@ -229,6 +243,7 @@ class ObjectStash(Generic[SyftT]):
         sort_order: str = "asc",
         limit: int | None = None,
         offset: int | None = None,
+        has_permission: bool = False,
     ) -> Result[list[SyftT], str]:
         result = self._get_by_fields(
             credentials=credentials,
@@ -237,6 +252,7 @@ class ObjectStash(Generic[SyftT]):
             sort_order=sort_order,
             limit=limit,
             offset=offset,
+            has_permission=has_permission,
         ).all()
         objs = [self.row_as_obj(row) for row in result]
         return Ok(objs)
@@ -250,16 +266,14 @@ class ObjectStash(Generic[SyftT]):
         sort_order: str = "asc",
         limit: int | None = None,
         offset: int | None = None,
+        has_permission: bool = False,
     ) -> Result[list[SyftT], str]:
         # TODO write filter logic, merge with get_all
 
         stmt = self.table.select().where(
-            sa.and_(
-                self.table.c.fields[field_name].contains(func.json_quote(field_value)),
-                self._get_permission_filter(credentials),
-            )
+            self.table.c.fields[field_name].contains(func.json_quote(field_value)),
         )
-
+        stmt = self._apply_permission_filter(stmt, credentials, has_permission)
         stmt = self._apply_order_by(stmt, order_by, sort_order)
         stmt = self._apply_limit_offset(stmt, limit, offset)
 
@@ -387,12 +401,17 @@ class ObjectStash(Generic[SyftT]):
         if not self.is_unique(obj):
             return Err(f"Some fields are not unique for {type(obj).__name__}")
 
+        has_permission_stmt = (
+            self._get_permission_filter(credentials, ActionPermission.WRITE)
+            if has_permission
+            else sa.literal(True)
+        )
         stmt = (
             self.table.update()
             .where(
                 sa.and_(
                     self._get_field_filter("id", obj.id),
-                    self._get_permission_filter(credentials, ActionPermission.WRITE),
+                    has_permission_stmt,
                 )
             )
             .values(fields=serialize_json(obj))
@@ -518,6 +537,7 @@ class ObjectStash(Generic[SyftT]):
         return None
 
     def has_permission(self, permission: ActionObjectPermission) -> bool:
+        # TODO: should check for compound permissions
         stmt = self.table.select().where(
             sa.and_(
                 self._get_field_filter("id", permission.uid),
