@@ -341,7 +341,7 @@ class RemoteFunction(SyftObject):
 
         allowed = self.warning.show() if self.warning else True
         if not allowed:
-            return
+            return None
         result = self.make_call(api_call=api_call, cache_result=cache_result)
 
         # TODO: annotate this on the service method decorator
@@ -641,8 +641,7 @@ def generate_remote_lib_function(
             blocking=blocking,
         )
 
-        result = wrapper_make_call(api_call=api_call)
-        return result
+        return wrapper_make_call(api_call=api_call)
 
     wrapper.__ipython_inspector_signature_override__ = signature
     return wrapper
@@ -817,10 +816,9 @@ def unwrap_and_migrate_annotation(annotation: Any, object_versions: dict) -> Any
             downgrade_klass_name = SyftMigrationRegistry.__migration_version_registry__[
                 annotation.__canonical_name__
             ][downgrade_to_version]
-            new_arg = index_syft_by_module_name(downgrade_klass_name)
-            return new_arg
-        else:
-            return annotation
+            return index_syft_by_module_name(downgrade_klass_name)
+            
+        return annotation
 
     migrated_annotations = []
     for arg in args:

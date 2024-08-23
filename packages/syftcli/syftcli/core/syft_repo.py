@@ -61,8 +61,7 @@ class SyftRepo:
         """
 
         results = SyftRepo.get_asset(rel_ver, SyftRepo.Assets.MANIFEST)
-        parsed = yaml.safe_load(results.text)
-        return parsed
+        return yaml.safe_load(results.text)
 
     @staticmethod
     def download_asset(asset_name: str, rel_ver: str, dl_dir: str) -> Path:

@@ -558,7 +558,7 @@ class Server(AbstractServer):
     def init_queue_manager(self, queue_config: QueueConfig) -> None:
         MessageHandlers = [APICallMessageHandler]
         if self.is_subprocess:
-            return None
+            return
 
         self.queue_manager = QueueManager(config=queue_config)
         for message_handler in MessageHandlers:

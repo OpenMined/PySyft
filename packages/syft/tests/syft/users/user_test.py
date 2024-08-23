@@ -64,8 +64,7 @@ def manually_call_service(worker, client, service, args=None, kwargs=None):
     api_call = SyftAPICall(server_uid=worker.id, path=service, args=args, kwargs=kwargs)
     signed_call = api_call.sign(client.api.signing_key)
     signed_result = client.api.connection.make_call(signed_call)
-    result = signed_result.message.data
-    return result
+    return signed_result.message.data
 
 
 @pytest.fixture

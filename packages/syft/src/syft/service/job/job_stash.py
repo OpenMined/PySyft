@@ -332,7 +332,7 @@ class Job(SyncableSyftObject):
         )
         job: Job | None = api.make_call(call)
         if job is None:
-            return None
+            return
         self.resolved = job.resolved
         if job.resolved:
             self.result = job.result
