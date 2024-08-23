@@ -4,10 +4,14 @@
 from collections.abc import Collection
 import logging
 
+# third party
+from IPython.display import display
+
 # relative
 from ..abstract_server import ServerSideType
 from ..server.credentials import SyftVerifyKey
 from ..service.response import SyftSuccess
+from ..service.response import SyftWarning
 from ..service.sync.diff_state import ObjectDiffBatch
 from ..service.sync.diff_state import ServerDiff
 from ..service.sync.diff_state import SyncInstruction
@@ -45,6 +49,25 @@ def sync(
         exclude_types=exclude_types,
         hide_usercode=hide_usercode,
     )
+
+    if diff.low_state.errors:
+        error_list_text = "<br>".join("- " + x for x in diff.low_state.errors.values())
+        warning = SyftWarning(
+            message=(
+                f"Server {to_client.name} had the following errors while trying to retrieve its sync state. "
+                + f"Objects corresponding to these errors will be ignored in comparison.<br>{error_list_text}"
+            )
+        )
+        display(warning)
+    if diff.high_state.errors:
+        error_list_text = "<br>".join("- " + x for x in diff.high_state.errors.values())
+        warning = SyftWarning(
+            message=(
+                f"Server {to_client.name} had the following errors while trying to retrieve its sync state. "
+                + f"Objects corresponding to these errors will be ignored in comparison.<br>{error_list_text}"
+            )
+        )
+        display(warning)
 
     return diff.resolve()
 
