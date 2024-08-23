@@ -1,7 +1,6 @@
 # stdlib
 from collections import defaultdict
 import sys
-from typing import cast
 
 # third party
 from result import Err
@@ -132,6 +131,7 @@ class MigrationService(AbstractService):
         document_store_object_types: list[type[SyftObject]] | None = None,
         include_action_store: bool = True,
     ) -> dict[str, StoreMetadata] | SyftError:
+        # FIXME
         # res = self._get_all_store_metadata(
         #     context,
         #     document_store_object_types=document_store_object_types,
@@ -143,19 +143,13 @@ class MigrationService(AbstractService):
         #     return res.ok()
         raise Exception("Not implemented")
 
-    def _get_partition_from_type(
-        self,
-        context: AuthedServiceContext,
-        object_type: type[SyftObject],
-    ):
-        return None
-
     def _get_store_metadata(
         self,
         context: AuthedServiceContext,
         object_type: type[SyftObject],
     ) -> Result[StoreMetadata, str]:
-        object_partition = self._get_partition_from_type(context, object_type)
+        # FIXME
+        object_partition = ...
         if object_partition.is_err():
             return object_partition
         object_partition = object_partition.ok()

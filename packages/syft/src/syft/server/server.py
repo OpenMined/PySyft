@@ -839,16 +839,11 @@ class Server(AbstractServer):
             action_store_config.client_config.server_obj_python_id = id(self)
 
             self.action_store = ActionObjectStash(
-                server_uid=self.id,
-                root_verify_key=self.verify_key,
-                store_config=action_store_config,
-                document_store=self.document_store,
+                store=self.document_store,
             )
         else:
             self.action_store = ActionObjectStash(
-                server_uid=self.id,
-                root_verify_key=self.verify_key,
-                document_store=self.document_store,
+                store=self.document_store,
             )
 
         self.action_store_config = action_store_config

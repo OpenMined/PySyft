@@ -17,6 +17,7 @@ from ..response import SyftSuccess
 from .action_object import ActionObject
 from .action_object import is_action_data_empty
 from .action_permissions import ActionObjectEXECUTE
+from .action_permissions import ActionObjectPermission
 from .action_permissions import ActionObjectREAD
 from .action_permissions import ActionObjectWRITE
 from .action_permissions import StoragePermission
@@ -109,7 +110,7 @@ class ActionObjectStash(ObjectStash[ActionObject]):
         uid = uid.id  # We only need the UID from LineageID or UID
 
         if self.exists(credentials=credentials, uid=uid):
-            permissions = []
+            permissions: list[ActionObjectPermission] = []
             if has_result_read_permission:
                 permissions.append(ActionObjectREAD(uid=uid, credentials=credentials))
             else:
