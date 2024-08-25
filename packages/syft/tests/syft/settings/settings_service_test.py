@@ -24,6 +24,9 @@ from syft.service.response import SyftSuccess
 from syft.service.service import _SIGNATURE_ERROR_MESSAGE
 from syft.service.settings.settings import ServerSettings
 from syft.service.settings.settings import ServerSettingsUpdate
+from syft.service.settings.settings_service import (
+    _NOTIFICATIONS_ENABLED_WIHOUT_CREDENTIALS_ERROR,
+)
 from syft.service.settings.settings_service import SettingsService
 from syft.service.settings.settings_stash import SettingsStash
 from syft.service.user.user_roles import ServiceRole
@@ -435,3 +438,12 @@ def test_invalid_args_error_message(root_datasite_client: DatasiteClient) -> Non
     settings = root_datasite_client.api.services.settings.get()
     assert settings.name == update_args["name"]
     assert settings.organization == update_args["organization"]
+
+
+def test_notifications_enabled_without_emails_credentials_not_allowed(
+    root_datasite_client: DatasiteClient,
+) -> None:
+    res = root_datasite_client.api.services.settings.update(notifications_enabled=True)
+
+    assert isinstance(res, SyftError)
+    assert _NOTIFICATIONS_ENABLED_WIHOUT_CREDENTIALS_ERROR in res.message

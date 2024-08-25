@@ -36,6 +36,14 @@ from .settings import ServerSettings
 from .settings import ServerSettingsUpdate
 from .settings_stash import SettingsStash
 
+# for testing purpose
+_NOTIFICATIONS_ENABLED_WIHOUT_CREDENTIALS_ERROR = (
+    "Failed to enable notification. "
+    "Email credentials are invalid or have not been set. "
+    "Please use `enable_notifications` from `user_service` "
+    "to set the correct email credentials."
+)
+
 
 @serializable(canonical_name="SettingsService", version=1)
 class SettingsService(AbstractService):
@@ -154,12 +162,7 @@ class SettingsService(AbstractService):
                         ).is_err()
                     ):
                         return SyftError(
-                            message=(
-                                "Failed to enable notification. "
-                                "Email credentials are invalid or have not been set. "
-                                "Please use `enable_notifications` from `user_service` "
-                                "to set the correct email credentials."
-                            )
+                            message=_NOTIFICATIONS_ENABLED_WIHOUT_CREDENTIALS_ERROR
                         )
                     result = notifier_service.set_notifier(
                         context, active=settings.notifications_enabled
