@@ -53,4 +53,3 @@ jobs:
       - name: Check Protocol Version
         run: |
           tox -e syft.protocol.check
-
