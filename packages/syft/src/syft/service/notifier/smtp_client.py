@@ -49,7 +49,7 @@ class SMTPClient(BaseModel):
     @classmethod
     def check_credentials(
         cls, server: str, port: int, username: str, password: str
-    ) -> Result[Ok, Err]:
+    ) -> Result[str, Exception]:
         """Check if the credentials are valid.
 
         Returns:

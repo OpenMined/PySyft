@@ -78,7 +78,7 @@ class EmailNotifier(BaseNotifier):
         password: str,
         server: str,
         port: int = 587,
-    ) -> Result[Ok, Err]:
+    ) -> Result[str, Exception]:
         return SMTPClient.check_credentials(
             server=server,
             port=port,
@@ -226,7 +226,7 @@ class NotifierSettings(SyftObject):
         password: str,
         server: str,
         port: int,
-    ) -> Result[Ok, Err]:
+    ) -> Result[str, Exception]:
         return self.notifiers[NOTIFIERS.EMAIL].check_credentials(
             server=server,
             port=port,

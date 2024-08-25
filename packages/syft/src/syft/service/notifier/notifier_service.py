@@ -69,7 +69,7 @@ class NotifierService(AbstractService):
             app=notifications[NOTIFIERS.APP],
         )
 
-    def set_notifier(
+    def _set_notifier(
         self, context: AuthedServiceContext, active: bool
     ) -> SyftSuccess | SyftError:
         result = self.stash.get(credentials=context.credentials)
