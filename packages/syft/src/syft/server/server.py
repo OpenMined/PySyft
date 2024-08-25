@@ -621,7 +621,7 @@ class Server(AbstractServer):
         """Starts in-memory workers for the server."""
 
         worker_pools = self.pool_stash.get_all(credentials=self.verify_key).ok()
-        for worker_pool in worker_pools:
+        for worker_pool in worker_pools: #type: ignore
             # Skip the default worker pool
             if worker_pool.name == DEFAULT_WORKER_POOL_NAME:
                 continue
