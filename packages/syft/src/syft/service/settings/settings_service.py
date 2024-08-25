@@ -132,7 +132,7 @@ class SettingsService(AbstractService):
                 )
 
                 # If notifications_enabled is present in the update, we need to update the notifier settings
-                if settings.notifications_enabled is not Empty:
+                if settings.notifications_enabled is not Empty:  # type: ignore[comparison-overlap]
                     if not (notifier_settings := notifier_service.settings(context)):
                         return SyftError(
                             message=(
@@ -140,9 +140,18 @@ class SettingsService(AbstractService):
                                 "Please use `enable_notifications` from `user_service`."
                             )
                         )
-                    if (
-                        settings.notifications_enabled
-                        and notifier_settings.validate_email_credentials().is_err()
+
+                    if settings.notifications_enabled and (
+                        not (
+                            notifier_settings.email_username
+                            and notifier_settings.email_password
+                        )
+                        or notifier_settings.validate_email_credentials(
+                            notifier_settings.email_username,
+                            notifier_settings.email_password,
+                            notifier_settings.email_server,
+                            notifier_settings.email_port,
+                        ).is_err()
                     ):
                         return SyftError(
                             message=(
