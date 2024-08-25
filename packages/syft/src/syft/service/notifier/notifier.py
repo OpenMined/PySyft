@@ -76,12 +76,16 @@ class EmailNotifier(BaseNotifier):
         server: str,
         port: int = 587,
     ) -> bool:
-        return SMTPClient.check_credentials(
-            server=server,
-            port=port,
-            username=username,
-            password=password,
-        ).unwrap()
+        try:
+            SMTPClient.check_credentials(
+                server=server,
+                port=port,
+                username=username,
+                password=password,
+            ).unwrap()
+            return True
+        except Exception:
+            return False
 
     @as_result(SyftException)
     def send(

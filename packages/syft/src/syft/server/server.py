@@ -488,7 +488,7 @@ class Server(AbstractServer):
             blob_storage_service = self.get_service(BlobStorageService)
             remote_profiles = blob_storage_service.remote_profile_stash.get_all(
                 credentials=self.signing_key.verify_key, has_permission=True
-            )
+            ).unwrap()
             for remote_profile in remote_profiles:
                 self.blob_store_config.client_config.remote_profiles[
                     remote_profile.profile_name
