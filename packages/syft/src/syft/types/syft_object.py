@@ -8,6 +8,8 @@ from collections.abc import Mapping
 from collections.abc import Sequence
 from collections.abc import Set
 from datetime import datetime
+from datetime import timedelta
+from datetime import timezone
 from functools import cache
 from functools import total_ordering
 from hashlib import sha256
@@ -354,18 +356,18 @@ class BaseDateTime(SyftObjectVersioned):
 
     @classmethod
     def now(cls) -> Self:
-        return cls(utc_timestamp=datetime.utcnow().timestamp())
+        return cls(utc_timestamp=datetime.now(timezone.utc).timestamp())
 
     def __str__(self) -> str:
-        utc_datetime = datetime.utcfromtimestamp(self.utc_timestamp)
+        utc_datetime = datetime.fromtimestamp(self.utc_timestamp, tz=timezone.utc)
         return utc_datetime.strftime("%Y-%m-%d %H:%M:%S")
 
     def __hash__(self) -> int:
         return hash(self.utc_timestamp)
 
-    def __sub__(self, other: Self) -> Self:
-        res = self.utc_timestamp - other.utc_timestamp
-        return BaseDateTime(utc_timestamp=res)
+    def __sub__(self, other: Self) -> timedelta:
+        res = timedelta(seconds=self.utc_timestamp - other.utc_timestamp)
+        return res
 
     def __eq__(self, other: Any) -> bool:
         if other is None:

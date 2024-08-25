@@ -131,8 +131,14 @@ class Asset(SyftObject):
         else:
             private_data_obj = private_data_res.ok()
             if isinstance(private_data_obj, ActionObject):
-                df = pd.DataFrame(private_data_obj)
-                data_table_line = itable_template_from_df(df=private_data_obj.head(5))
+                if isinstance(private_data_obj.syft_action_data, ActionDataEmpty):
+                    data_table_line = "No data"
+                else:
+                    df = pd.DataFrame(private_data_obj)
+                    data_table_line = itable_template_from_df(
+                        df=private_data_obj.head(5)
+                    )
+
             elif isinstance(private_data_obj, pd.DataFrame):
                 data_table_line = itable_template_from_df(df=private_data_obj.head(5))
             else:
@@ -146,8 +152,11 @@ class Asset(SyftObject):
                     data_table_line = private_data_res.ok()  # type: ignore
 
         if isinstance(mock, ActionObject):
-            df = pd.DataFrame(mock.syft_action_data)
-            mock_table_line = itable_template_from_df(df=df.head(5))
+            if isinstance(mock.syft_action_data, ActionDataEmpty):
+                mock_table_line = "No data"
+            else:
+                df = pd.DataFrame(mock.syft_action_data)
+                mock_table_line = itable_template_from_df(df=df.head(5))
         elif isinstance(mock, pd.DataFrame):
             mock_table_line = itable_template_from_df(df=self.mock.head(5))
         else:

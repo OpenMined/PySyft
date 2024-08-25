@@ -39,6 +39,13 @@ spec:
           ports:
             - name: ui-port
               containerPort: 80
+          startupProbe:
+            httpGet:
+              path: /health?probe=startupProbe
+              port: ui-port
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
           livenessProbe:
             httpGet:
               path: /health?probe=startupProbe
