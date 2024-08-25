@@ -1,5 +1,6 @@
 # stdlib
 from string import Template
+from typing import cast
 
 # third party
 from result import Err
@@ -22,6 +23,7 @@ from ...util.schema import GUEST_COMMANDS
 from ..context import AuthedServiceContext
 from ..context import UnauthedServiceContext
 from ..notifier.notifier_enums import EMAIL_TYPES
+from ..notifier.notifier_service import NotifierService
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -125,15 +127,31 @@ class SettingsService(AbstractService):
                 new_settings = current_settings[0].model_copy(
                     update=settings.to_dict(exclude_empty=True)
                 )
-                notifier_service = context.server.get_service("notifierservice")
+                notifier_service = cast(
+                    NotifierService, context.server.get_service("notifierservice")
+                )
 
                 # If notifications_enabled is present in the update, we need to update the notifier settings
                 if settings.notifications_enabled is not Empty:
-                    if not notifier_service.settings(context):
+                    if not (notifier_settings := notifier_service.settings(context)):
                         return SyftError(
-                            message="Create notification settings using enable_notifications from user_service"
+                            message=(
+                                "Notification has not been enabled. "
+                                "Please use `enable_notifications` from `user_service`."
+                            )
                         )
-                    notifier_service = context.server.get_service("notifierservice")
+                    if (
+                        settings.notifications_enabled
+                        and notifier_settings.validate_email_credentials().is_err()
+                    ):
+                        return SyftError(
+                            message=(
+                                "Failed to enable notification. "
+                                "Email credentials are invalid or have not been set. "
+                                "Please use `enable_notifications` from `user_service` "
+                                "to set the correct email credentials."
+                            )
+                        )
                     result = notifier_service.set_notifier(
                         context, active=settings.notifications_enabled
                     )
