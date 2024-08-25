@@ -10,6 +10,7 @@ from result import Result
 from ...abstract_server import ServerSideType
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
+from ...types.syft_metaclass import Empty
 from ...util.assets import load_png_base64
 from ...util.experimental_flags import flags
 from ...util.misc_objs import HTMLObject
@@ -127,20 +128,15 @@ class SettingsService(AbstractService):
                 notifier_service = context.server.get_service("notifierservice")
 
                 # If notifications_enabled is present in the update, we need to update the notifier settings
-                if settings.notifications_enabled is True:
+                if settings.notifications_enabled is not Empty:
                     if not notifier_service.settings(context):
                         return SyftError(
                             message="Create notification settings using enable_notifications from user_service"
                         )
                     notifier_service = context.server.get_service("notifierservice")
-                    result = notifier_service.set_notifier_active_to_true(context)
-                elif settings.notifications_enabled is False:
-                    if not notifier_service.settings(context):
-                        return SyftError(
-                            message="Create notification settings using enable_notifications from user_service"
-                        )
-                    notifier_service = context.server.get_service("notifierservice")
-                    result = notifier_service.set_notifier_active_to_false(context)
+                    result = notifier_service.set_notifier(
+                        context, active=settings.notifications_enabled
+                    )
                 update_result = self.stash.update(context.credentials, new_settings)
                 return update_result
             else:
