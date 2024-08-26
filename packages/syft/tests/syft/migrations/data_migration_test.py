@@ -5,15 +5,16 @@ import secrets
 # third party
 import faker
 import numpy as np
+import pytest
 import yaml
 
 # syft absolute
 import syft as sy
 from syft.client.datasite_client import DatasiteClient
 from syft.service.migration.object_migration_state import MigrationData
-from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.user.user import User
+from syft.types.errors import SyftException
 
 
 def register_ds(client):
@@ -86,8 +87,6 @@ def test_get_migration_data(worker, tmp_path):
     migration_data = client.get_migration_data()
     assert isinstance(migration_data, MigrationData)
 
-    print(migration_data._repr_markdown_())
-
     # Admin + data scientist
     assert len(migration_data.store_objects[User]) == 2
 
@@ -136,8 +135,8 @@ def test_data_migration_same_version(tmp_path):
 
     # Load migration data on wrong worker
     with named_worker_context(secrets.token_hex(8)) as wrong_worker:
-        result = wrong_worker.root_client.load_migration_data(blob_path)
-        assert isinstance(result, SyftError)
+        with pytest.raises(SyftException):
+            result = wrong_worker.root_client.load_migration_data(blob_path)
 
     # Load migration data on correct worker
     # NOTE worker is correct because admin keys and server id are derived from server name,
