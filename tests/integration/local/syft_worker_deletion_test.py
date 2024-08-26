@@ -9,7 +9,6 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.orchestra import ClientAlias
 from syft.orchestra import ServerHandle
 from syft.service.job.job_stash import JobStatus
 from syft.service.response import SyftError
@@ -45,8 +44,9 @@ class FlakyMark(RuntimeError):
 )
 @pytest.mark.parametrize("force", [True, False])
 def test_delete_idle_worker(
-    client: ClientAlias, force: bool, server_args: dict[str, Any]
+    server: ServerHandle, force: bool, server_args: dict[str, Any]
 ) -> None:
+    client = server.login(email="info@openmined.org", password="changethis")
     original_workers = client.worker.get_all()
     worker_to_delete = max(original_workers, key=operator.attrgetter("name"))
 
