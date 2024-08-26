@@ -424,3 +424,8 @@ class MongoActionStore(KeyValueActionStore):
     """
 
     pass
+
+
+@serializable(canonical_name="PostgreSQLActionStore", version=1)
+class PostgreSQLActionStore(KeyValueActionStore):
+    pass
