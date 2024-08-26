@@ -1,7 +1,6 @@
 # stdlib
 import ast
 from collections.abc import Callable
-import datetime
 import inspect
 from inspect import Signature
 import keyword
@@ -35,12 +34,11 @@ from ...types.transforms import keep
 from ...types.transforms import transform
 from ...types.uid import UID
 from ...util.misc_objs import MarkdownDescription
-from ..action.action_object import ActionObject
 from ..context import AuthedServiceContext
-from ..job.job_stash import Job
 from ..response import SyftError
 from ..user.user import UserView
 from ..user.user_service import UserService
+from .utils import print as log_print
 
 NOT_ACCESSIBLE_STRING = "N / A"
 
@@ -534,42 +532,16 @@ class TwinAPIEndpoint(SyncableSyftObject):
     ) -> Any:
         # stdlib
         import builtins as __builtin__
+        import functools
 
         original_print = __builtin__.print
         # stdlib
-        import sys
 
         try:
             if log_id is not None:
-
-                def print(*args: Any, sep: str = " ", end: str = "\n") -> str | None:
-                    def to_str(arg: Any) -> str:
-                        if isinstance(arg, bytes):
-                            return arg.decode("utf-8")
-                        if isinstance(arg, Job):
-                            return f"JOB: {arg.id}"
-                        if isinstance(arg, SyftError):
-                            return f"JOB: {arg.message}"
-                        if isinstance(arg, ActionObject):
-                            return str(arg.syft_action_data)
-                        return str(arg)
-
-                    new_args = [to_str(arg) for arg in args]
-                    new_str = sep.join(new_args) + end
-                    if context.server is not None:
-                        log_service = context.server.get_service("LogService")
-                        log_service.append(context=context, uid=log_id, new_str=new_str)
-                    time = datetime.datetime.now().strftime("%d/%m/%y %H:%M:%S")
-                    return __builtin__.print(
-                        f"{time} FUNCTION LOG :",
-                        *new_args,
-                        end=end,
-                        sep=sep,
-                        file=sys.stderr,
-                    )
-
+                print = functools.partial(log_print, context, log_id)
             else:
-                print = original_print
+                print = original_print  # type: ignore
 
             inner_function = ast.parse(code.api_code).body[0]
             inner_function.decorator_list = []
@@ -615,7 +587,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
             if upsert_result.is_err():
                 raise Exception(upsert_result.err())
 
-            print = original_print
+            print = original_print  # type: ignore
 
             # return the results
             return result
