@@ -133,7 +133,7 @@ class DatasiteClient(SyftClient):
             prompt_warning_message(message=message, confirm=True)
 
         with tqdm(
-            total=len(dataset.asset_list), colour="green", desc="Uploading"
+            total=len(dataset.asset_list), colour="green", desc="Uploading", position=1
         ) as pbar:
             for asset in dataset.asset_list:
                 try:

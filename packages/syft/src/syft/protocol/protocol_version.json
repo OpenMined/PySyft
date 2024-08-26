@@ -37,6 +37,13 @@
           "hash": "b087d0c62b7d304c6ca80e4fb0e8a7f2a444be8f8cba57490dc09aeb98033105",
           "action": "add"
         }
+      },
+      "UserSearch": {
+        "2": {
+          "version": 2,
+          "hash": "4b85bcbffc077a18be805960cc6d658225270875ccea1fa2b46370988ea0b32d",
+          "action": "add"
+        }
       }
     }
   }
