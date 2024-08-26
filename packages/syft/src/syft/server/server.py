@@ -43,7 +43,7 @@ from ..service.action.action_object import Action
 from ..service.action.action_object import ActionObject
 from ..service.action.action_store import ActionStore
 from ..service.action.action_store import DictActionStore
-from ..service.action.action_store import MongoActionStore
+from ..service.action.action_store import PostgreSQLActionStore
 from ..service.action.action_store import SQLiteActionStore
 from ..service.blob_storage.service import BlobStorageService
 from ..service.code.user_code_service import UserCodeService
@@ -100,7 +100,7 @@ from ..store.blob_storage.seaweedfs import SeaweedFSBlobDeposit
 from ..store.dict_document_store import DictStoreConfig
 from ..store.document_store import StoreConfig
 from ..store.linked_obj import LinkedObject
-from ..store.mongo_document_store import MongoStoreConfig
+from ..store.postgresql_document_store import PostgreSQLStoreConfig
 from ..store.sqlite_document_store import SQLiteStoreClientConfig
 from ..store.sqlite_document_store import SQLiteStoreConfig
 from ..types.datetime import DATETIME_FORMAT
@@ -842,13 +842,6 @@ class Server(AbstractServer):
         document_store_config: StoreConfig,
         action_store_config: StoreConfig,
     ) -> None:
-        # We add the python id of the current server in order
-        # to create one connection per Server object in MongoClientCache
-        # so that we avoid closing the connection from a
-        # different thread through the garbage collection
-        if isinstance(document_store_config, MongoStoreConfig):
-            document_store_config.client_config.server_obj_python_id = id(self)
-
         self.document_store_config = document_store_config
         self.document_store = document_store_config.store_type(
             server_uid=self.id,
@@ -863,17 +856,11 @@ class Server(AbstractServer):
                 root_verify_key=self.verify_key,
                 document_store=self.document_store,
             )
-        elif isinstance(action_store_config, MongoStoreConfig):
-            # We add the python id of the current server in order
-            # to create one connection per Server object in MongoClientCache
-            # so that we avoid closing the connection from a
-            # different thread through the garbage collection
-            action_store_config.client_config.server_obj_python_id = id(self)
-
-            self.action_store = MongoActionStore(
+        elif isinstance(action_store_config, PostgreSQLStoreConfig):
+            self.action_store = PostgreSQLActionStore(
                 server_uid=self.id,
-                root_verify_key=self.verify_key,
                 store_config=action_store_config,
+                root_verify_key=self.verify_key,
                 document_store=self.document_store,
             )
         else:
