@@ -37,6 +37,13 @@
           "hash": "b087d0c62b7d304c6ca80e4fb0e8a7f2a444be8f8cba57490dc09aeb98033105",
           "action": "add"
         }
+      },
+      "CustomEndpointActionObject": {
+        "2": {
+          "version": 2,
+          "hash": "846ba36e8737a1bec16853c9de54c4948450009278e0b76fe7e3355ef9e70089",
+          "action": "add"
+        }
       }
     }
   }

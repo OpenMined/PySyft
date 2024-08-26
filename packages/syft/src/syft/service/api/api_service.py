@@ -391,13 +391,14 @@ class APIService(AbstractService):
         )
         if isinstance(custom_endpoint, SyftError):
             return custom_endpoint
-
+        log_id = UID()
         result = context.server.add_api_endpoint_execution_to_queue(
             context.credentials,
             method,
             path,
             *args,
             worker_pool=custom_endpoint.worker_pool,
+            log_id=log_id,
             **kwargs,
         )
         if isinstance(result, SyftError):
@@ -493,6 +494,7 @@ class APIService(AbstractService):
         context: AuthedServiceContext,
         path: str,
         *args: Any,
+        log_id: UID | None = None,
         **kwargs: Any,
     ) -> SyftSuccess | SyftError:
         """Call a Custom API Method"""
@@ -503,7 +505,7 @@ class APIService(AbstractService):
         if isinstance(custom_endpoint, SyftError):
             return custom_endpoint
 
-        exec_result = custom_endpoint.exec(context, *args, **kwargs)
+        exec_result = custom_endpoint.exec(context, *args, log_id=log_id, **kwargs)
 
         if isinstance(exec_result, SyftError):
             return Ok(exec_result)
@@ -534,6 +536,7 @@ class APIService(AbstractService):
         context: AuthedServiceContext,
         path: str,
         *args: Any,
+        log_id: UID | None = None,
         **kwargs: Any,
     ) -> ActionObject | SyftError:
         """Call a Custom API Method in public mode"""
@@ -543,7 +546,9 @@ class APIService(AbstractService):
         )
         if isinstance(custom_endpoint, SyftError):
             return custom_endpoint
-        exec_result = custom_endpoint.exec_mock_function(context, *args, **kwargs)
+        exec_result = custom_endpoint.exec_mock_function(
+            context, *args, log_id=log_id, **kwargs
+        )
 
         if isinstance(exec_result, SyftError):
             return Ok(exec_result)
@@ -576,6 +581,7 @@ class APIService(AbstractService):
         context: AuthedServiceContext,
         path: str,
         *args: Any,
+        log_id: UID | None = None,
         **kwargs: Any,
     ) -> ActionObject | SyftError:
         """Call a Custom API Method in private mode"""
@@ -586,7 +592,9 @@ class APIService(AbstractService):
         if isinstance(custom_endpoint, SyftError):
             return custom_endpoint
 
-        exec_result = custom_endpoint.exec_private_function(context, *args, **kwargs)
+        exec_result = custom_endpoint.exec_private_function(
+            context, *args, log_id=log_id, **kwargs
+        )
 
         if isinstance(exec_result, SyftError):
             return Ok(exec_result)
@@ -634,6 +642,7 @@ class APIService(AbstractService):
         context: AuthedServiceContext,
         endpoint_uid: UID,
         *args: Any,
+        log_id: UID | None = None,
         **kwargs: Any,
     ) -> Any:
         endpoint = self.get_endpoint_by_uid(context, endpoint_uid)
@@ -643,13 +652,16 @@ class APIService(AbstractService):
         if not selected_code:
             selected_code = endpoint.mock_function
 
-        return endpoint.exec_code(selected_code, context, *args, **kwargs)
+        return endpoint.exec_code(
+            selected_code, context, *args, log_id=log_id, **kwargs
+        )
 
     def execute_service_side_endpoint_private_by_id(
         self,
         context: AuthedServiceContext,
         endpoint_uid: UID,
         *args: Any,
+        log_id: UID | None = None,
         **kwargs: Any,
     ) -> Any:
         endpoint = self.get_endpoint_by_uid(context, endpoint_uid)
@@ -657,19 +669,24 @@ class APIService(AbstractService):
             return endpoint
         if not endpoint.private_function:
             return SyftError(message="This endpoint does not have a private code")
-        return endpoint.exec_code(endpoint.private_function, context, *args, **kwargs)
+        return endpoint.exec_code(
+            endpoint.private_function, context, *args, log_id=log_id, **kwargs
+        )
 
     def execute_server_side_endpoint_mock_by_id(
         self,
         context: AuthedServiceContext,
         endpoint_uid: UID,
         *args: Any,
+        log_id: UID | None = None,
         **kwargs: Any,
     ) -> Any:
         endpoint = self.get_endpoint_by_uid(context, endpoint_uid)
         if isinstance(endpoint, SyftError):
             return endpoint
-        return endpoint.exec_code(endpoint.mock_function, context, *args, **kwargs)
+        return endpoint.exec_code(
+            endpoint.mock_function, context, *args, log_id=log_id, **kwargs
+        )
 
     def get_endpoint_by_uid(
         self, context: AuthedServiceContext, uid: UID
