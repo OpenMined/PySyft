@@ -59,10 +59,7 @@ class JobService(AbstractService):
     def get(self, context: AuthedServiceContext, uid: UID) -> Job:
         return self.stash.get_by_uid(context.credentials, uid=uid).unwrap()
 
-    @service_method(
-        path="job.get_all",
-        name="get_all",
-    )
+    @service_method(path="job.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL)
     def get_all(self, context: AuthedServiceContext) -> list[Job]:
         return self.stash.get_all(context.credentials).unwrap()
 
