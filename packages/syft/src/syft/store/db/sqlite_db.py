@@ -1,20 +1,21 @@
 # stdlib
-import threading
 from pathlib import Path
+import tempfile
+import threading
 
 # third party
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
+from pydantic import Field
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import sessionmaker
-from syft.server.credentials import SyftVerifyKey
 
 # relative
+from ...server.credentials import SyftVerifyKey
 from ...types.uid import UID
 from .models import Base
 from .utils import dumps
 from .utils import loads
-import tempfile
 
 
 class DBConfig(BaseModel):

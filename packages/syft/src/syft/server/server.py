@@ -23,7 +23,6 @@ from typing import cast
 from nacl.signing import SigningKey
 from result import Err
 from result import Result
-from syft.store.db.sqlite_db import SQLiteDBConfig, SQLiteDBManager
 
 # relative
 from .. import __version__
@@ -41,7 +40,6 @@ from ..protocol.data_protocol import PROTOCOL_TYPE
 from ..protocol.data_protocol import get_data_protocol
 from ..service.action.action_object import Action
 from ..service.action.action_object import ActionObject
-from ..service.action.action_store import ActionObjectStash
 from ..service.blob_storage.service import BlobStorageService
 from ..service.code.user_code_service import UserCodeService
 from ..service.code.user_code_stash import UserCodeStash
@@ -81,7 +79,6 @@ from ..service.user.user import UserCreate
 from ..service.user.user import UserView
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
-from ..service.user.user_stash import UserStash
 from ..service.worker.utils import DEFAULT_WORKER_IMAGE_TAG
 from ..service.worker.utils import DEFAULT_WORKER_POOL_NAME
 from ..service.worker.utils import create_default_image
@@ -94,6 +91,8 @@ from ..store.blob_storage import BlobStorageConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageClientConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
 from ..store.blob_storage.seaweedfs import SeaweedFSBlobDeposit
+from ..store.db.sqlite_db import SQLiteDBConfig
+from ..store.db.sqlite_db import SQLiteDBManager
 from ..store.dict_document_store import DictStoreConfig
 from ..store.document_store import StoreConfig
 from ..store.linked_obj import LinkedObject

@@ -24,7 +24,6 @@ from ...server.credentials import SyftVerifyKey
 from ...service.context import AuthedServiceContext
 from ...service.worker.worker_pool import SyftWorker
 from ...store.db.stash import ObjectStash
-from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
 from ...types.datetime import DateTime
 from ...types.datetime import format_timedelta

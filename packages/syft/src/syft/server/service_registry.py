@@ -6,8 +6,6 @@ import typing
 from typing import Any
 from typing import TYPE_CHECKING
 
-from syft.store.db.stash import ObjectStash
-
 # relative
 from ..serde.serializable import serializable
 from ..service.action.action_service import ActionService
@@ -42,6 +40,7 @@ from ..service.worker.image_registry_service import SyftImageRegistryService
 from ..service.worker.worker_image_service import SyftWorkerImageService
 from ..service.worker.worker_pool_service import SyftWorkerPoolService
 from ..service.worker.worker_service import WorkerService
+from ..store.db.stash import ObjectStash
 
 if TYPE_CHECKING:
     # relative
@@ -114,7 +113,7 @@ class ServiceRegistry:
             if issubclass(stash_annotation, ObjectStash):
                 return True
             return False
-        except Exception as e:
+        except Exception:
             return False
 
     @classmethod
