@@ -394,7 +394,7 @@ class NetworkService(AbstractService):
         try:
             self.stash.get_by_uid(context.server.verify_key, peer_id).unwrap()
             return ServerPeerAssociationStatus.PEER_ASSOCIATED
-        except NotFoundException:
+        except SyftException:
             association_requests: list[Request] = (
                 self._get_association_requests_by_peer_id(
                     context=context, peer_id=peer_id
