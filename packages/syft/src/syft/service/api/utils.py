@@ -5,13 +5,20 @@ import sys
 from typing import Any
 
 # relative
+from ...types.uid import UID
 from ..action.action_object import ActionObject
+from ..context import AuthedServiceContext
 from ..job.job_stash import Job
 from ..response import SyftError
-from ...types.uid import UID
-from ..context import AuthedServiceContext
 
-def print(context: AuthedServiceContext, log_id: UID, *args: Any, sep: str = " ", end: str = "\n") -> str | None:
+
+def print(
+    context: AuthedServiceContext,
+    log_id: UID,
+    *args: Any,
+    sep: str = " ",
+    end: str = "\n",
+) -> str | None:
     def to_str(arg: Any) -> str:
         if isinstance(arg, bytes):
             return arg.decode("utf-8")
