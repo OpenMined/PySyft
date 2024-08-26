@@ -162,6 +162,7 @@ class ServerPeer(SyftObject):
         for new_route in new_routes:
             self.update_route(new_route)
 
+    @as_result(SyftException)
     def update_existed_route_priority(
         self, route: ServerRoute, priority: int | None = None
     ) -> ServerRouteType:
