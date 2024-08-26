@@ -66,13 +66,11 @@ def _random_hash() -> str:
 
 
 def _remove_existing_peers(client: SyftClient) -> SyftSuccess | SyftError:
-    peers: list[ServerPeer] | SyftError = client.api.services.network.get_all_peers()
-    if isinstance(peers, SyftError):
-        return peers
+    peers: list[ServerPeer] | SyftError = (
+        client.api.services.network.get_all_peers().unwrap()
+    )
     for peer in peers:
-        res = client.api.services.network.delete_peer_by_id(peer.id)
-        if isinstance(res, SyftError):
-            return res
+        client.api.services.network.delete_peer_by_id(peer.id).unwrap()
     return SyftSuccess(message="All peers removed.")
 
 
