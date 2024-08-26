@@ -5,7 +5,11 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.service.response import SyftError
+from syft.service.response import SyftError, SyftSuccess
+from syft.service.request.request import Request
+from syft.service.request.request import RequestStatus
+from syft.service.code.user_code import UserCode
+from syft.service.job.job_stash import Job
 
 secrets = {
     "service_account_bigquery_private": {},
@@ -134,12 +138,20 @@ def submit_query(
         f"Query submitted {request}. Use `client.code.{func_name}()` to run your query"
     )
 
-
 @pytest.fixture
-def setup_query_endpoint(full_high_worker):
-    high_client = full_high_worker.login(
+def get_clients(full_high_worker):
+    admin_client = full_high_worker.login(
         email="info@openmined.org", password="changethis"
     )
+    admin_client.register(
+        email="ds_user@test.abc", name="ds_user", password="1234", password_verify="1234"
+    )
+    ds_client = full_high_worker.login(email="ds_user@test.abc", password="1234")
+    yield admin_client, ds_client
+
+@pytest.fixture
+def setup_query_endpoint(get_clients):
+    admin_client, ds_client = get_clients
     new_endpoint = sy.TwinAPIEndpoint(
         path="bigquery.test_query",
         description="This endpoint allows to query Bigquery storage via SQL queries.",
@@ -147,25 +159,92 @@ def setup_query_endpoint(full_high_worker):
         mock_function=mock_query_function,
     )
 
-    high_client.custom_api.add(endpoint=new_endpoint)
+    admin_client.custom_api.add(endpoint=new_endpoint)
 
-    yield high_client
+    yield admin_client, ds_client
 
 
 @pytest.fixture
 def update_query_endpoint(setup_query_endpoint):
-    client = setup_query_endpoint
-    client.api.services.api.update(
+    admin_client, ds_client = setup_query_endpoint
+    admin_client.api.services.api.update(
         endpoint_path="bigquery.test_query", hide_mock_definition=True
     )
-    client.api.services.api.update(
+    admin_client.api.services.api.update(
         endpoint_path="bigquery.test_query", endpoint_timeout=10
     )
-    yield client
+    yield admin_client, ds_client
+
+@pytest.fixture
+def create_submit_query_endpoint(update_query_endpoint):
+    admin_client, ds_client = update_query_endpoint
+
+    admin_client.custom_api.add(endpoint=submit_query)
+    admin_client.api.services.api.update(
+        endpoint_path="bigquery.submit_query", hide_mock_definition=True
+    )
+    yield admin_client, ds_client
 
 
-# set up schema endpoint (not sure if this one is needed yet)
+@pytest.fixture
+def submit_ds_request(create_submit_query_endpoint):
+    admin_client, ds_client = create_submit_query_endpoint
+    FUNC_NAME = "request_and_accept"
+    QUERY = "SELECT * FROM `bigquery-public-data.ml_datasets.penguins` LIMIT 10"
 
+    submit_res = ds_client.api.services.bigquery.submit_query(func_name=FUNC_NAME, query=QUERY)
+
+    fn_name = extract_code_path(submit_res)
+    yield admin_client, ds_client, fn_name
+
+@pytest.fixture
+def accept_request_by_deposit(submit_ds_request):
+    admin_client, ds_client, fn_name = submit_ds_request
+
+    request = admin_client.requests[0]
+
+    job = execute_request(admin_client, request)
+    job.wait() 
+    job_info = job.info(result=True)
+    approved_request = request.deposit_result(job_info, approve=True)
+    yield admin_client, ds_client, fn_name, job, approved_request
+
+@pytest.fixture
+def reject_request(submit_ds_request):
+    admin_client, ds_client, fn_name = submit_ds_request
+
+    request = admin_client.requests[0]
+
+    rejected_request = request.deny(reason="Bad vibes :(")
+
+    yield admin_client, ds_client, fn_name, rejected_request
+
+def extract_code_path(response):
+    # stdlib
+    import re
+
+    pattern = r"client\.code\.(\w+)\(\)"
+    match = re.search(pattern, str(response))
+    if match:
+        extracted_code = match.group(1)
+        return extracted_code
+    return None
+
+def execute_request(client_high, request) -> dict:
+    if not isinstance(request, Request):
+        return "This is not a request"
+
+    code = request.code
+    if not isinstance(code, UserCode):
+        return "No usercode found"
+
+    func_name = request.code.service_func_name
+    api_func = getattr(client_high.code, func_name, None)
+    if api_func is None:
+        return "Code name was not found on the client."
+
+    job = api_func(blocking=False)
+    return job
 
 # set up public submit query endpoint
 def test_query_endpoint_added(update_query_endpoint) -> None:
@@ -205,16 +284,10 @@ def test_query_endpoint_private_endpoint(update_query_endpoint) -> None:
     assert query in retrieved_obj
 
 
-@pytest.fixture
-def create_submit_query_endpoint(update_query_endpoint):
-    high_client = update_query_endpoint
 
-    high_client.custom_api.add(endpoint=submit_query)
-    high_client.api.services.api.update(
-        endpoint_path="bigquery.submit_query", hide_mock_definition=True
-    )
-    yield high_client
 
+
+# TODO add rate limit test
 
 def test_submit_query_endpoint_added(create_submit_query_endpoint):
     high_client = create_submit_query_endpoint
@@ -222,7 +295,7 @@ def test_submit_query_endpoint_added(create_submit_query_endpoint):
     assert len(high_client.custom_api.api_endpoints()) == 2
 
 
-def test_submit_query_endpoint_endpoint(create_submit_query_endpoint) -> None:
+def test_submit_query_endpoint(create_submit_query_endpoint) -> None:
     high_client = create_submit_query_endpoint
     sql_query = f"SELECT * FROM {secrets['dataset_1']}.{secrets['table_1']} LIMIT 1"
     # Inspect the context state on an endpoint
@@ -254,3 +327,44 @@ def test_submit_query_endpoint_endpoint(create_submit_query_endpoint) -> None:
 
     assert "PRIVATE QUERY" in retrieved_obj
     assert sql_query in retrieved_obj
+
+
+def test_ds_submit_without_approval_errors(submit_ds_request):
+    admin_client, ds_client, fn_name = submit_ds_request
+
+    assert "request_and_accept" in fn_name
+
+    api_method = getattr(ds_client.code, fn_name)
+
+    res = api_method()
+    assert isinstance(res, SyftError)
+
+def test_submit_and_accept_by_deposit_flow(accept_request_by_deposit):
+    admin_client, ds_client, fn_name, job, req = accept_request_by_deposit
+
+
+    assert "request_and_accept" in fn_name
+
+    job_res = job.wait()
+
+    assert not isinstance(job_res, SyftError)
+
+    api_method = getattr(ds_client.code, fn_name)
+
+    res = api_method()
+    assert not isinstance(res, SyftError)
+
+    assert res == job_res.get()
+
+def test_submit_and_reject_flow(reject_request):
+
+    admin_client, ds_client, fn_name, req = reject_request
+
+    assert isinstance(req, SyftSuccess)
+    assert 'denied' in req.message
+    api_method = getattr(ds_client.code, fn_name)
+
+    res = api_method()
+    assert isinstance(res, SyftError)
+    assert "Bad vibes :(" in res.message
+
