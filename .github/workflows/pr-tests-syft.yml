@@ -188,6 +188,30 @@ jobs:
           max_attempts: 3
           command: tox -e syft.test.notebook
 
+      # Create the settings.yaml file for the bigquery notebook config
+      - name: Create settings.yaml
+        if: steps.changes.outputs.syft == 'true' || steps.changes.outputs.notebooks == 'true'
+        run: |
+          mkdir -p ${GITHUB_WORKSPACE}/notebooks/scenarios/bigquery
+          cat <<EOF > ${GITHUB_WORKSPACE}/notebooks/scenarios/bigquery/settings.yaml
+          default:
+            gce_region: "${{ secrets.TEST_GCE_REGION }}"
+            gce_project_id: "${{ secrets.TEST_GCE_PROJECT_ID }}"
+            gce_service_account: '${{ secrets.TEST_GCE_SERVICE_ACCOUNT }}'
+            external_registry: "${{ secrets.TEST_EXTERNAL_REGISTRY }}"
+            dataset_1: "${{ secrets.TEST_DATASET_1 }}"
+            dataset_2: "${{ secrets.TEST_DATASET_2 }}"
+            table_1: "${{ secrets.TEST_TABLE_1 }}"
+            table_2: "${{ secrets.TEST_TABLE_2 }}"
+            table_2_col_id: "${{ secrets.TEST_TABLE_2_COL_ID }}"
+            table_2_col_score: "${{ secrets.TEST_TABLE_2_COL_SCORE }}"
+          EOF
+        
+      - name: Run Bigquery Scenario Notebooks
+        if: steps.changes.outputs.syft == 'true' || steps.changes.outputs.notebooks == 'true'
+        run: |
+          tox -e syft.test.notebook.scenario
+
   pr-tests-syft-notebook-single-container:
     strategy:
       max-parallel: 99
