@@ -8,9 +8,9 @@ from typing import Any
 from kr8s.objects import ConfigMap
 from kr8s.objects import Job
 from kr8s.objects import Secret
-from syft.types.errors import SyftException
 
 # relative
+from ..types.errors import SyftException
 from .builder_types import BUILD_IMAGE_TIMEOUT_SEC
 from .builder_types import BuilderBase
 from .builder_types import ImageBuildResult
