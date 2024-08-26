@@ -288,7 +288,7 @@ class Constant(PolicyRule):
     requires_input: bool = False
 
     @property
-    def value(self):
+    def value(self) -> Any:
         return self.val
 
     def is_met(self, context: AuthedServiceContext, *args: Any, **kwargs: Any) -> bool:
@@ -298,7 +298,9 @@ class Constant(PolicyRule):
     def transform_kwarg(self, context: AuthedServiceContext, val: Any) -> Any:
         if isinstance(self.val, UID):
             if issubclass(self.klass, CustomEndpointActionObject):
-                obj = context.server.get_service("actionservice").get(context, self.val)
+                obj = context.server.get_service("actionservice").get(
+                    context.as_root_context(), self.val
+                )
                 return obj.syft_action_data
         return self.val
 
