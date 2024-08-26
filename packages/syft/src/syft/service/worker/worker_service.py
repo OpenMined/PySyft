@@ -75,7 +75,7 @@ class WorkerService(AbstractService):
         else:
             # If container workers, check their statuses
             workers = refresh_worker_status(
-                workers, self.stash, context.credentials
+                workers, self.stash, context.as_root_context().credentials
             ).unwrap()
         return workers
 
@@ -102,7 +102,7 @@ class WorkerService(AbstractService):
             return worker
         else:
             workers = refresh_worker_status(
-                [worker], self.stash, context.credentials
+                [worker], self.stash, context.as_root_context().credentials
             ).unwrap()
             return workers[0]
 
@@ -250,13 +250,13 @@ def refresh_status_kubernetes(workers: list[SyftWorker]) -> list[SyftWorker]:
     for worker in workers:
         status: PodStatus | WorkerStatus | None = runner.get_pod_status(pod=worker.name)
         if not status:
-            raise SyftException(
-                public_message=f"Pod does not exist. name={worker.name}"
-            )
-        status, health, _ = map_pod_to_worker_status(status)
-        worker.status = status
-        worker.healthcheck = health
-        updated_workers.append(worker)
+            worker.status = WorkerStatus.STOPPED
+            worker.healthcheck = WorkerHealth.UNHEALTHY
+        else:
+            status, health, _ = map_pod_to_worker_status(status)
+            worker.status = status
+            worker.healthcheck = health
+            updated_workers.append(worker)
 
     return updated_workers
 

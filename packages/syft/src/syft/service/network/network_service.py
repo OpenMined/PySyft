@@ -394,7 +394,7 @@ class NetworkService(AbstractService):
         try:
             self.stash.get_by_uid(context.server.verify_key, peer_id).unwrap()
             return ServerPeerAssociationStatus.PEER_ASSOCIATED
-        except NotFoundException:
+        except SyftException:
             association_requests: list[Request] = (
                 self._get_association_requests_by_peer_id(
                     context=context, peer_id=peer_id
@@ -516,6 +516,7 @@ class NetworkService(AbstractService):
         # TODO: Handle the case when peer is deleted from datasite server
 
         self.stash.delete_by_uid(context.credentials, uid).unwrap()
+
         # Delete all the association requests from this peer
         association_requests: list[Request] = self._get_association_requests_by_peer_id(
             context=context, peer_id=uid
@@ -524,7 +525,7 @@ class NetworkService(AbstractService):
             request_delete_method = context.server.get_service_method(
                 RequestService.delete_by_uid
             )
-            request_delete_method(context, request.id).unwrap()
+            request_delete_method(context, request.id)
         # TODO: Notify the peer (either by email or by other form of notifications)
         # that it has been deleted from the network
         return SyftSuccess(message=f"Server Peer with id {uid} deleted.")
@@ -627,7 +628,11 @@ class NetworkService(AbstractService):
             f"was added for {str(context.server.server_type)} '{context.server.name}'"
         )
 
-    @service_method(path="network.delete_route_on_peer", name="delete_route_on_peer")
+    @service_method(
+        path="network.delete_route_on_peer",
+        name="delete_route_on_peer",
+        unwrap_on_success=False,
+    )
     def delete_route_on_peer(
         self,
         context: AuthedServiceContext,
@@ -658,7 +663,10 @@ class NetworkService(AbstractService):
         )
 
     @service_method(
-        path="network.delete_route", name="delete_route", roles=GUEST_ROLE_LEVEL
+        path="network.delete_route",
+        name="delete_route",
+        roles=GUEST_ROLE_LEVEL,
+        unwrap_on_success=False,
     )
     def delete_route(
         self,
@@ -747,6 +755,7 @@ class NetworkService(AbstractService):
     @service_method(
         path="network.update_route_priority_on_peer",
         name="update_route_priority_on_peer",
+        unwrap_on_success=False,
     )
     def update_route_priority_on_peer(
         self,
@@ -784,6 +793,7 @@ class NetworkService(AbstractService):
         path="network.update_route_priority",
         name="update_route_priority",
         roles=GUEST_ROLE_LEVEL,
+        unwrap_on_success=False,
     )
     def update_route_priority(
         self,

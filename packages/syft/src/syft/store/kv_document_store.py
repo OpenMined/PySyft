@@ -144,7 +144,7 @@ class KeyValueStorePartition(StorePartition):
     def __len__(self) -> int:
         return len(self.data)
 
-    @as_result(SyftException)
+    @as_result(SyftException, KeyError)
     def _get(
         self,
         uid: UID,

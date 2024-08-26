@@ -485,7 +485,7 @@ class Request(SyncableSyftObject):
             if isinstance(change, UserCodeStatusChange):
                 return change.linked_user_code.object_uid
         raise SyftException(
-            message="This type of request does not have code associated with it."
+            public_message="This type of request does not have code associated with it."
         )
 
     @property

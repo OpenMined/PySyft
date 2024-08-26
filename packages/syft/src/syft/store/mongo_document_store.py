@@ -40,6 +40,7 @@ from .document_store import QueryKey
 from .document_store import QueryKeys
 from .document_store import StoreConfig
 from .document_store import StorePartition
+from .document_store_errors import NotFoundException
 from .kv_document_store import KeyValueBackingStore
 from .locks import LockingConfig
 from .locks import NoLockingConfig
@@ -380,9 +381,13 @@ class MongoStorePartition(StorePartition):
         has_permission: bool | None = False,
     ) -> SyftObject:
         qks = QueryKeys.from_dict({"id": uid})
-        return self._get_all_from_store(
+        res = self._get_all_from_store(
             credentials, qks, order_by=None, has_permission=has_permission
-        ).unwrap()[0]
+        ).unwrap()
+        if len(res) == 0:
+            raise NotFoundException
+        else:
+            return res[0]
 
     @as_result(SyftException)
     def _get_all_from_store(
