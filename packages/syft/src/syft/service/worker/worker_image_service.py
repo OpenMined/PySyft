@@ -147,6 +147,7 @@ class SyftWorkerImageService(AbstractService):
         path="worker_image.push",
         name="push",
         roles=DATA_OWNER_ROLE_LEVEL,
+        unwrap_on_success=False,
     )
     def push(
         self,

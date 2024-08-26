@@ -143,7 +143,7 @@ class BlobStorageService(AbstractService):
 
         blob_files = []
         for bse in bse_list:
-            self.stash.set(obj=bse, credentials=context.credentials).unwrap()
+            # self.stash.set(obj=bse, credentials=context.credentials).unwrap()
             # We create an empty ActionObject and set its blob_storage_entry_id to bse.id
             # such that we can call reload_cache which creates
             # the BlobRetrieval (user needs permission to do this)
