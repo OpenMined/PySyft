@@ -51,4 +51,11 @@ class RequestStash(NewBaseUIDStoreStash):
         self, credentials: SyftVerifyKey, user_code_id: UID
     ) -> list[Request]:
         all_requests = self.get_all(credentials=credentials).unwrap()
-        return [r for r in all_requests if r.code_id == user_code_id]
+        res = []
+        for r in all_requests:
+            try:
+                if r.code_id == user_code_id:
+                    res.append(r)
+            except SyftException:
+                pass
+        return res

@@ -102,7 +102,7 @@ class WorkerService(AbstractService):
             return worker
         else:
             workers = refresh_worker_status(
-                [worker], self.stash, context.credentials
+                [worker], self.stash, context.as_root_context().credentials
             ).unwrap()
             return workers[0]
 
