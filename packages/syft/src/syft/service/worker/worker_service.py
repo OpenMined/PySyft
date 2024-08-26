@@ -75,7 +75,7 @@ class WorkerService(AbstractService):
         else:
             # If container workers, check their statuses
             workers = refresh_worker_status(
-                workers, self.stash, context.credentials
+                workers, self.stash, context.as_root_context().credentials
             ).unwrap()
         return workers
 
