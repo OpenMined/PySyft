@@ -126,14 +126,23 @@ def test_action_store_test_data_set_get(store: Any):
     root_key = SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_ROOT)
     SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_HACKER)
 
-    access = ActionObjectWRITE(uid=UID(), credentials=client_key)
-    access_root = ActionObjectWRITE(uid=UID(), credentials=root_key)
+    permission_only_uid = UID()
+    access = ActionObjectWRITE(uid=permission_only_uid, credentials=client_key)
+    access_root = ActionObjectWRITE(uid=permission_only_uid, credentials=root_key)
+    read_permission = ActionObjectREAD(uid=permission_only_uid, credentials=client_key)
 
     # add permission
     store.add_permission(access)
 
     assert store.has_permission(access)
     assert store.has_permission(access_root)
+
+    store.add_permission(read_permission)
+    assert store.has_permission(read_permission)
+
+    # check that trying to get action data that doesn't exist returns an error, even if have permissions
+    res = store.get(permission_only_uid, client_key)
+    assert res.is_err()
 
     # add data
     data_uid = UID()
