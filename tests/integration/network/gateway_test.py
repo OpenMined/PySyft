@@ -70,7 +70,7 @@ def _remove_existing_peers(client: SyftClient) -> SyftSuccess | SyftError:
         client.api.services.network.get_all_peers().unwrap()
     )
     for peer in peers:
-        client.api.services.network.delete_peer_by_id(peer.id).unwrap()
+        client.api.services.network.delete_peer_by_id(peer.id)
     return SyftSuccess(message="All peers removed.")
 
 
