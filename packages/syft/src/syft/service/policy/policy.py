@@ -202,7 +202,7 @@ def partition_by_server(kwargs: dict[str, Any]) -> dict[ServerIdentity, dict[str
 
                     _obj_exists = True
                     break
-            except requests.exceptions.ConnectionError:
+            except (requests.exceptions.ConnectionError, SyftException):
                 # To handle the cases , where there an old api objects in
                 # in APIRegistry
                 continue

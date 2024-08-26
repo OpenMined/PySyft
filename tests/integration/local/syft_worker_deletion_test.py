@@ -10,6 +10,7 @@ import pytest
 # syft absolute
 import syft as sy
 from syft.orchestra import ClientAlias
+from syft.orchestra import ServerHandle
 from syft.service.job.job_stash import JobStatus
 from syft.service.response import SyftError
 from syft.types.errors import SyftException
@@ -77,7 +78,8 @@ def test_delete_idle_worker(
 
 @pytest.mark.parametrize("server_args", matrix(**SERVER_ARGS_TEST_CASES))
 @pytest.mark.parametrize("force", [True, False])
-def test_delete_worker(client: ClientAlias, force: bool) -> None:
+def test_delete_worker(server: ServerHandle, force: bool) -> None:
+    client = server.login(email="info@openmined.org", password="changethis")
     data = np.array([1, 2, 3])
     data_action_obj = sy.ActionObject.from_obj(data)
     data_pointer = data_action_obj.send(client)
