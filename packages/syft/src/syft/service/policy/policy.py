@@ -287,6 +287,10 @@ class Constant(PolicyRule):
     klass: type
     requires_input: bool = False
 
+    @property
+    def value(self):
+        return self.val
+
     def is_met(self, context: AuthedServiceContext, *args: Any, **kwargs: Any) -> bool:
         return True
 
@@ -573,12 +577,11 @@ class MixedInputPolicy(InputPolicy):
             context=context,
             code_item_id=code_item_id,
         )
-
         expected_input_kwargs = set()
 
         for _inp_kwargs in self.inputs.values():
             for k in _inp_kwargs.keys():
-                if k not in usr_input_kwargs:
+                if k not in usr_input_kwargs and k not in filtered_input_kwargs:
                     raise SyftException(
                         public_message=f"Function missing required keyword argument: '{k}'"
                     )
