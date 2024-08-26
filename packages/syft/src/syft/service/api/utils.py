@@ -8,9 +8,10 @@ from typing import Any
 from ..action.action_object import ActionObject
 from ..job.job_stash import Job
 from ..response import SyftError
+from ...types.uid import UID
+from ..context import AuthedServiceContext
 
-
-def print(context, log_id, *args: Any, sep: str = " ", end: str = "\n") -> str | None:
+def print(context: AuthedServiceContext, log_id: UID, *args: Any, sep: str = " ", end: str = "\n") -> str | None:
     def to_str(arg: Any) -> str:
         if isinstance(arg, bytes):
             return arg.decode("utf-8")
