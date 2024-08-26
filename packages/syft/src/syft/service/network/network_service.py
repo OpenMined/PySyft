@@ -516,6 +516,7 @@ class NetworkService(AbstractService):
         # TODO: Handle the case when peer is deleted from datasite server
 
         self.stash.delete_by_uid(context.credentials, uid).unwrap()
+
         # Delete all the association requests from this peer
         association_requests: list[Request] = self._get_association_requests_by_peer_id(
             context=context, peer_id=uid
@@ -524,7 +525,7 @@ class NetworkService(AbstractService):
             request_delete_method = context.server.get_service_method(
                 RequestService.delete_by_uid
             )
-            request_delete_method(context, request.id).unwrap()
+            request_delete_method(context, request.id)
         # TODO: Notify the peer (either by email or by other form of notifications)
         # that it has been deleted from the network
         return SyftSuccess(message=f"Server Peer with id {uid} deleted.")
