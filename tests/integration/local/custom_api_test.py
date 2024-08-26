@@ -9,6 +9,7 @@ from syft.service.code.user_code import UserCode
 from syft.service.request.request import Request
 from syft.service.request.request import RequestStatus
 from syft.service.response import SyftError
+from syft.types.errors import SyftException
 
 secrets = {
     "service_account_bigquery_private": {},
@@ -343,8 +344,10 @@ def test_ds_submit_without_approval_errors(submit_ds_request):
 
     api_method = getattr(ds_client.code, fn_name)
 
-    res = api_method()
-    assert isinstance(res, SyftError)
+    with pytest.raises(SyftException) as exc:
+        api_method()
+
+    assert "UserCodeStatus.PENDING" in str(exc.value)
 
 
 def test_submit_and_accept_by_deposit_flow(accept_request_by_deposit):
@@ -370,8 +373,9 @@ def test_submit_and_reject_flow(reject_request):
     req = admin_client.requests[0]
     assert isinstance(req, Request)
     assert req.status == RequestStatus.REJECTED
-    api_method = getattr(ds_client.code, fn_name)
+    
+    with pytest.raises(SyftException) as exc:
+        api_method = getattr(ds_client.code, fn_name)
+        api_method()
+    assert "Bad vibes :(" in str(exc.value)
 
-    res = api_method()
-    assert isinstance(res, SyftError)
-    assert "Bad vibes :(" in res.message
