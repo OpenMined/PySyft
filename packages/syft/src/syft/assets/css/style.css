@@ -642,3 +642,19 @@ body {
 .syft-request {
   line-height: 1;
 }
+
+div.alert-warning,
+div.alert-info,
+div.alert-danger,
+div.alert-success {
+  padding: 5px;
+}
+
+pre.alert-warning,
+pre.alert-info,
+pre.alert-danger,
+pre.alert-success {
+  display: inline;
+  font-family: inherit;
+  color: var(--text-color);
+}
