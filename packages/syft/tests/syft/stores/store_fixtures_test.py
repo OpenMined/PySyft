@@ -13,9 +13,6 @@ import pytest
 from syft.server.credentials import SyftVerifyKey
 from syft.service.action.action_permissions import ActionObjectPermission
 from syft.service.action.action_permissions import ActionPermission
-from syft.service.action.action_store import DictActionStore
-from syft.service.action.action_store import MongoActionStore
-from syft.service.action.action_store import SQLiteActionStore
 from syft.service.queue.queue_stash import QueueStash
 from syft.service.user.user import User
 from syft.service.user.user import UserCreate
