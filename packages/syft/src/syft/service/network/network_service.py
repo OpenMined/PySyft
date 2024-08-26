@@ -628,7 +628,11 @@ class NetworkService(AbstractService):
             f"was added for {str(context.server.server_type)} '{context.server.name}'"
         )
 
-    @service_method(path="network.delete_route_on_peer", name="delete_route_on_peer")
+    @service_method(
+        path="network.delete_route_on_peer",
+        name="delete_route_on_peer",
+        unwrap_on_success=False,
+    )
     def delete_route_on_peer(
         self,
         context: AuthedServiceContext,
@@ -659,7 +663,10 @@ class NetworkService(AbstractService):
         )
 
     @service_method(
-        path="network.delete_route", name="delete_route", roles=GUEST_ROLE_LEVEL
+        path="network.delete_route",
+        name="delete_route",
+        roles=GUEST_ROLE_LEVEL,
+        unwrap_on_success=False,
     )
     def delete_route(
         self,
@@ -748,6 +755,7 @@ class NetworkService(AbstractService):
     @service_method(
         path="network.update_route_priority_on_peer",
         name="update_route_priority_on_peer",
+        unwrap_on_success=False,
     )
     def update_route_priority_on_peer(
         self,
@@ -785,6 +793,7 @@ class NetworkService(AbstractService):
         path="network.update_route_priority",
         name="update_route_priority",
         roles=GUEST_ROLE_LEVEL,
+        unwrap_on_success=False,
     )
     def update_route_priority(
         self,
