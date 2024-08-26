@@ -82,3 +82,6 @@ out.*
 
 # migration data
 packages/grid/helm/examples/dev/migration.yaml
+
+# dynaconf settings file
+**/settings.yaml

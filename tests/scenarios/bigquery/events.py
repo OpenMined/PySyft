@@ -14,6 +14,9 @@ class EventManager:
 
     def register(self, event_name: str):
         self.events[event_name] = anyio.Event()
+        # change to two step process to better track event outcomes
+        self.events[event_name].set()
+
         waiters = self.event_waiters.get(event_name, [])
         for waiter in waiters:
             waiter.set()
@@ -33,3 +36,9 @@ class EventManager:
             return self.events[event_name]
         finally:
             self.event_waiters[event_name].remove(waiter)
+
+    async def happened(self, event_name: str) -> bool:
+        if event_name in self.events:
+            event = self.events[event_name]
+            return event.is_set()
+        return False
