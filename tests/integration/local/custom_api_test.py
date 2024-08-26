@@ -7,8 +7,8 @@ import pytest
 import syft as sy
 from syft.service.code.user_code import UserCode
 from syft.service.request.request import Request
+from syft.service.request.request import RequestStatus
 from syft.service.response import SyftError
-from syft.service.response import SyftSuccess
 
 secrets = {
     "service_account_bigquery_private": {},
@@ -224,9 +224,9 @@ def reject_request(submit_ds_request):
 
     request = admin_client.requests[0]
 
-    rejected_request = request.deny(reason="Bad vibes :(")
+    request.deny(reason="Bad vibes :(")
 
-    yield admin_client, ds_client, fn_name, rejected_request
+    yield admin_client, ds_client, fn_name
 
 
 def extract_code_path(response):
@@ -260,15 +260,15 @@ def execute_request(client_high, request) -> dict:
 
 # set up public submit query endpoint
 def test_query_endpoint_added(update_query_endpoint) -> None:
-    high_client = update_query_endpoint
-    assert len(high_client.custom_api.api_endpoints()) == 1
+    admin_client, _ = update_query_endpoint
+    assert len(admin_client.custom_api.api_endpoints()) == 1
 
 
 def test_query_endpoint_mock_endpoint(update_query_endpoint) -> None:
     query = f"SELECT * FROM {secrets['dataset_1']}.{secrets['table_1']} LIMIT 10"
-    high_client = update_query_endpoint
+    admin_client, _ = update_query_endpoint
 
-    mock_result = high_client.api.services.bigquery.test_query.mock(
+    mock_result = admin_client.api.services.bigquery.test_query.mock(
         sql_query=f"SELECT * FROM {secrets['dataset_1']}.{secrets['table_1']} LIMIT 10"
     )
     assert not isinstance(mock_result, SyftError)
@@ -282,9 +282,9 @@ def test_query_endpoint_mock_endpoint(update_query_endpoint) -> None:
 
 def test_query_endpoint_private_endpoint(update_query_endpoint) -> None:
     query = f"SELECT * FROM {secrets['dataset_1']}.{secrets['table_1']} LIMIT 10"
-    high_client = update_query_endpoint
+    admin_client, _ = update_query_endpoint
 
-    result = high_client.api.services.bigquery.test_query.private(
+    result = admin_client.api.services.bigquery.test_query.private(
         sql_query=f"SELECT * FROM {secrets['dataset_1']}.{secrets['table_1']} LIMIT 10"
     )
     assert not isinstance(result, SyftError)
@@ -296,20 +296,17 @@ def test_query_endpoint_private_endpoint(update_query_endpoint) -> None:
     assert query in retrieved_obj
 
 
-# TODO add rate limit test
-
-
 def test_submit_query_endpoint_added(create_submit_query_endpoint):
-    high_client = create_submit_query_endpoint
+    admin_client, _ = create_submit_query_endpoint
 
-    assert len(high_client.custom_api.api_endpoints()) == 2
+    assert len(admin_client.custom_api.api_endpoints()) == 2
 
 
 def test_submit_query_endpoint(create_submit_query_endpoint) -> None:
-    high_client = create_submit_query_endpoint
+    admin_client, ds_client = create_submit_query_endpoint
     sql_query = f"SELECT * FROM {secrets['dataset_1']}.{secrets['table_1']} LIMIT 1"
     # Inspect the context state on an endpoint
-    result = high_client.api.services.bigquery.submit_query(
+    result = admin_client.api.services.bigquery.submit_query(
         func_name="my_func",
         query=sql_query,
     )
@@ -327,7 +324,7 @@ def test_submit_query_endpoint(create_submit_query_endpoint) -> None:
     fn_to_call = fn_name_pattern.findall(retrieved_obj)[0]
     assert "my_func" in fn_to_call
 
-    result = getattr(high_client.code, fn_to_call)()
+    result = getattr(admin_client.code, fn_to_call)()
 
     assert not isinstance(result, SyftError)
 
@@ -368,10 +365,11 @@ def test_submit_and_accept_by_deposit_flow(accept_request_by_deposit):
 
 
 def test_submit_and_reject_flow(reject_request):
-    admin_client, ds_client, fn_name, req = reject_request
+    admin_client, ds_client, fn_name = reject_request
 
-    assert isinstance(req, SyftSuccess)
-    assert "denied" in req.message
+    req = admin_client.requests[0]
+    assert isinstance(req, Request)
+    assert req.status == RequestStatus.REJECTED
     api_method = getattr(ds_client.code, fn_name)
 
     res = api_method()
