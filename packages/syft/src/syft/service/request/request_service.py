@@ -113,8 +113,11 @@ class RequestService(AbstractService):
         result = self.stash.get_all(context.credentials)
         if result.is_err():
             return SyftError(message=str(result.err()))
-        requests = result.ok()
-        # return [self.resolve_nested_requests(context, request) for request in requests]
+        requests: list[Request] = result.ok()
+
+        # TODO remove once sorting is handled by the stash
+        requests.sort(key=lambda x: (x.request_time, x.id), reverse=True)
+
         return requests
 
     @service_method(path="request.get_all_info", name="get_all_info")
