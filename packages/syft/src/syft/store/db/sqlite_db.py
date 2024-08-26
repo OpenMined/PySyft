@@ -6,6 +6,7 @@ import threading
 # third party
 from pydantic import BaseModel
 from pydantic import Field
+import sqlalchemy as sa
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import sessionmaker
@@ -55,9 +56,21 @@ class SQLiteDBManager(DBManager):
         self.engine = create_engine(
             self.path, json_serializer=dumps, json_deserializer=loads
         )
+        print(f"Connecting to {self.path}")
         self.Session = sessionmaker(bind=self.engine)
+
         # TODO use AuthedServiceContext for session management instead of threading.local
         self.thread_local = threading.local()
+
+        self.update_settings()
+
+    def update_settings(self) -> None:
+        connection = self.engine.connect()
+
+        connection.execute(sa.text("PRAGMA journal_mode = WAL"))
+        connection.execute(sa.text("PRAGMA busy_timeout = 5000"))
+        connection.execute(sa.text("PRAGMA temp_store = 2"))
+        connection.execute(sa.text("PRAGMA synchronous = 1"))
 
     def init_tables(self) -> None:
         Base.metadata.create_all(self.engine)
