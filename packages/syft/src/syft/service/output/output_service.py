@@ -192,14 +192,9 @@ class ExecutionOutput(SyncableSyftObject):
 @instrument
 @serializable(canonical_name="OutputStashSQL", version=1)
 class OutputStash(ObjectStash[ExecutionOutput]):
-    object_type = ExecutionOutput
     settings: PartitionSettings = PartitionSettings(
         name=ExecutionOutput.__canonical_name__, object_type=ExecutionOutput
     )
-
-    def __init__(self, store: DocumentStore) -> None:
-        super().__init__(store)
-        self.store = store
 
     def get_by_user_code_id(
         self, credentials: SyftVerifyKey, user_code_id: UID

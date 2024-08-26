@@ -23,6 +23,7 @@ from typing import cast
 from nacl.signing import SigningKey
 from result import Err
 from result import Result
+from syft.store.db.sqlite_db import SQLiteDBConfig, SQLiteDBManager
 
 # relative
 from .. import __version__
@@ -386,6 +387,7 @@ class Server(AbstractServer):
             use_sqlite=use_sqlite,
             store_type="Action Store",
         )
+
         self.init_stores(
             action_store_config=action_store_config,
             document_store_config=document_store_config,
@@ -393,6 +395,9 @@ class Server(AbstractServer):
 
         # construct services only after init stores
         self.services: ServiceRegistry = ServiceRegistry.for_server(self)
+        self.db.init_tables()
+        self.services.user.stash.init_root_user()
+        self.action_store = self.services.action.store
 
         create_admin_new(  # nosec B106
             name=root_username,
@@ -852,27 +857,37 @@ class Server(AbstractServer):
             store_config=document_store_config,
         )
 
-        if isinstance(action_store_config, SQLiteStoreConfig):
-            self.action_store: ActionObjectStash = ActionObjectStash(
-                store=self.document_store,
-            )
-        elif isinstance(action_store_config, MongoStoreConfig):
-            # We add the python id of the current server in order
-            # to create one connection per Server object in MongoClientCache
-            # so that we avoid closing the connection from a
-            # different thread through the garbage collection
-            action_store_config.client_config.server_obj_python_id = id(self)
+        # if isinstance(action_store_config, SQLiteStoreConfig):
+        #     self.action_store: ActionObjectStash = ActionObjectStash(
+        #         store=self.document_store,
+        #     )
+        # elif isinstance(action_store_config, MongoStoreConfig):
+        #     # We add the python id of the current server in order
+        #     # to create one connection per Server object in MongoClientCache
+        #     # so that we avoid closing the connection from a
+        #     # different thread through the garbage collection
+        #     action_store_config.client_config.server_obj_python_id = id(self)
 
-            self.action_store = ActionObjectStash(
-                store=self.document_store,
-            )
-        else:
-            self.action_store = ActionObjectStash(
-                store=self.document_store,
-            )
+        #     self.action_store = ActionObjectStash(
+        #         store=self.document_store,
+        #     )
+        # else:
+        #     self.action_store = ActionObjectStash(
+        #         store=self.document_store,
+        #     )
 
         self.action_store_config = action_store_config
         self.queue_stash = QueueStash(store=self.document_store)
+
+        json_db_config = SQLiteDBConfig(
+            filename=f"{self.id}_json.db",
+            path=self.get_temp_dir("db"),
+        )
+        self.db = SQLiteDBManager(
+            config=json_db_config,
+            server_uid=self.id,
+            root_verify_key=self.signing_key.verify_key,
+        )
 
     @property
     def job_stash(self) -> JobStash:
@@ -954,7 +969,7 @@ class Server(AbstractServer):
 
     @property
     def settings(self) -> ServerSettings:
-        settings_stash = SettingsStash(store=self.document_store)
+        settings_stash = self.services.settings.stash
         if self.signing_key is None:
             raise ValueError(f"{self} has no signing key")
         settings = settings_stash.get_all(self.signing_key.verify_key)
@@ -1592,7 +1607,7 @@ class Server(AbstractServer):
 
     def create_initial_settings(self, admin_email: str) -> ServerSettings | None:
         try:
-            settings_stash = SettingsStash(store=self.document_store)
+            settings_stash = SettingsStash(store=self.services.settings.stash)
             if self.signing_key is None:
                 logger.debug(
                     "create_initial_settings failed as there is no signing key"
@@ -1655,10 +1670,10 @@ def create_admin_new(
     name: str,
     email: str,
     password: str,
-    server: AbstractServer,
+    server: Server,
 ) -> User | None:
     try:
-        user_stash = UserStash(store=server.document_store)
+        user_stash = server.services.user.stash
         row_exists = user_stash.get_by_email(
             credentials=server.signing_key.verify_key, email=email
         ).ok()

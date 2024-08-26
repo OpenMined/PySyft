@@ -10,10 +10,6 @@ from .log import SyftLog
 @instrument
 @serializable(canonical_name="LogStash", version=1)
 class LogStash(ObjectStash[SyftLog]):
-    object_type = SyftLog
     settings: PartitionSettings = PartitionSettings(
         name=SyftLog.__canonical_name__, object_type=SyftLog
     )
-
-    def __init__(self, store: DocumentStore) -> None:
-        super().__init__(store=store)

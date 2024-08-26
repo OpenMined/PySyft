@@ -18,13 +18,9 @@ VerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
 
 @serializable(canonical_name="CodeHistoryStashSQL", version=1)
 class CodeHistoryStash(ObjectStash[CodeHistory]):
-    object_type = CodeHistory
     settings: PartitionSettings = PartitionSettings(
         name=CodeHistory.__canonical_name__, object_type=CodeHistory
     )
-
-    def __init__(self, store: DocumentStore) -> None:
-        super().__init__(store=store)
 
     def get_by_service_func_name_and_verify_key(
         self,

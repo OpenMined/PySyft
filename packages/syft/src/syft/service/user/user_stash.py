@@ -3,13 +3,13 @@
 # third party
 from result import Ok
 from result import Result
+from syft.store.db.sqlite_db import DBManager
 
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftSigningKey
 from ...server.credentials import SyftVerifyKey
 from ...store.db.stash import ObjectStash
-from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...util.telemetry import instrument
@@ -27,18 +27,15 @@ VerifyKeyPartitionKey = PartitionKey(key="verify_key", type_=SyftVerifyKey)
 @instrument
 @serializable(canonical_name="UserStashSQL", version=1)
 class UserStash(ObjectStash[User]):
-    object_type = User
     settings: PartitionSettings = PartitionSettings(
         name=User.__canonical_name__,
         object_type=User,
     )
 
-    def __init__(self, store: DocumentStore) -> None:
-        super().__init__(store=store)
+    def __init__(self, store: DBManager) -> None:
+        super().__init__(store)
 
-        self._init_root()
-
-    def _init_root(self) -> None:
+    def init_root_user(self) -> None:
         # start a transaction
         users = self.get_all(self.root_verify_key, has_permission=True)
         if not users:

@@ -842,13 +842,9 @@ class JobInfo(SyftObject):
 @instrument
 @serializable(canonical_name="JobStashSQL", version=1)
 class JobStash(ObjectStash[Job]):
-    object_type = Job
     settings: PartitionSettings = PartitionSettings(
         name=Job.__canonical_name__, object_type=Job
     )
-
-    def __init__(self, store: DocumentStore) -> None:
-        super().__init__(store)
 
     def set_result(
         self,

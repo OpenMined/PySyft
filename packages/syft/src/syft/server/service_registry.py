@@ -6,6 +6,8 @@ import typing
 from typing import Any
 from typing import TYPE_CHECKING
 
+from syft.store.db.stash import ObjectStash
+
 # relative
 from ..serde.serializable import serializable
 from ..service.action.action_service import ActionService
@@ -106,12 +108,29 @@ class ServiceRegistry:
         }
 
     @classmethod
+    def _uses_new_store(cls, service_cls: type[AbstractService]) -> bool:
+        stash_annotation = service_cls.__annotations__.get("stash")
+        try:
+            if issubclass(stash_annotation, ObjectStash):
+                return True
+            return False
+        except Exception as e:
+            return False
+
+    @classmethod
     def _construct_services(cls, server: "Server") -> dict[str, AbstractService]:
         service_dict = {}
         for field_name, service_cls in cls.get_service_classes().items():
             svc_kwargs: dict[str, Any] = {}
-            if issubclass(service_cls.store_type, ActionObjectStash):
+
+            # Use new DB
+            if cls._uses_new_store(service_cls):
+                svc_kwargs["store"] = server.db
+
+            # Use old DB
+            elif issubclass(service_cls.store_type, ActionObjectStash):
                 svc_kwargs["store"] = server.action_store
+
             else:
                 svc_kwargs["store"] = server.document_store
 

@@ -16,13 +16,9 @@ from .user_code import UserCode
 @instrument
 @serializable(canonical_name="UserCodeSQLStash", version=1)
 class UserCodeStash(ObjectStash[UserCode]):
-    object_type = UserCode
     settings: PartitionSettings = PartitionSettings(
         name=UserCode.__canonical_name__, object_type=UserCode
     )
-
-    def __init__(self, store: DocumentStore) -> None:
-        super().__init__(store=store)
 
     def get_by_code_hash(
         self, credentials: SyftVerifyKey, code_hash: str

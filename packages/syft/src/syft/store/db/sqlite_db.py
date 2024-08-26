@@ -1,29 +1,64 @@
 # stdlib
 import threading
+from pathlib import Path
 
 # third party
+from pydantic import BaseModel, Field
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import sessionmaker
+from syft.server.credentials import SyftVerifyKey
 
 # relative
 from ...types.uid import UID
 from .models import Base
 from .utils import dumps
 from .utils import loads
+import tempfile
 
 
-class SQLiteDBManager:
-    def __init__(self, server_uid: UID) -> None:
+class DBConfig(BaseModel):
+    pass
+
+
+class SQLiteDBConfig(DBConfig):
+    filename: str = "jsondb.sqlite"
+    path: Path = Field(default_factory=tempfile.gettempdir)
+
+
+class DBManager:
+    def __init__(
+        self,
+        config: DBConfig,
+        server_uid: UID,
+        root_verify_key: SyftVerifyKey,
+    ) -> None:
+        self.config = config
         self.server_uid = server_uid
-        self.path = f"sqlite:////tmp/{str(server_uid)}.db"
+        self.root_verify_key = root_verify_key
+
+
+class SQLiteDBManager(DBManager):
+    def __init__(
+        self,
+        config: SQLiteDBConfig,
+        server_uid: UID,
+        root_verify_key: SyftVerifyKey,
+    ) -> None:
+        self.config = config
+        self.root_verify_key = root_verify_key
+        self.server_uid = server_uid
+
+        self.filepath = config.path / config.filename
+        self.path = f"sqlite:///{self.filepath.resolve()}"
         self.engine = create_engine(
             self.path, json_serializer=dumps, json_deserializer=loads
         )
-        print(f"Connecting to {self.path}")
         self.Session = sessionmaker(bind=self.engine)
+        # TODO use AuthedServiceContext for session management instead of threading.local
         self.thread_local = threading.local()
 
+    def init_tables(self) -> None:
         Base.metadata.create_all(self.engine)
 
     # TODO remove

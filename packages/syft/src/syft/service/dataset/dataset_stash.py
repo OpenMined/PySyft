@@ -19,13 +19,9 @@ from .dataset import Dataset
 @instrument
 @serializable(canonical_name="DatasetStashSQL", version=1)
 class DatasetStash(ObjectStash[Dataset]):
-    object_type = Dataset
     settings: PartitionSettings = PartitionSettings(
         name=Dataset.__canonical_name__, object_type=Dataset
     )
-
-    def __init__(self, store: DocumentStore) -> None:
-        super().__init__(store=store)
 
     def get_by_name(
         self, credentials: SyftVerifyKey, name: str

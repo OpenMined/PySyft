@@ -25,8 +25,6 @@ from .action_permissions import StoragePermission
 
 @serializable(canonical_name="ActionObjectSQLStore", version=1)
 class ActionObjectStash(ObjectStash[ActionObject]):
-    object_type = ActionObject
-
     def get(
         self, uid: UID, credentials: SyftVerifyKey, has_permission: bool = False
     ) -> Result[ActionObject, str]:

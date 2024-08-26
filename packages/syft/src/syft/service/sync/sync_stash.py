@@ -7,6 +7,7 @@
 # third party
 from result import Ok
 from result import Result
+from syft.store.db.sqlite_db import DBManager
 
 # relative
 from ...serde.serializable import serializable
@@ -25,15 +26,13 @@ OrderByDatePartitionKey = PartitionKey(key="created_at", type_=DateTime)
 @instrument
 @serializable(canonical_name="SyncStash", version=1)
 class SyncStash(ObjectStash[SyncState]):
-    object_type = SyncState
     settings: PartitionSettings = PartitionSettings(
         name=SyncState.__canonical_name__,
         object_type=SyncState,
     )
 
-    def __init__(self, store: DocumentStore):
+    def __init__(self, store: DBManager) -> None:
         super().__init__(store)
-        self.store = store
         self.last_state: SyncState | None = None
 
     def get_latest(self, credentials: SyftVerifyKey) -> Result[SyncState | None, str]:

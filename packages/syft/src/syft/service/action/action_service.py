@@ -56,6 +56,8 @@ logger = logging.getLogger(__name__)
 
 @serializable(canonical_name="ActionService", version=1)
 class ActionService(AbstractService):
+    stash: ActionObjectStash
+
     def __init__(self, store: DocumentStore) -> None:
         self.store = ActionObjectStash(store)
 

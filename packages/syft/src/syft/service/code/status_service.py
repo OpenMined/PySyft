@@ -23,14 +23,10 @@ from .user_code import UserCodeStatusCollection
 @instrument
 @serializable(canonical_name="StatusSQLStash", version=1)
 class StatusStash(ObjectStash[UserCodeStatusCollection]):
-    object_type = UserCodeStatusCollection
     settings: PartitionSettings = PartitionSettings(
         name=UserCodeStatusCollection.__canonical_name__,
         object_type=UserCodeStatusCollection,
     )
-
-    def __init__(self, store: DocumentStore) -> None:
-        super().__init__(store=store)
 
 
 @instrument

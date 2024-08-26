@@ -18,13 +18,9 @@ MISSING_PATH_STRING = "Endpoint path: {path} does not exist."
 
 @serializable(canonical_name="TwinAPIEndpointSQLStash", version=1)
 class TwinAPIEndpointStash(ObjectStash[TwinAPIEndpoint]):
-    object_type = TwinAPIEndpoint
     settings: PartitionSettings = PartitionSettings(
         name=TwinAPIEndpoint.__canonical_name__, object_type=TwinAPIEndpoint
     )
-
-    def __init__(self, store: DocumentStore) -> None:
-        super().__init__(store=store)
 
     def get_by_path(
         self, credentials: SyftVerifyKey, path: str

@@ -3,6 +3,7 @@
 # stdlib
 from typing import Any
 from typing import Generic
+from typing import get_args
 import uuid
 
 # third party
@@ -35,25 +36,41 @@ from ...service.response import SyftSuccess
 from ...service.user.user_roles import ServiceRole
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
-from ..document_store import DocumentStore
 from .models import Base
 from .models import UIDTypeDecorator
-from .sqlite_db import SQLiteDBManager
+from .sqlite_db import DBManager
 
 SyftT = TypeVar("SyftT", bound=SyftObject)
 T = TypeVar("T")
 
 
 class ObjectStash(Generic[SyftT]):
-    object_type: type[SyftT]
     table: Table
+    object_type: type[SyftT]
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.server_uid = store.server_uid
-        self.root_verify_key = store.root_verify_key
-        # is there a better way to init the table
+    def __init__(self, store: DBManager) -> None:
+        self.db = store
+        self.object_type = self.get_object_type()
         self.table = self._create_table()
-        self.db = SQLiteDBManager(self.server_uid)
+
+    @classmethod
+    def get_object_type(cls) -> type[SyftT]:
+        generic_args = get_args(cls.__orig_bases__[0])
+        if len(generic_args) != 1:
+            raise TypeError("ObjectStash must have a single generic argument")
+        elif not issubclass(generic_args[0], SyftObject):
+            raise TypeError(
+                "ObjectStash generic argument must be a subclass of SyftObject"
+            )
+        return generic_args[0]
+
+    @property
+    def server_uid(self) -> UID:
+        return self.db.server_uid
+
+    @property
+    def root_verify_key(self) -> SyftVerifyKey:
+        return self.db.root_verify_key
 
     def check_type(self, obj: T, type_: type) -> Result[T, str]:
         return (
