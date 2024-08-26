@@ -305,13 +305,13 @@ class ObjectStash(Generic[SyftT]):
 
     def get_role(self, credentials: SyftVerifyKey) -> ServiceRole:
         user_table = Table("User", Base.metadata)
-        stmt = user_table.select().where(
+        stmt = select(user_table.c.fields["role"]).where(
             self._get_field_filter("verify_key", str(credentials), table=user_table),
         )
-        result = self.session.execute(stmt).first()
-        if result is None:
+        role = self.session.scalar(stmt)
+        if role is None:
             return ServiceRole.GUEST
-        return ServiceRole[result.fields["role"]]
+        return ServiceRole[role]
 
     def _get_permission_filter(
         self,

@@ -6,11 +6,11 @@ from result import Ok
 from result import Result
 
 # relative
+from ...serde.json_serde import serialize_json
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import BaseUIDStoreStash
+from ...store.db.stash import ObjectStash
 from ...store.document_store import PartitionKey
-from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
@@ -33,45 +33,29 @@ LinkedObjectPartitionKey = PartitionKey(key="linked_obj", type_=LinkedObject)
 
 
 @instrument
-@serializable(canonical_name="NotificationStash", version=1)
-class NotificationStash(BaseUIDStoreStash):
-    object_type = Notification
-    settings: PartitionSettings = PartitionSettings(
-        name=Notification.__canonical_name__,
-        object_type=Notification,
-    )
-
+@serializable(canonical_name="NotificationSQLStash", version=1)
+class NotificationStash(ObjectStash[Notification]):
     def get_all_inbox_for_verify_key(
         self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
     ) -> Result[list[Notification], str]:
-        qks = QueryKeys(
-            qks=[
-                ToUserVerifyKeyPartitionKey.with_obj(verify_key),
-            ]
-        )
-        return self.get_all_for_verify_key(
-            credentials=credentials, verify_key=verify_key, qks=qks
+        return self.get_all_by_field(
+            credentials, field_name="verify_key", field_value=str(verify_key)
         )
 
     def get_all_sent_for_verify_key(
         self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
     ) -> Result[list[Notification], str]:
-        qks = QueryKeys(
-            qks=[
-                FromUserVerifyKeyPartitionKey.with_obj(verify_key),
-            ]
+        return self.get_all_by_field(
+            credentials,
+            field_name="from_user_verify_key",
+            field_value=str(verify_key),
         )
-        return self.get_all_for_verify_key(credentials, verify_key=verify_key, qks=qks)
 
     def get_all_for_verify_key(
         self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey, qks: QueryKeys
     ) -> Result[list[Notification], str]:
-        if isinstance(verify_key, str):
-            verify_key = SyftVerifyKey.from_string(verify_key)
-        return self.query_all(
-            credentials,
-            qks=qks,
-            order_by=OrderByCreatedAtTimeStampPartitionKey,
+        return self.get_all_by_field(
+            credentials, field_name="verify_key", field_value=str(verify_key)
         )
 
     def get_all_by_verify_key_for_status(
@@ -80,16 +64,12 @@ class NotificationStash(BaseUIDStoreStash):
         verify_key: SyftVerifyKey,
         status: NotificationStatus,
     ) -> Result[list[Notification], str]:
-        qks = QueryKeys(
-            qks=[
-                ToUserVerifyKeyPartitionKey.with_obj(verify_key),
-                StatusPartitionKey.with_obj(status),
-            ]
-        )
-        return self.query_all(
+        return self.get_all_by_fields(
             credentials,
-            qks=qks,
-            order_by=OrderByCreatedAtTimeStampPartitionKey,
+            fields={
+                "to_user_verify_key": str(verify_key),
+                "status": status.value,
+            },
         )
 
     def get_notification_for_linked_obj(
@@ -97,12 +77,10 @@ class NotificationStash(BaseUIDStoreStash):
         credentials: SyftVerifyKey,
         linked_obj: LinkedObject,
     ) -> Result[Notification, str]:
-        qks = QueryKeys(
-            qks=[
-                LinkedObjectPartitionKey.with_obj(linked_obj),
-            ]
+        # TODO does this work?
+        return self.get_one_by_fields(
+            credentials, fields={"linked_obj": serialize_json(linked_obj)}
         )
-        return self.query_one(credentials=credentials, qks=qks)
 
     def update_notification_status(
         self, credentials: SyftVerifyKey, uid: UID, status: NotificationStatus

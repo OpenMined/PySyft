@@ -80,7 +80,7 @@ class NotifierService(AbstractService):
         if notifier is None:
             return SyftError(message="Notifier settings not found.")
         notifier.active = True
-        result = self.stash.update(credentials=context.credentials, settings=notifier)
+        result = self.stash.update(credentials=context.credentials, obj=notifier)
         if result.is_err():
             return SyftError(message=result.err())
         return SyftSuccess(message="notifier.active set to true.")
@@ -100,7 +100,7 @@ class NotifierService(AbstractService):
             return SyftError(message="Notifier settings not found.")
 
         notifier.active = False
-        result = self.stash.update(credentials=context.credentials, settings=notifier)
+        result = self.stash.update(credentials=context.credentials, obj=notifier)
         if result.is_err():
             return SyftError(message=result.err())
         return SyftSuccess(message="notifier.active set to false.")
@@ -210,7 +210,7 @@ class NotifierService(AbstractService):
             "Email credentials are valid. Updating the notifier settings in the db."
         )
 
-        result = self.stash.update(credentials=context.credentials, settings=notifier)
+        result = self.stash.update(credentials=context.credentials, obj=notifier)
         if result.is_err():
             return SyftError(message=result.err())
 
@@ -237,7 +237,7 @@ class NotifierService(AbstractService):
 
         notifier = result.ok()
         notifier.active = False
-        result = self.stash.update(credentials=context.credentials, settings=notifier)
+        result = self.stash.update(credentials=context.credentials, obj=notifier)
         if result.is_err():
             return SyftError(message=result.err())
 
@@ -294,7 +294,7 @@ class NotifierService(AbstractService):
         """
         try:
             # Create a new NotifierStash since its a static method.
-            notifier_stash = NotifierStash(store=server.document_store)
+            notifier_stash = NotifierStash(store=server.db)
             result = notifier_stash.get(server.signing_key.verify_key)
             if result.is_err():
                 raise Exception(f"Could not create notifier: {result}")
@@ -348,7 +348,7 @@ class NotifierService(AbstractService):
         notifier = notifier.ok()
 
         notifier.email_rate_limit[email_type.value] = daily_limit
-        result = self.stash.update(credentials=context.credentials, settings=notifier)
+        result = self.stash.update(credentials=context.credentials, obj=notifier)
         if result.is_err():
             return SyftError(message="Couldn't update the notifier.")
 
@@ -410,7 +410,7 @@ class NotifierService(AbstractService):
                     )
                 }
 
-            result = self.stash.update(credentials=admin_key, settings=notifier)
+            result = self.stash.update(credentials=admin_key, obj=notifier)
             if result.is_err():
                 return SyftError(message="Couldn't update the notifier.")
 
