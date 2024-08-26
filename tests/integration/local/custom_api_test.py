@@ -5,11 +5,10 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.service.response import SyftError, SyftSuccess
-from syft.service.request.request import Request
-from syft.service.request.request import RequestStatus
 from syft.service.code.user_code import UserCode
-from syft.service.job.job_stash import Job
+from syft.service.request.request import Request
+from syft.service.response import SyftError
+from syft.service.response import SyftSuccess
 
 secrets = {
     "service_account_bigquery_private": {},
@@ -138,16 +137,21 @@ def submit_query(
         f"Query submitted {request}. Use `client.code.{func_name}()` to run your query"
     )
 
+
 @pytest.fixture
 def get_clients(full_high_worker):
     admin_client = full_high_worker.login(
         email="info@openmined.org", password="changethis"
     )
     admin_client.register(
-        email="ds_user@test.abc", name="ds_user", password="1234", password_verify="1234"
+        email="ds_user@test.abc",
+        name="ds_user",
+        password="1234",
+        password_verify="1234",
     )
     ds_client = full_high_worker.login(email="ds_user@test.abc", password="1234")
     yield admin_client, ds_client
+
 
 @pytest.fixture
 def setup_query_endpoint(get_clients):
@@ -175,6 +179,7 @@ def update_query_endpoint(setup_query_endpoint):
     )
     yield admin_client, ds_client
 
+
 @pytest.fixture
 def create_submit_query_endpoint(update_query_endpoint):
     admin_client, ds_client = update_query_endpoint
@@ -192,10 +197,13 @@ def submit_ds_request(create_submit_query_endpoint):
     FUNC_NAME = "request_and_accept"
     QUERY = "SELECT * FROM `bigquery-public-data.ml_datasets.penguins` LIMIT 10"
 
-    submit_res = ds_client.api.services.bigquery.submit_query(func_name=FUNC_NAME, query=QUERY)
+    submit_res = ds_client.api.services.bigquery.submit_query(
+        func_name=FUNC_NAME, query=QUERY
+    )
 
     fn_name = extract_code_path(submit_res)
     yield admin_client, ds_client, fn_name
+
 
 @pytest.fixture
 def accept_request_by_deposit(submit_ds_request):
@@ -204,10 +212,11 @@ def accept_request_by_deposit(submit_ds_request):
     request = admin_client.requests[0]
 
     job = execute_request(admin_client, request)
-    job.wait() 
+    job.wait()
     job_info = job.info(result=True)
     approved_request = request.deposit_result(job_info, approve=True)
     yield admin_client, ds_client, fn_name, job, approved_request
+
 
 @pytest.fixture
 def reject_request(submit_ds_request):
@@ -219,6 +228,7 @@ def reject_request(submit_ds_request):
 
     yield admin_client, ds_client, fn_name, rejected_request
 
+
 def extract_code_path(response):
     # stdlib
     import re
@@ -229,6 +239,7 @@ def extract_code_path(response):
         extracted_code = match.group(1)
         return extracted_code
     return None
+
 
 def execute_request(client_high, request) -> dict:
     if not isinstance(request, Request):
@@ -245,6 +256,7 @@ def execute_request(client_high, request) -> dict:
 
     job = api_func(blocking=False)
     return job
+
 
 # set up public submit query endpoint
 def test_query_endpoint_added(update_query_endpoint) -> None:
@@ -284,10 +296,8 @@ def test_query_endpoint_private_endpoint(update_query_endpoint) -> None:
     assert query in retrieved_obj
 
 
-
-
-
 # TODO add rate limit test
+
 
 def test_submit_query_endpoint_added(create_submit_query_endpoint):
     high_client = create_submit_query_endpoint
@@ -339,9 +349,9 @@ def test_ds_submit_without_approval_errors(submit_ds_request):
     res = api_method()
     assert isinstance(res, SyftError)
 
+
 def test_submit_and_accept_by_deposit_flow(accept_request_by_deposit):
     admin_client, ds_client, fn_name, job, req = accept_request_by_deposit
-
 
     assert "request_and_accept" in fn_name
 
@@ -356,15 +366,14 @@ def test_submit_and_accept_by_deposit_flow(accept_request_by_deposit):
 
     assert res == job_res.get()
 
-def test_submit_and_reject_flow(reject_request):
 
+def test_submit_and_reject_flow(reject_request):
     admin_client, ds_client, fn_name, req = reject_request
 
     assert isinstance(req, SyftSuccess)
-    assert 'denied' in req.message
+    assert "denied" in req.message
     api_method = getattr(ds_client.code, fn_name)
 
     res = api_method()
     assert isinstance(res, SyftError)
     assert "Bad vibes :(" in res.message
-
