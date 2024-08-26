@@ -497,7 +497,7 @@ class NetworkService(AbstractService):
         path="network.delete_peer_by_id",
         name="delete_peer_by_id",
         roles=DATA_OWNER_ROLE_LEVEL,
-        unwrap_on_success=False
+        unwrap_on_success=False,
     )
     def delete_peer_by_id(self, context: AuthedServiceContext, uid: UID) -> SyftSuccess:
         """Delete Server Peer"""
@@ -566,7 +566,12 @@ class NetworkService(AbstractService):
             message="Route information added to remote peer", value=result
         )
 
-    @service_method(path="network.add_route", name="add_route", roles=GUEST_ROLE_LEVEL, unwrap_on_success=False)
+    @service_method(
+        path="network.add_route",
+        name="add_route",
+        roles=GUEST_ROLE_LEVEL,
+        unwrap_on_success=False,
+    )
     def add_route(
         self,
         context: AuthedServiceContext,
