@@ -1068,19 +1068,53 @@ def get_latest_tag(registry: str, repo: str) -> str | None:
     return None
 
 
-def get_nb_secrets(defaults: dict | None = None) -> dict:
-    if defaults is None:
-        defaults = {}
+def find_base_dir_with_tox_ini(start_path: str = ".") -> str | None:
+    base_path = os.path.abspath(start_path)
+    while True:
+        if os.path.exists(os.path.join(base_path, "tox.ini")):
+            return base_path
+        parent_path = os.path.abspath(os.path.join(base_path, os.pardir))
+        if parent_path == base_path:  # Reached the root directory
+            break
+        base_path = parent_path
+    return None
 
-    try:
-        filename = "./secrets.json"
-        with open(filename) as f:
-            loaded = json.loads(f.read())
-            defaults.update(loaded)
-    except Exception:
-        print(f"Unable to load {filename}")
 
-    return defaults
+def get_all_config_files(base_path: str, current_path: str) -> list[str]:
+    config_files = []
+    current_path = os.path.abspath(current_path)
+
+    while current_path.startswith(base_path):
+        config_file = os.path.join(current_path, "settings.yaml")
+        if os.path.exists(config_file):
+            config_files.append(config_file)
+        if current_path == base_path:  # Stop if we reach the base directory
+            break
+        current_path = os.path.abspath(os.path.join(current_path, os.pardir))
+
+    return config_files
+
+
+def test_settings() -> Any:
+    # third party
+    from dynaconf import Dynaconf
+
+    base_dir = find_base_dir_with_tox_ini()
+    config_files = get_all_config_files(base_dir, ".") if base_dir else []
+    # create
+    # can override with
+    # import os
+    # os.environ["TEST_KEY"] = "var"
+    # third party
+
+    # Dynaconf settings
+    test_settings = Dynaconf(
+        settings_files=list(reversed(config_files)),
+        environments=True,
+        envvar_prefix="TEST",
+    )
+
+    return test_settings
 
 
 class CustomRepr(reprlib.Repr):
