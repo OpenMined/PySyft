@@ -1,4 +1,5 @@
 # stdlib
+from inspect import unwrap
 from pathlib import Path
 
 # third party
@@ -53,7 +54,7 @@ class BlobStorageService(AbstractService):
     ) -> list[BlobStorageEntry]:
         return self.stash.get_all(context.credentials).unwrap()
 
-    @service_method(path="blob_storage.mount_azure", name="mount_azure")
+    @service_method(path="blob_storage.mount_azure", name="mount_azure", unwrap_on_success=False)
     def mount_azure(
         self,
         context: AuthedServiceContext,
@@ -259,6 +260,7 @@ class BlobStorageService(AbstractService):
         path="blob_storage.write_to_disk",
         name="write_to_disk",
         roles=GUEST_ROLE_LEVEL,
+        unwrap_on_success=False
     )
     def write_to_disk(
         self, context: AuthedServiceContext, uid: UID, data: bytes
@@ -280,6 +282,7 @@ class BlobStorageService(AbstractService):
         path="blob_storage.mark_write_complete",
         name="mark_write_complete",
         roles=GUEST_ROLE_LEVEL,
+        unwrap_on_success=False
     )
     def mark_write_complete(
         self,
@@ -306,7 +309,7 @@ class BlobStorageService(AbstractService):
 
         return result
 
-    @service_method(path="blob_storage.delete", name="delete")
+    @service_method(path="blob_storage.delete", name="delete", unwrap_on_success=False)
     def delete(self, context: AuthedServiceContext, uid: UID) -> SyftSuccess:
         obj = self.stash.get_by_uid(context.credentials, uid=uid).unwrap()
 
