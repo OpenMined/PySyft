@@ -183,7 +183,14 @@ async def result_is(
 
     lambda_source = inspect.getsource(expr)
     try:
-        result = expr()
+        try:
+            result = expr()
+        except Exception as e:
+            if isinstance(e, sy.SyftException):
+                result = e
+            else:
+                raise e
+
         assertion = False
         if isinstance(matches, bool):
             assertion = result == matches
@@ -193,9 +200,15 @@ async def result_is(
             message = matches.replace("*", "")
             assertion = message in str(result)
         else:
-            if hasattr(result, "message"):
-                message = result.message.replace("*", "")
+            if isinstance(result, sy.service.response.SyftResponseMessage):
+                message = matches.message.replace("*", "")
                 assertion = isinstance(result, type(matches)) and message in str(result)
+            elif isinstance(result, sy.SyftException):
+                message = matches.public_message.replace("*", "")
+                assertion = (
+                    isinstance(result, type(matches))
+                    and message in result.public_message
+                )
 
         if assertion and register:
             events.register(event_name=register)
@@ -423,7 +436,7 @@ async def test_level_2_basic_scenario(request):
     await result_is(
         events,
         lambda: run_code(users[0].client(server), method_name=f"{func_name}*"),
-        matches=sy.SyftError(message="*Your code is waiting for approval*"),
+        matches=sy.SyftException(public_message="*Your code is waiting for approval*"),
         after=[EVENT_USERS_CAN_SUBMIT_QUERY],
         register=EVENT_USERS_QUERY_NOT_READY,
     )
@@ -440,8 +453,8 @@ async def test_level_2_basic_scenario(request):
     res = await result_is(
         events,
         lambda: guest_register(root_client, make_user()),
-        matches=sy.SyftError(
-            message="*You don't have permission to create an account*"
+        matches=sy.SyftException(
+            public_message="*You have no permission to create an account*"
         ),
         after=EVENT_ALLOW_GUEST_SIGNUP_DISABLED,
     )
