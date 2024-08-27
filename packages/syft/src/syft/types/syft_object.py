@@ -36,7 +36,6 @@ from pydantic import EmailStr
 from pydantic import Field
 from pydantic import model_validator
 from pydantic.fields import PydanticUndefined
-from result import OkErr
 from typeguard import check_type
 from typing_extensions import Self
 
@@ -44,13 +43,14 @@ from typing_extensions import Self
 from ..serde.serializable import serializable
 from ..serde.serialize import _serialize as serialize
 from ..server.credentials import SyftVerifyKey
-from ..service.response import SyftError
 from ..util.autoreload import autoreload_enabled
 from ..util.markdown import as_markdown_python_code
 from ..util.notebook_ui.components.tabulator_template import build_tabulator_table
 from ..util.util import aggressive_set_attr
 from ..util.util import full_name_with_qualname
 from ..util.util import get_qualname_for
+from .result import Err
+from .result import Ok
 from .syft_metaclass import Empty
 from .syft_metaclass import PartialModelMetaclass
 from .syft_object_registry import SyftObjectRegistry
@@ -144,6 +144,36 @@ class SyftBaseObject(pydantic.BaseModel, SyftHashableObject):
     def _set_obj_location_(self, server_uid: UID, credentials: SyftVerifyKey) -> None:
         self.syft_server_location = server_uid
         self.syft_client_verify_key = credentials
+
+    def get_api(
+        self,
+        server_uid: UID | None = None,
+        user_verify_key: SyftVerifyKey | None = None,
+    ) -> "SyftAPI":
+        if server_uid is None:
+            server_uid = self.syft_server_location
+
+        if user_verify_key is None:
+            user_verify_key = self.syft_client_verify_key
+
+        # relative
+        from ..client.api import APIRegistry
+
+        return APIRegistry.api_for(
+            server_uid=server_uid,
+            user_verify_key=user_verify_key,
+        ).unwrap(
+            public_message=f"Can't access Syft API using this object. You must login to {self.syft_server_location}"
+        )
+
+    def get_api_wrapped(self):  # type: ignore
+        # relative
+        from ..client.api import APIRegistry
+
+        return APIRegistry.api_for(
+            server_uid=self.syft_server_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
 
 
 class Context(SyftBaseObject):
@@ -679,18 +709,14 @@ class SyftObject(SyftObjectVersioned):
                         diff_attrs.append(diff_attr)
         return diff_attrs
 
-    def _get_api(self) -> "SyftAPI | SyftError":
+    # TODO: Move this away from here
+    def _get_api(self) -> "SyftAPI":
         # relative
         from ..client.api import APIRegistry
 
-        api = APIRegistry.api_for(
+        return APIRegistry.api_for(
             self.syft_server_location, self.syft_client_verify_key
-        )
-        if api is None:
-            return SyftError(
-                f"Can't access the api. You must login to {self.server_uid}"
-            )
-        return api
+        ).unwrap()
 
     ## OVERRIDING pydantic.BaseModel.__getattr__
     ## return super().__getattribute__(item) -> return self.__getattribute__(item)
@@ -785,11 +811,18 @@ class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
     def __iter__(self) -> TupleGenerator:
         yield from ((k, v) for k, v in super().__iter__() if v is not Empty)
 
+    def apply(self, to: SyftObject) -> None:
+        for k, v in self:
+            setattr(to, k, v)
+
 
 def attach_attribute_to_syft_object(result: Any, attr_dict: dict[str, Any]) -> None:
     iterator: Iterable
-    if isinstance(result, OkErr):
-        iterator = (result._value,)
+
+    if isinstance(result, Ok):
+        iterator = (result.ok(),)
+    elif isinstance(result, Err):
+        iterator = (result.err(),)
     elif isinstance(result, Mapping):
         iterator = result.values()
     elif isinstance(result, Sequence):

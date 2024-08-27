@@ -36,10 +36,14 @@ class AuthedServiceContext(ServerServiceContext):
     extra_kwargs: dict = {}
     has_execute_permissions: bool = False
     is_blocking_api_call: bool = False
+    client_warnings: list[str] = []
 
     @property
     def dev_mode(self) -> Any:
         return self.server.dev_mode  # type: ignore
+
+    def add_warning(self, message: str) -> None:
+        self.client_warnings.append(message)
 
     def capabilities(self) -> list[ServiceRoleCapability]:
         return ROLE_TO_CAPABILITIES.get(self.role, [])
@@ -62,11 +66,9 @@ class AuthedServiceContext(ServerServiceContext):
         # but we can't import Job since it's a circular import
         if self.job_id is None:
             return None
-        res = self.server.job_stash.get_by_uid(self.credentials, self.job_id)
-        if res.is_err():
-            return None
-        else:
-            return res.ok()
+        return self.server.job_stash.get_by_uid(
+            self.credentials, self.job_id
+        ).ok()  # if this fails, it will return None
 
 
 class UnauthedServiceContext(ServerServiceContext):
