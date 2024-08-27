@@ -249,11 +249,13 @@ def execute_request(client_high, request) -> dict:
 
 
 # set up public submit query endpoint
+@pytest.mark.local_server
 def test_query_endpoint_added(update_query_endpoint) -> None:
     admin_client, _ = update_query_endpoint
     assert len(admin_client.custom_api.api_endpoints()) == 1
 
 
+@pytest.mark.local_server
 def test_query_endpoint_mock_endpoint(update_query_endpoint) -> None:
     query = "SELECT * FROM dataset_1.table_1 LIMIT 10"
     admin_client, _ = update_query_endpoint
@@ -268,6 +270,7 @@ def test_query_endpoint_mock_endpoint(update_query_endpoint) -> None:
     assert query in retrieved_obj
 
 
+@pytest.mark.local_server
 def test_query_endpoint_private_endpoint(update_query_endpoint) -> None:
     query = "SELECT * FROM dataset_1.table_1 LIMIT 100"
     admin_client, _ = update_query_endpoint
@@ -282,12 +285,14 @@ def test_query_endpoint_private_endpoint(update_query_endpoint) -> None:
     assert query in retrieved_obj
 
 
+@pytest.mark.local_server
 def test_submit_query_endpoint_added(create_submit_query_endpoint):
     admin_client, _ = create_submit_query_endpoint
 
     assert len(admin_client.custom_api.api_endpoints()) == 2
 
 
+@pytest.mark.local_server
 def test_submit_query_endpoint(create_submit_query_endpoint) -> None:
     admin_client, ds_client = create_submit_query_endpoint
     sql_query = "SELECT * FROM dataset_1.table_1 LIMIT 10"
@@ -322,6 +327,7 @@ def test_submit_query_endpoint(create_submit_query_endpoint) -> None:
     assert sql_query in retrieved_obj
 
 
+@pytest.mark.local_server
 @pytest.mark.parametrize(
     "fixture_name, expected_request_status, raises_expectation, error_message",
     [
