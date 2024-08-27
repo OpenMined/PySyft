@@ -7,7 +7,6 @@ from typing import get_args
 import uuid
 
 # third party
-from result import Result
 import sqlalchemy as sa
 from sqlalchemy import Column
 from sqlalchemy import Row
@@ -152,7 +151,9 @@ class ObjectStash(Generic[SyftT]):
     ) -> SyftT:
         stmt = self.table.select()
         stmt = stmt.where(self._get_field_filter("id", uid))
-        stmt = self._apply_permission_filter(stmt, credentials, has_permission)
+        stmt = self._apply_permission_filter(
+            stmt, credentials=credentials, has_permission=has_permission
+        )
         result = self.session.execute(stmt).first()
 
         if result is None:
@@ -192,7 +193,7 @@ class ObjectStash(Generic[SyftT]):
         stmt = table.select()
         stmt = stmt.where(sa.and_(*filters))
         stmt = self._apply_permission_filter(
-            stmt, credentials, has_permission=has_permission
+            stmt, credentials=credentials, has_permission=has_permission
         )
         stmt = self._apply_order_by(stmt, order_by, sort_order)
         stmt = self._apply_limit_offset(stmt, limit, offset)
@@ -212,7 +213,7 @@ class ObjectStash(Generic[SyftT]):
             credentials=credentials,
             fields={field_name: field_value},
             has_permission=has_permission,
-        )
+        ).unwrap()
 
     @as_result(SyftException, StashException, NotFoundException)
     def get_one_by_fields(
@@ -292,7 +293,9 @@ class ObjectStash(Generic[SyftT]):
         stmt = self.table.select().where(
             self.table.c.fields[field_name].contains(func.json_quote(field_value)),
         )
-        stmt = self._apply_permission_filter(stmt, credentials, has_permission)
+        stmt = self._apply_permission_filter(
+            stmt, credentials=credentials, has_permission=has_permission
+        )
         stmt = self._apply_order_by(stmt, order_by, sort_order)
         stmt = self._apply_limit_offset(stmt, limit, offset)
 
@@ -377,6 +380,7 @@ class ObjectStash(Generic[SyftT]):
     def _apply_permission_filter(
         self,
         stmt: T,
+        *,
         credentials: SyftVerifyKey,
         permission: ActionPermission = ActionPermission.READ,
         has_permission: bool = False,
@@ -399,7 +403,12 @@ class ObjectStash(Generic[SyftT]):
     ) -> list[SyftT]:
         stmt = self.table.select()
 
-        stmt = self._apply_permission_filter(stmt, credentials, has_permission)
+        stmt = self._apply_permission_filter(
+            stmt,
+            credentials=credentials,
+            has_permission=has_permission,
+            permission=ActionPermission.READ,
+        )
         stmt = self._apply_order_by(stmt, order_by, sort_order)
         stmt = self._apply_limit_offset(stmt, limit, offset)
 
@@ -456,7 +465,7 @@ class ObjectStash(Generic[SyftT]):
         stmt = self.table.delete().where(self._get_field_filter("id", uid))
         stmt = self._apply_permission_filter(
             stmt,
-            credentials,
+            credentials=credentials,
             permission=ActionPermission.WRITE,
             has_permission=has_permission,
         )
@@ -628,7 +637,7 @@ class ObjectStash(Generic[SyftT]):
         add_permissions: list[ActionObjectPermission] | None = None,
         add_storage_permission: bool = True,  # TODO: check the default value
         ignore_duplicates: bool = False,
-    ) -> Result[SyftT, str]:
+    ) -> SyftT:
         uid = obj.id
 
         # check if the object already exists
@@ -661,4 +670,4 @@ class ObjectStash(Generic[SyftT]):
         )
         self.session.execute(stmt)
         self.session.commit()
-        return self.get_by_uid(credentials, uid)
+        return self.get_by_uid(credentials, uid).unwrap()

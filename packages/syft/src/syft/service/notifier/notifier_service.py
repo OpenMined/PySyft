@@ -298,7 +298,7 @@ class NotifierService(AbstractService):
 
             if should_update:
                 notifier_stash.update(
-                    credentials=server.signing_key.verify_key, settings=notifier
+                    credentials=server.signing_key.verify_key, obj=notifier
                 ).unwrap()
             else:
                 notifier_stash.set(server.signing_key.verify_key, notifier).unwrap()

@@ -124,7 +124,7 @@ class MigrationService(AbstractService):
         self,
         context: AuthedServiceContext,
         object_type: type[SyftObject],
-    ) -> KeyValueActionStore | StorePartition:
+    ) -> StorePartition:
         object_partition: KeyValueActionStore | StorePartition | None = None
         if issubclass(object_type, ActionObject):
             object_partition = cast(KeyValueActionStore, context.server.action_store)

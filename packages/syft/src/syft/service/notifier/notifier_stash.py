@@ -34,4 +34,6 @@ class NotifierStash(ObjectStash[NotifierSettings]):
         result = self.get_all(credentials, limit=1).unwrap()
         if len(result) > 0:
             return result[0]
-        return None
+        raise NotFoundException(
+            public_message="No settings found for the current user."
+        )
