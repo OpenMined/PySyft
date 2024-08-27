@@ -29,6 +29,8 @@ build
 # docker compose volumes
 docker/data/*
 
+# env files
+.env
 
 # vagrant
 .vagrant
