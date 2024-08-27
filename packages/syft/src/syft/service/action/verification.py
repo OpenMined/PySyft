@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 # relative
-from ..response import SyftError
+from ...types.errors import SyftException
 from ..response import SyftResponseMessage
 from ..response import SyftSuccess
 from .action_object import ActionObject
@@ -57,7 +57,7 @@ def compare_hashes(
     target_hashes: list[int] | int,
     traced_hashes: list[int] | int,
     traced_results: Any,
-) -> SyftSuccess | SyftError:
+) -> SyftSuccess:
     if target_hashes == traced_hashes:
         msg = "Code Verification passed with matching hashes! Congratulations, and thank you for supporting PySyft!"
         return SyftSuccess(message=msg)
@@ -66,7 +66,7 @@ def compare_hashes(
             f"Hashes do not match! Target hashes were: {target_hashes} but Traced hashes were: {traced_results}. "
             f"Please try checking the logs."
         )
-        return SyftError(message=msg)
+        raise SyftException(public_message=msg)
 
 
 def code_verification(func: Callable) -> Callable:
@@ -81,12 +81,12 @@ def code_verification(func: Callable) -> Callable:
     - boolean:: if history hashes match
     """
 
-    def wrapper(*args: Any, **kwargs: Any) -> SyftSuccess | SyftError:
+    def wrapper(*args: Any, **kwargs: Any) -> SyftSuccess:
         trace_assets = []
         for asset in args:
             if not isinstance(asset, ActionObject):
-                raise Exception(
-                    f"ActionObject expected, instead received: {type(asset)}"
+                raise SyftException(
+                    public_message=f"ActionObject expected, instead received: {type(asset)}"
                 )
             # Manual type casting for now, to automate later
             if isinstance(asset.syft_action_data, np.ndarray):
@@ -123,6 +123,6 @@ def code_verification(func: Callable) -> Callable:
                 f"Hashes do not match! Target hashes were: {results} but Traced hashes were: {traced_results}. "
                 f"Please try checking the logs."
             )
-            return SyftError(message=msg)
+            raise SyftException(public_message=msg)
 
     return wrapper

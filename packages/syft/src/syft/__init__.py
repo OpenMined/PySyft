@@ -1,4 +1,4 @@
-__version__ = "0.9.1-beta.4"
+__version__ = "0.9.1-beta.6"
 
 # stdlib
 from collections.abc import Callable
@@ -76,6 +76,9 @@ from .service.response import SyftSuccess
 from .service.user.roles import Roles as roles
 from .service.user.user_service import UserService
 from .stable_version import LATEST_STABLE_SYFT
+from .types.errors import SyftException
+from .types.errors import raises
+from .types.result import as_result
 from .types.twin_object import TwinObject
 from .types.uid import UID
 from .util import filterwarnings
@@ -85,7 +88,6 @@ from .util.commit import __commit__
 from .util.patch_ipython import patch_ipython
 from .util.telemetry import instrument
 from .util.util import autocache
-from .util.util import get_nb_secrets
 from .util.util import get_root_data_path
 from .util.version_compare import make_requires
 
@@ -139,6 +141,14 @@ def _datasites() -> DatasiteRegistry:
 @module_property
 def _settings() -> UserSettings:
     return settings
+
+
+@module_property
+def _test_settings() -> Any:
+    # relative
+    from .util.util import test_settings
+
+    return test_settings()
 
 
 @module_property
