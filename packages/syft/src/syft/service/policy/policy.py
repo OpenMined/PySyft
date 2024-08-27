@@ -399,7 +399,6 @@ class InputPolicy(Policy):
         self,
         context: AuthedServiceContext,
         usr_input_kwargs: dict,
-        code_item_id: UID,
     ) -> bool:
         raise NotImplementedError
 
@@ -569,7 +568,6 @@ class MixedInputPolicy(InputPolicy):
         self,
         context: AuthedServiceContext,
         usr_input_kwargs: dict,
-        code_item_id: UID,
     ) -> bool:
         filtered_input_kwargs = self.filter_kwargs(
             kwargs=usr_input_kwargs,
@@ -696,7 +694,6 @@ class ExactMatch(InputPolicy):
         self,
         context: AuthedServiceContext,
         usr_input_kwargs: dict,
-        code_item_id: UID,
     ) -> bool:
         filtered_input_kwargs = self.filter_kwargs(
             kwargs=usr_input_kwargs,

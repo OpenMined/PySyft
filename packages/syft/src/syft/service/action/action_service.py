@@ -382,7 +382,6 @@ class ActionService(AbstractService):
             input_policy.is_valid(
                 context=context,
                 usr_input_kwargs=kwargs,
-                code_item_id=code_item.id,
             )
 
             # Filter input kwargs based on policy
