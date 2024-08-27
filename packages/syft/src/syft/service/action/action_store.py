@@ -4,11 +4,6 @@ from __future__ import annotations
 # stdlib
 import threading
 
-# third party
-from result import Err
-from result import Ok
-from result import Result
-
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftSigningKey
@@ -17,11 +12,15 @@ from ...store.dict_document_store import DictStoreConfig
 from ...store.document_store import BasePartitionSettings
 from ...store.document_store import DocumentStore
 from ...store.document_store import StoreConfig
+from ...store.document_store_errors import NotFoundException
+from ...store.document_store_errors import ObjectCRUDPermissionException
+from ...store.document_store_errors import StashException
+from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.syft_object import SyftObject
 from ...types.twin_object import TwinObject
 from ...types.uid import LineageID
 from ...types.uid import UID
-from ..response import SyftSuccess
 from .action_object import is_action_data_empty
 from .action_permissions import ActionObjectEXECUTE
 from .action_permissions import ActionObjectOWNER
@@ -80,74 +79,87 @@ class KeyValueActionStore(ActionStore):
 
             self.__user_stash = UserStash(store=document_store)
 
+    @as_result(NotFoundException, SyftException)
     def get(
         self, uid: UID, credentials: SyftVerifyKey, has_permission: bool = False
-    ) -> Result[SyftObject, str]:
+    ) -> SyftObject:
         uid = uid.id  # We only need the UID from LineageID or UID
 
         # if you get something you need READ permission
         read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
-        if has_permission or self.has_permission(read_permission):
-            try:
-                if isinstance(uid, LineageID):
-                    syft_object = self.data[uid.id]
-                elif isinstance(uid, UID):
-                    syft_object = self.data[uid]
-                else:
-                    raise Exception(f"Unrecognized UID type: {type(uid)}")
-                return Ok(syft_object)
-            except Exception as e:
-                return Err(f"Could not find item with uid {uid}, {e}")
-        return Err(f"Permission: {read_permission} denied")
 
-    def get_mock(self, uid: UID) -> Result[SyftObject, str]:
+        if not has_permission and not self.has_permission(read_permission):
+            raise SyftException(public_message=f"Permission: {read_permission} denied")
+
+        # TODO: Remove try/except?
+        try:
+            if isinstance(uid, LineageID):
+                syft_object = self.data[uid.id]
+            elif isinstance(uid, UID):
+                syft_object = self.data[uid]
+            else:
+                raise SyftException(
+                    public_message=f"Unrecognized UID type: {type(uid)}"
+                )
+            return syft_object
+        except Exception as e:
+            raise NotFoundException.from_exception(
+                e, public_message=f"Object {uid} not found"
+            )
+
+    @as_result(NotFoundException, SyftException)
+    def get_mock(self, uid: UID) -> SyftObject:
         uid = uid.id  # We only need the UID from LineageID or UID
 
         try:
             syft_object = self.data[uid]
+
             if isinstance(syft_object, TwinObject) and not is_action_data_empty(
                 syft_object.mock
             ):
-                return Ok(syft_object.mock)
-            return Err("No mock")
+                return syft_object.mock
+            raise NotFoundException(public_message=f"No mock found for object {uid}")
         except Exception as e:
-            return Err(f"Could not find item with uid {uid}, {e}")
+            raise NotFoundException.from_exception(
+                e, public_message=f"Object {uid} not found"
+            )
 
+    @as_result(NotFoundException, SyftException)
     def get_pointer(
         self,
         uid: UID,
         credentials: SyftVerifyKey,
         server_uid: UID,
-    ) -> Result[SyftObject, str]:
+    ) -> SyftObject:
         uid = uid.id  # We only need the UID from LineageID or UID
 
         try:
-            if uid in self.data:
-                obj = self.data[uid]
-                read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
+            if uid not in self.data:
+                raise SyftException(public_message="Permission denied")
 
-                # if you have permission you can have private data
-                if self.has_permission(read_permission):
-                    if isinstance(obj, TwinObject):
-                        return Ok(obj.private.syft_point_to(server_uid))
-                    return Ok(obj.syft_point_to(server_uid))
+            obj = self.data[uid]
+            read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
 
-                # if its a twin with a mock anyone can have this
+            # if you have permission you can have private data
+            if self.has_permission(read_permission):
                 if isinstance(obj, TwinObject):
-                    return Ok(obj.mock.syft_point_to(server_uid))
+                    return obj.private.syft_point_to(server_uid)
+                return obj.syft_point_to(server_uid)
 
-                # finally worst case you get ActionDataEmpty so you can still trace
-                return Ok(obj.as_empty().syft_point_to(server_uid))
+            # if its a twin with a mock anyone can have this
+            if isinstance(obj, TwinObject):
+                return obj.mock.syft_point_to(server_uid)
 
-            return Err("Permission denied")
+            # finally worst case you get ActionDataEmpty so you can still trace
+            return obj.as_empty().syft_point_to(server_uid)
+        # TODO: Check if this can be removed
         except Exception as e:
-            return Err(str(e))
+            raise SyftException(public_message=str(e))
 
     def exists(self, uid: UID) -> bool:
-        uid = uid.id  # We only need the UID from LineageID or UID
+        return uid.id in self.data  # We only need the UID from LineageID or UID
 
-        return uid in self.data
-
+    @as_result(SyftException, StashException)
     def set(
         self,
         uid: UID,
@@ -155,7 +167,7 @@ class KeyValueActionStore(ActionStore):
         syft_object: SyftObject,
         has_result_read_permission: bool = False,
         add_storage_permission: bool = True,
-    ) -> Result[SyftSuccess, Err]:
+    ) -> UID:
         uid = uid.id  # We only need the UID from LineageID or UID
 
         # if you set something you need WRITE permission
@@ -174,68 +186,77 @@ class KeyValueActionStore(ActionStore):
                 )
                 can_write = True if ownership_result.is_ok() else False
 
-        if can_write:
-            self.data[uid] = syft_object
-            if uid not in self.permissions:
-                # create default permissions
-                self.permissions[uid] = set()
-            if has_result_read_permission:
-                self.add_permission(ActionObjectREAD(uid=uid, credentials=credentials))
-            else:
-                self.add_permissions(
-                    [
-                        ActionObjectWRITE(uid=uid, credentials=credentials),
-                        ActionObjectEXECUTE(uid=uid, credentials=credentials),
-                    ]
-                )
+        if not can_write:
+            raise SyftException(public_message=f"Permission: {write_permission} denied")
 
-            if uid not in self.storage_permissions:
-                # create default storage permissions
-                self.storage_permissions[uid] = set()
-            if add_storage_permission:
-                self.add_storage_permission(
-                    StoragePermission(uid=uid, server_uid=self.server_uid)
-                )
-
-            return Ok(SyftSuccess(message=f"Set for ID: {uid}"))
-        return Err(f"Permission: {write_permission} denied")
-
-    def take_ownership(
-        self, uid: UID, credentials: SyftVerifyKey
-    ) -> Result[SyftSuccess, str]:
-        uid = uid.id  # We only need the UID from LineageID or UID
-
-        # first person using this UID can claim ownership
-        if uid not in self.permissions and uid not in self.data:
+        self.data[uid] = syft_object
+        if uid not in self.permissions:
+            # create default permissions
+            self.permissions[uid] = set()
+        if has_result_read_permission:
+            self.add_permission(ActionObjectREAD(uid=uid, credentials=credentials))
+        else:
             self.add_permissions(
                 [
-                    ActionObjectOWNER(uid=uid, credentials=credentials),
                     ActionObjectWRITE(uid=uid, credentials=credentials),
-                    ActionObjectREAD(uid=uid, credentials=credentials),
                     ActionObjectEXECUTE(uid=uid, credentials=credentials),
                 ]
             )
-            return Ok(SyftSuccess(message=f"Ownership of ID: {uid} taken."))
-        return Err(f"UID: {uid} already owned.")
 
-    def delete(self, uid: UID, credentials: SyftVerifyKey) -> Result[SyftSuccess, str]:
+        if uid not in self.storage_permissions:
+            # create default storage permissions
+            self.storage_permissions[uid] = set()
+        if add_storage_permission:
+            self.add_storage_permission(
+                StoragePermission(uid=uid, server_uid=self.server_uid)
+            )
+
+        return uid
+
+    @as_result(SyftException)
+    def take_ownership(self, uid: UID, credentials: SyftVerifyKey) -> bool:
+        uid = uid.id  # We only need the UID from LineageID or UID
+
+        # first person using this UID can claim ownership
+        if uid in self.permissions or uid in self.data:
+            raise SyftException(public_message=f"Object {uid} already owned")
+
+        self.add_permissions(
+            [
+                ActionObjectOWNER(uid=uid, credentials=credentials),
+                ActionObjectWRITE(uid=uid, credentials=credentials),
+                ActionObjectREAD(uid=uid, credentials=credentials),
+                ActionObjectEXECUTE(uid=uid, credentials=credentials),
+            ]
+        )
+
+        return True
+
+    @as_result(StashException)
+    def delete(self, uid: UID, credentials: SyftVerifyKey) -> UID:
         uid = uid.id  # We only need the UID from LineageID or UID
 
         # if you delete something you need OWNER permission
         # is it bad to evict a key and have someone else reuse it?
         # perhaps we should keep permissions but no data?
         owner_permission = ActionObjectOWNER(uid=uid, credentials=credentials)
-        if self.has_permission(owner_permission):
-            if uid in self.data:
-                del self.data[uid]
-            if uid in self.permissions:
-                del self.permissions[uid]
-            return Ok(SyftSuccess(message=f"ID: {uid} deleted"))
-        return Err(f"Permission: {owner_permission} denied")
+
+        if not self.has_permission(owner_permission):
+            raise StashException(
+                public_message=f"Permission: {owner_permission} denied"
+            )
+
+        if uid in self.data:
+            del self.data[uid]
+        if uid in self.permissions:
+            del self.permissions[uid]
+
+        return uid
 
     def has_permission(self, permission: ActionObjectPermission) -> bool:
         if not isinstance(permission.permission, ActionPermission):
-            raise Exception(f"ObjectPermission type: {permission.permission} not valid")
+            # If we reached this point, it's a malformed object error, let it bubble up
+            raise TypeError(f"ObjectPermission type: {permission.permission} not valid")
 
         if (
             permission.credentials is not None
@@ -294,13 +315,17 @@ class KeyValueActionStore(ActionStore):
         for permission in permissions:
             self.add_permission(permission)
 
-    def _get_permissions_for_uid(self, uid: UID) -> Result[set[str], str]:
+    @as_result(ObjectCRUDPermissionException)
+    def _get_permissions_for_uid(self, uid: UID) -> set[str]:
         if uid in self.permissions:
-            return Ok(self.permissions[uid])
-        return Err(f"No permissions found for uid: {uid}")
+            return self.permissions[uid]
+        raise ObjectCRUDPermissionException(
+            public_message=f"No permissions found for uid: {uid}"
+        )
 
-    def get_all_permissions(self) -> Result[dict[UID, set[str]], str]:
-        return Ok(dict(self.permissions.items()))
+    @as_result(SyftException)
+    def get_all_permissions(self) -> dict[UID, set[str]]:
+        return dict(self.permissions.items())
 
     def add_storage_permission(self, permission: StoragePermission) -> None:
         permissions = self.storage_permissions[permission.uid]
@@ -322,53 +347,55 @@ class KeyValueActionStore(ActionStore):
 
         if permission.uid in self.storage_permissions:
             return permission.server_uid in self.storage_permissions[permission.uid]
+
         return False
 
-    def _get_storage_permissions_for_uid(self, uid: UID) -> Result[set[UID], str]:
+    @as_result(ObjectCRUDPermissionException)
+    def _get_storage_permissions_for_uid(self, uid: UID) -> set[UID]:
         if uid in self.storage_permissions:
-            return Ok(self.storage_permissions[uid])
-        return Err(f"No storage permissions found for uid: {uid}")
+            return self.storage_permissions[uid]
+        raise ObjectCRUDPermissionException(f"No storage permissions found for {uid}")
 
-    def get_all_storage_permissions(self) -> Result[dict[UID, set[UID]], str]:
-        return Ok(dict(self.storage_permissions.items()))
+    @as_result(SyftException)
+    def get_all_storage_permissions(self) -> dict[UID, set[UID]]:
+        return dict(self.storage_permissions.items())
 
     def _all(
         self,
         credentials: SyftVerifyKey,
         has_permission: bool | None = False,
-    ) -> Result[list[SyftObject], str]:
+    ) -> list[SyftObject]:
         # this checks permissions
         res = [self.get(uid, credentials, has_permission) for uid in self.data.keys()]
-        result = [x.ok() for x in res if x.is_ok()]
-        return Ok(result)
+        return [x.ok() for x in res if x.is_ok()]  # type: ignore
 
-    def migrate_data(
-        self, to_klass: SyftObject, credentials: SyftVerifyKey
-    ) -> Result[bool, str]:
+    @as_result(ObjectCRUDPermissionException)
+    def migrate_data(self, to_klass: SyftObject, credentials: SyftVerifyKey) -> bool:
         has_root_permission = credentials == self.root_verify_key
 
-        if has_root_permission:
-            for key, value in self.data.items():
-                try:
-                    if value.__canonical_name__ != to_klass.__canonical_name__:
-                        continue
-                    migrated_value = value.migrate_to(to_klass.__version__)
-                except Exception as e:
-                    return Err(
-                        f"Failed to migrate data to {to_klass} {to_klass.__version__} for qk: {key}. Exception: {e}"
-                    )
-                result = self.set(
-                    uid=key,
-                    credentials=credentials,
-                    syft_object=migrated_value,
+        if not has_root_permission:
+            raise ObjectCRUDPermissionException(
+                public_message="You don't have permissions to migrate data."
+            )
+
+        for key, value in self.data.items():
+            try:
+                if value.__canonical_name__ != to_klass.__canonical_name__:
+                    continue
+                migrated_value = value.migrate_to(to_klass.__version__)
+            except Exception as e:
+                raise SyftException.from_exception(
+                    e,
+                    public_message=f"Failed to migrate data to {to_klass} for qk: {key}",
                 )
 
-                if result.is_err():
-                    return result.err()
+            self.set(
+                uid=key,
+                credentials=credentials,
+                syft_object=migrated_value,
+            ).unwrap()
 
-            return Ok(True)
-
-        return Err("You don't have permissions to migrate data.")
+        return True
 
 
 @serializable(canonical_name="DictActionStore", version=1)

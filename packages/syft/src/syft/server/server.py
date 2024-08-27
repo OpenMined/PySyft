@@ -21,9 +21,6 @@ from typing import cast
 
 # third party
 from nacl.signing import SigningKey
-from result import Err
-from result import Ok
-from result import Result
 
 # relative
 from .. import __version__
@@ -36,7 +33,6 @@ from ..client.api import SyftAPICall
 from ..client.api import SyftAPIData
 from ..client.api import debox_signed_syftapicall_response
 from ..client.client import SyftClient
-from ..exceptions.exception import PySyftException
 from ..protocol.data_protocol import PROTOCOL_TYPE
 from ..protocol.data_protocol import get_data_protocol
 from ..service.action.action_object import Action
@@ -73,6 +69,7 @@ from ..service.queue.zmq_queue import QueueConfig
 from ..service.queue.zmq_queue import ZMQClientConfig
 from ..service.queue.zmq_queue import ZMQQueueConfig
 from ..service.response import SyftError
+from ..service.response import SyftSuccess
 from ..service.service import AbstractService
 from ..service.service import ServiceConfigRegistry
 from ..service.service import UserServiceConfigRegistry
@@ -99,11 +96,16 @@ from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
 from ..store.blob_storage.seaweedfs import SeaweedFSBlobDeposit
 from ..store.dict_document_store import DictStoreConfig
 from ..store.document_store import StoreConfig
+from ..store.document_store_errors import NotFoundException
+from ..store.document_store_errors import StashException
 from ..store.linked_obj import LinkedObject
 from ..store.postgresql_document_store import PostgreSQLStoreConfig
 from ..store.sqlite_document_store import SQLiteStoreClientConfig
 from ..store.sqlite_document_store import SQLiteStoreConfig
 from ..types.datetime import DATETIME_FORMAT
+from ..types.errors import SyftException
+from ..types.result import Result
+from ..types.result import as_result
 from ..types.syft_metaclass import Empty
 from ..types.syft_object import Context
 from ..types.syft_object import PartialSyftObject
@@ -412,7 +414,7 @@ class Server(AbstractServer):
             email_sender=email_sender,
             smtp_port=smtp_port,
             smtp_host=smtp_host,
-        )
+        ).unwrap()
 
         self.post_init()
 
@@ -421,7 +423,7 @@ class Server(AbstractServer):
         else:
             self.find_and_migrate_data([ServerSettings])
 
-        self.create_initial_settings(admin_email=root_email)
+        self.create_initial_settings(admin_email=root_email).unwrap()
 
         self.init_blob_storage(config=blob_storage_config)
 
@@ -486,7 +488,7 @@ class Server(AbstractServer):
             blob_storage_service = self.get_service(BlobStorageService)
             remote_profiles = blob_storage_service.remote_profile_stash.get_all(
                 credentials=self.signing_key.verify_key, has_permission=True
-            ).ok()
+            ).unwrap()
             for remote_profile in remote_profiles:
                 self.blob_store_config.client_config.remote_profiles[
                     remote_profile.profile_name
@@ -619,7 +621,7 @@ class Server(AbstractServer):
         """Starts in-memory workers for the server."""
 
         worker_pools = self.pool_stash.get_all(credentials=self.verify_key).ok()
-        for worker_pool in worker_pools:
+        for worker_pool in worker_pools:  # type: ignore
             # Skip the default worker pool
             if worker_pool.name == DEFAULT_WORKER_POOL_NAME:
                 continue
@@ -644,7 +646,7 @@ class Server(AbstractServer):
             message_handler,
             address=address,
             service_name=service_name,
-            worker_stash=self.worker_stash,
+            worker_stash=self.worker_stash,  # type: ignore
             syft_worker_id=syft_worker_id,
         )
         consumer.run()
@@ -721,12 +723,12 @@ class Server(AbstractServer):
         from ..client.client import PythonConnection
 
         connection = PythonConnection(server=self)
-        client_type = connection.get_client_type()
-        if isinstance(client_type, SyftError):
-            return client_type
+        client_type = connection.get_client_type().unwrap()
         root_client = client_type(connection=connection, credentials=self.signing_key)
+
         if root_client.api.refresh_api_callback is not None:
             root_client.api.refresh_api_callback()
+
         return root_client
 
     def _find_klasses_pending_for_migration(
@@ -745,17 +747,13 @@ class Server(AbstractServer):
             canonical_name = object_type.__canonical_name__
             object_version = object_type.__version__
 
-            migration_state = migration_state_service.get_state(context, canonical_name)
-            if isinstance(migration_state, SyftError):
-                raise Exception(
-                    f"Failed to get migration state for {canonical_name}. Error: {migration_state}"
-                )
-            if (
-                migration_state is not None
-                and migration_state.current_version != migration_state.latest_version
-            ):
-                klasses_to_be_migrated.append(object_type)
-            else:
+            try:
+                migration_state = migration_state_service.get_state(
+                    context, canonical_name
+                ).unwrap()
+                if migration_state.current_version != migration_state.latest_version:
+                    klasses_to_be_migrated.append(object_type)
+            except NotFoundException:
                 migration_state_service.register_migration_state(
                     context,
                     current_version=object_version,
@@ -797,9 +795,7 @@ class Server(AbstractServer):
                 message += f"side {self.server_type.value.capitalize()} > as GUEST"
             logger.debug(message)
 
-        client_type = connection.get_client_type()
-        if isinstance(client_type, SyftError):
-            return client_type
+        client_type = connection.get_client_type().unwrap()
 
         guest_client = client_type(
             connection=connection, credentials=SyftSigningKey.generate()
@@ -930,36 +926,45 @@ class Server(AbstractServer):
     # NOTE: Some workflows currently expect the settings to be available,
     # even though they might not be defined yet. Because of this, we need to check
     # if the settings table is already defined. This function is basically a copy
-    # of the settings property but ignoring stash error in case settings doesn't exist yeat.
-    # it should be removed once the settings are refactored
-    # refactored and the inconsistencies between settings
-    # and services are resolved.
+    # of the settings property but ignoring stash error in case settings doesn't exist yet.
+    # it should be removed once the settings are refactored and the inconsistencies between
+    # settings and services are resolved.
     def get_settings(self) -> ServerSettings | None:
-        settings_stash = SettingsStash(store=self.document_store)
         if self.signing_key is None:
             raise ValueError(f"{self} has no signing key")
 
-        settings = settings_stash.get_all(self.signing_key.verify_key)
-        if settings.is_err():
+        settings_stash = SettingsStash(store=self.document_store)
+
+        try:
+            settings = settings_stash.get_all(self.signing_key.verify_key).unwrap()
+
+            if len(settings) > 0:
+                setting = settings[0]
+                self.update_self(setting)
+                return setting
+            else:
+                return None
+
+        except SyftException:
             return None
-        if settings.is_ok() and len(settings.ok()) > 0:
-            settings = settings.ok()[0]
-            self.update_self(settings)
-        return settings
 
     @property
     def settings(self) -> ServerSettings:
-        settings_stash = SettingsStash(store=self.document_store)
         if self.signing_key is None:
             raise ValueError(f"{self} has no signing key")
-        settings = settings_stash.get_all(self.signing_key.verify_key)
-        if settings.is_err():
-            raise ValueError(
-                f"Cannot get server settings for '{self.name}'. Error: {settings.err()}"
-            )
-        if settings.is_ok() and len(settings.ok()) > 0:
-            settings = settings.ok()[0]
-            self.update_self(settings)
+
+        settings_stash = SettingsStash(store=self.document_store)
+        error_msg = f"Cannot get server settings for '{self.name}'"
+
+        all_settings = settings_stash.get_all(self.signing_key.verify_key).unwrap(
+            public_message=error_msg
+        )
+
+        if len(all_settings) == 0:
+            raise SyftException(public_message=error_msg)
+
+        settings = all_settings[0]
+        self.update_self(settings)
         return settings
 
     @property
@@ -1018,45 +1023,33 @@ class Server(AbstractServer):
 
         return True
 
-    def await_future(
-        self, credentials: SyftVerifyKey, uid: UID
-    ) -> QueueItem | None | SyftError:
+    def await_future(self, credentials: SyftVerifyKey, uid: UID) -> QueueItem:
         # stdlib
 
         # relative
         from ..service.queue.queue import Status
 
         while True:
-            result = self.queue_stash.pop_on_complete(credentials, uid)
-            if not result.is_ok():
-                return result.err()
-            else:
-                res = result.ok()
-                if res.status == Status.COMPLETED:
-                    return res
+            result = self.queue_stash.pop_on_complete(credentials, uid).unwrap()
+            if result.status == Status.COMPLETED:
+                return result
             sleep(0.1)
 
-    def resolve_future(
-        self, credentials: SyftVerifyKey, uid: UID
-    ) -> QueueItem | None | SyftError:
-        result = self.queue_stash.pop_on_complete(credentials, uid)
-
-        if result.is_ok():
-            queue_obj = result.ok()
-            queue_obj._set_obj_location_(
-                server_uid=self.id,
-                credentials=credentials,
-            )
-            return queue_obj
-        return result.err()
+    def resolve_future(self, credentials: SyftVerifyKey, uid: UID) -> QueueItem:
+        queue_obj = self.queue_stash.pop_on_complete(credentials, uid).unwrap()
+        queue_obj._set_obj_location_(
+            server_uid=self.id,
+            credentials=credentials,
+        )
+        return queue_obj
 
     def forward_message(
         self, api_call: SyftAPICall | SignedSyftAPICall
-    ) -> Result | QueueItem | SyftObject | SyftError | Any:
+    ) -> Result | QueueItem | SyftObject | Any:
         server_uid = api_call.message.server_uid
         if "networkservice" not in self.service_path_map:
-            return SyftError(
-                message=(
+            raise SyftException(
+                public_message=(
                     "Server has no network service so we can't "
                     f"forward this message to {server_uid}"
                 )
@@ -1065,30 +1058,22 @@ class Server(AbstractServer):
         client = None
 
         network_service = self.get_service(NetworkService)
-        peer = network_service.stash.get_by_uid(self.verify_key, server_uid)
+        peer = network_service.stash.get_by_uid(self.verify_key, server_uid).unwrap()
 
-        if peer.is_ok() and peer.ok():
-            peer = peer.ok()
+        # Since we have several routes to a peer
+        # we need to cache the client for a given server_uid along with the route
+        peer_cache_key = hash(server_uid) + hash(peer.pick_highest_priority_route())
+        if peer_cache_key in self.peer_client_cache:
+            client = self.peer_client_cache[peer_cache_key]
+        else:
+            context = AuthedServiceContext(
+                server=self, credentials=api_call.credentials
+            )
 
-            # Since we have several routes to a peer
-            # we need to cache the client for a given server_uid along with the route
-            peer_cache_key = hash(server_uid) + hash(peer.pick_highest_priority_route())
-            if peer_cache_key in self.peer_client_cache:
-                client = self.peer_client_cache[peer_cache_key]
-            else:
-                context = AuthedServiceContext(
-                    server=self, credentials=api_call.credentials
-                )
-
-                client = peer.client_with_context(context=context)
-                if client.is_err():
-                    return SyftError(
-                        message=f"Failed to create remote client for peer: "
-                        f"{peer.id}. Error: {client.err()}"
-                    )
-                client = client.ok()
-
-                self.peer_client_cache[peer_cache_key] = client
+            client = peer.client_with_context(context=context).unwrap(
+                public_message=f"Failed to create remote client for peer: {peer.id}"
+            )
+            self.peer_client_cache[peer_cache_key] = client
 
         if client:
             message: SyftAPICall = api_call.message
@@ -1102,7 +1087,9 @@ class Server(AbstractServer):
                 result = client.connection.get_api(**message.kwargs)
             else:
                 signed_result = client.connection.make_call(api_call)
-                result = debox_signed_syftapicall_response(signed_result=signed_result)
+                result = debox_signed_syftapicall_response(
+                    signed_result=signed_result
+                ).unwrap()
 
                 # relative
                 from ..store.blob_storage import BlobRetrievalByURL
@@ -1112,20 +1099,21 @@ class Server(AbstractServer):
 
             return result
 
-        return SyftError(message=(f"Server has no route to {server_uid}"))
+        raise SyftException(public_message=(f"Server has no route to {server_uid}"))
 
     def get_role_for_credentials(self, credentials: SyftVerifyKey) -> ServiceRole:
-        role = self.get_service("userservice").get_role_for_credentials(
-            credentials=credentials
+        return (
+            self.get_service("userservice")
+            .get_role_for_credentials(credentials=credentials)
+            .unwrap()
         )
-        return role
 
     def handle_api_call(
         self,
         api_call: SyftAPICall | SignedSyftAPICall,
         job_id: UID | None = None,
         check_call_location: bool = True,
-    ) -> Result[SignedSyftAPICall, Err]:
+    ) -> SignedSyftAPICall:
         # Get the result
         result = self.handle_api_call_with_unsigned_result(
             api_call, job_id=job_id, check_call_location=check_call_location
@@ -1142,12 +1130,12 @@ class Server(AbstractServer):
         check_call_location: bool = True,
     ) -> Result | QueueItem | SyftObject | SyftError:
         if self.required_signed_calls and isinstance(api_call, SyftAPICall):
-            return SyftError(
-                message=f"You sent a {type(api_call)}. This server requires SignedSyftAPICall."
+            raise SyftException(
+                public_message=f"You sent a {type(api_call)}. This server requires SignedSyftAPICall."
             )
         else:
             if not api_call.is_valid:
-                return SyftError(message="Your message signature is invalid")
+                raise SyftException(public_message="Your message signature is invalid")
 
         if api_call.message.server_uid != self.id and check_call_location:
             return self.forward_message(api_call=api_call)
@@ -1163,8 +1151,17 @@ class Server(AbstractServer):
         result = None
         is_blocking = api_call.message.blocking
 
+        credentials: SyftVerifyKey = api_call.credentials
+        role = self.get_role_for_credentials(credentials=credentials)
+        context = AuthedServiceContext(
+            server=self,
+            credentials=credentials,
+            role=role,
+            job_id=job_id,
+            is_blocking_api_call=is_blocking,
+        )
+
         if is_blocking or self.is_subprocess:
-            credentials: SyftVerifyKey = api_call.credentials
             api_call = api_call.message
 
             role = self.get_role_for_credentials(credentials=credentials)
@@ -1173,11 +1170,13 @@ class Server(AbstractServer):
             # self.settings will always return a ServerSettings object.
             if (
                 settings is not None
-                and not isinstance(settings, Ok)
+                and isinstance(settings, ServerSettings)
                 and not settings.allow_guest_sessions
                 and role == ServiceRole.GUEST
             ):
-                return SyftError(message="Server doesn't allow guest sessions.")
+                raise SyftException(
+                    public_message="Server doesn't allow guest sessions."
+                )
             context = AuthedServiceContext(
                 server=self,
                 credentials=credentials,
@@ -1185,34 +1184,68 @@ class Server(AbstractServer):
                 job_id=job_id,
                 is_blocking_api_call=is_blocking,
             )
+
             AuthServerContextRegistry.set_server_context(self.id, context, credentials)
 
             user_config_registry = UserServiceConfigRegistry.from_role(role)
 
             if api_call.path not in user_config_registry:
                 if ServiceConfigRegistry.path_exists(api_call.path):
-                    return SyftError(
-                        message=f"As a `{role}`, "
+                    raise SyftException(
+                        public_message=f"As a `{role}`, "
                         f"you have no access to: {api_call.path}"
                     )
                 else:
-                    return SyftError(
-                        message=f"API call not in registered services: {api_call.path}"
+                    raise SyftException(
+                        public_message=f"API call not in registered services: {api_call.path}"
                     )
 
             _private_api_path = user_config_registry.private_path_for(api_call.path)
             method = self.get_service_method(_private_api_path)
             try:
                 logger.info(f"API Call: {api_call}")
+
                 result = method(context, *api_call.args, **api_call.kwargs)
-            except PySyftException as e:
-                return e.handle()
+
+                if isinstance(result, SyftError):
+                    raise TypeError(
+                        "Don't return a SyftError, raise SyftException instead"
+                    )
+                if not isinstance(result, SyftSuccess):
+                    result = SyftSuccess(message="", value=result)
+                result.add_warnings_from_context(context)
+                tb = None
+            except Exception as e:
+                include_traceback = (
+                    self.dev_mode or role.value >= ServiceRole.DATA_OWNER.value
+                )
+                result = SyftError.from_exception(
+                    context=context, exc=e, include_traceback=include_traceback
+                )
+                if not include_traceback:
+                    # then at least log it server side
+                    if isinstance(e, SyftException):
+                        tb = e.get_tb(context, overwrite_permission=True)
+                    else:
+                        tb = traceback.format_exc()
+                    logger.debug(
+                        f"Exception (hidden from DS) happened on the server side:\n{tb}"
+                    )
+        else:
+            try:
+                return self.add_api_call_to_queue(api_call)
+            except SyftException as e:
+                return SyftError.from_exception(context=context, exc=e)
             except Exception:
                 result = SyftError(
                     message=f"Exception calling {api_call.path}. {traceback.format_exc()}"
                 )
-        else:
-            return self.add_api_call_to_queue(api_call)
+                tb = traceback.format_exc()
+            if (
+                isinstance(result, SyftError)
+                and role.value < ServiceRole.DATA_OWNER.value
+            ):
+                print(f"Exception (hidden from DS) happened on the server side:\n{tb}")
         return result
 
     def add_api_endpoint_execution_to_queue(
@@ -1223,20 +1256,15 @@ class Server(AbstractServer):
         *args: Any,
         worker_pool: str | None = None,
         **kwargs: Any,
-    ) -> Job | SyftError:
+    ) -> Job:
         job_id = UID()
         task_uid = UID()
         worker_settings = WorkerSettings.from_server(server=self)
 
         if worker_pool is None:
-            worker_pool = self.get_default_worker_pool()
+            worker_pool = self.get_default_worker_pool().unwrap()
         else:
-            worker_pool = self.get_worker_pool_by_name(worker_pool)
-
-        if isinstance(worker_pool, SyftError):
-            return worker_pool
-        elif worker_pool is None:
-            return SyftError(message="Worker pool not found")
+            worker_pool = self.get_worker_pool_by_name(worker_pool).unwrap()
 
         # Create a Worker pool reference object
         worker_pool_ref = LinkedObject.from_obj(
@@ -1264,20 +1292,19 @@ class Server(AbstractServer):
             credentials=credentials,
             action=action,
             job_type=JobType.TWINAPIJOB,
-        )
+        ).unwrap()
 
     def get_worker_pool_ref_by_name(
         self, credentials: SyftVerifyKey, worker_pool_name: str | None = None
-    ) -> LinkedObject | SyftError:
+    ) -> LinkedObject:
         # If worker pool id is not set, then use default worker pool
         # Else, get the worker pool for given uid
         if worker_pool_name is None:
-            worker_pool = self.get_default_worker_pool()
+            worker_pool = self.get_default_worker_pool().unwrap()
         else:
-            result = self.pool_stash.get_by_name(credentials, worker_pool_name)
-            if result.is_err():
-                return SyftError(message=f"{result.err()}")
-            worker_pool = result.ok()
+            worker_pool = self.pool_stash.get_by_name(
+                credentials, worker_pool_name
+            ).unwrap()
 
         # Create a Worker pool reference object
         worker_pool_ref = LinkedObject.from_obj(
@@ -1287,6 +1314,7 @@ class Server(AbstractServer):
         )
         return worker_pool_ref
 
+    @as_result(SyftException)
     def add_action_to_queue(
         self,
         action: Action,
@@ -1294,27 +1322,22 @@ class Server(AbstractServer):
         parent_job_id: UID | None = None,
         has_execute_permissions: bool = False,
         worker_pool_name: str | None = None,
-    ) -> Job | SyftError:
+    ) -> Job:
         job_id = UID()
         task_uid = UID()
         worker_settings = WorkerSettings.from_server(server=self)
 
         # Extract worker pool id from user code
         if action.user_code_id is not None:
-            result = self.user_code_stash.get_by_uid(
+            user_code = self.user_code_stash.get_by_uid(
                 credentials=credentials, uid=action.user_code_id
-            )
-
-            # If result is Ok, then user code object exists
-            if result.is_ok() and result.ok() is not None:
-                user_code = result.ok()
+            ).unwrap()
+            if user_code is not None:
                 worker_pool_name = user_code.worker_pool_name
 
         worker_pool_ref = self.get_worker_pool_ref_by_name(
             credentials, worker_pool_name
         )
-        if isinstance(worker_pool_ref, SyftError):
-            return worker_pool_ref
         queue_item = ActionQueueItem(
             id=task_uid,
             server_uid=self.id,
@@ -1327,9 +1350,10 @@ class Server(AbstractServer):
             has_execute_permissions=has_execute_permissions,
             worker_pool=worker_pool_ref,  # set worker pool reference as part of queue item
         )
-        user_id = self.get_service("UserService").get_user_id_for_credentials(
-            credentials
-        )
+
+        user_service = self.get_service("UserService")
+        user_service = cast(UserService, user_service)
+        user_id = user_service.get_user_id_for_credentials(credentials).unwrap()
 
         return self.add_queueitem_to_queue(
             queue_item=queue_item,
@@ -1337,8 +1361,9 @@ class Server(AbstractServer):
             action=action,
             parent_job_id=parent_job_id,
             user_id=user_id,
-        )
+        ).unwrap()
 
+    @as_result(SyftException)
     def add_queueitem_to_queue(
         self,
         *,
@@ -1348,14 +1373,21 @@ class Server(AbstractServer):
         parent_job_id: UID | None = None,
         user_id: UID | None = None,
         job_type: JobType = JobType.JOB,
-    ) -> Job | SyftError:
+    ) -> Job:
         log_id = UID()
         role = self.get_role_for_credentials(credentials=credentials)
         context = AuthedServiceContext(server=self, credentials=credentials, role=role)
 
+        action_service = self.get_service("actionservice")
+        log_service = self.get_service("logservice")
+
         result_obj = ActionObject.empty()
         if action is not None:
-            result_obj = ActionObject.obj_not_ready(id=action.result_id)
+            result_obj = ActionObject.obj_not_ready(
+                id=action.result_id,
+                syft_server_location=self.id,
+                syft_client_verify_key=credentials,
+            )
             result_obj.id = action.result_id
             result_obj.syft_resolved = False
             result_obj.syft_server_location = self.id
@@ -1364,12 +1396,10 @@ class Server(AbstractServer):
             action_service = self.get_service("actionservice")
 
             if not action_service.store.exists(uid=action.result_id):
-                result = action_service.set_result_to_store(
+                action_service.set_result_to_store(
                     result_action_object=result_obj,
                     context=context,
-                )
-                if result.is_err():
-                    return result.err()
+                ).unwrap()
 
         job = Job(
             id=queue_item.job_id,
@@ -1386,16 +1416,11 @@ class Server(AbstractServer):
         )
 
         # 🟡 TODO 36: Needs distributed lock
-        job_res = self.job_stash.set(credentials, job)
-        if job_res.is_err():
-            return SyftError(message=f"{job_res.err()}")
-        self.queue_stash.set_placeholder(credentials, queue_item)
+        self.job_stash.set(credentials, job).unwrap()
+        self.queue_stash.set_placeholder(credentials, queue_item).unwrap()
 
-        log_service = self.get_service("logservice")
+        log_service.add(context, log_id, queue_item.job_id)
 
-        result = log_service.add(context, log_id, queue_item.job_id)
-        if isinstance(result, SyftError):
-            return result
         return job
 
     def _sort_jobs(self, jobs: list[Job]) -> list[Job]:
@@ -1414,17 +1439,14 @@ class Server(AbstractServer):
 
         return jobs
 
+    @as_result(SyftException)
     def _get_existing_user_code_jobs(
         self, context: AuthedServiceContext, user_code_id: UID
-    ) -> list[Job] | SyftError:
+    ) -> list[Job]:
         job_service = self.get_service("jobservice")
         jobs = job_service.get_by_user_code_id(
             context=context, user_code_id=user_code_id
         )
-
-        if isinstance(jobs, SyftError):
-            return jobs
-
         return self._sort_jobs(jobs)
 
     def _is_usercode_call_on_owned_kwargs(
@@ -1442,7 +1464,7 @@ class Server(AbstractServer):
 
     def add_api_call_to_queue(
         self, api_call: SyftAPICall, parent_job_id: UID | None = None
-    ) -> Job | SyftError:
+    ) -> SyftSuccess:
         unsigned_call = api_call
         if isinstance(api_call, SignedSyftAPICall):
             unsigned_call = api_call.message
@@ -1464,8 +1486,6 @@ class Server(AbstractServer):
             user_code_id = action.user_code_id
 
             user = self.get_service(UserService).get_current_user(context)
-            if isinstance(user, SyftError):
-                return user
             user = cast(UserView, user)
 
             is_execution_on_owned_kwargs_allowed = (
@@ -1479,41 +1499,45 @@ class Server(AbstractServer):
                 not is_usercode_call_on_owned_kwargs
                 and self.server_side_type == ServerSideType.LOW_SIDE
             ):
-                existing_jobs = self._get_existing_user_code_jobs(context, user_code_id)
-                if isinstance(existing_jobs, SyftError):
-                    return existing_jobs
-                elif len(existing_jobs) > 0:
-                    # Print warning if there are existing jobs for this user code
-                    # relative
-                    from ..util.util import prompt_warning_message
+                try:
+                    existing_jobs = self._get_existing_user_code_jobs(
+                        context, user_code_id
+                    ).unwrap()
 
-                    prompt_warning_message(
-                        "There are existing jobs for this user code, returning the latest one"
-                    )
-                    return existing_jobs[-1]
-                else:
-                    return SyftError(
-                        message="Please wait for the admin to allow the execution of this code"
-                    )
+                    if len(existing_jobs) > 0:
+                        # relative
+                        from ..util.util import prompt_warning_message
 
+                        prompt_warning_message(
+                            "There are existing jobs for this user code, returning the latest one"
+                        )
+                        return SyftSuccess(
+                            message="Found multiple existing jobs, got last",
+                            value=existing_jobs[-1],
+                        )
+                    else:
+                        raise SyftException(
+                            public_message="Please wait for the admin to allow the execution of this code"
+                        )
+                except Exception as e:
+                    raise SyftException.from_exception(e)
             elif (
                 is_usercode_call_on_owned_kwargs
                 and not is_execution_on_owned_kwargs_allowed
             ):
-                return SyftError(
-                    message="You do not have the permissions for mock execution, please contact the admin"
+                raise SyftException(
+                    public_message="You do not have the permissions for mock execution, please contact the admin"
                 )
 
-            return self.add_action_to_queue(
+            job = self.add_action_to_queue(
                 action, api_call.credentials, parent_job_id=parent_job_id
-            )
+            ).unwrap()
+
+            return SyftSuccess(message="Succesfully queued job", value=job)
 
         else:
             worker_settings = WorkerSettings.from_server(server=self)
             worker_pool_ref = self.get_worker_pool_ref_by_name(credentials=credentials)
-            if isinstance(worker_pool_ref, SyftError):
-                return worker_pool_ref
-
             queue_item = QueueItem(
                 id=UID(),
                 server_uid=self.id,
@@ -1532,7 +1556,7 @@ class Server(AbstractServer):
                 credentials=api_call.credentials,
                 action=None,
                 parent_job_id=parent_job_id,
-            )
+            ).unwrap()
 
     @property
     def pool_stash(self) -> SyftWorkerPoolStash:
@@ -1542,24 +1566,18 @@ class Server(AbstractServer):
     def user_code_stash(self) -> UserCodeStash:
         return self.get_service(UserCodeService).stash
 
-    def get_default_worker_pool(self) -> WorkerPool | None | SyftError:
-        result = self.pool_stash.get_by_name(
+    @as_result(NotFoundException)
+    def get_default_worker_pool(self) -> WorkerPool | None:
+        return self.pool_stash.get_by_name(
             credentials=self.verify_key,
             pool_name=self.settings.default_worker_pool,
-        )
-        if result.is_err():
-            return SyftError(message=f"{result.err()}")
-        worker_pool = result.ok()
-        return worker_pool
+        ).unwrap()
 
-    def get_worker_pool_by_name(self, name: str) -> WorkerPool | None | SyftError:
-        result = self.pool_stash.get_by_name(
+    @as_result(NotFoundException)
+    def get_worker_pool_by_name(self, name: str) -> WorkerPool:
+        return self.pool_stash.get_by_name(
             credentials=self.verify_key, pool_name=name
-        )
-        if result.is_err():
-            return SyftError(message=f"{result.err()}")
-        worker_pool = result.ok()
-        return worker_pool
+        ).unwrap()
 
     def get_api(
         self,
@@ -1583,65 +1601,60 @@ class Server(AbstractServer):
     ) -> ServerServiceContext:
         return UnauthedServiceContext(server=self, login_credentials=login_credentials)
 
-    def create_initial_settings(self, admin_email: str) -> ServerSettings | None:
-        try:
-            settings_stash = SettingsStash(store=self.document_store)
-            if self.signing_key is None:
-                logger.debug(
-                    "create_initial_settings failed as there is no signing key"
+    @as_result(SyftException, StashException)
+    def create_initial_settings(self, admin_email: str) -> ServerSettings:
+        settings_stash = SettingsStash(store=self.document_store)
+
+        if self.signing_key is None:
+            logger.debug("create_initial_settings failed as there is no signing key")
+            raise SyftException(
+                public_message="create_initial_settings failed as there is no signing key"
+            )
+
+        settings_exists = settings_stash.get_all(self.signing_key.verify_key).unwrap()
+
+        if settings_exists:
+            server_settings = settings_exists[0]
+            if server_settings.__version__ != ServerSettings.__version__:
+                context = Context()
+                server_settings = server_settings.migrate_to(
+                    ServerSettings.__version__, context
                 )
-                return None
-            settings_exists = settings_stash.get_all(self.signing_key.verify_key).ok()
-            if settings_exists:
-                server_settings = settings_exists[0]
-                if server_settings.__version__ != ServerSettings.__version__:
-                    context = Context()
-                    server_settings = server_settings.migrate_to(
-                        ServerSettings.__version__, context
-                    )
-                    res = settings_stash.delete_by_uid(
-                        self.signing_key.verify_key, server_settings.id
-                    )
-                    if res.is_err():
-                        raise Exception(res.value)
-                    res = settings_stash.set(
-                        self.signing_key.verify_key, server_settings
-                    )
-                    if res.is_err():
-                        raise Exception(res.value)
-                self.name = server_settings.name
-                self.association_request_auto_approval = (
-                    server_settings.association_request_auto_approval
-                )
-                return None
-            else:
-                # Currently we allow automatic user registration on enclaves,
-                # as enclaves do not have superusers
-                if self.server_type == ServerType.ENCLAVE:
-                    flags.CAN_REGISTER = True
-                new_settings = ServerSettings(
-                    id=self.id,
-                    name=self.name,
-                    verify_key=self.verify_key,
-                    server_type=self.server_type,
-                    deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
-                    signup_enabled=flags.CAN_REGISTER,
-                    admin_email=admin_email,
-                    server_side_type=self.server_side_type.value,  # type: ignore
-                    show_warnings=self.enable_warnings,
-                    association_request_auto_approval=self.association_request_auto_approval,
-                    default_worker_pool=get_default_worker_pool_name(),
-                    notifications_enabled=False,
-                )
-                result = settings_stash.set(
-                    credentials=self.signing_key.verify_key, settings=new_settings
-                )
-                if result.is_ok():
-                    return result.ok()
-                return None
-        except Exception as e:
-            logger.error("create_initial_settings failed", exc_info=e)
-            return None
+                settings_stash.delete_by_uid(
+                    self.signing_key.verify_key, server_settings.id
+                ).unwrap()
+                settings_stash.set(
+                    self.signing_key.verify_key, server_settings
+                ).unwrap()
+            self.name = server_settings.name
+            self.association_request_auto_approval = (
+                server_settings.association_request_auto_approval
+            )
+            return server_settings
+        else:
+            # Currently we allow automatic user registration on enclaves,
+            # as enclaves do not have superusers
+            if self.server_type == ServerType.ENCLAVE:
+                flags.CAN_REGISTER = True
+
+            new_settings = ServerSettings(
+                id=self.id,
+                name=self.name,
+                verify_key=self.verify_key,
+                server_type=self.server_type,
+                deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
+                signup_enabled=flags.CAN_REGISTER,
+                admin_email=admin_email,
+                server_side_type=self.server_side_type.value,  # type: ignore
+                show_warnings=self.enable_warnings,
+                association_request_auto_approval=self.association_request_auto_approval,
+                default_worker_pool=get_default_worker_pool_name(),
+                notifications_enabled=False,
+            )
+
+            return settings_stash.set(
+                credentials=self.signing_key.verify_key, obj=new_settings
+            ).unwrap()
 
 
 def create_admin_new(
@@ -1650,39 +1663,36 @@ def create_admin_new(
     password: str,
     server: AbstractServer,
 ) -> User | None:
-    try:
-        user_stash = UserStash(store=server.document_store)
-        row_exists = user_stash.get_by_email(
-            credentials=server.signing_key.verify_key, email=email
-        ).ok()
-        if row_exists:
-            return None
-        else:
-            create_user = UserCreate(
-                name=name,
-                email=email,
-                password=password,
-                password_verify=password,
-                role=ServiceRole.ADMIN,
-            )
-            # New User Initialization
-            # 🟡 TODO: change later but for now this gives the main user super user automatically
-            user = create_user.to(User)
-            user.signing_key = server.signing_key
-            user.verify_key = user.signing_key.verify_key
-            result = user_stash.set(
-                credentials=server.signing_key.verify_key,
-                user=user,
-                ignore_duplicates=True,
-            )
-            if result.is_ok():
-                return result.ok()
-            else:
-                raise Exception(f"Could not create user: {result}")
-    except Exception as e:
-        logger.error("Unable to create new admin", exc_info=e)
+    user_stash = UserStash(store=server.document_store)
 
-    return None
+    user_exists = user_stash.email_exists(email=email).unwrap()
+    if user_exists:
+        logger.debug("Admin not created, admin already exists")
+        return None
+
+    create_user = UserCreate(
+        name=name,
+        email=email,
+        password=password,
+        password_verify=password,
+        role=ServiceRole.ADMIN,
+    )
+
+    # New User Initialization
+    # 🟡 TODO: change later but for now this gives the main user super user automatically
+    user = create_user.to(User)
+    user.signing_key = server.signing_key
+    user.verify_key = user.signing_key.verify_key
+
+    new_user = user_stash.set(
+        credentials=server.signing_key.verify_key,
+        obj=user,
+        ignore_duplicates=True,
+    ).unwrap()
+
+    logger.debug(f"Created admin {new_user.email}")
+
+    return new_user
 
 
 class ServerRegistry:
@@ -1722,12 +1732,19 @@ def get_default_worker_tag_by_env(dev_mode: bool = False) -> str | None:
         return __version__
 
 
-def create_default_worker_pool(server: Server) -> SyftError | None:
+def create_default_worker_pool(server: Server) -> None:
     credentials = server.verify_key
     pull_image = not server.dev_mode
     image_stash = server.get_service(SyftWorkerImageService).stash
     default_pool_name = server.settings.default_worker_pool
-    default_worker_pool = server.get_default_worker_pool()
+
+    try:
+        default_worker_pool = server.get_default_worker_pool().unwrap(
+            public_message="Failed to get default worker pool"
+        )
+    except SyftException:
+        default_worker_pool = None
+
     default_worker_tag = get_default_worker_tag_by_env(server.dev_mode)
     default_worker_pool_pod_annotations = get_default_worker_pool_pod_annotations()
     default_worker_pool_pod_labels = get_default_worker_pool_pod_labels()
@@ -1738,24 +1755,15 @@ def create_default_worker_pool(server: Server) -> SyftError | None:
         role=ServiceRole.ADMIN,
     )
 
-    if isinstance(default_worker_pool, SyftError):
-        logger.error(
-            f"Failed to get default worker pool {default_pool_name}. "
-            f"Error: {default_worker_pool.message}"
-        )
-        return default_worker_pool
-
     logger.info(f"Creating default worker image with tag='{default_worker_tag}'. ")
     # Get/Create a default worker SyftWorkerImage
+    # TODO: MERGE: Unwrap without public message?
     default_image = create_default_image(
         credentials=credentials,
         image_stash=image_stash,
         tag=default_worker_tag,
         in_kubernetes=in_kubernetes(),
-    )
-    if isinstance(default_image, SyftError):
-        logger.error(f"Failed to create default worker image: {default_image.message}")
-        return default_image
+    ).unwrap(public_message="Failed to create default worker image")
 
     if not default_image.is_built:
         logger.info(f"Building default worker image with tag={default_worker_tag}. ")
@@ -1767,10 +1775,6 @@ def create_default_worker_pool(server: Server) -> SyftError | None:
             tag=DEFAULT_WORKER_IMAGE_TAG,
             pull_image=pull_image,
         )
-
-        if isinstance(result, SyftError):
-            logger.error(f"Failed to build default worker image: {result.message}")
-            return None
 
     # Create worker pool if it doesn't exists
     logger.info(
@@ -1807,10 +1811,6 @@ def create_default_worker_pool(server: Server) -> SyftError | None:
             )
         else:
             return None
-
-    if isinstance(result, SyftError):
-        logger.info(f"Default worker pool error. {result.message}")
-        return None
 
     for n in range(worker_to_add_):
         container_status = result[n]
