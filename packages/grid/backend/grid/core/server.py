@@ -14,8 +14,8 @@ from syft.service.queue.zmq_queue import ZMQClientConfig
 from syft.service.queue.zmq_queue import ZMQQueueConfig
 from syft.store.blob_storage.seaweedfs import SeaweedFSClientConfig
 from syft.store.blob_storage.seaweedfs import SeaweedFSConfig
-from syft.store.mongo_client import MongoStoreClientConfig
-from syft.store.mongo_document_store import MongoStoreConfig
+from syft.store.postgresql_document_store import PostgreSQLStoreClientConfig
+from syft.store.postgresql_document_store import PostgreSQLStoreConfig
 from syft.store.sqlite_document_store import SQLiteStoreClientConfig
 from syft.store.sqlite_document_store import SQLiteStoreConfig
 from syft.types.uid import UID
@@ -36,23 +36,24 @@ def queue_config() -> ZMQQueueConfig:
     return queue_config
 
 
-def mongo_store_config() -> MongoStoreConfig:
-    mongo_client_config = MongoStoreClientConfig(
-        hostname=settings.MONGO_HOST,
-        port=settings.MONGO_PORT,
-        username=settings.MONGO_USERNAME,
-        password=settings.MONGO_PASSWORD,
-    )
-
-    return MongoStoreConfig(client_config=mongo_client_config)
-
-
 def sql_store_config() -> SQLiteStoreConfig:
     client_config = SQLiteStoreClientConfig(
         filename=f"{UID.from_string(get_server_uid_env())}.sqlite",
         path=settings.SQLITE_PATH,
     )
     return SQLiteStoreConfig(client_config=client_config)
+
+
+def postgresql_store_config() -> PostgreSQLStoreConfig:
+    postgresql_client_config = PostgreSQLStoreClientConfig(
+        dbname=settings.POSTGRESQL_DBNAME,
+        host=settings.POSTGRESQL_HOST,
+        port=settings.POSTGRESQL_PORT,
+        username=settings.POSTGRESQL_USERNAME,
+        password=settings.POSTGRESQL_PASSWORD,
+    )
+
+    return PostgreSQLStoreConfig(client_config=postgresql_client_config)
 
 
 def seaweedfs_config() -> SeaweedFSConfig:
@@ -87,7 +88,9 @@ worker_classes = {
 worker_class = worker_classes[server_type]
 
 single_container_mode = settings.SINGLE_CONTAINER_MODE
-store_config = sql_store_config() if single_container_mode else mongo_store_config()
+store_config = (
+    sql_store_config() if single_container_mode else postgresql_store_config()
+)
 blob_storage_config = None if single_container_mode else seaweedfs_config()
 queue_config = queue_config()
 

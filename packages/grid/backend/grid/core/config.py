@@ -126,10 +126,11 @@ class Settings(BaseSettings):
     # NETWORK_CHECK_INTERVAL: int = int(os.getenv("NETWORK_CHECK_INTERVAL", 60))
     # DATASITE_CHECK_INTERVAL: int = int(os.getenv("DATASITE_CHECK_INTERVAL", 60))
     CONTAINER_HOST: str = str(os.getenv("CONTAINER_HOST", "docker"))
-    MONGO_HOST: str = str(os.getenv("MONGO_HOST", ""))
-    MONGO_PORT: int = int(os.getenv("MONGO_PORT", 27017))
-    MONGO_USERNAME: str = str(os.getenv("MONGO_USERNAME", ""))
-    MONGO_PASSWORD: str = str(os.getenv("MONGO_PASSWORD", ""))
+    POSTGRESQL_DBNAME: str = str(os.getenv("POSTGRESQL_DBNAME", ""))
+    POSTGRESQL_HOST: str = str(os.getenv("POSTGRESQL_HOST", ""))
+    POSTGRESQL_PORT: int = int(os.getenv("POSTGRESQL_PORT", 27017))
+    POSTGRESQL_USERNAME: str = str(os.getenv("POSTGRESQL_USERNAME", ""))
+    POSTGRESQL_PASSWORD: str = str(os.getenv("POSTGRESQL_PASSWORD", ""))
     DEV_MODE: bool = True if os.getenv("DEV_MODE", "false").lower() == "true" else False
     # ZMQ stuff
     QUEUE_PORT: int = int(os.getenv("QUEUE_PORT", 5556))

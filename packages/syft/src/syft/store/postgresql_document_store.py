@@ -4,10 +4,13 @@ import logging
 
 # third party
 import psycopg2
+from psycopg2.extensions import connection
+from psycopg2.extensions import cursor
 from pydantic import Field
 
 # relative
 from ..serde.serializable import serializable
+from ..types.errors import SyftException
 from .document_store import DocumentStore
 from .document_store import PartitionSettings
 from .document_store import StoreClientConfig
@@ -19,12 +22,11 @@ from .locks import SyftLock
 from .sqlite_document_store import SQLiteBackingStore
 from .sqlite_document_store import SQLiteStorePartition
 from .sqlite_document_store import cache_key
-from .sqlite_document_store import raise_exception
+from .sqlite_document_store import special_exception_public_message
 
 logger = logging.getLogger(__name__)
-
-_CONNECTION_POOL_DB: dict[str, psycopg2.Connection] = {}
-_CONNECTION_POOL_CUR: dict[str, psycopg2.Cursor] = {}
+_CONNECTION_POOL_DB: dict[str, connection] = {}
+_CONNECTION_POOL_CUR: dict[str, cursor] = {}
 REF_COUNTS: dict[str, int] = defaultdict(int)
 
 
@@ -32,7 +34,7 @@ REF_COUNTS: dict[str, int] = defaultdict(int)
 @serializable(canonical_name="PostgreSQLStoreClientConfig", version=1)
 class PostgreSQLStoreClientConfig(StoreClientConfig):
     dbname: str
-    user: str
+    username: str
     password: str
     host: str
     port: int
@@ -94,16 +96,17 @@ class PostgreSQLBackingStore(SQLiteBackingStore):
                 )
                 self.db.commit()
         except Exception as e:
-            raise_exception(self.table_name, e)
+            public_message = special_exception_public_message(self.table_name, e)
+            raise SyftException.from_exception(e, public_message=public_message)
 
     @property
-    def db(self) -> psycopg2.Connection:
+    def db(self) -> connection:
         if cache_key(self.dbname) not in _CONNECTION_POOL_DB:
             self._connect()
         return _CONNECTION_POOL_DB[cache_key(self.dbname)]
 
     @property
-    def cur(self) -> psycopg2.Cursor:
+    def cur(self) -> cursor:
         if cache_key(self.db_filename) not in _CONNECTION_POOL_CUR:
             _CONNECTION_POOL_CUR[cache_key(self.dbname)] = self.db.cursor()
 
