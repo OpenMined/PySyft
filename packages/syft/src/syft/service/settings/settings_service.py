@@ -136,15 +136,16 @@ class SettingsService(AbstractService):
             # If notifications_enabled is present in the update, we need to update the notifier settings
             if settings.notifications_enabled is not Empty:  # type: ignore[comparison-overlap]
                 notifier_settings_res = notifier_service.settings(context)
-                if not notifier_settings_res.is_ok():
+                if (
+                    not notifier_settings_res.is_ok()
+                    or (notifier_settings := notifier_settings_res.ok()) is None
+                ):
                     raise SyftException(
                         public_message=(
                             "Notification has not been enabled. "
                             "Please use `enable_notifications` from `user_service`."
                         )
                     )
-
-                notifier_settings = notifier_settings_res.ok()
 
                 if settings.notifications_enabled and (
                     not (
