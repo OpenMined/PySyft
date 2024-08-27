@@ -373,9 +373,8 @@ def test_submit_and_reject_flow(reject_request):
     req = admin_client.requests[0]
     assert isinstance(req, Request)
     assert req.status == RequestStatus.REJECTED
-    
+
     with pytest.raises(SyftException) as exc:
         api_method = getattr(ds_client.code, fn_name)
         api_method()
     assert "Bad vibes :(" in str(exc.value)
-

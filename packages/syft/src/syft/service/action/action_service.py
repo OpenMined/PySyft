@@ -386,7 +386,8 @@ class ActionService(AbstractService):
 
             # Filter input kwargs based on policy
             filtered_kwargs = input_policy.filter_kwargs(
-                kwargs=kwargs, context=context,
+                kwargs=kwargs,
+                context=context,
             )
         else:
             filtered_kwargs = retrieve_from_db(kwargs, context).unwrap()
