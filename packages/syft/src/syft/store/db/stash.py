@@ -7,13 +7,10 @@ from typing import get_args
 import uuid
 
 # third party
-from result import Err
-from result import Ok
 from result import Result
 import sqlalchemy as sa
 from sqlalchemy import Column
 from sqlalchemy import Row
-from sqlalchemy import Select
 from sqlalchemy import Table
 from sqlalchemy import func
 from sqlalchemy import select
@@ -113,8 +110,12 @@ class ObjectStash(Generic[SyftT]):
             )
         )
 
+    @property
+    def unique_fields(self) -> list[str]:
+        return getattr(self.object_type, "__attr_unique__", [])
+
     def is_unique(self, obj: SyftT) -> bool:
-        unique_fields = self.object_type.__attr_unique__
+        unique_fields = self.unique_fields
         if not unique_fields:
             return True
         filters = []
@@ -346,10 +347,10 @@ class ObjectStash(Generic[SyftT]):
 
     def _apply_limit_offset(
         self,
-        stmt: Select,
+        stmt: T,
         limit: int | None = None,
         offset: int | None = None,
-    ) -> Any:
+    ) -> T:
         if offset is not None:
             stmt = stmt.offset(offset)
         if limit is not None:
@@ -358,10 +359,10 @@ class ObjectStash(Generic[SyftT]):
 
     def _apply_order_by(
         self,
-        stmt: Select,
+        stmt: T,
         order_by: str | None = None,
         sort_order: str = "asc",
-    ) -> Any:
+    ) -> T:
         default_order_by = self.table.c.created_at
         default_order_by = (
             default_order_by.desc() if sort_order == "desc" else default_order_by
@@ -375,11 +376,11 @@ class ObjectStash(Generic[SyftT]):
 
     def _apply_permission_filter(
         self,
-        stmt: Select,
+        stmt: T,
         credentials: SyftVerifyKey,
         permission: ActionPermission = ActionPermission.READ,
         has_permission: bool = False,
-    ) -> Any:
+    ) -> T:
         if not has_permission:
             stmt = stmt.where(
                 self._get_permission_filter(credentials, permission=permission)
@@ -424,22 +425,15 @@ class ObjectStash(Generic[SyftT]):
         if not self.is_unique(obj):
             raise StashException(f"Some fields are not unique for {type(obj).__name__}")
 
-        # TODO error handling
-        has_permission_stmt = (
-            self._get_permission_filter(credentials, ActionPermission.WRITE)
-            if has_permission
-            else sa.literal(True)
+        stmt = self.table.update().where(self._get_field_filter("id", obj.id))
+        stmt = self._apply_permission_filter(
+            stmt,
+            credentials,
+            has_permission=has_permission,
+            permission=ActionPermission.WRITE,
         )
-        stmt = (
-            self.table.update()
-            .where(
-                sa.and_(
-                    self._get_field_filter("id", obj.id),
-                    has_permission_stmt,
-                )
-            )
-            .values(fields=serialize_json(obj))
-        )
+        stmt = stmt.values(fields=serialize_json(obj))
+
         self.session.execute(stmt)
         self.session.commit()
 
@@ -463,8 +457,8 @@ class ObjectStash(Generic[SyftT]):
         stmt = self._apply_permission_filter(
             stmt,
             credentials,
-            has_permission,
             permission=ActionPermission.WRITE,
+            has_permission=has_permission,
         )
         self.session.execute(stmt)
         self.session.commit()
@@ -472,11 +466,13 @@ class ObjectStash(Generic[SyftT]):
 
     def add_permissions(self, permissions: list[ActionObjectPermission]) -> None:
         # TODO: should do this in a single transaction
+        # TODO add error handling
         for permission in permissions:
             self.add_permission(permission)
         return None
 
     def add_permission(self, permission: ActionObjectPermission) -> None:
+        # TODO add error handling
         stmt = (
             self.table.update()
             .where(self.table.c.id == permission.uid)
@@ -493,8 +489,9 @@ class ObjectStash(Generic[SyftT]):
         self.session.commit()
 
     def remove_permission(self, permission: ActionObjectPermission) -> None:
+        # TODO not threadsafe
         try:
-            permissions = self._get_permissions_for_uid(permission.uid)
+            permissions = self._get_permissions_for_uid(permission.uid).unwrap()
             permissions.remove(permission.permission_string)
         except (NotFoundException, KeyError):
             # TODO add error handling to permissions
@@ -510,8 +507,9 @@ class ObjectStash(Generic[SyftT]):
         return None
 
     def remove_storage_permission(self, permission: StoragePermission) -> None:
+        # TODO not threadsafe
         try:
-            permissions = self._get_storage_permissions_for_uid(permission.uid)
+            permissions = self._get_storage_permissions_for_uid(permission.uid).unwrap()
             permissions.remove(permission.server_uid)
         except (NotFoundException, KeyError):
             # TODO add error handling to permissions
@@ -526,6 +524,7 @@ class ObjectStash(Generic[SyftT]):
         self.session.commit()
         return None
 
+    @as_result(StashException)
     def _get_storage_permissions_for_uid(self, uid: UID) -> set[UID]:
         stmt = select(self.table.c.id, self.table.c.storage_permissions).where(
             self.table.c.id == uid
@@ -535,13 +534,14 @@ class ObjectStash(Generic[SyftT]):
             raise NotFoundException(f"No storage permissions found for uid: {uid}")
         return {UID(uid) for uid in result.storage_permissions}
 
-    def get_all_storage_permissions(self) -> Result[dict[UID, set[UID]], str]:
+    @as_result(StashException)
+    def get_all_storage_permissions(self) -> dict[UID, set[UID]]:
         stmt = select(self.table.c.id, self.table.c.storage_permissions)
         results = self.session.execute(stmt).all()
 
-        # make uid
         return {
-            row.id: {(UID(uid) for uid in row.storage_permissions)} for row in results
+            UID(row.id): {(UID(uid) for uid in row.storage_permissions)}
+            for row in results
         }
 
     def has_permission(self, permission: ActionObjectPermission) -> bool:
@@ -568,7 +568,7 @@ class ObjectStash(Generic[SyftT]):
         return result
 
     def has_permissions(self, permissions: list[ActionObjectPermission]) -> bool:
-        # NOTE: maybe we should use a permissions table to check all permissions at once
+        # TODO: we should use a permissions table to check all permissions at once
         # TODO: should check for compound permissions
         permission_filters = [
             sa.and_(
@@ -606,6 +606,7 @@ class ObjectStash(Generic[SyftT]):
         for permission in permissions:
             self.add_storage_permission(permission)
 
+    @as_result(StashException)
     def _get_permissions_for_uid(self, uid: UID) -> set[str]:
         stmt = select(self.table.c.permissions).where(self.table.c.id == uid)
         result = self.session.execute(stmt).scalar_one_or_none()
@@ -613,11 +614,13 @@ class ObjectStash(Generic[SyftT]):
             return NotFoundException(f"No permissions found for uid: {uid}")
         return set(result)
 
-    def get_all_permissions(self) -> Result[dict[UID, set[str]], str]:
+    @as_result(StashException)
+    def get_all_permissions(self) -> dict[UID, set[str]]:
         stmt = select(self.table.c.id, self.table.c.permissions)
         results = self.session.execute(stmt).all()
-        return Ok({row.id: set(row.permissions) for row in results})
+        return {UID(row.id): set(row.permissions) for row in results}
 
+    @as_result(SyftException, StashException)
     def set(
         self,
         credentials: SyftVerifyKey,
@@ -626,13 +629,17 @@ class ObjectStash(Generic[SyftT]):
         add_storage_permission: bool = True,  # TODO: check the default value
         ignore_duplicates: bool = False,
     ) -> Result[SyftT, str]:
-        # uid is unique by database constraint
         uid = obj.id
 
+        # check if the object already exists
         if self.exists(credentials, uid) or not self.is_unique(obj):
             if ignore_duplicates:
-                return Ok(obj)
-            return Err(f"Some fields are not unique for {type(obj).__name__}")
+                return obj
+            unique_fields_str = ", ".join(self.unique_fields)
+            raise SyftException(
+                public_message=f"Duplication Key Error for {obj}.\n"
+                f"The fields that should be unique are {unique_fields_str}."
+            )
 
         permissions = self.get_ownership_permissions(uid, credentials)
         if add_permissions is not None:
@@ -654,4 +661,4 @@ class ObjectStash(Generic[SyftT]):
         )
         self.session.execute(stmt)
         self.session.commit()
-        return Ok(obj)
+        return self.get_by_uid(credentials, uid)
