@@ -119,15 +119,23 @@ def create_dataset(name: str):
     return dataset
 
 
-def make_server(request) -> Any:
+def make_server(request: Any | None = None) -> Any:
     print("making server")
     server = sy.orchestra.launch(
-        name="test-datasite-1", port="auto", dev_mode=True, reset=True
+        name="test-datasite-1",
+        port="auto",
+        dev_mode=True,
+        reset=True,
+        n_consumers=1,
+        create_producer=True,
     )
 
     def cleanup():
         print("landing server")
         server.land()
 
-    request.addfinalizer(cleanup)
+    if not request:
+        print("WARNING: No pytest request supplied, no finalizer added")
+    else:
+        request.addfinalizer(cleanup)
     return server

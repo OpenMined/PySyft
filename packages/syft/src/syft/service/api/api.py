@@ -7,6 +7,7 @@ import keyword
 import linecache
 import re
 import textwrap
+from textwrap import dedent
 from typing import Any
 from typing import cast
 
@@ -176,6 +177,7 @@ class Endpoint(SyftObject):
     @classmethod
     def validate_api_code(cls, api_code: str) -> str:
         valid_code = True
+        api_code = dedent(api_code)
         try:
             ast.parse(api_code)
         except SyntaxError:
@@ -558,7 +560,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
                 )
             else:
                 return SyftError(
-                    message="Ops something went wrong during this endpoint execution, please contact your admin."
+                    message="Oops something went wrong during this endpoint execution, please contact your admin."
                 )
 
 
@@ -692,7 +694,8 @@ def api_endpoint(
     def decorator(f: Callable) -> TwinAPIEndpoint | SyftError:
         try:
             helper_functions_dict = {
-                f.__name__: inspect.getsource(f) for f in (helper_functions or [])
+                f.__name__: dedent(inspect.getsource(f))
+                for f in (helper_functions or [])
             }
             res = CreateTwinAPIEndpoint(
                 path=path,
@@ -724,7 +727,8 @@ def api_endpoint_method(
     def decorator(f: Callable) -> Endpoint | SyftError:
         try:
             helper_functions_dict = {
-                f.__name__: inspect.getsource(f) for f in (helper_functions or [])
+                f.__name__: dedent(inspect.getsource(f))
+                for f in (helper_functions or [])
             }
             return Endpoint(
                 api_code=inspect.getsource(f),

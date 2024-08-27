@@ -10,9 +10,9 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from copy import deepcopy
 from datetime import datetime
-import inspect
 import functools
 import hashlib
+import inspect
 from itertools import chain
 from itertools import repeat
 import json
@@ -39,7 +39,6 @@ import time
 import types
 from types import ModuleType
 from typing import Any
-
 
 # third party
 from IPython.display import display

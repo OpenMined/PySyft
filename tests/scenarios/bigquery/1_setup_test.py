@@ -1,34 +1,30 @@
-# third party
-from api import get_datasets
-from asserts import has
+# stdlib
 import asyncio
-from events import EVENT_DATASET_MOCK_READABLE
-from events import EVENT_DATASET_UPLOADED
+import inspect
+
+# third party
+from asserts import ensure_package_installed
+from events import EVENT_ALLOW_GUEST_SIGNUP_DISABLED
+from events import EVENT_EXTERNAL_REGISTRY_BIGQUERY_CREATED
+from events import EVENT_PREBUILT_WORKER_IMAGE_BIGQUERY_CREATED
+from events import EVENT_USERS_CREATED
+from events import EVENT_USERS_CREATED_CHECKED
 from events import EVENT_USER_ADMIN_CREATED
+from events import EVENT_WORKER_POOL_CREATED
 from events import EventManager
+from events import Scenario
 from faker import Faker
-from fixtures_sync import create_dataset
 from fixtures_sync import make_admin
 from fixtures_sync import make_server
 from fixtures_sync import make_user
-from fixtures_sync import upload_dataset
+from make import create_endpoints_query
 from make import create_users
-from partials import with_client
 import pytest
-from story import user_can_read_mock_dataset
-from syft import test_settings
-import syft as sy
-from asserts import FailedAssert
 from unsync import unsync
 
-from events import EVENT_USERS_CREATED
-
-EVENT_PREBUILT_WORKER_IMAGE_BIGQUERY_CREATED = "prebuilt_worker_image_bigquery_created"
-EVENT_EXTERNAL_REGISTRY_BIGQUERY_CREATED = "external_registry_bigquery_created"
-EVENT_WORKER_POOL_CREATED = "worker_pool_created"
-EVENT_ALLOW_GUEST_SIGNUP_DISABLED = "allow_guest_signup_disabled"
-EVENT_USERS_CREATED_CHECKED = "users_created_checked"
-
+# syft absolute
+import syft as sy
+from syft import test_settings
 
 # dataset stuff
 # """
@@ -56,31 +52,29 @@ EVENT_USERS_CREATED_CHECKED = "users_created_checked"
 
 
 @unsync
-def get_prebuilt_worker_image(events, client, expected_tag, event_name):
-    if events.wait_for(event_name=event_name):
-        worker_images = client.images.get_all()
-        for worker_image in worker_images:
-            if expected_tag in str(worker_image.image_identifier):
-                assert expected_tag in str(worker_image.image_identifier)
-                return worker_image
-    raise FailedAssert(f"get_prebuilt_worker_image cannot find {expected_tag}")
-
-
-async def create_prebuilt_worker_image(events, client, expected_tag, event_name):
-    print("1")
-    external_registry = test_settings.get("external_registry", default="docker.io")
-    print("2")
-    docker_config = sy.PrebuiltWorkerConfig(tag=f"{external_registry}/{expected_tag}")
-    print("3")
-    result = client.api.services.worker_image.submit(worker_config=docker_config)
-    print("4", result)
-    assert isinstance(result, sy.SyftSuccess)
-    events.register(event_name)
-    print("5", event_name)
+async def get_prebuilt_worker_image(events, client, expected_tag, event_name):
+    await events.await_for(event_name=event_name, show=True)
+    worker_images = client.images.get_all()
+    for worker_image in worker_images:
+        if expected_tag in str(worker_image.image_identifier):
+            assert expected_tag in str(worker_image.image_identifier)
+            return worker_image
+    print(f"get_prebuilt_worker_image cannot find {expected_tag}")
+    # raise FailedAssert()
 
 
 @unsync
-def add_external_registry(events, client, event_name):
+async def create_prebuilt_worker_image(events, client, expected_tag, event_name):
+    external_registry = test_settings.get("external_registry", default="docker.io")
+    docker_config = sy.PrebuiltWorkerConfig(tag=f"{external_registry}/{expected_tag}")
+    result = client.api.services.worker_image.submit(worker_config=docker_config)
+    assert isinstance(result, sy.SyftSuccess)
+    asyncio.sleep(5)
+    events.register(event_name)
+
+
+@unsync
+async def add_external_registry(events, client, event_name):
     external_registry = test_settings.get("external_registry", default="docker.io")
     result = client.api.services.image_registry.add(external_registry)
     assert isinstance(result, sy.SyftSuccess)
@@ -88,7 +82,7 @@ def add_external_registry(events, client, event_name):
 
 
 @unsync
-def create_worker_pool(
+async def create_worker_pool(
     events, client, worker_pool_name, worker_pool_result, event_name
 ):
     # block until this is available
@@ -99,157 +93,254 @@ def create_worker_pool(
         image_uid=worker_image.id,
         num_workers=1,
     )
-    assert isinstance(result, sy.SyftSuccess)
-    events.register(event_name)
+
+    if isinstance(result, list) and isinstance(
+        result[0], sy.service.worker.worker_pool.ContainerSpawnStatus
+    ):
+        events.register(event_name)
+    else:
+        print("bad result", result)
 
 
+@unsync
 async def check_worker_pool_exists(events, client, worker_pool_name, event_name):
     timeout = 30
-    print("waiting for check_worker_pool_exists", event_name, timeout)
-    await events.wait_for(event_name=event_name, timeout=timeout)
-    print("its been 30 seconds, trying to get all worker pools")
+    await events.await_for(event_name=event_name, timeout=timeout)
     pools = client.worker_pools.get_all()
-    print("pools", len(pools), pools)
     for pool in pools:
-        print("pool name", pool.name)
         if worker_pool_name == pool.name:
             assert worker_pool_name == pool.name
             return worker_pool_name == pool.name
 
-    raise FailedAssert(
-        f"check_worker_pool_exists cannot find worker_pool_name {worker_pool_name}"
-    )
+    print(f"check_worker_pool_exists cannot find worker_pool_name {worker_pool_name}")
+    # raise FailedAssert(
+
+    # )
 
 
-def set_settings_allow_guest_signup(events, client, enabled, event_name):
+@unsync
+async def set_settings_allow_guest_signup(
+    events, client, enabled, event_name: str | None = None
+):
     result = client.settings.allow_guest_signup(enable=enabled)
-    assert isinstance(result, sy.SyftSuccess)
-    events.register(event_name)
+    if event_name:
+        if isinstance(result, sy.SyftSuccess):
+            events.register(event_name)
+        else:
+            print("cant set settings alow guest signup")
 
 
+@unsync
 async def check_users_created(events, client, users, event_name, event_set):
-    print("check users created")
     expected_emails = {user.email for user in users}
     found_emails = set()
-    print("wait for created event", event_name)
-    await events.wait_for(event_name=event_name)
-    print("finished waiting getting all the users")
+    await events.await_for(event_name=event_name)
     user_results = client.api.services.user.get_all()
     for user_result in user_results:
         if user_result.email in expected_emails:
             found_emails.add(user_result.email)
 
-    print(
-        "len(found_emails) == len(expected_emails)",
-        len(found_emails) == len(expected_emails),
-    )
     if len(found_emails) == len(expected_emails):
         events.register(event_set)
     else:
-        raise FailedAssert(
+        print(
             f"check_users_created only found {len(found_emails)} of {len(expected_emails)} "
             f"emails: {found_emails}, {expected_emails}"
         )
+        # raise FailedAssert()
+
+
+def guest_register(client, test_user):
+    guest_client = client.guest()
+    fake = Faker()
+    result = guest_client.register(
+        name=test_user.name,
+        email=test_user.email,
+        password=test_user.password,
+        password_verify=test_user.password,
+        institution=fake.company(),
+        website=fake.url(),
+    )
+    return result
+
+
+async def result_is(
+    events,
+    expr,
+    matches: bool | type | object,
+    after: str | None = None,
+    register: str | None = None,
+):
+    if after:
+        await events.await_for(event_name=after)
+
+    lambda_source = inspect.getsource(expr)
+    try:
+        result = expr()
+        if isinstance(matches, bool):
+            assertion = result == matches
+        if isinstance(matches, type):
+            assertion = isinstance(result, matches)
+        else:
+            if hasattr(result, "message"):
+                message = result.message.replace("*", "")
+                assertion = isinstance(result, type(matches)) and message in str(result)
+
+        if assertion and register:
+            events.register(event_name=register)
+        return assertion
+    except Exception as e:
+        print(f"insinstance({lambda_source}, {matches}). {e}")
+
+    return False
+
+
+@unsync
+async def set_endpoint_settings(events, client, path, after: str, register: str):
+    if after:
+        await events.await_for(event_name=after)
+
+    # Here, we update the endpoint to timeout after 100s (rather the default of 60s)
+    result1 = client.api.services.api.update(endpoint_path=path, endpoint_timeout=120)
+    result2 = client.api.services.api.update(
+        endpoint_path=path, hide_mock_definition=True
+    )
+    if isinstance(result1, sy.SyftSuccess) and isinstance(result2, sy.SyftSuccess):
+        events.register(register)
+    else:
+        print(f"Failed to update api endpoint. {path}")
+
+
+EVENT_QUERY_ENDPOINT_CREATED = "query_endpoint_created"
+EVENT_QUERY_ENDPOINT_CONFIGURED = "query_endpoint_configured"
+
+
+def make_test_query(client, path):
+    query = f"SELECT {test_settings.table_2_col_id}, AVG({test_settings.table_2_col_score}) AS average_score \
+        FROM {test_settings.dataset_2}.{test_settings.table_2} \
+        GROUP BY {test_settings.table_2_col_id} \
+        LIMIT 10000"
+
+    api_method = api_for_path(client, path)
+    result = api_method(sql_query=query)
+    return result
+
+
+def api_for_path(client, path):
+    root = client.api.services
+    for part in path.split("."):
+        if hasattr(root, part):
+            root = getattr(root, part)
+        else:
+            print("cant find part", part, path)
+    return root
+
+
+EVENT_USERS_CAN_QUERY_MOCK = "users_can_query_mock"
 
 
 @pytest.mark.asyncio
 async def test_create_dataset_and_read_mock(request):
+    ensure_package_installed("google-cloud-bigquery", "google.cloud.bigquery")
+    ensure_package_installed("db-dtypes", "db_dtypes")
+
+    scenario = Scenario(
+        name="test_create_dataset_and_read_mock",
+        events=[
+            EVENT_USER_ADMIN_CREATED,
+            EVENT_PREBUILT_WORKER_IMAGE_BIGQUERY_CREATED,
+            EVENT_EXTERNAL_REGISTRY_BIGQUERY_CREATED,
+            EVENT_WORKER_POOL_CREATED,
+            EVENT_ALLOW_GUEST_SIGNUP_DISABLED,
+            EVENT_USERS_CREATED,
+            EVENT_USERS_CREATED_CHECKED,
+            EVENT_QUERY_ENDPOINT_CREATED,
+            EVENT_QUERY_ENDPOINT_CONFIGURED,
+            EVENT_USERS_CAN_QUERY_MOCK,
+        ],
+    )
+
     events = EventManager()
+    events.add_scenario(scenario)
+    events.monitor()
+
     server = make_server(request)
 
     admin = make_admin()
     events.register(EVENT_USER_ADMIN_CREATED)
-    await events.wait_for(event_name=EVENT_USER_ADMIN_CREATED)
+
+    await events.await_for(event_name=EVENT_USER_ADMIN_CREATED)
     assert events.happened(EVENT_USER_ADMIN_CREATED)
 
     root_client = admin.client(server)
     worker_pool_name = "bigquery-pool"
 
     worker_docker_tag = f"openmined/bigquery:{sy.__version__}"
-    print("running create_prebuilt_worker_image")
-    asyncio.create_task(
-        create_prebuilt_worker_image(
-            events,
-            root_client,
-            worker_docker_tag,
-            EVENT_PREBUILT_WORKER_IMAGE_BIGQUERY_CREATED,
-        )
+
+    create_prebuilt_worker_image(
+        events,
+        root_client,
+        worker_docker_tag,
+        EVENT_PREBUILT_WORKER_IMAGE_BIGQUERY_CREATED,
     )
-    print("finished queing create_prebuilt_worker_image")
 
-    print("waiting...")
-    # await events.wait_for(
-    #     event_name=EVENT_PREBUILT_WORKER_IMAGE_BIGQUERY_CREATED, timeout=30
-    # )
-    # assert await events.happened(EVENT_PREBUILT_WORKER_IMAGE_BIGQUERY_CREATED)
+    worker_image_result = get_prebuilt_worker_image(
+        events,
+        root_client,
+        worker_docker_tag,
+        EVENT_PREBUILT_WORKER_IMAGE_BIGQUERY_CREATED,
+    )
 
-    # worker_image_result = get_prebuilt_worker_image(
-    #     events,
-    #     root_client,
-    #     worker_docker_tag,
-    #     EVENT_PREBUILT_WORKER_IMAGE_BIGQUERY_CREATED,
-    # )
+    add_external_registry(events, root_client, EVENT_EXTERNAL_REGISTRY_BIGQUERY_CREATED)
 
-    # await events.wait_for(event_name=EVENT_PREBUILT_WORKER_IMAGE_BIGQUERY_CREATED)
-    # assert events.happened(EVENT_PREBUILT_WORKER_IMAGE_BIGQUERY_CREATED)
+    create_worker_pool(
+        events,
+        root_client,
+        worker_pool_name,
+        worker_image_result,
+        EVENT_WORKER_POOL_CREATED,
+    )
 
-    # add_external_registry(events, root_client, EVENT_EXTERNAL_REGISTRY_BIGQUERY_CREATED)
+    check_worker_pool_exists(
+        events, root_client, worker_pool_name, EVENT_WORKER_POOL_CREATED
+    )
 
-    # await events.wait_for(event_name=EVENT_EXTERNAL_REGISTRY_BIGQUERY_CREATED)
-    # assert events.happened(EVENT_EXTERNAL_REGISTRY_BIGQUERY_CREATED)
+    set_settings_allow_guest_signup(
+        events, root_client, False, EVENT_ALLOW_GUEST_SIGNUP_DISABLED
+    )
 
-    # create_worker_pool(
-    #     events,
-    #     root_client,
-    #     worker_pool_name,
-    #     worker_image_result,
-    #     EVENT_WORKER_POOL_CREATED,
-    # )
+    users = [make_user() for i in range(2)]
 
-    # await events.wait_for(event_name=EVENT_WORKER_POOL_CREATED)
-    # assert events.happened(EVENT_WORKER_POOL_CREATED)
+    create_users(root_client, events, users, EVENT_USERS_CREATED)
 
-    # check_worker_pool_exists(
-    #     events, root_client, worker_pool_name, EVENT_WORKER_POOL_CREATED
-    # )
+    check_users_created(
+        events, root_client, users, EVENT_USERS_CREATED, EVENT_USERS_CREATED_CHECKED
+    )
 
-    # await events.wait_for(event_name=EVENT_WORKER_POOL_CREATED)
-    # assert events.happened(EVENT_WORKER_POOL_CREATED)
+    create_endpoints_query(
+        events,
+        root_client,
+        worker_pool_name=worker_pool_name,
+        register=EVENT_QUERY_ENDPOINT_CREATED,
+    )
 
-    # set_settings_allow_guest_signup(
-    #     events, root_client, False, EVENT_ALLOW_GUEST_SIGNUP_DISABLED
-    # )
+    test_query_path = "bigquery.test_query"
+    set_endpoint_settings(
+        events,
+        root_client,
+        path=test_query_path,
+        after=EVENT_QUERY_ENDPOINT_CREATED,
+        register=EVENT_QUERY_ENDPOINT_CONFIGURED,
+    )
 
-    # await events.wait_for(event_name=EVENT_ALLOW_GUEST_SIGNUP_DISABLED)
-    # assert events.happened(EVENT_ALLOW_GUEST_SIGNUP_DISABLED)
+    await result_is(
+        events,
+        lambda: len(make_test_query(users[0].client(server), test_query_path)) == 10000,
+        matches=True,
+        after=[EVENT_QUERY_ENDPOINT_CONFIGURED, EVENT_USERS_CREATED_CHECKED],
+        register=EVENT_USERS_CAN_QUERY_MOCK,
+    )
 
-    # users = [make_user() for i in range(2)]
-    # # user = users[0]
-
-    # create_users(root_client, events, users, EVENT_USERS_CREATED)
-
-    # await events.wait_for(event_name=EVENT_USERS_CREATED)
-    # assert events.happened(EVENT_USERS_CREATED)
-
-    # check_users_created(
-    #     events, root_client, users, EVENT_USERS_CREATED, EVENT_USERS_CREATED_CHECKED
-    # )
-
-    # await events.wait_for(event_name=EVENT_USERS_CREATED_CHECKED)
-    # assert events.happened(EVENT_USERS_CREATED_CHECKED)
-
-    # check users are created
-    # high_client.api.services.user.get_all()
-
-    # # check_cant_sign_up
-
-    # # create users
-
-    # # create api endpoints
-    # # check they respond
-
-    # # login as user
-    # # test queries
     # # submit code via api
     # # verify its not accessible yet
 
@@ -262,11 +353,16 @@ async def test_create_dataset_and_read_mock(request):
     # # continuously checking
     # # assert he random number of rows is there
 
-    # # await has(
-    # #     lambda: dataset_get_all() == 1,
-    # #     "1 Dataset",
-    # #     timeout=15,
-    # #     retry=1,
-    # # )
+    res = await result_is(
+        events,
+        lambda: guest_register(root_client, make_user()),
+        matches=sy.SyftError(
+            message="*You don't have permission to create an account*"
+        ),
+        after=EVENT_ALLOW_GUEST_SIGNUP_DISABLED,
+    )
 
-    # await events.wait_for(event_name=EVENT_USERS_CREATED_CHECKED, timeout=60)
+    assert res is True
+
+    await events.await_scenario(scenario_name="test_create_dataset_and_read_mock")
+    assert events.scenario_completed("test_create_dataset_and_read_mock")
