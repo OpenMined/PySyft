@@ -3,18 +3,17 @@ from typing import ClassVar
 
 # third party
 from pydantic import model_validator
-from result import Result
 
 # relative
-from ...client.api import APIRegistry
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...store.db.stash import ObjectStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
-from ...store.document_store import PartitionSettings
+from ...store.document_store_errors import StashException
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
+from ...types.result import as_result
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import UID
@@ -22,7 +21,6 @@ from ...util.telemetry import instrument
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectREAD
 from ..context import AuthedServiceContext
-from ..response import SyftError
 from ..service import AbstractService
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
@@ -126,14 +124,7 @@ class ExecutionOutput(SyncableSyftObject):
 
     @property
     def outputs(self) -> list[ActionObject] | dict[str, ActionObject] | None:
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            raise ValueError(
-                f"Can't access the api. Please log in to {self.syft_server_location}"
-            )
+        api = self.get_api()
         action_service = api.services.action
 
         # TODO: error handling for action_service.get
@@ -192,36 +183,35 @@ class ExecutionOutput(SyncableSyftObject):
 @instrument
 @serializable(canonical_name="OutputStashSQL", version=1)
 class OutputStash(ObjectStash[ExecutionOutput]):
-    settings: PartitionSettings = PartitionSettings(
-        name=ExecutionOutput.__canonical_name__, object_type=ExecutionOutput
-    )
-
+    @as_result(StashException)
     def get_by_user_code_id(
         self, credentials: SyftVerifyKey, user_code_id: UID
-    ) -> Result[list[ExecutionOutput], str]:
+    ) -> list[ExecutionOutput]:
         return self.get_all_by_field(
             credentials=credentials,
             field_name="user_code_id",
             field_value=str(user_code_id),
-        )
+        ).unwrap()
 
+    @as_result(StashException)
     def get_by_job_id(
         self, credentials: SyftVerifyKey, job_id: UID
-    ) -> Result[ExecutionOutput | None, str]:
+    ) -> ExecutionOutput | None:
         return self.get_one_by_field(
             credentials=credentials,
             field_name="job_id",
             field_value=str(job_id),
-        )
+        ).unwrap()
 
+    @as_result(StashException)
     def get_by_output_policy_id(
         self, credentials: SyftVerifyKey, output_policy_id: UID
-    ) -> Result[list[ExecutionOutput], str]:
+    ) -> list[ExecutionOutput]:
         return self.get_all_by_field(
             credentials=credentials,
             field_name="output_policy_id",
             field_value=str(output_policy_id),
-        )
+        ).unwrap()
 
 
 @instrument
@@ -248,7 +238,7 @@ class OutputService(AbstractService):
         job_id: UID | None = None,
         output_policy_id: UID | None = None,
         input_ids: dict[str, UID] | None = None,
-    ) -> ExecutionOutput | SyftError:
+    ) -> ExecutionOutput:
         output = ExecutionOutput.from_ids(
             output_ids=output_ids,
             user_code_id=user_code_id,
@@ -259,8 +249,7 @@ class OutputService(AbstractService):
             input_ids=input_ids,
         )
 
-        res = self.stash.set(context.credentials, output)
-        return res
+        return self.stash.set(context.credentials, output).unwrap()
 
     @service_method(
         path="output.get_by_user_code_id",
@@ -269,14 +258,11 @@ class OutputService(AbstractService):
     )
     def get_by_user_code_id(
         self, context: AuthedServiceContext, user_code_id: UID
-    ) -> list[ExecutionOutput] | SyftError:
-        result = self.stash.get_by_user_code_id(
+    ) -> list[ExecutionOutput]:
+        return self.stash.get_by_user_code_id(
             credentials=context.server.verify_key,  # type: ignore
             user_code_id=user_code_id,
-        )
-        if result.is_ok():
-            return result.ok()
-        return SyftError(message=result.err())
+        ).unwrap()
 
     @service_method(
         path="output.has_output_read_permissions",
@@ -288,11 +274,9 @@ class OutputService(AbstractService):
         context: AuthedServiceContext,
         user_code_id: UID,
         user_verify_key: SyftVerifyKey,
-    ) -> bool | SyftError:
+    ) -> bool:
         action_service = context.server.get_service("actionservice")
         all_outputs = self.get_by_user_code_id(context, user_code_id)
-        if isinstance(all_outputs, SyftError):
-            return all_outputs
         for output in all_outputs:
             # TODO tech debt: unclear why code owner can see outputhistory without permissions.
             # It is not a security issue (output history has no data) it is confusing for user
@@ -319,14 +303,11 @@ class OutputService(AbstractService):
     )
     def get_by_job_id(
         self, context: AuthedServiceContext, job_id: UID
-    ) -> ExecutionOutput | None | SyftError:
-        result = self.stash.get_by_job_id(
+    ) -> ExecutionOutput:
+        return self.stash.get_by_job_id(
             credentials=context.server.verify_key,  # type: ignore
             job_id=job_id,
-        )
-        if result.is_ok():
-            return result.ok()
-        return SyftError(message=result.err())
+        ).unwrap()
 
     @service_method(
         path="output.get_by_output_policy_id",
@@ -335,36 +316,23 @@ class OutputService(AbstractService):
     )
     def get_by_output_policy_id(
         self, context: AuthedServiceContext, output_policy_id: UID
-    ) -> list[ExecutionOutput] | SyftError:
-        result = self.stash.get_by_output_policy_id(
+    ) -> list[ExecutionOutput]:
+        return self.stash.get_by_output_policy_id(
             credentials=context.server.verify_key,  # type: ignore
             output_policy_id=output_policy_id,  # type: ignore
-        )
-        if result.is_ok():
-            return result.ok()
-        return SyftError(message=result.err())
+        ).unwrap()
 
     @service_method(
         path="output.get",
         name="get",
         roles=GUEST_ROLE_LEVEL,
     )
-    def get(
-        self, context: AuthedServiceContext, id: UID
-    ) -> ExecutionOutput | SyftError:
-        result = self.stash.get_by_uid(context.credentials, id)
-        if result.is_ok():
-            return result.ok()
-        return SyftError(message=result.err())
+    def get(self, context: AuthedServiceContext, id: UID) -> ExecutionOutput:
+        return self.stash.get_by_uid(context.credentials, id).unwrap()
 
     @service_method(path="output.get_all", name="get_all", roles=GUEST_ROLE_LEVEL)
-    def get_all(
-        self, context: AuthedServiceContext
-    ) -> list[ExecutionOutput] | SyftError:
-        result = self.stash.get_all(context.credentials)
-        if result.is_ok():
-            return result.ok()
-        return SyftError(message=result.err())
+    def get_all(self, context: AuthedServiceContext) -> list[ExecutionOutput]:
+        return self.stash.get_all(context.credentials).unwrap()
 
 
 TYPE_TO_SERVICE[ExecutionOutput] = OutputService

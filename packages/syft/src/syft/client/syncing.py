@@ -10,7 +10,6 @@ from IPython.display import display
 # relative
 from ..abstract_server import ServerSideType
 from ..server.credentials import SyftVerifyKey
-from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.response import SyftWarning
 from ..service.sync.diff_state import ObjectDiffBatch
@@ -19,6 +18,7 @@ from ..service.sync.diff_state import SyncInstruction
 from ..service.sync.resolve_widget import PaginatedResolveWidget
 from ..service.sync.resolve_widget import ResolveWidget
 from ..service.sync.sync_state import SyncState
+from ..types.errors import SyftException
 from ..types.uid import UID
 from ..util.decorators import deprecated
 from ..util.util import prompt_warning_message
@@ -38,7 +38,7 @@ def sync(
     include_types: Collection[str | type] | None = None,
     exclude_types: Collection[str | type] | None = None,
     hide_usercode: bool = True,
-) -> PaginatedResolveWidget | SyftError | SyftSuccess:
+) -> PaginatedResolveWidget | SyftSuccess:
     diff = compare_clients(
         from_client=from_client,
         to_client=to_client,
@@ -49,8 +49,6 @@ def sync(
         exclude_types=exclude_types,
         hide_usercode=hide_usercode,
     )
-    if isinstance(diff, SyftError):
-        return diff
 
     if diff.low_state.errors:
         error_list_text = "<br>".join("- " + x for x in diff.low_state.errors.values())
@@ -83,7 +81,7 @@ def compare_states(
     include_types: Collection[str | type] | None = None,
     exclude_types: Collection[str | type] | None = None,
     hide_usercode: bool = True,
-) -> ServerDiff | SyftError:
+) -> ServerDiff:
     # ServerDiff
     if (
         from_state.server_side_type == ServerSideType.LOW_SIDE
@@ -100,8 +98,8 @@ def compare_states(
         high_state = from_state
         direction = SyncDirection.HIGH_TO_LOW
     else:
-        return SyftError(
-            "Invalid server side types: can only compare a high and low server"
+        raise SyftException(
+            public_message="Invalid server side types: can only compare a high and low server"
         )
 
     if hide_usercode:
@@ -133,15 +131,9 @@ def compare_clients(
     include_types: Collection[str | type] | None = None,
     exclude_types: Collection[str | type] | None = None,
     hide_usercode: bool = True,
-) -> ServerDiff | SyftError:
+) -> ServerDiff:
     from_state = from_client.get_sync_state()
-    if isinstance(from_state, SyftError):
-        return from_state
-
     to_state = to_client.get_sync_state()
-    if isinstance(to_state, SyftError):
-        return to_state
-
     return compare_states(
         from_state=from_state,
         to_state=to_state,
@@ -156,7 +148,7 @@ def compare_clients(
 
 def resolve(
     obj: ObjectDiffBatch | ServerDiff,
-) -> ResolveWidget | PaginatedResolveWidget | SyftSuccess | SyftError:
+) -> ResolveWidget | PaginatedResolveWidget | SyftSuccess:
     if not isinstance(obj, ObjectDiffBatch | ServerDiff):
         raise ValueError(
             f"Invalid type: could not resolve object with type {type(obj).__qualname__}"
@@ -167,7 +159,7 @@ def resolve(
 @deprecated(reason="resolve_single has been renamed to resolve", return_syfterror=True)
 def resolve_single(
     obj_diff_batch: ObjectDiffBatch,
-) -> ResolveWidget | PaginatedResolveWidget | SyftSuccess | SyftError:
+) -> ResolveWidget | PaginatedResolveWidget | SyftSuccess:
     return resolve(obj_diff_batch)
 
 
@@ -175,11 +167,11 @@ def handle_sync_batch(
     obj_diff_batch: ObjectDiffBatch,
     share_private_data: dict[UID, bool],
     mockify: dict[UID, bool],
-) -> SyftSuccess | SyftError:
+) -> SyftSuccess:
     # Infer SyncDecision
     sync_direction = obj_diff_batch.sync_direction
     if sync_direction is None:
-        return SyftError(
+        raise SyftException(
             message="Cannot sync an object without a specified sync direction."
         )
 
@@ -187,16 +179,16 @@ def handle_sync_batch(
 
     # Validate decision
     if decision not in [SyncDecision.LOW, SyncDecision.HIGH]:
-        return SyftError(message="Invalid sync decision")
+        raise SyftException(public_message="Invalid sync decision")
     elif obj_diff_batch.is_unchanged:
         return SyftSuccess(message="No changes to sync")
     elif obj_diff_batch.decision is SyncDecision.IGNORE:
-        return SyftError(
-            message="Attempted to sync an ignored object, please unignore first"
+        raise SyftException(
+            public_message="Attempted to sync an ignored object, please unignore first"
         )
     elif obj_diff_batch.decision is not None:
-        return SyftError(
-            message="Attempted to sync an object that has already been synced"
+        raise SyftException(
+            public_message="Attempted to sync an object that has already been synced"
         )
 
     src_client = obj_diff_batch.source_client
@@ -229,26 +221,21 @@ def handle_sync_batch(
     logger.debug(f"Decision: Syncing {len(sync_instructions)} objects")
 
     # Apply empty state to source side to signal that we are done syncing
-    res_src = src_client.apply_state(src_resolved_state)
-    if isinstance(res_src, SyftError):
-        return res_src
-
+    src_client.apply_state(src_resolved_state)
     # Apply sync instructions to target side
     for sync_instruction in sync_instructions:
         tgt_resolved_state.add_sync_instruction(sync_instruction)
-    res_tgt = tgt_client.apply_state(tgt_resolved_state)
-
-    return res_tgt
+    return tgt_client.apply_state(tgt_resolved_state)
 
 
 def handle_ignore_batch(
     obj_diff_batch: ObjectDiffBatch,
     all_batches: list[ObjectDiffBatch],
-) -> SyftSuccess | SyftError:
+) -> SyftSuccess:
     if obj_diff_batch.decision is SyncDecision.IGNORE:
         return SyftSuccess(message="This batch is already ignored")
     elif obj_diff_batch.decision is not None:
-        return SyftError(
+        raise SyftException(
             message="Attempted to sync an object that has already been synced"
         )
 
@@ -268,18 +255,14 @@ def handle_ignore_batch(
         src_resolved_state.add_ignored(batch)
         tgt_resolved_state.add_ignored(batch)
 
-    res_src = src_client.apply_state(src_resolved_state)
-    if isinstance(res_src, SyftError):
-        return res_src
-
-    res_tgt = tgt_client.apply_state(tgt_resolved_state)
-    return res_tgt
+    src_client.apply_state(src_resolved_state)
+    return tgt_client.apply_state(tgt_resolved_state)
 
 
 def handle_unignore_batch(
     obj_diff_batch: ObjectDiffBatch,
     all_batches: list[ObjectDiffBatch],
-) -> SyftSuccess | SyftError:
+) -> SyftSuccess:
     src_client = obj_diff_batch.source_client
     tgt_client = obj_diff_batch.target_client
     src_resolved_state, tgt_resolved_state = obj_diff_batch.create_new_resolved_states()
@@ -297,12 +280,8 @@ def handle_unignore_batch(
         src_resolved_state.add_unignored(other_batch.root_id)
         tgt_resolved_state.add_unignored(other_batch.root_id)
 
-    res_src = src_client.apply_state(src_resolved_state)
-    if isinstance(res_src, SyftError):
-        return res_src
-
-    res_tgt = tgt_client.apply_state(tgt_resolved_state)
-    return res_tgt
+    src_client.apply_state(src_resolved_state)
+    return tgt_client.apply_state(tgt_resolved_state)
 
 
 def get_other_unignore_batches(

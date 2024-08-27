@@ -10,7 +10,6 @@ from ...store.document_store import PartitionSettings
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
-from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import TYPE_TO_SERVICE
@@ -44,46 +43,36 @@ class UserCodeStatusService(AbstractService):
         self,
         context: AuthedServiceContext,
         status: UserCodeStatusCollection,
-    ) -> UserCodeStatusCollection | SyftError:
-        result = self.stash.set(
+    ) -> UserCodeStatusCollection:
+        return self.stash.set(
             credentials=context.credentials,
             obj=status,
-        )
-        if result.is_ok():
-            return result.ok()
-        return SyftError(message=result.err())
+        ).unwrap()
 
     @service_method(
         path="code_status.get_by_uid", name="get_by_uid", roles=GUEST_ROLE_LEVEL
     )
     def get_status(
         self, context: AuthedServiceContext, uid: UID
-    ) -> UserCodeStatusCollection | SyftError:
+    ) -> UserCodeStatusCollection:
         """Get the status of a user code item"""
-        result = self.stash.get_by_uid(context.credentials, uid=uid)
-        if result.is_ok():
-            return result.ok()
-        return SyftError(message=result.err())
+        return self.stash.get_by_uid(context.credentials, uid=uid).unwrap()
 
     @service_method(path="code_status.get_all", name="get_all", roles=ADMIN_ROLE_LEVEL)
-    def get_all(
-        self, context: AuthedServiceContext
-    ) -> list[UserCodeStatusCollection] | SyftError:
+    def get_all(self, context: AuthedServiceContext) -> list[UserCodeStatusCollection]:
         """Get all user code item statuses"""
-        result = self.stash.get_all(context.credentials)
-        if result.is_ok():
-            return result.ok()
-        return SyftError(message=result.err())
+        return self.stash.get_all(context.credentials).unwrap()
 
-    @service_method(path="code_status.remove", name="remove", roles=ADMIN_ROLE_LEVEL)
-    def remove(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> SyftSuccess | SyftError:
+    @service_method(
+        path="code_status.remove",
+        name="remove",
+        roles=ADMIN_ROLE_LEVEL,
+        unwrap_on_success=False,
+    )
+    def remove(self, context: AuthedServiceContext, uid: UID) -> SyftSuccess:
         """Remove a user code item status"""
-        result = self.stash.delete_by_uid(context.credentials, uid=uid)
-        if result.is_ok():
-            return result.ok()
-        return SyftError(message=result.err())
+        self.stash.delete_by_uid(context.credentials, uid=uid).unwrap()
+        return SyftSuccess(message=f"{uid} successfully deleted", value=uid)
 
 
 TYPE_TO_SERVICE[UserCodeStatusCollection] = UserCodeStatusService
