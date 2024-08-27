@@ -12,25 +12,8 @@ from syft.service.request.request import RequestStatus
 from syft.service.response import SyftError
 from syft.types.errors import SyftException
 
-secrets = {
-    "service_account_bigquery_private": {},
-    "service_account_bigquery_mock": {},
-    "region_bigquery": "",
-    "project_id": "",
-    "dataset_1": "dataset1",
-    "table_1": "table1",
-    "table_2": "table2",
-}
 
-
-# create custom endpoint for private, mock query functions on high server
-@sy.api_endpoint_method(
-    settings={
-        "credentials": secrets["service_account_bigquery_private"],
-        "region": secrets["region_bigquery"],
-        "project_id": secrets["project_id"],
-    }
-)
+@sy.api_endpoint_method(settings={})
 def private_query_function(
     context,
     sql_query: str,
@@ -58,9 +41,6 @@ def is_within_rate_limit(context):
 
 @sy.api_endpoint_method(
     settings={
-        "credentials": secrets["service_account_bigquery_private"],
-        "region": secrets["region_bigquery"],
-        "project_id": secrets["project_id"],
         "CALLS_PER_MIN": 10,
     },
     helper_functions=[is_within_rate_limit],
@@ -210,7 +190,7 @@ def approve_original_request(submit_ds_request):
 
     request = admin_client.requests[0]
 
-    approved_request = request.approve()
+    request.approve()
 
     yield admin_client, ds_client, fn_name
 
@@ -224,7 +204,7 @@ def accept_request_by_deposit(submit_ds_request):
     job = execute_request(admin_client, request)
     job.wait()
     job_info = job.info(result=True)
-    approved_request = request.deposit_result(job_info, approve=True)
+    request.deposit_result(job_info, approve=True)
     yield admin_client, ds_client, fn_name
 
 
@@ -275,12 +255,10 @@ def test_query_endpoint_added(update_query_endpoint) -> None:
 
 
 def test_query_endpoint_mock_endpoint(update_query_endpoint) -> None:
-    query = f"SELECT * FROM {secrets['dataset_1']}.{secrets['table_1']} LIMIT 10"
+    query = "SELECT * FROM dataset_1.table_1 LIMIT 10"
     admin_client, _ = update_query_endpoint
 
-    mock_result = admin_client.api.services.bigquery.test_query.mock(
-        sql_query=f"SELECT * FROM {secrets['dataset_1']}.{secrets['table_1']} LIMIT 10"
-    )
+    mock_result = admin_client.api.services.bigquery.test_query.mock(sql_query=query)
     assert not isinstance(mock_result, SyftError)
 
     retrieved_obj = mock_result.get()
@@ -291,12 +269,10 @@ def test_query_endpoint_mock_endpoint(update_query_endpoint) -> None:
 
 
 def test_query_endpoint_private_endpoint(update_query_endpoint) -> None:
-    query = f"SELECT * FROM {secrets['dataset_1']}.{secrets['table_1']} LIMIT 10"
+    query = "SELECT * FROM dataset_1.table_1 LIMIT 100"
     admin_client, _ = update_query_endpoint
 
-    result = admin_client.api.services.bigquery.test_query.private(
-        sql_query=f"SELECT * FROM {secrets['dataset_1']}.{secrets['table_1']} LIMIT 10"
-    )
+    result = admin_client.api.services.bigquery.test_query.private(sql_query=query)
     assert not isinstance(result, SyftError)
 
     retrieved_obj = result.get()
@@ -314,7 +290,7 @@ def test_submit_query_endpoint_added(create_submit_query_endpoint):
 
 def test_submit_query_endpoint(create_submit_query_endpoint) -> None:
     admin_client, ds_client = create_submit_query_endpoint
-    sql_query = f"SELECT * FROM {secrets['dataset_1']}.{secrets['table_1']} LIMIT 1"
+    sql_query = "SELECT * FROM dataset_1.table_1 LIMIT 10"
     # Inspect the context state on an endpoint
     result = admin_client.api.services.bigquery.submit_query(
         func_name="my_func",
@@ -379,6 +355,6 @@ def test_ds_result_retrieval(
 
     api_method = getattr(ds_client.code, fn_name)
     with raises_expectation as exc:
-        res = api_method()
+        api_method()
     if error_message:
         assert error_message in str(exc.value)
