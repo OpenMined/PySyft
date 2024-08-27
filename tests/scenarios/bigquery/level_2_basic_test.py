@@ -7,6 +7,11 @@ from asserts import ensure_package_installed
 from events import EVENT_ALLOW_GUEST_SIGNUP_DISABLED
 from events import EVENT_EXTERNAL_REGISTRY_BIGQUERY_CREATED
 from events import EVENT_PREBUILT_WORKER_IMAGE_BIGQUERY_CREATED
+from events import EVENT_SCHEMA_ENDPOINT_CREATED
+from events import EVENT_SUBMIT_QUERY_ENDPOINT_CONFIGURED
+from events import EVENT_SUBMIT_QUERY_ENDPOINT_CREATED
+from events import EVENT_USERS_CAN_QUERY_MOCK
+from events import EVENT_USERS_CAN_SUBMIT_QUERY
 from events import EVENT_USERS_CREATED
 from events import EVENT_USERS_CREATED_CHECKED
 from events import EVENT_USER_ADMIN_CREATED
@@ -18,6 +23,8 @@ from fixtures_sync import make_admin
 from fixtures_sync import make_server
 from fixtures_sync import make_user
 from make import create_endpoints_query
+from make import create_endpoints_schema
+from make import create_endpoints_submit_query
 from make import create_users
 import pytest
 from unsync import unsync
@@ -167,7 +174,7 @@ def guest_register(client, test_user):
 async def result_is(
     events,
     expr,
-    matches: bool | type | object,
+    matches: bool | str | type | object,
     after: str | None = None,
     register: str | None = None,
 ):
@@ -177,10 +184,14 @@ async def result_is(
     lambda_source = inspect.getsource(expr)
     try:
         result = expr()
+        assertion = False
         if isinstance(matches, bool):
             assertion = result == matches
-        if isinstance(matches, type):
+        elif isinstance(matches, type):
             assertion = isinstance(result, matches)
+        elif isinstance(matches, str):
+            message = matches.replace("*", "")
+            assertion = message in str(result)
         else:
             if hasattr(result, "message"):
                 message = result.message.replace("*", "")
@@ -196,16 +207,15 @@ async def result_is(
 
 
 @unsync
-async def set_endpoint_settings(events, client, path, after: str, register: str):
+async def set_endpoint_settings(
+    events, client, path, kwargs, after: str, register: str
+):
     if after:
         await events.await_for(event_name=after)
 
     # Here, we update the endpoint to timeout after 100s (rather the default of 60s)
-    result1 = client.api.services.api.update(endpoint_path=path, endpoint_timeout=120)
-    result2 = client.api.services.api.update(
-        endpoint_path=path, hide_mock_definition=True
-    )
-    if isinstance(result1, sy.SyftSuccess) and isinstance(result2, sy.SyftSuccess):
+    result = client.api.services.api.update(endpoint_path=path, **kwargs)
+    if isinstance(result, sy.SyftSuccess):
         events.register(register)
     else:
         print(f"Failed to update api endpoint. {path}")
@@ -215,14 +225,32 @@ EVENT_QUERY_ENDPOINT_CREATED = "query_endpoint_created"
 EVENT_QUERY_ENDPOINT_CONFIGURED = "query_endpoint_configured"
 
 
-def make_test_query(client, path):
+def query_sql():
     query = f"SELECT {test_settings.table_2_col_id}, AVG({test_settings.table_2_col_score}) AS average_score \
         FROM {test_settings.dataset_2}.{test_settings.table_2} \
         GROUP BY {test_settings.table_2_col_id} \
         LIMIT 10000"
+    return query
 
+
+def run_code(client, method_name, **kwargs):
+    service_func_name = method_name
+    if "*" in method_name:
+        matcher = method_name.replace("*", "")
+        all_code = client.api.services.code.get_all()
+        for code in all_code:
+            if matcher in code.service_func_name:
+                service_func_name = code.service_func_name
+                break
+
+    api_method = api_for_path(client, path=f"code.{service_func_name}")
+    result = api_method(**kwargs)
+    return result
+
+
+def run_api_path(client, path, **kwargs):
     api_method = api_for_path(client, path)
-    result = api_method(sql_query=query)
+    result = api_method(**kwargs)
     return result
 
 
@@ -236,11 +264,11 @@ def api_for_path(client, path):
     return root
 
 
-EVENT_USERS_CAN_QUERY_MOCK = "users_can_query_mock"
+EVENT_USERS_QUERY_NOT_READY = "users_query_not_ready"
 
 
 @pytest.mark.asyncio
-async def test_create_dataset_and_read_mock(request):
+async def test_level_2_basic_scenario(request):
     ensure_package_installed("google-cloud-bigquery", "google.cloud.bigquery")
     ensure_package_installed("db-dtypes", "db_dtypes")
 
@@ -256,7 +284,12 @@ async def test_create_dataset_and_read_mock(request):
             EVENT_USERS_CREATED_CHECKED,
             EVENT_QUERY_ENDPOINT_CREATED,
             EVENT_QUERY_ENDPOINT_CONFIGURED,
+            EVENT_SCHEMA_ENDPOINT_CREATED,
+            EVENT_SUBMIT_QUERY_ENDPOINT_CREATED,
+            EVENT_SUBMIT_QUERY_ENDPOINT_CONFIGURED,
             EVENT_USERS_CAN_QUERY_MOCK,
+            EVENT_USERS_CAN_SUBMIT_QUERY,
+            EVENT_USERS_QUERY_NOT_READY,
         ],
     )
 
@@ -329,20 +362,71 @@ async def test_create_dataset_and_read_mock(request):
         events,
         root_client,
         path=test_query_path,
+        kwargs={"endpoint_timeout": 120, "hide_mock_definition": True},
         after=EVENT_QUERY_ENDPOINT_CREATED,
         register=EVENT_QUERY_ENDPOINT_CONFIGURED,
     )
 
+    print("calling create endpoints schema")
+    create_endpoints_schema(
+        events,
+        root_client,
+        worker_pool_name=worker_pool_name,
+        register=EVENT_SCHEMA_ENDPOINT_CREATED,
+    )
+
+    create_endpoints_submit_query(
+        events,
+        root_client,
+        worker_pool_name=worker_pool_name,
+        register=EVENT_SUBMIT_QUERY_ENDPOINT_CREATED,
+    )
+
+    submit_query_path = "bigquery.submit_query"
+    set_endpoint_settings(
+        events,
+        root_client,
+        path=submit_query_path,
+        kwargs={"hide_mock_definition": True},
+        after=EVENT_SUBMIT_QUERY_ENDPOINT_CREATED,
+        register=EVENT_SUBMIT_QUERY_ENDPOINT_CONFIGURED,
+    )
+
     await result_is(
         events,
-        lambda: len(make_test_query(users[0].client(server), test_query_path)) == 10000,
+        lambda: len(
+            run_api_path(
+                users[0].client(server), test_query_path, sql_query=query_sql()
+            )
+        )
+        == 10000,
         matches=True,
         after=[EVENT_QUERY_ENDPOINT_CONFIGURED, EVENT_USERS_CREATED_CHECKED],
         register=EVENT_USERS_CAN_QUERY_MOCK,
     )
 
-    # # submit code via api
-    # # verify its not accessible yet
+    func_name = "test_func"
+
+    await result_is(
+        events,
+        lambda: run_api_path(
+            users[0].client(server),
+            submit_query_path,
+            func_name=func_name,
+            query=query_sql(),
+        ),
+        matches="*Query submitted*",
+        after=[EVENT_SUBMIT_QUERY_ENDPOINT_CONFIGURED, EVENT_USERS_CREATED_CHECKED],
+        register=EVENT_USERS_CAN_SUBMIT_QUERY,
+    )
+
+    await result_is(
+        events,
+        lambda: run_code(users[0].client(server), method_name=f"{func_name}*"),
+        matches=sy.SyftError(message="*Your code is waiting for approval*"),
+        after=[EVENT_USERS_CAN_SUBMIT_QUERY],
+        register=EVENT_USERS_QUERY_NOT_READY,
+    )
 
     # # continuously checking for
     # # new untriaged requests

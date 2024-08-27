@@ -19,6 +19,11 @@ EVENT_EXTERNAL_REGISTRY_BIGQUERY_CREATED = "external_registry_bigquery_created"
 EVENT_WORKER_POOL_CREATED = "worker_pool_created"
 EVENT_ALLOW_GUEST_SIGNUP_DISABLED = "allow_guest_signup_disabled"
 EVENT_USERS_CREATED_CHECKED = "users_created_checked"
+EVENT_SCHEMA_ENDPOINT_CREATED = "schema_endpoint_created"
+EVENT_SUBMIT_QUERY_ENDPOINT_CREATED = "submit_query_endpoint_created"
+EVENT_SUBMIT_QUERY_ENDPOINT_CONFIGURED = "submit_query_endpoint_configured"
+EVENT_USERS_CAN_QUERY_MOCK = "users_can_query_mock"
+EVENT_USERS_CAN_SUBMIT_QUERY = "users_can_submit_query"
 
 
 @dataclass
